@@ -183,11 +183,9 @@ function snapshotErrors(
         (typeof provenance.usageId !== 'string' || !provenance.usageId)) ||
       (revisions !== undefined &&
         (!object(revisions) ||
-          Object.entries(revisions as Values).some(
-            ([key, revision]) =>
-              !Object.values(contract.groups).flat().includes(key) ||
-              !Number.isSafeInteger(revision) ||
-              Number(revision) < 0,
+          Object.values(revisions as Values).some(
+            (revision) =>
+              !Number.isSafeInteger(revision) || Number(revision) < 0,
           )))
     )
       errors.push('recoveredFrom');
@@ -312,10 +310,12 @@ const migration: MigrationDefinition = defineMigration({
             const creationValid =
               !!fact &&
               !!entry &&
+              usage?.recordKey === id &&
               fact.kind === 'transition' &&
               fact.associationId === entryId &&
               (fact.attempt ?? 0) === 0 &&
-              timestamp(fact.at) === timestamp(entry.at) &&
+              // Usage is written after its creation entry in the same transaction.
+              timestamp(fact.at) >= timestamp(entry.at) &&
               snapshotErrors(contract, fact, name, recordId).length === 0;
             if (creationValid) inventory.creationUsages++;
             let payload: Values;
@@ -369,6 +369,48 @@ const migration: MigrationDefinition = defineMigration({
                   ],
                 });
                 continue;
+              }
+              if (contract.legacySubmit && creationValid) {
+                const provenance = object(payload.recoveredFrom);
+                const creationTime =
+                  timestamp(payload.at) === timestamp(entry.at) ||
+                  (provenance &&
+                    provenance.transitionId === entryId &&
+                    provenance.usageId === usageId &&
+                    timestamp(payload.at) === timestamp(fact.at));
+                const sourceFields = [
+                  'group',
+                  'schemaVersion',
+                  'revision',
+                  'origin',
+                ];
+                const sameSources = Object.keys(contract.defaults).every(
+                  (field) =>
+                    sourceFields.every(
+                      (key) =>
+                        object((payload.sources as Values)[field])?.[key] ===
+                        object((fact.sources as Values)[field])?.[key],
+                    ),
+                );
+                if (
+                  !creationTime ||
+                  payload.revision !== fact.revision ||
+                  !sameSources
+                ) {
+                  inventory.legacySubmissionSnapshots++;
+                  conflicts.push({
+                    definition: name,
+                    recordId,
+                    reason: 'LEGACY_SUBMISSION_SNAPSHOT',
+                    snapshotAt: payload.at,
+                    creationUsageId: usageId,
+                    options: [
+                      'approvePreservingOriginalHistoricalSnapshot',
+                      'recreateRecordFromVerifiedCreationEvidence',
+                    ],
+                  });
+                  continue;
+                }
               }
               // Preserve the exact valid payload and its real historical freeze time.
             } else {

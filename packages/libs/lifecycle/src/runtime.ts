@@ -1288,11 +1288,8 @@ export class LifecycleRuntime {
               (typeof provenance.groupRevisions !== 'object' ||
                 provenance.groupRevisions === null ||
                 Array.isArray(provenance.groupRevisions) ||
-                Object.entries(provenance.groupRevisions).some(
-                  ([key, revision]) =>
-                    !configuredFields.has(key) ||
-                    !Number.isSafeInteger(revision) ||
-                    revision < 0,
+                Object.values(provenance.groupRevisions).some(
+                  (revision) => !Number.isSafeInteger(revision) || revision < 0,
                 )))
           )
             throw new Error('Invalid snapshot recovery provenance.');

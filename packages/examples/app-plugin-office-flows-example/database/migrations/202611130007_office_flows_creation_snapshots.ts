@@ -145,11 +145,9 @@ function errors(
         (typeof provenance.usageId !== 'string' || !provenance.usageId)) ||
       (revisions !== undefined &&
         (!object(revisions) ||
-          Object.entries(revisions as Record<string, unknown>).some(
-            ([key, revision]) =>
-              !fields.includes(key) ||
-              !Number.isSafeInteger(revision) ||
-              Number(revision) < 0,
+          Object.values(revisions as Record<string, unknown>).some(
+            (revision) =>
+              !Number.isSafeInteger(revision) || Number(revision) < 0,
           )))
     )
       result.push('recoveredFrom');

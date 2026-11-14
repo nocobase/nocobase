@@ -33,7 +33,7 @@ Shared code counts as part of a version. A guard, effect, service or helper that
 
 ## Parameters belong to the definition version
 
-Each definition version freezes its contract, including meaning, units, validation and defaults, and stores configuration independently by concrete definition name. A group can evolve independently in a new version; there is no cross-version group freezing rule. Administrators edit values only. An explicit copy from a previous version must validate against the target contract and becomes independent. At formal business start the runtime atomically saves complete effective values, revision and fixed time. All later execution uses that immutable instance snapshot. Return, withdrawal and resubmission of the same instance retain it. Identify start boundaries explicitly; see [parameter contracts and snapshots](lifecycle-parameters.md).
+Each definition version freezes its contract, including meaning, units, validation and defaults, and stores configuration independently by concrete definition name. A group can evolve independently in a new version; there is no cross-version group freezing rule. Administrators edit values only. An explicit copy from a previous version must validate against the target contract and becomes independent. When the runtime creates a record, including a business draft, it atomically saves complete effective values, revision and fixed time. All later execution uses that immutable instance snapshot. Return, withdrawal and resubmission of the same instance retain it. Use runtime creation for every configured entry, seed, import, batch and child record; see [parameter contracts and snapshots](lifecycle-parameters.md).
 
 ## Entry points
 

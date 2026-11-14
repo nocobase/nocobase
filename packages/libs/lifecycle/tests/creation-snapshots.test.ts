@@ -97,8 +97,8 @@ function setup(creation = false) {
     },
   };
 }
-describe('complete startup snapshots', () => {
-  it('ignores invalid current configuration after start and preserves defaults and provenance', async () => {
+describe('complete creation snapshots', () => {
+  it('ignores invalid current configuration after creation and preserves defaults and provenance', async () => {
     const { runtime, parameters, save } = setup();
     const a = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
     await save(500, 1000, 0);
@@ -118,7 +118,7 @@ describe('complete startup snapshots', () => {
       values: { wait: 100, second: 200 },
     });
   });
-  it('starts independently with same-name fields having different types, defaults and validation', async () => {
+  it('creates independently with same-name fields having different types, defaults and validation', async () => {
     const store = new MemoryLifecycleStore();
     const parameters = new StoredLifecycleParameters(store);
     const runtime = new LifecycleRuntime({ store });
@@ -262,6 +262,64 @@ describe('complete startup snapshots', () => {
       (await runtime.view('work', b.record.id, SYSTEM_ACTOR)).parameterValues,
     ).toEqual({ wait: 400, second: 800 });
   });
+  it('retains the creation snapshot when a closed record reopens after configuration changes', async () => {
+    const store = new MemoryLifecycleStore();
+    const parameters = new StoredLifecycleParameters(store);
+    const runtime = new LifecycleRuntime({ store });
+    runtime.register(
+      defineLifecycle<Types>({
+        name: 'reopening',
+        key: 'reopening',
+        version: 1,
+        initial: 'draft',
+        states: ['draft', 'done'],
+        parameters: { wait: 100, second: 200 },
+        parameterConfiguration: { groups: [group] },
+        transitions: {
+          close: { from: 'draft', to: 'done' },
+          reopen: { from: 'done', to: 'draft' },
+        },
+      }),
+      { parameterConfiguration: { store: parameters, scope: () => 'tenant' } },
+    );
+    const created = await runtime.create(
+      'reopening',
+      {},
+      { actor: SYSTEM_ACTOR },
+    );
+    const snapshot = await parameters.snapshot(
+      'tenant',
+      'reopening',
+      String(created.record.id),
+    );
+    await runtime.fire('reopening', created.record.id, 'close', {
+      actor: SYSTEM_ACTOR,
+    });
+    await parameters.save({
+      scope: 'tenant',
+      group: configurationGroup('reopening', [group]),
+      values: { wait: 400, second: 800 },
+      expectedRevision: 0,
+      requestId: 'changed-policy',
+      actorId: 'admin',
+      at: new Date().toISOString(),
+    });
+    await runtime.fire('reopening', created.record.id, 'reopen', {
+      actor: SYSTEM_ACTOR,
+    });
+    expect(
+      (await runtime.view('reopening', created.record.id, SYSTEM_ACTOR))
+        .parameterValues,
+    ).toEqual({ wait: 100, second: 200 });
+    expect(
+      await parameters.snapshot(
+        'tenant',
+        'reopening',
+        String(created.record.id),
+      ),
+    ).toEqual(snapshot);
+  });
+
   it('fires different instances at their own deadlines with one snapshot batch per page', async () => {
     const { runtime, parameters, save, advance } = setup(true);
     const a = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });

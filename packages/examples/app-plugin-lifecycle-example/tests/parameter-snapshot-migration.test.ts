@@ -289,7 +289,7 @@ it('reports a submission-only historical snapshot without modifying it or preten
   }
 });
 
-it('preserves an original historical freeze time only when creation usage proves the same parameters', async () => {
+it('reports a submission freeze time even when creation values agree, without relabeling its provenance', async () => {
   const run = await history('expenses', true, true);
   try {
     const submitted = { ...run.payload, at: later };
@@ -299,7 +299,9 @@ it('preserves an original historical freeze time only when creation usage proves
         filter: { id: run.snapshotId },
         values: { payload: submitted },
       });
-    await run.migrator.latest();
+    await expect(run.migrator.latest()).rejects.toThrow(
+      'LEGACY_SUBMISSION_SNAPSHOT',
+    );
     expect(
       (
         await run.database
@@ -454,6 +456,42 @@ it('collects configuration and history conflicts, then succeeds after repairing 
         .repository('lifecycleExampleParameterSnapshots')
         .count(),
     ).toBe(1);
+  } finally {
+    await run.fixture.destroy();
+  }
+});
+
+it('recovers creation usage written after its associated entry and preserves the real usage timestamp', async () => {
+  const run = await history('expenses');
+  try {
+    const usageAt = '2026-10-01T00:00:00.013Z';
+    await run.database
+      .repository('lifecycleExampleParameterUsages')
+      .updateMany({
+        filter: { id: run.usageId },
+        values: {
+          at: usageAt,
+          payload: {
+            ...run.payload,
+            at: usageAt,
+            kind: 'transition',
+            associationId: run.entryId,
+            attempt: 0,
+          },
+        },
+      });
+    await run.migrator.latest();
+    expect(
+      (
+        await run.database
+          .repository('lifecycleExampleParameterSnapshots')
+          .findOne({ filter: { id: run.snapshotId } })
+      )?.payload,
+    ).toMatchObject({
+      at: usageAt,
+      values: expenseValues,
+      recoveredFrom: { transitionId: run.entryId, usageId: run.usageId },
+    });
   } finally {
     await run.fixture.destroy();
   }

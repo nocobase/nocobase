@@ -48,6 +48,11 @@ async function setup(
   options: {
     fail?: boolean;
     draft?: boolean;
+    onCreate?: (
+      record: LifecycleRecord,
+      handle: unknown,
+      values: object,
+    ) => Promise<void>;
     effect?: (values: object) => void;
   } = {},
 ) {
@@ -83,9 +88,24 @@ async function setup(
       groups: [group],
     },
     onEnterState: {
+      ...(options.draft
+        ? {
+            draft: [
+              async ({
+                record,
+                tx,
+                parameters: values,
+              }: {
+                record: LifecycleRecord;
+                tx: { handle: unknown };
+                parameters: object;
+              }) => options.onCreate?.(record, tx.handle, values),
+            ],
+          }
+        : {}),
       waiting: [
         () => {
-          if (options.fail) throw new Error('start failure');
+          if (options.fail) throw new Error('state entry failure');
         },
       ],
     },
@@ -183,7 +203,7 @@ test('concurrent creation retries commit one identity and snapshot; other actors
   expect(other.record.id).not.toBe(result[0].record.id);
 });
 
-test('configuration save racing startup captures a complete old or new revision', async ({
+test('configuration save racing creation captures a complete old or new revision', async ({
   database,
 }) => {
   const { runtime, parameters, save } = await setup(database);
@@ -204,7 +224,7 @@ test('configuration save racing startup captures a complete old or new revision'
   expect(snapshot.revision).toBe(snapshot.values.left === 1 ? 0 : 1);
 });
 
-test('failed startup rolls back the request, record, snapshot, log and queued facts', async ({
+test('failed creation rolls back the request, record, snapshot, log and queued facts', async ({
   database,
 }) => {
   const options = { fail: true };
@@ -216,7 +236,7 @@ test('failed startup rolls back the request, record, snapshot, log and queued fa
       { title: 'retry' },
       { actor: SYSTEM_ACTOR, requestId: 'same' },
     ),
-  ).rejects.toThrow('start failure');
+  ).rejects.toThrow('state entry failure');
   for (const collection of [
     'snapshotWork',
     'lifecycleExampleCreationRequests',
@@ -296,7 +316,7 @@ test('edited drafts retain their creation snapshot across failed and successful 
   ).toEqual({ left: 1, right: 2 });
   await expect(
     instance.fire('snapshotWork', recordId, 'submit', { actor: SYSTEM_ACTOR }),
-  ).rejects.toThrow('start failure');
+  ).rejects.toThrow('state entry failure');
   expect(await parameters.snapshot('tenant', 'snapshotWork', recordId)).toEqual(
     before,
   );
@@ -349,4 +369,117 @@ test('lost submit logs and a missing snapshot never turn a withdrawn instance in
     instance.fire('snapshotWork', recordId, 'submit', { actor: SYSTEM_ACTOR }),
   ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
   expect(read).not.toHaveBeenCalled();
+});
+
+test('creation hooks and their nested transitions share one resolution after the snapshot is persisted', async ({
+  database,
+}) => {
+  const { runtime: factory, parameters } = await setup(database, {
+    draft: true,
+    onCreate: async (record, handle, values) => {
+      expect(
+        await parameters.snapshot(
+          'tenant',
+          'snapshotWork',
+          String(record.id),
+          handle,
+        ),
+      ).toMatchObject({ values });
+      expect(
+        await instance.resolveParameters('snapshotWork', {
+          record,
+          transactionHandle: handle,
+          purpose: 'action',
+        }),
+      ).toEqual(values);
+      await instance.fire('snapshotWork', record.id, 'submit', {
+        actor: SYSTEM_ACTOR,
+        transaction: handle,
+      });
+    },
+  });
+  const instance = factory();
+  const read = vi.spyOn(parameters, 'readConfiguration');
+  const created = await instance.create(
+    'snapshotWork',
+    { title: 'Nested creation' },
+    { actor: SYSTEM_ACTOR },
+  );
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(created.record.status).toBe('waiting');
+  expect(
+    await parameters.snapshot(
+      'tenant',
+      'snapshotWork',
+      String(created.record.id),
+    ),
+  ).toMatchObject({ values: { left: 1, right: 2 } });
+});
+
+test('existing drafts run from valid creation snapshots when the current persisted configuration is corrupt', async ({
+  database,
+}) => {
+  const { runtime, parameters, save } = await setup(database, { draft: true });
+  const instance = runtime();
+  const created = await instance.create(
+    'snapshotWork',
+    { title: 'Historical policy' },
+    { actor: SYSTEM_ACTOR },
+  );
+  const snapshot = await parameters.snapshot(
+    'tenant',
+    'snapshotWork',
+    String(created.record.id),
+  );
+  await save(10, 0);
+  await database.repository('lifecycleExampleParameterVersions').updateMany({
+    filter: { id: parameterIdentity('tenant', 'snapshotWork', 1) },
+    values: {
+      payload: {
+        scope: 'tenant',
+        group: 'snapshotWork',
+        revision: 1,
+        schemaVersion: 1,
+        values: { left: 'invalid', right: 20 },
+        actorId: 'admin',
+        at: new Date().toISOString(),
+      },
+    },
+  });
+  await expect(
+    instance.resolveParameters('snapshotWork', {
+      record: null,
+      purpose: 'preview',
+      transactionHandle: undefined,
+    }),
+  ).rejects.toThrow();
+  expect(
+    (await instance.view('snapshotWork', created.record.id, SYSTEM_ACTOR))
+      .parameterValues,
+  ).toEqual({ left: 1, right: 2 });
+  await instance.fire('snapshotWork', created.record.id, 'submit', {
+    actor: SYSTEM_ACTOR,
+  });
+  await instance.withParameterExecution(
+    'snapshotWork',
+    created.record.id,
+    async (values) => {
+      expect(values).toEqual({ left: 1, right: 2 });
+    },
+  );
+  expect(
+    await parameters.snapshot(
+      'tenant',
+      'snapshotWork',
+      String(created.record.id),
+    ),
+  ).toEqual(snapshot);
+  await expect(
+    instance.create(
+      'snapshotWork',
+      { title: 'New policy' },
+      { actor: SYSTEM_ACTOR },
+    ),
+  ).rejects.toThrow();
+  expect(await database.repository('snapshotWork').count()).toBe(1);
 });
