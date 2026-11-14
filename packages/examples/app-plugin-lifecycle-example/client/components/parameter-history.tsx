@@ -38,14 +38,6 @@ export function ParameterHistory({
           <p className='text-muted-foreground'>
             {t('parameters.historyBoundary')}
           </p>
-          {data.current && (
-            <>
-              <h4>{t('parameters.effectivePreview')}</h4>
-              <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
-                {JSON.stringify(data.current, null, 2)}
-              </pre>
-            </>
-          )}
           <h4>{t('parameters.firstSnapshot')}</h4>
           <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
             {data.snapshot

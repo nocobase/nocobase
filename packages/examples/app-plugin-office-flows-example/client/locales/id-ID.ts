@@ -87,8 +87,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Data demonstrasi yang dibaca oleh proses: orang-orang yang dibawa oleh barisan departemen, kelompok manajemen, dan kalender liburan 2026.',
   },
   common: {
-    parameterSnapshot: 'Snapshot saat instans dimulai',
-    parameterPreview: 'Pratinjau konfigurasi sebelum dimulai',
+    parameterSnapshot: 'Snapshot parameter saat pembuatan',
     created: 'Dibuat',
     actAs: 'Bertindak sebagai',
     save: 'Simpan',

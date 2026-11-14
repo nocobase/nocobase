@@ -20,53 +20,53 @@ const esES: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Tiempo de espera de pago (minutos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       escalateAfterMinutes: {
         title: 'Tiempo de espera de revisión del administrador (minutos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       waitMinutes: {
         title: 'Tiempo de espera de respuesta del cliente (minutos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       querySeconds: {
         title: 'Retraso en consulta de estado de factura (segundos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       pollSeconds: {
         title:
           'Intervalo de verificación del progreso de la exportación (segundos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       maxMinutes: {
         title: 'Tiempo de espera de finalización de exportación (minutos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       periodMinutes: {
         title: 'Periodo de renovación de suscripción (minutos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       dunningMinutes: {
         title: 'Intervalo de reintento de pago de renovación fallido (minutos)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       maxDunning: {
         title: 'Límite de fallas de pago de renovación',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       reopenDays: {
         title: 'Fecha límite de reapertura de tickets (días)',
         description:
-          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
     },
     loading: 'Cargando parámetros…',
@@ -90,7 +90,7 @@ const esES: LocaleResource<typeof enUS> = {
     codeDefaults: 'Código predeterminado',
     databaseVersion: 'Configuración guardada',
     snapshotEffect:
-      'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+      'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
     yes: 'Sí',
     no: 'No',
     invalidObject: 'Ingrese un objeto JSON válido.',
@@ -107,10 +107,9 @@ const esES: LocaleResource<typeof enUS> = {
       'No hay candidatos elegibles; la presentación será rechazada.',
     editCurrent: 'Editar configuración actual',
     historyBoundary:
-      'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
+      'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
     history: 'Uso real de parámetros',
-    effectivePreview: 'Vista previa de la configuración antes del inicio',
-    firstSnapshot: 'Instantánea al iniciar la instancia',
+    firstSnapshot: 'Instantánea de parámetros de creación',
     notRecorded: 'No registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:

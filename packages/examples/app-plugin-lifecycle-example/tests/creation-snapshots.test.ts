@@ -285,12 +285,10 @@ test('edited drafts retain their creation snapshot across failed and successful 
   expect(
     await database.repository('lifecycleExampleCreationRequests').count(),
   ).toBe(0);
-  await database
-    .repository('snapshotWork')
-    .updateMany({
-      filter: { id: Number(recordId) },
-      values: { title: 'edited', lifecycleVersion: 7 },
-    });
+  await database.repository('snapshotWork').updateMany({
+    filter: { id: Number(recordId) },
+    values: { title: 'edited', lifecycleVersion: 7 },
+  });
   await save(10, 0);
   expect(
     (await instance.view('snapshotWork', recordId, SYSTEM_ACTOR))

@@ -202,7 +202,7 @@ function listRoutes(
       summary: 'Draft an expense report',
       operationId: 'lifecycleExampleCreateExpense',
       description:
-        'Created through the expense lifecycle in `draft`, whose `create` lets only an employee file one, for themselves.',
+        'Creates a draft through its concrete definition, atomically freezing all effective parameters with the record. Only an employee may file one for themselves; configuration edits affect later-created records, including drafts.',
       responses: {
         201: dataResponse(ExampleRecord, 'The report, in `draft`.'),
         401: apiErrorResponse(401),

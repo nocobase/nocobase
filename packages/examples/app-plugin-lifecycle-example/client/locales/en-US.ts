@@ -18,52 +18,52 @@ const enUS = {
       paymentWindowMinutes: {
         title: 'Payment timeout (minutes)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       escalateAfterMinutes: {
         title: 'Manager review timeout (minutes)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       waitMinutes: {
         title: 'Customer reply timeout (minutes)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       querySeconds: {
         title: 'Invoice status query delay (seconds)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       pollSeconds: {
         title: 'Export progress check interval (seconds)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       maxMinutes: {
         title: 'Export completion timeout (minutes)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       periodMinutes: {
         title: 'Subscription renewal period (minutes)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       dunningMinutes: {
         title: 'Failed renewal payment retry interval (minutes)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       maxDunning: {
         title: 'Renewal payment failure limit',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
       reopenDays: {
         title: 'Ticket reopening deadline (days)',
         description:
-          'Fixed at instance start. Changes affect only future starts of this version.',
+          'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
       },
     },
     loading: 'Loading parameters…',
@@ -87,7 +87,7 @@ const enUS = {
     codeDefaults: 'Code defaults',
     databaseVersion: 'Saved configuration',
     snapshotEffect:
-      'Fixed at instance start. Changes affect only future starts of this version.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     yes: 'Yes',
     no: 'No',
     invalidObject: 'Enter a valid JSON object.',
@@ -103,10 +103,9 @@ const enUS = {
     noCandidates: 'No eligible candidates; submission will be refused.',
     editCurrent: 'Edit current configuration',
     historyBoundary:
-      'Fixed at instance start. Changes affect only future starts of this version.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     history: 'Actual parameter usage',
-    effectivePreview: 'Current configuration preview before start',
-    firstSnapshot: 'Instance start snapshot',
+    firstSnapshot: 'Creation parameter snapshot',
     notRecorded: 'Not recorded',
     diagramEntry: 'Optional diagram entry',
     diagramHint:

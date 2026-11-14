@@ -52,7 +52,11 @@ export function ExecutionDiagram({
       parameters={
         detail.view.parameterValues ? (
           <pre className='overflow-x-auto text-sm'>
-            {JSON.stringify(detail.view.parameterValues, null, 2)}
+            {JSON.stringify(
+              detail.view.parameterSnapshot ?? detail.view.parameterValues,
+              null,
+              2,
+            )}
           </pre>
         ) : undefined
       }

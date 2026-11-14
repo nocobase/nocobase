@@ -20,53 +20,53 @@ const viVN: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Thời gian chờ thanh toán (phút)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       escalateAfterMinutes: {
         title: 'Thời gian chờ xem xét của người quản lý (phút)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       waitMinutes: {
         title: 'Thời gian chờ trả lời của khách hàng (phút)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       querySeconds: {
         title: 'Độ trễ truy vấn trạng thái hóa đơn (giây)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       pollSeconds: {
         title: 'Khoảng thời gian kiểm tra tiến trình xuất (giây)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       maxMinutes: {
         title: 'Thời gian chờ hoàn thành xuất (phút)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       periodMinutes: {
         title: 'Thời gian gia hạn đăng ký (phút)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       dunningMinutes: {
         title:
           'Khoảng thời gian thử lại thanh toán gia hạn không thành công (phút)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       maxDunning: {
         title: 'Giới hạn lỗi thanh toán gia hạn',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
       reopenDays: {
         title: 'Thời hạn mở lại vé (ngày)',
         description:
-          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+          'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
       },
     },
     loading: 'Đang tải tham số…',
@@ -90,7 +90,7 @@ const viVN: LocaleResource<typeof enUS> = {
     codeDefaults: 'Mã mặc định',
     databaseVersion: 'Đã lưu cấu hình',
     snapshotEffect:
-      'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+      'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
     yes: 'Có',
     no: 'Không',
     invalidObject: 'Nhập đối tượng JSON hợp lệ.',
@@ -108,10 +108,9 @@ const viVN: LocaleResource<typeof enUS> = {
       'Không có ứng cử viên đủ tư cách; việc nộp hồ sơ sẽ bị từ chối.',
     editCurrent: 'Chỉnh sửa cấu hình hiện tại',
     historyBoundary:
-      'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
+      'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
     history: 'Sử dụng tham số thực tế',
-    effectivePreview: 'Xem trước cấu hình trước khi bắt đầu',
-    firstSnapshot: 'Ảnh chụp khi bắt đầu',
+    firstSnapshot: 'Ảnh chụp tham số khi tạo',
     notRecorded: 'Không được ghi lại',
     diagramEntry: 'Mục sơ đồ tùy chọn',
     diagramHint:

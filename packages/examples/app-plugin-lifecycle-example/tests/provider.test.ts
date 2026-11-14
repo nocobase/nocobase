@@ -413,7 +413,7 @@ describe('parameter configuration against the real repository', () => {
     }
   });
 
-  test('previews drafts and preserves a submitted snapshot after configuration changes and replay', async ({
+  test('freezes drafts at creation and preserves their snapshot after configuration changes and replay', async ({
     database,
   }) => {
     const running = await start(database);
@@ -422,6 +422,14 @@ describe('parameter configuration against the real repository', () => {
         parameterConfigurationServiceToken,
       );
       const service = running.container.resolve(lifecycleExampleServiceToken);
+      await config.save(
+        'expenseThresholds',
+        { autoApproveLimit: 100, financeLimit: 3000 },
+        0,
+        'at-creation',
+        'zhao',
+        'expenses-v2',
+      );
       const record = await service.createExpense(
         {
           title: 'Snapshot',
@@ -441,8 +449,8 @@ describe('parameter configuration against the real repository', () => {
       const id = String(record.id);
       await config.save(
         'expenseThresholds',
-        { autoApproveLimit: 100, financeLimit: 3000 },
-        0,
+        { autoApproveLimit: 200, financeLimit: 2000 },
+        1,
         'before-submit',
         'zhao',
         'expenses-v2',
@@ -453,7 +461,7 @@ describe('parameter configuration against the real repository', () => {
       ).toMatchObject({ financeLimit: 3000 });
       expect(
         await config.store.snapshot('demo', 'expenses-v2', id),
-      ).toBeUndefined();
+      ).toMatchObject({ values: { financeLimit: 3000 } });
       await service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         input: {},
@@ -462,7 +470,7 @@ describe('parameter configuration against the real repository', () => {
       await config.save(
         'expenseThresholds',
         { autoApproveLimit: 100, financeLimit: 1000 },
-        1,
+        2,
         'after-submit',
         'zhao',
         'expenses-v2',
@@ -479,13 +487,13 @@ describe('parameter configuration against the real repository', () => {
         auditLimit: 20000,
         escalateAfterMinutes: 3,
       });
-      expect(history.current).toBeUndefined();
+      expect(Object.hasOwn(history, 'current')).toBe(false);
       expect(
         history.usages.filter(
           (usage) =>
             usage.kind === 'transition' && usage.values.financeLimit === 3000,
         ),
-      ).toHaveLength(1);
+      ).toHaveLength(2);
       expect(
         (await config.read('expenseThresholds', 'lin', 'expenses-v2')).values
           .financeLimit,

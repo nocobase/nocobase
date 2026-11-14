@@ -19,43 +19,53 @@ const zhTW: LocaleResource<typeof enUS> = {
     fields: {
       paymentWindowMinutes: {
         title: '付款超時（分鐘）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       escalateAfterMinutes: {
         title: '經理審核超時（分鐘）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       waitMinutes: {
         title: '客戶回覆超時（分鐘）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       querySeconds: {
         title: '發票狀態查詢延遲（秒）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       pollSeconds: {
         title: '匯出進度檢查間隔（秒）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       maxMinutes: {
         title: '導出完成超時（分鐘）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       periodMinutes: {
         title: '訂閱續訂週期（分鐘）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       dunningMinutes: {
         title: '續費支付失敗重試間隔（分鐘）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       maxDunning: {
         title: '續費繳費失敗限額',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       reopenDays: {
         title: '門票重新開放截止日期（天）',
-        description: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+        description:
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
     },
     loading: '正在載入引數...',
@@ -78,7 +88,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     revision: '修訂版 {{revision}}',
     codeDefaults: '程式碼預設值',
     databaseVersion: '儲存的配置',
-    snapshotEffect: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+    snapshotEffect:
+      '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
     yes: '是',
     no: '否',
     invalidObject: '輸入有效的 JSON 物件。',
@@ -92,10 +103,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     candidates: '候選人',
     noCandidates: '沒有符合資格的候選人；提交將被拒絕。',
     editCurrent: '編輯目前配置',
-    historyBoundary: '實例正式啟動時固定。修改只影響此版本之後啟動的實例。',
+    historyBoundary:
+      '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
     history: '實際引數使用',
-    effectivePreview: '啟動前的目前設定預覽',
-    firstSnapshot: '實例啟動快照',
+    firstSnapshot: '建立時的參數快照',
     notRecorded: '未記錄',
     diagramEntry: '可選圖表條目',
     diagramHint:

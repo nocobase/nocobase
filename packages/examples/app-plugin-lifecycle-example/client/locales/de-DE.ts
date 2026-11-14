@@ -20,53 +20,53 @@ const deDE: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Zahlungs-Timeout (Minuten)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       escalateAfterMinutes: {
         title: 'Zeitüberschreitung der Managerüberprüfung (Minuten)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       waitMinutes: {
         title: 'Zeitüberschreitung der Kundenantwort (Minuten)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       querySeconds: {
         title: 'Verzögerung der Rechnungsstatusabfrage (Sekunden)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       pollSeconds: {
         title: 'Prüfintervall für den Exportfortschritt (Sekunden)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       maxMinutes: {
         title: 'Zeitüberschreitung beim Exportabschluss (Minuten)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       periodMinutes: {
         title: 'Abonnementverlängerungszeitraum (Minuten)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       dunningMinutes: {
         title:
           'Wiederholungsintervall für Verlängerungszahlung fehlgeschlagen (Minuten)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       maxDunning: {
         title: 'Fehlergrenze für Verlängerungszahlung',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       reopenDays: {
         title: 'Frist für die Wiedereröffnung des Tickets (Tage)',
         description:
-          'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
     },
     loading: 'Parameter werden geladen…',
@@ -90,7 +90,7 @@ const deDE: LocaleResource<typeof enUS> = {
     codeDefaults: 'Code-Standardwerte',
     databaseVersion: 'Konfiguration gespeichert',
     snapshotEffect:
-      'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+      'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
     yes: 'Ja',
     no: 'Nein',
     invalidObject: 'Geben Sie ein gültiges JSON-Objekt ein.',
@@ -107,10 +107,9 @@ const deDE: LocaleResource<typeof enUS> = {
       'Keine geeigneten Kandidaten; Die Einreichung wird abgelehnt.',
     editCurrent: 'Aktuelle Konfiguration bearbeiten',
     historyBoundary:
-      'Beim Instanzstart festgelegt. Änderungen gelten nur für künftige Starts dieser Version.',
+      'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
     history: 'Tatsächliche Parameterverwendung',
-    effectivePreview: 'Konfigurationsvorschau vor dem Start',
-    firstSnapshot: 'Snapshot beim Instanzstart',
+    firstSnapshot: 'Parameter-Snapshot bei Erstellung',
     notRecorded: 'Nicht erfasst',
     diagramEntry: 'Optionaler Diagrammeintrag',
     diagramHint:

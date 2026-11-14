@@ -17,43 +17,53 @@ const zhCN: LifecycleExampleResource = {
     fields: {
       paymentWindowMinutes: {
         title: '付款等待时限（分钟）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       escalateAfterMinutes: {
         title: '主管审批超时时长（分钟）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       waitMinutes: {
         title: '客户回复等待时限（分钟）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       querySeconds: {
         title: '开票结果查询等待时长（秒）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       pollSeconds: {
         title: '导出进度查询间隔（秒）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       maxMinutes: {
         title: '导出最长等待时长（分钟）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       periodMinutes: {
         title: '订阅续费周期（分钟）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       dunningMinutes: {
         title: '续费扣款失败重试间隔（分钟）',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       maxDunning: {
         title: '续费扣款失败次数上限',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       reopenDays: {
         title: '工单关闭后可重开天数',
-        description: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+        description:
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
     },
     loading: '正在加载参数…',
@@ -76,7 +86,8 @@ const zhCN: LifecycleExampleResource = {
     revision: '版本 {{revision}}',
     codeDefaults: '代码默认值',
     databaseVersion: '已保存的配置',
-    snapshotEffect: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+    snapshotEffect:
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     yes: '是',
     no: '否',
     invalidObject: '请输入有效的 JSON 对象。',
@@ -90,10 +101,10 @@ const zhCN: LifecycleExampleResource = {
     candidates: '候选人',
     noCandidates: '没有合格候选人，提交将被拒绝。',
     editCurrent: '修改当前配置',
-    historyBoundary: '实例正式启动时固定。修改只影响该版本此后启动的实例。',
+    historyBoundary:
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     history: '实际参数使用记录',
-    effectivePreview: '启动前的当前配置预览',
-    firstSnapshot: '实例启动快照',
+    firstSnapshot: '创建时的参数快照',
     notRecorded: '未记录',
     diagramEntry: '可选的流程图入口',
     diagramHint:

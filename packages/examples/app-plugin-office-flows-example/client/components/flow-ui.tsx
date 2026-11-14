@@ -463,21 +463,11 @@ export function History({
     );
   return (
     <div className='space-y-3'>
-      {(view.parameterSnapshot || view.parameterPreview) && (
+      {view.parameterSnapshot && (
         <details>
-          <summary>
-            {t(
-              view.parameterSnapshot
-                ? 'common.parameterSnapshot'
-                : 'common.parameterPreview',
-            )}
-          </summary>
+          <summary>{t('common.parameterSnapshot')}</summary>
           <pre className='overflow-auto text-xs'>
-            {JSON.stringify(
-              view.parameterSnapshot ?? view.parameterPreview,
-              null,
-              2,
-            )}
+            {JSON.stringify(view.parameterSnapshot, null, 2)}
           </pre>
         </details>
       )}

@@ -406,6 +406,8 @@ describe('complete startup snapshots', () => {
     'group',
     'origin',
     'sourceRevision',
+    'nonIsoTime',
+    'recovery',
   ])(
     'rejects a draft with invalid snapshot %s without consulting configuration',
     async (field) => {
@@ -417,7 +419,11 @@ describe('complete startup snapshots', () => {
         string,
         Record<string, unknown>
       >;
-      if (field === 'values') payload.values = { wait: 'wrong', second: 200 };
+      if (field === 'nonIsoTime') payload.at = 'January 1, 2026';
+      else if (field === 'recovery')
+        payload.recoveredFrom = { transitionId: 12 };
+      else if (field === 'values')
+        payload.values = { wait: 'wrong', second: 200 };
       else if (field === 'sources') payload.sources = {};
       else if (field === 'schemaVersion') sources.wait.schemaVersion = 2;
       else if (field === 'group') sources.wait.group = 'other';

@@ -51,6 +51,126 @@ describe('lifecycle parameter configuration through the application API', () => 
     }
   });
 
+  test('keeps a draft and its instance diagram on creation revision A after configuration changes to B', async ({
+    testApp,
+  }) => {
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const root = '/lifecycleExample';
+    const headers = {
+      'content-type': 'application/json',
+      origin: 'http://localhost',
+    };
+    const write = (
+      values: object,
+      expectedRevision: number,
+      requestId: string,
+    ) =>
+      session.fetch(
+        root +
+          '/parameterGroups/expenseThresholds?workflow=expenses-v2&actAs=zhao',
+        {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ values, expectedRevision, requestId }),
+        },
+      );
+    expect(
+      (
+        await write(
+          { autoApproveLimit: 100, financeLimit: 3000 },
+          0,
+          'creation-a',
+        )
+      ).status,
+    ).toBe(200);
+    const create = () =>
+      session.fetch(root + '/expenses?actAs=lin', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: 'Creation policy',
+          purpose: 'Travel',
+          items: [
+            {
+              date: '2026-11-14',
+              category: 'transport',
+              description: 'Taxi',
+              amountCents: 200000,
+            },
+          ],
+          failPayments: 0,
+        }),
+      });
+    const created = await create();
+    expect(created.status).toBe(201);
+    const { data: record } = (await created.json()) as { data: { id: string } };
+    const history = async () => {
+      const response = await session.fetch(
+        root + '/parameterHistory/expenses/' + record.id + '?actAs=lin',
+      );
+      expect(response.status).toBe(200);
+      return (await response.json()) as {
+        data: {
+          snapshot: {
+            revision: number;
+            at: string;
+            values: Record<string, number>;
+          };
+          current?: unknown;
+        };
+      };
+    };
+    const original = await history();
+    expect(original.data.snapshot).toMatchObject({
+      revision: 1,
+      values: { autoApproveLimit: 100, financeLimit: 3000 },
+    });
+    expect(original.data.current).toBeUndefined();
+    expect(
+      (
+        await write(
+          { autoApproveLimit: 200, financeLimit: 2000 },
+          1,
+          'creation-b',
+        )
+      ).status,
+    ).toBe(200);
+    expect((await history()).data.snapshot).toEqual(original.data.snapshot);
+    const diagram = await session.fetch(
+      root + '/expenses/lifecycle?recordId=' + record.id + '&actAs=lin',
+    );
+    expect(diagram.status).toBe(200);
+    expect(await diagram.json()).toMatchObject({
+      data: { parameters: { financeLimit: 3000 } },
+    });
+    const fresh = await create();
+    expect(fresh.status).toBe(201);
+    const { data: newer } = (await fresh.json()) as { data: { id: string } };
+    const view = await session.fetch(
+      root + '/expenses/' + newer.id + '?actAs=lin',
+    );
+    expect(view.status).toBe(200);
+    expect(await view.json()).toMatchObject({
+      data: {
+        parameterValues: { financeLimit: 2000 },
+        parameterSnapshot: { revision: 2 },
+      },
+    });
+    const fired = await session.fetch(
+      root + '/expenses/' + record.id + '/fire?actAs=lin',
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          transition: 'submit',
+          requestId: 'creation-submit',
+        }),
+      },
+    );
+    expect(fired.status).toBe(200);
+    expect((await history()).data.snapshot).toEqual(original.data.snapshot);
+  });
+
   test('authenticates before validation and checks read/write permissions on all entry points', async ({
     testApp,
     request,

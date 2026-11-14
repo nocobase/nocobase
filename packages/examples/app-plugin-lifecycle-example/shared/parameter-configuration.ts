@@ -40,6 +40,5 @@ export interface ReviewerReferencePage {
 export interface ParameterHistoryView {
   readonly snapshot: ParameterSnapshot | null;
   readonly usages: readonly ParameterUsage[];
-  readonly current?: Readonly<object>;
   readonly recorded: boolean;
 }

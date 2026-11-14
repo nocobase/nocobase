@@ -101,7 +101,6 @@ export interface RecordView {
   readonly traces: readonly Plain[];
   readonly parameterSnapshot?:
     import('@nocobase/lifecycle').ParameterSnapshot | null;
-  readonly parameterPreview?: Readonly<object>;
 }
 
 export interface Paging {
@@ -276,19 +275,7 @@ export class OfficeFlowsService {
             const snapshot = await this.store
               .parameterStore()
               .snapshot('office', definition, id);
-            return snapshot
-              ? { parameterSnapshot: snapshot }
-              : {
-                  parameterSnapshot: null,
-                  parameterPreview: await this.runtime.resolveParameters(
-                    definition,
-                    {
-                      record: { ...record, id },
-                      purpose: 'preview',
-                      transactionHandle: undefined,
-                    },
-                  ),
-                };
+            return { parameterSnapshot: snapshot ?? null };
           })()
         : {}),
       description: this.runtime.describe(definition),

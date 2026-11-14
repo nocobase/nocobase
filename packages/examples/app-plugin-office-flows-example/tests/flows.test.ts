@@ -419,6 +419,48 @@ describe('incoming document', () => {
     includeLeaders: true,
   };
 
+  it('rolls back a dispatch child, snapshot, receipt, claim and assignees together when snapshot persistence fails', async () => {
+    const rootId = await dispatching();
+    const rowId = await service.addRow(
+      'incoming',
+      rootId,
+      { departmentName: '财务部', ...allPeople },
+      'zhoujie',
+    );
+    const tracked = [
+      'officeFlowsClerkTasks',
+      'officeFlowsParameterSnapshots',
+      'officeFlowsCreationRequests',
+      'officeFlowsTaskAssignees',
+      'officeFlowsTransitions',
+    ];
+    const before = await Promise.all(
+      tracked.map((name) => database.repository(name).count()),
+    );
+    const failure = vi
+      .spyOn(StoredLifecycleParameters.prototype, 'saveSnapshot')
+      .mockRejectedValueOnce(new Error('snapshot write failed'));
+    await expect(store.dispatch(1, [Number(rowId)])).rejects.toThrow(
+      'snapshot write failed',
+    );
+    expect(
+      await Promise.all(
+        tracked.map((name) => database.repository(name).count()),
+      ),
+    ).toEqual(before);
+    const row = await store.find(COLLECTIONS.assignments, rowId);
+    expect(row?.dispatched).toBe(false);
+    expect(row?.childId).toBeNull();
+    failure.mockRestore();
+    await store.dispatch(1, [Number(rowId)]);
+    expect(await database.repository('officeFlowsClerkTasks').count()).toBe(
+      before[0]! + 1,
+    );
+    expect(
+      await database.repository('officeFlowsParameterSnapshots').count(),
+    ).toBe(before[1]! + 1);
+  });
+
   it('reminds a person in several departments once, also after re-approval', async () => {
     const id = await dispatching();
     await service.addRow(

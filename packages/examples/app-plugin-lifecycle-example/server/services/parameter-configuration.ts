@@ -478,6 +478,11 @@ export class ParameterConfigurationService {
         'PARAMETER_ACCESS_DENIED',
         'Only the record owner or a reviewer may inspect this history.',
       );
+    await this.runtime.resolveParameters(definition, {
+      record: { ...record, id },
+      purpose: 'preview',
+      transactionHandle: undefined,
+    });
     const [snapshot, usages] = await Promise.all([
       this.store.snapshot('demo', definition, id),
       this.store.listUsage('demo', definition, id),
@@ -485,15 +490,6 @@ export class ParameterConfigurationService {
     return {
       snapshot: snapshot ?? null,
       usages,
-      ...(!snapshot
-        ? {
-            current: await this.runtime.resolveParameters(definition, {
-              record: { ...record, id },
-              purpose: 'preview',
-              transactionHandle: undefined,
-            }),
-          }
-        : {}),
       recorded: usages.length > 0,
     };
   }

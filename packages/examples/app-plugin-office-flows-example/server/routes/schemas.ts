@@ -349,7 +349,6 @@ export const OfficeDetail: z.ZodType<Plain> = z
     }),
     traces: z.array(z.record(z.string(), z.unknown())),
     parameterSnapshot: z.record(z.string(), z.unknown()).nullable().optional(),
-    parameterPreview: z.record(z.string(), z.unknown()).optional(),
   })
   .meta({
     ref: 'OfficeFlowsExampleDetail',

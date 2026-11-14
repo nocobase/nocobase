@@ -20,53 +20,53 @@ const ptBR: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Tempo limite de pagamento (minutos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       escalateAfterMinutes: {
         title: 'Tempo limite de revisão do gerente (minutos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       waitMinutes: {
         title: 'Tempo limite de resposta do cliente (minutos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       querySeconds: {
         title: 'Atraso na consulta do status da fatura (segundos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       pollSeconds: {
         title: 'Intervalo de verificação do progresso da exportação (segundos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       maxMinutes: {
         title: 'Tempo limite de conclusão da exportação (minutos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       periodMinutes: {
         title: 'Período de renovação da assinatura (minutos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       dunningMinutes: {
         title:
           'Falha no intervalo de novas tentativas de pagamento de renovação (minutos)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       maxDunning: {
         title: 'Limite de falha de pagamento de renovação',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       reopenDays: {
         title: 'Prazo de reabertura de ingressos (dias)',
         description:
-          'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
     },
     loading: 'Carregando parâmetros…',
@@ -90,7 +90,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     codeDefaults: 'Padrões de código',
     databaseVersion: 'Configuração salva',
     snapshotEffect:
-      'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+      'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
     yes: 'Sim',
     no: 'Não',
     invalidObject: 'Insira um objeto JSON válido.',
@@ -106,10 +106,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     noCandidates: 'Nenhum candidato elegível; a submissão será recusada.',
     editCurrent: 'Editar configuração atual',
     historyBoundary:
-      'Fixado no início da instância. Alterações afetam apenas novos inícios desta versão.',
+      'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
     history: 'Uso real de parâmetros',
-    effectivePreview: 'Prévia da configuração antes do início',
-    firstSnapshot: 'Snapshot no início da instância',
+    firstSnapshot: 'Snapshot de parâmetros da criação',
     notRecorded: 'Não registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:

@@ -69,7 +69,6 @@ async function editor(
     history: async () => ({
       snapshot: null,
       usages: [],
-      current: {},
       recorded: false,
     }),
   };

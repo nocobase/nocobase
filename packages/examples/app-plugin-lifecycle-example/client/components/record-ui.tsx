@@ -298,6 +298,14 @@ export function LifecyclePanel({
             </div>
           </div>
 
+          {!actor && detail.parameterSnapshot && (
+            <details>
+              <summary>{t('parameters.firstSnapshot')}</summary>
+              <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
+                {JSON.stringify(detail.parameterSnapshot, null, 2)}
+              </pre>
+            </details>
+          )}
           {actor && detail.description.parameterConfiguration && (
             <>
               {parameterEditor.editor}

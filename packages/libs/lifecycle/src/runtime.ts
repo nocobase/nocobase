@@ -420,6 +420,8 @@ export const CREATE_TRANSITION: string = '$create';
 export interface RecordView {
   /** Effective values for this authoritative record preview, including its snapshot. */
   readonly parameterValues?: Readonly<object>;
+  /** The validated persisted snapshot, including revision, sources and actual freeze time. */
+  readonly parameterSnapshot?: ParameterSnapshot;
   /** The definition the record belongs to: draw its diagram, not the latest. */
   readonly lifecycle: string;
   /** Which version of its process that definition is. */
@@ -1220,8 +1222,7 @@ export class LifecycleRuntime {
           snapshot.recordId !== String(context.record!.id) ||
           !Number.isSafeInteger(snapshot.revision) ||
           snapshot.revision < 0 ||
-          typeof snapshot.at !== 'string' ||
-          !Number.isFinite(Date.parse(snapshot.at))
+          !validSnapshotTime(snapshot.at)
         )
           throw new Error('Invalid snapshot identity or provenance.');
         if (
@@ -1272,6 +1273,30 @@ export class LifecycleRuntime {
           )
         )
           throw new Error('Unknown snapshot parameter source.');
+        if (snapshot.recoveredFrom !== undefined) {
+          const provenance = snapshot.recoveredFrom;
+          if (
+            !provenance ||
+            typeof provenance !== 'object' ||
+            Array.isArray(provenance) ||
+            typeof provenance.transitionId !== 'string' ||
+            !provenance.transitionId ||
+            (provenance.usageId !== undefined &&
+              (typeof provenance.usageId !== 'string' ||
+                !provenance.usageId)) ||
+            (provenance.groupRevisions !== undefined &&
+              (typeof provenance.groupRevisions !== 'object' ||
+                provenance.groupRevisions === null ||
+                Array.isArray(provenance.groupRevisions) ||
+                Object.entries(provenance.groupRevisions).some(
+                  ([key, revision]) =>
+                    !configuredFields.has(key) ||
+                    !Number.isSafeInteger(revision) ||
+                    revision < 0,
+                )))
+          )
+            throw new Error('Invalid snapshot recovery provenance.');
+        }
         // Non-configurable defaults are also part of the complete frozen values.
         for (const key of Object.keys(registered.lifecycle.parameters))
           if (!Object.hasOwn(snapshot.values, key))
@@ -2015,7 +2040,39 @@ export class LifecycleRuntime {
     const registered = this.get(name);
     const { lifecycle } = registered;
     const record = await this.require(registered, id);
-    const context = await this.guardContext(registered, record, actor);
+    let snapshot: ParameterSnapshot | undefined;
+    let values: Readonly<object> | undefined;
+    if (registered.parameterConfiguration) {
+      const readContext = {
+        record,
+        transactionHandle: undefined,
+        purpose: 'preview' as const,
+      };
+      const scope = registered.parameterConfiguration.scope({
+        ...readContext,
+        lifecycle: name,
+        key: lifecycle.key,
+      });
+      snapshot = await registered.parameterConfiguration.store.snapshot(
+        scope,
+        name,
+        String(record.id),
+      );
+      values = (
+        await this.readConfiguredParameters(
+          registered,
+          readContext,
+          snapshot ?? null,
+        )
+      ).values;
+    }
+    const context = await this.guardContext(
+      registered,
+      record,
+      actor,
+      {},
+      values,
+    );
     return {
       lifecycle: lifecycle.name,
       definitionVersion: lifecycle.version,
@@ -2026,6 +2083,7 @@ export class LifecycleRuntime {
       ...(registered.parameterConfiguration || registered.parameterProvider
         ? { parameterValues: context.parameters }
         : {}),
+      ...(snapshot ? { parameterSnapshot: structuredClone(snapshot) } : {}),
       history: await this.history(name, id),
     };
   }
@@ -3343,7 +3401,14 @@ export class LifecycleRuntime {
           'REQUEST_REUSED',
           `Request "${options.requestId}" was already used by another actor on this ${lifecycle.collection} record; send "${transition}" under a new request id.`,
         );
-      if (earlier)
+      if (earlier) {
+        if (registered.parameterConfiguration)
+          await this.resolveParameters(lifecycle.name, {
+            record: current,
+            transactionHandle: store.transactionHandle,
+            purpose: 'transition',
+            transition,
+          });
         return {
           result: {
             record: current,
@@ -3354,6 +3419,7 @@ export class LifecycleRuntime {
           written: current,
           movedOn: false,
         };
+      }
     }
     // Read the record before checking its stay. The conditional update below
     // uses this same version, so a transition committed during or after the
@@ -3764,16 +3830,19 @@ export class LifecycleRuntime {
     record: LifecycleRecord,
     actor: LifecycleActor,
     input: JsonObject = {},
+    providedParameters?: Readonly<object>,
   ): Promise<TransitionContext<LifecycleTypes>> {
     return Object.freeze({
       record,
       actor,
       input,
-      parameters: (await this.resolveParameters(registered.lifecycle.name, {
-        record,
-        transactionHandle: undefined,
-        purpose: 'preview',
-      })) as ParametersOf<LifecycleTypes>,
+      parameters: (providedParameters
+        ? freezeParameters(providedParameters)
+        : await this.resolveParameters(registered.lifecycle.name, {
+            record,
+            transactionHandle: undefined,
+            purpose: 'preview',
+          })) as ParametersOf<LifecycleTypes>,
       services: registered.services(undefined) as ServicesOf<LifecycleTypes>,
       now: this.clock(),
     });
@@ -3828,4 +3897,36 @@ function freezeParameters(values: object): Readonly<object> {
   };
   freeze(copy);
   return copy;
+}
+
+function validSnapshotTime(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const parts =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/.exec(
+      value,
+    );
+  if (!parts || !Number.isFinite(Date.parse(value))) return false;
+  const [
+    ,
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    offsetHour = '0',
+    offsetMinute = '0',
+  ] = parts;
+  return (
+    Number(month) >= 1 &&
+    Number(month) <= 12 &&
+    Number(day) >= 1 &&
+    Number(day) <=
+      new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate() &&
+    Number(hour) < 24 &&
+    Number(minute) < 60 &&
+    Number(second) < 60 &&
+    Number(offsetHour) < 24 &&
+    Number(offsetMinute) < 60
+  );
 }

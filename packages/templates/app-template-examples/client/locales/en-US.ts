@@ -213,9 +213,9 @@ const enUS = {
     parametersTitle: '{{name}} parameters',
     copyVersionParameters: 'Copy values from v{{version}} as unsaved inputs',
     configuringVersion:
-      'Configuring v{{version}}. Changes apply only to instances of this version started afterward. References keep their selection; membership is resolved at execution.',
+      'Configuring v{{version}}. Changes affect only records created afterward, including drafts. References retain their selection; current membership is resolved at execution.',
     parametersDescription:
-      'These settings apply only to this workflow. Existing snapshots remain unchanged.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     discardParameters: 'Discard unsaved parameter changes?',
     noParameters: 'This workflow has no configurable parameters.',
     addParameterEntry: 'Add entry',
@@ -357,7 +357,7 @@ const enUS = {
       'Latest means the largest version number; new records may still start with an earlier version.',
     viewExecutions: 'View executions',
     parameterHint:
-      'Click a configured node or transition to adjust its runtime parameters. Other nodes show their definition details. Changes apply according to each workflow’s snapshot or live mode.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     currentState: 'Displayed state',
     latest: 'Latest progress',
     historyHint:
@@ -381,7 +381,7 @@ const enUS = {
       'Inspect the recorded path and review each transition in order.',
     executionParameters: 'Parameters used by this execution',
     snapshotHint:
-      'These values come from the execution record. Snapshot values remain fixed; live values are resolved again when the workflow runs.',
+      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     sources: {
       lifecycle: 'Lifecycle examples',
       office: 'Office workflows',

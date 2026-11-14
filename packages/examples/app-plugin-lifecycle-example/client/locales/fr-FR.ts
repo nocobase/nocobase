@@ -20,54 +20,54 @@ const frFR: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Délai de paiement (minutes)',
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       escalateAfterMinutes: {
         title: 'Expiration du délai de révision du responsable (minutes)',
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       waitMinutes: {
         title: 'Délai de réponse du client (minutes)',
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       querySeconds: {
         title: "Délai de requête sur l'état de la facture (secondes)",
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       pollSeconds: {
         title:
           "Intervalle de vérification de la progression de l'exportation (secondes)",
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       maxMinutes: {
         title: "Délai d'expiration de l'exportation (minutes)",
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       periodMinutes: {
         title: "Période de renouvellement de l'abonnement (minutes)",
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       dunningMinutes: {
         title:
           "Échec de l'intervalle de nouvelle tentative de paiement de renouvellement (minutes)",
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       maxDunning: {
         title: "Limite d'échec de paiement de renouvellement",
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       reopenDays: {
         title: 'Date limite de réouverture des billets (jours)',
         description:
-          'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
     },
     loading: 'Chargement des paramètres…',
@@ -91,7 +91,7 @@ const frFR: LocaleResource<typeof enUS> = {
     codeDefaults: 'Codes par défaut',
     databaseVersion: 'Configuration enregistrée',
     snapshotEffect:
-      'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+      'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
     yes: 'Oui',
     no: 'Non',
     invalidObject: 'Entrez un objet JSON valide.',
@@ -108,10 +108,9 @@ const frFR: LocaleResource<typeof enUS> = {
     noCandidates: 'Aucun candidat éligible ; la soumission sera refusée.',
     editCurrent: 'Modifier la configuration actuelle',
     historyBoundary:
-      'Fixé au démarrage de l’instance. Les modifications concernent uniquement les futurs démarrages de cette version.',
+      'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
     history: 'Utilisation réelle des paramètres',
-    effectivePreview: 'Aperçu de la configuration avant le démarrage',
-    firstSnapshot: 'Instantané au démarrage de l’instance',
+    firstSnapshot: 'Instantané des paramètres à la création',
     notRecorded: 'Non enregistré',
     diagramEntry: 'Entrée de diagramme facultative',
     diagramHint:

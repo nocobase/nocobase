@@ -368,22 +368,22 @@ export class OfficeStore {
       const extractions = connection.repository(COLLECTIONS.extractions);
       if (await existing(extractions)) return undefined;
       try {
-        const created = await extractions.createOne({
-          values: {
+        if (!this.runtime)
+          throw new Error(
+            'Extraction creation requires a registered lifecycle runtime.',
+          );
+        const created = await this.runtime.create(
+          'extractions',
+          {
             ...values,
             periodKey: periodKey ?? `manual:${number}`,
             executorIds: [...values.executorIds],
             feedbackFiles: [],
             number,
-            status: 'pending',
-            statusChangedAt: now,
-            lifecycleVersion: 0,
-            // Written outside runtime.create(), so bound here: a sweep and
-            // every record operation go by it.
-            lifecycleDefinition: 'extractions',
             createdAt: now,
           },
-        });
+          { actor: SYSTEM_ACTOR, transaction: connection },
+        );
         return plain(created.record);
       } catch (error) {
         // Another sweep created it between the read and the insert.

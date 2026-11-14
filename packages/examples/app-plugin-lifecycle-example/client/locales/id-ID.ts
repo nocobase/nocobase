@@ -20,53 +20,53 @@ const idID: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Batas waktu pembayaran (menit)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       escalateAfterMinutes: {
         title: 'Batas waktu peninjauan manajer (menit)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       waitMinutes: {
         title: 'Batas waktu balasan pelanggan (menit)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       querySeconds: {
         title: 'Penundaan permintaan status faktur (detik)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       pollSeconds: {
         title: 'Interval pemeriksaan kemajuan ekspor (detik)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       maxMinutes: {
         title: 'Batas waktu penyelesaian ekspor (menit)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       periodMinutes: {
         title: 'Periode perpanjangan langganan (menit)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       dunningMinutes: {
         title:
           'Interval percobaan ulang pembayaran perpanjangan yang gagal (menit)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       maxDunning: {
         title: 'Batas kegagalan pembayaran pembaruan',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       reopenDays: {
         title: 'Batas waktu pembukaan kembali tiket (hari)',
         description:
-          'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
     },
     loading: 'Memuat parameter…',
@@ -90,7 +90,7 @@ const idID: LocaleResource<typeof enUS> = {
     codeDefaults: 'Kode default',
     databaseVersion: 'Konfigurasi tersimpan',
     snapshotEffect:
-      'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+      'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
     yes: 'Ya',
     no: 'Tidak',
     invalidObject: 'Masukkan objek JSON yang valid.',
@@ -108,10 +108,9 @@ const idID: LocaleResource<typeof enUS> = {
       'Tidak ada kandidat yang memenuhi syarat; pengajuan akan ditolak.',
     editCurrent: 'Edit konfigurasi saat ini',
     historyBoundary:
-      'Ditetapkan saat instans dimulai. Perubahan hanya berlaku untuk awal instans berikutnya pada versi ini.',
+      'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
     history: 'Penggunaan parameter sebenarnya',
-    effectivePreview: 'Pratinjau konfigurasi sebelum dimulai',
-    firstSnapshot: 'Snapshot saat instans dimulai',
+    firstSnapshot: 'Snapshot parameter saat pembuatan',
     notRecorded: 'Tidak tercatat',
     diagramEntry: 'Entri diagram opsional',
     diagramHint:

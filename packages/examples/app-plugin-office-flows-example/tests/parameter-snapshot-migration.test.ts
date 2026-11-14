@@ -1,14 +1,7 @@
+import { parameterIdentity } from '@nocobase/lifecycle';
 import path from 'node:path';
 import { createMigrator } from '@nocobase/db';
 import { createTestDatabase } from '@nocobase/app-testing/server';
-import {
-  parameterIdentity,
-  LifecycleRuntime,
-  createRepositoryLifecycleStore,
-} from '@nocobase/lifecycle';
-import { OfficeStore } from '../server/services/store.js';
-import { registerLifecycles } from '../server/lifecycles/index.js';
-import { COLLECTIONS } from '../server/scope.js';
 import { expect, it } from 'vitest';
 import { migrations } from './fixtures.js';
 
@@ -88,70 +81,26 @@ it.each(['unknown', 'started', 'creation-only', 'partial-history'] as const)(
           },
         ],
       });
-      if (kind === 'creation-only') {
-        await noTransaction.latest();
-        const id = String(Number(record.record.id));
-        expect(
-          await fixture.database
-            .repository('officeFlowsCreationRequests')
-            .findOne({
-              filter: {
-                id: parameterIdentity(
-                  '$parameter-start-v1',
-                  'office',
-                  'incoming',
-                  id,
-                  'proof',
-                ),
-              },
-            }),
-        ).toMatchObject({ status: 'unstarted', revision: 0 });
-        const runtime = new LifecycleRuntime({
-          creationRequestsCollection: 'officeFlowsCreationRequests',
-          store: createRepositoryLifecycleStore(fixture.database, {
-            collections: {
-              transitions: COLLECTIONS.transitions,
-              effectRuns: COLLECTIONS.effectRuns,
-            },
-          }),
-        });
-        registerLifecycles(runtime, new OfficeStore(fixture.database));
-        expect(
-          (await runtime.view('incoming', id, { id: 'zhoujie' })).state,
-        ).toBe('draft');
-        await runtime.fire('incoming', id, 'submit', {
-          actor: { id: 'zhoujie' },
-        });
-        expect(
-          (await runtime.view('incoming', id, { id: 'zhoujie' })).state,
-        ).toBe('headReview');
-        await noTransaction.latest();
-      } else {
-        await expect(noTransaction.latest()).rejects.toThrow(
-          kind === 'started'
-            ? 'START_PARAMETERS_UNRECOVERABLE'
-            : kind === 'partial-history'
-              ? 'DRAFT_EDIT_HISTORY_UNPROVEN'
-              : 'START_HISTORY_UNKNOWN',
-        );
-        fixture.database.connection().collections.invalidate();
-        expect(
-          await fixture.database
-            .connection()
-            .collections.get('officeFlowsParameterSnapshots'),
-        ).toBeUndefined();
-        expect(
-          await fixture.database
-            .connection()
-            .collections.get('officeFlowsCreationRequests'),
-        ).toBeUndefined();
-        // Fix an unprovable imported record, then retry the exact nontransactional migration.
+      await expect(noTransaction.latest()).rejects.toThrow(
+        'CREATION_PARAMETERS_UNRECOVERABLE',
+      );
+      fixture.database.connection().collections.invalidate();
+      expect(
         await fixture.database
-          .repository('officeFlowsIncoming')
-          .deleteMany({ filter: { id: record.record.id } });
-        await noTransaction.latest();
-        await noTransaction.latest();
-      }
+          .connection()
+          .collections.get('officeFlowsParameterSnapshots'),
+      ).toBeUndefined();
+      expect(
+        await fixture.database
+          .connection()
+          .collections.get('officeFlowsCreationRequests'),
+      ).toBeUndefined();
+      // Fix an unprovable imported record, then retry the exact nontransactional migration.
+      await fixture.database
+        .repository('officeFlowsIncoming')
+        .deleteMany({ filter: { id: record.record.id } });
+      await noTransaction.latest();
+      await noTransaction.latest();
     } finally {
       await fixture.destroy();
     }
@@ -186,6 +135,124 @@ it.each(['officeFlowsParameterSnapshots', 'officeFlowsCreationRequests'])(
         'Parameter snapshots and receipts are retained.',
       );
       expect(await fixture.database.repository(collection).count()).toBe(1);
+    } finally {
+      await fixture.destroy();
+    }
+  },
+);
+
+it.each([
+  'valid',
+  'identity',
+  'at',
+  'schemaVersion',
+  'origin',
+  'values',
+  'recovery',
+])(
+  'preflights a retained office dispatch creation snapshot (%s)',
+  async (field) => {
+    const fixture = await createTestDatabase();
+    try {
+      const owner = createMigrator({
+        database: fixture.database,
+        sources: migrations,
+      });
+      await owner.upTo('202611130003_office_flows_definition_binding');
+      await fixture.database
+        .builder()
+        .createCollection('officeFlowsParameterSnapshots', (table) => {
+          table.string('id', { length: 64 }).primary().notNull();
+          table.json('payload').notNull();
+        });
+      const created = await fixture.database
+        .repository('officeFlowsClerkTasks')
+        .createOne({
+          values: {
+            number: 'OLD-DISPATCH',
+            rootId: 1,
+            parentId: 1,
+            departmentName: 'Example',
+            status: 'signing',
+            statusChangedAt: '2026-10-01T00:00:00.000Z',
+            lifecycleVersion: 1,
+            createdAt: '2026-10-01T00:00:00.000Z',
+            lifecycleDefinition: 'clerkTasks',
+          },
+        });
+      const recordId = String(Number(created.record.id));
+      const payload: Record<string, unknown> = {
+        scope: 'office',
+        lifecycle: 'clerkTasks',
+        recordId,
+        at: '2026-10-01T00:00:00.000Z',
+        revision: 0,
+        values: {
+          dispatchRules: {
+            departmentNames: [],
+            ownDepartmentOnly: false,
+            assigneeRole: 'clerks',
+            ccHeads: false,
+            ccLeaders: false,
+          },
+        },
+        sources: {
+          dispatchRules: {
+            group: 'clerkTasks',
+            schemaVersion: 1,
+            revision: 0,
+            origin: 'default',
+          },
+        },
+      };
+      const source = (
+        payload.sources as Record<string, Record<string, unknown>>
+      ).dispatchRules;
+      if (field === 'identity') payload.recordId = 'other';
+      if (field === 'at') payload.at = 'January 1, 2026';
+      if (field === 'schemaVersion') source.schemaVersion = 2;
+      if (field === 'origin') source.origin = 'unknown';
+      if (field === 'values') payload.values = { dispatchRules: {} };
+      if (field === 'recovery') payload.recoveredFrom = { transitionId: 12 };
+      const id = parameterIdentity('office', 'clerkTasks', recordId);
+      await fixture.database
+        .repository('officeFlowsParameterSnapshots')
+        .createOne({ values: { id, payload } });
+      const migrator = createMigrator({
+        database: fixture.database,
+        sources: [
+          {
+            packageName: 'office-retained-snapshot-test',
+            directory: path.resolve(
+              import.meta.dirname,
+              'fixtures/nontransactional-snapshot',
+            ),
+          },
+        ],
+      });
+      if (field === 'valid') {
+        await migrator.latest();
+        await migrator.latest();
+        await expect(migrator.rollback()).rejects.toThrow(
+          'Parameter snapshots and receipts are retained.',
+        );
+      } else {
+        await expect(migrator.latest()).rejects.toThrow(
+          'PARAMETER_SNAPSHOT_INVALID',
+        );
+        expect(
+          await fixture.database
+            .connection()
+            .collections.get('officeFlowsCreationRequests'),
+        ).toBeUndefined();
+      }
+      expect(
+        (
+          await fixture.database
+            .repository('officeFlowsParameterSnapshots')
+            .findOne({ filter: { id } })
+        )?.payload,
+      ).toEqual(payload);
     } finally {
       await fixture.destroy();
     }

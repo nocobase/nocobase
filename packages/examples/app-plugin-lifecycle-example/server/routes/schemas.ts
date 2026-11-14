@@ -382,7 +382,36 @@ const Run: z.ZodType<EffectRun> = z
   })
   .meta({ ref: 'LifecycleExampleEffectRun' });
 
+export const ParameterSnapshotSchema: z.ZodType<
+  import('@nocobase/lifecycle').ParameterSnapshot
+> = z.object({
+  scope: z.string(),
+  lifecycle: z.string(),
+  recordId: z.string(),
+  revision: z.number().int().nonnegative(),
+  at: z.string().datetime({ offset: true }),
+  values: z.record(z.string(), z.json()),
+  sources: z.record(
+    z.string(),
+    z.object({
+      group: z.string(),
+      schemaVersion: z.number().int().positive(),
+      revision: z.number().int().nonnegative(),
+      origin: z.enum(['default', 'configuration', 'recovered']),
+    }),
+  ),
+  recoveredFrom: z
+    .object({
+      transitionId: z.string(),
+      usageId: z.string().optional(),
+      groupRevisions: z.record(z.string(), z.number()).optional(),
+    })
+    .optional(),
+});
+
 const recordView = {
+  parameterValues: z.record(z.string(), z.unknown()).optional(),
+  parameterSnapshot: ParameterSnapshotSchema.optional(),
   lifecycle: z.string().meta({
     description:
       "The definition the record belongs to, whichever version the URL named: draw this definition's diagram.",
@@ -408,7 +437,6 @@ export const RecordViewSchema: z.ZodType<RecordView> = z
 
 export const FireViewSchema: z.ZodType<FireView> = z
   .object({
-    parameterValues: z.record(z.string(), z.unknown()).optional(),
     ...recordView,
     replayed: z.boolean().meta({
       description: 'True when this request id had already fired it.',
