@@ -20,53 +20,53 @@ const ptBR: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Tempo limite de pagamento (minutos)',
         description:
-          'Cancele um pedido não pago após esta espera. As alterações se aplicam aos cronômetros de pagamento recentemente agendados; os temporizadores existentes mantêm o tempo devido.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       escalateAfterMinutes: {
         title: 'Tempo limite de revisão do gerente (minutos)',
         description:
-          'Escale uma revisão pendente do gerente após esta espera. As alterações se aplicam aos cronômetros de revisão recentemente agendados; os temporizadores existentes mantêm o tempo devido.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       waitMinutes: {
         title: 'Tempo limite de resposta do cliente (minutos)',
         description:
-          'Fechar um ticket se o cliente não responder dentro desta espera. As alterações se aplicam aos cronômetros recentemente agendados; os temporizadores existentes mantêm o tempo devido.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       querySeconds: {
         title: 'Atraso na consulta do status da fatura (segundos)',
         description:
-          'Consulte o fornecedor da fatura se nenhum retorno de chamada chegar durante esta espera. As alterações se aplicam a consultas recentemente agendadas; as consultas existentes mantêm o devido tempo.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       pollSeconds: {
         title: 'Intervalo de verificação do progresso da exportação (segundos)',
         description:
-          'Espere um pouco antes de verificar uma exportação em andamento. As alterações se aplicam a verificações recentemente agendadas; os cheques existentes mantêm o seu devido tempo.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       maxMinutes: {
         title: 'Tempo limite de conclusão da exportação (minutos)',
         description:
-          'Defina o prazo de conclusão quando um trabalho de exportação for iniciado. Um trabalho inacabado expira nesse prazo. As mudanças não alteram os prazos de trabalho existentes.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       periodMinutes: {
         title: 'Período de renovação da assinatura (minutos)',
         description:
-          'Utilize esta duração para calcular o novo final do período após uma cobrança bem-sucedida. As alterações serão aplicadas após a próxima cobrança bem-sucedida; o final do período atual permanece fixo.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       dunningMinutes: {
         title:
           'Falha no intervalo de novas tentativas de pagamento de renovação (minutos)',
         description:
-          'Espere um pouco antes de tentar novamente um pagamento de renovação com falha. As alterações se aplicam a novas tentativas agendadas; as tentativas existentes mantêm o devido tempo.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       maxDunning: {
         title: 'Limite de falha de pagamento de renovação',
         description:
-          'Cancele a assinatura na próxima tentativa automática se a contagem de pagamentos com falha atingir esse limite. As alterações se aplicam na próxima decisão de nova tentativa.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
       reopenDays: {
         title: 'Prazo de reabertura de ingressos (dias)',
         description:
-          'Permitir a reabertura dentro de alguns dias após o fechamento de um ticket; caso contrário, será necessário um novo ticket. Cada solicitação de reabertura usa a configuração mais recente.',
+          'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
       },
     },
     loading: 'Carregando parâmetros…',
@@ -74,7 +74,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     description:
       'Altere apenas valores declarados por código. A estrutura do fluxo de trabalho, as decisões e os tempos limite permanecem no código.',
     ruleExplanation:
-      'Todas as condições em um grupo devem corresponder. Grupos separados são somados. Coloque usuários alternativos em grupos separados.',
+      'Todas as condições em um grupo devem corresponder. Grupos separados são somados. Coloque usuários alternativos em grupos separados. As referências escolhidas são fixas; os membros atuais e sua elegibilidade são resolvidos na execução.',
     allConditions: 'Combine todas essas condições',
     alsoInclude: 'Incluir também',
     selectionType: 'Tipo de seleção',
@@ -90,9 +90,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     codeDefaults: 'Padrões de código',
     databaseVersion: 'Configuração salva',
     snapshotEffect:
-      'Instantâneo: corrigido no primeiro envio; retido após devolução ou retirada',
-    liveEffect:
-      'As leituras futuras de parâmetros usam a configuração mais recente; os cronômetros e prazos existentes permanecem fixos.',
+      'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
     yes: 'Sim',
     no: 'Não',
     invalidObject: 'Insira um objeto JSON válido.',
@@ -108,10 +106,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     noCandidates: 'Nenhum candidato elegível; a submissão será recusada.',
     editCurrent: 'Editar configuração atual',
     historyBoundary:
-      'Isto edita a configuração atual. Os factos históricos e os candidatos atribuídos existentes permanecem inalterados.',
+      'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
     history: 'Uso real de parâmetros',
-    effectivePreview: 'Valores efetivos para este registro agora',
-    firstSnapshot: 'Instantâneo do primeiro envio',
+    firstSnapshot: 'Snapshot de parâmetros da criação',
     notRecorded: 'Não registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:
@@ -331,10 +328,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       entertainment: 'Entretenimento para clientes',
       other: 'Outros',
     },
+    allStates: 'Todos os estados',
     steps: {
       submit: 'Enviado',
       manager: 'Gerente',
       finance: 'Finanças',
+      audit: 'Auditoria',
       payment: 'Pago',
     },
     meta: {
@@ -997,6 +996,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     draft: 'Rascunho',
     awaitingManager: 'Aguardando gerente',
     awaitingFinance: 'Aguardando financiamento',
+    awaitingAudit: 'Aguardando auditoria',
     needsInfo: 'Enviado de volta',
     approved: 'Aprovado',
     rejected: 'Rejeitado',
@@ -1081,6 +1081,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     reopen: 'Reabrir',
     submit: 'Enviar',
     approve: 'Aprovar',
+    audit: 'Aprovar auditoria',
     reject: 'Rejeitar',
     requestInfo: 'Enviar de volta',
     resubmit: 'Reenviar',

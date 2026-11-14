@@ -123,7 +123,8 @@ describe('order paid by webhook', () => {
 
   it('accepts the webhook before the checkout was even recorded', async () => {
     const { kit, receiver, event } = setup(orderLifecycle);
-    const created = kit.create(order);
+    const created = await kit.start(order);
+    await kit.fire(created, 'checkout');
     kit.update(created, { status: 'creatingCheckout' });
     await expect(
       receiver.receive(

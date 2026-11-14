@@ -31,6 +31,8 @@ async function createTables(): Promise<void> {
     table.string('status').notNull();
     table.datetimeTz('statusChangedAt').notNull();
     table.integer('lifecycleVersion').notNull().defaultTo(0);
+    // Which version of a process a ticket belongs to; empty for most here.
+    table.string('flow');
   });
   await builder.createCollection('notes', (table) => {
     table.bigInt('id').primary().autoIncrement().notNull();
@@ -412,6 +414,28 @@ describe('Repository lifecycle store', () => {
       },
     });
     expect(third.map((record) => String(record.id))).toEqual([ids[3]]);
+  });
+
+  it('narrows idle records to one version of a process', async () => {
+    const first = await createTicket();
+    const second = await createTicket();
+    await database.repository('tickets').updateMany({
+      filter: { id: Number(first) },
+      values: { flow: 'tickets' },
+    });
+    await database.repository('tickets').updateMany({
+      filter: { id: Number(second) },
+      values: { flow: 'tickets-v2' },
+    });
+    const found = await store.findIdleRecords('tickets', {
+      stateField: 'status',
+      states: ['open'],
+      changedAtField: 'statusChangedAt',
+      changedBefore: '2026-10-01T10:00:00.000Z',
+      limit: 10,
+      match: { field: 'flow', value: 'tickets-v2' },
+    });
+    expect(found.map((record) => String(record.id))).toEqual([second]);
   });
 
   it('runs an effect a crashed process left behind once it recovers', async () => {

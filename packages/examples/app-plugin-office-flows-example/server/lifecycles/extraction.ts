@@ -44,6 +44,9 @@ export const EXTRACTION_REQUIRED: readonly (readonly [string, string])[] = [
 export const extractionLifecycle: Lifecycle<ExtractionTypes> =
   defineLifecycle<ExtractionTypes>({
     name: 'extractions',
+    key: 'extractions',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.extractions,
     initial: 'pending',
     states: [

@@ -20,52 +20,52 @@ const zhTW: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: '付款超時（分鐘）',
         description:
-          '在此等待後取消未付款的訂單。更改適用於新安排的付款計時器；現有定時器保持其應有的時間。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       escalateAfterMinutes: {
         title: '經理審核超時（分鐘）',
         description:
-          '在此等待後升級待處理的經理審核。更改適用於新安排的審核計時器；現有定時器保持其應有的時間。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       waitMinutes: {
         title: '客戶回覆超時（分鐘）',
         description:
-          '如果客戶在此等待時間內未回覆，則關閉票證。更改適用於新安排的計時器；現有定時器保持其應有的時間。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       querySeconds: {
         title: '發票狀態查詢延遲（秒）',
         description:
-          '如果在此等待時間內沒有回撥到達，則查詢發票提供者。更改適用於新安排的查詢；現有查詢保持其應有的時間。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       pollSeconds: {
         title: '匯出進度檢查間隔（秒）',
         description:
-          '在檢查正在進行的匯出之前等待這麼長時間。更改適用於新安排的檢查；現有支票保持其應有的時間。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       maxMinutes: {
         title: '導出完成超時（分鐘）',
         description:
-          '設定匯出作業開始時的完成期限。未完成的工作在截止日期前逾時。變更不會改變現有的工作截止日期。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       periodMinutes: {
         title: '訂閱續訂週期（分鐘）',
         description:
-          '扣款成功後，以此時長計算新計費週期的結束時間。變更會在下次成功扣款後套用；目前週期的結束時間不變。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       dunningMinutes: {
         title: '續費支付失敗重試間隔（分鐘）',
         description:
-          '請等待這麼長時間，然後再試一次失敗的續約付款。更改適用於新安排的重試；現有的重試會保留其應有的時間。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       maxDunning: {
         title: '續費繳費失敗限額',
         description:
-          '如果支付失敗次數達到此限制，則在下次自動重試時取消訂閱。更改將在下一次重試決定時套用。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
       reopenDays: {
         title: '門票重新開放截止日期（天）',
         description:
-          '允許在票證關閉後的這麼多天內重新開放；否則需要重新購買機票。每個重新開啟請求都使用最新設定。',
+          '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
       },
     },
     loading: '正在載入引數...',
@@ -73,7 +73,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     description:
       '僅更改程式碼宣告的值。工作流程結構、決策和逾時保留在程式碼中。',
     ruleExplanation:
-      '一組中的所有條件都必須匹配。單獨的組別被加到一起。將替代使用者放入不同的群組中。',
+      '一組中的所有條件都必須匹配。單獨的組別被加到一起。將替代使用者放入不同的群組中。 參照選擇固定，成員及人員有效性於執行時解析。',
     allConditions: '滿足所有這些條件',
     alsoInclude: '還包括',
     selectionType: '選擇型',
@@ -88,8 +88,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     revision: '修訂版 {{revision}}',
     codeDefaults: '程式碼預設值',
     databaseVersion: '儲存的配置',
-    snapshotEffect: '快照：首次提交時修復；退貨或提款後保留',
-    liveEffect: '未來引數讀取使用最新配置；現有的計時器和截止日期不變。',
+    snapshotEffect:
+      '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
     yes: '是',
     no: '否',
     invalidObject: '輸入有效的 JSON 物件。',
@@ -103,10 +103,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     candidates: '候選人',
     noCandidates: '沒有符合資格的候選人；提交將被拒絕。',
     editCurrent: '編輯目前配置',
-    historyBoundary: '這會編輯目前配置。歷史事實和現有指定候選人保持不變。',
+    historyBoundary:
+      '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
     history: '實際引數使用',
-    effectivePreview: '該記錄現在的有效值',
-    firstSnapshot: '首次提交快照',
+    firstSnapshot: '建立時的參數快照',
     notRecorded: '未記錄',
     diagramEntry: '可選圖表條目',
     diagramHint:
@@ -319,10 +319,12 @@ const zhTW: LocaleResource<typeof enUS> = {
       entertainment: '顧客娛樂',
       other: '其他',
     },
+    allStates: '全部狀態',
     steps: {
       submit: '已提交',
       manager: '經理',
       finance: '金融',
+      audit: '審計',
       payment: '已付費',
     },
     meta: {
@@ -954,6 +956,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     draft: '草稿',
     awaitingManager: '等待經理',
     awaitingFinance: '等待融資',
+    awaitingAudit: '待審計',
     needsInfo: '已發回',
     approved: '已核准',
     rejected: '已拒絕',
@@ -1038,6 +1041,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     reopen: '重新開放',
     submit: '提交',
     approve: '核准',
+    audit: '審計通過',
     reject: '拒絕',
     requestInfo: '發回',
     resubmit: '重新提交',

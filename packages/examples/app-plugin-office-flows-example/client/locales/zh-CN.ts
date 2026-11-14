@@ -81,6 +81,7 @@ const zhCN: OfficeFlowsExampleResource = {
       '流程读取的演示数据：各部门带入的人员、公司管理层群组，以及 2026 年工作日历。',
   },
   common: {
+    parameterSnapshot: '创建时的参数快照',
     created: '创建',
     actAs: '扮演',
     save: '保存',

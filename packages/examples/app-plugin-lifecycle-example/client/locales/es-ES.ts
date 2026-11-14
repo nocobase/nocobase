@@ -20,53 +20,53 @@ const esES: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Tiempo de espera de pago (minutos)',
         description:
-          'Cancelar un pedido impago después de esta espera. Los cambios se aplican a los temporizadores de pago recientemente programados; Los temporizadores existentes mantienen su tiempo debido.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       escalateAfterMinutes: {
         title: 'Tiempo de espera de revisión del administrador (minutos)',
         description:
-          'Escalar una revisión pendiente del administrador después de esta espera. Los cambios se aplican a los temporizadores de revisión recientemente programados; Los temporizadores existentes mantienen su tiempo debido.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       waitMinutes: {
         title: 'Tiempo de espera de respuesta del cliente (minutos)',
         description:
-          'Cerrar un ticket si el cliente no responde dentro de esta espera. Los cambios se aplican a los temporizadores programados recientemente; Los temporizadores existentes mantienen su tiempo debido.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       querySeconds: {
         title: 'Retraso en consulta de estado de factura (segundos)',
         description:
-          'Consulta al proveedor de facturas si no llega ninguna devolución de llamada dentro de esta espera. Los cambios se aplican a consultas recientemente programadas; las consultas existentes mantienen su debido tiempo.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       pollSeconds: {
         title:
           'Intervalo de verificación del progreso de la exportación (segundos)',
         description:
-          'Espere tanto tiempo antes de verificar una exportación en progreso. Los cambios se aplican a las comprobaciones programadas recientemente; los controles existentes mantienen su debido tiempo.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       maxMinutes: {
         title: 'Tiempo de espera de finalización de exportación (minutos)',
         description:
-          'Establece la fecha límite de finalización cuando comienza un trabajo de exportación. Un trabajo inacabado caduca en esa fecha límite. Los cambios no modifican los plazos de los trabajos existentes.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       periodMinutes: {
         title: 'Periodo de renovación de suscripción (minutos)',
         description:
-          'Utilice esta duración para calcular el final del nuevo período después de un cargo exitoso. Los cambios se aplican después del siguiente cargo exitoso; el final del período actual permanece fijo.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       dunningMinutes: {
         title: 'Intervalo de reintento de pago de renovación fallido (minutos)',
         description:
-          'Espere tanto tiempo antes de volver a intentar un pago de renovación fallido. Los cambios se aplican a los reintentos recién programados; los reintentos existentes mantienen su debido tiempo.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       maxDunning: {
         title: 'Límite de fallas de pago de renovación',
         description:
-          'Cancele la suscripción en el siguiente reintento automático si su recuento de pagos fallidos ha alcanzado este límite. Los cambios se aplican en la siguiente decisión de reintento.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
       reopenDays: {
         title: 'Fecha límite de reapertura de tickets (días)',
         description:
-          'Permitir la reapertura dentro de estos días después del cierre de un ticket; de lo contrario, se requerirá un boleto nuevo. Cada solicitud de reapertura utiliza la configuración más reciente.',
+          'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
       },
     },
     loading: 'Cargando parámetros…',
@@ -74,7 +74,7 @@ const esES: LocaleResource<typeof enUS> = {
     description:
       'Cambie sólo los valores declarados por código. La estructura del flujo de trabajo, las decisiones y los tiempos de espera permanecen en el código.',
     ruleExplanation:
-      'Todas las condiciones de un grupo deben coincidir. Los grupos separados se suman. Coloque a los usuarios alternativos en grupos separados.',
+      'Todas las condiciones de un grupo deben coincidir. Los grupos separados se suman. Coloque a los usuarios alternativos en grupos separados. Las referencias elegidas se fijan; los miembros actuales y su elegibilidad se resuelven al ejecutar.',
     allConditions: 'Cumple todas estas condiciones',
     alsoInclude: 'Inclúyase también',
     selectionType: 'Tipo de selección',
@@ -90,9 +90,7 @@ const esES: LocaleResource<typeof enUS> = {
     codeDefaults: 'Código predeterminado',
     databaseVersion: 'Configuración guardada',
     snapshotEffect:
-      'Instantánea: corregida en el primer envío; retenido después de la devolución o retiro',
-    liveEffect:
-      'Las lecturas futuras de parámetros utilizan la configuración más reciente; Los cronómetros y plazos existentes permanecen fijos.',
+      'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
     yes: 'Sí',
     no: 'No',
     invalidObject: 'Ingrese un objeto JSON válido.',
@@ -109,10 +107,9 @@ const esES: LocaleResource<typeof enUS> = {
       'No hay candidatos elegibles; la presentación será rechazada.',
     editCurrent: 'Editar configuración actual',
     historyBoundary:
-      'Esto edita la configuración actual. Los hechos históricos y los candidatos asignados existentes permanecen sin cambios.',
+      'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
     history: 'Uso real de parámetros',
-    effectivePreview: 'Valores efectivos para este registro ahora',
-    firstSnapshot: 'Instantánea del primer envío',
+    firstSnapshot: 'Instantánea de parámetros de creación',
     notRecorded: 'No registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:
@@ -336,10 +333,12 @@ const esES: LocaleResource<typeof enUS> = {
       entertainment: 'Entretenimiento para clientes',
       other: 'Otro',
     },
+    allStates: 'Todos los estados',
     steps: {
       submit: 'Enviado',
       manager: 'Gerente',
       finance: 'Finanzas',
+      audit: 'Auditoría',
       payment: 'Pagado',
     },
     meta: {
@@ -1001,6 +1000,7 @@ const esES: LocaleResource<typeof enUS> = {
     draft: 'Borrador',
     awaitingManager: 'Esperando gerente',
     awaitingFinance: 'En espera de financiación',
+    awaitingAudit: 'En espera de auditoría',
     needsInfo: 'Devuelto',
     approved: 'Aprobado',
     rejected: 'Rechazado',
@@ -1085,6 +1085,7 @@ const esES: LocaleResource<typeof enUS> = {
     reopen: 'Reabrir',
     submit: 'Enviar',
     approve: 'Aprobar',
+    audit: 'Aprobar auditoría',
     reject: 'Rechazar',
     requestInfo: 'Enviar de vuelta',
     resubmit: 'Volver a enviar',

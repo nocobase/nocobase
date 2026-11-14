@@ -237,6 +237,7 @@ export class DurableFlowService {
   public createSubscription(
     values: NewSubscription,
     actor: string,
+    requestId?: string,
   ): Promise<Plain> {
     return this.create(
       'subscriptions',
@@ -247,6 +248,7 @@ export class DurableFlowService {
         dunningCount: 0,
       },
       actor,
+      requestId,
     );
   }
 
@@ -378,11 +380,16 @@ export class DurableFlowService {
     flow: DurableFlow,
     values: Plain,
     actor: string,
+    requestId?: string,
   ): Promise<Plain> {
     const { record } = await this.runtime.create(
       flow,
       { ...values, createdAt: this.clock().toISOString() },
-      { actor: { id: actor } },
+      {
+        actor: { id: actor },
+        requestId,
+        requestInput: values as import('@nocobase/lifecycle').JsonObject,
+      },
     );
     return { ...record };
   }

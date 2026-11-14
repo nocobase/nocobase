@@ -87,6 +87,7 @@ const esES: LocaleResource<typeof enUS> = {
       'Datos de demostración que leen los procesos: las personas que ingresa una fila de departamento, los grupos de administración y el calendario de días festivos de 2026.',
   },
   common: {
+    parameterSnapshot: 'Instantánea de parámetros de creación',
     created: 'Creado',
     actAs: 'Actuar como',
     save: 'Guardar',

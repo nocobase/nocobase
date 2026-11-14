@@ -272,6 +272,26 @@ class RepositoryLifecycleStore implements LifecycleStore {
     this.transactionHandle.afterCommit(callback);
   }
 
+  public async findRecords(
+    collection: string,
+    ids: readonly RecordId[],
+  ): Promise<LifecycleRecord[]> {
+    if (!ids.length) return [];
+    const rows = await this.repository(collection).findMany({
+      filter: (filter) =>
+        filter.or(
+          ids.map((id) => {
+            const value = key(id);
+            return typeof value === 'number'
+              ? filter.number('id').eq(value)
+              : filter.string('id').eq(value);
+          }),
+        ),
+      limit: ids.length,
+    });
+    return rows.map(toRecord);
+  }
+
   public async findRecord(
     collection: string,
     id: RecordId,
@@ -324,6 +344,9 @@ class RepositoryLifecycleStore implements LifecycleStore {
             ),
           ),
           filter.date(query.changedAtField).before(query.changedBefore),
+          ...(query.match === undefined
+            ? []
+            : [filter.string(query.match.field).eq(query.match.value)]),
           // The page after the cursor, in the order below. A non-numeric id
           // cannot be compared through the filter, so records sharing the
           // cursor's instant are left to the next sweep.

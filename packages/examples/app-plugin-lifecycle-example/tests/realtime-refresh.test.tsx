@@ -183,3 +183,50 @@ it('waits for every request in a failed batch before allowing a retry', async ()
   await batch;
   expect(settled).toHaveBeenCalledWith(error);
 });
+
+function FilteredProbe({
+  filter,
+  read,
+}: {
+  filter: string;
+  read: (filter: string) => Promise<string>;
+}) {
+  // As the expense list: the filter reloads through the subscription, while
+  // the loader keeps its rows until the filtered ones arrive.
+  const data = useLoader(() => read(filter), 'list', '', false);
+  useLifecycleChanges('tickets', `list:${filter}`, data.refresh);
+  return <output>{data.data ?? 'loading'}</output>;
+}
+
+it('reads again with a changed filter and keeps the previous rows meanwhile', async () => {
+  vi.useFakeTimers();
+  const pending = Promise.withResolvers<string>();
+  const read = vi
+    .fn<(filter: string) => Promise<string>>()
+    .mockResolvedValueOnce('every state')
+    .mockReturnValueOnce(pending.promise);
+  const view = await renderWithApp(<FilteredProbe filter='' read={read} />, {
+    services(app) {
+      vi.spyOn(
+        app.container.resolve(realtimeClientToken),
+        'watch',
+      ).mockImplementation(() => ({
+        state: 'subscribed',
+        error: undefined,
+        retry: vi.fn(),
+        close: vi.fn(),
+      }));
+    },
+  });
+  await act(() => vi.advanceTimersByTimeAsync(100));
+  expect(screen.getByText('every state')).toBeInTheDocument();
+  view.rerender(<FilteredProbe filter='awaitingAudit' read={read} />);
+  await act(() => vi.advanceTimersByTimeAsync(100));
+  expect(read).toHaveBeenLastCalledWith('awaitingAudit');
+  expect(screen.getByText('every state')).toBeInTheDocument();
+  await act(async () => {
+    pending.resolve('awaiting audit');
+    await vi.advanceTimersByTimeAsync(100);
+  });
+  expect(screen.getByText('awaiting audit')).toBeInTheDocument();
+});

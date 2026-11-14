@@ -1,103 +1,74 @@
-# Configurable lifecycle parameters
+# Versioned parameter contracts and creation snapshots
 
-For approval processes, first follow [approval plugin prerequisites](lifecycle.md#approval-requests-check-the-pro-plugin-first). Reviewer parameters here describe lifecycle configuration, not a substitute for the commercial approval plugin's task and decision model; use that plugin's installed Skill for its configuration and integration contracts.
+A definition version fixes its parameter contract: field set, types, meaning, units, validation and defaults. Administrators edit one complete configuration revision for that concrete definition name. Different versions may reuse field names with different contracts; they never implicitly share configuration. A contract change requires a new definition version.
 
-Apply this by default whenever building or iterating on a process with administrator-owned business policy, including approval departments, reviewers, thresholds or reopening windows. Inspect the business rules and proactively declare suitable configuration even when the user never asks for configurability; follow [system settings delivery](system-settings.md#discover-configurable-business-rules-by-default). Developers keep the workflow structure in source. Read [record lifecycles](lifecycle.md) first. This capability belongs to `@nocobase/lifecycle`; verify that the installed package exports `StoredLifecycleParameters` and `normalizeReviewerSelections` before using it. An older installation needs a compatible release upgrade rather than invented APIs.
+`LifecycleRuntime.create()` binds the concrete definition and freezes all effective parameters in the business transaction, including for an initial business state named `draft`. Draft is a business state, not a parameter mode. Later edits, submissions, withdrawals, returns, reopening, retries, continuations and worker restarts always use the same snapshot. To use new parameters, create a new record; there is no instance parameter replacement or rebinding API.
 
-## Code declaration and storage
-
-Declare defaults in `parameters` and a code-owned `parameterConfiguration` with groups. Every group has key, title, schemaVersion and fields; every field has type, title and a parse function returning its complete normalized JSON value. Optional field bindings name a state or transition. The flow declares readMode and snapshotTransition, and individual fields can override readMode. Groups can declare a validate function and sameReadMode arrays for joint invariants.
+## Declare a configurable definition
 
 ```ts
-import { StoredLifecycleParameters, type ParameterGroup } from '@nocobase/lifecycle';
-import { z } from 'zod';
-
 const thresholds: ParameterGroup = {
-  key: 'approvalThresholds', title: 'Approval thresholds', schemaVersion: 1,
+  key: 'thresholds', title: 'Approval amounts (yuan)', schemaVersion: 1,
   fields: {
-    automaticLimit: {
-      type: 'number', title: 'Automatic approval limit',
-      parse: (value) => z.number().finite().nonnegative().parse(value),
-      bindings: [{ transition: 'submit' }],
-    },
-    financeLimit: {
-      type: 'number', title: 'Finance review limit',
-      parse: (value) => z.number().finite().nonnegative().parse(value),
-      bindings: [{ state: 'financeReview' }],
-    },
-  },
-  sameReadMode: [['automaticLimit', 'financeLimit']],
-  validate: (values) => {
-    if (Number(values.automaticLimit) > Number(values.financeLimit))
-      throw new Error('Automatic approval cannot exceed the finance limit.');
+    limit: { type: 'number', title: 'Limit (yuan)', parse(value) {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new Error('Expected a non-negative amount.');
+      return value;
+    } },
   },
 };
-
 // In the definition:
-parameters: { automaticLimit: 500, financeLimit: 5000 },
-parameterConfiguration: {
-  readMode: 'snapshot', snapshotTransition: 'submit', groups: [thresholds],
-},
-
-// Register on the application's existing lifecycle runtime:
-runtime.register(expenseLifecycle, {
-  parameterConfiguration: {
-    store: new StoredLifecycleParameters(lifecycleStore, collectionNames),
-    scope: ({ record }) => scopeFromAuthoritativeRecord(record),
-    legacyRecord: (record) => record.parameterContract !== 1,
-    snapshotRequired: (record) => record.status !== 'draft',
-  },
-});
+parameters: { limit: 5000 },
+parameterConfiguration: { groups: [thresholds] },
 ```
 
-Create six collections with an immutable migration, using application-owned names: heads (string id, scope, groupKey, status, integer revision; unique scope/groupKey); versions (string id, JSON payload, JSON selectionCounts); selections (string id, versionId, ruleKey, integer group, type, referenceId; index versionId); requests (string id, actorId, text fingerprint, integer revision); snapshots (string id, JSON payload); usages (string id, JSON payload, recordKey, zoned timestamp at; index recordKey/at/id). Pass names as `{ heads, versions, selections, requests, snapshots, usages }`. Existing LifecycleStore implementations are unchanged; custom parameter adapters implement the separate LifecycleParameterStore interface, including read/save/snapshot/saveSnapshot/usage/saveUsage/listUsage.
+Register `parameterConfiguration: { store, scope }`. Scope is authoritative server context, not form input. `LifecycleParameterStore.readConfiguration(scope, lifecycle, transaction)` reads one complete immutable revision for the concrete definition; do not independently read mutable group heads. Save all groups as one revision with `configurationGroup(definition.name, definition.parameterConfiguration.groups)` and `store.save(...)`; groups organize the editor, not separate revisions. `WorkflowParameterStore` uses one CAS-protected row per definition.
 
-Resolve scope and record identity from server-owned context. Authenticate and authorize configuration read/write before validators or record lookup. In the save transaction validate referenced entities in that scope, then call `store.save({ scope, group, values, expectedRevision, requestId, actorId, at }, transactionHandle)`. Save exactly the complete declared group: never accept undeclared fields, schemaVersion, modes, workflow structure or client-provided effective values. A stale revision is a 409 configuration conflict; the same request and values replay its immutable version. Reused request IDs with different input fail. Only an absent configuration uses code defaults; read errors and incompatible schemas fail.
+Creation merges defaults with that revision and validates complete values and cross-field constraints once. The record, immutable definition binding, complete snapshot, creation entry, optional creation receipt and persisted execution facts share the transaction. Creation validation, state hooks and nested same-record operations reuse that resolution. A failure rolls back everything; asynchronous effects read the committed snapshot. No independent startup marker or deferred snapshot boundary exists.
 
-## Snapshot, live and execution consistency
+With an existing record identity, `view`, `available`, `can`, `fire`, actions, triggers, effects, retries, continuations, recovery and instance diagrams read only its snapshot. A missing snapshot raises `PARAMETER_SNAPSHOT_MISSING`, including in draft. Invalid values, identity, timestamp, revision, or field provenance raise `PARAMETER_SNAPSHOT_INVALID`. Current configuration is never a fallback, and corrupt or unreadable current configuration cannot block an instance with a valid snapshot. Identity-free configuration previews still read current configuration and write nothing.
 
-Snapshot fixes all declared snapshot fields at the first successful formal submission, before routing, setters and hooks, in the business transaction. Draft preview writes nothing. Return, withdrawal and resubmission keep the original snapshot. Snapshot rules fix their choices, not organization membership. New snapshot fields missing from an old submitted record require a migration; never fabricate historical values using current settings. Define an explicit legacyRecord policy when introducing the contract to existing records, and use a version marker on newly created records.
+The snapshot contains scope, concrete lifecycle name, record identity, revision, fixed time, all values including defaults, and field sources. Sources identify the group, schema version, nonnegative revision and origin. A new definition may explicitly copy compatible fields as unsaved inputs, validate against its own contract, then save independently. A never-saved version uses its own defaults.
 
-Live reads current complete values for every execution, effect retry and continuation transition. A same-record execution shares one resolution through guard, execute, route, set, hooks and nested tx.fire calls; different records have independent resolutions. For business actions use `runtime.withParameterExecution(name, recordId, async (parameters, tx) => { ... }, { actionId, transaction })` after the application's action replay check. This helper writes an identified action's usage fact but does not deduplicate the business action. Query services in guards and callbacks must use tx.handle.
+Legacy synchronous `parameters` and asynchronous `parameterProvider` readers remain supported only for definitions without `parameterConfiguration`; do not combine them with configured snapshots. Parameterless definitions do not require parameter storage. Custom `LifecycleStore` adapters must implement `findRecords(collection, ids)` as a bounded primary-key batch read: preserve transaction and visibility semantics, omit missing IDs, issue no query for an empty list, split at dialect parameter limits and avoid individual per-ID reads. Rebuild approval-extension adapters during upgrade.
 
-Use `runtime.view()` for record availability and effective parameterValues from one authoritative preview. Use `lifecycleDescriptionViewAsync(runtime, name, { record: null, purpose: 'preview', transactionHandle: undefined })` for an authorized current configuration description. Record-aware previews pass the authoritative record. Preview is informative; actual execution rechecks guards.
+## Creation idempotency
 
-Transitions, identified actions and each effect attempt record actual values and per-field revision/schema/origin/mode. Effect facts persist before external execution and are fenced against the active attempt. `store.snapshot()`, `store.usage()` and `store.listUsage(scope, lifecycle, recordId)` expose history. Pruning effect runs preserves configuration facts. Display “Not recorded” for missing historical usage and show current effective values separately.
+Use `create(..., { requestId })` to retry one creation. The configurable `creationRequestsCollection` has string key `id` and fields `status`, `revision`, `actorId`, `fingerprint`, nullable `recordId` and `entryId`, and `at`. It is needed when using creation request IDs, not merely because a configured definition has a draft state. A savepoint-protected unique claim joins the business transaction. Concurrent retries return the original record and snapshot; changed input is refused. Scope, concrete definition and actor participate in the identity. `requestInput` contains trusted normalized business input, not an independently unvalidated body.
 
-Do not change payment amounts, accounts or recipients through live configuration while retaining an effect run's idempotency key. Those identities come from persisted business facts. Simulated notification copy is a safe demonstration of fresh live values on retry. Trigger timeouts remain code-owned.
+Use `fire(..., { requestId })` for transition replay. Same-record actions may use `withParameterExecution` to share values and facts with nested `tx.fire` calls. Caller-owned action replay checks precede execution. Effects keep their concrete definition, record identity and external idempotency key across retry and recovery.
 
-## Reviewer rules and task boundaries
+## State deadlines
 
-Use `type: 'reviewers'`, parsed with `normalizeReviewerSelections(value, ['department', 'role', 'user'])`. Persist flat choices `{ group, type, referenceId }`, never arbitrary expression JSON or scripts. Same-group conditions intersect, separate groups union and deduplicate. Alternative people belong in separate groups.
+A configured definition declares triggers only when the business needs them, with an indexed nullable `dueAtField`. Parameters such as waiting duration freeze at creation. Each transition calculates its destination state's earliest deadline from the time that state is entered, using the same creation snapshot, and writes it atomically with state and concurrency fields. An initial-state timer uses creation as that state's entry time. Delayed submission does not move the baseline back to record creation. Self-transitions restart the wait under the existing state-entry convention; withdrawal and later reentry calculate a new deadline using the original duration. Configuration edits never recalculate existing deadlines.
 
-Register selectors with `resolveReviewerSelections(choices, { scope, applicantId, transactionHandle }, { selectors, eligible })`. Each selector returns IDs for its code-declared reference type; eligible uniformly filters every result, including explicit users. Departments use exact membership unless code explicitly provides another named selector, roles respect scope, and inactive users and the applicant are filtered. Code determines a zero-candidate failure and the node's decision policy. Custom types may resolve positions, contextual department references or named queries without accepting arbitrary scripts.
+Index `(stateField, dueAtField)`. Sweeps filter state, concrete definition binding and due time, page by `(dueAt, id)`, batch-load snapshots and recheck concurrency before firing the transition declared by that version. Keep the successful-fire budget and resume refused backlogs. Corrupt snapshots are reported without stopping other candidates. No implicit automatic submission, cancellation or closure is added.
 
-On task creation resolve the snapshot or live rule against current organization data and persist candidates on the task. Existing candidates stay fixed. A single approver field is not a multi-person approval system. To demonstrate multiple candidates, declare a separate finite “any candidate can decide” workflow and use version checks so only one concurrent decision succeeds. Real approval plugins need their own compatibility verification for action replay, settings previews, task construction and opinion reuse; fixed current-round tasks or inherited opinions cannot stand in for rule configuration.
+## References and current facts
 
-## Management pages and contextual editors
+Snapshots fix parameter values, selected reference IDs and rule groups. Current organization membership, personnel eligibility, inventory and other external facts follow their existing business contracts. Deleted references yield no candidates, and the editor displays missing references. Required assignments reject empty eligible results. Never refresh the snapshot or substitute another reference implicitly.
 
-When application requirements include a process to develop, deliver workflow management pages by default as [Lifecycle UI](lifecycle-ui.md) describes, reusing the existing management area when present. Insert declared parameter forms into the `workflow-management` block's definition-detail parameter slot; users do not need to request these pages separately. Follow the scope exceptions in [system administration](system-administration.md#default-delivery); API-only work and explicitly excluded UI need no configuration page or diagram. Declared, authorized bindings receive contextual configuration by default; management pages do not introduce a second workflow-design system.
+## Administration and instance details
 
-For workflow management pages, prefer a visible parameter form beside the process diagram, grouped by business state or transition. Show shared fields once without changing their storage/save boundaries. Use the [Lifecycle UI reference](lifecycle-ui.md) for list, detail and administration composition. Provide contextual node or transition editing for declared, authorized bindings without requiring an explicit user request; keep the same editor and save contract and do not make diagram icons the only way to discover settings.
+Configuration edits affect only records created afterward in the selected version; existing drafts are unaffected. Require a concrete save target and reject mismatches. Preserve Save, Discard and Cancel during version changes or navigation, keep failed saves on the original form, and discard late responses from unmounted versions. Show the selected version once. Instance details, diagrams and parameter history display the actual snapshot values, revision, sources and fixed time, including for drafts. Current configuration is shown only on identity-free definition editors/previews.
 
-For save request IDs, follow the [browser request ID guidance](lifecycle.md#5-the-page): use an HTTP-compatible generator and retain the key for retries of the same save.
+| Creation entry                                    | Handling                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Expenses v1/v2, tickets and durable example flows | Services call `runtime.create()` with their explicit concrete definition; all configurable records freeze immediately |
+| Example sample records                            | Use the same services and runtime, including sample drafts                                                            |
+| Office incoming documents and data requests       | Services create through the runtime; holidays freeze with the data request                                            |
+| Office clerk/team/executor dispatch               | Claim, runtime creation, binding, snapshot where configured, child link and assignees share the parent transaction    |
+| Office scheduled/manual extractions               | Use runtime creation in the request's transaction; extraction is parameterless and requires no snapshot               |
+| Procurement and onboarding templates              | Existing runtime creation is retained; these parameterless definitions add no parameter storage                       |
+| Imports, batches and custom child creation        | Route through `runtime.create()`; direct insertion cannot satisfy the configured contract                             |
 
-The example plugin exports `ParameterEditor`, `parameterApi` and `boundParameterGroups` from `@nocobase/app-plugin-lifecycle-example/client`. They illustrate a shared editor with an injected API, complete-version CAS saves, read-only mode and preserved drafts on conflicts. They are example exports, not an automatically installed platform settings service. Applications can implement the same contracts in their own UI.
+## Historical inventory, preflight and rollback
 
-For a working management page in the NocoBase source repository, inspect `packages/templates/app-template-examples/client/pages/workflows/definition.tsx`, `parameters.tsx` and `parameter-sections.ts` in that directory. They place the parameter editor beside the diagram and map bound fields into business sections. The example plugin's `client/components/parameter-binding-editor.tsx` remains a reference for a diagram-bound dialog. These source paths are examples, not installed application imports.
+Stop every writer, worker and scheduler, take complete database/storage backups, inventory retained snapshots and creation usage, then run the migration. Keep old definitions, immutable revisions, usage and creation receipts. Do not mix old and new processes.
 
-For click-to-edit diagrams, derive groups from description.parameterConfiguration.groups and bindings referencing the clicked state or transition name. One entry can bind several fields or groups. Intercept only bound entries; unbound entries retain the component's ordinary details. In the example, ProcessDiagram's onParameterBinding(kind, name) returns true when the shared editor handles the click. Clicking opens configuration and never fires a transition. Use the diagram component's actual node/edge callbacks rather than assuming an event API.
+The full read-only preflight validates every final payload before any configuration or schema write. Validate values, scope/name/record identity, timestamp, revision, and every source's group, schema version, revision and origin. Invalid complete snapshots are conflicts even if values alone look valid. Configuration normalization applies only to future-record configuration and never supplies historical parameters.
 
-Show field titles, units, validation, read mode and effective timing. Snapshot changes affect new submissions; live changes affect subsequent executions/retries. Read-only viewers see disabled fields and no save control. On 409 keep draft inputs, fetch the current revision and values, then require a deliberate retry against that revision. Label an editor opened from history as current configuration; never rewrite an old snapshot, actual usage fact or candidate list.
+A missing snapshot may be recovered only from the full usage fact linked to the unique valid version-one `$create` entry, with matching scope, record, definition and attempt zero. Its usage timestamp may follow the creation entry because the fact is written later in the same transaction; preserve that actual time and reject a fact predating its entry. Its original values and provenance are retained. A current draft state, creation log alone, missing submit log, old unstarted marker, current configuration or current defaults cannot prove creation parameters. A later submit usage never repairs missing creation evidence, even if it is the earliest retained submit.
 
-## Validate the integration
+Preserve valid historical creation snapshots exactly. For definitions formerly frozen on submission, compare a valid historical snapshot with reliable creation usage. Require creation provenance as well as matching values, revision and sources: a snapshot must identify the creation event time or explicit verified creation-usage recovery. A later submission freeze time remains a conflict even when values agree. Never relabel that time as creation. If creation evidence is absent, differs, or proves only a different freeze event, leave both sources intact and report `LEGACY_SUBMISSION_SNAPSHOT` or `SNAPSHOT_CREATION_CONFLICT` with choices: explicitly approve retaining the original historical semantics, recover a verified backup, or recreate the record. Those choices need an operator/product decision and are not implemented by silently modifying records. Office's older versions kept no creation usage; unresolved Office records remain conflicts.
 
-Test complete schemas and cross-field constraints, CAS/replay, reference scope and authorization before validation. Prove draft previews create no facts, first submission freezes every snapshot field, failed transactions/savepoints remove it, resubmission retains it, and missing historical fields fail. Check same-record actions/nested transitions share values while different records do not. Prove fresh live retries preserve business idempotency and record each attempt's facts.
-
-Exercise reviewer intersections/unions, duplicate and inactive/applicant filtering, changed department choices, changed organization membership and fixed existing candidates. Test simultaneous decisions. For the delivered UI entry points verify shared save behavior, read-only rendering, preserved conflict drafts, multi-field bindings, untouched unbound entries and distinct current/history labels in the running application. Use the normal testing helpers and run skills sync after installation so this reference is reachable from the normal Skill entry.
-
-## Contextual entry defaults
-
-When a declared business parameter has a state/transition binding and the administrator may update it, connect `LifecycleDiagram.configuration` by default to the same authoritative editor used by the management form. Follow [the default diagram contract](lifecycle-ui.md#default-diagram-and-configuration-contract). The filtered callback selection identifies fields to focus, not a complete replacement group: preserve other values through an authorized read/merge/save with the expected revision. The server independently checks field/group permissions and validates the complete group. A node button is never evidence of runtime configurability without storage and a real consumer.
-
-When reviewers resolve from an existing organization relationship or role membership, provide an authorized `stateActions` entry on that approval node to the existing profile/role editor, as [Lifecycle UI](lifecycle-ui.md#default-diagram-and-configuration-contract) describes. Keep those identities in their authoritative service; do not duplicate them as workflow parameters. Verify the saved relationship/membership changes the candidates for an eligible new record/task while existing fixed candidates remain unchanged.
+After a clean preflight, apply bounded batches with writers still stopped. The lifecycle example uses two scan passes rather than an unbounded in-memory write plan. A data conflict leaves configuration, schema and snapshots unchanged even without transactional DDL. MySQL's DDL is not generally transactional; an unrelated DDL failure still needs the backup/recovery procedure. After new records exist, rollback to old code requires restoring the pre-upgrade backup. Do not erase snapshots or receipts to manufacture rollback. Unmerged migration renames require recreating temporary preview databases or restoring their matching source/database backup, not editing execution history.

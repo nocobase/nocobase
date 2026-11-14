@@ -143,6 +143,8 @@ function setup(options: ContinuationSweepOptions = {}) {
     continuations: options,
   });
   runtime.register(tasks, { services });
+  // What the sweeps say is the subject here, not the registration warnings.
+  logger.warn.mockClear();
   runtime.on('completed', {}, ({ transition }) => void heard.push(transition));
   const task = store.insertRecord('tasks', {
     status: 'todo',

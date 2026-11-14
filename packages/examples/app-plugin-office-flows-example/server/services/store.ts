@@ -1,4 +1,12 @@
+import { OfficeParameterStore } from './parameter-snapshots.js';
+import {
+  SYSTEM_ACTOR,
+  ParameterConfigurationError,
+  type LifecycleRuntime,
+  type ParameterSnapshot,
+} from '@nocobase/lifecycle';
 import { OfficeWorkflowParameterService } from './workflow-parameters.js';
+import { OfficeWorkflowValues } from './workflow-parameter-schema.js';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 
@@ -29,6 +37,8 @@ export const LEVELS: Readonly<
       readonly collection: string;
       readonly prefix: string;
       readonly initial: string;
+      /** The lifecycle definition the task is created for and bound to. */
+      readonly definition: string;
     }
   >
 > = {
@@ -37,18 +47,21 @@ export const LEVELS: Readonly<
     collection: COLLECTIONS.clerkTasks,
     prefix: 'SWSQ_BSRY',
     initial: 'signing',
+    definition: 'clerkTasks',
   },
   2: {
     kind: 'team',
     collection: COLLECTIONS.teamTasks,
     prefix: 'SWSQ_ZXTDCL',
     initial: 'processing',
+    definition: 'teamTasks',
   },
   3: {
     kind: 'executor',
     collection: COLLECTIONS.executorTasks,
     prefix: 'SWSQ_BSRY_ZB',
     initial: 'processing',
+    definition: 'executorTasks',
   },
 };
 
@@ -134,6 +147,13 @@ export interface DispatchResult {
  * a unique key.
  */
 export class OfficeStore {
+  private runtime?: LifecycleRuntime;
+  public attachRuntime(runtime: LifecycleRuntime): void {
+    this.runtime = runtime;
+  }
+  public parameterStore(): OfficeParameterStore {
+    return new OfficeParameterStore(this.database);
+  }
   public constructor(
     private readonly database: DatabaseManager,
     private readonly clock: () => Date = (): Date => new Date(),
@@ -146,13 +166,14 @@ export class OfficeStore {
    * connection, and a read elsewhere would wait for it.
    */
   public bound(handle: unknown): OfficeStore {
-    return handle === undefined
-      ? this
-      : new OfficeStore(
-          this.database,
-          this.clock,
-          handle as DatabaseConnection,
-        );
+    if (handle === undefined) return this;
+    const bound = new OfficeStore(
+      this.database,
+      this.clock,
+      handle as DatabaseConnection,
+    );
+    if (this.runtime) bound.attachRuntime(this.runtime);
+    return bound;
   }
 
   public repository(collection: string): Repository {
@@ -219,7 +240,54 @@ export class OfficeStore {
     }
   }
 
-  public async calendar(): Promise<WorkCalendar> {
+  private calendarFromSnapshot(
+    snapshot: ParameterSnapshot | undefined,
+  ): WorkCalendar {
+    if (!snapshot)
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_MISSING',
+        'Data request calendar requires its creation snapshot.',
+      );
+    const parsed = OfficeWorkflowValues.safeParse(snapshot.values);
+    if (!parsed.success || !parsed.data.holidays)
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_INVALID',
+        'Data request calendar snapshot is incomplete or invalid.',
+      );
+    return createWorkCalendar(
+      parsed.data.holidays.map((row) => ({ date: row.date, kind: row.kind })),
+    );
+  }
+
+  public async calendars(
+    recordIds: readonly string[],
+  ): Promise<ReadonlyMap<string, WorkCalendar>> {
+    const result = new Map<string, WorkCalendar>();
+    // Bound the IN list across dialects while keeping scheduling free of per-row snapshot reads.
+    for (let offset = 0; offset < recordIds.length; offset += 500) {
+      const ids = recordIds.slice(offset, offset + 500);
+      const snapshots = await this.parameterStore().snapshots(
+        'office',
+        'dataRequests',
+        ids,
+        this.connection,
+      );
+      for (const id of ids)
+        result.set(id, this.calendarFromSnapshot(snapshots.get(id)));
+    }
+    return result;
+  }
+
+  public async calendar(recordId?: string): Promise<WorkCalendar> {
+    if (recordId !== undefined)
+      return this.calendarFromSnapshot(
+        await this.parameterStore().snapshot(
+          'office',
+          'dataRequests',
+          recordId,
+          this.connection,
+        ),
+      );
     const rows = (
       await new OfficeWorkflowParameterService(
         this.database,
@@ -300,19 +368,22 @@ export class OfficeStore {
       const extractions = connection.repository(COLLECTIONS.extractions);
       if (await existing(extractions)) return undefined;
       try {
-        const created = await extractions.createOne({
-          values: {
+        if (!this.runtime)
+          throw new Error(
+            'Extraction creation requires a registered lifecycle runtime.',
+          );
+        const created = await this.runtime.create(
+          'extractions',
+          {
             ...values,
             periodKey: periodKey ?? `manual:${number}`,
             executorIds: [...values.executorIds],
             feedbackFiles: [],
             number,
-            status: 'pending',
-            statusChangedAt: now,
-            lifecycleVersion: 0,
             createdAt: now,
           },
-        });
+          { actor: SYSTEM_ACTOR, transaction: connection },
+        );
         return plain(created.record);
       } catch (error) {
         // Another sweep created it between the read and the insert.
@@ -433,26 +504,33 @@ export class OfficeStore {
         }
         const row = plain(await rows.findOne({ filter: { id: rowId } }))!;
         const now = this.now();
-        const record = await connection
-          .repository(target.collection)
-          .createOne({
-            values: {
-              number,
-              rootId: idOf(row.rootId),
-              parentId: idOf(row.parentId),
-              assignmentId: rowId,
-              departmentName: text(row.departmentName),
-              assignees: people(row.assignees),
-              ccHeads: people(row.ccHeads),
-              ccLeaders: people(row.ccLeaders),
-              signedBy: [],
-              attachments: [],
-              status: target.initial,
-              statusChangedAt: now,
-              lifecycleVersion: 0,
-              createdAt: now,
-            },
-          });
+        if (!this.runtime)
+          throw new Error(
+            'Task dispatch requires a registered lifecycle runtime.',
+          );
+        const record = await this.runtime.create(
+          target.definition,
+          {
+            number,
+            rootId: idOf(row.rootId),
+            parentId: idOf(row.parentId),
+            assignmentId: rowId,
+            departmentName: text(row.departmentName),
+            assignees: people(row.assignees),
+            ccHeads: people(row.ccHeads),
+            ccLeaders: people(row.ccLeaders),
+            signedBy: [],
+            attachments: [],
+            createdAt: now,
+          },
+          {
+            actor: SYSTEM_ACTOR,
+            state: target.initial,
+            requestId: `dispatch:${level}:${rowId}`,
+            requestInput: { rowId, level },
+            transaction: connection,
+          },
+        );
         const id = idOf(record.record.id);
         // Publish ownership with the task and the dispatch claim. A retry
         // reuses the existing task, so it cannot duplicate these memberships.

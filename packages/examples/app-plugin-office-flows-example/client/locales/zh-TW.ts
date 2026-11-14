@@ -85,6 +85,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       '流程讀取的演示資料：部門行引入的人員、管理組以及 2026 年假期日曆。',
   },
   common: {
+    parameterSnapshot: '建立時的參數快照',
     created: '已建立',
     actAs: '充當',
     save: '儲存',

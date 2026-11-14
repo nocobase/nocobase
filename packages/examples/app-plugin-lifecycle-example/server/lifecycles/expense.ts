@@ -56,7 +56,7 @@ export interface ExpenseTypes {
 type Context = TransitionContext<ExpenseTypes>;
 
 // Submitting and resubmitting after more information share one rule.
-function routeByAmount({ record, parameters }: Context): ExpenseState {
+export function routeByAmount({ record, parameters }: Context): ExpenseState {
   return record.amountCents <= parameters.autoApproveLimit * 100
     ? 'approved'
     : 'awaitingManager';
@@ -66,7 +66,7 @@ function routeByAmount({ record, parameters }: Context): ExpenseState {
 // the code is stable for the page to translate, the message says it in English.
 // A refusal about who asks is a permission, the default; one about the
 // record, which the right person could clear, says `kind: 'precondition'`.
-function isApplicant({ record, actor }: Context): GuardVerdict {
+export function isApplicant({ record, actor }: Context): GuardVerdict {
   return (
     actor.id === record.applicantId || {
       code: 'applicantOnly',
@@ -75,7 +75,7 @@ function isApplicant({ record, actor }: Context): GuardVerdict {
   );
 }
 
-function isApprover({ record, actor }: Context): GuardVerdict {
+export function isApprover({ record, actor }: Context): GuardVerdict {
   return (
     actor.id === record.approverId || {
       code: 'approverOnly',
@@ -89,7 +89,7 @@ function isApprover({ record, actor }: Context): GuardVerdict {
  * The request to submit is fine; the report is not ready, which is the
  * record's state: `INVALID_STATE`, a failed precondition, not invalid input.
  */
-function readyToSubmit({ record }: Context): Record<string, unknown> {
+export function readyToSubmit({ record }: Context): Record<string, unknown> {
   const problems = [
     ...(record.title.trim() ? [] : ['Give the report a title.']),
     ...itemProblems(parseItems(record.items)),
@@ -99,7 +99,7 @@ function readyToSubmit({ record }: Context): Record<string, unknown> {
   return { approverId: MANAGERS[record.applicantId] ?? FINANCE_DIRECTOR };
 }
 
-function reasonRequired(input: Record<string, unknown>): InputProblem[] {
+export function reasonRequired(input: Record<string, unknown>): InputProblem[] {
   return typeof input.reason === 'string' && input.reason.trim()
     ? []
     : [{ field: 'reason', message: 'Give a reason.' }];
@@ -116,6 +116,9 @@ function reasonRequired(input: Record<string, unknown>): InputProblem[] {
 export const expenseLifecycle: Lifecycle<ExpenseTypes> =
   defineLifecycle<ExpenseTypes>({
     name: 'expenses',
+    key: 'expenses',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.expenses,
     initial: 'draft',
     // Anyone may not file a report: an employee files their own.
@@ -138,9 +141,8 @@ export const expenseLifecycle: Lifecycle<ExpenseTypes> =
       { name: 'paid', final: true },
     ],
     // A real approval escalates after days; the example after minutes.
+    dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      readMode: 'snapshot',
-      snapshotTransition: 'submit',
       groups: [expenseParameterGroup, expenseTimingGroup],
     },
     parameters: {

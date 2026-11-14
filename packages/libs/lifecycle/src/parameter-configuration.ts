@@ -3,7 +3,6 @@ import { createHash } from 'node:crypto';
 import type { LifecycleStore } from './store.js';
 import type { JsonObject, JsonValue, LifecycleRecord } from './types.js';
 
-export type ParameterReadMode = 'snapshot' | 'live';
 export interface ParameterBinding {
   readonly state?: string;
   readonly transition?: string;
@@ -16,7 +15,6 @@ export interface ReviewerSelection {
 export interface ConfigurableParameter {
   readonly type: 'number' | 'string' | 'boolean' | 'object' | 'reviewers';
   readonly title: string;
-  readonly readMode?: ParameterReadMode;
   readonly bindings?: readonly ParameterBinding[];
   readonly minimum?: number;
   readonly maximum?: number;
@@ -30,27 +28,28 @@ export interface ParameterGroup {
   readonly fields: Readonly<Record<string, ConfigurableParameter>>;
   /** Cross-field validation over the complete version. */
   readonly validate?: (values: JsonObject) => void;
-  /** Fields whose joint constraint requires the same effective reading mode. */
-  readonly sameReadMode?: readonly (readonly string[])[];
 }
 export interface ParameterConfigurationDefinition {
-  readonly readMode?: ParameterReadMode;
-  readonly snapshotTransition?: string;
   readonly groups: readonly ParameterGroup[];
 }
 export interface ParameterSource {
   readonly group: string;
   readonly revision: number;
   readonly schemaVersion: number;
-  readonly origin: 'default' | 'configuration';
-  readonly readMode: ParameterReadMode;
+  readonly origin: 'default' | 'configuration' | 'recovered';
 }
 export interface ParameterResolution {
+  readonly revision: number;
   readonly scope: string;
   readonly values: JsonObject;
   readonly sources: Readonly<Record<string, ParameterSource>>;
 }
 export interface ParameterSnapshot extends ParameterResolution {
+  readonly recoveredFrom?: {
+    readonly transitionId: string;
+    readonly usageId?: string;
+    readonly groupRevisions?: Readonly<Record<string, number>>;
+  };
   readonly lifecycle: string;
   readonly recordId: string;
   readonly at: string;
@@ -86,6 +85,8 @@ export type ParameterConfigurationErrorCode =
   | 'CONFIGURATION_INVALID'
   | 'CONFIGURATION_INCOMPATIBLE'
   | 'CONFIGURATION_REQUEST_REUSED'
+  | 'PARAMETER_SNAPSHOT_MISSING'
+  | 'PARAMETER_SNAPSHOT_INVALID'
   | 'PARAMETER_SNAPSHOT_REQUIRED'
   | 'PARAMETER_ATTEMPT_STALE';
 export class ParameterConfigurationError extends Error {
@@ -99,6 +100,12 @@ export class ParameterConfigurationError extends Error {
 }
 /** Optional capability: unconfigured runtimes never require these collections. */
 export interface LifecycleParameterStore {
+  /** Reads one immutable, complete revision for this definition version. */
+  readConfiguration(
+    scope: string,
+    lifecycle: string,
+    transaction?: unknown,
+  ): Promise<ParameterVersion | undefined>;
   read(
     scope: string,
     group: string,
@@ -108,6 +115,12 @@ export interface LifecycleParameterStore {
     input: SaveParameterVersion,
     transaction?: unknown,
   ): Promise<ParameterVersion>;
+  snapshots(
+    scope: string,
+    lifecycle: string,
+    recordIds: readonly string[],
+    transaction?: unknown,
+  ): Promise<ReadonlyMap<string, ParameterSnapshot>>;
   snapshot(
     scope: string,
     lifecycle: string,
@@ -203,7 +216,7 @@ export function normalizeParameterValues(
   }
   return normalized;
 }
-function canonical(value: JsonValue): string {
+export function canonical(value: JsonValue): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   return `{${Object.keys(value)
@@ -214,7 +227,7 @@ function canonical(value: JsonValue): string {
 function stored<T>(record: LifecycleRecord | undefined): T | undefined {
   return record ? (structuredClone(record.payload) as T) : undefined;
 }
-function isUniqueConflict(error: unknown): boolean {
+export function isUniqueConflict(error: unknown): boolean {
   const seen = new Set<object>();
   let current = error;
   while (current && typeof current === 'object' && !seen.has(current)) {
@@ -223,6 +236,7 @@ function isUniqueConflict(error: unknown): boolean {
     const number = item.errno ?? item.number ?? item.errorNum;
     if (
       [
+        'UNIQUE_CONFLICT',
         '23505',
         'ER_DUP_ENTRY',
         'SQLITE_CONSTRAINT',
@@ -301,6 +315,13 @@ export class StoredLifecycleParameters implements LifecycleParameterStore {
       values[field] = selections;
     }
     return { ...version, values };
+  }
+  public readConfiguration(
+    scope: string,
+    lifecycle: string,
+    transaction?: unknown,
+  ): Promise<ParameterVersion | undefined> {
+    return this.read(scope, lifecycle, transaction);
   }
   public read(
     scope: string,
@@ -478,6 +499,25 @@ export class StoredLifecycleParameters implements LifecycleParameterStore {
       return version;
     });
   }
+  public snapshots(
+    scope: string,
+    lifecycle: string,
+    recordIds: readonly string[],
+    transaction?: unknown,
+  ): Promise<ReadonlyMap<string, ParameterSnapshot>> {
+    return this.transaction(transaction, async (store) => {
+      const rows = await store.findRecords(
+        this.collections.snapshots,
+        recordIds.map((id) => parameterIdentity(scope, lifecycle, id)),
+      );
+      return new Map(
+        rows.map((row) => {
+          const snapshot = stored<ParameterSnapshot>(row)!;
+          return [snapshot.recordId, snapshot];
+        }),
+      );
+    });
+  }
   public snapshot(
     scope: string,
     lifecycle: string,
@@ -611,4 +651,28 @@ export class StoredLifecycleParameters implements LifecycleParameterStore {
       });
     });
   }
+}
+
+/** A single revision covers all groups of one definition; groups are presentation only. */
+export function configurationGroup(
+  lifecycle: string,
+  groups: readonly ParameterGroup[],
+): ParameterGroup {
+  return {
+    key: lifecycle,
+    title: lifecycle,
+    schemaVersion: 1,
+    fields: Object.fromEntries(
+      groups.flatMap((group) => Object.entries(group.fields)),
+    ),
+    validate(values) {
+      for (const group of groups)
+        normalizeParameterValues(
+          group,
+          Object.fromEntries(
+            Object.keys(group.fields).map((key) => [key, values[key]]),
+          ),
+        );
+    },
+  };
 }

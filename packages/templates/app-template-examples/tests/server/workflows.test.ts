@@ -1,3 +1,5 @@
+import { parameterIdentity } from '@nocobase/lifecycle';
+import { databaseManagerToken } from '@nocobase/db';
 import type { OfficeWorkflowParameters } from '@nocobase/app-plugin-office-flows-example/client';
 import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 import {
@@ -33,7 +35,7 @@ describe('workflow management through the registered application routes', () => 
   }) => {
     const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
     const endpoint = (name: string) =>
-      `/workflows/definitions/lifecycle.${name}/parameters`;
+      `/workflows/definitions/lifecycle.${name}/parameters?version=1`;
     const save = (name: string, values: unknown) =>
       session.fetch(endpoint(name), {
         method: 'PUT',
@@ -43,6 +45,7 @@ describe('workflow management through the registered application routes', () => 
         },
         body: JSON.stringify({
           kind: 'lifecycle',
+          definition: name,
           values,
           expectedRevision: 0,
           requestId: `save-${name}`,
@@ -81,12 +84,110 @@ describe('workflow management through the registered application routes', () => 
     ).toMatchObject({ paymentWindowMinutes: 9 });
   });
 
+  test('requires a concrete parameter version and rejects a cross-version draft', async ({
+    testApp,
+  }) => {
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    expect(
+      (
+        await session.fetch(
+          '/workflows/definitions/lifecycle.expenses/parameters',
+        )
+      ).status,
+    ).toBe(400);
+    const response = await session.fetch(
+      '/workflows/definitions/lifecycle.expenses/parameters?version=2',
+      {
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+        },
+        body: JSON.stringify({
+          kind: 'lifecycle',
+          definition: 'expenses',
+          values: {},
+          expectedRevision: 0,
+          requestId: 'wrong-target',
+        }),
+      },
+    );
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: { reason: 'PARAMETER_DEFINITION_MISMATCH' },
+    });
+  });
+
+  test('reads an existing execution graph from its snapshot when current configuration is invalid', async ({
+    testApp,
+  }) => {
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const service = testApp.application.container.resolve(
+      lifecycleExampleServiceToken,
+    );
+    const ticket = await service.createTicket(
+      {
+        subject: 'Snapshot',
+        description: 'Original values',
+        category: 'account',
+        priority: 'high',
+        failNotifications: 0,
+      },
+      'customer-li',
+    );
+    const database =
+      testApp.application.container.resolve(databaseManagerToken);
+    const previous = await database
+      .repository('lifecycleExampleWorkflowParameters')
+      .findOne({ filter: { id: 'lifecycle.tickets' } });
+    const recordId = String(ticket.id);
+    try {
+      await database
+        .repository('lifecycleExampleWorkflowParameters')
+        .updateMany({
+          filter: { id: 'lifecycle.tickets' },
+          values: { values: { waitMinutes: 'invalid current value' } },
+        });
+      const response = await session.fetch(
+        `/workflows/executions/lifecycle.tickets/${recordId}`,
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        data: {
+          parameters: { waitMinutes: 2 },
+          view: { parameterValues: { waitMinutes: 2 } },
+        },
+      });
+    } finally {
+      await database
+        .repository('lifecycleExampleWorkflowParameters')
+        .updateMany({
+          filter: { id: 'lifecycle.tickets' },
+          values: { values: previous!.values },
+        });
+      await database
+        .repository('lifecycleExampleTickets')
+        .deleteMany({ filter: { id: Number(recordId) } });
+      await database
+        .repository('lifecycleExampleTransitions')
+        .deleteMany({ filter: { lifecycle: 'tickets', recordId } });
+      await database
+        .repository('lifecycleExampleParameterSnapshots')
+        .deleteMany({
+          filter: { id: parameterIdentity('demo', 'tickets', recordId) },
+        });
+      await database.repository('lifecycleExampleParameterUsages').deleteMany({
+        filter: { recordKey: parameterIdentity('demo', 'tickets', recordId) },
+      });
+    }
+  });
+
   test('updates shared office departments through the parameter API and rejects stale or invalid writes', async ({
     testApp,
     request,
   }) => {
     const endpoint = (name: string) =>
-      `/workflows/definitions/office.${name}/parameters`;
+      `/workflows/definitions/office.${name}/parameters?version=1`;
     expect((await request(endpoint('teamTasks'))).status).toBe(401);
     const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
     const read = async (name: string) =>
@@ -101,6 +202,7 @@ describe('workflow management through the registered application routes', () => 
     );
     const input = {
       kind: 'office',
+      definition: 'teamTasks',
       values: team.values,
       expectedRevision: team.revision,
       organization: {
@@ -141,8 +243,8 @@ describe('workflow management through the registered application routes', () => 
     request,
   }) => {
     for (const path of [
-      '/workflows/definitions/lifecycle.expenses/parameters',
-      '/workflows/definitions/office.teamTasks/parameters',
+      '/workflows/definitions/lifecycle.expenses/parameters?version=1',
+      '/workflows/definitions/office.teamTasks/parameters?version=1',
       '/workflows/definitions',
       '/workflows/definitions/invalid',
       '/workflows/executions?page=bad',
@@ -177,7 +279,12 @@ describe('workflow management through the registered application routes', () => 
       const definition = (
         (await response.json()) as { data: WorkflowDefinition }
       ).data;
-      expect(definition.description.name).toBe(workflow.name);
+      // The process is listed once, described by its latest version.
+      expect(workflow.versions.at(-1)).toEqual({
+        name: definition.definition.name,
+        version: workflow.version,
+      });
+      expect(definition.description.name).toBe(definition.definition.name);
       expect(definition.description.states).toHaveLength(workflow.states);
       expect(definition.description.transitions).toHaveLength(
         workflow.transitions,
@@ -226,8 +333,8 @@ describe('workflow management through the registered application routes', () => 
     expect(registered.status).toBe(200);
     const member = await signIn(testApp, credentials);
     for (const path of [
-      '/workflows/definitions/lifecycle.expenses/parameters',
-      '/workflows/definitions/office.teamTasks/parameters',
+      '/workflows/definitions/lifecycle.expenses/parameters?version=1',
+      '/workflows/definitions/office.teamTasks/parameters?version=1',
       '/workflows/definitions',
       '/workflows/categories',
       '/workflows/executions?page=bad',
@@ -264,14 +371,14 @@ describe('workflow management through the registered application routes', () => 
     expect(
       (
         await member.fetch(
-          '/workflows/definitions/lifecycle.expenses/parameters',
+          '/workflows/definitions/lifecycle.expenses/parameters?version=1',
         )
       ).status,
     ).toBe(200);
     expect(
       (
         await member.fetch(
-          '/workflows/definitions/lifecycle.expenses/parameters',
+          '/workflows/definitions/lifecycle.expenses/parameters?version=1',
           {
             method: 'PUT',
             headers: input.headers,
@@ -283,7 +390,7 @@ describe('workflow management through the registered application routes', () => 
     expect(
       (
         await member.fetch(
-          '/workflows/definitions/office.teamTasks/parameters',
+          '/workflows/definitions/office.teamTasks/parameters?version=1',
           { method: 'PUT', headers: input.headers, body: JSON.stringify({}) },
         )
       ).status,
@@ -594,5 +701,145 @@ describe('workflow management through the registered application routes', () => 
     expect(
       detail.description.parameterConfiguration?.groups.length,
     ).toBeGreaterThan(0);
+  });
+  test('lists two versions of one process once and tells their records apart by binding', async ({
+    testApp,
+  }) => {
+    const runtime = testApp.application.container.resolve(
+      lifecycleExampleServiceToken,
+    ).runtime;
+    const values = {
+      applicantId: 'lin',
+      title: 'Travel expense',
+      purpose: 'Customer visit',
+      parameterContract: 1,
+      amountCents: 1000000,
+      items: [
+        {
+          category: 'transport',
+          description: 'Travel',
+          amountCents: 1000000,
+          date: '2026-01-01',
+        },
+      ],
+      approverId: null,
+      failPayments: 0,
+    };
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const read = async <T>(path: string) => {
+      const response = await session.fetch(path);
+      return { status: response.status, body: (await response.json()) as T };
+    };
+    // Earlier tests in this file leave first-version records behind.
+    const before = (
+      await read<{ data: WorkflowDefinition }>(
+        '/workflows/definitions/lifecycle.expenses?version=1',
+      )
+    ).body.data.definition.executionCount;
+    const created: Record<string, string> = {};
+    for (const [index, name] of [
+      'expenses',
+      'expenses-v2',
+      'expenses-v2',
+    ].entries()) {
+      const { record } = await runtime.create(
+        name,
+        {
+          ...values,
+          createdAt: new Date(Date.UTC(2027, 0, 1, 0, index)).toISOString(),
+        },
+        { actor: { id: 'lin' } },
+      );
+      created[index] = String(record.id);
+    }
+    const catalog = await read<{ data: WorkflowSummary[] }>(
+      '/workflows/definitions?q=expenses-v2',
+    );
+    // A version's own name finds its process, listed once with every
+    // version's records.
+    expect(catalog.body.data).toHaveLength(1);
+    expect(catalog.body.data[0]).toMatchObject({
+      id: 'lifecycle.expenses',
+      name: 'expenses',
+      version: 2,
+      versions: [
+        { name: 'expenses', version: 1 },
+        { name: 'expenses-v2', version: 2 },
+      ],
+      executionCount: before + 3,
+    });
+    const latest = await read<{ data: WorkflowDefinition }>(
+      '/workflows/definitions/lifecycle.expenses',
+    );
+    expect(latest.body.data.definition).toEqual({
+      name: 'expenses-v2',
+      version: 2,
+      executionCount: 2,
+    });
+    expect(latest.body.data.description.states).toContain('awaitingAudit');
+    const first = await read<{ data: WorkflowDefinition }>(
+      '/workflows/definitions/lifecycle.expenses?version=1',
+    );
+    expect(first.body.data.definition).toEqual({
+      name: 'expenses',
+      version: 1,
+      executionCount: before + 1,
+    });
+    expect(first.body.data.description.states).not.toContain('awaitingAudit');
+    expect(first.body.data.workflow.executionCount).toBe(before + 3);
+    // A link from before the process had versions names one version.
+    const legacy = await read<{ data: WorkflowDefinition }>(
+      '/workflows/definitions/lifecycle.expenses-v2',
+    );
+    expect(legacy.body.data.workflow.id).toBe('lifecycle.expenses');
+    expect(legacy.body.data.definition.name).toBe('expenses-v2');
+    expect(
+      (await read('/workflows/definitions/lifecycle.expenses?version=3'))
+        .status,
+    ).toBe(404);
+    const page = (query: string) =>
+      read<WorkflowExecutionPage>(
+        `/workflows/executions?workflowId=lifecycle.expenses${query}`,
+      );
+    const all = await page('');
+    expect(all.body.meta.total).toBe(before + 3);
+    expect(
+      all.body.data
+        .slice(0, 3)
+        .map(({ recordId, definition, version }) => [
+          recordId,
+          definition,
+          version,
+        ]),
+    ).toEqual([
+      [created[2], 'expenses-v2', 2],
+      [created[1], 'expenses-v2', 2],
+      [created[0], 'expenses', 1],
+    ]);
+    const onlyFirst = await page('&version=1');
+    expect(onlyFirst.body.meta.total).toBe(before + 1);
+    expect(onlyFirst.body.data[0].recordId).toBe(created[0]);
+    expect(onlyFirst.body.data.every(({ version }) => version === 1)).toBe(
+      true,
+    );
+    const onlySecond = await page('&version=2');
+    expect(onlySecond.body.meta.total).toBe(2);
+    expect(onlySecond.body.data.map(({ recordId }) => recordId)).toEqual([
+      created[2],
+      created[1],
+    ]);
+    expect((await page('&version=3')).status).toBe(404);
+    expect((await read('/workflows/executions?version=1')).status).toBe(400);
+    // Each record opens with the version it is bound to, not the latest.
+    const v1 = await read<{ data: WorkflowExecutionDetail }>(
+      `/workflows/executions/lifecycle.expenses/${created[0]}`,
+    );
+    expect(v1.body.data.definition.name).toBe('expenses');
+    expect(v1.body.data.description.name).toBe('expenses');
+    const v2 = await read<{ data: WorkflowExecutionDetail }>(
+      `/workflows/executions/lifecycle.expenses/${created[1]}`,
+    );
+    expect(v2.body.data.definition.name).toBe('expenses-v2');
+    expect(v2.body.data.description.name).toBe('expenses-v2');
   });
 });

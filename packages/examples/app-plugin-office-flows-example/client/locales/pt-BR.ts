@@ -87,6 +87,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Dados de demonstração que os processos leem: as pessoas que uma linha de departamento traz, grupos de gerenciamento e o calendário de feriados de 2026.',
   },
   common: {
+    parameterSnapshot: 'Snapshot de parâmetros da criação',
     created: 'Criado',
     actAs: 'Agir como',
     save: 'Salvar',

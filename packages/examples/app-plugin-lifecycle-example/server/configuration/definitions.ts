@@ -28,12 +28,29 @@ export const expenseParameterGroup: ParameterGroup = {
       bindings: [{ state: 'awaitingManager' }],
     },
   },
-  sameReadMode: [['autoApproveLimit', 'financeLimit']],
   validate: (values) => {
     if (Number(values.autoApproveLimit) > Number(values.financeLimit))
       throw new Error(
         'The automatic approval limit cannot exceed the finance limit.',
       );
+  },
+};
+/**
+ * A group of its own for what the second expense version adds: the groups
+ * the first version uses are shared by both and stay exactly as they are.
+ */
+export const expenseAuditGroup: ParameterGroup = {
+  key: 'expenseAudit',
+  title: 'Expense audit',
+  schemaVersion: 1,
+  fields: {
+    auditLimit: {
+      type: 'number',
+      title: 'Audit limit (yuan)',
+      minimum: 0,
+      parse: (value) => z.number().finite().min(0).parse(value),
+      bindings: [{ state: 'awaitingAudit' }],
+    },
   },
 };
 export const ticketParameterGroup: ParameterGroup = {
@@ -44,7 +61,7 @@ export const ticketParameterGroup: ParameterGroup = {
     reopenDays: {
       type: 'number',
       title: 'Reopen window (days)',
-      readMode: 'live',
+
       minimum: 0,
       maximum: 365,
       parse: (value) => z.number().finite().min(0).max(365).parse(value),
@@ -60,7 +77,7 @@ export const notificationParameterGroup: ParameterGroup = {
     notificationPrefix: {
       type: 'string',
       title: 'Notification prefix',
-      readMode: 'live',
+
       parse: (value) => z.string().max(200).parse(value),
       bindings: [{ state: 'awaitingCustomer' }, { transition: 'reply' }],
     },
@@ -96,7 +113,7 @@ function timingGroup(
         {
           type: 'number',
           title: label,
-          readMode: 'live',
+
           bindings: [{ state: states[name] }],
           minimum: 1,
           parse: (value: unknown) =>

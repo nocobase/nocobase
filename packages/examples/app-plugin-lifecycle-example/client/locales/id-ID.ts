@@ -20,53 +20,53 @@ const idID: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Batas waktu pembayaran (menit)',
         description:
-          'Batalkan pesanan yang belum dibayar setelah penantian ini. Perubahan berlaku pada waktu pembayaran yang baru dijadwalkan; pengatur waktu yang ada menjaga waktu jatuh temponya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       escalateAfterMinutes: {
         title: 'Batas waktu peninjauan manajer (menit)',
         description:
-          'Tingkatkan peninjauan manajer yang tertunda setelah penantian ini. Perubahan berlaku pada waktu peninjauan yang baru dijadwalkan; pengatur waktu yang ada menjaga waktu jatuh temponya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       waitMinutes: {
         title: 'Batas waktu balasan pelanggan (menit)',
         description:
-          'Tutup tiket jika pelanggan tidak membalas dalam waktu tunggu ini. Perubahan berlaku untuk pengatur waktu yang baru dijadwalkan; pengatur waktu yang ada menjaga waktu jatuh temponya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       querySeconds: {
         title: 'Penundaan permintaan status faktur (detik)',
         description:
-          'Tanyakan kepada penyedia faktur jika tidak ada panggilan balik dalam waktu tunggu ini. Perubahan berlaku untuk kueri yang baru dijadwalkan; kueri yang ada mempertahankan waktunya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       pollSeconds: {
         title: 'Interval pemeriksaan kemajuan ekspor (detik)',
         description:
-          'Tunggu selama ini sebelum memeriksa ekspor yang sedang berlangsung. Perubahan berlaku untuk pemeriksaan yang baru dijadwalkan; cek yang ada tetap sesuai dengan waktunya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       maxMinutes: {
         title: 'Batas waktu penyelesaian ekspor (menit)',
         description:
-          'Tetapkan batas waktu penyelesaian saat tugas ekspor dimulai. Pekerjaan yang belum selesai akan habis waktunya pada tenggat waktu tersebut. Perubahan tidak menggeser tenggat waktu pekerjaan yang ada.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       periodMinutes: {
         title: 'Periode perpanjangan langganan (menit)',
         description:
-          'Gunakan durasi ini untuk menghitung akhir periode baru setelah tagihan berhasil. Perubahan berlaku setelah tagihan berikutnya berhasil; akhir periode saat ini tetap.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       dunningMinutes: {
         title:
           'Interval percobaan ulang pembayaran perpanjangan yang gagal (menit)',
         description:
-          'Tunggu selama ini sebelum mencoba kembali pembayaran perpanjangan yang gagal. Perubahan berlaku pada percobaan ulang yang baru dijadwalkan; percobaan ulang yang ada mempertahankan waktu jatuh temponya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       maxDunning: {
         title: 'Batas kegagalan pembayaran pembaruan',
         description:
-          'Batalkan langganan pada percobaan ulang otomatis berikutnya jika jumlah pembayaran yang gagal telah mencapai batas ini. Perubahan berlaku pada keputusan percobaan ulang berikutnya.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
       reopenDays: {
         title: 'Batas waktu pembukaan kembali tiket (hari)',
         description:
-          'Izinkan pembukaan kembali dalam beberapa hari setelah tiket ditutup; jika tidak, diperlukan tiket baru. Setiap permintaan pembukaan kembali menggunakan pengaturan terbaru.',
+          'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
       },
     },
     loading: 'Memuat parameter…',
@@ -74,7 +74,7 @@ const idID: LocaleResource<typeof enUS> = {
     description:
       'Ubah hanya nilai yang dideklarasikan kode. Struktur alur kerja, keputusan, dan batas waktu tetap dalam kode.',
     ruleExplanation:
-      'Semua kondisi dalam satu grup harus sesuai. Grup terpisah ditambahkan bersama. Tempatkan pengguna alternatif dalam grup terpisah.',
+      'Semua kondisi dalam satu grup harus sesuai. Grup terpisah ditambahkan bersama. Tempatkan pengguna alternatif dalam grup terpisah. Referensi yang dipilih tetap; anggota saat ini dan kelayakannya ditentukan saat eksekusi.',
     allConditions: 'Cocokkan semua kondisi ini',
     alsoInclude: 'Sertakan juga',
     selectionType: 'Jenis pemilihan',
@@ -90,9 +90,7 @@ const idID: LocaleResource<typeof enUS> = {
     codeDefaults: 'Kode default',
     databaseVersion: 'Konfigurasi tersimpan',
     snapshotEffect:
-      'Cuplikan: diperbaiki pada pengiriman pertama; disimpan setelah pengembalian atau penarikan',
-    liveEffect:
-      'Pembacaan parameter di masa mendatang menggunakan konfigurasi terbaru; pengatur waktu dan tenggat waktu yang ada tetap.',
+      'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
     yes: 'Ya',
     no: 'Tidak',
     invalidObject: 'Masukkan objek JSON yang valid.',
@@ -110,10 +108,9 @@ const idID: LocaleResource<typeof enUS> = {
       'Tidak ada kandidat yang memenuhi syarat; pengajuan akan ditolak.',
     editCurrent: 'Edit konfigurasi saat ini',
     historyBoundary:
-      'Ini mengedit konfigurasi saat ini. Fakta sejarah dan kandidat yang ditugaskan tetap tidak berubah.',
+      'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
     history: 'Penggunaan parameter sebenarnya',
-    effectivePreview: 'Nilai efektif untuk catatan ini sekarang',
-    firstSnapshot: 'Cuplikan pengiriman pertama',
+    firstSnapshot: 'Snapshot parameter saat pembuatan',
     notRecorded: 'Tidak tercatat',
     diagramEntry: 'Entri diagram opsional',
     diagramHint:
@@ -334,10 +331,12 @@ const idID: LocaleResource<typeof enUS> = {
       entertainment: 'Hiburan klien',
       other: 'Lainnya',
     },
+    allStates: 'Semua status',
     steps: {
       submit: 'Dikirim',
       manager: 'Manajer',
       finance: 'Keuangan',
+      audit: 'Audit',
       payment: 'Dibayar',
     },
     meta: {
@@ -1002,6 +1001,7 @@ const idID: LocaleResource<typeof enUS> = {
     draft: 'Draf',
     awaitingManager: 'Menunggu manajer',
     awaitingFinance: 'Menunggu keuangan',
+    awaitingAudit: 'Menunggu audit',
     needsInfo: 'Dikirim kembali',
     approved: 'Disetujui',
     rejected: 'Ditolak',
@@ -1086,6 +1086,7 @@ const idID: LocaleResource<typeof enUS> = {
     reopen: 'Buka kembali',
     submit: 'Kirim',
     approve: 'Setujui',
+    audit: 'Lulus audit',
     reject: 'Tolak',
     requestInfo: 'Kirim kembali',
     resubmit: 'Kirim ulang',

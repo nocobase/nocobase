@@ -2,7 +2,7 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
-Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, snapshot/live reads and shared configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, atomic creation snapshots and version-specific configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
 
 ## Approval requests: check the Pro plugin first
 
@@ -45,6 +45,7 @@ The business record's page may show a diagram, state/actions/history, or a compa
 6. **Guards are business rules, not permissions.** Routes still authenticate and authorize: at least `read`, `fire` and `operate`, ahead of the validators.
 7. **Inside a transaction, go through `tx`.** In `onTransition`, `onEnterState`, `onLeaveState` or `runtime.transaction()`, call `tx.fire()` / `tx.create()` or pass `transaction: context.transactionHandle`. A bare `runtime.fire()` there hangs forever on SQLite and commits separately on PostgreSQL or MySQL.
 8. **Services that read other tables are a factory bound to the transaction:** `services: (handle) => ({ … })`. Reading through the database manager from a guard deadlocks on SQLite.
+9. **A record runs the definition that created it.** Every definition declares `key`, `version` and `definitionField`; `runtime.create()` writes the definition's name into that field, and nothing else ever writes it. A change to what a process does is a new version beside the old one, as [versions of a process](lifecycle-versions.md) describes; never edit a definition records already run.
 
 ## Where the files go
 
@@ -119,6 +120,9 @@ const approverOnly = ({ record, actor }: TransitionContext<LeaveTypes>) =>
 export const leaveLifecycle: Lifecycle<LeaveTypes> =
   defineLifecycle<LeaveTypes>({
     name: 'leaves', // also the default collection name; stored in the log: never rename
+    key: 'leaves', // the process all versions of this definition belong to
+    version: 1, // the next version of this key is a new definition with version 2
+    definitionField: 'lifecycleDefinition', // the record field runtime.create() binds
     initial: 'draft',
     states: [
       'draft',
@@ -202,7 +206,8 @@ The record table needs, besides its business fields:
 
 - the state field, `status` by default, `string` not null;
 - `statusChangedAt`, `datetimeTz` not null;
-- `lifecycleVersion`, `integer` not null, default `0`;
+- `lifecycleVersion`, `integer` not null, default `0`; it orders concurrent changes of one record and is not the definition's version;
+- the definition field, `lifecycleDefinition` here, `string` and nullable: `runtime.create()` writes the definition's name, and a record no process has started leaves it empty. A record carrying two lifecycles, say an approval and a payment, has one such field per lifecycle (`approvalDefinition`, `paymentDefinition`);
 - an index on `(status, statusChangedAt)`, which the trigger sweep reads.
 
 The two log tables, created once for every lifecycle in the application:
@@ -320,7 +325,7 @@ The library ships no routes. Write them in `server/routes/` like every other `/a
 | `POST <lifecycle>/{id}/effectRuns/{runId}/continue`                                  | the record view                           |
 | `POST <lifecycle>/{id}/effectRuns/{runId}/cancel`                                    | the record view                           |
 
-Lists and creation are ordinary routes of the application; creation calls `runtime.create(name, values, { actor })`. The fire route passes `manual: true`, so a transition marked `manual: false` is refused with `NOT_MANUAL`:
+Lists and creation are ordinary routes of the application; creation calls `runtime.create(name, values, { actor })` with the definition this entry starts. `<lifecycle>` in these paths is the process's key: the page never names a version. Each record route first asks `runtime.boundLifecycle(key, id)` which definition the record is bound to and calls the runtime with that name, so one page serves the records of every version; a list or a route that has read the record already uses `runtime.recordLifecycle(key, record)`. The description route takes an optional `?definition=<name>` and describes the latest version without one. A record no version started is refused with `DEFINITION_MISMATCH`, which `lifecycleErrorFields()` maps to `400 FAILED_PRECONDITION`; never fall back to the latest version. The fire route passes `manual: true`, so a transition marked `manual: false` is refused with `NOT_MANUAL`:
 
 ```ts
 import { ApiError, apiErrorHandler } from '@nocobase/app-server/router';
@@ -338,7 +343,9 @@ router.onError((error, c) => apiErrorHandler(toApiError(error), c));
 // inside the POST /leaves/:leaveId/fire handler, after auth, authorization and validators:
 const actor = { id: String(signedInUserId) };
 try {
-  const result = await runtime.fire('leaves', leaveId, body.transition, {
+  // The version this record runs, whichever is the latest.
+  const name = await runtime.boundLifecycle('leaves', leaveId);
+  const result = await runtime.fire(name, leaveId, body.transition, {
     actor,
     manual: true,
     input: body.input,
@@ -347,7 +354,7 @@ try {
       ? {}
       : { expect: { version: body.expectVersion } }),
   });
-  const view = await runtime.view('leaves', leaveId, actor);
+  const view = await runtime.view(name, leaveId, actor);
   return c.json({ data: { ...view, replayed: result.replayed === true } });
 } catch (error) {
   throw toApiError(error, 'input'); // field problems are reported under `input`
@@ -432,12 +439,15 @@ it('expires a request nobody handles', async () => {
 - Every external call receives `idempotencyKey`, or the business fact's own key.
 - `prune()` runs in `onSweep`.
 - Routes authorize read, fire and operate separately; guards are not the only check.
-- No code outside the runtime writes the state, `statusChangedAt` or `lifecycleVersion`. An edit that a transition must not race, such as changing an amount a guard reads, may only increment `lifecycleVersion` conditionally on the version it read.
+- Every definition declares `key`, `version` and `definitionField`, the record table has the definition field, and record routes resolve the definition through `boundLifecycle()`.
+- No code outside the runtime writes the state, `statusChangedAt`, `lifecycleVersion` or the definition field. An edit that a transition must not race, such as changing an amount a guard reads, may only increment `lifecycleVersion` conditionally on the version it read.
 - Effect runs that are `failed`, `dead`, or hold a waiting or abandoned continuation are visible to an operator: `listEffectRuns({ status: 'failed' })`, `listEffectRuns({ continuationPending: true })`, `listEffectRuns({ continuationAbandoned: true })`.
 
-## Changing a definition in production
+## Changing a definition
 
-States, transition, lifecycle and effect names are stored in the database. Adding states, transitions, triggers or effects and changing guard or `set` logic is safe. Renaming or removing a state takes three releases: add the new state and a system-only transition from the old one, fire it on every record in the old state, then remove the old state. Keep a removed or renamed effect registered until no run under its name is queued or running. Never rename a lifecycle. Renaming the state, timestamp or version field needs a migration in the same release.
+A change to what a process does — its states, transitions, guards, `route`, `set`, `accept`, hooks, triggers or effects — is a new version: a new definition with the same `key` and the next `version`, registered beside the one existing records run. Every registered version is equal, and records may already run any of them. Follow [versions of a process](lifecycle-versions.md): it covers copying a definition, the parameter groups the versions share, which entry points move to the new version and what to list at delivery. A change to titles, descriptions or other display text alone changes no behavior and needs no version.
+
+States, transition, lifecycle and effect names are stored in the database. Never rename a definition. Keep a version registered while any record is bound to it, and keep a removed or renamed effect registered until no run under its name is queued or running. Renaming the state, timestamp, version or definition field needs a migration in the same release.
 
 ## Troubleshooting
 
@@ -475,4 +485,4 @@ Adapt the translation key prefix to the feature.
 
 Preserve the component’s application theme tokens: `--primary` for current, visited and available highlights, subdued neutral strokes for other edges, and card/foreground/border tokens for the canvas and labels. Current nodes use an accent border and ring, visited nodes a subtler accent border, and both retain the upstream textual status and icon so execution state does not rely on color alone. Labels stay on the routes; automatic transitions remain solid and may show `⚙` through `transitionLabel`. Do not introduce a separate palette or hard-coded accent color. Check light/dark themes and a changed application primary color when customizing the rendering.
 
-For narrow layouts, use `initialMinZoom={0.8}` to preserve readable node content, with pan and a full-graph Fit control. Do not add a minimap to standard process pages by default; `showMiniMap` remains opt-in for consumers that need it. `configuration` on LifecycleDiagram automatically exposes declared, authorized bindings through the real editor; `stateActions` (or `nodeActions` on FlowDiagram) adds custom controls; `nodeDescription` adds real policy summaries. Supply enough fixed node height for the content. Definition views show the latest configured policy, while record views identify their submission snapshot. Never invent reviewer names, policy values or execution highlights. Standard business process pages omit system-only technical edit paths without adding a technical display toggle; retain every business approval, rejection, withdrawal and resubmission path. Technical diagnostic views may expose the complete source description separately when explicitly needed.
+For narrow layouts, use `initialMinZoom={0.8}` to preserve readable node content, with pan and a full-graph Fit control. Do not add a minimap to standard process pages by default; `showMiniMap` remains opt-in for consumers that need it. `configuration` on LifecycleDiagram automatically exposes declared, authorized bindings through the real editor; `stateActions` (or `nodeActions` on FlowDiagram) adds custom controls; `nodeDescription` adds real policy summaries. Supply enough fixed node height for the content. Definition views show the latest configured policy, while record views identify their creation snapshot. Never invent reviewer names, policy values or execution highlights. Standard business process pages omit system-only technical edit paths without adding a technical display toggle; retain every business approval, rejection, withdrawal and resubmission path. Technical diagnostic views may expose the complete source description separately when explicitly needed.

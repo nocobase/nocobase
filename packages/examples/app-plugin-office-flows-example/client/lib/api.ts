@@ -51,6 +51,7 @@ export interface Trace {
 }
 
 export interface RecordView {
+  readonly parameterSnapshot?: object | null;
   readonly record: Plain;
   readonly description: Description;
   readonly available: readonly Available[];

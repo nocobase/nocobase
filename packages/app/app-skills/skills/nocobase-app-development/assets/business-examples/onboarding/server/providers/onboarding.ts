@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseConnection, Row, FilterBuilder } from '@nocobase/db';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
-import type { LifecycleRuntime } from '@nocobase/lifecycle';
+import type { LifecycleRecord, LifecycleRuntime } from '@nocobase/lifecycle';
 import { ApiError } from '@nocobase/app-server/router';
 import {
   ONBOARDING_ACCESS,
@@ -160,7 +160,12 @@ export class OnboardingService {
             .repository('onboardingEmployees')
             .findOne({ filter: { caseId: id } })
         : null,
-      this.runtime.view('onboarding', id, { id: actor.id }),
+      // The version the case is bound to, whichever is the latest.
+      this.runtime.view(
+        this.runtime.recordLifecycle('onboarding', row as LifecycleRecord),
+        id,
+        { id: actor.id },
+      ),
     ]);
     const editable =
       actor.coordinate &&
@@ -345,13 +350,18 @@ export class OnboardingService {
           );
         await this.validateDepartment(parsed.data.departmentId, actor, tx);
         // Native lifecycle version checks serialize edits/submissions of this case.
-        await this.runtime.fire('onboarding', id, 'submit', {
-          actor: { id: actor.id },
-          manual: true,
-          expect: { version },
-          requestId: key,
-          transaction: tx,
-        });
+        await this.runtime.fire(
+          this.runtime.recordLifecycle('onboarding', row as LifecycleRecord),
+          id,
+          'submit',
+          {
+            actor: { id: actor.id },
+            manual: true,
+            expect: { version },
+            requestId: key,
+            transaction: tx,
+          },
+        );
         email = parsed.data.workEmail;
         if (
           await tx

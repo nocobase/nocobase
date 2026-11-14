@@ -20,53 +20,53 @@ const deDE: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Zahlungs-Timeout (Minuten)',
         description:
-          'Stornieren Sie eine unbezahlte Bestellung nach dieser Wartezeit. Änderungen gelten für neu geplante Zahlungszeitpläne; Vorhandene Timer behalten ihre Zeit.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       escalateAfterMinutes: {
         title: 'Zeitüberschreitung der Managerüberprüfung (Minuten)',
         description:
-          'Eskalieren Sie eine ausstehende Managerüberprüfung nach dieser Wartezeit. Änderungen gelten für neu geplante Überprüfungstimer; Vorhandene Timer behalten ihre Zeit.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       waitMinutes: {
         title: 'Zeitüberschreitung der Kundenantwort (Minuten)',
         description:
-          'Schließen Sie ein Ticket, wenn der Kunde innerhalb dieser Wartezeit nicht antwortet. Änderungen gelten für neu geplante Timer; Vorhandene Timer behalten ihre Zeit.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       querySeconds: {
         title: 'Verzögerung der Rechnungsstatusabfrage (Sekunden)',
         description:
-          'Fragen Sie den Rechnungsanbieter ab, wenn innerhalb dieser Wartezeit kein Rückruf eintrifft. Änderungen gelten für neu geplante Abfragen; Bestehende Abfragen behalten ihre Zeit.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       pollSeconds: {
         title: 'Prüfintervall für den Exportfortschritt (Sekunden)',
         description:
-          'Warten Sie so lange, bevor Sie einen laufenden Export prüfen. Änderungen gelten für neu geplante Kontrollen; bestehende Schecks behalten ihre Gültigkeit.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       maxMinutes: {
         title: 'Zeitüberschreitung beim Exportabschluss (Minuten)',
         description:
-          'Legen Sie die Abschlussfrist fest, wenn ein Exportauftrag beginnt. Bei einem nicht abgeschlossenen Auftrag läuft die Zeit bis zu diesem Stichtag ab. Durch Änderungen werden bestehende Auftragsfristen nicht verschoben.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       periodMinutes: {
         title: 'Abonnementverlängerungszeitraum (Minuten)',
         description:
-          'Verwenden Sie diese Dauer, um das neue Periodenende nach einer erfolgreichen Aufladung zu berechnen. Änderungen gelten nach der nächsten erfolgreichen Aufladung; das aktuelle Periodenende bleibt fixiert.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       dunningMinutes: {
         title:
           'Wiederholungsintervall für Verlängerungszahlung fehlgeschlagen (Minuten)',
         description:
-          'Warten Sie so lange, bevor Sie eine fehlgeschlagene Verlängerungszahlung erneut versuchen. Änderungen gelten für neu geplante Wiederholungsversuche; Vorhandene Wiederholungsversuche behalten ihre fällige Zeit.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       maxDunning: {
         title: 'Fehlergrenze für Verlängerungszahlung',
         description:
-          'Kündigen Sie das Abonnement beim nächsten automatischen Wiederholungsversuch, wenn die Anzahl der fehlgeschlagenen Zahlungen dieses Limit erreicht hat. Änderungen gelten bei der nächsten Wiederholungsentscheidung.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
       reopenDays: {
         title: 'Frist für die Wiedereröffnung des Tickets (Tage)',
         description:
-          'Wiedereröffnung innerhalb dieser vielen Tage nach Schließung eines Tickets zulassen; andernfalls ist ein neues Ticket erforderlich. Bei jeder Wiedereröffnungsanfrage wird die neueste Einstellung verwendet.',
+          'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
       },
     },
     loading: 'Parameter werden geladen…',
@@ -74,7 +74,7 @@ const deDE: LocaleResource<typeof enUS> = {
     description:
       'Nur vom Code deklarierte Werte ändern. Workflow-Struktur, Entscheidungen und Zeitüberschreitungen bleiben im Code.',
     ruleExplanation:
-      'Alle Bedingungen in einer Gruppe müssen übereinstimmen. Einzelne Gruppen werden zusammengezählt. Ordnen Sie alternative Benutzer separaten Gruppen zu.',
+      'Alle Bedingungen in einer Gruppe müssen übereinstimmen. Einzelne Gruppen werden zusammengezählt. Ordnen Sie alternative Benutzer separaten Gruppen zu. Ausgewählte Referenzen bleiben fest; aktuelle Mitglieder und ihre Berechtigung werden bei der Ausführung ermittelt.',
     allConditions: 'Erfüllen Sie alle diese Bedingungen',
     alsoInclude: 'Auch einschließen',
     selectionType: 'Auswahltyp',
@@ -90,9 +90,7 @@ const deDE: LocaleResource<typeof enUS> = {
     codeDefaults: 'Code-Standardwerte',
     databaseVersion: 'Konfiguration gespeichert',
     snapshotEffect:
-      'Snapshot: bei der ersten Übermittlung behoben; nach Rückgabe oder Widerruf einbehalten',
-    liveEffect:
-      'Zukünftige Parameterlesevorgänge verwenden die neueste Konfiguration; Bestehende Timer und Fristen bleiben unverändert.',
+      'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
     yes: 'Ja',
     no: 'Nein',
     invalidObject: 'Geben Sie ein gültiges JSON-Objekt ein.',
@@ -109,10 +107,9 @@ const deDE: LocaleResource<typeof enUS> = {
       'Keine geeigneten Kandidaten; Die Einreichung wird abgelehnt.',
     editCurrent: 'Aktuelle Konfiguration bearbeiten',
     historyBoundary:
-      'Dadurch wird die aktuelle Konfiguration bearbeitet. Historische Fakten und bereits zugewiesene Kandidaten bleiben unverändert.',
+      'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
     history: 'Tatsächliche Parameterverwendung',
-    effectivePreview: 'Jetzt gültige Werte für diesen Datensatz',
-    firstSnapshot: 'Snapshot der ersten Übermittlung',
+    firstSnapshot: 'Parameter-Snapshot bei Erstellung',
     notRecorded: 'Nicht erfasst',
     diagramEntry: 'Optionaler Diagrammeintrag',
     diagramHint:
@@ -338,10 +335,12 @@ const deDE: LocaleResource<typeof enUS> = {
       entertainment: 'Kundenunterhaltung',
       other: 'Sonstiges',
     },
+    allStates: 'Alle Status',
     steps: {
       submit: 'Eingereicht',
       manager: 'Manager',
       finance: 'Finanzen',
+      audit: 'Prüfung',
       payment: 'Bezahlt',
     },
     meta: {
@@ -1010,6 +1009,7 @@ const deDE: LocaleResource<typeof enUS> = {
     draft: 'Entwurf',
     awaitingManager: 'Warten auf den Manager',
     awaitingFinance: 'Warten auf Finanzierung',
+    awaitingAudit: 'Wartet auf Prüfung',
     needsInfo: 'Zurückgeschickt',
     approved: 'Genehmigt',
     rejected: 'Abgelehnt',
@@ -1094,6 +1094,7 @@ const deDE: LocaleResource<typeof enUS> = {
     reopen: 'Wieder öffnen',
     submit: 'Senden',
     approve: 'Genehmigen',
+    audit: 'Prüfung bestanden',
     reject: 'Ablehnen',
     requestInfo: 'Zurückschicken',
     resubmit: 'Erneut senden',

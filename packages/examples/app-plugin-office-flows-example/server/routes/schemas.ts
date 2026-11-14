@@ -337,7 +337,7 @@ export const OfficeDetail: z.ZodType<Plain> = z
     record: OfficeRecord,
     description: z.record(z.string(), z.unknown()).meta({
       description:
-        'The lifecycle’s states, transitions, effects and triggers, as `runtime.describe()` answers.',
+        'The states, transitions, effects and triggers of the definition the record is bound to, with its `key` and `version`, as `runtime.describe()` answers.',
     }),
     available: z.array(z.record(z.string(), z.unknown())).meta({
       description:
@@ -348,6 +348,7 @@ export const OfficeDetail: z.ZodType<Plain> = z
       effectRuns: z.array(z.record(z.string(), z.unknown())),
     }),
     traces: z.array(z.record(z.string(), z.unknown())),
+    parameterSnapshot: z.record(z.string(), z.unknown()).nullable().optional(),
   })
   .meta({
     ref: 'OfficeFlowsExampleDetail',

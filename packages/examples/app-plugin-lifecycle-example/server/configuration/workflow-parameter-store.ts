@@ -45,6 +45,13 @@ export class WorkflowParameterStore extends StoredLifecycleParameters {
   public constructor(private readonly records: LifecycleStore) {
     super(records, PARAMETER_COLLECTIONS);
   }
+  public override readConfiguration(
+    scope: string,
+    lifecycle: string,
+    transaction?: unknown,
+  ): Promise<ParameterVersion | undefined> {
+    return this.read(scope, `lifecycle.${lifecycle}`, transaction);
+  }
   public override read(
     scope: string,
     key: string,
@@ -58,21 +65,25 @@ export class WorkflowParameterStore extends StoredLifecycleParameters {
           `lifecycle.${name}`,
         );
         if (!row || row.scope !== scope) return undefined;
+        const workflow = parameterWorkflows.find((item) => item.name === name);
         const version = {
           scope,
           group: `lifecycle.${name}`,
           revision: Number(row.revision),
           schemaVersion: 1,
-          values: row.values as JsonObject,
+          // A group a later version added has no value saved before it
+          // existed: it reads its default until it is saved.
+          values: {
+            ...(workflow?.parameters as JsonObject | undefined),
+            ...(row.values as JsonObject),
+          },
           actorId: String(row.actorId),
           at: String(row.at),
         };
         if (!groupKey) return version;
-        const group = parameterWorkflows
-          .find((item) => item.name === name)
-          ?.parameterConfiguration?.groups.find(
-            (item) => item.key === groupKey,
-          );
+        const group = workflow?.parameterConfiguration?.groups.find(
+          (item) => item.key === groupKey,
+        );
         if (!group)
           throw new ParameterConfigurationError(
             'CONFIGURATION_INVALID',
@@ -144,6 +155,7 @@ export class WorkflowParameterStore extends StoredLifecycleParameters {
           at: String(row!.at),
         };
         const values = normalizeParameterValues(group, {
+          ...(workflow.parameters as JsonObject),
           ...previous.values,
           ...input.values,
         });

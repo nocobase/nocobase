@@ -23,6 +23,7 @@ import {
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { expenseLifecycle } from '../lifecycles/expense.js';
+import { expenseV2Lifecycle } from '../lifecycles/expense-v2.js';
 import { invoiceLifecycle } from '../lifecycles/invoice.js';
 import { exportLifecycle } from '../lifecycles/export.js';
 import {
@@ -137,7 +138,8 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     const runtime = this.lifecycleRuntime();
     this.releaseChanges = runtime.onChange({}, (change) => {
       this.publishChange({
-        lifecycle: change.lifecycle,
+        // The process, as the pages subscribe: a record of any version.
+        lifecycle: runtime.group(change.lifecycle).key,
         recordId: String(change.recordId),
       });
     });
@@ -181,6 +183,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     this.parameterStore = parameterStore;
     const runtime = new LifecycleRuntime({
       store,
+      creationRequestsCollection: 'lifecycleExampleCreationRequests',
       dispatcher: this.effectJobs(),
       logger: {
         warn: (message, details) => logger.warn({ details }, message),
@@ -194,14 +197,23 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       services,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'tickets',
+        ticketLifecycle.key,
       ),
     });
     runtime.register(expenseLifecycle, {
       services,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'expenses',
+        expenseLifecycle.key,
+      ),
+    });
+    // The second version of the same process: same table, the same stored
+    // configuration under the shared key, and its own audit group.
+    runtime.register(expenseV2Lifecycle, {
+      services,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        expenseV2Lifecycle.key,
       ),
     });
     // The durable flows call the sandbox standing in for the outside
@@ -222,21 +234,21 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'orders',
+        orderLifecycle.key,
       ),
     });
     runtime.register(invoiceLifecycle, {
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'invoices',
+        invoiceLifecycle.key,
       ),
     });
     runtime.register(exportLifecycle, {
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'exports',
+        exportLifecycle.key,
       ),
     });
     runtime.register(purchaseLifecycle, { services: flowServices });
@@ -245,7 +257,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'subscriptions',
+        subscriptionLifecycle.key,
       ),
     });
     // Another plugin would subscribe the same way, to refresh a page, keep a

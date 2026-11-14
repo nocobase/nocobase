@@ -54,7 +54,6 @@ it('marks configurable states and transitions only for real parameter bindings',
   const graph = lifecycleDiagramGraph({
     ...description,
     parameterConfiguration: {
-      readMode: 'live',
       groups: [
         {
           key: 'review',

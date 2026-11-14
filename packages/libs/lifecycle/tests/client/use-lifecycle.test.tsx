@@ -44,6 +44,52 @@ describe('useLifecycle', () => {
     expect(result.current.description?.diagram).toContain('stateDiagram-v2');
   });
 
+  it('draws a record with the definition it is bound to, not the latest', async () => {
+    const describe = vi.fn(async (_lifecycle: string, definition?: string) => ({
+      description: { name: definition ?? 'orders-v2' },
+    }));
+    const client = {
+      describe,
+      view: vi.fn(async () => ({ lifecycle: 'orders', record: { id: '1' } })),
+    } as unknown as Parameters<typeof useLifecycle>[0];
+    const { result, rerender } = renderHook(
+      ({ selected }: { selected: string | undefined }) =>
+        useLifecycle(client, 'orders', selected, { refreshMs: 0 }),
+      { initialProps: { selected: undefined as string | undefined } },
+    );
+    await waitFor(() =>
+      expect(result.current.description?.description.name).toBe('orders-v2'),
+    );
+    expect(describe).toHaveBeenLastCalledWith('orders', undefined, undefined);
+    rerender({ selected: '1' });
+    await waitFor(() =>
+      expect(result.current.description?.description.name).toBe('orders'),
+    );
+    expect(describe).toHaveBeenLastCalledWith('orders', 'orders', '1');
+  });
+
+  it('displays instance values instead of the current configuration returned with its diagram', async () => {
+    const client = {
+      describe: vi.fn(async () => ({
+        description: { name: 'orders' },
+        parameters: { limit: 999 },
+        diagram: 'graph',
+      })),
+      view: vi.fn(async () => ({
+        lifecycle: 'orders',
+        record: { id: '1' },
+        parameterValues: { limit: 10 },
+      })),
+    } as unknown as Parameters<typeof useLifecycle>[0];
+    const { result } = renderHook(() =>
+      useLifecycle(client, 'orders', '1', { refreshMs: 0 }),
+    );
+    await waitFor(() =>
+      expect(result.current.description?.parameters).toEqual({ limit: 10 }),
+    );
+    expect(client.describe).toHaveBeenCalledWith('orders', 'orders', '1');
+  });
+
   it('fires with the version on screen and shows the record as it left it', async () => {
     const { client, id, sent } = setup('agent');
     const { result } = renderHook(() =>

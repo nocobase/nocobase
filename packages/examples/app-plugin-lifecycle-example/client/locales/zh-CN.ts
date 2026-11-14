@@ -18,52 +18,52 @@ const zhCN: LifecycleExampleResource = {
       paymentWindowMinutes: {
         title: '付款等待时限（分钟）',
         description:
-          '订单进入待付款状态后，超过此时长仍未付款将自动取消。修改用于新安排的付款计时，已安排的计时不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       escalateAfterMinutes: {
         title: '主管审批超时时长（分钟）',
         description:
-          '等待主管审批超过此时长后，自动升级审批处理。修改用于新安排的审批计时，已安排的计时不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       waitMinutes: {
         title: '客户回复等待时限（分钟）',
         description:
-          '工单等待客户回复超过此时长后自动关闭。修改用于新安排的等待计时，已安排的计时不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       querySeconds: {
         title: '开票结果查询等待时长（秒）',
         description:
-          '提交开票后，等待平台回调超过此时长便主动查询开票结果。修改用于新安排的查询，已安排的查询时间不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       pollSeconds: {
         title: '导出进度查询间隔（秒）',
         description:
-          '导出处理中，等待此时长后查询任务进度。修改用于新安排的查询，已安排的查询时间不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       maxMinutes: {
         title: '导出最长等待时长（分钟）',
         description:
-          '导出任务提交成功时，按此时长确定超时截止时间；到期仍未完成则标记为超时。修改不改变已有任务的截止时间。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       periodMinutes: {
         title: '订阅续费周期（分钟）',
         description:
-          '每次扣款成功后，按此时长计算新的订阅到期时间。修改在下次扣款成功时使用，当前到期时间不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       dunningMinutes: {
         title: '续费扣款失败重试间隔（分钟）',
         description:
-          '续费扣款失败后，等待此时长再自动尝试扣款。修改用于新安排的重试，已安排的重试时间不变。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       maxDunning: {
         title: '续费扣款失败次数上限',
         description:
-          '自动重试时，若累计扣款失败次数已达到此值，将取消订阅，不再扣款。修改在下次自动重试判断时生效。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
       reopenDays: {
         title: '工单关闭后可重开天数',
         description:
-          '工单关闭后，在此天数内允许重新打开；超过期限需新建工单。每次申请重开时使用最新配置。',
+          '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
       },
     },
     loading: '正在加载参数…',
@@ -71,7 +71,7 @@ const zhCN: LifecycleExampleResource = {
     description:
       '只调整代码明确开放的值。流程结构、审批决策和超时仍由代码控制。',
     ruleExplanation:
-      '同组条件取交集，不同组取并集。任选其一的人员应分别放在不同组。',
+      '同组条件取交集，不同组取并集。任选其一的人员应分别放在不同组。 引用选择固定，成员及人员有效性在执行时解析。',
     allConditions: '满足以下全部条件',
     alsoInclude: '另外加入',
     selectionType: '选择类型',
@@ -86,8 +86,8 @@ const zhCN: LifecycleExampleResource = {
     revision: '版本 {{revision}}',
     codeDefaults: '代码默认值',
     databaseVersion: '已保存的配置',
-    snapshotEffect: '快照：首次提交固定，退回与撤回重提沿用',
-    liveEffect: '后续使用时读取最新配置；已确定的计时或截止时间保持不变。',
+    snapshotEffect:
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     yes: '是',
     no: '否',
     invalidObject: '请输入有效的 JSON 对象。',
@@ -101,10 +101,10 @@ const zhCN: LifecycleExampleResource = {
     candidates: '候选人',
     noCandidates: '没有合格候选人，提交将被拒绝。',
     editCurrent: '修改当前配置',
-    historyBoundary: '修改的是当前配置，不会改写历史事实或已有候选人任务。',
+    historyBoundary:
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     history: '实际参数使用记录',
-    effectivePreview: '此记录当前的有效参数',
-    firstSnapshot: '首次提交快照',
+    firstSnapshot: '创建时的参数快照',
     notRecorded: '未记录',
     diagramEntry: '可选的流程图入口',
     diagramHint:
@@ -317,10 +317,12 @@ const zhCN: LifecycleExampleResource = {
       entertainment: '业务招待',
       other: '其他',
     },
+    allStates: '全部状态',
     steps: {
       submit: '提交',
       manager: '部门审批',
       finance: '财务审批',
+      audit: '审计',
       payment: '付款',
     },
     meta: {
@@ -954,6 +956,7 @@ const zhCN: LifecycleExampleResource = {
     draft: '草稿',
     awaitingManager: '待部门审批',
     awaitingFinance: '待财务审批',
+    awaitingAudit: '待审计',
     needsInfo: '待补充',
     approved: '已通过',
     rejected: '已驳回',
@@ -1038,6 +1041,7 @@ const zhCN: LifecycleExampleResource = {
     reopen: '重新打开',
     submit: '提交',
     approve: '通过',
+    audit: '审计通过',
     reject: '驳回',
     requestInfo: '退回补充',
     resubmit: '重新提交',

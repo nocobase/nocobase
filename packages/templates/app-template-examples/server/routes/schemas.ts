@@ -180,7 +180,7 @@ export const NumericExamples = z
 export const WorkflowParams = z.object({
   workflowId: z
     .string()
-    .regex(/^(lifecycle|office)\.[A-Za-z][A-Za-z0-9]*$/)
+    .regex(/^(lifecycle|office)\.[A-Za-z][A-Za-z0-9_-]*$/)
     .max(100),
 });
 export const WorkflowExecutionParams = WorkflowParams.extend({
@@ -190,11 +190,26 @@ export const WorkflowDefinitionQuery = z.object({
   q: z.string().trim().max(200).optional(),
   category: z.string().trim().min(1).max(100).optional(),
 });
+const WorkflowVersionNumber = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(Number.MAX_SAFE_INTEGER);
+export const WorkflowVersionQuery = z.object({
+  version: WorkflowVersionNumber.optional().meta({
+    description:
+      'The version to describe; the latest, which is the largest, by default.',
+  }),
+});
 export const WorkflowPageQuery = z.object({
   page: z.coerce.number().int().min(1).max(1000).default(1),
   order: z.enum(['newest', 'oldest']).default('newest'),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   workflowId: WorkflowParams.shape.workflowId.optional(),
+  version: WorkflowVersionNumber.optional().meta({
+    description:
+      'Only the records bound to this version of the `workflowId` process.',
+  }),
   q: z.string().trim().max(200).optional(),
 });
 export const WorkflowPageMeta = z.object({
@@ -202,12 +217,18 @@ export const WorkflowPageMeta = z.object({
   pageSize: z.number(),
   total: z.number(),
 });
+const WorkflowVersionSchema = z.object({
+  name: z.string(),
+  version: z.number().int().positive(),
+});
 export const WorkflowSummarySchema: z.ZodType<
   import('../../shared/workflows.js').WorkflowSummary
 > = z
   .object({
     id: z.string(),
     name: z.string(),
+    version: z.number().int().positive(),
+    versions: z.array(WorkflowVersionSchema),
     source: z.enum(['lifecycle', 'office']),
     states: z.number(),
     transitions: z.number(),
@@ -224,14 +245,27 @@ export const WorkflowExecutionSchema: z.ZodType<
     recordId: z.string(),
     title: z.string(),
     state: z.string(),
+    definition: z.string(),
+    version: z.number().int().positive(),
     createdAt: z.iso.datetime(),
   })
   .meta({ ref: 'ExamplesWorkflowExecution' });
+/** The version a definition response describes. */
+export const WorkflowDefinitionVersionSchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowDefinition['definition']
+> = WorkflowVersionSchema.extend({
+  executionCount: z.number().int().nonnegative().meta({
+    description: 'The records bound to this version.',
+  }),
+});
 export const WorkflowDefinitionSchema: z.ZodType<
   import('../../shared/workflows.js').WorkflowDefinition
 > = z
   .intersection(
-    z.object({ workflow: WorkflowSummarySchema }),
+    z.object({
+      workflow: WorkflowSummarySchema,
+      definition: WorkflowDefinitionVersionSchema,
+    }),
     DescriptionViewSchema,
   )
   .meta({ ref: 'ExamplesWorkflowDefinition' });

@@ -6,6 +6,8 @@ import type {
 
 export const description: LifecycleDescription = {
   name: 'orders',
+  key: 'orders',
+  version: 1,
   initial: 'draft',
   initialStates: ['draft'],
   states: ['draft', 'review', 'approved'],

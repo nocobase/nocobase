@@ -272,9 +272,13 @@ const zhCN: AppResource = {
     nodeParametersDescription:
       '仅展示当前节点或连线关联的参数，其他流程参数保持不变。',
     workflowParameters: '流程级参数',
-    parameterRevision: '流程参数版本 {{revision}}',
+    parameterRevision: '配置修订号 {{revision}}',
     parametersTitle: '{{name}} · 参数配置',
-    parametersDescription: '配置仅对当前流程生效，已保存的实例快照保持不变。',
+    copyVersionParameters: '将 v{{version}} 配置复制为未保存输入',
+    configuringVersion:
+      '正在配置 v{{version}}。修改仅影响此后新建的记录，已有草稿不受影响。引用保留所选对象，当前成员关系仍在执行时解析。',
+    parametersDescription:
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     discardParameters: '放弃尚未保存的参数修改？',
     noParameters: '此流程没有可配置参数。',
     addParameterEntry: '添加一项',
@@ -400,9 +404,16 @@ const zhCN: AppResource = {
     signIn: '请登录后查看工作流。',
     retry: '重试',
     executionCountLink: '已执行 {{count}} 次',
+    version: '版本',
+    versionLabel: '版本 {{version}}',
+    latestVersion: '版本 {{version}}（最新）',
+    versionShort: 'v{{version}}',
+    allVersions: '全部版本',
+    versionCount: '{{count}} 个版本',
+    latestHint: '最新版本指版本号最大的版本，新记录不一定从它开始。',
     viewExecutions: '查看执行记录',
     parameterHint:
-      '点击绑定了参数的节点或连线可调整运行参数，其他节点可查看定义详情。修改按各流程的快照或实时模式生效。',
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     currentState: '当前展示节点',
     latest: '最新进度',
     historyHint:
@@ -425,7 +436,7 @@ const zhCN: AppResource = {
     executionDescription: '查看实际经过的路径，按顺序回顾每次流转。',
     executionParameters: '本次执行使用的参数',
     snapshotHint:
-      '这些参数来自执行记录。快照参数保持固定，实时参数会在流程运行时重新读取。',
+      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     sources: {
       lifecycle: '生命周期示例',
       office: '办公流程',

@@ -22,7 +22,6 @@ export const description: LifecycleDescription = {
   onEnter: {},
   triggers: [],
   parameterConfiguration: {
-    readMode: 'snapshot',
     groups: [
       {
         key: 'approval',

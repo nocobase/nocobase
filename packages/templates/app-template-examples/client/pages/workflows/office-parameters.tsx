@@ -112,6 +112,7 @@ export function OfficeParameterEditor({
   disabled = false,
   configuration,
   path,
+  definition,
   onBusyChange,
   onDirtyChange,
   onSaved,
@@ -120,6 +121,7 @@ export function OfficeParameterEditor({
   saveRef?: Ref<{ save: () => Promise<boolean> }>;
   configuration: OfficeWorkflowParameters;
   path: string;
+  definition: string;
   onBusyChange: (value: boolean) => void;
   onDirtyChange: (value: boolean) => void;
   onSaved?: (configuration: OfficeWorkflowParameters) => void;
@@ -197,6 +199,7 @@ export function OfficeParameterEditor({
         method: 'PUT',
         json: {
           kind: 'office',
+          definition,
           values: draft,
           expectedRevision: saved.revision,
           ...(organization

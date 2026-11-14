@@ -26,25 +26,36 @@ export function reviewerServices(
         {
           selectors: {
             department: async (referenceId, context) =>
-              (
-                await connection
-                  .repository('lifecycleExampleMemberships')
-                  .findMany({
-                    filter: { scope: context.scope, departmentId: referenceId },
-                  })
-              ).map((row) =>
-                typeof row.userId === 'string' ? row.userId : '',
-              ),
+              !(await connection
+                .repository('lifecycleExampleDepartments')
+                .exists({ filter: { id: referenceId, scope: context.scope } }))
+                ? []
+                : (
+                    await connection
+                      .repository('lifecycleExampleMemberships')
+                      .findMany({
+                        filter: {
+                          scope: context.scope,
+                          departmentId: referenceId,
+                        },
+                      })
+                  ).map((row) =>
+                    typeof row.userId === 'string' ? row.userId : '',
+                  ),
             role: async (referenceId, context) =>
-              (
-                await connection
-                  .repository('lifecycleExampleMemberships')
-                  .findMany({
-                    filter: { scope: context.scope, roleId: referenceId },
-                  })
-              ).map((row) =>
-                typeof row.userId === 'string' ? row.userId : '',
-              ),
+              !(await connection
+                .repository('lifecycleExampleRoles')
+                .exists({ filter: { id: referenceId, scope: context.scope } }))
+                ? []
+                : (
+                    await connection
+                      .repository('lifecycleExampleMemberships')
+                      .findMany({
+                        filter: { scope: context.scope, roleId: referenceId },
+                      })
+                  ).map((row) =>
+                    typeof row.userId === 'string' ? row.userId : '',
+                  ),
             user: async (referenceId, context) =>
               (await connection
                 .repository('lifecycleExamplePeople')

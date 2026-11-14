@@ -105,6 +105,9 @@ function messageRequired(input: Record<string, unknown>): InputProblem[] {
 export const ticketLifecycle: Lifecycle<TicketTypes> =
   defineLifecycle<TicketTypes>({
     name: 'tickets',
+    key: 'tickets',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.tickets,
     initial: 'new',
     // Every way a ticket is filed meets the same rule: a customer, for themselves.
@@ -119,8 +122,8 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
     },
     states: ['new', 'open', 'awaitingCustomer', 'closed'],
     // A real help desk waits days; the example waits minutes so you can watch it.
+    dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      readMode: 'live',
       groups: [
         ticketParameterGroup,
         notificationParameterGroup,

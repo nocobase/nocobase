@@ -69,6 +69,7 @@ export const ListExpensesQuery: z.ZodObject<
     page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     view: z.ZodDefault<z.ZodEnum<{ mine: 'mine'; approvals: 'approvals' }>>;
+    status: z.ZodOptional<z.ZodString>;
   },
   z.core.$strip
 > = z.object({
@@ -78,6 +79,14 @@ export const ListExpensesQuery: z.ZodObject<
     description:
       'The applicant’s own reports, or those waiting for the persona’s decision.',
   }),
+  status: z
+    .string()
+    .regex(/^[A-Za-z][A-Za-z0-9]{0,63}$/)
+    .optional()
+    .meta({
+      description:
+        'Only reports in this state: any state of any version, as `meta.states` lists them.',
+    }),
 });
 
 const failures = z
@@ -239,6 +248,14 @@ export const ListMeta: z.ZodObject<
     pageSize: z.ZodNumber;
     total: z.ZodNumber;
     parameters: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    states: z.ZodOptional<
+      z.ZodArray<
+        z.ZodObject<
+          { name: z.ZodString; title: z.ZodString; final: z.ZodBoolean },
+          z.core.$strip
+        >
+      >
+    >;
   },
   z.core.$strip
 > = z.object({
@@ -249,6 +266,15 @@ export const ListMeta: z.ZodObject<
   parameters: z.record(z.string(), z.unknown()).meta({
     description: 'The lifecycle’s parameters, which the page quotes.',
   }),
+  states: z
+    .array(
+      z.object({ name: z.string(), title: z.string(), final: z.boolean() }),
+    )
+    .optional()
+    .meta({
+      description:
+        'Every state any version of the process declares, for the status filter and labels of a list holding records of several versions.',
+    }),
 });
 
 export const TriggersRun: z.ZodType<{
@@ -356,7 +382,43 @@ const Run: z.ZodType<EffectRun> = z
   })
   .meta({ ref: 'LifecycleExampleEffectRun' });
 
+export const ParameterSnapshotSchema: z.ZodType<
+  import('@nocobase/lifecycle').ParameterSnapshot
+> = z.object({
+  scope: z.string(),
+  lifecycle: z.string(),
+  recordId: z.string(),
+  revision: z.number().int().nonnegative(),
+  at: z.string().datetime({ offset: true }),
+  values: z.record(z.string(), z.json()),
+  sources: z.record(
+    z.string(),
+    z.object({
+      group: z.string(),
+      schemaVersion: z.number().int().positive(),
+      revision: z.number().int().nonnegative(),
+      origin: z.enum(['default', 'configuration', 'recovered']),
+    }),
+  ),
+  recoveredFrom: z
+    .object({
+      transitionId: z.string(),
+      usageId: z.string().optional(),
+      groupRevisions: z.record(z.string(), z.number()).optional(),
+    })
+    .optional(),
+});
+
 const recordView = {
+  parameterValues: z.record(z.string(), z.unknown()).optional(),
+  parameterSnapshot: ParameterSnapshotSchema.optional(),
+  lifecycle: z.string().meta({
+    description:
+      "The definition the record belongs to, whichever version the URL named: draw this definition's diagram.",
+  }),
+  definitionVersion: z.number().meta({
+    description: 'Which version of the process that definition is.',
+  }),
   record: ExampleRecord,
   state: z.string(),
   version: z.number().nullable().meta({
@@ -375,7 +437,6 @@ export const RecordViewSchema: z.ZodType<RecordView> = z
 
 export const FireViewSchema: z.ZodType<FireView> = z
   .object({
-    parameterValues: z.record(z.string(), z.unknown()).optional(),
     ...recordView,
     replayed: z.boolean().meta({
       description: 'True when this request id had already fired it.',
@@ -388,8 +449,6 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
     description: z.object({
       parameterConfiguration: z
         .object({
-          readMode: z.string(),
-          snapshotTransition: z.string().optional(),
           groups: z.array(
             z.object({
               key: z.string(),
@@ -406,7 +465,6 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
                     'reviewers',
                   ]),
                   title: z.string(),
-                  readMode: z.enum(['snapshot', 'live']).optional(),
                   minimum: z.number().optional(),
                   maximum: z.number().optional(),
                   bindings: z
@@ -424,6 +482,16 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
         })
         .optional(),
       name: z.string(),
+      key: z.string().meta({
+        description: 'The process this definition is a version of.',
+      }),
+      version: z.number().meta({
+        description: 'The version of the process; the largest is the latest.',
+      }),
+      definitionField: z.string().optional().meta({
+        description:
+          'The record field naming the definition a record belongs to.',
+      }),
       initial: z.string(),
       initialStates: z.array(z.string()),
       states: z.array(z.string()),

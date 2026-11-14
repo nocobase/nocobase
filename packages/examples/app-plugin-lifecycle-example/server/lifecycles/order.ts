@@ -74,6 +74,9 @@ function orderProblems(
 export const orderLifecycle: Lifecycle<OrderTypes> =
   defineLifecycle<OrderTypes>({
     name: 'orders',
+    key: 'orders',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.orders,
     initial: 'draft',
     create: { validate: orderProblems },
@@ -92,7 +95,10 @@ export const orderLifecycle: Lifecycle<OrderTypes> =
       { name: 'refunded', final: true },
     ],
     // A real shop waits half an hour or more; the example a few minutes.
-    parameterConfiguration: { readMode: 'live', groups: [orderTimingGroup] },
+    dueAtField: 'lifecycleDueAt',
+    parameterConfiguration: {
+      groups: [orderTimingGroup],
+    },
     parameters: { paymentWindowMinutes: 3 },
     transitions: {
       checkout: {

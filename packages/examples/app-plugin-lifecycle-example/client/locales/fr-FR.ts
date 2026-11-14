@@ -20,54 +20,54 @@ const frFR: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Délai de paiement (minutes)',
         description:
-          "Annuler une commande impayée après cette attente. Les modifications s'appliquent aux délais de paiement nouvellement programmés ; les minuteries existantes gardent leur heure due.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       escalateAfterMinutes: {
         title: 'Expiration du délai de révision du responsable (minutes)',
         description:
-          "Transférez une révision en attente du responsable après cette attente. Les modifications s'appliquent aux minuteries de révision nouvellement programmées ; les minuteries existantes gardent leur heure due.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       waitMinutes: {
         title: 'Délai de réponse du client (minutes)',
         description:
-          "Fermez un ticket si le client ne répond pas dans ce délai. Les modifications s'appliquent aux minuteries nouvellement programmées ; les minuteries existantes gardent leur heure due.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       querySeconds: {
         title: "Délai de requête sur l'état de la facture (secondes)",
         description:
-          "Interrogez le fournisseur de facture si aucun rappel n'arrive pendant cette attente. Les modifications s'appliquent aux requêtes nouvellement planifiées ; les requêtes existantes conservent leur heure d'échéance.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       pollSeconds: {
         title:
           "Intervalle de vérification de la progression de l'exportation (secondes)",
         description:
-          "Attendez aussi longtemps avant de vérifier une exportation en cours. Les modifications s'appliquent aux contrôles nouvellement programmés ; les chèques existants conservent leur échéance.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       maxMinutes: {
         title: "Délai d'expiration de l'exportation (minutes)",
         description:
-          "Définissez la date limite d'achèvement au démarrage d'une tâche d'exportation. Un travail inachevé expire à cette date limite. Les modifications ne modifient pas les délais de travail existants.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       periodMinutes: {
         title: "Période de renouvellement de l'abonnement (minutes)",
         description:
-          "Utilisez cette durée pour calculer la nouvelle fin de période après une charge réussie. Les modifications s'appliquent après la prochaine charge réussie ; la fin de la période en cours reste fixe.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       dunningMinutes: {
         title:
           "Échec de l'intervalle de nouvelle tentative de paiement de renouvellement (minutes)",
         description:
-          "Attendez aussi longtemps avant de réessayer un paiement de renouvellement qui a échoué. Les modifications s'appliquent aux tentatives nouvellement planifiées ; les tentatives existantes conservent leur heure d'échéance.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       maxDunning: {
         title: "Limite d'échec de paiement de renouvellement",
         description:
-          "Annulez l'abonnement à la prochaine tentative automatique si le nombre de paiements échoués a atteint cette limite. Les modifications s’appliquent à la prochaine décision de nouvelle tentative.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
       reopenDays: {
         title: 'Date limite de réouverture des billets (jours)',
         description:
-          "Autoriser la réouverture dans ce délai après la clôture d'un ticket ; sinon, un nouveau billet est requis. Chaque demande de réouverture utilise le dernier paramètre.",
+          'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
       },
     },
     loading: 'Chargement des paramètres…',
@@ -75,7 +75,7 @@ const frFR: LocaleResource<typeof enUS> = {
     description:
       "Modifiez uniquement les valeurs déclarées par le code. La structure du workflow, les décisions et les délais d'attente restent dans le code.",
     ruleExplanation:
-      'Toutes les conditions d’un groupe doivent correspondre. Des groupes séparés sont additionnés. Placez les utilisateurs alternatifs dans des groupes séparés.',
+      'Toutes les conditions d’un groupe doivent correspondre. Des groupes séparés sont additionnés. Placez les utilisateurs alternatifs dans des groupes séparés. Les références choisies sont fixes ; les membres actuels et leur admissibilité sont résolus à l’exécution.',
     allConditions: 'Répondre à toutes ces conditions',
     alsoInclude: 'Inclure également',
     selectionType: 'Type de sélection',
@@ -91,9 +91,7 @@ const frFR: LocaleResource<typeof enUS> = {
     codeDefaults: 'Codes par défaut',
     databaseVersion: 'Configuration enregistrée',
     snapshotEffect:
-      'Instantané : corrigé lors de la première soumission ; conservé après retour ou rétractation',
-    liveEffect:
-      'Les futures lectures de paramètres utilisent la dernière configuration ; les minuteries et les délais existants restent fixes.',
+      'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
     yes: 'Oui',
     no: 'Non',
     invalidObject: 'Entrez un objet JSON valide.',
@@ -110,10 +108,9 @@ const frFR: LocaleResource<typeof enUS> = {
     noCandidates: 'Aucun candidat éligible ; la soumission sera refusée.',
     editCurrent: 'Modifier la configuration actuelle',
     historyBoundary:
-      'Ceci modifie la configuration actuelle. Les faits historiques et les candidats assignés existants restent inchangés.',
+      'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
     history: 'Utilisation réelle des paramètres',
-    effectivePreview: 'Valeurs effectives pour cet enregistrement maintenant',
-    firstSnapshot: 'Instantané de première soumission',
+    firstSnapshot: 'Instantané des paramètres à la création',
     notRecorded: 'Non enregistré',
     diagramEntry: 'Entrée de diagramme facultative',
     diagramHint:
@@ -338,10 +335,12 @@ const frFR: LocaleResource<typeof enUS> = {
       entertainment: 'Divertissement client',
       other: 'Autres',
     },
+    allStates: 'Tous les états',
     steps: {
       submit: 'Soumis',
       manager: 'Gestionnaire',
       finance: 'Finances',
+      audit: 'Audit',
       payment: 'Payé',
     },
     meta: {
@@ -1006,6 +1005,7 @@ const frFR: LocaleResource<typeof enUS> = {
     draft: 'Brouillon',
     awaitingManager: 'Gestionnaire en attente',
     awaitingFinance: 'En attente de financement',
+    awaitingAudit: 'En attente d’audit',
     needsInfo: 'Renvoyé',
     approved: 'Approuvé',
     rejected: 'Rejeté',
@@ -1091,6 +1091,7 @@ const frFR: LocaleResource<typeof enUS> = {
     reopen: 'Réouvrir',
     submit: 'Soumettre',
     approve: 'Approuver',
+    audit: 'Valider l’audit',
     reject: 'Rejeter',
     requestInfo: 'Renvoyer',
     resubmit: 'Soumettre à nouveau',

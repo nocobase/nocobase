@@ -4,7 +4,6 @@ import { LifecycleDiagram } from '#components/lifecycle-diagram';
 
 const description: LifecycleDescription = {
   parameterConfiguration: {
-    readMode: 'snapshot',
     groups: [
       {
         key: 'approval',
@@ -27,6 +26,8 @@ const description: LifecycleDescription = {
     ],
   },
   name: 'expenses',
+  key: 'expenses',
+  version: 1,
   initial: 'draft',
   initialStates: ['draft'],
   states: ['draft', 'review', 'approved', 'rejected'],

@@ -16,7 +16,8 @@ export type LifecycleErrorCode =
   | 'NOT_MANUAL'
   | 'INVALID_REQUEST_ID'
   | 'RUN_SETTLED'
-  | 'NO_CONTINUATION';
+  | 'NO_CONTINUATION'
+  | 'DEFINITION_MISMATCH';
 
 /**
  * What kind of refusal a blocker is: `permission` when this actor may not do
@@ -47,6 +48,11 @@ export interface InputProblem {
 export interface LifecycleErrorDetails {
   readonly blockers?: readonly Blocker[];
   readonly problems?: readonly InputProblem[];
+  /**
+   * For `DEFINITION_MISMATCH`: the definition the record is bound to, or
+   * null when no definition has started it.
+   */
+  readonly bound?: string | null;
 }
 
 /**
@@ -58,6 +64,8 @@ export class LifecycleError extends Error {
   public readonly code: LifecycleErrorCode;
   public readonly blockers: readonly Blocker[];
   public readonly problems: readonly InputProblem[];
+  /** See {@link LifecycleErrorDetails.bound}; undefined for other codes. */
+  public readonly bound?: string | null;
 
   public constructor(
     code: LifecycleErrorCode,
@@ -69,6 +77,7 @@ export class LifecycleError extends Error {
     this.code = code;
     this.blockers = details.blockers ?? [];
     this.problems = details.problems ?? [];
+    if (details.bound !== undefined) this.bound = details.bound;
   }
 }
 
