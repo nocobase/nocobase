@@ -9,9 +9,27 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildDepartmentTree, buildLazyDepartmentTreeNodes } from '../shared/department';
+import { buildDepartmentTree, buildLazyDepartmentTreeNodes, getDepartmentTitle } from '../shared/department';
 
 describe('department tree helpers', () => {
+  it('formats nested department titles from parent chain', () => {
+    expect(
+      getDepartmentTitle({
+        id: 3,
+        title: 'Frontend',
+        parent: {
+          id: 2,
+          title: 'Engineering',
+          parent: {
+            id: 1,
+            title: 'Headquarters',
+          },
+        },
+      }),
+    ).toBe('Headquarters / Engineering / Frontend');
+    expect(getDepartmentTitle(null)).toBe('');
+  });
+
   it('builds department tree from flat department records', () => {
     expect(
       buildDepartmentTree([
