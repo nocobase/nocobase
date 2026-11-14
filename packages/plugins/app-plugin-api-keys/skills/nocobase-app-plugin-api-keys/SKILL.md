@@ -14,7 +14,7 @@ App issued is being rejected. The default configuration resolves a key into its 
 This package is Better Auth's
 [API Key plugin](https://www.better-auth.com/docs/plugins/api-key) plus the
 `apikey` migration. `apiKey` is wrapped
-only to supply three defaults, all overridable; its name, options and behaviour
+only to supply four defaults, all overridable; its name, options and behaviour
 are Better Auth's, and Better Auth's documentation applies unchanged.
 
 ## Public surfaces
@@ -54,10 +54,10 @@ Only step 1 leaves the `apikey` table created and no endpoints mounted. Only
 step 2 mounts endpoints against a table that does not exist, and every call
 fails at the database.
 
-### The three defaults
+### The four defaults
 
 `apiKey()` supplies `enableSessionForAPIKeys: true`, `rateLimit: { enabled:
-false }` and `requireName: true`, so an App normally passes nothing.
+false }`, `requireName: true` and `maximumNameLength: 100`, so an App normally passes nothing. The name limit matches scoped key creation and rotation; an application can override it.
 
 `enableSessionForAPIKeys` is the one that has to be set. Better Auth defaults
 it off, and with it off a key authenticates nothing: keys are still
@@ -69,7 +69,7 @@ day, which is a quota for issuing keys rather than for using them. Pass
 `{ enabled: true, maxRequests: 1000, timeWindow: 60_000 }` for a quota the App
 actually wants.
 
-All three are overridable, and passing all three back reproduces Better Auth's
+All four are overridable, and passing all four back reproduces Better Auth's
 own behaviour exactly.
 
 ## Call the API with a key
@@ -135,7 +135,7 @@ own, or the Session is minted and returned first.
 ## Ownership
 
 The plugin owns the `apikey` table, the `@better-auth/api-key` version, and
-the three defaults. The App owns its two `config/auth.ts` files, any
+the four defaults. The App owns its two `config/auth.ts` files, any
 option it overrides there, and any page it builds for managing keys.
 
 Never write the `apikey` table directly. Its `key` column holds a hash, and a

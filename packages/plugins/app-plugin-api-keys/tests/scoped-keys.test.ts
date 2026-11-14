@@ -24,7 +24,8 @@ import {
 } from '@nocobase/app-testing/server';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
 import { Hono } from 'hono';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { APIError } from 'better-auth/api';
 
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -32,6 +33,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { apiKey } from '../server/api-keys.js';
 import { requireSignInSession } from '../server/key-sessions.js';
 import { apiRoutes } from '../server/routes/index.js';
+import { toApiKeysApiError } from '../server/routes/errors.js';
 import { scopedApiKeysToken } from '../server/tokens.js';
 import { connectOwnKeyPolicy, ScopedApiKeys } from '../server/scoped-keys.js';
 import { createApiKeyScopes, type ApiKeyScopes } from '../server/scopes.js';
@@ -246,6 +248,136 @@ describe('scoped API keys', () => {
   });
 
   const as = (secret: string) => ({ headers: { 'x-api-key': secret } });
+
+  it('creates and rotates 100-character names and rotates a renamed key', async () => {
+    const name = 'n'.repeat(100);
+    const created = await keys.create(
+      personId,
+      { name },
+      await keys.identityOf(personId),
+    );
+    expect(created.key.name).toBe(name);
+    const rotated = await keys.rotate(personId, created.key.id);
+    expect(rotated.key).toMatchObject({ id: created.key.id, name });
+    expect(rotated.secret).not.toBe(created.secret);
+    await keys.update(personId, created.key.id, { name: 'r'.repeat(60) });
+    expect((await keys.rotate(personId, created.key.id)).key.name).toBe(
+      'r'.repeat(60),
+    );
+    await expect(
+      keys.update(personId, created.key.id, { name: 'n'.repeat(101) }),
+    ).rejects.toMatchObject({ status: 400, code: 'INVALID_NAME' });
+  });
+
+  it('honors a smaller upstream name limit for both creation and rotation', async () => {
+    const limitedAuth = new Auth({
+      connection: database.connection(),
+      baseURL: BASE_URL,
+      secret: 'development-secret-at-least-32-characters',
+      plugins: [apiKey({ maximumNameLength: 10 })],
+    });
+    const limitedKeys = new ScopedApiKeys({
+      auth: limitedAuth,
+      connection: () => database.connection(),
+      scopes,
+    });
+    const identity = await keys.identityOf(personId);
+    await expect(
+      limitedKeys.create(personId, { name: 'n'.repeat(11) }, identity),
+    ).rejects.toMatchObject({ status: 400, code: 'INVALID_NAME' });
+    const created = await limitedKeys.create(
+      personId,
+      { name: 'n'.repeat(10) },
+      identity,
+    );
+    await limitedKeys.update(personId, created.key.id, {
+      name: 'r'.repeat(11),
+    });
+    await expect(
+      limitedKeys.rotate(personId, created.key.id),
+    ).rejects.toMatchObject({ status: 400, code: 'INVALID_NAME' });
+    expect((await keys.get(personId, created.key.id)).name).toBe(
+      'r'.repeat(11),
+    );
+  });
+
+  it.each([
+    [
+      new APIError('BAD_REQUEST', {
+        code: 'INVALID_NAME_LENGTH',
+        message: 'Invalid name.',
+      }),
+      'INVALID_NAME',
+    ],
+    [
+      new APIError('BAD_REQUEST', {
+        code: 'NAME_REQUIRED',
+        message: 'Name required.',
+      }),
+      'INVALID_NAME',
+    ],
+    [
+      new APIError('BAD_REQUEST', {
+        code: 'INVALID_EXPIRATION',
+        message: 'Invalid expiry.',
+      }),
+      'INVALID_KEY',
+    ],
+    [new APIError('UNAUTHORIZED', { message: 'Unauthorized.' }), null],
+    [new APIError('FORBIDDEN', { message: 'Forbidden.' }), null],
+    [
+      new APIError('INTERNAL_SERVER_ERROR', { message: 'Internal error.' }),
+      null,
+    ],
+    [new Error('Storage failed.'), null],
+  ])(
+    'translates only upstream validation errors on issue and rotation (%s)',
+    async (error, code) => {
+      const identity = await keys.identityOf(personId);
+      const created = await keys.create(
+        personId,
+        { name: 'before-error' },
+        identity,
+      );
+      const before = (await keys.list(personId)).length;
+      const spy = vi.spyOn(auth, 'pluginApi').mockReturnValue({
+        createApiKey: vi.fn().mockRejectedValue(error),
+      } as never);
+      try {
+        for (const call of [
+          () => keys.create(personId, { name: 'new' }, identity),
+          () => keys.rotate(personId, created.key.id),
+        ]) {
+          const failure = await call().catch((caught: unknown) => caught);
+          if (code) {
+            expect(failure).toMatchObject({
+              name: 'ApiKeyRequestError',
+              status: 400,
+              code,
+              message: error.message,
+            });
+            expect(toApiKeysApiError(failure)).toMatchObject({
+              reason: code,
+              status: 'INVALID_ARGUMENT',
+              ...(code === 'INVALID_NAME'
+                ? {
+                    fieldViolations: [
+                      { field: 'name', description: error.message },
+                    ],
+                  }
+                : {}),
+            });
+          } else expect(failure).toBe(error);
+        }
+      } finally {
+        spy.mockRestore();
+      }
+      expect((await keys.list(personId)).length).toBe(before);
+      expect((await keys.get(personId, created.key.id)).name).toBe(
+        'before-error',
+      );
+    },
+  );
 
   it('stores a scope in the permissions column and reads it back', async () => {
     const encoded = encodeKeyScope({
@@ -778,8 +910,18 @@ describe('scoped API keys', () => {
       error: { reason: 'UNKNOWN_SCOPE_GROUP', domain: 'apiKeys' },
     });
 
+    const invalidName = await call('', 'POST', {
+      name: 'n'.repeat(101),
+      expiresInDays: 7,
+      scope: null,
+    });
+    expect(invalidName.status).toBe(400);
+    expect(await invalidName.json()).toMatchObject({
+      error: { reason: 'INVALID_NAME', fieldViolations: [{ field: 'name' }] },
+    });
+
     const created = await call('', 'POST', {
-      name: 'route',
+      name: 'n'.repeat(100),
       expiresInDays: 7,
       scope: { groups: { 'shop.orders': { level: 'read' } } },
     });
