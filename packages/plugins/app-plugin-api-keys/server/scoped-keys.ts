@@ -13,6 +13,7 @@ import type {
   KeyScope,
 } from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
+import { APIError } from 'better-auth/api';
 
 import {
   decodeKeyScope,
@@ -26,6 +27,7 @@ import {
   type KeyScopeOptions,
 } from '../shared/scopes.js';
 import { ownKeyPolicySlotOf, type ApiKeysPlugin } from './api-keys.js';
+import { MAX_KEY_NAME } from './constants.js';
 import { API_KEY_HEADER, isApiKeySession } from './key-sessions.js';
 import { ApiKeyScopeError, type ApiKeyScopes } from './scopes.js';
 
@@ -88,7 +90,6 @@ export interface CheckedApiKey {
 }
 
 const DAY_SECONDS = 24 * 60 * 60;
-const MAX_NAME = 100;
 const MAX_DESCRIPTION = 500;
 
 /**
@@ -273,7 +274,7 @@ export class ScopedApiKeys {
     identity: AuthorizationIdentity,
   ): Promise<CheckedApiKey> {
     const body = isRecord(input) ? input : {};
-    const name = text(body.name, 'name', MAX_NAME, true)!;
+    const name = text(body.name, 'name', MAX_KEY_NAME, true, 'INVALID_NAME')!;
     const description = text(
       body.description,
       'description',
@@ -316,8 +317,7 @@ export class ScopedApiKeys {
         : null;
     // Better Auth generates and hashes the new value, as for any key (its prefix, length and hashing options apply);
     // the value moves onto the existing row and the row Better Auth made for it goes.
-    const endpoints = this.options.auth.pluginApi<ApiKeysPlugin>('api-key');
-    const fresh = await endpoints.createApiKey({
+    const fresh = await this.createUpstream({
       body: {
         userId,
         name: row.name ?? 'API key',
@@ -403,7 +403,7 @@ export class ScopedApiKeys {
     const name =
       body.name === undefined
         ? row.name
-        : text(body.name, 'name', MAX_NAME, true);
+        : text(body.name, 'name', MAX_KEY_NAME, true, 'INVALID_NAME');
     const description =
       body.description === undefined
         ? descriptionOf(row.metadata)
@@ -480,8 +480,7 @@ export class ScopedApiKeys {
       readonly expiresInDays: number | null;
     },
   ): Promise<CreatedApiKey> {
-    const endpoints = this.options.auth.pluginApi<ApiKeysPlugin>('api-key');
-    const created = await endpoints.createApiKey({
+    const created = await this.createUpstream({
       body: {
         userId,
         name: input.name,
@@ -502,6 +501,25 @@ export class ScopedApiKeys {
         .execute();
     const row = await this.requireRow(userId, created.id);
     return { key: viewOf(row), secret: created.key };
+  }
+
+  private async createUpstream(
+    input: Parameters<ApiKeysPlugin['endpoints']['createApiKey']>[0],
+  ) {
+    const endpoints = this.options.auth.pluginApi<ApiKeysPlugin>('api-key');
+    try {
+      return await endpoints.createApiKey(input);
+    } catch (error) {
+      if (!(error instanceof APIError) || error.statusCode !== 400) throw error;
+      const code = error.body?.code;
+      throw new ApiKeyRequestError(
+        400,
+        code === 'INVALID_NAME_LENGTH' || code === 'NAME_REQUIRED'
+          ? 'INVALID_NAME'
+          : 'INVALID_KEY',
+        error.message,
+      );
+    }
   }
 
   private async remove(keyId: string): Promise<void> {
@@ -583,21 +601,22 @@ function text(
   name: string,
   max: number,
   required: boolean,
+  code = 'INVALID_KEY',
 ): string | null {
   if (value === undefined || value === null || value === '') {
     if (required)
-      throw new ApiKeyRequestError(400, 'INVALID_KEY', `${name} is required.`);
+      throw new ApiKeyRequestError(400, code, `${name} is required.`);
     return null;
   }
   if (typeof value !== 'string' || value.trim().length > max)
     throw new ApiKeyRequestError(
       400,
-      'INVALID_KEY',
+      code,
       `${name} must be text of at most ${max} characters.`,
     );
   const trimmed = value.trim();
   if (!trimmed && required)
-    throw new ApiKeyRequestError(400, 'INVALID_KEY', `${name} is required.`);
+    throw new ApiKeyRequestError(400, code, `${name} is required.`);
   return trimmed || null;
 }
 

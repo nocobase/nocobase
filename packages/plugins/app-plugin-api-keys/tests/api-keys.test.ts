@@ -23,6 +23,20 @@ function resolvesKeys(plugin: Plugin): boolean {
 }
 
 describe('apiKey', () => {
+  it('defaults every configuration to 100-character names and preserves application overrides', () => {
+    expect(apiKey().options.configurations[0]?.maximumNameLength).toBe(100);
+    expect(
+      apiKey([
+        { configId: 'default' },
+        { configId: 'short', maximumNameLength: 12 },
+      ]).options.configurations.map((item) => item.maximumNameLength),
+    ).toEqual([100, 12]);
+    expect(
+      apiKey({ maximumNameLength: 150 }).options.configurations[0]
+        ?.maximumNameLength,
+    ).toBe(150);
+  });
+
   it('accepts isolated configurations while retaining the default user-key behavior', () => {
     expect(
       resolvesKeys(
