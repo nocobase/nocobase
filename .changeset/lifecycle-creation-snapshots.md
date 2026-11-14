@@ -11,3 +11,5 @@ Freeze complete, version-specific lifecycle parameters atomically with record cr
 Remove the deferred snapshot boundary and independent startup-proof mechanism while retaining creation request idempotency. Reject missing or invalid instance snapshots without reading current configuration. Preflight complete historical payloads before configuration or schema writes, recover only from reliable creation evidence, and report historical submission-only evidence as a migration conflict with explicit operator choices.
 
 Update examples, parameter history, protected version editors and upgrade guidance. Custom LifecycleStore adapters must implement findRecords for bounded primary-key batch reads.
+
+Recognize released per-source parameter revisions when recovering verified creation usage, preserve original group revisions and remove obsolete read modes from the recovered payload. Keep released submission-only snapshots as explicit historical conflicts.

@@ -246,7 +246,7 @@ export class OfficeStore {
     if (!snapshot)
       throw new ParameterConfigurationError(
         'PARAMETER_SNAPSHOT_MISSING',
-        'Data request calendar requires its start snapshot.',
+        'Data request calendar requires its creation snapshot.',
       );
     const parsed = OfficeWorkflowValues.safeParse(snapshot.values);
     if (!parsed.success || !parsed.data.holidays)

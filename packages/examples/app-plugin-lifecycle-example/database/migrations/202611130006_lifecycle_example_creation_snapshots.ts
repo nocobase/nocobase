@@ -192,6 +192,61 @@ function snapshotErrors(
   }
   return errors;
 }
+/** The released format recorded revisions on sources, not on the resolution. */
+function publishedResolution(
+  contract: Contract,
+  payload: unknown,
+  name: string,
+  recordId: string,
+): { payload: Values; groupRevisions: Record<string, number> } | undefined {
+  const data = object(payload);
+  const sources = object(data?.sources);
+  if (
+    !data ||
+    Object.hasOwn(data, 'revision') ||
+    data.recoveredFrom !== undefined ||
+    !sources
+  )
+    return undefined;
+  const normalized: Values = {};
+  const groupRevisions: Record<string, number> = {};
+  for (const [field, value] of Object.entries(sources)) {
+    const source = object(value);
+    if (
+      !source ||
+      source.readMode !==
+        (name === 'expenses' && source.group === 'expenseThresholds'
+          ? 'snapshot'
+          : 'live') ||
+      !['default', 'configuration'].includes(String(source.origin)) ||
+      typeof source.group !== 'string' ||
+      !Number.isSafeInteger(source.revision) ||
+      Number(source.revision) < 0
+    )
+      return undefined;
+    const previous = groupRevisions[source.group];
+    if (previous !== undefined && previous !== source.revision)
+      return undefined;
+    groupRevisions[source.group] = Number(source.revision);
+    const { readMode: _readMode, ...retained } = source;
+    normalized[field] = retained;
+  }
+  const result = {
+    ...data,
+    // Match the already-merged 202610160005 configuration consolidation rule.
+    revision: Math.max(0, ...Object.values(groupRevisions)),
+    sources: normalized,
+  };
+  if (snapshotErrors(contract, result, name, recordId).length) return undefined;
+  return { payload: result, groupRevisions };
+}
+// Released expense snapshots contained only snapshot-mode fields, never the live timing field.
+const publishedExpenseSnapshot: Contract = {
+  collection: 'lifecycleExampleExpenses',
+  defaults: { autoApproveLimit: 5000, financeLimit: 50000 },
+  groups: { expenseThresholds: ['autoApproveLimit', 'financeLimit'] },
+  due: {},
+};
 const migration: MigrationDefinition = defineMigration({
   name: '202611130006_lifecycle_example_creation_snapshots',
   irreversible: true,
@@ -306,7 +361,12 @@ const migration: MigrationDefinition = defineMigration({
                   filter: { id: usageId },
                 })
               : undefined;
-            const fact = object(usage?.payload);
+            const rawFact = object(usage?.payload);
+            const publishedFact =
+              name === 'expenses-v2'
+                ? undefined
+                : publishedResolution(contract, rawFact, name, recordId);
+            const fact = publishedFact?.payload ?? rawFact;
             const creationValid =
               !!fact &&
               !!entry &&
@@ -320,6 +380,29 @@ const migration: MigrationDefinition = defineMigration({
             if (creationValid) inventory.creationUsages++;
             let payload: Values;
             if (stored) {
+              const publishedSnapshot =
+                name === 'expenses'
+                  ? publishedResolution(
+                      publishedExpenseSnapshot,
+                      existing,
+                      name,
+                      recordId,
+                    )
+                  : undefined;
+              if (publishedSnapshot) {
+                inventory.legacySubmissionSnapshots++;
+                conflicts.push({
+                  definition: name,
+                  recordId,
+                  reason: 'LEGACY_SUBMISSION_SNAPSHOT',
+                  snapshotAt: publishedSnapshot.payload.at,
+                  options: [
+                    'approvePreservingOriginalHistoricalSnapshot',
+                    'recreateRecordWithNewCreationParameters',
+                  ],
+                });
+                continue;
+              }
               const fields = snapshotErrors(contract, existing, name, recordId);
               if (fields.length) {
                 conflicts.push({
@@ -437,7 +520,13 @@ const migration: MigrationDefinition = defineMigration({
                 values: fact.values,
                 sources: fact.sources,
                 at: fact.at,
-                recoveredFrom: { transitionId: entryId, usageId },
+                recoveredFrom: {
+                  transitionId: entryId,
+                  usageId,
+                  ...(publishedFact
+                    ? { groupRevisions: publishedFact.groupRevisions }
+                    : {}),
+                },
               };
               const fields = snapshotErrors(contract, payload, name, recordId);
               if (fields.length) {
