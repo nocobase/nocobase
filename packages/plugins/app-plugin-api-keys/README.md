@@ -53,8 +53,7 @@ Registering the server plugin without `apiKey()` creates the table and mounts no
 | `enableSessionForAPIKeys` | `false`                             | `true`  | Without it a key authenticates nothing: keys are still issued, and every request carrying one answers 401               |
 | `rateLimit.enabled`       | `true`, 10 requests per key per day | `false` | That is a quota for issuing keys rather than for using them, and it silently breaks the first integration anyone writes |
 | `requireName`             | `false`                             | `true`  | A key is identified by its name, and a key listed as "unnamed" cannot be revoked with any confidence                    |
-
-| `maximumNameLength` | `32` | `100` | Matches scoped key creation and rotation. |
+| `maximumNameLength`       | `32`                                | `100`   | Matches scoped key creation and rotation.                                                                               |
 
 All four are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 1000, timeWindow: 60_000 } })` sets a quota, and passing all four back reproduces Better Auth's own behaviour exactly.
 
