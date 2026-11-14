@@ -682,6 +682,31 @@ describe('NocoBase dependency skills', () => {
     });
   });
 
+  it('synchronizes project guidance from a development CLI extension', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      devDependencies: { '@nocobase/example-cli': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/example-cli', {
+      'nocobase-example-cli': '# project commands',
+    });
+    await writeFile(
+      path.join(appRoot, 'node_modules/@nocobase/example-cli/package.json'),
+      JSON.stringify({
+        name: '@nocobase/example-cli',
+        version: '1.0.0',
+        nocobase: { cli: { entry: './cli' } },
+      }),
+    );
+    await syncApp(appRoot);
+    expect(
+      await readFile(
+        path.join(appRoot, '.agents/skills/nocobase-example-cli/SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# project commands');
+  });
+
   it('leaves the Skill a packaged CLI ships for its own users alone', async () => {
     const appRoot = await createApp();
     await declareDependencies(appRoot, {

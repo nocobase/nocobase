@@ -93,6 +93,12 @@ describe('TEMPLATE_ALIASES', () => {
       }),
     ).toBe('@nocobase/app-template-multi-app@0.0.1');
   });
+  it('resolves the child template at the requested channel', () => {
+    expect(isTemplateAlias('sub-app')).toBe(true);
+    expect(resolveTemplateSource('sub-app', { tag: 'beta' })).toBe(
+      '@nocobase/app-template-sub-app@beta',
+    );
+  });
   it('maps the default name to the app template', () => {
     expect(TEMPLATE_ALIASES.default).toEqual({
       packageName: '@nocobase/app-template-default',

@@ -115,6 +115,7 @@ export function formatHelp(binary: string): string {
     '  multi-portal is commercial: log in to https://pkg-v3.nocobase.com/ first and select that registry.',
     '  multi-app is a commercial Main application template; licensed registry access is required.',
     '  It creates Main only. Add and configure independent child applications when needed.',
+    '  sub-app is a commercial child template with deployment tooling and platform SSO.',
     '',
     '  The generated app is not configured yet. Configure it inside the app directory with:',
     '    pnpm nocobase config init',
