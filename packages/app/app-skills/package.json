@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-skills",
-  "version": "0.1.0-beta.64",
+  "version": "0.1.0-beta.65",
   "description": "Agent Skills for developing applications and plugins, upgrading and deploying NocoBase applications.",
   "license": "Apache-2.0",
   "repository": {
@@ -22,12 +22,14 @@
   "scripts": {
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "check": "pnpm format:check"
+    "check": "pnpm format:check",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
     "@playwright/test": "catalog:",
-    "prettier": "catalog:"
+    "prettier": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@playwright/test": "catalog:",

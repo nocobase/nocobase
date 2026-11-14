@@ -10,6 +10,8 @@ export interface ImapFolderCursor {
 
 export interface ImapSyncCursor {
   readonly version: 1;
+  /** Keep the import boundary when a history-complete partial resumes incrementally. */
+  readonly receivedAfter?: string;
   readonly folders: Readonly<Record<string, ImapFolderCursor>>;
   readonly verify?: ImapVerifyState;
 }
@@ -94,10 +96,23 @@ export interface ImapVerifyFolder {
 
 /** First verification pass, kept in the change cursor until the second pass compares it. */
 export interface ImapVerifyState {
-  readonly attempts: number;
-  readonly excluded?: readonly string[];
+  readonly attempts?: number;
+  readonly excluded?: Readonly<
+    Record<string, Pick<ImapVerifyFolder, 'uidValidity' | 'uids'>>
+  >;
   readonly folders?: Readonly<Record<string, ImapVerifyFolder>>;
+  readonly rechecks?: readonly ImapExcludedRecheck[];
 }
+
+/** A bounded batch of committed identities and the exclusion folders still to search. */
+export interface ImapExcludedRecheck {
+  readonly identities: readonly ImapRecheckIdentity[];
+  readonly folders: readonly string[];
+}
+
+export type ImapRecheckIdentity =
+  | { readonly emailId: string; readonly rfcMessageId?: undefined }
+  | { readonly emailId?: undefined; readonly rfcMessageId: string };
 
 /**
  * Account-bound persistence given to one IMAP adapter instance. It exposes only
@@ -136,6 +151,7 @@ export interface ImapLocationPersistence {
   ): Promise<readonly ImapStoredLocation[]>;
   /** Valid and pending copies of the account, for verification. */
   listKnownLocations(): Promise<readonly ImapStoredLocation[]>;
+  getPushRequestedAt(): Promise<string | undefined>;
   beginMove(): Promise<ImapMoveState>;
   rememberMoveDestination(
     state: ImapMoveState,

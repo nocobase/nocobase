@@ -1,5 +1,25 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.6
+
+### Minor Changes
+
+- 3112daa: Derive dedicated CLI operation keys from explicitly marked OpenAPI header schemas. The CLI generates or reuses a key, preserves it in success and failure output, and reports uncertain results without replaying writes. Upgrade the CLI and server together for operation-key commands. Online shells expose authorized commands but refuse unsupported writes before sending. Ordinary headers and existing commands retain their behavior.
+
+### Patch Changes
+
+- 3112daa: Generate CLI operation keys in the existing web client's timestamp.UUID format so native mutation receipts accept default calls. Require declared length bounds to allow 50-character keys, reject incompatible UUID-only schemas, and document the native 24-hour retry window without changing server receipt validation.
+
+## 5.0.0-beta.5
+
+### Minor Changes
+
+- 44bf26a: Allow plugins to contribute an application-local synchronous ID implementation with asynchronous initialization while retaining the host ID provider and public service token. Select and cache the implementation on first generation, preserving early-resolved references without per-ID container lookups. Document initialization ordering and plugin-owned cleanup.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+
 ## 5.0.0-beta.4
 
 ### Minor Changes

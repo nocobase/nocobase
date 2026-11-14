@@ -71,7 +71,7 @@ async function sheets(
   max?: number,
 ): Promise<string> {
   const budget = new OutputBudget(max);
-  const XLSX = await import('xlsx');
+  const XLSX = await import('@e965/xlsx');
   const workbook = csv
     ? XLSX.read(decode(bytes), { type: 'string', raw: true })
     : XLSX.read(bytes, { type: 'array', cellText: true });

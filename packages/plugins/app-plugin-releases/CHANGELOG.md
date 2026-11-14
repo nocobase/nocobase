@@ -1,5 +1,42 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- 2a63164: Paginate app lists in the database, scan label and runtime filters in bounded batches, and index both environment and global ordering. Treat search text literally.
+- Updated dependencies [3112daa]
+- Updated dependencies [f60b678]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-host@0.1.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 6102557: Keep the expanded release when the App Host refuses a deployment for memory or capacity, so the retry after a recycle or a Host restart reuses it instead of extracting it again, and stop appending an unset active app limit to capacity errors. Show one state per app in the Releases app list and app overview, with a pending deployment taking precedence and the runtime's last failure as its detail, and word capacity refusals and the recycle wait in every supported language.
+- Updated dependencies [b33e134]
+- Updated dependencies [6102557]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-host@0.1.0-beta.23
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
 ## 0.1.0-beta.21
 
 ### Patch Changes

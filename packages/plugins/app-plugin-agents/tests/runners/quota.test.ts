@@ -945,3 +945,80 @@ it('validates quota ceilings and protects settings from other users and anonymou
     ).status,
   ).toBe(200);
 });
+it('lists current tool quota with each visible runtime, as its own read shows it, and drops what has reset', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({
+    ownerUserId: 'alice',
+    tools: [{ kind: 'claude', authenticated: true }],
+  });
+  await h.services.tx.run((unit) =>
+    h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+      windows: [
+        {
+          scope: 'tool',
+          target: '',
+          window: 'five_hour',
+          resetsAt: '2026-10-01T01:00:00.000Z',
+          usedPercent: 100,
+          exhausted: true,
+        },
+        {
+          scope: 'tool',
+          target: '',
+          window: 'seven_day',
+          resetsAt: '2026-10-08T00:00:00.000Z',
+          usedPercent: 40,
+          exhausted: false,
+        },
+      ],
+    }),
+  );
+  await h.services.tx.run((unit) =>
+    h.services.runners.markModelUnavailable(
+      unit,
+      runner.runnerId,
+      'claude',
+      'claude-retired',
+    ),
+  );
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 80 },
+  });
+  const listed = async (user: string, can: string[] = []) =>
+    (await h.request('GET', '/agents/runners', { user, can })).body.data as {
+      id: string;
+      unavailableModels: { reason?: string; window?: string }[];
+      quotaUsage: { window: string; usedPercent?: number }[];
+      quotaLimits: Record<string, number> | null;
+    }[];
+  const reader = ['agents.runners/read'];
+  const [own] = await listed('alice');
+  expect(own?.unavailableModels).toEqual([
+    expect.objectContaining({ reason: 'toolQuota', window: 'five_hour' }),
+  ]);
+  expect(own?.quotaUsage.map((u) => [u.window, u.usedPercent])).toEqual([
+    ['five_hour', 100],
+    ['seven_day', 40],
+  ]);
+  expect(own?.quotaLimits).toEqual({ claude: 80 });
+  // A reader of runners sees the same quota as the runtime's own read; someone who may not see the runtime gets none.
+  const detail = (
+    await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+      user: 'bob',
+      can: reader,
+    })
+  ).body.data;
+  const [read] = await listed('bob', reader);
+  expect(read?.quotaUsage).toEqual(detail.quotaUsage);
+  expect(read?.unavailableModels).toEqual(
+    detail.unavailableModels.filter(
+      (mark: { reason?: string }) => mark.reason === 'toolQuota',
+    ),
+  );
+  expect(await listed('carol')).toEqual([]);
+  // Once a window resets, its mark and usage no longer count.
+  h.clock.advance(3_600_000);
+  const [later] = await listed('alice');
+  expect(later?.unavailableModels).toEqual([]);
+  expect(later?.quotaUsage.map((u) => u.window)).toEqual(['seven_day']);
+});

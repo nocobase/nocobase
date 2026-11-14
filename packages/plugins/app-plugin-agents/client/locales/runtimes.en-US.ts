@@ -41,6 +41,9 @@ const runtimesEnUS = {
       workspaceSize: 'Workspace size: {{value}}',
       providers_one: '{{count}} provider at quota',
       providers_other: '{{count}} providers at quota',
+      models_one: '{{count}} model at quota',
+      models_other: '{{count}} models at quota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Issue / conversation',
         agent: 'Agent',
@@ -156,8 +159,8 @@ const runtimesEnUS = {
       offlineNever: 'Offline',
     },
     toolUsage: {
-      label: 'Runs by coding tool',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Runs {{used}}/{{limit}}',
+      hint: 'At most {{limit}} {{tool}} runs at once; {{used}} running now',
     },
     toolSlots: {
       label: 'Limits per coding tool',
@@ -297,6 +300,8 @@ const runtimesEnUS = {
       show: 'Version {{version}}: a newer runner is available',
       available: 'Update available',
       badge: 'Upgradable',
+      latest: 'Latest',
+      installed: 'Version {{version}}',
       title: 'A newer runner for {{name}}',
       description: 'Installed {{version}}, this application serves {{latest}}.',
       hint: 'It updates itself once no agent is running. To update it now, run this on its host.',

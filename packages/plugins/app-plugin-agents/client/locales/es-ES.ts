@@ -659,6 +659,10 @@ const esES: LocaleResource<typeof enUS> = {
       workspaceSize: 'Tamaño del espacio de trabajo: {{value}}',
       providers_one: 'Proveedor {{count}} en cuota',
       providers_other: 'Proveedores {{count}} en cuota',
+      models_one: '{{count}} modelo sin cuota',
+      models_other: '{{count}} modelos sin cuota',
+      models_many: '{{count}} modelos sin cuota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Tarea / conversación',
         agent: 'Agente',
@@ -782,8 +786,8 @@ const esES: LocaleResource<typeof enUS> = {
       offlineNever: 'Sin conexión',
     },
     toolUsage: {
-      label: 'Se ejecuta mediante herramienta de codificación',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Ejecuciones {{used}}/{{limit}}',
+      hint: 'Como máximo {{limit}} ejecuciones de {{tool}} a la vez; {{used}} en curso',
     },
     toolSlots: {
       label: 'Límites por herramienta de codificación',
@@ -923,6 +927,8 @@ const esES: LocaleResource<typeof enUS> = {
       show: 'Versión {{version}}: hay un entorno de ejecución más nuevo disponible',
       available: 'Actualización disponible',
       badge: 'Actualizable',
+      latest: 'Actual',
+      installed: 'Versión {{version}}',
       title: 'Un entorno de ejecución más nuevo para {{name}}',
       description:
         'Instalado {{version}}, esta aplicación sirve para {{latest}}.',

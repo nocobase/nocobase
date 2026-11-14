@@ -54,7 +54,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -121,7 +120,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js

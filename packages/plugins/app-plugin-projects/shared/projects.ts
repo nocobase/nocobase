@@ -34,6 +34,14 @@ export interface Project {
   readonly updatedAt: string;
 }
 
+/** Authorized project metadata without issue counts, resources or person display records. */
+export interface ProjectReference extends Pick<
+  Project,
+  'id' | 'name' | 'leadUserId'
+> {
+  readonly member: boolean;
+}
+
 export interface IssueCounts {
   readonly total: number;
   /** Issues in a status of the `done` category. */

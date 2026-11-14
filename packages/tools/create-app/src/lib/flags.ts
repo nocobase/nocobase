@@ -40,7 +40,12 @@ export const CREATE_FLAGS = {
     description: `Channel to fetch a named template from: ${TEMPLATE_TAGS.join(', ')}. Ignored when --template names a package or a path, which already say which version to use.`,
   }),
   registry: Flags.string({
-    description: 'npm registry to download the template from.',
+    description:
+      'Deprecated. Use --nocobase-registry or NOCOBASE_REGISTRY for @nocobase packages; configure npm/pnpm for third-party templates.',
+  }),
+  'nocobase-registry': Flags.string({
+    description:
+      'Registry for @nocobase packages only. Overrides NOCOBASE_REGISTRY.',
   }),
   help: Flags.boolean({
     char: 'h',
@@ -60,6 +65,7 @@ export interface ParsedInput {
     install: boolean;
     template: string;
     'template-tag': string;
+    'nocobase-registry'?: string;
     registry?: string;
     help: boolean;
     version: boolean;
@@ -104,9 +110,11 @@ export function formatHelp(binary: string): string {
     `  $ ${binary} crm --template-tag=beta`,
     '',
     'NOTES',
-    '  The template is downloaded from https://registry.npmjs.org by default.',
-    '  Override it with --registry, or set the NOCOBASE_REGISTRY environment variable.',
+    '  Registry selection follows your npm/pnpm configuration.',
+    '  Set NOCOBASE_REGISTRY or --nocobase-registry to override @nocobase packages only.',
     '  multi-portal is commercial: log in to https://pkg-v3.nocobase.com/ first and select that registry.',
+    '  multi-app is a commercial Main application template; licensed registry access is required.',
+    '  It creates Main only. Add and configure independent child applications when needed.',
     '',
     '  The generated app is not configured yet. Configure it inside the app directory with:',
     '    pnpm nocobase config init',

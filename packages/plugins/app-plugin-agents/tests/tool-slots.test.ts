@@ -62,13 +62,20 @@ describe('limits per coding tool', () => {
     // Now the machine is full.
     expect((await waits()).get(third)?.reason).toBe('runnersBusy');
 
-    // The runs show on the runner by tool.
+    // The list shows each tool's runs against its own limit.
     const listed = await h.request('GET', '/agents/runners', { user: 'owner' });
     expect(
-      (listed.body.data as { id: string; activeByTool: unknown }[]).find(
-        (item) => item.id === runner.runnerId,
-      )?.activeByTool,
-    ).toEqual({ claude: 2, codex: 1 });
+      (
+        listed.body.data as {
+          id: string;
+          activeByTool: unknown;
+          toolSlots: unknown;
+        }[]
+      ).find((item) => item.id === runner.runnerId),
+    ).toMatchObject({
+      activeByTool: { claude: 2, codex: 1 },
+      toolSlots: { claude: 2, codex: 1 },
+    });
   });
 
   it('takes no run of a tool the runner says it has no room for', async () => {

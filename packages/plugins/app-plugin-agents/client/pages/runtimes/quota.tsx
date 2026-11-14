@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog.js';
 import { Button } from '../../components/ui/button.js';
+import { blockedProviders, providerTool, quotaView } from './quota-view.js';
 
 export function QuotaCell({
   runner,
@@ -34,41 +35,10 @@ export function QuotaCell({
   readonly onClear: (mark: UnavailableModel) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
-  const marks = (runner.unavailableModels ?? []).filter(
-    (m) =>
-      m.reason === 'toolQuota' &&
-      m.tool === tool &&
-      m.model === target &&
-      (!m.resetsAt || Date.parse(m.resetsAt) > now),
-  );
-  const usage = (runner.quotaUsage ?? []).filter(
-    (u) =>
-      u.tool === tool &&
-      u.target === target &&
-      u.usedPercent !== undefined &&
-      (!u.resetsAt || Date.parse(u.resetsAt) > now) &&
-      !(u.window === 'account' && marks.length) &&
-      !(u.exhausted && !marks.length),
-  );
-  const providerTool = tool === 'opencode' || tool === 'pi';
-  const blocked = new Set(
-    (runner.unavailableModels ?? [])
-      .filter(
-        (m) =>
-          m.reason === 'toolQuota' &&
-          m.tool === tool &&
-          m.scope === 'provider' &&
-          (!m.resetsAt || Date.parse(m.resetsAt) > now),
-      )
-      .map((m) => m.model),
-  ).size;
-  const near =
-    !marks.length &&
-    usage.some(
-      (u) =>
-        (u.usedPercent ?? 0) >= 90 &&
-        (!u.resetsAt || Date.parse(u.resetsAt) > now),
-    );
+  const { marks, usage, near } = quotaView(runner, tool, target, now);
+  const blocked = providerTool(tool)
+    ? blockedProviders(runner, tool, now).length
+    : 0;
   return (
     <div className='min-w-0 space-y-1 text-xs whitespace-normal'>
       {marks.map((mark) => (
@@ -139,7 +109,7 @@ export function QuotaCell({
         <p className='text-muted-foreground'>{t('runtimes.quota.automatic')}</p>
       ) : null}
       {!usage.length && !marks.length ? (
-        providerTool && !target && blocked > 0 ? (
+        !target && blocked > 0 ? (
           <span className='text-muted-foreground'>
             {t('runtimes.quota.providers', {
               count: blocked,

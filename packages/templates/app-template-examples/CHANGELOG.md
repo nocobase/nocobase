@@ -1,5 +1,81 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.80
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- 5fb0869: Run the generated application's test files in parallel, which makes `pnpm test` several times faster. Stop a form from announcing the end of its save after it has been removed from the page.
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+- Updated dependencies [b33e134]
+- Updated dependencies [8db22e3]
+- Updated dependencies [fb306c9]
+- Updated dependencies [a1af7f0]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [44cb25f]
+- Updated dependencies [e103671]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.23
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.26
+  - @nocobase/app-plugin-agents@2.0.0-beta.13
+  - @nocobase/app-plugin-mail@1.0.0-beta.25
+  - @nocobase/app-cli@1.0.0-beta.35
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.20
+
+## 1.0.0-beta.79
+
+### Minor Changes
+
+- a4191df: Put every table row's actions in one "⋮" menu. Both templates ship `RowActions` (`#components/row-actions`), which draws the same icon-only trigger on every row and page, keeps destructive actions last after a separator, renders nothing when the viewer has no action, and keeps menu clicks from reaching the row. The prepared Users and default access lists, the list and edit example and the customer contacts example use it; account actions such as Disable and Revoke sessions are no longer buttons on the row, and actions columns show no header text. The development Skill makes the menu the default for a single action, for every record state and for administration lists, shows an action outside it only when the user or a confirmed design asks for it, keeps the actions column unpinned, and the component checker reports actions columns that render buttons or links, show header text or pin the column. Existing applications receive `RowActions` and the updated pages through a template upgrade; synchronizing the Skill does not change pages that are already built.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [788df3e]
+- Updated dependencies [44bf26a]
+- Updated dependencies [c74760f]
+- Updated dependencies [74f1bf8]
+- Updated dependencies [1952789]
+- Updated dependencies [1724828]
+- Updated dependencies [7884308]
+- Updated dependencies [a6b6b7c]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.22
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.25
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.21
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.19
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.20
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.20
+  - @nocobase/app-plugin-foundation@0.1.0-beta.20
+  - @nocobase/app-plugin-i18n@1.0.0-beta.23
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.14
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.18
+  - @nocobase/app-plugin-mail@1.0.0-beta.24
+  - @nocobase/app-plugin-notification@2.0.0-beta.9
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.18
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.5
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.13
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.16
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.17
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.26
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.25
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.12
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.11
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-cli@1.0.0-beta.34
+
 ## 1.0.0-beta.78
 
 ### Minor Changes

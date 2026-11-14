@@ -92,10 +92,15 @@ export function UserLocaleProvider({
     store?.snapshot ?? (() => 0),
     () => 0,
   );
-  const identity = auth.isPending
-    ? 'pending'
-    : (auth.session?.session?.id ?? auth.session?.user.id ?? null);
-  const ready = !auth.isPending && (!store || store.loaded);
+  // Like AuthenticationGuard: once the identity is known, a session refresh keeps it. The session itself is kept
+  // until the refresh answers, so children such as a sign-up form stay mounted and keep their result.
+  const [hasResolved, setHasResolved] = useState(false);
+  if (!auth.isPending && !hasResolved) setHasResolved(true);
+  const settled = !auth.isPending || hasResolved;
+  const identity = settled
+    ? (auth.session?.session?.id ?? auth.session?.user.id ?? null)
+    : 'pending';
+  const ready = settled && (!store || store.loaded);
   const value = store?.loaded
     ? store.get(USER_LOCALE_PREFERENCE_KEY)
     : undefined;

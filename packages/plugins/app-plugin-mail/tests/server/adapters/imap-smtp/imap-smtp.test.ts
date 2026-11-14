@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => {
     mailbox: false as false | { uidValidity: bigint },
     search: vi.fn(),
     fetch: vi.fn(),
+    fetchAll: vi.fn(),
     fetchOne: vi.fn(),
     download: vi.fn(),
     messageFlagsAdd: vi.fn(),
@@ -114,6 +115,7 @@ describe('IMAP/SMTP mail Provider', () => {
     mocks.imap.exec.mockResolvedValue({ next: vi.fn() });
     mocks.imap.messageFlagsAdd.mockResolvedValue(true);
     mocks.imap.download.mockReset();
+    mocks.imap.fetchAll.mockResolvedValue([]);
     mocks.imap.fetch.mockImplementation(async function* () {});
   });
 
@@ -1225,7 +1227,7 @@ describe('IMAP/SMTP mail Provider', () => {
     mocks.imap.fetch.mockImplementation(async function* (
       uids: number[] | string,
     ) {
-      yield fetchedMessage(String(uids).startsWith('1:') ? 1 : 2);
+      yield fetchedMessage(Number(String(uids).split(':')[0]));
     });
     const adapter = await imapSmtpMailProviderDefinition.createAdapter(
       context(),
@@ -1237,10 +1239,29 @@ describe('IMAP/SMTP mail Provider', () => {
     if (!result.ok) throw new Error(result.error.message);
     const cursor = JSON.parse(String(result.value.nextCursor.value));
     expect(result.value.hasMore).toBe(true);
-    expect(cursor.folders.Projects).toEqual({
-      uidValidity: '1',
-      uidNext: 1,
+    // No extra STATUS/SELECT for a folder after the first completed import.
+    // Its absent checkpoint means start from UID 1 when it is first visited.
+    expect(cursor.folders.Projects).toBeUndefined();
+    const second = await adapter.listChanges!({
+      limit: 1,
+      cursor: result.value.nextCursor,
     });
+    if (!second.ok) throw new Error(second.error.message);
+    const third = await adapter.listChanges!({
+      limit: 1,
+      cursor: second.value.nextCursor,
+    });
+    if (!third.ok) throw new Error(third.error.message);
+    expect(
+      [result, second, third].flatMap((page) =>
+        page.value.messages.map((message) => message.providerMessageId),
+      ),
+    ).toEqual([
+      encodeMessageLocator({ folder: 'INBOX', uidValidity: '1', uid: 1 }),
+      encodeMessageLocator({ folder: 'Projects', uidValidity: '1', uid: 1 }),
+      encodeMessageLocator({ folder: 'Projects', uidValidity: '1', uid: 2 }),
+    ]);
+    expect(third.value.hasMore).toBe(false);
   });
 
   it.each([

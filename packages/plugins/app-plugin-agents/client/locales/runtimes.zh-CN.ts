@@ -40,6 +40,9 @@ const runtimesZhCN: RuntimesLocale = {
       workspaceSize: '工作目录总占用：{{value}}',
       providers_one: '{{count}} 个服务商额度用完',
       providers_other: '{{count}} 个服务商额度用完',
+      models_one: '{{count}} 个模型额度用完',
+      models_other: '{{count}} 个模型额度用完',
+      percent: '{{percent}}%',
       runColumns: {
         issue: '任务 / 对话',
         agent: 'Agent',
@@ -141,8 +144,8 @@ const runtimesZhCN: RuntimesLocale = {
     revokedList_other: '{{count}} 个已吊销的运行环境',
     lastSeen: '最近在线 {{time}}',
     toolUsage: {
-      label: '各编码工具的运行数',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '并发 {{used}}/{{limit}}',
+      hint: '{{tool}} 最多同时运行 {{limit}} 个，当前 {{used}} 个',
     },
     toolSlots: {
       label: '按编码工具限制',
@@ -286,6 +289,8 @@ const runtimesZhCN: RuntimesLocale = {
       show: '版本 {{version}}：runner 有新版本',
       available: '有可用更新',
       badge: '可升级',
+      latest: '最新',
+      installed: '版本 {{version}}',
       title: '{{name}} 的 runner 有新版本',
       description: '已安装 {{version}}，本应用提供 {{latest}}。',
       hint: '没有 Agent 运行时它会自动更新。如需立即更新，在它所在的主机上运行：',

@@ -133,17 +133,23 @@ export function resolveDirectories(commit, directories, { cwd } = {}) {
   return byName;
 }
 
+// A release's section of a root changelog read at its tagged commit, without its heading, or undefined when the
+// changelog is missing or has no section for the tag. A renamed historical tag still points at an immutable changelog
+// with its original `release-beta/` heading, so that heading is the fallback for a `nocobase-v3-beta/` tag.
+export function findReleaseSection(changelog, tag) {
+  if (!changelog) return undefined;
+  const section = extractReleaseSection(changelog, tag);
+  if (section || !tag.startsWith('nocobase-v3-beta/')) return section;
+  return extractReleaseSection(
+    changelog,
+    tag.replace('nocobase-v3-beta/', 'release-beta/'),
+  );
+}
+
 // The release's section of the root CHANGELOG.md, followed by a heading for the package table. A release cut before
 // the changelog existed, or one whose changelog step failed, has no section and renders the table alone.
 export function renderChangelogLines(changelog, tag) {
-  let section = changelog ? extractReleaseSection(changelog, tag) : undefined;
-  // A renamed historical tag still points at an immutable changelog with its original heading.
-  if (!section && changelog && tag.startsWith('nocobase-v3-beta/')) {
-    section = extractReleaseSection(
-      changelog,
-      tag.replace('nocobase-v3-beta/', 'release-beta/'),
-    );
-  }
+  const section = findReleaseSection(changelog, tag);
   return section ? [section, '', '## Packages', ''] : [];
 }
 

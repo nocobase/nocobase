@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { parse, stringify } from 'yaml';
 
 const scriptPath = path.resolve(
   import.meta.dirname,
@@ -336,6 +337,44 @@ describe('server package generation', () => {
       'Could not find a declared or installed version for hono',
     );
   });
+});
+
+it('keeps an official tarball source instead of its unpublished registry version', () => {
+  const { root, library } = createWorkspace();
+  const manifestPath = path.join(library, 'package.json');
+  const manifest = readJson(manifestPath);
+  const tarball = 'https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz';
+  manifest.dependencies = { xlsx: tarball };
+  writeJson(manifestPath, manifest);
+  writeJson(path.join(library, 'node_modules/xlsx/package.json'), {
+    name: 'xlsx',
+    version: '0.20.3',
+  });
+  expect(generate(root).status).toBe(0);
+  expect(readJson(path.join(root, 'dist/package.json')).dependencies.xlsx).toBe(
+    tarball,
+  );
+});
+
+it('carries security resolution rules and their catalogs into a standalone deployment', () => {
+  const { root } = createWorkspace();
+  const settings = {
+    catalog: { zod: '^4.6.6' },
+    catalogs: { ai: { zod: '^3.25.76' } },
+    overrides: {
+      'undici@>=7.0.0 <7.30.1': '^7.30.1',
+      'zod@^4.0.0': 'catalog:',
+      '@modelcontextprotocol/sdk>zod': 'catalog:ai',
+    },
+  };
+  writeFileSync(
+    path.resolve(root, '../../../pnpm-workspace.yaml'),
+    stringify({ packages: ['packages/*/*'], ...settings }),
+  );
+  expect(generate(root).status).toBe(0);
+  expect(
+    parse(readFileSync(path.join(root, 'dist/pnpm-workspace.yaml'), 'utf8')),
+  ).toMatchObject(settings);
 });
 
 it('carries dependency patches from the enclosing workspace into a standalone deployment', () => {

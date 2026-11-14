@@ -1,5 +1,71 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.14
+
+### Minor Changes
+
+- b2e2a1e: Support DeepSeek's official Search API in Native OnlineAgent web search using existing model-service credentials and bounded source evidence.
+
+### Patch Changes
+
+- 3112daa: Derive dedicated CLI operation keys from explicitly marked OpenAPI header schemas. The CLI generates or reuses a key, preserves it in success and failure output, and reports uncertain results without replaying writes. Upgrade the CLI and server together for operation-key commands. Online shells expose authorized commands but refuse unsupported writes before sending. Ordinary headers and existing commands retain their behavior.
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-cli-client@0.1.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-cli-distribution@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
+## 2.0.0-beta.13
+
+### Minor Changes
+
+- e103671: Show each enabled coding tool's runs against its own concurrency limit beside its tag in the runtime list ("Runs 1/2"), instead of under the runtime's status.
+
+### Patch Changes
+
+- 8db22e3: Send files uploaded by conversation runs immediately with their replies and retain them with the conversation.
+- fb306c9: Expose composable server-side CLI distribution without registering Agents, while preserving existing Agents download credentials and installation protocols.
+- dd0a34f: Require the patched RE2JS release for agent output schema pattern validation.
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+- Updated dependencies [b33e134]
+- Updated dependencies [fb306c9]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-cli-distribution@0.1.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.35
+  - @nocobase/document-extractor@0.1.0-beta.2
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 2.0.0-beta.12
+
+### Minor Changes
+
+- 7884308: Show each enabled coding tool's quota beside its tag in the runtime list, and show only "Latest" or "Upgradable" in its version column. The runtime list now returns current tool quota marks, usage and pause thresholds.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- fcd59ee: Simplify runtime quota threshold settings, show them read-only to viewers, distinguish missing quota data, and format quota windows in days or hours.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [a6b6b7c]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.21
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-cli@1.0.0-beta.34
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
 ## 2.0.0-beta.11
 
 ### Minor Changes

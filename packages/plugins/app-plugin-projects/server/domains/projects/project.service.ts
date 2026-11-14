@@ -14,6 +14,7 @@ import {
   type IssueCounts,
   type ProjectDetail,
   type ProjectListItem,
+  type ProjectReference,
   type UpdateProjectRequest,
 } from '../../../shared/projects.js';
 import { requireAction, scopeOf, type Viewer } from '../../access/viewer.js';
@@ -68,6 +69,8 @@ export interface ProjectIssues {
 
 export interface ProjectService extends ProjectMembers, ProjectResources {
   list(viewer: Viewer): Promise<ProjectListItem[]>;
+  /** One authorized metadata read, with the viewer's own membership. */
+  references(viewer: Viewer): Promise<ProjectReference[]>;
   get(viewer: Viewer, id: string): Promise<ProjectDetail>;
   create(viewer: Viewer, input: CreateProjectRequest): Promise<ProjectDetail>;
   update(
@@ -176,6 +179,53 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
     ...createProjectMembers(deps),
     ...createProjectResources(deps),
 
+    async references(viewer) {
+      const conn = deps.tx.read();
+      let query = conn.query
+        .selectFrom('pmProjects as project')
+        .select(['project.id', 'project.name', 'project.leadUserId'])
+        .select((eb) => [
+          eb
+            .selectFrom('pmProjectMembers as member')
+            .select('member.userId')
+            .whereRef('member.projectId', '=', 'project.id')
+            .where('member.userId', '=', viewer.userId)
+            .limit(1)
+            .as('memberUserId'),
+        ]);
+      const scope = scopeOf(viewer, 'pm.projects', 'view');
+      // Keep the same visibility predicate as visibleProjectsFilter, before projection.
+      if (scope === 'none') query = query.where('project.id', 'is', null);
+      else if (scope !== 'all')
+        query = query.where((eb) =>
+          eb.or([
+            eb('project.visibility', '!=', 'members'),
+            eb('project.leadUserId', 'in', scope.users),
+            eb.exists(
+              eb
+                .selectFrom('pmProjectMembers as visibleMember')
+                .select('visibleMember.userId')
+                .whereRef('visibleMember.projectId', '=', 'project.id')
+                .where('visibleMember.userId', 'in', scope.users),
+            ),
+          ]),
+        );
+      if (viewer.projectIds)
+        query = viewer.projectIds.length
+          ? query.where('project.id', 'in', viewer.projectIds)
+          : query.where('project.id', 'is', null);
+      const rows = await query
+        .orderBy('project.name', 'asc')
+        .orderBy('project.id', 'asc')
+        .execute();
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
+        leadUserId: row.leadUserId as string | null,
+        member: Boolean(row.memberUserId),
+      }));
+    },
+
     async list(viewer) {
       const conn = deps.tx.read();
       const projects = await findProjects(conn, visibleProjectsFilter(viewer));
@@ -236,6 +286,8 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
         await updateProject(tx.conn, id, values);
         if (values.leadUserId)
           await addMember(tx.conn, deps.ids.next(), id, values.leadUserId);
+        if (values.visibility !== undefined || values.leadUserId !== undefined)
+          tx.emit({ type: 'project.changed', projectId: id });
       });
       return detail(deps, deps.tx.read(), id);
     },

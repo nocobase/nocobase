@@ -47,6 +47,7 @@ import {
   mailOutboundAttachmentStorageToken,
   mailStoreToken,
 } from '../tokens.js';
+import type { ImapSmtpMailProviderConfig } from '../adapters/imap-smtp/config.js';
 import { mailFailedPrecondition } from '../services/errors.js';
 
 // Keep this historical destination fixed: the current default no longer names a Dev page.
@@ -104,6 +105,10 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           mailOutboundAttachmentStorageToken,
         ),
         credentials: container.resolve(mailCredentialVaultToken),
+        resolveImapConfig: (account) =>
+          this.resolveProviderConfig(
+            account.provider,
+          ) as ImapSmtpMailProviderConfig,
         logger: container
           .resolve(loggingToken)
           .getLogger()

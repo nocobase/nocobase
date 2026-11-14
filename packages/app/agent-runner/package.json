@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/agent-runner",
-  "version": "0.1.0-beta.26",
+  "version": "0.1.0-beta.29",
   "description": "The agent runner of NocoBase applications: registers a machine with applications, claims the agent runs they queue, and drives Claude Code, Codex, OpenCode or Pi on them",
   "type": "module",
   "license": "Apache-2.0",
@@ -52,7 +52,7 @@
     "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
     "ini": "6.0.0",
-    "pnpm": "11.7.0",
+    "pnpm": "11.11.0",
     "zod": "catalog:",
     "@nocobase/acp-bridge": "workspace:^"
   },

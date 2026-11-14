@@ -124,6 +124,7 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
                 activationHoldMs: host.activationHoldMs,
                 activationWaitMs: host.activationWaitMs,
                 memoryBudget: host.memoryBudget,
+                artifactRead: host.artifactRead,
                 maxActiveApps: host.maxActiveApps,
               }),
             ...(host.publicUrl ? { publicUrl: host.publicUrl } : {}),

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/document-extractor",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Worker-isolated local document text extraction without application or model dependencies.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -50,7 +50,7 @@
     "officeparser": "^6.0.4",
     "pdf-parse": "^1.1.1",
     "word-extractor": "^1.0.4",
-    "xlsx": "^0.18.5"
+    "@e965/xlsx": "0.20.3"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

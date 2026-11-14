@@ -69,15 +69,14 @@ const frFR: LocaleResource<typeof enUS> = {
             all: 'Déployer (tous)',
           },
           deployProtected: {
-            title: 'Approuver les déploiements protégés',
+            title: 'Déployer dans des environnements protégés',
             description:
-              'Approuver les déploiements dans des environnements protégés qui ne nomment aucun approbateur ; les gens seulement',
-            related:
-              'Approuver les déploiements protégés (ceux qui leur sont liés)',
+              'Si aucun approbateur n’est résolu, approuver les demandes en personne ou déployer directement en personne ou par son exécution',
+            related: 'Déployer dans des environnements protégés (liés)',
             relatedLabel: "Ceux que j'ai créés",
             relatedHint:
               "Applications que j'ai créées et toutes les applications qui me concernent",
-            all: 'Approuver les déploiements protégés (tous)',
+            all: 'Déployer dans des environnements protégés (tous)',
           },
           operate: {
             title: 'Démarrer et arrêter',
@@ -155,6 +154,7 @@ const frFR: LocaleResource<typeof enUS> = {
       environments: 'Déployer des environnements',
     },
     apps: {
+      lastFailure: 'Dernier échec : {{detail}}',
       title: 'Applications',
       create: 'Créer une application',
       id: "Identifiant de l'application",
@@ -793,6 +793,12 @@ const frFR: LocaleResource<typeof enUS> = {
           "Il n'y a pas de premier administrateur à afficher.",
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Aucune donnée du paquet de version n’a été reçue pendant {{seconds}} secondes. Le déploiement n’a pas abouti ; réessayez.',
+        artifactReadTotalTimeout:
+          'La lecture du paquet de version a dépassé {{seconds}} secondes. Le déploiement n’a pas abouti ; réessayez.',
+        artifactReadTimeout:
+          'Le délai de lecture du paquet de version a expiré. Le déploiement n’a pas abouti ; réessayez.',
         hostExited:
           'Le processus de l’application s’est arrêté avant qu’elle ne soit prête.',
         hostDisabled: "L'hôte de l'application est désactivé.",
@@ -813,6 +819,18 @@ const frFR: LocaleResource<typeof enUS> = {
         checkTimeout: "Le test ne s'est pas terminé dans les 20 secondes.",
         hostNoSettings:
           'Le runtime local ne prend aucun paramètre de connexion.',
+        recycleWait:
+          'L’hôte d’applications libère de la mémoire ; le déploiement reprendra ensuite.',
+        recycleRetry:
+          'L’hôte d’applications libère encore de la mémoire, le déploiement n’a donc pas abouti. Réessayez plus tard.',
+        capacityExceeded:
+          'L’hôte d’applications manque de mémoire ou d’emplacement libre, le déploiement n’a donc pas abouti. Réessayez plus tard.',
+        replacementMemory:
+          'L’hôte d’applications manque de mémoire pour démarrer la nouvelle version ; la version actuelle continue de fonctionner. Réessayez plus tard.',
+        startQueueFull:
+          'Trop d’applications démarrent sur l’hôte. Réessayez plus tard.',
+        activeLimit:
+          'Le nombre d’applications en cours d’exécution a atteint sa limite. Réessayez plus tard.',
       },
       prefixed: {
         startFailed: 'Échec du démarrage : {{detail}}',

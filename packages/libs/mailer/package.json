@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/mailer",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "Bounded SMTP and Resend email submission with explicit resource ownership.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -48,7 +48,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^10.1.4",
     "resend": "^6.22.1"
   },
   "devDependencies": {
@@ -57,7 +57,6 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@types/nodemailer": "^8.0.1"
+    "vitest": "catalog:"
   }
 }

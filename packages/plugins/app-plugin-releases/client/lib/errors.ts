@@ -24,7 +24,44 @@ const MESSAGES: Readonly<Record<string, string>> = {
   'The check did not finish within 20 seconds.': 'checkTimeout',
   'The target is not ready yet.': 'notReady',
   'The Host driver takes no connection settings.': 'hostNoSettings',
+  // The shared Host refusing a start for memory or a slot (`APP_CAPACITY_EXCEEDED`), and the driver's one wait.
+  'Waiting for Host memory recycling': 'recycleWait',
+  'Waiting for Host memory recycling; retry later': 'recycleRetry',
+  'App Host capacity exceeded: insufficient memory or active application capacity; retry later':
+    'capacityExceeded',
+  'Insufficient memory for replacement; current runtime kept serving':
+    'replacementMemory',
+  'Cold-start queue is full; retry later': 'startQueueFull',
+  'Active app capacity exceeded and no idle app can be evicted.': 'activeLimit',
 };
+
+/** The error code the Host driver puts before a failed deployment's message (`[APP_CAPACITY_EXCEEDED] …`). */
+const CODE_PREFIX = /^\[[A-Z][A-Z0-9_]*\]\s*/;
+/** The Host's active App limit, appended for diagnostics; older records carry it even when no limit is set. */
+const LIMIT_SUFFIX = /\s*maxActiveApps=\d+$/;
+
+const CAPACITY_KEYS: ReadonlySet<string> = new Set([
+  'recycleWait',
+  'recycleRetry',
+  'capacityExceeded',
+  'replacementMemory',
+  'startQueueFull',
+  'activeLimit',
+]);
+
+/**
+ * The locale key of a Host capacity message, also when the Host wraps it in the App it was about
+ * (`App "crm" failed to reload: …`).
+ */
+function capacityKey(text: string): string | undefined {
+  for (const [message, key] of Object.entries(MESSAGES))
+    if (
+      CAPACITY_KEYS.has(key) &&
+      (text === message || text.endsWith(`: ${message}`))
+    )
+      return key;
+  return undefined;
+}
 
 /** Prefixes the plugin puts before a runtime's message. */
 const PREFIXES: readonly (readonly [string, string])[] = [
@@ -36,7 +73,26 @@ const PREFIXES: readonly (readonly [string, string])[] = [
 
 /** A runtime's or the plugin's message in the reader's language; unknown text as it is. */
 export function messageText(t: Translate, message: string): string {
-  const text = message.trim();
+  const raw = message.trim();
+  const text = raw.replace(CODE_PREFIX, '').replace(LIMIT_SUFFIX, '');
+  const readTimeout =
+    /Reading the release package timed out: (no data received for|the attempt exceeded) (\d+) ms\. Deploy the release again\.$/.exec(
+      text,
+    );
+  if (readTimeout)
+    return t(
+      `ui.errors.messages.${readTimeout[1] === 'no data received for' ? 'artifactReadIdleTimeout' : 'artifactReadTotalTimeout'}`,
+      {
+        seconds: Number(readTimeout[2]) / 1000,
+      },
+    );
+  if (raw.startsWith('[ARTIFACT_READ_TIMEOUT]'))
+    return t('ui.errors.messages.artifactReadTimeout');
+  const capacity = capacityKey(text);
+  if (capacity) return t(`ui.errors.messages.${capacity}`);
+  // Any other wording of a capacity refusal still reads as one, never as the Host's own sentence.
+  if (raw.startsWith('[APP_CAPACITY_EXCEEDED]'))
+    return t('ui.errors.messages.capacityExceeded');
   if (text === 'Deployment cancelled.')
     return t('ui.deployments.statuses.cancelled');
   if (text === 'Replaced by a newer deployment.')

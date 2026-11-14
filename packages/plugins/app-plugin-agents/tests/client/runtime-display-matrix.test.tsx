@@ -12,7 +12,7 @@ import { runner } from './fixtures.js';
 import { clientMocks } from './fake-client.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
-const { RunnerStatusCell, RunnerVersionCell } =
+const { RunnerStatusCell, RunnerToolsCell, RunnerVersionCell } =
   await import('../../client/pages/runtimes/runner-cells.js');
 const { RunnerOverview } =
   await import('../../client/pages/runtimes/runner-overview.js');
@@ -50,6 +50,7 @@ for (const locale of ['en-US', 'zh-CN']) {
         <>
           <section aria-label='list'>
             <RunnerStatusCell runner={data} />
+            <RunnerToolsCell runner={data} />
             <RunnerVersionCell
               runner={{ ...data, updateVersion: 'test-newer' }}
             />
@@ -69,8 +70,17 @@ for (const locale of ['en-US', 'zh-CN']) {
     expect(
       within(list).getByText(locale === 'en-US' ? 'Online 2/2' : '在线 2/2'),
     ).toBeVisible();
-    expect(within(list).getByText('Claude Code 1/2')).toBeVisible();
-    expect(within(list).queryByText(/Codex.*\d\/\d/u)).toBeNull();
+    expect(
+      within(list).getByText(locale === 'en-US' ? 'Runs 1/2' : '并发 1/2'),
+    ).toBeVisible();
+    expect(
+      within(list).getByLabelText(
+        locale === 'en-US'
+          ? 'At most 2 Claude Code runs at once; 1 running now'
+          : 'Claude Code 最多同时运行 2 个，当前 1 个',
+      ),
+    ).toBeVisible();
+    expect(within(list).queryByTestId('tool-concurrency-codex')).toBeNull();
     expect(within(list).getByRole('button')).toBeVisible();
     // The owner accepted deferring this difference: detail edits the raw configured limit, rather than the effective list cap.
     const detail = screen.getByRole('region', { name: 'detail' });
@@ -102,7 +112,6 @@ for (const locale of ['en-US', 'zh-CN']) {
     expect(
       screen.getByText(locale === 'en-US' ? 'Online 0/2' : '在线 0/2'),
     ).toBeVisible();
-    expect(screen.queryByRole('list')).toBeNull();
     client.clear();
   });
 }

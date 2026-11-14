@@ -54,6 +54,8 @@ storage/
 
 Archive hashing and extraction run one child process at a time per Host. Each worker has a 120-second execution deadline (queue wait excluded). Deployment cancellation aborts queued or running archive work. On cancellation, timeout or worker error, the Host sends SIGTERM, escalates to SIGKILL after one second if necessary, and waits for process close before cleaning temporary archives/staging directories and advancing the queue. A failed or cancelled candidate does not replace the selected revision.
 
+Remote artifact reads have a 60-second idle timeout (including waiting for the storage stream) and a ten-minute total deadline per attempt. Set `host.artifactRead.idleTimeoutMs` and `host.artifactRead.timeoutMs` to override them; each must be an integer from 1 to 2147483647. A read timeout retries once with a fresh archive; other storage errors and cancellation do not retry. Cancellation stops waiting for storage immediately and destroys a late stream when it arrives. The Drive API cannot abort a pending storage request before it returns a stream, so the underlying driver's request may remain pending independently of the deployment. Failed or cancelled reads clean partial archives and release the deployment queue. Read logs include `attempt`, `bytes`, `readDurationMs`, both configured limits and `reason` (`complete`, `idle`, `total`, `cancelled` or `error`). Installed revision cache hits and direct local filesystem artifacts bypass downloading.
+
 ## Host modes
 
 The host defaults to `standalone` mode. It discovers local app definitions and

@@ -1,5 +1,30 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-cli-client@0.1.0-beta.22
+
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [1952789]
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.21
+
 ## 0.1.0-beta.26
 
 ### Patch Changes

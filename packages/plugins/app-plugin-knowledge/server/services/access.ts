@@ -5,8 +5,8 @@
  * (`permissions.ts`, `docs/permissions.md`), naming subjects the application's providers resolve (`subjects.ts`).
  * Every read, search and export takes a reader and asks first; nothing is read without one.
  *
- * Whatever the application answers, an actor that is not a person (an agent acting for someone) never edits, manages
- * or decides: it reads and proposes within what the person it acts for may.
+ * By default an actor reads and proposes within both parties’ permissions. Applications may opt into authorizing
+ * actors as their initiating user, retaining the actor for audit.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -38,6 +38,8 @@ import {
   findSpace,
   findSpaceById,
   type DocRecord,
+  type SpaceRecord,
+  type AccessEntryRecord,
 } from './store.js';
 import type { KnowledgeSubjects } from './subjects.js';
 
@@ -58,10 +60,19 @@ export interface KnowledgeReader {
 export interface KnowledgeReaderAccess {
   /** What the reader may do in `space`. */
   access(space: SpaceRef): Promise<KnowledgeAccess>;
+  /** Optional application catalogue, including readable spaces that have not been materialized yet. Cached for this reader/request. */
+  directory?(): Promise<
+    readonly (SpaceRef & {
+      readonly title: string | null;
+      readonly access: KnowledgeAccess;
+    })[]
+  >;
 }
 
 /** The application's spaces and their access, bound to `knowledgeAccessToken`. */
 export interface KnowledgeAccessResolver {
+  /** Authorize run agents (actor kind `agent`) as their initiating user, retaining the actor for audit. Default: intersect both parties and cap actors at propose. */
+  readonly actorAuthorization?: 'initiator';
   /** `space` in its normal form when the application has such a space; null otherwise (400 `INVALID_SCOPE`). */
   space(space: SpaceRef): SpaceRef | null;
   /** The spaces `space` inherits, nearest first, without itself. */
@@ -169,6 +180,17 @@ export interface AccessCheck {
   ): Promise<KnowledgeAccess>;
 }
 
+/** The authorization subject; the original reader remains the audit actor. */
+export function authorizationReader(
+  access: Pick<KnowledgeAccessResolver, 'actorAuthorization'>,
+  reader: KnowledgeReader,
+): KnowledgeReader {
+  return access.actorAuthorization === 'initiator' &&
+    reader.actor?.kind === 'agent'
+    ? { userId: reader.userId }
+    : reader;
+}
+
 const keyOf = (space: SpaceRef) => `${space.scope}:${space.scopeId}`;
 
 const refusal = (reader: KnowledgeReader, need: DocNeed) =>
@@ -182,12 +204,23 @@ const refusal = (reader: KnowledgeReader, need: DocNeed) =>
           : 'You may not change the knowledge here.',
   );
 
+/** A directory read shares these bulk-loaded records with the ordinary ACL evaluator. */
+export interface AccessSnapshot {
+  readonly answers: KnowledgeReaderAccess;
+  readonly spaces: ReadonlyMap<string, SpaceRecord>;
+  readonly docs: ReadonlyMap<string, readonly DocRecord[]>;
+  readonly entries: ReadonlyMap<string, readonly AccessEntryRecord[]>;
+  readonly parties: ReadonlyMap<string, readonly ReadonlySet<string>[]>;
+}
+
 export function createAccessCheck(
   context: AccessContext,
   reader: KnowledgeReader,
+  snapshot?: AccessSnapshot,
 ): AccessCheck {
-  const answers = context.access.forReader(reader);
-  const actor = Boolean(reader.actor);
+  const answers = snapshot?.answers ?? context.access.forReader(reader);
+  const principal = authorizationReader(context.access, reader);
+  const actor = Boolean(principal.actor);
   const known = new Map<string, Promise<KnowledgeAccess>>();
   const acls = new Map<string, Promise<SpaceAcl>>();
   const refs = new Map<string, Promise<SpaceRef | null>>();
@@ -209,7 +242,9 @@ export function createAccessCheck(
   async function load(space: SpaceRef): Promise<SpaceAcl> {
     const level = levelOf(await access(space));
     const conn = context.read();
-    const record = await findSpace(conn, space);
+    const record = snapshot
+      ? snapshot.spaces.get(keyOf(space))
+      : await findSpace(conn, space);
     const flat = (spaceId: string | null): SpaceAcl => ({
       ref: space,
       spaceId,
@@ -225,25 +260,36 @@ export function createAccessCheck(
       manages: level === 'manage',
     });
     if (!record) return flat(null);
-    const entries: AclEntry[] = await accessRepo(conn).findMany({
-      filter: { spaceId: record.id },
-    });
-    const custom = await docsRepo(conn).findMany({
-      filter: { spaceId: record.id, accessMode: 'custom' },
-      select: (select) => select.fields('id'),
-      limit: 1,
-    });
+    const entries: readonly AclEntry[] = snapshot
+      ? (snapshot.entries.get(record.id) ?? [])
+      : await accessRepo(conn).findMany({
+          filter: { spaceId: record.id },
+        });
+    const custom = snapshot
+      ? (snapshot.docs.get(record.id) ?? []).filter(
+          (doc) => doc.accessMode === 'custom',
+        )
+      : await docsRepo(conn).findMany({
+          filter: { spaceId: record.id, accessMode: 'custom' },
+          select: (select) => select.fields('id'),
+          limit: 1,
+        });
     if (entries.length === 0 && custom.length === 0) return flat(record.id);
-    const nodes = await docsRepo(conn).findMany({
-      filter: { spaceId: record.id },
-      select: (select) => select.fields('id', 'parentId', 'accessMode'),
-    });
-    const parties = [
-      await context.subjects.keysOf({ kind: 'user', id: reader.userId }, space),
-      ...(reader.actor
+    const nodes = snapshot
+      ? (snapshot.docs.get(record.id) ?? [])
+      : await docsRepo(conn).findMany({
+          filter: { spaceId: record.id },
+          select: (select) => select.fields('id', 'parentId', 'accessMode'),
+        });
+    const parties = snapshot?.parties.get(keyOf(space)) ?? [
+      await context.subjects.keysOf(
+        { kind: 'user', id: principal.userId },
+        space,
+      ),
+      ...(principal.actor
         ? [
             await context.subjects.keysOf(
-              { kind: reader.actor.kind, id: reader.actor.id },
+              { kind: principal.actor.kind, id: principal.actor.id },
               space,
             ),
           ]
@@ -313,7 +359,7 @@ export function createAccessCheck(
     },
     async requireEdit(space, hidden) {
       const rights = await check.requireRead(space, hidden);
-      if (!rights.edit) throw refusal(reader, 'edit');
+      if (!rights.edit) throw refusal(principal, 'edit');
       return rights;
     },
     async doc(doc) {
@@ -325,13 +371,13 @@ export function createAccessCheck(
     async requireDoc(doc, need, hidden = docNotFound) {
       const { access: rights } = await check.doc(doc);
       if (!rights.read) throw hidden();
-      if (!rights[need]) throw refusal(reader, need);
+      if (!rights[need]) throw refusal(principal, need);
       return rights;
     },
     async requireUnder(space, parent, need) {
       if (parent) return check.requireDoc(parent, need);
       const rights = await check.requireRead(space);
-      if (!rights[need]) throw refusal(reader, need);
+      if (!rights[need]) throw refusal(principal, need);
       return rights;
     },
   };

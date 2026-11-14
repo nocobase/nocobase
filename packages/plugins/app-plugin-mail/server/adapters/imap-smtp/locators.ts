@@ -8,7 +8,11 @@ import type {
   ImapVerifyState,
   MessageLocator,
 } from './types.js';
-import { MAX_IMAP_PROVIDER_ID_LENGTH } from './constants.js';
+import {
+  MAX_IMAP_PROVIDER_ID_LENGTH,
+  MAX_IMAP_RECHECK_IDENTITIES,
+  IMAP_RECHECK_BATCH_SIZE,
+} from './constants.js';
 
 export const MAX_IMAP_UID = 0xffff_ffff;
 
@@ -58,6 +62,7 @@ export function parseSyncCursor(
     throw new Error('Invalid IMAP sync cursor.');
   const record = parsed as {
     version?: unknown;
+    receivedAfter?: unknown;
     folders?: unknown;
     verify?: unknown;
   };
@@ -68,6 +73,13 @@ export function parseSyncCursor(
   ) {
     throw new Error('Invalid IMAP sync cursor.');
   }
+  if (
+    record.receivedAfter !== undefined &&
+    (typeof record.receivedAfter !== 'string' ||
+      !Number.isFinite(Date.parse(record.receivedAfter)))
+  )
+    throw new Error('Invalid IMAP sync cursor.');
+  const receivedAfter = record.receivedAfter;
   const folders: Record<string, ImapFolderCursor> = {};
   for (const [path, value] of Object.entries(record.folders)) {
     if (!isImapFolderCursor(value)) {
@@ -75,10 +87,22 @@ export function parseSyncCursor(
     }
     folders[path] = value;
   }
-  if (record.verify === undefined) return { version: 1, folders };
+  if (record.verify === undefined)
+    return { version: 1, folders, receivedAfter };
   if (!isVerifyState(record.verify))
     throw new Error('Invalid IMAP sync cursor.');
-  return { version: 1, folders, verify: record.verify };
+  return {
+    version: 1,
+    receivedAfter,
+    folders,
+    verify: {
+      ...record.verify,
+      // Old tuple arrays are deliberately re-screened rather than migrated.
+      excluded: Array.isArray(record.verify.excluded)
+        ? undefined
+        : record.verify.excluded,
+    },
+  };
 }
 
 function isVerifyState(value: unknown): value is ImapVerifyState {
@@ -87,14 +111,23 @@ function isVerifyState(value: unknown): value is ImapVerifyState {
     attempts?: unknown;
     folders?: unknown;
     excluded?: unknown;
+    rechecks?: unknown;
   };
+  if (record.rechecks !== undefined && !isRechecks(record.rechecks))
+    return false;
   if (
     record.excluded !== undefined &&
-    (!Array.isArray(record.excluded) ||
-      !record.excluded.every((value) => typeof value === 'string'))
+    !(Array.isArray(record.excluded)
+      ? record.excluded.every((value) => typeof value === 'string')
+      : record.excluded &&
+        typeof record.excluded === 'object' &&
+        Object.values(record.excluded).every(isExcludedFolder))
   )
     return false;
-  if (!Number.isSafeInteger(record.attempts) || (record.attempts as number) < 0)
+  if (
+    record.attempts !== undefined &&
+    (!Number.isSafeInteger(record.attempts) || (record.attempts as number) < 0)
+  )
     return false;
   if (record.folders === undefined) return true;
   if (!record.folders || typeof record.folders !== 'object') return false;
@@ -104,6 +137,106 @@ function isVerifyState(value: unknown): value is ImapVerifyState {
       typeof (folder as Partial<ImapVerifyFolder>).uids === 'string' &&
       /^[\d:,]*$/.test((folder as ImapVerifyFolder).uids),
   );
+}
+
+function isRechecks(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length > MAX_IMAP_RECHECK_IDENTITIES)
+    return false;
+  let count = 0;
+  return value.every((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const batch = entry as Record<string, unknown>;
+    if (
+      !Array.isArray(batch.folders) ||
+      !batch.folders.length ||
+      !batch.folders.every((folder: unknown) => typeof folder === 'string') ||
+      !Array.isArray(batch.identities) ||
+      !batch.identities.length ||
+      batch.identities.length > IMAP_RECHECK_BATCH_SIZE
+    )
+      return false;
+    count += batch.identities.length;
+    return (
+      count <= MAX_IMAP_RECHECK_IDENTITIES &&
+      batch.identities.every((identity: unknown) => {
+        if (!identity || typeof identity !== 'object') return false;
+        const id = identity as Record<string, unknown>;
+        return (
+          (typeof id.emailId === 'string' &&
+            /^[A-Za-z0-9_-]{1,255}$/.test(id.emailId) &&
+            id.rfcMessageId === undefined) ||
+          (id.emailId === undefined &&
+            typeof id.rfcMessageId === 'string' &&
+            id.rfcMessageId.length <= MAX_IMAP_PROVIDER_ID_LENGTH &&
+            /^<[\x21-\x3b\x3d\x3f-\x7e]+@[\x21-\x3b\x3d\x3f-\x7e]+>$/.test(
+              id.rfcMessageId,
+            ))
+        );
+      })
+    );
+  });
+}
+
+function isExcludedFolder(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const folder = value as Record<string, unknown>;
+  return isUidValidity(folder.uidValidity) && isUidRanges(folder.uids);
+}
+
+function isUidRanges(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  if (!value) return true;
+  let previous = 0;
+  return value.split(',').every((range) => {
+    if (!/^[1-9]\d*(?::[1-9]\d*)?$/.test(range)) return false;
+    const [first, last = first] = range.split(':').map(Number);
+    const valid = first > previous && last >= first && last <= MAX_IMAP_UID;
+    previous = last;
+    return valid;
+  });
+}
+
+/** Intersect a SEARCH result with compressed ranges without expanding the cursor. */
+export function matchingUids(
+  uids: readonly number[],
+  ranges: string,
+): number[] {
+  const intervals = ranges
+    ? ranges.split(',').map((range) => {
+        const [first, last = first] = range.split(':').map(Number);
+        return [first, last] as const;
+      })
+    : [];
+  let index = 0;
+  return [...uids]
+    .sort((a, b) => a - b)
+    .filter((uid) => {
+      while (index < intervals.length && intervals[index][1] < uid) index += 1;
+      return index < intervals.length && intervals[index][0] <= uid;
+    });
+}
+
+/** Remove a small UID set without expanding potentially huge exclusion ranges. */
+export function subtractUids(
+  ranges: string,
+  removed: readonly number[],
+): string {
+  const sorted = [...new Set(removed)].sort((a, b) => a - b);
+  const kept: string[] = [];
+  let index = 0;
+  for (const range of ranges.split(',')) {
+    if (!range) continue;
+    const [first, last = first] = range.split(':').map(Number);
+    let start = first;
+    while (index < sorted.length && sorted[index] < first) index += 1;
+    while (index < sorted.length && sorted[index] <= last) {
+      const uid = sorted[index++];
+      if (start < uid) kept.push(rangeFor(start, uid - 1));
+      start = uid + 1;
+    }
+    if (start <= last) kept.push(rangeFor(start, last));
+  }
+  return kept.join(',');
 }
 
 /** Compress a UID set into sorted IMAP ranges; equal sets give equal strings. */

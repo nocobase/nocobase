@@ -338,12 +338,31 @@ export async function spacesOf(
   conn: DatabaseConnection,
   refs: readonly SpaceRef[],
 ): Promise<Map<string, SpaceRecord>> {
-  const found = new Map<string, SpaceRecord>();
-  for (const ref of refs) {
-    const space = await findSpace(conn, ref);
-    if (space) found.set(spaceKey(ref), space);
-  }
-  return found;
+  if (!refs.length) return new Map();
+  const records = await spacesRepo(conn).findMany({
+    filter: (f) =>
+      f.or(
+        refs.map((ref) =>
+          f.and([
+            f.string('scope').eq(ref.scope),
+            f.string('scopeId').eq(ref.scopeId),
+          ]),
+        ),
+      ),
+  });
+  const keyed = new Map(
+    records.map((record) => [
+      spaceKey({ ...record, scopeId: record.scopeId ?? '' }),
+      record,
+    ]),
+  );
+  return new Map(
+    refs.flatMap((ref) => {
+      const key = spaceKey(ref);
+      const record = keyed.get(key);
+      return record ? [[key, record] as const] : [];
+    }),
+  );
 }
 
 export async function findDoc(

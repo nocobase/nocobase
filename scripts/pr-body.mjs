@@ -1,20 +1,28 @@
 // Reads a v3 pull request's title and description the way the PR template (`.github/pull_request_template.md`) lays
 // them out: the type checked under "This is a ...", the module from the title's conventional-commit scope, and the
-// English and Chinese changelog sentences. Pure functions with no I/O and node builtins only, shared by the CI check
-// (`check-pr-body.mjs`) and the release changelog writer (`changelog.mjs`).
+// English, Chinese and Japanese changelog sentences. Pure functions with no I/O and node builtins only, shared by the
+// CI check (`check-pr-body.mjs`) and the release changelog writer (`changelog.mjs`).
 //
 // Parsing is deliberately section-scoped: the type comes only from the checkboxes of the "This is a ..." section and
 // the changelog only from the table of the "Changelog" section, so a checked box or a table row anywhere else in the
-// description (a checklist, a quoted template, a code block) never changes the result. That also accepts the v2
-// template GitHub offers from the default branch `main`, whose type list and Changelog table have the same shape.
+// description (a checklist, a quoted template, a code block) never changes the result. That also reads the v2 template
+// GitHub offers from the default branch `main`, whose type list and Changelog table, Japanese row included, have the
+// same shape.
 import scopes from './changelog-scopes.json' with { type: 'json' };
+
+/** The changelog languages, in the template's order: the key of each sentence and the label of its table row. */
+export const LANGUAGES = [
+  { key: 'en', label: 'English' },
+  { key: 'zh', label: 'Chinese' },
+  { key: 'ja', label: 'Japanese' },
+];
 
 /** The types a PR can be, in the template's order. `Others` never reaches the changelog. */
 export const TYPES = ['New feature', 'Improvement', 'Bug fix', 'Others'];
 
 /** Cell values that only stand in for a sentence someone still has to write. */
 export const PLACEHOLDER =
-  /^(?:todo|tbd|tba|n\/?a|none|null|-+|—+|\.+|…|无|暂无|待定|待补充)[.。!！]?$/iu;
+  /^(?:todo|tbd|tba|n\/?a|none|null|-+|—+|\.+|…|无|暂无|待定|待补充|なし|未定|未記入)[.。!！]?$/iu;
 
 const CHECKBOX = /^\s*[-*+]\s+\[([ xX])\]\s+(.+?)\s*$/u;
 
@@ -96,7 +104,7 @@ export function resolveScope(scope, scopeMap = scopes) {
 /**
  * The changelog cell of a language's row in a Markdown table, or `null` when the table has no such row.
  * @param {string[]} lines
- * @param {string} language `English` or `Chinese`
+ * @param {string} language the row's label, `English`, `Chinese` or `Japanese`
  * @returns {string | null}
  */
 function tableCell(lines, language) {
@@ -115,18 +123,20 @@ function tableCell(lines, language) {
 /**
  * Parses a pull request against the v3 PR template.
  * @param {{ title: string, body: string | null | undefined }} pullRequest
- * @param {{ scopes?: Record<string, { en: string, zh: string }> }} [options] the scope map, `changelog-scopes.json` by
- *   default
+ * @param {{ scopes?: Record<string, { en: string, zh: string, ja: string }> | null, languages?: string[] }} [options]
+ *   the scope map, `changelog-scopes.json` by default, or `null` to skip the scope warnings; and the keys of the
+ *   languages whose sentence is required, all of `LANGUAGES` by default
  * @returns {{
  *   type: 'New feature' | 'Improvement' | 'Bug fix' | 'Others' | null,
  *   scope: string | null,
- *   changelog: { en: string, zh: string },
+ *   changelog: { en: string, zh: string, ja: string },
  *   errors: string[],
  *   warnings: string[],
  * }}
  */
 export function parsePullRequest({ title, body }, options = {}) {
-  const scopeMap = options.scopes ?? scopes;
+  const scopeMap = options.scopes === undefined ? scopes : options.scopes;
+  const required = options.languages ?? LANGUAGES.map(({ key }) => key);
   const errors = [];
   const warnings = [];
   const sections = splitSections(
@@ -167,14 +177,12 @@ export function parsePullRequest({ title, body }, options = {}) {
   }
 
   const changelogSection = find(/^changelog\b/iu);
-  const changelog = {
-    en: changelogSection
-      ? (tableCell(changelogSection.lines, 'English') ?? '')
-      : '',
-    zh: changelogSection
-      ? (tableCell(changelogSection.lines, 'Chinese') ?? '')
-      : '',
-  };
+  const changelog = Object.fromEntries(
+    LANGUAGES.map(({ key, label }) => [
+      key,
+      changelogSection ? (tableCell(changelogSection.lines, label) ?? '') : '',
+    ]),
+  );
 
   const { conventional, scope } = parseTitle(title);
   if (type && type !== 'Others') {
@@ -182,29 +190,27 @@ export function parsePullRequest({ title, body }, options = {}) {
       errors.push(
         'The description has no "### Changelog" section; start from the PR template.',
       );
-    for (const [key, language] of [
-      ['en', 'English'],
-      ['zh', 'Chinese'],
-    ]) {
+    for (const { key, label } of LANGUAGES) {
+      if (!required.includes(key)) continue;
       const text = changelog[key];
       if (!text)
         errors.push(
-          `The ${language} changelog is empty: write one user-facing sentence, or check Others.`,
+          `The ${label} changelog is empty: write one user-facing sentence, or check Others.`,
         );
       else if (PLACEHOLDER.test(text))
         errors.push(
-          `The ${language} changelog "${text}" is a placeholder: write one user-facing sentence.`,
+          `The ${label} changelog "${text}" is a placeholder: write one user-facing sentence.`,
         );
     }
-    if (!conventional) {
+    if (scopeMap && !conventional) {
       warnings.push(
         'The title is not `type(scope): subject`; the entry is listed under General.',
       );
-    } else if (!scope) {
+    } else if (scopeMap && !scope) {
       warnings.push(
         'The title has no scope; the entry is listed under General.',
       );
-    } else if (!resolveScope(scope, scopeMap)) {
+    } else if (scopeMap && !resolveScope(scope, scopeMap)) {
       const near = nearestScope(scope, scopeMap);
       warnings.push(
         `The scope "${scope}" is not in scripts/changelog-scopes.json, so the entry is listed under General. ${near ? `Did you mean "${near}"? ` : ''}Replace it with a scope from the list that covers the change; add a scope only when none does (.agents/rules/pull-requests-and-changesets.md).`,
@@ -253,13 +259,14 @@ function editDistance(a, b) {
 }
 
 /**
- * The display name of a scope's module in each language, `General` / `通用` when the scope is missing or unknown.
+ * The display name of a scope's module in each language, `General` / `通用` / `全般` when the scope is missing or
+ * unknown.
  * @param {string | null} scope
- * @param {Record<string, { en: string, zh: string }>} [scopeMap]
- * @returns {{ en: string, zh: string }}
+ * @param {Record<string, { en: string, zh: string, ja: string }>} [scopeMap]
+ * @returns {{ en: string, zh: string, ja: string }}
  */
 export function moduleOf(scope, scopeMap = scopes) {
   const key = resolveScope(scope, scopeMap);
   if (key) return scopeMap[key];
-  return { en: 'General', zh: '通用' };
+  return { en: 'General', zh: '通用', ja: '全般' };
 }

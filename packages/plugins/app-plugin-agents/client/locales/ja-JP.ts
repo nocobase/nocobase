@@ -629,6 +629,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       workspaceSize: 'ワークスペースのサイズ: {{value}}',
       providers_one: '{{count}} プロバイダーがクォータに達しました',
       providers_other: '{{count}} プロバイダーがクォータに達しています',
+      models_one: '{{count}} モデルがクォータに達しています',
+      models_other: '{{count}} モデルがクォータに達しています',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'タスク / 会話',
         agent: 'エージェント',
@@ -747,8 +750,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       offlineNever: 'オフライン',
     },
     toolUsage: {
-      label: 'コーディングツールで実行',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '同時 {{used}}/{{limit}}',
+      hint: '{{tool}} は同時に最大 {{limit}} 件まで実行、現在 {{used}} 件',
     },
     toolSlots: {
       label: 'コーディングツールごとの制限',
@@ -887,6 +890,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       show: 'バージョン {{version}}: 新しい実行環境が利用可能です',
       available: 'アップデートが利用可能',
       badge: 'アップグレード可能',
+      latest: '最新',
+      installed: 'バージョン {{version}}',
       title: '{{name}} の新しい実行環境',
       description:
         '{{version}} がインストールされており、このアプリケーションは {{latest}} を提供します。',

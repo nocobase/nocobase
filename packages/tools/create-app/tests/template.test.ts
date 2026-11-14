@@ -1,11 +1,11 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  DEFAULT_REGISTRY,
   DEFAULT_TEMPLATE,
   DEFAULT_TEMPLATE_TAG,
   downloadTemplate,
@@ -79,6 +79,20 @@ describe('TEMPLATE_ALIASES', () => {
     ).toBe('@nocobase/app-template-multi-portal@0.1.0');
   });
 
+  it('resolves multi-app with the selected channel without changing explicit versions', () => {
+    expect(isTemplateAlias('multi-app')).toBe(true);
+    expect(resolveTemplateSource('multi-app')).toBe(
+      '@nocobase/app-template-multi-app@latest',
+    );
+    expect(resolveTemplateSource('multi-app', { tag: 'beta' })).toBe(
+      '@nocobase/app-template-multi-app@beta',
+    );
+    expect(
+      resolveTemplateSource('@nocobase/app-template-multi-app@0.0.1', {
+        tag: 'beta',
+      }),
+    ).toBe('@nocobase/app-template-multi-app@0.0.1');
+  });
   it('maps the default name to the app template', () => {
     expect(TEMPLATE_ALIASES.default).toEqual({
       packageName: '@nocobase/app-template-default',
@@ -162,6 +176,33 @@ describe('resolveTemplateSource', () => {
   });
 });
 
+describe('local template archives', () => {
+  it.each(['.tgz', '.tar.gz'])(
+    'uses a packed %s artifact directly without package-registry access',
+    async (extension) => {
+      const root = await mkdtemp(path.join(os.tmpdir(), 'create-app-archive-'));
+      created.push(root);
+      await mkdir(path.join(root, 'package'));
+      await writeFile(
+        path.join(root, 'package', 'package.json'),
+        JSON.stringify({ name: '@test/packed', version: '0.0.0' }),
+      );
+      await writeFile(path.join(root, 'package', 'marker'), 'archive-only');
+      const archive = path.join(root, 'candidate archive' + extension);
+      execFileSync('tar', ['-czf', archive, '-C', root, 'package']);
+      const result = await downloadTemplate({
+        source: archive,
+        nocobaseRegistry: 'https://registry.invalid/',
+      });
+      created.push(result.directory);
+      expect(result).toMatchObject({ name: '@test/packed', version: '0.0.0' });
+      expect(
+        await readFile(path.join(result.directory, 'marker'), 'utf8'),
+      ).toBe('archive-only');
+    },
+  );
+});
+
 describe('isTemplateAlias', () => {
   it('recognizes only the names in the table', () => {
     expect(isTemplateAlias('default')).toBe(true);
@@ -179,17 +220,11 @@ describe('isTemplateAlias', () => {
   });
 });
 
-describe('DEFAULT_REGISTRY', () => {
-  it('points at the public npm registry', () => {
-    expect(DEFAULT_REGISTRY).toBe('https://registry.npmjs.org');
-  });
-});
-
 describe('downloadTemplate', () => {
-  it(
-    'reports the source when a package cannot be fetched',
+  it.each(['scoped override', 'configured scope', 'third-party', 'legacy'])(
+    'routes template requests using %s and reports download errors',
     { timeout: 60_000 },
-    async () => {
+    async (mode) => {
       // setup-node writes @nocobase:registry into its user config. npm prefers that scope
       // over --registry, so this network fixture must not inherit runner or user config.
       const npmConfig = await mkdtemp(
@@ -214,14 +249,38 @@ describe('downloadTemplate', () => {
       });
       try {
         const { port } = registry.address() as AddressInfo;
+        const registryUrl = `http://127.0.0.1:${port}/`;
+        const source =
+          mode === 'third-party' || mode === 'legacy'
+            ? '@other/template-probe'
+            : '@nocobase/this-template-does-not-exist';
+        const userConfig = path.join(npmConfig, 'userconfig.npmrc');
+        await writeFile(
+          userConfig,
+          `registry=${registryUrl}\n@nocobase:registry=${mode === 'scoped override' ? 'http://127.0.0.1:1/' : registryUrl}\n`,
+        );
+        vi.stubEnv(
+          'npm_config_registry',
+          mode === 'legacy' ? 'http://127.0.0.1:1/' : registryUrl,
+        );
+        vi.stubEnv(
+          'NPM_CONFIG_REGISTRY',
+          mode === 'legacy' ? 'http://127.0.0.1:1/' : registryUrl,
+        );
         await expect(
           downloadTemplate({
-            source: '@nocobase/this-template-does-not-exist',
-            registry: `http://127.0.0.1:${port}`,
+            source,
+            ...(mode === 'legacy' ? { legacyRegistry: registryUrl } : {}),
+            nocobaseRegistry:
+              mode === 'configured scope'
+                ? undefined
+                : mode === 'third-party'
+                  ? 'http://127.0.0.1:1/'
+                  : registryUrl,
           }),
-        ).rejects.toThrow(/this-template-does-not-exist/u);
+        ).rejects.toThrow(source);
         expect(requests.map((url) => decodeURIComponent(url))).toContain(
-          '/@nocobase/this-template-does-not-exist',
+          `/${source}`,
         );
       } finally {
         await new Promise<void>((resolve, reject) => {

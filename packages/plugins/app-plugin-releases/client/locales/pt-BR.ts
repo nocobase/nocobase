@@ -69,15 +69,14 @@ const ptBR: LocaleResource<typeof enUS> = {
             all: 'Implantar (todos)',
           },
           deployProtected: {
-            title: 'Aprovar implantações protegidas',
+            title: 'Implantar em ambientes protegidos',
             description:
-              'Aprovar implantações em ambientes protegidos que não nomeiam aprovadores; apenas pessoas',
-            related:
-              'Aprovar implantações protegidas (aquelas relacionadas a elas)',
+              'Quando nenhum aprovador do ambiente for resolvido, aprovar solicitações pessoalmente ou implantar diretamente como essa pessoa ou sua execução',
+            related: 'Implantar em ambientes protegidos (relacionados)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:
               'Aplicativos que criei e qualquer aplicativo relacionado a mim',
-            all: 'Aprovar implantações protegidas (todas)',
+            all: 'Implantar em ambientes protegidos (todos)',
           },
           operate: {
             title: 'Iniciar e parar',
@@ -154,6 +153,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       environments: 'Implantar ambientes',
     },
     apps: {
+      lastFailure: 'Última falha: {{detail}}',
       title: 'Aplicativos',
       create: 'Criar aplicativo',
       id: 'ID do aplicativo',
@@ -786,6 +786,12 @@ const ptBR: LocaleResource<typeof enUS> = {
           'Não há primeiro administrador para mostrar.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Nenhum dado do pacote da versão foi recebido por {{seconds}} segundos. A implantação não foi concluída; tente novamente.',
+        artifactReadTotalTimeout:
+          'A leitura do pacote da versão excedeu {{seconds}} segundos. A implantação não foi concluída; tente novamente.',
+        artifactReadTimeout:
+          'O tempo de leitura do pacote da versão esgotou. A implantação não foi concluída; tente novamente.',
         hostExited:
           'O processo do aplicativo foi interrompido antes de estar pronto.',
         hostDisabled: 'O host do aplicativo está desativado.',
@@ -805,6 +811,18 @@ const ptBR: LocaleResource<typeof enUS> = {
         checkTimeout: 'O teste não foi concluído em 20 segundos.',
         hostNoSettings:
           'O ambiente de execução local não requer configurações de conexão.',
+        recycleWait:
+          'O host de aplicativos está liberando memória; a implantação continua quando terminar.',
+        recycleRetry:
+          'O host de aplicativos ainda está liberando memória, então a implantação não foi concluída. Tente novamente mais tarde.',
+        capacityExceeded:
+          'O host de aplicativos não tem memória suficiente ou vaga livre, então a implantação não foi concluída. Tente novamente mais tarde.',
+        replacementMemory:
+          'O host de aplicativos não tem memória suficiente para iniciar a nova versão; a atual continua em execução. Tente novamente mais tarde.',
+        startQueueFull:
+          'Há aplicativos demais iniciando no host. Tente novamente mais tarde.',
+        activeLimit:
+          'O número de aplicativos em execução atingiu o limite. Tente novamente mais tarde.',
       },
       prefixed: {
         startFailed: 'Falha na inicialização: {{detail}}',

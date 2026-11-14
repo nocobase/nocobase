@@ -1,10 +1,7 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
-
-/** The public npm registry that carries NocoBase packages and templates. */
-export const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
 
 export interface TemplateAlias {
   /** Published package the name resolves to. Carries no tag; the channel is applied separately. */
@@ -25,6 +22,7 @@ export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   default: { packageName: '@nocobase/app-template-default' },
   examples: { packageName: '@nocobase/app-template-examples' },
   'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
+  'multi-app': { packageName: '@nocobase/app-template-multi-app' },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -93,7 +91,9 @@ export interface ResolvedTemplate {
 export interface DownloadTemplateOptions {
   /** A published package (`pkg`, `pkg@1.2.3`) or a path to a local package directory. */
   source: string;
-  registry?: string;
+  nocobaseRegistry?: string;
+  /** Deprecated generic override, retained only for callers using --registry. */
+  legacyRegistry?: string;
 }
 
 /**
@@ -127,7 +127,13 @@ function packerFor(source: string): {
 
   return {
     command: 'npm',
-    args: () => ['pack', '--silent', source],
+    args: (destination) => [
+      'pack',
+      '--silent',
+      source,
+      '--pack-destination',
+      path.dirname(destination),
+    ],
   };
 }
 
@@ -190,16 +196,26 @@ export async function downloadTemplate(
 
   try {
     const tarballPath = path.join(packDirectory, 'template.tgz');
-    const args = packer.args(tarballPath);
-
-    if (options.registry && !isLocalTemplateSource(source)) {
-      args.push(`--registry=${options.registry}`);
+    const local = isLocalTemplateSource(source);
+    const localArchive = local && /\.(?:tgz|tar\.gz)$/u.test(source);
+    if (localArchive) {
+      await copyFile(path.resolve(source), tarballPath);
+    } else {
+      const args = packer.args(tarballPath);
+      if (options.legacyRegistry && !local)
+        args.push(`--registry=${options.legacyRegistry}`);
+      if (
+        options.nocobaseRegistry &&
+        !local &&
+        source.startsWith('@nocobase/')
+      ) {
+        args.push(`--@nocobase:registry=${options.nocobaseRegistry}`);
+      }
+      await runCommand(packer.command, args, {
+        cwd: local ? path.resolve(source) : process.cwd(),
+        timeoutMs: PACK_TIMEOUT_MS,
+      });
     }
-
-    await runCommand(packer.command, args, {
-      cwd: isLocalTemplateSource(source) ? path.resolve(source) : packDirectory,
-      timeoutMs: PACK_TIMEOUT_MS,
-    });
 
     const tarball = isLocalTemplateSource(source)
       ? tarballPath

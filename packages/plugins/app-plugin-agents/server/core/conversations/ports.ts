@@ -385,6 +385,8 @@ export interface ConversationService {
   };
   /** Turns the run's new text events into assistant messages; nothing for runs on other subjects. */
   syncRun(runId: string): Promise<Run>;
+  /** Sends an uploaded file as part of the conversation run's current reply; other subjects do nothing. */
+  attachFromRun(runId: string, fileId: string): Promise<void>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
   chatAgents(userId: string): Promise<ChatAgent[]>;

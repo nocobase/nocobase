@@ -70,15 +70,14 @@ const esES: LocaleResource<typeof enUS> = {
             all: 'Implementar (todos)',
           },
           deployProtected: {
-            title: 'Aprobar implementaciones protegidas',
+            title: 'Desplegar en entornos protegidos',
             description:
-              'Aprobar implementaciones en entornos protegidos que no nombran aprobadores; solo personas',
-            related:
-              'Aprobar despliegues protegidos (los relacionados con ellos)',
+              'Si no se resuelven aprobadores del entorno, aprobar solicitudes personalmente o desplegar directamente como esa persona o su ejecución',
+            related: 'Desplegar en entornos protegidos (relacionados)',
             relatedLabel: 'Los que creé',
             relatedHint:
               'Aplicaciones que creé y cualquier aplicación relacionada conmigo',
-            all: 'Aprobar implementaciones protegidas (todas)',
+            all: 'Desplegar en entornos protegidos (todos)',
           },
           operate: {
             title: 'Iniciar y detener',
@@ -155,6 +154,7 @@ const esES: LocaleResource<typeof enUS> = {
       environments: 'Implementar entornos',
     },
     apps: {
+      lastFailure: 'Último fallo: {{detail}}',
       title: 'Aplicaciones',
       create: 'Crear aplicación',
       id: 'ID de aplicación',
@@ -785,6 +785,12 @@ const esES: LocaleResource<typeof enUS> = {
           'No hay un primer administrador para mostrar.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'No se recibieron datos del paquete de la versión durante {{seconds}} segundos. El despliegue no se completó; inténtalo de nuevo.',
+        artifactReadTotalTimeout:
+          'La lectura del paquete de la versión superó {{seconds}} segundos. El despliegue no se completó; inténtalo de nuevo.',
+        artifactReadTimeout:
+          'Se agotó el tiempo de lectura del paquete de la versión. El despliegue no se completó; inténtalo de nuevo.',
         hostExited:
           'El proceso de la aplicación se detuvo antes de que estuviera lista.',
         hostDisabled: 'El host de la aplicación está apagado.',
@@ -804,6 +810,18 @@ const esES: LocaleResource<typeof enUS> = {
         checkTimeout: 'La prueba no finalizó en 20 segundos.',
         hostNoSettings:
           'El entorno de ejecución local no requiere configuración de conexión.',
+        recycleWait:
+          'El host de aplicaciones está liberando memoria; el despliegue continuará cuando termine.',
+        recycleRetry:
+          'El host de aplicaciones sigue liberando memoria, así que el despliegue no se completó. Inténtalo más tarde.',
+        capacityExceeded:
+          'El host de aplicaciones no tiene suficiente memoria ni un espacio libre, así que el despliegue no se completó. Inténtalo más tarde.',
+        replacementMemory:
+          'El host de aplicaciones no tiene memoria suficiente para iniciar la nueva versión; la actual sigue en ejecución. Inténtalo más tarde.',
+        startQueueFull:
+          'Se están iniciando demasiadas aplicaciones en el host. Inténtalo más tarde.',
+        activeLimit:
+          'El número de aplicaciones en ejecución alcanzó su límite. Inténtalo más tarde.',
       },
       prefixed: {
         startFailed: 'Error al iniciar: {{detail}}',

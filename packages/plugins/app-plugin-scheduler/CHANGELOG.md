@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-scheduler
 
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [a6b6b7c]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-cli@1.0.0-beta.34
+
 ## 1.0.0-beta.24
 
 ### Minor Changes

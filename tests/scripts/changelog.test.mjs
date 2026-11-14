@@ -11,6 +11,7 @@ import {
   collectEntries,
   extractPullRequestNumbers,
   extractReleaseSection,
+  mergeScopes,
   parseChangelogSections,
   pendingBetaPullRequests,
   prependChangelog,
@@ -22,7 +23,12 @@ import { renderChangelogLines } from '../../scripts/release-notes.mjs';
 
 const repo = 'nocobase/nocobase';
 
-function body(type, en = 'An English sentence.', zh = '一句中文。') {
+function body(
+  type,
+  en = 'An English sentence.',
+  zh = '一句中文。',
+  ja = '日本語の一文。',
+) {
   return `### This is a ...
 
 - [${type === 'New feature' ? 'x' : ' '}] New feature
@@ -32,11 +38,11 @@ function body(type, en = 'An English sentence.', zh = '一句中文。') {
 
 ### Changelog
 
-| Language   | Changelog |
-| ---------- | --------- |
-| 🇺🇸 English | ${en} |
-| 🇨🇳 Chinese | ${zh} |
-`;
+| Language    | Changelog |
+| ----------- | --------- |
+| 🇺🇸 English  | ${en} |
+| 🇨🇳 Chinese  | ${zh} |
+${ja === null ? '' : `| 🇯🇵 Japanese | ${ja} |\n`}`;
 }
 
 function pr(number, title, text, headRefName = `fix/v3-${number}`) {
@@ -45,7 +51,6 @@ function pr(number, title, text, headRefName = `fix/v3-${number}`) {
     title,
     body: text,
     url: `https://github.com/${repo}/pull/${number}`,
-    author: { login: 'someone' },
     headRefName,
   };
 }
@@ -92,9 +97,13 @@ test('pull request numbers come from squash and merge commit subjects', () => {
 
 test('entries are grouped by type and module; Others, release and unreadable PRs stay out', () => {
   const collected = collectEntries([
-    pr(5, 'fix(demo-mode): b', body('Bug fix', 'Fix B.', '修复 B。')),
-    pr(3, 'feat(knowledge): a', body('New feature', 'Add A.', '新增 A。')),
-    pr(4, 'fix(demo-mode): c', body('Bug fix', 'Fix C.', '修复 C。')),
+    pr(5, 'fix(demo-mode): b', body('Bug fix', 'Fix B.', '修复 B。', null)),
+    pr(
+      3,
+      'feat(knowledge): a',
+      body('New feature', 'Add A.', '新增 A。', 'A を追加。'),
+    ),
+    pr(4, 'fix(demo-mode): c', body('Bug fix', 'Fix C.', '修复 C。', 'TODO')),
     pr(6, 'ci: d', body('Others')),
     pr(7, 'chore: release', body('Bug fix'), 'release-beta/2026-10-26.3'),
     pr(8, 'fix(db): old description', 'Fixes something.'),
@@ -107,13 +116,13 @@ test('entries are grouped by type and module; Others, release and unreadable PRs
     renderNotes(collected, 'en'),
     `### 🎉 New Features
 
-- **[Knowledge base]** Add A. ([#3](https://github.com/${repo}/pull/3)) by @someone
+- **[Knowledge base]** Add A. ([#3](https://github.com/${repo}/pull/3))
 
 ### 🐛 Bug Fixes
 
 - **[Demo mode]**
-  - Fix C. ([#4](https://github.com/${repo}/pull/4)) by @someone
-  - Fix B. ([#5](https://github.com/${repo}/pull/5)) by @someone
+  - Fix C. ([#4](https://github.com/${repo}/pull/4))
+  - Fix B. ([#5](https://github.com/${repo}/pull/5))
 `,
   );
   assert.match(
@@ -121,6 +130,44 @@ test('entries are grouped by type and module; Others, release and unreadable PRs
     /### 🐛 修复\n\n- \*\*\[演示模式\]\*\*\n {2}- 修复 C。/u,
   );
   assert.equal(renderNotes({ entries: [] }, 'zh'), '没有面向用户的变更。\n');
+});
+
+test('the Japanese changelog falls back to English when a PR has no Japanese sentence', () => {
+  const collected = collectEntries([
+    pr(
+      3,
+      'feat(knowledge): a',
+      body('New feature', 'Add A.', '新增 A。', 'A を追加。'),
+    ),
+    pr(4, 'fix(demo-mode): c', body('Bug fix', 'Fix C.', '修复 C。', 'TODO')),
+    pr(5, 'fix(demo-mode): b', body('Bug fix', 'Fix B.', '修复 B。', null)),
+  ]);
+  assert.deepEqual(collected.missing, []);
+  assert.equal(
+    renderNotes(collected, 'ja'),
+    `### 🎉 新機能
+
+- **[ナレッジベース]** A を追加。 ([#3](https://github.com/${repo}/pull/3))
+
+### 🐛 不具合修正
+
+- **[デモモード]**
+  - Fix C. ([#4](https://github.com/${repo}/pull/4))
+  - Fix B. ([#5](https://github.com/${repo}/pull/5))
+`,
+  );
+  assert.equal(
+    renderNotes({ entries: [] }, 'ja'),
+    'ユーザー向けの変更はありません。\n',
+  );
+  assert.ok(
+    prependChangelog(null, {
+      tag: 'release-beta/2026-10-26.3',
+      repo,
+      notes: renderNotes(collected, 'ja'),
+      language: 'ja',
+    }).startsWith(CHANGELOG_HEADERS.ja),
+  );
 });
 
 test('sections are prepended below the header once per tag and read back for the GitHub Release', () => {
@@ -172,11 +219,11 @@ test('sections are prepended below the header once per tag and read back for the
 test('a stable release carries the PRs the betas listed that no stable section lists', () => {
   const link = (number) =>
     `([#${number}](https://github.com/${repo}/pull/${number}))`;
-  // Sync merges can leave the stable section anywhere relative to later betas.
+  // Sync merges can leave the stable section anywhere relative to later betas. Sections written before authors were left out still end entries with `by @<login>`.
   const changelog = `${CHANGELOG_HEADERS.en}
 ## [release-beta/2026-10-28.1](x)
 
-- **[Database]** D ${link(4)} by @a
+- **[Database]** D ${link(4)}
 
 ## [release/2026-10-27.1](x)
 
@@ -309,4 +356,31 @@ test('changelog CLI discovers legacy tags for the first new Beta release', (t) =
     );
     git('tag', tag);
   }
+});
+
+test('a --scopes file adds modules over changelog-scopes.json and must name each in every language', () => {
+  const scopeMap = mergeScopes({
+    approval: { en: 'Approval', zh: '审批', ja: '承認' },
+  });
+  const collected = collectEntries(
+    [
+      pr(3, 'feat(approval): a', body('New feature', 'Add A.', '新增 A。')),
+      pr(
+        4,
+        'fix(app-plugin-approval): b',
+        body('Bug fix', 'Fix B.', '修复 B。'),
+      ),
+      pr(5, 'fix(db): c', body('Bug fix', 'Fix C.', '修复 C。')),
+    ],
+    scopeMap,
+  );
+  assert.deepEqual(
+    collected.entries.map(({ module }) => module.en),
+    ['Approval', 'Approval', 'Database'],
+  );
+  assert.throws(
+    () => mergeScopes({ approval: { en: 'Approval', zh: '审批' } }),
+    /"approval" has no ja module name/u,
+  );
+  assert.throws(() => mergeScopes([]), /JSON object/u);
 });

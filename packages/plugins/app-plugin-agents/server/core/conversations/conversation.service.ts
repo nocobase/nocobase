@@ -3012,6 +3012,39 @@ export function createConversationService(
       },
     },
 
+    async attachFromRun(runId, fileId) {
+      const stored = await findRunRecord(tx.read(), runId);
+      if (!stored) throw notFound('Run');
+      const run = toRun(stored);
+      if (run.subject.kind !== CONVERSATION_SUBJECT || !deps.attachments)
+        return;
+      await tx.run(async (unit) => {
+        const record = await lockConversation(unit.conn, run.subject.id, now());
+        if (!record || record.userId !== run.actorUserId) return;
+        await syncIn(unit, run, record);
+        const synced = await findConversation(unit.conn, record.id);
+        const message = await append(unit, record, {
+          role: 'assistant',
+          text: '',
+          runId: run.id,
+          metadata: {
+            agentId: run.agentId,
+            runEventSeq: Number(synced!.syncSeq),
+          },
+        });
+        const files = await deps.attachments!.attach(
+          unit.conn,
+          run.actorUserId,
+          { conversationId: record.id, messageId: message.id },
+          [fileId],
+        );
+        await messagesRepo(unit.conn).updateMany({
+          filter: { id: message.id },
+          values: { attachments: asJson(files) },
+        });
+      });
+    },
+
     async syncRun(runId) {
       const stored = await findRunRecord(tx.read(), runId);
       if (!stored) throw notFound('Run');

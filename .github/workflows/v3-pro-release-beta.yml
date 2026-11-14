@@ -1,7 +1,9 @@
 name: V3 Release Pro Beta
 
 # Run the commercial beta release on public-repository Actions minutes while every branch, tag, PR, and GitHub
-# Release remains in nocobase/nocobase3-pro. Commercial source and packages never leave this job as artifacts.
+# Release remains in nocobase/nocobase3-pro. Commercial source and packages never leave a job as artifacts or caches.
+#
+# prepare selects the Pro develop and OSS v3-develop commits once. Then three jobs start together, each on its own freshly versioned tree of those commits: the check legs run Pro's tests (pnpm release:test, which needs no build) and the create-app smoke test, and release builds Pro (pnpm release:build) for publishing at the same time. Before writing anything, release waits for both legs and requires that each passed on exactly the tree it built (scripts/wait-for-pro-checks.mjs), so the build overlaps the checks instead of following them. The private packages/examples/** are neither built nor tested, as in the joint release.
 
 on:
   workflow_dispatch:
@@ -41,11 +43,27 @@ permissions:
   contents: read
 
 jobs:
-  release:
-    name: Publish Pro beta
+  prepare:
+    name: Select what to release
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 15
+    outputs:
+      release: ${{ steps.release_state.outputs.release }}
+      pro_sha: ${{ steps.commits.outputs.pro_sha }}
+      oss_sha: ${{ steps.commits.outputs.oss_sha }}
     steps:
+      # The Pro checkout below replaces the workspace, so the open-source tooling this job runs is copied out first.
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          path: .workflow-tools
+          persist-credentials: false
+
+      - name: Copy release tooling outside the checkout
+        run: |
+          mkdir -p "$RUNNER_TEMP/oss-tools"
+          cp .workflow-tools/scripts/pro-release-candidates.mjs "$RUNNER_TEMP/oss-tools/"
+
       - name: Create a read token for the Pro repository
         id: checkout_token
         uses: actions/create-github-app-token@v2
@@ -62,7 +80,6 @@ jobs:
           repository: nocobase/nocobase3-pro
           ref: develop
           fetch-depth: 0
-          submodules: recursive
           token: ${{ steps.checkout_token.outputs.token }}
           persist-credentials: false
 
@@ -71,10 +88,76 @@ jobs:
           PRO_TOKEN: ${{ steps.checkout_token.outputs.token }}
         run: git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
 
+      # V3 Release Beta releases Pro with the open-source beta through a release-candidate/<batch> branch. While one is in flight, a Pro release of its own would publish the same versions or take the same release-beta name, so this workflow refuses to start, and checks again just before it writes anything. A candidate older than 30 days is ignored, because its run can no longer be re-run; see scripts/pro-release-candidates.mjs.
+      - name: Refuse to run while a joint beta release is in flight
+        run: node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" check
+
+      - name: Inspect prerelease state
+        id: release_state
+        run: |
+          test -f .changeset/pre.json || { echo '::error::Pro develop is not in pre mode'; exit 1; }
+          test "$(node -p "require('./.changeset/pre.json').mode")" = pre || { echo '::error::Pro develop has an invalid pre mode'; exit 1; }
+          COUNT=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
+          if [ "$COUNT" = 0 ]; then
+            echo 'release=false' >> "$GITHUB_OUTPUT"
+            echo '### Pro beta release skipped' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Pro develop has no pending changesets, so no package, tag, branch, PR, or Release was created.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'release=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      # Every later job, and every re-run of one, checks out and versions exactly these two commits.
+      - name: Select the Pro and OSS commits
+        if: steps.release_state.outputs.release == 'true'
+        id: commits
+        env:
+          OSS_SHA: ${{ inputs.oss_sha }}
+        run: |
+          if [ -z "$OSS_SHA" ]; then
+            OSS_SHA=$(git ls-remote https://github.com/nocobase/nocobase.git refs/heads/v3-develop | cut -f1)
+          fi
+          [[ "$OSS_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::'$OSS_SHA' is not a full OSS commit SHA"; exit 1; }
+          echo "Releasing Pro develop $(git rev-parse HEAD) with OSS $OSS_SHA."
+          {
+            echo "pro_sha=$(git rev-parse HEAD)"
+            echo "oss_sha=$OSS_SHA"
+          } >> "$GITHUB_OUTPUT"
+
+  # The two legs check what release builds and publishes, on runners of their own. Each leg announces the versioned tree it checked as a "Pro checked tree" notice once its check passed; release reads it back before it writes anything. Like release, they upload and cache nothing.
+  check:
+    name: Check Pro (${{ matrix.part }})
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [test, smoke]
+    steps:
+      - name: Create a read token for the Pro repository
+        id: checkout_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+
+      - name: Check out the selected Pro commit
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase3-pro
+          ref: ${{ needs.prepare.outputs.pro_sha }}
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ steps.checkout_token.outputs.token }}
+          persist-credentials: false
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Validate the Pro npm registry
@@ -96,33 +179,122 @@ jobs:
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
           scope: '@nocobase'
 
-      - name: Inspect prerelease state
-        id: release_state
+      - name: Freeze the OSS v3-develop snapshot and install
+        env:
+          OSS_SHA: ${{ needs.prepare.outputs.oss_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: node ./scripts/sync-release-oss.mjs --branch develop --sha "$OSS_SHA"
+
+      - name: Version Pro packages
         run: |
-          test -f .changeset/pre.json || { echo '::error::Pro develop is not in pre mode'; exit 1; }
-          test "$(node -p "require('./.changeset/pre.json').mode")" = pre || { echo '::error::Pro develop has an invalid pre mode'; exit 1; }
-          COUNT=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
-          if [ "$COUNT" = 0 ]; then
-            echo 'release=false' >> "$GITHUB_OUTPUT"
-            echo '### Pro beta release skipped' >> "$GITHUB_STEP_SUMMARY"
-            echo 'Pro develop has no pending changesets, so no package, tag, branch, PR, or Release was created.' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'release=true' >> "$GITHUB_OUTPUT"
-          fi
+          node ./vendor/nocobase3/scripts/list-package-versions.mjs > "$RUNNER_TEMP/pro-versions-before.json"
+          pnpm changeset version
+          CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
+          test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
+          echo "$CHANGED"
+
+      # The index records the versioned tree this leg checks; testing never stages anything.
+      - name: Stage the versioned Pro tree
+        id: tree
+        run: |
+          git add -A
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+
+      # Pro's tests read source, not builds, so this leg builds nothing; release builds Pro for publishing.
+      - name: Test Pro
+        if: matrix.part == 'test'
+        run: pnpm release:test
+
+      - name: Verify Pro packages in OSS Default
+        if: matrix.part == 'smoke'
+        uses: ./.github/actions/verify-create-app
+
+      - name: Announce the checked tree
+        env:
+          TREE: ${{ steps.tree.outputs.tree }}
+        run: echo "::notice title=Pro checked tree::$TREE"
+
+  release:
+    name: Publish Pro beta
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # actions and checks: read let it read the check legs' results and annotations of this run.
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+    steps:
+      # The Pro checkout below replaces the workspace, so the open-source tooling this job runs is copied out first.
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          path: .workflow-tools
+          persist-credentials: false
+
+      - name: Copy release tooling outside the checkout
+        run: |
+          mkdir -p "$RUNNER_TEMP/oss-tools"
+          cp .workflow-tools/scripts/pro-release-candidates.mjs .workflow-tools/scripts/wait-for-pro-checks.mjs "$RUNNER_TEMP/oss-tools/"
+
+      - name: Create a read token for the Pro repository
+        id: checkout_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+
+      - name: Check out the selected Pro commit
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase3-pro
+          ref: ${{ needs.prepare.outputs.pro_sha }}
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ steps.checkout_token.outputs.token }}
+          persist-credentials: false
+
+      - name: Configure the Pro read remote
+        env:
+          PRO_TOKEN: ${{ steps.checkout_token.outputs.token }}
+        run: git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
+          scope: '@nocobase'
 
       - name: Freeze the OSS v3-develop snapshot and install
-        if: steps.release_state.outputs.release == 'true'
         id: oss
         env:
-          OSS_SHA: ${{ inputs.oss_sha }}
+          OSS_SHA: ${{ needs.prepare.outputs.oss_sha }}
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
-        run: |
-          ARGS=(--branch develop)
-          if [ -n "$OSS_SHA" ]; then ARGS+=(--sha "$OSS_SHA"); fi
-          node ./scripts/sync-release-oss.mjs "${ARGS[@]}"
+        run: node ./scripts/sync-release-oss.mjs --branch develop --sha "$OSS_SHA"
 
       - name: Configure release branch
-        if: steps.release_state.outputs.release == 'true'
         id: branch
         run: |
           git config user.name 'nocobase[bot]'
@@ -143,7 +315,6 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
 
       - name: Version Pro packages
-        if: steps.release_state.outputs.release == 'true'
         id: changed
         run: |
           pnpm changeset version
@@ -152,23 +323,66 @@ jobs:
           echo "$CHANGED"
           echo "rows=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --released-rows "$RUNNER_TEMP/pro-versions-before.json")" >> "$GITHUB_OUTPUT"
 
-      - name: Build and test Pro
-        if: steps.release_state.outputs.release == 'true'
+      # The tree the check legs must have passed on. It is recorded before the changelog below, which no build or test reads, so the changelog files are the only part of the release commit the legs did not see.
+      - name: Stage the versioned Pro tree
+        id: tree
         run: |
-          pnpm build
-          pnpm test
+          git add -A
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
 
-      - name: Verify Pro packages in OSS Default
-        if: steps.release_state.outputs.release == 'true'
-        uses: ./.github/actions/verify-create-app
+      # The root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md gain this release's section, written by the
+      # framework's scripts/changelog.mjs from the descriptions of the Pro pull requests the release contains, with
+      # Pro's own module names (scripts/changelog-scopes.json, passed once the framework's script takes --scopes); the
+      # release commit carries the three files, and the Pro GitHub Release opens with the English section. Best effort:
+      # a failure warns, puts the files back as they were, and the release goes on without the section.
+      - name: Create a Pro pull request read token
+        id: pull_request_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+          permission-pull-requests: read
+
+      - name: Write the changelog
+        env:
+          GH_TOKEN: ${{ steps.pull_request_token.outputs.token }}
+          TAG: ${{ steps.branch.outputs.name }}
+        run: |
+          ARGS=(--tag "$TAG" --repo nocobase/nocobase3-pro --root .)
+          if [ -f scripts/changelog-scopes.json ] && grep -q -- "scopes: { type: 'string' }" vendor/nocobase3/scripts/changelog.mjs; then
+            ARGS+=(--scopes scripts/changelog-scopes.json)
+          fi
+          if ! node ./vendor/nocobase3/scripts/changelog.mjs "${ARGS[@]}"; then
+            echo "::warning::Writing the changelog failed; $TAG has no changelog section."
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
+              if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
+                git checkout HEAD -- "$file"
+              else
+                rm -f -- "$file"
+              fi
+            done
+          fi
+
+      # Publishing needs the build; a build failure stops the release here, before anything is written.
+      - name: Build Pro
+        run: pnpm release:build
+
+      - name: Wait for the Pro checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TREE: ${{ steps.tree.outputs.tree }}
+        run: node "$RUNNER_TEMP/oss-tools/wait-for-pro-checks.mjs" --tree "$TREE" --job 'Check Pro (test)' --job 'Check Pro (smoke)'
 
       - name: Stop after validation
-        if: inputs.dry_run && steps.release_state.outputs.release == 'true'
+        if: inputs.dry_run
         run: echo 'dry_run=true — no branch, tag, package, PR, or GitHub Release was written.'
 
       # Installation tokens expire after one hour, so mint the write token only after the long validation phase.
       - name: Create a fresh Pro write token
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
+        if: '!inputs.dry_run'
         id: write_token
         uses: actions/create-github-app-token@v2
         with:
@@ -180,12 +394,13 @@ jobs:
           permission-pull-requests: write
 
       - name: Commit, tag, and push the tested candidate
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
+        if: '!inputs.dry_run'
         env:
           PRO_TOKEN: ${{ steps.write_token.outputs.token }}
           OSS_SHA: ${{ steps.oss.outputs.sha }}
         run: |
           git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" check
           git add -A
           test "$(git -C vendor/nocobase3 rev-parse HEAD)" = "$OSS_SHA"
           test "$(git ls-files --stage vendor/nocobase3 | awk '{print $2}')" = "$OSS_SHA"
@@ -195,7 +410,7 @@ jobs:
           git push origin "refs/tags/${{ steps.branch.outputs.name }}:refs/tags/${{ steps.branch.outputs.name }}"
 
       - name: Publish Pro packages
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
+        if: '!inputs.dry_run'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
           PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
@@ -204,7 +419,7 @@ jobs:
       # Point latest at each release as well as beta, so installing a Pro package without a tag gets the version that was
       # just published, as the OSS beta release does.
       - name: Point beta and latest at this release and push package tags
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
+        if: '!inputs.dry_run'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
           PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
@@ -218,10 +433,19 @@ jobs:
             done
           done < "$RUNNER_TEMP/pro-released-specs.txt"
           test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
-          git push origin --tags
+          # publish-commercial-packages.mjs moves a package tag that a candidate which never published had reserved, so the package tags it wrote at the release commit are forced; it refuses to move any other.
+          HEAD_SHA=$(git rev-parse HEAD)
+          REFS=()
+          while IFS= read -r SPEC; do
+            [ -n "$SPEC" ] || continue
+            if [ "$(git rev-parse --verify --quiet "refs/tags/${SPEC}^{commit}" || true)" = "$HEAD_SHA" ]; then
+              REFS+=("+refs/tags/${SPEC}:refs/tags/${SPEC}")
+            fi
+          done < "$RUNNER_TEMP/pro-released-specs.txt"
+          if [ "${#REFS[@]}" -gt 0 ]; then git push origin "${REFS[@]}"; fi
 
       - name: Merge release metadata back into Pro develop
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
+        if: '!inputs.dry_run'
         id: merge
         env:
           GH_TOKEN: ${{ steps.write_token.outputs.token }}
@@ -234,7 +458,7 @@ jobs:
           gh pr merge --repo nocobase/nocobase3-pro "$PR_URL" --merge --delete-branch
 
       - name: Create the Pro GitHub Release
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true' && steps.merge.outcome == 'success'"
+        if: "!inputs.dry_run && steps.merge.outcome == 'success'"
         env:
           GH_TOKEN: ${{ steps.write_token.outputs.token }}
           TAG: ${{ steps.branch.outputs.name }}
@@ -250,7 +474,7 @@ jobs:
           fi
 
       - name: Notify success
-        if: "!inputs.dry_run && steps.release_state.outputs.release == 'true' && success()"
+        if: '!inputs.dry_run && success()'
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
@@ -265,8 +489,21 @@ jobs:
           CONTENT: 版本 **${{ steps.branch.outputs.batch }}** 已发布到私有 npm（dist-tag `beta` 和 `latest`）。
         run: ./vendor/nocobase3/scripts/feishu-notify.sh
 
+  # Reports a failure of any job. It checks out only this repository's tooling, so it works however early the release failed.
+  notify-failure:
+    name: Notify failure
+    needs: [prepare, check, release]
+    if: failure() && !inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Notify failure
-        if: failure() && !inputs.dry_run
+        if: '!inputs.dry_run'
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
@@ -276,4 +513,4 @@ jobs:
           STATUS_TEXT_FAILURE: 发版中断
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: 请检查 OSS 仓库中的 Pro 发版运行；若 publish 已执行，重跑前先确认私有 registry 状态。
-        run: ./vendor/nocobase3/scripts/feishu-notify.sh
+        run: ./scripts/feishu-notify.sh

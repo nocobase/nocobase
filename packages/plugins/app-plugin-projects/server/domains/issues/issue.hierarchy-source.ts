@@ -12,6 +12,11 @@ import { visibleProjects } from '../projects/index.js';
 
 /** No records are materialized: consumers may aggregate or page these relations in the database. */
 export interface IssueHierarchySource {
+  /** Visible seeds in the requested project; consumers may follow only authorized parents. All visible records without a project filter. */
+  readonly scoped: {
+    readonly sql: string;
+    readonly parameters: readonly unknown[];
+  };
   readonly visible: {
     readonly sql: string;
     readonly parameters: readonly unknown[];
@@ -178,7 +183,12 @@ export async function hierarchySource(
     )
     .select('id')
     .compile();
+  const visibleSource = visible.select(fields).compile();
+  const scoped = query.projectId
+    ? visible.where('projectId', '=', query.projectId).select(fields).compile()
+    : visibleSource;
   return {
+    scoped,
     visible: visible.select(fields).compile(),
     blocked,
     matching: { sql: sql.sql, parameters: sql.bindings },
