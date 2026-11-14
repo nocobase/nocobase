@@ -102,6 +102,10 @@ export interface AppCliPluginDefinition {
    * out of a built `dist/`, where the sources and the development tooling they need are not installed.
    */
   readonly devCommands?: AppCliCommands;
+  /** Command mounted on the package topic itself. */
+  readonly rootCommand?: AppCliCommands[string];
+  /** Topic command available only in a source application. */
+  readonly devRootCommand?: AppCliCommands[string];
   /** Commands an application's `pnpm build` runs on this plugin's behalf, keyed by build stage. */
   readonly buildHooks?: AppBuildHooks;
   /**
@@ -122,6 +126,8 @@ export interface AppCliPlugin {
   readonly topics?: Readonly<Record<string, string>>;
   readonly commands: AppCliCommands;
   readonly devCommands: AppCliCommands;
+  readonly rootCommand?: AppCliCommands[string];
+  readonly devRootCommand?: AppCliCommands[string];
   readonly buildHooks: AppBuildHooks;
   readonly devHooks: AppDevHooks;
 }
