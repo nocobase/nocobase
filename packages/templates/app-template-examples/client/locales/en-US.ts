@@ -355,7 +355,6 @@ const enUS = {
     versionCount: '{{count}} versions',
     latestHint:
       'Latest means the largest version number; new records may still start with an earlier version.',
-    versionExecutionCountLink: 'Version {{version}} executions: {{count}}',
     viewExecutions: 'View executions',
     parameterHint:
       'Click a configured node or transition to adjust its runtime parameters. Other nodes show their definition details. Changes apply according to each workflow’s snapshot or live mode.',

@@ -156,14 +156,12 @@ export default function DefinitionPage(): ReactElement {
               to={`/workflows/executions?${executionsSearch}`}
               className='text-sm font-normal tracking-normal text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring'
             >
-              {versioned
-                ? t('workflows.versionExecutionCountLink', {
-                    version: loaded.definition.version,
-                    count: loaded.definition.executionCount,
-                  })
-                : t('workflows.executionCountLink', {
-                    count: loaded.workflow.executionCount,
-                  })}
+              {/* The version select beside it already names the version. */}
+              {t('workflows.executionCountLink', {
+                count: versioned
+                  ? loaded.definition.executionCount
+                  : loaded.workflow.executionCount,
+              })}
             </Link>
           </>
         ) : undefined

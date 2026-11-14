@@ -410,7 +410,6 @@ const zhCN: AppResource = {
     allVersions: '全部版本',
     versionCount: '{{count}} 个版本',
     latestHint: '最新版本指版本号最大的版本，新记录不一定从它开始。',
-    versionExecutionCountLink: '版本 {{version}} 已执行 {{count}} 次',
     viewExecutions: '查看执行记录',
     parameterHint:
       '点击绑定了参数的节点或连线可调整运行参数，其他节点可查看定义详情。修改按各流程的快照或实时模式生效。',
