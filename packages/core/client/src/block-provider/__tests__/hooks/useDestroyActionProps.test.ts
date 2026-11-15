@@ -19,6 +19,7 @@ import * as ActionHooks from '../../../schema-component/antd/action/hooks';
 import * as BlockProvider from '../../BlockProvider';
 import { TableFieldResource } from '../../TableFieldProvider';
 import { useDestroyActionProps } from '../../hooks';
+import { parseQuery } from '../../../../../resourcer/src/utils';
 
 const state = {
   associationName: 'orgs.users' as string | undefined,
@@ -117,6 +118,52 @@ describe('useDestroyActionProps', () => {
       mock.restore();
     }
   });
+
+  it.each([
+    '["A","B"]',
+    '{"code":"A"}',
+    '{"0":"A","1":"B"}',
+    '[]',
+    '{}',
+    ' \n ["A","B"] \t',
+    '[not JSON',
+    '{not JSON',
+    '["中文 & + %", "B"]',
+  ])('preserves the literal hasMany key %s through server query parsing', async (key) => {
+    state.record.code = key;
+    const api = new APIClient({ baseURL: 'http://localhost/api/' });
+    const mock = new MockAdapter(api.axios);
+    mock.onPost('orgs/110013/users:destroy').reply(200, { data: true });
+    state.resource.destroy = vi.fn((params: ActionParams) => api.resource('orgs.users', '110013').destroy(params));
+    try {
+      const { result } = renderHook(() => useDestroyActionProps());
+      await result.current.onClick();
+      expect(mock.history.post).toHaveLength(1);
+      const config = mock.history.post[0];
+      const paramsSerializer =
+        typeof config.paramsSerializer === 'function'
+          ? { serialize: config.paramsSerializer }
+          : config.paramsSerializer;
+      const url = new URL(api.axios.getUri({ ...config, paramsSerializer }));
+      expect(url.pathname).toBe('/api/orgs/110013/users:destroy');
+      expect(parseQuery(url.search.slice(1)).filterByTk).toEqual([key]);
+    } finally {
+      mock.restore();
+    }
+  });
+
+  it.each([undefined, 'belongsToMany', 'hasOne', 'belongsTo'])(
+    'does not wrap scalar keys outside hasMany: %s',
+    async (type) => {
+      state.associationName = type ? 'orgs.users' : undefined;
+      state.association = type ? { type, targetKey: 'code' } : undefined;
+      state.record.code = '["A","B"]';
+      state.filterByTk = state.record.code;
+      const { result } = renderHook(() => useDestroyActionProps());
+      await result.current.onClick();
+      expect(state.resource.destroy).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: '["A","B"]' }));
+    },
+  );
 
   it('supports an uppercase target key', async () => {
     state.association = { type: 'hasMany', targetKey: 'ID' };

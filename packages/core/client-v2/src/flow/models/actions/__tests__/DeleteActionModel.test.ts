@@ -13,6 +13,7 @@ import { APIClient } from '@nocobase/sdk';
 import MockAdapter from 'axios-mock-adapter';
 import { DeleteActionModel } from '../DeleteActionModel';
 import { BulkDeleteActionModel } from '../BulkDeleteActionModel';
+import { parseQuery } from '../../../../../../resourcer/src/utils';
 
 type RecordData = Record<string, unknown>;
 
@@ -130,6 +131,81 @@ describe('hasMany delete actions', () => {
       expect(url.searchParams.get('filterByTk')).toBe('S1523968');
       expect(url.searchParams.has('filterByTk[code]')).toBe(false);
       expect(ctx.message.success).toHaveBeenCalledOnce();
+    } finally {
+      mock.restore();
+    }
+  });
+
+  describe.each([false, true])('literal hasMany keys with singleRecord=%s', (single) => {
+    it.each([
+      '["A","B"]',
+      '{"code":"A"}',
+      '{"0":"A","1":"B"}',
+      '[]',
+      '{}',
+      ' \n ["A","B"] \t',
+      '[not JSON',
+      '{not JSON',
+      '["中文 & + %", "B"]',
+    ])('preserves %s through server query parsing', async (key) => {
+      const { ctx, resource, run } = setup(single);
+      ctx.record.code = key;
+      const api = new APIClient({ baseURL: 'http://localhost/api/' });
+      const mock = new MockAdapter(api.axios);
+      mock.onPost('orgs/110013/users:destroy').reply(200, { data: true });
+      resource.setAPIClient(api).setResourceName('orgs.users').setSourceId('110013');
+      resource.setFilterByTk(ctx.record);
+      vi.spyOn(resource, 'refresh').mockResolvedValue();
+      try {
+        await run();
+        expect(mock.history.post).toHaveLength(1);
+        const config = mock.history.post[0];
+        const paramsSerializer =
+          typeof config.paramsSerializer === 'function'
+            ? { serialize: config.paramsSerializer }
+            : config.paramsSerializer;
+        const url = new URL(api.axios.getUri({ ...config, paramsSerializer }));
+        expect(url.pathname).toBe('/api/orgs/110013/users:destroy');
+        expect(parseQuery(url.search.slice(1)).filterByTk).toEqual([key]);
+        expect(ctx.message.success).toHaveBeenCalledOnce();
+      } finally {
+        mock.restore();
+      }
+    });
+  });
+
+  it.each([undefined, 'belongsToMany', 'hasOne', 'belongsTo'])(
+    'does not wrap scalar keys outside hasMany: %s',
+    async (type) => {
+      const { ctx, resource, run } = setup();
+      ctx.blockModel.association = type ? { type, targetKey: 'code' } : undefined;
+      ctx.blockModel.collection = new Collection({ name: 'users', filterTargetKey: 'code' });
+      ctx.record.code = '["A","B"]';
+      const destroy = vi.spyOn(resource, 'destroy').mockResolvedValue();
+      await run();
+      expect(destroy).toHaveBeenCalledWith('["A","B"]');
+    },
+  );
+
+  it('preserves special string elements in a hasMany bulk request', async () => {
+    const { resource, runBulk } = setup();
+    const keys = ['["A","B"]', '{"code":"A"}'];
+    (resource as MultiRecordResource).setSelectedRows(keys.map((code) => ({ code })));
+    const api = new APIClient({ baseURL: 'http://localhost/api/' });
+    const mock = new MockAdapter(api.axios);
+    mock.onPost('orgs/110013/users:destroy').reply(200, { data: true });
+    resource.setAPIClient(api).setResourceName('orgs.users').setSourceId('110013');
+    vi.spyOn(resource, 'refresh').mockResolvedValue();
+    try {
+      await runBulk();
+      expect(mock.history.post).toHaveLength(1);
+      const config = mock.history.post[0];
+      const paramsSerializer =
+        typeof config.paramsSerializer === 'function'
+          ? { serialize: config.paramsSerializer }
+          : config.paramsSerializer;
+      const url = new URL(api.axios.getUri({ ...config, paramsSerializer }));
+      expect(parseQuery(url.search.slice(1)).filterByTk).toEqual(keys);
     } finally {
       mock.restore();
     }

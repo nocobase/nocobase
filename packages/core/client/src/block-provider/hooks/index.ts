@@ -1145,7 +1145,11 @@ export const useDestroyActionProps = () => {
           message.error(t('The association target key is missing or invalid.'));
           return;
         }
-        params.filterByTk = targetValue;
+        // Preserve JSON-like string keys as one value when the server parses filterByTk.
+        params.filterByTk =
+          typeof targetValue === 'string' && ['[', '{'].includes(targetValue.trimStart()[0])
+            ? [targetValue]
+            : targetValue;
       }
       actionField.data = field.data || {};
       actionField.data.loading = true;

@@ -31,5 +31,10 @@ export function getHasManyDeleteFilterByTk(
     }
     values.push(value);
   }
-  return Array.isArray(records) ? values : values[0];
+  if (Array.isArray(records)) {
+    return values;
+  }
+  const value = values[0];
+  // Preserve JSON-like string keys as one value when the server parses filterByTk.
+  return typeof value === 'string' && ['[', '{'].includes(value.trimStart()[0]) ? [value] : value;
 }
