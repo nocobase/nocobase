@@ -1225,15 +1225,50 @@ export const useDisassociateActionProps = () => {
 };
 
 export const useBulkDestroyActionProps = () => {
-  const { field } = useBlockRequestContext();
-  const { resource, service } = useBlockRequestContext();
+  const { t } = useTranslation();
+  const { field, resource, service, __parent } = useBlockRequestContext();
+  const associationName = useBlockAssociationContext();
+  const collectionManager = useCollectionManager();
+  const association = collectionManager?.getCollectionField(associationName);
   const { setSubmitted } = useActionContext();
   const collection = useCollection_deprecated();
   const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      if (!field?.data?.selectedRowKeys?.length) {
+        return;
+      }
       let filterByTk = field.data?.selectedRowKeys;
-      if (Array.isArray(filterTargetKey)) {
+      if (
+        association?.type === 'hasMany' &&
+        !(resource instanceof TableFieldResource) &&
+        __parent?.block !== 'TableField'
+      ) {
+        const rows = field.data.selectedRowData;
+        if (
+          typeof association.targetKey !== 'string' ||
+          !association.targetKey ||
+          !Array.isArray(rows) ||
+          rows.length !== field.data.selectedRowKeys.length
+        ) {
+          message.error(t('The association target key is missing or invalid.'));
+          return;
+        }
+        const targetValues: (string | number)[] = [];
+        for (const row of rows) {
+          const value = row?.[association.targetKey];
+          if (
+            (typeof value !== 'string' && typeof value !== 'number') ||
+            value === '' ||
+            (typeof value === 'number' && !Number.isFinite(value))
+          ) {
+            message.error(t('The association target key is missing or invalid.'));
+            return;
+          }
+          targetValues.push(value);
+        }
+        filterByTk = targetValues;
+      } else if (Array.isArray(filterTargetKey)) {
         filterByTk = field.data.selectedRowData.map((v) => {
           const obj = {};
           filterTargetKey.map((j) => {
@@ -1241,9 +1276,6 @@ export const useBulkDestroyActionProps = () => {
           });
           return obj;
         });
-      }
-      if (!field?.data?.selectedRowKeys?.length) {
-        return;
       }
       await resource.destroy({
         filterByTk,
