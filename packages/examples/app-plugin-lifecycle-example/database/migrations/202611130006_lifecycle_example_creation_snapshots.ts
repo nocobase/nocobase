@@ -431,7 +431,13 @@ const migration: MigrationDefinition = defineMigration({
             if (creationValid) inventory.creationUsages++;
             let payload: Values | undefined;
             let writeSnapshot = !stored;
-            const current = configurations.get(name);
+            // Released early expenses bypassed saved configuration through legacyRecord.
+            const current =
+              !creationValid &&
+              name === 'expenses' &&
+              Number(record.parameterContract) !== 1
+                ? { values: contract.defaults, revision: 0 }
+                : configurations.get(name);
             const supplement = (base?: Values): Values | undefined => {
               if (!current) return undefined;
               const values = { ...object(base?.values) };

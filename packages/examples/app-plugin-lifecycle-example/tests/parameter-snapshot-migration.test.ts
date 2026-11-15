@@ -7,6 +7,7 @@ import {
   createRepositoryLifecycleStore,
   SYSTEM_ACTOR,
 } from '@nocobase/lifecycle';
+import { expenseLifecycle } from '../server/lifecycles/expense.js';
 import { ticketLifecycle } from '../server/lifecycles/ticket.js';
 import { createExampleServices } from '../server/lifecycles/services.js';
 import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
@@ -911,16 +912,38 @@ it.each(['awaitingCustomer', 'closed'])(
   },
 );
 
-it('supplements early live expenses but refuses missing fixed thresholds and unknown definition bindings before writes', async () => {
-  const run = await history('expenses', false);
-  try {
-    await run.database.repository(run.collection).updateMany({
-      filter: { id: Number(run.recordId) },
-      values: { status: 'paid', parameterContract: null },
-    });
-    await run.database
-      .repository('lifecycleExampleWorkflowParameters')
-      .updateMany({
+it.each([
+  { marker: null, status: 'awaitingManager' },
+  { marker: 0, status: 'paid' },
+])(
+  'freezes released defaults for early expense contract $marker in $status despite changed configuration',
+  async ({ marker, status }) => {
+    const run = await history('expenses', false);
+    try {
+      const records = run.database.repository(run.collection);
+      await records.updateMany({
+        filter: { id: Number(run.recordId) },
+        values: {
+          status,
+          parameterContract: marker,
+          amountCents: 2000000,
+          approverId: 'chen',
+        },
+      });
+      const original = await records.findOne({
+        filter: { id: Number(run.recordId) },
+      });
+      let waitingId: string | undefined;
+      if (status === 'awaitingManager') {
+        const clone = { ...original };
+        delete clone.id;
+        const created = await records.createOne({ values: clone });
+        waitingId = String(Number(created.record.id));
+      }
+      const config = run.database.repository(
+        'lifecycleExampleWorkflowParameters',
+      );
+      await config.updateMany({
         filter: { id: 'lifecycle.expenses' },
         values: {
           revision: 4,
@@ -931,9 +954,7 @@ it('supplements early live expenses but refuses missing fixed thresholds and unk
           },
         },
       });
-    await run.database
-      .repository('lifecycleExampleWorkflowParameters')
-      .updateMany({
+      await config.updateMany({
         filter: { id: 'lifecycle.expenses-v2' },
         values: {
           revision: 9,
@@ -945,6 +966,122 @@ it('supplements early live expenses but refuses missing fixed thresholds and unk
           },
         },
       });
+      await run.migrator.latest();
+      const snapshot = (
+        await run.database
+          .repository('lifecycleExampleParameterSnapshots')
+          .findOne({ filter: { id: run.snapshotId } })
+      )?.payload;
+      expect(snapshot).toMatchObject({
+        revision: 0,
+        values: expenseValues,
+        sources: {
+          autoApproveLimit: { origin: 'upgrade', revision: 0 },
+          financeLimit: { origin: 'upgrade', revision: 0 },
+          escalateAfterMinutes: { origin: 'upgrade', revision: 0 },
+        },
+      });
+      let now = Date.parse(at) + 179999;
+      const store = createRepositoryLifecycleStore(run.database, {
+        collections: {
+          transitions: 'lifecycleExampleTransitions',
+          effectRuns: 'lifecycleExampleEffectRuns',
+        },
+      });
+      const runtime = new LifecycleRuntime({
+        store,
+        clock: () => new Date(now),
+      });
+      runtime.register(expenseLifecycle, {
+        services: createExampleServices({ info: () => {} }),
+        parameterConfiguration: {
+          store: new WorkflowParameterStore(store),
+          scope: () => 'demo',
+        },
+      });
+      expect(
+        (await runtime.view('expenses', run.recordId, SYSTEM_ACTOR))
+          .parameterValues,
+      ).toEqual(expenseValues);
+      if (waitingId) {
+        expect(
+          new Date(
+            (await records.findOne({ filter: { id: Number(waitingId) } }))!
+              .lifecycleDueAt as string,
+          ).toISOString(),
+        ).toBe('2026-10-01T00:03:00.000Z');
+        const approved = await runtime.fire(
+          'expenses',
+          run.recordId,
+          'approve',
+          { actor: { id: 'chen' } },
+        );
+        expect(approved.entry.to).toBe('approved');
+        expect(await runtime.runTriggers()).toBe(0);
+        now++;
+        expect(await runtime.runTriggers()).toBe(1);
+        expect(
+          (await runtime.view('expenses', waitingId, SYSTEM_ACTOR)).record
+            .approverId,
+        ).toBe('wang');
+      }
+      await config.updateMany({
+        filter: { id: 'lifecycle.expenses' },
+        values: {
+          revision: 5,
+          values: {
+            autoApproveLimit: 100,
+            financeLimit: 1000,
+            escalateAfterMinutes: 20,
+          },
+        },
+      });
+      await run.migrator.latest();
+      expect(
+        (
+          await run.database
+            .repository('lifecycleExampleParameterSnapshots')
+            .findOne({ filter: { id: run.snapshotId } })
+        )?.payload,
+      ).toEqual(snapshot);
+      expect(
+        (await runtime.view('expenses', run.recordId, SYSTEM_ACTOR))
+          .parameterValues,
+      ).toEqual(expenseValues);
+    } finally {
+      await run.fixture.destroy();
+    }
+  },
+);
+
+it('prefers verified creation usage for an early expense rather than replacing it with defaults', async () => {
+  const run = await history('expenses', true);
+  try {
+    await run.database.repository(run.collection).updateMany({
+      filter: { id: Number(run.recordId) },
+      values: { parameterContract: null },
+    });
+    const original = {
+      ...run.payload,
+      values: {
+        autoApproveLimit: 100,
+        financeLimit: 9000,
+        escalateAfterMinutes: 11,
+      },
+    };
+    await run.database
+      .repository('lifecycleExampleParameterUsages')
+      .updateMany({
+        filter: { id: run.usageId },
+        values: {
+          payload: {
+            ...original,
+            kind: 'transition',
+            associationId: run.entryId,
+            attempt: 0,
+          },
+        },
+      });
     await run.migrator.latest();
     expect(
       (
@@ -952,18 +1089,44 @@ it('supplements early live expenses but refuses missing fixed thresholds and unk
           .repository('lifecycleExampleParameterSnapshots')
           .findOne({ filter: { id: run.snapshotId } })
       )?.payload,
-    ).toMatchObject({
-      revision: 4,
-      values: {
-        autoApproveLimit: 2000,
-        financeLimit: 12345,
-        escalateAfterMinutes: 5,
-      },
-      sources: {
-        autoApproveLimit: { origin: 'upgrade' },
-        escalateAfterMinutes: { origin: 'upgrade' },
-      },
+    ).toEqual({
+      ...original,
+      recoveredFrom: { transitionId: run.entryId, usageId: run.usageId },
     });
+  } finally {
+    await run.fixture.destroy();
+  }
+});
+
+it('preserves an existing valid early expense snapshot when administrator configuration differs', async () => {
+  const run = await history('expenses', false, true);
+  try {
+    await run.database.repository(run.collection).updateMany({
+      filter: { id: Number(run.recordId) },
+      values: { parameterContract: null, status: 'paid' },
+    });
+    await run.database
+      .repository('lifecycleExampleWorkflowParameters')
+      .updateMany({
+        filter: { id: 'lifecycle.expenses' },
+        values: {
+          revision: 4,
+          values: {
+            autoApproveLimit: 100,
+            financeLimit: 1000,
+            escalateAfterMinutes: 20,
+          },
+        },
+      });
+    await run.migrator.latest();
+    await run.migrator.latest();
+    expect(
+      (
+        await run.database
+          .repository('lifecycleExampleParameterSnapshots')
+          .findOne({ filter: { id: run.snapshotId } })
+      )?.payload,
+    ).toEqual(run.payload);
   } finally {
     await run.fixture.destroy();
   }
