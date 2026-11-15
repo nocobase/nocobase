@@ -8,16 +8,11 @@
  */
 
 import React from 'react';
-import { isCardMoveDisabled, getCardDragId } from './kanbanRecord';
 import { Draggable } from 'react-beautiful-dnd';
 
 function Card({ children, index, renderCard, disableCardDrag }) {
   return (
-    <Draggable
-      draggableId={getCardDragId(children)}
-      index={index}
-      isDragDisabled={disableCardDrag || isCardMoveDisabled(children)}
-    >
+    <Draggable draggableId={String(children.id)} index={index} isDragDisabled={disableCardDrag}>
       {(provided, { isDragging }) => {
         return (
           <div

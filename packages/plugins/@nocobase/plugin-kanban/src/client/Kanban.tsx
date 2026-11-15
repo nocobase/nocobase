@@ -13,6 +13,7 @@ import {
   RecordProvider,
   SchemaComponentOptions,
   useCreateActionProps as useCAP,
+  useCollection,
   useCollectionParentRecordData,
   useProps,
   withDynamicSchemaProps,
@@ -21,7 +22,6 @@ import {
 import { Card, Skeleton, Spin, Tag } from 'antd';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { kanbanRecord, toColumns as buildColumns, isCardMoveDisabled } from './board/kanbanRecord';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
@@ -39,7 +39,34 @@ const useCreateActionProps = () => {
 };
 
 export const toColumns = (groupField: any, dataSource: Array<any> = [], primaryKey) => {
-  return buildColumns(groupField, dataSource, primaryKey, groupField.uiSchema.enum);
+  const columns = {
+    __unknown__: {
+      id: '__unknown__',
+      title: 'Unknown',
+      color: 'default',
+      cards: [],
+    },
+  };
+  groupField.uiSchema.enum.forEach((item) => {
+    columns[item.value] = {
+      id: item.value,
+      title: item.label,
+      color: item.color,
+      cards: [],
+    };
+  });
+  dataSource.forEach((ds) => {
+    const value = ds[groupField.name];
+    if (value && columns[value]) {
+      columns[value].cards.push({ ...ds, id: ds[primaryKey] });
+    } else {
+      columns.__unknown__.cards.push(ds);
+    }
+  });
+  if (columns.__unknown__.cards.length === 0) {
+    delete columns.__unknown__;
+  }
+  return Object.values(columns);
 };
 
 const MemorizedRecursionField = React.memo(RecursionField);
@@ -50,9 +77,11 @@ export const Kanban: any = withDynamicSchemaProps(
     observer((props: any) => {
       const { styles } = useStyles();
 
-      // Keep useProps for older UI schemas that still depend on it.
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
 
+      const collection = useCollection();
+      const primaryKey = collection.getPrimaryKey();
       const parentRecordData = useCollectionParentRecordData();
       const field = useField<ArrayField>();
       const fieldSchema = useFieldSchema();
@@ -72,7 +101,7 @@ export const Kanban: any = withDynamicSchemaProps(
             },
             { card: null, cardAdder: null, cardViewer: null },
           ),
-        [fieldSchema],
+        [],
       );
       const handleCardRemove = useCallback(
         (card, column) => {
@@ -80,20 +109,18 @@ export const Kanban: any = withDynamicSchemaProps(
           field.value = updatedBoard.columns;
           setDataSource(updatedBoard.columns);
         },
-        [field, setDataSource],
+        [field],
       );
       const lastDraggedCard = useRef(null);
       const handleCardDragEnd = useCallback(
         (card, fromColumn, toColumn) => {
-          const target = field.value.find((column) => column.id === toColumn.toColumnId)?.cards[toColumn.toPosition];
-          if (isCardMoveDisabled(card) || isCardMoveDisabled(target)) return;
-          lastDraggedCard.current = card.id;
+          lastDraggedCard.current = card[primaryKey];
           onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
           const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
           field.value = updatedBoard.columns;
           setDataSource(updatedBoard.columns);
         },
-        [field, onCardDragEnd, groupField, setDataSource],
+        [field],
       );
 
       return (
@@ -117,12 +144,12 @@ export const Kanban: any = withDynamicSchemaProps(
               const { ref, inView } = useInView({
                 threshold: 0,
                 triggerOnce: true,
-                initialInView: lastDraggedCard.current && lastDraggedCard.current === card.id,
+                initialInView: lastDraggedCard.current && lastDraggedCard.current === card[primaryKey],
               });
 
               return (
                 schemas.card && (
-                  <RecordProvider record={card[kanbanRecord] ?? card} parent={parentRecordData}>
+                  <RecordProvider record={card} parent={parentRecordData}>
                     <KanbanCardContext.Provider
                       value={{
                         setDisableCardDrag,
