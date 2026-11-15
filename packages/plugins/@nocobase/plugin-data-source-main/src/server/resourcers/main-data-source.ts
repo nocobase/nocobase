@@ -10,7 +10,6 @@
 import { Context, Next } from '@nocobase/actions';
 import PluginDataSourceMainServer from '../server';
 import { MainDataSource } from '@nocobase/server';
-import { syncImportedFields } from '../sync-imported-fields';
 
 export default {
   name: 'mainDataSource',
@@ -28,7 +27,6 @@ export default {
       const { collections } = ctx.action.params.values || {};
       const mainDataSource = ctx.app.dataSourceManager.get('main') as MainDataSource;
       if (mainDataSource.status === 'loaded') {
-        await syncImportedFields(ctx, collections);
         await mainDataSource.syncFieldsFromDatabase(ctx, collections);
       }
       await next();

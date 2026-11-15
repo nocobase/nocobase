@@ -1,5 +1,4 @@
 {
-  "Cannot add database column \"{{field}}\" because the field name is already used in \"{{collection}}\".": "Cannot add database column \"{{field}}\" because the field name is already used in \"{{collection}}\".",
   "any.required": "{{label}} is required",
   "date.base": "{{label}} must be a valid date",
   "date.format": "{{label}} must be in {{format}} format",
