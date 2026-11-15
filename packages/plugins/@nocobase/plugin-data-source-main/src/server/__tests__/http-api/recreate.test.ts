@@ -23,6 +23,34 @@ describe('recreate field', () => {
     await app.destroy();
   });
 
+  it('forgets an auto-defined resource after its collection is deleted and supports recreating it', async () => {
+    const create = () => agent.resource('collections').create({ values: { name: 'inventory' } });
+    expect((await create()).status).toBe(200);
+    expect((await agent.resource('inventory').list()).status).toBe(200);
+    expect((await agent.resource('collections').destroy({ filterByTk: 'inventory' })).status).toBe(200);
+    expect((await agent.resource('inventory').list()).status).toBe(404);
+    expect((await create()).status).toBe(200);
+    expect((await agent.resource('inventory').list()).status).toBe(200);
+  });
+
+  it('retains an explicitly registered resource that replaces an automatic registration', async () => {
+    const name = 'inventory';
+    expect((await agent.resource('collections').create({ values: { name } })).status).toBe(200);
+    expect((await agent.resource(name).list()).status).toBe(200);
+    app.resourceManager.define({
+      name,
+      actions: {
+        ping: async (ctx) => {
+          ctx.body = { alive: true };
+        },
+      },
+    });
+    expect((await agent.resource('collections').destroy({ filterByTk: name })).status).toBe(200);
+    const response = await agent.resource(name).ping();
+    expect(response.status).toBe(200);
+    expect(response.body.data ?? response.body).toEqual({ alive: true });
+  });
+
   it('should recreate field', async () => {
     await agent.resource('collections').create({
       values: {

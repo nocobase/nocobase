@@ -39,7 +39,7 @@
   "Please enter your email": "メールアドレスを入力してください。",
   "Please enter your username or email": "ユーザー名またはメールアドレスを入力してください。",
   "Please keep and enable at least one authenticator": "少なくとも1つの認証器を保持して有効にしてください。",
-  "Reset email sent successfully": "リセットメールが正常に送信されました",
+  "If this email address is registered, you will receive a password reset email.": "このメールアドレスが登録されている場合は、パスワード再設定用のメールが届きます。",
   "Reset link expiration (minutes)": "リセットリンクの有効期限（分）",
   "Reset link has expired": "リセットリンクの有効期限が切れています",
   "Reset password": "パスワードをリセット",

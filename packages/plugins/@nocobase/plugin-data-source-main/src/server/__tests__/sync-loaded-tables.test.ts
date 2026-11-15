@@ -7,318 +7,205 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createServer } from 'node:http';
+import { AddressInfo } from 'node:net';
 import { uid } from '@nocobase/utils';
-import { MainDataSource } from '@nocobase/server';
-import { DataTypes, QueryTypes } from 'sequelize';
+import { DataTypes } from 'sequelize';
 import { createApp } from '.';
+import { FieldModel } from '../models/field';
 
-describe.each(['', 'nb_'])('sync loaded tables with table prefix "%s"', (tablePrefix) => {
+describe.each(['', 'nb_'])('register new imported columns (prefix %s)', (tablePrefix) => {
   let app: Awaited<ReturnType<typeof createApp>>;
-  let tableName: string;
-
+  let name: string;
   beforeEach(async () => {
-    app = await createApp({
-      database: { tablePrefix },
-      plugins: ['data-source-manager'],
-    });
-    tableName = `external_${uid(6)}`;
-    await app.db.sequelize.getQueryInterface().createTable(
-      { tableName, schema: app.db.options.schema },
-      {
-        id: { type: DataTypes.INTEGER, primaryKey: true },
-        title: { type: DataTypes.STRING, allowNull: true },
-        obsolete: { type: DataTypes.STRING },
-      },
+    app = await createApp({ database: { tablePrefix }, plugins: ['data-source-manager'] });
+    name = `external_${uid(6)}`;
+    const qi = app.db.sequelize.getQueryInterface();
+    await qi.createTable(
+      { tableName: name, schema: app.db.options.schema },
+      { id: { type: DataTypes.INTEGER, primaryKey: true }, title: { type: DataTypes.STRING } },
     );
     const response = await app
       .agent()
       .resource('dataSources')
       .loadTables({
-        values: { dataSourceKey: 'main', tables: [tableName] },
+        values: { dataSourceKey: 'main', tables: [name] },
       });
     expect(response.status).toBe(200);
-    const collection = await app.db.getRepository('collections').findOne({ filterByTk: tableName });
-    expect(collection.get('from')).toBe('dbsync');
-    expect(app.db.getCollection(tableName).model.tableName).toBe(tableName);
   });
-
   afterEach(async () => {
     vi.restoreAllMocks();
     await app.db.clean({ drop: true });
     await app.destroy();
   });
-
-  async function changeTitleToUnsupportedType() {
-    const db = app.db;
-    const physicalTable = db.getCollection(tableName).getTableNameWithSchema();
-    if (db.inDialect('postgres')) {
-      await db.sequelize.query(
-        `ALTER TABLE ${db.utils.quoteTable(physicalTable)} ALTER COLUMN "title" TYPE BYTEA USING convert_to("title", 'UTF8')`,
-      );
-    } else {
-      await db.sequelize.getQueryInterface().changeColumn(physicalTable, 'title', { type: DataTypes.BLOB });
-    }
+  const fields = async () => app.db.getRepository('fields').find({ filter: { collectionName: name }, sort: 'name' });
+  const sync = (all = false) =>
+    app
+      .agent()
+      .resource('mainDataSource')
+      .syncFields({ values: all ? {} : { collections: [name] } });
+  async function addColumn(column = 'note') {
+    const qi = app.db.sequelize.getQueryInterface();
+    const table = app.db.getCollection(name).getTableNameWithSchema();
+    await qi.addColumn(table, column, { type: DataTypes.STRING, allowNull: false, defaultValue: 'pending' });
+    await qi.addIndex(table, [column], { unique: true, name: `idx_${name}_${column}` });
   }
 
-  it.each([false, true])('should sync added, changed and removed columns (all collections: %s)', async (syncAll) => {
+  it.each([false, true])('adds columns while preserving metadata and physical constraints (all %s)', async (all) => {
     const db = app.db;
-    const queryInterface = db.sequelize.getQueryInterface();
-    const physicalTable = db.getCollection(tableName).getTableNameWithSchema();
-    await queryInterface.addColumn(physicalTable, 'description', { type: DataTypes.TEXT });
-    await queryInterface.changeColumn(physicalTable, 'title', { type: DataTypes.TEXT, allowNull: false });
-    await queryInterface.removeColumn(physicalTable, 'obsolete');
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({
-        values: syncAll ? {} : { collections: [tableName] },
-      });
-    expect(response.status).toBe(200);
-
-    const fields = await db.getRepository('fields').find({ filter: { collectionName: tableName } });
-    expect(fields.find((field) => field.get('name') === 'description')?.get('type')).toBe('text');
-    const titleField = fields.find((field) => field.get('name') === 'title');
-    expect(titleField?.get('type')).toBe('text');
-    expect(titleField?.get('allowNull')).toBe(false);
-    expect(fields.some((field) => field.get('name') === 'obsolete')).toBe(false);
-
-    const collection = db.getCollection(tableName);
-    expect(collection.model.tableName).toBe(tableName);
-    expect(collection.getField('description')?.options.type).toBe('text');
-    expect(collection.getField('title')?.options.type).toBe('text');
-    expect(collection.getField('title')?.options.allowNull).toBe(false);
-    expect(collection.getField('obsolete')).toBeUndefined();
-    await collection.repository.create({ values: { id: 1, title: 'Updated', description: 'Synced' } });
-    const record = await collection.repository.findOne({ filterByTk: 1 });
-    expect(record.get('description')).toBe('Synced');
-
-    const collectionRecord = await db.getRepository('collections').findOne({ filterByTk: tableName });
-    expect(collectionRecord.get('from')).toBe('dbsync');
-    const tables = await queryInterface.showAllTables();
-    expect(tables).toContain(tableName);
-    if (tablePrefix) {
-      expect(tables).not.toContain(`${tablePrefix}${tableName}`);
-    }
-  });
-
-  it('should keep plugin-defined collections excluded from field synchronization', async () => {
-    await app.db.getRepository('collections').update({ filterByTk: tableName, values: { from: 'db2cm' } });
-    const collection = app.db.getCollection(tableName);
-    await app.db.sequelize.getQueryInterface().addColumn(collection.getTableNameWithSchema(), 'description', {
-      type: DataTypes.TEXT,
-    });
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({
-        values: { collections: [tableName] },
-      });
-    expect(response.status).toBe(200);
-    const field = await app.db.getRepository('fields').findOne({
-      filter: { collectionName: tableName, name: 'description' },
-    });
-    expect(field).toBeNull();
-    expect(collection.getField('description')).toBeUndefined();
-  });
-
-  it('should preserve field metadata and associations when the physical table name includes the prefix', async () => {
-    const db = app.db;
-    const name = `prefixed_${uid(6)}`;
-    const physicalTable = { tableName: `${tablePrefix}${name}`, schema: db.options.schema };
-    await db.sequelize.getQueryInterface().createTable(physicalTable, {
-      id: { type: DataTypes.INTEGER, primaryKey: true },
-      title: { type: DataTypes.STRING },
-    });
-    const loaded = await app
-      .agent()
-      .resource('dataSources')
-      .loadTables({
-        values: { dataSourceKey: 'main', tables: [physicalTable.tableName] },
-      });
-    expect(loaded.status).toBe(200);
-    const customized = await app
-      .agent()
-      .resource('collections.fields', name)
-      .update({
-        filterByTk: 'title',
-        values: { uiSchema: { title: 'Customized title' } },
-      });
-    expect(customized.status).toBe(200);
-    const alias = await app
-      .agent()
-      .resource('collections.fields', name)
-      .create({
-        values: { name: 'titleAlias', field: 'title', type: 'string', interface: 'input' },
-      });
-    expect(alias.status).toBe(200);
-    const association = await app
-      .agent()
-      .resource('collections.fields', name)
-      .create({
-        values: { name: 'related', type: 'hasMany', target: tableName, foreignKey: 'parentId', interface: 'o2m' },
-      });
-    expect(association.status).toBe(200);
-    const before = await db.getRepository('fields').find({ filter: { collectionName: name } });
-    await db.sequelize.getQueryInterface().addColumn(physicalTable, 'description', { type: DataTypes.TEXT });
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({ values: { collections: [name] } });
-    expect(response.status).toBe(200);
-    const after = await db.getRepository('fields').find({ filter: { collectionName: name } });
-    for (const field of before) {
-      expect(after.find((candidate) => candidate.get('name') === field.get('name'))?.get('key')).toBe(field.get('key'));
-    }
-    expect(after.find((field) => field.get('name') === 'title')?.get('uiSchema').title).toBe('Customized title');
     const collection = db.getCollection(name);
-    expect(collection.model.tableName).toBe(physicalTable.tableName);
-    expect(collection.getField('titleAlias')?.options.field).toBe('title');
-    expect(collection.getField('related')?.options.target).toBe(tableName);
-    expect(collection.getField('description')?.options.type).toBe('text');
-  });
-
-  it.each(['en-US', 'zh-CN'])('should reject unsupported existing types without changing data (%s)', async (locale) => {
-    const db = app.db;
-    const collection = db.getCollection(tableName);
-    await collection.repository.create({ values: { id: 1, title: 'Must preserve' } });
-    const before = await db.getRepository('fields').find({ filter: { collectionName: tableName } });
-    await changeTitleToUnsupportedType();
-    const queryInterface = db.sequelize.getQueryInterface();
-    const physicalTable = collection.getTableNameWithSchema();
-    const beforeColumns = await queryInterface.describeTable(physicalTable);
-    const beforeRows = await db.sequelize.query(`SELECT * FROM ${db.utils.quoteTable(physicalTable)}`, {
-      type: QueryTypes.SELECT,
+    const qi = db.sequelize.getQueryInterface();
+    const table = collection.getTableNameWithSchema();
+    await app
+      .agent()
+      .resource('fields')
+      .create({
+        values: { name: 'preview_note', collectionName: name, type: 'virtual', interface: 'input' },
+      });
+    const alias = await db.getRepository('fields').create({
+      values: { name: 'title_alias', collectionName: name, field: 'title', type: 'string', interface: 'input' },
     });
-    const removeColumn = vi.spyOn(queryInterface, 'removeColumn');
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({ locale, values: { collections: [tableName] } });
-    expect(response.status).toBe(400);
-    expect(response.body.errors[0].message).toContain(tableName);
-    expect(response.body.errors[0].message).toContain('title');
-    expect(response.body.errors[0].message).toContain(beforeColumns.title.type);
-    expect(response.body.errors[0].message).toContain(locale === 'zh-CN' ? '不支持数据库类型' : 'is not supported');
-    expect(removeColumn).not.toHaveBeenCalled();
-    const after = await db.getRepository('fields').find({ filter: { collectionName: tableName } });
-    expect(after.map((field) => field.toJSON())).toEqual(before.map((field) => field.toJSON()));
-    expect(await queryInterface.describeTable(physicalTable)).toEqual(beforeColumns);
-    expect(
-      await db.sequelize.query(`SELECT * FROM ${db.utils.quoteTable(physicalTable)}`, {
-        type: QueryTypes.SELECT,
-      }),
-    ).toEqual(beforeRows);
-    expect(collection.getField('title')?.options.type).toBe('string');
-  });
-
-  it('should validate every collection before writing a batch', async () => {
-    const db = app.db;
-    const otherName = `other_${uid(6)}`;
+    await alias.load();
+    const oldFields = (await fields()).map((f) => f.toJSON());
+    await addColumn();
+    const before = { columns: await qi.describeTable(table), indexes: await qi.showIndex(table) };
+    const ddl = vi.spyOn(collection, 'sync');
+    const response = await sync(all);
+    expect(response.status).toBe(200);
+    expect((await fields()).filter((f) => f.name !== 'note').map((f) => f.toJSON())).toEqual(oldFields);
+    expect(await qi.describeTable(table)).toEqual(before.columns);
+    expect(await qi.showIndex(table)).toEqual(before.indexes);
+    expect(ddl).not.toHaveBeenCalled();
+    expect(collection.getField('note')).toBeTruthy();
     const created = await app
       .agent()
-      .resource('collections')
-      .create({
-        values: { name: otherName, fields: [{ name: 'title', type: 'string', interface: 'input' }] },
-      });
+      .resource(name)
+      .create({ values: { id: 1, title: 'test', note: 'hello' } });
     expect(created.status).toBe(200);
-    await db.sequelize
-      .getQueryInterface()
-      .addColumn(db.getCollection(otherName).getTableNameWithSchema(), 'description', {
-        type: DataTypes.TEXT,
-      });
-    await changeTitleToUnsupportedType();
+    const read = await app.agent().resource(name).list();
+    expect(read.body.data[0].note).toBe('hello');
+    const saved = (await fields()).map((f) => f.toJSON());
+    expect((await sync()).status).toBe(200);
+    expect((await fields()).map((f) => f.toJSON())).toEqual(saved);
+    expect(await qi.describeTable(table)).toEqual(before.columns);
+  });
 
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({
-        values: { collections: [otherName, tableName] },
-      });
+  it('serializes concurrent additions', async () => {
+    await addColumn();
+    const results = await Promise.all([sync(), sync()]);
+    expect(results.map((r) => r.status)).toEqual([200, 200]);
+    expect((await fields()).filter((f) => f.name === 'note')).toHaveLength(1);
+    expect(app.db.getCollection(name).getField('note')).toBeTruthy();
+  });
+
+  it('keeps metadata for removed columns without recreating them', async () => {
+    const db = app.db;
+    const table = db.getCollection(name).getTableNameWithSchema();
+    const qi = db.sequelize.getQueryInterface();
+    const old = (await fields()).map((f) => f.toJSON());
+    await qi.removeColumn(table, 'title');
+    await addColumn();
+    const before = await qi.describeTable(table);
+    expect((await sync()).status).toBe(200);
+    expect((await fields()).filter((f) => f.name !== 'note').map((f) => f.toJSON())).toEqual(old);
+    expect(await qi.describeTable(table)).toEqual(before);
+  });
+
+  it('preserves existing field settings when a physical column changes type', async () => {
+    const db = app.db;
+    const table = db.getCollection(name).getTableNameWithSchema();
+    const qi = db.sequelize.getQueryInterface();
+    const old = (await fields()).map((f) => f.toJSON());
+    await qi.changeColumn(table, 'title', { type: DataTypes.TEXT });
+    await addColumn();
+    const before = await qi.describeTable(table);
+    expect((await sync()).status).toBe(200);
+    expect((await fields()).filter((f) => f.name !== 'note').map((f) => f.toJSON())).toEqual(old);
+    expect(db.getCollection(name).getField('title').type).toBe('string');
+    expect(await qi.describeTable(table)).toEqual(before);
+  });
+
+  it('rejects a collision with a logical field before adding any metadata', async () => {
+    const db = app.db;
+    const virtual = await db.getRepository('fields').create({
+      values: { collectionName: name, name: 'note', type: 'virtual', interface: 'input' },
+    });
+    await virtual.load();
+    const old = (await fields()).map((f) => f.toJSON());
+    await addColumn();
+    const response = await sync();
     expect(response.status).toBe(400);
-    expect(
-      await db.getRepository('fields').findOne({
-        filter: { collectionName: otherName, name: 'description' },
-      }),
-    ).toBeNull();
-    expect(db.getCollection(otherName).getField('description')).toBeUndefined();
-    expect(db.getCollection(tableName).getField('title')).toBeTruthy();
+    expect(response.body.errors[0].message).toContain('note');
+    expect((await fields()).map((f) => f.toJSON())).toEqual(old);
+    expect(db.getCollection(name).getField('note').options.type).toBe('virtual');
   });
 
-  it('should retain new unsupported columns while synchronizing supported changes', async () => {
-    const db = app.db;
-    const physicalTable = db.getCollection(tableName).getTableNameWithSchema();
-    const queryInterface = db.sequelize.getQueryInterface();
-    await queryInterface.addColumn(physicalTable, 'description', { type: DataTypes.TEXT });
-    await queryInterface.addColumn(physicalTable, 'binaryData', { type: DataTypes.BLOB });
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({ values: { collections: [tableName] } });
-    expect(response.status).toBe(200);
-    expect(db.getCollection(tableName).getField('description')?.options.type).toBe('text');
-    expect(db.getCollection(tableName).getField('binaryData')).toBeUndefined();
-    expect(await queryInterface.describeTable(physicalTable)).toHaveProperty('binaryData');
+  it('fails a missing table and does not change metadata', async () => {
+    const old = (await fields()).map((f) => f.toJSON());
+    await app.db.sequelize.getQueryInterface().dropTable(app.db.getCollection(name).getTableNameWithSchema());
+    expect((await sync()).status).toBe(500);
+    expect((await fields()).map((f) => f.toJSON())).toEqual(old);
   });
 
-  it('should report introspection errors before applying changes', async () => {
-    const dataSource = app.dataSourceManager.get('main') as MainDataSource;
-    vi.spyOn(dataSource.introspector, 'getCollection').mockRejectedValue(new Error('Introspection failed'));
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({ values: { collections: [tableName] } });
-    expect(response.status).toBe(500);
-    expect(app.db.getCollection(tableName).getField('title')).toBeTruthy();
+  it('rolls back all new metadata when one field fails validation', async () => {
+    await addColumn('note');
+    await addColumn('second_note');
+    const old = (await fields()).map((f) => f.toJSON());
+    const rejectSecond = (field: FieldModel) => {
+      if (field.name === 'second_note') throw new Error('test validation failure');
+    };
+    app.db.on('fields.beforeCreate', rejectSecond);
+    try {
+      expect((await sync()).status).toBe(500);
+      expect((await fields()).map((f) => f.toJSON())).toEqual(old);
+      expect(app.db.getCollection(name).getField('note')).toBeUndefined();
+    } finally {
+      app.db.off('fields.beforeCreate', rejectSecond);
+    }
+    expect((await sync()).status).toBe(200);
+    expect(app.db.getCollection(name).getField('second_note')).toBeTruthy();
   });
 
-  it('should preserve ordinary collection metadata when synchronizing a prefixed runtime table', async () => {
-    const name = `ordinary_${uid(6)}`;
-    const created = await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: {
-          name,
-          fields: [{ name: 'title', type: 'string', interface: 'input', uiSchema: { title: 'Custom title' } }],
-        },
+  it('reloads persisted fields missing from the local runtime on retry', async () => {
+    await addColumn();
+    expect((await sync()).status).toBe(200);
+    const old = (await fields()).map((f) => f.toJSON());
+    app.db.getCollection(name).removeField('note');
+    expect((await sync()).status).toBe(200);
+    expect((await fields()).map((f) => f.toJSON())).toEqual(old);
+    expect(app.db.getCollection(name).getField('note')).toBeTruthy();
+  });
+
+  it('exposes added columns through a listening HTTP server', async () => {
+    await addColumn();
+    const server = createServer(app.callback());
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    try {
+      const response = await fetch(`${base}/mainDataSource:syncFields`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collections: [name] }),
       });
-    expect(created.status).toBe(200);
-    const db = app.db;
-    const before = await db.getRepository('fields').findOne({ filter: { collectionName: name, name: 'title' } });
-    const physicalTable = db.getCollection(name).getTableNameWithSchema();
-    await db.sequelize.getQueryInterface().addColumn(physicalTable, 'description', { type: DataTypes.TEXT });
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({ values: { collections: [name] } });
-    expect(response.status).toBe(200);
-    const after = await db.getRepository('fields').findOne({ filter: { collectionName: name, name: 'title' } });
-    expect(after.get('key')).toBe(before.get('key'));
-    expect(after.get('uiSchema').title).toBe('Custom title');
-    expect(db.getCollection(name).getField('description')?.options.type).toBe('text');
-    expect(db.utils.quoteTable(db.getCollection(name).getTableNameWithSchema())).toBe(
-      db.utils.quoteTable(physicalTable),
-    );
+      expect(response.status).toBe(200);
+      const created = await fetch(`${base}/${name}:create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 1, note: 'http-value' }),
+      });
+      expect(created.status).toBe(200);
+      const listed = await fetch(`${base}/${name}:list`);
+      expect(listed.status).toBe(200);
+      expect((await listed.json()).data[0].note).toBe('http-value');
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+    }
   });
 
-  it('should report a missing physical table without deleting its field metadata', async () => {
-    const db = app.db;
-    await db.sequelize.getQueryInterface().dropTable(db.getCollection(tableName).getTableNameWithSchema());
-    const before = await db.getRepository('fields').find({ filter: { collectionName: tableName } });
-
-    const response = await app
-      .agent()
-      .resource('mainDataSource')
-      .syncFields({ values: { collections: [tableName] } });
-    expect(response.status).toBe(400);
-    expect(response.body.errors[0].message).toContain(tableName);
-    const after = await db.getRepository('fields').find({ filter: { collectionName: tableName } });
-    expect(after.map((field) => field.toJSON())).toEqual(before.map((field) => field.toJSON()));
+  it('keeps db2cm excluded', async () => {
+    await app.db.getRepository('collections').update({ filterByTk: name, values: { from: 'db2cm' } });
+    await addColumn();
+    expect((await sync()).status).toBe(200);
+    expect((await fields()).find((f) => f.name === 'note')).toBeUndefined();
   });
 });

@@ -15,7 +15,7 @@ import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
-import { getNameByParams, ParsedParams, parseQuery, parseRequest } from './utils';
+import { getNameByParams, InvalidFilterError, ParsedParams, parseQuery, parseRequest } from './utils';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
@@ -407,6 +407,9 @@ export class ResourceManager {
         }
         return compose(ctx.action.getHandlers())(ctx, next);
       } catch (error) {
+        if (error instanceof InvalidFilterError) {
+          ctx.throw(400, ctx.t?.(error.message, { ns: 'error-handler' }) ?? error.message, { code: 'INVALID_FILTER' });
+        }
         console.log(error);
         return next();
       }

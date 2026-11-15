@@ -55,6 +55,7 @@ const MobileDateTimePicker = connect(
       disabled,
       dateOnly,
       utc,
+      isUnixTimestamp,
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
@@ -100,7 +101,9 @@ const MobileDateTimePicker = connect(
     const handleConfirm = useCallback(
       (value) => {
         setVisible(false);
-        if (dateOnly) {
+        if (isUnixTimestamp) {
+          onChange(dayjs(value));
+        } else if (dateOnly) {
           onChange(dayjs(value).format('YYYY-MM-DD'));
         } else if (!utc) {
           if (showTime) {
@@ -113,7 +116,7 @@ const MobileDateTimePicker = connect(
           onChange(selectedDateTime);
         }
       },
-      [showTime, onChange],
+      [dateOnly, isUnixTimestamp, onChange, picker, showTime, utc],
     );
 
     // 清空选择的日期和时间
@@ -168,6 +171,11 @@ const MobileDateTimePicker = connect(
   mapProps(mapDatePicker()),
   mapReadPretty(NBDatePicker.ReadPretty),
 );
+
+export const MobileUnixTimestamp = (props: React.ComponentProps<typeof MobileDateTimePicker>) => {
+  const { utc = true } = useDatePickerContext();
+  return <MobileDateTimePicker utc={utc} {...props} isUnixTimestamp />;
+};
 
 const MobileRangePicker = (props) => {
   const [startDate, setStartDate] = useState(props.value?.[0]);

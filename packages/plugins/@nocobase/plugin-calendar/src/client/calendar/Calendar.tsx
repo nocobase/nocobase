@@ -51,9 +51,7 @@ import { formatDate } from './utils';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import zhCN from 'date-fns/locale/zh-CN';
-import ru from 'date-fns/locale/ru';
+import { calendarLocales, resolveCalendarCulture } from '../../shared/calendarLocale';
 
 interface Event {
   id: string;
@@ -80,7 +78,7 @@ function Toolbar(props: ToolbarProps) {
         }
         return buf;
       }, null),
-    [],
+    [fieldSchema],
   );
 
   return (
@@ -287,12 +285,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       const apiClient = useAPIClient();
-      const locales = {
-        'zh-CN': zhCN,
-        'en-US': enUS,
-        'ru-RU': ru,
-      };
-      const locale = apiClient.auth.locale || 'en-US';
+      const locale = resolveCalendarCulture(apiClient.auth.locale);
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
@@ -345,14 +338,15 @@ export const Calendar: any = withDynamicSchemaProps(
             return local.format(date, 'EEE', culture);
           },
         };
-      }, [locale, view]);
+      }, []);
       const localizer = useMemo(() => {
         return dateFnsLocalizer({
           format,
           parse,
-          startOfWeek: (date) => startOfWeek(date, { locale: locales[locale], weekStartsOn: props.weekStart ?? 1 }),
+          startOfWeek: (date) =>
+            startOfWeek(date, { locale: calendarLocales[locale], weekStartsOn: props.weekStart ?? 1 }),
           getDay,
-          locales,
+          locales: calendarLocales,
         });
       }, [locale, props.weekStart]);
       useEffect(() => {
@@ -371,7 +365,7 @@ export const Calendar: any = withDynamicSchemaProps(
             dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
           },
         };
-      }, [showLunar]);
+      }, [locale, localizer, showLunar]);
 
       const messages: any = {
         allDay: '',

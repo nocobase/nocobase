@@ -39,6 +39,11 @@ export default {
       defaultValue: true,
     },
     {
+      name: 'fromFile',
+      type: 'boolean',
+      defaultValue: false,
+    },
+    {
       name: 'transport',
       type: 'string',
       interface: 'select',

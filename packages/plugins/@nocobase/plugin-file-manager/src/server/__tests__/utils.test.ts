@@ -28,6 +28,7 @@ import {
 } from '../utils';
 import {
   getRepairedAttachmentValues,
+  registerRepairFilenamesCommand,
   repairAttachmentFilenames,
   replaceInvisibleChars,
 } from '../commands/repair-filenames';
@@ -114,6 +115,18 @@ describe('file manager > utils', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('loads plugin commands after static registration without duplicating the repair command', async () => {
+    registerRepairFilenamesCommand(app);
+
+    await expect(app.pm.loadCommands()).resolves.toBeUndefined();
+
+    const repairCommands = app
+      .findCommand('file-manager')
+      .commands.filter((command) => command.name() === 'repair-filenames');
+    expect(repairCommands).toHaveLength(1);
+    expect(repairCommands[0].options.map((option) => option.long)).toEqual(['--apply', '--batch-size', '--limit']);
   });
 
   describe('getFileKey', () => {

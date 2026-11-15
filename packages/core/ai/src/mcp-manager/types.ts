@@ -20,7 +20,7 @@ export interface MCPManager extends MCPRegistration {
   getClient(): MultiServerMCPClient | null;
   getMCPToolsProvider(): DynamicToolsProvider;
   listMCPTools(ctx?: Context): Promise<Record<string, MCPToolEntry[]>>;
-  updateMCPToolPermission(toolName: string, permission: Permission): Promise<void>;
+  updateMCPToolPermission(toolName: string, permission: Permission, ctx?: Context): Promise<void>;
   clearUserContextCache(): Promise<void>;
 }
 
@@ -37,10 +37,13 @@ export type MCPOptions = {
   headers?: Record<string, string>;
   restart?: Record<string, any>;
   useUserContext?: boolean;
+  fromFile?: boolean;
 };
 
 export type MCPEntry = MCPOptions & {
   name: string;
+  title?: string;
+  description?: string;
   enabled: boolean;
 };
 

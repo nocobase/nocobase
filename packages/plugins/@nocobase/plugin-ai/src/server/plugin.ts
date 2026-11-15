@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { MCPLoader } from '@nocobase/ai';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { openaiResponsesProviderOptions } from './llm-providers/openai';
@@ -114,6 +115,7 @@ export class PluginAIServer extends Plugin {
     this.app.on('afterStart', async () => {
       await this.ai.skillsManager.init();
       await this.ai.employeeManager.init();
+      await new MCPLoader(this.ai.mcpManager, { log: this.log }).load();
       await this.ai.mcpManager.init();
     });
     this.app.on('afterUpgrade', async () => {

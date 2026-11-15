@@ -55,6 +55,11 @@ import { UserContextMCPClientManager } from '../mcp-manager/user-context-client-
 
 describe('user-bound MCP clients', () => {
   const createApp = () => ({
+    mainDataSource: {
+      collectionManager: {
+        getCollection: () => ({ model: { findAll: vi.fn().mockResolvedValue([]) } }),
+      },
+    },
     environment: {
       getVariables: () => ({
         MCP_HOST: 'mcp.example.test',

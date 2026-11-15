@@ -172,25 +172,38 @@ describe('actions', () => {
       expect((await resource.list()).body.data.length).toBe(0);
     });
 
-    it("Cannot delete other user's API keys", async () => {
+    it("preserves another user's API key and its ability to authenticate", async () => {
       const res = await resource.list();
       expect(res.body.data.length).toBe(1);
       const data = res.body.data[0];
       await agent.login(testUser);
-      await resource.destroy({
+      const deletion = await resource.destroy({
         filterByTk: data.id,
       });
+      expect(deletion.status).toBe(200);
       await agent.login(user);
-      expect((await resource.list()).body.data.length).toBe(1);
+      expect((await resource.list()).body.data).toMatchObject([{ id: data.id }]);
+      const check = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
+      expect(check.status).toBe(200);
+      expect(check.body.data.id).toBe(user.id);
     });
 
-    it('The token should not work after removing the api key', async () => {
+    it('keeps an owned key active when an additional deletion filter excludes it', async () => {
+      const [key] = (await resource.list()).body.data;
+      await resource.destroy({ filterByTk: key.id, filter: { name: 'different key' } });
+      expect((await resource.list()).body.data).toMatchObject([{ id: key.id }]);
+      const check = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
+      expect(check.status).toBe(200);
+    });
+
+    it('deletes an owned key and rejects subsequent authentication with its token', async () => {
       const res = await resource.list();
       expect(res.body.data.length).toBe(1);
       const data = res.body.data[0];
       await resource.destroy({
         filterByTk: data.id,
       });
+      expect((await resource.list()).body.data).toEqual([]);
       const response = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
       expect(response.status).toBe(401);
     });

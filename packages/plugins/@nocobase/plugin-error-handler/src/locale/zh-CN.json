@@ -1,4 +1,5 @@
 {
+  "The filter query parameter must be valid JSON.": "查询参数 filter 必须是有效的 JSON。",
   "Validation error": "{{field}} 字段规则验证失败",
   "notNull Violation": "{{field}} cannot be null",
   "notNull violation": "{{field}} 字段不能为空",

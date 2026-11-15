@@ -124,6 +124,7 @@ vi.mock('../adaptor-of-desktop/FilterAction', () => ({
 vi.mock('../pages/dynamic-page/components/MobileDatePicker', () => ({
   MobileDateFilterWithPicker: () => <div data-testid="mobile-date-filter-with-picker" />,
   MobileDateTimePicker: () => <div data-testid="mobile-date-time-picker" />,
+  MobileUnixTimestamp: () => <div data-testid="mobile-unix-timestamp" />,
   MobileRangePicker: () => <div data-testid="mobile-range-picker" />,
   MobileTimePicker: () => <div data-testid="mobile-time-picker" />,
 }));

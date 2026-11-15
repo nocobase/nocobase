@@ -5,6 +5,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.46](https://github.com/nocobase/nocobase/compare/v2.2.45...v2.2.46) - 2026-11-12
+
+### 🐛 Bug Fixes
+
+- **[Workflow: CC]** Marking a workflow CC task as read or unread now preserves its recipient and linked workflow records. ([#11516](https://github.com/nocobase/nocobase/pull/11516))
+
+- **[Custom variables]** Creating, editing and deleting custom variables now requires the “Allows to configure interface” permission. ([#11528](https://github.com/nocobase/nocobase/pull/11528))
+
+- **[Authentication]**
+  - Password reset emails open the sub-application’s registered domain. For the main application or a sub-application without its own domain, set `APP_PUBLIC_ORIGIN` before upgrading if email recovery is enabled. ([#11496](https://github.com/nocobase/nocobase/pull/11496))
+Reference: [Email recovery domains and upgrade steps](https://github.com/nocobase/nocobase/blob/f26e6b7705/docs/docs/en/get-started/installation/env.md#app_public_origin)
+  - Email password recovery now shows the same confirmation for registered and unregistered addresses. ([#11501](https://github.com/nocobase/nocobase/pull/11501))
+
+- **[Mobile (deprecated)]** V1 mobile forms now submit UnixTimestamp values in the same format as desktop forms. ([#11427](https://github.com/nocobase/nocobase/pull/11427))
+
+- **[Auth: API keys]** Deleting an API key now invalidates only keys the current user is allowed to delete. ([#11513](https://github.com/nocobase/nocobase/pull/11513))
+
+## [v2.2.45](https://github.com/nocobase/nocobase/compare/v2.2.44...v2.2.45) - 2026-11-11
+
+### 🚀 Improvements
+
+- **[App supervisor]** The Environment and Proxy environment dropdowns in App Supervisor now sort names in ascending order, with numbered names such as cluster-2 listed before cluster-10. by @hongboji
+
+### 🐛 Bug Fixes
+
+- **[ai]** Fixed global MCP tool permission settings being lost after application restarts and becoming inconsistent across application instances. ([#11476](https://github.com/nocobase/nocobase/pull/11476)) by @cgyrock
+
+- **[UI templates]** Fixed an issue where a duplicated popup could still show edits to the original page when its template was saved from an action that opened another popup. ([#11491](https://github.com/nocobase/nocobase/pull/11491)) by @hongboji
+
+- **[AI employees]** Prevented web/API callers from creating stdio MCP servers or editing/deleting deployment-managed connections, while preserving enabled switches and connection tests. MCP deployment definitions now load from `storage/ai/mcp/servers.json` instead of automatically imported TS/JS files. ([#11461](https://github.com/nocobase/nocobase/pull/11461)) by @cgyrock
+
+- **[Template print]** Fixed a missing dependency that could prevent Template print from loading after an upgrade. by @hongboji
+
+## [v2.2.44](https://github.com/nocobase/nocobase/compare/v2.2.43...v2.2.44) - 2026-11-10
+
+### 🚀 Improvements
+
+- **[Access control]** Document and test default-role fallback for the reserved union header. ([#11452](https://github.com/nocobase/nocobase/pull/11452)) by @hongboji
+Reference: [OpenAPI: roles:check](https://github.com/nocobase/nocobase/blob/fix/main-issue-10399/packages/plugins/@nocobase/plugin-acl/src/swagger/index.ts)
+### 🐛 Bug Fixes
+
+- **[resourcer]** Resource API requests with malformed JSON in the filter query parameter now return HTTP 400 instead of an empty success response. ([#11465](https://github.com/nocobase/nocobase/pull/11465)) by @hongboji
+
+- **[client]** Configure popup mode and size for linked association tags. ([#11449](https://github.com/nocobase/nocobase/pull/11449)) by @hongboji
+
+- **[client-v2]** Restore the default table sort when column sorting is cleared. ([#11443](https://github.com/nocobase/nocobase/pull/11443)) by @hongboji
+
+- **[AI employees]** Fixed Nathan reporting an interrupted tool call after the JavaScript editor returned the block content. ([#11454](https://github.com/nocobase/nocobase/pull/11454)) by @hongboji
+
+- **[Calendar]** Display calendar headings in the selected Spanish locale. ([#11446](https://github.com/nocobase/nocobase/pull/11446)) by @hongboji
+
+## [v2.2.41](https://github.com/nocobase/nocobase/compare/v2.2.40...v2.2.41) - 2026-11-08
+
+### 🚀 Improvements
+
+- **[Departments]** Added a schema-only migration option for departments and department-role bindings, allowing existing target records to be preserved. ([#11343](https://github.com/nocobase/nocobase/pull/11343)) by @zhouyanliang
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed partial-text search when using string-valued formula fields as labels in v2 association dropdowns and cascaders. ([#11370](https://github.com/nocobase/nocobase/pull/11370)) by @hongboji
+
+- **[File manager]** Fixed blank PDF previews caused by missing JPEG2000 image decoder resources in the v2 file manager. ([#11308](https://github.com/nocobase/nocobase/pull/11308)) by @mytharcher
+
+## [v2.2.40](https://github.com/nocobase/nocobase/compare/v2.2.39...v2.2.40) - 2026-11-04
+
+### 🐛 Bug Fixes
+
+- **[File manager]** Fixed audio previews continuing to play the previously opened file when switching attachments or reopening the preview for another file ([#11328](https://github.com/nocobase/nocobase/pull/11328)) by @zhouyanliang
+
+- **[Backup manager]** Fixed missing feedback during large backup downloads by using short-lived links and native browser downloads. ([#11324](https://github.com/nocobase/nocobase/pull/11324)) by @gchust
+
 ## [v2.2.39](https://github.com/nocobase/nocobase/compare/v2.2.38...v2.2.39) - 2026-11-04
 
 ### 🐛 Bug Fixes

@@ -62,7 +62,7 @@ export const parentIdField = {
 export default defineCollection({
   name: 'departments',
   dataCategory: 'business',
-  migrationRules: ['overwrite'],
+  migrationRules: ['overwrite', 'schema-only'],
   title: '{{t("Departments")}}',
   dumpRules: 'required',
   tree: 'adjacency-list',

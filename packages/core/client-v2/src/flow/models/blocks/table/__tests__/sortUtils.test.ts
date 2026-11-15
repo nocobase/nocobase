@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { getTableColumnSortField, resolveTableSorterField } from '../sortUtils';
+import { getTableColumnSortField, getTableSorterOrder, resolveTableSorterField } from '../sortUtils';
 
 describe('table sort utils', () => {
   it('builds a relation sort path from the selected association title field', () => {
@@ -55,4 +55,14 @@ describe('table sort utils', () => {
       }),
     ).toBe('org_oho.orgname');
   });
+});
+
+it('restores configured sorting after both directions of manual association sorting', () => {
+  const column = { sortField: 'team.title' };
+  const defaults = ['-createdAt', 'id'];
+  expect(getTableSorterOrder({ column, order: 'ascend' }, undefined, defaults)).toEqual(['team.title']);
+  expect(getTableSorterOrder({ column, order: 'descend' }, undefined, defaults)).toEqual(['-team.title']);
+  expect(getTableSorterOrder({ column }, undefined, defaults)).toEqual(defaults);
+  expect(getTableSorterOrder({ column })).toEqual([]);
+  expect(getTableSorterOrder({ column }, 'position', defaults)).toEqual(['position']);
 });

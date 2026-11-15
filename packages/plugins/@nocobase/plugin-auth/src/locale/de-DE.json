@@ -39,7 +39,7 @@
   "Please enter your email": "Bitte geben Sie Ihre E-Mail-Adresse ein",
   "Please enter your username or email": "Bitte geben Sie Ihren Benutzernamen oder Ihre E-Mail-Adresse ein",
   "Please keep and enable at least one authenticator": "Bitte mindestens einen Authentifikator beibehalten und aktivieren",
-  "Reset email sent successfully": "E-Mail zum Zurücksetzen erfolgreich gesendet",
+  "If this email address is registered, you will receive a password reset email.": "Wenn diese E-Mail-Adresse registriert ist, erhalten Sie eine E-Mail zum Zurücksetzen Ihres Passworts.",
   "Reset link expiration (minutes)": "Ablauf des Rücksetzlinks (Minuten)",
   "Reset link has expired": "Der Zurücksetzen-Link ist abgelaufen",
   "Reset password": "Passwort zurücksetzen",

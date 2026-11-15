@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
         setSubmitting(true);
         try {
           await app.apiClient.auth.lostPassword(values);
-          message.success(t('Reset email sent successfully'));
+          message.success(t('If this email address is registered, you will receive a password reset email.'));
           form.resetFields();
         } catch (error) {
           setErrorMessage(error?.response?.data?.errors?.[0]?.message || error?.message || String(error));

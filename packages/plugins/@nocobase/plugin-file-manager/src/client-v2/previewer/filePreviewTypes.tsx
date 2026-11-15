@@ -793,13 +793,14 @@ const getPdfjsBaseUrl = () => {
 
 export const getPdfPreviewResourceOptions = (): Pick<
   DocumentInitParameters,
-  'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl'
+  'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl' | 'wasmUrl'
 > => {
   const pdfjsBaseUrl = getPdfjsBaseUrl();
   return {
     cMapPacked: true,
     cMapUrl: `${pdfjsBaseUrl}cmaps/`,
     standardFontDataUrl: `${pdfjsBaseUrl}standard_fonts/`,
+    wasmUrl: `${pdfjsBaseUrl}wasm/`,
   };
 };
 
@@ -1316,7 +1317,7 @@ const AudioPreviewer = ({ file }: FilePreviewerProps) => {
     return null;
   }
   return (
-    <audio controls>
+    <audio key={src} controls>
       <source src={src} type={file?.type || file?.mimetype} />
       {t('Your browser does not support the audio tag.')}
     </audio>

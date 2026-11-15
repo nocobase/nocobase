@@ -16,10 +16,15 @@ import { useCollectionField } from '../../../../data-source';
 import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
 import { useFieldModeOptions } from '../../../../schema-component/hooks/useFieldModeOptions';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useIsAddNewForm, useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import {
+  useIsAddNewForm,
+  useIsAssociationField,
+  useIsFieldReadPretty,
+  useTitleFieldOptions,
+} from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
-import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
+import { ellipsisSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -178,6 +183,15 @@ export const tagComponentFieldSettings = new SchemaSettings({
     },
     titleField,
     enableLink,
+    {
+      ...openModeSettingsItem,
+      useVisible() {
+        const { fieldSchema: column } = useColumnSchema();
+        const isAssociation = useIsAssociationField();
+        const readPretty = useIsFieldReadPretty();
+        return !!column && readPretty && isAssociation && column['x-component-props']?.enableLink !== false;
+      },
+    },
     ellipsisSettingsItem,
   ],
 });

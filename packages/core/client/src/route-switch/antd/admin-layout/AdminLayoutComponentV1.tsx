@@ -42,6 +42,7 @@ import { AdminLayoutResponsiveOpenModeProvider } from './AdminLayoutResponsiveOp
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 import { PinnedPluginList } from '../../../plugin-manager';
+import { DropdownVisibleContext } from '../../../user/CurrentUser';
 import { useSchemaComponentContext } from '../../../schema-component/hooks/useSchemaComponentContext';
 
 const className1 = css`
@@ -309,11 +310,16 @@ const MobileActions: FC = () => {
   const handleContentClick = useCallback(() => {
     setOpen(false);
   }, []);
+  const dropdownContext = useMemo(() => ({ visible: open, setVisible: setOpen }), [open]);
 
   return (
     <Popover
       rootClassName={popoverStyle}
-      content={<PinnedPluginList onClick={handleContentClick} />}
+      content={
+        <DropdownVisibleContext.Provider value={dropdownContext}>
+          <PinnedPluginList onClick={handleContentClick} />
+        </DropdownVisibleContext.Provider>
+      }
       color={customToken.colorBgHeader}
       trigger="click"
       open={open}

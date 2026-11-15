@@ -11,11 +11,12 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import PluginAIServer from '../plugin';
 import { aiMcpClients } from '../resource/aiMcpClients';
+import { AIEmployee } from '../ai-employees/ai-employee';
 
 describe('MCP client database events', () => {
   let app: MockServer;
   let plugin: PluginAIServer;
-  let clearUserContextCache: ReturnType<typeof vi.fn>;
+  let clearUserContextCache: ReturnType<typeof vi.fn<[], Promise<void>>>;
 
   beforeAll(async () => {
     app = await createMockServer({
@@ -69,6 +70,18 @@ describe('MCP client database events', () => {
     expect(clearUserContextCache).toHaveBeenCalledTimes(1);
   });
 
+  it('does not clear user-bound cache for rolled-back writes', async () => {
+    const transaction = await app.db.sequelize.transaction();
+    await app.db.getRepository('aiMcpClients').create({
+      values: { name: 'rolled-back', transport: 'http', url: 'http://127.0.0.1/mcp', useUserContext: true },
+      transaction,
+    });
+    expect(clearUserContextCache).not.toHaveBeenCalled();
+    await transaction.rollback();
+    expect(clearUserContextCache).not.toHaveBeenCalled();
+    expect(await app.db.getRepository('aiMcpClients').findOne({ filterByTk: 'rolled-back' })).toBeNull();
+  });
+
   it('clears user-bound cache after commit when a user-bound record is disabled', async () => {
     const repository = app.db.getRepository('aiMcpClients');
     await repository.create({
@@ -93,6 +106,28 @@ describe('MCP client database events', () => {
 
     await transaction.commit();
     expect(clearUserContextCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses persisted MCP permissions in the actual confirmation decision for subsequent calls', async () => {
+    const manager = plugin.ai.mcpManager;
+    await app.db.getRepository('aiMcpClients').create({
+      values: { name: 'confirm-test', transport: 'http', enabled: true },
+    });
+    Reflect.set(manager, 'toolsMap', {
+      'confirm-test': [
+        { name: 'getRecord', description: 'Read record' },
+        { name: 'updateRecord', description: 'Write record' },
+      ],
+    });
+    const employee = Object.create(AIEmployee.prototype) as AIEmployee;
+    const tools = plugin.ai.toolsManager;
+    expect(employee.shouldInterruptToolCall(await tools.getTools('mcp-confirm-test-getRecord'))).toBe(false);
+    expect(employee.shouldInterruptToolCall(await tools.getTools('mcp-confirm-test-updateRecord'))).toBe(true);
+    await manager.updateMCPToolPermission('mcp-confirm-test-getRecord', 'ASK');
+    await manager.updateMCPToolPermission('mcp-confirm-test-updateRecord', 'ALLOW');
+    expect((await manager.listMCPTools())['confirm-test'].map((tool) => tool.permission)).toEqual(['ASK', 'ALLOW']);
+    expect(employee.shouldInterruptToolCall(await tools.getTools('mcp-confirm-test-getRecord'))).toBe(true);
+    expect(employee.shouldInterruptToolCall(await tools.getTools('mcp-confirm-test-updateRecord'))).toBe(false);
   });
 
   it('does not block transaction commit while clearing user-bound cache', async () => {
@@ -143,7 +178,7 @@ describe('aiMcpClients resource actions', () => {
       body: undefined,
     };
     const next = vi.fn().mockResolvedValue(undefined);
-    const action = aiMcpClients.actions?.listTools as (ctx: typeof ctx, next: typeof next) => Promise<void>;
+    const action = aiMcpClients.actions?.listTools as (context: typeof ctx, proceed: typeof next) => Promise<void>;
 
     await action(ctx, next);
 

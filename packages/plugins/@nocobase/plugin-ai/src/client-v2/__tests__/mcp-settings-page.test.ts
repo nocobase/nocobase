@@ -62,6 +62,11 @@ describe('MCPSettingsPage request helpers', () => {
     });
   });
 
+  it('never sends source ownership as a writable field', () => {
+    const values = sanitizeMCPValues({ name: 'remote', transport: 'http', fromFile: true });
+    expect(values).not.toHaveProperty('fromFile');
+  });
+
   it('sanitizes stdio values and clears remote fields', () => {
     expect(
       sanitizeMCPValues({
@@ -153,38 +158,50 @@ describe('MCPSettingsPage request helpers', () => {
     });
   });
 
-  it('tests connection with sanitized values', async () => {
-    const testConnection = vi.fn().mockResolvedValue({
-      data: {
-        data: {
-          success: true,
-          toolsCount: 2,
-        },
-      },
-    });
-    const apiClient = {
-      resource: () => ({ testConnection }),
-    };
-
+  it('tests saved stdio with only the immutable record name', async () => {
+    const testConnection = vi.fn().mockResolvedValue({ data: { data: { success: true, toolsCount: 2 } } });
+    const apiClient = { resource: () => ({ testConnection }) };
     await expect(
-      testMCPConnection(apiClient, {
-        name: 'server',
-        transport: 'stdio',
-        command: 'npx',
-        args: '-y pkg',
-        useUserContext: true,
-      }),
+      testMCPConnection(
+        apiClient,
+        {
+          name: 'edited-name',
+          transport: 'stdio',
+          command: 'untrusted',
+          args: '--untrusted',
+          env: { UNTRUSTED: 'yes' },
+        },
+        { name: 'saved-name', transport: 'stdio' },
+      ),
     ).resolves.toEqual({ success: true, toolsCount: 2 });
+    expect(testConnection).toHaveBeenCalledWith({ filterByTk: 'saved-name' });
+  });
+
+  it('continues testing remote form values, including for file-managed records', async () => {
+    const testConnection = vi.fn().mockResolvedValue({ data: { data: { success: true } } });
+    const apiClient = { resource: () => ({ testConnection }) };
+    await testMCPConnection(
+      apiClient,
+      {
+        name: 'remote',
+        transport: 'http',
+        fromFile: true,
+        url: 'http://127.0.0.1/form',
+        useUserContext: true,
+        headers: [{ name: 'User', value: '{{$user.id}}' }],
+      },
+      { name: 'remote', transport: 'http', fromFile: true },
+    );
     expect(testConnection).toHaveBeenCalledWith({
       values: {
-        name: 'server',
-        transport: 'stdio',
-        command: 'npx',
-        args: ['-y', 'pkg'],
+        name: 'remote',
+        transport: 'http',
+        url: 'http://127.0.0.1/form',
+        useUserContext: true,
+        headers: { User: '{{$user.id}}' },
+        command: null,
+        args: [],
         env: {},
-        headers: {},
-        url: null,
-        useUserContext: false,
         restart: {},
       },
     });

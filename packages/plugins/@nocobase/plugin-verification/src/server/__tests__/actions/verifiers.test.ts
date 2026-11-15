@@ -89,6 +89,26 @@ describe('actions of verifiers', async () => {
       await app.destroy();
     });
 
+    it('hasAny reflects configured records even for a verifier that does not require binding', async () => {
+      const resource = agent.resource('verifiers');
+      const repo = app.db.getRepository('verifiers');
+      expect((await resource.hasAny()).body).toEqual({ data: false });
+
+      manager.registerVerificationType('no-binding', {
+        title: 'No binding',
+        bindingRequired: false,
+        verification: class extends Verification {
+          async verify() {}
+        },
+      });
+      await repo.create({ values: { name: 'configured', verificationType: 'no-binding' } });
+      expect((await resource.listByUser()).body.data).toEqual([]);
+      expect((await resource.hasAny()).body).toEqual({ data: true });
+
+      await repo.destroy({ filterByTk: 'configured' });
+      expect((await resource.hasAny()).body).toEqual({ data: false });
+    });
+
     it('listByUser', async () => {
       manager.registerVerificationType('test', {
         title: 'Test',

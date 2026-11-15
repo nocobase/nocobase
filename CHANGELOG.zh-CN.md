@@ -5,6 +5,77 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.46](https://github.com/nocobase/nocobase/compare/v2.2.45...v2.2.46) - 2026-11-12
+
+### 🐛 修复
+
+- **[工作流：抄送]** 将工作流抄送任务标记为已读或未读时，只更新阅读状态和时间，保留原收件人和关联的流程记录。 ([#11516](https://github.com/nocobase/nocobase/pull/11516))
+
+- **[自定义变量]** 创建、编辑和删除自定义变量现在需要“允许配置界面”权限。 ([#11528](https://github.com/nocobase/nocobase/pull/11528))
+
+- **[用户认证]**
+  - 找回密码邮件优先打开子应用绑定的独立域名。已启用邮件找回的主应用和未绑定域名的子应用，请在升级前设置 `APP_PUBLIC_ORIGIN`。 ([#11496](https://github.com/nocobase/nocobase/pull/11496))
+参考文档：[邮件找回域名及升级说明](https://github.com/nocobase/nocobase/blob/f26e6b7705/docs/docs/cn/get-started/installation/env.md#app_public_origin)
+  - 找回密码时，已注册和未注册邮箱都会看到相同提示，系统仅向已注册邮箱发送邮件。 ([#11501](https://github.com/nocobase/nocobase/pull/11501))
+
+- **[移动端（已废弃）]** v1 移动端表单提交 UnixTimestamp 字段时，时间格式与 PC 端一致。 ([#11427](https://github.com/nocobase/nocobase/pull/11427))
+
+- **[认证：API 密钥]** 删除 API 密钥时，只有当前用户有权删除的密钥才会失效。 ([#11513](https://github.com/nocobase/nocobase/pull/11513))
+
+## [v2.2.45](https://github.com/nocobase/nocobase/compare/v2.2.44...v2.2.45) - 2026-11-11
+
+### 🚀 优化
+
+- **[应用监管器]** 应用监管器的“环境”和“代理环境”下拉选项现按名称升序排列，名称中的数字按数值排序，例如 cluster-2 排在 cluster-10 前。 by @hongboji
+
+### 🐛 修复
+
+- **[ai]** 修复 MCP 工具全局权限配置在应用重启后丢失，以及不同应用实例间配置不一致的问题。 ([#11476](https://github.com/nocobase/nocobase/pull/11476)) by @cgyrock
+
+- **[UI 模板]** 修复从打开其他弹窗的操作保存模板后，将模板引用转为复制仍会同步原弹窗修改的问题。 ([#11491](https://github.com/nocobase/nocobase/pull/11491)) by @hongboji
+
+- **[AI 员工]** 禁止通过网页或 API 创建 stdio MCP 服务及修改、删除部署管理的连接，同时保留启停与连接测试。MCP 部署配置改为从 `storage/ai/mcp/servers.json` 加载，不再自动导入 TS/JS 文件。 ([#11461](https://github.com/nocobase/nocobase/pull/11461)) by @cgyrock
+
+- **[模板打印]** 修复升级后模板打印插件因缺少依赖而加载失败的问题。 by @hongboji
+
+## [v2.2.44](https://github.com/nocobase/nocobase/compare/v2.2.43...v2.2.44) - 2026-11-10
+
+### 🚀 优化
+
+- **[权限控制]** 明确角色检查接口对保留角色值的回退规则及 API 密钥的角色优先级。 ([#11452](https://github.com/nocobase/nocobase/pull/11452)) by @hongboji
+参考文档：[OpenAPI: roles:check](https://github.com/nocobase/nocobase/blob/fix/main-issue-10399/packages/plugins/@nocobase/plugin-acl/src/swagger/index.ts)
+### 🐛 修复
+
+- **[resourcer]** 资源 API 的 filter 查询参数包含无效 JSON 时，现在会返回 HTTP 400，而不再返回空的成功响应。 ([#11465](https://github.com/nocobase/nocobase/pull/11465)) by @hongboji
+
+- **[client]** 关联标签支持设置弹窗方式与大小，并打开点击的记录。 ([#11449](https://github.com/nocobase/nocobase/pull/11449)) by @hongboji
+
+- **[client-v2]** 清除手动列排序后恢复表格原配置的顺序。 ([#11443](https://github.com/nocobase/nocobase/pull/11443)) by @hongboji
+
+- **[AI 员工]** 修复 JavaScript 编辑器已返回区块内容后，Nathan 仍提示工具调用中断的问题。 ([#11454](https://github.com/nocobase/nocobase/pull/11454)) by @hongboji
+
+- **[日历]** v1 和 v2 日历按所选西班牙语区域显示星期表头。 ([#11446](https://github.com/nocobase/nocobase/pull/11446)) by @hongboji
+
+## [v2.2.41](https://github.com/nocobase/nocobase/compare/v2.2.40...v2.2.41) - 2026-11-08
+
+### 🚀 优化
+
+- **[部门]** 部门和部门角色关联表新增仅结构迁移选项，可保留目标环境已有记录。 ([#11343](https://github.com/nocobase/nocobase/pull/11343)) by @zhouyanliang
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2 关联下拉选择和级联选择使用字符串结果的公式字段作为标签时，部分文本搜索失效的问题。 ([#11370](https://github.com/nocobase/nocobase/pull/11370)) by @hongboji
+
+- **[文件管理器]** 修复 v2 文件管理器因缺少 JPEG2000 图片解码资源导致 PDF 预览空白的问题。 ([#11308](https://github.com/nocobase/nocobase/pull/11308)) by @mytharcher
+
+## [v2.2.40](https://github.com/nocobase/nocobase/compare/v2.2.39...v2.2.40) - 2026-11-04
+
+### 🐛 修复
+
+- **[文件管理器]** 修复切换附件或关闭预览后打开另一文件时，音频预览仍播放之前文件的问题 ([#11328](https://github.com/nocobase/nocobase/pull/11328)) by @zhouyanliang
+
+- **[备份管理器]** 修复大文件备份下载缺少反馈的问题，使用短期凭证通过浏览器直接下载。 ([#11324](https://github.com/nocobase/nocobase/pull/11324)) by @gchust
+
 ## [v2.2.39](https://github.com/nocobase/nocobase/compare/v2.2.38...v2.2.39) - 2026-11-04
 
 ### 🐛 修复

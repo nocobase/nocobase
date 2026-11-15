@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useForm } from '@formily/react';
 import { SchemaComponent, useAPIClient } from '@nocobase/client';
 import { useAuthTranslation } from '../locale';
@@ -53,7 +62,7 @@ const getForgotPasswordForm = (): ISchema => ({
                   } finally {
                     setLoading(false);
                   }
-                  message.success(t('Reset email sent successfully'));
+                  message.success(t('If this email address is registered, you will receive a password reset email.'));
                   form.reset();
                 },
                 loading,

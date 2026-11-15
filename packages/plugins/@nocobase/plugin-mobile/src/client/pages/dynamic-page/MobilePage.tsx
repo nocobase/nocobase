@@ -24,6 +24,7 @@ import { Outlet, useParams } from 'react-router-dom';
 import {
   MobileDateFilterWithPicker,
   MobileDateTimePicker,
+  MobileUnixTimestamp,
   MobileRangePicker,
   MobileTimePicker,
 } from './components/MobileDatePicker';
@@ -71,7 +72,7 @@ export const mobileComponents = {
     }
   },
   DatePicker: DatePickerMobile,
-  UnixTimestamp: MobileDateTimePicker,
+  UnixTimestamp: MobileUnixTimestamp,
   Modal: MobileDialog,
   AssociationField: AssociationFieldMobile,
   TimePicker: (props) => {

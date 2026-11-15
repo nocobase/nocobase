@@ -22,5 +22,5 @@ export default defineCollection({
   name: 'departmentsRoles',
   dataCategory: 'business',
   dumpRules: 'required',
-  migrationRules: ['overwrite'],
+  migrationRules: ['overwrite', 'schema-only'],
 });

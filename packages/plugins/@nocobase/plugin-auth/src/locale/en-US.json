@@ -1,4 +1,8 @@
 {
+  "Check the custom domain registered for this sub-application to enable email password recovery.": "Check the custom domain registered for this sub-application to enable email password recovery.",
+  "Could not read the sub-application domain settings for email password recovery.": "Could not read the sub-application domain settings for email password recovery.",
+  "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.": "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.",
+  "Email password recovery is temporarily unavailable.": "Email password recovery is temporarily unavailable.",
   "1. Select notification channel": "1. Select notification channel",
   "2. Configure reset email": "2. Configure reset email",
   "Allow to sign in with": "Allow to sign in with",
@@ -40,7 +44,7 @@
   "Please enter your email": "Please enter your email",
   "Please enter your username or email": "Please enter your username or email",
   "Please keep and enable at least one authenticator": "Please keep and enable at least one authenticator",
-  "Reset email sent successfully": "Reset email sent successfully",
+  "If this email address is registered, you will receive a password reset email.": "If this email address is registered, you will receive a password reset email.",
   "Reset link expiration (minutes)": "Reset link expiration (minutes)",
   "Reset link has expired": "Reset link has expired",
   "Reset password": "Reset password",

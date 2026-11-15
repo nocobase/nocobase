@@ -52,7 +52,7 @@ function createEmployee(onEvent: (event: StatusEvent) => void) {
   const end = vi.fn();
   Reflect.set(employee, 'sessionId', conversation.sessionId);
   Reflect.set(employee, 'from', conversation.from);
-  Reflect.set(employee, 'employee', { username: conversation.username });
+  Reflect.set(employee, 'employee', { username: conversation.username, get: () => conversation.username });
   Reflect.set(employee, 'ctx', {
     log: { error: vi.fn() },
     res: { end, write: vi.fn(), headersSent: true },
@@ -204,4 +204,54 @@ describe('AIEmployee tool resume checkpoint ordering', () => {
       expect(end).toHaveBeenCalled();
     },
   );
+});
+
+describe('AIEmployee resumes with the original LangGraph command', () => {
+  it.each(['stream', 'invoke'] as const)('passes the resume command to the graph on %s', async (mode) => {
+    const checkpointer = new MemorySaver();
+    const writes = vi.spyOn(checkpointer, 'putWrites');
+    const readCode = vi.fn(async () => 'current editor content');
+    const model = new ReadCodeModel({});
+    const generate = vi.spyOn(model, '_generate');
+    const createReadAgent = () =>
+      createAgent({
+        model,
+        tools: [tool(readCode, { name: toolCall.name, description: 'Read editor code', schema: z.object({}) })],
+        middleware: [humanInTheLoopMiddleware({ interruptOn: { readJSCode: true } })],
+        checkpointer,
+      });
+    const config = { configurable: { thread_id: conversation.sessionId } };
+    const { employee } = createEmployee(() => {});
+    Reflect.set(employee, 'createAgent', async () => createReadAgent());
+    const interrupted = await employee.agentInvoke(
+      provider,
+      { messages: [{ role: 'user', content: 'Read block content' }] },
+      config,
+    );
+    const [resumeConfig] = writes.mock.calls.find(([, pending]) =>
+      pending.some(([channel]) => channel === '__interrupt__'),
+    );
+    const context = {
+      decisions: { interruptId: interrupted.__interrupt__[0].id, decisions: [{ type: 'approve' as const }] },
+    };
+    const agent = createReadAgent();
+    const graphCall = vi.spyOn(agent.graph, mode);
+    Reflect.set(employee, 'createAgent', async () => agent);
+
+    if (mode === 'stream') {
+      const stream = await employee.agentStream(provider, context, resumeConfig);
+      for await (const chunk of stream) {
+        // Drain the stream to complete the tool call.
+      }
+    } else {
+      await employee.agentInvoke(provider, context, resumeConfig);
+    }
+
+    expect(graphCall.mock.calls[0][0]).toBeInstanceOf(Command);
+    const [messages] = generate.mock.lastCall;
+    expect(messages.filter(ToolMessage.isInstance)).toEqual([
+      expect.objectContaining({ tool_call_id: toolCall.id, content: 'current editor content' }),
+    ]);
+    expect(readCode).toHaveBeenCalledTimes(1);
+  });
 });

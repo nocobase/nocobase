@@ -43,6 +43,11 @@ export default {
     };
     await next();
   },
+  hasAny: async (ctx: Context, next: Next) => {
+    const verifier = await ctx.db.getRepository('verifiers').findOne({ fields: ['name'] });
+    ctx.body = Boolean(verifier);
+    await next();
+  },
   listByUser: async (ctx: Context, next: Next) => {
     const plugin = ctx.app.pm.get('verification') as PluginVerificationServer;
     const verificationTypes = plugin.verificationManager.verificationTypes;

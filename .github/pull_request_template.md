@@ -32,6 +32,7 @@ and provide some testing suggestions.
 | ---------- | --------- |
 | 🇺🇸 English |           |
 | 🇨🇳 Chinese |           |
+| 🇯🇵 Japanese |           |
 
 ### Docs
 

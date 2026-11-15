@@ -252,6 +252,8 @@ function normalizeIndexedObjectToArray(value: any) {
   return keys.sort((a, b) => Number(a) - Number(b)).map((key) => value[key]);
 }
 
+export class InvalidFilterError extends SyntaxError {}
+
 export function parseQuery(input: string): any {
   // 自带 query 处理的不太给力，需要用 qs 转一下
   const query = qs.parse(input, {
@@ -265,7 +267,11 @@ export function parseQuery(input: string): any {
 
   // filter 支持 json string
   if (typeof query.filter === 'string') {
-    query.filter = JSON.parse(query.filter);
+    try {
+      query.filter = JSON.parse(query.filter);
+    } catch {
+      throw new InvalidFilterError('The filter query parameter must be valid JSON.');
+    }
   }
 
   if (typeof query.filterByTk === 'string') {

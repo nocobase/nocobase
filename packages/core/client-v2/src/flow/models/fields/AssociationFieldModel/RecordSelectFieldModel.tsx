@@ -590,7 +590,10 @@ async function originalHandler(ctx, params) {
 
     const targetInterface = targetLabelField.getInterfaceOptions();
 
-    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+    const operator =
+      targetLabelField.type === 'string' || targetLabelField.dataType === 'string'
+        ? '$includes'
+        : targetInterface?.filterable?.operators?.[0]?.value || '$includes';
 
     const searchText = ctx.inputArgs.searchText?.trim();
 

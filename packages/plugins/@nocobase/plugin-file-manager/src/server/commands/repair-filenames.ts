@@ -358,6 +358,9 @@ export function registerRepairFilenamesCommand(app: Application) {
   const command = (app.findCommand('file-manager') || app.command('file-manager')) as ReturnType<
     Application['command']
   >;
+  if (command.commands.some((subcommand) => subcommand.name() === 'repair-filenames')) {
+    return;
+  }
   command
     .command('repair-filenames')
     .preload()
@@ -391,3 +394,5 @@ export function registerRepairFilenamesCommand(app: Application) {
       }
     });
 }
+
+export default registerRepairFilenamesCommand;

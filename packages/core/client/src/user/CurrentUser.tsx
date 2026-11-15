@@ -8,7 +8,7 @@
  */
 
 import { createContext } from 'react';
-import { SelectWithTitle } from '../common';
+import { SelectWithTitle } from '../common/SelectWithTitle';
 
 export const SettingsMenuProvider = (props) => {
   return SelectWithTitle;
