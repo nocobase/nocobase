@@ -18,7 +18,7 @@ import { removeHopByHopHeaders } from '../proxy/http-proxy.js';
 export interface NodeServerProxyOptions {
   readonly match: (pathname: string) => boolean;
   /** Resolve the current upstream origin without starting it. Null means unavailable. */
-  readonly target: () => URL | null | Promise<URL | null>;
+  readonly target: (request: Request) => URL | null | Promise<URL | null>;
 }
 
 /** A standalone listener's proxy; application routes never pass through this layer. */
@@ -229,7 +229,7 @@ export class NodeServerProxy {
 
   private async resolveTarget(request: Request): Promise<URL | null> {
     if (this.closed) return null;
-    const origin = await this.options.target();
+    const origin = await this.options.target(request);
     if (!origin) return null;
     if (!['http:', 'https:'].includes(origin.protocol))
       throw new Error('Proxy targets must use HTTP or HTTPS.');

@@ -46,6 +46,29 @@ afterEach(async () => {
 });
 
 describe('standalone proxy', () => {
+  it('resolves each request to its own upstream without sharing mutable routing state', async () => {
+    const one = await listen(
+      createServer((req, res) => res.end(`one:${req.url}`)),
+    );
+    const two = await listen(
+      createServer((req, res) => res.end(`two:${req.url}`)),
+    );
+    const { url } = await startProxy((request) =>
+      new URL(request.url).pathname.startsWith('/two/') ? two : one,
+    );
+    const results = await Promise.all(
+      ['/one/a?x=1', '/two/b', '/one/c', '/two/d'].map(async (path) =>
+        (await fetch(url + path)).text(),
+      ),
+    );
+    expect(results).toEqual([
+      'one:/one/a?x=1',
+      'two:/two/b',
+      'one:/one/c',
+      'two:/two/d',
+    ]);
+  });
+
   it('routes before the app mount and preserves bodies, public headers, cookies and redirects', async () => {
     const upstream = createServer(async (req, res) => {
       const chunks: Buffer[] = [];
@@ -285,7 +308,7 @@ describe('standalone proxy', () => {
   });
 });
 
-async function startProxy(target: () => URL | null) {
+async function startProxy(target: (request: Request) => URL | null) {
   const directory = mkdtempSync(path.join(tmpdir(), 'nocobase-proxy-'));
   directories.push(directory);
   const definition = defineStandaloneServer({
