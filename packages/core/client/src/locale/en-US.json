@@ -1401,6 +1401,7 @@
   "Text input": "Text input",
   "Text only": "Text only",
   "The application is reloading, please do not close the page.": "The application is reloading, please do not close the page.",
+  "The association target key is missing or invalid.": "The association target key is missing or invalid.",
   "The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).": "The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).",
   "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?",
   "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for collection \"{{name}}\"": "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for collection \"{{name}}\"",
