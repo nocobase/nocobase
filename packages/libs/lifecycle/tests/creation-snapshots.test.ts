@@ -454,6 +454,32 @@ describe('complete creation snapshots', () => {
     expect(await runtime.runTriggers()).toBe(1);
   });
 
+  it.each(['upgrade', 'recovered'])(
+    'validates the %s origin without consulting current configuration',
+    async (origin) => {
+      const { runtime, store, parameters } = setup();
+      const created = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
+      const row = store.records('lifecycleParameterSnapshots')[0]!;
+      const payload = structuredClone(row.payload) as Record<string, unknown>;
+      (payload.sources as Record<string, Record<string, unknown>>).wait.origin =
+        origin;
+      store.patchRecord('lifecycleParameterSnapshots', row.id, { payload });
+      const read = vi
+        .spyOn(parameters, 'readConfiguration')
+        .mockRejectedValue(new Error('Configuration must not be read.'));
+      if (origin === 'upgrade')
+        expect(
+          (await runtime.view('work', created.record.id, SYSTEM_ACTOR))
+            .parameterSnapshot,
+        ).toEqual(payload);
+      else
+        await expect(
+          runtime.view('work', created.record.id, SYSTEM_ACTOR),
+        ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_INVALID' });
+      expect(read).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     'values',
     'scope',

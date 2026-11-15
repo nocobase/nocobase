@@ -2,7 +2,7 @@
 
 The core `tests/creation-snapshots.test.ts` and configured-parameter suites cover immediate freezing for business drafts, identity-free previews, independent version contracts, snapshot-first reads with broken configuration, missing/invalid payloads, actions, withdrawal and resubmission. Real repository tests cover concurrent idempotent creation, configuration-save/creation races, rollback of record/snapshot/receipt/log/usage, effects after worker restart and failed submission retaining the original creation snapshot.
 
-Migration tests execute the actual migrations without their outer transaction to verify conflict-before-write behavior. They cover exact valid historical snapshots, full creation-usage recovery, later submission rejection, absent creation evidence, conflicting creation/submission values, original historical timestamps, invalid values and provenance, repaired-data reruns and rollback protection. A full values object alone is insufficient: identity, timestamp, revision, group, schema version, source revision and origin must also pass. Old startup markers cannot supply creation values.
+Migration tests execute the actual migrations without their outer transaction to verify conflict-before-write behavior. They cover exact valid historical snapshots, full creation-usage recovery, one-time supplementation of released live parameters, mixed submission/upgrade sources, lost fixed-snapshot refusal, original historical timestamps, invalid values and provenance, repaired-data reruns and rollback protection. A full values object alone is insufficient: identity, timestamp, revision, group, schema version, source revision and origin must also pass. Old startup markers cannot supply creation values.
 
 ## Scan cost
 

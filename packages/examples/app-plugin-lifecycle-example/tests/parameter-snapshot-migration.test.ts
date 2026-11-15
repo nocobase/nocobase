@@ -406,11 +406,19 @@ it.each([false, true])(
         values: Object.fromEntries(
           fields.map((field) => [
             field,
-            (run.payload.values as Record<string, unknown>)[field],
+            creationUsage && field === 'financeLimit'
+              ? 75000
+              : (run.payload.values as Record<string, unknown>)[field],
           ]),
         ),
         sources: Object.fromEntries(
-          fields.map((field) => [field, usage.sources[field]]),
+          fields.map((field) => [
+            field,
+            {
+              ...usage.sources[field],
+              revision: creationUsage ? 8 : usage.sources[field].revision,
+            },
+          ]),
         ),
       };
       await run.database
@@ -430,7 +438,10 @@ it.each([false, true])(
         .repository('lifecycleExampleWorkflowParameters')
         .updateMany({
           filter: { id: 'lifecycle.expenses' },
-          values: { revision: 0, values: {} },
+          values: {
+            revision: 4,
+            values: { ...expenseValues, escalateAfterMinutes: 9 },
+          },
         });
       await run.migrator.latest();
       const mixed = (
@@ -440,8 +451,20 @@ it.each([false, true])(
       )?.payload;
       expect(mixed).toEqual({
         ...submitted,
-        revision: 7,
-        values: { ...submitted.values, escalateAfterMinutes: 3 },
+        ...(creationUsage
+          ? {
+              recoveredFrom: {
+                transitionId: run.entryId,
+                usageId: run.usageId,
+                groupRevisions: { expenseThresholds: 7, expenseTiming: 7 },
+              },
+            }
+          : {}),
+        revision: creationUsage ? 8 : 7,
+        values: {
+          ...submitted.values,
+          escalateAfterMinutes: creationUsage ? 3 : 9,
+        },
         sources: {
           ...Object.fromEntries(
             Object.entries(submitted.sources).map(
@@ -451,8 +474,8 @@ it.each([false, true])(
           escalateAfterMinutes: {
             group: 'expenseTiming',
             schemaVersion: 1,
-            revision: 0,
-            origin: 'upgrade',
+            revision: creationUsage ? 7 : 4,
+            origin: creationUsage ? 'configuration' : 'upgrade',
           },
         },
       });
@@ -822,12 +845,10 @@ it.each(['awaitingCustomer', 'closed'])(
   async (status) => {
     const run = await history('tickets', false);
     try {
-      await run.database
-        .repository(run.collection)
-        .updateMany({
-          filter: { id: Number(run.recordId) },
-          values: { status },
-        });
+      await run.database.repository(run.collection).updateMany({
+        filter: { id: Number(run.recordId) },
+        values: { status },
+      });
       const entries = await run.database
         .repository('lifecycleExampleTransitions')
         .findMany();
@@ -893,11 +914,36 @@ it.each(['awaitingCustomer', 'closed'])(
 it('supplements early live expenses but refuses missing fixed thresholds and unknown definition bindings before writes', async () => {
   const run = await history('expenses', false);
   try {
+    await run.database.repository(run.collection).updateMany({
+      filter: { id: Number(run.recordId) },
+      values: { status: 'paid', parameterContract: null },
+    });
     await run.database
-      .repository(run.collection)
+      .repository('lifecycleExampleWorkflowParameters')
       .updateMany({
-        filter: { id: Number(run.recordId) },
-        values: { status: 'paid', parameterContract: null },
+        filter: { id: 'lifecycle.expenses' },
+        values: {
+          revision: 4,
+          values: {
+            autoApproveLimit: 2000,
+            financeLimit: 12345,
+            escalateAfterMinutes: 5,
+          },
+        },
+      });
+    await run.database
+      .repository('lifecycleExampleWorkflowParameters')
+      .updateMany({
+        filter: { id: 'lifecycle.expenses-v2' },
+        values: {
+          revision: 9,
+          values: {
+            autoApproveLimit: 8000,
+            financeLimit: 90000,
+            escalateAfterMinutes: 99,
+            auditLimit: 20000,
+          },
+        },
       });
     await run.migrator.latest();
     expect(
@@ -907,7 +953,12 @@ it('supplements early live expenses but refuses missing fixed thresholds and unk
           .findOne({ filter: { id: run.snapshotId } })
       )?.payload,
     ).toMatchObject({
-      values: expenseValues,
+      revision: 4,
+      values: {
+        autoApproveLimit: 2000,
+        financeLimit: 12345,
+        escalateAfterMinutes: 5,
+      },
       sources: {
         autoApproveLimit: { origin: 'upgrade' },
         escalateAfterMinutes: { origin: 'upgrade' },
@@ -928,19 +979,15 @@ it.each(['fixedMissing', 'unknownBinding', 'creationContradiction'])(
     );
     try {
       if (kind === 'fixedMissing')
-        await run.database
-          .repository(run.collection)
-          .updateMany({
-            filter: { id: Number(run.recordId) },
-            values: { status: 'paid' },
-          });
+        await run.database.repository(run.collection).updateMany({
+          filter: { id: Number(run.recordId) },
+          values: { status: 'paid' },
+        });
       if (kind === 'unknownBinding')
-        await run.database
-          .repository(run.collection)
-          .updateMany({
-            filter: { id: Number(run.recordId) },
-            values: { lifecycleDefinition: 'missing-definition' },
-          });
+        await run.database.repository(run.collection).updateMany({
+          filter: { id: Number(run.recordId) },
+          values: { lifecycleDefinition: 'missing-definition' },
+        });
       if (kind === 'creationContradiction')
         await run.database
           .repository('lifecycleExampleParameterSnapshots')

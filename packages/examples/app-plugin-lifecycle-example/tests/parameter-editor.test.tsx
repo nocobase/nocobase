@@ -12,6 +12,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import type { ParameterGroupView } from '../shared/parameter-configuration.js';
 import type { ParameterApi } from '../client/lib/parameter-api.js';
+import { SnapshotOrigins } from '../client/components/parameter-history.js';
 import { ParameterEditor } from '../client/components/parameter-editor.js';
 import { boundParameterGroups } from '../client/components/parameter-binding-editor.js';
 import { describeLifecycle } from '@nocobase/lifecycle';
@@ -188,4 +189,45 @@ describe('shared parameter editor', () => {
       [],
     );
   });
+});
+
+it('identifies only supplemented fields in a mixed historical expense snapshot', async () => {
+  const runtime = await createTestI18nRuntime({
+    locale: 'en-US',
+    namespaces: { [NAMESPACE]: { 'en-US': async () => ({ default: enUS }) } },
+  });
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <SnapshotOrigins
+        snapshot={{
+          scope: 'demo',
+          lifecycle: 'expenses',
+          recordId: '1',
+          at: '2026-10-01T00:00:00.000Z',
+          revision: 7,
+          values: { financeLimit: 3000, escalateAfterMinutes: 5 },
+          sources: {
+            financeLimit: {
+              group: 'expenseThresholds',
+              schemaVersion: 1,
+              revision: 2,
+              origin: 'configuration',
+            },
+            escalateAfterMinutes: {
+              group: 'expenseTiming',
+              schemaVersion: 1,
+              revision: 7,
+              origin: 'upgrade',
+            },
+          },
+        }}
+      />
+    </TestI18nProvider>,
+  );
+  expect(
+    screen.getByText(
+      'escalateAfterMinutes: Added during upgrade using configuration revision 7',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/financeLimit/)).not.toBeInTheDocument();
 });

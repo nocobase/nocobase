@@ -417,21 +417,19 @@ it.each(['configuration', 'binding'])(
         sources: migrations,
       });
       await owner.upTo('202611130003_office_flows_definition_binding');
-      await fixture.database
-        .repository('officeFlowsClerkTasks')
-        .createOne({
-          values: {
-            number: 'BAD',
-            rootId: 1,
-            parentId: 1,
-            departmentName: 'Example',
-            status: 'done',
-            statusChangedAt: '2026-10-01T00:00:00.000Z',
-            createdAt: '2026-10-01T00:00:00.000Z',
-            lifecycleVersion: 1,
-            lifecycleDefinition: kind === 'binding' ? 'unknown' : 'clerkTasks',
-          },
-        });
+      await fixture.database.repository('officeFlowsClerkTasks').createOne({
+        values: {
+          number: 'BAD',
+          rootId: 1,
+          parentId: 1,
+          departmentName: 'Example',
+          status: 'done',
+          statusChangedAt: '2026-10-01T00:00:00.000Z',
+          createdAt: '2026-10-01T00:00:00.000Z',
+          lifecycleVersion: 1,
+          lifecycleDefinition: kind === 'binding' ? 'unknown' : 'clerkTasks',
+        },
+      });
       if (kind === 'configuration')
         await fixture.database
           .repository('officeFlowsWorkflowParameters')

@@ -12,6 +12,6 @@ Remove the deferred snapshot boundary and independent startup-proof mechanism wh
 
 Update examples, parameter history, protected version editors and upgrade guidance. Custom LifecycleStore adapters must implement findRecords for bounded primary-key batch reads.
 
-Recognize released per-source parameter revisions when recovering verified creation usage, preserve original group revisions and remove obsolete read modes from the recovered payload. Complete released partial submission snapshots only with their missing live fields, marking those fields as upgrade origin.
+Recognize released per-source parameter revisions when recovering verified creation usage, preserve original group revisions and remove obsolete read modes from the recovered payload. Complete released partial submission snapshots only with their missing live fields, marking only upgrade-time additions as upgrade origin.
 
 Expose default, configuration and upgrade parameter origins in schemas and instance details. Keep old definitions available and explicitly route new records to new behavior versions; old records can continue without waiting for completion.

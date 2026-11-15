@@ -6,7 +6,6 @@ const identity = (...parts: (string | number)[]) =>
 type Values = Record<string, unknown>;
 interface Contract {
   collection: string;
-  legacySubmit?: string;
   defaults: Values;
   groups: Record<string, readonly string[]>;
   due: Record<string, readonly [string, number]>;
@@ -15,7 +14,6 @@ interface Contract {
 const contracts: Record<string, Contract> = {
   expenses: {
     collection: 'lifecycleExampleExpenses',
-    legacySubmit: 'submit',
     defaults: {
       autoApproveLimit: 5000,
       financeLimit: 50000,
@@ -29,7 +27,6 @@ const contracts: Record<string, Contract> = {
   },
   'expenses-v2': {
     collection: 'lifecycleExampleExpenses',
-    legacySubmit: 'submit',
     defaults: {
       autoApproveLimit: 5000,
       financeLimit: 50000,
@@ -55,7 +52,6 @@ const contracts: Record<string, Contract> = {
   },
   orders: {
     collection: 'lifecycleExampleOrders',
-    legacySubmit: 'checkout',
     defaults: { paymentWindowMinutes: 3 },
     groups: { orderTiming: ['paymentWindowMinutes'] },
     due: {
@@ -65,14 +61,12 @@ const contracts: Record<string, Contract> = {
   },
   invoices: {
     collection: 'lifecycleExampleInvoices',
-    legacySubmit: 'submit',
     defaults: { querySeconds: 30 },
     groups: { invoiceTiming: ['querySeconds'] },
     due: { awaitingIssue: ['querySeconds', 1000] },
   },
   exports: {
     collection: 'lifecycleExampleExports',
-    legacySubmit: 'submit',
     defaults: { pollSeconds: 15, maxMinutes: 3 },
     groups: { exportTiming: ['pollSeconds', 'maxMinutes'] },
     due: { processing: ['pollSeconds', 1000] },
@@ -261,8 +255,6 @@ const migration: MigrationDefinition = defineMigration({
       const inventory = {
         completeSnapshots: 0,
         creationUsages: 0,
-        missingCreationEvidence: 0,
-        legacySubmissionSnapshots: 0,
         recovered: 0,
       };
       const configurations = new Map<
@@ -444,31 +436,49 @@ const migration: MigrationDefinition = defineMigration({
               if (!current) return undefined;
               const values = { ...object(base?.values) };
               const sources = { ...object(base?.sources) };
+              let revision = Number(base?.revision ?? 0);
               for (const [group, fields] of Object.entries(contract.groups))
                 for (const field of fields)
                   if (!Object.hasOwn(values, field)) {
-                    values[field] = current.values[field];
-                    sources[field] = {
-                      group,
-                      schemaVersion: 1,
-                      revision: current.revision,
-                      origin: 'upgrade',
-                    };
+                    if (creationValid) {
+                      values[field] = object(fact.values)?.[field];
+                      sources[field] = object(fact.sources)?.[field];
+                      revision = Math.max(
+                        revision,
+                        Number(object(sources[field])?.revision),
+                      );
+                    } else {
+                      values[field] = current.values[field];
+                      sources[field] = {
+                        group,
+                        schemaVersion: 1,
+                        revision: current.revision,
+                        origin: 'upgrade',
+                      };
+                      revision = Math.max(revision, current.revision);
+                    }
                   }
               return {
                 scope: 'demo',
                 lifecycle: name,
                 recordId,
-                revision: Math.max(
-                  Number(base?.revision ?? 0),
-                  current.revision,
-                ),
+                revision,
                 values,
                 sources,
                 at: base?.at ?? upgradeAt,
-                ...(base?.recoveredFrom
-                  ? { recoveredFrom: base.recoveredFrom }
-                  : {}),
+                ...(creationValid
+                  ? {
+                      recoveredFrom: {
+                        transitionId: entryId,
+                        usageId,
+                        ...(publishedFact
+                          ? { groupRevisions: publishedFact.groupRevisions }
+                          : {}),
+                      },
+                    }
+                  : base?.recoveredFrom
+                    ? { recoveredFrom: base.recoveredFrom }
+                    : {}),
               };
             };
             if (stored) {
@@ -511,7 +521,8 @@ const migration: MigrationDefinition = defineMigration({
                 if (
                   creationValid &&
                   (timestamp(payload.at) === timestamp(entry.at) ||
-                    provenance?.transitionId === entryId) &&
+                    (provenance?.transitionId === entryId &&
+                      timestamp(payload.at) === timestamp(fact.at))) &&
                   Object.keys(contract.defaults).some(
                     (field) =>
                       JSON.stringify(snapshotValues?.[field]) !==

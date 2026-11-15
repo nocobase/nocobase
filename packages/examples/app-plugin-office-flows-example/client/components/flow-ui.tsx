@@ -457,10 +457,6 @@ export function History({
       ),
     })),
   ].sort((left, right) => text(right.at).localeCompare(text(left.at)));
-  if (!entries.length)
-    return (
-      <p className='text-sm text-muted-foreground'>{t('common.noHistory')}</p>
-    );
   return (
     <div className='space-y-3'>
       {view.parameterSnapshot && (
@@ -481,11 +477,16 @@ export function History({
           </pre>
         </details>
       )}
-      <ol className='space-y-3 border-l pl-4'>
-        {entries.map((entry) => (
-          <li key={entry.key}>{entry.node}</li>
-        ))}
-      </ol>
+      {!entries.length && (
+        <p className='text-sm text-muted-foreground'>{t('common.noHistory')}</p>
+      )}
+      {entries.length > 0 && (
+        <ol className='space-y-3 border-l pl-4'>
+          {entries.map((entry) => (
+            <li key={entry.key}>{entry.node}</li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

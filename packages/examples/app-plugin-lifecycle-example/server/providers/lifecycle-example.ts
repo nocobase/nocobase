@@ -207,8 +207,8 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         expenseLifecycle.key,
       ),
     });
-    // The second version of the same process: same table, the same stored
-    // configuration under the shared key, and its own audit group.
+    // The second version shares the business table and keeps its own complete
+    // configuration revision, contract and audit group.
     runtime.register(expenseV2Lifecycle, {
       services,
       parameterConfiguration: exampleParameterRegistration(
