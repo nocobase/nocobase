@@ -13,25 +13,31 @@ import { uid } from '@nocobase/utils';
 import { DataTypes } from 'sequelize';
 import { createApp } from '.';
 
-describe.each(['', 'nb_'])('sync imported fields (prefix %s)', (tablePrefix) => {
+describe.each([
+  { tablePrefix: '', physicalPrefix: '' },
+  { tablePrefix: 'nb_', physicalPrefix: '' },
+  { tablePrefix: 'nb_', physicalPrefix: 'nb_' },
+])('sync imported fields (configured $tablePrefix, physical $physicalPrefix)', ({ tablePrefix, physicalPrefix }) => {
   let app: Awaited<ReturnType<typeof createApp>>;
   let server: ReturnType<typeof createServer>;
   let base: string;
   let name: string;
+  let physicalName: string;
 
   beforeEach(async () => {
     app = await createApp({ database: { tablePrefix }, plugins: ['data-source-manager'] });
     name = `external_${uid(6)}`;
+    physicalName = `${physicalPrefix}${name}`;
     await app.db.sequelize
       .getQueryInterface()
       .createTable(
-        { tableName: name, schema: app.db.options.schema },
+        { tableName: physicalName, schema: app.db.options.schema },
         { id: { type: DataTypes.INTEGER, primaryKey: true }, title: { type: DataTypes.STRING } },
       );
     const response = await app
       .agent()
       .resource('dataSources')
-      .loadTables({ values: { dataSourceKey: 'main', tables: [name] } });
+      .loadTables({ values: { dataSourceKey: 'main', tables: [physicalName] } });
     expect(response.status).toBe(200);
     expect(app.db.getCollection(name).options.from).toBe('dbsync');
     server = createServer(app.callback());
@@ -58,6 +64,22 @@ describe.each(['', 'nb_'])('sync imported fields (prefix %s)', (tablePrefix) => 
     const db = app.db;
     const qi = db.sequelize.getQueryInterface();
     const collection = db.getCollection(name);
+    const initial = await app.agent().resource('collections.fields', name).list();
+    expect(initial.status).toBe(200);
+    const titleField = initial.body.data.find((field: { name: string }) => field.name === 'title');
+    const customized = await app
+      .agent()
+      .resource('fields')
+      .update({
+        filterByTk: titleField.key,
+        values: {
+          description: 'Custom field description',
+          uiSchema: { title: 'Custom business title', 'x-component-props': { placeholder: 'keep-me' } },
+        },
+      });
+    expect(customized.status).toBe(200);
+    const before = await app.agent().resource('collections.fields', name).list();
+    expect(before.status).toBe(200);
     const ordinaryName = `ordinary_${uid(6)}`;
     const ordinary = await app
       .agent()
@@ -77,7 +99,7 @@ describe.each(['', 'nb_'])('sync imported fields (prefix %s)', (tablePrefix) => 
     expect(metadata.body.data.filter((field: { name: string }) => field.name === 'note')).toHaveLength(1);
     expect(collection.getField('note')).toBeTruthy();
     expect(Boolean(db.getCollection(ordinaryName).getField('note'))).toBe(all);
-    expect(collection.model.tableName).toBe(name);
+    expect(collection.model.tableName).toBe(physicalName);
     expect((await qi.describeTable(collection.getTableNameWithSchema())).note).toBeTruthy();
 
     const created = await fetch(`${base}/${name}:create`, {
@@ -96,6 +118,22 @@ describe.each(['', 'nb_'])('sync imported fields (prefix %s)', (tablePrefix) => 
     await repeated.text();
     const saved = await db.getRepository('fields').find({ filter: { collectionName: name, name: 'note' } });
     expect(saved).toHaveLength(1);
+    const repeatedMetadata = await app.agent().resource('collections.fields', name).list();
+    expect(repeatedMetadata.status).toBe(200);
+    for (const result of [metadata.body.data, repeatedMetadata.body.data]) {
+      expect(result).toHaveLength(before.body.data.length + 1);
+      for (const field of before.body.data) {
+        expect(result.find((item: { name: string }) => item.name === field.name)).toMatchObject({
+          key: field.key,
+          name: field.name,
+          collectionName: name,
+          type: field.type,
+          interface: field.interface,
+          description: field.description,
+          uiSchema: field.uiSchema,
+        });
+      }
+    }
   });
 
   it.each([false, true])('continues to exclude db2cm collections (all %s)', async (all) => {

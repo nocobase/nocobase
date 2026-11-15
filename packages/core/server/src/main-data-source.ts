@@ -155,7 +155,14 @@ export class MainDataSource extends SequelizeDataSource {
     } catch (err) {
       ctx.log.error(err);
     }
-    const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
+    const toLoadCollections = collections.flatMap((collection) => {
+      const loaded = loadedCollections[collection.tableName];
+      // Imported physical table names may differ from the logical names used by the merge lookup.
+      return this.mergeWithLoadedCollections(
+        [collection],
+        loaded?.from === 'dbsync' ? { [collection.name]: loaded } : loadedCollections,
+      );
+    });
     const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
 
     for (const values of toLoadCollections) {
