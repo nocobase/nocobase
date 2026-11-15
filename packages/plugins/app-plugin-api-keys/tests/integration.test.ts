@@ -134,12 +134,20 @@ describe('API keys', () => {
         code: 'API_KEY_SESSION_FORBIDDEN',
       });
     }
-    const list = await auth.handler(
-      new Request(`${BASE_URL}/api-key/list`, {
-        headers: { 'x-api-key': key },
-      }),
-    );
-    expect(list.status).toBe(403);
+    for (const path of [
+      '/api-key/list',
+      `/api-key/get?id=${encodeURIComponent(target.id)}`,
+    ]) {
+      const response = await auth.handler(
+        new Request(`${BASE_URL}${path}`, {
+          headers: { 'x-api-key': key },
+        }),
+      );
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({
+        code: 'API_KEY_SESSION_FORBIDDEN',
+      });
+    }
     // The key itself still works, and its owner's session still manages keys.
     await expect(
       auth.getSession(new Headers({ 'x-api-key': key })),

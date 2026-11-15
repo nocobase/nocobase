@@ -2,7 +2,7 @@
 
 API key authentication for NocoBase applications, built on Better Auth.
 
-A key authenticates as the user who created it. `Auth.getSession()` resolves the `x-api-key` header the same way it resolves a session cookie, so `auth.required()`, the route guards, and `@nocobase/app-plugin-authorization` all see the owning user and exactly the roles that user holds. Nothing in an application has to know a request arrived by key rather than by cookie.
+A key authenticates as the user who created it. `Auth.getSession()` resolves the `x-api-key` header the same way it resolves a session cookie, so `auth.required()`, the route guards, and `@nocobase/app-plugin-authorization` all see the owning user and exactly the roles that user holds. Account and key-management endpoints distinguish an API-key Session from a signed-in Session; scoped keys and service-account keys also require routes that opt in and enforce their scopes.
 
 Keys are self-service: each signed-in user creates and revokes their own. The plugin ships no page for that; an application builds one on `authClient.apiKey.*` or the scoped key API below and declares it among its own routes.
 
@@ -13,7 +13,7 @@ Better Auth's [API Key plugin](https://www.better-auth.com/docs/plugins/api-key)
 - the `apikey` table migration;
 - `apiKey` and `apiKeyClient`, carrying Better Auth's own names and options.
 
-`apiKey` is wrapped only to supply three defaults, all of them overridable; everything else is Better Auth's behavior and its documentation applies unchanged. They come from this package rather than from a dependency each application installs because the migration here has to match the schema that version of `@better-auth/api-key` declares; a test asserts the table carries a column for every field the plugin declares.
+`apiKey` supplies three overridable defaults and adds NocoBase's key-management and scoped-credential restrictions. Better Auth's option documentation applies subject to those restrictions. Import it from this package so the `apikey` migration stays aligned with the installed `@better-auth/api-key` schema.
 
 ## Installing it
 
@@ -54,7 +54,7 @@ Registering the server plugin without `apiKey()` creates the table and mounts no
 | `rateLimit.enabled`       | `true`, 10 requests per key per day | `false` | That is a quota for issuing keys rather than for using them, and it silently breaks the first integration anyone writes |
 | `requireName`             | `false`                             | `true`  | A key is identified by its name, and a key listed as "unnamed" cannot be revoked with any confidence                    |
 
-All three are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 1000, timeWindow: 60_000 } })` sets a quota, and passing all three back reproduces Better Auth's own behaviour exactly.
+All three defaults are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 1000, timeWindow: 60_000 } })` sets a quota. Overriding defaults does not remove NocoBase's security checks.
 
 ## Using a key
 
@@ -68,22 +68,13 @@ A valid key may read the application's OpenAPI document and its Swagger UI, exac
 
 ## What a key can do
 
-A key is its owner. Beyond the application's own routes, it reaches the Better Auth endpoints Better Auth lets a session reach — verified against `@better-auth/api-key` 1.7.1 with only an `x-api-key` header:
+A Session-enabled key identifies its owner, but does not receive all the capabilities of that user's sign-in. Every `/api/auth/api-key/*` endpoint, including create, get, list, update and delete, rejects API-key Sessions with 403 `API_KEY_SESSION_FORBIDDEN`. Key management requires a signed-in Session plus the applicable ownership and authorization checks. Application routes that manage keys apply the same boundary with `requireSignInSession()` after `auth.required()`.
 
-| Endpoint                                                           |                                                                         |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `/api-key/*` (create, list, update, delete)                        | 403 `API_KEY_SESSION_FORBIDDEN` — managing keys takes a sign-in         |
-| `POST /update-user`                                                | reachable — profile fields                                              |
-| `GET /list-sessions`                                               | reachable — returns session rows including the unsigned session `token` |
-| `POST /sign-out`                                                   | reachable                                                               |
-| `POST /delete-user`, `POST /change-email`, `POST /revoke-sessions` | 401                                                                     |
-| `POST /change-password`                                            | requires `currentPassword`                                              |
+An ordinary user's unscoped key can update the profile, list sessions and sign out. Scoped user keys and service-account keys cannot use those account endpoints: they receive 403 `SCOPED_KEY_FORBIDDEN`, although `/api/auth/get-session` can still identify their owner. Service-account keys have this restriction even without an explicit scope. Device authorization review, approval and denial also require a signed-in Session when installed.
 
-**No key manages keys.** Every `/api-key/*` endpoint refuses a request made with a key, scoped or not, so a leaked key cannot mint its own successors or revoke the evidence; only a signed-in session creates, updates or deletes keys. Routes of the application that manage keys apply the same rule with `requireSignInSession()` after `auth.required()`.
+See the [Skill's endpoint table](skills/nocobase-app-plugin-api-keys/SKILL.md#what-a-key-can-reach-and-what-it-cannot) for the verified dependency version, configuration and request conditions. Other account operations remain subject to Better Auth's endpoint-specific requirements; do not infer their availability from access to business APIs.
 
-One consequence of an unscoped key reaching the rest is worth planning for. **`/list-sessions` discloses the session token.** It is the unsigned half of the session cookie, which is `token.signature`; replaying it alone does not authenticate, because the HMAC is computed with the auth secret. It becomes a working session takeover only if that secret also leaks or a deployment turns cookie signing off.
-
-An application that wants it closed gives the key a scope, or adds a Better Auth `before` hook of its own.
+An ordinary user's unscoped key can read unsigned session tokens from `/list-sessions`. Treat it as a powerful credential; use scoped keys and scope-aware business routes for integrations that should not reach account endpoints. The plugin already blocks key management, so applications do not need to add a hook for that restriction.
 
 A rejected key — expired, revoked, or wrong — is answered by a guarded `/api` route with Better Auth's own status in the standard error body, its code as `error.reason` and `authentication` as `error.domain`, so the caller can tell why: `401 KEY_EXPIRED`, `401 KEY_NOT_FOUND`, `429 USAGE_EXCEEDED`. Branch on `error.reason`, never on `message`. `Auth.getSession()` throws Better Auth's `APIError` for a refused key, exactly as Better Auth itself does, and a caller that only asks who is signed in catches it. A disabled user's keys stop working immediately, because `Auth.getSession()` re-reads `user.disabledAt` on every request.
 

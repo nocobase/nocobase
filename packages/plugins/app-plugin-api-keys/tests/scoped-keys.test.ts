@@ -380,47 +380,97 @@ describe('scoped API keys', () => {
     );
   });
 
-  it('refuses account endpoints to a scoped key but answers get-session', async () => {
-    const created = await keys.create(
-      personId,
-      {
-        name: 'account',
-        expiresInDays: 7,
-        scope: { groups: { 'shop.billing': { level: 'read' } } },
-      },
-      await keys.identityOf(personId),
-    );
-    const session = await auth.handler(
-      new Request(`${BASE_URL}/get-session`, as(created.secret)),
-    );
-    expect(session.status).toBe(200);
-    for (const [path, body] of [
-      ['/api-key/create', { name: 'minted' }],
-      ['/update-user', { name: 'Mallory' }],
-      ['/sign-out', {}],
-    ] as const) {
-      const response = await auth.handler(
-        new Request(`${BASE_URL}${path}`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-api-key': created.secret,
-          },
-          body: JSON.stringify(body),
-        }),
+  it.each([
+    { kind: 'unscoped person', serviceAccount: false, scoped: false },
+    { kind: 'scoped person', serviceAccount: false, scoped: true },
+    { kind: 'unscoped service account', serviceAccount: true, scoped: false },
+    { kind: 'scoped service account', serviceAccount: true, scoped: true },
+  ])(
+    'enforces account endpoint boundaries for a $kind key',
+    async ({ serviceAccount, scoped }) => {
+      const ownerId = serviceAccount
+        ? (await users.createServiceAccount({ name: 'Endpoint verification' }))
+            .id
+        : personId;
+      const created = await keys.create(
+        ownerId,
+        {
+          name: 'account',
+          expiresInDays: 7,
+          scope: scoped
+            ? { groups: { 'shop.billing': { level: 'read' } } }
+            : null,
+        },
+        await keys.identityOf(personId),
       );
-      expect(response.status).toBe(403);
-      expect(await response.json()).toMatchObject({
-        code: path.startsWith('/api-key/')
-          ? 'API_KEY_SESSION_FORBIDDEN'
-          : 'SCOPED_KEY_FORBIDDEN',
-      });
-    }
-    const listSessions = await auth.handler(
-      new Request(`${BASE_URL}/list-sessions`, as(created.secret)),
-    );
-    expect(listSessions.status).toBe(403);
-  });
+      const session = await auth.handler(
+        new Request(`${BASE_URL}/get-session`, as(created.secret)),
+      );
+      expect(session.status).toBe(200);
+      expect(await session.json()).toMatchObject({ user: { id: ownerId } });
+      for (const [path, body] of [
+        ['/api-key/create', { name: 'minted' }],
+        ['/api-key/update', { keyId: created.key.id, name: 'renamed' }],
+        ['/api-key/delete', { keyId: created.key.id }],
+      ] as const) {
+        const response = await auth.handler(
+          new Request(`${BASE_URL}${path}`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-api-key': created.secret,
+            },
+            body: JSON.stringify(body),
+          }),
+        );
+        expect(response.status).toBe(403);
+        expect(await response.json()).toMatchObject({
+          code: 'API_KEY_SESSION_FORBIDDEN',
+        });
+      }
+      for (const path of [
+        '/api-key/list',
+        `/api-key/get?id=${encodeURIComponent(created.key.id)}`,
+      ]) {
+        const response = await auth.handler(
+          new Request(`${BASE_URL}${path}`, as(created.secret)),
+        );
+        expect(response.status).toBe(403);
+        expect(await response.json()).toMatchObject({
+          code: 'API_KEY_SESSION_FORBIDDEN',
+        });
+      }
+      const accountStatus = scoped || serviceAccount ? 403 : 200;
+      const listSessions = await auth.handler(
+        new Request(`${BASE_URL}/list-sessions`, as(created.secret)),
+      );
+      expect(listSessions.status).toBe(accountStatus);
+      if (accountStatus === 403)
+        expect(await listSessions.json()).toMatchObject({
+          code: 'SCOPED_KEY_FORBIDDEN',
+        });
+      for (const [path, body] of [
+        ['/update-user', { name: 'Ada' }],
+        ['/sign-out', {}],
+      ] as const) {
+        const response = await auth.handler(
+          new Request(`${BASE_URL}${path}`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-api-key': created.secret,
+            },
+            body: JSON.stringify(body),
+          }),
+        );
+        expect(response.status).toBe(accountStatus);
+        if (accountStatus === 403)
+          expect(await response.json()).toMatchObject({
+            code: 'SCOPED_KEY_FORBIDDEN',
+          });
+      }
+    },
+  );
 
   it('rotates a key in place: the same id, name, scope and owner with a new secret; and revokes it', async () => {
     const identity = await keys.identityOf(personId);
