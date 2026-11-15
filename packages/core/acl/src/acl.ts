@@ -8,7 +8,7 @@
  */
 
 import { Action } from '@nocobase/resourcer';
-import { assign, dayjs, getDateVars, offsetFromString, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, flatten, getDateVars, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import lodash from 'lodash';
@@ -508,7 +508,6 @@ export class ACL extends EventEmitter {
           }
         } catch (e) {
           if (e instanceof NoPermissionError) {
-            ctx.log?.debug?.('Permission check denied', { reason: e.message });
             ctx.throw(403, 'No permissions');
             return;
           }
@@ -747,54 +746,29 @@ export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateO
 
   const timezone = options?.timezone;
   const state = JSON.parse(JSON.stringify(options?.state || {}));
-  const now = new Date().toISOString();
-  const dates = getDateVars();
-  const dateVars = Object.fromEntries(
-    Object.entries(dates).map(([name, resolver]) => [
-      name,
-      (context) => {
-        const field = context.field;
-        const localDate =
-          field?.type === 'dateOnly' || (field?.type === 'formula' && field.options?.dataType === 'dateOnly');
-        const localTime = field?.type === 'datetimeNoTz';
-        if (name === 'now') {
-          const wall = dayjs(now).utcOffset(offsetFromString(field?.timezone || timezone || '+00:00'));
-          if (localDate) return wall.format('YYYY-MM-DD');
-          if (localTime) return wall.format('YYYY-MM-DD HH:mm:ss.SSS');
-          return now;
-        }
-        const value = typeof resolver === 'function' ? resolver(context) : resolver;
-        if (!localDate && !localTime) return value;
-        return typeof value === 'string'
-          ? value.replace(/[+-]\d{2}:\d{2}$/, '')
-          : [value[0], value[1], value[2], '+00:00'];
-      },
-    ]),
-  );
-  const vars = {
-    ctx: { state },
-    $user: options?.userProvider || (async () => undefined),
-    $nRole: () => state.currentRole,
-    $date: dateVars,
-    $nDate: dateVars,
-  };
+  const dateVars = getDateVars();
+  const flatFilter = flatten(filter, {
+    breakOn: ({ key }) => key.startsWith('$') && key !== '$and' && key !== '$or',
+  });
   const parsedFilter = await parseFilter(filter, {
     timezone,
-    now,
-    vars,
+    now: dateVars.now,
+    vars: {
+      ctx: { state },
+      $user: options?.userProvider || (async () => undefined),
+      $nRole: () => state.currentRole,
+      $date: dateVars,
+      $nDate: dateVars,
+    },
     getField: (path: string) => {
+      const value = flatFilter[path];
+      // Field-aware parsing is limited to date variables so existing literal filters keep their behavior.
+      if (typeof value !== 'string' || !/^\s*\{\{\s*\$(?:date|nDate)\.[\s\S]*\}\}\s*$/.test(value)) {
+        return;
+      }
       const collection = options?.collection;
       const parts = path.split('.').filter((part) => !part.startsWith('$') && !/^\d+$/.test(part));
       return collection?.db?.getFieldByPath([collection.name, ...parts].join('.'));
-    },
-    validateVariable: (key) => {
-      const [root, member, ...rest] = key.split('.');
-      if (
-        !Object.prototype.hasOwnProperty.call(vars, root) ||
-        (['$date', '$nDate'].includes(root) && (rest.length || !Object.prototype.hasOwnProperty.call(dates, member)))
-      ) {
-        throw new NoPermissionError('Unknown variable in permission filter: ' + key);
-      }
     },
   });
   return parsedFilter;

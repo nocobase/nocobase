@@ -146,7 +146,6 @@ export type ParseFilterOptions = {
   now?: any;
   timezone?: string;
   getField?: any;
-  validateVariable?: (key: string) => void;
 };
 
 export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) => {
@@ -189,7 +188,6 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const match = re.exec(value);
         if (match) {
           const key = match[1].trim();
-          opts.validateVariable?.(key);
           const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
           value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
@@ -199,7 +197,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const field = getField?.(path);
 
         if (isDateFieldWithoutTimezone(field)) {
-          if (value?.type) {
+          if (value.type) {
             return getDayRangeByParams({ ...value, timezone: field?.timezone || timezone });
           }
           return value;
