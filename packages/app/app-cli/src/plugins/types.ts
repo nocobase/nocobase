@@ -102,9 +102,12 @@ export interface AppCliPluginDefinition {
    * out of a built `dist/`, where the sources and the development tooling they need are not installed.
    */
   readonly devCommands?: AppCliCommands;
-  /** Command mounted on the package topic itself. */
+  /**
+   * Command run by `nocobase <topic>` itself, wherever the application runs. A subcommand wins when the next word names
+   * one, so prefer flags to positional arguments. Mutually exclusive with `devRootCommand`.
+   */
   readonly rootCommand?: AppCliCommands[string];
-  /** Topic command available only in a source application. */
+  /** Like `rootCommand`, but available only in a source application and left out of a built `dist/`. */
   readonly devRootCommand?: AppCliCommands[string];
   /** Commands an application's `pnpm build` runs on this plugin's behalf, keyed by build stage. */
   readonly buildHooks?: AppBuildHooks;

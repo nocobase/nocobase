@@ -151,8 +151,9 @@ export async function collectPluginSkills({
 }: PluginLocation): Promise<PluginSkills> {
   const skillsDirectory = path.join(pluginDirectory, PLUGIN_SKILLS_DIRECTORY);
   const prefix = pluginSkillPrefix(packageName);
-  // A packaged application CLI (`nocobase.cli` in its manifest, such as `@nocobase/studio-cli`) ships the Skill its
-  // own users read beside the command, not one for developing the application that depends on it.
+  // A standalone packaged CLI (`nocobase.cli.bin` without `nocobase.cli.entry`, such as `@nocobase/studio-cli`) ships
+  // the Skill its own users read beside the command, not one for developing the application that depends on it. A CLI
+  // extension (`nocobase.cli.entry`) ships guidance for the consuming application and is synchronized like a plugin.
   if (await isPackagedCli(pluginDirectory))
     return {
       packageName,

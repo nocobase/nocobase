@@ -17,7 +17,11 @@ import { removeHopByHopHeaders } from '../proxy/http-proxy.js';
 
 export interface NodeServerProxyOptions {
   readonly match: (pathname: string) => boolean;
-  /** Resolve the current upstream origin without starting it. Null means unavailable. */
+  /**
+   * Resolve the upstream origin for this request without starting it. Null means unavailable. HTTP requests and
+   * WebSocket upgrades both pass through here. Route on the method, URL and headers only: the body is forwarded to the
+   * upstream afterwards and must not be read.
+   */
   readonly target: (request: Request) => URL | null | Promise<URL | null>;
 }
 

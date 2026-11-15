@@ -69,6 +69,43 @@ describe('standalone proxy', () => {
     ]);
   });
 
+  it('resolves each WebSocket upgrade to its own upstream from the original path and query', async () => {
+    const accept = (name: string) => {
+      const upstream = createServer();
+      upstream.on('upgrade', (req, socket) => {
+        socket.end(
+          `HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Protocol: ${name}\r\nX-Upstream-Url: ${req.url}\r\n\r\n`,
+        );
+      });
+      return upstream;
+    };
+    const one = await listen(accept('one'));
+    const two = await listen(accept('two'));
+    const seen: string[] = [];
+    const { url } = await startProxy((request) => {
+      const { pathname, search } = new URL(request.url);
+      seen.push(pathname + search);
+      return pathname.startsWith('/two/') ? two : one;
+    });
+    const [first, second] = await Promise.all([
+      upgrade(url, '/one/ws?channel=1', url),
+      upgrade(url, '/two/ws?channel=2', url),
+    ]);
+    first.socket?.destroy();
+    second.socket?.destroy();
+    expect([
+      first.status,
+      first.protocol,
+      first.headers['x-upstream-url'],
+    ]).toEqual([101, 'one', '/one/ws?channel=1']);
+    expect([
+      second.status,
+      second.protocol,
+      second.headers['x-upstream-url'],
+    ]).toEqual([101, 'two', '/two/ws?channel=2']);
+    expect(seen.sort()).toEqual(['/one/ws?channel=1', '/two/ws?channel=2']);
+  });
+
   it('routes before the app mount and preserves bodies, public headers, cookies and redirects', async () => {
     const upstream = createServer(async (req, res) => {
       const chunks: Buffer[] = [];
