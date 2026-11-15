@@ -30,9 +30,9 @@ This Skill gets a new project created, configured and running locally: source co
 
 ## Choose the template
 
-Use Default for an ordinary application, Examples for exploring bundled examples, and `multi-portal` when the user asks for one application with multiple business entry points. Use `multi-app` when the user asks for a Main application that manages independent child applications. Both multi-portal and multi-app are commercial Pro templates. Multi-portal is not a tenant or process isolation mechanism. Keep the user's explicit template choice.
+Use Default for an ordinary application, Examples for exploring bundled examples, and `multi-portal` when the user asks for one application with multiple business entry points. Use `multi-app` when the user asks for a Main application that manages independent child applications, and `sub-app` for a child application that such a Main deploys (see Continue by creating a child application). Multi-portal, multi-app and sub-app are commercial Pro templates. Multi-portal is not a tenant or process isolation mechanism. Keep the user's explicit template choice.
 
-For Default and Examples, continue with Create below. For multi-portal or multi-app, follow the commercial registry authentication steps below, verify access to the selected template package, then use that template's creation command instead of the public-registry command below.
+For Default and Examples, continue with Create below. For multi-portal, multi-app or sub-app, follow the commercial registry authentication steps below, verify access to the selected template package, then use that template's creation command instead of the public-registry command below.
 
 ### Commercial multi-portal template
 
@@ -95,7 +95,7 @@ After Main is configured and running, ask whether the user wants to create a chi
 
 Before creation, ask whether the child needs platform-wide SSO. Independent login is the default. Selecting SSO authorizes installing and configuring the commercial `@nocobase/app-plugin-platform-sso` package; merely requesting a child does not. Reuse the commercial registry authentication procedure and verify access to a compatible plugin version before installation. If access or required SSO configuration is unavailable, report the blocker rather than silently changing the login choice.
 
-Create the child as an ordinary Default application, not another multi-app Main. Create its parent directory when needed and run from that parent with the target's basename; do not pass a slash-containing path or `.` as the application name. For the default location:
+When the user selected SSO, prefer the commercial `sub-app` template (`@nocobase/app-template-sub-app`), which already registers platform SSO and preinstalls the `deploy` CLI extension: verify it with `npm view @nocobase/app-template-sub-app@beta version --registry=https://pkg-v3.nocobase.com/` and check that the generator's `--help` lists `sub-app`, then use `--template sub-app` with `NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/` in the command below and skip the separate SSO plugin installation. If the template or alias is unavailable, use the Default procedure below. Otherwise create the child as an ordinary Default application, not another multi-app Main. Create its parent directory when needed and run from that parent with the target's basename; do not pass a slash-containing path or `.` as the application name. For the default location:
 
 ```bash
 mkdir -p <main-directory>/packages

@@ -123,7 +123,9 @@ export function assembleCli({
       : { ...plugin.commands, ...plugin.devCommands };
     // A plugin whose commands are all development-only contributes nothing to a deployment, so its topic would list
     // no commands at all.
-    if (Object.keys(contributed).length === 0) {
+    const rootCommand =
+      plugin.rootCommand ?? (deployment ? undefined : plugin.devRootCommand);
+    if (Object.keys(contributed).length === 0 && !rootCommand) {
       continue;
     }
     topics[plugin.topic] = {
@@ -143,6 +145,14 @@ export function assembleCli({
       topicOrigins[`${plugin.topic}:${name}`] = {
         source: 'plugin',
         package: plugin.packageName,
+      };
+    }
+    if (rootCommand) {
+      assembled[plugin.topic] = rootCommand;
+      commandOrigins[plugin.topic] = {
+        source: 'plugin',
+        package: plugin.packageName,
+        developmentOnly: !deployment && Boolean(plugin.devRootCommand),
       };
     }
     for (const [name, command] of Object.entries(contributed)) {

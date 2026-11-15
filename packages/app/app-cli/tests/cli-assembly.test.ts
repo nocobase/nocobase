@@ -416,3 +416,62 @@ describe('definition validation', () => {
     warn.mockRestore();
   });
 });
+
+describe('plugin topic root commands', () => {
+  it('dispatches a topic root alongside subcommands and excludes development roots from production', () => {
+    const plugins = defineCliPlugins([
+      defineCliPlugin({
+        packageName: '@nocobase/deploy-cli',
+        devRootCommand: Fake,
+        devCommands: { init: Fake },
+      }),
+    ]);
+    const source = assembleCli({
+      builtinCommands: {},
+      builtinTopics: {},
+      plugins,
+    });
+    expect(source.commands.deploy).toBe(Fake);
+    expect(source.commands['deploy:init']).toBe(Fake);
+    expect(source.commandOrigins.deploy).toMatchObject({
+      developmentOnly: true,
+    });
+    expect(
+      matchCommandId(
+        ['deploy', '--target', 'dev'],
+        Object.keys(source.commands),
+      ),
+    ).toBe('deploy');
+    const runtime = assembleCli({
+      builtinCommands: {},
+      builtinTopics: {},
+      plugins,
+      deployment: true,
+    });
+    expect(runtime.commands.deploy).toBeUndefined();
+    expect(runtime.topics.deploy).toBeUndefined();
+  });
+  it('supports a runtime root without subcommands and refuses ambiguous duplicate roots', () => {
+    const plugins = defineCliPlugins([
+      defineCliPlugin({
+        packageName: '@nocobase/example-cli',
+        rootCommand: Fake,
+      }),
+    ]);
+    expect(
+      assembleCli({
+        builtinCommands: {},
+        builtinTopics: {},
+        plugins,
+        deployment: true,
+      }).commands.example,
+    ).toBe(Fake);
+    expect(() =>
+      defineCliPlugin({
+        packageName: '@nocobase/example-cli',
+        rootCommand: Fake,
+        devRootCommand: Fake,
+      }),
+    ).toThrow();
+  });
+});

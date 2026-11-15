@@ -8,11 +8,11 @@ Applications are created with `pnpm create @nocobase/app`, not with this package
 
 The bin finds the application from the nearest `package.json` above the working directory, and what that manifest says decides the command set:
 
-| Found                                    | Location   | Commands registered                                                                    |
-| ---------------------------------------- | ---------- | -------------------------------------------------------------------------------------- |
-| `nocobase.templateKind`                  | source     | everything: runtime, development, the application's own, and every plugin's            |
-| `nocobase.buildTarget` (a built `dist/`) | deployment | runtime commands, the application's own, and plugins' `commands` but not `devCommands` |
-| neither                                  | none       | `commands`, and the flag-targeted `plugin *`, `package remove` and `skills sync`       |
+| Found                                    | Location   | Commands registered                                                                                                          |
+| ---------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `nocobase.templateKind`                  | source     | everything: runtime, development, the application's own, and every plugin's                                                  |
+| `nocobase.buildTarget` (a built `dist/`) | deployment | runtime commands, the application's own, and plugins' `commands` and `rootCommand` but not `devCommands` or `devRootCommand` |
+| neither                                  | none       | `commands`, and the flag-targeted `plugin *`, `package remove` and `skills sync`                                             |
 
 `NOCOBASE_APP_ROOT` names the application explicitly and leaves the working directory alone, so relative paths a command takes still resolve against where it was run. The `cli/index.js` a build writes into `dist/` passes its own location instead, which is why `node dist/cli/index.js db apply` works from any directory — a built `dist/` has no `.bin`, and a slim runtime image has no pnpm.
 
@@ -122,6 +122,8 @@ export default cliPlugin;
 ```
 
 `commands` run wherever the application runs; `devCommands` only make sense in a source checkout and are left out of a built `dist/`. Keep a command module light — import the heavy work inside `run()` — because help loads every command class.
+
+A plugin can also mount one command on its topic itself, so `pnpm nocobase deploy --target dev` runs it while `pnpm nocobase deploy init` still runs a subcommand. Declare it as `rootCommand`, which runs wherever the application runs, or as `devRootCommand`, which a built `dist/` leaves out together with the topic when nothing else remains under it; a plugin declares at most one of the two, and a plugin with only a root command is valid. A subcommand wins over the root command whenever the next word names one, so give a root command flags rather than a positional argument that could collide with a subcommand name.
 
 A command name nested with `:`, such as `export:csv`, sits in a nested topic, `audit-log export`. `topics: { export: 'Export audit logs.' }` gives that topic its line in `--help`; without it the topic borrows one of its commands' summaries. A described topic must have a command under it.
 

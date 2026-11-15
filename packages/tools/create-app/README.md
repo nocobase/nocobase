@@ -56,7 +56,7 @@ pnpm create @nocobase/app
 | `-h, --help`          | Show help                                                                                |
 | `--version`           | Show the version                                                                         |
 
-`--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), and `multi-app` (Main only, with optional independent children), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal and multi-app templates are commercial Pro packages, not bundled with this open-source creation tool. They require authorized registry access.
+`--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), `multi-app` (Main only, with optional independent children), and `sub-app` (an independent child application for a multi-app platform), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal, multi-app and sub-app templates are commercial Pro packages, not bundled with this open-source creation tool. They require authorized registry access.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
@@ -101,6 +101,20 @@ pnpm nocobase config check
 ```
 
 After creation, use the installed `nocobase-app-plugin-multi-app` Skill for multi-app development and deployment. Each create-app invocation creates one application.
+
+### Child applications
+
+The `sub-app` alias resolves the commercial `@nocobase/app-template-sub-app` package in `nocobase/nocobase3-pro`: an independent child application that a multi-app Main deploys and admits through platform SSO. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
+
+```bash
+npm view @nocobase/app-template-sub-app@beta version --registry=https://pkg-v3.nocobase.com/
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta child-app --template sub-app --template-tag beta
+cd child-app
+pnpm nocobase config init
+pnpm nocobase deploy init
+```
+
+Give each child its own database, separate from Main's. Do not substitute Default when the commercial package is unavailable.
 
 Dependencies are installed automatically; `--no-install` skips that. Generated `pnpm-workspace.yaml` defaults to `verifyDepsBeforeRun: false`, so `pnpm dev`, `pnpm build`, and `pnpm start` do not implicitly install dependencies. Run `pnpm install` explicitly after changing dependencies, or before starting an app created with `--no-install`. An explicit template setting is preserved. Existing applications can add `verifyDepsBeforeRun: false` to their own `pnpm-workspace.yaml`.
 
