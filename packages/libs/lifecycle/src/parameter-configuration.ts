@@ -36,7 +36,7 @@ export interface ParameterSource {
   readonly group: string;
   readonly revision: number;
   readonly schemaVersion: number;
-  readonly origin: 'default' | 'configuration' | 'recovered';
+  readonly origin: 'default' | 'configuration' | 'upgrade';
 }
 export interface ParameterResolution {
   readonly revision: number;

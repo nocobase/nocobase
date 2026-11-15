@@ -87,6 +87,12 @@ const contracts = [
   ['clerkTasks', 'officeFlowsClerkTasks', ['dispatchRules']],
   ['teamTasks', 'officeFlowsTeamTasks', ['dispatchRules']],
 ] as const;
+const text = (value: unknown): string =>
+  typeof value === 'string'
+    ? value
+    : typeof value === 'number' || typeof value === 'boolean'
+      ? String(value)
+      : '';
 function object(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -130,7 +136,7 @@ function errors(
       !Number.isSafeInteger(source.revision) ||
       Number(source.revision) < 0 ||
       typeof source.origin !== 'string' ||
-      !['default', 'configuration', 'recovered'].includes(source.origin)
+      !['default', 'configuration', 'upgrade'].includes(source.origin)
     )
       result.push(`sources.${field}`);
   }
@@ -159,93 +165,156 @@ const migration: MigrationDefinition = defineMigration({
   async up(context) {
     const { builder, query } = context;
     const repository = context.repository.bind(context);
+    const upgradeAt = new Date().toISOString();
     const hasSnapshots = await builder.hasCollection(
       'officeFlowsParameterSnapshots',
     );
+    const configurations = new Map<
+      string,
+      { values: Record<string, unknown>; revision: number }
+    >();
     const conflicts: object[] = [];
-    const inventory = {
-      completeSnapshots: 0,
-      missingCreationEvidence: 0,
-      legacySubmissionSnapshots: 0,
-    };
-    // Old office code persisted neither creation usage nor historical parameter revisions.
-    // Never use the current organization/configuration or a start marker as creation evidence.
-    for (const [definition, collection, fields] of contracts) {
-      let cursor = 0;
-      for (;;) {
-        const rows = await query
-          .selectFrom(collection)
-          .select(['id', 'status'])
-          .where('id', '>', cursor)
-          .orderBy('id', 'asc')
-          .limit(500)
-          .execute();
-        for (const row of rows) {
-          cursor = Number(row.id);
-          const recordId = String(cursor);
-          const id = createHash('sha256')
-            .update(JSON.stringify(['office', definition, recordId]))
-            .digest('hex');
-          // JSON decoding differs by dialect, so use a point Repository read only for this payload.
-          const existing = hasSnapshots
-            ? await repository('officeFlowsParameterSnapshots').findOne({
-                filter: { id },
-              })
-            : undefined;
-          if (!existing) {
-            inventory.missingCreationEvidence++;
-            conflicts.push({
-              definition,
-              recordId,
-              status: row.status,
-              reason: 'CREATION_PARAMETERS_UNRECOVERABLE',
-              options: [
-                'restoreVerifiedCreationSnapshotBackup',
-                'recreateRecordWithNewCreationParameters',
-              ],
-            });
-            continue;
-          }
-          const invalid = errors(
-            existing.payload,
-            definition,
-            recordId,
-            fields,
-          );
-          if (invalid.length) {
-            conflicts.push({
-              definition,
-              recordId,
-              reason: 'PARAMETER_SNAPSHOT_INVALID',
-              fields: invalid,
-            });
-            continue;
-          }
-          inventory.completeSnapshots++;
-          // Existing dispatch-created tasks were already frozen at creation. Draft-capable
-          // incoming/data request snapshots from older code were frozen on submit instead.
-          if (definition === 'incoming' || definition === 'dataRequests') {
-            inventory.legacySubmissionSnapshots++;
-            conflicts.push({
-              definition,
-              recordId,
-              reason: 'LEGACY_SUBMISSION_SNAPSHOT',
-              options: [
-                'approvePreservingOriginalHistoricalSnapshot',
-                'recreateRecordWithNewCreationParameters',
-              ],
-            });
+    // Frozen counterpart of the released OfficeWorkflowParameterService.read contract.
+    for (const [definition, , fields] of contracts) {
+      const saved = await repository('officeFlowsWorkflowParameters').findOne({
+        filter: { id: `office.${definition}` },
+      });
+      try {
+        const stored = saved ? OfficeWorkflowValues.parse(saved.values) : {};
+        const revision = saved?.revision ?? 0;
+        if (!Number.isSafeInteger(revision) || Number(revision) < 0)
+          throw new Error('Invalid revision.');
+        const values: Record<string, unknown> = {};
+        for (const field of fields) {
+          if (field === 'dispatchRules') {
+            values[field] = stored.dispatchRules ?? {
+              departmentNames: stored.departments?.map((row) => row.name) ?? [],
+              ownDepartmentOnly: definition === 'teamTasks',
+              assigneeRole: 'clerks',
+              ccHeads: false,
+              ccLeaders: false,
+            };
+          } else if (stored[field]) values[field] = stored[field];
+          else {
+            // Point-in-time parameter lists require JSON codecs; each reference table is read once per definition.
+            const rows = await repository(
+              field === 'holidays'
+                ? 'officeFlowsHolidays'
+                : 'officeFlowsManagementGroups',
+            ).findMany({});
+            values[field] =
+              field === 'holidays'
+                ? rows.map((row) => ({
+                    date: text(row.date),
+                    kind: row.kind,
+                    name: text(row.name),
+                  }))
+                : rows.map((row) => ({
+                    id: Number(row.id),
+                    name: text(row.name),
+                    members: row.members,
+                  }));
           }
         }
-        if (rows.length < 500) break;
+        configurations.set(definition, {
+          revision: Number(revision),
+          values: OfficeWorkflowValues.parse(values),
+        });
+      } catch (error) {
+        conflicts.push({
+          definition,
+          reason: 'CONFIGURATION_INVALID',
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     }
-    console.info(
-      `Office creation snapshot inventory: ${JSON.stringify({ ...inventory, conflicts: conflicts.length })}`,
-    );
+    const scan = async (apply: boolean) => {
+      const supplemented: Record<string, number> = {};
+      for (const [definition, collection, fields] of contracts) {
+        let cursor = 0;
+        for (;;) {
+          const rows = await query
+            .selectFrom(collection)
+            .select(['id', 'status', 'lifecycleDefinition'])
+            .where('id', '>', cursor)
+            .orderBy('id', 'asc')
+            .limit(500)
+            .execute();
+          for (const row of rows) {
+            cursor = Number(row.id);
+            if (row.lifecycleDefinition === null) continue;
+            if (row.lifecycleDefinition !== definition) {
+              conflicts.push({
+                definition,
+                recordId: String(cursor),
+                reason: 'DEFINITION_BINDING_UNKNOWN',
+              });
+              continue;
+            }
+            const recordId = String(cursor);
+            const state =
+              typeof row.status === 'string' ? row.status : '<invalid>';
+            const id = createHash('sha256')
+              .update(JSON.stringify(['office', definition, recordId]))
+              .digest('hex');
+            // JSON decoding differs by dialect, so use a point Repository read only for this payload.
+            const existing = hasSnapshots
+              ? await repository('officeFlowsParameterSnapshots').findOne({
+                  filter: { id },
+                })
+              : undefined;
+            let payload = existing?.payload;
+            if (!existing) {
+              const current = configurations.get(definition);
+              if (!current) continue;
+              payload = {
+                scope: 'office',
+                lifecycle: definition,
+                recordId,
+                at: upgradeAt,
+                revision: current.revision,
+                values: current.values,
+                sources: Object.fromEntries(
+                  fields.map((field) => [
+                    field,
+                    {
+                      group: definition,
+                      schemaVersion: 1,
+                      revision: current.revision,
+                      origin: 'upgrade',
+                    },
+                  ]),
+                ),
+              };
+              supplemented[`${definition}:${state}`] =
+                (supplemented[`${definition}:${state}`] ?? 0) + 1;
+            }
+            const invalid = errors(payload, definition, recordId, fields);
+            if (invalid.length) {
+              conflicts.push({
+                definition,
+                recordId,
+                reason: 'PARAMETER_SNAPSHOT_INVALID',
+                fields: invalid,
+              });
+              continue;
+            }
+            if (apply && !existing)
+              await repository('officeFlowsParameterSnapshots').createOne({
+                values: { id, payload },
+              });
+          }
+          if (rows.length < 500) break;
+        }
+      }
+      console.info(
+        `Office parameter snapshot inventory: ${JSON.stringify({ phase: apply ? 'apply' : 'preflight', supplemented, conflicts: conflicts.length })}`,
+      );
+    };
+    await scan(false);
     if (conflicts.length)
       throw new Error(
-        `Office creation snapshot migration conflicts: ${JSON.stringify(conflicts)}`,
+        `Office parameter snapshot migration conflicts: ${JSON.stringify(conflicts)}`,
       );
     if (!hasSnapshots)
       await builder.createCollection(
@@ -266,6 +335,7 @@ const migration: MigrationDefinition = defineMigration({
         table.string('entryId').nullable();
         table.datetimeTz('at').notNull();
       });
+    await scan(true);
   },
   async down({ builder, query }) {
     const snapshots = await query

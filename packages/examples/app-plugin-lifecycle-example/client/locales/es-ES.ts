@@ -107,9 +107,11 @@ const esES: LocaleResource<typeof enUS> = {
       'No hay candidatos elegibles; la presentación será rechazada.',
     editCurrent: 'Editar configuración actual',
     historyBoundary:
-      'Se fijan al crear el registro, incluidos los borradores. Los cambios solo afectan a los registros creados después en esta versión.',
+      'Los parámetros de este registro permanecen fijos. Los valores añadidos durante la actualización se indican abajo.',
     history: 'Uso real de parámetros',
-    firstSnapshot: 'Instantánea de parámetros de creación',
+    firstSnapshot: 'Parámetros fijos de la instancia',
+    upgradeSource:
+      'Añadido durante la actualización desde la revisión {{revision}}',
     notRecorded: 'No registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:

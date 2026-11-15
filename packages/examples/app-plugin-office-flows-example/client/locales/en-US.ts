@@ -83,7 +83,9 @@ const enUS = {
       'Demonstration data the processes read: the people a department row brings in, management groups, and the 2026 holiday calendar.',
   },
   common: {
-    parameterSnapshot: 'Creation parameter snapshot',
+    parameterSnapshot: 'Fixed instance parameters',
+    upgradeSource:
+      'Added during upgrade using configuration revision {{revision}}',
     created: 'Created',
     actAs: 'Act as',
     save: 'Save',

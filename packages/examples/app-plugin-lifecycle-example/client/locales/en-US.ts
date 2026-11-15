@@ -103,9 +103,11 @@ const enUS = {
     noCandidates: 'No eligible candidates; submission will be refused.',
     editCurrent: 'Edit current configuration',
     historyBoundary:
-      'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
+      'Parameters stay fixed for this record. Values added during upgrade are identified below.',
     history: 'Actual parameter usage',
-    firstSnapshot: 'Creation parameter snapshot',
+    firstSnapshot: 'Fixed instance parameters',
+    upgradeSource:
+      'Added during upgrade using configuration revision {{revision}}',
     notRecorded: 'Not recorded',
     diagramEntry: 'Optional diagram entry',
     diagramHint:

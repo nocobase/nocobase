@@ -108,9 +108,11 @@ const idID: LocaleResource<typeof enUS> = {
       'Tidak ada kandidat yang memenuhi syarat; pengajuan akan ditolak.',
     editCurrent: 'Edit konfigurasi saat ini',
     historyBoundary:
-      'Ditetapkan saat catatan dibuat, termasuk draf. Perubahan hanya memengaruhi catatan yang dibuat kemudian dalam versi ini.',
+      'Parameter rekaman ini tetap. Nilai yang ditambahkan saat peningkatan ditandai di bawah.',
     history: 'Penggunaan parameter sebenarnya',
-    firstSnapshot: 'Snapshot parameter saat pembuatan',
+    firstSnapshot: 'Parameter tetap instans',
+    upgradeSource:
+      'Ditambahkan saat peningkatan dari revisi konfigurasi {{revision}}',
     notRecorded: 'Tidak tercatat',
     diagramEntry: 'Entri diagram opsional',
     diagramHint:

@@ -51,13 +51,29 @@ export function ExecutionDiagram({
       }
       parameters={
         detail.view.parameterValues ? (
-          <pre className='overflow-x-auto text-sm'>
-            {JSON.stringify(
-              detail.view.parameterSnapshot ?? detail.view.parameterValues,
-              null,
-              2,
+          <>
+            {detail.view.parameterSnapshot && (
+              <ul className='space-y-1 text-sm text-muted-foreground'>
+                {Object.entries(detail.view.parameterSnapshot.sources)
+                  .filter(([, source]) => source.origin === 'upgrade')
+                  .map(([field, source]) => (
+                    <li key={field}>
+                      {field}:{' '}
+                      {t('workflows.upgradeSource', {
+                        revision: source.revision,
+                      })}
+                    </li>
+                  ))}
+              </ul>
             )}
-          </pre>
+            <pre className='overflow-x-auto text-sm'>
+              {JSON.stringify(
+                detail.view.parameterSnapshot ?? detail.view.parameterValues,
+                null,
+                2,
+              )}
+            </pre>
+          </>
         ) : undefined
       }
       renderDiagram={({ current, history }) => (

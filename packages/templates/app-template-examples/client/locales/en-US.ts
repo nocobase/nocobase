@@ -380,6 +380,8 @@ const enUS = {
     executionDescription:
       'Inspect the recorded path and review each transition in order.',
     executionParameters: 'Parameters used by this execution',
+    upgradeSource:
+      'Added during upgrade using configuration revision {{revision}}',
     snapshotHint:
       'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
     sources: {

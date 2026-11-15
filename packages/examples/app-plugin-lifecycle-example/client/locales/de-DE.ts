@@ -107,9 +107,11 @@ const deDE: LocaleResource<typeof enUS> = {
       'Keine geeigneten Kandidaten; Die Einreichung wird abgelehnt.',
     editCurrent: 'Aktuelle Konfiguration bearbeiten',
     historyBoundary:
-      'Bei der Datensatzerstellung festgelegt, auch für Entwürfe. Änderungen gelten nur für danach in dieser Version erstellte Datensätze.',
+      'Die Parameter dieses Datensatzes bleiben fest. Beim Upgrade ergänzte Werte sind unten gekennzeichnet.',
     history: 'Tatsächliche Parameterverwendung',
-    firstSnapshot: 'Parameter-Snapshot bei Erstellung',
+    firstSnapshot: 'Feste Instanzparameter',
+    upgradeSource:
+      'Beim Upgrade aus Konfigurationsrevision {{revision}} ergänzt',
     notRecorded: 'Nicht erfasst',
     diagramEntry: 'Optionaler Diagrammeintrag',
     diagramHint:

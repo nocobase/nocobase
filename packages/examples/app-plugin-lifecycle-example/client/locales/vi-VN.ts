@@ -108,9 +108,11 @@ const viVN: LocaleResource<typeof enUS> = {
       'Không có ứng cử viên đủ tư cách; việc nộp hồ sơ sẽ bị từ chối.',
     editCurrent: 'Chỉnh sửa cấu hình hiện tại',
     historyBoundary:
-      'Cố định khi tạo bản ghi, kể cả bản nháp. Thay đổi chỉ ảnh hưởng đến bản ghi tạo sau trong phiên bản này.',
+      'Tham số của bản ghi này được giữ cố định. Các giá trị bổ sung khi nâng cấp được đánh dấu bên dưới.',
     history: 'Sử dụng tham số thực tế',
-    firstSnapshot: 'Ảnh chụp tham số khi tạo',
+    firstSnapshot: 'Tham số cố định của bản ghi',
+    upgradeSource:
+      'Được bổ sung khi nâng cấp từ bản sửa đổi cấu hình {{revision}}',
     notRecorded: 'Không được ghi lại',
     diagramEntry: 'Mục sơ đồ tùy chọn',
     diagramHint:

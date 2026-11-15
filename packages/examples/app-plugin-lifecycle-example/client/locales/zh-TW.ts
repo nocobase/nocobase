@@ -103,10 +103,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     candidates: '候選人',
     noCandidates: '沒有符合資格的候選人；提交將被拒絕。',
     editCurrent: '編輯目前配置',
-    historyBoundary:
-      '記錄建立時即固定，包括業務草稿。修改只影響此版本之後新建的記錄。',
+    historyBoundary: '本記錄的參數保持固定。升級時補入的值在下方標明。',
     history: '實際引數使用',
-    firstSnapshot: '建立時的參數快照',
+    firstSnapshot: '實例固定參數',
+    upgradeSource: '升級時依設定修訂 {{revision}} 補入',
     notRecorded: '未記錄',
     diagramEntry: '可選圖表條目',
     diagramHint:

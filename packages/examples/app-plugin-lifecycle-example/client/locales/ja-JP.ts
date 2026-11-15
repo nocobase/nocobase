@@ -106,9 +106,10 @@ const jaJP: LocaleResource<typeof enUS> = {
     noCandidates: '適格な候補者はいない。提出は拒否されます。',
     editCurrent: '現在の設定を編集します',
     historyBoundary:
-      '下書きを含むレコードの作成時に固定されます。変更はこのバージョンで以後に作成するレコードだけに適用されます。',
+      'このレコードのパラメーターは固定です。アップグレード時の追加値を以下に示します。',
     history: '実際のパラメータの使用法',
-    firstSnapshot: '作成時のパラメータースナップショット',
+    firstSnapshot: 'インスタンスの固定パラメーター',
+    upgradeSource: 'アップグレード時に設定リビジョン {{revision}} から追加',
     notRecorded: '未収録',
     diagramEntry: 'オプションの図エントリ',
     diagramHint:

@@ -1251,7 +1251,7 @@ export class LifecycleRuntime {
                   source.group !== group.key ||
                   !Number.isSafeInteger(source.revision) ||
                   source.revision < 0 ||
-                  !['default', 'configuration', 'recovered'].includes(
+                  !['default', 'configuration', 'upgrade'].includes(
                     source.origin,
                   )
                 )

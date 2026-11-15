@@ -466,6 +466,16 @@ export function History({
       {view.parameterSnapshot && (
         <details>
           <summary>{t('common.parameterSnapshot')}</summary>
+          <ul className='space-y-1 text-sm text-muted-foreground'>
+            {Object.entries(view.parameterSnapshot.sources)
+              .filter(([, source]) => source.origin === 'upgrade')
+              .map(([field, source]) => (
+                <li key={field}>
+                  {field}:{' '}
+                  {t('common.upgradeSource', { revision: source.revision })}
+                </li>
+              ))}
+          </ul>
           <pre className='overflow-auto text-xs'>
             {JSON.stringify(view.parameterSnapshot, null, 2)}
           </pre>

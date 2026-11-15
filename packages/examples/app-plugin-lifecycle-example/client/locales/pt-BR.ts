@@ -106,9 +106,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     noCandidates: 'Nenhum candidato elegível; a submissão será recusada.',
     editCurrent: 'Editar configuração atual',
     historyBoundary:
-      'Fixados na criação do registro, inclusive rascunhos. Alterações afetam apenas registros criados depois nesta versão.',
+      'Os parâmetros deste registro permanecem fixos. Os valores adicionados na atualização estão identificados abaixo.',
     history: 'Uso real de parâmetros',
-    firstSnapshot: 'Snapshot de parâmetros da criação',
+    firstSnapshot: 'Parâmetros fixos da instância',
+    upgradeSource: 'Adicionado na atualização usando a revisão {{revision}}',
     notRecorded: 'Não registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:

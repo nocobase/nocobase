@@ -108,9 +108,11 @@ const frFR: LocaleResource<typeof enUS> = {
     noCandidates: 'Aucun candidat éligible ; la soumission sera refusée.',
     editCurrent: 'Modifier la configuration actuelle',
     historyBoundary:
-      'Fixés à la création du dossier, y compris les brouillons. Les modifications concernent uniquement les dossiers créés ensuite dans cette version.',
+      'Les paramètres de cet enregistrement restent fixes. Les valeurs ajoutées lors de la mise à niveau sont indiquées ci-dessous.',
     history: 'Utilisation réelle des paramètres',
-    firstSnapshot: 'Instantané des paramètres à la création',
+    firstSnapshot: 'Paramètres fixes de cette instance',
+    upgradeSource:
+      'Ajouté lors de la mise à niveau depuis la révision {{revision}}',
     notRecorded: 'Non enregistré',
     diagramEntry: 'Entrée de diagramme facultative',
     diagramHint:

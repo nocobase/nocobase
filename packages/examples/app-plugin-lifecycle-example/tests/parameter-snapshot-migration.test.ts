@@ -1,7 +1,15 @@
 import path from 'node:path';
 import { createMigrator } from '@nocobase/db';
 import { createTestDatabase } from '@nocobase/app-testing/server';
-import { parameterIdentity } from '@nocobase/lifecycle';
+import {
+  parameterIdentity,
+  LifecycleRuntime,
+  createRepositoryLifecycleStore,
+  SYSTEM_ACTOR,
+} from '@nocobase/lifecycle';
+import { ticketLifecycle } from '../server/lifecycles/ticket.js';
+import { createExampleServices } from '../server/lifecycles/services.js';
+import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
 import { expect, it } from 'vitest';
 import { migrations } from './fixtures.js';
 
@@ -360,7 +368,7 @@ it.each([
         .connection()
         .collections.getPhysical(run.collection);
       await expect(run.migrator.latest()).rejects.toThrow(
-        'CREATION_PARAMETERS_UNRECOVERABLE',
+        'CREATION_EVIDENCE_INVALID',
       );
       run.database.connection().collections.invalidate();
       expect(
@@ -384,7 +392,7 @@ it.each([
 );
 
 it.each([false, true])(
-  'reports the released partial submission snapshot as a historical conflict (creation usage: %s)',
+  'completes the released partial submission snapshot without changing threshold history (creation usage: %s)',
   async (creationUsage) => {
     const run = await history('expenses', creationUsage, true);
     try {
@@ -424,36 +432,38 @@ it.each([false, true])(
           filter: { id: 'lifecycle.expenses' },
           values: { revision: 0, values: {} },
         });
-      const config = await run.database
-        .repository('lifecycleExampleWorkflowParameters')
-        .findMany();
-      const schema = await run.database
-        .connection()
-        .collections.getPhysical(run.collection);
-      await expect(run.migrator.latest()).rejects.toThrow(
-        'LEGACY_SUBMISSION_SNAPSHOT',
-      );
+      await run.migrator.latest();
+      const mixed = (
+        await run.database
+          .repository('lifecycleExampleParameterSnapshots')
+          .findOne({ filter: { id: run.snapshotId } })
+      )?.payload;
+      expect(mixed).toEqual({
+        ...submitted,
+        revision: 7,
+        values: { ...submitted.values, escalateAfterMinutes: 3 },
+        sources: {
+          ...Object.fromEntries(
+            Object.entries(submitted.sources).map(
+              ([field, { readMode: _mode, ...source }]) => [field, source],
+            ),
+          ),
+          escalateAfterMinutes: {
+            group: 'expenseTiming',
+            schemaVersion: 1,
+            revision: 0,
+            origin: 'upgrade',
+          },
+        },
+      });
+      await run.migrator.latest();
       expect(
         (
           await run.database
             .repository('lifecycleExampleParameterSnapshots')
             .findOne({ filter: { id: run.snapshotId } })
         )?.payload,
-      ).toEqual(submitted);
-      expect(
-        await run.database
-          .repository('lifecycleExampleWorkflowParameters')
-          .findMany(),
-      ).toEqual(config);
-      run.database.connection().collections.invalidate();
-      expect(
-        await run.database.connection().collections.getPhysical(run.collection),
-      ).toEqual(schema);
-      expect(
-        await run.database
-          .connection()
-          .collections.get('lifecycleExampleCreationRequests'),
-      ).toBeUndefined();
+      ).toEqual(mixed);
     } finally {
       await run.fixture.destroy();
     }
@@ -565,7 +575,7 @@ it('never recovers from a second submission when first-submit history is lost, e
       },
     });
     await expect(run.migrator.latest()).rejects.toThrow(
-      'CREATION_PARAMETERS_UNRECOVERABLE',
+      'PARAMETER_SNAPSHOT_MISSING',
     );
     expect(
       await run.database
@@ -577,7 +587,7 @@ it('never recovers from a second submission when first-submit history is lost, e
   }
 });
 
-it('reports a submission-only historical snapshot without modifying it or pretending its timestamp is creation time', async () => {
+it('preserves a complete historical snapshot with its actual submission timestamp', async () => {
   const run = await history('expenses', false, true);
   try {
     const submitted = { ...run.payload, at: later };
@@ -587,9 +597,7 @@ it('reports a submission-only historical snapshot without modifying it or preten
         filter: { id: run.snapshotId },
         values: { payload: submitted },
       });
-    await expect(run.migrator.latest()).rejects.toThrow(
-      'LEGACY_SUBMISSION_SNAPSHOT',
-    );
+    await run.migrator.latest();
     expect(
       (
         await run.database
@@ -598,16 +606,14 @@ it('reports a submission-only historical snapshot without modifying it or preten
       )?.payload,
     ).toEqual(submitted);
     expect(
-      await run.database
-        .connection()
-        .collections.get('lifecycleExampleCreationRequests'),
-    ).toBeUndefined();
+      await run.database.repository('lifecycleExampleCreationRequests').count(),
+    ).toBe(0);
   } finally {
     await run.fixture.destroy();
   }
 });
 
-it('reports a submission freeze time even when creation values agree, without relabeling its provenance', async () => {
+it('preserves a valid historical freeze time even when creation values agree', async () => {
   const run = await history('expenses', true, true);
   try {
     const submitted = { ...run.payload, at: later };
@@ -617,9 +623,7 @@ it('reports a submission freeze time even when creation values agree, without re
         filter: { id: run.snapshotId },
         values: { payload: submitted },
       });
-    await expect(run.migrator.latest()).rejects.toThrow(
-      'LEGACY_SUBMISSION_SNAPSHOT',
-    );
+    await run.migrator.latest();
     expect(
       (
         await run.database
@@ -632,7 +636,7 @@ it('reports a submission freeze time even when creation values agree, without re
   }
 });
 
-it('reports conflicting creation and submission values and preserves both evidence sources', async () => {
+it('preserves actual submission parameters rather than replacing them with earlier creation values', async () => {
   const run = await history('expenses', true, true);
   try {
     const submitted = {
@@ -646,9 +650,7 @@ it('reports conflicting creation and submission values and preserves both eviden
         filter: { id: run.snapshotId },
         values: { payload: submitted },
       });
-    await expect(run.migrator.latest()).rejects.toThrow(
-      'SNAPSHOT_CREATION_CONFLICT',
-    );
+    await run.migrator.latest();
     expect(
       (
         await run.database
@@ -749,7 +751,7 @@ it('collects configuration and history conflicts, then succeeds after repairing 
       .latest()
       .catch((error: unknown) => error);
     expect(String(failure)).toContain('configuration');
-    expect(String(failure)).toContain('CREATION_PARAMETERS_UNRECOVERABLE');
+    expect(String(failure)).toContain('paymentWindowMinutes');
     await config.updateMany({
       filter: { id: 'lifecycle.orders' },
       values: { revision: 1, values: { paymentWindowMinutes: 3 } },
@@ -814,3 +816,167 @@ it('recovers creation usage written after its associated entry and preserves the
     await run.fixture.destroy();
   }
 });
+
+it.each(['awaitingCustomer', 'closed'])(
+  'supplements a released live ticket in %s, keeps history and executes with fixed upgrade values',
+  async (status) => {
+    const run = await history('tickets', false);
+    try {
+      await run.database
+        .repository(run.collection)
+        .updateMany({
+          filter: { id: Number(run.recordId) },
+          values: { status },
+        });
+      const entries = await run.database
+        .repository('lifecycleExampleTransitions')
+        .findMany();
+      await run.database
+        .repository('lifecycleExampleWorkflowParameters')
+        .updateMany({
+          filter: { id: 'lifecycle.tickets' },
+          values: { revision: 4, values: ticketValues },
+        });
+      await run.migrator.latest();
+      const store = createRepositoryLifecycleStore(run.database, {
+        collections: {
+          transitions: 'lifecycleExampleTransitions',
+          effectRuns: 'lifecycleExampleEffectRuns',
+        },
+      });
+      const parameters = new WorkflowParameterStore(store);
+      const runtime = new LifecycleRuntime({ store });
+      runtime.register(ticketLifecycle, {
+        services: createExampleServices({ info: () => {} }),
+        parameterConfiguration: { store: parameters, scope: () => 'demo' },
+      });
+      const view = await runtime.view('tickets', run.recordId, SYSTEM_ACTOR);
+      expect(view.parameterValues).toEqual(ticketValues);
+      expect(view.parameterSnapshot?.sources.waitMinutes).toMatchObject({
+        origin: 'upgrade',
+        revision: 4,
+      });
+      expect(
+        await run.database.repository('lifecycleExampleTransitions').findMany(),
+      ).toEqual(entries);
+      const row = await run.database
+        .repository(run.collection)
+        .findOne({ filter: { id: Number(run.recordId) } });
+      if (status === 'awaitingCustomer')
+        expect(new Date(row!.lifecycleDueAt as string).toISOString()).toBe(
+          '2026-10-01T00:05:00.000Z',
+        );
+      await run.database
+        .repository('lifecycleExampleWorkflowParameters')
+        .updateMany({
+          filter: { id: 'lifecycle.tickets' },
+          values: { revision: 5, values: { ...ticketValues, waitMinutes: 99 } },
+        });
+      expect(
+        (await runtime.view('tickets', run.recordId, SYSTEM_ACTOR))
+          .parameterSnapshot,
+      ).toEqual(view.parameterSnapshot);
+      if (status === 'awaitingCustomer')
+        await runtime.fire('tickets', run.recordId, 'autoClose', {
+          actor: SYSTEM_ACTOR,
+        });
+      expect(
+        (await runtime.view('tickets', run.recordId, SYSTEM_ACTOR))
+          .parameterValues,
+      ).toEqual(ticketValues);
+    } finally {
+      await run.fixture.destroy();
+    }
+  },
+);
+
+it('supplements early live expenses but refuses missing fixed thresholds and unknown definition bindings before writes', async () => {
+  const run = await history('expenses', false);
+  try {
+    await run.database
+      .repository(run.collection)
+      .updateMany({
+        filter: { id: Number(run.recordId) },
+        values: { status: 'paid', parameterContract: null },
+      });
+    await run.migrator.latest();
+    expect(
+      (
+        await run.database
+          .repository('lifecycleExampleParameterSnapshots')
+          .findOne({ filter: { id: run.snapshotId } })
+      )?.payload,
+    ).toMatchObject({
+      values: expenseValues,
+      sources: {
+        autoApproveLimit: { origin: 'upgrade' },
+        escalateAfterMinutes: { origin: 'upgrade' },
+      },
+    });
+  } finally {
+    await run.fixture.destroy();
+  }
+});
+
+it.each(['fixedMissing', 'unknownBinding', 'creationContradiction'])(
+  'rejects %s before configuration or structure writes',
+  async (kind) => {
+    const run = await history(
+      'expenses',
+      kind === 'creationContradiction',
+      kind === 'creationContradiction',
+    );
+    try {
+      if (kind === 'fixedMissing')
+        await run.database
+          .repository(run.collection)
+          .updateMany({
+            filter: { id: Number(run.recordId) },
+            values: { status: 'paid' },
+          });
+      if (kind === 'unknownBinding')
+        await run.database
+          .repository(run.collection)
+          .updateMany({
+            filter: { id: Number(run.recordId) },
+            values: { lifecycleDefinition: 'missing-definition' },
+          });
+      if (kind === 'creationContradiction')
+        await run.database
+          .repository('lifecycleExampleParameterSnapshots')
+          .updateMany({
+            filter: { id: run.snapshotId },
+            values: {
+              payload: {
+                ...run.payload,
+                values: { ...expenseValues, financeLimit: 99000 },
+              },
+            },
+          });
+      const schema = await run.database
+        .connection()
+        .collections.getPhysical(run.collection);
+      const config = await run.database
+        .repository('lifecycleExampleWorkflowParameters')
+        .findMany();
+      await expect(run.migrator.latest()).rejects.toThrow(
+        kind === 'fixedMissing'
+          ? 'PARAMETER_SNAPSHOT_MISSING'
+          : kind === 'unknownBinding'
+            ? 'DEFINITION_BINDING_UNKNOWN'
+            : 'SNAPSHOT_CREATION_CONFLICT',
+      );
+      run.database.connection().collections.invalidate();
+      expect(
+        await run.database.connection().collections.getPhysical(run.collection),
+      ).toEqual(schema);
+      expect(
+        await run.database
+          .repository('lifecycleExampleWorkflowParameters')
+          .findMany(),
+      ).toEqual(config);
+    } finally {
+      await run.fixture.destroy();
+    }
+  },
+);

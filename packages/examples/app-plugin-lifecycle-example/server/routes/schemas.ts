@@ -397,7 +397,7 @@ export const ParameterSnapshotSchema: z.ZodType<
       group: z.string(),
       schemaVersion: z.number().int().positive(),
       revision: z.number().int().nonnegative(),
-      origin: z.enum(['default', 'configuration', 'recovered']),
+      origin: z.enum(['default', 'configuration', 'upgrade']),
     }),
   ),
   recoveredFrom: z

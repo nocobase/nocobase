@@ -1,12 +1,25 @@
-import { parameterIdentity } from '@nocobase/lifecycle';
+import {
+  parameterIdentity,
+  LifecycleRuntime,
+  createRepositoryLifecycleStore,
+} from '@nocobase/lifecycle';
+import { registerLifecycles } from '../server/lifecycles/index.js';
+import { OfficeStore } from '../server/services/store.js';
+import { OfficeFlowsService } from '../server/services/office-flows.js';
 import path from 'node:path';
 import { createMigrator } from '@nocobase/db';
 import { createTestDatabase } from '@nocobase/app-testing/server';
 import { expect, it } from 'vitest';
 import { migrations } from './fixtures.js';
 
-it.each(['unknown', 'started', 'creation-only', 'partial-history'] as const)(
-  'requires reliable office startup history (%s) without creating a baseline',
+it.each([
+  'unknown',
+  'started',
+  'creation-only',
+  'partial-history',
+  'closed',
+] as const)(
+  'supplements released office records once despite missing creation history (%s)',
   async (kind) => {
     const fixture = await createTestDatabase();
     try {
@@ -30,7 +43,7 @@ it.each(['unknown', 'started', 'creation-only', 'partial-history'] as const)(
             registrarId: 'zhoujie',
             officeHeadId: 'xulei',
             officeLeaderId: 'fanqing',
-            status: 'draft',
+            status: kind === 'closed' ? 'closed' : 'draft',
             statusChangedAt: '2026-10-01T00:00:00.000Z',
             lifecycleVersion: kind === 'partial-history' ? 3 : 1,
             createdAt: '2026-10-01T00:00:00.000Z',
@@ -81,26 +94,83 @@ it.each(['unknown', 'started', 'creation-only', 'partial-history'] as const)(
           },
         ],
       });
-      await expect(noTransaction.latest()).rejects.toThrow(
-        'CREATION_PARAMETERS_UNRECOVERABLE',
-      );
-      fixture.database.connection().collections.invalidate();
+      const original = await fixture.database
+        .repository('officeFlowsTransitions')
+        .findMany();
+      await noTransaction.latest();
+      const snapshot = (
+        await fixture.database
+          .repository('officeFlowsParameterSnapshots')
+          .findOne({
+            filter: {
+              id: parameterIdentity(
+                'office',
+                'incoming',
+                String(Number(record.record.id)),
+              ),
+            },
+          })
+      )?.payload;
+      expect(snapshot).toMatchObject({
+        lifecycle: 'incoming',
+        revision: 0,
+        sources: {
+          dispatchRules: { origin: 'upgrade' },
+          managementGroups: { origin: 'upgrade' },
+        },
+      });
+      expect(
+        await fixture.database.repository('officeFlowsTransitions').findMany(),
+      ).toEqual(original);
+      if (kind === 'unknown' || kind === 'closed') {
+        const runtime = new LifecycleRuntime({
+          store: createRepositoryLifecycleStore(fixture.database, {
+            collections: {
+              transitions: 'officeFlowsTransitions',
+              effectRuns: 'officeFlowsEffectRuns',
+            },
+          }),
+        });
+        const store = new OfficeStore(fixture.database);
+        registerLifecycles(runtime, store);
+        const service = new OfficeFlowsService(
+          fixture.database,
+          runtime,
+          store,
+        );
+        const id = String(Number(record.record.id));
+        const before = await service.incomingDetail(id, 'zhoujie');
+        expect(before.parameterSnapshot).toEqual(snapshot);
+        await fixture.database
+          .repository('officeFlowsWorkflowParameters')
+          .createOne({
+            values: {
+              id: 'office.incoming',
+              revision: 1,
+              values: {
+                dispatchRules: {
+                  departmentNames: [],
+                  ownDepartmentOnly: false,
+                  assigneeRole: 'heads',
+                  ccHeads: false,
+                  ccLeaders: false,
+                },
+                managementGroups: [],
+              },
+            },
+          });
+        if (kind === 'unknown')
+          await service.fire('incoming', id, 'submit', {}, 'zhoujie');
+        expect(
+          (await service.incomingDetail(id, 'zhoujie')).parameterSnapshot,
+        ).toEqual(snapshot);
+      }
+      await noTransaction.latest();
       expect(
         await fixture.database
-          .connection()
-          .collections.get('officeFlowsParameterSnapshots'),
-      ).toBeUndefined();
-      expect(
-        await fixture.database
-          .connection()
-          .collections.get('officeFlowsCreationRequests'),
-      ).toBeUndefined();
-      // Fix an unprovable imported record, then retry the exact nontransactional migration.
-      await fixture.database
-        .repository('officeFlowsIncoming')
-        .deleteMany({ filter: { id: record.record.id } });
-      await noTransaction.latest();
-      await noTransaction.latest();
+          .repository('officeFlowsParameterSnapshots')
+          .count(),
+      ).toBe(1);
     } finally {
       await fixture.destroy();
     }
@@ -253,6 +323,156 @@ it.each([
             .findOne({ filter: { id } })
         )?.payload,
       ).toEqual(payload);
+    } finally {
+      await fixture.destroy();
+    }
+  },
+);
+
+it.each(['dataRequests', 'clerkTasks', 'teamTasks'])(
+  'supplements released completed %s records and retains business deadlines',
+  async (definition) => {
+    const fixture = await createTestDatabase();
+    try {
+      const owner = createMigrator({
+        database: fixture.database,
+        sources: migrations,
+      });
+      await owner.upTo('202611130003_office_flows_definition_binding');
+      const collection =
+        definition === 'dataRequests'
+          ? 'officeFlowsDataRequests'
+          : definition === 'clerkTasks'
+            ? 'officeFlowsClerkTasks'
+            : 'officeFlowsTeamTasks';
+      const created = await fixture.database.repository(collection).createOne({
+        values: {
+          number: 'LEGACY',
+          status: definition === 'dataRequests' ? 'completed' : 'done',
+          statusChangedAt: '2026-10-01T00:00:00.000Z',
+          createdAt: '2026-10-01T00:00:00.000Z',
+          lifecycleVersion: 7,
+          lifecycleDefinition: definition,
+          ...(definition === 'dataRequests'
+            ? {
+                applicantId: 'zhangwei',
+                subject: 'Historical request',
+                reason: 'Historical test',
+                volume: 'small',
+                scope: 'internal',
+                frequency: 'once',
+                deliveryDate: '2026-12-10',
+              }
+            : { rootId: 1, parentId: 1, departmentName: 'Example' }),
+        },
+      });
+      const before = await fixture.database
+        .repository(collection)
+        .findOne({ filter: { id: created.record.id } });
+      await owner.latest();
+      expect(
+        await fixture.database
+          .repository(collection)
+          .findOne({ filter: { id: created.record.id } }),
+      ).toEqual(before);
+      const id = String(Number(created.record.id));
+      const snapshot = (
+        await fixture.database
+          .repository('officeFlowsParameterSnapshots')
+          .findOne({
+            filter: { id: parameterIdentity('office', definition, id) },
+          })
+      )?.payload;
+      expect(snapshot).toMatchObject({ lifecycle: definition, revision: 0 });
+      const runtime = new LifecycleRuntime({
+        store: createRepositoryLifecycleStore(fixture.database, {
+          collections: {
+            transitions: 'officeFlowsTransitions',
+            effectRuns: 'officeFlowsEffectRuns',
+          },
+        }),
+      });
+      registerLifecycles(runtime, new OfficeStore(fixture.database));
+      expect(
+        (await runtime.view(definition, id, { id: 'zhangwei' }))
+          .parameterSnapshot,
+      ).toEqual(snapshot);
+      if (definition === 'teamTasks')
+        expect(snapshot).toMatchObject({
+          values: { dispatchRules: { ownDepartmentOnly: true } },
+        });
+    } finally {
+      await fixture.destroy();
+    }
+  },
+);
+
+it.each(['configuration', 'binding'])(
+  'preflights invalid office %s before any schema writes',
+  async (kind) => {
+    const fixture = await createTestDatabase();
+    try {
+      const owner = createMigrator({
+        database: fixture.database,
+        sources: migrations,
+      });
+      await owner.upTo('202611130003_office_flows_definition_binding');
+      await fixture.database
+        .repository('officeFlowsClerkTasks')
+        .createOne({
+          values: {
+            number: 'BAD',
+            rootId: 1,
+            parentId: 1,
+            departmentName: 'Example',
+            status: 'done',
+            statusChangedAt: '2026-10-01T00:00:00.000Z',
+            createdAt: '2026-10-01T00:00:00.000Z',
+            lifecycleVersion: 1,
+            lifecycleDefinition: kind === 'binding' ? 'unknown' : 'clerkTasks',
+          },
+        });
+      if (kind === 'configuration')
+        await fixture.database
+          .repository('officeFlowsWorkflowParameters')
+          .createOne({
+            values: {
+              id: 'office.clerkTasks',
+              revision: 1,
+              values: { dispatchRules: { ownDepartmentOnly: 'invalid' } },
+            },
+          });
+      const migrator = createMigrator({
+        database: fixture.database,
+        sources: [
+          {
+            packageName: 'office-preflight',
+            directory: path.resolve(
+              import.meta.dirname,
+              'fixtures/nontransactional-snapshot',
+            ),
+          },
+        ],
+      });
+      const before = await fixture.database
+        .repository('officeFlowsWorkflowParameters')
+        .findMany();
+      await expect(migrator.latest()).rejects.toThrow(
+        kind === 'configuration'
+          ? 'CONFIGURATION_INVALID'
+          : 'DEFINITION_BINDING_UNKNOWN',
+      );
+      fixture.database.connection().collections.invalidate();
+      expect(
+        await fixture.database
+          .connection()
+          .collections.get('officeFlowsParameterSnapshots'),
+      ).toBeUndefined();
+      expect(
+        await fixture.database
+          .repository('officeFlowsWorkflowParameters')
+          .findMany(),
+      ).toEqual(before);
     } finally {
       await fixture.destroy();
     }

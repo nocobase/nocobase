@@ -167,7 +167,7 @@ function snapshotErrors(
           !Number.isSafeInteger(source.revision) ||
           Number(source.revision) < 0 ||
           typeof source.origin !== 'string' ||
-          !['default', 'configuration', 'recovered'].includes(source.origin)
+          !['default', 'configuration', 'upgrade'].includes(source.origin)
         )
           errors.push(`sources.${field}`);
       }
@@ -255,6 +255,7 @@ const migration: MigrationDefinition = defineMigration({
     const repository = context.repository.bind(context);
     // Repository is limited to point reads/writes requiring cross-dialect JSON or datetime codecs.
     // Business rows are scanned with query keyset pages, never an unbounded repository walk.
+    const upgradeAt = new Date().toISOString();
     const scan = async (apply: boolean): Promise<void> => {
       const conflicts: object[] = [];
       const inventory = {
@@ -264,17 +265,58 @@ const migration: MigrationDefinition = defineMigration({
         legacySubmissionSnapshots: 0,
         recovered: 0,
       };
+      const configurations = new Map<
+        string,
+        { values: Values; revision: number }
+      >();
+      const supplemented: Record<string, number> = {};
+      if (!apply) {
+        for (const collection of new Set(
+          Object.values(contracts).map((item) => item.collection),
+        )) {
+          const names = Object.entries(contracts)
+            .filter(([, item]) => item.collection === collection)
+            .map(([name]) => name);
+          let cursor = 0;
+          for (;;) {
+            const rows = await query
+              .selectFrom(collection)
+              .select(['id', 'lifecycleDefinition'])
+              .where('id', '>', cursor)
+              .orderBy('id', 'asc')
+              .limit(500)
+              .execute();
+            for (const row of rows) {
+              cursor = Number(row.id);
+              if (
+                row.lifecycleDefinition !== null &&
+                (typeof row.lifecycleDefinition !== 'string' ||
+                  !names.includes(row.lifecycleDefinition))
+              )
+                conflicts.push({
+                  collection,
+                  recordId: String(cursor),
+                  reason: 'DEFINITION_BINDING_UNKNOWN',
+                });
+            }
+            if (rows.length < 500) break;
+          }
+        }
+      }
       for (const [name, contract] of Object.entries(contracts)) {
         const config = await repository(
           'lifecycleExampleWorkflowParameters',
         ).findOne({ filter: { id: `lifecycle.${name}` } });
+        if (!config)
+          configurations.set(name, { values: contract.defaults, revision: 0 });
         if (config) {
           const values = {
             ...contract.defaults,
-            ...(Number(config.revision) > 0 ? object(config.values) : {}),
+            ...object(config.values),
           };
           const errors = validate(contract, values);
           if (!object(config.values)) errors.push('values');
+          if (config.scope !== 'demo') errors.push('scope');
           if (
             !Number.isSafeInteger(config.revision) ||
             Number(config.revision) < 0
@@ -286,7 +328,14 @@ const migration: MigrationDefinition = defineMigration({
               configuration: true,
               fields: errors,
             });
-          else if (
+          else {
+            configurations.set(name, {
+              values,
+              revision: Number(config.revision),
+            });
+          }
+          if (
+            !errors.length &&
             apply &&
             JSON.stringify(config.values) !== JSON.stringify(values)
           )
@@ -323,7 +372,15 @@ const migration: MigrationDefinition = defineMigration({
         for (;;) {
           const records = await query
             .selectFrom(contract.collection)
-            .select(['id', 'status', 'statusChangedAt'])
+            .select([
+              'id',
+              'status',
+              'statusChangedAt',
+              'lifecycleVersion',
+              ...(contract.collection === 'lifecycleExampleExpenses'
+                ? ['parameterContract']
+                : []),
+            ])
             .where('lifecycleDefinition', '=', name)
             .where('id', '>', cursor)
             .orderBy('id', 'asc')
@@ -332,6 +389,8 @@ const migration: MigrationDefinition = defineMigration({
           for (const record of records) {
             cursor = Number(record.id);
             const recordId = String(cursor);
+            const state =
+              typeof record.status === 'string' ? record.status : '<invalid>';
             const id = identity('demo', name, recordId);
             const stored = await repository(
               'lifecycleExampleParameterSnapshots',
@@ -378,7 +437,40 @@ const migration: MigrationDefinition = defineMigration({
               timestamp(fact.at) >= timestamp(entry.at) &&
               snapshotErrors(contract, fact, name, recordId).length === 0;
             if (creationValid) inventory.creationUsages++;
-            let payload: Values;
+            let payload: Values | undefined;
+            let writeSnapshot = !stored;
+            const current = configurations.get(name);
+            const supplement = (base?: Values): Values | undefined => {
+              if (!current) return undefined;
+              const values = { ...object(base?.values) };
+              const sources = { ...object(base?.sources) };
+              for (const [group, fields] of Object.entries(contract.groups))
+                for (const field of fields)
+                  if (!Object.hasOwn(values, field)) {
+                    values[field] = current.values[field];
+                    sources[field] = {
+                      group,
+                      schemaVersion: 1,
+                      revision: current.revision,
+                      origin: 'upgrade',
+                    };
+                  }
+              return {
+                scope: 'demo',
+                lifecycle: name,
+                recordId,
+                revision: Math.max(
+                  Number(base?.revision ?? 0),
+                  current.revision,
+                ),
+                values,
+                sources,
+                at: base?.at ?? upgradeAt,
+                ...(base?.recoveredFrom
+                  ? { recoveredFrom: base.recoveredFrom }
+                  : {}),
+              };
+            };
             if (stored) {
               const publishedSnapshot =
                 name === 'expenses'
@@ -390,155 +482,142 @@ const migration: MigrationDefinition = defineMigration({
                     )
                   : undefined;
               if (publishedSnapshot) {
-                inventory.legacySubmissionSnapshots++;
-                conflicts.push({
-                  definition: name,
+                // Preserve the actual submitted thresholds and timestamp; only the old live timing is added.
+                payload = supplement(publishedSnapshot.payload);
+                if (payload) {
+                  writeSnapshot = true;
+                  supplemented[`${name}:${state}`] =
+                    (supplemented[`${name}:${state}`] ?? 0) + 1;
+                }
+              } else {
+                const fields = snapshotErrors(
+                  contract,
+                  existing,
+                  name,
                   recordId,
-                  reason: 'LEGACY_SUBMISSION_SNAPSHOT',
-                  snapshotAt: publishedSnapshot.payload.at,
-                  options: [
-                    'approvePreservingOriginalHistoricalSnapshot',
-                    'recreateRecordWithNewCreationParameters',
-                  ],
-                });
-                continue;
-              }
-              const fields = snapshotErrors(contract, existing, name, recordId);
-              if (fields.length) {
-                conflicts.push({
-                  definition: name,
-                  recordId,
-                  reason: 'PARAMETER_SNAPSHOT_INVALID',
-                  fields,
-                  options: [
-                    'restoreVerifiedSnapshotBackup',
-                    'reviewCreationEvidence',
-                  ],
-                });
-                continue;
-              }
-              payload = existing as Values;
-              inventory.completeSnapshots++;
-              if (contract.legacySubmit && !creationValid) {
-                inventory.legacySubmissionSnapshots++;
-                conflicts.push({
-                  definition: name,
-                  recordId,
-                  reason: 'LEGACY_SUBMISSION_SNAPSHOT',
-                  snapshotAt: payload.at,
-                  options: [
-                    'approvePreservingOriginalHistoricalSnapshot',
-                    'recreateRecordWithNewCreationParameters',
-                  ],
-                });
-                continue;
-              }
-              if (
-                creationValid &&
-                Object.keys(contract.defaults).some(
-                  (field) =>
-                    JSON.stringify((payload.values as Values)[field]) !==
-                    JSON.stringify((fact.values as Values)[field]),
-                )
-              ) {
-                conflicts.push({
-                  definition: name,
-                  recordId,
-                  reason: 'SNAPSHOT_CREATION_CONFLICT',
-                  creationUsageId: usageId,
-                  options: [
-                    'approvePreservingOriginalHistoricalSnapshot',
-                    'recreateRecordFromVerifiedCreationEvidence',
-                  ],
-                });
-                continue;
-              }
-              if (contract.legacySubmit && creationValid) {
-                const provenance = object(payload.recoveredFrom);
-                const creationTime =
-                  timestamp(payload.at) === timestamp(entry.at) ||
-                  (provenance &&
-                    provenance.transitionId === entryId &&
-                    provenance.usageId === usageId &&
-                    timestamp(payload.at) === timestamp(fact.at));
-                const sourceFields = [
-                  'group',
-                  'schemaVersion',
-                  'revision',
-                  'origin',
-                ];
-                const sameSources = Object.keys(contract.defaults).every(
-                  (field) =>
-                    sourceFields.every(
-                      (key) =>
-                        object((payload.sources as Values)[field])?.[key] ===
-                        object((fact.sources as Values)[field])?.[key],
-                    ),
                 );
-                if (
-                  !creationTime ||
-                  payload.revision !== fact.revision ||
-                  !sameSources
-                ) {
-                  inventory.legacySubmissionSnapshots++;
+                if (fields.length) {
                   conflicts.push({
                     definition: name,
                     recordId,
-                    reason: 'LEGACY_SUBMISSION_SNAPSHOT',
-                    snapshotAt: payload.at,
-                    creationUsageId: usageId,
-                    options: [
-                      'approvePreservingOriginalHistoricalSnapshot',
-                      'recreateRecordFromVerifiedCreationEvidence',
-                    ],
+                    reason: 'PARAMETER_SNAPSHOT_INVALID',
+                    fields,
+                  });
+                  continue;
+                }
+                payload = existing as Values;
+                const provenance = object(payload.recoveredFrom);
+                const snapshotValues = object(payload.values);
+                if (
+                  creationValid &&
+                  (timestamp(payload.at) === timestamp(entry.at) ||
+                    provenance?.transitionId === entryId) &&
+                  Object.keys(contract.defaults).some(
+                    (field) =>
+                      JSON.stringify(snapshotValues?.[field]) !==
+                      JSON.stringify(object(fact.values)?.[field]),
+                  )
+                ) {
+                  conflicts.push({
+                    definition: name,
+                    recordId,
+                    reason: 'SNAPSHOT_CREATION_CONFLICT',
+                  });
+                  continue;
+                }
+                inventory.completeSnapshots++;
+              }
+            } else {
+              if (name === 'expenses-v2' && !creationValid) {
+                conflicts.push({
+                  definition: name,
+                  recordId,
+                  reason: 'PARAMETER_SNAPSHOT_MISSING',
+                });
+                continue;
+              }
+              // Published contract-one expenses must retain the thresholds fixed on submit.
+              // Version one drafts cannot have executed a submit; the concurrency counter never resets.
+              if (
+                name === 'expenses' &&
+                Number(record.parameterContract) === 1
+              ) {
+                let unsubmitted = record.status === 'draft';
+                const history = await query
+                  .selectFrom('lifecycleExampleTransitions')
+                  .select(['version', 'transition'])
+                  .where('lifecycle', '=', name)
+                  .where('recordId', '=', recordId)
+                  .orderBy('version', 'asc')
+                  .execute();
+                if (
+                  history.some(
+                    (item) =>
+                      item.transition === 'submit' ||
+                      item.transition === 'resubmit',
+                  )
+                )
+                  unsubmitted = false;
+                if (
+                  Number(record.lifecycleVersion) !== 1 &&
+                  (history.length !== Number(record.lifecycleVersion) ||
+                    history.some(
+                      (item, index) => Number(item.version) !== index + 1,
+                    ))
+                )
+                  unsubmitted = false;
+                if (!unsubmitted) {
+                  conflicts.push({
+                    definition: name,
+                    recordId,
+                    reason: 'PARAMETER_SNAPSHOT_MISSING',
+                    fields: ['expenseThresholds'],
                   });
                   continue;
                 }
               }
-              // Preserve the exact valid payload and its real historical freeze time.
-            } else {
-              if (!creationValid) {
-                inventory.missingCreationEvidence++;
+              if (rawFact && !creationValid) {
                 conflicts.push({
                   definition: name,
                   recordId,
-                  status: record.status,
-                  reason: 'CREATION_PARAMETERS_UNRECOVERABLE',
-                  creationEntryId: entryId ?? null,
-                  options: [
-                    'restoreCreationUsageBackup',
-                    'recreateRecordWithNewCreationParameters',
-                  ],
+                  reason: 'CREATION_EVIDENCE_INVALID',
                 });
                 continue;
               }
-              payload = {
-                scope: 'demo',
-                lifecycle: name,
+              if (creationValid) {
+                payload = {
+                  scope: 'demo',
+                  lifecycle: name,
+                  recordId,
+                  revision: fact.revision,
+                  values: fact.values,
+                  sources: fact.sources,
+                  at: fact.at,
+                  recoveredFrom: {
+                    transitionId: entryId,
+                    usageId,
+                    ...(publishedFact
+                      ? { groupRevisions: publishedFact.groupRevisions }
+                      : {}),
+                  },
+                };
+                inventory.recovered++;
+              } else {
+                payload = supplement();
+                supplemented[`${name}:${state}`] =
+                  (supplemented[`${name}:${state}`] ?? 0) + 1;
+              }
+            }
+            if (!payload) continue; // Configuration errors are already in the preflight conflict list.
+            const fields = snapshotErrors(contract, payload, name, recordId);
+            if (fields.length) {
+              conflicts.push({
+                definition: name,
                 recordId,
-                revision: fact.revision,
-                values: fact.values,
-                sources: fact.sources,
-                at: fact.at,
-                recoveredFrom: {
-                  transitionId: entryId,
-                  usageId,
-                  ...(publishedFact
-                    ? { groupRevisions: publishedFact.groupRevisions }
-                    : {}),
-                },
-              };
-              const fields = snapshotErrors(contract, payload, name, recordId);
-              if (fields.length) {
-                conflicts.push({
-                  definition: name,
-                  recordId,
-                  reason: 'PARAMETER_SNAPSHOT_INVALID',
-                  fields,
-                });
-                continue;
-              }
-              inventory.recovered++;
+                reason: 'PARAMETER_SNAPSHOT_INVALID',
+                fields,
+              });
+              continue;
             }
             const due =
               contract.due[
@@ -561,10 +640,16 @@ const migration: MigrationDefinition = defineMigration({
               continue;
             }
             if (!apply) continue;
-            if (!stored)
-              await repository('lifecycleExampleParameterSnapshots').createOne({
-                values: { id, payload },
-              });
+            if (writeSnapshot) {
+              if (stored)
+                await repository(
+                  'lifecycleExampleParameterSnapshots',
+                ).updateMany({ filter: { id }, values: { payload } });
+              else
+                await repository(
+                  'lifecycleExampleParameterSnapshots',
+                ).createOne({ values: { id, payload } });
+            }
             if (dueMs !== undefined)
               await repository(contract.collection).updateMany({
                 filter: { id: cursor },
@@ -575,7 +660,7 @@ const migration: MigrationDefinition = defineMigration({
         }
       }
       console.info(
-        `Parameter creation snapshot inventory: ${JSON.stringify({ phase: apply ? 'apply' : 'preflight', ...inventory, conflicts: conflicts.length })}`,
+        `Parameter creation snapshot inventory: ${JSON.stringify({ phase: apply ? 'apply' : 'preflight', ...inventory, supplemented, conflicts: conflicts.length })}`,
       );
       if (conflicts.length)
         throw new Error(

@@ -101,10 +101,10 @@ const zhCN: LifecycleExampleResource = {
     candidates: '候选人',
     noCandidates: '没有合格候选人，提交将被拒绝。',
     editCurrent: '修改当前配置',
-    historyBoundary:
-      '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
+    historyBoundary: '本记录的参数保持固定。升级时补入的值在下方标明。',
     history: '实际参数使用记录',
-    firstSnapshot: '创建时的参数快照',
+    firstSnapshot: '实例固定参数',
+    upgradeSource: '升级时按配置修订 {{revision}} 补入',
     notRecorded: '未记录',
     diagramEntry: '可选的流程图入口',
     diagramHint:

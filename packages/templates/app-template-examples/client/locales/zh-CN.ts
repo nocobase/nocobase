@@ -435,6 +435,7 @@ const zhCN: AppResource = {
     noEffects: '暂无异步执行记录。',
     executionDescription: '查看实际经过的路径，按顺序回顾每次流转。',
     executionParameters: '本次执行使用的参数',
+    upgradeSource: '升级时按配置修订 {{revision}} 补入',
     snapshotHint:
       '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
     sources: {
