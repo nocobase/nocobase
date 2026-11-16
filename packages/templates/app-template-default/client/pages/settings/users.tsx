@@ -9,6 +9,8 @@ import {
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
+import { userChange, usersScope } from './user-scopes.js';
+import { announceDataChange } from '#hooks/use-data-changes';
 import {
   resolveListState,
   useApiClient,
@@ -62,10 +64,11 @@ function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
 
 function UserActions({
   user,
-  reload,
+  onDone,
 }: {
   readonly user: ManagedUser;
-  readonly reload: (updated?: ManagedUser) => void;
+  /** Returns focus to the list after the action's dialog closes; data refreshes through scopes. */
+  readonly onDone: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
@@ -97,7 +100,8 @@ function UserActions({
         title: t(`settings.userActionSaved.${action}`, { name: user.name }),
       });
       setAction(undefined);
-      reload(updated ?? undefined);
+      announceDataChange(userChange(user.id, updated ?? undefined));
+      onDone();
     } catch (next) {
       setError(next);
     } finally {
@@ -275,7 +279,23 @@ export default function UsersPage(): ReactElement {
   const request = useSettingsData<{
     data: readonly ManagedUser[];
     meta: { total: number };
-  }>(requestPath, { keepPreviousData: true, active });
+  }>(requestPath, {
+    keepPreviousData: true,
+    active,
+    scopes: [usersScope],
+    // Show a confirmed change to a shown user at once; the verification read follows.
+    merge: (current, change) => {
+      let changed = false;
+      const data = current.data.map((row) => {
+        const result = change.results?.[`${usersScope}/${row.id}`] as
+          { data: ManagedUser } | null | undefined;
+        if (!result) return row;
+        changed = true;
+        return result.data;
+      });
+      return changed ? { ...current, data } : undefined;
+    },
+  });
   const hasCurrentResponse = request.path === requestPath;
   const tableState = useTableUrlState({
     active,
@@ -300,22 +320,10 @@ export default function UsersPage(): ReactElement {
       { replace: true },
     );
   };
-  const { data: pageData, replaceData, reload: refreshUsers } = request;
-  const reload = useCallback(
-    (updated?: ManagedUser) => {
-      if (updated && pageData)
-        replaceData({
-          ...pageData,
-          data: pageData.data.map((row) =>
-            row.id === updated.id ? updated : row,
-          ),
-        });
-      refreshUsers();
-      if (updated && location.pathname === listPath)
-        requestAnimationFrame(() => searchRef.current?.focus());
-    },
-    [pageData, replaceData, refreshUsers, location.pathname, listPath],
-  );
+  const focusSearch = useCallback(() => {
+    if (location.pathname === listPath)
+      requestAnimationFrame(() => searchRef.current?.focus());
+  }, [location.pathname, listPath]);
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role');
   const rows = request.data?.data ?? [];
@@ -394,10 +402,12 @@ export default function UsersPage(): ReactElement {
         id: 'actions',
         header: () => <span className='sr-only'>{t('settings.actions')}</span>,
         enableSorting: false,
-        cell: ({ row }) => <UserActions user={row.original} reload={reload} />,
+        cell: ({ row }) => (
+          <UserActions user={row.original} onDone={focusSearch} />
+        ),
       },
     ],
-    [t, reload, roleScopes, roleText],
+    [t, focusSearch, roleScopes, roleText],
   );
   const create =
     canCreate && canAssign ? (
@@ -530,7 +540,7 @@ export default function UsersPage(): ReactElement {
           </p>
         )}
       </PageContainer>
-      <Outlet context={{ reload }} />
+      <Outlet />
     </>
   );
 }
