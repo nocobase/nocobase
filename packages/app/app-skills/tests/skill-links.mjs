@@ -40,7 +40,10 @@ function stripCode(source) {
 export function anchorsOf(source) {
   const anchors = new Set();
   const counts = new Map();
-  const text = source.replace(/^([ \t]*)(```|~~~)[^\n]*\n[\s\S]*?\n\1\2[^\n]*$/gmu, '');
+  const text = source.replace(
+    /^([ \t]*)(```|~~~)[^\n]*\n[\s\S]*?\n\1\2[^\n]*$/gmu,
+    '',
+  );
   for (const match of text.matchAll(/^#{1,6}\s+(.+?)\s*#*\s*$/gmu)) {
     const slug = match[1]
       .replace(/<[^>]+>/gu, '')
@@ -108,7 +111,11 @@ async function resolveTarget(from, target) {
 
 async function siblingSkillsDirs() {
   await skillSource('');
-  return [...new Set([...skillSources.values()].map((dir) => path.dirname(path.dirname(dir))))];
+  return [
+    ...new Set(
+      [...skillSources.values()].map((dir) => path.dirname(path.dirname(dir))),
+    ),
+  ];
 }
 
 const anchorCache = new Map();
@@ -147,7 +154,10 @@ export async function checkLinks(files) {
   return problems;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   const targets = process.argv.slice(2);
   const files = [];
   for (const target of targets.length ? targets : [skillsRoot])
