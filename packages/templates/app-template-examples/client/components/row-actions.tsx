@@ -34,8 +34,8 @@ export interface RowActionsProps {
    */
   readonly actions: readonly (RowAction | false | null | undefined)[];
   /**
-   * Keys of actions shown as buttons before the menu. Only for an action the user or a confirmed page design asked
-   * to show outside the menu; every other action stays in it. Never chosen by how often an action is used.
+   * Keys of actions shown as buttons before the menu: at most 2 primary actions named in the page plan. Every other
+   * action stays in the menu.
    */
   readonly exposed?: readonly string[];
 }

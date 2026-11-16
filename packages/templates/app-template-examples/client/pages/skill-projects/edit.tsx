@@ -113,7 +113,7 @@ function ProjectEditor({
   });
   // What is saved, as the form shows it: the record, or the blank values of a new project. A form that restores a
   // draft starts from it (`defaultValues: draft ?? saved`) and keeps this as `savedValues`, so leaving with the draft
-  // still asks (mobile.md M7.4).
+  // still asks (ui-guidelines.md T3.9).
   const [saved] = useState(() => ({ name: project?.name ?? '' }));
   const form = useForm({
     defaultValues: saved,

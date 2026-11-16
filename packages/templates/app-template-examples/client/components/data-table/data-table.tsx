@@ -644,7 +644,7 @@ function DataTableCard<TData>({
       : row
           .getVisibleCells()
           .find((candidate) => candidate.column.id === actionsColumnId);
-  // Phone tap targets are at least 32px (M8.1), even when the row's cell uses a smaller icon button.
+  // Phone cards keep a comfortable tap target, even when the row's cell uses a smaller icon button.
   const actions = cell ? (
     <div
       data-slot='data-table-card-actions'

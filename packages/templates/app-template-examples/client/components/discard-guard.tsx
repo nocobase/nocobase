@@ -83,7 +83,7 @@ const DiscardOwnerContext = createContext<{
  * own (the settings forms' `usePageLeave`): the overlay leaves the question to them instead of asking twice.
  * Application forms do not render it; they rely on the overlay's question. A kept draft or working storage is never a
  * reason to: the draft restores input after a reload, while leaving on purpose still asks, and a guard that only blocks
- * while a save runs asks nothing (mobile.md M7.4).
+ * while a save runs asks nothing (ui-guidelines.md T3.9).
  */
 export function OwnDiscardQuestion(): null {
   const owners = useContext(DiscardOwnerContext);
@@ -260,7 +260,7 @@ function DiscardGuard({
 
 /**
  * The unsaved-changes question of one layer — a `RouteDialog`, a `RouteDrawer` or a `RouteChildPage` — for every form
- * rendered inside `containerRef` (guideline T3.9, mobile.md M7.4): once a form there differs from what is saved, every
+ * rendered inside `containerRef` (ui-guidelines.md T3.9): once a form there differs from what is saved, every
  * way out of the layer asks "Discard changes?" first, and reloading or closing the tab gets the browser's warning. A
  * `FeedbackForm` with `values` and `savedValues` is compared with them; any other form with how it was just before the
  * user first touched it. `dirty` only adds. Inside an application only: a test or preview without the application's

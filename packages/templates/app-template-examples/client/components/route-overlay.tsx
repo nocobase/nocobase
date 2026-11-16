@@ -48,7 +48,7 @@ export interface RouteOverlayProps {
   /** Runs before every close; resolving `false` keeps the overlay open, for example to guard unsaved changes. */
   readonly beforeClose?: () => boolean | Promise<boolean>;
   /**
-   * Unsaved changes the overlay cannot see by itself (guideline T3.9, mobile.md M7.4). Every route overlay asks
+   * Unsaved changes the overlay cannot see by itself (ui-guidelines.md T3.9). Every route overlay asks
    * "Discard changes?" before every way out — ×, Esc, the backdrop, Cancel through `close()`, browser back and
    * forward, the phone's back gesture and links — while a `FeedbackForm` inside has unsaved input, and reloading or
    * closing the tab then gets the browser's warning. A `FeedbackForm` given `values={form.getValues}` and

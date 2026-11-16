@@ -790,7 +790,7 @@ describe('detail drawer, edit dialog and a confirmation', () => {
 });
 
 describe('the dirty prop of a route overlay', () => {
-  // The default path of M7.4: a page passes whether its form is dirty, and the overlay asks before every way out.
+  // The default path of T3.9: a page passes whether its form is dirty, and the overlay asks before every way out.
   function DirtyEdit() {
     const [dirty, setDirty] = useState(false);
     const savedRef = useRef(false);

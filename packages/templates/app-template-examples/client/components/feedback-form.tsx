@@ -44,7 +44,7 @@ export interface FeedbackFormProps extends Omit<
   /**
    * The form's current values, read when the user tries to leave: React Hook Form's `form.getValues`. With
    * `savedValues`, an enclosing route overlay asks "Discard changes?" whenever they differ, whatever changed them:
-   * typing, a Select, a date or relation picker, an upload, or a restored draft (mobile.md M7.4).
+   * typing, a Select, a date or relation picker, an upload, or a restored draft (ui-guidelines.md T3.9).
    */
   readonly values?: () => unknown;
   /**
