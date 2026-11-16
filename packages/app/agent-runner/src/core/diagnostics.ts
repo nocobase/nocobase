@@ -39,7 +39,7 @@ export async function* diagnosticsRecords(
   const request = DiagnosticsRequestSchema.parse(input);
   const dates = new Set(diagnosticsDates(request.window));
   const selected = new Set(request.window.runIds);
-  const candidates: { file: string; date: string; selected: boolean }[] = [];
+  const candidates: { file: string; date: string }[] = [];
   const summaries: DiagnosticsFile[] = [];
   let truncated = false;
   const check = () => {
@@ -62,14 +62,18 @@ export async function* diagnosticsRecords(
     for (const name of await names(paths.logsDir)) {
       const match = /^runner\.(\d{4}-\d{2}-\d{2})\.\d+\.log$/.exec(name);
       if (match && dates.has(match[1]))
-        candidates.push({ file: name, date: match[1], selected: false });
+        candidates.push({ file: name, date: match[1] });
     }
     const runs = path.join(paths.logsDir, 'runs');
     for (const date of (await names(runs)).reverse()) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      if (!dates.has(date)) continue;
       for (const name of await names(path.join(runs, date))) {
         const match = /^([a-zA-Z0-9_-]+)\.(?:log|stderr)$/.exec(name);
-        if (!match || (!dates.has(date) && !selected.has(match[1]))) continue;
+        if (
+          !match ||
+          (request.window.runIds !== undefined && !selected.has(match[1]))
+        )
+          continue;
         const file = `runs/${date}/${name}`;
         // Empty crash sidecars are not sources; they may become useful on a later collection.
         if (
@@ -77,20 +81,14 @@ export async function* diagnosticsRecords(
           !(await lstat(path.join(paths.logsDir, file))).size
         )
           continue;
-        candidates.push({ file, date, selected: selected.has(match[1]) });
+        candidates.push({ file, date });
       }
     }
   }
   candidates.sort(
-    (a, b) =>
-      Number(b.selected) - Number(a.selected) ||
-      b.date.localeCompare(a.date) ||
-      b.file.localeCompare(a.file),
+    (a, b) => b.date.localeCompare(a.date) || b.file.localeCompare(a.file),
   );
-  const chosen = candidates.filter((source) => source.selected);
-  const ordinary = candidates.filter((source) => !source.selected);
-  const files = [...chosen, ...ordinary.slice(0, 64)];
-  if (ordinary.length > 64) truncated = true;
+  const files = candidates;
   const encode = (value: unknown) => JSON.stringify(value) + '\n';
   const first = encode({
     type: 'environment',
@@ -110,7 +108,6 @@ export async function* diagnosticsRecords(
   // Reserve space for the terminal manifest even when all input was truncated or filtered.
   const logBudget = Math.max(bytes, request.maxBytes - 48 * 1024);
   let manifestBytes = 128;
-  let remainingSelected = chosen.length;
   for (const source of files) {
     check();
     const summary: DiagnosticsFile = {
@@ -120,7 +117,7 @@ export async function* diagnosticsRecords(
       truncated: false,
       omittedLines: 0,
     };
-    // The terminal record's existing byte limit, rather than the ordinary-file count, bounds selected metadata.
+    // Bound manifest metadata by the existing record-size budget, without a file-count preference.
     manifestBytes += Buffer.byteLength(JSON.stringify(summary)) + 32;
     if (manifestBytes > 48 * 1024) {
       truncated = true;
@@ -150,15 +147,7 @@ export async function* diagnosticsRecords(
         0,
         Math.min(request.maxBytes - scanned, logBudget - bytes),
       );
-      // Leave one maximum-size record per remaining selected source when possible, including its failure tail.
-      const reserved = source.selected
-        ? Math.min(
-            remaining / Math.max(1, remainingSelected),
-            DIAGNOSTICS_MAX_RECORD,
-          ) * Math.max(0, remainingSelected - 1)
-        : 0;
-      const allowance = Math.max(0, Math.floor(remaining - reserved));
-      if (source.selected) remainingSelected--;
+      const allowance = Math.max(0, Math.floor(remaining));
       if (allowance <= 512) {
         summary.truncated = truncated = true;
         continue;
@@ -208,7 +197,6 @@ export async function* diagnosticsRecords(
               ? entry.level
               : (levels[String(entry.level)] ?? 0);
           if (
-            !source.selected &&
             request.window.level &&
             severity < levels[request.window.level] &&
             !(

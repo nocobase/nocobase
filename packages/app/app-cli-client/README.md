@@ -54,6 +54,8 @@ Query the service's actual status before recovering. If a retry is appropriate, 
 
 Help and docs never submit a business request. For an operation-key command, `--dry-run` validates locally and returns `success-noop` with `requestStatus: 'not-sent'`; it generates no key, sends no request and does not preview server-side effects. Direct JSON and multipart requests are supported with streaming file transport. Pre-upload, ticket, changed-file and read-binding flows are rejected until they have defined multi-request semantics. Redirects and automatic write retries are disabled for these commands. Existing confirmation, revision checks and request-time permissions remain owned by the API.
 
-## Local diagnostics timeline
+## Log export and local timeline
 
-`<bin> diagnostics timeline <bundle.tar.gz> --out <new.jsonl> [--level warn] [--request-id <id>]` merges downloaded diagnostics logs chronologically and adds each record's source filename. It works without signing in or contacting a server. Existing destinations are never overwritten. See the [diagnostics protocol](../../libs/agent-protocol/docs/diagnostics.md) for archive and temporary-disk limits.
+`<bin> logs timeline <bundle.tar.gz> --out <new.jsonl> [--level warn] [--request-id <id>]` merges downloaded diagnostics logs chronologically and adds each record's source filename. It works without signing in or contacting a server. Existing destinations are never overwritten. See the [diagnostics protocol](../../libs/agent-protocol/docs/diagnostics.md) for archive and temporary-disk limits.
+
+`<bin> logs export --days 3 --out studio-logs.tar.gz` collects and streams server and permitted runner logs through the signed-in application's `logsExport` API operation. Use repeated `--issue` and `--runner` flags to select issues and runners, `--app-log` or `--request-log` to select server log types, and `--level` for the minimum severity. Dates are local calendar dates within the last seven days. The CLI prints each source's status and size from the downloaded manifest. This command requires the host to implement the logs export contract; `logs timeline` stays entirely local.

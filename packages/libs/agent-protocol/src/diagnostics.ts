@@ -6,7 +6,7 @@ export const DIAGNOSTICS_MAX_RECORD: number = 64 * 1024;
 export interface DiagnosticsWindow {
   since: string;
   until: string;
-  runIds: string[];
+  runIds?: string[];
   level?: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 }
 export const DiagnosticsWindowSchema: z.ZodType<DiagnosticsWindow> = z
@@ -14,11 +14,11 @@ export const DiagnosticsWindowSchema: z.ZodType<DiagnosticsWindow> = z
     /** UTC instants bounding the selected local calendar days, end exclusive (DST supported). */
     since: z.iso.datetime({ offset: true }),
     until: z.iso.datetime({ offset: true }),
-    /** Selected runs include all retained dates, subject to the same byte budget. */
+    /** Absent: all runs in the window. Empty: no run logs. Otherwise intersect dates and run IDs. */
     runIds: z
       .array(z.string().regex(/^[a-zA-Z0-9_-]{1,120}$/))
-      .max(20)
-      .default([]),
+      .max(500)
+      .optional(),
     level: z
       .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
       .optional(),

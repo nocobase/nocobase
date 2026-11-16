@@ -13,7 +13,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { DiagnosticsRecordSchema } from '../src/protocol/index.ts';
 import { diagnosticsRecords } from '../src/core/diagnostics.ts';
 import { RunnerJournal, pruneRunnerLogs } from '../src/lib/journal.ts';
 import {
@@ -195,7 +194,7 @@ describe('执行机诊断与清理', () => {
       vi.useRealTimers();
     }
   });
-  it('收集相交 UTC 日期原文件并包含跨日期的指定运行，排除其他文件和符号链接', async () => {
+  it('只收集相交 UTC 日期文件，排除日期外的指定运行和符号链接', async () => {
     const home = path.join(root, 'dates');
     const paths = runnerPaths(home, home);
     await mkdir(paths.logsDir, { recursive: true });
@@ -219,14 +218,14 @@ describe('执行机诊断与清理', () => {
     const output = await records(home);
     expect(output).toContain('first');
     expect(output).toContain('second');
-    expect(output).toContain('full-run');
+    expect(output).not.toContain('full-run');
     expect(output).not.toContain('excluded');
     expect(output).not.toContain('never-export-this');
     expect(
       JSON.parse(output.trim().split('\n').at(-1)!).files.some(
         (file: { dates: string[] }) => file.dates.includes('2026-10-01'),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
   it('工具探测输出再长也不突破环境记录协议上限', async () => {
     let first = '';
@@ -285,58 +284,33 @@ describe('执行机诊断与清理', () => {
     expect(output).toContain('request-fixture');
     expect(output).not.toContain('ordinary-info');
   });
-  it('超过 64 份普通日志仍优先导出所有选中运行日期，并保留最新普通日志', async () => {
-    const home = path.join(root, 'selected-many');
+  it('日期与运行编号取交集，未传与空列表不同，不再限制为 64 份', async () => {
+    const home = path.join(root, 'intersection');
     const paths = runnerPaths(home, home);
-    const input = request();
-    input.window.runIds = Array.from(
-      { length: 20 },
-      (_, index) => `chosen-${index}`,
-    );
-    for (const id of input.window.runIds)
-      for (const date of [
-        '2026-10-01',
-        '2026-10-02',
-        '2026-10-03',
-        '2026-10-04',
-      ]) {
-        const file = runLogPath(paths, id, date);
-        await mkdir(path.dirname(file), { recursive: true });
-        await writeFile(file, entry(`${id}-${date}`));
-      }
     for (let index = 0; index < 70; index++) {
-      const file = runLogPath(
-        paths,
-        `ordinary-${index.toString().padStart(3, '0')}`,
-        index === 69 ? '2026-11-01' : '2026-10-31',
-      );
+      const file = runLogPath(paths, `chosen-${index}`, '2026-11-01');
       await mkdir(path.dirname(file), { recursive: true });
-      await writeFile(file, entry(index === 69 ? 'latest-day' : 'ordinary'));
+      await writeFile(file, entry(`chosen-${index}`));
     }
-    const output = await records(home, input);
-    const rows = output
-      .trim()
-      .split('\n')
-      .map((line) => DiagnosticsRecordSchema.parse(JSON.parse(line)));
-    const manifest = rows.at(-1)!;
-    expect(manifest.type).toBe('manifest');
-    if (manifest.type !== 'manifest') throw new Error('Missing manifest');
+    const input = request();
+    input.window.runIds = Array.from({ length: 70 }, (_, i) => `chosen-${i}`);
+    const selected = JSON.parse(
+      (await records(home, input)).trim().split('\n').at(-1)!,
+    );
+    expect(selected.files).toHaveLength(70);
+    input.window.runIds = [];
     expect(
-      manifest.files.filter((file) => file.file.includes('/chosen-')),
-    ).toHaveLength(80);
-    expect(manifest.files).toHaveLength(144);
-    expect(output).toContain('latest-day');
+      JSON.parse((await records(home, input)).trim().split('\n').at(-1)!).files,
+    ).toHaveLength(0);
+    delete input.window.runIds;
     expect(
-      rows
-        .filter((row) => row.type === 'log')
-        .slice(0, 80)
-        .every((row) => row.type === 'log' && row.file.includes('/chosen-')),
-    ).toBe(true);
+      JSON.parse((await records(home, input)).trim().split('\n').at(-1)!).files,
+    ).toHaveLength(70);
   });
   it('选中大文件与原始崩溃输出在大小上限内保留故障末尾，并明确说明截断', async () => {
     const home = path.join(root, 'tail');
     const paths = runnerPaths(home, home);
-    const file = runLogPath(paths, 'selected', '2026-10-01');
+    const file = runLogPath(paths, 'selected', '2026-11-01');
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(
       file,
@@ -345,11 +319,10 @@ describe('执行机诊断与清理', () => {
         entry('failure-at-the-end'),
     );
     await writeFile(
-      runRawLogPath(paths, 'selected', '2026-10-01'),
+      runRawLogPath(paths, 'selected', '2026-11-01'),
       'native crash api_key=fixture-sensitive-value\nstack-final-frame\n',
     );
     const input = request();
-    input.window.level = 'fatal';
     const output = await records(home, input);
     expect(output).toContain('failure-at-the-end');
     expect(output).toContain('stack-final-frame');

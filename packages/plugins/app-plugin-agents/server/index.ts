@@ -42,5 +42,7 @@ export { runMachineViewerFor } from './core/runs/execution-view.js';
 export type {
   RunnerDiagnostics,
   RunnerDiagnosticsCollection,
+  RunnerDiagnosticsFile,
+  RunnerDiagnosticsProgress,
   RunnerDiagnosticsResult,
 } from './runners/diagnostics.js';

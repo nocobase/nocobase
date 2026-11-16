@@ -11,7 +11,7 @@ import path from 'node:path';
 import { create, Header } from 'tar';
 import { gzipSync } from 'node:zlib';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { diagnosticsTimeline } from '../src/diagnostics.ts';
+import { logsTimeline } from '../src/logs.ts';
 import { cli, cliEnv } from './packaged/helpers.ts';
 import { createServer } from 'node:http';
 import { tempDir, removeDir } from './helpers.ts';
@@ -54,7 +54,7 @@ describe('本地诊断时间线', () => {
     const writes = vi.spyOn(Object.getPrototypeOf(probe), 'writeFile');
     let result;
     try {
-      result = await diagnosticsTimeline({ bundle, out });
+      result = await logsTimeline({ bundle, out });
       // Both the sorted chunks and final output must batch disk writes.
       const outputBytes = (await stat(out)).size;
       expect(writes.mock.calls.length).toBeLessThanOrEqual(
@@ -78,9 +78,7 @@ describe('本地诊断时间线', () => {
     expect(lines.at(-1).source).toBe('runner.log');
     expect(text).not.toContain('fixture-sensitive-value');
     expect(
-      (await readdir(root)).some((file) =>
-        file.startsWith('.diagnostics-timeline-'),
-      ),
+      (await readdir(root)).some((file) => file.startsWith('.logs-timeline-')),
     ).toBe(false);
   });
   it('批量写盘失败时删除部分输出并清理排序分片', async () => {
@@ -101,13 +99,13 @@ describe('本地诊断时间线', () => {
         return original.apply(this, args);
       });
     try {
-      await expect(diagnosticsTimeline({ bundle, out })).rejects.toThrow(
+      await expect(logsTimeline({ bundle, out })).rejects.toThrow(
         'disk write failed',
       );
       expect(await stat(out).catch(() => null)).toBeNull();
       expect(
         (await readdir(root)).some((file) =>
-          file.startsWith('.diagnostics-timeline-'),
+          file.startsWith('.logs-timeline-'),
         ),
       ).toBe(false);
     } finally {
@@ -125,7 +123,7 @@ describe('本地诊断时间线', () => {
     const out = path.join(root, 'filtered.jsonl');
     expect(
       (
-        await diagnosticsTimeline({
+        await logsTimeline({
           bundle,
           out,
           level: 'warn',
@@ -135,7 +133,7 @@ describe('本地诊断时间线', () => {
     ).toBe(1);
     const before = await readFile(out, 'utf8');
     expect(before).toContain('error');
-    await expect(diagnosticsTimeline({ bundle, out })).rejects.toMatchObject({
+    await expect(logsTimeline({ bundle, out })).rejects.toMatchObject({
       code: 'EEXIST',
     });
     expect(await readFile(out, 'utf8')).toBe(before);
@@ -155,7 +153,7 @@ describe('本地诊断时间线', () => {
         gzipSync(Buffer.concat([header.block!, Buffer.alloc(1024)])),
       );
       const out = `${bundle}.jsonl`;
-      await expect(diagnosticsTimeline({ bundle, out })).rejects.toThrow();
+      await expect(logsTimeline({ bundle, out })).rejects.toThrow();
       expect(await stat(out).catch(() => null)).toBeNull();
     },
   );
@@ -164,7 +162,7 @@ describe('本地诊断时间线', () => {
       'worker.stderr': row('2026-11-01T00:00:00Z', 'native crash'),
     });
     const out = path.join(root, 'stderr.jsonl');
-    expect((await diagnosticsTimeline({ bundle, out })).entries).toBe(1);
+    expect((await logsTimeline({ bundle, out })).entries).toBe(1);
     expect(JSON.parse((await readFile(out, 'utf8')).trim()).source).toBe(
       'worker.stderr',
     );
@@ -186,7 +184,7 @@ describe('本地诊断时间线', () => {
     try {
       const address = server.address() as { port: number };
       const result = await cli(
-        ['diagnostics', 'timeline', bundle, '--out', out],
+        ['logs', 'timeline', bundle, '--out', out],
         cliEnv(path.join(root, 'cli-home'), {
           ACME_SERVER: `http://127.0.0.1:${address.port}`,
         }),
@@ -200,5 +198,150 @@ describe('本地诊断时间线', () => {
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
+  });
+});
+
+describe('日志导出命令', () => {
+  it('通过真实 HTTP 流下载同一包并按清单输出英文来源结果', async () => {
+    const bundle = await archive({
+      'app.log': row('2026-11-01T00:00:00Z', 'streamed'),
+      'manifest.json': JSON.stringify({
+        sources: [
+          { name: 'app logs', status: 'complete', bytes: 13002342 },
+          {
+            name: 'runner-fixture',
+            status: 'truncated',
+            bytes: 20 * 1024 ** 2,
+          },
+          { name: 'offline-fixture', status: 'offline' },
+        ],
+      }),
+    });
+    const payload = await readFile(bundle);
+    const requests: { url: string; body: Record<string, unknown> }[] = [];
+    const server = createServer(async (request, response) => {
+      if (request.url === '/test/api/swagger') {
+        response.setHeader('content-type', 'application/json');
+        response.end(
+          JSON.stringify({
+            paths: {
+              '/api/logs/export': { post: { operationId: 'logsExport' } },
+            },
+          }),
+        );
+        return;
+      }
+      if (request.url === '/test/api/logs/export') {
+        let body = '';
+        for await (const chunk of request) body += chunk;
+        requests.push({ url: request.url, body: JSON.parse(body) });
+        response.writeHead(200, {
+          'content-type': 'application/gzip',
+          'content-disposition': 'attachment; filename="studio-logs.tar.gz"',
+        });
+        response.write(payload.subarray(0, 50));
+        setImmediate(() => response.end(payload.subarray(50)));
+        return;
+      }
+      response.writeHead(404);
+      response.end();
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve),
+    );
+    try {
+      const { port } = server.address() as { port: number };
+      const out = path.join(root, 'exported.tar.gz');
+      const result = await cli(
+        [
+          'logs',
+          'export',
+          '--days',
+          '3',
+          '--issue',
+          'PM-1505',
+          '--issue',
+          'PM-1506',
+          '--runner',
+          'runner-fixture',
+          '--app-log',
+          '--out',
+          out,
+        ],
+        cliEnv(path.join(root, 'export-home'), {
+          ACME_SERVER: `http://127.0.0.1:${port}/test`,
+          ACME_API_KEY: 'fixture-key',
+        }),
+      );
+      expect({ code: result.code, stderr: result.stderr }).toEqual({
+        code: 0,
+        stderr: '',
+      });
+      expect(result.stdout).toMatch(/app logs\s+complete\s+12\.4 MB/);
+      expect(result.stdout).toMatch(/runner-fixture\s+truncated\s+20\.0 MB/);
+      expect(result.stdout).toMatch(/offline-fixture\s+offline/);
+      expect(result.stdout).toContain('Saved');
+      expect(await readFile(out)).toEqual(payload);
+      expect(requests).toHaveLength(1);
+      expect(requests[0].body).toMatchObject({
+        issues: ['PM-1505', 'PM-1506'],
+        runners: ['runner-fixture'],
+        appLog: true,
+        requestLog: false,
+      });
+      expect(requests[0].body).not.toHaveProperty('bundleId');
+      const jsonOut = path.join(root, 'exported-json.tar.gz');
+      const json = await cli(
+        ['logs', 'export', '--out', jsonOut, '--json'],
+        cliEnv(path.join(root, 'export-json-home'), {
+          ACME_SERVER: `http://127.0.0.1:${port}/test`,
+          ACME_API_KEY: 'fixture-key',
+        }),
+      );
+      expect(json.code).toBe(0);
+      expect(JSON.parse(json.stdout)).toMatchObject({
+        ok: true,
+        command: 'logs export',
+        result: {
+          data: {
+            sources: [
+              { name: 'app logs', status: 'complete', bytes: 13002342 },
+              { name: 'runner-fixture', status: 'truncated', bytes: 20971520 },
+              { name: 'offline-fixture', status: 'offline' },
+            ],
+          },
+        },
+      });
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+  it('本地时间线排除数据库运行记录，日期参数按本地整日校验', async () => {
+    const { logsExportInput } = await import('../src/logs.ts');
+    const now = new Date(2026, 10, 16, 12);
+    expect(logsExportInput({ days: 3, out: 'unused' }, now)).toMatchObject({
+      since: new Date(2026, 10, 14).toISOString(),
+      until: new Date(2026, 10, 17).toISOString(),
+      appLog: true,
+      requestLog: true,
+    });
+    for (const options of [
+      { days: 8 },
+      { days: 3, since: '2026-11-15', until: '2026-11-16' },
+      { since: '2026-11-15' },
+      { since: '2026-11-09', until: '2026-11-16' },
+      { since: '2026-11-16', until: '2026-11-17' },
+      { since: '2026-02-31', until: '2026-11-16' },
+    ])
+      expect(() =>
+        logsExportInput({ ...options, out: 'unused' }, now),
+      ).toThrow();
+    const bundle = await archive({
+      'events.jsonl': row('2026-11-01T00:00:00Z', 'database event'),
+      'app.log': row('2026-11-01T00:00:01Z', 'log'),
+    });
+    const out = path.join(root, 'logs-only.jsonl');
+    expect((await logsTimeline({ bundle, out })).entries).toBe(1);
+    expect(await readFile(out, 'utf8')).not.toContain('database event');
   });
 });

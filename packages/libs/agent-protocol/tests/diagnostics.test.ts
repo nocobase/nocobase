@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   diagnosticsDates,
   DiagnosticsRequestSchema,
+  DiagnosticsWindowSchema,
   HeartbeatResponseSchema,
   RUNNER_FEATURES,
 } from '../src/index.js';
@@ -26,6 +27,28 @@ describe('诊断协议日期交集', () => {
         until: '2026-11-02T00:00:00+08:00',
       }),
     ).toEqual(['2026-10-31', '2026-11-01']);
+  });
+  it('运行编号最多 500 个，未传与空列表保持不同语义', () => {
+    const window = {
+      since: '2026-11-01T00:00:00Z',
+      until: '2026-11-02T00:00:00Z',
+    };
+    expect(DiagnosticsWindowSchema.parse(window).runIds).toBeUndefined();
+    expect(
+      DiagnosticsWindowSchema.parse({ ...window, runIds: [] }).runIds,
+    ).toEqual([]);
+    expect(
+      DiagnosticsWindowSchema.safeParse({
+        ...window,
+        runIds: Array.from({ length: 500 }, (_, i) => `run-${i}`),
+      }).success,
+    ).toBe(true);
+    expect(
+      DiagnosticsWindowSchema.safeParse({
+        ...window,
+        runIds: Array.from({ length: 501 }, (_, i) => `run-${i}`),
+      }).success,
+    ).toBe(false);
   });
   it('旧心跳仍有效，新请求拒绝过长日期、任意路径和过大预算', () => {
     expect(

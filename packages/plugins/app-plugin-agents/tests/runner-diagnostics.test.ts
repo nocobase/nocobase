@@ -1,14 +1,30 @@
-import { mkdtemp, rm, readFile, stat } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createRunnerDiagnostics } from '../server/runners/diagnostics.js';
+import { createRunnerDiagnostics as createService } from '../server/runners/diagnostics.js';
 import { createHarness, type Harness } from './harness.js';
 import { HEADERS, type DiagnosticsRequest } from '@nocobase/agent-protocol';
 const roots: string[] = [];
+const saved = new Map<string, string>();
+const onFile: Parameters<
+  ReturnType<typeof createService>['collect']
+>[0]['onFile'] = async (file) => {
+  saved.set(`${file.runnerId}/${file.file}`, await readFile(file.path, 'utf8'));
+};
+function createRunnerDiagnostics(...args: Parameters<typeof createService>) {
+  const service = createService(...args);
+  return {
+    ...service,
+    collect(options: Omit<Parameters<typeof service.collect>[0], 'onFile'>) {
+      return service.collect({ ...options, onFile });
+    },
+  };
+}
 let harness: Harness | undefined;
 afterEach(async () => {
+  saved.clear();
   await harness?.close();
   harness = undefined;
   await Promise.all(
@@ -18,7 +34,6 @@ afterEach(async () => {
 const window = {
   since: '2026-11-01T00:00:00Z',
   until: '2026-11-02T00:00:00Z',
-  runIds: [],
 };
 const env = {
   type: 'environment',
@@ -118,16 +133,12 @@ describe('执行机上传边界', () => {
         { ...manifest, files: [{ ...manifest.files[0], file: name }] },
       ]),
     );
-    const result = await collecting;
-    const saved = await readFile(
-      path.join(result.runners[0].directory!, name),
-      'utf8',
-    );
-    expect(saved).not.toContain('fixture-sensitive-value');
-    expect(saved).not.toContain('private-body-fixture');
-    expect(saved).not.toContain('old-log-fixture');
-    expect(saved).toContain('final stack');
-    await result.dispose();
+    await collecting;
+    const text = saved.get(`one/${name}`)!;
+    expect(text).not.toContain('fixture-sensitive-value');
+    expect(text).not.toContain('private-body-fixture');
+    expect(text).not.toContain('old-log-fixture');
+    expect(text).toContain('final stack');
   });
   it('宿主范围外的在线执行机不获请求、不能上传，也不挤占收集预算', async () => {
     const list = vi.fn(async () => [
@@ -159,7 +170,6 @@ describe('执行机上传边界', () => {
     const result = await collecting;
     expect(result.runners.map((item) => item.runnerId)).toEqual(['chosen']);
     expect(list).toHaveBeenCalledTimes(1);
-    await result.dispose();
   });
   it('空执行机范围不下发请求，缺少范围不能退回全量收集', async () => {
     const service = createRunnerDiagnostics(async () => [
@@ -182,7 +192,6 @@ describe('执行机上传边界', () => {
     });
     expect(result.runners).toEqual([]);
     expect(service.take('one')).toBeUndefined();
-    await result.dispose();
   });
   it('只消费指定执行机的一次请求，服务端再次脱敏并按真实字节生成清单', async () => {
     const service = createRunnerDiagnostics(async () => [
@@ -214,28 +223,15 @@ describe('执行机上传边界', () => {
       'offline',
       'unsupported',
     ]);
-    const saved = await readFile(
-      path.join(result.runners[0].directory!, file),
-      'utf8',
-    );
-    expect(saved).not.toContain('fixture-sensitive-value');
-    expect(saved).toContain('request-fixture');
-    expect(JSON.parse(saved)).toMatchObject({
+    const text = saved.get(`online/${file}`)!;
+    expect(text).not.toContain('fixture-sensitive-value');
+    expect(text).toContain('request-fixture');
+    expect(JSON.parse(text)).toMatchObject({
       inputTokens: 1234,
       tokensUsed: '9000',
     });
-    expect(saved).toContain('inputTokens=1234');
-    expect(result.runners[0].files![0].bytes).toBe(Buffer.byteLength(saved));
-    await expect(
-      service.collect({
-        runnerIds: ['online'],
-        directory: result.directory,
-        window,
-      }),
-    ).rejects.toMatchObject({ code: 409 });
-    await result.dispose();
-    expect(await stat(result.directory).catch(() => null)).toBeNull();
-    await result.dispose();
+    expect(text).toContain('inputTokens=1234');
+    expect(result.runners[0].files![0].bytes).toBe(Buffer.byteLength(text));
   });
   it.each([
     [
@@ -282,62 +278,8 @@ describe('执行机上传边界', () => {
       expect(result.runners[0].status).toBe(
         status === 'RESOURCE_EXHAUSTED' ? 'too_large' : 'failed',
       );
-      await result.dispose();
     },
   );
-  it('选中运行超过 64 份日志仍全部接收，清单保留全部来源', async () => {
-    const service = createRunnerDiagnostics(async () => [
-      { id: 'one', status: 'online', features: ['diagnostics'] },
-    ]);
-    const selectedWindow = {
-      ...window,
-      runIds: Array.from({ length: 20 }, (_, index) => `chosen-${index}`),
-    };
-    const collecting = service.collect({
-      runnerIds: ['one'],
-      directory: await directory(),
-      window: selectedWindow,
-    });
-    const request = await take(service, 'one');
-    const selectedNames = selectedWindow.runIds.flatMap((id) =>
-      ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map(
-        (date) => `runs/${date}/${id}.log`,
-      ),
-    );
-    const names = [
-      ...selectedNames,
-      ...Array.from(
-        { length: 64 },
-        (_, index) => `runs/2026-11-01/ordinary-${index}.log`,
-      ),
-    ];
-    names[79] = names[79].replace(/\.log$/, '.stderr');
-    const logs = names.map((file) => ({ ...record, file }));
-    const summary = {
-      type: 'manifest',
-      files: names.map((file) => ({
-        ...manifest.files[0],
-        file,
-        dates: [file.split('/')[1]],
-      })),
-      truncated: false,
-    };
-    await service.accept(
-      'one',
-      request.requestId,
-      body([env, ...logs, summary]),
-    );
-    const result = await collecting;
-    expect(result.runners[0].status).toBe('collected');
-    expect(result.runners[0].files).toHaveLength(144);
-    expect(
-      await readFile(
-        path.join(result.runners[0].directory!, names.at(-1)!),
-        'utf8',
-      ),
-    ).toContain('request-fixture');
-    await result.dispose();
-  });
   it('压缩输入也有独立上限，断流不能留下可下载的部分内容', async () => {
     for (const disconnect of [false, true]) {
       const service = createRunnerDiagnostics(async () => [
@@ -364,10 +306,9 @@ describe('执行机上传边界', () => {
       expect(result.runners[0].status).toBe(
         disconnect ? 'failed' : 'too_large',
       );
-      await result.dispose();
     }
   });
-  it('离线与超时均返回跳过原因，同时最多向两台执行机下发请求', async () => {
+  it('离线与超时均返回跳过原因，多台执行机均可领取后依次上传', async () => {
     const service = createRunnerDiagnostics(async () =>
       ['one', 'two', 'three'].map((id) => ({
         id,
@@ -383,7 +324,7 @@ describe('执行机上传边界', () => {
     });
     const first = await take(service, 'one');
     await take(service, 'two');
-    expect(service.take('three')).toBeUndefined();
+    await take(service, 'three');
     const result = await collecting;
     expect(result.runners.every((runner) => runner.status === 'timeout')).toBe(
       true,
@@ -391,7 +332,6 @@ describe('执行机上传边界', () => {
     await expect(
       service.accept('one', first.requestId, body([env, record, manifest])),
     ).rejects.toMatchObject({ status: 'PERMISSION_DENIED' });
-    await result.dispose();
   });
   it('真实路由拒绝未登录、会话和错误执行机，仅接受合法执行机的一次上传', async () => {
     harness = await createHarness();
@@ -401,6 +341,7 @@ describe('执行机上传边界', () => {
       runnerIds: [runner.runnerId],
       directory: await directory(),
       window,
+      onFile,
     });
     const request = await take(harness.services.diagnostics, runner.runnerId);
     const url = `/agents/runners/diagnostics/${request.requestId}`;
@@ -446,6 +387,176 @@ describe('执行机上传边界', () => {
     expect(result.runners.map((item) => item.runnerId)).toEqual([
       runner.runnerId,
     ]);
-    await result.dispose();
   });
+});
+
+describe('流式收集', () => {
+  it('逐文件消费后删除，同一导出两台执行机上传不积存文件，报告真实进度', async () => {
+    const service = createService(async () =>
+      ['one', 'two'].map((id) => ({
+        id,
+        status: 'online' as const,
+        features: ['diagnostics'],
+      })),
+    );
+    const root = await directory();
+    const progress: { runnerId: string; status: string; bytes: number }[] = [];
+    const names: string[] = [];
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let entered!: () => void;
+    const first = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let calls = 0;
+    const collecting = service.collect({
+      runnerIds: ['one', 'two'],
+      window,
+      directory: root,
+      onProgress: (event) => progress.push(event),
+      onFile: async (file) => {
+        const temporary = path.dirname(file.path);
+        expect(await readdir(temporary)).toEqual(['current']);
+        expect((await readFile(file.path)).length).toBe(file.bytes);
+        names.push(`${file.runnerId}/${file.file}`);
+        if (++calls === 1) {
+          entered();
+          await blocked;
+        }
+      },
+    });
+    const one = await take(service, 'one');
+    const two = await take(service, 'two');
+    const uploadOne = service.accept(
+      'one',
+      one.requestId,
+      body([env, record, manifest]),
+    );
+    await first;
+    const uploadTwo = service.accept(
+      'two',
+      two.requestId,
+      body([env, record, manifest]),
+    );
+    expect(names).toEqual(['one/environment.json']);
+    release();
+    await Promise.all([uploadOne, uploadTwo]);
+    const result = await collecting;
+    expect(
+      result.runners.every((runner) => runner.status === 'collected'),
+    ).toBe(true);
+    expect(names).toEqual([
+      'one/environment.json',
+      `one/${file}`,
+      'two/environment.json',
+      `two/${file}`,
+    ]);
+    expect(await readdir(root)).toEqual([]);
+    for (const runnerId of ['one', 'two']) {
+      const events = progress.filter((event) => event.runnerId === runnerId);
+      expect(events.map((event) => event.status)).toEqual([
+        'waiting',
+        'uploading',
+        'collected',
+      ]);
+      expect(events.at(-1)!.bytes).toBeGreaterThan(0);
+    }
+  });
+  it('两次导出可并发，同一执行机按队列领取，互不删除文件或等待其他导出结束', async () => {
+    const service = createService(async () => [
+      { id: 'one', status: 'online', features: ['diagnostics'] },
+    ]);
+    const root = await directory();
+    const options = { runnerIds: ['one'], window, directory: root, onFile };
+    const first = service.collect(options);
+    const one = await take(service, 'one');
+    const second = service.collect(options);
+    expect(service.take('one')).toBeUndefined();
+    await service.accept('one', one.requestId, body([env, record, manifest]));
+    expect((await first).runners[0].status).toBe('collected');
+    const two = await take(service, 'one');
+    expect(two.requestId).not.toBe(one.requestId);
+    await service.accept('one', two.requestId, body([env, record, manifest]));
+    expect((await second).runners[0].status).toBe('collected');
+    expect(await readdir(root)).toEqual([]);
+  });
+  it('连接中止时停止消费并清除全部临时文件，队列请求不再可领取', async () => {
+    const service = createService(async () => [
+      { id: 'one', status: 'online', features: ['diagnostics'] },
+    ]);
+    const controller = new AbortController();
+    const root = await directory();
+    let entered!: () => void;
+    const consumed = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const collecting = service.collect({
+      runnerIds: ['one'],
+      window,
+      directory: root,
+      signal: controller.signal,
+      onFile: async (file) => {
+        entered();
+        await new Promise<void>((_resolve, reject) =>
+          file.signal.addEventListener(
+            'abort',
+            () => reject(file.signal.reason),
+            { once: true },
+          ),
+        );
+      },
+    });
+    const expected = collecting.catch((error) => error);
+    const request = await take(service, 'one');
+    const uploading = service.accept(
+      'one',
+      request.requestId,
+      body([env, record, manifest]),
+    );
+    const rejectedUpload = uploading.catch((error) => error);
+    await consumed;
+    controller.abort();
+    expect(await expected).toBeInstanceOf(Error);
+    expect(await rejectedUpload).toBeInstanceOf(Error);
+    expect(await readdir(root)).toEqual([]);
+    expect(service.take('one')).toBeUndefined();
+  });
+  it.each(['interleaved', 'outside-date', 'outside-run', 'sink-error'])(
+    '拒绝 %s 并在消费失败时清理',
+    async (reason) => {
+      const service = createService(async () => [
+        { id: 'one', status: 'online', features: ['diagnostics'] },
+      ]);
+      const root = await directory();
+      const collecting = service.collect({
+        runnerIds: ['one'],
+        window: { ...window, runIds: ['chosen'] },
+        directory: root,
+        onFile: async () => {
+          if (reason === 'sink-error') throw new Error('sink failed');
+        },
+      });
+      const request = await take(service, 'one');
+      const bad = {
+        ...record,
+        file:
+          reason === 'outside-date'
+            ? 'runs/2026-10-01/chosen.log'
+            : reason === 'outside-run'
+              ? 'runs/2026-11-01/other.log'
+              : 'runs/2026-11-01/chosen.log',
+      };
+      const records =
+        reason === 'interleaved'
+          ? [env, record, bad, record, manifest]
+          : [env, bad, manifest];
+      await expect(
+        service.accept('one', request.requestId, body(records)),
+      ).rejects.toBeDefined();
+      expect((await collecting).runners[0].status).toBe('failed');
+      expect(await readdir(root)).toEqual([]);
+    },
+  );
 });
