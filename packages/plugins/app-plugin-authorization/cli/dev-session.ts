@@ -2,11 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { AppCommand, CommandError } from '@nocobase/app-cli';
-import { locateApp } from '@nocobase/app-cli/runtime';
 import { Flags, type Interfaces } from '@oclif/core';
-import { databaseManagerToken } from '@nocobase/db';
-import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication/server';
-import { authorizationToken } from '../server/tokens.js';
 
 interface SessionCookie {
   name: string;
@@ -49,11 +45,9 @@ export default class DevSession extends AppCommand {
 
   async run(): Promise<DevSessionResult> {
     const { flags } = await this.parse(DevSession);
-    if (
-      locateApp(this.rootDir).kind === 'deployment' ||
-      process.env.NODE_ENV === 'production'
-    )
-      throw developmentOnly();
+    if (process.env.NODE_ENV === 'production') throw developmentOnly();
+    const { locateApp } = await import('@nocobase/app-cli/runtime');
+    if (locateApp(this.rootDir).kind === 'deployment') throw developmentOnly();
     return this.withApp(async ({ app, env }) => {
       if (app.nodeEnv === 'production' || env.NODE_ENV === 'production')
         throw developmentOnly();
@@ -77,10 +71,19 @@ export default class DevSession extends AppCommand {
       base.pathname = `${base.pathname.replace(/\/+$/u, '')}/`;
       const statePath = app.paths.storage('ui-workflow/auth.json');
       await app.registerProviders();
-      const users = app.container.resolve(userAdministrationServiceToken);
-      const sets = app.container.resolve(authorizationToken).permissionSets;
+      const [database, authentication, authorization] = await Promise.all([
+        import('@nocobase/db'),
+        import('@nocobase/app-plugin-authentication/server'),
+        import('../server/tokens.js'),
+      ]);
+      const users = app.container.resolve(
+        authentication.userAdministrationServiceToken,
+      );
+      const sets = app.container.resolve(
+        authorization.authorizationToken,
+      ).permissionSets;
       const connection = app.container
-        .resolve(databaseManagerToken)
+        .resolve(database.databaseManagerToken)
         .connection();
       const row = await connection.query
         .selectFrom('user')
