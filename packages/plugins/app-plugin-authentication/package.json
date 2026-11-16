@@ -125,7 +125,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",
-    "shadcn": "^4.13.1",
+    "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "^1.2.5",
     "typescript": "catalog:",
