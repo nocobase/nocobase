@@ -79,9 +79,14 @@ export function failureStage(
         : '';
   if (['ENOTFOUND', 'EAI_AGAIN', 'EDNS'].includes(code)) return 'dns';
   if (
-    ['ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'ECONNECTION'].includes(
-      code,
-    )
+    [
+      'ECONNREFUSED',
+      'ENETUNREACH',
+      'EHOSTUNREACH',
+      'ECONNECTION',
+      'CONNECT_TIMEOUT',
+      'UND_ERR_CONNECT_TIMEOUT',
+    ].includes(code)
   )
     return 'connect';
   if (
@@ -98,6 +103,8 @@ export function failureStage(
   )
     return 'greeting';
   if (
+    (typeof value.command === 'string' &&
+      /^(?:AUTH(?:ENTICATE)?|LOGIN)(?: |$)/iu.test(value.command)) ||
     value.authenticationFailed === true ||
     code === 'EAUTH' ||
     ['AUTHENTICATIONFAILED', 'AUTHORIZATIONFAILED', 'EXPIRED'].includes(

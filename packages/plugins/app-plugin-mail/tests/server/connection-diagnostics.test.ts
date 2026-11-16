@@ -21,6 +21,8 @@ const credential = {
 describe('credential-safe connection diagnostics', () => {
   it.each([
     [{ code: 'ENOTFOUND' }, 'dns', 'HostNotFound'],
+    [{ code: 'CONNECT_TIMEOUT' }, 'connect', 'ConnectionTimeout'],
+    [{ code: 'ECONNRESET', command: 'AUTH PLAIN' }, 'auth', 'ConnectionLost'],
     [
       { code: 'ESOCKET', originalCode: 'ECONNREFUSED' },
       'connect',
