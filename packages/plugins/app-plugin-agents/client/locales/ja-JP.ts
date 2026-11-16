@@ -785,7 +785,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     variables: {
       title: 'このマシンからの変数',
       description:
-        '実行環境から名前を取得して実行に提供する変数。値はマシン上に残ります。 `nocobase-runner env set NAME` でそこに設定するか、`--pass-env NAME` で渡します。',
+        'ここには変数名のみが表示され、値は実行環境のマシンに保存されます。そのマシンで `nocobase-runner env set NAME` を実行すると、標準入力から値を保存できます。現在のターミナルで export 済みの変数を渡すには、フォアグラウンド実行では `nocobase-runner start --pass-env NAME`、バックグラウンドサービスでは `nocobase-runner service install --pass-env NAME` を実行します。後者は現在の値を保存し、サービスを再起動します。サービスはシェル設定ファイルを読み込まないため、値を変更したらサービスのコマンドを再実行してください。変数ごとに `--pass-env NAME` を指定できます。',
       none: 'なし: 実行環境から変数を取得する実行は、開始する前にここで失敗します。',
       unknown:
         '未報告: その実行環境はこの機能よりも古いです。実行環境を更新して表示します。',

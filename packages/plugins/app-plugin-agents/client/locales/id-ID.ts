@@ -787,7 +787,7 @@ const idID: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variabel dari mesin ini',
       description:
-        'Variabel yang disediakan untuk proses yang mengambilnya dari lingkungan runtime, berdasarkan nama; nilainya tetap ada di mesin. Tetapkan satu di sana dengan `nocobase-runner env set NAME`, atau teruskan dengan `--pass-env NAME`.',
+        'Di sini hanya nama variabel yang ditampilkan; nilainya tetap berada di mesin. Pada mesin tersebut, gunakan `nocobase-runner env set NAME` untuk menyimpan nilai dari input standar. Untuk meneruskan variabel yang sudah diekspor di terminal saat ini, gunakan `nocobase-runner start --pass-env NAME` untuk menjalankan di latar depan, atau `nocobase-runner service install --pass-env NAME` untuk menyimpan nilai saat ini dan memulai ulang layanan latar belakang. Layanan tidak membaca file konfigurasi shell; jalankan kembali perintah layanan setelah mengubah nilainya. Ulangi `--pass-env NAME` untuk setiap variabel.',
       none: 'Tidak ada: proses yang mengambil variabel dari lingkungan runtime gagal di sini sebelum dimulai.',
       unknown:
         'Tidak dilaporkan: runnernya lebih tua dari fitur ini. Perbarui runner untuk melihatnya.',

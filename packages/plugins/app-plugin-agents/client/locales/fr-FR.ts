@@ -819,7 +819,7 @@ const frFR: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variables de cette machine',
       description:
-        "Les variables qu'il fournit aux exécutions qui les extraient du runtime, par leur nom ; les valeurs restent sur la machine. Définissez-en un ici avec `nocobase-runner env set NAME`, ou transmettez-le avec `--pass-env NAME`.",
+        'Seuls les noms des variables sont affichés ici ; les valeurs restent sur la machine. Sur cette machine, utilisez `nocobase-runner env set NAME` pour enregistrer une valeur depuis l’entrée standard. Pour transmettre une variable déjà exportée dans le terminal actuel, utilisez `nocobase-runner start --pass-env NAME` pour une exécution au premier plan, ou `nocobase-runner service install --pass-env NAME` pour enregistrer sa valeur actuelle et redémarrer le service en arrière-plan. Les services ne lisent pas les fichiers de configuration du shell ; relancez la commande du service après avoir modifié la valeur. Répétez `--pass-env NAME` pour chaque variable.',
       none: 'Aucun : une exécution qui prend une variable du runtime échoue ici avant de démarrer.',
       unknown:
         'Non signalé : son runner est plus ancien que cette fonctionnalité. Mettez à jour le environnement d’exécution pour les voir.',
