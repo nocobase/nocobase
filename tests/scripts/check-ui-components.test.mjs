@@ -549,7 +549,7 @@ test('rejects a plain form that bypasses the route overlay discard question, a F
   );
   assert.match(
     result.findings[1].replacement,
-    /FeedbackForm.*savedValues.*M7\.4/,
+    /FeedbackForm.*savedValues.*T3\.9/,
   );
   assert.match(
     result.findings[2].replacement,
@@ -938,6 +938,18 @@ test('accepts RowActions reached through a component of the same file, and a cel
       { id: 'actions', cell: ({ row }) => <ImportedActions row={row} /> },
     ];`);
   assert.deepEqual(result.findings, []);
+});
+
+test('accepts up to two exposed row actions and reports a third', () => {
+  const result = inspect(`
+    export const A = () => <RowActions label='a' actions={[]} exposed={['open', 'approve']} />;
+    export const B = () => <RowActions label='b' actions={[]} exposed={['open', 'approve', 'reject']} />;
+    export const C = ({ keys }) => <RowActions label='c' actions={[]} exposed={keys} />;`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [['RowActions', 3]],
+  );
+  assert.match(result.findings[0].replacement, /at most 2 exposed actions/);
 });
 
 test('reports a control beside RowActions in the cell or in a component of the same file', () => {

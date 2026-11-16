@@ -46,19 +46,19 @@ const widgetRoles = new Set([
   'tab',
   'tree',
 ]);
-// Unsaved input in a create or edit form (mobile.md M7.4): the route overlay asks "Discard changes?" before every way
+// Unsaved input in a create or edit form (ui-guidelines.md T3.9): the route overlay asks "Discard changes?" before every way
 // out. A FeedbackForm with values and savedValues lets it compare with what is saved, a restored draft included.
 const formReplacement =
-  "FeedbackForm (#components/feedback-form) with values={form.getValues} and savedValues={the stored or blank values}, so its route overlay asks before discarding the input, a restored draft included (mobile.md M7.4); a search form takes role='search'";
+  "FeedbackForm (#components/feedback-form) with values={form.getValues} and savedValues={the stored or blank values}, so its route overlay asks before discarding the input, a restored draft included (ui-guidelines.md T3.9); a search form takes role='search'";
 const feedbackFormValues =
-  'values={form.getValues} (or values={() => values} for a form kept in useState) and savedValues={the stored or blank values, never the restored draft} on this FeedbackForm, so its route overlay asks before discarding the input, a restored draft or a changed Select included (mobile.md M7.4)';
+  'values={form.getValues} (or values={() => values} for a form kept in useState) and savedValues={the stored or blank values, never the restored draft} on this FeedbackForm, so its route overlay asks before discarding the input, a restored draft or a changed Select included (ui-guidelines.md T3.9)';
 const feedbackFormSpread =
-  'values={form.getValues} and savedValues={the stored or blank values} written on this FeedbackForm itself: a spread whose contents this file does not show cannot confirm them, so its route overlay may not ask before discarding the input (mobile.md M7.4)';
+  'values={form.getValues} and savedValues={the stored or blank values} written on this FeedbackForm itself: a spread whose contents this file does not show cannot confirm them, so its route overlay may not ask before discarding the input (ui-guidelines.md T3.9)';
 const draftDirty =
-  'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (mobile.md M7.4)';
+  'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (ui-guidelines.md T3.9)';
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
 const ownQuestion =
-  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks about unsaved input itself through useNavigationGuard from @nocobase/app-client, and no guard here reads an unsaved state (dirty, unsaved, changed); a guard that only blocks during a save, or a kept draft, never replaces the question (mobile.md M7.4)";
+  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks about unsaved input itself through useNavigationGuard from @nocobase/app-client, and no guard here reads an unsaved state (dirty, unsaved, changed); a guard that only blocks during a save, or a kept draft, never replaces the question (ui-guidelines.md T3.9)";
 // What a guard of a form's own reads when it asks about unsaved input, matched against identifiers, never comments or strings.
 const unsavedState = /dirty|unsaved|changed|modified/i;
 const passiveTags = new Set([
@@ -266,7 +266,7 @@ export function inspectSource(ts, text, file, root) {
 
   const findings = [];
   const accepted = [];
-  // `exemptable` is false for the unsaved-input rules (mobile.md M7.4): no marker waives a create or edit form's
+  // `exemptable` is false for the unsaved-input rules (ui-guidelines.md T3.9): no marker waives a create or edit form's
   // discard question.
   function report(node, tag, replacement, type, exemptable = true) {
     const position = source.getLineAndCharacterOfPosition(
@@ -752,7 +752,7 @@ export function inspectSource(ts, text, file, root) {
             report(
               control,
               'actions column',
-              "RowActions (#components/row-actions): the row's actions in one ⋮ menu, a single action included; show an action outside it only through exposed, for an action the user or a confirmed design names (T1.5)",
+              "RowActions (#components/row-actions): the row's actions in one ⋮ menu, a single action included; show at most 2 primary actions named in the page plan outside it, only through exposed (T1.5)",
             );
         }
       }
@@ -862,6 +862,34 @@ export function inspectSource(ts, text, file, root) {
     );
   }
   inspectActionColumns();
+  // RowActions shows at most two primary actions outside its menu (ui-guidelines.md T1.5). Only an array literal
+  // shows its length here; a variable is left to review.
+  (function findExposed(node) {
+    if (
+      (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
+      node.tagName.getText(source) === 'RowActions'
+    ) {
+      const exposed = attribute(ts, node, 'exposed');
+      let value = exposed?.initializer;
+      if (value && ts.isJsxExpression(value)) value = value.expression;
+      while (
+        value &&
+        (ts.isAsExpression(value) || ts.isParenthesizedExpression(value))
+      )
+        value = value.expression;
+      if (
+        value &&
+        ts.isArrayLiteralExpression(value) &&
+        value.elements.length > 2
+      )
+        report(
+          exposed,
+          'RowActions',
+          'at most 2 exposed actions, the primary ones named in the page plan; the rest stay in the ⋮ menu (T1.5)',
+        );
+    }
+    ts.forEachChild(node, findExposed);
+  })(source);
   visit(source);
   for (const exception of exceptions.values()) {
     if (!exception.used)
