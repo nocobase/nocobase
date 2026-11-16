@@ -10,6 +10,7 @@ import {
 import { WorkflowDefinitionList } from '#extensions/nocobase-workflow-management/definition-list';
 import { WorkflowExecutionList } from '#extensions/nocobase-workflow-management/execution-list';
 import { WorkflowExecutionDetail } from '#extensions/nocobase-workflow-management/execution-detail';
+import { WorkflowVersionSelect } from '#extensions/nocobase-workflow-management/version-select';
 import { description, transitions, executionLabels } from './fixtures.js';
 import {
   DemoCategories,
@@ -24,6 +25,16 @@ export function WorkflowManagementDemo(): ReactElement {
   const [search, setSearch] = useState('');
   const [ascending, setAscending] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [version, setVersion] = useState<number | undefined>(2);
+  const versionDescription = {
+    ...description,
+    version: version ?? 2,
+    transitions: description.transitions.map((transition) =>
+      transition.name === 'approve' && version === 1
+        ? { ...transition, effects: [] }
+        : transition,
+    ),
+  };
   const [categories, setCategories] = useState<DemoCategory[]>([
     { id: 'sales', title: 'Sales', color: 'blue' },
     { id: 'operations', title: 'Operations', color: 'teal' },
@@ -87,6 +98,17 @@ export function WorkflowManagementDemo(): ReactElement {
                     : 'Order approval · #1'}
                 </span>
                 {tab === 'definitions' && (
+                  <WorkflowVersionSelect
+                    versions={[
+                      { version: 1, label: 'Version 1' },
+                      { version: 2, label: 'Version 2 (latest)' },
+                    ]}
+                    value={version}
+                    onChange={setVersion}
+                    label='Version'
+                  />
+                )}
+                {tab === 'definitions' && (
                   <DemoWorkflowCategory
                     categories={categories}
                     value={workflowCategory}
@@ -98,7 +120,7 @@ export function WorkflowManagementDemo(): ReactElement {
           />
           {tab === 'definitions' ? (
             <WorkflowDefinitionDetail
-              diagramTitle='Process diagram'
+              diagramTitle={`Process diagram · Version ${version}`}
               parametersTitle='Parameter settings'
               diagram={
                 <LifecycleDiagram
@@ -114,7 +136,7 @@ export function WorkflowManagementDemo(): ReactElement {
                             ? 'start'
                             : 'work'
                   }
-                  description={description}
+                  description={versionDescription}
                   ariaLabel='Order approval definition'
                   direction='DOWN'
                   autoHeight
@@ -123,7 +145,8 @@ export function WorkflowManagementDemo(): ReactElement {
               }
               parameters={
                 <p className='text-sm text-muted-foreground'>
-                  This definition has no adjustable parameters.
+                  Version {version} has no adjustable parameters.
+                  {version === 2 && ' Approval sends a notification.'}
                 </p>
               }
             />

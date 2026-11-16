@@ -288,6 +288,7 @@
     "#components/loading": "./registry/components/loading.tsx",
     "#components/pending-button": "./registry/components/pending-button.tsx",
     "#components/task-progress": "./registry/components/task-progress.tsx",
-    "#components/brand-loading-mark": "./registry/components/brand-loading-mark.tsx"
+    "#components/brand-loading-mark": "./registry/components/brand-loading-mark.tsx",
+    "#extensions/nocobase-workflow-management/version-select": "./registry/lifecycle/workflow-management/version-select.tsx"
   }
 }
