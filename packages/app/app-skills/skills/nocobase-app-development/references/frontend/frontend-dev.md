@@ -28,28 +28,28 @@ Call `copyText(text)` directly in the click handler and await its boolean. It fa
 
 ## Look up by task
 
-| Task                                                              | Read                                                                                                             |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Workflow, page plan, verification, acceptance                     | [`ui-workflow.md`](ui-workflow.md), [`ui-acceptance.md`](ui-acceptance.md)                                       |
-| Layout, page templates, interactions, states, copy, accessibility | [`ui-guidelines.md`](ui-guidelines.md)                                                                           |
-| What changes on a phone                                           | [`mobile.md`](mobile.md)                                                                                         |
-| Design references, component selection, the checker               | [`design-contract.md`](design-contract.md)                                                                       |
-| Routes, menus, the page component, permissions, settings pages    | [`page.md`](references/page.md)                                                                                  |
-| Child pages, tabs, covering pages, navigation groups              | [`child-routes.md`](references/child-routes.md), [`navigation.md`](references/navigation.md)                     |
-| Dialogs, drawers, confirmations, the discard question             | [`overlay.md`](references/overlay.md)                                                                            |
-| Forms: fields, dates, validation, server errors, uploads          | [`form.md`](references/form.md)                                                                                  |
-| Lists: `DataTable`, search, filters, row actions, phone cards     | [`table.md`](references/table.md), [`list-feedback.md`](references/list-feedback.md)                             |
-| Endpoints, loading data, errors, toasts, realtime                 | [`api.md`](references/api.md)                                                                                    |
-| Refreshing other views after a write                              | [`data-changes.md`](references/data-changes.md), [`page-freshness.md`](references/page-freshness.md)             |
-| The runnable list/edit example                                    | [`executable-list-edit.md`](references/executable-list-edit.md)                                                  |
-| Relations and batch actions example; the full projects example    | [`executable-relation-batch.md`](references/executable-relation-batch.md), [`example.md`](references/example.md) |
-| Shipped primitives, adding one, registry components               | [`shadcn.md`](references/shadcn.md), [`ui-library.md`](references/ui-library.md)                                 |
-| Base UI composition, tokens, buttons, icons, charts, dark mode    | [`styling.md`](references/styling.md) §2, §7, §8, §10, §12                                                       |
-| Changing a template or registry component, `client/extensions/`   | [`styling.md` §4](references/styling.md#4-customize-template-and-registry-components)                            |
-| The application shell and its header                              | [`shell.md`](references/shell.md)                                                                                |
-| Theme tokens and presets                                          | [`theme.md`](references/theme.md)                                                                                |
-| Copy keys, dates and numbers, languages                           | [`i18n.md`](references/i18n.md)                                                                                  |
-| Frontend tests, the harness, running tests                        | [`testing.md`](references/testing.md)                                                                            |
+| Task                                                              | Read                                                                                                               |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Workflow, page plan, verification, acceptance                     | [`ui-workflow.md`](ui-workflow.md), [`ui-acceptance.md`](ui-acceptance.md)                                         |
+| Layout, page templates, interactions, states, copy, accessibility | [`ui-guidelines.md`](ui-guidelines.md)                                                                             |
+| What changes on a phone                                           | [`mobile.md`](mobile.md)                                                                                           |
+| Design references, component selection, the checker               | [`design-contract.md`](design-contract.md)                                                                         |
+| Routes, menus, the page component, permissions, settings pages    | [`page.md`](references/page.md)                                                                                    |
+| Child pages, tabs, covering pages, navigation groups              | [`child-routes.md`](references/child-routes.md), [`navigation.md`](references/navigation.md)                       |
+| Dialogs, drawers, confirmations, the discard question             | [`overlay.md`](references/overlay.md)                                                                              |
+| Forms: fields, dates, validation, server errors, uploads          | [`form.md`](references/form.md)                                                                                    |
+| Lists: `DataTable`, search, filters, row actions, phone cards     | [`table.md`](references/table.md), [`table.md`](references/table.md#7-list-feedback-states)                        |
+| Endpoints, loading data, errors, toasts, realtime                 | [`api.md`](references/api.md)                                                                                      |
+| Refreshing other views after a write                              | [`data-changes.md`](references/data-changes.md), [`data-changes.md`](references/data-changes.md#no-refresh-button) |
+| The runnable list/edit example                                    | [`executable-list-edit.md`](references/executable-list-edit.md)                                                    |
+| Relations and batch actions example; the full projects example    | [`executable-relation-batch.md`](references/executable-relation-batch.md), [`example.md`](references/example.md)   |
+| Shipped primitives, adding one, registry components               | [`shadcn.md`](references/shadcn.md), [`ui-library.md`](references/ui-library.md)                                   |
+| Base UI composition, tokens, buttons, icons, charts, dark mode    | [`styling.md`](references/styling.md) §2, §7, §8, §10, §12                                                         |
+| Changing a template or registry component, `client/extensions/`   | [`styling.md` §4](references/styling.md#4-customize-template-and-registry-components)                              |
+| The application shell and its header                              | [`shell.md`](references/shell.md)                                                                                  |
+| Theme tokens and presets                                          | [`theme.md`](references/theme.md)                                                                                  |
+| Copy keys, dates and numbers, languages                           | [`i18n.md`](references/i18n.md)                                                                                    |
+| Frontend tests, the harness, running tests                        | [`testing.md`](references/testing.md)                                                                              |
 
 ## Self-check before finishing
 

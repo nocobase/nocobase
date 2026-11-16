@@ -1,335 +1,229 @@
 # List pages
 
-A list page is for browsing, finding and managing one kind of record. Its structure, top to bottom (guideline T1): `PageHeader` (primary button "New X") → toolbar (search, filters, clear filters) → table → pagination. Create, detail and edit are child-route overlays, rendered in the `<Outlet />` at the end of the list page (see [`overlay.md`](overlay.md)).
+How to build a list page with the template's components. What it looks like and how it behaves is T1 in [`../ui-guidelines.md`](../ui-guidelines.md); phone judgement is [`../mobile.md`](../mobile.md); routes and the page frame are [`page.md`](page.md) and [`child-routes.md`](child-routes.md). The runnable reference is the [executable list and edit example](executable-list-edit.md); more worked code is indexed in [`example.md`](example.md).
 
-This document uses `client/pages/projects/index.tsx` as its example; the complete code is in [section 10](#10-complete-code). For the route declaration see [`page.md`](page.md); for the file layout of child routes see [`child-routes.md`](child-routes.md).
+Structure: `PageHeader` with the create button → `DataTable` (its toolbar holds search, filters, summary, Clear and Retry) → pagination → `<Outlet />` for the child routes.
 
 ## 1. Choosing a table component
 
-Use the standard `DataTable` and companions already shipped in `client/components/data-table/`, imported through `#components/data-table`: `DataTableColumnHeader`, `DataTablePagination`, `DataTableViewOptions`, `DataTableSearch` and `DataTableFilter`. Both templates declare `@tanstack/react-table` through the repository's v8 catalog range, and the lockfile resolves 8.21.3. Application ownership of these source files is intentional; replacing the TanStack engine with an agent-written table engine is not. Do not rebuild these components for every app. A short list inside a card uses the same component with `pagination={false}`. For older applications missing the standard files, copy the compatible template implementation and its primitives and dependencies before building list pages.
+Use the shipped `DataTable` and companions from `#components/data-table`: `DataTableSearch`, `DataTableFilter`, `DataTableColumnHeader`, `DataTableViewOptions`, `DataTablePagination`, `DataTableSortMenu`. They are application source on `@tanstack/react-table` v8. Do not write another table; a short list in a card uses `pagination={false}`. An older application copies the template's `client/components/data-table/` with its primitives. If the installed package lacks `useReactTable`/`getCoreRowModel`, repair it to `^8.21.3` (after asking) instead of substituting hooks.
 
-If an installed dependency does not expose `useReactTable` and `getCoreRowModel`, inspect the actual resolved package/version and repair the dependency to the supported v8 range (for example `pnpm add -D @tanstack/react-table@^8.21.3`). Do not install an unqualified latest major, invent substitute hooks, abandon TanStack, or merely document the deviation. A normal dependency installation and a compile test must verify the repaired exports. A historical `.agents/rules/components.md` note about missing exports records a migration issue, not an accepted substitute for the standard component. Inspect the affected application, restore the compatible dependency and TanStack implementation, and update that note only after its checks pass.
+- Up to one endpoint page (≤ 100 records): `DataTable` sorts and paginates in the browser; show the cap notice when `meta.total` exceeds the rows (T1.10).
+- More: the endpoint paginates and returns `total`; pass `manualPagination`, `rowCount` and `manualSorting` with the state from [`useTableUrlState`](#restore-list-position). Keep the previous page's rows while the next loads, decide "empty" by `total`, and restart at page 1 on a new sort or filter.
 
-| Scenario                                                                                                | What to use                                                                                                                      |
-| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| A list that fits in one page of the endpoint (at most 100 records), sorted and paginated in the browser | `DataTable`, with the cap notice when `meta.total` exceeds the rows returned (guideline T1.10, [section 6](#6-loading-the-list)) |
-| Larger data sets that the endpoint paginates, returning the total                                       | `ProjectsServerTable` ([`example/server-table.md`](example/server-table.md)), described below                                    |
-
-- Leave search and filtering to the backend: pass the filters as endpoint parameters; `DataTable` only displays, sorts and paginates.
-- The complete list page, [`example/list-page.md`](example/list-page.md), shows column definitions, the toolbar outside `DataTable`, a row actions menu and the list feedback states working together.
-
-Server-side pagination uses the same standard `DataTable`: pass `manualPagination`, `rowCount`, controlled `paginationState` and `onPaginationChange`; add `manualSorting`, `sortingState` and `onSortingChange` when the endpoint sorts. The component does not paginate or sort the already paginated server response again. Keep page, page size, sort and filters in the URL. The thin `ProjectsServerTable` adapter in [`example/server-table.md`](example/server-table.md) translates page-specific props to the standard component; it does not rebuild table markup or a TanStack instance.
-
-- Keep `page` and `pageSize` in the URL beside `q` and `status`, written through the same `updateParams` ([section 5](#5-writing-search-and-filters-to-the-url)), and reset `page` when a filter changes. Include both in the request key and in `query`.
-- Pass the component the current page's rows, the returned total, `{ pageIndex: page - 1, pageSize }` read from the URL, and an `onPaginationChange` that writes the new values back to the URL; the request follows the URL.
-- Sort on the server, never one page in the browser: the sort lives in the URL as `orderBy` (`updatedAt desc`, the default, or `name`), goes to the endpoint with the page, and `ProjectsServerTable` hands it to the table with `manualSorting`, so the header shows its direction ([`example/server-table.md`](example/server-table.md)). A new sort starts on the first page.
-- The list feedback states in [section 7](#7-list-feedback-states) and the loading rules in [section 6](#6-loading-the-list) stay the same; while a page loads, keep the previous page's rows on screen. Decide "empty" by the endpoint's `total`, not by an empty page: a page past the end is empty while records exist.
+Search and filters always run on the server, as endpoint parameters.
 
 ## Delete and recover a list
 
-Use the application-owned `#hooks/use-list-data`, `#hooks/use-list-location` and `#hooks/use-table-url-state` for business lists. The prepared Users, Roles and Default access pages show the integration. Do not duplicate the request/correction algorithm per page. `useSettingsData` remains a compatibility alias of `useListData`.
+Use the application hooks; do not reimplement request or page correction per page: `useListLocation()` (`#hooks/use-list-location`) gives `params`, `setParams` and `active`; `useListData` (`#hooks/use-list-data`) reads; `useTableUrlState` (`#hooks/use-table-url-state`) holds page and sort.
 
-- `useListLocation()` returns the list's committed `params`, `setParams` and `active`. Use these parameters to construct the request path, including the resource, search, filters, ordering, page, size and any result-changing tab. A covered parent retains its ancestor query and suspends reads. Returning through an explicit link or browser history triggers a fresh read; a direct detail link is verified on return too.
-- `useListData<T>(path, { active, keepPreviousData: true })` keeps existing rows during a refresh, cancels superseded reads and rejects responses invalidated by `reload()` immediately. Pass the current successful total to `useTableUrlState` only when `!request.loading && !request.error`; also pass `active` and `revision: request.revision`. For full client pagination use the count of the complete filtered data, and omit `manualPagination`. A capped response is not a complete client list; use server pagination instead.
-- Spread the table state into `DataTable`; resolve `tableState.error ?? request.error` through `resolveListState`, pass the result as `listState`, and use `request.reload` for Retry. `DataTable` and `ListFeedback` show the matching icon and one short line, with retry and clear actions in the existing toolbar. An automatic correction replaces only `page`; valid pages stay put. Search, filters, ordering, page size, unrelated query parameters and tabs survive. There are at most two corrective reads per refresh/query chain; continued concurrent shrinkage shows the localized list-changed error until Retry or a new query.
-- After a successful deletion call `request.reload()` once, without subtracting selected rows from a cached total. For individual batch endpoints wait for `Promise.allSettled`, retain each failed record and its error, then refresh once after all outcomes are known. A wholly rejected deletion keeps the loaded list and its URL; show the operation error and allow retry. When a network outcome is uncertain, refresh to verify the server state, but never automatically resubmit a deletion.
-- Declare the list's `scopes` and announce each confirmed write instead of passing reload callbacks through the list's `Outlet` context ([keeping views current after a write](data-changes.md)). A detail deletion announces the deleted record and returns using the existing source-list destination. While the detail covers its parent, the announcement invalidates pending reads without changing the detail URL or fetching a hidden list. Return activates one verification read and, if necessary, correction. Keep business permissions, constraints, soft/hard delete semantics and hooks on the existing server endpoint.
-
-Normal deletion costs one list read; an out-of-range page usually costs two, with three reads as the concurrent-change limit. No separate count call, polling or additional server writes are required. This contract supports numbered server pages with an accurate matching total and complete client data. Cursor pagination, infinite scrolling and truncated client results need their own navigation contract.
+- After a confirmed delete, announce it: `announceDataChange({ scopes: [scope], results: { [scope]: null } })` ([`data-changes.md`](data-changes.md)). Do not subtract from a cached total; the list reads again and `useTableUrlState` corrects an out-of-range page (at most two corrective reads, then a "list changed" error until Retry).
+- A batch waits for `Promise.allSettled`, keeps each failure with its error, then announces once. A rejected delete keeps the list and URL and shows the error. After an unknown outcome, announce the scopes without results; never resend a delete automatically.
+- A delete from a detail announces and returns to the source list with its query ([`data-changes.md`](data-changes.md#returning-and-direct-links)).
 
 ## 2. DataTable props
 
-| Prop                                                                    | Description                                                                                                                                                                                         |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `columns`                                                               | `ColumnDef<T>[]`, created with `useMemo`                                                                                                                                                            |
-| `data`                                                                  | Row data, `T[]`                                                                                                                                                                                     |
-| `getRowId`                                                              | Returns a stable row id, for example `(row) => row.id`                                                                                                                                              |
-| `emptyMessage`                                                          | Optional business-specific empty content for a successful unfiltered empty response; built-in request feedback and its clear action come from `ListFeedback` and `ListFeedbackActions`              |
-| `pageSize`, `pageSizeOptions`                                           | Rows per page, default 10; the selectable rows-per-page values default to `[10, 20, 30, 40, 50]`                                                                                                    |
-| `pagination`                                                            | When set to `false`, all rows are shown and there is no pagination bar                                                                                                                              |
-| `toolbar`                                                               | `(table) => ReactNode`, rendered above the table inside `DataTable`, with access to the table instance. For browser-side filtering and `DataTableViewOptions`                                       |
-| `onRowClick`                                                            | Makes the whole row clickable. Do not use it when the row contains links, buttons or menus, because the clicks conflict. It does not work from the keyboard, so the first column still needs a link |
-| `className`                                                             | Class name of the outer container                                                                                                                                                                   |
-| `manualPagination`, `rowCount`, `paginationState`, `onPaginationChange` | Server paging: rows are the current server page, total controls page count, state and changes belong to the page                                                                                    |
-| `manualSorting`, `sortingState`, `onSortingChange`                      | Server sorting: the endpoint applies the controlled sort, not the browser                                                                                                                           |
-| `loading`                                                               | Marks the table busy and disables paging controls while preserving visible rows                                                                                                                     |
-| `showSelectedCount`                                                     | Defaults to `true`; pass `false` on a table without row selection so the pagination bar does not show "0 of N row(s) selected"                                                                      |
+From `client/components/data-table/data-table.tsx`:
+
+- `columns` (`useMemo`), `data`, `getRowId` (`(row) => row.id`).
+- `search`: a `DataTableSearch`. `filters`: `DataTableFilter` elements; `filterCount`: how many are applied (phone badge). `summary`: a short note such as "37 projects".
+- `filtered` with `onClearFilters`: "Clear filters" shows in the toolbar while anything is applied, with results too.
+- `listState`, `loading`, `loadingIdentity`, `onRetry`: request feedback ([section 7](#7-list-feedback-states)).
+- `getColumnLabel`: translated column names for `DataTableViewOptions` and the phone "Sort" menu.
+- `toolbar`: `(table) => ReactNode` after search and filters, for `DataTableViewOptions`, export or bulk actions; never search, filters or a sort menu.
+- `renderCard`, `actionsColumnId` (default `'actions'`), `selectionColumnId` (default `'select'`): [phone cards](#phone-cards).
+- Server state: `manualPagination`, `rowCount`, `paginationState`, `onPaginationChange`, `manualSorting`, `sortingState`, `onSortingChange`, `sortableColumns`.
+- `pagination` (`false` hides it), `pageSize`, `pageSizeOptions`, `showSelectedCount` (`false` without selection).
+- `emptyMessage`, `emptyAction`: business content for a successful unfiltered empty result; never the standard create button.
+- `onRowClick`, `className`. Avoid `onRowClick` when rows hold links or menus; it is not keyboard reachable, so the name still links.
 
 ## 3. Known DataTable behavior
 
-The following holds for the standard `client/components/data-table/` implementation shipped in the templates. Know these points before you use it, and handle them as needed in the design and the implementation:
-
-| Behavior                                                     | Impact                                                                                                                                         | What to do                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The pagination bar shows "N of M row(s) selected" by default | A table without row selection would show "0 of N row(s) selected."                                                                             | Pass `showSelectedCount={false}` on a table without selection. An application generated before `DataTable` had this prop adds it: `readonly showSelectedCount?: boolean` in `DataTableProps`, defaulted to `true` and passed to `<DataTablePagination>`                                                                                                                                                                                                                                                                                               |
-| `DataTableViewOptions` shows raw column ids                  | Without `getColumnLabel` the menu lists `column.id` (untranslated, guideline C1); the trigger remains available on narrow screens              | Render it as `toolbar={(table) => <DataTableViewOptions table={table} getColumnLabel={(column) => t(…)} />}` with translated labels. When the page does not need column toggling, set `enableHiding: false` on the columns instead of offering the menu                                                                                                                                                                                                                                                                                               |
-| The header menu of a sortable column includes "Hide"         | If the page has no "Toggle columns" entry, a hidden column cannot be brought back                                                              | Write `enableHiding: false` in the column definition, or put `DataTableViewOptions` in `toolbar`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| No initial sorting state                                     | The default order can only be the order the endpoint returns, and no header shows a sort direction until the user sorts                        | Have the endpoint return the default order (guideline T1.8: most recently updated first). The server-paginated table keeps the sort in the URL, so its header shows the default direction; if a browser-sorted list must show it too, add an optional `initialSorting` prop to `DataTable`                                                                                                                                                                                                                                                            |
-| Returns to page 1 when the data changes                      | Search, filtering, refreshing and deleting all return to page 1                                                                                | Usually what you want. To stay on the current page, change `DataTable` (for example, add an `autoResetPageIndex` prop passed through to `useReactTable`) and handle the current page exceeding the page count after a delete                                                                                                                                                                                                                                                                                                                          |
-| Browser-side sorting compares character codes                | Chinese is not sorted by pinyin                                                                                                                | Offer no sorting on Chinese columns, or write a `sortingFn` in the column definition that compares with `Intl.Collator(locale)` (the example's name column does this)                                                                                                                                                                                                                                                                                                                                                                                 |
-| The built-in `toolbar` container wraps                       | It sits between the page header and the rows, and holds the shared Clear and Retry actions (Clear with results only when `filtered` is passed) | Pass `DataTableSearch` as `search` (the magnifier sits inside the field, it applies as typing pauses and on Enter, so there is no separate search button), each filter as a `DataTableFilter` in `filters` with `filterCount`, and `getColumnLabel`: `DataTable` lays them out on one row and, on a phone, collapses the filters into a "Filters" sheet and adds the "Sort" menu ([M4.1](../mobile.md#m4-search-filters-and-the-toolbar)). `toolbar` is for the rest (`DataTableViewOptions`, bulk actions), never the search, filters or a sort menu |
+- The pagination bar shows "N of M row(s) selected": pass `showSelectedCount={false}` without selection.
+- `DataTableViewOptions` and a sortable header's "Hide" use raw ids and can hide a column for good: pass `getColumnLabel` and offer `DataTableViewOptions` in `toolbar`, or set `enableHiding: false`.
+- There is no initial sort: the endpoint returns the default order (T1.8); a URL-sorted list passes `defaultSorting` to `useTableUrlState`.
+- Browser sorting compares code units: sort Chinese with a `sortingFn` using `Intl.Collator(locale)`, or not at all.
+- Uncontrolled paging returns to page 1 when data changes: use `useTableUrlState` to keep the page.
 
 ### Phone cards
 
-An ordinary business list shows one card per record below the `md` breakpoint (guideline T1.13, [M3 of the phone experience](../mobile.md#m3-lists-cards-and-tables)). Pass `renderCard` to `DataTable`; it renders a semantic list of the cards in place of the table on phones and keeps everything else: the list states with their icons, the refresh indicator, kept geometry while a new query loads, selection state and pagination. A card opens its record through its own link (its name, T1.3); `onRowClick` applies only to table rows. It reads the viewport on the first render, so a phone never flashes the table, and changing width sends no request. An application whose `DataTable` predates `renderCard` copies the template's `data-table/` directory, including `sort-menu.tsx`, before using it.
+Pass `renderCard` for an ordinary business list (T1.13). Below `md` the rows become cards with the same states, selection and pagination; the first render already knows the width, so a phone never flashes the table.
 
 ```tsx
 <DataTable
-  {...tableState}
+  {...tableProps}
   columns={columns}
-  data={rows ?? []}
+  data={rows}
   getRowId={(row) => row.id}
   search={
     <DataTableSearch
       value={q}
       label={t('projects.search')}
-      onSearch={(value) => setQuery({ q: value })}
+      onSearch={(value) => setFilter('q', value)}
     />
   }
   filters={
-    <>
-      <DataTableFilter label={t('projects.fields.status')}>
-        <StatusFilter … />
-      </DataTableFilter>
-      <DataTableFilter label={t('projects.fields.owner')}>
-        <OwnerFilter … />
-      </DataTableFilter>
-    </>
+    <DataTableFilter label={t('projects.fields.status')}>
+      <StatusFilter value={status} onChange={(v) => setFilter('status', v)} />
+    </DataTableFilter>
   }
-  filterCount={appliedFilters}
-  // A result count joins the toolbar row on desktop and sits above the pagination on a phone (M1.1).
-  summary={t('projects.count', { count: total })}
-  filtered={hasFilters}
+  filterCount={status ? 1 : 0}
+  filtered={Boolean(q || status)}
   onClearFilters={clearFilters}
+  summary={t('projects.count', { count: total })}
   getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
   renderCard={(row, card) => (
-    <ProjectCard project={row.original} actions={card.actions} … />
+    <ProjectCard project={row.original} actions={card.actions} />
   )}
 />
 ```
 
-- The card is `rounded-lg border p-4`: the record's name link first (T1.3) with its status `Badge` beside it (T1.4), then two or three key fields as a small label–value list, and the row's "⋮" menu (`card.actions`) at the end. The complete card is `ProjectCard` in [`example/list-page.md`](example/list-page.md). Do not repeat every column; the detail holds the rest.
-- With `getColumnLabel`, phone cards get an icon "Sort" menu on the search row (`DataTableSortMenu`), offering every sortable column in both directions under the translated names the headers show, and driving the same sorting state as the headers. Spread `useTableUrlState` into `DataTable`, as above: it passes `sortableColumns`, so only the URL's `sortColumns` are sortable, in the headers and the menu (M4.4). A controlled `onSortingChange` writes the URL and resets the page as a header click does. A dot on the icon marks an applied sort; from `md` up the headers sort and the menu is gone. Render `DataTableSortMenu` yourself only for a list outside `DataTable`.
-- The card's menu repeats the row's actions (M3.1), and `DataTable` provides it: `renderCard` receives the cell of the actions column (id `actions`, or `actionsColumnId`) as `card.actions`, already at a 32px tap size. Place it in the card's layout (`ProjectCard` in the example puts it after the name); a card that leaves it out still gets it in its top-right corner. Never write a second, different action control into the card, such as an inline Edit button beside a row's "⋮" menu. A list without row actions names its case (a), (b) or (c) of M3.1 in the design or report; the customer list of the [executable relation and batch example](executable-relation-batch.md) is case (c).
-- With selection, render a `Checkbox` in the card with the same `aria-label` as the selection column, from `row.getIsSelected()` and `row.toggleSelected`; bulk actions stay in `toolbar`. Give the selection column the id `select` (or pass its id as `selectionColumnId`): `DataTable` then renders its header, the page's select-all checkbox with its indeterminate state, above the cards with the visible label "Select all on this page", which is also a tap target for it. The checkbox keeps its own `aria-label` ("Select all on this page"), which is its whole accessible name there: the visible text is hidden from assistive technology so the name is not read twice (M3.2).
-- Keep a table on phones only for rows compared across columns (M3.4): omit `renderCard`, and the table scrolls sideways inside its own frame.
+- A card is `rounded-lg border p-4`: the name link with its status `Badge`, two or three key fields, then `card.actions`. A card that ignores `card.actions` still gets them in its corner; never add a second, different action control.
+- With `getColumnLabel` the phone toolbar gets the "Sort" menu by itself; render `DataTableSortMenu` only for a list outside `DataTable`.
+- With selection, the card renders a `Checkbox` from `row.getIsSelected()`/`row.toggleSelected`; the `select` column header renders above the cards as "Select all on this page".
+- Omit `renderCard` only for rows compared across columns; the table then scrolls sideways in its own frame.
 
 ## 4. Changing shared components
 
-- You may change the composed components under `client/components/` (`DataTable` and others): only add optional props and keep the default behavior unchanged, so other pages are unaffected; list these changes in the final report.
-- Do not modify the primitives under `client/components/ui/` for a single page.
-- When all tables need to change together (for example, the page-number width), change the shared component instead of building a separate version in one page.
+Extend `client/components/` compositions only with optional props that keep the default, and list the change in the final report. Never edit `client/components/ui/` primitives for one page.
 
 ## 5. Writing search and filters to the URL
 
-The search term and filter values live in URL query parameters (`?q=…&status=…`), so a refresh, going back or a shared link restores them (guideline T1.7). Request parameters follow the URL, not the input.
+Search, filters, page and sort live in the URL (T1.7); the request is built from the URL, never from input state.
 
-- The search box's `placeholder` says which fields can be searched (guideline T1.1), for example "Search by name or owner". Both the search box and the filter controls need an `aria-label`.
-
-### Parameter names below another page
-
-A list rendered below another page — a tab of a record's page, a list in a drawer — shares the query string with the pages it sits on. Those pages keep their own search and filters there, and links carry them down so that going back restores them (guideline L6), so a list below them owns only the names it adds:
-
-- Name its parameters after what it lists (`ordersQ`, `ordersStatus`; `useUrlSearch({ param: 'ordersQ' })`), never the `q` or `status` of a page above it.
-- Read and change only those. A customers list's `?status=vip` must not filter the customer's orders, and clearing the orders' filters leaves it in place.
-- Add them to the list of parameters the page that owns the list removes when the user leaves ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
-
-### Do not bind the search box directly to the URL
-
-Do not write `value={searchParams.get('q')}` together with a `setSearchParams` call in `onChange`. React Router changes the URL inside a transition, and between two keystrokes React resets the input to the old URL value: a Chinese input method leaves a string of raw pinyin in the box, the cursor jumps to the end when you edit in the middle, and fast typing drops characters (violating guideline A7). `tsc`, ESLint and tests that fill in a value in one step (such as Playwright's `fill()`) cannot catch this; verify with real character-by-character typing and an input method.
-
-### What the list page does
-
-Each behavior below is in `useUrlSearch` (`client/hooks/use-url-search.ts`, [`example/url-search.md`](example/url-search.md)), with the reason in a comment next to it; the names are its variables and functions. A list page calls the hook and spreads its `inputProps` onto the search box, as [`example/list-page.md`](example/list-page.md) does; do not reimplement it.
-
-1. The input's text lives in state (`text`); typing starts a 300ms timer (`schedule`, guideline I5), and nothing is scheduled while an input method is composing (`isComposing`, then `onCompositionEnd`).
-2. The timer writes `q` to the URL with `{ replace: true }` through `updateParams`, which starts from `paramsRef`, the latest parameters, instead of `setSearchParams((prev) => …)`, whose `prev` can be stale when two writes race. The request uses the trimmed value.
-3. Back, forward and links update the input during render by comparing with `seenSearch`, never in an effect; a value this page wrote itself (`ownSearch`) does not overwrite what the user typed since; a timer whose `q` changed underneath it (router or address bar) drops its write.
-4. The status filter passes `items` to `Select`; `'all'`, `null` and an unknown URL value all mean no filter (`isProjectStatus`).
-5. "Clear filters" shows as soon as the input has text: the page passes `filtered={hasFilters}` (`hasFilters` reads `text`) and `onClearFilters` to `DataTable`, whose toolbar then shows it beside the controls with results too, and it calls `clear`, which cancels the timer and empties the box and `q`, passing the page's own filters to remove (`status`); the page then focuses the search box (`searchRef`, guideline A6).
+- Search is `DataTableSearch` (`value`, `onSearch`, `label`, optional `placeholder`, `debounceMs`). It owns the typed text, applies it 300 ms after typing pauses or on Enter, never mid-IME composition, and follows the URL when it changes elsewhere. `onSearch` writes `q` with `{ replace: true }` and deletes `page`. Never hand-make a search input or bind an `<Input>` to `searchParams` (it loses IME input, A7). The `placeholder` names the searched fields (T1.1).
+- Each filter control has its own `aria-label`, writes its parameter and deletes `page`; `'all'`, `null` and unknown values mean no filter.
+- `clearFilters` removes `q`, the filters and `page` in one `setParams`, keeping sort and page size, then focuses the search box (A6).
+- A list below another page (a record's tab, a drawer) names its parameters after what it lists (`ordersQ`) and never touches the parent's `q` or `status`.
 
 ## 6. Loading the list
 
-Use the shared `useListData` hook and [list request feedback](list-feedback.md) contract. The request path includes the effective query, filters, pagination and ordering, while its request identity also includes the refresh revision and active state. `loading` stays true until that identity succeeds or fails and is also true while `active` is false; it is a readiness flag, not proof that a network request is running. Preserve it for request validity and pagination checks. The search term goes to the endpoint as `q`.
+```tsx
+const { params, active } = useListLocation();
+const requestPath = `projects?${remoteQuery(params)}`;
+const request = useListData<ProjectList>(requestPath, {
+  active,
+  keepPreviousData: true,
+  scopes: [projectsScope],
+});
+const { error: tableError, ...tableProps } = useTableUrlState({
+  active,
+  revision: request.revision,
+  sortColumns: ['name', 'updatedAt'],
+  rowCount:
+    request.path === requestPath && !request.loading && !request.error
+      ? request.data?.meta.total
+      : undefined,
+});
+```
 
-A same-query reload keeps the previous rows on screen. Pass `loading={active && request.loading}` to `DataTable`: explicit false suppresses unresolved first-load feedback as well as refresh feedback while the parent query is paused; it never turns missing data into a successful empty result. Omitting `loading` retains `listState`-driven feedback for other request adapters. For card lists, render `ListFeedback` only when `active || state !== 'loading'`, and pass `active && request.loading` to retry and refresh indicators. Returning to the parent starts a fresh read and its own shared 300ms/10s display thresholds. Preserve current-query rows, table structure and cached geometry; never substitute another query's rows. Delay presentation only, never requests, data updates or error handling.
-
-Derive whether displayed rows were filtered from `request.path`, which identifies their last response, rather than the current URL while the next query loads. Clearing filters must not flash "No data yet" over a previous filtered result. `request.reload` has a stable identity and invalidates the previous request synchronously before advancing the refresh revision. Pass it through the child routes' context; do not replace it with a separate page-local request loop. A list endpoint caps `pageSize` at 100. A browser-paginated list that requests 100 rows must show a cap notice when the successful current-query total exceeds the rows returned. Use server pagination for larger lists.
+- While a child route covers the list, `active` is false: rows and query stay, nothing is sent, and one read follows the return. Pass `loading={active && request.loading}`.
+- `request.path` names the query the shown rows answer; derive "rows are filtered" from it, not the URL, so clearing filters never flashes "No data yet".
+- `rowCount` only for the current successful query.
+- Writes refresh through `scopes` ([`data-changes.md`](data-changes.md)); there is no Refresh button. `request.reload` is for Retry only.
 
 ## 7. List feedback states
 
-Resolve the request snapshot with `resolveListState` and render `ListFeedback` or pass `listState` to `DataTable`. Each built-in state shows only its matching icon and one short line: Loading, No data yet, No results, Access denied, Session expired or Unable to load list. `DataTable` keeps its authorized column headers and toolbar, with feedback inside a full-width table-body row; access-denied and no-current-data states hide rows. A failed refresh keeps the old rows and shows one stale-data line in a body row before them. Clear, Retry and sign-in actions stay in the existing toolbar or authentication flow; the standard create action stays in the permission-gated page header, including when a successful query returns no records. Do not put a standard create button in `emptyAction`.
+Resolve the snapshot with `resolveListState` from `@nocobase/app-client` and pass it as `listState`; a card list outside `DataTable` uses `ListFeedback` and `ListFeedbackActions` from `#components/list-feedback`.
 
-The shared component provides accessible English and Chinese text. A business-specific empty message or action applies only to a successful unfiltered empty result. Do not infer denied access or hidden records from a successful empty response. HTTP 401 and 403 hide cached rows; 401 follows the existing sign-in route. Retry preserves filters, sorting and pagination. Clear cancels pending debounce and resets controls, applied filters and page together, preserving sort and page size. Never swallow a request failure into an empty array or add an existence/count probe to diagnose emptiness.
+```tsx
+const current = request.path === requestPath;
+const state = resolveListState(
+  {
+    data: current ? request.data : undefined,
+    error: tableError ?? request.error,
+    isPending: request.loading && !current,
+  },
+  current ? (request.data?.meta.total ?? 0) : 0,
+  shownRowsFiltered,
+);
+const rows = listStateShowsData(state) ? (request.data?.data ?? []) : [];
+// <DataTable listState={state} loading={active && request.loading} onRetry={request.reload} onClearFilters={clearFilters} … />
+```
+
+Each state is one icon and one short translated line (S1–S4, C4): first load → Loading (never empty); covered without data → nothing; successful empty → "No data yet"; empty with filters → "No results" with Clear; 403 → "Access denied", rows and header create hidden; 401 → "Session expired" with the sign-in flow; failure without data → "Unable to load list" with Retry; refresh failure → previous rows plus one stale-data line. Never turn an error into an empty array or probe for existence.
+
+A card list keeps the actions in its own toolbar:
+
+```tsx
+<>
+  <ListFeedbackActions
+    state={state}
+    filtered={filtered}
+    onClear={clearFilters}
+    onRetry={request.reload}
+    busy={active && request.loading}
+  />
+  {active || state !== 'loading' ? (
+    <ListFeedback state={state} identity={request.path}>
+      <ProjectCards rows={rows} />
+    </ListFeedback>
+  ) : null}
+</>
+```
+
+Show the header's create button once the permission check (for example `useCan` from `@nocobase/app-plugin-authorization/client`) resolves to allowed and the state is `ready`, `empty`, `no-results` or `refresh-failed` (L7).
 
 ## 8. Column definitions and row actions
 
-- Create `columns` with `useMemo`, and put everything it uses (`t`, the formatters, `location.search`) in the dependency array.
-- **The first column is the name** (guideline T1.3), a `RecordLink` from `#components/record-link` to the detail child route: `to={{ pathname: row.original.id, search: location.search }}`. The path is relative and keeps the query parameters, so closing the detail view returns to the same filtered result.
-- **Sortable columns** (guideline T1.8): make every date and time column (created, updated, due) and every number column sortable without being asked, and the name column when it sorts in the current language's order. Leave statuses, types, tags, people, long text and yes/no values as plain titles unless the business asks for them and the order means something.
-- A sortable column uses `DataTableColumnHeader` as its `header` and sets `enableHiding: false` (see [section 3](#3-known-datatable-behavior)); a plain column uses the translated text directly. In a server-paginated list, the endpoint must accept the column in `orderBy`.
-- Sorting Chinese names in the browser: `sortingFn` compares with `Intl.Collator(locale)`.
-- **Show status as text in a Badge** (guideline T1.4): `ProjectStatusBadge` (`status-badge.tsx`; for the code see [`i18n.md`](i18n.md)) is shared by the list and the detail view, so a given status looks the same everywhere.
-- **Show an empty value as "—"**, with `text-muted-foreground`.
-- **Format times in the current language** (guideline T1.6): get `locale` from `useLocale()` and create the `Intl.DateTimeFormat` with `useMemo`, so it updates when the language switches.
-- **Right-align numbers** (guideline T1.6): `DataTable` has no per-column alignment option, so align inside the header and the cell, in a `div` (`text-right` does nothing on an inline `span`): `header: () => <div className='text-right'>{t('projects.fields.budget')}</div>` and `cell: ({ row }) => <div className='text-right tabular-nums'>{amountFormat.format(row.original.budget)}</div>`, with `amountFormat` an `Intl.NumberFormat` created in `useMemo` from `locale`. For a sortable number column, pass the alignment to the header itself, with no wrapper: `<DataTableColumnHeader column={column} title={…} className='justify-end text-right' />` (its root is a flex row when the column sorts and a plain `div` when it does not, so both classes are needed). The sort button keeps its padding, so the title sits slightly left of the numbers.
-- **Show a cut-off cell's full content on hover** (guideline T1.11): a cell does not wrap and the table widens to fit it, so content is cut off only where a column limits its width. There it ends in an ellipsis, and hovering shows the full value, but only when it is cut off:
-  - Text, or a link such as the name column, uses a `Tooltip` whose trigger is the truncated element; `TooltipTrigger` leaves a `RecordLink` a native link. `onOpenChange` cancels the tooltip when the value fits:
+- `columns` in `useMemo`, depending on `t`, formatters and `location.search`.
+- The first column is the name (T1.3): a `RecordLink` (`#components/record-link`) with a relative path that keeps the query, `to={{ pathname: row.original.id, search: location.search }}` (`${id}/details` for a detail page, [`page.md`](page.md)).
+- Sortable columns (T1.8) use `DataTableColumnHeader` and `enableHiding: false`; a server list lists them in `sortColumns`.
+- Status is text in a `Badge` (T1.4); empty is "—" in `text-muted-foreground`; dates and numbers use `Intl` formatters from `useLocale()`'s `locale`, in `useMemo` (T1.6). Right-align numbers in a `div` (`text-right tabular-nums`); a sortable one passes `className='justify-end text-right'` to `DataTableColumnHeader`.
+- A width-limited cell truncates (`block max-w-60 truncate`) and shows the full value on hover only when cut off (T1.11): a `Tooltip` whose `onOpenChange` calls `details.cancel()` when `trigger.scrollWidth <= trigger.clientWidth`. A truncated `Badge` uses a hover `Popover` instead.
 
-    ```tsx
-    <Tooltip
-      onOpenChange={(open, details) => {
-        // A value that fits needs no tooltip.
-        const trigger = details.trigger;
-        if (open && trigger && trigger.scrollWidth <= trigger.clientWidth) {
-          details.cancel();
-        }
-      }}
-    >
-      <TooltipTrigger
-        render={
-          <RecordLink
-            to={{ pathname: row.original.id, search: location.search }}
-            className='block max-w-60 truncate'
-          />
-        }
-      >
-        {value}
-      </TooltipTrigger>
-      <TooltipContent>{value}</TooltipContent>
-    </Tooltip>
-    ```
-
-    For plain text, render `<span className='block max-w-60 truncate' />` in place of the `RecordLink`.
-
-  - A `Badge` or other styled content goes in a `Popover` that opens on hover (`openOnHover delay={0}` on the trigger) instead: the tooltip surface is inverted, so a badge on it is unreadable.
-  - `truncate` shows the ellipsis only on a block element. On a flex element such as `Badge` it clips without one, and the centered text loses both ends, so put the text in a `<span className='truncate'>` inside the badge and give the badge `min-w-0 shrink`. Do not use `line-clamp` in a cell: it needs text that wraps, which the cell prevents, so it only clips.
-- **Put row actions in the row's "⋮" menu with `RowActions`** (guideline T1.5). `#components/row-actions` ships with both templates; it renders the same trigger, menu, ordering and empty case on every page, so do not compose a `DropdownMenu`, buttons or links in the actions cell yourself:
-
-  ```tsx
-  {
-    id: 'actions',
-    enableHiding: false,
-    // No visible header text; the name stays for screen readers.
-    header: () => <span className='sr-only'>{t('projects.actions.label')}</span>,
-    cell: ({ row }) => (
-      <RowActions
-        label={t('projects.actions.more', { name: row.original.name })}
-        actions={[
-          canUpdate && {
-            key: 'edit',
-            label: t('projects.actions.edit'),
-            render: <Link to={{ pathname: `edit/${encodeURIComponent(row.original.id)}`, search: location.search }} />,
-          },
-          canDelete && {
-            key: 'delete',
-            label: t('projects.actions.delete'),
-            destructive: true,
-            onClick: () => setDeletion({ open: true, project: row.original }),
-          },
-        ]}
-      />
-    ),
-  }
-  ```
-
-  - `label` is the trigger's `aria-label` and names the record ("Actions for Apollo", "Apollo 的操作"); a button that opens a menu needs no tooltip (guideline A1).
-  - `actions` is the stable order of the items. Leave out an item the viewer may not do (`canX && { … }`); when none is left, `RowActions` renders nothing, so no empty menu or trigger appears. A state-dependent item (Start for a stopped instance, Open for an installed module, Enable for a disabled account) is chosen in this array: the entry looks the same in every state. Use `disabled` only for an item that is temporarily unavailable, such as while it runs.
-  - "Edit" is a child route, so its item renders as a link through `render`: `edit/:projectId` is the list's own edit route, so the dialog opens alone over the list and closing returns to it; the drawer's "Edit" uses the route stacked on the drawer instead ([section 2.1 of `overlay.md`](overlay.md#21-declare-the-child-routes)). An external link uses `render={<a href={url} target='_blank' rel='noreferrer' />}`.
-  - An item that does something on the server (Install, Start, Disable, Revoke sessions) opens its confirmation when it has consequences, shows its progress in that dialog or in the record's status, and ends in a result toast or an error, as it would from a button; the menu itself closes at once. Keep the existing permission checks, confirmations and feedback when moving such actions into the menu.
-  - `destructive: true` items ("Delete") come last, after a separator, in the destructive style, and open the delete confirmation.
-  - Items are verbs only ("Edit", "Delete"); the row they are in determines the object (guideline C3). The menu items carry no icons, so every page's menu reads the same.
-  - Clicks on the trigger and the items do not reach the row, so a row with `onRowClick` neither navigates nor toggles selection when its menu is used.
-  - The column has no visible header text, no fixed width and no `sticky`, `fixed` or right pinning: the trigger keeps it narrow, and it scrolls with the table. Pin it only for a wide table whose actions would otherwise be out of reach after scrolling sideways, and record why.
-  - `exposed={['start']}` shows the named actions as ghost buttons before the "⋮", the same on every row, while the rest stay in the menu. Use it only when the user asked for that action outside the menu or a confirmed page design shows it; never because the action is frequent or "primary".
-
-- The delete confirmation dialog is `ProjectDeleteDialog`, driven by `deletion` state as [section 4 of `overlay.md`](overlay.md#4-delete-confirmation-alertdialog) describes; after a successful delete, refresh the list and move focus to the search box (`deletedFocusRef`).
-
-### Selection and bulk actions
-
-Add row selection only when the page has a bulk action (guideline L5: bulk actions appear only after rows are selected).
-
-- `DataTable` already keeps the selection state; put a selection column first in `columns`. Its header checkbox selects the current page, it shows the indeterminate state for a partial selection, and each row's `aria-label` names the record (the `checkbox` primitive is added with `yes n | pnpm exec shadcn add checkbox`):
+Row actions are `RowActions` from `#components/row-actions` (T1.5): one "⋮" menu at the row's end, nothing when the viewer has no action. Do not compose menus or buttons in the cell, and do not size its trigger.
 
 ```tsx
-// client/pages/projects/use-select-column.tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import type { ColumnDef } from '@tanstack/react-table';
-import { useMemo } from 'react';
-
-import { Checkbox } from '#components/ui/checkbox';
-
-import type { Project } from './types.js';
-
-/** The row selection column; the list page puts it first in its `columns`. */
-export function useSelectColumn(): ColumnDef<Project> {
-  const { t } = useTranslation();
-  return useMemo<ColumnDef<Project>>(
-    () => ({
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={
-            table.getIsSomePageRowsSelected() &&
-            !table.getIsAllPageRowsSelected()
-          }
-          onCheckedChange={(checked) =>
-            table.toggleAllPageRowsSelected(checked)
-          }
-          aria-label={t('projects.selection.all')}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(checked) => row.toggleSelected(checked)}
-          aria-label={t('projects.selection.row', { name: row.original.name })}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    }),
-    [t],
-  );
+{
+  id: 'actions',
+  enableHiding: false,
+  header: () => <span className='sr-only'>{t('projects.actions.label')}</span>,
+  cell: ({ row }) => (
+    <RowActions
+      label={t('projects.actions.more', { name: row.original.name })}
+      actions={[
+        canUpdate && {
+          key: 'edit',
+          label: t('projects.actions.edit'),
+          render: <Link to={{ pathname: `${row.original.id}/edit`, search: location.search }} />,
+        },
+        canDelete && {
+          key: 'delete',
+          label: t('projects.actions.delete'),
+          destructive: true,
+          onClick: () => setDeletion({ open: true, project: row.original }),
+        },
+      ]}
+    />
+  ),
 }
 ```
 
-- Pass `getRowId={(row) => row.id}` so the selection follows records, not row positions, across reloads.
-- Read the selection in `toolbar={(table) => …}`, the only place the table instance is available: `table.getSelectedRowModel().rows` holds the selected rows on the current data. Render the bulk action there only when that list is not empty, with the count in its label ("Delete 3 projects"), and keep the page's own search and filters outside `DataTable` as [section 3](#3-known-datatable-behavior) says.
-- A destructive bulk action opens an `AlertDialog` naming the count and the consequence (guideline I2), calls one bulk endpoint rather than one request per row, then refreshes the list and clears the selection with `table.resetRowSelection()`. When the endpoint reports that some records failed, say how many in the result toast.
-- A table with selection keeps the default `showSelectedCount`, so the pagination bar shows "N of M row(s) selected".
+- A `RowAction` has `key`, `label` (a verb, C3), `onClick` or `render` (a `<Link>` for a child route), `destructive` (last, after a separator) and `disabled` (temporarily unavailable). Leave out what the viewer may never do; choose state-dependent actions (Start/Stop) in the array.
+- `exposed={['start']}` shows up to two primary actions named in the page plan as buttons before the "⋮"; the rest stay in the menu.
+- Clicks in `RowActions` do not reach `onRowClick`. The column has no header text, fixed width or pinning.
+- An action with consequences confirms first (I2) and ends in a toast or error; delete is in [`overlay.md`](overlay.md#4-delete-confirmation-alertdialog).
+
+### Selection and bulk actions
+
+Add selection only for a bulk action (L5). The first column has id `select`: its header `Checkbox` uses `table.getIsAllPageRowsSelected()`, `indeterminate` for a partial page and `table.toggleAllPageRowsSelected`; each cell uses `row.getIsSelected()` with an `aria-label` naming the record. Read `table.getSelectedRowModel().rows` in `toolbar` and show the bulk action, with the count in its label, only when rows are selected. A destructive one confirms with the count (I2), calls one bulk endpoint, announces, reports partial failures and calls `table.resetRowSelection()`.
 
 ## 9. Child routes and refreshing the list
 
-- "New project" in the page header is a `Button` rendered as a `Link` to `new` that keeps the query string ([section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)).
-- `<Outlet context={outletContext} />` goes at the end of `PageContainer`; the context is memoized, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains. It carries `reload` and `afterDelete` for the create dialog and the drawer (`ProjectsOutletContext`), and `onSaved` and `onNotFound` for the edit dialog a row's menu opens (`ProjectEditOutletContext`), both of which refresh the list.
-- After a save, the child route calls `reload()` to invalidate the list. This worked example wires one parent to its own children; a page whose data also appears in other views (a count, a card, a related list) declares scopes and announces the write instead ([keeping views current after a write](data-changes.md)). While covered, the list keeps its rows and suspends reads; returning activates a fresh read. Keep invalidation independent of whether the delayed refresh indicator is visible.
-- A delete from the detail drawer calls `afterDelete()` before closing: it refreshes the list and, once `loading` is false again, focuses the search box (`focusSearchAfterReloadRef`), because the row whose link had focus is gone (guideline A6). The list's own delete dialog focuses the search box directly (`deletedFocusRef`).
+- "New project" is `<Button nativeButton={false} render={<Link to={{ pathname: 'new', search: location.search }} />}>`.
+- Place a plain `<Outlet />` at the end of `PageContainer`, with no `reload`, `onSaved` or `afterDelete` context: child routes announce their writes and the list follows its `scopes` ([`data-changes.md`](data-changes.md)).
+- When a delete removes the focused row, focus the search box or a focusable page region after the return read (A6).
 
-## 10. Complete code
+## 10. Verification
 
-The complete list page, `client/pages/projects/index.tsx`, is [`example/list-page.md`](example/list-page.md). Every variable and function named in sections [5](#5-writing-search-and-filters-to-the-url), [6](#6-loading-the-list), [7](#7-list-feedback-states), [8](#8-column-definitions-and-row-actions) and [9](#9-child-routes-and-refreshing-the-list) appears there.
-
-## 11. Verification
-
-Try it by hand in a browser; static checks cannot find input method and focus problems:
-
-- Type with a Chinese input method, edit in the middle, and type quickly: the input drops no characters and the cursor does not jump; about 300ms after typing stops, `?q=` appears in the address bar and the list refreshes, keeping the old data; a fast refresh shows no Spinner, while a slow refresh shows it after the short presentation delay.
-- Change the status filter within 300ms of typing: the address bar keeps both `q` and `status`.
-- Refresh the page, use the browser's back and forward, and click the sidebar menu: the input, the filters and the list stay consistent.
-- "Clear filters": appears as soon as the first character is typed; after a click, the button disappears, focus is on the search box, and "No data yet" does not flash.
-- All list states have appeared with their matching icon and one short line; clear, retry and sign-in actions remain in the existing toolbar or authentication flow.
-- The name link, "New project" and the "Edit" menu item open their child routes, "Edit" as the dialog alone; opening a child route's URL directly also works; after closing, the query parameters are still there.
-- Open and close an overlay, cancel an unchanged form, save a change, and return through browser history. The covered list shows no refresh indicator; on return, fast reads do not flash one, slow reads show it, and success or failure clears it without shifting the table. Verify updated values after saving and preserved query, pagination and scroll context. Use deferred responses and fake timers for component assertions, including completion or unmount before the delay expires; inspect the transition in the browser, not only its settled screenshot.
-- The date and number columns sort, and a server-paginated list keeps the sort in the URL and starts it on the first page.
-- Delete a record in the detail drawer: after the list refreshes, focus is on the search box.
-- At 375×667 and at a 390–412px phone width: the search box, "Filters" and "Sort" share one row above the first cards, which show name, status and key fields; "Sort" sorts and keeps the URL; several filters open from "Filters" with the applied count; pagination keeps its groups whole; the page never scrolls sideways (check `document.documentElement.scrollWidth <= innerWidth`); everything is legible in both the light and dark themes and both languages. At a desktop width the table, its headers and its sorting are unchanged (guidelines A4, T1.13 and F6; [M10](../mobile.md#m10-verifying-the-phone-experience)).
+- Chinese IME, editing mid-text and fast typing lose nothing; about 300 ms later `?q=` appears and old rows stay while new ones load. A filter changed right after typing keeps both.
+- Refresh, back, forward and the sidebar entry keep input, filters and list consistent. "Clear filters" clears in one step and focuses the search box without flashing "No data yet".
+- Every [section 7](#7-list-feedback-states) state appears with its icon and line.
+- Name link, "New" and "Edit" open their child routes, also by direct URL; closing keeps the query; saving or deleting updates the list on return.
+- Date and number columns sort; a server list keeps the sort in the URL and restarts at page 1.
+- At 1440 and 390 px: search, "Filters" and "Sort" share one row above the cards, nothing scrolls sideways, both themes and languages read correctly.
 
 ### Restore list position
 
-The template's `#hooks/use-table-url-state` adapts standard `DataTable` controlled pagination/sorting to `page`, `pageSize`, `sort` and `order` query parameters. Pass an explicit allowlist of sortable column IDs. Use it with `RoleList.tableState` or spread its result into `DataTable`; server lists also set `manualPagination`/`manualSorting` and send those values to the real API. Supply `rowCount` only for the current successful query, never cached rows during loading/errors. Client lists retain the full dataset for the table's local sorting/paging. Filter changes reset `page` while preserving unrelated URL context, page size and ordering. Links to child details carry `location.search` and close to the same view. Test reload/history and removal of the last row on a page. A controlled table delegates page resets to the host so refreshed data cannot silently jump back to page one.
-
-Use `readTableUrlState(params, options)` when a request must be constructed before its result can be supplied to `useTableUrlState`. Pass the identical options to both; never re-parse raw sorting parameters independently in the request. `sortFormat: 'sort-order'` is the existing single-column contract; `sortFormat: 'orderBy'` uses the existing comma-separated ordered field list (`name,updatedAt desc`) for endpoints that support it. Do not enable multi-column interaction for an endpoint that accepts only one field. `defaultSorting` sets the same fallback for controls and requests; invalid fields or directions fall back to it. Page size changes reset to page one even when TanStack supplies an old index. Search, filters and sorting also reset the page. Only the current successful query's count may correct an out-of-range page; loading, failures and stale responses must not clamp it.
-
-List context belongs to its route and dataset. Use the [list-tab recipe](child-routes.md#list-tab-breadcrumbs-and-private-conditions) for tabbed lists and sensitive conditions. Public shareable parameters remain in the URL; this does not authorize putting private conditions there. There is no cross-session preference storage.
+`useTableUrlState({ sortColumns, defaultSorting, defaultPageSize, pageSizeOptions, sortFormat, rowCount, active, revision })` maps `page`, `pageSize` and `sort`/`order` (or `orderBy` with `sortFormat: 'orderBy'`) to controlled table state and returns `paginationState`, `onPaginationChange`, `sortingState`, `onSortingChange`, `sortableColumns`, `pageSizeOptions` and `error`. Page-size and sort changes reset the page; invalid values fall back to defaults. When the request is built before the hook, call `readTableUrlState(params, options)` with the same options instead of parsing the sort yourself. Tabbed lists and private conditions follow [`child-routes.md`](child-routes.md).

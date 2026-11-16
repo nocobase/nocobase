@@ -1,6 +1,6 @@
 # Keeping views current after a write
 
-One record often appears at once in a list, its detail, a dashboard card and a count. After a create, edit or delete the server confirmed, every view that reads it shows the new data the next time it is visible. Default and Examples ship the mechanism as application source: `client/hooks/use-data-changes.ts` and the `scopes`/`merge` options of `client/hooks/use-list-data.ts`. The Examples Projects page (`client/pages/skill-projects/`, published as the [executable list and edit example](executable-list-edit.md)) is the runnable reference.
+One record often appears at once in a list, its detail, a dashboard card and a count. After a create, edit or delete the server confirmed, every view that reads it shows the new data the next time it is visible. The templates ship it as `client/hooks/use-data-changes.ts` and the `scopes`/`merge` options of `client/hooks/use-list-data.ts`. The Examples Projects page (`client/pages/skill-projects/`, published as the [executable list and edit example](executable-list-edit.md)) is the runnable reference.
 
 ## The contract
 
@@ -13,13 +13,11 @@ One record often appears at once in a list, its detail, a dashboard card and a c
 
 ## Outcomes
 
-| Write outcome                                     | Feedback                                             | Announce                                             |
-| ------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
-| Success                                           | Success toast; close or return                       | `scopes` and `results` from the response             |
-| Delete success, or 404 on delete                  | Success (or "already deleted"); return to the source | `results: { [scope]: null }`                         |
-| 404 on edit or a missing record                   | Missing-record message, no Retry                     | `scopes` only, so stale views show the missing state |
-| Network failure, timeout, 5xx, or failed recovery | Unknown-result message; keep input and operation key | `scopes` only, so views read what actually happened  |
-| Validation, 403 or other definite rejection       | Error where the action started; keep input           | Nothing: no data changed                             |
+- Success: success toast, then close or return; announce `scopes` and `results` from the response.
+- Delete success, or 404 on delete: success (or "already deleted"), return to the source; announce `results: { [scope]: null }`.
+- 404 on edit or a missing record: missing-record message without Retry; announce `scopes` only.
+- Network failure, timeout, 5xx or failed recovery: unknown-result message, keep input and operation key; announce `scopes` only, so views read what happened.
+- Validation, 403 or another definite rejection: error where the action started, keep input; announce nothing.
 
 Never show success before the server confirms it, and never resubmit automatically after an unknown result: retrying is the person's choice and reuses the original operation key ([submission protection](../../submission.md)).
 
@@ -59,7 +57,11 @@ announceDataChange({ scopes: [scope], results: { [scope]: null } });
 await navigate({ pathname: owner, search: routeSearches.get(owner) ?? '' });
 ```
 
-A child route needs no `reload` or `onSaved` callbacks through `<Outlet context>`; keep the context only for state that is not server data, such as the selected rows of a batch action. A view that is not a `useListData` read, such as a TanStack Query snapshot or a chart adapter, subscribes with `useDataChange(scopes, onChange)` and refetches there, honoring its own visibility.
+This is the only refresh mechanism: pass no `reload`, `onSaved` or `afterDelete` callbacks through `<Outlet context>` (keep the context for state that is not server data, such as selected rows). A view that is not a `useListData` read, such as a chart adapter, subscribes with `useDataChange(scopes, onChange)` and refetches there, honoring its own visibility.
+
+## No Refresh button
+
+Ordinary lists, details, settings and dashboards have no persistent action that only rereads data (R4 in [`../ui-guidelines.md`](../ui-guidelines.md#r-data-freshness)): writes refresh through scopes, a failed read offers contextual Retry (which repeats the read, never a write), and a browser reload restores the route and URL state without replaying a write. Keep existing realtime, reconnect and visibility recovery; do not add polling to replace a removed button. Rescan, sync, recheck and regenerate are business operations with their own names, permissions and confirmations, not refreshes. Do not assume or build pull-to-refresh.
 
 ## Returning and direct links
 

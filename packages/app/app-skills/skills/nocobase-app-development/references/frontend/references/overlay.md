@@ -1,129 +1,33 @@
 # Dialogs, drawers and confirmation dialogs
 
-This document shows how to write overlays. For the rules on choosing and stacking overlays, see I1 in [`../ui-guidelines.md`](../ui-guidelines.md); for the form itself, see [`form.md`](form.md); for how to load data, see [`api.md`](api.md).
-
-**Before writing any create or edit overlay (M7.4, Must):** the form is a `FeedbackForm` with `values={form.getValues}` (`values={() => values}` for a form kept in `useState`) and `savedValues` (the stored or blank values, never the restored draft), its save button is `type='submit'` with `form={formId}`, and the page writes no discard question, `beforeunload` handler or `dirty` condition of its own based on a draft or storage. The overlay asks "Discard changes?" on every way out and warns before a reload whenever the form differs from what is saved; a kept draft restores input after a reload and never replaces the question, so it is never a reason to render `OwnDiscardQuestion`, which only declares that the file's own guard asks about its unsaved input. `scripts/check-ui-components.mjs` rejects a plain create or edit `<form>`, a `FeedbackForm` without `values` and `savedValues` (React Hook Form or `useState`), a draft-based `dirty`, and an `OwnDiscardQuestion` without a guard of the file's own that reads an unsaved state, without exceptions. A save in flight is the only lock: after a failed save whose outcome is unknown (`submission.pending`), Cancel stays enabled and `beforeClose` reads only the save in flight, so leaving asks about the changed values and "Discard" leaves. The details are in [section 2.5](#25-beforeclose-checks-before-closing).
+How to build overlays with the template's components. Which overlay to use and how wide is I1 in [`../ui-guidelines.md`](../ui-guidelines.md); the unsaved-input rule is T3.9 there. The form inside a dialog is [`form.md`](form.md); route declaration and the detail-page alternative are [`page.md`](page.md) and [`child-routes.md`](child-routes.md); refreshing other views after a save is [`data-changes.md`](data-changes.md). The runnable reference is the [executable list and edit example](executable-list-edit.md).
 
 ## 1. Choosing an overlay
 
-| Use case                                                                             | Component                      | Width (`className`)                                          | Where the open state lives |
-| ------------------------------------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------ | -------------------------- |
-| Confirm one action (delete, deactivate, etc.)                                        | `AlertDialog`                  | the default                                                  | Component state            |
-| Create or edit with 1–4 fields                                                       | `RouteDialog` (child route)    | `sm:max-w-md`                                                | URL                        |
-| A small form that is not a record's create or edit (rename, set one value)           | `Dialog`                       | `sm:max-w-md`                                                | Component state            |
-| Create or edit with 5–8 fields, or with a list or a picker                           | `RouteDialog` (child route)    | `sm:max-w-2xl` (the default)                                 | URL                        |
-| Record detail view, inspector, a record's edit while the list stays in view          | `RouteDrawer` (child route)    | `sm:max-w-xl` (the default), `sm:max-w-2xl` for a wide table | URL                        |
-| Large read-only content (a transcript, a diff, a file preview)                       | `Dialog`                       | `sm:max-w-4xl`, scrolling body                               | Component state            |
-| Child page that covers the content area (non-modal), or a form of more than 8 fields | `RouteChildPage` (child route) | —                                                            | URL                        |
-| Temporary panel that represents no record or location (explanations, help)           | `Sheet`                        | the default, or I11's width for a form                       | Component state            |
+- Create or edit a record, of any length: `RouteDialog` at `new` or `:id/edit`; a long form scrolls inside.
+- Record detail with at most about 15 fields and no related lists: `RouteDrawer` at `:id`. More fields, tabs or related lists: a detail page at `:id/details` ([`child-routes.md`](child-routes.md)).
+- Confirm one action (delete, disable, revoke): `AlertDialog`, component state.
+- A small form that is not a record's create or edit (rename one value), or large read-only content (`sm:max-w-4xl`): `Dialog`, component state.
+- A temporary panel that is no record or place (help): `Sheet`, component state.
 
-- **Build dialogs and drawers that represent a page, form, editor or detail view as child routes by default**, even when the user does not mention "routing": a link opens them directly, a refresh restores them, and browser back and forward work. Follow an explicit user request for a different interaction.
-- For these overlays, do not use an `open` state inside the component, do not add an `open` prop to `RouteDialog`/`RouteDrawer`, and do not build a separate route-overlay implementation. Route matching decides whether the overlay exists: the child route's URL opens it, and the parent route's URL closes it.
-- **An overlay opens over the view the user is on** (guideline I9): the page, or on a page with tabs, the tab being shown. A record shown on a dashboard, a board or another record's tab opens the same drawer as in its list, declared under that page ([section 2.1](#21-declare-the-child-routes)). Never link to the list's overlay URL from another page, and never open a page's header overlay beside its tabs (["Overlays opened from the header of a page with tabs" in `child-routes.md`](child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)).
-- Only a confirmation of a single action (`AlertDialog`), a small form or large read-only content that represents no record (`Dialog`, [section 6](#6-plain-dialogs-sizes-and-scrolling)) and a temporary panel (`Sheet`) use component state. Every confirmation is an `AlertDialog`, never a `Dialog` with two buttons.
-- `RouteChildPage` covers the content area and is not modal, so the sidebar and header stay usable; see [`child-routes.md`](child-routes.md).
-- Stacking: a drawer can open dialogs and confirmation dialogs on top of it; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer (guideline I1). On a phone, the detail drawer → edit dialog → confirmation path keeps the same routes and is the deepest allowed stack (M7.2 in [the phone experience](../mobile.md)); the templates' `tests/client/route-overlay.test.tsx` walks it with a discard question, one layer at a time. A dialog, confirmation or sheet opened inside another overlay must cover the one below with its own backdrop: Base UI leaves a nested backdrop out unless it is forced, and without it a tap on the Save below the confirmation still saves. The templates' `Dialog`, `AlertDialog` and `Sheet` therefore render their overlay with `forceRender`, as `RouteDialog` does; keep it when updating or re-adding those primitives, and check in a browser that no point outside the top layer reaches the layer below.
-- This table replaces the overlay table of the shadcn skill, which gives record details to `Sheet` ([section 3 of `shadcn.md`](shadcn.md#3-where-this-application-departs-from-the-skill)).
+Rules for all of them:
 
-Component locations: `#components/route-dialog`, `#components/route-drawer`, `#components/use-route-overlay`, `#components/ui/alert-dialog`, `#components/ui/sheet`. The last two are not in the template; add them with `yes n | pnpm exec shadcn add alert-dialog sheet` ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
+- Overlays that represent a record, form or detail are child routes even when the user did not mention routing: a link opens them, refresh restores them, back and forward work (I6). Never give `RouteDialog`/`RouteDrawer` an `open` prop or hold their open state in a component; route matching decides.
+- An overlay opens over the view the user is on (I9) and closing returns there. A page that shows another feature's records declares that feature's drawer under itself ([The same drawer over another page](#the-same-drawer-over-another-page)).
+- Stacking: a drawer may open a dialog or confirmation; a dialog may open only a confirmation. Esc and the backdrop close the topmost layer only. Drawer → edit dialog → confirmation is the deepest stack. The templates' `Dialog`, `AlertDialog` and `Sheet` render their backdrop with `forceRender` so a nested layer blocks the one below; keep it when re-adding those primitives.
+- Imports: `#components/route-dialog`, `#components/route-drawer`, `#components/use-route-overlay`, `#components/ui/dialog`, `#components/ui/alert-dialog`, `#components/ui/sheet` (add missing primitives with `yes n | pnpm exec shadcn add alert-dialog sheet`).
 
 ## 2. Overlays as child routes
 
-Work in this order:
-
-1. Declare the child routes in `client/routes.ts`.
-2. Place `<Outlet />` in the parent page and pass the refresh function down through `context`.
-3. In the child route's page, wrap the content in `RouteDialog` or `RouteDrawer`.
-4. Close the overlay by calling `useRouteOverlay()` in a component inside it.
-5. Put the form in a `FeedbackForm` inside the overlay with `values={form.getValues}` and `savedValues` (the stored record or the blank values, never a restored draft): the overlay then asks before discarding any unsaved difference on every way out, browser back included, whatever field changed. Add `beforeClose` for a submission in progress ([section 2.5](#25-beforeclose-checks-before-closing)).
+Declare the child route, place `<Outlet />` in the parent, render `RouteDialog` or `RouteDrawer` as the child page's root, close from inside with `useRouteOverlay()`, and put any form in a `FeedbackForm` with `values` and `savedValues`.
 
 ### 2.1 Declare the child routes
 
-The projects route with its overlay children is declared in [section 1 of `page.md`](page.md#1-declare-the-route): `new` (`/projects/new`, the create dialog), `edit/:projectId` (`/projects/edit/12`, the edit dialog opened from a row's menu), `:projectId` (`/projects/12`, the detail drawer) and, inside it, `edit` (`/projects/12/edit`, the same edit dialog opened from the drawer). Static segments such as `new` and `edit` take precedence over `:projectId`.
-
-- Declare them in `defineAppRoutes()` in `client/routes.ts`, not in a page component file.
-- **An overlay is a child route of the view it opens over, and closing returns to that view.** Create and detail are children of the list route. Edit is declared twice, with the same module: under the list as `edit/:projectId`, so a row's menu opens the dialog alone and closing returns to the list; and under the detail drawer as `edit`, so the drawer's "Edit" stacks the dialog on the drawer and closing returns to the drawer. The two cannot both be `:projectId/edit`: registration rejects a second route whose path differs only in parameter names. On a page with tabs the view is the tab being shown, so an overlay the page's header opens — the edit dialog of a customer's page — is declared under every tab with the same module, stacks on the tab, and closing returns to that tab (["Overlays opened from the header of a page with tabs" in `child-routes.md`](child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)).
-- Child routes declare no `navigation` (they are not menu items, and a dynamic path cannot be one anyway) and no `breadcrumb` (an overlay is not a destination).
-- Child routes follow the `authz` inheritance rules in [section 4 of `page.md`](page.md#4-authz-page-authorization); the parent route's check always applies first.
-- Lay out files by what they show, not by every URL that reaches them: `new.tsx`, `detail/index.tsx` and `detail/edit.tsx`, which both edit routes load (see [`child-routes.md`](child-routes.md)).
-
-#### The same drawer over another page
-
-A page that shows records whose details a drawer already presents — a dashboard's recent projects, a board's cards, a customer's projects tab — opens that drawer over itself. It declares the drawer and its edit dialog under its own route, with the same modules, and renders an `Outlet` with the drawer's context ([section 2.2](#22-place-the-outlet-in-the-parent-page)). `projectDetailRoutes` in `client/routes.ts` declares the pair, so each page adds one line; its `owner` argument keeps the route names unique:
-
-```ts
-const appRoutes: AppClientRouteContribution = defineAppRoutes([
-  // … existing routes, and the projects route of page.md, which calls projectDetailRoutes('project')
-  {
-    name: 'project-dashboard',
-    path: '/project-dashboard',
-    auth: 'required',
-    authz: 'skip',
-    navigation: { title: 'navigation.projectDashboard', icon: LayoutDashboard },
-    componentLoader: () => import('./pages/project-dashboard/index.js'),
-    // /project-dashboard/12 and /project-dashboard/12/edit: the project drawer, over the dashboard
-    children: projectDetailRoutes('project-dashboard'),
-  },
-]);
-```
-
-- The page links to a record with a relative path, `{ pathname: project.id, search: location.search }`, as the list does; the drawer's own "Edit" link, `edit`, then resolves under this page as well.
-- Do not link to `/projects/12` instead: the list replaces the page the user was on, the menu highlight moves to Projects, and closing the drawer leaves them on the list.
-- The drawer's route inherits the page's `authz`. When opening a project must require the projects page's grant rather than this page's, declare it on the drawer's route in the function, as `{ resource: { type: 'page', id: 'projects' }, action: 'access' }`.
-- The new route names join the route test's grant list ([section 12 of `page.md`](page.md#12-update-the-route-test)).
-- [`example/project-dashboard.md`](example/project-dashboard.md) is the complete page that does this.
-- A detail that needs a page rather than a drawer follows the same rule: declare the page module under this page as a covering child route and link to it relatively — ["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page).
-
-### 2.2 Place the Outlet in the parent page
-
-`RouteDialog` and `RouteDrawer` do not insert `<Outlet />` automatically. A page that declares `children` must place it itself; the child routes render there.
-
-An overlay reads its context from whichever view it opens over, so every such view passes the same context. The overlays declare what they read in `types.ts` ([`example/types.md`](example/types.md)):
-
-| Context                    | Fields                  | Read by                                 | Passed by                                          |
-| -------------------------- | ----------------------- | --------------------------------------- | -------------------------------------------------- |
-| `ProjectsOutletContext`    | `reload`, `afterDelete` | The create dialog and the detail drawer | The list, and every other page that opens a drawer |
-| `ProjectEditOutletContext` | `onSaved`, `onNotFound` | The edit dialog                         | The detail drawer, and the list for a row's menu   |
-
-The list opens all three overlays, so its context carries both sets of fields. It builds the context with `useMemo` and places `<Outlet context={outletContext} />` at the end of its `PageContainer`; the code is the list page, [`example/list-page.md`](example/list-page.md) (`outletContext`, and the `focusSearchAfterReloadRef` effect behind `afterDelete`), explained in [section 9 of `table.md`](table.md#9-child-routes-and-refreshing-the-list).
-
-- Closing an overlay does not remount or reload the whole parent page: its form contents and scroll position are kept. Data revalidation is separate: lists using `useListLocation` and `useListData` suspend reads while covered and read again on return. A child write announces what it changed, and the list and any other view reading it update ([keeping views current after a write](data-changes.md)). Follow [list loading feedback](table.md#6-loading-the-list) so paused parents show no refresh indicator and fast return reads do not flash one.
-- Keep the context stable with `useMemo`: the child route's loading effect lists the context functions as dependencies, so an object that changes on every render causes repeated requests.
-- A child route reads it with `useOutletContext<ProjectsOutletContext>()`. It gets the context of the nearest `<Outlet>` above it: the drawer gets the list's or the dashboard's, and the edit dialog gets the drawer's, or the list's when a row's menu opened it.
-- On a page with tabs, the overlays the header opens render through the tab's `Outlet`, so each tab places one and passes on the page's context, which it reads with `useOutletContext()` ([`example/detail-page-tabs.md`](example/detail-page-tabs.md)). A tab whose own children need more adds their fields to the same object.
-- When an overlay has child routes of its own, place another `<Outlet />` inside the overlay. Placed in `children`, the child route stacks on this overlay, and focus returns to this layer after it closes; placed outside the overlay, the child route opens as a separate layer, which is rarely needed.
-- A link that opens an overlay must keep the query parameters: `<Link to={{ pathname: row.original.id, search: location.search }}>`. The list's search and filters live in the URL; if the query parameters are lost, the list behind the overlay changes with them.
-
-### 2.3 Render with RouteDialog or RouteDrawer
-
-- `RouteDialog`: focused tasks such as create, edit and short forms.
-- `RouteDrawer`: content that suits the side of the screen, such as detail views and inspectors.
-
-Both take the same props:
-
-| Prop          | Type                                | Description                                                                                                                                                                                      |
-| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `title`       | `ReactNode`, required               | Title at the top, which is also the overlay's accessible name                                                                                                                                    |
-| `description` | `ReactNode`                         | Description under the title                                                                                                                                                                      |
-| `children`    | `ReactNode`                         | Content area; scrolls internally when its content exceeds the height                                                                                                                             |
-| `footer`      | `ReactNode`                         | Fixed bottom area rendered in `DialogFooter`: the buttons sit together on the right, and on narrow screens they stack with the last one on top                                                   |
-| `closeTo`     | `To`                                | Where to go after closing. Defaults to the parent route `{ pathname: '..', search: location.search, hash: '' }`, resolved by route hierarchy, keeping the query parameters and dropping the hash |
-| `beforeClose` | `() => boolean \| Promise<boolean>` | Called before closing; returning `false` keeps the overlay open                                                                                                                                  |
-| `className`   | `string`                            | Added to the panel to adjust its width: dialogs default to `sm:max-w-2xl`, drawers to `sm:max-w-xl`; a create or edit dialog of 1–4 fields passes `sm:max-w-md` (guideline I1)                   |
-
-What the components already do:
-
-- **Size**: a dialog is centered, is the screen width minus 2rem wide on narrow screens, and has a maximum height of `100dvh - 2rem`; a drawer sits against the right edge at full height and takes the full width on narrow screens. The title area and the bottom button area are fixed and only the content area scrolls, so the bottom buttons stay reachable on narrow screens too (guideline A4); there is no need to add `max-h` or `overflow` to the panel.
-- **Content container**: the content area already has the dialog's padding. Do not nest a `PageContainer` inside it, and do not add outer padding of your own.
-- **Look**: the title, description and footer are the dialog primitives (`DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` from `#components/ui/dialog`) inside the same padding, spacing and close-button position as `DialogContent`, so a route overlay looks like any other dialog of the application, and a change to the dialog primitive or its theme rules reaches both. A drawer uses the same regions against the right edge.
-- **Ways to close**: a close button is built into the top-right corner (its accessible name comes from `routeOverlay.close`); Esc and clicking the backdrop close the overlay too. Each overlay layer has its own backdrop, and when layers stack only the topmost one closes.
-- **Closing is navigation**: closing first calls `beforeClose`, then navigates to `closeTo` with `replace`. Because it uses `replace`, pressing the browser's "Forward" after closing does not reopen the overlay.
-- **Focus**: on open, focus moves into the overlay; when the focused element inside the overlay disappears (for example, a button is replaced by a skeleton after clicking "Retry"), focus returns to the overlay panel; after closing, focus returns to the element that had focus before opening (usually the link that opened it; for a row menu's "Edit", the menu's trigger). When a nested overlay closes, focus returns to the element in the parent layer that opened it, or to the parent layer's panel if that element is gone; when `/projects/12/edit` is opened directly, both layers mount at once, and after the dialog closes, focus is on the drawer panel.
-- When the element that focus should return to is no longer on the page after closing (for example, the list row disappears after a delete), the component cannot handle it. Move focus to a stable place yourself; see `afterDelete` above (guideline A6).
+Routes, paths, `authz` inheritance and file layout belong to [`page.md`](page.md) and [`child-routes.md`](child-routes.md). For overlays: create is `new` and edit is `:id/edit` (a `RouteDialog`), a small detail is `:id` (a `RouteDrawer`); child routes have no `navigation` and no `breadcrumb`; static segments such as `new` win over `:id`; new route names join the route test's grant list.
 
 #### Declare the presentation
 
-Declare every route whose page renders `RouteDialog` or `RouteDrawer` as its root with a `presentation`, so the overlay opens on the click and not when the module, the authorization check and the data have all arrived:
+Give every route whose page renders `RouteDialog` or `RouteDrawer` a `presentation`, so the panel opens on the click instead of after the module, permission check and data arrive:
 
 ```ts
 {
@@ -134,211 +38,107 @@ Declare every route whose page renders `RouteDialog` or `RouteDrawer` as its roo
 },
 ```
 
-- The application opens one panel at once with `title`, a static translation key in the route's package that must not depend on the record. A plugin whose route definitions an application registers under its own package adds `namespace: '<plugin package>'` so the key resolves in the plugin's translations. The authorization check, the module wait, a denial and a load failure render inside it. Retry loads only this module again; because a browser may keep answering a failed module import without fetching it again, a retry that fails too also offers Reload page, which reloads the document, so nothing is added under the page that opened it and its draft and scroll position stay.
-- The page keeps rendering `RouteDialog` or `RouteDrawer` exactly as before. Inside the opened panel it configures that panel instead of opening a second one: its `title`, `description`, `footer`, `closeTo` and `beforeClose` replace the opened panel's. Render it unconditionally as the page's root; its footer renders in the panel's footer slot, so it reads only contexts provided above the route. Its `className` (a width such as `sm:max-w-md`) moves onto the opened panel once the page is ready, so the panel takes the route's default width while it waits.
-- Slot elements (`title`, `description`, `footer`) render under the host, outside the page's providers, including its `NamespaceScope`. A plugin slot component uses `useTranslation(PLUGIN_NAMESPACE)` explicitly or wraps its content in `NamespaceScope`; `presentation.namespace` only translates the static waiting title. Pass needed values as props or wrap the slot in the required provider. Do not assume a React element captures context where it is created; the shared overlay close context remains available in the host.
-- While an authorization recheck hides an allowed page, the panel shows the route's static title and no footer or description, and still applies the page's `beforeClose`.
-- `kind` names the container the page renders: `dialog` for `RouteDialog`, `drawer` for `RouteDrawer`. Nothing infers it from the route depth.
-- A route without `presentation` keeps the earlier behavior: its component builds its own overlay once loaded, and the application renders a page-sized placeholder at the parent's outlet until then. That is the long blank area under the list a slow module shows, so declare it on every route overlay you add or touch.
-- Closing a panel that is still loading goes to the parent route, `..`. A parent route that only forwards to this one, such as an old `:id` link redirecting to `:id/edit`, sends the user back into the overlay; declare the overlay as `:id/edit` beside the forwarding route instead of under it.
+- `kind` is `'dialog'` or `'drawer'`, matching the component; `title` is a static translation key that does not depend on the record (a plugin registered under an application adds `namespace`). Permission checks, loading, denial and load failure render inside that panel.
+- The page still renders `RouteDialog`/`RouteDrawer`; inside an opened panel it configures that panel (title, description, footer, `closeTo`, `beforeClose`, then `className` once ready). Slot elements (`title`, `description`, `footer`) render under the host, outside the page's providers: read translations with an explicit namespace and pass values as props.
+- Without `presentation` the overlay appears only after loading, leaving a blank area under the list.
+
+#### The same drawer over another page
+
+A dashboard, board or another record's tab that shows records with an existing drawer declares that drawer (and its edit dialog) under its own route through a shared function, for example `children: projectDetailRoutes('project-dashboard')`, whose `owner` argument keeps route names unique. It links with a relative path, `{ pathname: project.id, search: location.search }`, never to `/projects/12`, which would leave the page. The drawer inherits the page's `authz` unless the function declares the projects grant. The mechanics are in [`child-routes.md`](child-routes.md).
+
+### 2.2 Place the Outlet in the parent page
+
+`RouteDialog` and `RouteDrawer` do not insert an `<Outlet />`; a page with children places a plain `<Outlet />` at the end of its `PageContainer`, and an overlay with its own children places one inside its body so the child stacks on it.
+
+- Pass no `reload`, `onSaved` or `afterDelete` callbacks through Outlet context. A child route announces its write with `announceDataChange`, and every view that declared an overlapping scope updates ([`data-changes.md`](data-changes.md)). Keep Outlet context only for state that is not server data.
+- Closing does not remount the parent: its scroll position and inputs stay. A covered list (`useListLocation().active === false`) sends no request and reads once on return ([`table.md`](table.md#6-loading-the-list)).
+- Every link that opens an overlay keeps `location.search`, so the list behind keeps its search, filters and page.
+
+### 2.3 Render with RouteDialog or RouteDrawer
+
+Both take `RouteOverlayProps` (`client/components/route-overlay.tsx`):
+
+- `title` (required `ReactNode`): heading and accessible name. `description`: the line under it. `children`: the body, which scrolls by itself.
+- `footer`: buttons or a fragment, laid out right-aligned and stacked on narrow screens; no `DialogFooter` inside.
+- `closeTo` (`To`): where closing goes; defaults to the parent route with the current search.
+- `beforeClose` (`() => boolean | Promise<boolean>`): runs before ×, Esc, backdrop and `close()`; `false` keeps the overlay open.
+- `dirty` (`boolean | (() => boolean)`): extra unsaved state the overlay cannot see ([2.5](#25-beforeclose-checks-before-closing)).
+- `className`: width. Dialogs default to `sm:max-w-2xl`, drawers to `sm:max-w-xl`; a 1–4 field form passes `sm:max-w-md` (I1).
+
+What they already do: fit the screen (`100dvh - 2rem`, full width on phones) with a fixed header and footer and a scrolling body; provide padding (no `PageContainer` inside); a × button, Esc and backdrop; close by navigating to `closeTo` with `replace`; move focus in on open and back to the opener on close (or to the parent panel when nested). When the opener is gone after closing (a deleted row), move focus to a stable place yourself (A6).
 
 #### Asynchronous overlay lifecycle
 
-For one opening, identify the owner of the overlay container through route fallback, lazy module loading, data loading, failure/retry and ready content. Prefer one stable `RouteDrawer` or `RouteDialog` with state-specific children. For example, keep the drawer outside the conditional that chooses loading, error or detail content; on a record change, key the record-specific child by its id when its draft must reset. Do not key the container by loading state, request count or data version.
-
-React preserves identity by component type, position and key. A loading branch returning a drawer and a ready branch returning a business component that creates another drawer can remount even when both look identical. Components defined inside render can also acquire a new type on each render. Inspect the rendered hierarchy, not just JSX names.
-
-When route resolution or navigation must replace the container, define the handoff across module loading: avoid an unexplained blank interval, a second entrance for the same opening, duplicate backdrops or competing focus restoration. Preserve close/back behavior and unsaved-change protection. Use the actual overlay API or local composition; do not assume a universal navigation-state flag exists. This is not a single-instance requirement: a normal new opening and a nested edit dialog each retain their own entrance, backdrop, focus and closing lifecycle.
-
-Verify the transition with pending requests and in the actual application browser; see [asynchronous transitions](testing.md#asynchronous-transitions).
+Keep one stable `RouteDialog`/`RouteDrawer` for an opening and switch only its children between loading, error and content. Do not key the container by loading state or data version, and do not return a different component that creates a second overlay when the data arrives: that remounts the panel, replays its entrance and fights over focus. Key the record-specific child by its id when its form must reset. Verify with delayed responses in a real browser ([`testing.md`](testing.md)).
 
 ### 2.4 Close with useRouteOverlay
 
-`useRouteOverlay()` returns `{ close, isClosing }`:
+`useRouteOverlay()` returns `{ close, isClosing }`. `close()` runs `beforeClose`, then navigates; a second call while closing returns the same Promise. `isClosing` disables buttons such as Cancel.
 
-- `close(): Promise<void>`: closes the current overlay layer. Calling it again while a close is in progress returns the same Promise.
-- `isClosing`: `true` from the `close()` call until navigation finishes (including the wait for `beforeClose`); use it to disable buttons such as "Cancel".
-
-**Call it only in a component inside the overlay**, including a component passed as `footer`. The context comes from `RouteDialog`/`RouteDrawer`, and the page component that renders the overlay is outside it:
+Call it only in a component rendered inside the overlay (its body or footer). The page component that returns `<RouteDialog>` is outside the overlay's provider: there the hook throws, or in a nested overlay silently closes the outer layer. Split `CancelButton`, `EditBody` and similar into components and render them as JSX.
 
 ```tsx
-// Wrong: NewProjectPage renders the RouteDialog, so it is itself outside that RouteDialog.
-export default function NewProjectPage(): ReactElement {
+function CancelButton({
+  disabled,
+}: {
+  readonly disabled?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
-  // Throws when there is no overlay outside; when another overlay is outside, it gets that outer close and closes the wrong layer.
   const { close } = useRouteOverlay();
   return (
-    <RouteDialog
-      title={t('projects.create.title')}
-      footer={
-        <Button variant='outline' onClick={() => void close()}>
-          {t('actions.cancel')}
-        </Button>
-      }
-    >
-      {/* … */}
-    </RouteDialog>
+    <Button variant='outline' disabled={disabled} onClick={() => void close()}>
+      {t('actions.cancel')}
+    </Button>
   );
 }
 ```
 
-- With no overlay outside, it throws `useRouteOverlay must be used inside RouteDialog or RouteDrawer`. When nested, it does not throw; instead it silently gets the parent overlay's `close` and closes the wrong layer. Context is looked up through the parent-child relationships of React components, regardless of the source file or the DOM location a portal renders into.
-- The right way: the page component only renders `RouteDialog`; split the parts that need to close into separate components (for example, `NewProjectBody` and `NewProjectFooter`) and render them as JSX (`<NewProjectFooter />`, not the function call `NewProjectFooter()`; otherwise the hook does not run inside the overlay).
-- By default, closing goes to the parent route and keeps the query parameters. Pass `closeTo` only when going somewhere else. It is not how an overlay returns to the view it opened from: that view is its parent route, and an overlay that needs `closeTo`, `location.state` or a query parameter to get back there is declared under the wrong route (["Overlays opened from the header of a page with tabs" in `child-routes.md`](child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)). The one reason to pass it on the way back is an overlay that writes parameters of its own, such as a drawer with a search box: it closes to `{ pathname: '..', search: withoutParams(location.search, [...]) }` with those parameters listed, as a page does ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)). Do not close with `navigate(-1)`: a child route opened directly may have no previous history entry.
-- When `beforeClose` throws, `close()` rejects and the overlay stays open. When `beforeClose` can throw (for example, it sends a request), the caller must handle it: `close().catch((error: unknown) => { console.error('Failed to close route overlay', error); })`. When `beforeClose` cannot throw, `void close()` is enough.
+Pass `closeTo` only for an overlay that wrote parameters of its own (a drawer with a search box closes to `{ pathname: '..', search }` with its own parameters removed from `search`). Never close with `navigate(-1)`: a directly opened overlay has no previous entry. When `beforeClose` can throw, handle `close()`'s rejection.
 
 ### 2.5 beforeClose: checks before closing
 
-- `beforeClose` applies to the top-right button, Esc, clicking the backdrop and `close()`; **browser back and forward do not go through it**. Use it for checks that belong to closing only (a submission in progress); guard unsaved changes with the overlay's `dirty`, below, which also covers history navigation.
-- Returning `false` (or a Promise that resolves to `false`) keeps the overlay open.
+**The discard question is built in (T3.9).** Every `RouteDialog`, `RouteDrawer` and covering `RouteChildPage` asks "Discard changes?" ("Keep editing" / "Discard") on every way out (×, Esc, backdrop, Cancel through `close()`, browser back and forward, the phone's back gesture, links) and gets the browser's warning on reload, while a `FeedbackForm` inside has unsaved input. Pages write no question, `beforeunload` handler or draft-based `dirty` of their own.
 
-**No closing while submitting** (guideline T3.5): write `beforeClose={() => !submittingRef.current}`, using both a state and a ref:
+- Give the form `values={form.getValues}` (`values={() => values}` for `useState`) and `savedValues`: the stored record as the form shows it, or the blank create values, never a restored draft. A page restoring a draft starts from it (`defaultValues: draft ?? saved`) and keeps `savedValues={saved}`, so leaving with the draft asks.
+- Values are compared when the user tries to leave, so every field counts: typing, Select, date, relation picker, upload. Empty text, `null` and `undefined` are equal, dates compare by time, files by identity; a value changed back does not ask. Without `values`, typing in the form counts. `dirty` only adds state the form cannot show; `false` never switches the question off.
+- The save leaves without asking when it navigates or calls `close()` while the `FeedbackForm`'s `onSubmit` is still running (await the request inside it). A plain `<form>` reports no save, so the question would appear after a successful save too; use `FeedbackForm` with a real `type='submit' form={formId}` button. `scripts/check-ui-components.mjs` rejects plain create/edit forms and a `FeedbackForm` without `values` and `savedValues`.
+- A read-only drawer, or an overlay nobody typed in, does not ask.
 
-- The state (`submitting`) renders the buttons' disabled and loading states; the ref (`submittingRef`) is what `beforeClose` reads. Both are updated together in the same `handleSubmittingChange` (see `new.tsx`, [`example/create-dialog.md`](example/create-dialog.md)).
-- Using only the state, as `() => !submitting`, is unreliable: state updates only on the next render, so a `close()` called right after a successful save may run the `beforeClose` from the "submitting" render, read `submitting === true`, and have the close blocked.
-- On success, `ProjectForm` guarantees that it passes `onSubmittingChange(false)` before calling `onSubmitted`, so calling `close()` directly in `onSubmitted` closes the overlay.
-- **An unknown outcome is not a lock.** With [`useSubmission`](../../submission.md), `submission.pending` stays true after a lost response, a 5xx or a timeout so the same key can be retried; the request is over. `beforeClose`, a navigation guard of your own and Cancel's `disabled` read only the save in flight (`submitting`), never `pending`. The `FeedbackForm`'s `values` and `savedValues` keep asking as before the save: Cancel, ×, Esc, the backdrop and browser back ask "Discard changes?" while the values differ from the saved ones, "Keep editing" keeps the input for the retry, and "Discard" closes; an edit saved unchanged loses nothing and leaves without asking. The same holds on a covering `RouteChildPage`. The key stays in session storage, so reopening the form offers the same retry. A form that blocks leaving on `pending` locks the person in after every server failure. The runnable version is `client/pages/skill-projects/edit.tsx`.
+**The only lock is a save in flight (T3.5):** `beforeClose={() => !submission.submitting}` with `submitting` from `useSubmission`. (A page that tracks its own flag reads a ref, not state, so a `close()` right after success does not see a stale `true`.) While submitting, Cancel and save are disabled.
 
-**Confirm when there are unsaved changes** (guideline T3.9, M7.4 in [the phone experience](../mobile.md)): every `RouteDialog` and `RouteDrawer` asks by itself, without a prop on the overlay: while a `FeedbackForm` inside has values that differ from its `savedValues` (or, without them, once the user typed in it), or while the overlay's `dirty` is true, the overlay asks "Discard changes?" (with "Keep editing" and "Discard") before every way out: the × button, Esc, the backdrop and `close()` (Cancel) reach it through the close navigation, and browser back and forward, the phone's back gesture and any link reach it directly. It holds the navigation while it asks, keeps the overlay and its input mounted, restores the URL when the answer is "Keep editing", and warns before a reload or closing the tab. Keep `beforeClose` for what only closing should check, such as a submission in progress:
+**After an unknown outcome** (lost response, timeout, 5xx), `submission.pending` stays true so the same key can retry, but the request is over: `beforeClose` and Cancel's `disabled` read only `submitting`, never `pending`. The form keeps the input and shows the "may have been saved" message; Save retries with the same key; every way out asks "Discard changes?" because the values still differ from `savedValues`; "Keep editing" keeps the input and URL; "Discard" leaves. The key stays in session storage, so reopening the form offers the same retry. Blocking on `pending` would trap the person after every server failure.
 
-```tsx
-export default function EditProjectPage(): ReactElement {
-  const { t } = useTranslation();
-  const submittingRef = useRef(false);
+`OwnDiscardQuestion` (exported by `route-overlay.tsx`) declares a file whose own guard asks about its input, such as a wizard; a kept draft is never a reason for it. `tests/client/skill-projects.test.tsx` and `tests/client/route-overlay.test.tsx` cover every way out.
 
-  return (
-    <RouteDialog
-      title={t('projects.edit.title')}
-      // No dirty prop: ProjectForm's FeedbackForm reports its values and the saved record, and every way out asks
-      // first while they differ: ×, Esc, the backdrop, Cancel, browser back, links.
-      // Closing only: no closing while submitting (T3.5).
-      beforeClose={() => !submittingRef.current}
-    >
-      <EditProjectBody />
-    </RouteDialog>
-  );
-}
-
-function EditProjectBody(): ReactElement {
-  const { close } = useRouteOverlay();
-  const { onSaved } = useOutletContext<ProjectEditOutletContext>();
-  return (
-    <ProjectForm
-      formId='project-edit-form'
-      // … project, onSubmittingChange and onNotFound as in example/edit-dialog.md
-      onSubmitted={(saved) => {
-        // Still inside the FeedbackForm's onSubmit, so this close is the save's own and does not ask.
-        onSaved(saved);
-        void close();
-      }}
-    />
-  );
-}
-```
-
-- **What counts as a change**: a `FeedbackForm` given `values={form.getValues}` and `savedValues` is unsaved whenever its current values differ from the saved ones, compared when the user tries to leave, so every field counts the same way: typing, a Select, a date or relation picker, an upload, and a restored draft. Empty text, `null` and `undefined` count as equal, dates compare by time and files by identity, so a value changed and changed back does not ask. `savedValues` is what is stored, as the form shows it (the record when editing, the blank values when creating), never the draft: a page that restores a draft starts the form from it (`defaultValues: draft ?? saved`) and keeps `savedValues={saved}`, so leaving with the restored draft asks. React Hook Form's `formState.isDirty` cannot say this, because the restored draft is its default. A `FeedbackForm` without `values` counts typing or change events in it; the overlay's `dirty` adds anything else (once passed, typing in any `<form>` inside counts too). Leaving `dirty` out or passing `false` never switches the question off. Do not make anything depend on a saved draft or a storage flag: a draft restores input after a reload, while leaving on purpose still asks.
-- **What does not ask**: an overlay nobody typed in, a read-only drawer (a search box in a plain `<form>` there is not unsaved input), and the save, below.
-- **What leaves without asking**: the save itself, that is a navigation or `close()` made while a `FeedbackForm` in the overlay is still running its `onSubmit` (await the request and navigate inside it, as the examples do). A failed or rejected save keeps the question: after it, Cancel, ×, Esc, the backdrop, browser back and a reload all still ask. A plain `<form>` reports no save of its own, and the way the page leaves after it says nothing about whether the save worked, so the overlay still asks after a plain form's successful save too: one question too many rather than input lost after a failed save. Use `FeedbackForm`. A disabled save button, such as while validation fails, does not count as unchanged: leaving still asks. The save button is therefore a real submit button (`type='submit'` with `form={formId}`), not a plain button with an `onClick`.
-- Do not ask in `beforeClose` or in a navigation guard of your own as well: the overlay already asks once per way out. A guard of your own may still return `false` to block leaving while a save is in flight; such a guard asks nothing, so it never comes with `OwnDiscardQuestion`. `OwnDiscardQuestion` is for a form whose own guard asks about its unsaved input (the settings forms' `usePageLeave`, the onboarding wizard); a kept draft or working storage is not such a question.
-- The confirmation is the one layer allowed above the overlay (M7.2); its backdrop covers the overlay, so only its buttons take a tap.
-- The runnable version is the edit dialog of the [executable list and edit example](executable-list-edit.md) (`client/pages/skill-projects/edit.tsx`): `tests/client/skill-projects.test.tsx` checks that Cancel, Esc and browser back each ask, that "Keep editing" keeps the input and the URL, and that discarding closes. `tests/client/route-overlay.test.tsx` checks the same paths, the × button, a `dirty` that says "nothing to lose" after typing, a draft-keeping form with no `dirty` at all, a restored draft closed without typing and a value changed only by a picker (both ask), a value changed back (does not ask), the backdrop, a save button disabled by validation, a read-only drawer, and a save that leaves without asking.
-- A create or edit page that covers the list (`RouteChildPage`, [`example/create-page.md`](example/create-page.md)) asks the same way by itself: its `FeedbackForm` with `values` and `savedValues` is compared before Cancel, the back button, a breadcrumb, a link and browser back, and a reload gets the browser's warning. Write no guard or `beforeunload` handler of your own there either. Only a form on an ordinary page outside these layers needs `useNavigationGuard` from `@nocobase/app-client`.
+During a permission recheck the shell keeps the allowed page hidden and refuses closing until the check settles; a settled denial unmounts the form. Keep `client-route.tsx`, `route-leave-boundary.tsx` and `route-overlay.tsx` together when merging template updates.
 
 ## 3. Complete example
 
-The create dialog, the detail drawer and the edit dialog built with these rules are [`example/create-dialog.md`](example/create-dialog.md), [`example/detail-drawer.md`](example/detail-drawer.md) and [`example/edit-dialog.md`](example/edit-dialog.md) (`new.tsx`, `detail/index.tsx`, `detail/edit.tsx`), each with notes on the choices it makes; the form they share is [`example/project-form.md`](example/project-form.md). The dashboard, [`example/project-dashboard.md`](example/project-dashboard.md), opens the same drawer over another page. Read them before writing an overlay of your own.
+The create/edit dialog is `client/pages/skill-projects/edit.tsx` in the [executable list and edit example](executable-list-edit.md); the detail is `detail.tsx` beside it. The worked projects feature (create dialog, detail drawer, edit dialog, delete confirmation, dashboard) is indexed in [`example.md`](example.md).
 
 ## 4. Delete confirmation (AlertDialog)
 
-A confirmation dialog concerns a single action, so it uses component state. Make it one component, `project-delete-dialog.tsx` ([`example/delete-dialog.md`](example/delete-dialog.md)), shared by the list's row menu and the detail drawer. The list page keeps `deletion` state (`{ open, project }`), sets it from the row menu's "Delete" and renders `<ProjectDeleteDialog … deletedFocusRef={searchRef} />` ([`example/list-page.md`](example/list-page.md)); the drawer renders it from `ProjectDetailActions` ([`example/detail-drawer.md`](example/detail-drawer.md)).
+One component per record type (`project-delete-dialog.tsx`), used by the row menu and the detail. The opener keeps `{ open, project }` state.
 
-- **Store the open state and the target separately**: closing only sets `open` to `false` and keeps `project`. If closing also clears the target, the title flashes to an empty name during the exit animation.
-- **Title and buttons**: the title names the record, the description states the consequence, and the confirm button uses the destructive style and the specific action "Delete" (guidelines I2 and C7).
-- `AlertDialogAction` does not close the confirmation dialog automatically: on success, the parent closes it in `onDeleted` (the list sets `open` to `false`; the drawer closes the whole drawer). `AlertDialogCancel` does close automatically.
-- **While deleting**: `onOpenChange` ignores close requests (Esc; an AlertDialog ignores backdrop clicks anyway), both buttons are disabled, and the confirm button shows a `Spinner` (guideline S5).
-- **Failure**: the confirmation dialog stays open and explains the reason inside it with `role='alert'` (guideline I3), by status as ["Handling each kind of error" in `api.md`](api.md#handling-each-kind-of-error) says; the confirm button stays enabled only for a failure a retry can fix.
-- **404**: someone else already deleted the record; say so with an `info` toast and treat it as a successful delete (guideline R3).
-- **Where focus goes**: the deleted row disappears together with the menu that opened the confirmation dialog, so the list passes `deletedFocusRef={searchRef}`, and focus lands on the search box after the delete (guideline A6). The drawer does not pass it: the drawer closes, and the list's `afterDelete` handles focus.
-- When the confirmation dialog renders inside the drawer (in the drawer's `footer`), Esc closes only the confirmation dialog.
+- Keep the target when closing (set only `open` to `false`), so the title does not flash empty during the exit animation.
+- The title names the record, the description states the consequence, the confirm button is destructive and says "Delete" (I2, C7).
+- `AlertDialogAction` does not close by itself: close on success. While deleting, `onOpenChange` ignores close requests, both buttons are disabled and the confirm button shows progress (S5).
+- On failure the dialog stays open and explains inside with `role='alert'` (I3); confirm stays enabled only when a retry can help. A 404 is "already deleted": an `info` toast, treated as success (R3).
+- On success, announce `results: { [scope]: null }` ([`data-changes.md`](data-changes.md)) and move focus to a stable place, such as the list's search box, because the row and its menu are gone (A6). From a drawer, close the drawer.
 
 ## 5. Sheet: temporary panels
 
-Use `Sheet` for side panels that do not represent a record or a location and need no direct link (explanations, help and so on), and keep the open state in the component. Use `RouteDrawer` for record details, not `Sheet`. The template does not ship it: add it with `yes n | pnpm exec shadcn add sheet`.
+`Sheet` is for help or explanations that are no record or place; keep its state in the component. Use `SheetTrigger render={<Button variant='outline' />}` and `SheetClose render={<Button />}`, or `open`/`onOpenChange` on `Sheet`.
 
-```tsx
-// client/pages/projects/status-help-sheet.tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import { InfoIcon } from 'lucide-react';
-import type { ReactElement } from 'react';
-
-import { Button } from '#components/ui/button';
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '#components/ui/sheet';
-
-import { PROJECT_STATUSES } from './types.js';
-
-/** A temporary explanation panel: it represents no record or location, so it does not go into the URL. */
-export function ProjectStatusHelp(): ReactElement {
-  const { t } = useTranslation();
-  return (
-    <Sheet>
-      <SheetTrigger render={<Button variant='outline' />}>
-        <InfoIcon data-icon='inline-start' />
-        {t('projects.statusHelp.action')}
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>{t('projects.statusHelp.title')}</SheetTitle>
-          <SheetDescription>
-            {t('projects.statusHelp.description')}
-          </SheetDescription>
-        </SheetHeader>
-        {/* SheetContent does not scroll by itself: the content area fills the remaining height and scrolls on its own. */}
-        <dl className='flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4'>
-          {PROJECT_STATUSES.map((status) => (
-            <div key={status} className='flex flex-col gap-1'>
-              <dt className='font-medium'>{t(`projects.status.${status}`)}</dt>
-              <dd className='text-muted-foreground'>
-                {t(`projects.statusHelp.${status}`)}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <SheetFooter>
-          <SheetClose render={<Button variant='outline' />}>
-            {t('actions.close')}
-          </SheetClose>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-```
-
-The details below describe `sheet.tsx` as the registry writes it today; the file the CLI wrote is the authority when they differ.
-
-- Use `SheetTrigger render={<Button />}` for the trigger button and `SheetClose render={<Button />}` for the close button. To control opening and closing from code, pass `open` and `onOpenChange` to `Sheet`.
-- `side` defaults to `'right'`; the other options are `'left'`, `'top'` and `'bottom'`. On the left and right sides the width is `w-3/4 sm:max-w-sm`, narrow enough only for a small panel like this one; a sheet holding a form or a record's details is medium width (guideline I11). Widen it with the side's prefix, `className='w-full data-[side=right]:sm:max-w-xl'`: the registry writes the default as `data-[side=right]:sm:max-w-sm`, and a bare `sm:max-w-xl` loses to it, so the sheet stays narrow.
-- `SheetContent` is a vertical flex container and does not scroll itself: give the content area `min-h-0 flex-1 overflow-y-auto`. `SheetFooter` sits at the bottom, with its buttons stacked vertically.
-- `SheetContent` has a built-in close button in the top-right corner (turn it off with `showCloseButton={false}`). The registry names it with the English "Close"; when you add `sheet`, replace that literal with `{t('actions.close')}` as ["English built into primitives" in `shadcn.md`](shadcn.md#english-built-into-primitives) shows.
+- `side` defaults to `'right'` at `w-3/4 sm:max-w-sm`. Widen with the side prefix, `className='w-full data-[side=right]:sm:max-w-xl'` (I11); a bare `sm:max-w-xl` loses.
+- `SheetContent` does not scroll: give the body `min-h-0 flex-1 overflow-y-auto`.
+- Replace the registry's English "Close" on the built-in button with `t('actions.close')` ([`shadcn.md`](shadcn.md)).
 
 ## 6. Plain dialogs: sizes and scrolling
 
-A `Dialog` from `#components/ui/dialog` currently defaults to `sm:max-w-lg`, `p-6`, a viewport height cap and `overflow-y-auto` on the whole popup. Inspect the installed source because older or customized copies can differ. For a fixed-footer design, override the popup's scrolling and scroll only its body; changing it to flex alone does not remove its default `overflow-y-auto`:
+`DialogContent` defaults to `sm:max-w-lg`, `p-6` and scrolls as a whole; check the installed source. For a fixed header and footer around a scrolling body:
 
 ```tsx
-// A small form: 1–4 fields, the width alone.
-<DialogContent className='sm:max-w-md'>…</DialogContent>
-
-// Content that can outgrow the screen: a fixed header and footer around a scrolling body.
 <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl'>
   <DialogHeader className='shrink-0'>…</DialogHeader>
   <div className='-mx-6 min-h-0 flex-1 overflow-y-auto px-6'>…</div>
@@ -346,44 +146,19 @@ A `Dialog` from `#components/ui/dialog` currently defaults to `sm:max-w-lg`, `p-
 </DialogContent>
 ```
 
-- `flex flex-col` replaces the content's grid, and `min-h-0 flex-1` lets the body shrink and scroll; `-mx-6 … px-6` matches the content's `p-6` and runs its scrollbar along the dialog's edge. When the body is the form, put the classes on the `form` and keep the submit button in `DialogFooter` with `form='…'`.
-- `overflow-hidden` overrides the popup's default scrolling; `shrink-0` keeps the header and footer from being compressed. Use the viewport cap above rather than adding a competing cap. Verify actual geometry with long content and at a short viewport height as [the shared acceptance checks](../ui-acceptance.md#overlay-and-action-layout) describe.
-- Large read-only content (a transcript, a diff, a file preview) uses the same structure at `sm:max-w-4xl`, usually with no footer.
-- `RouteDialog` and `RouteDrawer` are built this way already; pass them only a width.
+A small form passes only `sm:max-w-md`. `RouteDialog` and `RouteDrawer` are already built this way; pass them only a width.
 
 ### Footer ownership
 
-In a plain `Dialog`, use one `DialogFooter` directly in the content structure. Its `-mx-6 -mb-6` compensates for the current popup's `p-6`; extra padded wrappers or a different popup padding require checking that relationship. In `RouteDialog` or `RouteDrawer`, pass the buttons (or a component returning them as a fragment) to `footer`: the route wrapper already supplies the footer layout. Do not put another `DialogFooter`, `SheetFooter` or outer padded footer in that slot. Inspect older copies before assuming the latest spacing or mobile order. For an authorized layout exception, use a supported variant or scoped composition and verify it instead of stacking conflicting footer containers.
-
-The template's unlayered `client/styles.css` owns footer action geometry. It matches direct children by `data-slot='button'`, `dialog-close`, `alert-dialog-action` or `alert-dialog-cancel`, including `Button render={<Link />}`; the HTML tag does not determine size. These actions share a minimum height of ten spacing units, horizontal padding of four units and vertical padding of two units (Compact: 36px / 14.4px / 7.2px; Spacious: 40px / 16px / 8px). This footer contract takes precedence over the primitive's `size` height/padding utilities and page `h-*`/`px-*` utilities. Labels may wrap and grow; desktop rows stretch to align their top and bottom edges without forcing equal widths. Keep cancel links as links, use `nativeButton={false}` for `Button render={<Link />}`, and retain disabled/submission guards. Avoid page size patches for footer alignment; buttons outside these footers retain their ordinary size variants. A nested tooltip or wrapper must be checked separately because only direct semantic actions receive this rule.
-
-New applications generated from a template release containing this rule receive it in their source. Existing applications own their copied CSS and Registry components: package updates, Skill sync and UI Library publication do not replace those copies. Use the application-local template upgrade Skill to reconcile `client/styles.css` and applicable copied components, remove obsolete alignment patches, and preserve route, pending and focus behavior. Verify the reconciled application in a browser; do not claim it updated automatically. `tests/playwright/dialog-footer.test.ts` runs against `APP_URL` and checks real geometry with both presets, narrow screens, long English/Chinese labels and pending actions.
-
-## Permission rechecks and drafts
-
-The application keeps a previously allowed page's state in a hidden Activity during permission rechecks. Activity disconnects form effects, including unsaved-change registrations; preserving a `beforeClose` function alone cannot protect those forms. The stable ClientRoute blocks route departures and warns on native document leave while an already mounted page is being rechecked. The overlay host refuses Esc, ×, backdrop and shared `close()` without consulting disconnected form guards, and invalidates pending closes so recovery never resumes an old request. Once allowed again, form effects reconnect and normal draft confirmation applies. A settled denial unmounts protected content and releases the temporary block; cold permission/module loading remains closable. Browser reload/tab-close confirmation is a native warning, not persistent draft recovery.
-
-When merging copied routing and Registry source, update both `client-route.tsx` and `route-leave-boundary.tsx` with `route-overlay.tsx`. The shell boundary cancels pending leave confirmations when concealed, retains registrations during hiding and prunes them on actual removal. Route overlay frames also conceal their own Portal on effect disconnection so a parent route hiding a DOM wrapper cannot leave a nested panel visible. Nested confirmation portals can live outside the hidden form DOM: their boundary must conceal the portal and cancel its question on effect disconnection, because hidden state updates can wait for recovery. Keep the ordinary `useUnsavedChanges` cleanup: a removed form must stop reporting dirty. Verify a real child form, an already open confirmation, parent rechecks/nested panels, recovery and denial; a synthetic `beforeClose={() => false}` misses dirty registration cleanup.
+A plain `Dialog` uses one `DialogFooter` directly in its content. `RouteDialog`/`RouteDrawer` take buttons in `footer` and supply the layout; never nest another `DialogFooter`, `SheetFooter` or padded wrapper there. The template's `client/styles.css` gives direct footer actions (buttons, `dialog-close`, `alert-dialog-action`, `alert-dialog-cancel`, and `Button render={<Link />}` with `nativeButton={false}`) one shared height and padding; do not patch sizes per page. Existing applications reconcile copied `styles.css` through the template upgrade Skill.
 
 ## 7. Verification checklist
 
-After implementing, confirm each item by actually trying it:
-
-- [ ] Overlays such as create, edit and detail views are all child routes; only confirmation dialogs and temporary panels use component state.
-- [ ] A row menu's "Edit" opens the dialog alone; the drawer's "Edit" stacks it on the drawer; on a page with tabs, the header's "Edit" stacks it on the tab being shown. A record opened from any other page opens over that page, and closing stays there.
-- [ ] From a view other than the first one a page shows — a tab other than the default, a list with a search or filter applied — every overlay's URL is that view's URL plus its own segments, the view stays rendered behind it, and closing, saving, Esc and Back all return to exactly that URL.
-- [ ] The parent page places `<Outlet />` in the intended spot; an overlay with child routes also places `<Outlet />` inside itself.
-- [ ] The right one of `RouteDialog` / `RouteDrawer` is chosen, with the width guideline I1 gives what it holds; child routes declare no `navigation` or `breadcrumb`.
-- [ ] Every confirmation is an `AlertDialog`; a plain `Dialog` has I1's width, and one that can outgrow the screen caps its height at `calc(100dvh-2rem)` with a scrolling body and its footer in view.
-- [ ] `useRouteOverlay()` is called in components inside the overlay, not in the page component that renders the overlay; when `beforeClose` can throw, the rejection from `close()` is handled.
-- [ ] While submitting or deleting, ×, Esc, clicking the backdrop (dialogs and drawers; an AlertDialog never closes on it) and "Cancel" all fail to close it; where needed, there is a confirmation for unsaved changes.
-- [ ] After a save fails with HTTP 500 or a lost response, the input stays, the error shows, Save retries, and Cancel, ×, Esc, the backdrop and browser back each ask before discarding; "Discard" closes the overlay.
-- [ ] Opening a child route's URL directly (with the deployment base path, for example `/main/projects/12/edit`, `/main/projects/edit/12` and `/main/customers/12/orders/edit`), refreshing, browser back and forward, and nested overlays all show the correct layers.
-- [ ] Opening and closing overlays keeps the query parameters, so the search and filters of the list behind stay the same: after closing, the URL is exactly the one the overlay was opened from, with nothing the overlay wrote left in it. The parent page stays mounted and does not reload.
-- [ ] After saving, the drawer shows the new values immediately, and the list refreshes afterwards (guideline R2).
-- [ ] Record not found: the situation is explained, no "Retry" is offered, and the list refreshes (guideline R3); other load failures can be retried (guideline S4).
-- [ ] Delete: failures are explained in the confirmation dialog, a 404 is treated as success, and focus lands on the search box after the delete (guideline A6).
-- [ ] Esc closes only the topmost layer; after closing, focus returns to the element that opened it, or lands in a stable place when that element is gone.
-- [ ] At 375×667, a 390–412px width and in landscape, overlays stay within the screen, the content area scrolls, the bottom buttons are reachable, and a focused field near the footer stays visible; a task that would need a third layer is a covering page instead ([M7 of the phone experience](../mobile.md#m7-overlays-and-action-areas), guideline A4).
-- [ ] Without permission for the parent route, the child route's URL does not open either.
-- [ ] The new route names are in the route test's page grant list (see [section 12 of `page.md`](page.md#12-update-the-route-test)).
+- Create, edit and detail are child routes with the right container; a direct URL (with the base path), refresh, back and forward show the right layers.
+- Closing, saving, Esc and back return to exactly the URL the overlay opened from, query included; the parent stays mounted.
+- While saving or deleting, ×, Esc, the backdrop and Cancel do not close.
+- After a 500 or a lost response the input stays, Save retries, every way out asks and "Discard" closes.
+- After saving, the drawer shows the new values at once and the list updates (R2); a missing record shows its notice without Retry (R3).
+- Esc closes only the top layer; focus returns to the opener or a stable place.
+- At 390 px and in landscape the overlay fits, its body scrolls and the footer stays reachable ([`../mobile.md`](../mobile.md)).
+- Without permission for the parent route, the child URL does not open.

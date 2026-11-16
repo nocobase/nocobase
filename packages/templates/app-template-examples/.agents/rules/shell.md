@@ -52,7 +52,7 @@ Keep the identity-keyed `SessionPreparation` boundary: mounted private list cond
 
 ## Page data freshness
 
-Follow the synchronized [page data freshness rules](../skills/nocobase-app-development/references/frontend/references/page-freshness.md): ordinary pages have no persistent Refresh action. Preserve contextual read retries, write invalidation and live progress updates. Dependency upgrades do not rewrite application-owned pages or installed Registry source; reconcile them through the template upgrade workflow.
+Follow the synchronized [page data freshness rules](../skills/nocobase-app-development/references/frontend/references/data-changes.md#no-refresh-button): ordinary pages have no persistent Refresh action. Preserve contextual read retries, write invalidation and live progress updates. Dependency upgrades do not rewrite application-owned pages or installed Registry source; reconcile them through the template upgrade workflow.
 
 ## Features and extensions
 
