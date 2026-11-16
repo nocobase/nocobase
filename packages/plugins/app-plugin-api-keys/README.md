@@ -13,7 +13,7 @@ Better Auth's [API Key plugin](https://www.better-auth.com/docs/plugins/api-key)
 - the `apikey` table migration;
 - `apiKey` and `apiKeyClient`, carrying Better Auth's own names and options.
 
-`apiKey` is wrapped only to supply three defaults, all of them overridable; everything else is Better Auth's behavior and its documentation applies unchanged. They come from this package rather than from a dependency each application installs because the migration here has to match the schema that version of `@better-auth/api-key` declares; a test asserts the table carries a column for every field the plugin declares.
+`apiKey` is wrapped only to supply four defaults, all of them overridable; everything else is Better Auth's behavior and its documentation applies unchanged. They come from this package rather than from a dependency each application installs because the migration here has to match the schema that version of `@better-auth/api-key` declares; a test asserts the table carries a column for every field the plugin declares.
 
 ## Installing it
 
@@ -46,15 +46,16 @@ Then run `pnpm nocobase db apply`.
 
 Registering the server plugin without `apiKey()` creates the table and mounts no endpoints; registering `apiKey()` without the server plugin mounts endpoints against a table that does not exist.
 
-## The three defaults
+## The four defaults
 
 | Option                    | Better Auth                         | Here    | Why                                                                                                                     |
 | ------------------------- | ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `enableSessionForAPIKeys` | `false`                             | `true`  | Without it a key authenticates nothing: keys are still issued, and every request carrying one answers 401               |
 | `rateLimit.enabled`       | `true`, 10 requests per key per day | `false` | That is a quota for issuing keys rather than for using them, and it silently breaks the first integration anyone writes |
 | `requireName`             | `false`                             | `true`  | A key is identified by its name, and a key listed as "unnamed" cannot be revoked with any confidence                    |
+| `maximumNameLength`       | `32`                                | `100`   | Matches scoped key creation and rotation.                                                                               |
 
-All three are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 1000, timeWindow: 60_000 } })` sets a quota, and passing all three back reproduces Better Auth's own behaviour exactly.
+All four are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 1000, timeWindow: 60_000 } })` sets a quota, and passing all four back reproduces Better Auth's own behaviour exactly.
 
 ## Using a key
 
