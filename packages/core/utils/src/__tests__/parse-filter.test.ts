@@ -346,3 +346,11 @@ describe('parseFilter', () => {
     ).toEqual({ createdAt: { $dateOn: date.toISOString() } });
   });
 });
+
+describe('UTC date filter values', () => {
+  it.each(['+14:00', '-12:00'])('preserves an ISO instant through repeated parsing in %s', async (timezone) => {
+    const filter = { value: { $dateAfter: '2026-10-31T10:00:00.500Z' } };
+    expect(await parseFilter(filter, { timezone })).toEqual(filter);
+    expect(await parseFilter(await parseFilter(filter, { timezone }), { timezone })).toEqual(filter);
+  });
+});
