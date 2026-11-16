@@ -227,6 +227,29 @@ describe('执行机诊断与清理', () => {
       ),
     ).toBe(false);
   });
+  it('按日期倒序，同日主日志先于运行日志使用容量预算', async () => {
+    const home = path.join(root, 'main-before-runs');
+    const paths = runnerPaths(home, home);
+    await mkdir(paths.logsDir, { recursive: true });
+    for (const date of ['2026-10-31', '2026-11-01']) {
+      await writeFile(
+        path.join(paths.logsDir, `runner.${date}.000000.log`),
+        entry('main'),
+      );
+      const run = runLogPath(paths, 'selected', date);
+      await mkdir(path.dirname(run), { recursive: true });
+      await writeFile(run, entry('run'));
+    }
+    const output = await records(home);
+    const manifest = JSON.parse(output.trim().split('\n').at(-1)!);
+    expect(manifest.files.map((file: { file: string }) => file.file)).toEqual([
+      'runner.2026-11-01.000000.log',
+      'runs/2026-11-01/selected.log',
+      'runner.2026-10-31.000000.log',
+      'runs/2026-10-31/selected.log',
+    ]);
+    expect(Buffer.byteLength(output)).toBeLessThanOrEqual(request().maxBytes);
+  });
   it('工具探测输出再长也不突破环境记录协议上限', async () => {
     let first = '';
     for await (const line of diagnosticsRecords(

@@ -86,7 +86,10 @@ export async function* diagnosticsRecords(
     }
   }
   candidates.sort(
-    (a, b) => b.date.localeCompare(a.date) || b.file.localeCompare(a.file),
+    (a, b) =>
+      b.date.localeCompare(a.date) ||
+      Number(a.file.startsWith('runs/')) - Number(b.file.startsWith('runs/')) ||
+      b.file.localeCompare(a.file),
   );
   const files = candidates;
   const encode = (value: unknown) => JSON.stringify(value) + '\n';
