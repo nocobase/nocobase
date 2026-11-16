@@ -7,6 +7,7 @@
 import {
   act,
   fireEvent,
+  renderHook,
   screen,
   waitFor,
   within,
@@ -29,6 +30,7 @@ import {
   clientMocks,
   FakeApiError,
   resetApi,
+  toasts,
 } from './fake-client.js';
 import { agent } from './fixtures.js';
 import { renderPage } from './render.js';
@@ -41,6 +43,7 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
 
 const { default: AgentsPage } =
   await import('../../client/pages/agents/index.js');
+const { useNotify } = await import('../../client/hooks/use-notify.js');
 
 let agents: AgentView[] = [];
 let availableGroups: AvailableModelGroup[] = [];
@@ -59,6 +62,27 @@ async function chooseTemplate(container: HTMLElement, template: string) {
 }
 
 describe('the Agent page', () => {
+  it('错误提示保留真实 API 请求 ID，本地错误不带请求 ID', async () => {
+    const { ApiClientError } = await vi.importActual<
+      typeof import('@nocobase/app-client')
+    >('@nocobase/app-client');
+    const { result } = renderHook(() => useNotify());
+    result.current.error(
+      new ApiClientError('Request failed', {
+        status: 500,
+        method: 'POST',
+        url: '/api/agents/runnerAgents',
+        requestId: 'request-fixture',
+      }),
+    );
+    expect(toasts.at(-1)).toMatchObject({
+      type: 'error',
+      requestId: 'request-fixture',
+    });
+    result.current.error(new Error('Local failure'));
+    expect(toasts.at(-1)).toMatchObject({ type: 'error' });
+    expect(toasts.at(-1)).not.toHaveProperty('requestId');
+  });
   beforeEach(() => {
     agents = [
       agent('sonnet', {
