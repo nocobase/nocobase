@@ -10,6 +10,7 @@
 import { tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { getHasManyDeleteFilterByTk } from './getHasManyDeleteFilterByTk';
 
 export class BulkDeleteActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
@@ -49,11 +50,21 @@ BulkDeleteActionModel.registerFlow({
           return;
         }
         const resource = ctx.blockModel.resource as MultiRecordResource;
-        if (resource.getSelectedRows().length === 0) {
+        const selectedRows = resource.getSelectedRows();
+        if (selectedRows.length === 0) {
           ctx.message.warning(ctx.t('Please select at least one record to delete'));
           return;
         }
-        await resource.destroy(ctx.blockModel.collection.getFilterByTK(resource.getSelectedRows()));
+        const association = ctx.blockModel.association;
+        const filterByTk =
+          association?.type === 'hasMany'
+            ? getHasManyDeleteFilterByTk(association.targetKey, selectedRows)
+            : ctx.blockModel.collection.getFilterByTK(selectedRows);
+        if (association?.type === 'hasMany' && filterByTk === undefined) {
+          ctx.message.error(ctx.t('The association target key is missing or invalid.'));
+          return;
+        }
+        await resource.destroy(filterByTk);
         ctx.message.success(ctx.t('Selected records deleted successfully'));
       },
     },

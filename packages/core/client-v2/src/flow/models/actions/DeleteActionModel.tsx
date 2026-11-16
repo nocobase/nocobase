@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr } from '@nocobase/flow-engine';
+import { tExpr, SingleRecordResource } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { getHasManyDeleteFilterByTk } from './getHasManyDeleteFilterByTk';
 
 export class DeleteActionModel extends ActionModel {
   static scene = ActionSceneEnum.record;
@@ -53,7 +54,20 @@ DeleteActionModel.registerFlow({
           ctx.message.error(ctx.t('No resource or record selected for deletion'));
           return;
         }
-        await ctx.resource.destroy(ctx.blockModel.collection.getFilterByTK(ctx.record));
+        const association = ctx.blockModel.association;
+        const filterByTk =
+          association?.type === 'hasMany'
+            ? getHasManyDeleteFilterByTk(association.targetKey, ctx.record)
+            : ctx.blockModel.collection.getFilterByTK(ctx.record);
+        if (association?.type === 'hasMany' && filterByTk === undefined) {
+          ctx.message.error(ctx.t('The association target key is missing or invalid.'));
+          return;
+        }
+        if (association?.type === 'hasMany' && ctx.resource instanceof SingleRecordResource) {
+          await ctx.resource.destroy({ params: { filterByTk } });
+        } else {
+          await ctx.resource.destroy(filterByTk);
+        }
         ctx.message.success(ctx.t('Record deleted successfully'));
       },
     },
