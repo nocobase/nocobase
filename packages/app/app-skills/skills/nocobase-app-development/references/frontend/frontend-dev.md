@@ -65,7 +65,7 @@ pnpm exec vitest run <related-test-files>
 - ESLint takes only `.ts`, `.tsx`, `.js` and `.mjs` files (it exits nonzero on `.css` and `.md`); Prettier takes every changed file.
 - Primitives the change added count as changed files: formatted, their built-in English translated ([`references/shadcn.md`](references/shadcn.md#english-built-into-primitives)), otherwise as the CLI wrote them.
 - Run the [component checker](design-contract.md#component-checker) on the changed client source of each owning package.
-- Lint does not check the shadcn skill's critical rules; read the changed components against them ([`references/shadcn.md`](references/shadcn.md)).
+- Lint does not check where this application departs from upstream shadcn; read the changed components against [section 2 of `references/shadcn.md`](references/shadcn.md#2-where-this-application-departs-from-upstream).
 - Find related tests by searching `tests/` for the changed component, page or route. A changed route includes `tests/client/client-routes.test.ts`; a changed `t()` key or route title includes `tests/client/app-locale-coverage.test.ts` ([`references/i18n.md`](references/i18n.md#checks)). Confirm every named test file ran ([`references/testing.md`](references/testing.md#running-tests)).
 - Server or database code changed: also `pnpm exec tsc -p tsconfig.server.json --noEmit`. A browser test under `tests/playwright/` changed: also `pnpm exec tsc -p tsconfig.node.json --noEmit`.
 

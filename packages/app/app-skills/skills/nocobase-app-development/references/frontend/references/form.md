@@ -113,7 +113,7 @@ Keep the form value a string (`z.coerce.number()` turns an empty input into `0`)
 
 ### Choosing a related record
 
-A related record stores its id and shows its name, through a picker component built on `Combobox` (see the customer picker in [`example.md`](example.md) and the relation picker in [`executable-relation-batch.md`](executable-relation-batch.md)):
+A related record stores its id and shows its name, through a picker component built on `Combobox` (see the relation picker in [`executable-relation-batch.md`](executable-relation-batch.md)):
 
 - It loads its options with `useListData` and maps them to `{ value: id, label: name }`; `onValueChange` returns `item?.value ?? ''`, `itemToStringLabel` shows the name, `isItemEqualToValue` compares ids.
 - While options load the input is disabled with a loading placeholder; a failed load shows an inline error with Retry (none for 403).

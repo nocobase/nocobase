@@ -143,7 +143,7 @@ Three are the template's own:
 | `Breadcrumbs` | The header's trail, which the layouts render from routes' `breadcrumb` declarations or a page's `usePageBreadcrumb`; pages do not place it ([`page.md`](page.md#7-back-button-and-breadcrumbs)) |
 | `Loading`     | The shared loading indicator                                                                                                                                                                    |
 
-A date field is the application's own `DatePicker` in `date-picker.tsx`, composed from `Popover` plus `Calendar` as shadcn's Date Picker guide does ([`form.md`](form.md)); the template does not ship one.
+A date field is the application's own `DatePicker` in `date-picker.tsx`, composed from `Popover` plus `Calendar` as shadcn's Date Picker guide does. The Default and Examples templates ship it; an older application without it adds it as [`form.md`](form.md#dates) describes.
 
 A composition uses the full structure of the primitives it is built from, such as `CardHeader`, `CardTitle`, `CardAction` and `CardContent` for a card (as the shadcn/ui documentation of each primitive shows). Do not reimplement a primitive's behavior: focus, keyboard interaction, and ARIA attributes are already handled in the shadcn components, and they are easy to get wrong by hand.
 

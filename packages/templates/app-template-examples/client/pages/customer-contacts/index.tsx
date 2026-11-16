@@ -174,7 +174,12 @@ function CustomerContactsContent() {
       accessorKey: 'name',
       header: t('customerContacts.customer'),
       cell: ({ row }) => (
-        <RecordLink to={{ pathname: row.original.id, search: location.search }}>
+        <RecordLink
+          to={{
+            pathname: `${row.original.id}/details`,
+            search: location.search,
+          }}
+        >
           {row.original.name}
         </RecordLink>
       ),
@@ -424,7 +429,7 @@ function CustomerCard({
       <div className='flex min-w-0 flex-1 flex-col gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           <RecordLink
-            to={{ pathname: customer.id, search }}
+            to={{ pathname: `${customer.id}/details`, search }}
             className='min-w-0 break-words'
           >
             {customer.name}

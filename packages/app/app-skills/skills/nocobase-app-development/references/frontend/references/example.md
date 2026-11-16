@@ -7,7 +7,7 @@ Start every new page from the runnable [executable list and edit example](execut
 - Create and edit forms: [shared form](example/project-form.md), [create dialog](example/create-dialog.md), [edit dialog](example/edit-dialog.md).
 - A record's detail with few fields: [detail drawer](example/detail-drawer.md); deleting it: [delete confirmation](example/delete-dialog.md).
 - A settings page with a toggle that applies at once and a card form: [settings page](example/settings-page.md).
-- A relation picker or batch assignment, or a detail page with related lists (`:id/details`): the runnable [customer/contact example](executable-relation-batch.md); tabs on a detail page: [`child-routes.md`](child-routes.md).
+- A relation picker or batch assignment, or a detail page with related lists (`:customerId/details`): the runnable [customer/contact example](executable-relation-batch.md); tabs on a detail page: [`child-routes.md`](child-routes.md).
 
 What every file follows, stated once here:
 

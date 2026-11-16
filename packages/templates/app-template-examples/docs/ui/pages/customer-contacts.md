@@ -26,7 +26,7 @@ Every endpoint requires native authentication and its business action; the brows
 
 ## Routes and structure
 
-Sidebar: Customers and contacts / 客户与联系人, UsersRound icon, page permission customer-contacts. The route /customer-contacts is a T1 customer list. Child :customerId uses RouteChildPage for T2 detail with a contacts sub-table; child edit uses RouteDialog for the customer form; contacts/new and contacts/:contactId/edit under that detail use RouteDialog for the contact form. The parent list remains mounted and retains search, filters and pagination. Closing returns to its exact parent URL with search preserved. Batch is a child-route RouteDialog at batch over the selected list, snapshots the current selection and rejects an empty/direct selection; reset/delete use named AlertDialog confirmations.
+Sidebar: Customers and contacts / 客户与联系人, UsersRound icon, page permission customer-contacts. The route /customer-contacts is a T1 customer list. Child :customerId/details uses RouteChildPage for T2 detail with a contacts sub-table; child edit uses RouteDialog for the customer form; contacts/new and contacts/:contactId/edit under that detail use RouteDialog for the contact form. The parent list remains mounted and retains search, filters and pagination. Closing returns to its exact parent URL with search preserved. Batch is a child-route RouteDialog at batch over the selected list, snapshots the current selection and rejects an empty/direct selection; reset/delete use named AlertDialog confirmations.
 
 ```text
 PageHeader Customers and contacts                         [Reset (admin)] [Refresh]

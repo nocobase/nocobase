@@ -106,7 +106,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       },
       {
         name: 'customer-contacts-detail',
-        path: ':customerId',
+        path: ':customerId/details',
         presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/customer-contacts/detail.js'),
         children: [

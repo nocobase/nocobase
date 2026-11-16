@@ -76,7 +76,7 @@ function mount(
       <Routes>
         <Route path='/customer-contacts' element={<CustomerContactsPage />}>
           <Route path='batch' element={<CustomerBatchPage />} />
-          <Route path=':customerId' element={<CustomerDetailPage />}>
+          <Route path=':customerId/details' element={<CustomerDetailPage />}>
             <Route path='edit' element={<CustomerEditorPage />} />
             <Route path='contacts/new' element={<CustomerEditorPage />} />
             <Route
@@ -387,7 +387,7 @@ it('keeps a contact draft after a rejected association save and sends the select
       return { data: contact };
     }
     throw new Error(`Unexpected ${path}`);
-  }, '/customer-contacts/customer-01/contacts/contact-01/edit');
+  }, '/customer-contacts/customer-01/details/contacts/contact-01/edit');
   const dialog = await screen.findByRole('dialog', { name: 'Edit contact' });
   const name = await within(dialog).findByRole('textbox', { name: 'Name *' });
   await userEvent.clear(name);
@@ -460,7 +460,7 @@ it('keeps delete failure feedback inside its open confirmation', async () => {
     if (path === 'customerContacts/contacts/contact-01')
       return method === 'DELETE' ? failure(403) : { data: contact };
     throw new Error(`Unexpected ${path}`);
-  }, '/customer-contacts/customer-01');
+  }, '/customer-contacts/customer-01/details');
   await userEvent.click(
     await screen.findByRole('button', {
       name: 'Actions for Original buyer',
@@ -490,7 +490,7 @@ it('focuses an unavailable association and links its validation message', async 
       return { data: contact };
     }
     throw new Error(`Unexpected ${path}`);
-  }, '/customer-contacts/customer-01/contacts/contact-01/edit');
+  }, '/customer-contacts/customer-01/details/contacts/contact-01/edit');
   const dialog = await screen.findByRole('dialog', { name: 'Edit contact' });
   await within(dialog).findByText('Record unavailable');
   await userEvent.click(
