@@ -5892,6 +5892,9 @@ importers:
       cn:
         specifier: 'catalog:'
         version: 0.4.0
+      date-fns:
+        specifier: 'catalog:'
+        version: 4.4.0
       dayjs:
         specifier: ^1.10.7
         version: 1.11.21
@@ -5937,6 +5940,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      react-day-picker:
+        specifier: ^10.0.2
+        version: 10.0.2(@types/react@19.2.18)(react@19.2.8)
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
