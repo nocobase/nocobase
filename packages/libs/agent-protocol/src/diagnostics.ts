@@ -25,7 +25,7 @@ export const DiagnosticsWindowSchema: z.ZodType<DiagnosticsWindow> = z
   })
   .refine((value) => {
     const duration = Date.parse(value.until) - Date.parse(value.since);
-    return duration > 0 && duration <= 8 * 86400000;
+    return duration > 0 && duration <= 7 * 86400000 + 3 * 3600000;
   }, 'Select at most seven local calendar days');
 
 export interface DiagnosticsRequest {

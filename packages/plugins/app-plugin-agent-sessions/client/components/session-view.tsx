@@ -1,4 +1,3 @@
-import { ApiClientError } from '@nocobase/app-client';
 /**
  * One session: its header, what it waits for, the work it produced, its transcript and the composer with the agent's
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is

@@ -5,11 +5,18 @@ export class LogLineFramer {
   private chunks: Buffer[] = [];
   private size = 0;
   private dropping = false;
+  private readonly line: (text: string) => void;
+  private readonly oversized: () => void;
+  private readonly maxBytes: number;
   constructor(
-    private readonly line: (text: string) => void,
-    private readonly oversized: () => void,
-    private readonly maxBytes: number = 32 * 1024,
-  ) {}
+    line: (text: string) => void,
+    oversized: () => void,
+    maxBytes: number = 32 * 1024,
+  ) {
+    this.line = line;
+    this.oversized = oversized;
+    this.maxBytes = maxBytes;
+  }
   write(data: Buffer | string): void {
     const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
     let start = 0;
@@ -58,8 +65,16 @@ export async function* boundedLogLines(
     maxBytes,
   );
   for await (const chunk of input) {
-    framer.write(Buffer.from(chunk));
-    while (ready.length) yield ready.shift()!;
+    for (let offset = 0; offset < chunk.length; offset += 32 * 1024) {
+      framer.write(
+        Buffer.from(
+          chunk.buffer,
+          chunk.byteOffset + offset,
+          Math.min(32 * 1024, chunk.length - offset),
+        ),
+      );
+      while (ready.length) yield ready.shift()!;
+    }
   }
   if (includePartial) framer.flush();
   while (ready.length) yield ready.shift()!;

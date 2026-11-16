@@ -81,6 +81,70 @@ describe('runner end to end', () => {
     return started;
   };
 
+  it('原生执行机在心跳后异步上传诊断，继续认领并由独立工作进程写 JSON 日志', async () => {
+    const paths = runnerPaths(home);
+    const date = new Date().toISOString().slice(0, 10);
+    mkdirSync(paths.logsDir, { recursive: true });
+    writeFileSync(
+      paths.daemonLog,
+      JSON.stringify({
+        time: new Date().toISOString(),
+        level: 'info',
+        msg: 'api_key=fixture-sensitive-value',
+      }) + '\n',
+    );
+    const run = server.enqueue({ workspace: { dirs: [], env: [] } });
+    server.diagnostics = {
+      requestId: '7e53ca48-1bd0-4343-b027-b5d81bdb7d43',
+      window: {
+        since: `${date}T00:00:00Z`,
+        until: new Date(
+          Date.parse(`${date}T00:00:00Z`) + 86400000,
+        ).toISOString(),
+        runIds: [],
+      },
+      maxBytes: 131072,
+      expiresAt: new Date(Date.now() + 45000).toISOString(),
+    };
+    daemon();
+    await waitFor(
+      () => server.diagnosticsUploads.length === 1,
+      undefined,
+      'diagnostics upload',
+    );
+    await waitFor(
+      () => run.status === 'completed',
+      undefined,
+      'worker completion',
+    );
+    expect(JSON.stringify(server.diagnosticsUploads)).not.toContain(
+      'fixture-sensitive-value',
+    );
+    expect(JSON.stringify(server.diagnosticsUploads)).toContain('REDACTED');
+    const log = path.join(
+      paths.logsDir,
+      'runs',
+      date,
+      `${run.payload.run.id}.log`,
+    );
+    const records = readFileSync(log, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    expect(records.length).toBeGreaterThan(0);
+    expect(
+      records.every(
+        (entry) =>
+          entry.time &&
+          entry.runId === run.payload.run.id &&
+          typeof entry.msg === 'string',
+      ),
+    ).toBe(true);
+    expect(
+      [...server.runners.values()][0].heartbeats.at(-1)?.features,
+    ).toContain('diagnostics');
+  });
+
   it('registers with features and tools, and heartbeats', async () => {
     const runner = [...server.runners.values()][0];
     expect(runner?.register).toMatchObject({

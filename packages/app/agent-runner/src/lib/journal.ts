@@ -107,7 +107,7 @@ export function workerJournal(
     );
   });
   for (const [index, stream] of [process.stdout, process.stderr].entries()) {
-    stream.write = ((
+    stream.write = (
       chunk: string | Uint8Array,
       encoding?: BufferEncoding | ((error?: Error | null) => void),
       callback?: (error?: Error | null) => void,
@@ -119,7 +119,7 @@ export function workerJournal(
       );
       (typeof encoding === 'function' ? encoding : callback)?.();
       return true;
-    }) as typeof stream.write;
+    };
   }
   process.on('uncaughtExceptionMonitor', (error) =>
     write('fatal', error.stack ?? error.message),
@@ -160,7 +160,11 @@ export async function pruneRunnerLogs(
   const active = (await readRecords(paths)).filter((record) =>
     isAlive(record.pid),
   );
-  const protectedFiles: string[] = [];
+  const protectedFiles: string[] = active.flatMap((record) =>
+    record.log && !path.relative(paths.logsDir, record.log).startsWith('..')
+      ? [record.log]
+      : [],
+  );
   const today = new Date().toISOString().slice(0, 10);
   for (const name of await readdir(paths.logsDir).catch(() => []))
     if (name.startsWith(`runner.${today}.`)) protectedFiles.push(name);

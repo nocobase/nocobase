@@ -7,75 +7,135 @@ import { safeName } from '../lib/home.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 
 export default class Logs extends RunnerCommand {
-  static override summary: string = "Print the runner daemon's log, or one run's.";
+  static override summary: string =
+    "Print the runner daemon's log, or one run's.";
   static override enableJsonFlag = false;
-  static override flags: { run: Interfaces.OptionFlag<string | undefined>; lines: Interfaces.OptionFlag<number>; follow: Interfaces.BooleanFlag<boolean> } = {
+  static override flags: {
+    run: Interfaces.OptionFlag<string | undefined>;
+    lines: Interfaces.OptionFlag<number>;
+    follow: Interfaces.BooleanFlag<boolean>;
+  } = {
     run: Flags.string({ description: "Print this run's worker log instead." }),
-    lines: Flags.integer({ char: 'n', description: 'How many lines from the end (at most 1 MiB).', default: 100, min: 1 }),
-    follow: Flags.boolean({ char: 'f', description: 'Keep printing what is appended, across UTC date rotation.' }),
+    lines: Flags.integer({
+      char: 'n',
+      description: 'How many lines from the end (at most 1 MiB).',
+      default: 100,
+      min: 1,
+    }),
+    follow: Flags.boolean({
+      char: 'f',
+      description: 'Keep printing what is appended, across UTC date rotation.',
+    }),
   };
   async run(): Promise<void> {
     const { flags } = await this.parse(Logs);
     const files = async (): Promise<string[]> => {
       const directory = this.paths.logsDir;
-      if (!(await lstat(directory).catch(() => undefined))?.isDirectory()) return [];
-      if (!flags.run) return (await readdir(directory)).filter((name) => /^runner\.\d{4}-\d{2}-\d{2}\.\d+\.log$/.test(name)).sort().map((name) => path.join(directory, name));
+      if (!(await lstat(directory).catch(() => undefined))?.isDirectory())
+        return [];
+      if (!flags.run)
+        return (await readdir(directory))
+          .filter((name) => /^runner\.\d{4}-\d{2}-\d{2}\.\d+\.log$/.test(name))
+          .sort()
+          .map((name) => path.join(directory, name));
       const runs = path.join(directory, 'runs');
       if (!(await lstat(runs).catch(() => undefined))?.isDirectory()) return [];
       const result: string[] = [];
       for (const date of (await readdir(runs)).sort()) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !(await lstat(path.join(runs, date))).isDirectory()) continue;
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+          !(await lstat(path.join(runs, date))).isDirectory()
+        )
+          continue;
         const file = path.join(runs, date, `${safeName(flags.run)}.log`);
-        if ((await lstat(file).catch(() => undefined))?.isFile()) result.push(file);
+        if ((await lstat(file).catch(() => undefined))?.isFile())
+          result.push(file);
       }
       return result;
     };
     let current = (await files()).at(-1);
-    if (!current) throw new UsageError('No journal is available.', EXIT_CODES.notFound);
+    if (!current)
+      throw new UsageError('No journal is available.', EXIT_CODES.notFound);
     let offset = 0;
     let inode = 0;
     const read = async (initial: boolean) => {
       const candidates = await files();
       const index = current ? candidates.indexOf(current) : -1;
-      const selected = initial ? candidates.slice(-1) : candidates.slice(index < 0 ? -1 : index);
+      const selected = initial
+        ? candidates.slice(-1)
+        : candidates.slice(index < 0 ? -1 : index);
       for (const file of selected) {
         let handle;
         try {
           handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW);
           const info = await handle.stat();
           if (!info.isFile()) continue;
-          if (current !== file || inode !== info.ino || info.size < offset) offset = 0;
-          current = file; inode = info.ino;
+          if (current !== file || inode !== info.ino || info.size < offset)
+            offset = 0;
+          current = file;
+          inode = info.ino;
           if (initial) offset = Math.max(0, info.size - 1024 * 1024);
           const started = offset;
           if (initial) {
             const data = Buffer.alloc(info.size - offset);
-            const { bytesRead } = await handle.read(data, 0, data.length, offset);
+            const { bytesRead } = await handle.read(
+              data,
+              0,
+              data.length,
+              offset,
+            );
             offset += bytesRead;
-            const lines = data.subarray(0, bytesRead).toString('utf8').split('\n');
+            const lines = data
+              .subarray(0, bytesRead)
+              .toString('utf8')
+              .split('\n');
             if (started) lines.shift();
             if (lines.at(-1) === '') lines.pop();
             for (const line of lines.slice(-flags.lines)) this.log(line);
           } else {
             while (offset < info.size) {
-              const data = Buffer.alloc(Math.min(32 * 1024, info.size - offset));
-              const { bytesRead } = await handle.read(data, 0, data.length, offset);
+              const data = Buffer.alloc(
+                Math.min(32 * 1024, info.size - offset),
+              );
+              const { bytesRead } = await handle.read(
+                data,
+                0,
+                data.length,
+                offset,
+              );
               if (!bytesRead) break;
               offset += bytesRead;
-              await new Promise<void>((resolve, reject) => process.stdout.write(data.subarray(0, bytesRead), (error) => error ? reject(error) : resolve()));
+              await new Promise<void>((resolve, reject) =>
+                process.stdout.write(data.subarray(0, bytesRead), (error) =>
+                  error ? reject(error) : resolve(),
+                ),
+              );
             }
           }
-        } catch (error) { if (!['ENOENT', 'ELOOP'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error; }
-        finally { await handle?.close(); }
+        } catch (error) {
+          if (
+            !['ENOENT', 'ELOOP'].includes(
+              (error as NodeJS.ErrnoException).code ?? '',
+            )
+          )
+            throw error;
+        } finally {
+          await handle?.close();
+        }
       }
     };
     await read(true);
     if (!flags.follow) return;
     await new Promise<void>((resolve, reject) => {
       let pending = Promise.resolve();
-      const update = () => { pending = pending.then(() => read(false)).catch(reject); };
+      const update = () => {
+        pending = pending.then(() => read(false)).catch(reject);
+      };
       const timer = setInterval(update, 500);
-      const stop = () => { clearInterval(timer); void pending.then(resolve, reject); };
+      const stop = () => {
+        clearInterval(timer);
+        void pending.then(resolve, reject);
+      };
       process.once('SIGINT', stop);
       update();
     });

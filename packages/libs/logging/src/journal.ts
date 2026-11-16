@@ -47,7 +47,7 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
   if (depth > 8) return '[TRUNCATED]';
   if (typeof value === 'string') {
     // Parse structured text before free-text matching, including escaped JSON strings.
-    if (/^\s*[\[{]/.test(value) && value.length <= MAX_LINE) {
+    if (/^\s*[[{]/.test(value) && value.length <= MAX_LINE) {
       try {
         return JSON.stringify(sanitizeLog(JSON.parse(value), depth + 1));
       } catch {
@@ -59,14 +59,14 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
         /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/g,
         '[REDACTED]',
       )
-      .replace(/(Bearer\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
+      .replace(/((?:Bearer|Basic)\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
       .replace(/(\w+:\/\/)[^\s/@]+:[^\s/@]+@/g, '$1[REDACTED]@')
       .replace(
-        /((?:[\w-]*(?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]*)["']?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
+        /\b((?:[\w-]*(?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]*)["']?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
         '$1[REDACTED]',
       )
       .replace(
-        /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+)/g,
+        /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+|npm_[a-zA-Z0-9_]+|fg(?:[kro]|reg|dl)_[a-zA-Z0-9_-]+)/g,
         '[REDACTED]',
       )
       .slice(0, MAX_LINE);
@@ -267,7 +267,10 @@ async function listFiles(
         ))
           files.push({ ...file, name: path.join(entry.name, file.name) });
       }
-      if (!entry.isFile() || !/^[a-zA-Z0-9_.-]+\.log$/.test(entry.name))
+      if (
+        !entry.isFile() ||
+        !/^[a-zA-Z0-9_.-]+\.log(?:\.\d+)?$/.test(entry.name)
+      )
         continue;
       const stats = await lstat(path.join(directory, entry.name));
       if (stats.isFile())

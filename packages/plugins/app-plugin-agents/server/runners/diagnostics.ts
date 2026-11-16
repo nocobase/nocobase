@@ -180,6 +180,8 @@ export function createRunnerDiagnostics(
         );
         const results = await Promise.all(jobs);
         clearTimeout(timer);
+        // A timed-out upload may still be removing its partial directory. Never hand it to the packager.
+        await Promise.allSettled([...uploads]);
         let disposed = false;
         return {
           directory,
@@ -258,7 +260,7 @@ export function createRunnerDiagnostics(
             limit(request.maxBytes),
             async (input) => {
               for await (const line of boundedLogLines(
-                input,
+                input as AsyncIterable<Uint8Array>,
                 DIAGNOSTICS_MAX_RECORD,
               )) {
                 if (line === null)

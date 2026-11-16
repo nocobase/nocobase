@@ -1,5 +1,6 @@
 import {
   existsSync,
+  readdirSync,
   readFileSync,
   statSync,
   writeFileSync,
@@ -7,7 +8,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { RotatingLog, runService } from '../src/core/service-runner.ts';
+import { RunnerJournal, runService } from '../src/core/service-runner.ts';
 import { servicePlan, installService } from '../src/core/service.ts';
 import { launcherPidPath } from '../src/core/launcher.ts';
 import { runnerPaths } from '../src/lib/home.ts';
@@ -16,7 +17,12 @@ import { removeDir, tempDir } from './helpers.ts';
 const root = tempDir('service-runner-');
 afterAll(() => removeDir(root));
 let serial = 0;
-const logFor = () => new RotatingLog(path.join(root, `runner-${serial++}.log`));
+const logFor = () => {
+  const paths = runnerPaths(path.join(root, `runner-${serial++}`));
+  return Object.assign(new RunnerJournal(paths.logsDir), {
+    file: paths.daemonLog,
+  });
+};
 const command = (script: string) => [process.execPath, '-e', script];
 
 describe('service launch policy', () => {
@@ -41,7 +47,9 @@ describe('service launch policy', () => {
         expect(exit).toBe(code);
         expect(waits).toEqual([]);
         expect(existsSync(launcherPidPath(paths))).toBe(false);
-        expect(readFileSync(log.file, 'utf8')).toBe(`exit ${code}\n`);
+        expect(JSON.parse(readFileSync(log.file, 'utf8').trim()).msg).toBe(
+          `exit ${code}`,
+        );
       }
     },
   );
@@ -154,17 +162,30 @@ describe('service launch policy', () => {
     expect(waits).toBe(1);
   });
 
-  it('bounds output by bytes across large chunks and restarts, retaining two backups', () => {
-    const file = logFor().file;
-    const log = new RotatingLog(file, 128);
-    log.write(Buffer.alloc(600, 65));
-    new RotatingLog(file, 128).write('last line\n');
-    expect(readFileSync(file, 'utf8')).toMatch(/last line\n$/);
-    for (const suffix of ['', '.1', '.2']) {
-      expect(statSync(file + suffix).size).toBeLessThanOrEqual(128);
-      expect(statSync(file + suffix).mode & 0o777).toBe(0o600);
-    }
-    expect(existsSync(file + '.3')).toBe(false);
+  it('rolls UTC journal segments and wraps oversized output without splitting records', () => {
+    const log = logFor();
+    const directory = path.dirname(log.file);
+    const writer = new RunnerJournal(directory, {
+      logMaxSizeMB: 1024 / 1024 ** 2,
+    });
+    for (let index = 0; index < 100; index++) writer.write('bounded line\n');
+    writer.write('x'.repeat(100000) + '\nlast line\n');
+    writer.flush();
+    const files = readdirSync(directory).filter((name) =>
+      name.endsWith('.log'),
+    );
+    expect(files.length).toBeGreaterThan(1);
+    const records = files.flatMap((name) => {
+      expect(statSync(path.join(directory, name)).size).toBeLessThanOrEqual(
+        1024,
+      );
+      return readFileSync(path.join(directory, name), 'utf8')
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line));
+    });
+    expect(records.some((entry) => entry.truncated)).toBe(true);
+    expect(records.at(-1).msg).toBe('last line');
   });
 
   it.each(['darwin', 'linux'] as const)(
@@ -216,12 +237,20 @@ describe('service launch policy', () => {
     },
   );
 
-  it('trims a previously unbounded log on startup', () => {
-    const file = logFor().file;
-    writeFileSync(file, 'old'.repeat(100));
-    new RotatingLog(file, 64).write('tail');
-    expect(statSync(file + '.1').size).toBe(64);
-    expect(readFileSync(file, 'utf8')).toBe('tail');
+  it('resumes a new bounded segment after a previously oversized segment', () => {
+    const log = logFor();
+    mkdirSync(path.dirname(log.file), { recursive: true });
+    writeFileSync(log.file, 'old'.repeat(1000));
+    new RunnerJournal(path.dirname(log.file), {
+      logMaxSizeMB: 1024 / 1024 ** 2,
+    }).write('tail\n');
+    const newest = readdirSync(path.dirname(log.file)).sort().at(-1)!;
+    expect(
+      readFileSync(path.join(path.dirname(log.file), newest), 'utf8'),
+    ).toContain('tail');
+    expect(
+      statSync(path.join(path.dirname(log.file), newest)).size,
+    ).toBeLessThanOrEqual(1024);
   });
 
   it('restarts every service exit after 60 seconds without a failure budget', () => {

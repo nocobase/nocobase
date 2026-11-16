@@ -194,7 +194,7 @@ export class ApiClient {
       signal: options.signal
         ? AbortSignal.any([timeout, options.signal])
         : timeout,
-    } as RequestInit);
+    });
     if (!response.ok) {
       await response.body?.cancel();
       throw new ApiError(

@@ -1,0 +1,35 @@
+# Runner diagnostics
+
+Diagnostics is an optional `diagnostics` runner feature within the current protocol version. Older runners are skipped. The agents service keeps pending requests in memory on one application instance; no run scheduling, leases, persistent state, or normal-heartbeat database work is added.
+
+## Application integration
+
+The host application authorizes collection, preview and download using its own diagnostics permission. A runner key can only upload a pending request belonging to that runner; it never grants collection or download. Human sessions and delegated agent identities must be checked by the host, including the initiating person's effective grants. API keys must be refused by the host's diagnostics routes.
+
+Call `agents.diagnostics.collect({ window, directory, maxTotalBytes?, timeoutMs? })` from the host's authorized bundle-generation service. `window` contains `since` and exclusive `until` UTC instants converted from at most seven local calendar dates, optional minimum `level`, and `runIds` (up to 20). Keep calendar-day validation in the host; the wire interval allows daylight-saving transitions. `directory` is an application-owned private temporary directory, never supplied by an HTTP caller. Collection defaults to a 45-second deadline and 200 MiB combined uncompressed runner budget, bounded by 300 MiB. Each runner receives at most 20 MiB, with at most 128 participating runners and two outstanding dispatches. Runners beyond the allocated budget return `capacity`.
+
+The result contains its temporary `directory`, per-runner results (`collected`, `offline`, `unsupported`, `timeout`, `too_large`, `failed`, or `capacity`), and an idempotent async `dispose()`. Collected runners have private directories, `environment.json`, original relative log filenames and file summaries with actual sanitized byte counts and UTC source dates. Empty filtered or unavailable files may appear only in the summary with zero bytes. Build the final archive from existing output files, not from a guessed list of input paths. Reserve the host's server-log, run-event, manifest and archive budgets independently so the complete bundle stays within 300 MiB. Only one collection may exist until disposed. The host must retain the completed archive for its authorized preview/download TTL, then dispose in `finally`; bind it to the initiating identity, recheck permission at download, and download those same bytes. The host owns crash-time cleanup of abandoned temporary directories.
+
+## Heartbeat and upload
+
+A heartbeat response optionally contains `diagnostics: { requestId, window, maxBytes, expiresAt }`. The handler performs one memory lookup and does not wait for file scanning. The runner starts an asynchronous upload to `POST /api/agents/runners/diagnostics/:requestId`, under the existing application base path, with its normal runner-key and protocol headers, `Content-Type: application/gzip`, and redirects disabled. This upload is one use, bound to that runner and instance, and expires at the shared collection deadline. Another runner's attempt does not consume the request. A failed or interrupted upload consumes it; a later collection can request another.
+
+The gzip body contains newline-delimited `DiagnosticsRecord` objects: exactly one whitelisted `environment`, then `log` records, then one terminal `manifest`. Environment includes runner/Node/OS/architecture and detected tool versions only. No credentials, settings files, environment values or workspace files are read. Both compressed and expanded upload bytes are counted separately against `maxBytes`. Each record is at most 64 KiB. Invalid records, extra records after the manifest, unexpected dates, arbitrary paths and incomplete streams are rejected; the partial directory is removed. The server never extracts an archive or trusts upload paths: it accepts only protocol log filenames under a server-created private directory, validates the requested dates or selected run IDs, sanitizes again and measures actual output bytes.
+
+## Journals and limits
+
+The launcher writes daemon JSON journals through `@nocobase/logging` as `logs/runner.<UTC-date>.<segment>.log`. A foreground daemon owns these files itself when no launcher captures stdout. Each worker writes its own `logs/runs/<UTC-date>/<runId>.log` using `appendJournal`; long-lived runs continue in the next UTC day's file. Raw stdout/stderr and crash stacks are wrapped as records, with separate line framing and private-key-block redaction. No daemon process writes a worker's log file.
+
+`nocobase-runner config set log-retention 7` and `config set log-max-size 500M` configure retention (defaults 7 days and 500 MiB total). Automatic GC and `gc --apply` use `pruneJournals` across daemon and run logs, protecting all dates held by live workers and today's daemon segments. Settings apply at the next GC; launcher segment settings apply after restart. Protected active logs can temporarily exceed the retention budget. Per-run daily files stop at the configured size with a truncation marker. Legacy text logs are not included in the new diagnostics format.
+
+Collection selects UTC date files intersecting the local-day interval, without filtering individual record timestamps or using modification time. Selected run IDs include every retained date. Source reads are capped at the runner's byte budget, records are framed at 32 KiB before JSON parsing, and oversized lines are discarded in full. Space is reserved for the final manifest. At most 64 source files are emitted; excess files, source limits and dropped lines are marked truncated. Failed requests carrying correlation IDs remain included even if their severity is below the selected minimum.
+
+## Local timeline
+
+Every branded application CLI provides `diagnostics timeline <bundle.tar.gz> --out <new.jsonl> [--level warn] [--request-id <id>]`. It uses only local files and does not load a session or contact a server. It merges `.log` and `.jsonl` records by `time`, normalizes numeric or string timestamps to UTC ISO, adds `source`, filters level/request ID, sanitizes again, and counts malformed or oversized records as omitted. An existing destination is never overwritten.
+
+The timeline reads archive entries without extracting them, rejects links and unsafe paths, and bounds compressed input, expanded entry sizes and output to 512 MiB each. It uses 4 MiB sort chunks and at most 256 merge inputs in a private directory beside the output. Temporary sort files and partial output are removed on failure. The operator needs space for the chunks plus the output.
+
+## Request IDs
+
+Framework plugin error notifications now pass `ToastOptions.requestId` from `ApiClientError.requestId`. The host toaster renders and copies that metadata. Existing server error bodies and request journals already carry the same ID, with warning/error completion records for failed requests. The host diagnostics implementation must preserve failed request correlation when applying its own minimum-level filter.

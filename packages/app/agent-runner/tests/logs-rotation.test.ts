@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { afterAll, expect, it } from 'vitest';
-import { RotatingLog } from '../src/core/service-runner.ts';
+import { RunnerJournal } from '../src/core/service-runner.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 import { waitFor } from './fake-server.ts';
 import { BIN, cliEnv, removeDir, tempDir } from './helpers.ts';
@@ -12,9 +12,9 @@ afterAll(() => removeDir(home));
 it.each(['rotation', 'append'] as const)(
   'follows a log %s between initial output and watcher initialization',
   async (change) => {
-    const writer = new RotatingLog(
-      runnerPaths(path.join(home, change)).daemonLog,
-      128,
+    const writer = new RunnerJournal(
+      runnerPaths(path.join(home, change)).logsDir,
+      { logMaxSizeMB: 1024 / 1024 ** 2 },
     );
     writer.write('ready\n');
     const child = spawn(process.execPath, [BIN, 'logs', '--follow'], {
@@ -47,7 +47,7 @@ it.each(['rotation', 'append'] as const)(
         'initial log output',
       );
       writer.write(
-        (change === 'rotation' ? 'x'.repeat(128) : '') +
+        (change === 'rotation' ? ('x'.repeat(100) + '\n').repeat(20) : '') +
           '\nnew file followed\n',
       );
       child.stdio[3]?.write('!');

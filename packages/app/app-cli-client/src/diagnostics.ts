@@ -3,8 +3,7 @@ import { createReadStream } from 'node:fs';
 import { mkdtemp, open, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { Parser, type ReadEntry } from 'tar';
-import { boundedLogLines, sanitizeLog } from '@nocobase/logging';
+import type { Parser, ReadEntry } from 'tar';
 import { AppCommand, UsageError } from './lib/command.ts';
 
 const MAX_INPUT = 512 * 1024 * 1024;
@@ -40,6 +39,8 @@ export interface TimelineResult {
 export async function diagnosticsTimeline(
   options: TimelineOptions,
 ): Promise<TimelineResult> {
+  const { Parser } = await import('tar');
+  const { boundedLogLines, sanitizeLog } = await import('@nocobase/logging');
   if (options.level && !(options.level in LEVELS))
     throw new UsageError('Unknown minimum log level');
   const input = await stat(options.bundle);
@@ -143,7 +144,7 @@ export async function diagnosticsTimeline(
       strict: true,
       maxMetaEntrySize: 64 * 1024,
       onReadEntry(entry) {
-        consuming = consume(entry);
+        consuming = consuming.then(() => consume(entry));
         void consuming.catch((error: unknown) =>
           parser.abort(
             error instanceof Error ? error : new Error(String(error)),
@@ -191,7 +192,9 @@ export async function diagnosticsTimeline(
     throw error;
   } finally {
     await output?.close();
-    await Promise.allSettled(iterators.map((iterator) => iterator.return(undefined)));
+    await Promise.allSettled(
+      iterators.map((iterator) => iterator.return(undefined)),
+    );
     await rm(temporary, { recursive: true, force: true });
   }
 }

@@ -59,14 +59,8 @@ describe('Logging', () => {
   it('resolves logger names in rolling file transports', async () => {
     const directory = mkdtempSync(path.join(tmpdir(), 'nocobase-logging-'));
     const logging = createLogging({
-      transport: {
-        target: 'pino-roll',
-        options: {
-          file: path.join(directory, '{logger}.log'),
-          frequency: 'daily',
-          dateFormat: 'yyyy_MM_dd',
-        },
-      },
+      file: { directory },
+      loggers: { request: { file: { name: 'request' } } },
     });
 
     try {
@@ -76,7 +70,7 @@ describe('Logging', () => {
       await vi.waitFor(
         () => {
           expect(readdirSync(directory)).toEqual([
-            expect.stringMatching(/^request\.\d{4}_\d{2}_\d{2}\.1\.log$/),
+            expect.stringMatching(/^request\.\d{4}-\d{2}-\d{2}\.000000\.log$/),
           ]);
         },
         { timeout: 5_000 },
