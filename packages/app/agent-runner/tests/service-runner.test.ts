@@ -7,7 +7,7 @@ import {
   mkdirSync,
 } from 'node:fs';
 import path from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { RunnerJournal, runService } from '../src/core/service-runner.ts';
 import { servicePlan, installService } from '../src/core/service.ts';
 import { launcherPidPath } from '../src/core/launcher.ts';
@@ -30,6 +30,30 @@ const logFor = () => {
 const command = (script: string) => [process.execPath, '-e', script];
 
 describe('service launch policy', () => {
+  it('主进程 JSON 每行只解析和序列化一次，敏感值只在持久化边界处理', () => {
+    const log = logFor();
+    const input =
+      JSON.stringify({
+        time: new Date().toISOString(),
+        level: 30,
+        msg: 'api_key=fixture-sensitive-value',
+        requestId: 'request-fixture',
+      }) + '\n';
+    const parse = vi.spyOn(JSON, 'parse');
+    const stringify = vi.spyOn(JSON, 'stringify');
+    try {
+      log.write(input);
+      log.flush();
+      expect(parse).toHaveBeenCalledTimes(1);
+      expect(stringify).toHaveBeenCalledTimes(1);
+    } finally {
+      parse.mockRestore();
+      stringify.mockRestore();
+    }
+    const saved = readDaemonLog(log.directory);
+    expect(saved).not.toContain('fixture-sensitive-value');
+    expect(saved).toContain('request-fixture');
+  });
   it.each(['0', '1'])(
     'preserves clean, authentication and update exits (service=%s)',
     async (service) => {
@@ -169,10 +193,9 @@ describe('service launch policy', () => {
   it('rolls UTC journal segments and wraps oversized output without splitting records', () => {
     const log = logFor();
     const directory = log.directory;
-    const writer = new RunnerJournal(directory, {
-      logMaxSizeMB: 1024 / 1024 ** 2,
-    });
-    for (let index = 0; index < 100; index++) writer.write('bounded line\n');
+    const writer = new RunnerJournal(directory);
+    for (let index = 0; index < 6000; index++)
+      writer.write('bounded line' + 'x'.repeat(1000) + '\n');
     writer.write('x'.repeat(100000) + '\nlast line\n');
     writer.flush();
     const files = readdirSync(directory).filter((name) =>
@@ -181,7 +204,7 @@ describe('service launch policy', () => {
     expect(files.length).toBeGreaterThan(1);
     const records = files.flatMap((name) => {
       expect(statSync(path.join(directory, name)).size).toBeLessThanOrEqual(
-        1024,
+        5 * 1024 ** 2,
       );
       return readFileSync(path.join(directory, name), 'utf8')
         .trim()
@@ -244,10 +267,8 @@ describe('service launch policy', () => {
   it('resumes a new bounded segment after a previously oversized segment', () => {
     const log = logFor();
     mkdirSync(path.dirname(log.file), { recursive: true });
-    writeFileSync(log.file, 'old'.repeat(1000));
-    new RunnerJournal(path.dirname(log.file), {
-      logMaxSizeMB: 1024 / 1024 ** 2,
-    }).write('tail\n');
+    writeFileSync(log.file, 'old'.repeat(2 * 1024 ** 2));
+    new RunnerJournal(path.dirname(log.file)).write('tail\n');
     const newest = readdirSync(path.dirname(log.file)).sort().at(-1)!;
     expect(
       readFileSync(path.join(path.dirname(log.file), newest), 'utf8'),

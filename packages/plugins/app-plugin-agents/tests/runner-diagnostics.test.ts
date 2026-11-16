@@ -87,6 +87,48 @@ async function take(
 }
 
 describe('执行机上传边界', () => {
+  it('服务端统一处理原始崩溃输出、跨行私钥和旧日志中的未脱敏字段', async () => {
+    const service = createRunnerDiagnostics(async () => [
+      { id: 'one', status: 'online', features: ['diagnostics'] },
+    ]);
+    const collecting = service.collect({
+      runnerIds: ['one'],
+      directory: await directory(),
+      window,
+    });
+    const request = await take(service, 'one');
+    const name = 'runs/2026-11-01/selected.stderr';
+    const logs = [
+      'native api_key=fixture-sensitive-value',
+      '-----BEGIN PRIVATE KEY-----',
+      'private-body-fixture',
+      '-----END PRIVATE KEY-----',
+      'final stack',
+    ].map((msg) => ({
+      ...record,
+      file: name,
+      entry: { ...record.entry, password: 'old-log-fixture', msg },
+    }));
+    await service.accept(
+      'one',
+      request.requestId,
+      body([
+        env,
+        ...logs,
+        { ...manifest, files: [{ ...manifest.files[0], file: name }] },
+      ]),
+    );
+    const result = await collecting;
+    const saved = await readFile(
+      path.join(result.runners[0].directory!, name),
+      'utf8',
+    );
+    expect(saved).not.toContain('fixture-sensitive-value');
+    expect(saved).not.toContain('private-body-fixture');
+    expect(saved).not.toContain('old-log-fixture');
+    expect(saved).toContain('final stack');
+    await result.dispose();
+  });
   it('宿主范围外的在线执行机不获请求、不能上传，也不挤占收集预算', async () => {
     const list = vi.fn(async () => [
       { id: 'other-personal', status: 'online', features: ['diagnostics'] },

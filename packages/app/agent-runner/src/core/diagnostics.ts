@@ -4,7 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { createGzip } from 'node:zlib';
-import { createLogLineSanitizer, sanitizeLog } from '@nocobase/logging';
 import { diagnosticLines } from './diagnostic-lines.ts';
 import {
   diagnosticsDates,
@@ -92,7 +91,7 @@ export async function* diagnosticsRecords(
   const ordinary = candidates.filter((source) => !source.selected);
   const files = [...chosen, ...ordinary.slice(0, 64)];
   if (ordinary.length > 64) truncated = true;
-  const encode = (value: unknown) => JSON.stringify(sanitizeLog(value)) + '\n';
+  const encode = (value: unknown) => JSON.stringify(value) + '\n';
   const first = encode({
     type: 'environment',
     version: environment.version.slice(0, 100),
@@ -169,9 +168,7 @@ export async function* diagnosticsRecords(
       const start = stat.size - length;
       const raw = source.file.endsWith('.stderr');
       const converter = (initialPrivate = false) => {
-        const redact = createLogLineSanitizer();
         let privateKey = initialPrivate;
-        if (initialPrivate) redact('-----BEGIN PRIVATE KEY-----');
         return (line: string) => {
           let entry: Record<string, unknown>;
           const wasPrivate = privateKey;
@@ -180,12 +177,11 @@ export async function* diagnosticsRecords(
           if (begins) privateKey = true;
           if (ends) privateKey = false;
           const reset = ends && !wasPrivate && !begins;
-          const rawText = raw ? redact(line) : '';
           if (raw)
             entry = {
               time: stat.mtime.toISOString(),
               level: 'error',
-              msg: ends ? '[REDACTED]' : rawText,
+              msg: line,
               runId: path.basename(source.file, '.stderr'),
             };
           else {
@@ -273,6 +269,12 @@ export async function* diagnosticsRecords(
           head = 0;
         }
       }
+      // Do not begin a retained raw suffix in the middle of a private-key block.
+      while (raw && queue[head]?.privateKey) {
+        head++;
+        summary.omittedLines++;
+        summary.truncated = true;
+      }
       summary.truncated ||= start > 0;
       truncated ||= summary.truncated;
       if (summary.truncated) {
@@ -327,7 +329,7 @@ export async function* diagnosticsRecords(
   }
   yield JSON.stringify({
     type: 'manifest',
-    files: summaries.map((file) => sanitizeLog(file)),
+    files: summaries,
     truncated,
   }) + '\n';
 }

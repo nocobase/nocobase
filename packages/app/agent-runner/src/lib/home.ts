@@ -31,6 +31,8 @@
 //   ~/.nocobase-runner-work/.pnpm-store/          the pnpm store every run shares (core/pnpm-store.ts)
 import {
   chmod,
+  lstat,
+  unlink,
   mkdir,
   readFile,
   rename,
@@ -163,4 +165,13 @@ export async function writeJsonAtomic(
 
 export async function removeFile(file: string): Promise<void> {
   await rm(file, { force: true });
+}
+
+export async function removeEmptyStderr(file: string): Promise<void> {
+  try {
+    const stats = await lstat(file);
+    if (stats.isFile() && stats.size === 0) await unlink(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
 }

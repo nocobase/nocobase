@@ -5,7 +5,11 @@ import path from 'node:path';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
-import { boundedLogLines, sanitizeLog } from '@nocobase/logging';
+import {
+  boundedLogLines,
+  sanitizeLog,
+  createLogLineSanitizer,
+} from '@nocobase/logging';
 import {
   DIAGNOSTICS_FEATURE,
   DIAGNOSTICS_MAX_BYTES,
@@ -245,6 +249,10 @@ export function createRunnerDiagnostics(
       item.uploading = true;
       const request = item.request;
       const seen = new Map<string, number>();
+      const redactLines = new Map<
+        string,
+        ReturnType<typeof createLogLineSanitizer>
+      >();
       let environment = false;
       let manifest:
         { files: DiagnosticsFile[]; truncated: boolean } | undefined;
@@ -362,7 +370,18 @@ export function createRunnerDiagnostics(
                       'INVALID_ARGUMENT',
                       'Invalid diagnostics log time',
                     );
-                  const text = JSON.stringify(sanitizeLog(record.entry)) + '\n';
+                  let redact = redactLines.get(record.file);
+                  if (!redact) {
+                    redact = createLogLineSanitizer();
+                    redactLines.set(record.file, redact);
+                  }
+                  const text =
+                    JSON.stringify(
+                      sanitizeLog({
+                        ...record.entry,
+                        msg: redact(record.entry.msg),
+                      }),
+                    ) + '\n';
                   written += Buffer.byteLength(text);
                   if (written > request.maxBytes)
                     throw fail(

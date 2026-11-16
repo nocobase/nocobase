@@ -14,7 +14,6 @@ it.each(['rotation', 'append'] as const)(
   async (change) => {
     const writer = new RunnerJournal(
       runnerPaths(path.join(home, change)).logsDir,
-      { logMaxSizeMB: 1024 / 1024 ** 2 },
     );
     writer.write('ready\n');
     const child = spawn(process.execPath, [BIN, 'logs', '--follow'], {
@@ -47,7 +46,7 @@ it.each(['rotation', 'append'] as const)(
         'initial log output',
       );
       writer.write(
-        (change === 'rotation' ? ('x'.repeat(100) + '\n').repeat(20) : '') +
+        (change === 'rotation' ? ('x'.repeat(1000) + '\n').repeat(6000) : '') +
           '\nnew file followed\n',
       );
       child.stdio[3]?.write('!');

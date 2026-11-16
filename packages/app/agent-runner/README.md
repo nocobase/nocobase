@@ -19,7 +19,6 @@ nocobase-runner gc [--apply] [--ended] [--older-than 14d] [--subject <key>] [--f
 nocobase-runner config set min-free-disk 20G|10%|off
 nocobase-runner config set agent-tools runner|system
 nocobase-runner config set log-retention 7
-nocobase-runner config set log-max-size 500M
 nocobase-runner config set artifact-ttl 24h|30m|2d|off
 nocobase-runner config set artifact-patterns node_modules,.next,.turbo|default
 nocobase-runner config models <tool> add|remove <model> | reset | show
@@ -196,4 +195,4 @@ Partial snapshots retain at most 64 open blocks of 64 KiB UTF-8 text each (4 MiB
 
 ## Diagnostics journals
 
-Daemon logs rotate by UTC date through `@nocobase/logging`; each worker writes its own JSON-lines files under `logs/runs/<UTC-date>/`. Automatic GC and `gc --apply` keep seven days and 500 MiB by default, while protecting live worker files. `config set log-retention <days>` and `config set log-max-size <size>` change the policy. `logs --follow` follows date and segment rotation. See the [diagnostics protocol](../../libs/agent-protocol/docs/diagnostics.md) for asynchronous collection, limits, skipped runners and the local timeline command.
+Daemon logs rotate by UTC date through `@nocobase/logging`; each worker writes its own JSON-lines files under `logs/runs/<UTC-date>/`. Automatic GC and `gc --apply` retain seven days by modification time, configurable with `config set log-retention <days>`, without a total-size budget or protected-path list. Each worker JSON journal stops at 50 MiB with a truncation marker. Empty native stderr sidecars are removed at normal exit and by GC, while live empty sidecars and nonempty crash output are retained. Journal writes sanitize once; diagnostics upload source records without another runner-side redaction pass, and the server sanitizes them before building the bundle. `logs --follow` follows date and segment rotation. See the [diagnostics protocol](../../libs/agent-protocol/docs/diagnostics.md) for collection, limits, skipped runners and the local timeline command.

@@ -4,6 +4,7 @@ import {
   waitForWorkspaceCleanup,
 } from './workspace-use.ts';
 import { taskWorkDir } from './checkout.ts';
+import { removeEmptyStderr } from '../lib/home.ts';
 import { cleanupRunTemp } from './run-temp.ts';
 import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
@@ -464,6 +465,10 @@ export class Supervisor {
               );
           })
           .finally(async () => {
+            if (code === 0 && signal === null)
+              await removeEmptyStderr(rawFile).catch((error: unknown) =>
+                log('Empty crash log cleanup failed: ' + String(error)),
+              );
             const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
             const upgrade = this.runs.get(runId)?.upgradeInterrupted === true;
             await this.afterExit(runId, cancelled, upgrade);

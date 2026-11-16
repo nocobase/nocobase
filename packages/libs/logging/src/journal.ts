@@ -152,7 +152,7 @@ function compactError(value: unknown, depth: number = 0): unknown {
 }
 
 /** Keep correlation and failure details when optional payloads exceed the line budget. */
-function serializeEntry(entry: JournalEntry): string {
+export function serializeJournalEntry(entry: JournalEntry): string {
   const sanitized = sanitizeLog(entry) as JournalEntry;
   const line = JSON.stringify(sanitized) + '\n';
   if (Buffer.byteLength(line) <= MAX_LINE) return line;
@@ -184,12 +184,18 @@ function serializeEntry(entry: JournalEntry): string {
   return JSON.stringify(compact) + '\n';
 }
 
-/** One complete append per entry. No file descriptor survives a write or rotation. */
+/** One serialization and append. A destination callback can rotate using the prepared line without serializing again. */
 export function appendJournal(
-  file: string,
+  destination: string | ((line: string) => { file: string; maxSizeMB: number }),
   entry: JournalEntry,
   maxSizeMB: number = 50,
 ): void {
+  let line: string | undefined;
+  const target =
+    typeof destination === 'string'
+      ? { file: destination, maxSizeMB }
+      : destination((line = serializeJournalEntry(entry)));
+  const { file } = target;
   mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   const fd = openSync(
     file,
@@ -203,9 +209,9 @@ export function appendJournal(
     const stats = fstatSync(fd);
     if (!stats.isFile())
       throw new Error('Log destination must be a regular file');
-    const limit = maxSizeMB * 1024 * 1024;
+    const limit = target.maxSizeMB * 1024 * 1024;
     if (stats.size >= limit) return;
-    let line = serializeEntry(entry);
+    line ??= serializeJournalEntry(entry);
     if (stats.size + Buffer.byteLength(line) >= limit) {
       const marker = JSON.stringify({
         time: entry.time,
@@ -232,28 +238,35 @@ export function appendJournal(
 export async function pruneJournals(
   directory: string,
   policy: JournalPolicy,
-  protectedFile?: string | readonly string[],
-  options: { recursive?: boolean } = {},
+  protectedFile?: string,
+  options: { recursive?: boolean; retentionOnly?: boolean } = {},
 ): Promise<void> {
   validateJournalPolicy(policy);
   const files = await listFiles(directory, options.recursive);
-  let total = files.reduce((sum, file) => sum + file.size, 0);
+  let total = options.retentionOnly
+    ? 0
+    : files.reduce((sum, file) => sum + file.size, 0);
   const expiry = Date.now() - (policy.retentionDays ?? 7) * 86400000;
-  for (const file of files.sort((a, b) => a.modified - b.modified)) {
-    const protectedNames =
-      typeof protectedFile === 'string'
-        ? [protectedFile]
-        : (protectedFile ?? []);
+  for (const file of options.retentionOnly
+    ? files
+    : files.sort((a, b) => a.modified - b.modified)) {
+    // Empty crash sidecars require the runner's live-worker check before removal.
     if (
-      protectedNames.some(
-        (name) =>
-          path.resolve(directory, name) === path.resolve(directory, file.name),
-      )
+      options.retentionOnly &&
+      file.size === 0 &&
+      file.name.endsWith('.stderr')
+    )
+      continue;
+    if (
+      protectedFile &&
+      path.resolve(directory, protectedFile) ===
+        path.resolve(directory, file.name)
     )
       continue;
     if (
       file.modified < expiry ||
-      total > (policy.maxSizeMB ?? 500) * 1024 * 1024
+      (!options.retentionOnly &&
+        total > (policy.maxSizeMB ?? 500) * 1024 * 1024)
     ) {
       await unlink(path.join(directory, file.name)).catch(
         (error: NodeJS.ErrnoException) => {

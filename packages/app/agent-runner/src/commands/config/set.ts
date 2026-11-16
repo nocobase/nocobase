@@ -12,14 +12,12 @@ import {
   DEFAULT_MIN_FREE_DISK,
   formatFreeSpace,
   parseFreeSpace,
-  parseSize,
   type FreeSpace,
 } from '../../lib/size.ts';
 
 /** The settings `config set` changes, by the name it takes. */
 const KEYS = [
   'log-retention',
-  'log-max-size',
   'min-free-disk',
   'agent-tools',
   'artifact-ttl',
@@ -69,7 +67,7 @@ const AGENT_TOOLS: readonly AgentTools[] = ['runner', 'system'];
 export default class ConfigSet extends RunnerCommand {
   static override summary: string = 'Change a runner setting.';
   static override description: string =
-    '`log-retention` keeps logs for 7 days by default; `log-max-size` bounds all logs to 500M by default. Live workers are protected. Changes apply at the next GC; launcher rotation settings apply after restart.\n\n' +
+    '`log-retention` keeps logs for 7 days by default. Runner logs have no total-size budget. Each run journal stops at 50 MiB with a truncation marker. Changes apply at the next GC.\n\n' +
     '`min-free-disk` is how much of the disk holding the working directories to keep free: a size (20G, 512M), a ' +
     `share of the disk (10%), or off; ${formatFreeSpace(DEFAULT_MIN_FREE_DISK)} by default. Below it, the runner cleans ` +
     'idle artifacts, then clean pushed workspaces, then disposable read-only copies. If space remains low, new work pauses ' +
@@ -105,7 +103,6 @@ export default class ConfigSet extends RunnerCommand {
     | { key: string; minFreeDisk: FreeSpace | null }
     | { key: string; agentTools: AgentTools }
     | { key: string; logRetentionDays: number }
-    | { key: string; logMaxSizeMB: number }
     | { key: string; artifactTtlMs: number }
     | { key: string; artifactPatterns: string[] }
   > {
@@ -122,14 +119,6 @@ export default class ConfigSet extends RunnerCommand {
       settings.logRetentionDays = days;
       await writeSettings(settings, this.paths);
       return { key: args.key, logRetentionDays: days };
-    }
-    if (args.key === 'log-max-size') {
-      const bytes = parseSize(args.value, 'log-max-size');
-      if (bytes === undefined)
-        throw new UsageError('log-max-size must be a positive size.');
-      settings.logMaxSizeMB = bytes / 1024 ** 2;
-      await writeSettings(settings, this.paths);
-      return { key: args.key, logMaxSizeMB: settings.logMaxSizeMB };
     }
     if (args.key === 'artifact-ttl') {
       const ttl = parseArtifactTtl(args.value);

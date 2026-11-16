@@ -10,7 +10,7 @@ import {
 import { readdir, lstat, rmdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { RunnerSettings } from './config.ts';
-import { type RunnerPaths, runLogPath, runRawLogPath } from './home.ts';
+import { type RunnerPaths, runLogPath, removeEmptyStderr } from './home.ts';
 import { readRecords, isAlive } from '../core/supervisor.ts';
 
 /** The launcher alone owns daemon files; foreground daemons own them when no launcher captures stdout. */
@@ -20,25 +20,25 @@ export class RunnerJournal {
   private readonly errors;
   constructor(
     directory: string,
-    settings: Pick<RunnerSettings, 'logRetentionDays' | 'logMaxSizeMB'> = {},
+    settings: Pick<RunnerSettings, 'logRetentionDays'> = {},
   ) {
     this.output = createLogOutput({
       file: {
         directory,
         name: 'runner',
         retentionDays: settings.logRetentionDays ?? 7,
-        maxTotalSizeMB: settings.logMaxSizeMB ?? 500,
-        maxFileSizeMB: Math.min(5, settings.logMaxSizeMB ?? 500),
+        retentionOnly: true,
+        maxFileSizeMB: 5,
       },
     });
     const frame = (level: string) => {
       const redactLine = createLogLineSanitizer();
       return new LogLineFramer(
         (input) => {
-          const line = redactLine(input);
           let entry: JournalEntry;
           try {
-            const parsed = JSON.parse(line) as JournalEntry;
+            if (level === 'error') throw new Error('raw');
+            const parsed = JSON.parse(input) as JournalEntry;
             if (
               typeof parsed.msg !== 'string' ||
               !['string', 'number'].includes(typeof parsed.level)
@@ -46,6 +46,7 @@ export class RunnerJournal {
               throw new Error('raw');
             entry = {
               ...parsed,
+              msg: redactLine(parsed.msg),
               time:
                 typeof parsed.time === 'string' &&
                 Number.isFinite(Date.parse(parsed.time))
@@ -53,19 +54,21 @@ export class RunnerJournal {
                   : new Date().toISOString(),
             };
           } catch {
-            entry = { time: new Date().toISOString(), level, msg: line };
+            entry = {
+              time: new Date().toISOString(),
+              level,
+              msg: redactLine(input),
+            };
           }
-          this.output.write(JSON.stringify(entry));
+          this.output.writeEntry(entry);
         },
         () =>
-          this.output.write(
-            JSON.stringify({
-              time: new Date().toISOString(),
-              level: 'warn',
-              msg: 'Oversized output line omitted',
-              truncated: true,
-            }),
-          ),
+          this.output.writeEntry({
+            time: new Date().toISOString(),
+            level: 'warn',
+            msg: 'Oversized output line omitted',
+            truncated: true,
+          }),
       );
     };
     this.lines = frame('info');
@@ -87,11 +90,10 @@ export class RunnerJournal {
 export function workerJournal(
   paths: RunnerPaths,
   runId: string,
-  maxSizeMB = 500,
+  maxSizeMB = 50,
 ): {
   log: (message: string) => void;
   flush: () => void;
-  setMaxSizeMB: (size: number) => void;
 } {
   const write = (level: string, msg: string) =>
     appendJournal(
@@ -125,9 +127,6 @@ export function workerJournal(
     write('fatal', error.stack ?? error.message),
   );
   return {
-    setMaxSizeMB: (size) => {
-      maxSizeMB = size;
-    },
     log: (message) => write('info', message),
     flush: () => frames.forEach((frame) => frame.flush()),
   };
@@ -143,8 +142,8 @@ export function daemonLogger(
       name: 'runner',
       enabled: process.env.NOCOBASE_RUNNER_LOG_PIPE !== '1',
       retentionDays: settings.logRetentionDays ?? 7,
-      maxTotalSizeMB: settings.logMaxSizeMB ?? 500,
-      maxFileSizeMB: Math.min(5, settings.logMaxSizeMB ?? 500),
+      retentionOnly: true,
+      maxFileSizeMB: 5,
     },
     console: { enabled: true },
   });
@@ -152,7 +151,7 @@ export function daemonLogger(
   return (message) => logger.info(message);
 }
 
-/** Shared budget across daemon and run logs; every date of every live worker remains protected. */
+/** Time-only retention; live empty crash sidecars remain open for possible native failures. */
 export async function pruneRunnerLogs(
   paths: RunnerPaths,
   settings: RunnerSettings,
@@ -160,19 +159,7 @@ export async function pruneRunnerLogs(
   const active = (await readRecords(paths)).filter((record) =>
     isAlive(record.pid),
   );
-  const protectedFiles: string[] = active.flatMap((record) =>
-    record.log && !path.relative(paths.logsDir, record.log).startsWith('..')
-      ? [record.log]
-      : [],
-  );
-  const today = new Date().toISOString().slice(0, 10);
-  const currentDaemon = (await readdir(paths.logsDir).catch(() => []))
-    .filter(
-      (name) => name.startsWith(`runner.${today}.`) && name.endsWith('.log'),
-    )
-    .sort()
-    .at(-1);
-  if (currentDaemon) protectedFiles.push(currentDaemon);
+  const activeIds = new Set(active.map((record) => record.runId));
   const runs = path.join(paths.logsDir, 'runs');
   if (
     await lstat(runs)
@@ -180,31 +167,25 @@ export async function pruneRunnerLogs(
       .catch(() => false)
   )
     throw new Error('Symbolic log directories are not allowed');
-  for (const date of await readdir(runs).catch(() => [])) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-    for (const record of active) {
-      protectedFiles.push(
-        path.relative(paths.logsDir, runRawLogPath(paths, record.runId, date)),
-      );
-      protectedFiles.push(
-        path.relative(paths.logsDir, runLogPath(paths, record.runId, date)),
-      );
-    }
-  }
   await pruneJournals(
     paths.logsDir,
     {
       retentionDays: settings.logRetentionDays ?? 7,
-      maxSizeMB: settings.logMaxSizeMB ?? 500,
     },
-    protectedFiles,
-    { recursive: true },
+    undefined,
+    { recursive: true, retentionOnly: true },
   );
   for (const entry of await readdir(runs, { withFileTypes: true }).catch(
     () => [],
   )) {
     if (!entry.isDirectory() || !/^\d{4}-\d{2}-\d{2}$/.test(entry.name))
       continue;
+    const directory = path.join(runs, entry.name);
+    for (const name of await readdir(directory)) {
+      const match = /^([a-zA-Z0-9_-]+)\.stderr$/.exec(name);
+      if (match && !activeIds.has(match[1]))
+        await removeEmptyStderr(path.join(directory, name));
+    }
     await rmdir(path.join(runs, entry.name)).catch(
       (error: NodeJS.ErrnoException) => {
         // A worker may create a log between pruning and directory removal.

@@ -16,6 +16,26 @@ import { appendJournal, readJournal, pruneJournals } from '../src/journal.js';
 import { normalizeFileOptions } from '../src/output.js';
 import { createLogging } from '../src/logging.js';
 const roots: string[] = [];
+it('按时间清理不展开受保护路径列表，也不对每份文件 resolve', async () => {
+  const root = await directory();
+  await Promise.all(
+    Array.from({ length: 20 }, (_, index) =>
+      writeFile(path.join(root, 'run-' + index + '.log'), 'fresh'),
+    ),
+  );
+  const resolve = vi.spyOn(path, 'resolve');
+  try {
+    await pruneJournals(root, { retentionDays: 7 }, undefined, {
+      retentionOnly: true,
+    });
+    expect(
+      resolve.mock.calls.filter(([directory]) => directory === root),
+    ).toHaveLength(0);
+    expect(await readdir(root)).toHaveLength(20);
+  } finally {
+    resolve.mockRestore();
+  }
+});
 async function directory(): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'journal-'));
   roots.push(root);

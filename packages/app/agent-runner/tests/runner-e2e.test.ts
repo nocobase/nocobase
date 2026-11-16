@@ -117,10 +117,9 @@ describe('runner end to end', () => {
       undefined,
       'worker completion',
     );
-    expect(JSON.stringify(server.diagnosticsUploads)).not.toContain(
+    expect(JSON.stringify(server.diagnosticsUploads)).toContain(
       'fixture-sensitive-value',
     );
-    expect(JSON.stringify(server.diagnosticsUploads)).toContain('REDACTED');
     const log = path.join(
       paths.logsDir,
       'runs',
@@ -131,6 +130,17 @@ describe('runner end to end', () => {
       .trim()
       .split('\n')
       .map((line) => JSON.parse(line));
+    const raw = path.join(
+      paths.logsDir,
+      'runs',
+      date,
+      run.payload.run.id + '.stderr',
+    );
+    await waitFor(
+      () => !existsSync(raw),
+      undefined,
+      'empty crash sidecar removed',
+    );
     expect(records.length).toBeGreaterThan(0);
     expect(
       records.every(
@@ -192,7 +202,7 @@ describe('runner end to end', () => {
     expect(output).toContain('native-stdout-fixture');
     expect(output).toContain('native-stderr-fixture');
     expect(output).toContain('missing-worker-import-fixture');
-    expect(output).not.toContain('fixture-sensitive-value');
+    expect(output).toContain('fixture-sensitive-value');
   });
 
   it('registers with features and tools, and heartbeats', async () => {

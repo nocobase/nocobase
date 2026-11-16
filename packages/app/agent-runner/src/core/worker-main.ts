@@ -82,7 +82,6 @@ async function runJob(
 async function main(): Promise<number> {
   const job = JSON.parse(await readStdin()) as WorkerJob;
   const settings = await readSettings(runnerPaths());
-  journal.setMaxSizeMB(settings.logMaxSizeMB ?? 500);
   if (job.kind === 'job') return runJob(job);
   const payload = RunPayloadSchema.parse(job.payload);
   const paths = runnerPaths();
