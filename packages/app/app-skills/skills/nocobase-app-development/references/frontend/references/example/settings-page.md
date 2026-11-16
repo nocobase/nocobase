@@ -9,12 +9,13 @@ Rules: guideline T4 (one `Card` per topic, each saving on its own; a toggle appl
 import { useApiClient, useToaster } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useState } from 'react';
+import { type ReactElement, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { FeedbackForm } from '#components/feedback-form';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
+import { Alert, AlertDescription } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import {
   Card,
@@ -50,6 +51,9 @@ interface ProjectSettings {
 }
 type Settings = { data: ProjectSettings };
 const SCOPE = 'projectSettings';
+/** Every view of the settings takes a confirmed result at once ([data changes](../data-changes.md)). */
+const publish = (result: Settings): void =>
+  announceDataChange({ scopes: [SCOPE], results: { [SCOPE]: result } });
 
 export default function ProjectSettingsPage(): ReactElement {
   const { t } = useTranslation();
@@ -59,15 +63,13 @@ export default function ProjectSettingsPage(): ReactElement {
     action: 'update',
   });
   const api = useApiClient();
-  // Each card sends only its own fields; the confirmed result updates every view of the settings.
-  async function save(changes: Partial<ProjectSettings>): Promise<void> {
-    const result = await api.request<Settings>({
+  // Each card sends only its own fields and publishes the confirmed result itself.
+  const save = (changes: Partial<ProjectSettings>): Promise<Settings> =>
+    api.request<Settings>({
       path: 'projectSettings',
       method: 'PATCH',
       json: changes,
     });
-    announceDataChange({ scopes: [SCOPE], results: { [SCOPE]: result } });
-  }
   const settings = request.error ? undefined : request.data?.data;
   return (
     <PageContainer>
@@ -97,8 +99,7 @@ export default function ProjectSettingsPage(): ReactElement {
               save={save}
             />
             <DefaultsCard
-              // Only this card's own stored values remount it; a toggle saved next to it keeps its input.
-              key={`${settings.defaultView}|${settings.notifyOwners}|${settings.welcomeMessage}`}
+              // One stable card: new stored values update its baseline and never remount the form.
               settings={settings}
               editable={update.can}
               save={save}
@@ -113,7 +114,7 @@ export default function ProjectSettingsPage(): ReactElement {
 interface CardProps {
   readonly settings: ProjectSettings;
   readonly editable: boolean;
-  readonly save: (changes: Partial<ProjectSettings>) => Promise<void>;
+  readonly save: (changes: Partial<ProjectSettings>) => Promise<Settings>;
 }
 
 /** A toggle applies at once with a toast; on failure it shows the stored value again (T4.3). */
@@ -124,7 +125,7 @@ function VisibilityCard({ settings, editable, save }: CardProps): ReactElement {
   async function toggle(checked: boolean): Promise<void> {
     setPending(true);
     try {
-      await save({ publicByDefault: checked });
+      publish(await save({ publicByDefault: checked }));
       toaster.show({ type: 'success', title: t('projectSettings.saved') });
     } catch {
       toaster.show({ type: 'error', title: t('projectSettings.saveFailed') });
@@ -157,22 +158,53 @@ function VisibilityCard({ settings, editable, save }: CardProps): ReactElement {
   );
 }
 
+type Defaults = Pick<
+  ProjectSettings,
+  'defaultView' | 'welcomeMessage' | 'notifyOwners'
+>;
+const defaultsOf = (settings: Defaults): Defaults => ({
+  defaultView: settings.defaultView,
+  welcomeMessage: settings.welcomeMessage,
+  notifyOwners: settings.notifyOwners,
+});
+const sameDefaults = (a: Defaults, b: Defaults): boolean =>
+  a.defaultView === b.defaultView &&
+  a.welcomeMessage === b.welcomeMessage &&
+  a.notifyOwners === b.notifyOwners;
+
 /** Settings that need input apply on the card's own Save (T4.2). */
 function DefaultsCard({ settings, editable, save }: CardProps): ReactElement {
   const { t } = useTranslation();
   const toaster = useToaster();
-  const [saved] = useState(() => ({
-    defaultView: settings.defaultView,
-    welcomeMessage: settings.welcomeMessage,
-    notifyOwners: settings.notifyOwners,
-  }));
+  // What is stored for this card: the FeedbackForm's baseline, replaced by a save or a change made elsewhere.
+  const [saved, setSaved] = useState(() => defaultsOf(settings));
   const form = useForm({ defaultValues: saved, shouldFocusError: false });
+  const [changedElsewhere, setChangedElsewhere] = useState(false);
+  const { defaultView, welcomeMessage, notifyOwners } = settings;
+  useEffect(() => {
+    const stored = { defaultView, welcomeMessage, notifyOwners };
+    if (sameDefaults(stored, saved)) return;
+    // Another view saved these settings. An untouched form shows them; typed input stays, saving replaces them,
+    // and leaving still asks because the input differs from what is stored now.
+    if (sameDefaults(form.getValues(), saved)) form.reset(stored);
+    else setChangedElsewhere(true);
+    setSaved(stored);
+  }, [defaultView, welcomeMessage, notifyOwners, saved, form]);
   const [error, setError] = useState<unknown>();
   const submitting = form.formState.isSubmitting;
   const submit = form.handleSubmit(async (values) => {
     setError(undefined);
     try {
-      await save({ ...values, welcomeMessage: values.welcomeMessage.trim() });
+      const result = await save({
+        ...values,
+        welcomeMessage: values.welcomeMessage.trim(),
+      });
+      // The new baseline comes first, so publishing the result is not mistaken for a change made elsewhere.
+      const next = defaultsOf(result.data);
+      setSaved(next);
+      form.reset(next);
+      setChangedElsewhere(false);
+      publish(result);
       toaster.show({ type: 'success', title: t('projectSettings.saved') });
     } catch (caught: unknown) {
       setError(caught); // keep the input
@@ -186,7 +218,14 @@ function DefaultsCard({ settings, editable, save }: CardProps): ReactElement {
           {t('projectSettings.defaults.description')}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className='flex flex-col gap-4'>
+        {changedElsewhere ? (
+          <Alert>
+            <AlertDescription>
+              {t('projectSettings.changedElsewhere')}
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <FeedbackForm
           id='project-defaults'
           values={form.getValues}
@@ -269,5 +308,5 @@ function DefaultsCard({ settings, editable, save }: CardProps): ReactElement {
 ```
 
 - **Read-only** is the same cards with their controls disabled and no Save; a user without `update` never sees a control that fails on use.
-- **Keyed by its stored values**: after its save, or a change to its fields announced elsewhere, `DefaultsCard` remounts with the new values as its saved ones; the toggle's save leaves it alone.
+- **One stable card, never remounted by data**: its own save makes the returned values the new baseline. A change to its fields saved elsewhere updates an untouched form; typed input stays, with the note "These settings were changed elsewhere. Saving replaces them with your input.", and leaving still asks. A toggle saved next to it never touches its input.
 - **Array fields** (a list of emails, of steps) follow ["Array fields" in `form.md`](../form.md#array-fields) inside the same kind of card.
