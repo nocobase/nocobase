@@ -1,242 +1,202 @@
 # UI guidelines
 
-These are the shared UI guidelines for NocoBase 3 applications and embedded plugins: foundations, page structure, page templates, interaction choices, data freshness, states, copy, accessibility and adaptation. Apply them through [the design contract](design-contract.md), which distinguishes product defaults from usability requirements and defines how user references and authorized exceptions take precedence. Implementation remains in the owning development Skill (for applications, [`frontend-dev.md`](frontend-dev.md)). Every rule has an ID and is marked Must or Should. For the full workflow, read the whole document; for a quick change, read the items related to the change.
+The visual and interaction rules for NocoBase 3 application pages and plugins. Workflow: [`ui-workflow.md`](ui-workflow.md); design references and components: [`design-contract.md`](design-contract.md); phone judgement: [`mobile.md`](mobile.md); implementation: the linked `references/*.md`. Cite rules by ID ("violates T1.5").
 
-## How to use
-
-- **When designing**: first read the reference and system/page decisions, then choose a page template from section T where it fits; record any authorized replacement instead of forcing the reference into a default template. Decide each page's phone layout at the same time, not after the desktop page is built: [the phone experience](mobile.md) (rules M1–M10) is part of these guidelines and of every page's completion.
-- **When reviewing**: go through the review checklist at the end item by item, and cite rule IDs in issues, for example "violates T1.4".
-- An unmet usability or integration requirement is an issue. A Must product default applies unless the design contract records an authorized replacement; review that replacement and its acceptance criterion instead. A Should departure needs a reason in "Guideline trade-offs". A visual exception never waives usable controls, permission checks or correct data.
-- For a situation the guidelines do not cover: follow the closest rule, and record the situation under "Open questions" in the design file.
-- **Scope**: shared components supply their default behavior. Prefer their props, variants and composition for a recorded page exception; change shared source only for an intentional shared change with its consumers checked. Plugin copies belong to the plugin and inherit the host's theme; do not change host globals for a local reference. This document describes outcomes, not permission to import private host components.
+Breaking a [Must] rule is a real defect for users. Other rules are defaults: depart only for a reason stated in the page plan or final report. Uncovered situations follow the closest rule. Shared components implement most rules; use their props rather than restyling them.
 
 ## F Foundations
 
-**F1 [Must] Color uses only semantic tokens**: `bg-background` for the page, `bg-card` for cards, `bg-muted` for muted areas, `text-foreground` and `text-muted-foreground` for text, `border-border` for borders, the default button for primary actions and `variant='destructive'` or `text-destructive` for destructive ones. The full mapping, with what each replaces, is in [section 7 of `references/styling.md`](references/styling.md#7-semantic-tokens). Do not use literal colors such as `bg-white`, `text-gray-500`, `#1677ff` or `rgb(…)`.
+**F1** Colors come only from semantic tokens (`bg-background`, `bg-card`, `text-muted-foreground`, `border-border`, `variant='destructive'`…; mapping in [`references/styling.md`](references/styling.md)), never literals such as `bg-white` or `#1677ff`.
 
-**F1.1 [Should] Record-name links stay visually quiet**: In tables and content lists, use the normal foreground color for a record's name or identifier, an underline on hover with `underline-offset-4`, and the shared keyboard focus treatment from `client/styles.css`. Apply this consistently to user, role and workflow names. Use the primary color for deliberate primary actions and selected navigation, rather than coloring every record link.
+**F2** Font sizes come from the scale: `PageHeader` sets the title, section titles use `text-base font-medium`, body, tables and forms keep the components' `text-sm`, helper text is `text-sm text-muted-foreground` or `text-xs`. No arbitrary values such as `text-[13px]`.
 
-**F2 [Must] Font sizes come from the scale**: PageHeader provides the page title; section titles use `text-base font-medium`; body text, tables and forms use the components' default size (`text-sm`); helper text uses `text-sm text-muted-foreground` or `text-xs`. Do not use arbitrary values such as `text-[13px]`.
+**F3** Spacing comes from the scale: `PageContainer` spaces sections, stacked blocks use `flex flex-col gap-4` or `gap-6`, cards keep the `Card` padding and their content lines up with the card title, related controls use `gap-2`. No arbitrary values such as `mt-[7px]`.
 
-**F3 [Must] Spacing comes from the scale**: PageContainer spaces the sections of a page, and blocks you stack yourself use `flex flex-col` with `gap-4` or `gap-6` rather than `space-y-*`; cards keep the `Card` component's own padding, and whatever sits in a card lines up with its title: a `DataTable` in a card runs to the card's edges and pads its first and last cells to the card's spacing by itself ("Table in a card" in ["Common layouts" of `references/styling.md`](references/styling.md#common-layouts)); a panel you build yourself uses `p-4` or `p-6`; `gap-2` between related controls; FieldGroup's default spacing between form fields. Do not use arbitrary values such as `mt-[7px]`.
+**F4** Radius and shadow use component defaults, or utilities such as `rounded-lg` and `shadow-sm`.
 
-**F4 [Must] Radius and shadow use the component defaults**; when you need a custom one, use only utility classes such as `rounded-lg` and `shadow-sm`.
+**F5** Icons come from lucide-react; a button sizes its own icon, a standalone icon uses `size-4`.
 
-**F5 [Must] All icons come from lucide-react**; the button controls the size of an icon inside it, and a standalone icon uses `size-4`.
+**F6** Everything stays readable in the light and dark themes.
 
-**F6 [Must] Everything is clearly readable in both the light and dark themes**. Use semantic tokens so the host controls both themes; when their values change, verify readability rather than assuming a token name guarantees contrast.
-
-**F7 [Must] Explain intentional fixed sizes**: where a fixed value is genuinely needed, such as a control width, a viewport-relative maximum height or an image size, you may use a literal value, but record it in the design file's "Guideline trade-offs" section. The standard layouts in ["Common layouts" of `references/styling.md`](references/styling.md#common-layouts) (the `sm:grid-cols-[8rem_1fr]` label–value grid, `md:w-40` inline filters, `md:max-w-xs` search) and the overlay sizes of I1 and I13 (`max-h-[calc(100dvh-2rem)]`, `w-auto min-w-40`) are already approved and need no entry. This exception does not apply to color, font size or spacing.
+**F7** A literal size (a control width, an image size) is allowed where genuinely needed and explained in the report, except for color, font size or spacing; the layouts in `references/styling.md` and the classes of I1, I12 and I13 need no explanation.
 
 ## L Page structure
 
-**L1 [Must]** A business page is wrapped in PageContainer, with a PageHeader at the top: a title (required), a one-sentence description (recommended) and page-level actions. From 640px (`sm`) up, the actions are right-aligned in the same row as the title block and never wrapped below the description; this holds inside a settings dialog too. On a phone, `PageHeader` keeps one primary action on the title's row, with the rest in a "More" menu; only a page that has to keep several buttons visible gets them on one row under the title, which keeps at least 12rem, and that row counts toward the control limits of M1.1. An auxiliary note is one muted line under the description, or an `Alert`, never a second description.
+**L1** A business page is a `PageContainer` with a `PageHeader`: a noun title, a one-sentence description and page-level actions on the right of the title row (never wrapped below the description from `sm` up). On a phone `PageHeader` keeps one primary action beside the title and moves the rest into a "More" menu.
 
-**L2 [Must]** A view (page, dialog, drawer) has at most one primary button (the default style); other buttons use outline, ghost or destructive, or go into a menu. Each Card of a settings page saves on its own (T4.2) and counts as its own view, so each Card's Save may be primary.
+**L2** A view (page, dialog, drawer, settings Card) has at most one primary (default-style) button; others are outline, ghost, destructive or in a menu.
 
-**L3 [Should]** The page title matches the navigation menu name and is a noun ("Customers"), not a verb phrase.
+**L3** The page title matches its menu entry.
 
-**L4 [Should]** List and table pages use the full width; pages mainly for forms or reading limit the content width (`max-w-2xl` to `max-w-4xl`) so inputs do not get too long.
+**L4** Lists and tables use the full width; form and reading pages limit content to `max-w-2xl`–`max-w-4xl`.
 
-**L5 [Must]** Page-level actions go on the right of the PageHeader; actions on a single record go in that record's row or detail view; bulk actions appear only after records are selected.
+**L5** Page actions go in the `PageHeader`, record actions in the record's row or detail view, bulk actions appear only after records are selected.
 
-**L6 [Must] Parent navigation**: an independent detail, covering child page or edit page declares its parent and current title before loading succeeds. The shell renders desktop breadcrumbs and, on a phone, the current title with a visible, named arrow to the nearest authorized parent. Keep that parent on loading, error and not-found states; detail tabs do not change it, and an independent edit returns to detail before list. Restore the source list/tab's recorded query through the existing list-state contract; a direct open or reload without source context uses a valid default parent. Validate explicit destinations and ancestors against registered application routes and resolved permissions, hide denied names, and never trust external return URLs or browser history alone. Home and first-level lists invent no parent; structural groups are not links. Under the shell, omit duplicate page BackButtons and the mobile header brand. Without a shell header, supply a validated parent link above the title. Dialogs/drawers retain their close/cancel semantics. Follow [the generation pattern](references/navigation.md).
+**L6** A detail or edit view shows its parent: the shell renders the breadcrumb on desktop and a named back arrow on a phone, keeping the source list's query; never add a second back button. Mechanics: [`references/navigation.md`](references/navigation.md).
 
-**L7 [Must] The primary action appears in exactly one place**: put the standard list create action only in the `PageHeader`, including when a successful query returns no records; never put that same action in the empty state. Show it for the ready, empty, no-results and refresh-failed list states only after the existing create permission resolves as allowed. Hide it while permission is pending or denied, and while the list is loading, the viewer has no access, the session is unauthenticated, or the list load failed. A search or filter that matches nothing is not an empty list (S3), and does not hide an authorized header action. A header `DropdownMenu` uses `align='end'`; an empty-state-specific business menu uses `align='center'`. Each item is an icon and a name on one line with the `DropdownMenuItem` defaults, no sub-label.
+**L7** The list's create action appears only in the `PageHeader`, never again in the empty state, and only once the create permission resolves as allowed.
 
-**L8 [Should] A count beside a menu entry is what waits on the viewer**: unread messages, requests to decide, work assigned to them and not yet done. Never a total of records ("Leads 18"), which the page itself shows. Zero shows nothing. Work under way the viewer may want to follow, such as runs in progress, is a live count with words of its own ("2 running"). One thing is counted in one place: an entry and a header button, such as the inbox button, do not both count the same items. See ["A count beside an entry" in `references/page.md`](references/page.md#a-count-beside-an-entry).
+**L8** A count beside a menu entry is only what waits on the viewer (unread, to decide, assigned), never a record total; zero shows nothing. See [`references/page.md`](references/page.md).
 
 ## T Page templates
 
-### T1 List page: browse, find and manage one kind of record
+### T1 List page
 
-The T1 guidelines apply to a list page. A short list of records inside a card, such as a dashboard's, follows T5.3 instead: no search, filters, sorting or pagination.
+Top to bottom: `PageHeader` with "New X" → toolbar (search and filters left, secondary actions right) → table → pagination. A short list inside a dashboard card follows T5.3 instead. Build it from [`references/table.md`](references/table.md).
 
-Structure, top to bottom: PageHeader (primary action "New X") → toolbar (search box and filters on the left, secondary actions on the right) → table → pagination. On a phone the same page shows the title with "New X" on one row, then one row with the search box and the icon "Filters" (several filters move into a sheet) and "Sort" buttons, then one card per record, then pagination (M1.1, M3, M4).
-
-- **T1.1 [Must]** The search box has a placeholder that says which fields it searches, for example "Search by name or email".
-- **T1.2 [Must]** Filter controls show their current value; while a search or filter is applied, show "Clear filters".
-- **T1.3 [Must]** The first column is the record's name or number; when there is a detail view, clicking it opens the detail view. Use the template’s `RecordLink` for record names and identifiers: foreground text with medium weight, no permanent underline, underline on hover, and underline plus a visible focus outline for keyboard navigation. Preserve native link behavior; action buttons and menu items keep their own styling.
-- **T1.4 [Must]** Enumerated values such as status and type are shown as text in a Badge; color is only an aid, and values must never be distinguished by color alone.
-- **T1.5 [Must]** Every table row's actions sit in one menu at the end of the row: render them with `RowActions` from `#components/row-actions`, which draws the same icon-only ghost "⋮" button (`EllipsisVerticalIcon`, `size='icon-sm'`, right-aligned, labelled "Actions for <name>") on every row of every page and opens a `DropdownMenu`. This holds for a single action too, for every state of a record (a stopped and a running instance, an installed and an available module, an enabled and a disabled account), and for administration lists (users, roles, sessions) as much as business lists; the record's state changes which items the menu holds, never how the entry looks. Do not render actions as text links, outline buttons or a row of buttons, and do not mix them with a "More" text button. Items are verbs in a stable order (C3); destructive items come last, after a separator, in the destructive style, and are confirmed with an AlertDialog (I2). Leave out what the viewer may not do, and render no menu when nothing remains; hiding an item is not a permission check, and the server still enforces it (I7). The actions column has no visible header text (`header: () => <span className='sr-only'>…</span>` keeps its name for screen readers), stays as narrow as the trigger, and scrolls with the table: it is not `sticky`, `fixed` or pinned to the right. Open a record's details from its name (T1.3), not from a "View" item or a column of its own. **Exceptions need a recorded basis, never the model's judgement**: show a named action outside the menu only when the user asked for it or a confirmed page design specifies it, by passing its key in `RowActions`' `exposed` (a ghost `size='sm'` button before the "⋮", the same on every row; everything else stays in the menu). How often an action is used, its being the "main" action, an approval or to-do list, or a different action name are not reasons. A wide table that scrolls sideways may pin its actions column only when the actions would otherwise be out of reach, with the reason recorded in the design or report. Which lists have row actions, and when a list may leave them out, is M3.1 in [the phone experience](mobile.md): `DataTable` ends each phone card with the same menu.
-- **T1.6 [Must]** Dates and times are formatted for the current language; numbers and amounts are right-aligned, with thousands separators.
-- **T1.7 [Should]** Search and filter conditions are written to the URL, so they survive a refresh and going back.
-- **T1.8 [Must]** Columns of dates and times (created, updated, due) and of numbers (amounts, quantities, counts) are sortable by default, and so is the name column when it sorts in the current language's order (pinyin for Chinese). Statuses, types, tags, people, long text and yes/no values are not, unless the business asks for it and the order means something (a priority by its rank, not alphabetically). The default order is by last update time, newest first, and a sorted column shows its direction in the header.
-- **T1.9 [Must]** A list page must have a design for every built-in feedback state in S1–S4.
-- **T1.10 [Must]** When a list shows only part of the matching results, because it sorts and paginates one capped page in the browser or because the endpoint returns no total, show a notice when the results reach the cap ("Only the first N records are shown. Use search or filters to narrow the results."); records beyond the cap must not silently disappear.
-- **T1.11 [Must]** When a table cell is too narrow for its content, the content ends in an ellipsis where it is cut off, and hovering over it shows the full content. Content that fits shows nothing on hover. Phone cards do not rely on hover: their text wraps or clamps, and the full value is on the detail (M3.3).
-- **T1.12 [Must]** Pagination labels size to their localized text rather than a fixed English-sized width. Keep each short page summary, page-size control and navigation button group intact; at narrow widths, wrap whole groups onto another row instead of splitting labels or shrinking controls. Verify Chinese and English with large page counts at 375px and desktop widths.
-- **T1.13 [Must]** An ordinary business list renders one card per record on phones through `DataTable`'s `renderCard`, each card with the row's actions, and the search, filters and sort on one row through `DataTable`'s `search`, `filters` and `getColumnLabel`; a table stays on phones only for rows compared across columns, scrolling inside its own container, with the reason recorded (M3).
+- **T1.1** Search is `DataTableSearch` from `#components/data-table`, never a hand-made input; its placeholder names the searched fields ("Search by name or email").
+- **T1.2** Filters show their current value; while any search or filter applies, "Clear filters" is shown.
+- **T1.3** The first column is the record's name or number, rendered with `RecordLink`; it opens the detail view. No separate "View" action or column.
+- **T1.4** Enumerated values (status, type) are text in a `Badge`; color only supports the text.
+- **T1.5 [Must]** Row actions go in the `RowActions` "⋮" menu at the end of the row (`#components/row-actions`), including a single action and in every record state. Up to two primary actions named in the page plan may be shown outside the menu through `exposed`; nothing else is. Destructive items come last and are confirmed (I2); actions the viewer may not take are left out, and no menu renders when none remain. The actions column has no visible header and is not pinned. `scripts/check-ui-components.mjs` enforces the details.
+- **T1.6** Dates and times are formatted for the current language; numbers are right-aligned with thousands separators.
+- **T1.7** Search, filters, sort and page live in the URL, so a refresh or back keeps them ([`references/table.md`](references/table.md)).
+- **T1.8** Date, time, number and name columns are sortable; status, type, people, long text and yes/no columns are not unless their order means something. The default order is last updated, newest first.
+- **T1.9** A list handles every state in S1–S4.
+- **T1.10** When results are capped (a browser-sorted page, or no total from the endpoint), say so ("Only the first N records are shown…"); records never silently disappear.
+- **T1.11** A cut-off table cell ends in an ellipsis and shows its full content on hover.
+- **T1.12** Pagination wraps whole groups at narrow widths instead of shrinking labels.
+- **T1.13** On a phone an ordinary list renders cards (`renderCard`, M3.1 in [`mobile.md`](mobile.md)).
 
 ### T2 Detail view
 
-- **T2.1 [Must]** With few fields (about 15 or fewer) and no sub-tables, show the details in a right-side drawer; with multiple sections, sub-tables or a need for tabs, use a separate page. On a page with tabs, the tab being shown is the view the user is on: what the page's header opens stacks on that tab (I9).
-- **T2.2 [Must]** The top of the drawer or detail page shows the record name. Actions on the record (edit, delete) sit in a fixed position at the top or the bottom, grouped together, not one on the left and one on the right.
-- **T2.3 [Must]** The detail view can be opened directly by URL, and a refresh still shows the same record (see I6).
-- **T2.4 [Must]** Fields are laid out in two columns, "label — value", and an empty value shows "—"; multi-line text keeps its line breaks; very long values (emails, URLs) may wrap and must not break the layout. Below `sm` the label sits above its value unless every value is short (M5.1).
-- **T2.5 [Should] Particulars read first and edit in place**: a record's particulars in the side column of its page, or in its drawer, use the UI Library `property-fields` card with `variant='inline'`: each value is plain text, shaded under the pointer when the user may change it, edited on a double-click (Enter or F2 from the keyboard) and saved on the pick or when it loses focus, Escape leaving it as it was. A single click never enters editing, so a value can be selected and copied. A value people copy — an email, a phone number, an address, a website — gets a copy button on hover (`copyable`). A long text opens beside the column in a pop-up on a click and is edited there with a double-click, so the column keeps its height; a link, which a click opens, is edited from a pencil shown on hover, so following it never starts an edit. A value the user may not change is plain text, with no shading and no pencil. A form filled in at once, such as a create dialog, keeps every value in its control (the card's default `variant='form'`, or T3). Double-click editing is a desktop shortcut: the record's Edit action stays available on every width, so a phone user can change the same values by touch (M5.2).
+- **T2.1 [Must]** A record with at most about 15 fields opens its detail in a `RouteDrawer` at `:id` over the list; a complex record (more fields, tabs, related lists) gets a detail page at `:id/details`. Editing is a `RouteDialog` at `:id/edit` (T3.1). Route mechanics: [`references/page.md`](references/page.md) and [`references/child-routes.md`](references/child-routes.md).
+- **T2.2** The top shows the record name; record actions (edit, delete) are grouped in one place at the top or bottom.
+- **T2.3** The detail opens directly by URL and survives a refresh (I6).
+- **T2.4** Fields are "label — value" pairs; an empty value shows "—", multi-line text keeps its breaks, long values wrap without breaking the layout.
+- **T2.5** Particulars may use the UI Library `property-fields` card (`variant='inline'`, double-click to edit); the Edit action stays for touch.
 
-### T3 Form: create and edit
+### T3 Forms
 
-- **T3.1 [Must]** Choosing the container: with at most 8 fields and no complex dependencies between them, use a dialog — a plain Dialog `sm:max-w-md` for 1–4 fields, a `RouteDialog` for 5–8 fields or a form with a list or a picker (I1); with more fields, or when the form needs groups or steps, use a separate page (a covering child page when the user returns to the list afterwards, see I1). On phones every form is one column, and its submit action stays reachable above the keyboard (M6).
-- **T3.2 [Must]** Labels sit above inputs; a required field gets a `*` after its label, and an optional field gets no mark.
-- **T3.3 [Must]** Validation timing: validate on submit, not while the form is being filled in, so a field that loses focus or a form closed without submitting shows no error. After a failed submission a field is revalidated as it changes, and its error disappears once it is corrected. Errors appear below the field and say what is wrong and how to fix it ("Enter an email address", "The email format is invalid"); when submission fails, focus moves to the first field with an error.
-- **T3.4 [Must]** Dialog footer buttons are right-aligned: "Cancel" and then the submit button, from left to right. On narrow screens keep the component's default: the footers of `Dialog`, `RouteDialog` and `RouteDrawer` stack their buttons with the submit button on top, and so does `AlertDialog` with the confirm button. The submit button names the specific action ("Create", "Save"), not "OK" or "Submit".
-- **T3.5 [Must]** While submitting: the submit button shows a loading state and is disabled, the cancel button is disabled too, and the dialog cannot be closed, to prevent duplicate submissions.
-- **T3.6 [Must]** Field errors returned by the server appear below the corresponding fields; other failures appear in an Alert at the top of the form. On failure, do not close the form or clear the input.
-- **T3.7 [Must]** On success, close the dialog, update the related data (see R2) and state the result in a toast (`Created customer "Zhang San"`).
-- **T3.8 [Must]** When an edit form opens, it loads the record's latest data before prefilling the fields; it does not use data from the list or detail view directly, since that data may be stale. Show a skeleton while loading; handle a load failure or a missing record as S4 and R3 describe.
-- **T3.9 [Should]** A form with many fields asks for confirmation when it is left with unsaved changes, by any way out: Cancel, ×, Esc, the backdrop, browser back and links ([section 2.5 of `overlay.md`](references/overlay.md#25-beforeclose-checks-before-closing)).
+Build forms from [`references/form.md`](references/form.md).
+
+- **T3.1 [Must]** Every create and edit form opens in a `RouteDialog`: create at `new`, edit at `:id/edit`. No create or edit forms in drawers or covering pages; a long form groups its fields and scrolls inside the dialog.
+- **T3.2** Labels sit above inputs; required fields get `*`, optional ones nothing.
+- **T3.3 [Must]** Validate on submit, then revalidate a field as it changes; errors appear below the field and say how to fix it, and focus moves to the first error.
+- **T3.4** The footer is right-aligned, "Cancel" then the submit button, which names the action ("Create", "Save"); narrow screens keep the components' stacked footer.
+- **T3.5 [Must]** While submitting, the submit button shows its pending state and is disabled, Cancel is disabled and the overlay cannot close.
+- **T3.6 [Must]** On failure the form stays open with its input: server field errors appear under their fields, other failures in an `Alert` at the top.
+- **T3.7** On success the dialog closes, related views refresh (R2) and a toast names the result (`Created customer "Zhang San"`).
+- **T3.8** An edit form loads the record's latest data before prefilling (skeleton while loading; a failure or missing record follows S4 and R3).
+- **T3.9 [Must]** Unsaved input is never lost silently: build every create and edit form with `FeedbackForm` (`#components/feedback-form`), passing `values={form.getValues}` (or `values={() => values}` for `useState`) and `savedValues` (the stored record or the blank create values, never a restored draft), inside its route overlay. The overlay then asks "Discard changes?" on every way out (Cancel, ×, Esc, backdrop, browser back, links) and leaves without asking after a successful save. Pages write no guard of their own. Mechanics: [`references/overlay.md`](references/overlay.md).
 
 ### T4 Settings page
 
-- **T4.1 [Must]** Split the page into Cards by topic; each Card has a title and a one-sentence description.
-- **T4.2 [Must]** Each Card is saved on its own, with its save button at the bottom right of the Card.
-- **T4.3 [Must]** A toggle setting takes effect as soon as it is switched and shows a toast; a setting that needs input takes effect when Save is clicked.
+- **T4.1** One `Card` per topic, each with a title and a one-sentence description.
+- **T4.2** Each Card saves on its own, with Save at its bottom right.
+- **T4.3** A toggle applies at once with a toast; a setting that needs input applies on Save.
 
-### T5 Dashboard: where things stand, at a glance
+### T5 Dashboard
 
-Structure, top to bottom: PageHeader (title and description; actions only for whole-page business operations, such as Export) → a row of metric cards → charts → the records that need attention (recently updated, overdue), each list in a card.
+Top to bottom: `PageHeader` (whole-page actions only) → metric cards → charts → lists of records that need attention, each in a card.
 
-- **T5.1 [Must]** A metric card shows its label above its value, the value large and formatted for the current language (T1.6). A change against an earlier period states its direction in words or with a sign, not by color alone (A2).
-- **T5.2 [Must]** Each chart sits in a Card with a title and a one-sentence description. Axis labels, series names and the tooltip are translated, and the colors come from the theme's chart tokens.
-- **T5.3 [Must]** A list of records in a card shows a few rows (at most 10) with no search, filters, sorting or pagination, lines up with the card's title (F3), and links to the full list ("View all"). Its first column opens the record over the dashboard (I9).
-- **T5.4 [Must]** A dashboard has a design for its states: skeletons shaped like its cards while loading (S1), an error with "Retry" where a retry can help (S4), and a card with no data yet says so inside the card instead of showing an empty chart or table (S2).
-- **T5.5 [Must]** On a phone, metric cards sit two per row with a smaller value (`grid-cols-2`, `text-2xl sm:text-3xl`), charts take the full width one per row with the legend below the plot, and record lists keep their "View all" link. When the dashboard's main task is acting on records that need attention, place that list before the charts on every width and record the choice (M1.1, M5.4).
+- **T5.1** A metric card shows its label above a large, localized value; a change states its direction in words or a sign, not color alone.
+- **T5.2** Each chart sits in a titled Card; labels and tooltips are translated and colors come from the chart tokens.
+- **T5.3** A list in a card shows at most 10 rows, no search, filters, sorting or pagination, and links to the full list ("View all"); its records open over the dashboard (I9).
+- **T5.4** Each card has loading, error and no-data states of its own (S1, S2, S4).
+- **T5.5** On a phone, metric cards sit two per row and charts one per row ([`mobile.md`](mobile.md)).
 
-### Page types not covered
-
-Kanban boards, calendars and similar pages have no template yet. When designing one, follow the rules in sections F, L, I, R, S, C and A — a record on them opens over the page, as on a dashboard (I9) — and explain in the design file why you chose its structure, including its phone plan (M5.4): a board shows one column at a time and moves cards from a menu, a calendar shows a day or agenda list.
+Boards, calendars and other pages without a template follow F, L, I, R, S, C and A; the page plan explains their structure.
 
 ## I Interaction choices
 
-**I1 [Must] Choosing an overlay**: pick the overlay, and its width, from what it holds, so the same kind of task looks the same everywhere.
+**I1 [Must]** Choose the overlay by what it holds:
 
-| What it holds                                                                                             | Use                                                                     | Width (`className`)                                          | Structure                               |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------- |
-| Confirming an action (delete, disable, revoke)                                                            | AlertDialog                                                             | the default (`sm`)                                           | names the object (I2)                   |
-| A small form of 1–4 fields (rename, a new label, one variable)                                            | Dialog; a `RouteDialog` when it creates or edits a record (I6)          | `sm:max-w-md`                                                | header, fields, footer                  |
-| A form of 5–8 fields, or one with a list or a picker (create an app, a new agent, pasting many variables) | `RouteDialog` (child route, can be opened directly by URL)              | `sm:max-w-2xl` (the default)                                 | fixed header and footer, scrolling body |
-| More than 8 fields, groups or steps                                                                       | Separate page (a covering child page when the user returns to the list) | —                                                            | —                                       |
-| A record's details, or editing it, while the list stays in view                                           | `RouteDrawer` (child route, can be opened directly by URL)              | `sm:max-w-xl` (the default); `sm:max-w-2xl` for a wide table | fixed header, scrolling body            |
-| Large read-only content (a transcript, a diff, a file preview)                                            | Dialog                                                                  | `sm:max-w-4xl`                                               | scrolling body                          |
-| A few options, filter conditions, quick actions                                                           | DropdownMenu or Popover                                                 | sized to its content (I13)                                   | —                                       |
+| What it holds                                    | Use                         | Width                                      |
+| ------------------------------------------------ | --------------------------- | ------------------------------------------ |
+| Confirming an action                             | `AlertDialog`               | default                                    |
+| Creating or editing a record (T3.1)              | `RouteDialog`               | `sm:max-w-md` for 1–4 fields, else default |
+| A record's details over the list (T2.1)          | `RouteDrawer`               | default; `sm:max-w-2xl` for a wide table   |
+| Large read-only content (a diff, a file preview) | `Dialog`                    | `sm:max-w-4xl`, scrolling body             |
+| A few options or quick actions                   | `DropdownMenu` or `Popover` | sized to content (I13)                     |
 
-Every confirmation is an AlertDialog, never a Dialog with two buttons. A dialog that is not a route overlay and whose content can outgrow the screen caps its height with one idiom, `max-h-[calc(100dvh-2rem)]`, keeps its header and footer fixed and scrolls only its body, so the footer's buttons never scroll out of view (A4): `DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl'` with `shrink-0` on its header and footer around a body of `-mx-6 min-h-0 flex-1 overflow-y-auto px-6` ([`references/overlay.md`](references/overlay.md#6-plain-dialogs-sizes-and-scrolling)). Do not use other caps (`90vh`, `85dvh`, `calc(100svh-2rem)`), and do not scroll the whole dialog. `RouteDialog` and `RouteDrawer` already do this.
+Every confirmation is an `AlertDialog`. A plain dialog that can outgrow the screen caps itself at `max-h-[calc(100dvh-2rem)]` with a fixed header and footer and a scrolling body; `RouteDialog` and `RouteDrawer` already do. The deepest stack is drawer → dialog → confirmation; Esc and the backdrop close only the top layer. Details: [`references/overlay.md`](references/overlay.md).
 
-Stacking rules: a drawer can open a dialog (for example, to edit from the detail view) and a confirmation dialog; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer. Edit opened from a list row's menu is the dialog alone over the list; edit opened from the detail drawer stacks the dialog on the drawer, and closing it returns to the drawer; edit opened from the header of a record page with tabs stacks the dialog on the tab being shown, and closing it returns to that tab. Drawer → dialog → confirmation is the deepest stack on every width; on a phone it keeps these routes and follows M7.2 of [the phone experience](mobile.md) (only the top layer takes taps, leaving goes back one layer at a time), and anything deeper becomes a covering page.
+**I2 [Must]** Destructive actions (delete, disable, revoke, clear) open an `AlertDialog` first whose title names the object (`Delete customer "Zhang San"?`), whose description states the consequence and whose confirm button is destructive and names the action.
 
-**I2 [Must] Confirm destructive actions first**: deleting, disabling, clearing, revoking access and similar actions open an AlertDialog first. The title names the object (`Delete customer "Zhang San"?`), the description states the consequence ("This cannot be undone"), and the confirm button uses the destructive style, with a label naming the specific action ("Delete").
+**I3 [Must]** Feedback: success is a one-sentence toast; validation errors are inline; a failed request in a dialog shows inside the dialog, which stays open; a failed page load is an in-page state (S4); a failed one-click action is an error toast. Never show raw backend messages, stack traces or SQL.
 
-**I3 [Must] How to give feedback**:
+**I4** Loading: a button shows its own pending state; a same-query refresh keeps the rows with the shared refresh indicator; a new query never shows the previous results as current. Timing: [pending feedback](../pending-feedback.md).
 
-| Situation                                                                                              | Method                                                  |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| An action succeeds                                                                                     | A toast stating the result in one sentence              |
-| Form validation fails                                                                                  | Inline errors below the fields, not a toast             |
-| A request in a dialog fails                                                                            | Show the error inside the dialog; the dialog stays open |
-| Page data fails to load                                                                                | An error state in the page (S4)                         |
-| A single-click action without a dialog fails (such as "Mark as done"), or a background operation fails | An error-style toast                                    |
+**I5** Search applies about 300 ms after typing pauses (`DataTableSearch` does this).
 
-Do not show raw backend error messages (untranslated exception messages, stack traces, SQL) to the user.
+**I6 [Must]** Create and edit dialogs and detail drawers have their own URL: a link opens them, a refresh restores them, back and forward close and reopen them. Only single-action confirmations and temporary panels stay out of the URL.
 
-**I4 [Must] Loading indicators**: the first list load uses S1's shared list loading; other page content may use a skeleton that appears after the same display delay. An action triggered by a button shows its loading state on that button. A same-query list reload keeps still-authorized data and shows the standard refresh indicator inside the region that owns it (DataTable does this from `loading`; other retained regions render `RefreshIndicator`) instead of replacing the rows or adding a page-level spinner. Search, filter, sort or page changes must not present previous results, totals or picker options as the new query's results, TanStack placeholder data included; the table keeps the previous body and pagination height while the new query loads. Follow the [data invalidation boundaries](references/api.md#data-invalidation-boundaries). Distinguish paused or covered content from an active request: pass `active && loading`, so a list under a route overlay shows no refresh feedback. Every indicator follows [pending feedback](../pending-feedback.md) timing: nothing before 300ms, a long-wait note at 10 seconds, removal on completion. Do not delay the request, data updates, errors, permission checks or submit-button feedback.
+**I7 [Must]** Actions the viewer may not take are hidden; temporarily unavailable ones are disabled with a reason (a tooltip, unless the reason is visible). Hiding is not a permission check: the server enforces it.
 
-**I5 [Should]** The search box searches automatically as the user types (debounced by about 300ms), without the user pressing Enter.
+**I8** Everything works with the keyboard; do not break the components' focus, Esc and Enter handling.
 
-**I6 [Must] URL-addressable state**: create and edit dialogs and detail drawers each have their own URL, so a link opens them directly, a refresh restores them, and the browser's back and forward buttons open and close them. The URL also carries the view behind the overlay — the list's search and filters, the tab of a record page — so a link or a refresh restores the overlay over that same view (I9). Only a confirmation dialog for a single action and a temporary panel stay out of the URL.
+**I9 [Must]** A record or overlay opens over the view the user is on (a filtered list, a dashboard, the current tab), at that view's URL plus its own segments, and closing returns to exactly that URL. Never send the user to another page's route for a record. Mechanics: [`references/child-routes.md`](references/child-routes.md).
 
-**I7 [Must]** Actions the user has no permission for are not shown; actions that are temporarily unavailable are disabled, with a tooltip explaining why. When the reason is visible next to the action, it needs no tooltip: a submission or save in progress, a form with no changes, or a limit the view states ("Up to 10 member emails").
+**I10** Dates are picked with the application's `DatePicker` (Calendar in a Popover), never a native date input; a range offers presets ([`references/form.md`](references/form.md)).
 
-**I8 [Must]** Every action can be completed with the keyboard: when a dialog opens, focus moves into it, Esc closes it, and Enter submits the form. The components have these behaviors built in; do not break them.
+**I11** A plain `Sheet` holding a form or details is medium width (`w-full gap-0 data-[side=right]:sm:max-w-xl`).
 
-**I9 [Must] Records and overlays open where the user is**: the view the user is on is the deepest thing they are looking at — a list with its search and filters, a dashboard, a board, a drawer, or the tab being shown on a page with tabs. A record opened from a view (a list, a dashboard, a board or another record's tab), and any overlay opened from a view, open over that view — a drawer or dialog for a short detail view or form, a covering child page (`RouteChildPage`) when the detail needs a page of its own (T2.1) — at the view's URL followed by the overlay's own segments, so the view stays rendered behind it, and closing or going back returns to exactly that URL, with no redirect in between. To check, remove the overlay's own segments from its URL: what remains is the URL the user opened it from. Declare the detail, with its edit, tab and print children, under every view that opens it, reusing the same modules; on a page with tabs, the overlays its header opens are declared under every tab, since the header sits above all of them. Never send the user to another page's route for a record, whether its overlay URL or its detail page: the page they were on disappears, the menu highlight moves to another entry, and closing lands them on a page they did not come from. Never open an overlay beside a page's tabs either: the tab unmounts behind it, and closing lands on the default tab.
+**I12** Every `SelectContent` grows with its options and wraps long ones: `className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'`.
 
-**I10 [Must] Dates are picked from a calendar**: never a native `<input type='date'>` or a shadcn `<Input type='date'>`, which opens the same browser calendar. A date is the application's `DatePicker`: the shadcn `Calendar` in a `Popover`, opened by an outline `Button` that shows the value in the current language's format, composed once and reused by every page ([Dates in `references/form.md`](references/form.md#dates)). A date and time keeps its time input beside it. A range is one such trigger opening `Calendar mode='range'`, two months side by side on wide screens and one below `md`, with quick presets beside it (last 7 days, last 30 days, this month, last month, last 90 days), and keeps its two ends in the URL like other filters (T1.7).
+**I13** A `DropdownMenuContent` on an icon or narrow trigger gets `className='w-auto min-w-40'` (`RowActions` already does).
 
-**I11 [Must] Drawers are wide enough for their content**: a drawer holding a form or a record's details is medium width (`RouteDrawer` already is); a plain `Sheet` used that way gets `className='w-full gap-0 data-[side=right]:sm:max-w-xl'`, or `sm:max-w-2xl` with the same prefix when it holds a wide table, a header with a bottom border and a scrolling body ([`Sheet` in `references/overlay.md`](references/overlay.md#5-sheet-temporary-panels)). Keep the narrow default only for a small panel, such as a short explanation.
-
-**I12 [Must] Select popups fit their options**: the shadcn `SelectContent` defaults to its trigger's width and keeps every option on one line, so a long option is cut off. Every `SelectContent` therefore gets `className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'`: at least as wide as its trigger, growing with its options up to `max-w-sm` or the space beside it, with a long option wrapping onto another line. Never truncate an option's text inside the popup; the trigger may still end the selected value in an ellipsis. Keep the class on the call site rather than in a wrapper component, and add positioning props such as `align='end'` beside it when the trigger sits at the end of a row.
-
-**I13 [Must] Menus on icon triggers size to their items**: the shadcn `DropdownMenuContent` defaults to its trigger's width, so the menu of an icon button (a row's "⋮", a card's "More") is as narrow as the icon and wraps every item. Every `DropdownMenuContent` whose trigger is an icon button, or any trigger narrower than its items, gets `className='w-auto min-w-40'`: as wide as its longest item, and never narrower than `min-w-40`. Keep the class on the call site rather than in a wrapper component, beside positioning props such as `align='end'`; `RowActions` (T1.5) already sets both on a row's menu. A menu whose trigger is at least as wide as its items, such as a labelled button, keeps the default.
-
-**I14 [Must] Long text shows in part, by where it sits**: a description, an introduction, a note or a comment never ends in an ellipsis mid-sentence, and never pushes a narrow column longer than its neighbours. Where there is room, such as the description under a page's title or a comment in a timeline, show up to five lines and unfold the rest in place on a click (`LongText`). In a narrow column, such as a record's particulars beside its page or a card, show up to three muted lines and open the whole text in a pop-up beside it (`LongTextPreview`), so the column keeps its height. The last line fades out, and a text that fits is shown plainly, with nothing to click. Both come from the UI Library item `@nocobase/long-text` ([`references/ui-library.md`](references/ui-library.md)). A table cell or a list item's one-line summary keeps `truncate` or `line-clamp-1`, where the row opens the record.
+**I14** Long prose never ends in a mid-sentence ellipsis: show up to five lines and unfold in place (`LongText`), or three muted lines with a pop-up in a narrow column (`LongTextPreview`), both from the UI Library `@nocobase/long-text`. Table cells keep `truncate`.
 
 ## R Data freshness
 
-**R1 [Must] Never write from stale data**: edit, delete and similar actions work from the record's latest data (see T3.8). Take particular care when the backend replaces fields wholesale; otherwise the write overwrites changes that someone else, or the same user, just made.
+How to keep views current is [`references/data-changes.md`](references/data-changes.md).
 
-**R2 [Must] Update immediately after a successful write**: update the current view (detail view, drawer) at once with the data the endpoint returns, then refresh the related lists, cards and counts ([how](references/data-changes.md)); the UI must never end up in a state where "the toast says it was saved, but the UI still shows the old value". While refreshing, keep the old data and show that it is loading, as I4 requires.
+**R1** Edit and delete work from the record's latest data (T3.8), so a write never overwrites someone else's change.
 
-**R3 [Must] The record no longer exists**: when editing, deleting or opening the details reveals that the record has been deleted (404), say "This record does not exist or has been deleted" and give a next step (close the overlay, go back to the list); the list refreshes as well. Do not let the user repeat an action that is bound to fail, and do not offer "Retry".
+**R2 [Must]** After a successful write the UI shows the new state at once: the current view uses the returned data, and every affected list, card and count refreshes through scopes (views declare `scopes` in `useListData`, writes call `announceDataChange({ scopes, results })`). Never pass a `reload` callback through Outlet context or `onSaved`.
 
-**R4 [Must] No default page Refresh action**: ordinary lists, details, settings and dashboards do not add a persistent header or toolbar action whose only effect is refetching page data. Browser reload remains available; preserve the route and URL-backed list state (I6). Mobile pull-to-refresh depends on the browser and scroll container: do not promise it everywhere or add a custom implementation by default. Keep immediate updates after writes (R2), contextual Retry after a failed read (S4), and existing realtime subscriptions or polling. Before removing an existing control on a progress or runtime-status view, verify that asynchronous completion still reaches the open view; use the existing event/snapshot mechanism rather than adding unnecessary high-frequency polling. Rescan, synchronize, recheck and regenerate operations with business effects remain explicit authorized actions with descriptive labels and pending states; browser reload must never trigger them.
+**R3** When an action or open reveals the record no longer exists (404), say "This record does not exist or has been deleted", offer the next step (close, back to the list) and refresh the list; no Retry.
+
+**R4** Ordinary pages have no Refresh button; Retry appears only after a failed read (S4). Business operations (rescan, sync) stay explicit actions with descriptive labels.
 
 ## S States
 
-- **S1 [Must] Loading**: use `ListFeedback`/`DataTable` loading: the body keeps its place at once and shows the shared indicator with the single short line "Loading" after 300ms; keep the initial state distinct from an empty result and use the standard refresh indicator during same-query refreshes (I4).
-- **S2 [Must] Empty** (no data at all yet): replace the list in the space it would take with the Empty component (`className='min-h-24 flex-row gap-2'`), a matching icon and the single short line "No data yet". The default status has no description or inline action. If the existing create permission is allowed, the single "New customer" action remains in the `PageHeader` (L7); never duplicate it inside `EmptyContent`. Preserve application-supplied custom empty content when deliberately needed.
-- **S3 [Must] No results** (a search or filter is applied but nothing matches): keep it distinct from S2 and show the single short line "No results". Put "Clear filters" in the existing page or table toolbar, not inside the status area.
-- **S4 [Must] Request and access feedback**: use the matching icon and one short line: "Access denied" for 403, "Session expired" for 401, and "Unable to load list" for an initial network, timeout or server failure. Put retry and sign-in recovery in the existing toolbar or authentication flow; the status area has no inline actions. A same-query refresh failure keeps its usable previous data and adds only one short stale-data line ("Refresh failed; showing previous data"); keep retry in the existing toolbar. Never infer hidden records from an empty result or probe for them.
-- **S5 [Must] Submitting, deleting**: see T3.5 and I2. Use the installed PendingButton with real `submitting`: disable immediately, show feedback after 300ms, explain after 10 seconds and clear on actual completion. Preserve shared submission protection for click and keyboard entries; follow [pending feedback](../pending-feedback.md).
-- **S6 [Must] No access**: the application shell handles a whole page the user cannot access, so the page needs no design of its own for that case; when the user may not view one block of data on a page, show an explanation there instead of leaving it blank.
-- **S7 [Must] Continuous transitions**: loading, failure, retry and route resolution do not unnecessarily remove navigation, shift the surrounding layout, erase drafts, jump focus or scroll, or replay an overlay's entrance during one opening. Preserve what still belongs to the current resource and authorization scope; reset when identity or permissions require it. Prefer changing content inside a stable overlay; necessary replacements explicitly hand over presentation and focus ([overlay lifecycle](references/overlay.md#asynchronous-overlay-lifecycle)). Do not hide required feedback, disable animations globally or delay real work to conceal a discontinuity. The shared presentation delay in [pending feedback](../pending-feedback.md) does not delay requests, submission locks or errors.
+`DataTable`, `ListFeedback` and `RefreshIndicator` implement S1–S4; never hand-write spinners or status blocks ([`references/list-feedback.md`](references/list-feedback.md)).
+
+- **S1 [Must]** Loading, empty, no results and failure are distinct states: loading shows the shared indicator; empty ("No data yet") is distinct from no results ("No results"), and "Clear filters" lives in the toolbar.
+- **S2** The empty state is one line with an icon and no actions; the create action stays in the `PageHeader` (L7).
+- **S3** A search or filter that matches nothing is no results, not empty, and never hides the header's create action.
+- **S4** A failed load shows one line with an icon ("Unable to load list", "Access denied", "Session expired"); retry and sign-in live in the toolbar or the auth flow. A failed refresh keeps the previous data and adds one stale-data line.
+- **S5** Submitting uses `PendingButton` (T3.5, [pending feedback](../pending-feedback.md)).
+- **S6** A block the viewer may not see explains itself rather than staying blank.
+- **S7** Loading and retry never remove navigation, shift the layout, erase input or jump focus.
 
 ## C Copy
 
-- **C1 [Must]** All user-visible text has a translation in every language the application offers (the loaders in `client/locales/index.ts`; the template offers Chinese and English), including aria-labels, placeholders, toasts, validation messages and the English built into shadcn/ui primitives ([how](references/shadcn.md#english-built-into-primitives)).
-- **C2 [Must]** Use the same word for the same concept across the whole application (do not mix "customer" and "client", or "客户" and "顾客").
-- **C3 [Must] Button copy**:
-  - Page-level actions use "verb + object" ("New customer"; 新建客户 in Chinese).
-  - Buttons in a record's context (row menu, bottom of the detail drawer) and buttons in dialogs use only the verb ("Edit", "Delete", "Create", "Save"); the context already identifies the object.
-- **C4 [Must]** Default list feedback is one concise translated status line with a matching icon. Put recovery actions in the existing operation area; preserve a deliberately supplied business-specific empty state.
-- **C5 [Should]** Keep copy short: a description is one sentence, and a toast is at most 20 Chinese characters (about 12 English words), not counting the record name.
-- **C6 [Must]** When copy refers to a specific record, include the record's name (`Deleted customer "Zhang San"`; in Chinese, `已删除客户“张三”`). Chinese wraps the name in “”; English wraps it in "…".
-- **C7 [Must] Overlay titles**: dialog and confirmation dialog titles use "verb + object", with the same verb as the button that opens them (the "Edit" button opens "Edit customer", and the "New customer" button opens "New customer"); a confirmation dialog title also includes the record name (I2).
+- **C1 [Must]** All visible text, including aria-labels, placeholders, toasts and validation messages, is translated into every language in `client/locales/index.ts` ([`references/i18n.md`](references/i18n.md)).
+- **C2** The same concept uses the same word everywhere.
+- **C3** Page actions are "verb + object" ("New customer"); buttons in a record's context or a dialog are the verb alone ("Edit", "Save").
+- **C4** Default list feedback is one short line with an icon.
+- **C5** A description is one sentence; a toast is at most about 12 English words (20 Chinese characters) plus the record name.
+- **C6** Copy about a record includes its name: `Deleted customer "Zhang San"`, `已删除客户“张三”`.
+- **C7** Overlay titles are "verb + object" with the opening button's verb ("Edit customer"); confirmations include the record name.
 
 ## A Accessibility and adaptation
 
-- **A1 [Must]** Icon buttons have an accessible name (aria-label); an icon button that performs an action on its own gets a tooltip; a "More" button that opens a menu needs no tooltip.
-- **A2 [Must]** Do not convey information by color alone: states have text, and errors have a text explanation.
-- **A3 [Must]** Keep a visible focus style, and keep it consistent across links, buttons and inputs.
-- **A4 [Must] Designed for phones**: every page meets [the phone experience](mobile.md) (M1–M10) at 375px and a 390–412px phone width without being asked: its first screen shows main content, the page never scrolls sideways, ordinary lists become cards, several filters move behind one "Filters" button, tabs stay on one row, forms are one column with reachable actions, overlays keep their footer in view, and every task works by touch. A toolbar that merely wraps or a table that merely scrolls sideways does not meet A4; sideways scrolling is reserved for regions that compare across columns (M3.4).
-- **A5 [Must]** Text-to-background contrast meets WCAG AA. Verify changed foreground/background token pairs in every supported theme; an application can customize their values.
-- **A6 [Must] Where focus goes**: when an action removes the element that has focus (deleting a row, closing a drawer, a record that no longer exists), move focus to a stable place (such as the search box or the page title); do not let focus fall to the top level of the page.
-- **A7 [Must] Reliable input**: text boxes support Chinese input methods (IME composition), typing character by character, and editing in the middle of the text; while the user is typing, external state (the URL, endpoint responses, auto-refresh) must not overwrite or interrupt the text box's content.
-- **A8 [Should]** Informational messages (such as the result cap notice) do not use alert semantics, which interrupt screen reader announcements; use those only for errors.
+- **A1** Icon buttons have an accessible name; one that acts on its own has a tooltip.
+- **A2 [Must]** Information is never conveyed by color alone.
+- **A3** Focus is visible and consistent.
+- **A4 [Must]** Every page works on a phone without being asked, following [`mobile.md`](mobile.md): main content on the first screen, no sideways page scrolling, cards for ordinary lists, every task possible by touch.
+- **A5** Text contrast meets WCAG AA in every theme.
+- **A6** When an action removes the focused element (a deleted row, a closed drawer), focus moves to a stable place.
+- **A7** Inputs support IME composition and mid-text editing; the URL, responses or refreshes never overwrite what the user is typing.
+- **A8** Informational notices do not use alert semantics; only errors do.
 
 ## Review checklist
 
-First apply the reference modes and authorized exceptions from [the design contract](design-contract.md). Include [shared acceptance checks](ui-acceptance.md) where relevant, especially actual browser geometry for overlay changes. An authorized default replacement is recorded with its evidence; it is not silently skipped or reported as a violation of the old default.
-
-The design review and the acceptance review both go through this checklist item by item: the review record's "Review checklist" section gets one row per item, and each unmet item is also an issue that cites its IDs. The checklist covers every Must rule; a rule the page cannot trigger (no detail view, no settings page) is marked "Not applicable" rather than skipped silently.
-
-- [ ] The page template and overlay choices are correct, and stacking follows the rules (T1–T5, I1)
-- [ ] Page structure: PageContainer, PageHeader, one primary button per view, actions in the right places, desktop and mobile parent navigation on detail/edit pages, retaining the source list/tab state and a direct-entry default without duplicate back buttons, and the standard create action only in the header when permission is resolved and allowed, including for an empty list; it is hidden while permission is pending or denied (L1, L2, L5, L6, L7)
-- [ ] Navigation is consistent: entries in one group all carry an icon or none does, a group's own icon does not repeat its first child's, and a count beside an entry is only what waits on the viewer (`page.md` §6, L8)
-- [ ] All states are covered: loading, empty, no results, load failed, submitting, a block the user may not see; whether a failure offers a retry follows S4 (S1–S7); affected transitions follow S7
-- [ ] Default list states show one concise line with the matching icon and no inline actions; custom empty content remains supported, while create, clear, retry and sign-in recovery stay in their existing permission-gated page or toolbar actions (L7, S1–S4)
-- [ ] Row actions: every row's actions are in one `RowActions` "⋮" menu at the end of the row, a single action included and in every record state; no text links, outline buttons or rows of buttons; the actions column has no visible header text and is not sticky or pinned; destructive items last after a separator; no empty menu; any action shown outside the menu, or a pinned column, cites the user's request or confirmed design (T1.5)
-- [ ] List: search placeholder, filters and clearing them, first column, enum Badges, row actions, formatting, date and number columns sortable, every built-in feedback state in S1–S4, result cap notice, a cut-off cell ending in an ellipsis with its full content on hover, cards on phones (T1.1–T1.6, T1.8–T1.13)
-- [ ] Detail view: drawer or page, record name and grouped actions, opens by URL, label–value layout with "—" for empty values (T2.1–T2.4)
-- [ ] Form: container, labels and required marks, validation timing, button order and copy, submitting, failure, success, loading the latest data before editing (T3.1–T3.8)
-- [ ] Settings page: one Card per topic, each saved on its own, toggles that apply at once (T4.1–T4.3)
-- [ ] Dashboard: metric cards, charts in titled cards, short record lists aligned with their card and linking to the full list, the states of each card (T5.1–T5.4)
-- [ ] Data freshness: writes use the latest data and update the UI after success; missing records and failed reads have contextual recovery; ordinary pages have no persistent Refresh action; asynchronous completion and business rescan/sync actions still work (R1–R4)
-- [ ] Destructive actions are confirmed, and the confirmation dialog names the object and the consequence (I2)
-- [ ] Feedback and loading indicators are correct, and raw backend errors are not exposed (I3, I4)
-- [ ] Overlays and their state have URLs; every record and overlay opens over the view the user is on — a filtered list, a dashboard, a board, a drawer, the tab being shown — at that view's URL plus its own segments, and closing returns to exactly that URL, checked from a view other than the first one too: a tab other than the default, a list with a filter applied (I6, I9)
-- [ ] Each overlay has the component, width and structure I1 gives what it holds, confirmations are AlertDialogs, and a dialog that can outgrow the screen caps its height at `calc(100dvh-2rem)` with a fixed footer and a scrolling body (I1)
-- [ ] Dates are picked from a Calendar in a Popover, never a native date input, and a range has presets; a drawer holding a form or details is medium width; select popups grow with their options and wrap long ones; menus on icon triggers size to their items (I10–I13)
-- [ ] A record's particulars read as text and edit on a double-click, with copy on hover and a pencil for links (T2.5)
-- [ ] Long text fades after five lines and unfolds in place where there is room, and after three muted lines opening in a pop-up in a narrow column, never an ellipsis mid-sentence (I14)
-- [ ] Actions without permission are hidden and unavailable ones disabled with a reason; everything works with the keyboard (I7, I8)
-- [ ] Color, font size, spacing, radius and icons use only tokens, scales and lucide-react, and fixed sizes are explained (F1–F5, F7)
-- [ ] Copy exists in every language `client/locales/index.ts` offers, wording is consistent, and button and title copy follows the rules (C1–C4, C6, C7)
-- [ ] Icon buttons are accessible, focus is visible and goes somewhere sensible, information is not conveyed by color alone, and custom colors meet AA contrast (A1–A3, A5, A6)
-- [ ] Each page has a phone layout decided in the design and meets every applicable item of [the phone checklist](mobile.md#checklist): first screen, no page overflow, cards for ordinary lists, filters and sort behind compact controls, one-row tabs, one-column forms, overlays, touch and both languages, verified at two phone widths, a short height and desktop (A4, M1–M10, T1.13, T5.5)
-- [ ] Usable in the dark theme and with a Chinese input method (F6, A7)
-
-- [ ] Page/panel waits and native submit actions use the installed Loading/PendingButton contract; immediate busy semantics, delayed display, one announcement and stable dimensions are verified (S5, S7).
-- [ ] Lists, cards and pickers take loading, refresh, empty, failure and permission states from `resolveListState` and the shared DataTable/ListFeedback/RefreshIndicator; no hand-written spinner, timer or refresh slot, no previous query's rows, total or options shown as current, and covered lists show no refresh feedback (S1, I4).
-- [ ] Uploads, imports, exports and jobs show only real progress (`TaskProgress` or the upload field's indeterminate wait), offer cancel only where it really stops the work, keep failures recoverable and say where the result is (see pending feedback).
+- [ ] Template, route tree and overlays match the page plan (T1–T5, T2.1, T3.1, I1)
+- [ ] One primary button per view; actions in their places; create only in the header (L2, L5, L7)
+- [ ] Row actions in the `RowActions` menu, exposed ones named in the plan (T1.5)
+- [ ] Search with `DataTableSearch`, filters, sort and page in the URL (T1.1, T1.2, T1.7, T1.8)
+- [ ] Loading, empty, no results, failure and denied states all render correctly (S1–S6)
+- [ ] Forms validate on submit, block while submitting, keep input on failure (T3.3, T3.5, T3.6)
+- [ ] A dirty form asks "Discard changes?" on every way out and not after saving (T3.9)
+- [ ] Destructive actions confirmed with the object named (I2)
+- [ ] Overlays have URLs and open over the current view; closing returns to it (I6, I9)
+- [ ] Writes refresh affected views through scopes (R2)
+- [ ] No raw backend errors; denied actions hidden (I3, I7)
+- [ ] Tokens, scales and lucide icons only (F1–F5)
+- [ ] All copy translated and consistent (C1–C3, C6, C7)
+- [ ] Works on a phone at 390 px (A4, [`mobile.md`](mobile.md))
+- [ ] Readable in the dark theme; keyboard and focus work (F6, A1–A3, A6)
