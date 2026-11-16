@@ -40,20 +40,37 @@ export interface JournalPage {
 const MAX_READ = 256 * 1024;
 const MAX_LINE = 32 * 1024;
 const SECRET =
-  /password|secret|token|authorization|cookie|api.?key|credentials/i;
+  /password|secret|token|authorization|cookie|api.?key|access.?key|private.?key|client.?secret|credentials/i;
 
 /** Sanitize at the persistence boundary, including nested errors and free text. */
 export function sanitizeLog(value: unknown, depth: number = 0): unknown {
   if (depth > 8) return '[TRUNCATED]';
-  if (typeof value === 'string')
+  if (typeof value === 'string') {
+    // Parse structured text before free-text matching, including escaped JSON strings.
+    if (/^\s*[\[{]/.test(value) && value.length <= MAX_LINE) {
+      try {
+        return JSON.stringify(sanitizeLog(JSON.parse(value), depth + 1));
+      } catch {
+        // Legacy output need not be JSON.
+      }
+    }
     return value
-      .slice(0, MAX_LINE)
-      .replace(/(Bearer\s+)\S+/gi, '$1[REDACTED]')
+      .replace(
+        /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/g,
+        '[REDACTED]',
+      )
+      .replace(/(Bearer\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
       .replace(/(\w+:\/\/)[^\s/@]+:[^\s/@]+@/g, '$1[REDACTED]@')
       .replace(
-        /((?:password|secret|token|apiKey|authorization)\s*[=:]\s*)[^\s,;&]+/gi,
+        /((?:[\w-]*(?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]*)["']?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
         '$1[REDACTED]',
-      );
+      )
+      .replace(
+        /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+)/g,
+        '[REDACTED]',
+      )
+      .slice(0, MAX_LINE);
+  }
   if (value instanceof Error)
     return sanitizeLog(
       {
@@ -190,14 +207,25 @@ export function appendJournal(
 export async function pruneJournals(
   directory: string,
   policy: JournalPolicy,
-  protectedFile?: string,
+  protectedFile?: string | readonly string[],
+  options: { recursive?: boolean } = {},
 ): Promise<void> {
   validateJournalPolicy(policy);
-  const files = await listFiles(directory);
+  const files = await listFiles(directory, options.recursive);
   let total = files.reduce((sum, file) => sum + file.size, 0);
   const expiry = Date.now() - (policy.retentionDays ?? 7) * 86400000;
   for (const file of files.sort((a, b) => a.modified - b.modified)) {
-    if (file.name === protectedFile) continue;
+    const protectedNames =
+      typeof protectedFile === 'string'
+        ? [protectedFile]
+        : (protectedFile ?? []);
+    if (
+      protectedNames.some(
+        (name) =>
+          path.resolve(directory, name) === path.resolve(directory, file.name),
+      )
+    )
+      continue;
     if (
       file.modified < expiry ||
       total > (policy.maxSizeMB ?? 500) * 1024 * 1024
@@ -218,13 +246,27 @@ interface LogFile {
   inode: number;
   modified: number;
 }
-async function listFiles(directory: string): Promise<LogFile[]> {
+async function listFiles(
+  directory: string,
+  recursive = false,
+): Promise<LogFile[]> {
   try {
     if ((await lstat(directory)).isSymbolicLink())
       throw new Error('Symbolic log directories are not allowed');
     const entries = await readdir(directory, { withFileTypes: true });
     const files: LogFile[] = [];
     for (const entry of entries) {
+      if (
+        recursive &&
+        entry.isDirectory() &&
+        /^(?:runs|\d{4}-\d{2}-\d{2})$/.test(entry.name)
+      ) {
+        for (const file of await listFiles(
+          path.join(directory, entry.name),
+          true,
+        ))
+          files.push({ ...file, name: path.join(entry.name, file.name) });
+      }
       if (!entry.isFile() || !/^[a-zA-Z0-9_.-]+\.log$/.test(entry.name))
         continue;
       const stats = await lstat(path.join(directory, entry.name));

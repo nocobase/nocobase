@@ -1,3 +1,4 @@
+import { diagnosticsCommands } from './diagnostics.ts';
 // The static command map oclif reads (`commands.strategy: 'explicit'`). `runAppCli` fills it before oclif loads it:
 // `login`, `logout`, `whoami`, `profile …`, `docs`, `completion`, `acp start`, `acp service …`, `update` for a CLI that updates itself, and whatever static commands the application CLI
 // adds. Business commands are not here: they come from the server's command manifest (src/dynamic/) through the
@@ -45,6 +46,7 @@ export function defineCommands(
       docs: docsCommand(config),
       ...profileCommands(config),
       ...completionCommands(config),
+      ...diagnosticsCommands(),
       ...(hasStudioSkill(config) ? skillsCommands(config) : {}),
       ...acpCommands(config),
       ...(config.selfUpdate === undefined

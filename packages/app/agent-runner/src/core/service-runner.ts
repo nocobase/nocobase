@@ -1,19 +1,6 @@
 // The service owns this process; the daemon owns its workers. Keep retries in memory and pipe all daemon output
 // through one bounded log writer, so rotation never leaves a service writing to an old inode.
 import { spawn, type ChildProcess } from 'node:child_process';
-import {
-  appendFileSync,
-  openSync,
-  closeSync,
-  readSync,
-  writeFileSync,
-  chmodSync,
-  mkdirSync,
-  renameSync,
-  rmSync,
-  statSync,
-} from 'node:fs';
-import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { ensureHome, type RunnerPaths } from '../lib/home.ts';
@@ -22,57 +9,13 @@ import { EXIT_CODES } from '../protocol/index.ts';
 import { RESTART_EXIT_CODE } from './update.ts';
 import { SERVICE_ENV } from './service.ts';
 
-export class RotatingLog {
-  private size: number;
-  readonly file: string;
-  readonly maxBytes: number;
-
-  constructor(file: string, maxBytes: number = 5 * 1024 * 1024) {
-    this.file = file;
-    this.maxBytes = maxBytes;
-    mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-    appendFileSync(file, '', { mode: 0o600 });
-    chmodSync(file, 0o600);
-    this.size = statSync(file).size;
-    // An older installation may already have an oversized log. Retain only its bounded tail once on upgrade.
-    if (this.size > maxBytes) {
-      const fd = openSync(file, 'r');
-      const tail = Buffer.alloc(maxBytes);
-      try {
-        readSync(fd, tail, 0, maxBytes, this.size - maxBytes);
-      } finally {
-        closeSync(fd);
-      }
-      writeFileSync(file, tail, { mode: 0o600 });
-      this.size = maxBytes;
-    }
-  }
-
-  write(data: Buffer | string): void {
-    let buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-    while (buffer.length > 0) {
-      if (this.size >= this.maxBytes) {
-        rmSync(`${this.file}.2`, { force: true });
-        try {
-          renameSync(`${this.file}.1`, `${this.file}.2`);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-        }
-        renameSync(this.file, `${this.file}.1`);
-        this.size = 0;
-      }
-      const length = Math.min(buffer.length, this.maxBytes - this.size);
-      appendFileSync(this.file, buffer.subarray(0, length), { mode: 0o600 });
-      this.size += length;
-      buffer = buffer.subarray(length);
-    }
-  }
-}
+import { RunnerJournal } from '../lib/journal.ts';
+export { RunnerJournal } from '../lib/journal.ts';
 
 export interface ServiceRunnerOptions {
   command: string[];
   paths?: RunnerPaths;
-  log: RotatingLog;
+  log: RunnerJournal;
   env?: NodeJS.ProcessEnv;
   /** Injectable time and retry waits for deterministic policy tests. */
   now?: () => number;
@@ -117,17 +60,21 @@ export async function runService(
       const code = await new Promise<number>((resolve) => {
         const [command = '', ...args] = options.command;
         child = spawn(command, args, {
-          env: options.env ?? process.env,
+          env: {
+            ...(options.env ?? process.env),
+            NOCOBASE_RUNNER_LOG_PIPE: '1',
+          },
           stdio: ['ignore', 'pipe', 'pipe'],
         });
         child.stdout?.on('data', (chunk: Buffer) => log.write(chunk));
-        child.stderr?.on('data', (chunk: Buffer) => log.write(chunk));
+        child.stderr?.on('data', (chunk: Buffer) => log.writeError(chunk));
         let spawnFailed = false;
         child.on('error', (error) => {
           spawnFailed = true;
           message(`Cannot start runner: ${error.message}`);
         });
         child.on('close', (exit, signal) => {
+          log.flush();
           child = undefined;
           if (signal !== null) message(`Runner ended with signal ${signal}.`);
           resolve(

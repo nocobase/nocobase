@@ -1,3 +1,4 @@
+import { daemonLogger } from '../lib/journal.ts';
 import { Flags, type Interfaces } from '@oclif/core';
 import { spawn } from 'node:child_process';
 
@@ -129,9 +130,7 @@ export default class Start extends RunnerCommand {
       );
     }
 
-    const log = (message: string): void => {
-      process.stdout.write(`${new Date().toISOString()} ${message}\n`);
-    };
+    const log = daemonLogger(paths, settings);
     // Only a daemon its service supervises updates itself: it stops after an update, and the service starts the new
     // version. Anywhere else an update would leave nothing running.
     const installation = detectInstallation();

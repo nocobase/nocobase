@@ -173,6 +173,39 @@ export class ApiClient {
     return new Uint8Array(await response.arrayBuffer());
   }
 
+  async upload(
+    route: string,
+    body: AsyncIterable<Uint8Array>,
+    options: RequestOptions = {},
+  ): Promise<void> {
+    const base = this.options.server.endsWith('/')
+      ? this.options.server
+      : `${this.options.server}/`;
+    const url = new URL(route.replace(/^\//, ''), base);
+    if (url.origin !== new URL(base).origin)
+      throw new Error('Diagnostics upload must use the application origin');
+    const timeout = AbortSignal.timeout(options.timeoutMs ?? 45_000);
+    const response = await (this.options.fetch ?? fetch)(url, {
+      method: 'POST',
+      headers: { ...this.options.headers, 'content-type': 'application/gzip' },
+      body,
+      duplex: 'half',
+      redirect: 'error',
+      signal: options.signal
+        ? AbortSignal.any([timeout, options.signal])
+        : timeout,
+    } as RequestInit);
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new ApiError(
+        response.status,
+        `HTTP_${response.status}`,
+        'Diagnostics upload refused',
+      );
+    }
+    await response.body?.cancel();
+  }
+
   async request(
     method: string,
     route: string,

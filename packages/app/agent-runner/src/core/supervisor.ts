@@ -20,7 +20,6 @@ import { finalizeRunWorktrees } from './run-worktrees.ts';
 // replays its event spool, reports the run as failed with `leaseExpired` to the application it came from, and deletes
 // its credentials file.
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -383,8 +382,6 @@ export class Supervisor {
     const noun = record.kind === 'job' ? 'job' : 'run';
     const label = record.jobId ?? runId;
     const logFile = runLogPath(paths, runId);
-    mkdirSync(path.dirname(logFile), { recursive: true, mode: 0o700 });
-    const fd = openSync(logFile, 'a', 0o600);
     const processTag = newProcessTag();
     this.tags.add(processTag);
     if (this.tags.size > MAX_TAGS)
@@ -394,17 +391,17 @@ export class Supervisor {
       [...workerEntry(), workerMarker(runId)],
       {
         detached: true,
-        stdio: ['pipe', fd, fd],
+        stdio: ['pipe', 'ignore', 'ignore'],
         env: {
           ...process.env,
           NOCOBASE_RUNNER_HOME: paths.home,
+          NOCOBASE_RUNNER_LOG_ID: runId,
           NOCOBASE_RUNNER_WORK_ROOT: paths.workRoot,
           // The worker hands it to the tool's environment (env.ts).
           [PROCESS_TAG_ENV]: processTag,
         },
       },
     );
-    closeSync(fd);
     const pid = child.pid;
     if (pid === undefined)
       throw new Error(`Could not start a worker for ${noun} ${label}`);

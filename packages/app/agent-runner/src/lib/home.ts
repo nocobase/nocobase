@@ -97,7 +97,10 @@ export function runnerPaths(
     capacity: path.join(home, 'capacity.json'),
     runsDir: path.join(home, 'runs'),
     logsDir,
-    daemonLog: path.join(logsDir, 'runner.log'),
+    daemonLog: path.join(
+      logsDir,
+      `runner.${new Date().toISOString().slice(0, 10)}.000000.log`,
+    ),
     reposDir: path.join(home, 'repos'),
     cliDir: path.join(home, 'cli'),
     skillsDir: path.join(home, 'skills'),
@@ -117,8 +120,12 @@ export async function ensureHome(paths: RunnerPaths): Promise<void> {
   await chmod(paths.home, 0o700);
 }
 
-export function runLogPath(paths: RunnerPaths, runId: string): string {
-  return path.join(paths.logsDir, 'runs', `${safeName(runId)}.log`);
+export function runLogPath(
+  paths: RunnerPaths,
+  runId: string,
+  date: string = new Date().toISOString().slice(0, 10),
+): string {
+  return path.join(paths.logsDir, 'runs', date, `${safeName(runId)}.log`);
 }
 
 /** A string safe to use as one path segment. */

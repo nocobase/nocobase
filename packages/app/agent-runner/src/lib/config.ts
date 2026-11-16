@@ -33,6 +33,8 @@ import {
 import { DEFAULT_MIN_FREE_DISK, type FreeSpace } from './size.ts';
 
 export interface RunnerSettings {
+  logRetentionDays?: number;
+  logMaxSizeMB?: number;
   /** Shown in every application; the host name by default. */
   name: string;
   /** Legacy fallback for servers that do not send capacity. New commands never configure this. */
@@ -202,6 +204,13 @@ export async function readSettings(
     toolSlots.data !== undefined &&
     Object.keys(toolSlots.data).length > 0
       ? { toolSlots: toolSlots.data }
+      : {}),
+    ...(Number.isSafeInteger(stored?.logRetentionDays) &&
+    stored!.logRetentionDays! > 0
+      ? { logRetentionDays: stored!.logRetentionDays }
+      : {}),
+    ...(Number.isFinite(stored?.logMaxSizeMB) && stored!.logMaxSizeMB! > 0
+      ? { logMaxSizeMB: stored!.logMaxSizeMB }
       : {}),
     agentTools: stored?.agentTools === 'system' ? 'system' : 'runner',
     autoUpdate: stored?.autoUpdate !== false,

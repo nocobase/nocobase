@@ -24,6 +24,8 @@ export interface ToastAction {
  * application's toaster, not by the code that shows it.
  */
 export interface ToastOptions {
+  /** Correlates a failed API request with server request logs. The host may display and copy it. */
+  readonly requestId?: string;
   /**
    * Identifies the toast. Showing a toast with the id of one still open replaces that toast's content and restarts
    * its timer instead of adding a second one; the replaced content's `onClose` does not run.

@@ -1,5 +1,5 @@
 /** Outcomes as toasts through the application's toaster, with failures worded by `lib/errors.ts`. */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMemo } from 'react';
 
@@ -26,6 +26,8 @@ export function useNotify(): Notify {
       error: (error) =>
         void toaster.show({
           type: 'error',
+          requestId:
+            error instanceof ApiClientError ? error.requestId : undefined,
           title: errorText(t, error, t('ui.errors.requestFailed')),
         }),
     }),

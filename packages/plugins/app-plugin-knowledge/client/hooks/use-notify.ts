@@ -36,6 +36,8 @@ export function useNotify(): Notify {
       error: (error, fallback) =>
         void toaster.show({
           type: 'error',
+          requestId:
+            error instanceof ApiClientError ? error.requestId : undefined,
           title: errorText(t, error, fallback ?? t('common.requestFailed')),
         }),
     }),
