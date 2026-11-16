@@ -152,7 +152,7 @@ How to keep views current is [`references/data-changes.md`](references/data-chan
 
 ## S States
 
-`DataTable`, `ListFeedback` and `RefreshIndicator` implement S1–S4; never hand-write spinners or status blocks ([`references/list-feedback.md`](references/list-feedback.md)).
+`DataTable`, `ListFeedback` and `RefreshIndicator` implement S1–S4; never hand-write spinners or status blocks ([`references/table.md`](references/table.md#7-list-feedback-states)).
 
 - **S1 [Must]** Loading, empty, no results and failure are distinct states: loading shows the shared indicator; empty ("No data yet") is distinct from no results ("No results"), and "Clear filters" lives in the toolbar.
 - **S2** The empty state is one line with an icon and no actions; the create action stays in the `PageHeader` (L7).
