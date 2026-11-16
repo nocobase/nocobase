@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.39
+
+### Patch Changes
+
+- 8339722: Recognize the commercial sub-app template alias for independent children with deployment tooling and platform SSO.
+
 ## 0.1.0-beta.38
 
 ### Patch Changes

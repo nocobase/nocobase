@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 71716c6: Allow API key names up to 100 characters by default and return validation errors as client errors when creating or rotating scoped keys.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 1.0.0-beta.23
 
 ### Patch Changes

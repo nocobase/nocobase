@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+- Updated dependencies [38854ec]
+- Updated dependencies [85d7e34]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 0.1.0-beta.31
 
 ### Patch Changes
