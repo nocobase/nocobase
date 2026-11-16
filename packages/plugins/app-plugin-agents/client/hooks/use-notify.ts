@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMemo } from 'react';
@@ -18,8 +19,7 @@ export function useNotify(): Notify {
       error: (error, fallback) =>
         void toaster.show({
           type: 'error',
-          requestId:
-            error instanceof ApiClientError ? error.requestId : undefined,
+          ...errorToastOptions(error),
           title: errorText(t, error, fallback ?? t('common.requestFailed')),
         }),
     }),

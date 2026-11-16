@@ -47,36 +47,46 @@ export default class Logs extends RunnerCommand {
           !(await lstat(path.join(runs, date))).isDirectory()
         )
           continue;
-        const file = path.join(runs, date, `${safeName(flags.run)}.log`);
-        if ((await lstat(file).catch(() => undefined))?.isFile())
-          result.push(file);
+        for (const extension of ['log', 'stderr']) {
+          const file = path.join(
+            runs,
+            date,
+            `${safeName(flags.run)}.${extension}`,
+          );
+          if ((await lstat(file).catch(() => undefined))?.isFile())
+            result.push(file);
+        }
       }
       return result;
     };
     let current = (await files()).at(-1);
     if (!current)
       throw new UsageError('No journal is available.', EXIT_CODES.notFound);
-    let offset = 0;
-    let inode = 0;
+    const positions = new Map<string, { offset: number; inode: number }>();
     const read = async (initial: boolean) => {
       const candidates = await files();
       const index = current ? candidates.indexOf(current) : -1;
-      const selected = initial
-        ? candidates.slice(-1)
-        : candidates.slice(index < 0 ? -1 : index);
+      const selected = flags.run
+        ? candidates
+        : initial
+          ? candidates.slice(-1)
+          : candidates.slice(index < 0 ? -1 : index);
       for (const file of selected) {
         let handle;
         try {
           handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW);
           const info = await handle.stat();
           if (!info.isFile()) continue;
-          if (current !== file || inode !== info.ino || info.size < offset)
-            offset = 0;
+          const previous = positions.get(file);
+          let offset =
+            previous?.inode === info.ino && previous.offset <= info.size
+              ? previous.offset
+              : 0;
           current = file;
-          inode = info.ino;
-          if (initial) offset = Math.max(0, info.size - 1024 * 1024);
+          const firstRead = initial || !previous;
+          if (firstRead) offset = Math.max(0, info.size - 1024 * 1024);
           const started = offset;
-          if (initial) {
+          if (firstRead) {
             const data = Buffer.alloc(info.size - offset);
             const { bytesRead } = await handle.read(
               data,
@@ -112,6 +122,7 @@ export default class Logs extends RunnerCommand {
               );
             }
           }
+          positions.set(file, { inode: info.ino, offset });
         } catch (error) {
           if (
             !['ENOENT', 'ELOOP'].includes(

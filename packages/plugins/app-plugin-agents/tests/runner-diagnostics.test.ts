@@ -175,6 +175,50 @@ describe('执行机上传边界', () => {
       await result.dispose();
     },
   );
+  it('选中运行超过 64 份日志仍全部接收，清单保留全部来源', async () => {
+    const service = createRunnerDiagnostics(async () => [
+      { id: 'one', status: 'online', features: ['diagnostics'] },
+    ]);
+    const selectedWindow = {
+      ...window,
+      runIds: Array.from({ length: 20 }, (_, index) => `chosen-${index}`),
+    };
+    const collecting = service.collect({
+      directory: await directory(),
+      window: selectedWindow,
+    });
+    const request = await take(service, 'one');
+    const names = selectedWindow.runIds.flatMap((id) =>
+      ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map(
+        (date) => `runs/${date}/${id}.log`,
+      ),
+    );
+    const logs = names.map((file) => ({ ...record, file }));
+    const summary = {
+      type: 'manifest',
+      files: names.map((file) => ({
+        ...manifest.files[0],
+        file,
+        dates: [file.split('/')[1]],
+      })),
+      truncated: false,
+    };
+    await service.accept(
+      'one',
+      request.requestId,
+      body([env, ...logs, summary]),
+    );
+    const result = await collecting;
+    expect(result.runners[0].status).toBe('collected');
+    expect(result.runners[0].files).toHaveLength(80);
+    expect(
+      await readFile(
+        path.join(result.runners[0].directory!, names.at(-1)!),
+        'utf8',
+      ),
+    ).toContain('request-fixture');
+    await result.dispose();
+  });
   it('压缩输入也有独立上限，断流不能留下可下载的部分内容', async () => {
     for (const disconnect of [false, true]) {
       const service = createRunnerDiagnostics(async () => [

@@ -105,6 +105,16 @@ describe('本地诊断时间线', () => {
       expect(await stat(out).catch(() => null)).toBeNull();
     },
   );
+  it('原生 fd 文件转换后的 JSON 记录也可合并时间线', async () => {
+    const bundle = await archive({
+      'worker.stderr': row('2026-11-01T00:00:00Z', 'native crash'),
+    });
+    const out = path.join(root, 'stderr.jsonl');
+    expect((await diagnosticsTimeline({ bundle, out })).entries).toBe(1);
+    expect(JSON.parse((await readFile(out, 'utf8')).trim()).source).toBe(
+      'worker.stderr',
+    );
+  });
   it('注册静态命令，不加载登录状态或调用 fetch', async () => {
     const bundle = await archive({
       'request.log': row('2026-11-01T00:00:00Z', 'local'),

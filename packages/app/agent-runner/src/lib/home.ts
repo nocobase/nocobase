@@ -128,6 +128,15 @@ export function runLogPath(
   return path.join(paths.logsDir, 'runs', date, `${safeName(runId)}.log`);
 }
 
+/** The worker's inherited fd output is separate from its JavaScript-owned JSON journal. */
+export function runRawLogPath(
+  paths: RunnerPaths,
+  runId: string,
+  date: string = new Date().toISOString().slice(0, 10),
+): string {
+  return runLogPath(paths, runId, date).replace(/\.log$/, '.stderr');
+}
+
 /** A string safe to use as one path segment. */
 export function safeName(value: string): string {
   const cleaned = value.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '_');

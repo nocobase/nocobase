@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 /**
  * One session: its header, what it waits for, the work it produced, its transcript and the composer with the agent's
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
@@ -263,7 +264,7 @@ function Conversation({
     void toaster.show({
       type: 'error',
       title: errorText(error, t('errors.generic')),
-      requestId: error instanceof ApiClientError ? error.requestId : undefined,
+      ...errorToastOptions(error),
       ...suggestionAction(
         error,
         t('links.configure', { defaultValue: 'Configure' }),
@@ -347,6 +348,7 @@ function Conversation({
       else
         void toaster.show({
           type: 'error',
+          ...errorToastOptions(error),
           title: t('composer.sendUnconfirmed'),
         });
       throw error;
@@ -1064,10 +1066,7 @@ function Details({
                                 toaster.show({
                                   type: 'error',
                                   title: errorText(error, t('errors.generic')),
-                                  requestId:
-                                    error instanceof ApiClientError
-                                      ? error.requestId
-                                      : undefined,
+                                  ...errorToastOptions(error),
                                   ...suggestionAction(
                                     error,
                                     t('links.configure', {

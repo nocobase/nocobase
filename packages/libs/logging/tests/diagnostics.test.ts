@@ -9,6 +9,7 @@ import {
 describe('诊断日志脱敏与逐行上限', () => {
   it.each([
     'api_key=fixture-sensitive-value',
+    String.raw`payload={\"password\":\"fixture-sensitive-value\"}`,
     'fgk_fixture-sensitive-value',
     'fgr_fixture-sensitive-value',
     'Basic fixture-sensitive-value',
@@ -30,7 +31,14 @@ describe('诊断日志脱敏与逐行上限', () => {
     );
   });
   it.each([32768, 131072])('病态长串先截断且匹配耗时有界：%s 字节', (size) => {
-    for (const seed of ['a-', 'aB0_-', 'token-', 'password-']) {
+    for (const seed of [
+      'a',
+      'a-',
+      'aB0_-',
+      'token-',
+      'password-',
+      'http://a:',
+    ]) {
       const input = seed.repeat(Math.ceil(size / seed.length)).slice(0, size);
       sanitizeLog('warmup');
       const started = performance.now();
@@ -42,6 +50,14 @@ describe('诊断日志脱敏与逐行上限', () => {
       'x'.repeat(32720) +
       ' ANTHROPIC_API_KEY="fixture-sensitive-value with spaces"';
     expect(String(sanitizeLog(input))).not.toContain('fixture-sensitive-value');
+  });
+  it('截断的连接凭据仍隐藏，普通短 URL 的端口仍可诊断', () => {
+    expect(
+      String(
+        sanitizeLog('https://user:' + 'fixture-sensitive-value'.repeat(10000)),
+      ),
+    ).not.toContain('fixture-sensitive-value');
+    expect(sanitizeLog('http://localhost:3000')).toBe('http://localhost:3000');
   });
   it('嵌套字段、转义 JSON 和截断边界不泄露秘密', () => {
     const value = {

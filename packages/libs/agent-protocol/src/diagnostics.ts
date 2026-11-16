@@ -59,7 +59,7 @@ const FileSchema = z.object({
     .string()
     .max(200)
     .regex(
-      /^(?:runner\.\d{4}-\d{2}-\d{2}\.\d+\.log|runs\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.log)$/,
+      /^(?:runner\.\d{4}-\d{2}-\d{2}\.\d+\.log|runs\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.(?:log|stderr))$/,
     ),
   dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(1),
   bytes: z.number().int().nonnegative().max(DIAGNOSTICS_MAX_BYTES),
@@ -125,7 +125,7 @@ export const DiagnosticsRecordSchema: z.ZodType<DiagnosticsRecord> =
     z
       .object({
         type: z.literal('manifest'),
-        files: z.array(DiagnosticsFileSchema).max(256),
+        files: z.array(DiagnosticsFileSchema).max(512),
         truncated: z.boolean(),
       })
       .strict(),

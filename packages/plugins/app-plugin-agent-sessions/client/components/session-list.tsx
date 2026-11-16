@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 /**
  * The viewer's sessions, newest activity first, grouped by day. A row says what a person needs to know at a glance:
  * the session's title, the work it produced and how that stands, and whether it waits for them. Hovering a row (or
@@ -655,7 +656,12 @@ function useArchive(): (session: Session, archived: boolean) => void {
           },
         });
       },
-      () => toaster.show({ type: 'error', title: t('errors.generic') }),
+      (error: unknown) =>
+        toaster.show({
+          type: 'error',
+          ...errorToastOptions(error),
+          title: t('errors.generic'),
+        }),
     );
   };
 }

@@ -1,4 +1,4 @@
-import { ApiClientError } from '@nocobase/app-client';
+import { errorToastOptions } from '@nocobase/app-client';
 import { useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
@@ -124,10 +124,7 @@ export function WithdrawnEditor({
                   void toaster.show({
                     type: 'error',
                     title: errorText(error, t('errors.generic')),
-                    requestId:
-                      error instanceof ApiClientError
-                        ? error.requestId
-                        : undefined,
+                    ...errorToastOptions(error),
                   });
                   throw error;
                 }

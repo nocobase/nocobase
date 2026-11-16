@@ -47,24 +47,28 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
   if (depth > 8) return '[TRUNCATED]';
   if (typeof value === 'string') {
     // Bound every parser and matcher before scanning untrusted process output.
-    value = value.slice(0, MAX_LINE);
+    const text = value.slice(0, MAX_LINE);
+    const urlCredentials =
+      value.length > MAX_LINE
+        ? /\b([a-z][a-z0-9+.-]{0,31}:\/\/)[^\s/:@]+:[^\s/@]+(?:@|$)/gi
+        : /\b([a-z][a-z0-9+.-]{0,31}:\/\/)[^\s/:@]+:[^\s/@]+@/gi;
     // Parse structured text before free-text matching, including escaped JSON strings.
-    if (/^\s*[[{]/.test(value) && value.length <= MAX_LINE) {
+    if (/^\s*[[{]/.test(text)) {
       try {
-        return JSON.stringify(sanitizeLog(JSON.parse(value), depth + 1));
+        return JSON.stringify(sanitizeLog(JSON.parse(text), depth + 1));
       } catch {
         // Legacy output need not be JSON.
       }
     }
-    return (value as string)
+    return text
       .replace(
         /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/g,
         '[REDACTED]',
       )
       .replace(/((?:Bearer|Basic)\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
-      .replace(/(\w+:\/\/)[^\s/@]+:[^\s/@]+@/g, '$1[REDACTED]@')
+      .replace(urlCredentials, '$1[REDACTED]@')
       .replace(
-        /((?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]{0,64}["']?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
+        /((?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]{0,64}(?:\\?["'])?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
         '$1[REDACTED]',
       )
       .replace(
@@ -270,7 +274,7 @@ async function listFiles(
       }
       if (
         !entry.isFile() ||
-        !/^[a-zA-Z0-9_.-]+\.log(?:\.\d+)?$/.test(entry.name)
+        !/^[a-zA-Z0-9_.-]+\.(?:log(?:\.\d+)?|stderr)$/.test(entry.name)
       )
         continue;
       const stats = await lstat(path.join(directory, entry.name));

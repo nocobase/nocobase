@@ -91,7 +91,10 @@ export async function diagnosticsTimeline(
     declared += entry.size;
     if (!Number.isSafeInteger(declared) || declared > MAX_INPUT)
       throw new UsageError('Expanded diagnostics archive exceeds 512 MiB');
-    if (entry.type === 'Directory' || !/\.(?:log|jsonl)$/.test(entry.path)) {
+    if (
+      entry.type === 'Directory' ||
+      !/\.(?:log|jsonl|stderr)$/.test(entry.path)
+    ) {
       entry.resume();
       return;
     }

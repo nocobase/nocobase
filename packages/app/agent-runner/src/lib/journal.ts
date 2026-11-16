@@ -10,7 +10,7 @@ import {
 import { readdir, lstat } from 'node:fs/promises';
 import path from 'node:path';
 import type { RunnerSettings } from './config.ts';
-import { type RunnerPaths, runLogPath } from './home.ts';
+import { type RunnerPaths, runLogPath, runRawLogPath } from './home.ts';
 import { readRecords, isAlive } from '../core/supervisor.ts';
 
 /** The launcher alone owns daemon files; foreground daemons own them when no launcher captures stdout. */
@@ -182,10 +182,14 @@ export async function pruneRunnerLogs(
     throw new Error('Symbolic log directories are not allowed');
   for (const date of await readdir(runs).catch(() => [])) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-    for (const record of active)
+    for (const record of active) {
+      protectedFiles.push(
+        path.relative(paths.logsDir, runRawLogPath(paths, record.runId, date)),
+      );
       protectedFiles.push(
         path.relative(paths.logsDir, runLogPath(paths, record.runId, date)),
       );
+    }
   }
   await pruneJournals(
     paths.logsDir,

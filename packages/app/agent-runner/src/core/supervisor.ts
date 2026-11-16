@@ -19,6 +19,7 @@ import { finalizeRunWorktrees } from './run-worktrees.ts';
 // worker is gone, or whose worker outlived its daemon, is an orphan: on start the daemon kills the worker's group,
 // replays its event spool, reports the run as failed with `leaseExpired` to the application it came from, and deletes
 // its credentials file.
+import { constants, openSync, closeSync, mkdirSync } from 'node:fs';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -26,6 +27,7 @@ import path from 'node:path';
 import {
   readJson,
   runLogPath,
+  runRawLogPath,
   safeName,
   writeJsonAtomic,
   type RunnerPaths,
@@ -386,12 +388,21 @@ export class Supervisor {
     this.tags.add(processTag);
     if (this.tags.size > MAX_TAGS)
       this.tags.delete(this.tags.values().next().value!);
-    const child = spawn(
-      process.execPath,
-      [...workerEntry(), workerMarker(runId)],
-      {
+    const rawFile = runRawLogPath(paths, runId);
+    mkdirSync(path.dirname(rawFile), { recursive: true, mode: 0o700 });
+    const raw = openSync(
+      rawFile,
+      constants.O_CREAT |
+        constants.O_APPEND |
+        constants.O_WRONLY |
+        constants.O_NOFOLLOW,
+      0o600,
+    );
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(process.execPath, [...workerEntry(), workerMarker(runId)], {
         detached: true,
-        stdio: ['pipe', 'ignore', 'ignore'],
+        stdio: ['pipe', raw, raw],
         env: {
           ...process.env,
           NOCOBASE_RUNNER_HOME: paths.home,
@@ -400,8 +411,10 @@ export class Supervisor {
           // The worker hands it to the tool's environment (env.ts).
           [PROCESS_TAG_ENV]: processTag,
         },
-      },
-    );
+      });
+    } finally {
+      closeSync(raw);
+    }
     const pid = child.pid;
     if (pid === undefined)
       throw new Error(`Could not start a worker for ${noun} ${label}`);

@@ -8,9 +8,15 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { DiagnosticsRecordSchema } from '../src/protocol/index.ts';
 import { diagnosticsRecords } from '../src/core/diagnostics.ts';
 import { RunnerJournal, pruneRunnerLogs } from '../src/lib/journal.ts';
-import { runnerPaths, runLogPath, writeJsonAtomic } from '../src/lib/home.ts';
+import {
+  runnerPaths,
+  runLogPath,
+  runRawLogPath,
+  writeJsonAtomic,
+} from '../src/lib/home.ts';
 import { recordPath } from '../src/core/supervisor.ts';
 import { tempDir, removeDir, cli, cliEnv } from './helpers.ts';
 import type { DiagnosticsRequest } from '../src/protocol/index.ts';
@@ -129,6 +135,84 @@ describe('执行机诊断与清理', () => {
     expect(output).toContain('request-fixture');
     expect(output).not.toContain('ordinary-info');
   });
+  it('超过 64 份普通日志仍优先导出所有选中运行日期，并保留最新普通日志', async () => {
+    const home = path.join(root, 'selected-many');
+    const paths = runnerPaths(home, home);
+    const input = request();
+    input.window.runIds = Array.from(
+      { length: 20 },
+      (_, index) => `chosen-${index}`,
+    );
+    for (const id of input.window.runIds)
+      for (const date of [
+        '2026-10-01',
+        '2026-10-02',
+        '2026-10-03',
+        '2026-10-04',
+      ]) {
+        const file = runLogPath(paths, id, date);
+        await mkdir(path.dirname(file), { recursive: true });
+        await writeFile(file, entry(`${id}-${date}`));
+      }
+    for (let index = 0; index < 70; index++) {
+      const file = runLogPath(
+        paths,
+        `ordinary-${index.toString().padStart(3, '0')}`,
+        index === 69 ? '2026-11-01' : '2026-10-31',
+      );
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, entry(index === 69 ? 'latest-day' : 'ordinary'));
+    }
+    const output = await records(home, input);
+    const rows = output
+      .trim()
+      .split('\n')
+      .map((line) => DiagnosticsRecordSchema.parse(JSON.parse(line)));
+    const manifest = rows.at(-1)!;
+    expect(manifest.type).toBe('manifest');
+    if (manifest.type !== 'manifest') throw new Error('Missing manifest');
+    expect(
+      manifest.files.filter((file) => file.file.includes('/chosen-')),
+    ).toHaveLength(80);
+    expect(manifest.files).toHaveLength(144);
+    expect(output).toContain('latest-day');
+    expect(
+      rows
+        .filter((row) => row.type === 'log')
+        .slice(0, 80)
+        .every((row) => row.type === 'log' && row.file.includes('/chosen-')),
+    ).toBe(true);
+  });
+  it('选中大文件与原始崩溃输出在大小上限内保留故障末尾，并明确说明截断', async () => {
+    const home = path.join(root, 'tail');
+    const paths = runnerPaths(home, home);
+    const file = runLogPath(paths, 'selected', '2026-10-01');
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(
+      file,
+      entry('front-only') +
+        entry('repeated').repeat(10000) +
+        entry('failure-at-the-end'),
+    );
+    await writeFile(
+      runRawLogPath(paths, 'selected', '2026-10-01'),
+      'native crash api_key=fixture-sensitive-value\nstack-final-frame\n',
+    );
+    const input = request();
+    input.window.level = 'fatal';
+    const output = await records(home, input);
+    expect(output).toContain('failure-at-the-end');
+    expect(output).toContain('stack-final-frame');
+    expect(output).not.toContain('front-only');
+    expect(output).not.toContain('fixture-sensitive-value');
+    expect(output).toContain('retained the available tail');
+    expect(Buffer.byteLength(output)).toBeLessThanOrEqual(input.maxBytes);
+    expect(JSON.parse(output.trim().split('\n').at(-1)!).truncated).toBe(true);
+    const log = await cli(['logs', '--run', 'selected'], cliEnv(home));
+    expect(log.code).toBe(0);
+    expect(log.stdout).toContain('failure-at-the-end');
+    expect(log.stdout).toContain('stack-final-frame');
+  });
   it('GC 对主日志及运行日志共享上限，保留存活工作进程的全部日期', async () => {
     const home = path.join(root, 'gc');
     const paths = runnerPaths(home, home);
@@ -136,6 +220,8 @@ describe('执行机诊断与清理', () => {
       const file = runLogPath(paths, id, '2020-01-01');
       await mkdir(path.dirname(file), { recursive: true });
       await writeFile(file, entry(id));
+      await writeFile(file.replace(/\.log$/, '.stderr'), 'native crash\n');
+      await utimes(file.replace(/\.log$/, '.stderr'), new Date(0), new Date(0));
       await utimes(file, new Date(0), new Date(0));
     }
     await writeJsonAtomic(recordPath(paths, 'active'), {
@@ -172,6 +258,12 @@ describe('执行机诊断与清理', () => {
       logRetentionDays: 7,
       logMaxSizeMB: 1,
     });
+    expect(
+      await stat(runRawLogPath(paths, 'active', '2020-01-01')),
+    ).toBeDefined();
+    expect(
+      await stat(runRawLogPath(paths, 'ended', '2020-01-01')).catch(() => null),
+    ).toBeNull();
     expect(await stat(previousDaemon).catch(() => null)).toBeNull();
     expect(await stat(currentDaemon)).toBeDefined();
     expect(

@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/api-client';
 import {
   createServiceToken,
   type ServiceResolver,
@@ -43,6 +44,13 @@ export interface ToastOptions {
   readonly action?: ToastAction;
   /** Runs when the toast starts closing: when it times out, when the user dismisses it, and when `close` is called. */
   readonly onClose?: () => void;
+}
+
+/** Preserve correlation whenever a plugin reports an API failure through the host toaster. */
+export function errorToastOptions(
+  error: unknown,
+): Pick<ToastOptions, 'requestId'> {
+  return error instanceof ApiClientError ? { requestId: error.requestId } : {};
 }
 
 /**

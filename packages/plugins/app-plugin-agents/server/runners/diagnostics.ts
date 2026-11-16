@@ -1,3 +1,4 @@
+import { DiagnosticsWriter } from './diagnostics-writer.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, open, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -246,10 +247,13 @@ export function createRunnerDiagnostics(
           date &&
           (dates.has(date) ||
             (file.startsWith('runs/') &&
-              selected.has(path.basename(file, '.log'))))
+              selected.has(
+                path.basename(file).replace(/\.(?:log|stderr)$/, ''),
+              )))
         );
       };
       const upload = (async () => {
+        const writer = new DiagnosticsWriter(item.directory);
         let written = 0;
         try {
           await mkdir(item.directory, { recursive: true, mode: 0o700 });
@@ -315,7 +319,27 @@ export function createRunnerDiagnostics(
                       'INVALID_ARGUMENT',
                       'Unexpected diagnostics log source',
                     );
-                  if (!seen.has(record.file) && seen.size >= 64)
+                  if (
+                    !seen.has(record.file) &&
+                    (record.file.startsWith('runs/') &&
+                    selected.has(
+                      path
+                        .basename(record.file)
+                        .replace(/\.(?:log|stderr)$/, ''),
+                    )
+                      ? seen.size >= 512
+                      : [...seen.keys()].filter(
+                          (file) =>
+                            !(
+                              file.startsWith('runs/') &&
+                              selected.has(
+                                path
+                                  .basename(file)
+                                  .replace(/\.(?:log|stderr)$/, ''),
+                              )
+                            ),
+                        ).length >= 64)
+                  )
                     throw fail(
                       'RESOURCE_EXHAUSTED',
                       'Too many diagnostics log sources',
@@ -329,26 +353,14 @@ export function createRunnerDiagnostics(
                       'INVALID_ARGUMENT',
                       'Invalid diagnostics log time',
                     );
-                  const destination = path.join(item.directory, record.file);
-                  await mkdir(path.dirname(destination), {
-                    recursive: true,
-                    mode: 0o700,
-                  });
-                  const file = await open(destination, 'a', 0o600);
                   const text = JSON.stringify(sanitizeLog(record.entry)) + '\n';
                   written += Buffer.byteLength(text);
-                  if (written > request.maxBytes) {
-                    await file.close();
+                  if (written > request.maxBytes)
                     throw fail(
                       'RESOURCE_EXHAUSTED',
                       'Diagnostics output exceeds its byte budget',
                     );
-                  }
-                  try {
-                    await file.writeFile(text);
-                  } finally {
-                    await file.close();
-                  }
+                  await writer.write(record.file, text);
                   seen.set(
                     record.file,
                     (seen.get(record.file) ?? 0) + Buffer.byteLength(text),
@@ -356,7 +368,18 @@ export function createRunnerDiagnostics(
                 } else {
                   if (
                     !environment ||
-                    record.files.length > 64 ||
+                    record.files.length > 512 ||
+                    record.files.filter(
+                      (file) =>
+                        !(
+                          file.file.startsWith('runs/') &&
+                          selected.has(
+                            path
+                              .basename(file.file)
+                              .replace(/\.(?:log|stderr)$/, ''),
+                          )
+                        ),
+                    ).length > 64 ||
                     new Set(record.files.map((file) => file.file)).size !==
                       record.files.length ||
                     record.files.some((file) => !allowedFile(file.file)) ||
@@ -382,6 +405,7 @@ export function createRunnerDiagnostics(
             },
             { signal: item.controller.signal },
           );
+          await writer.close();
           if (!manifest || !environment)
             throw fail('INVALID_ARGUMENT', 'Diagnostics upload is incomplete');
           item.finish({
@@ -392,6 +416,7 @@ export function createRunnerDiagnostics(
             truncated: manifest.truncated,
           });
         } catch (error) {
+          await writer.close().catch(() => undefined);
           await rm(item.directory, { recursive: true, force: true });
           item.finish({
             runnerId,

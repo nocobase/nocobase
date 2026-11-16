@@ -1,4 +1,4 @@
-import { ApiClientError } from '@nocobase/app-client';
+import { errorToastOptions } from '@nocobase/app-client';
 /**
  * The viewer's computers: which are online and what each can run, removing one, and the steps that connect another
  * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
@@ -292,8 +292,7 @@ function AllowedFolders({
         toaster.show({
           type: 'error',
           title: errorText(error, t('errors.generic')),
-          requestId:
-            error instanceof ApiClientError ? error.requestId : undefined,
+          ...errorToastOptions(error),
         }),
     });
   return (
