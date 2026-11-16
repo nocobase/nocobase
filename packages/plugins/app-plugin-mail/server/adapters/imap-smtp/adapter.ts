@@ -317,7 +317,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: this.diagnose(error, 'IMAP_LIST_FOLDERS', startedAt, 'imap'),
+        error: this.diagnose(
+          error,
+          'IMAP_LIST_FOLDERS',
+          startedAt,
+          'imap',
+          input.signal,
+        ),
       };
     }
   }
@@ -346,7 +352,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: this.diagnose(error, 'IMAP_SYNC_CURSOR', startedAt, 'imap'),
+        error: this.diagnose(
+          error,
+          'IMAP_SYNC_CURSOR',
+          startedAt,
+          'imap',
+          signal,
+        ),
       };
     }
   }
@@ -529,7 +541,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: this.diagnose(error, 'IMAP_LIST_MESSAGES', startedAt, 'imap'),
+        error: this.diagnose(
+          error,
+          'IMAP_LIST_MESSAGES',
+          startedAt,
+          'imap',
+          input.signal,
+        ),
       };
     }
   }
@@ -696,7 +714,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: this.diagnose(error, 'IMAP_LIST_CHANGES', startedAt, 'imap'),
+        error: this.diagnose(
+          error,
+          'IMAP_LIST_CHANGES',
+          startedAt,
+          'imap',
+          input.signal,
+        ),
       };
     }
   }
@@ -774,7 +798,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: this.diagnose(error, 'IMAP_GET_MESSAGE', startedAt, 'imap'),
+        error: this.diagnose(
+          error,
+          'IMAP_GET_MESSAGE',
+          startedAt,
+          'imap',
+          signal,
+        ),
       };
     }
   }
@@ -929,7 +959,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: this.diagnose(error, 'IMAP_GET_ATTACHMENT', startedAt, 'imap'),
+        error: this.diagnose(
+          error,
+          'IMAP_GET_ATTACHMENT',
+          startedAt,
+          'imap',
+          signal,
+        ),
       };
     } finally {
       if (!streamed) release?.();
@@ -1069,7 +1105,13 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      const classified = this.diagnose(error, 'SMTP_SEND', startedAt, 'smtp');
+      const classified = this.diagnose(
+        error,
+        'SMTP_SEND',
+        startedAt,
+        'smtp',
+        input.signal,
+      );
       return {
         status:
           submissionStarted &&
@@ -1584,18 +1626,14 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     code: string,
     startedAt: number,
     protocol: 'imap' | 'smtp' = 'imap',
+    signal?: AbortSignal,
   ): MailProviderError {
-    const wrapped =
-      error instanceof MailConnectionError
-        ? error
-        : new MailConnectionError(
-            protocol,
-            error,
-            Date.now() - startedAt,
-            protocol === 'smtp' ? 'send' : 'sync',
-          );
-    const classified = classifyError(wrapped, code);
-    logMailFailure(wrapped, classified, {
+    let classified = classifyError(error, code, protocol);
+    if (signal?.aborted && classified.reasonCode) {
+      const { reasonCode: _reasonCode, ...withoutReason } = classified;
+      classified = withoutReason;
+    }
+    logMailFailure(error, classified, {
       logger: this.context.logger,
       event:
         protocol === 'smtp'

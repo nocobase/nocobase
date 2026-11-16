@@ -1,3 +1,4 @@
+import { mailLogError } from '../../server/logging.js';
 import { mailPushTiming } from '../../server/runtime/push-timing.js';
 import { EventEmitter } from 'node:events';
 import type { ImapFlow } from 'imapflow';
@@ -765,9 +766,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       expect.objectContaining({
         event: 'mail.send.sync_kick_failed',
         submissionId: result.id,
-        err: {
-          message: 'Mail operation failed.',
-        },
+        err: mailLogError(cleanupError),
       }),
       expect.any(String),
     );
@@ -849,9 +848,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         expect(logger.error).toHaveBeenCalledWith(
           expect.objectContaining({
             event: 'mail.send.exception',
-            err: {
-              message: 'Mail operation failed.',
-            },
+            err: mailLogError(failure),
           }),
           expect.any(String),
         );
@@ -908,7 +905,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
           event: retryable ? 'mail.sync.retry_scheduled' : 'mail.sync.failed',
           accountId: ACCOUNT_ID,
           syncRunId: run.id,
-          errorCode: 'MAIL_PROVIDER_FAILURE',
+          errorCode: 'SYNC_FAILED',
           retryable,
           durationMs: expect.any(Number),
           ...(retryable ? { retryAfterMs: 1234 } : {}),
@@ -1039,7 +1036,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     runtime.kick();
     await vi.waitFor(() =>
       expect(logger.error).toHaveBeenCalledWith(
-        { err: { message: 'Mail operation failed.' } },
+        { err: mailLogError(error) },
         'Mail Outbox Relay failed.',
       ),
     );
@@ -1678,7 +1675,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         expect.objectContaining({
           event: 'mail.maintenance.failed',
           task: failedTask,
-          err: expect.objectContaining({ message: 'Mail operation failed.' }),
+          err: expect.objectContaining({ message: error.message }),
         }),
         'Mail maintenance task failed.',
       );

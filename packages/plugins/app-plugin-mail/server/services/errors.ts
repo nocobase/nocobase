@@ -197,14 +197,10 @@ export class MailProviderRequestError
 
   public constructor(
     error: MailProviderError,
-    options: { readonly cause?: unknown } = {},
+    _options: { readonly cause?: unknown } = {},
   ) {
-    super(
-      'Mail provider request failed.',
-      options.cause === undefined
-        ? undefined
-        : { cause: new Error('Mail provider operation failed.') },
-    );
+    // Detailed provider diagnostics are recorded at the credential-aware boundary.
+    super('Mail provider request failed.');
     this.name = 'MailProviderRequestError';
     this.code = error.code;
     this.category = error.category;

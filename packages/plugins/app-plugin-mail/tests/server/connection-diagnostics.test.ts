@@ -65,6 +65,34 @@ describe('credential-safe connection diagnostics', () => {
     },
   );
 
+  it.each([
+    [{ code: 'NO', serverResponseCode: 'NONEXISTENT' }, 'provider'],
+    [{ code: 'EENVELOPE', responseCode: 550 }, 'recipient'],
+    [new DOMException('Cancelled', 'AbortError'), 'provider'],
+  ] as const)(
+    'does not add connection reasons to operation failures: %j',
+    (cause, category) => {
+      const classified = classifyError(
+        new MailConnectionError('imap', cause, 10, 'sync'),
+        'IMAP_GET_MESSAGE',
+      );
+      expect(classified.category).toBe(category);
+      expect(classified.reasonCode).toBeUndefined();
+    },
+  );
+
+  it.each([
+    'GREETING_TIMEOUT',
+    'CONNECT_TIMEOUT',
+    'EENVELOPE',
+    'ERR_SSL_WRONG_VERSION_NUMBER',
+    'HTTP_429',
+    'SQLITE_ERROR',
+    'GMAIL_OAUTH_invalid_grant',
+  ])('preserves a safe SDK code: %s', (code) => {
+    expect(mailLogCode(code)).toBe(code);
+  });
+
   it('whitelists fields, scrubs credentials before truncation and records STARTTLS accurately', () => {
     const logger = { warn: vi.fn() };
     const secrets = [
@@ -128,8 +156,10 @@ describe('credential-safe connection diagnostics', () => {
     expect(
       redactMailText(Buffer.from('private-token').toString('base64'), secrets),
     ).toBe('[REDACTED]');
-    expect(mailLogError(new Error(text))).toEqual({
-      message: 'Mail operation failed.',
+    expect(mailLogError(new Error(text), secrets)).toMatchObject({
+      type: 'Error',
+      message: expect.not.stringContaining('diagnostic-password'),
+      stack: expect.any(String),
     });
     expect(mailLogCode('private-token')).toBe('MAIL_PROVIDER_FAILURE');
     const propagated = new MailProviderRequestError(
@@ -137,6 +167,7 @@ describe('credential-safe connection diagnostics', () => {
       { cause: error },
     );
     expect(propagated.message).toBe('Mail provider request failed.');
+    expect(propagated.cause).toBeUndefined();
     expect(
       JSON.stringify({
         message: propagated.message,
@@ -149,88 +180,174 @@ describe('credential-safe connection diagnostics', () => {
     ).not.toContain('diagnostic-password');
   });
 
-  it('does not propagate credential-bearing OAuth error codes into callback summary logs', async () => {
-    const logger = { warn: vi.fn() };
-    const credentials: MailCredentialVault = {
-      get: async <T>() => ({ codeVerifier: 'private-verifier' }) as T,
-      put: async () => 'private-reference',
-      replace: async () => undefined,
-      getOrRefresh: vi.fn(),
-      delete: vi.fn(),
-    };
-    const identity = { type: 'gmail', name: 'test' };
-    const registry = createMailProviderRegistry().register({
-      type: 'gmail',
-      label: 'Test',
-      capabilities: {},
-      authorization: {
-        start: vi.fn(),
-        complete: async () => ({
-          ok: false,
-          error: {
-            code: 'GMAIL_OAUTH_PRIVATECLIENTSECRET',
-            category: 'authentication',
-            retryable: false,
-            message:
-              'private-code private-verifier private-reference PRIVATECLIENTSECRET',
-          },
-        }),
-      },
-      createAdapter: async () => ({ identity, capabilities: {} }),
-    });
-    const service = new MailAuthorizationService(
-      {
-        logger,
-        credentials,
-        registry,
-        providerContext: { publicBasePath: '/', credentials },
-        outbox: { kick: vi.fn() },
-        resolveProviderConfig: (provider) => provider,
-        store: {
-          consumeAuthorizationTransaction: async () => ({
-            stateHash: 'hash',
-            userId: 'owner',
-            provider: identity,
-            redirectUri: 'https://example.invalid',
-            verifierCredentialReference: 'private-reference',
-            scopes: [],
-            expiresAt: '2099-01-01T00:00:00.000Z',
-          }),
-          createAuthorizationTransaction: vi.fn(),
-          findAccountByProviderIdentity: vi.fn(),
-          listIdentities: vi.fn(),
-          listSignatures: vi.fn(),
-          saveAuthorizedAccount: vi.fn(),
+  it.each([
+    {
+      kind: 'secret',
+      code: 'GMAIL_OAUTH_PRIVATECLIENTSECRET',
+      category: 'authentication',
+      retryable: false,
+      expectedCode: 'MAIL_PROVIDER_FAILURE',
+    },
+    {
+      kind: 'quota',
+      code: 'GMAIL_HTTP_429',
+      category: 'rate_limit',
+      retryable: true,
+      expectedCode: 'GMAIL_HTTP_429',
+    },
+    {
+      kind: 'server',
+      code: 'MICROSOFT_HTTP_503',
+      category: 'provider',
+      retryable: true,
+      expectedCode: 'MICROSOFT_HTTP_503',
+    },
+    {
+      kind: 'expired',
+      code: 'GMAIL_OAUTH_invalid_grant',
+      category: 'authentication',
+      retryable: false,
+      expectedCode: 'GMAIL_OAUTH_invalid_grant',
+    },
+    {
+      kind: 'denied',
+      code: 'unused',
+      category: 'authentication',
+      retryable: false,
+      expectedCode: 'MAIL_AUTHORIZATION_DENIED',
+      oauthError: 'access_denied',
+    },
+    {
+      kind: 'consent',
+      code: 'unused',
+      category: 'authentication',
+      retryable: false,
+      expectedCode: 'MAIL_AUTHORIZATION_DENIED',
+      oauthError: 'consent_required',
+    },
+    {
+      kind: 'invalid-denial',
+      code: 'unused',
+      category: 'authentication',
+      retryable: false,
+      expectedCode: 'MAIL_AUTHORIZATION_DENIED',
+      oauthError: 'private-code?token=PRIVATECLIENTSECRET',
+    },
+    {
+      kind: 'persistence',
+      code: 'unused',
+      category: 'unknown',
+      retryable: false,
+      expectedCode: 'SQLITE_ERROR',
+    },
+  ] as const)(
+    'retains OAuth $kind classification and diagnostics without credentials',
+    async (scenario) => {
+      const logger = { warn: vi.fn() };
+      const credentials: MailCredentialVault = {
+        get: async <T>() => ({ codeVerifier: 'private-verifier' }) as T,
+        put: async () => 'private-reference',
+        replace: async () => undefined,
+        getOrRefresh: vi.fn(),
+        delete: vi.fn(),
+      };
+      const identity = { type: 'gmail', name: 'test' };
+      const registry = createMailProviderRegistry().register({
+        type: 'gmail',
+        label: 'Test',
+        capabilities: {},
+        authorization: {
+          start: vi.fn(),
+          complete: async () =>
+            scenario.kind === 'persistence'
+              ? {
+                  ok: true,
+                  value: {
+                    address: 'new@example.invalid',
+                    credentialReference: 'private-account-ref',
+                    scopes: [],
+                  },
+                }
+              : {
+                  ok: false,
+                  error: {
+                    code: scenario.code,
+                    category: scenario.category,
+                    retryable: scenario.retryable,
+                    message:
+                      'private-code private-verifier private-reference PRIVATECLIENTSECRET',
+                  },
+                },
         },
-      },
-      { startSync: vi.fn() },
-      5,
-    );
-    await expect(
-      service.completeAuthorization({
-        code: 'private-code',
-        state: 'private-state',
-      }),
-    ).rejects.toMatchObject({ message: 'Mail provider request failed.' });
-    expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        event: 'mail.account.authorize_failed',
-        code: 'MAIL_AUTHORIZATION_FAILED',
-        category: 'authentication',
-        stage: 'auth',
-        retryable: false,
-      }),
-      expect.any(String),
-    );
-    for (const secret of [
-      'private-code',
-      'private-state',
-      'private-verifier',
-      'private-reference',
-      'PRIVATECLIENTSECRET',
-    ])
-      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
-  });
+        createAdapter: async () => ({ identity, capabilities: {} }),
+      });
+      const service = new MailAuthorizationService(
+        {
+          logger,
+          credentials,
+          registry,
+          providerContext: { publicBasePath: '/', credentials },
+          outbox: { kick: vi.fn() },
+          resolveProviderConfig: (provider) => ({
+            ...provider,
+            clientSecret: 'PRIVATECLIENTSECRET',
+          }),
+          store: {
+            consumeAuthorizationTransaction: async () => ({
+              stateHash: 'hash',
+              userId: 'owner',
+              provider: identity,
+              redirectUri: 'https://example.invalid',
+              verifierCredentialReference: 'private-reference',
+              scopes: [],
+              expiresAt: '2099-01-01T00:00:00.000Z',
+            }),
+            createAuthorizationTransaction: vi.fn(),
+            findAccountByProviderIdentity: vi.fn(),
+            listIdentities: vi.fn(),
+            listSignatures: vi.fn(),
+            saveAuthorizedAccount: async () => {
+              throw Object.assign(
+                new Error('Database write failed password=PRIVATECLIENTSECRET'),
+                { code: 'SQLITE_ERROR' },
+              );
+            },
+          },
+        },
+        { startSync: vi.fn() },
+        5,
+      );
+      await expect(
+        service.completeAuthorization({
+          code: 'private-code',
+          state: 'private-state',
+          ...('oauthError' in scenario ? { error: scenario.oauthError } : {}),
+        }),
+      ).rejects.toBeInstanceOf(Error);
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          event: 'mail.account.authorize_failed',
+          code: scenario.expectedCode,
+          category: scenario.category,
+          stage: scenario.kind === 'persistence' ? 'sync' : 'auth',
+          retryable: scenario.retryable,
+          oauthError:
+            'oauthError' in scenario && scenario.kind !== 'invalid-denial'
+              ? scenario.oauthError
+              : undefined,
+        }),
+        expect.any(String),
+      );
+      for (const secret of [
+        'private-code',
+        'private-state',
+        'private-verifier',
+        'private-reference',
+        'PRIVATECLIENTSECRET',
+      ])
+        expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+    },
+  );
 
   it('keeps HTTP failures opaque and preserves native network diagnostics and result semantics', async () => {
     const logger = { warn: vi.fn() };

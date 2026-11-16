@@ -28,7 +28,11 @@ export function failure<T>(
  * 5530) such as `[AUTHENTICATIONFAILED]`, `[UNAVAILABLE]` or Gmail's `[THROTTLED]`, which imapflow exposes as
  * `serverResponseCode`; SMTP servers report a reply code, where 4xx is transient and 5xx permanent.
  */
-export function classifyError(error: unknown, code: string): MailProviderError {
+export function classifyError(
+  error: unknown,
+  code: string,
+  protocol?: 'imap' | 'smtp',
+): MailProviderError {
   const value = (connectionCause(error) ?? {}) as {
     code?: unknown;
     originalCode?: unknown;
@@ -99,7 +103,7 @@ export function classifyError(error: unknown, code: string): MailProviderError {
     typeof value.throttleReset === 'number' && value.throttleReset > 0
       ? value.throttleReset
       : undefined;
-  const reason = connectionReason(error, providerCode, category);
+  const reason = connectionReason(error, providerCode, category, protocol);
   return {
     ...(reason ? { reasonCode: reason } : {}),
     code: providerCode,
@@ -155,11 +159,30 @@ function connectionReason(
   error: unknown,
   code: string,
   category: MailProviderError['category'],
+  operationProtocol?: 'imap' | 'smtp',
 ): string | undefined {
   const protocol =
-    error instanceof MailConnectionError ? error.protocol : undefined;
+    error instanceof MailConnectionError ? error.protocol : operationProtocol;
   if (!protocol || protocol === 'https') return undefined;
   const detail = errorRecord(connectionCause(error));
+  if (detail.name === 'AbortError' || detail.code === 'ABORT_ERR')
+    return undefined;
+  const connectionStage =
+    error instanceof MailConnectionError && error.stage === 'connect';
+  const tlsFailure =
+    isCertificateFailure(detail) ||
+    [
+      'EPROTO',
+      'ETLS',
+      'ERR_SSL_WRONG_VERSION_NUMBER',
+      'ERR_SSL_UNKNOWN_PROTOCOL',
+    ].includes(code);
+  if (
+    !['authentication', 'network', 'timeout'].includes(category) &&
+    !tlsFailure &&
+    !(connectionStage && category === 'provider')
+  )
+    return undefined;
   const reason =
     category === 'authentication'
       ? 'AuthenticationFailed'

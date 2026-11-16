@@ -227,6 +227,75 @@ describe('IMAP/SMTP mail Provider', () => {
     await provider.close!();
   });
 
+  it('does not turn a missing-message NO or rejected recipient into a connection failure', async () => {
+    const logger = { warn: vi.fn() };
+    const adapter = await imapSmtpMailProviderDefinition.createAdapter(
+      { ...context(), logger },
+      config(),
+      account(),
+    );
+    mocks.imap.fetchOne.mockRejectedValueOnce(
+      Object.assign(new Error('The message no longer exists'), {
+        code: 'NO',
+        serverResponseCode: 'NONEXISTENT',
+        responseText: 'No such message',
+      }),
+    );
+    const missing = await adapter.getMessage!(
+      encodeMessageLocator({ folder: 'INBOX', uidValidity: '1', uid: 1 }),
+    );
+    expect(missing).toMatchObject({
+      ok: false,
+      error: { category: 'provider' },
+    });
+    if (!missing.ok) expect(missing.error.reasonCode).toBeUndefined();
+    mocks.sendMail.mockRejectedValueOnce(
+      Object.assign(new Error('Recipient refused'), {
+        code: 'EENVELOPE',
+        responseCode: 550,
+      }),
+    );
+    const rejected = await adapter.sendMessage!(sentInput());
+    expect(rejected).toMatchObject({
+      status: 'failed',
+      error: { code: 'EENVELOPE', category: 'recipient' },
+    });
+    if (rejected.status !== 'accepted')
+      expect(rejected.error.reasonCode).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        protocol: 'smtp',
+        stage: 'send',
+        code: 'EENVELOPE',
+        category: 'recipient',
+      }),
+      expect.any(String),
+    );
+    await adapter.close!();
+  });
+
+  it.each([
+    new DOMException('Request cancelled', 'AbortError'),
+    Object.assign(new Error('Cancelled by caller'), { code: 'ETIMEDOUT' }),
+  ])(
+    'does not show a connection failure for cancelled requests: %s',
+    async (reason) => {
+      const adapter = await imapSmtpMailProviderDefinition.createAdapter(
+        context(),
+        config(),
+        account(),
+      );
+      const result = await adapter.listFolders!({
+        limit: 10,
+        signal: AbortSignal.abort(reason),
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.reasonCode).toBeUndefined();
+      expect(mocks.imap.connect).not.toHaveBeenCalled();
+      await adapter.close!();
+    },
+  );
+
   it('keeps oversized and missing bodies visible without blocking later UIDs', async () => {
     mocks.imap.list.mockResolvedValue([{ path: 'INBOX', name: 'Inbox' }]);
     mocks.imap.status.mockResolvedValue({ uidNext: 4, uidValidity: 1n });

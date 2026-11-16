@@ -1,3 +1,5 @@
+import { redactMailText } from './redaction.js';
+export { redactMailText } from './redaction.js';
 import type { MailProviderError } from '../shared/mail.js';
 import { writeMailLog, type MailLogger } from './logging.js';
 import type { ImapSmtpEndpointConfig } from './adapters/imap-smtp/config.js';
@@ -26,44 +28,6 @@ export function errorRecord(error: unknown): Record<string, unknown> {
 
 export function connectionCause(error: unknown): unknown {
   return error instanceof MailConnectionError ? error.cause : error;
-}
-
-function encodedSecret(secret: string): string {
-  try {
-    return encodeURIComponent(secret);
-  } catch {
-    return secret;
-  }
-}
-
-/** Replace known credentials before truncation, including common protocol encodings. */
-export function redactMailText(
-  value: unknown,
-  secrets: readonly string[] = [],
-): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  let text = value;
-  const variants = secrets
-    .filter(Boolean)
-    .flatMap((secret) => [
-      secret,
-      encodedSecret(secret),
-      Buffer.from(secret).toString('base64'),
-    ]);
-  for (const secret of variants.sort((a, b) => b.length - a.length))
-    text = text.split(secret).join('[REDACTED]');
-  return text
-    .replace(/(?:https?:\/\/|imaps?:\/\/|smtps?:\/\/)[^\s]+/giu, '[URL]')
-    .replace(
-      /\b(?:AUTH(?:ENTICATE)?|LOGIN|Bearer|Basic)\s+[^\r\n]*/giu,
-      '[REDACTED]',
-    )
-    .replace(
-      /\b(?:password|pass|access_token|refresh_token|client_secret|code_verifier|credentialReference|authorization|code|state)\s*[=:]\s*[^\s,;]+/giu,
-      '[REDACTED]',
-    )
-    .replace(/[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+)/giu, '***@$1')
-    .slice(0, 200);
 }
 
 export function failureStage(
@@ -153,6 +117,7 @@ export interface MailFailureContext {
   readonly stage: MailFailureStage;
   readonly startedAt: number;
   readonly secrets?: readonly string[];
+  readonly oauthError?: string;
 }
 
 /** Only these scalar fields cross the logging boundary; never copy SDK errors, commands or stacks. */
@@ -219,6 +184,7 @@ export function logMailFailure(
       category: classified.category,
       retryable: classified.retryable,
       reasonCode: clean(classified.reasonCode),
+      oauthError: clean(context.oauthError),
     },
     'Mail provider operation failed.',
   );

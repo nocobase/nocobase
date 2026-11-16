@@ -1,3 +1,4 @@
+import { classifyError as classifyProtocolError } from '../../server/adapters/imap-smtp/errors.js';
 import {
   authenticationToken,
   type Auth,
@@ -119,6 +120,39 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
         });
         expect(JSON.stringify(body)).not.toContain('Private SDK diagnostic');
       }
+    },
+  );
+
+  it.each([
+    {
+      code: 'NO',
+      serverResponseCode: 'NONEXISTENT',
+      message: 'No such message',
+    },
+    { code: 'EENVELOPE', responseCode: 550, message: 'Recipient refused' },
+    new DOMException('Cancelled', 'AbortError'),
+  ])(
+    'keeps operation failures on the request-failed UI channel: %j',
+    async (cause) => {
+      const error = classifyProtocolError(cause, 'IMAP_GET_ATTACHMENT', 'imap');
+      const router = await createRouter(
+        true,
+        service({
+          getAttachment: async () => {
+            throw new MailProviderRequestError(error);
+          },
+        }),
+      );
+      const response = await router.request(
+        '/api/mail/accounts/account-1/messages/message-1/attachments/attachment-1',
+        { headers: { 'accept-language': 'en-US' } },
+      );
+      const body = await response.json();
+      expect(body.error.localizedMessage.message).toBe(
+        'The mail request could not be completed.',
+      );
+      expect(body.error.metadata.reasonCode).toBeUndefined();
+      expect(body.error.localizedMessage.message).not.toMatch(/connection/i);
     },
   );
 
