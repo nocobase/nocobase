@@ -29,6 +29,20 @@ describe('诊断日志脱敏与逐行上限', () => {
       'fixtureSensitiveValue123',
     );
   });
+  it.each([32768, 131072])('病态长串先截断且匹配耗时有界：%s 字节', (size) => {
+    for (const seed of ['a-', 'aB0_-', 'token-', 'password-']) {
+      const input = seed.repeat(Math.ceil(size / seed.length)).slice(0, size);
+      sanitizeLog('warmup');
+      const started = performance.now();
+      const result = sanitizeLog(input);
+      expect(performance.now() - started).toBeLessThan(50);
+      expect(String(result).length).toBeLessThanOrEqual(32768);
+    }
+    const input =
+      'x'.repeat(32720) +
+      ' ANTHROPIC_API_KEY="fixture-sensitive-value with spaces"';
+    expect(String(sanitizeLog(input))).not.toContain('fixture-sensitive-value');
+  });
   it('嵌套字段、转义 JSON 和截断边界不泄露秘密', () => {
     const value = {
       api_key: 'fixture',

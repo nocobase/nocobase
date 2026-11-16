@@ -46,6 +46,8 @@ const SECRET =
 export function sanitizeLog(value: unknown, depth: number = 0): unknown {
   if (depth > 8) return '[TRUNCATED]';
   if (typeof value === 'string') {
+    // Bound every parser and matcher before scanning untrusted process output.
+    value = value.slice(0, MAX_LINE);
     // Parse structured text before free-text matching, including escaped JSON strings.
     if (/^\s*[[{]/.test(value) && value.length <= MAX_LINE) {
       try {
@@ -54,7 +56,7 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
         // Legacy output need not be JSON.
       }
     }
-    return value
+    return (value as string)
       .replace(
         /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/g,
         '[REDACTED]',
@@ -62,14 +64,13 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
       .replace(/((?:Bearer|Basic)\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
       .replace(/(\w+:\/\/)[^\s/@]+:[^\s/@]+@/g, '$1[REDACTED]@')
       .replace(
-        /\b((?:[\w-]*(?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]*)["']?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
+        /((?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]{0,64}["']?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
         '$1[REDACTED]',
       )
       .replace(
         /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+|npm_[a-zA-Z0-9_]+|fg(?:[kro]|reg|dl)_[a-zA-Z0-9_-]+)/g,
         '[REDACTED]',
-      )
-      .slice(0, MAX_LINE);
+      );
   }
   if (value instanceof Error)
     return sanitizeLog(
