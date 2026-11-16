@@ -1,5 +1,12 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.7
+
+### Patch Changes
+
+- 38854ec: Keep internal HTTP and WebSocket forwarding connected directly to the configured upstream when an environment proxy is enabled.
+- 8339722: Pass the incoming request to standalone proxy target resolution so applications can route HTTP and WebSocket traffic to the appropriate upstream.
+
 ## 5.0.0-beta.6
 
 ### Minor Changes

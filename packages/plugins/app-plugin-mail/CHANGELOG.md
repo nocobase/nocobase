@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 7f138bc: Report protocol-specific mailbox connection failures with localized explanations and credential-safe structured diagnostics for connection, synchronization, IDLE, and sending failures.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 1.0.0-beta.25
 
 ### Patch Changes

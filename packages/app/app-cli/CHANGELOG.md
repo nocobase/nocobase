@@ -1,5 +1,18 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.36
+
+### Minor Changes
+
+- 8339722: Allow CLI extensions to register a command at their topic root, including development-only root commands excluded from production applications.
+
+### Patch Changes
+
+- 8339722: Synchronize application development Skills from installed CLI extensions while keeping standalone branded CLI Skills separate.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+
 ## 1.0.0-beta.35
 
 ### Patch Changes
