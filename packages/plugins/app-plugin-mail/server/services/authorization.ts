@@ -1,4 +1,3 @@
-import { mailLogCode } from '../logging.js';
 import { logMailFailure } from '../connection-diagnostics.js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
@@ -205,8 +204,9 @@ export class MailAuthorizationService {
       logMailFailure(
         { message: 'Mail authorization failed.' },
         {
-          ...classified,
-          code: mailLogCode(classified.code),
+          category: classified.category,
+          retryable: classified.retryable,
+          code: 'MAIL_AUTHORIZATION_FAILED',
           message: 'Mail authorization failed.',
         },
         {
