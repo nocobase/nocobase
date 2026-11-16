@@ -3765,6 +3765,9 @@ importers:
 
   packages/plugins/app-plugin-authorization:
     dependencies:
+      '@nocobase/app-cli':
+        specifier: workspace:^
+        version: link:../../app/app-cli
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
@@ -3786,6 +3789,9 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.14.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2

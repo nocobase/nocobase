@@ -34,6 +34,10 @@
     "./server/extension": {
       "types": "./server/extension/index.ts",
       "import": "./server/extension/index.ts"
+    },
+    "./cli": {
+      "types": "./cli/index.ts",
+      "import": "./cli/index.ts"
     }
   },
   "files": [
@@ -68,6 +72,10 @@
       "./server/extension": {
         "types": "./dist/server/extension/index.d.ts",
         "import": "./dist/server/extension/index.js"
+      },
+      "./cli": {
+        "types": "./dist/cli/index.d.ts",
+        "import": "./dist/cli/index.js"
       }
     }
   },
@@ -97,7 +105,9 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "react": "^19.0.0",
-    "@nocobase/authorization": "workspace:^"
+    "@nocobase/authorization": "workspace:^",
+    "@nocobase/app-cli": "workspace:^",
+    "@oclif/core": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

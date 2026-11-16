@@ -3,16 +3,24 @@
 `capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions, 4xx/5xx requests and any sideways page overflow (`horizontalOverflow`, measured before the final screenshot) to `screenshots/capture-log.json`. The full workflow uses it in its acceptance review (step 4 of [`../ui-workflow.md`](../ui-workflow.md)). It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install: in an application without it run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
 
 ```bash
-# 1. Save the sign-in session: a browser window opens, the user signs in themselves, and the script never touches the password
-node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs login --base http://127.0.0.1:13000/main/
-```
+# 1. Start pnpm dev, then use its printed Local application entry URL
+pnpm nocobase authorization dev-session --base http://127.0.0.1:13000/main/
 
-```bash
-# 2. Take screenshots from the configuration
+# 2. Check each path at 1440×900 and 390×844, headlessly, in English by default
+node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs check / /projects --base http://127.0.0.1:13000/main/
+
+# 3. Use a configuration for additional states and interactions
 node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs shoot --spec storage/ui-workflow/<feature>/capture.json
+
+# 4. Sign out and disable the dedicated account when finished
+pnpm nocobase authorization dev-session --revoke --base http://127.0.0.1:13000/main/
 ```
 
-The sign-in session is saved to `storage/ui-workflow/auth.json` (`storage/` is ignored by git). Do not commit or share it, and delete it when the task ends. For `--base`, pass the `Local:` URL `pnpm dev` prints (for example `http://127.0.0.1:13000/main/`, trailing slash allowed); shot paths start with `/` after it; the `base` used for screenshots must be on the same host as the one used to sign in (sign-in sessions for `localhost` and `127.0.0.1` are not interchangeable). `login` waits 10 minutes by default; extend it with `--timeout <minutes>`. To keep a second session, such as a test account without some permission, pass `--state <file>` to `login`, and the same `--state` (or `"state"` in the configuration) to `shoot`.
+`dev-session` is development-only and refuses production and deployments. It creates or reuses `ui_check`, defaults to the `root` Permission Set and replaces its assignments with `--role <permission-set-key>` when testing restricted access. Each run rotates a random password in memory without printing it. Start the development server first: the command signs in through that process so its session survives CLI exit. `--base` accepts local development URLs only. The private Playwright session is written to `storage/ui-workflow/auth.json`; never commit, attach or share it. Use the same host and base path for sign-in, checks and revocation.
+
+`check <paths...> --base <url>` verifies the saved session before visiting pages. It writes screenshots and `capture-log.json` under `storage/ui-workflow/check/screenshots` (override with `--out <directory>`), and prints one JSON result containing `ok`, `logPath` and `shots`. Console errors, page exceptions, failed requests (including HTTP 4xx/5xx), navigation errors or horizontal overflow make `ok` false and exit with code 1. Missing or expired sessions fail with instructions to rerun `dev-session`. Use `--locale <locale>` to override English, `--state <file>` for another saved state, and `--channel <channel>` to select Chromium. Investigate and fix check failures; only an application startup failure allows recording browser checks as "Not verified", with startup evidence.
+
+For environments with a visible browser, `node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs login --base <url>` remains an optional fallback. The user signs in themselves; `--timeout <minutes>` changes the ten-minute timeout. `login --state <file>` saves a separate session; pass the same `--state` to `check` or `shoot` (or `"state"` in a shoot configuration).
 
 ## Configuration
 
