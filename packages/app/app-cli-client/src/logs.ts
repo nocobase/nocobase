@@ -261,7 +261,7 @@ const SourceSchema: z.ZodType<LogsExportSource> = z.object({
   ]),
   bytes: z.number().int().nonnegative().optional(),
 });
-const ManifestSchema = z.object({ sources: z.array(SourceSchema).max(130) });
+const ManifestSchema = z.object({ sources: z.array(SourceSchema) });
 export interface LogsExportOptions {
   days?: number;
   since?: string;

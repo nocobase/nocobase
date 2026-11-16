@@ -560,3 +560,65 @@ describe('流式收集', () => {
     },
   );
 });
+
+describe('收集回调边界', () => {
+  it('进度回调失败也结束所有排队请求并清理目录', async () => {
+    const service = createService(async () => [
+      { id: 'offline', status: 'offline', features: [] },
+      { id: 'online', status: 'online', features: ['diagnostics'] },
+    ]);
+    const root = await directory();
+    await expect(
+      service.collect({
+        runnerIds: ['offline', 'online'],
+        window,
+        directory: root,
+        onFile,
+        onProgress() {
+          throw new Error('progress failed');
+        },
+      }),
+    ).rejects.toThrow('progress failed');
+    expect(service.take('online')).toBeUndefined();
+    expect(await readdir(root)).toEqual([]);
+  });
+  it('大文件批量写入受反压约束，不为每条记录写盘', async () => {
+    const service = createService(async () => [
+      { id: 'one', status: 'online', features: ['diagnostics'] },
+    ]);
+    const root = await directory();
+    const { open } = await import('node:fs/promises');
+    const probe = await open(path.join(root, 'probe'), 'wx');
+    const writes = vi.spyOn(Object.getPrototypeOf(probe), 'writeFile');
+    try {
+      const collecting = service.collect({
+        runnerIds: ['one'],
+        window,
+        directory: root,
+        onFile: async (file) => {
+          expect((await readFile(file.path)).length).toBe(file.bytes);
+        },
+      });
+      const request = await take(service, 'one');
+      const rows = Array.from({ length: 2000 }, () => ({
+        ...record,
+        entry: { ...record.entry, msg: 'log'.repeat(300) },
+      }));
+      await service.accept(
+        'one',
+        request.requestId,
+        body([env, ...rows, manifest]),
+      );
+      const result = await collecting;
+      expect(result.runners[0].status).toBe('collected');
+      const bytes = result.runners[0].files![0].bytes;
+      expect(writes.mock.calls.length).toBeLessThanOrEqual(
+        Math.ceil(bytes / (64 * 1024)) + 2,
+      );
+      expect(writes.mock.calls.length).toBeGreaterThan(2);
+    } finally {
+      writes.mockRestore();
+      await probe.close();
+    }
+  });
+});
