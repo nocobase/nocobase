@@ -295,7 +295,7 @@ it('keeps unsaved child-page input until leaving is confirmed', async () => {
     screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
   );
   await userEvent.click(
-    await screen.findByRole('button', { name: 'Discard changes' }),
+    await screen.findByRole('button', { name: 'Discard', exact: true }),
   );
   await waitFor(() =>
     expect(screen.queryByLabelText('Full name')).not.toBeInTheDocument(),
@@ -394,7 +394,7 @@ it('locks save and submit through refresh and replays an uncertain submission wi
       screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
     );
     await screen.findByRole('alertdialog', {
-      name: 'Discard unsaved changes?',
+      name: 'Discard changes?',
     });
     await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
     await waitFor(() =>

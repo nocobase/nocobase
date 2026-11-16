@@ -17,7 +17,6 @@ import { RouteDrawer } from '#components/route-drawer';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
 import { Button } from '#components/ui/button';
-import { Alert, AlertDescription } from '#components/ui/alert';
 import { FeedbackForm } from '#components/feedback-form';
 import { useListData } from '#hooks/use-list-data';
 import {
@@ -91,7 +90,6 @@ function Editor({
   // A write is usable only after the refreshed version and actions reach the editor.
   const busy = writing || refreshing;
   const [dirty, setDirty] = useState(false);
-  const [discard, setDiscard] = useState(false);
   const lockedRef = useRef(false);
   const editable = !detail || detail.actions.edit;
   const submission = useSubmission({
@@ -100,8 +98,17 @@ function Editor({
   const change = (update: () => void) => {
     update();
     setDirty(true);
-    setDiscard(false);
   };
+  // What the drawer compares when the person leaves: every field and line as stored, and a write whose outcome is
+  // unknown counts as unsaved, so leaving asks "Discard changes?" before the retry is given up (ui-guidelines.md T3.9).
+  const current = () => ({
+    title,
+    supplierId,
+    reviewerId,
+    lines,
+    pending: submission.pending,
+  });
+  const [saved] = useState(current);
   const normalized = lines.map((l) => ({
     ...(l.id ? { id: l.id } : {}),
     materialId: l.materialId,
@@ -209,15 +216,8 @@ function Editor({
     <RouteDrawer
       title={t(detail ? 'procurement.open' : 'procurement.new')}
       className='sm:w-3xl'
-      beforeClose={() => {
-        if (busy) return false;
-        // An unknown outcome is unsaved too: ask, never lock the drawer open.
-        if (dirty || submission.pending) {
-          setDiscard(true);
-          return false;
-        }
-        return true;
-      }}
+      // The only lock is a write or refresh in flight (ui-guidelines.md T3.5).
+      beforeClose={() => !busy}
       footer={
         <>
           {editable ? (
@@ -250,22 +250,6 @@ function Editor({
         </>
       }
     >
-      {discard ? (
-        <Alert>
-          <AlertDescription>
-            {t('procurement.discard')}{' '}
-            <Button
-              variant='outline'
-              onClick={() => {
-                setDirty(false);
-                void navigate({ pathname: '..', search: location.search });
-              }}
-            >
-              {t('procurement.discardAction')}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : null}
       <p className='text-sm text-muted-foreground'>
         {t('procurement.approvalHint')}
       </p>
@@ -290,6 +274,8 @@ function Editor({
             : undefined
         }
         submitting={busy}
+        values={current}
+        savedValues={saved}
         onSubmit={async (e) => {
           e.preventDefault();
           await save();

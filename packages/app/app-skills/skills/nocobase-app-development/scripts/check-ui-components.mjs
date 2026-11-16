@@ -58,7 +58,9 @@ const draftDirty =
   'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (ui-guidelines.md T3.9)';
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
 const ownQuestion =
-  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks about unsaved input itself through useNavigationGuard from @nocobase/app-client, and no guard here reads an unsaved state (dirty, unsaved, changed); a guard that only blocks during a save, or a kept draft, never replaces the question (ui-guidelines.md T3.9)";
+  "the route overlay's own question: give the FeedbackForm values and savedValues; OwnDiscardQuestion belongs to the template's settings forms, and a page never asks about unsaved input itself, a kept draft included (ui-guidelines.md T3.9)";
+const ownGuard =
+  "the route overlay's own question: give the FeedbackForm values and savedValues and write no guard of your own that reads unsaved input; a guard or beforeClose may only block while a save runs (ui-guidelines.md T3.9, T3.5)";
 // What a guard of a form's own reads when it asks about unsaved input, matched against identifiers, never comments or strings.
 const unsavedState = /dirty|unsaved|changed|modified/i;
 const passiveTags = new Set([
@@ -137,6 +139,8 @@ export function inspectSource(ts, text, file, root) {
   let rendersPage = false;
   // FeedbackForm's own implementation renders the one plain <form> the rule points everyone else to.
   const definesFeedbackForm = /\bfunction FeedbackForm\b/.test(text);
+  // The template's routing and overlay components implement the discard question every page relies on.
+  const framework = /(^|[\\/])client[\\/](routing|components)[\\/]/.test(file);
   // Local names bound to an input primitive, including aliases.
   const inputs = new Set();
   for (const statement of source.statements) {
@@ -363,8 +367,8 @@ export function inspectSource(ts, text, file, root) {
         literal(ts, attribute(ts, node, 'role')?.initializer) !== 'search' &&
         // A form in a route overlay, React Hook Form or `useState` alike: without values and savedValues nothing saved
         // is compared, so a restored draft left untouched leaves without asking. Elsewhere a React Hook Form form
-        // outside a page of its own (a form component an overlay renders). A form whose file asks its own question
-        // (a guard reading its unsaved state, or the application's page-leave hook) compares by itself.
+        // outside a page of its own (a form component an overlay renders). A settings form using the template's
+        // page-leave hook compares by itself.
         (usesOverlay || (usesHookForm && !rendersPage)) &&
         !covered(node, asking)
       ) {
@@ -390,10 +394,7 @@ export function inspectSource(ts, text, file, root) {
             undefined,
             false,
           );
-      } else if (
-        tag === 'OwnDiscardQuestion' &&
-        !covered(node, guarding, true)
-      ) {
+      } else if (tag === 'OwnDiscardQuestion' && !framework) {
         report(node, tag, ownQuestion, undefined, false);
       } else if (overlays.has(tag) && attribute(ts, node, 'dirty')) {
         const value = attribute(ts, node, 'dirty').initializer;
@@ -781,9 +782,8 @@ export function inspectSource(ts, text, file, root) {
     if (!edges.has(from)) edges.set(from, new Set());
     edges.get(from).add(target);
   };
-  // Units asking their own question about unsaved input, and the subset doing it through useNavigationGuard.
+  // Units asking their own question about unsaved input: the template's settings forms, through its page-leave hook.
   const asking = new Set();
-  const guarding = new Set();
   (function findGuardCall(node) {
     if (
       (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
@@ -801,13 +801,12 @@ export function inspectSource(ts, text, file, root) {
           guardNamespaces.has(node.expression.expression.text) &&
           node.expression.name.text === 'useNavigationGuard')) &&
       node.arguments[0] &&
-      // A guard that asks about unsaved input reads it; one that only blocks while a save runs (`submitting`,
-      // `pending`, a saved flag) does not ask anything, so it cannot stand in for the layer's question.
+      !framework &&
+      // A guard that reads unsaved input asks a question of its own; one that only blocks while a save runs
+      // (`submitting`, `pending`, a saved flag) is the lock T3.5 allows.
       unsavedState.test(guardReads(node.arguments[0]))
-    ) {
-      asking.add(unitOf(node));
-      guarding.add(unitOf(node));
-    }
+    )
+      report(node, 'useNavigationGuard', ownGuard, undefined, false);
     if (
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
@@ -819,24 +818,26 @@ export function inspectSource(ts, text, file, root) {
       ts.isJsxAttribute(node) &&
       node.name.getText(source) === 'beforeClose' &&
       node.initializer &&
+      !framework &&
       unsavedState.test(identifiers(node.initializer))
     )
-      asking.add(unitOf(node));
+      report(node, 'beforeClose', ownGuard, undefined, false);
     ts.forEachChild(node, findGuardCall);
   })(source);
   // A unit calling a hook of this file that asks asks as well.
-  for (const set of [asking, guarding])
-    for (let grew = true; grew;) {
-      grew = false;
-      for (const [from, targets] of calls)
-        if (!set.has(from) && [...targets].some((target) => set.has(target))) {
-          set.add(from);
-          grew = true;
-        }
-    }
-  // Whether the unit of `node`, or a unit of this file rendering or calling it, is in `set`. With `downward`, the
-  // units it renders count too: OwnDiscardQuestion may sit in the overlay while the form component it renders asks.
-  function covered(node, set, downward = false) {
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [from, targets] of calls)
+      if (
+        !asking.has(from) &&
+        [...targets].some((target) => asking.has(target))
+      ) {
+        asking.add(from);
+        grew = true;
+      }
+  }
+  // Whether the unit of `node`, or a unit of this file rendering or calling it, is in `set`.
+  function covered(node, set) {
     const unit = unitOf(node);
     if (set.has(unit)) return true;
     const reach = (start, next) => {
@@ -856,10 +857,7 @@ export function inspectSource(ts, text, file, root) {
       [...renders, ...calls]
         .filter(([, targets]) => targets.has(target))
         .map(([from]) => from);
-    return (
-      reach(unit, callers) ||
-      (downward && reach(unit, (from) => renders.get(from) ?? []))
-    );
+    return reach(unit, callers);
   }
   inspectActionColumns();
   // RowActions shows at most two primary actions outside its menu (ui-guidelines.md T1.5). Only an array literal

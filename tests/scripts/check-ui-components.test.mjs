@@ -571,98 +571,111 @@ test('lets no exception marker waive the discard question of a create or edit fo
   assert.deepEqual(result.accepted, []);
 });
 
-test('rejects OwnDiscardQuestion in a file that asks no question of its own', () => {
+test('rejects OwnDiscardQuestion in application pages, whatever guard sits beside it', () => {
+  const tags = (source) =>
+    inspect(source)
+      .findings.map((item) => item.tag)
+      .sort();
   assert.deepEqual(
-    inspect(
+    tags(
       `export const Page = () => <RouteChildPage><OwnDiscardQuestion/></RouteChildPage>`,
-    ).findings.map((item) => item.tag),
+    ),
     ['OwnDiscardQuestion'],
   );
+  // A save-only lock beside it is allowed; the declaration is not.
   assert.deepEqual(
-    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      export const Page = () => { useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`)
-      .findings,
+    tags(`import { useNavigationGuard } from '@nocobase/app-client';
+      export const Page = () => { useNavigationGuard(() => !submitting); return <OwnDiscardQuestion/>; }`),
+    ['OwnDiscardQuestion'],
+  );
+  // A guard reading unsaved input is reported as well.
+  assert.deepEqual(
+    tags(`import { useNavigationGuard } from '@nocobase/app-client';
+      export const Page = () => { useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`),
+    ['OwnDiscardQuestion', 'useNavigationGuard'],
+  );
+  // The template's own routing and overlay components implement the question and are left alone.
+  assert.deepEqual(
+    inspectSource(
+      ts,
+      `import { useNavigationGuard } from '@nocobase/app-client';
+      export const Boundary = () => { useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`,
+      resolve(root, 'client/routing/route-leave-boundary.tsx'),
+      root,
+    ).findings,
     [],
   );
-  // A namespace import of the application client counts as well.
+});
+
+test('reports a guard that reads unsaved input and accepts one that only blocks while a save runs', () => {
+  const tags = (source) =>
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => item.tag);
+  assert.deepEqual(
+    tags(
+      `export const Page = () => { useNavigationGuard(() => !dirty || ask()); return null; }`,
+    ),
+    ['useNavigationGuard'],
+  );
+  assert.deepEqual(
+    tags(
+      `export const Page = () => { useNavigationGuard(() => savedRef.current || !submission.submitting); return null; }`,
+    ),
+    [],
+  );
+  // A namespace import of the application client counts; a hook of the same name from elsewhere does not.
   assert.deepEqual(
     inspect(`import * as App from '@nocobase/app-client';
-      export const Page = () => { App.useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`)
-      .findings,
-    [],
-  );
-  assert.deepEqual(
-    inspect(`import * as Local from './local-guard';
-      export const Page = () => { Local.useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`).findings.map(
+      export const Page = () => { App.useNavigationGuard(() => !dirty || ask()); return null; }`).findings.map(
       (item) => item.tag,
     ),
-    ['OwnDiscardQuestion'],
+    ['useNavigationGuard'],
   );
-  // A comment, or a hook of the same name from elsewhere, does not count.
   assert.deepEqual(
     inspect(`import { useNavigationGuard } from './local-guard';
-      // useNavigationGuard(ask)
-      export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`).findings.map(
-      (item) => item.tag,
-    ),
-    ['OwnDiscardQuestion'],
+      export const Page = () => { useNavigationGuard(() => !dirty); return null; }`)
+      .findings,
+    [],
   );
 });
 
 test('resolves a guard passed by name in its own scope, so a same-named guard of another component lends nothing', () => {
-  // Two components each declare `guard`: the one that only blocks during a save cannot borrow the other's reads.
-  const result =
+  const lines = (source) =>
     inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-    import { RouteDrawer } from '#components/route-drawer';
-    export function Asking() {
-      const guard = () => !dirty || ask();
-      useNavigationGuard(guard);
-      return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>;
-    }
-    export function Saving() {
-      const guard = () => !submitting;
-      useNavigationGuard(guard);
-      return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>;
-    }`);
+      ${source}`).findings.map((item) => [item.tag, item.line]);
   assert.deepEqual(
-    result.findings.map((item) => [item.tag, item.line]),
-    [
-      ['OwnDiscardQuestion', 11],
-      ['FeedbackForm', 11],
-    ],
+    lines(`export function Asking() {
+        const guard = () => !dirty || ask();
+        useNavigationGuard(guard);
+        return null;
+      }
+      export function Saving() {
+        const guard = () => !submitting;
+        useNavigationGuard(guard);
+        return null;
+      }`),
+    [['useNavigationGuard', 4]],
   );
   // The nearest declaration wins: an inner `guard` shadows an outer one, in either direction.
   assert.deepEqual(
-    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      const guard = () => !dirty;
-      export function Page() {
-        const guard = () => !submitting;
-        useNavigationGuard(guard);
-        return <OwnDiscardQuestion/>;
-      }`).findings.map((item) => item.tag),
-    ['OwnDiscardQuestion'],
+    lines(`const guard = () => !dirty;
+      export function Page() { const guard = () => !submitting; useNavigationGuard(guard); return null; }`),
+    [],
   );
   assert.deepEqual(
-    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      const guard = () => !submitting;
-      export function Page() {
-        const guard = () => !dirty || ask();
-        useNavigationGuard(guard);
-        return <OwnDiscardQuestion/>;
-      }`).findings,
-    [],
+    lines(`const guard = () => !submitting;
+      export function Page() { const guard = () => !dirty || ask(); useNavigationGuard(guard); return null; }`),
+    [['useNavigationGuard', 3]],
   );
   // A guard declared in an enclosing scope of the file still counts.
   assert.deepEqual(
-    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      function guard() { return !dirty || ask(); }
-      export function Page() { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`)
-      .findings,
-    [],
+    lines(`function guard() { return !dirty || ask(); }
+      export function Page() { useNavigationGuard(guard); return null; }`),
+    [['useNavigationGuard', 3]],
   );
 });
 
-test('rejects a draft-keeping full page that yields the question to a guard which only blocks during a save', () => {
+test('rejects a draft-keeping full page that declares its own question and guards only the running save', () => {
   // The first-generation counterexample: a useState form on a RouteChildPage that keeps a local draft, renders
   // OwnDiscardQuestion and guards only the running save. Both the declaration and the uncompared FeedbackForm fail.
   const result =
@@ -686,69 +699,56 @@ test('rejects a draft-keeping full page that yields the question to a guard whic
       ['FeedbackForm', 11],
     ],
   );
-  assert.match(result.findings[0].replacement, /kept draft, never replaces/);
+  assert.match(result.findings[0].replacement, /a kept draft included/);
   assert.match(result.findings[1].replacement, /values=\{\(\) => values\}/);
-  // A guard declared under a name is read through its declaration.
-  assert.deepEqual(
-    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      const guard = () => !submitting;
-      export const Page = () => { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`).findings.map(
-      (item) => item.tag,
-    ),
-    ['OwnDiscardQuestion'],
-  );
-  assert.deepEqual(
-    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      function guard() { return !controller.dirty || controller.ask(); }
-      export const Page = () => { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`)
-      .findings,
-    [],
-  );
 });
 
-test('compares every FeedbackForm in a route overlay, unless the file asks its own question', () => {
+test('compares every FeedbackForm in a route overlay; only the template settings hook asks by itself', () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      ${source}`).findings.map((item) => item.tag);
   // useState forms count as much as React Hook Form ones.
   assert.deepEqual(
-    inspect(`import { RouteDrawer } from '#components/route-drawer';
-      export const Edit = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>`).findings.map(
-      (item) => item.tag,
+    tags(
+      `export const Edit = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>`,
     ),
     ['FeedbackForm'],
   );
   assert.deepEqual(
-    inspect(`import { RouteDrawer } from '#components/route-drawer';
-      export const Edit = () => <RouteDrawer><FeedbackForm values={() => values} savedValues={saved} onSubmit={save}/></RouteDrawer>`)
-      .findings,
+    tags(
+      `export const Edit = () => <RouteDrawer><FeedbackForm values={() => values} savedValues={saved} onSubmit={save}/></RouteDrawer>`,
+    ),
     [],
   );
-  // Asking its own question: a guard reading the unsaved state, the application's page-leave hook, or a
-  // beforeClose reading it. A beforeClose that only waits for a save does not count.
-  for (const own of [
-    `import { useNavigationGuard } from '@nocobase/app-client';
-      export const Edit = () => { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
-    `import { useSettingsLeave } from './hooks.js';
-      export const Edit = () => { const leave = useSettingsLeave(dirty, busy); return <RouteDrawer>{leave.dialog}<FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
-    `export const Edit = () => <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>`,
-  ])
-    assert.deepEqual(
-      inspect(`import { RouteDrawer } from '#components/route-drawer';\n${own}`)
-        .findings,
-      [],
-    );
+  // The template's settings forms ask through its page-leave hook.
   assert.deepEqual(
-    inspect(`import { RouteDrawer } from '#components/route-drawer';
-      export const Edit = () => <RouteDrawer beforeClose={() => !locked()}><FeedbackForm onSubmit={save}/></RouteDrawer>`).findings.map(
-      (item) => item.tag,
+    tags(`import { useSettingsLeave } from './hooks.js';
+      export const Edit = () => { const leave = useSettingsLeave(dirty, busy); return <RouteDrawer>{leave.dialog}<FeedbackForm onSubmit={save}/></RouteDrawer>; }`),
+    [],
+  );
+  // A page's own guard or beforeClose reading unsaved input replaces nothing: both it and the form are reported.
+  assert.deepEqual(
+    tags(`import { useNavigationGuard } from '@nocobase/app-client';
+      export const Edit = () => { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`).sort(),
+    ['FeedbackForm', 'useNavigationGuard'],
+  );
+  assert.deepEqual(
+    tags(
+      `export const Edit = () => <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>`,
+    ).sort(),
+    ['FeedbackForm', 'beforeClose'],
+  );
+  // A beforeClose that only waits for a save is the allowed lock.
+  assert.deepEqual(
+    tags(
+      `export const Edit = () => <RouteDrawer beforeClose={() => !locked()}><FeedbackForm onSubmit={save}/></RouteDrawer>`,
     ),
     ['FeedbackForm'],
   );
   // A leave hook imported but never called, or one from a package, does not count.
   assert.deepEqual(
-    inspect(`import { RouteDrawer } from '#components/route-drawer';
-      import { usePageLeave } from 'some-package';
-      export const Edit = () => { usePageLeave(); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`).findings.map(
-      (item) => item.tag,
-    ),
+    tags(`import { usePageLeave } from 'some-package';
+      export const Edit = () => { usePageLeave(); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`),
     ['FeedbackForm'],
   );
 });
@@ -803,36 +803,27 @@ test('reads the spread props of a FeedbackForm, and reports values it cannot con
   assert.match(result.findings[2].replacement, /spread.*cannot confirm/);
 });
 
-test('credits a form only with the question of its own component, a component rendering it or a hook it calls', () => {
+test('credits a form only with the settings hook of its own component, a component rendering it or a hook it calls', () => {
   const tags = (source) =>
     inspect(`import { RouteDrawer } from '#components/route-drawer';
-      import { useNavigationGuard } from '@nocobase/app-client';
+      import { useSettingsLeave } from './hooks.js';
       ${source}`).findings.map((item) => [item.tag, item.line]);
-  // Another form's guard or beforeClose in the same file does not lend its question.
+  // Another form's hook in the same file does not lend its question.
   assert.deepEqual(
-    tags(`function Asking() { useNavigationGuard(() => !dirty || ask()); return <FeedbackForm onSubmit={save}/>; }
-      function Closing() { return <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>; }
+    tags(`function Asking() { useSettingsLeave(dirty); return <FeedbackForm onSubmit={save}/>; }
       export const Other = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>;`),
-    [['FeedbackForm', 5]],
+    [['FeedbackForm', 4]],
   );
   // A component that renders the form, a hook of this file the form calls, or one the renderer calls, does.
   assert.deepEqual(
     tags(`function Form() { return <FeedbackForm onSubmit={save}/>; }
-      export function Page() { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><Form/></RouteDrawer>; }
-      function useEditLeave(dirty) { useNavigationGuard(() => !dirty || ask()); }
+      export function Page() { useSettingsLeave(dirty); return <RouteDrawer><Form/></RouteDrawer>; }
+      function useEditLeave(dirty) { useSettingsLeave(dirty); }
       function Hooked() { useEditLeave(dirty); return <FeedbackForm onSubmit={save}/>; }
       function useOuterLeave() { useEditLeave(dirty); }
       function Inner() { return <FeedbackForm onSubmit={save}/>; }
       export function Outer() { useOuterLeave(); return <RouteDrawer><Inner/></RouteDrawer>; }`),
     [],
-  );
-  // OwnDiscardQuestion counts the guard of its component, a component rendering it or a form component it renders,
-  // never an unrelated component's.
-  assert.deepEqual(
-    tags(`function Form() { useNavigationGuard(() => !dirty || ask()); return <FeedbackForm onSubmit={save}/>; }
-      export const Shell = () => <RouteDrawer><OwnDiscardQuestion/><Form/></RouteDrawer>;
-      export const Stray = () => <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>;`),
-    [['OwnDiscardQuestion', 5]],
   );
 });
 
@@ -847,61 +838,57 @@ test('reads what a guard does from its identifiers, never from comments or strin
     `useNavigationGuard(() => !submitting || log(\`changed \${count}\`))`,
   ])
     assert.deepEqual(
-      tags(
-        `export const Edit = () => { ${guard}; return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
-      ),
-      ['OwnDiscardQuestion', 'FeedbackForm'],
+      tags(`export const Edit = () => { ${guard}; return null; }`),
+      [],
     );
   assert.deepEqual(
     tags(`export const Edit = () => <RouteDrawer beforeClose={() => {
         // ask when dirty
         return !locked();
-      }}><FeedbackForm onSubmit={save}/></RouteDrawer>`),
-    ['FeedbackForm'],
+      }}><FeedbackForm values={() => values} savedValues={saved} onSubmit={save}/></RouteDrawer>`),
+    [],
   );
   // A guard passed by name is read through its declaration, not its name; so is either branch of a conditional.
   assert.deepEqual(
     tags(`const dirtyGuard = () => !submitting;
-      export const Edit = () => { useNavigationGuard(dirtyGuard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
-    ['OwnDiscardQuestion'],
+      export const Edit = () => { useNavigationGuard(dirtyGuard); return null; }`),
+    [],
   );
   assert.deepEqual(
     tags(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
       export function useLeave() { const [controller] = useState(() => new Leave());
-        useNavigationGuard(boundary ? () => true : controller.guard);
-        return <OwnDiscardQuestion/>; }`),
-    [],
+        useNavigationGuard(boundary ? () => true : controller.guard); }`),
+    ['useNavigationGuard'],
   );
 });
 
 test("resolves a guard's object in its own scope, so another component's same-named member lends nothing", () => {
-  const tags = (source) =>
-    inspect(`import { RouteDrawer } from '#components/route-drawer';
-      import { useNavigationGuard } from '@nocobase/app-client';
+  const lines = (source) =>
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
       ${source}`).findings.map((item) => [item.tag, item.line]);
-  // Object literals, class instances and the results of hooks declared here: only the save-only one is reported.
+  // Object literals, class instances and the results of hooks declared here: only the ones reading unsaved input
+  // are reported.
   assert.deepEqual(
-    tags(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+    lines(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
       class Saving { guard = () => !this.submitting; }
       function useDirtyLeave() { const controller = new Leave(); return { guard: controller.guard }; }
       const useSaveOnly = () => ({ guard: () => !submitting });
-      export function Asking() { const controller = new Leave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
-      export function Blocking() { const controller = new Saving(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
-      export function Literal() { const controller = { guard: () => !submitting }; useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
-      export function Hooked() { const controller = useDirtyLeave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
-      export function SaveHook() { const controller = useSaveOnly(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+      export function Asking() { const controller = new Leave(); useNavigationGuard(controller.guard); return null; }
+      export function Blocking() { const controller = new Saving(); useNavigationGuard(controller.guard); return null; }
+      export function Literal() { const controller = { guard: () => !submitting }; useNavigationGuard(controller.guard); return null; }
+      export function Hooked() { const controller = useDirtyLeave(); useNavigationGuard(controller.guard); return null; }
+      export function SaveHook() { const controller = useSaveOnly(); useNavigationGuard(controller.guard); return null; }`),
     [
-      ['OwnDiscardQuestion', 8],
-      ['OwnDiscardQuestion', 9],
-      ['OwnDiscardQuestion', 11],
+      ['useNavigationGuard', 6],
+      ['useNavigationGuard', 9],
     ],
   );
   // An object this file cannot resolve, such as an imported hook's result, falls back to every member of that name.
   assert.deepEqual(
-    tags(`import { useLeave } from './leave';
+    lines(`import { useLeave } from './leave';
       class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
-      export function Page() { const controller = useLeave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
-    [],
+      export function Page() { const controller = useLeave(); useNavigationGuard(controller.guard); return null; }`),
+    [['useNavigationGuard', 4]],
   );
 });
 

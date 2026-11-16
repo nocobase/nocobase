@@ -58,9 +58,6 @@ export const enUS = {
     'The operation could not be confirmed. Reload the request before continuing.',
   historyEntry: '{{transition}}: {{from}} → {{to}} · {{actor}} · {{at}}',
   created: 'Created',
-  discard:
-    'You have unsaved changes. Save the draft or discard changes before closing.',
-  discardAction: 'Discard changes',
   approvalHint:
     'Submitted and approved requests are read-only. Only the designated reviewer can decide.',
   referenceHint:
@@ -120,8 +117,6 @@ export const zhCN: typeof enUS = {
   operationFailed: '无法确认操作结果，请重新加载申请后继续。',
   historyEntry: '{{transition}}：{{from}} → {{to}} · {{actor}} · {{at}}',
   created: '创建',
-  discard: '有尚未保存的修改，请先保存草稿或放弃修改再关闭。',
-  discardAction: '放弃修改',
   approvalHint: '已提交和已通过的申请只读，仅指定审批人可以审批。',
   referenceHint: '仅可选择对您可见的启用记录，每次搜索最多返回100条。',
 };

@@ -26,16 +26,6 @@ import { Label } from '#components/ui/label';
 import { Button } from '#components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '#components/ui/alert-dialog';
-import {
   Card,
   CardContent,
   CardDescription,
@@ -58,7 +48,6 @@ import {
 } from '#components/ui/table';
 import { Separator } from '#components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
-import { OwnDiscardQuestion } from '#components/discard-guard';
 import { FeedbackForm } from '#components/feedback-form';
 import { useListData } from '#hooks/use-list-data';
 import {
@@ -243,6 +232,7 @@ function Editor({
   const { reload } = useOutletContext<{ reload: () => void }>();
   const formId = useId();
   const [input, setInput] = useState(() => values(detail));
+  const [saved] = useState(() => ({ input: values(detail), pending: false }));
   const [step, setStep] = useState(() =>
     detail
       ? detail.record.status === 'submitted'
@@ -257,11 +247,6 @@ function Editor({
   const [writing, setWriting] = useState(false);
   const lockedRef = useRef(false);
   const navigatingAfterSaveRef = useRef(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const discardRef = useRef<{
-    promise: Promise<boolean>;
-    resolve: (value: boolean) => void;
-  } | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'submit'>();
   const [documentKeys, setDocumentKeys] = useState(
     () => detail?.documents.map((doc) => doc.id) ?? [],
@@ -275,37 +260,17 @@ function Editor({
     'onboarding/candidates?kind=departments',
     { active: editable },
   );
-  const decideDiscard = (discard: boolean) => {
-    discardRef.current?.resolve(discard);
-    discardRef.current = null;
-    setConfirmDiscard(false);
-  };
-  useEffect(
-    () => () => {
-      discardRef.current?.resolve(false);
-    },
-    [],
+  // The only lock is a write or refresh in flight; unsaved input is the child page's question, asked through the
+  // FeedbackForm's values below (ui-guidelines.md T3.9).
+  useNavigationGuard(
+    () => navigatingAfterSaveRef.current || !(lockedRef.current || refreshing),
   );
-  useNavigationGuard(() => {
-    if (navigatingAfterSaveRef.current) return true;
-    if (lockedRef.current || refreshing) return false;
-    // An unknown outcome is unsaved too: leaving asks, and discarding leaves; it never locks the page.
-    if (!dirty && !submission.pending) return true;
-    if (discardRef.current) return discardRef.current.promise;
-    let resolve!: (value: boolean) => void;
-    const promise = new Promise<boolean>((done) => {
-      resolve = done;
-    });
-    discardRef.current = { promise, resolve };
-    setConfirmDiscard(true);
-    return promise;
-  });
   useEffect(() => {
-    if (!dirty && !busy && !submission.pending) return;
+    if (!busy) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty, busy, submission.pending]);
+  }, [busy]);
   const update = (patch: Partial<OnboardingInput>) => {
     setInput((old) => ({ ...old, ...patch }));
     setDirty(true);
@@ -554,30 +519,6 @@ function Editor({
       status={detail?.record.status}
       description={description}
     >
-      {/* The wizard asks its own question: its input spans steps whose fields are not all on screen, so the page's
-          layer cannot compare them, and leaving during a held submission is blocked rather than asked. */}
-      <OwnDiscardQuestion />
-      <AlertDialog
-        open={confirmDiscard}
-        onOpenChange={(open) => {
-          if (!open) decideDiscard(false);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('onboarding.discard')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('onboarding.discardDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('onboarding.keepEditing')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => decideDiscard(true)}>
-              {t('onboarding.discardAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {/* Below lg the step list collapses into the current step and a four-part progress bar. */}
       <div className='space-y-2 lg:hidden'>
         <p className='text-sm text-muted-foreground'>
@@ -712,6 +653,10 @@ function Editor({
             error={error}
             errorContent={error ? t('onboarding.operationFailed') : undefined}
             submitting={busy}
+            // Every step's input, not only the fields on screen, compared with the stored case. A submission whose
+            // outcome is unknown counts as unsaved, so leaving asks before the retry is given up.
+            values={() => ({ input, pending: submission.pending })}
+            savedValues={saved}
             onSubmit={async (e) => {
               e.preventDefault();
               await write('save');
