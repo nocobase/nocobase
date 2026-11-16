@@ -47,7 +47,7 @@ Declare such a package in `dependencies` when you write the code; nothing will r
 
 Node ABI to major version: 115 is Node 20, 127 is 22, 137 is 24, 147 is 26.
 
-`pnpm build` targets the machine it runs on, so `pnpm build && pnpm start` works. A deployment build says where it is going: `--target linux-x64`, `--target linux-arm64`, `--target linux-x64-musl`, plus `--node-version` when the server's Node major differs. A `.node` binary must match the target platform, architecture, and C library; addons using the Node ABI must also match its version. `pg`, `mysql2`, and `tedious` are plain JavaScript, so an application using only those is portable as built. The Finishing section of [the Skill](../SKILL.md#finishing) and the `nocobase-deployment` Skill cover build targets in full.
+`pnpm build` targets the machine it runs on, so `pnpm build && pnpm start` works. A deployment build says where it is going: `--target linux-x64`, `--target linux-arm64`, `--target linux-x64-musl`, plus `--node-version` when the server's Node major differs. A `.node` binary must match the target platform, architecture, and C library; addons using the Node ABI must also match its version. `pg`, `mysql2`, and `tedious` are plain JavaScript, so an application using only those is portable as built. The Finishing section of [the Skill](operations.md#builds) and the `nocobase-deployment` Skill cover build targets in full.
 
 ## Internal workspace packages
 
