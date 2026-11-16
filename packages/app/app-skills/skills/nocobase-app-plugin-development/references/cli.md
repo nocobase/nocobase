@@ -20,86 +20,9 @@ Use plugin CLI commands for work a person or CI invokes explicitly, such as vali
 
 Topics share one flat namespace. A plugin's topic is its package name without the scope and `app-plugin-` prefix — `@nocobase/app-plugin-demo` mounts under `demo` — so it needs no declaration. The scope is not part of the topic: `@acme/app-plugin-reports` and `@other/app-plugin-reports` both claim `reports`, and CLI assembly rejects that collision. Check existing plugin topics before choosing a package name; the optional `topic` field cannot rename the derived topic. The built-in topics avoid every official plugin name; a plugin whose name is a built-in topic or top-level command (`RESERVED_TOPICS` in `packages/app/app-cli/src/runtime/builtin.ts`) fails assembly. Command keys are lower-case kebab-case and may use colon-separated nesting: `artifact:build` becomes `nocobase demo artifact build`.
 
-<!-- command-authoring:start -->
-
 ## Write the command
 
-Every command extends `AppCommand` from `@nocobase/app-cli` (1.0.0-beta.0 or later). It is an oclif `Command` with the application wired in and one output contract.
-
-Choose what the command reaches for:
-
-| The command needs                                  | Use                                                                        |
-| -------------------------------------------------- | -------------------------------------------------------------------------- |
-| Files in the application                           | `this.rootDir`, the application root the runner located; nothing is loaded |
-| Configuration, paths, the environment, or services | `await this.withApp(async ({ app, env }) => { … })`                        |
-| The full application lifecycle                     | `await app.start()` inside the `withApp()` callback                        |
-
-`withApp()` creates the application from `server/app`, runs the callback, then shuts the application down and destroys its runtime, whether the callback returns or throws. A failure to shut down is a warning: it never turns work that succeeded into a failure, which would invite a rerun that repeats it. It registers and starts nothing: call `app.registerProviders()` to resolve services, and `app.start()` only when the command needs every provider running, because starting also starts workers and schedules. `app.config` and `app.paths` (`root()`, `storage()`, `database()`) need neither. `app` is valid only inside the callback; return what the command needs from it.
-
-### Output
-
-`run()` returns the command's result and throws `CommandError` when it fails. `AppCommand` provides `--json` and turns either into one document on stdout:
-
-```json
-{
-  "schemaVersion": 1,
-  "ok": true,
-  "command": "app orders export",
-  "status": "success",
-  "result": { "exported": 42 },
-  "warnings": []
-}
-```
-
-```json
-{
-  "schemaVersion": 1,
-  "ok": false,
-  "command": "app orders export",
-  "status": "failure",
-  "error": {
-    "code": "NO_ORDERS",
-    "message": "There are no orders to export.",
-    "suggestions": [],
-    "details": { "from": "2026-09-01" }
-  },
-  "warnings": []
-}
-```
-
-| To                        | Write                                                                   | Without `--json`                   | With `--json`                |
-| ------------------------- | ----------------------------------------------------------------------- | ---------------------------------- | ---------------------------- |
-| Tell a person the result  | `this.log(text)`                                                        | stdout                             | nothing                      |
-| Give a program the result | `return { … }`                                                          | nothing                            | `result`                     |
-| Report progress           | `this.logToStderr(text)`                                                | stderr                             | stderr                       |
-| Warn                      | `this.warn(text)`                                                       | stderr                             | `warnings`                   |
-| Fail                      | `throw new CommandError(message, { code, suggestions, details, exit })` | message and suggestions, on stderr | `error`, and a non-zero exit |
-
-- `code` is a stable UPPER_SNAKE name a caller branches on. `suggestions` are strings or `{ message, run: { command, args } }`; give `run` when the next step is a command. For a command of this CLI, `run: this.cliCommand(['db', 'apply'])` names it the way it runs where the command runs: `pnpm nocobase` in a source checkout, `node <dist>/cli/index.js` in a built `dist/`, which has no pnpm. `details` is plain data the caller needs to act on. `exit` defaults to `1`; use `2` for invalid usage.
-- `status` is `success` unless the command calls `this.setStatus('success-noop')` — for a dry run, or a run that found nothing to do — or `this.setStatus('partial-success')`; a failure is always `failure`.
-- The result is a public contract that callers and scripts come to rely on: declare its type, keep it to plain data, and never include a secret or a large text.
-- Do not call `this.exit()`, `this.logJson()` or `console.log`. Each puts something on stdout the document does not account for; `AppCommand` refuses the first two, and the shared ESLint preset refuses all three in `cli/`. Do not use `this.error()` either: it reports `COMMAND_FAILED` with oclif's default exit `2`, which reads as invalid usage.
-
-Records the application logs while a command runs go to stderr, so stdout carries only the command's own output. Progress stays on stderr under `--json` too, so a long command does not go quiet for the agent that asked for JSON.
-
-### Logs and debugging
-
-- A `CommandError`'s `cause` is never printed with it: the message is written to be safe anywhere, and the error behind it may quote a request, a response or an environment value. `NOCOBASE_CLI_DEBUG=1` prints that chain, with stacks and redacted, to stderr, for any command.
-- A record that belongs in the application's log — something an operator looks for later — goes through the application's own logger inside `withApp()`: call `app.registerProviders()`, then `app.container.resolve(loggingToken).getLogger('<topic>')` with `loggingToken` from `@nocobase/app-server/logging`. It lands in the application's log files, redacted and rotated like the server's records, and on stderr.
-
-### Paths
-
-Declare a path flag with `appPath({ description, default })`. The command receives an absolute path: a value the user typed resolves from the current directory, and the default resolves from the application root, wherever the command was run. Do not resolve it again, and do not use `process.cwd()` for application files.
-
-### Make it discoverable
-
-`pnpm nocobase commands --json` lists every command with its summary, arguments and flags, and marks the ones that take `--dry-run` and `--force`; an agent reads it before choosing a command. Give every flag a description, and use the conventional names: `dry-run` for a preview that changes nothing and answers `success-noop` with the plan in `result`, and `force` for proceeding past a confirmation. A command that refuses without `force` outside a terminal throws `CommandError` with code `FORCE_REQUIRED`, exit `2`, the plan in `details`, and both forms in `suggestions`. Lead the `examples` with the safe form — `--json`, `--dry-run` — rather than `--force`.
-
-### Keep the module cheap
-
-The command tree is assembled for `--help` too, so every command module is imported before any command runs. Keep top-level imports to `@nocobase/app-cli`, `@oclif/core` and Node built-ins, and load anything heavy with `await import()` inside `run()`.
-
-<!-- command-authoring:end -->
+A plugin command is written exactly like an application command: extend `AppCommand`, use `withApp()` when it needs the App, return a typed result for `--json`, and keep the module cheap to import. Follow [Write the command](../../nocobase-app-development/references/commands.md#write-the-command) in the application Skill, including its output, logging, path and discoverability rules. What differs for a plugin is where the class is registered (`defineCliPlugin()` below, not a file under `cli/commands/`) and that the topic is derived from the package name.
 
 ### Test
 
@@ -141,7 +64,7 @@ it('rejects a missing target', async () => {
 });
 ```
 
-`bindAppCommand()` pins the command to a fixture application, the way the runner would point it at the one it located; `id` is the id the runner would give it, colon-separated, so the document names the command. Pass `loadRuntime` and `createApp` as well to replace the application with a stub. `runAppCommand()` returns what `run()` returned as `result`, what escaped it as `error`, the `exitCode`, the captured `stdout` and `stderr`, and `json()` for the `--json` document. Assert on those rather than on printed text.
+`bindAppCommand()` and `runAppCommand()` behave as [the application Skill describes](../../nocobase-app-development/references/commands.md#test).
 
 A successful run leaves `exitCode` undefined, meaning zero; normalize it with `run.exitCode ?? 0`. Under `--json`, a handled failure is represented by its nonzero exit code and JSON error envelope, so checking `run.error` alone can miss it.
 

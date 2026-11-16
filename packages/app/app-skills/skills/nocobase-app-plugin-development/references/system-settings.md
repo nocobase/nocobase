@@ -35,7 +35,7 @@ authz.ui.place(
 );
 ```
 
-Use translated `{ key, ns }` titles for real items. Keep the same stable settings id in the registration, client checks and server checks. `authz.settings.grant(id, actions)` builds the grant for seeds and provisioning. Grant settings access directly rather than through a composite resource. For business data permissions, read `packages/plugins/app-plugin-authorization/skills/nocobase-app-plugin-authorization/SKILL.md` instead of treating all data editing as system administration.
+Use translated `{ key, ns }` titles for real items. Keep the same stable settings id in the registration, client checks and server checks. `authz.settings.grant(id, actions)` builds the grant for seeds and provisioning. Grant settings access directly rather than through a composite resource. For business data permissions, read the [authorization plugin Skill](../../nocobase-app-plugin-authorization/SKILL.md) (`.agents/skills/nocobase-app-plugin-authorization/SKILL.md` in an App) instead of treating all data editing as system administration.
 
 ## Leave the page to the application
 
