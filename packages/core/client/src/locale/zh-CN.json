@@ -1,4 +1,5 @@
 {
+  "The association target key is missing or invalid.": "关联目标键缺失或无效。",
   "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" 仅支持 \"application/json\"，无需指定",
   "(Fields only)": "（仅字段）",
   "(currently not effective in sub-forms/sub-tables)": "（该字段作为子表单/子表格不生效）",

@@ -225,6 +225,7 @@ async function getParsedPermissionFilter(options: ApplyQueryPermissionOptions, p
 
   return (
     (await parseJsonTemplate(filterParams, {
+      collection: options.db.getCollection(options.resourceName),
       state: options.state,
       timezone: options.timezone,
       userProvider: createUserProvider({

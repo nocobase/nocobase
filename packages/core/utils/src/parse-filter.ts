@@ -130,7 +130,7 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   }
 
   if (typeof value === 'string') {
-    if (!timezone || /(\+|-)\d\d:\d\d$/.test(value)) {
+    if (!timezone || /(?:Z|[+-]\d\d:\d\d)$/.test(value)) {
       return value;
     }
     return value + timezone;
