@@ -1,3 +1,5 @@
+import { mailLogCode, mailLogError } from '../logging.js';
+import { logMailFailure, errorRecord } from '../connection-diagnostics.js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   type MailAccount,
@@ -36,6 +38,7 @@ export class MailAuthorizationService {
       | 'credentials'
       | 'providerContext'
       | 'outbox'
+      | 'logger'
     >,
     private readonly sync: Pick<MailService, 'startSync'>,
     private readonly defaultAutomaticSyncIntervalMinutes: number,
@@ -155,6 +158,13 @@ export class MailAuthorizationService {
     if (!transaction) {
       throw new Error('Mail authorization state is invalid or expired.');
     }
+    const startedAt = Date.now();
+    const secrets = [
+      input.code ?? '',
+      input.state,
+      transaction.verifierCredentialReference,
+    ];
+    let stage: 'auth' | 'sync' = 'auth';
     try {
       if (input.error || !input.code) {
         throw new Error('Mail authorization was denied by the Provider.');
@@ -164,9 +174,12 @@ export class MailAuthorizationService {
         throw new Error('Mail Provider authorization is not available.');
       }
       const config = resolveProviderConfig(transaction.provider);
+      const clientSecret: unknown = Reflect.get(config, 'clientSecret');
+      if (typeof clientSecret === 'string') secrets.push(clientSecret);
       const verifier = await credentials.get<{
         readonly codeVerifier: string;
       }>(transaction.verifierCredentialReference);
+      secrets.push(verifier.codeVerifier);
       const result = await definition.authorization.complete(
         providerContext,
         config,
@@ -179,7 +192,9 @@ export class MailAuthorizationService {
         },
       );
       if (!result.ok) throw new MailProviderRequestError(result.error);
-      return this.persistAuthorizedAccount(
+      secrets.push(result.value.credentialReference);
+      stage = 'sync';
+      return await this.persistAuthorizedAccount(
         transaction.userId,
         transaction.provider,
         result.value,
@@ -188,6 +203,52 @@ export class MailAuthorizationService {
             `${mailSyncDateMonthsAgo(1)}T00:00:00Z`,
         ),
       );
+    } catch (error) {
+      const underlyingCode = errorRecord(error).code;
+      const classified =
+        error instanceof MailProviderRequestError
+          ? error
+          : {
+              code:
+                input.error || !input.code
+                  ? 'MAIL_AUTHORIZATION_DENIED'
+                  : typeof underlyingCode === 'string'
+                    ? underlyingCode
+                    : 'MAIL_AUTHORIZATION_RUNTIME_FAILED',
+              category:
+                input.error || !input.code
+                  ? ('authentication' as const)
+                  : ('unknown' as const),
+              retryable: false,
+              message: 'Mail authorization failed.',
+            };
+      logMailFailure(
+        {
+          ...mailLogError(error, secrets),
+          code: mailLogCode(classified.code, secrets),
+        },
+        {
+          category: classified.category,
+          retryable: classified.retryable,
+          code: mailLogCode(classified.code, secrets),
+          message: 'Mail authorization failed.',
+        },
+        {
+          secrets,
+          oauthError:
+            typeof input.error === 'string' &&
+            /^[a-z][a-z0-9_]{1,63}$/u.test(input.error)
+              ? input.error
+              : undefined,
+          logger: this.dependencies.logger,
+          event: 'mail.account.authorize_failed',
+          provider: transaction.provider.type,
+          protocol: 'https',
+          stage,
+          startedAt,
+        },
+      );
+      throw error;
     } finally {
       await credentials.delete(transaction.verifierCredentialReference);
     }

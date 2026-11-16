@@ -1,3 +1,4 @@
+import { mailLogError } from '../../server/logging.js';
 import { mailPushTiming } from '../../server/runtime/push-timing.js';
 import { EventEmitter } from 'node:events';
 import type { ImapFlow } from 'imapflow';
@@ -765,11 +766,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       expect.objectContaining({
         event: 'mail.send.sync_kick_failed',
         submissionId: result.id,
-        err: {
-          type: 'Error',
-          message: cleanupError.message,
-          stack: cleanupError.stack,
-        },
+        err: mailLogError(cleanupError),
       }),
       expect.any(String),
     );
@@ -851,11 +848,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         expect(logger.error).toHaveBeenCalledWith(
           expect.objectContaining({
             event: 'mail.send.exception',
-            err: {
-              type: 'Error',
-              message: failure.message,
-              stack: failure.stack,
-            },
+            err: mailLogError(failure),
           }),
           expect.any(String),
         );
@@ -1043,7 +1036,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     runtime.kick();
     await vi.waitFor(() =>
       expect(logger.error).toHaveBeenCalledWith(
-        { err: { type: 'Error', message: error.message, stack: error.stack } },
+        { err: mailLogError(error) },
         'Mail Outbox Relay failed.',
       ),
     );

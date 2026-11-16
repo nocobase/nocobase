@@ -4,6 +4,22 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   errors: {
+    connectionAuthenticationFailed:
+      'Autentikasi {{protocol}} gagal. Periksa nama login dan kata sandi atau kata sandi aplikasi.',
+    connectionHostNotFound:
+      'Host {{protocol}} tidak dapat diresolusikan. Periksa nama server.',
+    connectionConnectionRefused:
+      'Koneksi {{protocol}} ditolak. Periksa host, port, dan ketersediaan server.',
+    connectionConnectionTimeout:
+      'Koneksi {{protocol}} kehabisan waktu. Periksa server dan jaringan.',
+    connectionCertificateInvalid:
+      'Validasi sertifikat {{protocol}} gagal. Periksa sertifikat dan nama host.',
+    connectionTlsFailed:
+      'Negosiasi TLS {{protocol}} gagal. Periksa SSL/STARTTLS dan port.',
+    connectionConnectionFailed:
+      'Koneksi {{protocol}} gagal. Periksa server dan jaringan.',
+    connectionConnectionLost: 'Koneksi {{protocol}} terputus. Coba lagi.',
+
     imapMoveLocationChanged:
       'Folder atau salinan yang dipilih telah berubah. Sinkronkan kotak surat dan buka kembali folder sumber.',
     imapMoveNotWritable:

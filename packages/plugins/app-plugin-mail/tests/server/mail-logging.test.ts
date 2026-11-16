@@ -65,8 +65,9 @@ describe('Mail error serialization', () => {
           accountId: 'account',
           submissionId: 'submission',
           err: expect.objectContaining({
+            type: 'Error',
             message: error.message,
-            stack: error.stack,
+            stack: expect.stringContaining('mail-logging.test.ts'),
           }),
         }),
       );
@@ -78,19 +79,62 @@ describe('Mail error serialization', () => {
     }
   });
 
-  it('preserves message and stack across JSON serialization without SDK request or credential objects', () => {
-    const error = Object.assign(new Error('SMTP connection failed'), {
-      request: { password: 'private-password', body: 'private-body' },
-      accessToken: 'private-token',
+  it('preserves sanitized database diagnostics and frame locations without payloads or stack messages', () => {
+    const error = Object.assign(
+      new TypeError(
+        'Missing column in users: password=private-password token=private-token user@example.com',
+      ),
+      {
+        code: 'SQLITE_ERROR',
+        request: { body: 'private-body' },
+        stack:
+          'TypeError: private-password\nprivate-token\n    at loadMailbox (/app/mail.ts:42:7)\n    at callback (https://example.invalid/callback?code=private-code:4:2)',
+      },
+    );
+    const serialized = mailLogError(error);
+    expect(serialized).toMatchObject({
+      type: 'TypeError',
+      code: 'SQLITE_ERROR',
+      message: expect.stringContaining('Missing column in users'),
+      stack: expect.stringContaining('/app/mail.ts:42:7'),
     });
-    const serialized = JSON.parse(JSON.stringify(mailLogError(error)));
+    for (const secret of [
+      'private-password',
+      'private-token',
+      'private-body',
+      'private-code',
+      'user@example.com',
+      'TypeError:',
+    ])
+      expect(JSON.stringify(serialized)).not.toContain(secret);
+    expect(serialized.message).toContain('***@example.com');
+  });
+
+  it('redacts explicit credentials in messages and stack frames', () => {
+    const error = new Error('private-password private-code');
+    error.stack =
+      'Error: private-code\n    at private-password (/app/private-code.ts:4:2)';
+    const serialized = mailLogError(error, [
+      'private-password',
+      'private-code',
+    ]);
     expect(serialized).toEqual({
       type: 'Error',
-      message: error.message,
-      stack: error.stack,
+      message: '[REDACTED] [REDACTED]',
+      stack: '    at [REDACTED] (/app/[REDACTED].ts:4:2)',
     });
   });
-  it('only copies the message from provider failures and handles non-Error exceptions', () => {
+
+  it('keeps unscoped provider payloads opaque and handles non-Error exceptions', () => {
+    expect(
+      mailLogError({
+        message: 'private-provider-secret',
+        code: 'HTTP_429',
+        category: 'rate_limit',
+        retryable: true,
+        request: { token: 'secret' },
+      }),
+    ).toEqual({ message: 'Mail provider operation failed.', code: 'HTTP_429' });
     expect(
       mailLogError({
         message: 'Provider rejected request',

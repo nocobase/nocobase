@@ -2,6 +2,22 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    connectionAuthenticationFailed:
+      '{{protocol}} authentication failed. Check the login name and password or app password.',
+    connectionHostNotFound:
+      '{{protocol}} host could not be resolved. Check the server hostname.',
+    connectionConnectionRefused:
+      '{{protocol}} connection was refused. Check the host, port and server availability.',
+    connectionConnectionTimeout:
+      '{{protocol}} connection timed out. Check the server and network settings.',
+    connectionCertificateInvalid:
+      '{{protocol}} certificate validation failed. Check the certificate and hostname.',
+    connectionTlsFailed:
+      '{{protocol}} TLS negotiation failed. Check the SSL/STARTTLS settings and port.',
+    connectionConnectionFailed:
+      '{{protocol}} connection failed. Check the server and network settings.',
+    connectionConnectionLost: '{{protocol}} connection was lost. Try again.',
+
     imapMoveLocationChanged:
       'The selected folder or copy changed. Synchronize and open the source folder again.',
     imapMoveNotWritable:

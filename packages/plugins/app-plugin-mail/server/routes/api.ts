@@ -1,4 +1,8 @@
 import {
+  MAIL_CONNECTION_REASONS,
+  MailProviderRequestError,
+} from '../services/errors.js';
+import {
   authenticationToken,
   type AuthEnv,
 } from '@nocobase/app-plugin-authentication';
@@ -1741,14 +1745,37 @@ function attachmentResponse(
   return new Response(content.stream, { headers });
 }
 
+function connectionLocalized(
+  context: Context,
+  error: unknown,
+): { localizedMessage?: { locale: string; message: string } } {
+  const reason =
+    error instanceof MailError &&
+    error.cause instanceof MailProviderRequestError
+      ? error.cause.reasonCode
+      : isMailProviderError(error)
+        ? error.reasonCode
+        : undefined;
+  for (const protocol of ['imap', 'smtp']) {
+    for (const suffix of MAIL_CONNECTION_REASONS) {
+      if (reason === `${protocol}${suffix}`)
+        return localized(context, `errors.connection${suffix}`, {
+          protocol: protocol.toUpperCase(),
+        });
+    }
+  }
+  return {};
+}
+
 /** The request's translation of a Mail message key, as the error body's `localizedMessage`. */
 function localized(
   context: Context,
   key: string,
+  params?: { protocol: string },
 ): { localizedMessage?: { locale: string; message: string } } {
   try {
     const locale = getRequestLocale(context);
-    const message = getRequestTranslator(context, MAIL_NAMESPACE)(key);
+    const message = getRequestTranslator(context, MAIL_NAMESPACE)(key, params);
     return locale && message ? { localizedMessage: { locale, message } } : {};
   } catch {
     // A router mounted without the i18n middleware answers without a translation.
@@ -1818,6 +1845,7 @@ function toMailApiError(error: unknown, context: Context): unknown {
               ? 'errors.invalidRecipient'
               : 'errors.invalidRequest',
         ),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     }
@@ -1887,6 +1915,7 @@ function mailProviderApiError(
         message: 'The mail Provider is rate limiting requests.',
         metadata,
         ...localized(context, 'errors.providerRateLimited'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     case 'UNAVAILABLE':
@@ -1897,6 +1926,7 @@ function mailProviderApiError(
         message: 'The mail Provider could not be reached.',
         metadata,
         ...localized(context, 'errors.providerUnavailable'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     case 'REAUTHORIZATION_REQUIRED':
@@ -1908,6 +1938,7 @@ function mailProviderApiError(
           'The mail Provider no longer accepts the account authorization; reconnect the account.',
         metadata,
         ...localized(context, 'errors.reauthorizationRequired'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     case 'REJECTED':
@@ -1918,6 +1949,7 @@ function mailProviderApiError(
         message: 'The mail Provider rejected the request.',
         metadata,
         ...localized(context, 'errors.requestFailed'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
   }

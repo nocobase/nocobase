@@ -37,7 +37,11 @@ describe('Mail realtime notifications', () => {
       expect.objectContaining({
         event: 'mail.realtime.failed',
         userId: 'user-1',
-        err: { type: 'Error', message: error.message, stack: error.stack },
+        err: expect.objectContaining({
+          type: 'Error',
+          message: error.message,
+          stack: expect.stringContaining('mail-realtime.test.ts'),
+        }),
       }),
       'Failed to publish Mail realtime event.',
     );
