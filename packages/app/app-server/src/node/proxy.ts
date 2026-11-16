@@ -1,10 +1,11 @@
 import {
+  Agent as HttpAgent,
   request as httpRequest,
   type ClientRequest,
   type IncomingMessage,
   type RequestOptions,
 } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import { Agent as HttpsAgent, request as httpsRequest } from 'node:https';
 import { Duplex, Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
@@ -27,6 +28,10 @@ export interface NodeServerProxyOptions {
 
 /** A standalone listener's proxy; application routes never pass through this layer. */
 export class NodeServerProxy {
+  // Internal forwarding must not inherit the global agent's environment proxy:
+  // its destination differs from the public Host header we intentionally preserve.
+  private readonly httpAgent = new HttpAgent({ keepAlive: true });
+  private readonly httpsAgent = new HttpsAgent({ keepAlive: true });
   private readonly requests = new Set<ClientRequest>();
   private readonly webSockets = new Set<Duplex>();
   private closed = false;
@@ -220,12 +225,17 @@ export class NodeServerProxy {
     this.closeWebSockets();
     for (const request of this.requests) request.destroy();
     this.requests.clear();
+    this.httpAgent.destroy();
+    this.httpsAgent.destroy();
   }
 
   private request(target: URL, options: RequestOptions): ClientRequest {
     const outgoing = (
       target.protocol === 'https:' ? httpsRequest : httpRequest
-    )(target, options);
+    )(target, {
+      ...options,
+      agent: target.protocol === 'https:' ? this.httpsAgent : this.httpAgent,
+    });
     this.requests.add(outgoing);
     outgoing.once('close', () => this.requests.delete(outgoing));
     return outgoing;

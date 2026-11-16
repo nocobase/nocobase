@@ -1,4 +1,5 @@
-import {
+import http, {
+  Agent,
   createServer,
   request as httpRequest,
   type Server,
@@ -46,6 +47,80 @@ afterEach(async () => {
 });
 
 describe('standalone proxy', () => {
+  it.each(['http', 'websocket'] as const)(
+    'forwards %s directly when the global agent uses an environment proxy',
+    async (transport) => {
+      let intercepted = 0;
+      const environmentProxy = await listen(
+        createServer((_req, res) => {
+          intercepted++;
+          res.end('environment proxy');
+        }),
+      );
+      let received: IncomingMessage | undefined;
+      const upstream = createServer((req, res) => {
+        received = req;
+        res.setHeader('set-cookie', 'session=child; Path=/crm/');
+        res.end('child');
+      });
+      upstream.on('upgrade', (req, socket) => {
+        received = req;
+        socket.end(
+          'HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n',
+        );
+      });
+      const target = await listen(upstream);
+      const { app, url } = await startProxy(() => target);
+      const previousAgent = http.globalAgent;
+      const environmentAgent = new Agent({
+        proxyEnv: { HTTP_PROXY: environmentProxy.href, NO_PROXY: '' },
+      });
+      http.globalAgent = environmentAgent;
+      try {
+        if (transport === 'http') {
+          const response = await app.fetch(
+            new Request(`${url}/crm/?q=1`, {
+              headers: { cookie: 'session=demo', origin: url },
+            }),
+          );
+          expect(response.status).toBe(200);
+          expect(await response.text()).toBe('child');
+          expect(response.headers.getSetCookie()).toEqual([
+            'session=child; Path=/crm/',
+          ]);
+        } else {
+          const response = await upgrade(url, '/crm/?q=1', url);
+          response.socket?.destroy();
+          expect(response.status).toBe(101);
+        }
+        expect(received?.url).toBe('/crm/?q=1');
+        expect(received?.headers).toMatchObject({
+          host: new URL(url).host,
+          'x-forwarded-host': new URL(url).host,
+          cookie: 'session=demo',
+          origin: url,
+        });
+        expect(intercepted).toBe(0);
+        // Ordinary outbound requests must still use the configured global agent.
+        const body = await new Promise<string>((resolve, reject) => {
+          const req = http.get(target, (res) => {
+            let text = '';
+            res.on('data', (chunk) => {
+              text += String(chunk);
+            });
+            res.on('end', () => resolve(text));
+          });
+          req.on('error', reject);
+        });
+        expect(body).toBe('environment proxy');
+        expect(intercepted).toBe(1);
+      } finally {
+        http.globalAgent = previousAgent;
+        environmentAgent.destroy();
+      }
+    },
+  );
+
   it('resolves each request to its own upstream without sharing mutable routing state', async () => {
     const one = await listen(
       createServer((req, res) => res.end(`one:${req.url}`)),
@@ -422,6 +497,7 @@ function upgrade(
 }> {
   return new Promise((resolve, reject) => {
     const req = httpRequest(new URL(pathname, origin), {
+      agent: false,
       headers: {
         connection: 'Upgrade',
         upgrade: 'websocket',
