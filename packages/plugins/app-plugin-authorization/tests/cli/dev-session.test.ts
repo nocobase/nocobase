@@ -153,6 +153,27 @@ describe('development browser sessions', () => {
     },
   );
 
+  it('rejects remote URLs before resolving services', async () => {
+    const { root, app } = await fixture();
+    const Command = bindAppCommand(DevSession, {
+      id: 'authorization:dev-session',
+      rootDir: root,
+      loadRuntime: async () =>
+        ({ env: {}, scope: { destroy: vi.fn() } }) as never,
+      createApp: () => app as never,
+    });
+    const result = await runAppCommand(Command, [
+      '--base',
+      'https://example.com/main/',
+      '--json',
+    ]);
+    expect(result.json()).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_BASE_URL' },
+    });
+    expect(app.registerProviders).not.toHaveBeenCalled();
+  });
+
   it('reuses an account, replaces root with member, revokes the session and re-enables the account', async () => {
     const { run, state, session, auth, authz, users, passwords } =
       await databaseFixture();
