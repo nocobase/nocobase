@@ -1,4 +1,8 @@
-import { PageBreadcrumbProvider } from '@nocobase/app-client';
+import { apiClientToken, PageBreadcrumbProvider } from '@nocobase/app-client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+} from '@nocobase/app-plugin-authorization/client';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { answerApi, type ApiCall } from '@nocobase/app-testing/client';
 import { act, screen, waitFor, within } from '@testing-library/react';
@@ -118,6 +122,28 @@ function Location() {
   );
 }
 
+/** Answers the authorization snapshot `useCan` reads with the page grant the server requires. */
+const authorized =
+  (fetch: typeof globalThis.fetch): typeof globalThis.fetch =>
+  (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    return new URL(request.url).pathname.endsWith('/authorization/permissions')
+      ? Promise.resolve(
+          Response.json({
+            data: {
+              unrestricted: false,
+              permissions: [
+                {
+                  resource: { type: 'page', id: 'skill-projects' },
+                  actions: ['access'],
+                },
+              ],
+            },
+          }),
+        )
+      : fetch(request);
+  };
+
 const mount = (api: ReturnType<typeof server>, route: string) =>
   renderSettingsClient(
     <RouteTreeProvider routes={routes}>
@@ -127,18 +153,24 @@ const mount = (api: ReturnType<typeof server>, route: string) =>
         <Routes>
           <Route path='/skill-projects' element={<SkillProjectsPage />}>
             <Route path='new' element={<SkillProjectEditPage />} />
-            <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
-            <Route
-              path=':projectId/details'
-              element={<SkillProjectDetailPage />}
-            >
+            <Route path=':projectId' element={<SkillProjectDetailPage />}>
               <Route path='edit' element={<SkillProjectEditPage />} />
             </Route>
           </Route>
         </Routes>
       </PageBreadcrumbProvider>
     </RouteTreeProvider>,
-    { route, namespace, namespaces, fetch: api.fetch },
+    {
+      route,
+      namespace,
+      namespaces,
+      fetch: authorized(api.fetch),
+      services: (app) =>
+        app.container.instance(
+          authorizationClientToken,
+          new AuthorizationClient(app.container.resolve(apiClientToken)),
+        ),
+    },
   );
 
 const total = () => screen.getByTestId('projects-total');
@@ -183,10 +215,10 @@ it('updates the open detail from the save response, then the searched, sorted se
   await screen.findByRole('heading', { name: 'Project 02' });
   const detailReads = api.count('GET', 'skillProjects/p02');
   await userEvent.click(
-    screen.getAllByRole('button', { name: 'Edit' }).find((link) =>
+    (await screen.findAllByRole('button', { name: 'Edit' })).find((link) =>
       // The link keeps the list's query, so a reload of the edit dialog still knows the list.
       new URL(link.getAttribute('href') ?? '', 'http://app').pathname.endsWith(
-        '/details/edit',
+        '/p02/edit',
       ),
     )!,
   );
@@ -199,12 +231,11 @@ it('updates the open detail from the save response, then the searched, sorted se
   expect(api.count('GET', 'skillProjects/p02')).toBe(detailReads + 1);
   const listReads = api.count('GET', 'skillProjects');
   expect(api.count('GET', 'skillProjects/summary')).toBe(1);
+  // Closing the drawer returns to the list it covered.
   await userEvent.click(
-    within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByRole(
-      'link',
-      { name: 'Projects' },
-    ),
+    within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }),
   );
+  await waitFor(() => expect(location()).toBe(source));
   await screen.findByRole('link', { name: 'Project 02 renamed' });
   expect(location()).toBe(source);
   expect(screen.getByText('Page 2 of 2')).toBeVisible();
@@ -229,7 +260,7 @@ it('returns a deleted detail to its source list, drops the row and count, and co
     await screen.findByRole('link', { name: 'Project 11' }),
   );
   await screen.findByRole('heading', { name: 'Project 11' });
-  await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
   const dialog = await screen.findByRole('alertdialog');
   await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(location()).toBe('/skill-projects?page=1'));
@@ -252,11 +283,11 @@ it('returns a deleted detail to its source list, drops the row and count, and co
 
 it('opens a detail URL directly, deletes it and returns to the default list', async () => {
   const api = server(['Alpha', 'Beta']);
-  await mount(api, '/skill-projects/p01/details');
+  await mount(api, '/skill-projects/p01');
   await screen.findByRole('heading', { name: 'Alpha' });
   // The covered list has not been read.
   expect(api.count('GET', 'skillProjects')).toBe(0);
-  await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
   await userEvent.click(
     within(await screen.findByRole('alertdialog')).getByRole('button', {
       name: 'Delete',
@@ -285,15 +316,17 @@ it.each([
             { status },
           )
         : undefined;
-    const view = await mount(api, '/skill-projects/p01/details');
+    const view = await mount(api, '/skill-projects/p01');
     await screen.findByRole('heading', { name: 'Alpha' });
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete' }),
+    );
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Delete' }),
     );
     expect(await within(dialog).findByText(message)).toBeVisible();
-    expect(location()).toBe('/skill-projects/p01/details');
+    expect(location()).toBe('/skill-projects/p01');
     expect(
       screen.getByRole('heading', { name: 'Alpha', hidden: true }),
     ).toBeInTheDocument();
@@ -312,9 +345,9 @@ it('re-reads after an unknown delete result, never resubmits on its own, and ret
       { status: 500 },
     );
   };
-  const view = await mount(api, '/skill-projects/p01/details');
+  const view = await mount(api, '/skill-projects/p01');
   await screen.findByRole('heading', { name: 'Alpha' });
-  await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
   const dialog = await screen.findByRole('alertdialog');
   await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
@@ -338,7 +371,7 @@ it('re-reads after an unknown delete result, never resubmits on its own, and ret
 
 it('treats a delete of an already removed record as done and returns to the list', async () => {
   const api = server(['Alpha', 'Beta']);
-  await mount(api, '/skill-projects/p01/details');
+  await mount(api, '/skill-projects/p01');
   await screen.findByRole('heading', { name: 'Alpha' });
   api.override.answer = (call) =>
     call.method === 'DELETE'
@@ -353,7 +386,7 @@ it('treats a delete of an already removed record as done and returns to the list
           { status: 404 },
         )
       : undefined;
-  await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
   await userEvent.click(
     within(await screen.findByRole('alertdialog')).getByRole('button', {
       name: 'Delete',

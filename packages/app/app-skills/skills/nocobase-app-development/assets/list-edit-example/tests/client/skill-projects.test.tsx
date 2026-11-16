@@ -1,9 +1,8 @@
-import { PageBreadcrumbProvider } from '@nocobase/app-client';
-import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
-import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
-import { RouteTreeProvider } from '../../client/routing/route-context.js';
-import applicationRoutes from '../../client/routes.js';
-import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js';
+import { apiClientToken } from '@nocobase/app-client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+} from '@nocobase/app-plugin-authorization/client';
 import { answerApi } from '@nocobase/app-testing/client';
 import {
   act,
@@ -13,10 +12,12 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { renderSettingsClient } from '../helpers/settings-client.js';
 import SkillProjectsPage from '../../client/pages/skill-projects/index.js';
+import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js';
 import SkillProjectEditPage from '../../client/pages/skill-projects/edit.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
@@ -33,23 +34,62 @@ const namespaces = {
     'zh-CN': async () => ({ default: zhCN }),
   },
 };
+/** The session's permission snapshot: the page grant the server requires, or nothing. */
+const snapshot = (granted: boolean) => ({
+  data: {
+    unrestricted: false,
+    permissions: granted
+      ? [
+          {
+            resource: { type: 'page', id: 'skill-projects' },
+            actions: ['access'],
+          },
+        ]
+      : [],
+  },
+});
+/** Answers the authorization snapshot `useCan` reads; every other request goes to the test's API double. */
+const authorized =
+  (fetch: typeof globalThis.fetch, granted = true): typeof globalThis.fetch =>
+  (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    return new URL(request.url).pathname.endsWith('/authorization/permissions')
+      ? Promise.resolve(Response.json(snapshot(granted)))
+      : fetch(request);
+  };
+// The routes of the Examples `client/routes.ts` entry: create beside the drawer, edit stacked on it.
+const projectRoutes = (
+  <Route path='/skill-projects' element={<SkillProjectsPage />}>
+    <Route path='new' element={<SkillProjectEditPage />} />
+    <Route path=':projectId' element={<SkillProjectDetailPage />}>
+      <Route path='edit' element={<SkillProjectEditPage />} />
+    </Route>
+  </Route>
+);
+const render = (
+  ui: ReactElement,
+  fetch: typeof globalThis.fetch,
+  route = '/skill-projects',
+  locale = 'en-US',
+  granted = true,
+) =>
+  renderSettingsClient(ui, {
+    route,
+    namespace,
+    namespaces,
+    locale,
+    fetch: authorized(fetch, granted),
+    services: (app) =>
+      app.container.instance(
+        authorizationClientToken,
+        new AuthorizationClient(app.container.resolve(apiClientToken)),
+      ),
+  });
 const mount = (
   fetch: typeof globalThis.fetch,
   route = '/skill-projects',
   locale = 'en-US',
-) =>
-  renderSettingsClient(
-    <Routes>
-      <Route path='/skill-projects' element={<SkillProjectsPage />}>
-        <Route path='new' element={<SkillProjectEditPage />} />
-        <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
-      </Route>
-    </Routes>,
-    { route, namespace, namespaces, locale, fetch },
-  );
-const detailRoutes = resolveAppClientContributions([
-  { packageName: namespace, source: 'application', routes: applicationRoutes },
-]).routes;
+) => render(<Routes>{projectRoutes}</Routes>, fetch, route, locale);
 // A row's Edit sits in its "⋮" actions menu (T1.5).
 async function openRowEdit(
   user: Pick<typeof userEvent, 'click'>,
@@ -63,31 +103,19 @@ async function openRowEdit(
   await user.click(triggers[index]!);
   await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
 }
-
-const mountDetail = (fetch: typeof globalThis.fetch) =>
-  renderSettingsClient(
-    <Routes>
-      <Route
-        path='/skill-projects'
-        element={
-          <RouteTreeProvider routes={detailRoutes}>
-            <PageBreadcrumbProvider>
-              <Breadcrumbs />
-              <SkillProjectsPage />
-            </PageBreadcrumbProvider>
-          </RouteTreeProvider>
-        }
-      >
-        <Route path=':projectId/details' element={<SkillProjectDetailPage />} />
-      </Route>
-    </Routes>,
-    {
-      route: '/skill-projects/abc/details?detailTab=activity',
-      namespace,
-      namespaces,
-      fetch,
-    },
+/** The create or edit dialog; the detail drawer it stacks on is named after the project. */
+const formDialog = (name = /^(Create|Edit) project$/) =>
+  screen.queryByRole('dialog', { name });
+/** Closes the detail drawer left open after its edit dialog closed, back to the list. */
+async function closeDrawer(): Promise<void> {
+  await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(1));
+  await userEvent.click(
+    within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }),
   );
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+}
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -103,38 +131,44 @@ it.each(['fast', 'slow'])(
     });
     const view = await mount(
       answerApi(({ path }) => {
-        if (path === 'skillProjects/abc') return { data: original };
+        if (path === 'skillProjects/summary') return { data: { total: 1 } };
         if (path === 'skillProjects') return ++reads === 1 ? list() : refresh;
         throw new Error(`Unexpected request: ${path}`);
       }),
     );
     await screen.findByText('Alpha');
-    const slot = screen.getByTestId('refresh-slot');
-    await openRowEdit(userEvent);
+    const table = screen.getByRole('table');
+    const refreshing = () =>
+      screen.queryByRole('status', { name: enUS['status.refreshing'] });
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Create project' }),
+    );
     await screen.findByRole('textbox', { name: 'Name' });
     vi.useFakeTimers();
     await act(() => vi.advanceTimersByTimeAsync(1000));
     expect(reads).toBe(1);
     expect(screen.getByText('Alpha')).toBeInTheDocument();
-    expect(screen.queryByText('Refreshing…')).not.toBeInTheDocument();
+    expect(refreshing()).not.toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     });
     expect(reads).toBe(2);
-    expect(screen.queryByText('Refreshing…')).not.toBeInTheDocument();
+    expect(refreshing()).not.toBeInTheDocument();
     if (speed === 'slow') {
       await act(() => vi.advanceTimersByTimeAsync(299));
-      expect(screen.queryByText('Refreshing…')).not.toBeInTheDocument();
+      expect(refreshing()).not.toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(1));
-      expect(screen.getByText('Refreshing…')).toBeVisible();
+      expect(refreshing()).toBeInTheDocument();
+      // The rows stay while they refresh.
+      expect(screen.getByText('Alpha')).toBeVisible();
     }
     await act(async () => {
       finish(list('Fresh Alpha'));
     });
     await act(() => vi.advanceTimersByTimeAsync(1000));
     expect(screen.getByText('Fresh Alpha')).toBeVisible();
-    expect(screen.queryByText('Refreshing…')).not.toBeInTheDocument();
-    expect(screen.getByTestId('refresh-slot')).toBe(slot);
+    expect(refreshing()).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toBe(table);
     view.unmount();
   },
 );
@@ -185,10 +219,13 @@ it('revalidates a corrected name, keeps a rejected draft, and refreshes the list
     ).toBeEnabled(),
   );
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-  );
-  expect(await screen.findByText('New Alpha')).toBeVisible();
+  await waitFor(() => expect(formDialog()).not.toBeInTheDocument());
+  // The edit returns to the drawer it opened from, which shows the saved name.
+  expect(
+    await screen.findByRole('dialog', { name: 'New Alpha' }),
+  ).toBeVisible();
+  await closeDrawer();
+  expect(await screen.findByRole('link', { name: 'New Alpha' })).toBeVisible();
   expect(writes).toEqual([{ name: 'New Alpha' }, { name: 'New Alpha' }]);
 });
 
@@ -324,16 +361,21 @@ it('keeps the original payload/key after an unknown result, asks before closing 
   await waitFor(() => expect(writes).toBe(2));
   expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
   await userEvent.keyboard('{Escape}');
-  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  expect(formDialog()).toBeInTheDocument();
   expect(keys[0]).toBeTruthy();
   expect(keys[1]).toBe(keys[0]);
   await act(async () => {
     complete();
   });
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-  );
-  expect(screen.getByText('Confirmed Alpha')).toBeVisible();
+  await waitFor(() => expect(formDialog()).not.toBeInTheDocument());
+  // The drawer and the covered list both show the saved row before any verification read of the list.
+  expect(
+    await screen.findByRole('dialog', { name: 'Confirmed Alpha' }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('link', { name: 'Confirmed Alpha', hidden: true }),
+  ).toBeInTheDocument();
+  expect(reads).toBe(1);
   expect(view.toasts()).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
@@ -353,8 +395,9 @@ it('shows a named skeleton without a create action until the initial read finish
     finish = resolve;
   });
   await mount(answerApi(() => response));
+  // The list's built-in loading state names itself after the shared display delay.
   expect(
-    screen.getByRole('status', { name: 'Loading projects…' }),
+    await screen.findByRole('status', { name: enUS.listFeedback.loading }),
   ).toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: 'Create project' }),
@@ -363,8 +406,9 @@ it('shows a named skeleton without a create action until the initial read finish
     finish(list());
   });
   expect(screen.getByText('Alpha')).toBeVisible();
+  // The page header holds the only New button.
   expect(
-    screen.getAllByRole('button', { name: 'Create project' }),
+    await screen.findAllByRole('button', { name: 'Create project' }),
   ).toHaveLength(1);
 });
 
@@ -427,13 +471,14 @@ it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
         rows = rows.filter((row) => row.id !== 'project-10');
       await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     }
+    // The edit dialog returns to the record's drawer; the list stays covered and unread until the drawer closes.
+    await waitFor(() => expect(formDialog()).not.toBeInTheDocument());
+    expect(reads).toBe(1);
+    await closeDrawer();
     await waitFor(() => expect(reads).toBe(2));
     await act(async () => {
       finish();
     });
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
     expect(
       screen.getByText(
         action === 'lastPageRemoved' ? 'Page 1 of 1' : 'Page 2 of 2',
@@ -470,7 +515,11 @@ it('returns a direct edit link to a stable page focus target', async () => {
   );
   await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-  await screen.findByText('Alpha');
+  // Cancel returns to the drawer the edit stacks on; the covered list has not been read.
+  expect(await screen.findByRole('dialog', { name: 'Alpha' })).toBeVisible();
+  expect(reads).toBe(0);
+  await closeDrawer();
+  await screen.findByRole('link', { name: 'Alpha' });
   expect(reads).toBe(1);
   await waitFor(() =>
     expect(screen.getByRole('region', { name: 'Projects' })).toHaveFocus(),
@@ -519,9 +568,12 @@ it.each([
       screen.getByRole('button', { name: copy.discardAction }),
     );
     await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole('dialog', { name: copy.edit }),
+      ).not.toBeInTheDocument(),
     );
-    expect(await screen.findByText('Alpha')).toBeVisible();
+    // Discarding returns to the drawer the edit stacks on.
+    expect(await screen.findByRole('dialog', { name: 'Alpha' })).toBeVisible();
     expect(nativeConfirm).not.toHaveBeenCalled();
   },
 );
@@ -535,7 +587,8 @@ it('keeps a consistent frame across held loading, retryable error and recovery',
   await mount(
     answerApi(async ({ path }) => {
       if (path === 'skillProjects') return list();
-      if (++reads === 1) {
+      // The drawer and its stacked edit dialog each read the record once.
+      if (++reads <= 2) {
         await held;
         return Response.json(
           {
@@ -552,26 +605,29 @@ it('keeps a consistent frame across held loading, retryable error and recovery',
     }),
     '/skill-projects/abc/edit',
   );
-  expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-md');
+  const dialog = () => screen.getByRole('dialog', { name: 'Edit project' });
+  expect(dialog()).toHaveClass('sm:max-w-md');
   expect(
-    screen.getByRole('status', { name: 'Loading projects…' }),
+    within(dialog()).getByRole('status', { name: 'Loading projects…' }),
   ).toBeInTheDocument();
   await act(async () => {
     finish();
   });
-  const alert = await screen.findByRole('alert');
+  const alert = await within(dialog()).findByRole('alert');
   expect(alert).toHaveAttribute('data-slot', 'alert');
-  expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-md');
-  await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
-  await screen.findByRole('textbox', { name: 'Name' });
-  expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-md');
+  expect(dialog()).toHaveClass('sm:max-w-md');
+  await userEvent.click(
+    within(dialog()).getByRole('button', { name: 'Retry' }),
+  );
+  await within(dialog()).findByRole('textbox', { name: 'Name' });
+  expect(dialog()).toHaveClass('sm:max-w-md');
 });
 
 it.each([
-  ['en-US', enUS.skillProjects],
-  ['zh-CN', zhCN.skillProjects],
+  ['en-US', enUS],
+  ['zh-CN', zhCN],
 ] as const)(
-  'shows localized list error recovery for 401/403/500 in %s',
+  'shows the built-in localized list states for 401/403/500 in %s',
   async (locale, copy) => {
     for (const status of [401, 403, 500]) {
       let failed = true;
@@ -594,29 +650,35 @@ it.each([
         locale,
       );
       const alert = await screen.findByRole('alert');
-      expect(alert).toHaveAttribute('data-slot', 'alert');
       expect(alert).toHaveTextContent(
         status === 401
-          ? copy.expired
+          ? copy.listFeedback.unauthenticated
           : status === 403
-            ? copy.denied
-            : copy.failed,
+            ? copy.listFeedback.forbidden
+            : copy.listFeedback.failed,
       );
       expect(
-        screen.queryByRole('button', { name: copy.create }),
+        screen.queryByRole('button', { name: copy.skillProjects.create }),
       ).not.toBeInTheDocument();
       if (status === 500) {
         failed = false;
-        await userEvent.click(screen.getByRole('button', { name: copy.retry }));
+        await userEvent.click(
+          screen.getByRole('button', { name: copy.listFeedback.retry }),
+        );
         expect(await screen.findByText('Alpha')).toBeVisible();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(
+          await screen.findByRole('button', {
+            name: copy.skillProjects.create,
+          }),
+        ).toBeVisible();
       } else {
         expect(
-          screen.queryByRole('button', { name: copy.retry }),
+          screen.queryByRole('button', { name: copy.listFeedback.retry }),
         ).not.toBeInTheDocument();
         if (status === 401)
           expect(
-            screen.getByRole('link', { name: copy.signIn }),
+            screen.getByText(copy.listFeedback.signIn).closest('a'),
           ).toHaveAttribute('href', '/login');
       }
       view.unmount();
@@ -687,9 +749,7 @@ it.each(['create', 'edit'])(
     await userEvent.click(
       screen.getByRole('button', { name: action, exact: true }),
     );
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(formDialog()).not.toBeInTheDocument());
     expect(writes).toBe(2);
     expect(keys[0]).toBeTruthy();
     expect(keys[1]).toBe(keys[0]);
@@ -751,9 +811,8 @@ it.each([
     await userEvent.click(
       within(prompt).getByRole('button', { name: 'Discard' }),
     );
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(formDialog()).not.toBeInTheDocument());
+    await closeDrawer();
     expect(await screen.findByText(enUS.skillProjects.empty)).toBeVisible();
     expect(writes).toBe(2);
   },
@@ -805,9 +864,7 @@ it('keeps a retryable pending operation after an ordinary recovery 404 without c
   await userEvent.click(
     screen.getByRole('button', { name: 'Save', exact: true }),
   );
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-  );
+  await waitFor(() => expect(formDialog()).not.toBeInTheDocument());
   expect(writes).toBe(3);
 });
 
@@ -821,36 +878,27 @@ it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
       back = () => void navigate(-1);
       return null;
     }
-    await renderSettingsClient(
+    await render(
       <>
-        <Routes>
-          <Route path='/skill-projects' element={<SkillProjectsPage />}>
-            <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
-          </Route>
-        </Routes>
+        <Routes>{projectRoutes}</Routes>
         <HistoryBack />
       </>,
-      {
-        route: '/skill-projects',
-        namespace,
-        namespaces,
-        fetch: answerApi(({ path, method }) => {
-          if (method === 'PATCH') {
-            writes += 1;
-            return Response.json(
-              {
-                error: {
-                  status: 'INTERNAL',
-                  reason: 'LOST_RESPONSE',
-                  message: 'Unavailable',
-                },
+      answerApi(({ path, method }) => {
+        if (method === 'PATCH') {
+          writes += 1;
+          return Response.json(
+            {
+              error: {
+                status: 'INTERNAL',
+                reason: 'LOST_RESPONSE',
+                message: 'Unavailable',
               },
-              { status: 500 },
-            );
-          }
-          return path === 'skillProjects' ? list() : { data: original };
-        }),
-      },
+            },
+            { status: 500 },
+          );
+        }
+        return path === 'skillProjects' ? list() : { data: original };
+      }),
     );
     await screen.findByText('Alpha');
     await openRowEdit(userEvent);
@@ -872,7 +920,12 @@ it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
             .closest('[data-base-ui-portal]')!
             .querySelector(':scope > [data-slot="dialog-overlay"]')!,
         );
-      else await userEvent.click(screen.getByRole('button', { name: way }));
+      else
+        await userEvent.click(
+          within(
+            screen.getByRole('dialog', { name: 'Edit project' }),
+          ).getByRole('button', { name: way }),
+        );
     };
     await leave();
     await screen.findByRole('alertdialog', {
@@ -901,29 +954,42 @@ it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
   },
 );
 
-it('keeps a default list parent while a directly opened record loads, then names the record', async () => {
+it('opens a directly linked record in its drawer over the unread list, then names the record', async () => {
   let finish!: (value: { data: typeof original }) => void;
   const pending = new Promise<{ data: typeof original }>((resolve) => {
     finish = resolve;
   });
-  const view = await mountDetail(
-    answerApi(({ path }) => (path === 'skillProjects/abc' ? pending : list())),
+  let reads = 0;
+  const view = await mount(
+    answerApi(({ path }) => {
+      if (path === 'skillProjects/abc') return pending;
+      if (path === 'skillProjects') reads += 1;
+      return list();
+    }),
+    '/skill-projects/abc',
   );
-  const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
-  expect(trail).toHaveTextContent('Projects');
-  expect(trail).toHaveTextContent('Project details');
+  const drawer = screen.getByRole('dialog', { name: 'Project details' });
   expect(
-    screen.getByRole('link', { name: 'Back to Projects' }),
-  ).toHaveAttribute('href', '/skill-projects');
+    within(drawer).getByRole('status', { name: 'Loading projects…' }),
+  ).toBeInTheDocument();
   await act(async () => {
     finish({ data: original });
   });
-  await screen.findByRole('heading', { name: 'Alpha' });
-  expect(trail).toHaveTextContent('Alpha');
+  expect(await screen.findByRole('dialog', { name: 'Alpha' })).toBe(drawer);
+  expect(within(drawer).getByRole('definition')).toHaveTextContent('Alpha');
+  // Edit and Delete are the drawer's footer actions; the covered list was never read.
+  expect(
+    await within(drawer).findByRole('button', { name: 'Edit' }),
+  ).toBeVisible();
+  expect(within(drawer).getByRole('button', { name: 'Delete' })).toBeVisible();
+  expect(reads).toBe(0);
+  await closeDrawer();
+  await screen.findByRole('link', { name: 'Alpha' });
+  expect(reads).toBe(1);
   view.unmount();
 });
 
-it('returns to the same list page after a reloaded edit is saved, without detail parameters (mobile.md M2.3)', async () => {
+it('returns a reloaded edit to its drawer, then the drawer to the same list page (mobile.md M2.3)', async () => {
   function LocationProbe() {
     const location = useLocation();
     return (
@@ -936,39 +1002,20 @@ it('returns to the same list page after a reloaded edit is saved, without detail
   const writes: unknown[] = [];
   let current = original;
   // A fresh shell at the edit URL is what a reload leaves: no recorded visit to the list.
-  await renderSettingsClient(
-    <Routes>
-      <Route
-        path='/skill-projects'
-        element={
-          <RouteTreeProvider routes={detailRoutes}>
-            <PageBreadcrumbProvider>
-              <Breadcrumbs />
-              <LocationProbe />
-              <SkillProjectsPage />
-            </PageBreadcrumbProvider>
-          </RouteTreeProvider>
-        }
-      >
-        <Route path=':projectId/details' element={<SkillProjectDetailPage />}>
-          <Route path='edit' element={<SkillProjectEditPage />} />
-        </Route>
-      </Route>
-    </Routes>,
-    {
-      route:
-        '/skill-projects/abc/details/edit?page=2&pageSize=20&detailTab=activity',
-      namespace,
-      namespaces,
-      fetch: answerApi(({ path, method, json }) => {
-        if (path === 'skillProjects') return list(current.name);
-        if (method === 'PATCH') {
-          writes.push(json);
-          current = { ...original, name: (json as { name: string }).name };
-        }
-        return { data: current };
-      }),
-    },
+  await render(
+    <>
+      <LocationProbe />
+      <Routes>{projectRoutes}</Routes>
+    </>,
+    answerApi(({ path, method, json }) => {
+      if (path === 'skillProjects') return list(current.name);
+      if (method === 'PATCH') {
+        writes.push(json);
+        current = { ...original, name: (json as { name: string }).name };
+      }
+      return { data: current };
+    }),
+    '/skill-projects/abc/edit?page=2&pageSize=20',
   );
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await user.clear(name);
@@ -976,30 +1023,31 @@ it('returns to the same list page after a reloaded edit is saved, without detail
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
   await waitFor(() =>
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/skill-projects/abc/details?page=2&pageSize=20&detailTab=activity',
+      /^\/skill-projects\/abc\?page=2&pageSize=20$/u,
     ),
   );
   expect(writes).toEqual([{ name: 'Saved Alpha' }]);
-  const back = screen.getByRole('link', { name: 'Back to Projects' });
-  expect(back).toHaveAttribute('href', '/skill-projects?page=2&pageSize=20');
-  expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute(
-    'href',
-    '/skill-projects?page=2&pageSize=20',
-  );
-  await user.click(back);
+  expect(
+    await screen.findByRole('dialog', { name: 'Saved Alpha' }),
+  ).toBeVisible();
+  await closeDrawer();
   await waitFor(() =>
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/skill-projects\?page=2&pageSize=20$/u,
     ),
   );
+  expect(
+    await screen.findByRole('link', { name: 'Saved Alpha' }),
+  ).toBeVisible();
 });
 
-it.each([403, 404, 500])(
-  'keeps its parent and fallback title after record error %s',
+it.each([401, 403, 404, 500])(
+  'keeps the fallback title and no record actions after record error %s',
   async (status) => {
-    const view = await mountDetail(
+    let failing = true;
+    const view = await mount(
       answerApi(({ path }) =>
-        path === 'skillProjects/abc'
+        path === 'skillProjects/abc' && failing
           ? Response.json(
               {
                 error: {
@@ -1010,22 +1058,78 @@ it.each([403, 404, 500])(
               },
               { status },
             )
-          : list(),
+          : path === 'skillProjects/abc'
+            ? { data: original }
+            : list(),
       ),
+      '/skill-projects/abc',
     );
-    await screen.findByRole('alert');
+    const drawer = screen.getByRole('dialog', { name: 'Project details' });
+    const alert = await within(drawer).findByRole('alert');
+    expect(alert).toHaveTextContent(
+      status === 404
+        ? enUS.skillProjects.detailGone
+        : status === 403
+          ? enUS.skillProjects.denied
+          : status === 401
+            ? enUS.skillProjects.expired
+            : enUS.skillProjects.failed,
+    );
     expect(
-      screen.getByRole('navigation', { name: 'Breadcrumb' }),
-    ).toHaveTextContent('Project details');
-    expect(
-      screen.getByRole('link', { name: 'Back to Projects' }),
-    ).toHaveAttribute('href', '/skill-projects');
-    expect(
-      screen.queryByRole('heading', { name: 'Alpha' }),
+      within(drawer).queryByRole('button', { name: 'Edit' }),
     ).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('button', { name: 'Delete' }),
+    ).not.toBeInTheDocument();
+    if (status === 500) {
+      failing = false;
+      await userEvent.click(
+        within(drawer).getByRole('button', { name: 'Retry' }),
+      );
+      expect(await screen.findByRole('dialog', { name: 'Alpha' })).toBe(drawer);
+    } else
+      expect(
+        within(drawer).queryByRole('button', { name: 'Retry' }),
+      ).not.toBeInTheDocument();
     view.unmount();
   },
 );
+
+it('shows Create, Edit and Delete only with the page grant the server checks', async () => {
+  const view = await render(
+    <Routes>{projectRoutes}</Routes>,
+    answerApi(({ path }) =>
+      path === 'skillProjects' ? list() : { data: original },
+    ),
+    '/skill-projects',
+    'en-US',
+    false,
+  );
+  await screen.findByRole('link', { name: 'Alpha' });
+  // Let every permission check settle before asserting what stays hidden.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+  expect(
+    screen.queryByRole('button', { name: 'Create project' }),
+  ).not.toBeInTheDocument();
+  // No permitted row action leaves no "⋮" menu.
+  expect(
+    screen.queryByRole('button', { name: /^Actions for / }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('link', { name: 'Alpha' }));
+  const drawer = await screen.findByRole('dialog', { name: 'Alpha' });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+  expect(
+    within(drawer).queryByRole('button', { name: 'Edit' }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(drawer).queryByRole('button', { name: 'Delete' }),
+  ).not.toBeInTheDocument();
+  view.unmount();
+});
 
 it('shows each project as a card with its detail link and edit action on a phone', async () => {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -1046,9 +1150,10 @@ it('shows each project as a card with its detail link and edit action on a phone
     const card = (await screen.findAllByRole('listitem'))[0];
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(card).toHaveTextContent('Alpha');
+    // The name opens the record's drawer and keeps the list's query.
     expect(screen.getByRole('link', { name: 'Alpha' })).toHaveAttribute(
       'href',
-      expect.stringContaining('/skill-projects/abc/details'),
+      '/skill-projects/abc?page=1',
     );
     await openRowEdit(userEvent);
     expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue(
@@ -1067,23 +1172,15 @@ it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do
     back = () => void navigate(-1);
     return null;
   }
-  await renderSettingsClient(
+  await render(
     <>
-      <Routes>
-        <Route path='/skill-projects' element={<SkillProjectsPage />}>
-          <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
-        </Route>
-      </Routes>
+      <Routes>{projectRoutes}</Routes>
       <HistoryBack />
     </>,
-    {
-      route: '/skill-projects?page=1',
-      namespace,
-      namespaces,
-      fetch: answerApi(({ path }) =>
-        path === 'skillProjects' ? list() : { data: original },
-      ),
-    },
+    answerApi(({ path }) =>
+      path === 'skillProjects' ? list() : { data: original },
+    ),
+    '/skill-projects?page=1',
   );
   await screen.findByText('Alpha');
   await openRowEdit(userEvent);

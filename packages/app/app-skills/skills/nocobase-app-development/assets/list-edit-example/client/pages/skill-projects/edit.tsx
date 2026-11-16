@@ -125,6 +125,7 @@ function ProjectEditor({
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
   const busyRef = useRef(false);
+  const savingRef = useRef<Promise<void> | undefined>(undefined);
   const [attempted, setAttempted] = useState(false);
   const restoringInput = submission.pending && !attempted;
   const [confirmedMissing, setConfirmedMissing] = useState<
@@ -274,7 +275,12 @@ function ProjectEditor({
         submitting={submission.submitting}
         onSubmit={async (event) => {
           event.preventDefault();
-          await submit();
+          // A repeated submit joins the running save instead of ending at once, so the FeedbackForm keeps reporting
+          // the save until it settles and the save's own navigation does not ask to discard the input.
+          savingRef.current ??= submit().finally(() => {
+            savingRef.current = undefined;
+          });
+          await savingRef.current;
         }}
       >
         <fieldset

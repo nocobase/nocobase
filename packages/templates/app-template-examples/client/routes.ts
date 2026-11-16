@@ -160,22 +160,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       },
       {
         name: 'skill-projects-detail',
-        path: ':projectId/details',
-        breadcrumb: { title: 'skillProjects.detail' },
+        path: ':projectId',
+        presentation: { kind: 'drawer', title: 'skillProjects.detail' },
         componentLoader: () => import('./pages/skill-projects/detail.js'),
         children: [
           {
-            name: 'skill-projects-detail-edit',
+            name: 'skill-projects-edit',
             path: 'edit',
+            presentation: { kind: 'dialog', title: 'skillProjects.edit' },
             componentLoader: () => import('./pages/skill-projects/edit.js'),
           },
         ],
-      },
-      {
-        name: 'skill-projects-edit',
-        path: ':projectId/edit',
-        presentation: { kind: 'dialog', title: 'skillProjects.edit' },
-        componentLoader: () => import('./pages/skill-projects/edit.js'),
       },
     ],
   },

@@ -14,6 +14,7 @@ const files = [
   'client/pages/skill-projects/edit.tsx',
   'client/pages/skill-projects/locales.ts',
   'client/pages/skill-projects/scopes.ts',
+  'client/pages/skill-projects/access.ts',
   'server/routes/skill-projects.ts',
   'server/providers/skill-projects.ts',
   'database/main/migrations/202611030001_create_skill_projects.ts',

@@ -1,42 +1,27 @@
-import { ApiClientError } from '@nocobase/app-client';
+import { resolveListState } from '@nocobase/app-client';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Link, Outlet, useLocation } from 'react-router';
-import { FolderIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable, DataTableColumnHeader } from '#components/data-table';
-import { Card, CardDescription, CardHeader } from '#components/ui/card';
-import { Input } from '#components/ui/input';
-import { type DataChange } from '#hooks/use-data-changes';
-import { useUrlSearch } from '#hooks/use-url-search';
-import { projectsScope } from './scopes.js';
+import { useEffect, useMemo, useRef, type ReactElement } from 'react';
+import { Link, Outlet, useLocation } from 'react-router';
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTableSearch,
+} from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RecordLink } from '#components/record-link';
 import { RowActions } from '#components/row-actions';
-import { Alert, AlertDescription } from '#components/ui/alert';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '#components/ui/table';
 import { Button } from '#components/ui/button';
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from '#components/ui/empty';
+import { Card, CardDescription, CardHeader } from '#components/ui/card';
 import { Skeleton } from '#components/ui/skeleton';
-import { Spinner } from '#components/ui/spinner';
-import { useListLocation } from '#hooks/use-list-location';
+import { type DataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
+import { useListLocation } from '#hooks/use-list-location';
 import { useTableUrlState } from '#hooks/use-table-url-state';
+import { projectPermissions } from './access.js';
+import { projectsScope } from './scopes.js';
 
 export interface SkillProject {
   id: string;
@@ -50,9 +35,10 @@ export interface SkillProjectList {
 
 export default function SkillProjectsPage(): ReactElement {
   const { t } = useTranslation();
-  const { active, params } = useListLocation();
+  const { active, params, setParams } = useListLocation();
   const location = useLocation();
-  const searchBox = useUrlSearch({ resetParams: ['page'] });
+  const canCreate = useCan(projectPermissions.create).can;
+  const canUpdate = useCan(projectPermissions.update).can;
   const q = params.get('q')?.trim() ?? '';
   const sortingQuery = new URLSearchParams();
   if (q) sortingQuery.set('q', q);
@@ -64,6 +50,7 @@ export default function SkillProjectsPage(): ReactElement {
     ? `${projectsScope}?${sortingQuery}`
     : projectsScope;
   const defaultOrder = !sortingQuery.has('sort') && !q;
+  // Every write the overlays announce for `skillProjects` refreshes the list and the metric (data-changes.md).
   const request = useListData<SkillProjectList>(requestPath, {
     active,
     keepPreviousData: true,
@@ -75,16 +62,36 @@ export default function SkillProjectsPage(): ReactElement {
     `${projectsScope}/summary`,
     { active, keepPreviousData: true, scopes: [projectsScope] },
   );
-  const { data } = request;
-  const tableState = useTableUrlState({
+  const current = request.path === requestPath ? request.data : undefined;
+  const { error: tableError, ...tableState } = useTableUrlState({
     active,
     revision: request.revision,
     sortColumns: ['name'],
     rowCount:
-      !request.loading && !request.error && request.path === requestPath
-        ? data?.data.length
+      current && !request.loading && !request.error
+        ? current.data.length
         : undefined,
   });
+  // Whether the shown rows answer a search, from the response rather than the URL.
+  const filtered = Boolean(
+    new URLSearchParams(request.path.split('?')[1]).get('q'),
+  );
+  const listState = resolveListState(
+    {
+      data: current,
+      error: tableError ?? request.error,
+      isPending: request.loading && !current,
+    },
+    current?.data.length ?? 0,
+    filtered,
+  );
+  const setSearch = (value: string) => {
+    const next = new URLSearchParams(params);
+    if (value) next.set('q', value);
+    else next.delete('q');
+    next.delete('page');
+    setParams(next, { replace: true });
+  };
   const returnTargetRef = useRef<HTMLDivElement>(null);
   const returningRef = useRef(false);
   useEffect(() => {
@@ -101,7 +108,7 @@ export default function SkillProjectsPage(): ReactElement {
       if (!request.loading) returningRef.current = false;
     });
     return () => cancelAnimationFrame(frame);
-  }, [active, request.loading, data]);
+  }, [active, request.loading, request.data]);
   const columns = useMemo<ColumnDef<SkillProject>[]>(
     () => [
       {
@@ -112,12 +119,10 @@ export default function SkillProjectsPage(): ReactElement {
             title={t('skillProjects.name')}
           />
         ),
+        // The name opens the detail drawer and keeps the list's query.
         cell: ({ row }) => (
           <RecordLink
-            to={{
-              pathname: `${row.original.id}/details`,
-              search: location.search,
-            }}
+            to={{ pathname: row.original.id, search: location.search }}
             className='block max-w-64 truncate'
             title={row.original.name}
           >
@@ -127,6 +132,7 @@ export default function SkillProjectsPage(): ReactElement {
       },
       {
         id: 'actions',
+        enableHiding: false,
         // The actions column keeps a name for screen readers and shows no header text (T1.5).
         header: () => (
           <span className='sr-only'>{t('skillProjects.actions')}</span>
@@ -135,7 +141,7 @@ export default function SkillProjectsPage(): ReactElement {
           <RowActions
             label={t('skillProjects.actionsFor', { name: row.original.name })}
             actions={[
-              {
+              canUpdate && {
                 key: 'edit',
                 label: t('skillProjects.editAction'),
                 render: (
@@ -152,20 +158,11 @@ export default function SkillProjectsPage(): ReactElement {
         ),
       },
     ],
-    [t, location.search],
+    [t, location.search, canUpdate],
   );
-  const status =
-    request.error instanceof ApiClientError ? request.error.status : undefined;
-  // Whether the shown rows answer a search, from the response rather than the URL.
-  const shownQuery = new URLSearchParams(request.path.split('?')[1]).get('q');
-  const createAction = (
-    <Button
-      render={<Link to={{ pathname: 'new', search: location.search }} />}
-      nativeButton={false}
-    >
-      {t('skillProjects.create')}
-    </Button>
-  );
+  const showCreate =
+    canCreate &&
+    ['ready', 'empty', 'no-results', 'refresh-failed'].includes(listState);
   return (
     <PageContainer>
       <div
@@ -178,9 +175,16 @@ export default function SkillProjectsPage(): ReactElement {
           title={t('skillProjects.title')}
           description={t('skillProjects.description')}
           actions={
-            (request.data?.data.length || shownQuery) && !request.error
-              ? createAction
-              : undefined
+            showCreate ? (
+              <Button
+                render={
+                  <Link to={{ pathname: 'new', search: location.search }} />
+                }
+                nativeButton={false}
+              >
+                {t('skillProjects.create')}
+              </Button>
+            ) : undefined
           }
         />
       </div>
@@ -188,126 +192,54 @@ export default function SkillProjectsPage(): ReactElement {
         total={summary.error ? undefined : summary.data?.data.total}
         failed={Boolean(summary.error)}
       />
-      <Input
-        type='search'
-        className='w-full sm:max-w-xs'
-        aria-label={t('skillProjects.search')}
-        placeholder={t('skillProjects.search')}
-        {...searchBox.inputProps}
-      />
-      <div
-        className='flex h-8 items-center justify-end'
-        data-testid='refresh-slot'
-      >
-        {active && request.loading && request.data ? (
-          <RefreshIndicator />
-        ) : null}
-      </div>
-      {request.error ? (
-        <Alert variant='destructive'>
-          <AlertDescription className='flex flex-col items-start gap-2'>
-            <p>
-              {t(
-                status === 401
-                  ? 'skillProjects.expired'
-                  : status === 403
-                    ? 'skillProjects.denied'
-                    : 'skillProjects.failed',
-              )}
-            </p>
-            {status === 401 ? (
-              <Link to='/login'>{t('skillProjects.signIn')}</Link>
-            ) : status === 403 ? null : (
-              <Button onClick={request.reload}>
-                {t('skillProjects.retry')}
-              </Button>
-            )}
-          </AlertDescription>
-        </Alert>
-      ) : null}
-      {!request.data && !request.error ? (
-        <div role='status' aria-label={t('skillProjects.loading')}>
-          <Table aria-hidden='true'>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('skillProjects.name')}</TableHead>
-                <TableHead>
-                  <span className='sr-only'>{t('skillProjects.actions')}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[0, 1, 2].map((row) => (
-                <TableRow key={row}>
-                  <TableCell>
-                    <Skeleton className='h-4 w-40' />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className='ml-auto size-7' />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : request.data?.data.length === 0 && !request.error && shownQuery ? (
-        <Empty className='min-h-48 border'>
-          <EmptyHeader>
-            <EmptyTitle>{t('skillProjects.noResults')}</EmptyTitle>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button variant='outline' onClick={() => searchBox.clear()}>
-              {t('skillProjects.clearSearch')}
-            </Button>
-          </EmptyContent>
-        </Empty>
-      ) : request.data?.data.length === 0 && !request.error ? (
-        <Empty className='min-h-48 border'>
-          <EmptyHeader>
-            <EmptyMedia variant='icon'>
-              <FolderIcon />
-            </EmptyMedia>
-            <EmptyTitle>{t('skillProjects.emptyTitle')}</EmptyTitle>
-            <EmptyDescription>{t('skillProjects.empty')}</EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>{createAction}</EmptyContent>
-        </Empty>
-      ) : request.data ? (
-        <>
-          {request.data.meta.total > request.data.data.length ? (
-            <p>{t('skillProjects.cap')}</p>
-          ) : null}
-          <DataTable
-            paginationState={tableState.paginationState}
-            onPaginationChange={tableState.onPaginationChange}
-            pageSizeOptions={tableState.pageSizeOptions}
-            manualSorting
-            sortingState={tableState.sortingState}
-            onSortingChange={tableState.onSortingChange}
-            columns={columns}
-            data={request.data.data}
-            getRowId={(row) => row.id}
-            showSelectedCount={false}
-            emptyMessage={t('skillProjects.empty')}
-            // Phones show one card per project (mobile.md M3): the name opens its detail, and the row's own actions
-            // cell (the "⋮" menu with Edit) follows it, so the card offers what the row does.
-            renderCard={(row, card) => (
-              <div className='flex items-center gap-2 rounded-lg border p-4'>
-                <RecordLink
-                  to={{
-                    pathname: `${row.original.id}/details`,
-                    search: location.search,
-                  }}
-                  className='min-w-0 flex-1 break-words'
-                >
-                  {row.original.name}
-                </RecordLink>
-                {card.actions}
-              </div>
-            )}
+      <DataTable
+        {...tableState}
+        manualSorting
+        columns={columns}
+        data={current?.data ?? []}
+        getRowId={(row) => row.id}
+        showSelectedCount={false}
+        listState={listState}
+        loading={active && request.loading}
+        loadingIdentity={requestPath}
+        onRetry={request.reload}
+        search={
+          <DataTableSearch
+            value={q}
+            label={t('skillProjects.search')}
+            onSearch={setSearch}
           />
-        </>
-      ) : null}
+        }
+        filtered={filtered}
+        onClearFilters={() => setSearch('')}
+        // The endpoint returns at most 100 projects; say so when more match (T1.10).
+        summary={
+          current && current.meta.total > current.data.length
+            ? t('skillProjects.cap')
+            : undefined
+        }
+        emptyMessage={t('skillProjects.empty')}
+        getColumnLabel={(column) =>
+          t(
+            column.id === 'name'
+              ? 'skillProjects.name'
+              : 'skillProjects.actions',
+          )
+        }
+        // Phones show one card per project (mobile.md M3): the name opens its detail, and the row's own actions
+        // cell (the "⋮" menu with Edit) follows it, so the card offers what the row does.
+        renderCard={(row, card) => (
+          <div className='flex items-center gap-2 rounded-lg border p-4'>
+            <RecordLink
+              to={{ pathname: row.original.id, search: location.search }}
+              className='min-w-0 flex-1 break-words'
+            >
+              {row.original.name}
+            </RecordLink>
+            {card.actions}
+          </div>
+        )}
+      />
       <Outlet />
     </PageContainer>
   );
@@ -377,22 +309,4 @@ function ProjectsMetric({
       </CardHeader>
     </Card>
   );
-}
-
-function RefreshIndicator(): ReactElement | null {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-  return visible ? (
-    <span
-      role='status'
-      className='flex items-center gap-2 text-sm text-muted-foreground'
-    >
-      <Spinner />
-      {t('skillProjects.refreshing')}
-    </span>
-  ) : null;
 }
