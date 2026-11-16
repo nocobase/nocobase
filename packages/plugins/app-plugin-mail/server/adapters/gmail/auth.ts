@@ -1,3 +1,4 @@
+import { diagnosticFetch, type MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailAuthorizedAccount,
   MailProviderAuthorization,
@@ -60,6 +61,18 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
       };
     },
     async complete(context, config, input) {
+      const fetcher: MailFetch = (url, init) =>
+        diagnosticFetch(fetchWithTimeout, url, init, {
+          logger: context.logger,
+          provider: 'gmail',
+          stage: 'auth',
+          secrets: [
+            config.clientSecret,
+            input.code,
+            input.codeVerifier,
+            input.state,
+          ],
+        });
       const token = await exchangeToken(
         config,
         {
@@ -71,6 +84,7 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           grant_type: 'authorization_code',
         },
         input.signal,
+        fetcher,
       );
       if (!token.ok) return token;
       if (!token.value.refresh_token) {
@@ -106,6 +120,7 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           required(token.value.access_token, 'Gmail access token'),
           '/users/me/profile',
           { signal: input.signal },
+          fetcher,
         );
         if (!profile.ok) {
           await context.credentials.delete(credentialReference);
@@ -131,6 +146,7 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           required(token.value.access_token, 'Gmail access token'),
           '/users/me/settings/sendAs',
           { signal: input.signal },
+          fetcher,
         );
         const identities = aliases.ok
           ? (aliases.value.sendAs ?? []).flatMap((alias) =>
@@ -181,9 +197,10 @@ export async function exchangeToken(
   config: GmailMailProviderConfig,
   body: Record<string, string>,
   signal?: AbortSignal,
+  fetcher: MailFetch = fetchWithTimeout,
 ): Promise<MailProviderResult<GmailTokenResponse>> {
   try {
-    const response = await fetchWithTimeout(
+    const response = await fetcher(
       config.tokenEndpoint ?? 'https://oauth2.googleapis.com/token',
       {
         method: 'POST',

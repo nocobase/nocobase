@@ -1,3 +1,7 @@
+import {
+  logMailFailure,
+  MailConnectionError,
+} from '../../connection-diagnostics.js';
 import { encodePath } from 'imapflow/lib/tools.js';
 import { MailError, mailFailedPrecondition } from '../../services/errors.js';
 import {
@@ -298,6 +302,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   public async listFolders(
     input: MailProviderListFoldersInput,
   ): Promise<MailProviderResult<MailProviderFolderPage>> {
+    const startedAt = Date.now();
     try {
       throwIfAborted(input.signal);
       const mailboxes = this.selectableMailboxes(await this.listMailboxes());
@@ -310,13 +315,17 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      return { ok: false, error: classifyError(error, 'IMAP_LIST_FOLDERS') };
+      return {
+        ok: false,
+        error: this.diagnose(error, 'IMAP_LIST_FOLDERS', startedAt, 'imap'),
+      };
     }
   }
 
   public async getCurrentSyncCursor(
     signal?: AbortSignal,
   ): Promise<MailProviderResult<MailSyncCursor>> {
+    const startedAt = Date.now();
     try {
       throwIfAborted(signal);
       const mailboxes = this.selectableMailboxes(await this.listMailboxes());
@@ -337,7 +346,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       this.closeImap();
       return {
         ok: false,
-        error: classifyError(error, 'IMAP_SYNC_CURSOR'),
+        error: this.diagnose(error, 'IMAP_SYNC_CURSOR', startedAt, 'imap'),
       };
     }
   }
@@ -345,6 +354,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   public async listMessages(
     input: MailProviderListMessagesInput,
   ): Promise<MailProviderResult<MailProviderMessagePage>> {
+    const startedAt = Date.now();
     this.beginStep();
     try {
       throwIfAborted(input.signal);
@@ -517,7 +527,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      return { ok: false, error: classifyError(error, 'IMAP_LIST_MESSAGES') };
+      return {
+        ok: false,
+        error: this.diagnose(error, 'IMAP_LIST_MESSAGES', startedAt, 'imap'),
+      };
     }
   }
 
@@ -529,6 +542,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       readonly hasMore: boolean;
     }>
   > {
+    const startedAt = Date.now();
     this.beginStep();
     try {
       throwIfAborted(input.signal);
@@ -680,7 +694,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      return { ok: false, error: classifyError(error, 'IMAP_LIST_CHANGES') };
+      return {
+        ok: false,
+        error: this.diagnose(error, 'IMAP_LIST_CHANGES', startedAt, 'imap'),
+      };
     }
   }
 
@@ -688,6 +705,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     providerMessageId: string,
     signal?: AbortSignal,
   ): Promise<MailProviderResult<NormalizedMailMessage>> {
+    const startedAt = Date.now();
     try {
       throwIfAborted(signal);
       if (this.locations) {
@@ -754,7 +772,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      return { ok: false, error: classifyError(error, 'IMAP_GET_MESSAGE') };
+      return {
+        ok: false,
+        error: this.diagnose(error, 'IMAP_GET_MESSAGE', startedAt, 'imap'),
+      };
     }
   }
 
@@ -763,6 +784,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     providerAttachmentId: string,
     signal?: AbortSignal,
   ): Promise<MailProviderResult<MailAttachmentContent>> {
+    const startedAt = Date.now();
     let release: (() => void) | undefined;
     let streamed = false;
     try {
@@ -905,7 +927,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      return { ok: false, error: classifyError(error, 'IMAP_GET_ATTACHMENT') };
+      return {
+        ok: false,
+        error: this.diagnose(error, 'IMAP_GET_ATTACHMENT', startedAt, 'imap'),
+      };
     } finally {
       if (!streamed) release?.();
     }
@@ -914,6 +939,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   public async sendMessage(
     input: MailProviderSendInput,
   ): Promise<MailProviderSendResult> {
+    const startedAt = Date.now();
     let submissionStarted = false;
     try {
       throwIfAborted(input.signal);
@@ -1028,7 +1054,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           this.closeImap();
           // SMTP already accepted the message; never report this as a send failure.
           sentCopyError = {
-            ...classifyError(error, 'IMAP_SAVE_SENT_COPY'),
+            ...this.diagnose(error, 'IMAP_SAVE_SENT_COPY', startedAt, 'imap'),
             code: 'IMAP_SENT_COPY_FAILED',
             retryable: false,
           };
@@ -1043,7 +1069,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       };
     } catch (error) {
       this.closeImap();
-      const classified = classifyError(error, 'SMTP_SEND');
+      const classified = this.diagnose(error, 'SMTP_SEND', startedAt, 'smtp');
       return {
         status:
           submissionStarted &&
@@ -1553,23 +1579,72 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     }
   }
 
+  private diagnose(
+    error: unknown,
+    code: string,
+    startedAt: number,
+    protocol: 'imap' | 'smtp' = 'imap',
+  ): MailProviderError {
+    const wrapped =
+      error instanceof MailConnectionError
+        ? error
+        : new MailConnectionError(
+            protocol,
+            error,
+            Date.now() - startedAt,
+            protocol === 'smtp' ? 'send' : 'sync',
+          );
+    const classified = classifyError(wrapped, code);
+    logMailFailure(wrapped, classified, {
+      logger: this.context.logger,
+      event:
+        protocol === 'smtp'
+          ? 'mail.smtp.send_failed'
+          : 'mail.imap.operation_failed',
+      provider: this.identity.type,
+      accountId: this.account.id,
+      address: this.account.address,
+      protocol,
+      endpoint: this.config[protocol],
+      stage: protocol === 'smtp' ? 'send' : 'sync',
+      startedAt,
+      secrets: [
+        this.credential.password,
+        this.credential.username,
+        this.account.credentialReference,
+      ],
+    });
+    return classified;
+  }
+
   private async imap(): Promise<ImapFlow> {
     if (this.imapClient) return this.imapClient;
-    const client = this.pool
-      ? await this.pool.acquire(
-          this.account.id,
-          this.config.imap,
-          this.credential,
-        )
-      : this.protocol.imap(this.config.imap, this.credential);
-    if (!this.pool) {
-      try {
-        await client.connect();
-      } catch (error) {
-        this.closeImap();
-        client.close();
-        throw error;
+    const startedAt = Date.now();
+    let client: ImapFlow;
+    try {
+      client = this.pool
+        ? await this.pool.acquire(
+            this.account.id,
+            this.config.imap,
+            this.credential,
+          )
+        : this.protocol.imap(this.config.imap, this.credential);
+      if (!this.pool) {
+        try {
+          await client.connect();
+        } catch (error) {
+          client.close();
+          throw error;
+        }
       }
+    } catch (cause) {
+      const error = new MailConnectionError(
+        'imap',
+        cause,
+        Date.now() - startedAt,
+      );
+      this.diagnose(error, 'IMAP_CONNECT', startedAt);
+      throw error;
     }
     this.imapClient = client;
     if (this.syncRun) {

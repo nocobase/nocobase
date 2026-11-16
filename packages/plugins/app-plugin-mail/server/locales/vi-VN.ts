@@ -4,6 +4,22 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   errors: {
+    connectionAuthenticationFailed:
+      'Xác thực {{protocol}} thất bại. Kiểm tra tên đăng nhập và mật khẩu hoặc mật khẩu ứng dụng.',
+    connectionHostNotFound:
+      'Không thể phân giải máy chủ {{protocol}}. Kiểm tra tên máy chủ.',
+    connectionConnectionRefused:
+      'Kết nối {{protocol}} bị từ chối. Kiểm tra máy chủ, cổng và trạng thái máy chủ.',
+    connectionConnectionTimeout:
+      'Kết nối {{protocol}} hết thời gian chờ. Kiểm tra máy chủ và mạng.',
+    connectionCertificateInvalid:
+      'Xác minh chứng chỉ {{protocol}} thất bại. Kiểm tra chứng chỉ và tên máy chủ.',
+    connectionTlsFailed:
+      'Đàm phán TLS {{protocol}} thất bại. Kiểm tra SSL/STARTTLS và cổng.',
+    connectionConnectionFailed:
+      'Kết nối {{protocol}} thất bại. Kiểm tra máy chủ và mạng.',
+    connectionConnectionLost: 'Kết nối {{protocol}} bị ngắt. Vui lòng thử lại.',
+
     imapMoveLocationChanged:
       'Thư mục hoặc bản sao đã chọn đã thay đổi. Đồng bộ hộp thư và mở lại thư mục nguồn.',
     imapMoveNotWritable:

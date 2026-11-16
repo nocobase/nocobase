@@ -1,3 +1,4 @@
+import { logMailFailure } from '../connection-diagnostics.js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   type MailAccount,
@@ -36,6 +37,7 @@ export class MailAuthorizationService {
       | 'credentials'
       | 'providerContext'
       | 'outbox'
+      | 'logger'
     >,
     private readonly sync: Pick<MailService, 'startSync'>,
     private readonly defaultAutomaticSyncIntervalMinutes: number,
@@ -155,6 +157,7 @@ export class MailAuthorizationService {
     if (!transaction) {
       throw new Error('Mail authorization state is invalid or expired.');
     }
+    const startedAt = Date.now();
     try {
       if (input.error || !input.code) {
         throw new Error('Mail authorization was denied by the Provider.');
@@ -188,6 +191,27 @@ export class MailAuthorizationService {
             `${mailSyncDateMonthsAgo(1)}T00:00:00Z`,
         ),
       );
+    } catch (error) {
+      const classified =
+        error instanceof MailProviderRequestError
+          ? error
+          : {
+              code: 'MAIL_AUTHORIZATION_FAILED',
+              category: 'authentication' as const,
+              retryable: false,
+              message: 'Mail authorization failed.',
+            };
+      // The HTTP boundary already logs SDK failures with their credential context.
+      if (!(error instanceof MailProviderRequestError))
+        logMailFailure({ message: 'Mail authorization failed.' }, classified, {
+          logger: this.dependencies.logger,
+          event: 'mail.account.authorize_failed',
+          provider: transaction.provider.type,
+          protocol: 'https',
+          stage: 'auth',
+          startedAt,
+        });
+      throw error;
     } finally {
       await credentials.delete(transaction.verifierCredentialReference);
     }

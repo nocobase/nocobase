@@ -120,7 +120,21 @@ export function isMailProviderError(
   );
 }
 
+export const MAIL_CONNECTION_REASONS = [
+  'AuthenticationFailed',
+  'HostNotFound',
+  'ConnectionRefused',
+  'ConnectionTimeout',
+  'CertificateInvalid',
+  'TlsFailed',
+  'ConnectionFailed',
+  'ConnectionLost',
+] as const;
+
 const PUBLIC_REASON_CODES = new Set([
+  ...['imap', 'smtp'].flatMap((protocol) =>
+    MAIL_CONNECTION_REASONS.map((reason) => `${protocol}${reason}`),
+  ),
   'gmailRateLimitExceeded',
   'gmailUserRateLimitExceeded',
   'gmailDailyLimitExceeded',

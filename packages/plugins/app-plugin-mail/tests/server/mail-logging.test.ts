@@ -65,8 +65,7 @@ describe('Mail error serialization', () => {
           accountId: 'account',
           submissionId: 'submission',
           err: expect.objectContaining({
-            message: error.message,
-            stack: error.stack,
+            message: 'Mail operation failed.',
           }),
         }),
       );
@@ -78,16 +77,14 @@ describe('Mail error serialization', () => {
     }
   });
 
-  it('preserves message and stack across JSON serialization without SDK request or credential objects', () => {
+  it('omits arbitrary error text, stacks and SDK credential objects', () => {
     const error = Object.assign(new Error('SMTP connection failed'), {
       request: { password: 'private-password', body: 'private-body' },
       accessToken: 'private-token',
     });
     const serialized = JSON.parse(JSON.stringify(mailLogError(error)));
     expect(serialized).toEqual({
-      type: 'Error',
-      message: error.message,
-      stack: error.stack,
+      message: 'Mail operation failed.',
     });
   });
   it('only copies the message from provider failures and handles non-Error exceptions', () => {
@@ -96,13 +93,13 @@ describe('Mail error serialization', () => {
         message: 'Provider rejected request',
         request: { token: 'secret' },
       }),
-    ).toEqual({ message: 'Provider rejected request' });
+    ).toEqual({ message: 'Mail operation failed.' });
     expect(mailLogError('Connection lost')).toEqual({
-      message: 'Connection lost',
+      message: 'Mail operation failed.',
     });
-    expect(mailLogError(null)).toEqual({ message: 'Unknown mail error' });
+    expect(mailLogError(null)).toEqual({ message: 'Mail operation failed.' });
     expect(mailLogError({ message: { token: 'secret' } })).toEqual({
-      message: 'Unknown mail error',
+      message: 'Mail operation failed.',
     });
   });
 });

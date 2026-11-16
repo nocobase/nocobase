@@ -1,3 +1,4 @@
+import { diagnosticFetch } from '../../diagnostic-fetch.js';
 import { randomUUID } from 'node:crypto';
 import { incompleteMessage } from '../incomplete-message.js';
 import type {
@@ -446,7 +447,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         20 * ids.length,
         signal,
       );
-      const response = await fetchWithTimeout(gmailBatchUrl(this.config), {
+      const response = await this.fetch(gmailBatchUrl(this.config), {
         method: 'POST',
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -641,7 +642,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         );
         input.signal?.throwIfAborted();
         submissionStarted = true;
-        const response = await fetchWithTimeout(
+        const response = await this.fetch(
           `${apiBase(this.config)}/users/me/drafts/send`,
           {
             method: 'POST',
@@ -679,7 +680,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
       );
       input.signal?.throwIfAborted();
       submissionStarted = true;
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${apiBase(this.config)}/users/me/messages/send`,
         {
           method: 'POST',
@@ -734,7 +735,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         10,
         input.signal,
       );
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${apiBase(this.config)}/users/me/drafts`,
         {
           method: 'POST',
@@ -1057,16 +1058,13 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         gmailQuotaUnits(path, init.method),
         init.signal ?? undefined,
       );
-      const response = await fetchWithTimeout(
-        `${apiBase(this.config)}${path}`,
-        {
-          ...init,
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            ...init.headers,
-          },
+      const response = await this.fetch(`${apiBase(this.config)}${path}`, {
+        ...init,
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          ...init.headers,
         },
-      );
+      });
       return response.ok
         ? { ok: true, value: undefined }
         : { ok: false, error: await responseError('GMAIL', response) };
@@ -1090,11 +1088,38 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
         gmailQuotaUnits(path, init.method),
         init.signal ?? undefined,
       );
-      return await gmailRequest<T>(this.config, accessToken, path, init);
+      return await gmailRequest<T>(
+        this.config,
+        accessToken,
+        path,
+        init,
+        this.fetch,
+      );
     } catch (error) {
       return { ok: false, error: errorResult(error, 'GMAIL_REQUEST_FAILED') };
     }
   }
+
+  private readonly fetch = (
+    input: Parameters<typeof fetch>[0],
+    init?: RequestInit,
+  ): Promise<Response> =>
+    diagnosticFetch(fetchWithTimeout, input, init, {
+      logger: this.context.logger,
+      provider: 'gmail',
+      accountId: this.account.id,
+      address: this.account.address,
+      stage: /\/(?:send|sendMail)(?:$|\?)/u.test(
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url,
+      )
+        ? 'send'
+        : 'sync',
+      secrets: [this.config.clientSecret, this.account.credentialReference],
+    });
 
   private async accessToken(signal?: AbortSignal): Promise<string> {
     const credential =
@@ -1111,6 +1136,20 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
               grant_type: 'refresh_token',
             },
             refreshSignal ?? signal,
+            (input, init) =>
+              diagnosticFetch(fetchWithTimeout, input, init, {
+                logger: this.context.logger,
+                provider: 'gmail',
+                accountId: this.account.id,
+                address: this.account.address,
+                stage: 'auth',
+                secrets: [
+                  this.config.clientSecret,
+                  this.account.credentialReference,
+                  value.accessToken,
+                  value.refreshToken,
+                ],
+              }),
           );
           if (!refreshed.ok) throw new ProviderRequestError(refreshed.error);
           return {

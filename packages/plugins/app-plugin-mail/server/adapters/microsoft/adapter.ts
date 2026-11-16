@@ -1,3 +1,4 @@
+import { diagnosticFetch } from '../../diagnostic-fetch.js';
 import { incompleteMessage } from '../incomplete-message.js';
 import type {
   MailAttachmentContent,
@@ -163,7 +164,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         `/subscriptions/${encodeURIComponent(providerSubscriptionId)}`,
       );
       if (!resolvedUrl.ok) return resolvedUrl;
-      const response = await fetchWithTimeout(resolvedUrl.value, {
+      const response = await this.fetch(resolvedUrl.value, {
         method: 'DELETE',
         headers: {
           authorization: `Bearer ${await this.accessToken(signal)}`,
@@ -637,7 +638,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
             ),
           };
         }
-        const sent = await fetchWithTimeout(
+        const sent = await this.fetch(
           `${graphBase(this.config)}/me/messages/${encodeURIComponent(input.message.draftProviderMessageId)}/send`,
           {
             method: 'POST',
@@ -681,7 +682,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         }
         if (!draft.ok) return { status: 'failed', error: draft.error };
         const draftId = draft.value.providerMessageId;
-        const sent = await fetchWithTimeout(
+        const sent = await this.fetch(
           `${graphBase(this.config)}/me/messages/${encodeURIComponent(draftId)}/send`,
           {
             method: 'POST',
@@ -708,7 +709,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
           ),
         };
       }
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${graphBase(this.config)}/me/sendMail`,
         {
           method: 'POST',
@@ -955,7 +956,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
       };
     }
     try {
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${graphBase(this.config)}/me/messages/${encodeURIComponent(providerMessageId)}`,
         {
           method: 'DELETE',
@@ -1012,7 +1013,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
     }
     if (!prepared.ok) return { status: 'failed', error: prepared.error };
     const draftId = prepared.value.providerMessageId;
-    const sent = await fetchWithTimeout(
+    const sent = await this.fetch(
       `${graphBase(this.config)}/me/messages/${encodeURIComponent(draftId)}/send`,
       {
         method: 'POST',
@@ -1114,7 +1115,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
     signal?: AbortSignal,
   ): Promise<MailProviderResult<void>> {
     try {
-      const response = await fetchWithTimeout(
+      const response = await this.fetch(
         `${graphBase(this.config)}/me/messages/${encodeURIComponent(providerMessageId)}/attachments/${encodeURIComponent(providerAttachmentId)}`,
         {
           method: 'DELETE',
@@ -1200,7 +1201,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         start += UPLOAD_CHUNK_SIZE
       ) {
         const end = Math.min(start + UPLOAD_CHUNK_SIZE, bytes.byteLength);
-        const response = await fetchWithTimeout(uploadUrl, {
+        const response = await this.fetch(uploadUrl, {
           method: 'PUT',
           headers: {
             'content-length': String(end - start),
@@ -1389,6 +1390,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         await this.accessToken(init.signal ?? undefined),
         pathOrUrl,
         init,
+        this.fetch,
       );
     } catch (error) {
       return {
@@ -1397,6 +1399,27 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
       };
     }
   }
+
+  private readonly fetch = (
+    input: Parameters<typeof fetch>[0],
+    init?: RequestInit,
+  ): Promise<Response> =>
+    diagnosticFetch(fetchWithTimeout, input, init, {
+      logger: this.context.logger,
+      provider: 'microsoft',
+      accountId: this.account.id,
+      address: this.account.address,
+      stage: /\/(?:send|sendMail)(?:$|\?)/u.test(
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url,
+      )
+        ? 'send'
+        : 'sync',
+      secrets: [this.config.clientSecret, this.account.credentialReference],
+    });
 
   private async accessToken(signal?: AbortSignal): Promise<string> {
     const credential =
@@ -1414,6 +1437,20 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
               scope: value.scopes.join(' '),
             },
             refreshSignal ?? signal,
+            (input, init) =>
+              diagnosticFetch(fetchWithTimeout, input, init, {
+                logger: this.context.logger,
+                provider: 'microsoft',
+                accountId: this.account.id,
+                address: this.account.address,
+                stage: 'auth',
+                secrets: [
+                  this.config.clientSecret,
+                  this.account.credentialReference,
+                  value.accessToken,
+                  value.refreshToken,
+                ],
+              }),
           );
           if (!refreshed.ok) throw new ProviderRequestError(refreshed.error);
           return {

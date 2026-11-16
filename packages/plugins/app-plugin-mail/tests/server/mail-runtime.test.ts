@@ -766,9 +766,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         event: 'mail.send.sync_kick_failed',
         submissionId: result.id,
         err: {
-          type: 'Error',
-          message: cleanupError.message,
-          stack: cleanupError.stack,
+          message: 'Mail operation failed.',
         },
       }),
       expect.any(String),
@@ -852,9 +850,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
           expect.objectContaining({
             event: 'mail.send.exception',
             err: {
-              type: 'Error',
-              message: failure.message,
-              stack: failure.stack,
+              message: 'Mail operation failed.',
             },
           }),
           expect.any(String),
@@ -1043,7 +1039,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     runtime.kick();
     await vi.waitFor(() =>
       expect(logger.error).toHaveBeenCalledWith(
-        { err: { type: 'Error', message: error.message, stack: error.stack } },
+        { err: { message: 'Mail operation failed.' } },
         'Mail Outbox Relay failed.',
       ),
     );

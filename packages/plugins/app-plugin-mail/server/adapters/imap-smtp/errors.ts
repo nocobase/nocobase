@@ -3,6 +3,13 @@ import type {
   MailProviderResult,
 } from '../../../shared/mail.js';
 
+import {
+  connectionCause,
+  errorRecord,
+  isCertificateFailure,
+  MailConnectionError,
+} from '../../connection-diagnostics.js';
+
 export function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw signal.reason ?? new Error('Operation aborted.');
 }
@@ -22,8 +29,9 @@ export function failure<T>(
  * `serverResponseCode`; SMTP servers report a reply code, where 4xx is transient and 5xx permanent.
  */
 export function classifyError(error: unknown, code: string): MailProviderError {
-  const value = error as {
+  const value = (connectionCause(error) ?? {}) as {
     code?: unknown;
+    originalCode?: unknown;
     responseCode?: unknown;
     responseText?: unknown;
     serverResponseCode?: unknown;
@@ -37,11 +45,13 @@ export function classifyError(error: unknown, code: string): MailProviderError {
       ? value.serverResponseCode.toUpperCase()
       : undefined;
   const providerCode =
-    typeof value.code === 'string'
-      ? value.code
-      : typeof value.serverResponseCode === 'string'
-        ? value.serverResponseCode
-        : code;
+    typeof value.originalCode === 'string'
+      ? value.originalCode
+      : typeof value.code === 'string'
+        ? value.code
+        : typeof value.serverResponseCode === 'string'
+          ? value.serverResponseCode
+          : code;
   const responseCode =
     typeof value.responseCode === 'number' ? value.responseCode : undefined;
   const message =
@@ -68,20 +78,30 @@ export function classifyError(error: unknown, code: string): MailProviderError {
     ? 'authentication'
     : rateLimited
       ? 'rate_limit'
-      : providerCode === 'EENVELOPE'
-        ? 'recipient'
-        : TIMEOUT_CODES.has(providerCode)
-          ? 'timeout'
-          : NETWORK_CODES.has(providerCode)
-            ? 'network'
-            : 'provider';
+      : isCertificateFailure(errorRecord(connectionCause(error))) ||
+          [
+            'EPROTO',
+            'ETLS',
+            'ERR_SSL_WRONG_VERSION_NUMBER',
+            'ERR_SSL_UNKNOWN_PROTOCOL',
+          ].includes(providerCode)
+        ? 'configuration'
+        : providerCode === 'EENVELOPE'
+          ? 'recipient'
+          : TIMEOUT_CODES.has(providerCode)
+            ? 'timeout'
+            : NETWORK_CODES.has(providerCode)
+              ? 'network'
+              : 'provider';
   const transientReply =
     responseCode !== undefined && responseCode >= 400 && responseCode < 500;
   const retryAfterMs =
     typeof value.throttleReset === 'number' && value.throttleReset > 0
       ? value.throttleReset
       : undefined;
+  const reason = connectionReason(error, providerCode, category);
   return {
+    ...(reason ? { reasonCode: reason } : {}),
     code: providerCode,
     message,
     category,
@@ -127,3 +147,36 @@ const RATE_LIMIT_RESPONSE_CODES = new Set(['THROTTLED']);
 /** SMTP replies that report a sending rate or quota limit, such as `421 4.7.0 Try again later, too many messages`. */
 const SMTP_RATE_LIMIT_TEXT =
   /\b(?:rate limit|too many (?:messages|connections|recipients)|quota exceeded|sending limit|throttl)/iu;
+
+function connectionReason(
+  error: unknown,
+  code: string,
+  category: MailProviderError['category'],
+): string | undefined {
+  const protocol =
+    error instanceof MailConnectionError ? error.protocol : undefined;
+  if (!protocol || protocol === 'https') return undefined;
+  const detail = errorRecord(connectionCause(error));
+  const reason =
+    category === 'authentication'
+      ? 'AuthenticationFailed'
+      : ['ENOTFOUND', 'EAI_AGAIN', 'EDNS'].includes(code)
+        ? 'HostNotFound'
+        : code === 'ECONNREFUSED'
+          ? 'ConnectionRefused'
+          : category === 'timeout'
+            ? 'ConnectionTimeout'
+            : isCertificateFailure(detail)
+              ? 'CertificateInvalid'
+              : [
+                    'EPROTO',
+                    'ETLS',
+                    'ERR_SSL_WRONG_VERSION_NUMBER',
+                    'ERR_SSL_UNKNOWN_PROTOCOL',
+                  ].includes(code)
+                ? 'TlsFailed'
+                : detail.code === 'ECONNRESET'
+                  ? 'ConnectionLost'
+                  : 'ConnectionFailed';
+  return `${protocol}${reason}`;
+}

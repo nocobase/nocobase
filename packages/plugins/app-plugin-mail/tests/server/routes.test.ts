@@ -17,6 +17,7 @@ import { MailIdempotencyConflictError } from '../../server/operations/send-mail.
 import { mailApiRoutes } from '../../server/routes/api.js';
 import {
   MailError,
+  MailProviderRequestError,
   mailInvalidArgument,
 } from '../../server/services/errors.js';
 import { mailServiceToken } from '../../server/tokens.js';
@@ -24,6 +25,103 @@ import type { MailService, MailSyncRunView } from '../../server/types.js';
 import serverLocales from '../../server/locales/index.js';
 
 describe('[API][SEC] mail API routes and permission boundaries', () => {
+  it.each([
+    [
+      'imapAuthenticationFailed',
+      'authentication',
+      'IMAP authentication failed',
+      'IMAP 认证失败',
+    ],
+    [
+      'smtpAuthenticationFailed',
+      'authentication',
+      'SMTP authentication failed',
+      'SMTP 认证失败',
+    ],
+    [
+      'smtpHostNotFound',
+      'network',
+      'SMTP host could not be resolved',
+      '无法解析 SMTP 主机',
+    ],
+    [
+      'imapConnectionRefused',
+      'network',
+      'IMAP connection was refused',
+      'IMAP 连接被拒绝',
+    ],
+    [
+      'smtpConnectionTimeout',
+      'timeout',
+      'SMTP connection timed out',
+      'SMTP 连接超时',
+    ],
+    [
+      'imapCertificateInvalid',
+      'configuration',
+      'IMAP certificate validation failed',
+      'IMAP 证书验证失败',
+    ],
+    [
+      'smtpTlsFailed',
+      'configuration',
+      'SMTP TLS negotiation failed',
+      'SMTP TLS 协商失败',
+    ],
+  ] as const)(
+    'localizes %s without exposing SDK text',
+    async (reasonCode, category, english, chinese) => {
+      const failure = new MailProviderRequestError({
+        code: 'EAUTH',
+        category,
+        retryable: false,
+        reasonCode,
+        message: 'Private SDK diagnostic password token',
+      });
+      const connectAccount: MailService['connectAccount'] = async () => {
+        if (category === 'authentication')
+          throw new MailError({
+            status: 'INVALID_ARGUMENT',
+            reason: 'MAIL_ACCOUNT_CREDENTIALS_INVALID',
+            message: 'The mail Provider rejected the account credentials.',
+            field: 'password',
+            cause: failure,
+          });
+        throw failure;
+      };
+      const router = await createRouter(true, service({ connectAccount }));
+      for (const [locale, expected] of [
+        ['en-US', english],
+        ['zh-CN', chinese],
+      ]) {
+        const response = await router.request('/api/mail/accounts/connect', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'accept-language': locale,
+          },
+          body: JSON.stringify({
+            type: 'imap-smtp',
+            name: 'test',
+            address: 'test@example.com',
+            password: 'test-password',
+            initialSyncReceivedAfter: '2026-01-01T00:00:00.000Z',
+          }),
+        });
+        const body = await response.json();
+        expect(body).toMatchObject({
+          error: {
+            localizedMessage: {
+              locale,
+              message: expect.stringContaining(expected),
+            },
+          },
+        });
+        expect(JSON.stringify(body)).not.toContain('Private SDK diagnostic');
+      }
+    },
+  );
+
   it('accepts a structured Unicode display name and rejects the second bulk recipient at its exact path', async () => {
     const send = vi.fn<MailService['sendMessage']>(async (_context, input) => ({
       id: 'submission',
