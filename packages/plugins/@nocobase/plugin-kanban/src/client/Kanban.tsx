@@ -81,7 +81,7 @@ export const Kanban: any = withDynamicSchemaProps(
       const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
 
       const collection = useCollection();
-      const primaryKey = collection.getPrimaryKey();
+      const primaryKey = collection.getPrimaryKey() || collection.getFilterTargetKey();
       const parentRecordData = useCollectionParentRecordData();
       const field = useField<ArrayField>();
       const fieldSchema = useFieldSchema();

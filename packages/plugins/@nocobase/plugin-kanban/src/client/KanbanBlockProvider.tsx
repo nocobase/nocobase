@@ -133,7 +133,8 @@ export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
-  const primaryKey = useCollection()?.getPrimaryKey();
+  const collection = useCollection();
+  const primaryKey = collection?.getPrimaryKey() || collection?.getFilterTargetKey();
   const fieldSchema = useFieldSchema();
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
