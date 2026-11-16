@@ -132,6 +132,10 @@ it('builds a business attachment feature from the shipped Skill and UI Library',
     );
     writeFileSync(path.join(appRoot, 'routes.ts'), snippet('API routes', 'ts'));
     writeFileSync(
+      path.join(appRoot, 'storage-routes.ts'),
+      snippet('Storage directories', 'ts'),
+    );
+    writeFileSync(
       path.join(appRoot, 'client/invoice-attachments.tsx'),
       snippet('UI Library components', 'tsx'),
     );
@@ -173,7 +177,7 @@ it('builds a business attachment feature from the shipped Skill and UI Library',
         compilerOptions: {
           outDir: './server-declarations',
         },
-        include: ['database/**/*.ts', 'routes.ts'],
+        include: ['database/**/*.ts', 'routes.ts', 'storage-routes.ts'],
       }),
     );
     execFileSync(
