@@ -54,7 +54,7 @@ describe('support ticket', () => {
 
   it('is taken by the agent who first replies, and emails the customer', async () => {
     const { tickets, fake } = kit();
-    const created = tickets.create(ticket);
+    const created = await tickets.start(ticket, { actor: 'customer-li' });
     await tickets.fire(
       created,
       'reply',
@@ -70,7 +70,7 @@ describe('support ticket', () => {
 
   it('closes a ticket the customer leaves unanswered', async () => {
     const { tickets } = kit();
-    const created = tickets.create(ticket);
+    const created = await tickets.start(ticket, { actor: 'customer-li' });
     await tickets.fire(
       created,
       'reply',
@@ -89,7 +89,7 @@ describe('support ticket', () => {
 
   it('restarts the wait when the agent follows up', async () => {
     const { tickets, fake } = kit();
-    const created = tickets.create(ticket);
+    const created = await tickets.start(ticket, { actor: 'customer-li' });
     await tickets.fire(
       created,
       'reply',
@@ -111,7 +111,7 @@ describe('support ticket', () => {
 
   it('goes back to the agent when the customer replies, and tells them', async () => {
     const { tickets, fake } = kit();
-    const created = tickets.create(ticket);
+    const created = await tickets.start(ticket, { actor: 'customer-li' });
     await tickets.fire(
       created,
       'reply',
@@ -133,7 +133,7 @@ describe('support ticket', () => {
 
   it('lets only the requester write as the customer, and only agents reply', async () => {
     const { tickets } = kit();
-    const created = tickets.create(ticket);
+    const created = await tickets.start(ticket, { actor: 'customer-li' });
     await expect(
       tickets.fire(
         created,
@@ -154,7 +154,7 @@ describe('support ticket', () => {
 
   it('can be reopened by the customer within seven days of closing', async () => {
     const { tickets } = kit();
-    const first = tickets.create(ticket);
+    const first = await tickets.start(ticket, { actor: 'customer-li' });
     await tickets.fire(first, 'accept', {}, { actor: 'agent-zhou' });
     await tickets.fire(first, 'resolve', {}, { actor: 'agent-zhou' });
     tickets.advance({ days: 2 });
@@ -213,7 +213,10 @@ describe('support ticket', () => {
 
   it('retries a failing email after its backoff and keeps the reply', async () => {
     const { tickets } = kit();
-    const created = tickets.create({ ...ticket, failNotifications: 2 });
+    const created = await tickets.start(
+      { ...ticket, failNotifications: 2 },
+      { actor: 'customer-li' },
+    );
     await tickets.fire(
       created,
       'reply',
@@ -268,7 +271,10 @@ describe('expense report', () => {
 
   it('refuses to submit a report without items', async () => {
     const { expenses } = kit();
-    const created = expenses.create({ ...report(0), items: [] });
+    const created = await expenses.start(
+      { ...report(0), items: [] },
+      { actor: 'lin' },
+    );
     // The request is fine; the report is not ready, which is its state.
     await expect(
       expenses.fire(created, 'submit', {}, { actor: 'lin' }),
@@ -280,7 +286,7 @@ describe('expense report', () => {
 
   it('pays up to 5,000 yuan without anyone approving, and records the payment', async () => {
     const { expenses, fake } = kit();
-    const created = expenses.create(report(300_000));
+    const created = await expenses.start(report(300_000), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     expect(expenses.get(created)).toMatchObject({
       status: 'paid',
@@ -291,7 +297,7 @@ describe('expense report', () => {
 
   it('needs the manager, then finance, above 50,000 yuan', async () => {
     const { expenses } = kit();
-    const created = expenses.create(report(8_000_000));
+    const created = await expenses.start(report(8_000_000), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     expect(expenses.get(created)).toMatchObject({
       status: 'awaitingManager',
@@ -310,6 +316,7 @@ describe('expense report', () => {
     await expenses.fire(created, 'approve', {}, { actor: 'zhao' });
     expect(expenses.get(created).status).toBe('paid');
     expect(await expenses.history(created)).toEqual([
+      '$create',
       'submit',
       'approve',
       'approve',
@@ -319,7 +326,7 @@ describe('expense report', () => {
 
   it('lets the applicant withdraw while it waits, and edit before resubmitting', async () => {
     const { expenses } = kit();
-    const created = expenses.create(report(800_000));
+    const created = await expenses.start(report(800_000), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     await expenses.fire(created, 'withdraw', {}, { actor: 'lin' });
     expect(expenses.get(created)).toMatchObject({
@@ -333,7 +340,7 @@ describe('expense report', () => {
 
   it('sends a report back for information and routes it again', async () => {
     const { expenses } = kit();
-    const created = expenses.create(report(800_000));
+    const created = await expenses.start(report(800_000), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     await expect(
       expenses.fire(created, 'requestInfo', {}, { actor: 'chen' }),
@@ -357,7 +364,7 @@ describe('expense report', () => {
 
   it('passes an idle manager over for theirs, once', async () => {
     const { expenses, fake } = kit();
-    const created = expenses.create(report(800_000));
+    const created = await expenses.start(report(800_000), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     expenses.advance({ minutes: 4 });
     expect(await expenses.runTriggers()).toBe(1);
@@ -387,7 +394,7 @@ describe('expense report', () => {
 
   it('stays approved when every payment attempt fails', async () => {
     const { expenses } = kit();
-    const created = expenses.create(report(300_000, 5));
+    const created = await expenses.start(report(300_000, 5), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     expenses.advance({ seconds: 2 });
     await expenses.runDue();
@@ -403,7 +410,7 @@ describe('expense report', () => {
   it('pays once someone retries a payment that gave up', async () => {
     const { expenses, fake } = kit();
     // Four failures: the three attempts, then the first retry's first try.
-    const created = expenses.create(report(300_000, 4));
+    const created = await expenses.start(report(300_000, 4), { actor: 'lin' });
     await expenses.fire(created, 'submit', {}, { actor: 'lin' });
     expenses.advance({ seconds: 2 });
     await expenses.runDue();

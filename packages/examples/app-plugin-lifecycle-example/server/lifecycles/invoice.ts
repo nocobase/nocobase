@@ -44,6 +44,9 @@ export interface InvoiceTypes {
 export const invoiceLifecycle: Lifecycle<InvoiceTypes> =
   defineLifecycle<InvoiceTypes>({
     name: 'invoices',
+    key: 'invoices',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.invoices,
     initial: 'draft',
     create: {
@@ -75,7 +78,10 @@ export const invoiceLifecycle: Lifecycle<InvoiceTypes> =
       { name: 'issued', final: true },
       'issueFailed',
     ],
-    parameterConfiguration: { readMode: 'live', groups: [invoiceTimingGroup] },
+    dueAtField: 'lifecycleDueAt',
+    parameterConfiguration: {
+      groups: [invoiceTimingGroup],
+    },
     parameters: { querySeconds: 30 },
     transitions: {
       submit: { title: 'Request invoice', from: 'draft', to: 'submitting' },

@@ -232,7 +232,8 @@ export class LifecycleTestKit<T extends LifecycleTypes> {
    * bypasses the definition's `create` checks — `validate` and `guard` — and
    * writes no `$create` entry, which suits a test about later transitions;
    * test who may create what with `start()`, which goes through
-   * `runtime.create()`.
+   * `runtime.create()`. The record is bound to the kit's definition, as a
+   * seed binds what it writes.
    */
   public create(values: Readonly<Record<string, unknown>> = {}): T['record'] {
     return this.store.insertRecord(this.lifecycle.collection, {
@@ -240,6 +241,9 @@ export class LifecycleTestKit<T extends LifecycleTypes> {
       [this.lifecycle.stateField]: this.lifecycle.initial,
       [this.lifecycle.changedAtField]: this.now().toISOString(),
       [this.lifecycle.versionField]: 0,
+      ...(this.lifecycle.definitionField === undefined
+        ? {}
+        : { [this.lifecycle.definitionField]: this.lifecycle.name }),
     });
   }
 

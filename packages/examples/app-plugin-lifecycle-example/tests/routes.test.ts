@@ -10,6 +10,8 @@ import {
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  defineLifecycle,
+  parameterIdentity,
   LifecycleError,
   LifecycleRuntime,
   MemoryLifecycleStore,
@@ -23,6 +25,7 @@ import {
   generateApiDocument,
 } from '@nocobase/app-server/router';
 
+import { expenseV2Lifecycle } from '../server/lifecycles/expense-v2.js';
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
 import { invoiceLifecycle } from '../server/lifecycles/invoice.js';
 import { orderLifecycle } from '../server/lifecycles/order.js';
@@ -47,7 +50,41 @@ const deny = {
   required: () => (context) => context.json({ code: 'UNAUTHORIZED' }, 401),
 } as unknown as Auth;
 
-function application(authentication: Auth) {
+function fixtureSnapshot(
+  store: MemoryLifecycleStore,
+  runtime: LifecycleRuntime,
+  name: string,
+  recordId: number,
+) {
+  const lifecycle = runtime.definition(name);
+  const sources = Object.fromEntries(
+    lifecycle.parameterConfiguration!.groups.flatMap((group) =>
+      Object.keys(group.fields).map((key) => [
+        key,
+        {
+          group: group.key,
+          schemaVersion: group.schemaVersion,
+          revision: 0,
+          origin: 'default',
+        },
+      ]),
+    ),
+  );
+  store.insertRecord('lifecycleExampleParameterSnapshots', {
+    id: parameterIdentity('demo', name, String(recordId)),
+    payload: {
+      scope: 'demo',
+      lifecycle: name,
+      recordId: String(recordId),
+      revision: 0,
+      values: lifecycle.parameters,
+      sources,
+      at: '2026-10-01T09:00:00.000Z',
+    },
+  });
+}
+
+async function application(authentication: Auth) {
   // A real runtime on a memory store: the record routes are the library's,
   // so they are tested against a lifecycle, not a mock.
   const store = new MemoryLifecycleStore();
@@ -55,6 +92,13 @@ function application(authentication: Auth) {
   const services = createExampleServices({ info: () => undefined });
   const parameters = new WorkflowParameterStore(store);
   runtime.register(expenseLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'expenses',
+    ),
+  });
+  runtime.register(expenseV2Lifecycle, {
     services,
     parameterConfiguration: exampleParameterRegistration(
       parameters,
@@ -78,6 +122,7 @@ function application(authentication: Auth) {
     ),
   });
   store.insertRecord('lifecycleExampleInvoices', {
+    lifecycleDefinition: 'invoices',
     id: 9,
     status: 'issued',
     title: 'Example company',
@@ -92,20 +137,22 @@ function application(authentication: Auth) {
     statusChangedAt: '2026-10-01T09:00:00.000Z',
     lifecycleVersion: 3,
   });
-  store.insertRecord('lifecycleExampleOrders', {
-    id: 3,
-    title: '降噪耳机',
-    customerId: 'customer-li',
-    amountCents: 39_900,
-    paymentAttempt: 0,
-    paymentSessionId: null,
-    failCheckouts: 0,
-    failRefunds: 0,
-    status: 'draft',
-    statusChangedAt: '2026-10-01T09:00:00.000Z',
-    lifecycleVersion: 1,
-  });
+  await runtime.create(
+    'orders',
+    {
+      id: 3,
+      title: '降噪耳机',
+      customerId: 'customer-li',
+      amountCents: 39_900,
+      paymentAttempt: 0,
+      paymentSessionId: null,
+      failCheckouts: 0,
+      failRefunds: 0,
+    },
+    { actor: { id: 'user-1' } },
+  );
   store.insertRecord('lifecycleExampleExpenses', {
+    lifecycleDefinition: 'expenses',
     id: 1,
     title: '上海出差',
     items: [],
@@ -120,6 +167,7 @@ function application(authentication: Auth) {
   });
   // Closed long before the reopen window of seven days.
   store.insertRecord('lifecycleExampleTickets', {
+    lifecycleDefinition: 'tickets',
     id: 5,
     subject: '无法登录后台',
     description: '提示会话过期',
@@ -133,6 +181,9 @@ function application(authentication: Auth) {
     statusChangedAt: '2000-01-01T00:00:00.000Z',
     lifecycleVersion: 3,
   });
+  fixtureSnapshot(store, runtime, 'invoices', 9);
+  fixtureSnapshot(store, runtime, 'expenses', 1);
+  fixtureSnapshot(store, runtime, 'tickets', 5);
   const service = {
     runtime,
     createExpense: vi.fn(async (values: object) => ({ id: 2, ...values })),
@@ -141,6 +192,7 @@ function application(authentication: Auth) {
       ...values,
     })),
     listTickets: vi.fn(async () => ({ records: [], total: 0 })),
+    listExpenses: vi.fn(async () => ({ records: [], total: 0 })),
     parameters: vi.fn(() => ({ waitMinutes: 2, reopenDays: 7 })),
   };
   // The durable flows' routes: their webhook receiver on the same runtime;
@@ -176,7 +228,7 @@ function application(authentication: Auth) {
     router: new Hono(),
     container,
   };
-  return { app, service, store };
+  return { app, service, store, runtime };
 }
 
 function post(path: string, body: unknown, method = 'POST'): Request {
@@ -188,15 +240,38 @@ function post(path: string, body: unknown, method = 'POST'): Request {
 }
 
 describe('lifecycle example routes', () => {
+  it('describes an instance with its immutable values when current administrator configuration is invalid', async () => {
+    const { app, store } = await application(allow);
+    store.insertRecord('lifecycleExampleWorkflowParameters', {
+      id: 'lifecycle.tickets',
+      scope: 'demo',
+      revision: 1,
+      values: { waitMinutes: 'broken' },
+      actorId: 'admin',
+      at: '2026-11-13T00:00:00.000Z',
+    });
+    const router = await apiRoutes.createRouter(app);
+    const response = await router.request(
+      '/lifecycleExample/tickets/lifecycle?recordId=5&actAs=agent-zhou',
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: {
+        description: { name: 'tickets' },
+        parameters: { waitMinutes: 2, reopenDays: 7 },
+      },
+    });
+  });
+
   it('requires a signed-in user', async () => {
-    const router = await apiRoutes.createRouter(application(deny).app);
+    const router = await apiRoutes.createRouter((await application(deny)).app);
     expect((await router.request('/lifecycleExample/tickets')).status).toBe(
       401,
     );
   });
 
   it('lists a page of records with the parameters the page quotes', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const response = await router.request(
       '/lifecycleExample/tickets?actAs=agent-zhou',
@@ -209,6 +284,7 @@ describe('lifecycle example routes', () => {
         pageSize: 20,
         total: 0,
         parameters: { waitMinutes: 2, reopenDays: 7 },
+        states: expect.any(Array),
       },
     });
     expect(service.listTickets).toHaveBeenCalledWith('agent-zhou', {
@@ -221,8 +297,39 @@ describe('lifecycle example routes', () => {
     expect(tooMany.status).toBe(400);
   });
 
+  it('lists the reports of every version with the states of all of them', async () => {
+    const { app, service } = await application(allow);
+    const router = await apiRoutes.createRouter(app);
+    const response = await router.request(
+      '/lifecycleExample/expenses?actAs=zhao&view=approvals&status=awaitingAudit',
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      meta: { states: { name: string }[] };
+    };
+    // The second version's audit state joins the first version's states.
+    expect(body.meta.states.map((state) => state.name)).toEqual([
+      'draft',
+      'awaitingManager',
+      'awaitingFinance',
+      'awaitingAudit',
+      'needsInfo',
+      'approved',
+      'rejected',
+      'paid',
+    ]);
+    // The list quotes what new reports run with: the latest definition.
+    expect(service.parameters).toHaveBeenCalledWith('expenses-v2');
+    expect(service.listExpenses).toHaveBeenCalledWith(
+      'zhao',
+      'approvals',
+      { page: 1, pageSize: 20 },
+      'awaitingAudit',
+    );
+  });
+
   it('fires a transition as one of the lifecycle personas through the record routes', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const response = await router.request(
       post('/lifecycleExample/expenses/1/fire?actAs=chen', {
@@ -257,7 +364,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('rejects a persona the example does not define', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const response = await router.request(
       post('/lifecycleExample/expenses/1/fire?actAs=mallory', {
         transition: 'approve',
@@ -274,7 +381,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers a refused transition in the standard body, with its reasons', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const denied = await router.request(
       post('/lifecycleExample/expenses/1/fire?actAs=sun', {
         transition: 'approve',
@@ -340,7 +447,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers a guard about the record as a failed precondition, and one about the persona as forbidden', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const reopen = { transition: 'reopen', input: { message: '又坏了' } };
     // The customer who filed it may reopen tickets; this one closed too long ago.
     const expired = await router.request(
@@ -379,7 +486,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('edits only the fields an expense edit sends, under the record’s id', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const edited = await router.request(
       post(
@@ -408,16 +515,124 @@ describe('lifecycle example routes', () => {
     expect(service.updateExpense).toHaveBeenCalledTimes(1);
   });
 
+  it('answers and acts through the version a record is bound to, whichever the page names', async () => {
+    const { app, store, runtime } = await application(allow);
+    // A second version of orders on the same table: one step, straight to paid.
+    runtime.register(
+      defineLifecycle({
+        name: 'orders-v2',
+        key: 'orders',
+        version: 2,
+        collection: 'lifecycleExampleOrders',
+        definitionField: 'lifecycleDefinition',
+        initial: 'draft',
+        states: ['draft', { name: 'paid', final: true }],
+        transitions: { settle: { from: 'draft', to: 'paid' } },
+      }),
+    );
+    const order = (id: number, lifecycleDefinition: string | null) =>
+      store.insertRecord('lifecycleExampleOrders', {
+        id,
+        lifecycleDefinition,
+        title: 'Desk',
+        customerId: 'customer-li',
+        amountCents: 100,
+        paymentAttempt: 0,
+        paymentSessionId: null,
+        failCheckouts: 0,
+        failRefunds: 0,
+        status: 'draft',
+        statusChangedAt: '2026-10-01T09:00:00.000Z',
+        lifecycleVersion: 1,
+      });
+    order(20, 'orders-v2');
+    order(21, null);
+    const router = await apiRoutes.createRouter(app);
+
+    const v2 = await router.request('/lifecycleExample/orders/20?actAs=lin');
+    expect(v2.status).toBe(200);
+    await expect(v2.json()).resolves.toMatchObject({
+      data: {
+        lifecycle: 'orders-v2',
+        definitionVersion: 2,
+        available: [{ name: 'settle' }],
+      },
+    });
+    const v1 = await router.request('/lifecycleExample/orders/3?actAs=lin');
+    await expect(v1.json()).resolves.toMatchObject({
+      data: { lifecycle: 'orders', definitionVersion: 1 },
+    });
+
+    const fired = await router.request(
+      post('/lifecycleExample/orders/20/fire?actAs=lin', {
+        transition: 'settle',
+        requestId: 'settle-20',
+      }),
+    );
+    const body: unknown = await fired.json();
+    expect(fired.status).toBe(200);
+    expect(body).toMatchObject({
+      data: { lifecycle: 'orders-v2', state: 'paid' },
+    });
+    // v1's transitions are not v2's.
+    const wrong = await router.request(
+      post('/lifecycleExample/orders/3/fire?actAs=lin', {
+        transition: 'settle',
+        requestId: 'settle-3',
+      }),
+    );
+    expect(wrong.status).toBe(400);
+    await expect(wrong.json()).resolves.toMatchObject({
+      error: { reason: 'UNKNOWN_TRANSITION' },
+    });
+
+    const unbound = await router.request(
+      '/lifecycleExample/orders/21?actAs=lin',
+    );
+    expect(unbound.status).toBe(400);
+    await expect(unbound.json()).resolves.toMatchObject({
+      error: {
+        status: 'FAILED_PRECONDITION',
+        reason: 'DEFINITION_MISMATCH',
+        metadata: { bound: null },
+      },
+    });
+
+    const latest = await router.request(
+      '/lifecycleExample/orders/lifecycle?actAs=lin',
+    );
+    await expect(latest.json()).resolves.toMatchObject({
+      data: { description: { name: 'orders-v2', key: 'orders', version: 2 } },
+    });
+    const first = await router.request(
+      '/lifecycleExample/orders/lifecycle?actAs=lin&definition=orders',
+    );
+    await expect(first.json()).resolves.toMatchObject({
+      data: { description: { name: 'orders', version: 1 } },
+    });
+    const missing = await router.request(
+      '/lifecycleExample/orders/lifecycle?actAs=lin&definition=tickets',
+    );
+    expect(missing.status).toBe(404);
+  });
+
   it('describes a lifecycle, and refuses an effect run of another record', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const described = await router.request(
       '/lifecycleExample/expenses/lifecycle?actAs=lin',
     );
+    // The latest version by default, and the one `definition` names.
     await expect(described.json()).resolves.toMatchObject({
       data: {
-        description: { name: 'expenses' },
+        description: { name: 'expenses-v2', key: 'expenses', version: 2 },
         diagram: expect.stringContaining('stateDiagram-v2'),
       },
+    });
+    const first = await router.request(
+      '/lifecycleExample/expenses/lifecycle?actAs=lin&definition=expenses',
+    );
+    await expect(first.json()).resolves.toMatchObject({
+      data: { description: { name: 'expenses', version: 1 } },
     });
     const retried = await router.request(
       post('/lifecycleExample/expenses/1/effectRuns/7/retry?actAs=lin', {}),
@@ -429,11 +644,12 @@ describe('lifecycle example routes', () => {
   });
 
   it('continues a run whose continuation waits, without running its effect again', async () => {
-    const { app, store } = application(allow);
+    const { app, store, runtime } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     // An approved report whose payment succeeded, but whose `paid` could not
     // be fired yet: the continuation waits on the run.
     store.insertRecord('lifecycleExampleExpenses', {
+      lifecycleDefinition: 'expenses',
       id: 3,
       title: '客户拜访',
       items: [],
@@ -446,6 +662,7 @@ describe('lifecycle example routes', () => {
       statusChangedAt: '2026-10-01T09:00:00.000Z',
       lifecycleVersion: 2,
     });
+    fixtureSnapshot(store, runtime, 'expenses', 3);
     const run = await store.createEffectRun({
       transitionId: '0',
       lifecycle: 'expenses',
@@ -513,7 +730,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers a continuation refused again as a failed precondition with its own code', async () => {
-    const { app, store, service } = application(allow);
+    const { app, store, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     /** A succeeded payment run on report 1 whose continuation waits. */
     const waiting = (transition: string) =>
@@ -624,7 +841,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('validates a new expense before creating it', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const bad = await router.request(
       post('/lifecycleExample/expenses?actAs=lin', {
@@ -679,7 +896,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('acts as the signed-in user on a durable flow, whatever persona is named', async () => {
-    const { app } = application(allow);
+    const { app } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const view = await router.request('/lifecycleExample/orders/3');
     expect(view.status).toBe(200);
@@ -711,7 +928,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('protects invoice creation, platform actions and PDF downloads', async () => {
-    const router = await apiRoutes.createRouter(application(deny).app);
+    const router = await apiRoutes.createRouter((await application(deny)).app);
     for (const request of [
       post('/lifecycleExample/invoices', {}),
       post('/lifecycleExample/sandbox/invoices/9/complete', {
@@ -723,7 +940,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('downloads an issued sample PDF and refuses a missing invoice', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const response = await router.request('/lifecycleExample/invoices/9/pdf');
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('application/pdf');
@@ -741,7 +958,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('declares every route in the API document', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
     const document = await generateApiDocument(router, {
       info: { title: 'Lifecycle example', version: '0.0.0' },

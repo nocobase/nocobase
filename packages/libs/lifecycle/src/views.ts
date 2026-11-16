@@ -37,7 +37,10 @@ export function lifecycleDescriptionView(
 export async function lifecycleDescriptionViewAsync(
   runtime: LifecycleRuntime,
   name: string,
-  context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'purpose'>,
+  context: Omit<
+    ParameterReadContext<LifecycleTypes>,
+    'lifecycle' | 'key' | 'purpose'
+  >,
 ): Promise<LifecycleDescriptionView> {
   const description = runtime.describe(name);
   return {
