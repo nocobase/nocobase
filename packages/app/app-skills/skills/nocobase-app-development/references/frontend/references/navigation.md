@@ -1,10 +1,10 @@
 # Detail and edit navigation
 
-Generate navigation together with the page, before implementing its successful data state. The application shell owns desktop breadcrumbs and the mobile parent arrow. Each independent detail supplies its full trail with `usePageBreadcrumb`; do not add a second page back button. A static nested page can rely on route `breadcrumb` metadata. A first-level list or home has no invented parent. Structure without a page remains text, and tabs and overlays add no level.
+Generate navigation together with the page, before implementing its successful data state. The application shell owns desktop breadcrumbs and the mobile parent arrow (guideline L6). Each independent detail page supplies its full trail with `usePageBreadcrumb`; do not add a second page back button. A static nested page can rely on route `breadcrumb` metadata. A first-level list or home has no invented parent. Structure without a page remains text, and tabs and overlays add no level.
 
 ## A detail under its source list
 
-Declare the list's `navigation`, the detail's static `breadcrumb` fallback and the independent edit's `breadcrumb`. Lazy-load all pages and keep the existing permission boundary. Nest the detail under each supported source list/tab so its list remains mounted and the existing list-state contract preserves private filters. The detail renders `RouteChildPage`, its own `PageContainer`, and its final `Outlet`; the independent edit covers the detail in the same way. An edit dialog instead declares no breadcrumb and closes through `useRouteOverlay`.
+Declare the list's `navigation` and the detail page's static `breadcrumb` fallback. Lazy-load all pages and keep the existing permission boundary. Nest the detail under each supported source list/tab so its list remains mounted and the existing list-state contract preserves private filters. The detail page renders `RouteChildPage`, its own `PageContainer`, and its final `Outlet`. Its edit is a `RouteDialog` ([`page.md`](page.md#detail-drawer-or-detail-page)): it declares no breadcrumb, closes through `useRouteOverlay`, and returns to the detail.
 
 ```tsx
 // In the detail page, before any early loading/error return.
@@ -14,35 +14,21 @@ import { useAncestorSearch } from '../../../routing/route-context.js';
 import { PROJECT_LIST_KEYS } from './types.js';
 
 const owner = useResolvedPath('..').pathname;
-const detail = useResolvedPath('.').pathname;
 const listLevel = {
   label: t('projects.title'),
   to: { pathname: owner, search: useAncestorSearch(owner, PROJECT_LIST_KEYS) },
 };
-const recordLevel = {
-  label: request.data?.data.name ?? t('projects.detail'),
-  to: {
-    pathname: detail,
-    search: useAncestorSearch(detail, PROJECT_LIST_KEYS),
-  },
-};
-usePageBreadcrumb([listLevel, recordLevel]);
-// Pass { listLevel, recordLevel, reload: request.reload } through Outlet context.
+usePageBreadcrumb([
+  listLevel,
+  { label: request.data?.data.name ?? t('projects.detail') },
+]);
 // A tab does not replace this declaration. A list-tab owner supplies its translated
 // tab label and useListTabs().source instead of the generic listLevel above.
 ```
 
-```tsx
-// In an independent edit page; inherited context comes from the record detail.
-const { listLevel, recordLevel } = useOutletContext<DetailContext>();
-usePageBreadcrumb([listLevel, recordLevel, { label: t('projects.edit') }]);
-// Cancel and a successful save navigate to recordLevel.to (replace: true).
-// A dialog's Cancel closes the dialog instead; never change overlay semantics.
-```
+`useAncestorSearch` returns the query recorded when that level was last visited. After a direct entry or a reload of the detail or its edit URL nothing is recorded, so it takes the list's public keys from the current URL: the list links to a record with `search: location.search`, and the detail links on to its edit dialog with the same query, so after a reload the arrow still returns to the same view, search, filters, sort and page. Declare those keys once beside the list's types (`PROJECT_LIST_KEYS`: the search and filter keys plus `TABLE_URL_KEYS` from `#hooks/use-table-url-state`), not in the list component, so the detail does not import the list. Name the detail's own parameters apart from them (`detailTab`, `contactsPage`); the allowlist keeps those out of the list URL. Never fall back to `''` with `searches.get(owner) ?? ''` in a record page: that is the defect where a reloaded edit returns to page 1 of an unfiltered list.
 
-`useAncestorSearch` returns the query recorded when that level was last visited. After a direct entry or a reload of the detail or its edit URL nothing is recorded, so it takes the list's public keys from the current URL: the list links to a record with `search: location.search`, and the detail links on to its edit with the same query, so after a reload the arrow still returns to the same view, search, filters, sort and page. Declare those keys once beside the list's types (`PROJECT_LIST_KEYS`: the search and filter keys plus `TABLE_URL_KEYS` from `#hooks/use-table-url-state`), not in the list component, so the detail does not import the list. Name the detail's own parameters apart from them (`detailTab`, `contactsPage`); the allowlist keeps those out of the list URL. Never fall back to `''` with `searches.get(owner) ?? ''` in a record page: that is the defect where a reloaded edit returns to page 1 of an unfiltered list.
-
-Keep `listLevel` and the record's translated fallback title when loading, on 401/403, on missing records and on retryable failures. Keep the error explanation in the page; do not turn a failed record into a list, hide its parent, or claim it is successfully loaded. An edit's parent is the record detail even after switching detail tabs. Do not use `history.back()` or cut a URL segment to determine either parent.
+Keep `listLevel` and the record's translated fallback title when loading, on 401/403, on missing records and on retryable failures. Keep the error explanation in the page; do not turn a failed record into a list, hide its parent, or claim it is successfully loaded. Do not use `history.back()` or cut a URL segment to determine the parent.
 
 ## A logical parent outside the URL tree
 
@@ -94,7 +80,7 @@ The route-search map keeps active ancestry only. A source outside that ancestry 
 
 ## Generation checklist
 
-- Declare list → dynamic record → independent edit together; ordinary nested routes, logical parents and two source tabs have explicit examples in the generated feature.
+- Declare list → dynamic record → edit dialog together; ordinary nested routes, logical parents and two source tabs have explicit examples in the generated feature.
 - Check desktop breadcrumb and mobile arrow destinations against the same expected source, including search/filter/sort/order/page size/page and actual returned records. Use browser Back too. Repeated visits and the same record from two sources must stay isolated.
 - Open the list on a non-default view, search, sort and page 2, open a record and its edit, reload the edit URL, save, then click the header's parent arrow (and the desktop breadcrumb): the resulting list URL equals the one you started from, exactly, and shows the same rows. Checking that the detail URL still carries `page=2` is not enough.
 - Check detail-tab switches, edit → detail → list, direct entry, refresh, new tab, deleted source, loading, load failure and missing record. Preserve parent navigation in each record state.

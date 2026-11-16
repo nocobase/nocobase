@@ -4,13 +4,13 @@ The UI is composed of shadcn/ui primitives (the Base UI version) and styled with
 
 ## 1. Look up components
 
-How to use a primitive comes from the shadcn/ui skill. Read [`shadcn.md`](shadcn.md) first: it lists the primitives the template ships and how to add the others, says which of the skill's files to open, and where this application departs from the skill. For one primitive's API and examples, run `pnpm exec shadcn docs <name>` and fetch the URLs it prints; they point at the Base UI version. Do not infer an API from memory or from Radix-based examples on the web.
+Read [`shadcn.md`](shadcn.md) first: it lists the primitives the template ships, how to add the others, and where this application departs from upstream shadcn/ui. For one primitive's API and examples, run `pnpm exec shadcn docs <name>` and fetch the URLs it prints; they point at the Base UI version. Do not infer an API from memory or from Radix-based examples on the web.
 
-This document adds what the skill does not cover: the Base UI details it leaves out, the compositions this template ships, and the styling rules that keep the pages of this application consistent. For how a whole feature fits together, read the worked example ([`example.md`](example.md)).
+This document adds what the shadcn/ui documentation does not cover: the Base UI details it leaves out, the compositions this template ships, and the styling rules that keep the pages of this application consistent. For how a whole feature fits together, read the worked example ([`example.md`](example.md)).
 
 ## 2. Components are built on Base UI, not Radix
 
-The `style` in `components.json` is `base-nova`, so every component in `client/components/ui/` is built on Base UI. Most shadcn examples on the web are the Radix version, which is written differently; the skill's [`rules/base-vs-radix.md`](../shadcn/rules/base-vs-radix.md) lists the differences: `render` instead of `asChild`, `nativeButton={false}`, `Select` with `items`, `ToggleGroup`, `Slider` and `Accordion`. It leaves out:
+The `style` in `components.json` is `base-nova`, so every component in `client/components/ui/` is built on Base UI. Most shadcn examples on the web are the Radix version, which is written differently: `render` instead of `asChild`, `nativeButton={false}`, `Select` with `items`, and different `ToggleGroup`, `Slider` and `Accordion` APIs. In detail:
 
 - There is no `asChild`; passing it is a type error. Give the element passed to `render` **no children**; write the children between the component's opening and closing tags, and the props are merged automatically.
 - A `Button` rendered as a link with `nativeButton={false}` keeps its `href` but is announced as a button (`role='button'`). That is right for an action that happens to be a route, such as "New project", "Edit" or "Import projects", which open a dialog or a child page. Navigation between places (tabs, menus, the back button, breadcrumbs) stays a link: style a `Link` or `NavLink` with `buttonVariants(…)` instead ([section 4 of `child-routes.md`](child-routes.md#4-page-tabs)). Tests query the former by the `button` role.
@@ -21,7 +21,7 @@ The `style` in `components.json` is `base-nova`, so every component in `client/c
 | The value passed by `onValueChange` of `RadioGroup` and `DropdownMenuRadioGroup` has no specific type | Validate that it is an allowed value before using it; in a form field, `z.enum` in the schema does this, so `field.onChange` can take it directly ([`form.md`](form.md))                                                                                                                 |
 | Open on hover: set `openOnHover` and `delay={0}` on the trigger                                       | Component options of `DropdownMenu` and `Popover`; do not write your own mouse event handlers. For when to use it, see [section 2 of `shell.md`](shell.md#2-header-icon-buttons) and, for a cut-off table cell, [section 8 of `table.md`](table.md#8-column-definitions-and-row-actions) |
 | Close on selection: add `closeOnClick` to radio items and checkbox items                              | By default, a radio item does not close the menu when selected; the language items of the account menu (`client/layouts/components/language-switcher.tsx`) set it                                                                                                                        |
-| A `DropdownMenuLabel` outside a `DropdownMenuGroup` or `DropdownMenuRadioGroup`                       | Throws `MenuGroupContext is missing` at runtime. The skill's rule of putting every item and label inside its group avoids it                                                                                                                                                             |
+| A `DropdownMenuLabel` outside a `DropdownMenuGroup` or `DropdownMenuRadioGroup`                       | Throws `MenuGroupContext is missing` at runtime. Put every item and label inside its group                                                                                                                                                                                               |
 
 `Select` (the status filter of the example; its options are translated at render time, see ["Derived values that use `t`" in `i18n.md`](i18n.md#derived-values-that-use-t)):
 
@@ -96,14 +96,10 @@ For flowcharts and process diagrams, reuse UI Library `@nocobase/flow-diagram` (
 
 The template ships only the primitives its shell and compositions use ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)). First check whether `client/components/ui/` has the component you need. If it does not, add it from the shadcn registry:
 
-```bash
-yes n | pnpm exec shadcn add card
-yes n | pnpm exec shadcn add alert-dialog badge
-```
+`yes n | pnpm exec shadcn add card`, then format, translate and keep the files as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes.
 
-- The CLI writes into `client/components/ui/`, as `components.json` configures. `yes n |` answers "no" when it offers to overwrite a primitive that is already installed; then format the files it created, translate the English some of them carry, and leave them otherwise as they arrived ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
 - Adding is the first choice. Do not hand-write a button, dialog, or select that shadcn already provides, and do not copy one from another project.
-- `pnpm exec shadcn search @shadcn -q <word>` finds an item by keyword (it takes a registry name and a query, not a component name), and `pnpm exec shadcn docs <name>` gives its documentation and examples. The other commands are in the skill's [`cli.md`](../shadcn/cli.md).
+- `pnpm exec shadcn search @shadcn -q <word>` finds an item by keyword (it takes a registry name and a query, not a component name), and `pnpm exec shadcn docs <name>` gives its documentation and examples. Every other command is in the [CLI documentation](https://ui.shadcn.com/docs/cli).
 
 `components.json` also configures the `@nocobase` registry, the NocoBase UI Library: business components and blocks — page layout, route overlays, authentication pages, boards, issue and project pages, permission editors, comments, attachments — many of them wired to a plugin's API. `yes n | pnpm exec shadcn add @nocobase/<item>` writes a single component to `client/components/` and a complete feature to `client/extensions/nocobase-<item>/`.
 
@@ -143,13 +139,13 @@ Three are the template's own:
 
 | Component     | Purpose                                                                                                                                                                                         |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BackButton`  | The way back from a page below another one, above its title; leads to the parent route with the query string ([`page.md`](page.md#7-back-button-and-breadcrumbs))                               |
+| `BackButton`  | The parent link of a page without the shell header (`StandalonePageLayout`); under `AppLayout` the header provides it ([`page.md`](page.md#7-back-button-and-breadcrumbs))                      |
 | `Breadcrumbs` | The header's trail, which the layouts render from routes' `breadcrumb` declarations or a page's `usePageBreadcrumb`; pages do not place it ([`page.md`](page.md#7-back-button-and-breadcrumbs)) |
 | `Loading`     | The shared loading indicator                                                                                                                                                                    |
 
 A date field is the application's own `DatePicker` in `date-picker.tsx`, composed from `Popover` plus `Calendar` as shadcn's Date Picker guide does ([`form.md`](form.md)); the template does not ship one.
 
-A composition uses the full structure of the primitives it is built from, such as `CardHeader`, `CardTitle`, `CardAction` and `CardContent` for a card (the skill's [`rules/composition.md`](../shadcn/rules/composition.md)). [`example/project-summary.md`](example/project-summary.md) is a complete one: a card that loads one record and shares `ProjectStatusBadge` ([`i18n.md`](i18n.md)) with the list, so a status looks the same everywhere. Do not reimplement a primitive's behavior: focus, keyboard interaction, and ARIA attributes are already handled in the shadcn components, and they are easy to get wrong by hand.
+A composition uses the full structure of the primitives it is built from, such as `CardHeader`, `CardTitle`, `CardAction` and `CardContent` for a card (as the shadcn/ui documentation of each primitive shows). Do not reimplement a primitive's behavior: focus, keyboard interaction, and ARIA attributes are already handled in the shadcn components, and they are easy to get wrong by hand.
 
 ### Charts
 
@@ -207,30 +203,27 @@ Using `bg-background` because it "looks right" puts a page-colored block inside 
 
 - Fonts: `body` is `font-sans text-base`; `h1`–`h6` use `font-heading`; `code`, `pre`, `kbd`, and `samp` use `font-mono`. A heading rendered with another element needs `font-heading`. Ordinary bold text and button text still use the body font.
 - Font sizes: `text-xs`, `text-sm`, `text-base`, `text-lg`, and so on. Buttons, inputs, tables, and other components come with `text-sm`; body text and descriptions on the page match the components with `text-sm`. Do not use `text-[13px]`.
-- Spacing: `gap-2` (between related controls), `gap-4`, `gap-6` (between blocks you stack yourself, in a `flex flex-col` container: the skill's rule is `gap-*`, never `space-y-*`), `p-4`, `p-6`. `PageContainer` already spaces the blocks of a page. Do not use `mt-[7px]`.
+- Spacing: `gap-2` (between related controls), `gap-4`, `gap-6` (between blocks you stack yourself, in a `flex flex-col` container: `gap-*`, never `space-y-*`), `p-4`, `p-6`. `PageContainer` already spaces the blocks of a page. Do not use `mt-[7px]`.
 - Sizes: numeric classes such as `h-8`, `size-4`, and `w-64`, which scale with `--spacing`.
 - Radius: `rounded-md`, `rounded-lg`; shadows: `shadow-sm`, `shadow-md`. Usually just use the component defaults.
-- Deliberate fixed values (image sizes, viewport-related limits, circular icons) may stay, but confirm that fixed sizes, separately set line heights (`leading-*`, `text-sm/6`), and shadow color classes (`shadow-black/30`) do not override the theme's settings; state the reason in the design file ([`../ui-guidelines.md`](../ui-guidelines.md) F7).
+- Deliberate fixed values (image sizes, viewport-related limits, circular icons) may stay, but confirm that fixed sizes, separately set line heights (`leading-*`, `text-sm/6`), and shadow color classes (`shadow-black/30`) do not override the theme's settings; state the reason in the final report ([`../ui-guidelines.md`](../ui-guidelines.md) F7).
 - Do not globally rewrite isolated third-party content to unify the look. Font variables take effect only after the font resources have loaded (see [`theme.md`](theme.md)).
 
 ### Common layouts
 
-| Scenario                               | Classes                                                                                                 |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Toolbar                                | `flex flex-wrap items-center gap-2` (on phones: the search box, then one row of compact controls, M4.1) |
-| Search box width                       | `w-full md:max-w-xs`                                                                                    |
-| Inline filter control (a `Select`)     | `hidden md:flex md:w-40` beside a `md:hidden` "Filters" button that opens the same controls in a sheet  |
-| Filter control inside the phone sheet  | `w-full`                                                                                                |
-| Stat card grid                         | `grid grid-cols-2 gap-4 xl:grid-cols-4`                                                                 |
-| "Label — value" pairs in a detail view | `grid gap-1 text-sm sm:grid-cols-[8rem_1fr] sm:gap-x-4 sm:gap-y-3`                                      |
-| Main column with a side column         | `grid gap-6 md:grid-cols-[minmax(0,1fr)_20rem]`, side content after the main content in source order    |
-| Tabs or links in one sideways row      | `flex overflow-x-auto` with `shrink-0` items (M2.2)                                                     |
-| Limiting form width                    | `max-w-2xl`                                                                                             |
-| Table in a card                        | See below                                                                                               |
+| Scenario                               | Classes                                                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| List toolbar (search, filters, sort)   | `DataTable`'s `search` (`DataTableSearch`), `filters` and `toolbar` props, which lay it out on every width ([`table.md`](table.md)) |
+| Stat card grid                         | `grid grid-cols-2 gap-4 xl:grid-cols-4`                                                                                             |
+| "Label — value" pairs in a detail view | `grid gap-1 text-sm sm:grid-cols-[8rem_1fr] sm:gap-x-4 sm:gap-y-3`                                                                  |
+| Main column with a side column         | `grid gap-6 md:grid-cols-[minmax(0,1fr)_20rem]`, side content after the main content in source order                                |
+| Tabs or links in one sideways row      | `flex overflow-x-auto` with `shrink-0` items (M2.2)                                                                                 |
+| Limiting form width                    | `max-w-2xl`                                                                                                                         |
+| Table in a card                        | See below                                                                                                                           |
 
-These are the phone-first defaults of [the phone experience](../mobile.md). A filter that is the page's only one may stay inline at `w-full md:w-40`. Several filters are written once, as a component the page renders both inline (`hidden md:flex`) and inside the phone sheet, so both write the same URL parameters.
+These are the phone-first defaults of [the phone experience](../mobile.md).
 
-**Table in a card.** Put a `DataTable` in the card's `CardContent` as it is. There it drops its own frame and reaches the card's edges, and its first and last cells take the card's `--card-spacing` (`size='sm'` makes it smaller), so the text lines up with the card's title while the row lines and the hover color span the whole card. Do not give that `CardContent` `px-0` or write the table from `Table` by hand. A list in a card has plain headers and `pagination={false}` (guideline T5.3). The recent projects of [`example/project-dashboard.md`](example/project-dashboard.md) are a complete one.
+**Table in a card.** Put a `DataTable` in the card's `CardContent` as it is. There it drops its own frame and reaches the card's edges, and its first and last cells take the card's `--card-spacing` (`size='sm'` makes it smaller), so the text lines up with the card's title while the row lines and the hover color span the whole card. Do not give that `CardContent` `px-0` or write the table from `Table` by hand. A list in a card has plain headers and `pagination={false}` (guideline T5.3).
 
 Merge class names with `cn()` from the `cn` package (`import { cn } from 'cn'`), for example `cn('flex gap-2', className)`.
 
@@ -337,7 +330,7 @@ export function DeleteProjectButton({
 ## 10. Icons
 
 - Use `lucide-react`, for example `import { PlusIcon } from 'lucide-react'`.
-- Inside a component, the component sizes the icon, as the skill's [`rules/icons.md`](../shadcn/rules/icons.md) says. A standalone icon takes a scale class such as `size-4`, not fixed pixels, so it follows the text beside it.
+- Inside a component, the component sizes the icon: give it `data-icon='inline-start'` or `'inline-end'` in a button and no size class. A standalone icon takes a scale class such as `size-4`, not fixed pixels, so it follows the text beside it.
 - An icon inside a control that has text (a button, menu item, badge, alert or tab) needs no attribute: an `<svg>` without a title adds nothing to the control's accessible name, which is why the examples leave it bare. An icon-only button gets its name from `aria-label`. A decorative icon standing on its own outside a control may take `aria-hidden='true'`.
 
 ## 11. Application-wide consistency

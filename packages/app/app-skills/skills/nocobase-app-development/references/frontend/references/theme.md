@@ -2,7 +2,7 @@
 
 Theme presets belong to the application, not to a plugin. This document is the complete reference for the theme tokens, the steps for adding, changing and removing presets, and how the color mode and preset a user picks are saved and defaulted. For how to use the tokens while writing components, see [`styling.md`](styling.md); the rules they serve (F1–F7, A5) are in [`../ui-guidelines.md`](../ui-guidelines.md).
 
-The theming in the shadcn skill does not apply here: no `shadcn apply`, `shadcn init` or `--preset`, no variables added to `:root` and `.dark` in `client/styles.css`, and no `next-themes` setup of your own ([section 3 of `shadcn.md`](shadcn.md#3-where-this-application-departs-from-the-skill)). This application's presets, below, replace all of it.
+The theming in the shadcn skill does not apply here: no `shadcn apply`, `shadcn init` or `--preset`, no variables added to `:root` and `.dark` in `client/styles.css`, and no `next-themes` setup of your own ([section 2 of `shadcn.md`](shadcn.md#2-where-this-application-departs-from-upstream)). This application's presets, below, replace all of it.
 
 ## 1. Files and mechanism
 
