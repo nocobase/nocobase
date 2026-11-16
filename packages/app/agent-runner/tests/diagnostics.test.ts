@@ -5,9 +5,10 @@ import {
   symlink,
   utimes,
   stat,
+  readdir,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { DiagnosticsRecordSchema } from '../src/protocol/index.ts';
 import { diagnosticsRecords } from '../src/core/diagnostics.ts';
 import { RunnerJournal, pruneRunnerLogs } from '../src/lib/journal.ts';
@@ -18,7 +19,7 @@ import {
   writeJsonAtomic,
 } from '../src/lib/home.ts';
 import { recordPath } from '../src/core/supervisor.ts';
-import { tempDir, removeDir, cli, cliEnv } from './helpers.ts';
+import { tempDir, removeDir, cli, cliEnv, readDaemonLog } from './helpers.ts';
 import type { DiagnosticsRequest } from '../src/protocol/index.ts';
 const root = tempDir('runner-diagnostics-');
 afterAll(() => removeDir(root));
@@ -45,6 +46,62 @@ async function records(home: string, input = request()) {
 }
 
 describe('执行机诊断与清理', () => {
+  it('删除空日期目录但保留正在运行的日志、非日期目录及符号链接', async () => {
+    const paths = runnerPaths(path.join(root, 'empty-dates'));
+    const runs = path.join(paths.logsDir, 'runs');
+    for (const date of ['2019-01-01', '2020-01-01', '2021-01-01', 'other'])
+      await mkdir(path.join(runs, date), { recursive: true });
+    const ended = runLogPath(paths, 'ended', '2019-01-01');
+    const active = runLogPath(paths, 'active', '2020-01-01');
+    for (const file of [ended, active]) {
+      await writeFile(file, entry('old'));
+      await utimes(file, new Date(0), new Date(0));
+    }
+    await writeJsonAtomic(recordPath(paths, 'active'), {
+      runId: 'active',
+      pid: process.pid,
+      log: active,
+    });
+    const outside = path.join(root, 'outside-dates');
+    await mkdir(outside);
+    await writeFile(path.join(outside, 'keep.log'), entry('keep'));
+    await symlink(outside, path.join(runs, '2022-01-01'));
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+    });
+    expect((await readdir(runs)).sort()).toEqual([
+      '2020-01-01',
+      '2022-01-01',
+      'other',
+    ]);
+    expect(await stat(active)).toBeDefined();
+    expect(await stat(path.join(outside, 'keep.log'))).toBeDefined();
+  });
+  it('同一日志对象跨 UTC 午夜继续滚动，读取时覆盖全部日期和分段', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-11-01T23:59:59Z'));
+      const paths = runnerPaths(path.join(root, 'midnight'));
+      const writer = new RunnerJournal(paths.logsDir);
+      writer.write('before midnight\n');
+      vi.setSystemTime(new Date('2026-11-02T00:00:01Z'));
+      writer.write('after midnight\n');
+      writer.flush();
+      const files = await readdir(paths.logsDir);
+      expect(files.some((file) => file.startsWith('runner.2026-11-01.'))).toBe(
+        true,
+      );
+      expect(files.some((file) => file.startsWith('runner.2026-11-02.'))).toBe(
+        true,
+      );
+      expect(readDaemonLog(paths.logsDir)).toContain('before midnight');
+      expect(readDaemonLog(paths.logsDir)).toContain('after midnight');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('收集相交 UTC 日期原文件并包含跨日期的指定运行，排除其他文件和符号链接', async () => {
     const home = path.join(root, 'dates');
     const paths = runnerPaths(home, home);
@@ -293,7 +350,7 @@ describe('执行机诊断与清理', () => {
     );
     writer.writeError('crash stack\n');
     writer.flush();
-    const lines = (await readFile(paths.daemonLog, 'utf8'))
+    const lines = readDaemonLog(paths.logsDir)
       .trim()
       .split('\n')
       .map((line) => JSON.parse(line));

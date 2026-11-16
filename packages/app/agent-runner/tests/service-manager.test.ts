@@ -35,6 +35,7 @@ import {
   cli,
   cliEnv,
   registerRunner,
+  readDaemonLog,
   removeDir,
   tempDir,
 } from './helpers.ts';
@@ -215,7 +216,7 @@ describe('installed service migration', () => {
             expect(readFileSync(plan.file, 'utf8')).toBe(
               managerExit === '1' ? old : plan.content,
             );
-            expect(readFileSync(paths.daemonLog, 'utf8')).toContain(
+            expect(readDaemonLog(paths.logsDir)).toContain(
               'Service migration failed; continuing with the installed policy and retrying on the next start:',
             );
           } finally {

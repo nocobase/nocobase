@@ -655,7 +655,11 @@ export class RunnerDaemon {
       try {
         while (this.claimsInFlight > 0) await delay(20, this.stopping.signal);
         const settings = await readSettings(paths);
-        await pruneRunnerLogs(paths, settings);
+        await pruneRunnerLogs(paths, settings).catch((error: unknown) =>
+          log(
+            `gc: log cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
         const reporters = new Map<
           string,
           (request: WorkspacesRequest) => Promise<WorkspacesResponse>

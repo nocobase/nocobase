@@ -86,7 +86,7 @@ describe('runner end to end', () => {
     const date = new Date().toISOString().slice(0, 10);
     mkdirSync(paths.logsDir, { recursive: true });
     writeFileSync(
-      paths.daemonLog,
+      path.join(paths.logsDir, `runner.${date}.000000.log`),
       JSON.stringify({
         time: new Date().toISOString(),
         level: 'info',

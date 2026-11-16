@@ -36,7 +36,9 @@ const record = {
   entry: {
     time: '2026-11-01T12:00:00Z',
     level: 'error',
-    msg: 'api_key=fixture-sensitive-value',
+    msg: 'inputTokens=1234 api_key=fixture-sensitive-value',
+    inputTokens: 1234,
+    tokensUsed: '9000',
     requestId: 'request-fixture',
   },
 };
@@ -85,6 +87,61 @@ async function take(
 }
 
 describe('执行机上传边界', () => {
+  it('宿主范围外的在线执行机不获请求、不能上传，也不挤占收集预算', async () => {
+    const list = vi.fn(async () => [
+      { id: 'other-personal', status: 'online', features: ['diagnostics'] },
+      { id: 'chosen', status: 'online', features: ['diagnostics'] },
+    ]);
+    const service = createRunnerDiagnostics(list);
+    const collecting = service.collect({
+      runnerIds: ['chosen', 'chosen'],
+      directory: await directory(),
+      window,
+      maxTotalBytes: 131072,
+    });
+    const request = await take(service, 'chosen');
+    expect(request.maxBytes).toBe(131072);
+    expect(service.take('other-personal')).toBeUndefined();
+    await expect(
+      service.accept(
+        'other-personal',
+        request.requestId,
+        body([env, record, manifest]),
+      ),
+    ).rejects.toMatchObject({ status: 'PERMISSION_DENIED' });
+    await service.accept(
+      'chosen',
+      request.requestId,
+      body([env, record, manifest]),
+    );
+    const result = await collecting;
+    expect(result.runners.map((item) => item.runnerId)).toEqual(['chosen']);
+    expect(list).toHaveBeenCalledTimes(1);
+    await result.dispose();
+  });
+  it('空执行机范围不下发请求，缺少范围不能退回全量收集', async () => {
+    const service = createRunnerDiagnostics(async () => [
+      { id: 'one', status: 'online', features: ['diagnostics'] },
+    ]);
+    const directoryPath = await directory();
+    for (const runnerIds of [undefined, [''], [1]]) {
+      await expect(
+        service.collect({
+          runnerIds: runnerIds as never,
+          directory: directoryPath,
+          window,
+        }),
+      ).rejects.toMatchObject({ status: 'INVALID_ARGUMENT' });
+    }
+    const result = await service.collect({
+      runnerIds: [],
+      directory: directoryPath,
+      window,
+    });
+    expect(result.runners).toEqual([]);
+    expect(service.take('one')).toBeUndefined();
+    await result.dispose();
+  });
   it('只消费指定执行机的一次请求，服务端再次脱敏并按真实字节生成清单', async () => {
     const service = createRunnerDiagnostics(async () => [
       { id: 'online', status: 'online', features: ['diagnostics'] },
@@ -92,6 +149,7 @@ describe('执行机上传边界', () => {
       { id: 'old', status: 'online', features: [] },
     ]);
     const collecting = service.collect({
+      runnerIds: ['online', 'offline', 'old'],
       directory: await directory(),
       window,
     });
@@ -120,9 +178,18 @@ describe('执行机上传边界', () => {
     );
     expect(saved).not.toContain('fixture-sensitive-value');
     expect(saved).toContain('request-fixture');
+    expect(JSON.parse(saved)).toMatchObject({
+      inputTokens: 1234,
+      tokensUsed: '9000',
+    });
+    expect(saved).toContain('inputTokens=1234');
     expect(result.runners[0].files![0].bytes).toBe(Buffer.byteLength(saved));
     await expect(
-      service.collect({ directory: result.directory, window }),
+      service.collect({
+        runnerIds: ['online'],
+        directory: result.directory,
+        window,
+      }),
     ).rejects.toMatchObject({ code: 409 });
     await result.dispose();
     expect(await stat(result.directory).catch(() => null)).toBeNull();
@@ -160,6 +227,7 @@ describe('执行机上传边界', () => {
         { id: 'one', status: 'online', features: ['diagnostics'] },
       ]);
       const collecting = service.collect({
+        runnerIds: ['one'],
         directory: await directory(),
         window,
         maxTotalBytes: 131072,
@@ -184,6 +252,7 @@ describe('执行机上传边界', () => {
       runIds: Array.from({ length: 20 }, (_, index) => `chosen-${index}`),
     };
     const collecting = service.collect({
+      runnerIds: ['one'],
       directory: await directory(),
       window: selectedWindow,
     });
@@ -233,6 +302,7 @@ describe('执行机上传边界', () => {
         { id: 'one', status: 'online', features: ['diagnostics'] },
       ]);
       const collecting = service.collect({
+        runnerIds: ['one'],
         directory: await directory(),
         window,
         maxTotalBytes: 131072,
@@ -264,6 +334,7 @@ describe('执行机上传边界', () => {
       })),
     );
     const collecting = service.collect({
+      runnerIds: ['one', 'two', 'three'],
       directory: await directory(),
       window,
       timeoutMs: 100,
@@ -285,6 +356,7 @@ describe('执行机上传边界', () => {
     const runner = await harness.registerRunner({ features: ['diagnostics'] });
     const other = await harness.registerRunner({ features: ['diagnostics'] });
     const collecting = harness.services.diagnostics.collect({
+      runnerIds: [runner.runnerId],
       directory: await directory(),
       window,
     });
@@ -315,6 +387,7 @@ describe('执行机上传边界', () => {
       body: payload,
     });
     expect(wrong.status).toBe(403);
+    expect(harness.services.diagnostics.take(other.runnerId)).toBeUndefined();
     const response = await harness.app.request(url, {
       method: 'POST',
       headers: {
@@ -324,17 +397,13 @@ describe('执行机上传边界', () => {
       body: payload,
     });
     expect(response.status).toBe(200);
-    // Complete the other runner rather than waiting for its timeout.
-    const second = await take(harness.services.diagnostics, other.runnerId);
-    await harness.services.diagnostics.accept(
-      other.runnerId,
-      second.requestId,
-      body([env, record, manifest]),
-    );
     const result = await collecting;
     expect(result.runners.every((item) => item.status === 'collected')).toBe(
       true,
     );
+    expect(result.runners.map((item) => item.runnerId)).toEqual([
+      runner.runnerId,
+    ]);
     await result.dispose();
   });
 });

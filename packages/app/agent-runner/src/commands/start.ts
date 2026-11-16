@@ -28,7 +28,7 @@ function timingsFromEnv(): Timings {
 export default class Start extends RunnerCommand {
   static override summary: string = 'Start the runner daemon.';
   static override description: string =
-    'Without --foreground the daemon starts in the background, writing to ~/.nocobase-runner/logs/runner.log; ' +
+    'Without --foreground the daemon starts in the background, writing dated journals in ~/.nocobase-runner/logs/; ' +
     `\`${runnerCommandLine('stop')}\` stops it. One daemon serves every application this runner is registered with.`;
   static override flags: {
     foreground: Interfaces.BooleanFlag<boolean>;
@@ -117,7 +117,7 @@ export default class Start extends RunnerCommand {
         const started = await readDaemonPid(paths);
         if (started !== undefined) {
           this.log(
-            `Runner ${settings.name} started (pid ${started.pid}). Logs: ${paths.daemonLog}`,
+            `Runner ${settings.name} started (pid ${started.pid}). Logs: ${paths.logsDir}`,
           );
           return { pid: started.pid };
         }
@@ -125,7 +125,7 @@ export default class Start extends RunnerCommand {
         await delay(100);
       }
       throw new UsageError(
-        `The runner did not start; see ${paths.daemonLog}.`,
+        `The runner did not start; see ${paths.logsDir}.`,
         EXIT_CODES.general,
       );
     }

@@ -68,7 +68,6 @@ export interface RunnerPaths {
   capacity: string;
   runsDir: string;
   logsDir: string;
-  daemonLog: string;
   reposDir: string;
   cliDir: string;
   skillsDir: string;
@@ -97,10 +96,6 @@ export function runnerPaths(
     capacity: path.join(home, 'capacity.json'),
     runsDir: path.join(home, 'runs'),
     logsDir,
-    daemonLog: path.join(
-      logsDir,
-      `runner.${new Date().toISOString().slice(0, 10)}.000000.log`,
-    ),
     reposDir: path.join(home, 'repos'),
     cliDir: path.join(home, 'cli'),
     skillsDir: path.join(home, 'skills'),

@@ -41,6 +41,17 @@ const MAX_READ = 256 * 1024;
 const MAX_LINE = 32 * 1024;
 const SECRET =
   /password|secret|token|authorization|cookie|api.?key|access.?key|private.?key|client.?secret|credentials/i;
+const NON_TOKEN_SECRET =
+  /password|secret|authorization|cookie|api.?key|access.?key|private.?key|credentials/i;
+
+function isTokenUsage(key: string, value: unknown): boolean {
+  if (!/token/i.test(key) || NON_TOKEN_SECRET.test(key)) return false;
+  return typeof value === 'number'
+    ? Number.isSafeInteger(value) && value >= 0
+    : typeof value === 'string' &&
+        value.length <= MAX_LINE &&
+        /^\d+$/.test(value);
+}
 
 /** Sanitize at the persistence boundary, including nested errors and free text. */
 export function sanitizeLog(value: unknown, depth: number = 0): unknown {
@@ -68,8 +79,15 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
       .replace(/((?:Bearer|Basic)\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
       .replace(urlCredentials, '$1[REDACTED]@')
       .replace(
-        /((?:password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]{0,64}(?:\\?["'])?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
+        /((?:password|secret|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]{0,64}(?:\\?["'])?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
         '$1[REDACTED]',
+      )
+      .replace(
+        /((token[\w-]{0,64})(?:\\?["'])?\s*[=:]\s*)(\d+(?=\s|[,;&}]|$)|"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
+        (_match, prefix: string, key: string, raw: string) =>
+          isTokenUsage(key, raw.trim().replace(/^(\\?["'])(\d+)\1$/, '$2'))
+            ? prefix + raw
+            : prefix + '[REDACTED]',
       )
       .replace(
         /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+|npm_[a-zA-Z0-9_]+|fg(?:[kro]|reg|dl)_[a-zA-Z0-9_-]+)/g,
@@ -95,7 +113,9 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
         .slice(0, 100)
         .map(([key, item]) => [
           key,
-          SECRET.test(key) ? '[REDACTED]' : sanitizeLog(item, depth + 1),
+          SECRET.test(key) && !isTokenUsage(key, item)
+            ? '[REDACTED]'
+            : sanitizeLog(item, depth + 1),
         ]),
     );
   return value;

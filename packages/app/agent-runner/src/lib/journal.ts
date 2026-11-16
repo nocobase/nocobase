@@ -7,7 +7,7 @@ import {
   pruneJournals,
   type JournalEntry,
 } from '@nocobase/logging';
-import { readdir, lstat } from 'node:fs/promises';
+import { readdir, lstat, rmdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { RunnerSettings } from './config.ts';
 import { type RunnerPaths, runLogPath, runRawLogPath } from './home.ts';
@@ -200,4 +200,21 @@ export async function pruneRunnerLogs(
     protectedFiles,
     { recursive: true },
   );
+  for (const entry of await readdir(runs, { withFileTypes: true }).catch(
+    () => [],
+  )) {
+    if (!entry.isDirectory() || !/^\d{4}-\d{2}-\d{2}$/.test(entry.name))
+      continue;
+    await rmdir(path.join(runs, entry.name)).catch(
+      (error: NodeJS.ErrnoException) => {
+        // A worker may create a log between pruning and directory removal.
+        if (
+          error.code !== 'ENOENT' &&
+          error.code !== 'ENOTEMPTY' &&
+          error.code !== 'EEXIST'
+        )
+          throw error;
+      },
+    );
+  }
 }

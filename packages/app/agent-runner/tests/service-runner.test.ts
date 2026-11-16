@@ -12,7 +12,7 @@ import { RunnerJournal, runService } from '../src/core/service-runner.ts';
 import { servicePlan, installService } from '../src/core/service.ts';
 import { launcherPidPath } from '../src/core/launcher.ts';
 import { runnerPaths } from '../src/lib/home.ts';
-import { removeDir, tempDir } from './helpers.ts';
+import { removeDir, tempDir, readDaemonLog } from './helpers.ts';
 
 const root = tempDir('service-runner-');
 afterAll(() => removeDir(root));
@@ -20,7 +20,11 @@ let serial = 0;
 const logFor = () => {
   const paths = runnerPaths(path.join(root, `runner-${serial++}`));
   return Object.assign(new RunnerJournal(paths.logsDir), {
-    file: paths.daemonLog,
+    directory: paths.logsDir,
+    file: path.join(
+      paths.logsDir,
+      `runner.${new Date().toISOString().slice(0, 10)}.000000.log`,
+    ),
   });
 };
 const command = (script: string) => [process.execPath, '-e', script];
@@ -32,7 +36,7 @@ describe('service launch policy', () => {
       for (const code of [0, 3, 75]) {
         const log = logFor();
         const waits: number[] = [];
-        const paths = runnerPaths(`${log.file}.home`, root);
+        const paths = runnerPaths(`${log.directory}.home`, root);
         const exit = await runService({
           paths,
           command: command(
@@ -47,7 +51,7 @@ describe('service launch policy', () => {
         expect(exit).toBe(code);
         expect(waits).toEqual([]);
         expect(existsSync(launcherPidPath(paths))).toBe(false);
-        expect(JSON.parse(readFileSync(log.file, 'utf8').trim()).msg).toBe(
+        expect(JSON.parse(readDaemonLog(log.directory).trim()).msg).toBe(
           `exit ${code}`,
         );
       }
@@ -97,7 +101,7 @@ describe('service launch policy', () => {
     });
     expect(result).toBe(0);
     expect(waits).toEqual([10_000, 20_000, 40_000, 80_000]);
-    expect(readFileSync(log.file, 'utf8').trim().split('\n').at(-1)).toContain(
+    expect(readDaemonLog(log.directory).trim().split('\n').at(-1)).toContain(
       'five rapid failures',
     );
   });
@@ -142,7 +146,7 @@ describe('service launch policy', () => {
       signal: controller.signal,
     });
     expect(result).toBe(0);
-    expect(readFileSync(log.file, 'utf8')).toContain('cleaned');
+    expect(readDaemonLog(log.directory)).toContain('cleaned');
   });
 
   it('cancels a pending retry when stopped', async () => {
@@ -164,7 +168,7 @@ describe('service launch policy', () => {
 
   it('rolls UTC journal segments and wraps oversized output without splitting records', () => {
     const log = logFor();
-    const directory = path.dirname(log.file);
+    const directory = log.directory;
     const writer = new RunnerJournal(directory, {
       logMaxSizeMB: 1024 / 1024 ** 2,
     });

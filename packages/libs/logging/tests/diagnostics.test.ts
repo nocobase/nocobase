@@ -8,6 +8,72 @@ import {
 
 describe('诊断日志脱敏与逐行上限', () => {
   it.each([
+    'inputTokens=1234',
+    'maxTokens: 4096',
+    'tokensUsed=9000',
+    'inputTokens=1234 maxTokens: 4096 tokensUsed=9000',
+    'Used inputTokens=1234 for this run',
+    'token=0',
+    'token="00123"',
+    "tokensUsed='9000'",
+    'payload={\\"inputTokens\\":\\"1234\\"}',
+  ])('自由文本的纯数字 token 用量保留：%s', (text) => {
+    expect(sanitizeLog(text)).toBe(text);
+  });
+  it('结构化字段和 JSON 文本保留纯数字 token 用量，包括嵌套及数字字符串', () => {
+    const value = {
+      inputTokens: 1234,
+      maxTokens: 4096,
+      tokensUsed: 9000,
+      nested: { token: '00123', output_tokens: 0 },
+    };
+    expect(sanitizeLog(value)).toEqual(value);
+    expect(JSON.parse(String(sanitizeLog(JSON.stringify(value))))).toEqual(
+      value,
+    );
+    expect(sanitizeLog({ token: '1'.repeat(131072) })).toEqual({
+      token: '[REDACTED]',
+    });
+  });
+  it.each([
+    'token',
+    'accessToken',
+    'inputTokens',
+    'password',
+    'secret',
+    'apiKey',
+    'passwordToken',
+    'tokenSecret',
+  ])('真正凭据和密码不会被数字用量例外放过：%s', (key) => {
+    for (const value of [
+      'fixture-sensitive-value',
+      '1234abc',
+      '1234.5',
+      '-1234',
+    ]) {
+      expect(String(sanitizeLog(`${key}=${value}`))).not.toContain(value);
+      expect(sanitizeLog({ [key]: value })).toEqual({ [key]: '[REDACTED]' });
+    }
+    if (!['token', 'accessToken', 'inputTokens'].includes(key)) {
+      expect(String(sanitizeLog(`${key}=1234`))).not.toContain('1234');
+      expect(sanitizeLog({ [key]: 1234 })).toEqual({ [key]: '[REDACTED]' });
+      expect(sanitizeLog({ [key]: '1234' })).toEqual({ [key]: '[REDACTED]' });
+    }
+  });
+  it('数字 token 用量不会阻止相邻凭据脱敏，含空格的密码仍整段遮蔽', () => {
+    expect(
+      sanitizeLog(
+        'inputTokens=1234 password="fixture-sensitive-value with spaces"',
+      ),
+    ).toBe('inputTokens=1234 password=[REDACTED]');
+    expect(sanitizeLog('token=1234 secret=5678')).toBe(
+      'token=1234 secret=[REDACTED]',
+    );
+    expect(sanitizeLog('password=1234 with spaces')).toBe(
+      'password=[REDACTED]',
+    );
+  });
+  it.each([
     'api_key=fixture-sensitive-value',
     String.raw`payload={\"password\":\"fixture-sensitive-value\"}`,
     'fgk_fixture-sensitive-value',

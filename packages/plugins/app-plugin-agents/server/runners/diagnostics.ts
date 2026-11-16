@@ -37,6 +37,7 @@ export interface RunnerDiagnosticsCollection {
 export interface RunnerDiagnostics {
   /** Caller owns authorization. Retain until the preview bundle expires, then dispose. Single instance only. */
   collect(options: {
+    runnerIds: readonly string[];
     window: DiagnosticsWindow;
     directory: string;
     timeoutMs?: number;
@@ -98,6 +99,12 @@ export function createRunnerDiagnostics(
           message: 'A diagnostics collection is already active',
         });
       const window = DiagnosticsWindowSchema.parse(options.window);
+      if (
+        !Array.isArray(options.runnerIds) ||
+        options.runnerIds.some((id) => typeof id !== 'string' || !id.trim())
+      )
+        throw fail('INVALID_ARGUMENT', 'Invalid diagnostics runner scope');
+      const runnerIds = new Set(options.runnerIds);
       const budget = options.maxTotalBytes ?? 200 * 1024 * 1024;
       if (
         !Number.isSafeInteger(budget) ||
@@ -115,7 +122,9 @@ export function createRunnerDiagnostics(
         directory = await mkdtemp(
           path.join(options.directory, 'runner-diagnostics-'),
         );
-        const runners = await list();
+        const runners = (await list()).filter((runner) =>
+          runnerIds.has(runner.id),
+        );
         const eligible = runners.filter(
           (runner) =>
             runner.status === 'online' &&
