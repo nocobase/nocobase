@@ -1,5 +1,7 @@
 # Versioned parameter contracts and creation snapshots
 
+Declare configurable parameters only when the user asks for administrators to adjust a process policy; otherwise keep the requested values in the definition. When they are declared, the contracts below apply.
+
 A definition version's parameter contract includes its field set, types, meaning, units, validation and defaults; it freezes when the version reaches the target main branch. Administrators edit one complete configuration revision for that concrete definition name. Different versions may reuse field names with different contracts; they never implicitly share configuration. A contract change to a frozen version requires a new definition version; a version newly introduced on the current branch can be revised until merged. Check compatibility with any saved configuration and snapshots when editing an unmerged contract, which may already have been deployed or used. Editing configuration values under the declared contract is separate: it affects future records and never replaces an existing instance snapshot.
 
 `LifecycleRuntime.create()` binds the concrete definition and freezes all effective parameters in the business transaction, including for an initial business state named `draft`. Draft is a business state, not a parameter mode. Later edits, submissions, withdrawals, returns, reopening, retries, continuations and worker restarts always use the same snapshot. To use new parameters, create a new record; there is no instance parameter replacement or rebinding API.

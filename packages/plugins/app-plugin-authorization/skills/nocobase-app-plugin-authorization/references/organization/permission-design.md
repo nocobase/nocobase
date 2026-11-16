@@ -1,6 +1,6 @@
 # Design permissions around an organisation
 
-Part of [the organisation dimension](../organization.md). Use it to decide who gets what once departments exist: which permission sets to write, whom to assign them to and which data scope each grant uses. [Department scopes and heads](scopes.md) has the registration code.
+Part of [the organisation dimension](overview.md). Use it to decide who gets what once departments exist: which permission sets to write, whom to assign them to and which data scope each grant uses. [Department scopes and heads](scopes.md) has the registration code.
 
 The core needs only the authorization plugin: permission sets, the department and department-head subject types, and the two department data scopes. Default access, sharing rules and restriction rules are separate, optional plugins; the sections that use them are marked optional and each gives the permission-set alternative where there is one. Before designing with one, confirm it is installed as the authorization Skill's `references/optional-capabilities.md` describes.
 

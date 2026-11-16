@@ -2,9 +2,9 @@
 
 ## Default delivery
 
-A complete application includes the System settings structure and working administration pages by default. Users asking for a CRM, an order system or another business application do not need to enumerate its administrative infrastructure. Follow explicit exclusions and narrower deliverables such as API-only services or prototypes explicitly limited to business screens. For an individual feature, integrate its administration into the existing application.
+Deliver what the user asked for plus the minimal management entry for each capability the application actually uses: Users and Roles when it has business permissions, one Workflow management card when it has a process, the module of a used notification or scheduled-task capability. Build parameter forms, business dictionaries, document numbering, operation records, process-diagram configuration and prerequisite checklists only when the user asks for them. Installed packages alone are not use. Follow explicit exclusions and narrower deliverables such as API-only services or prototypes limited to business screens. For an individual feature, integrate its administration into the existing application.
 
-Inspect existing routes, pages, plugin registrations and plugin Skills before implementing administration. Reuse installed capabilities and existing management pages; create application-owned pages for missing interfaces. Deliver real data, actions and initial permission configuration, rather than empty menu entries or placeholder pages. Follow the normal plugin installation workflow when a required capability is missing.
+Inspect existing routes, pages, plugin registrations and plugin Skills before implementing administration. Reuse installed capabilities and existing management pages; create application-owned pages for missing interfaces. Deliver real data, actions and initial permission configuration, rather than empty menu entries or placeholder pages. When a required capability is missing, tell the user which plugin provides it and install it only after they agree ([installing plugins](plugins.md#installing-and-updating)).
 
 ## Administration baseline
 
@@ -15,7 +15,7 @@ Inspect existing routes, pages, plugin registrations and plugin Skills before im
 
 For implemented workflows, background tasks and notifications, deliver status, execution or delivery records, failure reasons and supported recovery actions within their respective management pages. Reuse installed execution capabilities and add missing application-owned views. Do not invent telemetry or offer recovery actions the runtime cannot perform. Infrastructure dashboards and external observability platforms require relevant scope.
 
-Add management pages for the capabilities the application uses: organizations and departments, business reference data, integration and notification settings, background tasks, and workflow definitions, parameters and executions. Whenever requirements include a process to develop, include its workflow management pages by default following [Lifecycle UI](lifecycle-ui.md), even if the user did not separately request a management console.
+Organization and department maintenance is the minimal entry when business rules consume those relationships; integration settings and business reference data pages are built when the user asks for them. A process gets its Workflow management card with definitions and executions following [Lifecycle UI](lifecycle-ui.md); its parameter forms only on request.
 
 ## Navigation and access
 

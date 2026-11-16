@@ -1,6 +1,6 @@
 # Department scopes and heads
 
-Part of [the organisation dimension](../organization.md). It registers the department-head subject type and two owner-based data scopes; [permission design](permission-design.md) explains when to use each. Everything here needs only the authorization plugin.
+Part of [the organisation dimension](overview.md). It registers the department-head subject type and two owner-based data scopes; [permission design](permission-design.md) explains when to use each. Everything here needs only the authorization plugin.
 
 ## Department heads
 

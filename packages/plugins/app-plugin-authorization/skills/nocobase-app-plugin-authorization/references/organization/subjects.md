@@ -1,6 +1,6 @@
 # Organisation subjects, sync and seeds
 
-Part of [the organisation dimension](../organization.md). The code calls [the organisation service](model-and-service.md#the-organisation-service).
+Part of [the organisation dimension](overview.md). The code calls [the organisation service](model-and-service.md#the-organisation-service).
 
 ## Register the department subject type
 
@@ -126,7 +126,7 @@ Assigning or revoking a permission set on a department needs nothing from you: a
 
 ## Seeds
 
-A seed writes an idempotent department tree and memberships, keyed on the fixed ids, parents before children, and skips rows that already exist so an administrator's later changes survive. Store seeded titles as descriptors, as [seeded titles](settings-page.md#seeded-titles-are-translation-descriptors) describes. Follow the authorization Skill's `references/code-and-seeds.md` for the permission-set rows and [migrations and seeds](../migrations.md) for where seeds run; the permission sets themselves must already exist, created by an earlier seed.
+A seed writes an idempotent department tree and memberships, keyed on the fixed ids, parents before children, and skips rows that already exist so an administrator's later changes survive. Store seeded titles as descriptors, as [seeded titles](settings-page.md#seeded-titles-are-translation-descriptors) describes. Follow the authorization Skill's `references/code-and-seeds.md` for the permission-set rows and [migrations and seeds](../../../nocobase-app-development/references/migrations.md) for where seeds run; the permission sets themselves must already exist, created by an earlier seed.
 
 Assign existing permission sets to departments for the access everyone there shares, and grant job roles, such as an engineer set that a department's assistant must not hold, to the people directly. Seed the business attributes the sync maintains in the same step as the memberships that imply them.
 

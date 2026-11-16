@@ -1,10 +1,10 @@
 # Organisation model and service
 
-Part of [the organisation dimension](../organization.md), which states the model decisions this page implements.
+Part of [the organisation dimension](overview.md), which states the model decisions this page implements.
 
 ## Migration
 
-Write the tables in one self-contained migration under `database/main/migrations/`; read [migrations and seeds](../migrations.md) and the `nocobase-db` Skill sections 2 and 3 for the file shape and the builder. Never import a runtime definition, constant or service into a migration. Add each business attribute the organisation owns, such as `region`, as a nullable column.
+Write the tables in one self-contained migration under `database/main/migrations/`; read [migrations and seeds](../../../nocobase-app-development/references/migrations.md) and the `nocobase-db` Skill sections 2 and 3 for the file shape and the builder. Never import a runtime definition, constant or service into a migration. Add each business attribute the organisation owns, such as `region`, as a nullable column.
 
 ```ts
 import { defineMigration, type MigrationDefinition } from '@nocobase/db';
@@ -44,7 +44,7 @@ export default migration;
 
 ## The organisation service
 
-Put the rules in one service registered by a provider, as [services and jobs](../services-and-jobs.md) describes, so routes, the subject type and tests share them. Every read takes an optional connection, so it can run inside the caller's transaction.
+Put the rules in one service registered by a provider, as [services and jobs](../../../nocobase-app-development/references/services-and-jobs.md) describes, so routes, the subject type and tests share them. Every read takes an optional connection, so it can run inside the caller's transaction.
 
 ```ts
 export interface OrganizationService {

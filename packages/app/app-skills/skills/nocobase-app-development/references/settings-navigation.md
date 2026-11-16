@@ -1,6 +1,6 @@
 # System settings navigation
 
-Every administration surface of an application lives under one System settings entry in the sidebar. Opening it shows a home page of cards grouped by category; a card opens one module; a module with several views shows them as tabs. Build every administration page into this structure without the user asking for it, and keep everyday business entries — the inbox, approval to-dos, a team's mailbox, a knowledge base people read — in the business navigation even when their names sound administrative.
+Every administration surface of an application lives under one System settings entry in the sidebar. Opening it shows a home page of cards grouped by category; a card opens one module; a module with several views shows them as tabs. Every administration page you build joins this structure — which pages to build follows the [scope policy](system-administration.md#default-delivery) — and keep everyday business entries — the inbox, approval to-dos, a team's mailbox, a knowledge base people read — in the business navigation even when their names sound administrative.
 
 ## The structure is the route tree
 

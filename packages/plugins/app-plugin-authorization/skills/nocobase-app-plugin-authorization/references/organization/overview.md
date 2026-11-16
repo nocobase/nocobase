@@ -1,10 +1,10 @@
 # Build an organisation dimension
 
-Use this reference when permission sets should follow where people sit in the organisation: departments, and optionally positions or roles. It builds the organisation in the application and plugs it into authorization as an inherited subject type, so an administrator assigns a permission set to a department and its members inherit it. Read [application permission development](authorization.md) and the installed `nocobase-app-plugin-authorization` Skill, especially its `references/subjects-and-administration.md`, before starting.
+Use this reference when permission sets should follow where people sit in the organisation: departments, and optionally positions or roles. It builds the organisation in the application and plugs it into authorization as an inherited subject type, so an administrator assigns a permission set to a department and its members inherit it. Read [application permission development](../../../nocobase-app-development/references/authorization.md) and this Skill's [subjects and administration](../subjects-and-administration.md) before starting.
 
 ## When to use it, and its scope
 
-Build this when access follows a department tree: a user belongs to several departments, one of them primary, and a permission set assigned to a department reaches everyone in it and in the departments below it. Departments and memberships are disabled rather than deleted, because assignments and history keep referring to them. Positions and roles are not built in; model them the same way when the business needs them, as [subjects, sync and seeds](organization/subjects.md#positions-and-roles) describes.
+Build this when access follows a department tree: a user belongs to several departments, one of them primary, and a permission set assigned to a department reaches everyone in it and in the departments below it. Departments and memberships are disabled rather than deleted, because assignments and history keep referring to them. Positions and roles are not built in; model them the same way when the business needs them, as [subjects, sync and seeds](subjects.md#positions-and-roles) describes.
 
 ## Model decisions
 
@@ -24,12 +24,12 @@ Build this when access follows a department tree: a user belongs to several depa
 
 ## Steps
 
-1. Write the tables in one self-contained migration and put the rules in one organisation service: [model and service](organization/model-and-service.md).
-2. Mount the organisation routes and build the settings page under one localized name: [routes and settings page](organization/settings-page.md).
-3. Register the department subject type, sync department attributes into business data, refresh sessions after membership changes, and seed the tree, accounts and assignments: [subjects, sync and seeds](organization/subjects.md).
-4. Register the department-head subject type and the department data scopes: [department scopes and heads](organization/scopes.md).
-5. Decide who gets what across departments, heads and cross-department work: [permission design](organization/permission-design.md).
-6. Cover the test matrix against the real application: [testing](organization/testing.md).
+1. Write the tables in one self-contained migration and put the rules in one organisation service: [model and service](model-and-service.md).
+2. Mount the organisation routes and build the settings page under one localized name: [routes and settings page](settings-page.md).
+3. Register the department subject type, sync department attributes into business data, refresh sessions after membership changes, and seed the tree, accounts and assignments: [subjects, sync and seeds](subjects.md).
+4. Register the department-head subject type and the department data scopes: [department scopes and heads](scopes.md).
+5. Decide who gets what across departments, heads and cross-department work: [permission design](permission-design.md).
+6. Cover the test matrix against the real application: [testing](testing.md).
 
 Permission-set assignment belongs to the authorization plugin and its API; do not build a second assignment model. The core works with the authorization plugin alone; default access, sharing rules and restriction rules are optional plugins, so never make the organisation depend on them.
 

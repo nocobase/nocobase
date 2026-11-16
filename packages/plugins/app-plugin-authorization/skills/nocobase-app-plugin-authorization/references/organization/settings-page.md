@@ -1,10 +1,10 @@
 # Organisation routes and settings page
 
-Part of [the organisation dimension](../organization.md). The handlers call [the organisation service](model-and-service.md#the-organisation-service).
+Part of [the organisation dimension](overview.md). The handlers call [the organisation service](model-and-service.md#the-organisation-service).
 
 ## Routes
 
-Mount the organisation endpoints as an isolated router under your prefix with `auth.required()` and `authz.middleware()`, and check the departments settings item on every route, in middleware ahead of its validators: `read` for lists and details, `update` for writes. Read [server routes](../server-routes.md) for the router, its registration and why each route owns its security.
+Mount the organisation endpoints as an isolated router under your prefix with `auth.required()` and `authz.middleware()`, and check the departments settings item on every route, in middleware ahead of its validators: `read` for lists and details, `update` for writes. Read [server routes](../../../nocobase-app-development/references/server-routes.md) for the router, its registration and why each route owns its security.
 
 ```ts
 routes.use('*', auth.required(), authz.middleware());
@@ -57,7 +57,7 @@ routes.post(
 );
 ```
 
-`refreshUsers` is shown in [refresh sessions](subjects.md#refresh-sessions-after-membership-changes). A denied `require` answers `403 PERMISSION_DENIED`, reason `AUTHORIZATION_DENIED`, on its own; turn the service's own validation errors into an `ApiError` (`INVALID_ARGUMENT`, `NOT_FOUND` or `ALREADY_EXISTS`) with a `reason` the page translates, and let anything else propagate. See [HTTP API design](../http-api.md): the schemas live in `server/routes/schemas.ts`, and `describeRoute()` and `apiValidator()` come from `@nocobase/app-server/router`. Validate every input, including that `userId` names an enabled user and that a new `parentId` creates no cycle. Answer an unknown department with 404.
+`refreshUsers` is shown in [refresh sessions](subjects.md#refresh-sessions-after-membership-changes). A denied `require` answers `403 PERMISSION_DENIED`, reason `AUTHORIZATION_DENIED`, on its own; turn the service's own validation errors into an `ApiError` (`INVALID_ARGUMENT`, `NOT_FOUND` or `ALREADY_EXISTS`) with a `reason` the page translates, and let anything else propagate. See [HTTP API design](../../../nocobase-app-development/references/http-api.md): the schemas live in `server/routes/schemas.ts`, and `describeRoute()` and `apiValidator()` come from `@nocobase/app-server/router`. Validate every input, including that `userId` names an enabled user and that a new `parentId` creates no cycle. Answer an unknown department with 404.
 
 ## One localized name
 
@@ -90,7 +90,7 @@ A department an administrator creates stores its title as plain text. A seeded d
 
 ## Settings page
 
-Declare one page in `client/routes.ts` with `defineAppRoutes`, titled with the same key and placed as a card in the Accounts and permissions category of System settings ([System settings navigation](../settings-navigation.md)); the department details are a child route, so they inherit the entry page's `authz`:
+Declare one page in `client/routes.ts` with `defineAppRoutes`, titled with the same key and placed as a card in the Accounts and permissions category of System settings ([System settings navigation](../../../nocobase-app-development/references/settings-navigation.md)); the department details are a child route, so they inherit the entry page's `authz`:
 
 ```ts
 defineAppRoutes([
@@ -121,4 +121,4 @@ defineAppRoutes([
 ]);
 ```
 
-Lay the page out as a searchable tree on the left with create-child, rename and enable or disable, and the selected department on the right with a members tab (a table with a primary badge, add through a user picker, remove, set primary) and a basic-info tab. Show loading, empty and error states, translate every label and every error code, and hide each write unless `useCan({ resource: { type: 'settings', id: 'departments' }, action: 'update' })`. Follow [pages and routes](../frontend/references/page.md), [child routes](../frontend/references/child-routes.md), [dialogs and drawers](../frontend/references/overlay.md), [list pages](../frontend/references/table.md) and [theme](../frontend/references/theme.md). Assigning permission sets is not part of this page.
+Lay the page out as a searchable tree on the left with create-child, rename and enable or disable, and the selected department on the right with a members tab (a table with a primary badge, add through a user picker, remove, set primary) and a basic-info tab. Show loading, empty and error states, translate every label and every error code, and hide each write unless `useCan({ resource: { type: 'settings', id: 'departments' }, action: 'update' })`. Follow [pages and routes](../../../nocobase-app-development/references/frontend/references/page.md), [child routes](../../../nocobase-app-development/references/frontend/references/child-routes.md), [dialogs and drawers](../../../nocobase-app-development/references/frontend/references/overlay.md), [list pages](../../../nocobase-app-development/references/frontend/references/table.md) and [theme](../../../nocobase-app-development/references/frontend/references/theme.md). Assigning permission sets is not part of this page.

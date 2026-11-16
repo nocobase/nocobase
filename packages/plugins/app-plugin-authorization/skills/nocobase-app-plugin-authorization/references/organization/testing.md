@@ -1,10 +1,10 @@
 # Organisation tests
 
-Part of [the organisation dimension](../organization.md). Follow [testing and verification](../testing.md) for the layers and fixtures.
+Part of [the organisation dimension](overview.md). Follow [testing and verification](../../../nocobase-app-development/references/testing.md) for the layers and fixtures.
 
 ## Test against the real application
 
-Most of the matrix needs real authorization routes and middleware. Use `createAppTest({ createServer: createStandaloneServer })` from `@nocobase/app-testing/server` with the application's own `server/standalone.ts`. Confirm its runtime registers authentication, authorization and, for the cross-department case, sharing-rules. The fixture installs their migrations and seeds on isolated databases on the selected test dialect; do not choose a dialect or configure a driver here. Sign in seeded or test-created users with `signIn()` from `@nocobase/app-plugin-authentication/testing`, and create permission sets and assignments through `authz.permissionSets`. Use `scope: 'test'` for cases that need fresh data, or explicitly clean up each test's records and assignments when sharing the file-scoped application. Follow the [complete application test example](../testing/server/routes.md) for fixture ownership, account setup and denied-access checks.
+Most of the matrix needs real authorization routes and middleware. Use `createAppTest({ createServer: createStandaloneServer })` from `@nocobase/app-testing/server` with the application's own `server/standalone.ts`. Confirm its runtime registers authentication, authorization and, for the cross-department case, sharing-rules. The fixture installs their migrations and seeds on isolated databases on the selected test dialect; do not choose a dialect or configure a driver here. Sign in seeded or test-created users with `signIn()` from `@nocobase/app-plugin-authentication/testing`, and create permission sets and assignments through `authz.permissionSets`. Use `scope: 'test'` for cases that need fresh data, or explicitly clean up each test's records and assignments when sharing the file-scoped application. Follow the [complete application test example](../../../nocobase-app-development/references/testing/server/routes.md) for fixture ownership, account setup and denied-access checks.
 
 ## Test matrix
 
