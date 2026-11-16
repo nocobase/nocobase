@@ -180,7 +180,7 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     // Closing the top-right dialog control can hover the shell's account menu.
     await owner.keyboard.press('Escape');
     await owner
-      .getByRole('textbox', { name: 'Search requests', exact: true })
+      .getByRole('searchbox', { name: 'Search requests', exact: true })
       .fill(title);
     await expect(
       owner.getByRole('link', { name: title, exact: true }),

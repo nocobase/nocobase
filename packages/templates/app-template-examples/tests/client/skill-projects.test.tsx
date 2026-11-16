@@ -2,6 +2,7 @@ import { apiClientToken } from '@nocobase/app-client';
 import {
   AuthorizationClient,
   authorizationClientToken,
+  useCan,
 } from '@nocobase/app-plugin-authorization/client';
 import { answerApi } from '@nocobase/app-testing/client';
 import {
@@ -85,6 +86,22 @@ const render = (
         new AuthorizationClient(app.container.resolve(apiClientToken)),
       ),
   });
+
+const SkillProjectsPermissionProbe = () => {
+  const { can, error, isPending } = useCan({
+    resource: { type: 'page', id: 'skill-projects' },
+    action: 'access',
+  });
+  const state = isPending
+    ? 'pending'
+    : error
+      ? 'error'
+      : can
+        ? 'allowed'
+        : 'denied';
+  return <output data-testid='skill-projects-access-state'>{state}</output>;
+};
+
 const mount = (
   fetch: typeof globalThis.fetch,
   route = '/skill-projects',
@@ -1097,7 +1114,10 @@ it.each([401, 403, 404, 500])(
 
 it('shows Create, Edit and Delete only with the page grant the server checks', async () => {
   const view = await render(
-    <Routes>{projectRoutes}</Routes>,
+    <>
+      <Routes>{projectRoutes}</Routes>
+      <SkillProjectsPermissionProbe />
+    </>,
     answerApi(({ path }) =>
       path === 'skillProjects' ? list() : { data: original },
     ),
@@ -1106,10 +1126,7 @@ it('shows Create, Edit and Delete only with the page grant the server checks', a
     false,
   );
   await screen.findByRole('link', { name: 'Alpha' });
-  // Let every permission check settle before asserting what stays hidden.
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  });
+  await screen.findByText('denied', { exact: true });
   expect(
     screen.queryByRole('button', { name: 'Create project' }),
   ).not.toBeInTheDocument();
@@ -1119,9 +1136,7 @@ it('shows Create, Edit and Delete only with the page grant the server checks', a
   ).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('link', { name: 'Alpha' }));
   const drawer = await screen.findByRole('dialog', { name: 'Alpha' });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  });
+  await screen.findByText('denied', { exact: true });
   expect(
     within(drawer).queryByRole('button', { name: 'Edit' }),
   ).not.toBeInTheDocument();
