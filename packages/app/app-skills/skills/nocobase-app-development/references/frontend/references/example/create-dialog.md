@@ -1,16 +1,13 @@
 # Create dialog: `new.tsx`
 
-Part of the [projects worked example](../example.md).
+Part of the [projects worked example](../example.md). **Depends on**: [form](project-form.md), [types](types.md); the `new` route under the list ([routes](../example.md#routes)).
 
-**Depends on**: [form](project-form.md), [types](types.md), [copy](copy.md); its child route in [section 1 of `page.md`](../page.md#1-declare-the-route).
-
-Rules: [section 2 of `overlay.md`](../overlay.md#2-overlays-as-child-routes), and ["Inside a RouteDialog" in `form.md`](../form.md#inside-a-routedialog).
+Rules: [`overlay.md`](../overlay.md), ["Inside a RouteDialog" in `form.md`](../form.md#inside-a-routedialog), guidelines T3.1 (forms open in a `RouteDialog`), T3.4–T3.5 (buttons, submitting) and T3.9 (unsaved input).
 
 ```tsx
 // client/pages/projects/new.tsx
 import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router';
 
 import { RouteDialog } from '#components/route-dialog';
 import { Button } from '#components/ui/button';
@@ -18,57 +15,49 @@ import { Spinner } from '#components/ui/spinner';
 import { useRouteOverlay } from '#components/use-route-overlay';
 
 import { ProjectForm } from './project-form.js';
-import type { ProjectsOutletContext } from './types.js';
 
 const FORM_ID = 'project-new-form';
 
 export default function NewProjectPage(): ReactElement {
   const { t } = useTranslation();
-  // The state disables the buttons; the ref is for beforeClose to read: when close() runs right after a successful save, the new state value has not rendered yet.
+  // The state disables the buttons; the ref is what beforeClose reads, before the state has rendered.
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
-  const handleSubmittingChange = (value: boolean) => {
+  const onSubmittingChange = (value: boolean) => {
     submittingRef.current = value;
     setSubmitting(value);
   };
-
   return (
     <RouteDialog
       title={t('projects.create.title')}
-      description={t('projects.form.description')}
       className='sm:max-w-lg'
-      // No closing while submitting: the × button, Esc, clicking the backdrop and close() all go through beforeClose first (guideline T3.5).
+      // No closing while the request runs (T3.5); unsaved input is the FeedbackForm's job (T3.9).
       beforeClose={() => !submittingRef.current}
-      footer={<NewProjectFooter submitting={submitting} />}
+      footer={<Footer submitting={submitting} />}
     >
-      {/* No dirty prop: ProjectForm's FeedbackForm reports its values and the saved ones, and the dialog asks
-          "Discard changes?" before every way out while they differ (T3.9, M7.4). */}
-      <NewProjectBody onSubmittingChange={handleSubmittingChange} />
+      <Body onSubmittingChange={onSubmittingChange} />
     </RouteDialog>
   );
 }
 
-// useRouteOverlay() can only be called in a component inside RouteDialog, so the form and the footer buttons each get their own wrapper component.
-function NewProjectBody({
+// useRouteOverlay() works only inside the RouteDialog, so the body and the footer are components of their own.
+function Body({
   onSubmittingChange,
 }: {
   readonly onSubmittingChange: (submitting: boolean) => void;
 }): ReactElement {
   const { close } = useRouteOverlay();
-  const { reload } = useOutletContext<ProjectsOutletContext>();
+  // The form announced the new project, so the list behind updates by itself; only close.
   return (
     <ProjectForm
       formId={FORM_ID}
       onSubmittingChange={onSubmittingChange}
-      onSubmitted={() => {
-        reload();
-        void close();
-      }}
+      onSubmitted={() => void close()}
     />
   );
 }
 
-function NewProjectFooter({
+function Footer({
   submitting,
 }: {
   readonly submitting: boolean;
@@ -78,24 +67,20 @@ function NewProjectFooter({
   return (
     <>
       <Button
-        type='button'
         variant='outline'
         disabled={submitting}
         onClick={() => void close()}
       >
-        {t('actions.cancel')}
+        {t('projects.actions.cancel')}
       </Button>
-      {/* The button is outside the <form> and linked through the form attribute; while it is disabled, Enter does not submit either. */}
       <Button type='submit' form={FORM_ID} disabled={submitting}>
         {submitting ? <Spinner data-icon='inline-start' /> : null}
-        {submitting ? t('actions.saving') : t('actions.create')}
+        {t(submitting ? 'projects.actions.saving' : 'projects.actions.create')}
       </Button>
     </>
   );
 }
 ```
 
-- **Form in `children`, buttons in `footer`**: the buttons are outside the `<form>`, so give the `<form>` an `id` and write the submit button as `type='submit' form={FORM_ID}`; pressing Enter in the form still submits. Make `FORM_ID` a module constant; it must be unique on the page.
-- **Button order**: "Cancel" on the left and the submit button on the right, grouped at the right edge (`footer` has `justify-end` built in); the submit button names the specific action, "Create" (guidelines T3.4 and C3). While submitting, both buttons are disabled and the submit button shows a `Spinner` (guideline T3.5).
-- **Success**: `ProjectForm` shows the success message, so the page must not show a toast as well. The page first calls `reload()` to refresh the list behind it, then `close()` (guideline T3.7). After closing, focus returns to the "New project" button.
-- The 3-field form narrows the dialog with `className='sm:max-w-lg'`.
+- **Form in `children`, buttons in `footer`**: the submit button sits outside the `<form>` and names it with `form={FORM_ID}`; Enter in a field still submits. Cancel comes first, the submit button names the action ("Create").
+- **Success**: the form already showed the toast and announced the change; the dialog only closes, and focus returns to the "New project" button. A long form scrolls inside the dialog, which also fits a phone.

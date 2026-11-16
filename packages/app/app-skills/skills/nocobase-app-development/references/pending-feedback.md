@@ -37,7 +37,7 @@ Render within the slot that actually loads; only application startup uses `fulls
 
 ## A new list page
 
-A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand `active && request.loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`. This feedback-focused excerpt requests only page 1 and leaves pagination to the table, so it is not a complete server-paginated list; for URL-backed page state, `manualPagination`, and the server's total, follow the [complete server-paginated table example](frontend/references/example/server-table.md).
+A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand `active && request.loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`. This feedback-focused excerpt requests only page 1 and leaves pagination to the table, so it is not a complete server-paginated list; for URL-backed page state, `manualPagination`, and the server's total, follow the [server-paginated list example](frontend/references/example/list-page.md).
 
 ```tsx
 const path = `equipment?page=1&pageSize=20${query ? `&q=${encodeURIComponent(query)}` : ''}`;
