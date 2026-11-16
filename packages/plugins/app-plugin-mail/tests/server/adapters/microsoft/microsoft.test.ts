@@ -14,6 +14,58 @@ import {
 import { graphFolderType } from '../../../../server/adapters/microsoft/normalize.js';
 
 describe('Microsoft Mail Provider', () => {
+  it('logs account reauthorization failures without refresh tokens', async () => {
+    const credentials = memoryVault();
+    await credentials.putAt('credential-1', {
+      provider: 'microsoft',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: '2000-01-01T00:00:00.000Z',
+      scopes: [],
+      tokenType: 'Bearer',
+    });
+    const logger = { warn: vi.fn() };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: 'invalid_grant',
+            error_description: 'refresh-1 access-1 client-secret credential-1',
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    const adapter = new MicrosoftMailProviderAdapter(
+      { ...context(credentials), logger },
+      config(),
+      account(),
+    );
+    expect(await adapter.listFolders({ limit: 10 })).toMatchObject({
+      ok: false,
+      error: { category: 'authentication', retryable: false },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.microsoft.auth_failed',
+        accountId: 'account-1',
+        category: 'authentication',
+        retryable: false,
+        stage: 'auth',
+        responseCode: 400,
+      }),
+      expect.any(String),
+    );
+    for (const secret of [
+      'refresh-1',
+      'access-1',
+      'client-secret',
+      'credential-1',
+    ])
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+  });
+
   it('logs sync, sending and OAuth failures without credentials or HTTP payloads', async () => {
     const logger = { warn: vi.fn() };
     const credentials = memoryVault();

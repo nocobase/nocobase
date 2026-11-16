@@ -1,3 +1,4 @@
+import type { MailProviderError } from '../shared/mail.js';
 import {
   errorRecord,
   logMailFailure,
@@ -9,12 +10,16 @@ export type MailFetch = (
   init?: RequestInit,
 ) => Promise<Response>;
 
-/** Observe the transport only: never read or log HTTP bodies, URLs, headers or OAuth payloads. */
+/** Classify bounded failure responses without logging HTTP bodies, URLs, headers or OAuth payloads. */
 export async function diagnosticFetch(
   fetcher: MailFetch,
   input: Parameters<typeof fetch>[0],
   init: RequestInit | undefined,
-  context: Omit<MailFailureContext, 'event' | 'startedAt' | 'protocol'>,
+  context: Omit<MailFailureContext, 'event' | 'startedAt' | 'protocol'> & {
+    readonly classifyResponse?: (
+      response: Response,
+    ) => Promise<MailProviderError>;
+  },
 ): Promise<Response> {
   const startedAt = Date.now();
   const details = (): MailFailureContext => {
@@ -38,7 +43,7 @@ export async function diagnosticFetch(
   try {
     const response = await fetcher(input, init);
     if (!response.ok) {
-      const classified = {
+      let classified: MailProviderError = {
         code: `HTTP_${response.status}`,
         message: `Mail provider returned HTTP ${response.status}.`,
         category:
@@ -49,8 +54,18 @@ export async function diagnosticFetch(
               : ('provider' as const),
         retryable: response.status === 429 || response.status >= 500,
       };
+      if (context.classifyResponse) {
+        try {
+          classified = await context.classifyResponse(response.clone());
+        } catch {
+          /* Diagnostics must not change the original response or failure. */
+        }
+      }
       logMailFailure(
-        { responseCode: response.status, message: classified.message },
+        {
+          responseCode: response.status,
+          message: `Mail provider returned HTTP ${response.status}.`,
+        },
         classified,
         details(),
       );

@@ -48,6 +48,7 @@ import {
   fetchWithTimeout,
   graphBase,
   graphRequest,
+  readJson,
   resolveGraphUrl,
   responseError,
   submissionResponse,
@@ -76,7 +77,13 @@ import {
   uniqueStrings,
 } from './sync.js';
 import { mapConcurrent } from './concurrency.js';
-import { exchangeToken, expiry, required, splitScopes } from './auth.js';
+import {
+  exchangeToken,
+  expiry,
+  required,
+  splitScopes,
+  tokenEndpointError,
+} from './auth.js';
 
 export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
   public readonly identity: MailProviderAccount['provider'];
@@ -1407,6 +1414,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
     diagnosticFetch(fetchWithTimeout, input, init, {
       logger: this.context.logger,
       provider: 'microsoft',
+      classifyResponse: (response) => responseError(response),
       accountId: this.account.id,
       address: this.account.address,
       stage: /\/(?:send|sendMail)(?:$|\?)/u.test(
@@ -1444,6 +1452,13 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
                 accountId: this.account.id,
                 address: this.account.address,
                 stage: 'auth',
+                classifyResponse: async (response) =>
+                  tokenEndpointError(
+                    'MICROSOFT',
+                    response,
+                    await readJson(response),
+                    'Mail OAuth request failed.',
+                  ),
                 secrets: [
                   this.config.clientSecret,
                   this.account.credentialReference,

@@ -28,6 +28,14 @@ export function connectionCause(error: unknown): unknown {
   return error instanceof MailConnectionError ? error.cause : error;
 }
 
+function encodedSecret(secret: string): string {
+  try {
+    return encodeURIComponent(secret);
+  } catch {
+    return secret;
+  }
+}
+
 /** Replace known credentials before truncation, including common protocol encodings. */
 export function redactMailText(
   value: unknown,
@@ -39,7 +47,7 @@ export function redactMailText(
     .filter(Boolean)
     .flatMap((secret) => [
       secret,
-      encodeURIComponent(secret),
+      encodedSecret(secret),
       Buffer.from(secret).toString('base64'),
     ]);
   for (const secret of variants.sort((a, b) => b.length - a.length))

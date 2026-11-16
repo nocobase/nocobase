@@ -1,3 +1,4 @@
+import { MailProviderRequestError } from '../../server/services/errors.js';
 import { createServer } from 'node:net';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createImapClient } from '../../server/adapters/imap-smtp/connection.js';
@@ -126,6 +127,21 @@ describe('credential-safe connection diagnostics', () => {
       message: 'Mail operation failed.',
     });
     expect(mailLogCode('private-token')).toBe('MAIL_PROVIDER_FAILURE');
+    const propagated = new MailProviderRequestError(
+      classifyError(error, 'CONNECT'),
+      { cause: error },
+    );
+    expect(propagated.message).toBe('Mail provider request failed.');
+    expect(
+      JSON.stringify({
+        message: propagated.message,
+        stack: propagated.stack,
+        cause:
+          propagated.cause instanceof Error
+            ? propagated.cause.message
+            : undefined,
+      }),
+    ).not.toContain('diagnostic-password');
   });
 
   it('keeps HTTP failures opaque and preserves native network diagnostics and result semantics', async () => {

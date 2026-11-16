@@ -69,7 +69,13 @@ import {
   normalizedDraft,
 } from './mime.js';
 import { gmailCursor, parseGmailCursor } from './sync.js';
-import { expiry, exchangeToken, required, splitScopes } from './auth.js';
+import {
+  expiry,
+  exchangeToken,
+  required,
+  splitScopes,
+  tokenEndpointError,
+} from './auth.js';
 
 export class GmailMailProviderAdapter implements MailProviderAdapter {
   public readonly identity: MailProviderAccount['provider'];
@@ -1107,6 +1113,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
     diagnosticFetch(fetchWithTimeout, input, init, {
       logger: this.context.logger,
       provider: 'gmail',
+      classifyResponse: (response) => responseError('GMAIL', response),
       accountId: this.account.id,
       address: this.account.address,
       stage: /\/(?:send|sendMail)(?:$|\?)/u.test(
@@ -1143,6 +1150,13 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
                 accountId: this.account.id,
                 address: this.account.address,
                 stage: 'auth',
+                classifyResponse: async (response) =>
+                  tokenEndpointError(
+                    'GMAIL',
+                    response,
+                    await readJson(response),
+                    'Mail OAuth request failed.',
+                  ),
                 secrets: [
                   this.config.clientSecret,
                   this.account.credentialReference,

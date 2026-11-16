@@ -86,10 +86,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           registry,
           context: {
             publicBasePath: this.app.publicBasePath,
-            logger: container
-              .resolve(loggingToken)
-              .getLogger()
-              .child({ module: 'mail' }),
+            logger: container.has(loggingToken)
+              ? container
+                  .resolve(loggingToken)
+                  .getLogger()
+                  .child({ module: 'mail' })
+              : undefined,
             credentials: container.resolve(mailCredentialVaultToken),
           },
           resolveConfig: (account) =>
@@ -149,10 +151,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           registry,
           providerContext: {
             publicBasePath: this.app.publicBasePath,
-            logger: container
-              .resolve(loggingToken)
-              .getLogger()
-              .child({ module: 'mail' }),
+            logger: container.has(loggingToken)
+              ? container
+                  .resolve(loggingToken)
+                  .getLogger()
+                  .child({ module: 'mail' })
+              : undefined,
             credentials: container.resolve(mailCredentialVaultToken),
           },
           credentials: container.resolve(mailCredentialVaultToken),

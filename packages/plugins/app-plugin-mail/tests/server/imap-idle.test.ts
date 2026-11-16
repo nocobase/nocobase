@@ -70,51 +70,49 @@ afterEach(async () => {
 });
 
 describe('INBOX IDLE lifecycle', () => {
-  it('logs failed IDLE opens with endpoint details and redacts the vault credential', async () => {
-    vi.useFakeTimers();
-    const { listener, clients, credentials, logger } = fixture();
-    credentials.get.mockResolvedValue({
-      username: 'idle-user',
-      password: 'idle-password',
-    });
-    listener.update(account);
-    // The native client is created after the asynchronous vault lookup.
-    await Promise.resolve();
-    clients[0].connect.mockRejectedValueOnce(
-      Object.assign(
-        new Error('idle-password idle-user credential owner@example.com'),
-        { code: 'GREETING_TIMEOUT' },
-      ),
-    );
-    // The first connect has already started; exercise the scheduled reconnect.
-    clients[0].emit(
-      'error',
-      Object.assign(
-        new Error('idle-password idle-user credential owner@example.com'),
-        { code: 'GREETING_TIMEOUT' },
-      ),
-    );
-    await vi.advanceTimersByTimeAsync(0);
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'mail.imap.idle.connect_failed',
-        accountId: 'account',
-        protocol: 'imap',
-        stage: 'greeting',
-        host: 'imap.example.com',
-        category: 'timeout',
-        durationMs: expect.any(Number),
-      }),
-      expect.any(String),
-    );
-    for (const secret of [
-      'idle-password',
-      'idle-user',
-      'credential',
-      'owner@example.com',
-    ])
-      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
-  });
+  it.each(['connect', 'idle'] as const)(
+    'logs failed IDLE %s with endpoint details and redacts the vault credential',
+    async (step) => {
+      vi.useFakeTimers();
+      const { listener, clients, credentials, logger, createClient } =
+        fixture();
+      credentials.get.mockResolvedValue({
+        username: 'idle-user',
+        password: 'idle-password',
+      });
+      createClient.mockImplementationOnce(() => {
+        const client = new FakeImap();
+        const error = Object.assign(
+          new Error('idle-password idle-user credential owner@example.com'),
+          { code: step === 'connect' ? 'GREETING_TIMEOUT' : 'ECONNRESET' },
+        );
+        client[step].mockRejectedValueOnce(error);
+        clients.push(client);
+        return client as unknown as ImapFlow;
+      });
+      listener.update(account);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'mail.imap.idle.connect_failed',
+          accountId: 'account',
+          protocol: 'imap',
+          stage: step === 'connect' ? 'greeting' : 'sync',
+          host: 'imap.example.com',
+          category: step === 'connect' ? 'timeout' : 'network',
+          durationMs: expect.any(Number),
+        }),
+        expect.any(String),
+      );
+      for (const secret of [
+        'idle-password',
+        'idle-user',
+        'credential',
+        'owner@example.com',
+      ])
+        expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+    },
+  );
 
   it('schedules catch-up on connect and pushes on increasing INBOX EXISTS without polling', async () => {
     vi.useFakeTimers();

@@ -180,7 +180,7 @@ export function classifyMailProviderError(
 
 /**
  * A Provider failure thrown to the caller of a synchronous operation. It carries the adapter's `MailProviderError`
- * fields on itself, so code that reads `code`, `category` or `retryable` off a caught error keeps working, and the
+ * classification fields on itself, so code that reads `code`, `category` or `retryable` off a caught error keeps working, and the
  * HTTP API answers it by its `kind` rather than with an opaque 500.
  */
 export class MailProviderRequestError
@@ -200,8 +200,10 @@ export class MailProviderRequestError
     options: { readonly cause?: unknown } = {},
   ) {
     super(
-      error.message,
-      options.cause === undefined ? undefined : { cause: options.cause },
+      'Mail provider request failed.',
+      options.cause === undefined
+        ? undefined
+        : { cause: new Error('Mail provider operation failed.') },
     );
     this.name = 'MailProviderRequestError';
     this.code = error.code;

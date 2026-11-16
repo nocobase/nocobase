@@ -18,6 +18,7 @@ import type {
 import { DEFAULT_SCOPES } from './constants.js';
 import {
   gmailRequest,
+  responseError,
   fetchWithTimeout,
   parseRetryAfter,
   readJson,
@@ -66,6 +67,15 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           logger: context.logger,
           provider: 'gmail',
           stage: 'auth',
+          classifyResponse: async (response) =>
+            init?.body instanceof URLSearchParams
+              ? tokenEndpointError(
+                  'GMAIL',
+                  response,
+                  await readJson(response),
+                  'Mail OAuth request failed.',
+                )
+              : responseError('GMAIL', response),
           secrets: [
             config.clientSecret,
             input.code,
@@ -255,7 +265,7 @@ export function required(value: string | undefined, label: string): string {
  * or has expired, means the account has to be reauthorized; a throttled request or a failure on the authorization
  * server's side does not, and is retried like any other Provider request.
  */
-function tokenEndpointError(
+export function tokenEndpointError(
   prefix: string,
   response: Response,
   value: { readonly error?: string; readonly error_description?: string },

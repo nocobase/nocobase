@@ -1,3 +1,4 @@
+import { mailLogCode } from '../logging.js';
 import { logMailFailure } from '../connection-diagnostics.js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
@@ -201,16 +202,27 @@ export class MailAuthorizationService {
               retryable: false,
               message: 'Mail authorization failed.',
             };
-      // The HTTP boundary already logs SDK failures with their credential context.
-      if (!(error instanceof MailProviderRequestError))
-        logMailFailure({ message: 'Mail authorization failed.' }, classified, {
+      logMailFailure(
+        { message: 'Mail authorization failed.' },
+        {
+          ...classified,
+          code: mailLogCode(classified.code),
+          message: 'Mail authorization failed.',
+        },
+        {
+          secrets: [
+            input.code ?? '',
+            input.state,
+            transaction.verifierCredentialReference,
+          ],
           logger: this.dependencies.logger,
           event: 'mail.account.authorize_failed',
           provider: transaction.provider.type,
           protocol: 'https',
           stage: 'auth',
           startedAt,
-        });
+        },
+      );
       throw error;
     } finally {
       await credentials.delete(transaction.verifierCredentialReference);

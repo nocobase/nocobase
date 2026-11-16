@@ -17,6 +17,7 @@ import type {
 import { DEFAULT_SCOPES } from './constants.js';
 import {
   graphRequest,
+  responseError,
   fetchWithTimeout,
   parseRetryAfter,
   readJson,
@@ -59,6 +60,15 @@ export function createAuthorization(): MailProviderAuthorization<MicrosoftMailPr
           logger: context.logger,
           provider: 'microsoft',
           stage: 'auth',
+          classifyResponse: async (response) =>
+            init?.body instanceof URLSearchParams
+              ? tokenEndpointError(
+                  'MICROSOFT',
+                  response,
+                  await readJson(response),
+                  'Mail OAuth request failed.',
+                )
+              : responseError(response),
           secrets: [
             config.clientSecret,
             input.code,
@@ -214,7 +224,7 @@ export function required(value: string | undefined, label: string): string {
  * or has expired, means the account has to be reauthorized; a throttled request or a failure on the authorization
  * server's side does not, and is retried like any other Provider request.
  */
-function tokenEndpointError(
+export function tokenEndpointError(
   prefix: string,
   response: Response,
   value: { readonly error?: string; readonly error_description?: string },
