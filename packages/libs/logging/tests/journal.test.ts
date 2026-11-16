@@ -36,6 +36,26 @@ it('按时间清理不展开受保护路径列表，也不对每份文件 resolv
     resolve.mockRestore();
   }
 });
+it('按时间清理所有过期侧车，空文件不获通用豁免，单文件保护保持有效', async () => {
+  const root = await directory();
+  const names = [
+    'expired.stderr',
+    'expired-full.stderr',
+    'fresh.stderr',
+    'protected.stderr',
+  ];
+  for (const name of names)
+    await writeFile(
+      path.join(root, name),
+      name === 'expired-full.stderr' ? 'crash' : '',
+    );
+  for (const name of names.filter((name) => name !== 'fresh.stderr'))
+    await utimes(path.join(root, name), new Date(0), new Date(0));
+  await pruneJournals(root, { retentionDays: 7 }, 'protected.stderr', {
+    retentionOnly: true,
+  });
+  expect(await readdir(root)).toEqual(['fresh.stderr', 'protected.stderr']);
+});
 async function directory(): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'journal-'));
   roots.push(root);

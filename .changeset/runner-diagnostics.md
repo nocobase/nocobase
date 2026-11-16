@@ -12,3 +12,5 @@
 ---
 
 Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.

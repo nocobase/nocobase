@@ -39,18 +39,27 @@ export interface JournalPage {
 }
 const MAX_READ = 256 * 1024;
 const MAX_LINE = 32 * 1024;
-const SECRET =
-  /password|secret|token|authorization|cookie|api.?key|access.?key|private.?key|client.?secret|credentials/i;
-const NON_TOKEN_SECRET =
-  /password|secret|authorization|cookie|api.?key|access.?key|private.?key|credentials/i;
+const SECRET_KEY =
+  /password|secret|authorization|cookie|credentials|api.?key|access.?key|private.?key|token(?![a-z])/i;
 
-function isTokenUsage(key: string, value: unknown): boolean {
-  if (!/token/i.test(key) || NON_TOKEN_SECRET.test(key)) return false;
-  return typeof value === 'number'
-    ? Number.isSafeInteger(value) && value >= 0
-    : typeof value === 'string' &&
-        value.length <= MAX_LINE &&
-        /^\d+$/.test(value);
+/** Scan full keys without consuming nonsensitive fields that may precede credentials. */
+function sanitizeKeyValues(text: string): string {
+  const keys = /(?<![\w.-])([\w.-]+)(?:\\?["'])?[ \t]*[=:][ \t]*/g;
+  // Only the first space in a run can begin the next pair, keeping long whitespace scans linear.
+  const values =
+    /"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+?(?=(?<![ \t])[ \t]+[\w.-]+(?:\\?["'])?[ \t]*[=:]|[\r\n,;&}]|$)/y;
+  let result = '';
+  let copied = 0;
+  for (let match; (match = keys.exec(text));) {
+    if (!SECRET_KEY.test(match[1])) continue;
+    values.lastIndex = keys.lastIndex;
+    const value = values.exec(text);
+    if (!value) continue;
+    result += text.slice(copied, keys.lastIndex) + '[REDACTED]';
+    copied = values.lastIndex;
+    keys.lastIndex = copied;
+  }
+  return result + text.slice(copied);
 }
 
 /** Sanitize at the persistence boundary, including nested errors and free text. */
@@ -71,24 +80,13 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
         // Legacy output need not be JSON.
       }
     }
-    return text
+    return sanitizeKeyValues(text)
       .replace(
         /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/g,
         '[REDACTED]',
       )
       .replace(/((?:Bearer|Basic)\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
       .replace(urlCredentials, '$1[REDACTED]@')
-      .replace(
-        /((?:password|secret|api[_-]?key|access[_-]?key|private[_-]?key|authorization|cookie|credentials)[\w-]{0,64}(?:\\?["'])?\s*[=:]\s*)(?:"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
-        '$1[REDACTED]',
-      )
-      .replace(
-        /((token[\w-]{0,64})(?:\\?["'])?\s*[=:]\s*)(\d+(?=\s|[,;&}]|$)|"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+)/gi,
-        (_match, prefix: string, key: string, raw: string) =>
-          isTokenUsage(key, raw.trim().replace(/^(\\?["'])(\d+)\1$/, '$2'))
-            ? prefix + raw
-            : prefix + '[REDACTED]',
-      )
       .replace(
         /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+|npm_[a-zA-Z0-9_]+|fg(?:[kro]|reg|dl)_[a-zA-Z0-9_-]+)/g,
         '[REDACTED]',
@@ -113,9 +111,7 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
         .slice(0, 100)
         .map(([key, item]) => [
           key,
-          SECRET.test(key) && !isTokenUsage(key, item)
-            ? '[REDACTED]'
-            : sanitizeLog(item, depth + 1),
+          SECRET_KEY.test(key) ? '[REDACTED]' : sanitizeLog(item, depth + 1),
         ]),
     );
   return value;
@@ -250,13 +246,6 @@ export async function pruneJournals(
   for (const file of options.retentionOnly
     ? files
     : files.sort((a, b) => a.modified - b.modified)) {
-    // Empty crash sidecars require the runner's live-worker check before removal.
-    if (
-      options.retentionOnly &&
-      file.size === 0 &&
-      file.name.endsWith('.stderr')
-    )
-      continue;
     if (
       protectedFile &&
       path.resolve(directory, protectedFile) ===

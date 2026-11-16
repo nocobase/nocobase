@@ -80,6 +80,25 @@ describe('执行机诊断与清理', () => {
     expect((await stat(active)).size).toBe(0);
     expect(await readFile(useful, 'utf8')).toBe('native failure');
   });
+  it('存活运行的过期空崩溃文件仍按时间清理，不受新鲜空文件保护影响', async () => {
+    const paths = runnerPaths(path.join(root, 'expired-stderr'));
+    const expired = runRawLogPath(paths, 'active');
+    await mkdir(path.dirname(expired), { recursive: true });
+    await writeFile(expired, '');
+    await utimes(expired, new Date(0), new Date(0));
+    await writeJsonAtomic(recordPath(paths, 'active'), {
+      runId: 'active',
+      pid: process.pid,
+      log: runLogPath(paths, 'active'),
+    });
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+    });
+    expect(await stat(expired).catch(() => null)).toBeNull();
+    expect(await stat(path.dirname(expired)).catch(() => null)).toBeNull();
+  });
   it('运行日志默认在 50 MiB 停止并标注截断，新鲜文件不受总大小预算清理', async () => {
     const paths = runnerPaths(path.join(root, 'fifty-mib'));
     const file = runLogPath(paths, 'capped');

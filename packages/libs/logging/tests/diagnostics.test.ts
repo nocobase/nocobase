@@ -8,69 +8,74 @@ import {
 
 describe('诊断日志脱敏与逐行上限', () => {
   it.each([
-    'inputTokens=1234',
-    'maxTokens: 4096',
-    'tokensUsed=9000',
-    'inputTokens=1234 maxTokens: 4096 tokensUsed=9000',
-    'Used inputTokens=1234 for this run',
-    'token=0',
-    'token="00123"',
-    "tokensUsed='9000'",
-    'payload={\\"inputTokens\\":\\"1234\\"}',
-  ])('自由文本的纯数字 token 用量保留：%s', (text) => {
-    expect(sanitizeLog(text)).toBe(text);
-  });
-  it('结构化字段和 JSON 文本保留纯数字 token 用量，包括嵌套及数字字符串', () => {
-    const value = {
-      inputTokens: 1234,
-      maxTokens: 4096,
-      tokensUsed: 9000,
-      nested: { token: '00123', output_tokens: 0 },
-    };
-    expect(sanitizeLog(value)).toEqual(value);
-    expect(JSON.parse(String(sanitizeLog(JSON.stringify(value))))).toEqual(
-      value,
-    );
-    expect(sanitizeLog({ token: '1'.repeat(131072) })).toEqual({
-      token: '[REDACTED]',
-    });
-  });
-  it.each([
     'token',
     'accessToken',
-    'inputTokens',
+    'refresh_token',
+    'csrfToken',
+    'x-auth-token',
+    'apiKey',
     'password',
     'secret',
-    'apiKey',
     'passwordToken',
     'tokenSecret',
-  ])('真正凭据和密码不会被数字用量例外放过：%s', (key) => {
-    for (const value of [
-      'fixture-sensitive-value',
-      '1234abc',
-      '1234.5',
-      '-1234',
-    ]) {
-      expect(String(sanitizeLog(`${key}=${value}`))).not.toContain(value);
+    'authorization',
+    'cookie',
+    'credentials',
+    'api.key',
+    'access_key',
+    'private-key',
+  ])('敏感键不因数字值而豁免，结构化和两种文本均脱敏：%s', (key) => {
+    for (const value of [0, 4096, '00123', 'fixture-sensitive-value']) {
       expect(sanitizeLog({ [key]: value })).toEqual({ [key]: '[REDACTED]' });
-    }
-    if (!['token', 'accessToken', 'inputTokens'].includes(key)) {
-      expect(String(sanitizeLog(`${key}=1234`))).not.toContain('1234');
-      expect(sanitizeLog({ [key]: 1234 })).toEqual({ [key]: '[REDACTED]' });
-      expect(sanitizeLog({ [key]: '1234' })).toEqual({ [key]: '[REDACTED]' });
+      expect(
+        JSON.parse(String(sanitizeLog(JSON.stringify({ [key]: value })))),
+      ).toEqual({ [key]: '[REDACTED]' });
+      for (const separator of ['=', ': ']) {
+        expect(sanitizeLog(`${key}${separator}${value}`)).toBe(
+          `${key}${separator}[REDACTED]`,
+        );
+        expect(sanitizeLog(`${key}${separator}"${value}"`)).toBe(
+          `${key}${separator}[REDACTED]`,
+        );
+      }
     }
   });
-  it('数字 token 用量不会阻止相邻凭据脱敏，含空格的密码仍整段遮蔽', () => {
+  it.each([
+    'maxTokens',
+    'inputTokens',
+    'outputTokens',
+    'tokensUsed',
+    'tokenCount',
+  ])('用量键仅按名称保留，结构化和两种文本不依赖数值类型：%s', (key) => {
+    for (const value of [0, 4096, '00123', 'fixture-usage-value']) {
+      expect(sanitizeLog({ [key]: value })).toEqual({ [key]: value });
+      const json = JSON.stringify({ [key]: value });
+      expect(sanitizeLog(json)).toBe(json);
+      for (const separator of ['=', ': ']) {
+        for (const text of [
+          `${key}${separator}${value}`,
+          `${key}${separator}"${value}"`,
+        ])
+          expect(sanitizeLog(text)).toBe(text);
+      }
+    }
+  });
+  it('完整键名匹配保留相邻用量，密码中的空格和嵌套凭据仍遮蔽', () => {
     expect(
       sanitizeLog(
-        'inputTokens=1234 password="fixture-sensitive-value with spaces"',
+        'inputTokens=1234 password="fixture-sensitive-value with spaces" maxTokens: 4096 token=0 tokensUsed=9000',
       ),
-    ).toBe('inputTokens=1234 password=[REDACTED]');
-    expect(sanitizeLog('token=1234 secret=5678')).toBe(
-      'token=1234 secret=[REDACTED]',
+    ).toBe(
+      'inputTokens=1234 password=[REDACTED] maxTokens: 4096 token=[REDACTED] tokensUsed=9000',
     );
     expect(sanitizeLog('password=1234 with spaces')).toBe(
       'password=[REDACTED]',
+    );
+    expect(sanitizeLog({ nested: { token: 4096, inputTokens: 4096 } })).toEqual(
+      { nested: { token: '[REDACTED]', inputTokens: 4096 } },
+    );
+    expect(sanitizeLog(String.raw`payload={\"inputTokens\":\"1234\"}`)).toBe(
+      String.raw`payload={\"inputTokens\":\"1234\"}`,
     );
   });
   it.each([
@@ -104,6 +109,8 @@ describe('诊断日志脱敏与逐行上限', () => {
       'token-',
       'password-',
       'http://a:',
+      'a ',
+      ' ',
     ]) {
       const input = seed.repeat(Math.ceil(size / seed.length)).slice(0, size);
       sanitizeLog('warmup');
