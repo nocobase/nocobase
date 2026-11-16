@@ -8,7 +8,7 @@
  */
 
 import { Action } from '@nocobase/resourcer';
-import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, flatten, getDateVars, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import lodash from 'lodash';
@@ -20,7 +20,7 @@ import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
-import Database from '@nocobase/database';
+import Database, { Collection } from '@nocobase/database';
 
 export interface CanResult {
   role: string;
@@ -58,6 +58,7 @@ type Listener = (ctx: ListenerContext) => void;
 export type UserProvider = (args: { fields: string[] }) => Promise<any>;
 
 export interface ParseJsonTemplateOptions {
+  collection?: Collection;
   timezone?: string;
   state?: any;
   userProvider?: UserProvider;
@@ -559,6 +560,7 @@ export class ACL extends EventEmitter {
     const collection = db?.getCollection?.(resourceName);
     checkFilterParams(collection, params?.filter);
     const parsedFilter = await parseJsonTemplate(params.filter, {
+      collection,
       state: ctx.state,
       timezone: getTimezone(ctx),
       userProvider: createUserProvider({
@@ -744,15 +746,29 @@ export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateO
 
   const timezone = options?.timezone;
   const state = JSON.parse(JSON.stringify(options?.state || {}));
+  const dateVars = getDateVars();
+  const flatFilter = flatten(filter, {
+    breakOn: ({ key }) => key.startsWith('$') && key !== '$and' && key !== '$or',
+  });
   const parsedFilter = await parseFilter(filter, {
     timezone,
-    now: new Date().toISOString(),
+    now: dateVars.now,
     vars: {
-      ctx: {
-        state,
-      },
+      ctx: { state },
       $user: options?.userProvider || (async () => undefined),
       $nRole: () => state.currentRole,
+      $date: dateVars,
+      $nDate: dateVars,
+    },
+    getField: (path: string) => {
+      const value = flatFilter[path];
+      // Field-aware parsing is limited to date variables so existing literal filters keep their behavior.
+      if (typeof value !== 'string' || !/^\s*\{\{\s*\$(?:date|nDate)\.[\s\S]*\}\}\s*$/.test(value)) {
+        return;
+      }
+      const collection = options?.collection;
+      const parts = path.split('.').filter((part) => !part.startsWith('$') && !/^\d+$/.test(part));
+      return collection?.db?.getFieldByPath([collection.name, ...parts].join('.'));
     },
   });
   return parsedFilter;

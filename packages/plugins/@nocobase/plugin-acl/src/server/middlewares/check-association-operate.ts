@@ -46,6 +46,7 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
       const collection = ctx.database?.getCollection?.(resource);
       checkFilterParams(collection, params.filter);
       const parsedFilter = await parseJsonTemplate(params.filter, {
+        collection,
         state: ctx.state,
         timezone: timezone as string,
         userProvider: createUserProvider({

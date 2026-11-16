@@ -24,7 +24,6 @@ import { NavigateFunction } from 'react-router-dom';
 import {
   AssociationFilter,
   useCollection,
-  useCollectionManager,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
@@ -37,6 +36,8 @@ import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvid
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { getVariableValue } from '../../common/getVariableValue';
+import { useCollectionRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
+import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
@@ -50,7 +51,12 @@ import { useLocalVariables, useVariables } from '../../variables';
 import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
-import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
+import {
+  useBlockAssociationContext,
+  useBlockRequestContext,
+  useFilterByTk,
+  useParamsFromRecord,
+} from '../BlockProvider';
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -1102,8 +1108,13 @@ export const useUpdateActionProps = () => {
 };
 
 export const useDestroyActionProps = () => {
+  const { t } = useTranslation();
   const filterByTk = useFilterByTk();
   const { resource, service, block, field, __parent } = useBlockRequestContext();
+  const associationName = useBlockAssociationContext();
+  const collectionManager = useCollectionManager();
+  const association = collectionManager?.getCollectionField(associationName);
+  const record = useCollectionRecordData<Record<string, unknown>>();
   const { setVisible, setSubmitted } = useActionContext();
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
@@ -1111,17 +1122,39 @@ export const useDestroyActionProps = () => {
   return {
     async onClick(e?, callBack?) {
       const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
+      const params = {
+        filterByTk,
+        // TODO(refactor): should change to inject by plugin
+        triggerWorkflows: triggerWorkflows?.length
+          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
+        ...data,
+      };
+      if (
+        association?.type === 'hasMany' &&
+        typeof association.targetKey === 'string' &&
+        !(resource instanceof TableFieldResource) &&
+        __parent?.block !== 'TableField'
+      ) {
+        const targetValue = record?.[association.targetKey];
+        if (
+          (typeof targetValue !== 'string' && typeof targetValue !== 'number') ||
+          targetValue === '' ||
+          (typeof targetValue === 'number' && !Number.isFinite(targetValue))
+        ) {
+          message.error(t('The association target key is missing or invalid.'));
+          return;
+        }
+        // Preserve JSON-like string keys as one value when the server parses filterByTk.
+        params.filterByTk =
+          typeof targetValue === 'string' && ['[', '{'].includes(targetValue.trimStart()[0])
+            ? [targetValue]
+            : targetValue;
+      }
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.destroy({
-          filterByTk,
-          // TODO(refactor): should change to inject by plugin
-          triggerWorkflows: triggerWorkflows?.length
-            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-            : undefined,
-          ...data,
-        });
+        await resource.destroy(params);
 
         const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
         if (count % pageSize === 1 && page !== 1) {
@@ -1196,15 +1229,50 @@ export const useDisassociateActionProps = () => {
 };
 
 export const useBulkDestroyActionProps = () => {
-  const { field } = useBlockRequestContext();
-  const { resource, service } = useBlockRequestContext();
+  const { t } = useTranslation();
+  const { field, resource, service, __parent } = useBlockRequestContext();
+  const associationName = useBlockAssociationContext();
+  const collectionManager = useCollectionManager();
+  const association = collectionManager?.getCollectionField(associationName);
   const { setSubmitted } = useActionContext();
   const collection = useCollection_deprecated();
   const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      if (!field?.data?.selectedRowKeys?.length) {
+        return;
+      }
       let filterByTk = field.data?.selectedRowKeys;
-      if (Array.isArray(filterTargetKey)) {
+      if (
+        association?.type === 'hasMany' &&
+        !(resource instanceof TableFieldResource) &&
+        __parent?.block !== 'TableField'
+      ) {
+        const rows = field.data.selectedRowData;
+        if (
+          typeof association.targetKey !== 'string' ||
+          !association.targetKey ||
+          !Array.isArray(rows) ||
+          rows.length !== field.data.selectedRowKeys.length
+        ) {
+          message.error(t('The association target key is missing or invalid.'));
+          return;
+        }
+        const targetValues: (string | number)[] = [];
+        for (const row of rows) {
+          const value = row?.[association.targetKey];
+          if (
+            (typeof value !== 'string' && typeof value !== 'number') ||
+            value === '' ||
+            (typeof value === 'number' && !Number.isFinite(value))
+          ) {
+            message.error(t('The association target key is missing or invalid.'));
+            return;
+          }
+          targetValues.push(value);
+        }
+        filterByTk = targetValues;
+      } else if (Array.isArray(filterTargetKey)) {
         filterByTk = field.data.selectedRowData.map((v) => {
           const obj = {};
           filterTargetKey.map((j) => {
@@ -1212,9 +1280,6 @@ export const useBulkDestroyActionProps = () => {
           });
           return obj;
         });
-      }
-      if (!field?.data?.selectedRowKeys?.length) {
-        return;
       }
       await resource.destroy({
         filterByTk,
