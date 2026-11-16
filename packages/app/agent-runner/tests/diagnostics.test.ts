@@ -72,6 +72,24 @@ describe('执行机诊断与清理', () => {
       ),
     ).toBe(true);
   });
+  it('工具探测输出再长也不突破环境记录协议上限', async () => {
+    let first = '';
+    for await (const line of diagnosticsRecords(
+      runnerPaths(path.join(root, 'environment')),
+      request(),
+      {
+        version: 'v'.repeat(1000),
+        tools: [{ tool: 't'.repeat(1000), version: 'v'.repeat(1000) }],
+      },
+    )) {
+      first = line;
+      break;
+    }
+    const environment = JSON.parse(first);
+    expect(environment.version).toHaveLength(100);
+    expect(environment.tools[0].tool).toHaveLength(50);
+    expect(environment.tools[0].version).toHaveLength(100);
+  });
   it('超长单行和大源文件有界截断，秘密和后缀不会混入后续记录', async () => {
     const home = path.join(root, 'large');
     const paths = runnerPaths(home, home);

@@ -79,14 +79,17 @@ export async function* diagnosticsRecords(
   const encode = (value: unknown) => JSON.stringify(sanitizeLog(value)) + '\n';
   const first = encode({
     type: 'environment',
-    version: environment.version,
+    version: environment.version.slice(0, 100),
     os: os.platform(),
     release: os.release(),
     arch: os.arch(),
     node: process.version,
     tools: environment.tools
       .slice(0, 30)
-      .map((tool) => ({ tool: tool.tool, version: tool.version ?? null })),
+      .map((tool) => ({
+        tool: tool.tool.slice(0, 50),
+        version: tool.version?.slice(0, 100) ?? null,
+      })),
   });
   let bytes = Buffer.byteLength(first);
   let scanned = 0;

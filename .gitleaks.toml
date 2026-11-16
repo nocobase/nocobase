@@ -268,3 +268,14 @@ paths = [
 regexes = [
   '''^(?:nb_live_9f2c41d8a7e04b13)$''',
 ]
+
+[[allowlists]]
+description = "Non-key marker body used to verify journal private-key redaction"
+targetRules = ["private-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/libs/logging/tests/diagnostics\.test\.ts$''',
+]
+regexes = [
+  '''fixture-sensitive-value''',
+]
