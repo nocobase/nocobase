@@ -166,8 +166,13 @@ export async function pruneRunnerLogs(
       : [],
   );
   const today = new Date().toISOString().slice(0, 10);
-  for (const name of await readdir(paths.logsDir).catch(() => []))
-    if (name.startsWith(`runner.${today}.`)) protectedFiles.push(name);
+  const currentDaemon = (await readdir(paths.logsDir).catch(() => []))
+    .filter(
+      (name) => name.startsWith(`runner.${today}.`) && name.endsWith('.log'),
+    )
+    .sort()
+    .at(-1);
+  if (currentDaemon) protectedFiles.push(currentDaemon);
   const runs = path.join(paths.logsDir, 'runs');
   if (
     await lstat(runs)

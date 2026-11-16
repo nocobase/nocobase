@@ -152,6 +152,19 @@ describe('执行机诊断与清理', () => {
       new Date(0),
       new Date(0),
     );
+    const today = new Date().toISOString().slice(0, 10);
+    const previousDaemon = path.join(
+      paths.logsDir,
+      `runner.${today}.000000.log`,
+    );
+    const currentDaemon = path.join(
+      paths.logsDir,
+      `runner.${today}.000001.log`,
+    );
+    for (const file of [previousDaemon, currentDaemon]) {
+      await writeFile(file, entry('daemon'));
+      await utimes(file, new Date(0), new Date(0));
+    }
     await pruneRunnerLogs(paths, {
       name: 'fixture',
       agentTools: 'runner',
@@ -159,6 +172,8 @@ describe('执行机诊断与清理', () => {
       logRetentionDays: 7,
       logMaxSizeMB: 1,
     });
+    expect(await stat(previousDaemon).catch(() => null)).toBeNull();
+    expect(await stat(currentDaemon)).toBeDefined();
     expect(
       await readFile(runLogPath(paths, 'active', '2020-01-01'), 'utf8'),
     ).toContain('active');
