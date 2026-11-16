@@ -59,6 +59,7 @@ export function AppThemeProvider({
   defaultTheme,
   enableSystem = true,
   storageKey = themeStorageKeys(resolveAppBase()).mode,
+  scriptProps,
   ...props
 }: ThemeProviderProps): ReactElement {
   const [defaults] = useState(() =>
@@ -96,6 +97,9 @@ export function AppThemeProvider({
       defaultTheme={mode}
       enableSystem={enableSystem}
       storageKey={storageKey}
+      // initializeTheme restores preferences before mounting. React cannot execute
+      // next-themes' SSR bootstrap on the client, so render it as inert text.
+      scriptProps={{ ...scriptProps, type: 'text/plain' }}
     >
       <ModeStorageSync storageKey={storageKey} defaultTheme={mode} />
       <PresetContext.Provider value={{ preset, setPreset: selectPreset }}>

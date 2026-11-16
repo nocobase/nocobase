@@ -5,4 +5,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Create development-only browser sessions and run unattended desktop and phone screenshot checks without interactive sign-in.
+Create development-only browser sessions and run unattended desktop and phone screenshot checks without interactive sign-in. Keep the theme bootstrap inert during client rendering so clean applications pass React's development checks.
