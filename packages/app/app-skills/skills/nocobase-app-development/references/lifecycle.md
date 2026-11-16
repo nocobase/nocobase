@@ -211,7 +211,18 @@ The two log tables, created once for every lifecycle in the application:
 - `lifecycleTransitions`: `id`, `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
 - `lifecycleEffectRuns`: `id`, `transitionId`, `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
 
+The store never passes a log `id`: the database assigns it. Both log tables therefore key on an auto-increment `bigInt`, and `transitionId` refers to it, even when the record table keys on an application UUID; a required `string` id with no generator makes every `runtime.create()` fail with a not-null error:
+
+```ts
+// In both log tables:
+table.bigInt('id').primary().autoIncrement().notNull();
+// In lifecycleEffectRuns:
+table.bigInt('transitionId').notNull();
+```
+
 Different table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`. Copy the column list from the installed package's README or the lifecycle example's migration (`packages/examples/app-plugin-lifecycle-example/database/migrations/` in the NocoBase repository) rather than guessing, and test it with `describeMigration()` as [testing](testing.md) describes.
+
+As soon as the migration, provider and create route exist, before building the page, run one route test against a started application on a real database: create a record, fire its first manual transition, then read back the new state, the two `lifecycleTransitions` entries (`$create` and the transition) and any effect run. This catches a wrong log schema, and a runtime API the installed `@nocobase/lifecycle` does not export (check its `dist/*.d.ts`, not only its version number), while they are still one-line fixes.
 
 ## 3. The provider
 
@@ -447,14 +458,15 @@ States, transition, lifecycle and effect names are stored in the database. Never
 
 ## Troubleshooting
 
-| Symptom                                        | Cause and fix                                                                                                                                                                                         |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A request or transition hangs on SQLite        | A guard or hook reads through the database manager, or calls `runtime.fire()` without `tx`. Use a services factory and `tx`                                                                           |
-| A trigger never fires                          | The record was not created through `runtime.create()`, nothing sweeps, a self-transition restarted the wait, or the guard refuses `SYSTEM_ACTOR`; `can(name, id, transition, SYSTEM_ACTOR)` shows why |
-| An effect run stays `queued`                   | Its effect was renamed and no process registers the old name, or `runAfter` has not come                                                                                                              |
-| An effect succeeded but the record never moved | Its continuation was refused, often because a parent is not ready; it waits on the run and the sweep retries it, or `continueRun(id)` once the cause is fixed                                         |
-| Frequent `CONFLICT`                            | Expected for stale pages; reload and let the person decide again. If triggers or continuations conflict with people, check they do not compete for the same state                                     |
-| `INVALID_SET` on create                        | `values` set the state, timestamp or version; pass `{ state }` to `create()` to start in another initial state                                                                                        |
+| Symptom                                            | Cause and fix                                                                                                                                                                                         |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A request or transition hangs on SQLite            | A guard or hook reads through the database manager, or calls `runtime.fire()` without `tx`. Use a services factory and `tx`                                                                           |
+| A trigger never fires                              | The record was not created through `runtime.create()`, nothing sweeps, a self-transition restarted the wait, or the guard refuses `SYSTEM_ACTOR`; `can(name, id, transition, SYSTEM_ACTOR)` shows why |
+| An effect run stays `queued`                       | Its effect was renamed and no process registers the old name, or `runAfter` has not come                                                                                                              |
+| An effect succeeded but the record never moved     | Its continuation was refused, often because a parent is not ready; it waits on the run and the sweep retries it, or `continueRun(id)` once the cause is fixed                                         |
+| Frequent `CONFLICT`                                | Expected for stale pages; reload and let the person decide again. If triggers or continuations conflict with people, check they do not compete for the same state                                     |
+| Create fails with a not-null error on the log `id` | The log tables declare a `string` id with no generator; use the auto-increment `bigInt` id from [the migration](#2-the-migration)                                                                     |
+| `INVALID_SET` on create                            | `values` set the state, timestamp or version; pass `{ state }` to `create()` to start in another initial state                                                                                        |
 
 The installed package's README lists its entries; the full guide, design notes and 28 worked recipes are in `packages/libs/lifecycle/docs/` of the NocoBase repository, and `packages/examples/app-plugin-lifecycle-example` and `packages/examples/app-plugin-office-flows-example` are complete working code.
 
