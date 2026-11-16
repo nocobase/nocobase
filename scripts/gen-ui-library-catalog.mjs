@@ -66,32 +66,36 @@ const itemsOf = (item) =>
     name.startsWith('@nocobase/'),
   );
 
+/** The first sentence of a description: the catalog is an index, `shadcn view` shows the rest. */
+export function summaryOf(description = '') {
+  const match = /^.*?[.!?](?=\s|$)/su.exec(description.trim());
+  return (match ? match[0] : description.trim()).replace(/\s+/gu, ' ');
+}
+
+/** Where an item installs when that is not the default for its kind, or undefined. */
+function unusualLocation(item) {
+  const location = locationOf(item);
+  const usual =
+    item.type === 'registry:block'
+      ? `\`client/extensions/nocobase-${item.name}/\``
+      : item.files.every((file) => file.target.startsWith('client/components/'))
+        ? location
+        : undefined;
+  return location === usual ? undefined : location;
+}
+
 export function itemSection(item, examples) {
-  const example = examples.find(
-    (candidate) => candidate.name === `${item.name}-demo`,
-  );
-  const plugins = pluginsOf(item);
-  const lines = [
-    `### ${item.name}`,
-    '',
-    item.description,
-    '',
-    `- Kind: ${kindOf(item)}`,
-    `- Install: \`yes n | pnpm exec shadcn add @nocobase/${item.name}\``,
-    `- Installs to: ${locationOf(item)}`,
-    `- Plugin dependencies: ${plugins.length ? plugins.map((name) => `\`${name}\``).join(', ') : 'none'}`,
+  const parts = [
+    `- \`${item.name}\` (${kindOf(item)}): ${summaryOf(item.description)}`,
   ];
-  const items = itemsOf(item);
-  if (items.length)
-    lines.push(
-      `- Also installs: ${items.map((name) => `\`${name}\``).join(', ')}`,
-    );
-  if (example)
-    lines.push(
-      `- Example: \`@nocobase/${example.name}\` (\`pnpm exec shadcn view @nocobase/${example.name}\`)`,
-    );
-  if (item.docs) lines.push(`- After installing: ${item.docs}`);
-  return `${lines.join('\n')}\n`;
+  const plugins = pluginsOf(item);
+  if (plugins.length)
+    parts.push(`Plugins: ${plugins.map((name) => `\`${name}\``).join(', ')}.`);
+  const location = unusualLocation(item);
+  if (location) parts.push(`Installs to ${location}.`);
+  if (!examples.some((candidate) => candidate.name === `${item.name}-demo`))
+    parts.push('No example.');
+  return parts.join(' ');
 }
 
 export function renderCatalog(items) {
@@ -106,14 +110,18 @@ export function renderCatalog(items) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(
       ([group, list]) =>
-        `## ${group}\n\n${list.map((item) => itemSection(item, examples)).join('\n')}`,
+        `## ${group}\n\n${list.map((item) => itemSection(item, examples)).join('\n')}\n`,
     );
   return [
     '# NocoBase UI Library catalog',
     '',
     GENERATED,
     '',
-    'Every item of the `@nocobase` shadcn registry (the NocoBase UI Library, previewed at https://ui.nocobase.com), as of this release of the Skill. A component installs into `client/components/` and a block into `client/extensions/nocobase-<item>/`; every item has a usage example, `@nocobase/<item>-demo`, to read before using it. Look an item up live first, as [section 3 of `styling.md`](styling.md#3-use-shadcn) says, and use this list when the registry cannot be reached.',
+    'A compact index of the `@nocobase` shadcn registry (the NocoBase UI Library, previewed at https://ui.nocobase.com) as of this release of the Skill. Look an item up live first, as [section 3 of `styling.md`](styling.md#3-use-shadcn) says, and use this list when the registry cannot be reached.',
+    '',
+    '- Install: `yes n | pnpm exec shadcn add @nocobase/<item>`. A component installs into `client/components/`, a block into `client/extensions/nocobase-<item>/`; an entry names any other location.',
+    '- Before using an item, read its description, wiring notes and plugin requirements with `pnpm exec shadcn view @nocobase/<item>`, and its usage example `@nocobase/<item>-demo` (every item has one unless its entry says otherwise).',
+    '- An item that names plugins needs them registered (`pnpm nocobase plugin register <name>`).',
     '',
     ...sections,
   ].join('\n');
