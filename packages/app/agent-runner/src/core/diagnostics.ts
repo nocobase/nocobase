@@ -137,6 +137,10 @@ export async function* diagnosticsRecords(
         if (!(await lstat(parent)).isDirectory())
           throw new Error('Unsafe log directory');
       }
+      if (!(await lstat(path.join(paths.logsDir, source.file))).isFile()) {
+        summary.truncated = truncated = true;
+        continue;
+      }
       handle = await open(
         path.join(paths.logsDir, source.file),
         constants.O_RDONLY | constants.O_NOFOLLOW,

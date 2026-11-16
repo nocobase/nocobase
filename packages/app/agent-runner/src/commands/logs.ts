@@ -41,6 +41,7 @@ export default class Logs extends RunnerCommand {
       const runs = path.join(directory, 'runs');
       if (!(await lstat(runs).catch(() => undefined))?.isDirectory()) return [];
       const result: string[] = [];
+      const modified = new Map<string, number>();
       for (const date of (await readdir(runs)).sort()) {
         if (
           !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
@@ -53,15 +54,22 @@ export default class Logs extends RunnerCommand {
             date,
             `${safeName(flags.run)}.${extension}`,
           );
-          if ((await lstat(file).catch(() => undefined))?.isFile())
+          const stats = await lstat(file).catch(() => undefined);
+          if (stats?.isFile()) {
             result.push(file);
+            modified.set(file, stats.mtimeMs);
+          }
         }
       }
-      return result;
+      return result.sort(
+        (a, b) => modified.get(a)! - modified.get(b)! || a.localeCompare(b),
+      );
     };
     let current = (await files()).at(-1);
     if (!current)
       throw new UsageError('No journal is available.', EXIT_CODES.notFound);
+    const initialLines: string[] = [];
+    let initialBytes = 0;
     const positions = new Map<string, { offset: number; inode: number }>();
     const read = async (initial: boolean) => {
       const candidates = await files();
@@ -101,7 +109,18 @@ export default class Logs extends RunnerCommand {
               .split('\n');
             if (started) lines.shift();
             if (lines.at(-1) === '') lines.pop();
-            for (const line of lines.slice(-flags.lines)) this.log(line);
+            for (const line of lines.slice(-flags.lines)) {
+              if (!initial) this.log(line);
+              else {
+                initialLines.push(line);
+                initialBytes += Buffer.byteLength(line) + 1;
+                while (
+                  initialLines.length > flags.lines ||
+                  initialBytes > 1024 * 1024
+                )
+                  initialBytes -= Buffer.byteLength(initialLines.shift()!) + 1;
+              }
+            }
           } else {
             while (offset < info.size) {
               const data = Buffer.alloc(
@@ -136,6 +155,7 @@ export default class Logs extends RunnerCommand {
       }
     };
     await read(true);
+    for (const line of initialLines) this.log(line);
     if (!flags.follow) return;
     await new Promise<void>((resolve, reject) => {
       let pending = Promise.resolve();

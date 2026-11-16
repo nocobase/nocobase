@@ -212,6 +212,13 @@ describe('执行机诊断与清理', () => {
     expect(log.code).toBe(0);
     expect(log.stdout).toContain('failure-at-the-end');
     expect(log.stdout).toContain('stack-final-frame');
+    const short = await cli(
+      ['logs', '--run', 'selected', '--lines', '2'],
+      cliEnv(home),
+    );
+    expect(short.code).toBe(0);
+    expect(short.stdout.trim().split('\n')).toHaveLength(2);
+    expect(short.stdout).toContain('stack-final-frame');
   });
   it('GC 对主日志及运行日志共享上限，保留存活工作进程的全部日期', async () => {
     const home = path.join(root, 'gc');

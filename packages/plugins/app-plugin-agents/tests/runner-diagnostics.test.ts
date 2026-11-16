@@ -188,11 +188,19 @@ describe('执行机上传边界', () => {
       window: selectedWindow,
     });
     const request = await take(service, 'one');
-    const names = selectedWindow.runIds.flatMap((id) =>
+    const selectedNames = selectedWindow.runIds.flatMap((id) =>
       ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map(
         (date) => `runs/${date}/${id}.log`,
       ),
     );
+    const names = [
+      ...selectedNames,
+      ...Array.from(
+        { length: 64 },
+        (_, index) => `runs/2026-11-01/ordinary-${index}.log`,
+      ),
+    ];
+    names[79] = names[79].replace(/\.log$/, '.stderr');
     const logs = names.map((file) => ({ ...record, file }));
     const summary = {
       type: 'manifest',
@@ -210,7 +218,7 @@ describe('执行机上传边界', () => {
     );
     const result = await collecting;
     expect(result.runners[0].status).toBe('collected');
-    expect(result.runners[0].files).toHaveLength(80);
+    expect(result.runners[0].files).toHaveLength(144);
     expect(
       await readFile(
         path.join(result.runners[0].directory!, names.at(-1)!),
