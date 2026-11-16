@@ -202,9 +202,7 @@ const enUS = {
 
     readOnlyParameters:
       'This workflow has configurable parameters. Your access is read-only.',
-    unsavedParameters: 'Your parameter changes have not been saved.',
     keepParameterEditing: 'Keep editing',
-    discardParameterChanges: 'Discard changes',
     reloadParameterRevision: 'Load latest revision and keep draft',
     nodeParametersDescription:
       'Only parameters associated with this node or transition are shown. Other workflow parameters remain unchanged.',
@@ -216,7 +214,6 @@ const enUS = {
       'Configuring v{{version}}. Changes affect only records created afterward, including drafts. References retain their selection; current membership is resolved at execution.',
     parametersDescription:
       'Fixed when a record is created, including drafts. Changes affect only records created later in this version.',
-    discardParameters: 'Discard unsaved parameter changes?',
     noParameters: 'This workflow has no configurable parameters.',
     addParameterEntry: 'Add entry',
     removeParameterEntry: 'Remove entry',

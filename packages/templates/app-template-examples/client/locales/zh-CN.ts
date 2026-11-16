@@ -265,9 +265,7 @@ const zhCN: AppResource = {
     changeCategory: '修改分类：{{title}}',
 
     readOnlyParameters: '此流程包含可配置参数，你当前只有查看权限。',
-    unsavedParameters: '参数修改尚未保存。',
     keepParameterEditing: '继续编辑',
-    discardParameterChanges: '放弃修改',
     reloadParameterRevision: '加载最新版本并保留草稿',
     nodeParametersDescription:
       '仅展示当前节点或连线关联的参数，其他流程参数保持不变。',
@@ -279,7 +277,6 @@ const zhCN: AppResource = {
       '正在配置 v{{version}}。修改仅影响此后新建的记录，已有草稿不受影响。引用保留所选对象，当前成员关系仍在执行时解析。',
     parametersDescription:
       '记录创建时即固定，包括业务草稿。修改只影响该版本此后新建的记录。',
-    discardParameters: '放弃尚未保存的参数修改？',
     noParameters: '此流程没有可配置参数。',
     addParameterEntry: '添加一项',
     removeParameterEntry: '移除',

@@ -6,24 +6,11 @@ import { useCan } from '@nocobase/app-plugin-authorization/client';
 import type { JsonObject } from '@nocobase/lifecycle';
 import { Button } from '#components/ui/button';
 import { useRouteOverlay } from '#components/use-route-overlay';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '#components/ui/alert-dialog';
+import { DiscardScope } from '#components/discard-guard';
 import { useEffect, useRef, useState } from 'react';
-import {
-  createUuid,
-  useApiClient,
-  useNavigationGuard,
-} from '@nocobase/app-client';
+import { createUuid, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useBeforeUnload, useLocation, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import {
   ParameterEditor,
   parameterApi,
@@ -83,11 +70,18 @@ function InlineSaveParameters({
   );
 }
 
-function InlineParameters({ children, footer }: RouteDialogProps) {
+/**
+ * The parameters inside a definition page: the same unsaved-changes question as the dialog, asked by the template's
+ * discard scope for every way out of the page (ui-guidelines.md T3.9).
+ */
+function InlineParameters({ children, footer, dirty }: RouteDialogProps) {
+  const ref = useRef<HTMLDivElement>(null);
   return (
-    <div className='space-y-4'>
-      {children}
-      <div className='flex justify-end'>{footer}</div>
+    <div ref={ref} className='space-y-4'>
+      <DiscardScope containerRef={ref} dirty={dirty}>
+        {children}
+        <div className='flex justify-end'>{footer}</div>
+      </DiscardScope>
     </div>
   );
 }
@@ -189,7 +183,6 @@ export function WorkflowParametersForm({
   const [revisionOverride, setRevisionOverride] = useState<number>();
   const revision = revisionOverride ?? configuration?.revision ?? 0;
   const savingRef = useRef(false);
-  const savedRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [pendingGroups, setPendingGroups] = useState<Record<string, boolean>>(
     {},
@@ -211,22 +204,7 @@ export function WorkflowParametersForm({
     setDirty({});
   };
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const decisionRef = useRef<((value: boolean) => void) | null>(null);
-  const leaveApprovedRef = useRef(false);
   const isDirty = Object.values(dirty).some(Boolean);
-  useBeforeUnload((event) => {
-    if (busy || dirtyRef.current) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
-  });
-  const decide = (value: boolean) => {
-    leaveApprovedRef.current = value;
-    decisionRef.current?.(value);
-    decisionRef.current = null;
-    setConfirmOpen(false);
-  };
   const workflow = workflowId.slice(workflowId.indexOf('.') + 1);
   const definition =
     selectedDefinition ??
@@ -281,14 +259,14 @@ export function WorkflowParametersForm({
           if (inline) {
             setSavedParameters(result.data);
             setRevisionOverride(undefined);
-            clearDirty();
           }
         }
       } else {
         if (!(await editorsRef.current.office?.save())) return false;
       }
       setSuccess(true);
-      savedRef.current = !inline;
+      // Saved values are no longer unsaved input: the dialog closes and the inline form stays without asking.
+      clearDirty();
       return true;
     } catch (error) {
       setSaveError(
@@ -310,16 +288,6 @@ export function WorkflowParametersForm({
       setSaving(false);
     }
   };
-  const confirmLeave = (): boolean | Promise<boolean> => {
-    if (savedRef.current || leaveApprovedRef.current) return true;
-    if (savingRef.current || busy) return false;
-    if (!dirtyRef.current) return true;
-    setConfirmOpen(true);
-    return new Promise<boolean>((resolve) => {
-      decisionRef.current = resolve;
-    });
-  };
-  useNavigationGuard(confirmLeave);
   const SaveAction = inline ? InlineSaveParameters : SaveParameters;
   const Container = inline ? InlineParameters : RouteDialog;
   return (
@@ -344,7 +312,10 @@ export function WorkflowParametersForm({
         pathname: `/workflows/definitions/${encodeURIComponent(workflowId)}`,
         search: search.toString(),
       }}
-      beforeClose={confirmLeave}
+      // The editors' unsaved input, which no field of a form shows; the layer asks before discarding it.
+      dirty={() => dirtyRef.current}
+      // The only lock is a save in flight (ui-guidelines.md T3.5).
+      beforeClose={() => !busy}
       footer={
         update.can &&
         (groups.some((group) => group.canUpdate) ||
@@ -354,44 +325,6 @@ export function WorkflowParametersForm({
       }
       className='sm:max-w-2xl'
     >
-      <AlertDialog
-        open={confirmOpen}
-        onOpenChange={(open) => {
-          if (!open) decide(false);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('workflows.discardParameters')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('workflows.unsavedParameters')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => decide(false)}>
-              {t('workflows.keepParameterEditing')}
-            </AlertDialogCancel>
-            <Button
-              disabled={busy}
-              onClick={() => {
-                void save().then((saved) => {
-                  if (saved) decide(true);
-                });
-              }}
-            >
-              {t('workflows.saveParameters')}
-            </Button>
-            <AlertDialogAction
-              variant='destructive'
-              onClick={() => decide(true)}
-            >
-              {t('workflows.discardParameterChanges')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {inline && configuration?.kind === 'lifecycle' && success && !isDirty && (
         <p role='status'>{t('workflows.parametersSaved')}</p>
       )}
