@@ -61,11 +61,6 @@ const pluginsOf = (item) =>
     .map((dependency) => dependency.slice(0, dependency.lastIndexOf('@')))
     .filter((name) => name.startsWith('@nocobase/app-plugin-'));
 
-const itemsOf = (item) =>
-  (item.registryDependencies ?? []).filter((name) =>
-    name.startsWith('@nocobase/'),
-  );
-
 /** The first sentence of a description: the catalog is an index, `shadcn view` shows the rest. */
 export function summaryOf(description = '') {
   const match = /^.*?[.!?](?=\s|$)/su.exec(description.trim());
