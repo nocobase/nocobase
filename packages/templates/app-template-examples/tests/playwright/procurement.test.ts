@@ -177,7 +177,7 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     console.info('Procurement draft saved and history visible.');
     const detailUrl = app + '/procurement/' + id;
     await owner.getByRole('button', { name: 'Close', exact: true }).click();
-    // Closing the top-right drawer control can hover the shell's account menu.
+    // Closing the top-right dialog control can hover the shell's account menu.
     await owner.keyboard.press('Escape');
     await owner
       .getByRole('textbox', { name: 'Search requests', exact: true })

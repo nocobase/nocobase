@@ -76,13 +76,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'procurement-new',
         path: 'new',
-        presentation: { kind: 'drawer', title: 'procurement.new' },
+        presentation: { kind: 'dialog', title: 'procurement.new' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
       {
         name: 'procurement-detail',
         path: ':id',
-        presentation: { kind: 'drawer', title: 'procurement.open' },
+        presentation: { kind: 'dialog', title: 'procurement.open' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
     ],

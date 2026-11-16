@@ -12,6 +12,7 @@ import { useListData } from '#hooks/use-list-data';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { type ProcurementDetail } from '../../../shared/procurement.js';
 import { Choice } from './reference.js';
+import { procurementScope } from './scopes.js';
 
 type Record = ProcurementDetail['record'];
 export default function ProcurementPage() {
@@ -23,6 +24,7 @@ export default function ProcurementPage() {
   const status = params.get('status') ?? '';
   const request = useListData<{ data: Record[]; meta: { total: number } }>(
     `procurement?${new URLSearchParams({ q, ...(status ? { status } : {}), page: String(table.paginationState.pageIndex + 1), pageSize: String(table.paginationState.pageSize) })}`,
+    { scopes: [procurementScope] },
   );
   const context = useListData<{ data: { request: boolean; review: boolean } }>(
     'procurement/context',
@@ -139,7 +141,7 @@ export default function ProcurementPage() {
           </div>
         )}
       />
-      <Outlet context={{ reload: request.reload }} />
+      <Outlet />
     </PageContainer>
   );
 }

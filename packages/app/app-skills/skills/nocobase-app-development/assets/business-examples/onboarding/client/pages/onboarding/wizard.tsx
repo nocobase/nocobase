@@ -1,10 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import {
-  useParams,
-  useNavigate,
-  useLocation,
-  useOutletContext,
-} from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import {
   useApiClient,
   useSubmission,
@@ -49,6 +44,7 @@ import {
 import { Separator } from '#components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
 import { FeedbackForm } from '#components/feedback-form';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import {
   OnboardingInput,
@@ -58,6 +54,7 @@ import {
   type OnboardingDetail,
 } from '../../../shared/onboarding.js';
 import { Choice } from './choice.js';
+import { caseScope } from './scopes.js';
 
 const steps = ['basic', 'employment', 'documents', 'confirmation'] as const;
 type DocumentKind = OnboardingInput['documents'][number]['kind'];
@@ -112,6 +109,7 @@ export default function OnboardingWizard() {
   const { t } = useTranslation();
   const request = useListData<{ data: OnboardingDetail }>(`onboarding/${id}`, {
     active: !!id,
+    scopes: id ? [caseScope(id)] : [],
   });
   // Only the version first loaded is a restore: saving remounts the editor with a newer version.
   const version = request.data?.data.record.lifecycleVersion;
@@ -229,7 +227,6 @@ function Editor({
   const { session } = useAuthentication();
   const navigate = useNavigate();
   const location = useLocation();
-  const { reload } = useOutletContext<{ reload: () => void }>();
   const formId = useId();
   const [input, setInput] = useState(() => values(detail));
   const [saved] = useState(() => ({ input: values(detail), pending: false }));
@@ -348,9 +345,9 @@ function Editor({
       );
       if (result) {
         setDirty(false);
-        reload();
-        if (detail) refresh();
-        else {
+        // The list and this case read again through their scopes; no callback through the Outlet.
+        announceDataChange({ scopes: [caseScope(result.data.id)] });
+        if (!detail) {
           navigatingAfterSaveRef.current = true;
           await navigate(
             { pathname: `../${result.data.id}`, search: location.search },
@@ -611,13 +608,14 @@ function Editor({
                   )}
                 >
                   {reachable ? (
-                    <button
+                    <Button
                       type='button'
-                      className='flex w-full gap-3 rounded-lg text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+                      variant='ghost'
+                      className='h-auto w-full items-start justify-start gap-3 p-0 text-left font-normal whitespace-normal hover:bg-transparent'
                       onClick={() => go(index)}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ) : (
                     <div className='flex gap-3'>{label}</div>
                   )}
@@ -700,15 +698,16 @@ function Editor({
                         <ul className='space-y-0.5'>
                           {issueTargets.map((issue) => (
                             <li key={issue.target + issue.text}>
-                              <button
+                              <Button
                                 type='button'
-                                className='inline text-left underline underline-offset-2'
+                                variant='link'
+                                className='h-auto p-0 text-left whitespace-normal text-inherit'
                                 onClick={() =>
                                   document.getElementById(issue.target)?.focus()
                                 }
                               >
                                 {issue.text}
-                              </button>
+                              </Button>
                             </li>
                           ))}
                         </ul>

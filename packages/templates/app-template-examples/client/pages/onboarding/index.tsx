@@ -12,6 +12,7 @@ import { useListData } from '#hooks/use-list-data';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { type OnboardingDetail } from '../../../shared/onboarding.js';
 import { Choice } from './choice.js';
+import { onboardingScope } from './scopes.js';
 
 type Record = OnboardingDetail['record'];
 export default function OnboardingPage() {
@@ -23,6 +24,7 @@ export default function OnboardingPage() {
   const status = params.get('status') ?? '';
   const request = useListData<{ data: Record[]; meta: { total: number } }>(
     `onboarding?${new URLSearchParams({ q, ...(status ? { status } : {}), page: String(table.paginationState.pageIndex + 1), pageSize: String(table.paginationState.pageSize) })}`,
+    { scopes: [onboardingScope] },
   );
   const context = useListData<{ data: { coordinate: boolean; view: boolean } }>(
     'onboarding/context',
@@ -142,7 +144,7 @@ export default function OnboardingPage() {
           </div>
         )}
       />
-      <Outlet context={{ reload: request.reload }} />
+      <Outlet />
     </PageContainer>
   );
 }

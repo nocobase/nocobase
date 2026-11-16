@@ -1,10 +1,5 @@
 import { useState, useRef, useId } from 'react';
-import {
-  useParams,
-  useOutletContext,
-  useNavigate,
-  useLocation,
-} from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import {
   useApiClient,
   useSubmission,
@@ -13,11 +8,12 @@ import {
 } from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { RouteDrawer } from '#components/route-drawer';
+import { RouteDialog } from '#components/route-dialog';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
 import { Button } from '#components/ui/button';
 import { FeedbackForm } from '#components/feedback-form';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import {
   ProcurementInput,
@@ -26,6 +22,7 @@ import {
   type ProcurementDetail,
 } from '../../../shared/procurement.js';
 import { Reference } from './reference.js';
+import { requestScope } from './scopes.js';
 
 export default function ProcurementDetailPage() {
   const { id } = useParams();
@@ -34,16 +31,16 @@ export default function ProcurementDetailPage() {
   const [failure, setFailure] = useState<{ id?: string; error: unknown }>();
   const request = useListData<{ data: ProcurementDetail }>(
     `procurement/${id}`,
-    { active: !!id },
+    { active: !!id, scopes: id ? [requestScope(id)] : [] },
   );
   if (id && (!request.data || request.error))
     return (
-      <RouteDrawer title={t('procurement.open')}>
+      <RouteDialog title={t('procurement.open')}>
         <p role='status'>
           {t(request.error ? 'procurement.failed' : 'procurement.loading')}
         </p>
         <Button onClick={request.reload}>{t('procurement.retry')}</Button>
-      </RouteDrawer>
+      </RouteDialog>
     );
   return (
     <Editor
@@ -74,7 +71,6 @@ function Editor({
   const { session } = useAuthentication();
   const navigate = useNavigate();
   const location = useLocation();
-  const { reload } = useOutletContext<{ reload: () => void }>();
   const formId = useId();
   const [title, setTitle] = useState(detail?.record.title ?? '');
   const [supplierId, setSupplierId] = useState(detail?.record.supplierId ?? '');
@@ -99,7 +95,7 @@ function Editor({
     update();
     setDirty(true);
   };
-  // What the drawer compares when the person leaves: every field and line as stored, and a write whose outcome is
+  // What the dialog compares when the person leaves: every field and line as stored, and a write whose outcome is
   // unknown counts as unsaved, so leaving asks "Discard changes?" before the retry is given up (ui-guidelines.md T3.9).
   const current = () => ({
     title,
@@ -165,9 +161,9 @@ function Editor({
       );
       if (result) {
         setDirty(false);
-        reload();
-        if (detail) refresh();
-        else
+        // The list and this request read again through their scopes; no callback through the Outlet.
+        announceDataChange({ scopes: [requestScope(result.data.id)] });
+        if (!detail)
           await navigate(
             { pathname: `../${result.data.id}`, search: location.search },
             { replace: true },
@@ -196,8 +192,7 @@ function Editor({
           requestId: createUuid(),
         },
       });
-      reload();
-      refresh();
+      announceDataChange({ scopes: [requestScope(detail.record.id)] });
     } catch (e) {
       setError(e);
       if (e instanceof ApiClientError && e.status === 409) refresh();
@@ -213,9 +208,9 @@ function Editor({
       ),
     );
   return (
-    <RouteDrawer
+    <RouteDialog
       title={t(detail ? 'procurement.open' : 'procurement.new')}
-      className='sm:w-3xl'
+      className='sm:max-w-3xl'
       // The only lock is a write or refresh in flight (ui-guidelines.md T3.5).
       beforeClose={() => !busy}
       footer={
@@ -473,7 +468,7 @@ function Editor({
           </ol>
         </section>
       ) : null}
-    </RouteDrawer>
+    </RouteDialog>
   );
 }
 
