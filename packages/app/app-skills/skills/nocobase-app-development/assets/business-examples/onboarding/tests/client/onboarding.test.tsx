@@ -166,7 +166,7 @@ it('retains input while changing steps, validates conditions and recovers a priv
   expect(screen.getByLabelText('Job title')).toHaveValue('Engineer');
   expect(writes).toEqual([]);
   await userEvent.click(
-    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    screen.getByRole('button', { name: 'Close', exact: true }),
   );
   expect(await screen.findByRole('alertdialog')).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
@@ -180,10 +180,15 @@ it('retains input while changing steps, validates conditions and recovers a priv
   expect(await screen.findByText('Draft saved')).toBeVisible();
   expect(screen.queryByText('Draft restored')).not.toBeInTheDocument();
   await userEvent.click(
-    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    screen.getByRole('button', { name: 'Close', exact: true }),
   );
+  // The list behind the dialog loads its first rows once the dialog closes; the real API can be slow under load.
   await userEvent.click(
-    await screen.findByRole('link', { name: 'Example employee', exact: true }),
+    await screen.findByRole(
+      'link',
+      { name: 'Example employee', exact: true },
+      { timeout: 5000 },
+    ),
   );
   expect(
     await screen.findByRole('heading', { name: 'Documents', exact: true }),
@@ -272,7 +277,7 @@ it('retains input while changing steps, validates conditions and recovers a priv
     screen.queryByRole('button', { name: 'Save draft' }),
   ).not.toBeInTheDocument();
 });
-it('keeps unsaved child-page input until leaving is confirmed', async () => {
+it('keeps unsaved dialog input until leaving is confirmed', async () => {
   await renderOnboardingClient(
     <Routes>
       <Route path='/onboarding' element={<OnboardingPage />}>
@@ -286,13 +291,13 @@ it('keeps unsaved child-page input until leaving is confirmed', async () => {
     'Unsaved example',
   );
   await userEvent.click(
-    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    screen.getByRole('button', { name: 'Close', exact: true }),
   );
   expect(await screen.findByRole('alertdialog')).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
   expect(screen.getByLabelText('Full name')).toHaveValue('Unsaved example');
   await userEvent.click(
-    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    screen.getByRole('button', { name: 'Close', exact: true }),
   );
   await userEvent.click(
     await screen.findByRole('button', { name: 'Discard', exact: true }),
@@ -372,7 +377,7 @@ it('locks save and submit through refresh and replays an uncertain submission wi
       screen.getByRole('button', { name: 'Submit onboarding' }),
     ).toBeDisabled();
     await userEvent.click(
-      screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+      screen.getByRole('button', { name: 'Close', exact: true }),
     );
     expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
     await act(async () => refreshGate.resolve());
@@ -391,7 +396,7 @@ it('locks save and submit through refresh and replays an uncertain submission wi
     ).toBeVisible();
     // An unknown outcome never locks the page: leaving asks, and "Keep editing" stays for the retry.
     await userEvent.click(
-      screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+      screen.getByRole('button', { name: 'Close', exact: true }),
     );
     await screen.findByRole('alertdialog', {
       name: 'Discard changes?',

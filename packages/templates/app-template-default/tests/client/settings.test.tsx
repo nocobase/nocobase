@@ -57,7 +57,7 @@ describe('template system settings', () => {
     expect(
       screen.queryByRole('link', { name: 'New user' }),
     ).not.toBeInTheDocument();
-    const search = screen.getByRole('textbox', {
+    const search = screen.getByRole('searchbox', {
       name: enUS.settings.userSearch,
     });
     await user.type(search, 'Ali');
@@ -71,7 +71,7 @@ describe('template system settings', () => {
     );
     expect(search).toHaveValue('Ali');
   });
-  it('waits for Chinese composition and restores the textbox from history query changes', async () => {
+  it('waits for Chinese composition and restores the search box from history query changes', async () => {
     const calls = vi.fn(({ path }: { path: string }) =>
       path === 'authorization/permissions'
         ? { data: { unrestricted: false, permissions: [] } }
@@ -95,7 +95,7 @@ describe('template system settings', () => {
         fetch: answerApi(calls),
       },
     );
-    const search = screen.getByRole('textbox', {
+    const search = screen.getByRole('searchbox', {
       name: enUS.settings.userSearch,
     });
     fireEvent.compositionStart(search);

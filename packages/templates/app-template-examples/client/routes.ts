@@ -54,13 +54,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'onboarding-new',
         path: 'new',
-        presentation: { kind: 'child-page' },
+        presentation: { kind: 'dialog', title: 'onboarding.new' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
       {
         name: 'onboarding-detail',
         path: ':id',
-        presentation: { kind: 'child-page' },
+        presentation: { kind: 'dialog', title: 'onboarding.open' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
     ],

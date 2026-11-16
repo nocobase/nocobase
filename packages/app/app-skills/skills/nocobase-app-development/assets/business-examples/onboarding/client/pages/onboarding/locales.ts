@@ -70,7 +70,6 @@ export const enUS = {
   employee: 'Employee created',
   employeeId: 'Employee ID',
   none: 'Not provided',
-  back: 'Back to onboarding',
   newDescription:
     'Four steps. Save a private draft at any time; only you can open it.',
   stepOf: 'Step {{current}} of {{total}}',
@@ -172,7 +171,6 @@ export const zhCN: Record<keyof typeof enUS, string> = {
   employee: '已生成员工记录',
   employeeId: '员工编号',
   none: '未填写',
-  back: '返回入职列表',
   newDescription: '共四步，可随时保存私有草稿，只有你本人能打开。',
   stepOf: '第 {{current}} 步，共 {{total}} 步',
   basicSummary: '姓名、邮箱和国籍',

@@ -110,7 +110,7 @@ test('four-step form preserves values, restores drafts and submits one employee 
     if (name.includes('mobile')) return;
     const viewport = page.viewportSize()!;
     await page.setViewportSize({ width: 390, height: 844 });
-    const layer = page.locator('[data-slot=route-child-page] > div');
+    const layer = page.locator('[data-slot=route-overlay-body]');
     if (
       (await layer.count()) &&
       !(await page.getByRole('alertdialog').count())
@@ -208,9 +208,7 @@ test('four-step form preserves values, restores drafts and submits one employee 
     );
     expect(writes).toBe(0);
     await snapshot('onboarding-employment.png');
-    await page
-      .getByRole('link', { name: 'Back to onboarding', exact: true })
-      .click();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(page.getByRole('alertdialog')).toBeVisible();
     await snapshot('onboarding-discard.png');
     await page
@@ -313,8 +311,8 @@ test('four-step form preserves values, restores drafts and submits one employee 
     expect(replay.headers()['idempotency-replayed']).toBe('true');
     await snapshot('onboarding-submitted.png');
     await page.setViewportSize({ width: 390, height: 844 });
-    // The child page covers the content area; neither it nor the document scrolls sideways at phone width.
-    const layer = page.locator('[data-slot=route-child-page] > div');
+    // Neither the dialog's body nor the document scrolls sideways at phone width.
+    const layer = page.locator('[data-slot=route-overlay-body]');
     await expect(
       page.getByRole('heading', { name: 'Employee created', exact: true }),
     ).toBeVisible();

@@ -11,10 +11,7 @@ import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon, CircleAlertIcon, PlusIcon, XIcon } from 'lucide-react';
 import { cn } from 'cn';
-import { BackButton } from '#components/back-button';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
-import { RouteChildPage } from '#components/route-child-page';
+import { RouteDialog } from '#components/route-dialog';
 import { StatusBadge } from '#components/status-badge';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
@@ -64,43 +61,42 @@ const documentKinds: DocumentKind[] = [
   'serviceAgreement',
 ];
 
-/** The covering child page every state of the wizard renders in: it keeps the list, its filters and scroll beneath. */
+/** The route dialog every state of the wizard renders in: the list, its filters and scroll stay beneath it. */
 function Frame({
   title,
   status,
   description,
+  footer,
   children,
 }: {
   title: string;
   status?: OnboardingDetail['record']['status'];
   description?: string;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
   return (
-    <RouteChildPage>
-      {/* A full-height column, so the action bar sits at the bottom even when a step is short. */}
-      <PageContainer className='flex min-h-full flex-col'>
-        <BackButton>{t('onboarding.back')}</BackButton>
-        <PageHeader
-          title={
-            <span className='flex flex-wrap items-center gap-2'>
-              {title}
-              {status ? (
-                <StatusBadge
-                  size='sm'
-                  tone={status === 'submitted' ? 'success' : 'neutral'}
-                >
-                  {t(`onboarding.${status}`)}
-                </StatusBadge>
-              ) : null}
-            </span>
-          }
-          description={description}
-        />
-        {children}
-      </PageContainer>
-    </RouteChildPage>
+    <RouteDialog
+      title={
+        <span className='flex flex-wrap items-center gap-2'>
+          {title}
+          {status ? (
+            <StatusBadge
+              size='sm'
+              tone={status === 'submitted' ? 'success' : 'neutral'}
+            >
+              {t(`onboarding.${status}`)}
+            </StatusBadge>
+          ) : null}
+        </span>
+      }
+      description={description}
+      className='sm:max-w-5xl'
+      footer={footer}
+    >
+      <div className='space-y-6'>{children}</div>
+    </RouteDialog>
   );
 }
 
@@ -257,7 +253,7 @@ function Editor({
     'onboarding/candidates?kind=departments',
     { active: editable },
   );
-  // The only lock is a write or refresh in flight; unsaved input is the child page's question, asked through the
+  // The only lock is a write or refresh in flight; unsaved input is the dialog's question, asked through the
   // FeedbackForm's values below (ui-guidelines.md T3.9).
   useNavigationGuard(
     () => navigatingAfterSaveRef.current || !(lockedRef.current || refreshing),
@@ -510,11 +506,55 @@ function Editor({
       {t(detail ? 'onboarding.saved' : 'onboarding.notSaved')}
     </span>
   );
+  // The dialog's footer keeps the actions reachable on long steps.
+  const footer = editable ? (
+    <div className='flex w-full flex-wrap items-center justify-between gap-3'>
+      <div className='flex items-center gap-3'>
+        <Button
+          type='submit'
+          form={formId}
+          variant='outline'
+          disabled={busy || (submission.pending && pendingAction !== 'save')}
+        >
+          {t('onboarding.save')}
+        </Button>
+        {saveState}
+      </div>
+      <div className='grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto [&>:only-child]:col-span-2'>
+        {step > 0 ? (
+          <Button
+            variant='outline'
+            disabled={actionsLocked}
+            onClick={() => go(step - 1)}
+          >
+            {t('onboarding.previous')}
+          </Button>
+        ) : null}
+        {step < 3 ? (
+          <Button disabled={actionsLocked} onClick={next}>
+            {t('onboarding.next')}
+          </Button>
+        ) : detail?.actions.submit ? (
+          <Button
+            disabled={
+              busy ||
+              dirty ||
+              (submission.pending && pendingAction !== 'submit')
+            }
+            onClick={() => void write('submit')}
+          >
+            {t('onboarding.submit')}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  ) : undefined;
   return (
     <Frame
       title={title}
       status={detail?.record.status}
       description={description}
+      footer={footer}
     >
       {/* Below lg the step list collapses into the current step and a four-part progress bar. */}
       <div className='space-y-2 lg:hidden'>
@@ -1166,55 +1206,6 @@ function Editor({
           </FeedbackForm>
         </div>
       </div>
-      {editable ? (
-        // Pinned to the bottom of the child page's scroller, so the actions stay reachable on long steps.
-        <div className='sticky bottom-0 z-10 -mx-6 mt-auto -mb-6 border-t bg-background/95 px-6 py-3 backdrop-blur md:-mx-8 md:-mb-8 md:px-8'>
-          <div className='grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]'>
-            <div className='flex flex-wrap items-center justify-between gap-3 lg:col-start-2'>
-              <div className='flex items-center gap-3'>
-                <Button
-                  type='submit'
-                  form={formId}
-                  variant='outline'
-                  disabled={
-                    busy || (submission.pending && pendingAction !== 'save')
-                  }
-                >
-                  {t('onboarding.save')}
-                </Button>
-                {saveState}
-              </div>
-              <div className='grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto [&>:only-child]:col-span-2'>
-                {step > 0 ? (
-                  <Button
-                    variant='outline'
-                    disabled={actionsLocked}
-                    onClick={() => go(step - 1)}
-                  >
-                    {t('onboarding.previous')}
-                  </Button>
-                ) : null}
-                {step < 3 ? (
-                  <Button disabled={actionsLocked} onClick={next}>
-                    {t('onboarding.next')}
-                  </Button>
-                ) : detail?.actions.submit ? (
-                  <Button
-                    disabled={
-                      busy ||
-                      dirty ||
-                      (submission.pending && pendingAction !== 'submit')
-                    }
-                    onClick={() => void write('submit')}
-                  >
-                    {t('onboarding.submit')}
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </Frame>
   );
 }

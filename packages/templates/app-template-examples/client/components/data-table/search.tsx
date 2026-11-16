@@ -1,5 +1,11 @@
 import { SearchIcon } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type Ref,
+} from 'react';
 
 import {
   InputGroup,
@@ -18,6 +24,8 @@ export interface DataTableSearchProps {
   readonly placeholder?: string;
   /** How long typing pauses before the search applies; Enter applies at once. */
   readonly debounceMs?: number;
+  /** The text field, such as for returning focus to the search after a row action. */
+  readonly inputRef?: Ref<HTMLInputElement>;
 }
 
 /**
@@ -31,6 +39,7 @@ export function DataTableSearch({
   label,
   placeholder,
   debounceMs = 300,
+  inputRef,
 }: DataTableSearchProps): ReactElement {
   const [text, setText] = useState(value);
   const [seen, setSeen] = useState(value);
@@ -59,6 +68,7 @@ export function DataTableSearch({
         <SearchIcon aria-hidden='true' />
       </InputGroupAddon>
       <InputGroupInput
+        ref={inputRef}
         type='search'
         enterKeyHint='search'
         aria-label={label}
