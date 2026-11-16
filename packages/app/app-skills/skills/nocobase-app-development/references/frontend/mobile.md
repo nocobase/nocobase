@@ -30,7 +30,7 @@ Decide it in the page plan ([`ui-workflow.md`](ui-workflow.md)), before writing 
 ## M2 Navigation, tabs and returning
 
 - **M2.1** The shell's sidebar sheet and parent arrow (L6) are the only phone navigation; add no bottom bar or in-page back button.
-- **M2.2** Tabs and other link rows stay on one row (`flex overflow-x-auto`, `shrink-0` items, no `flex-wrap`) with the current tab scrolled into view within the row; more than about five tabs become a `Select`. See [`example/detail-page-tabs.md`](references/example/detail-page-tabs.md).
+- **M2.2** Tabs and other link rows stay on one row (`flex overflow-x-auto`, `shrink-0` items, no `flex-wrap`) with the current tab scrolled into view within the row; more than about five tabs become a `Select`. See [child routes](references/child-routes.md).
 - **M2.3** Deep links, reload, back and the parent arrow keep the list's query, page and scroll position as on desktop ([`references/table.md`](references/table.md)).
 
 ## M3 Lists, cards and tables
