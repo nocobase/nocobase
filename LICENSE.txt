@@ -14,7 +14,7 @@ The Company reserves the right to formulate and modify this Agreement from time 
 1. Definitions
 ==============
 
-1.1 "Software" refers to NocoBase, including its application foundation (Core), its governance platform for people and agents building software together (Studio), and the application templates, development standards, and development skills that come with them, together with their source code, installation packages, images, and all their modifications, updates, and upgrades.
+1.1 "Software" refers to NocoBase, including its application foundation (Core), its workspace for people and agents building software together (Studio), and the application templates, development standards, and development skills that come with them, together with their source code, installation packages, images, and all their modifications, updates, and upgrades.
 
 1.2 "Community Edition" refers to the free version of the Software provided to the User as open source through public channels.
 
