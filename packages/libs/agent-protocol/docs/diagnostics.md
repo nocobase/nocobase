@@ -30,6 +30,12 @@ Every branded application CLI provides `diagnostics timeline <bundle.tar.gz> --o
 
 The timeline reads archive entries without extracting them, rejects links and unsafe paths, and bounds compressed input, expanded entry sizes and output to 512 MiB each. It uses 4 MiB sort chunks and at most 256 merge inputs in a private directory beside the output. Temporary sort files and partial output are removed on failure. The operator needs space for the chunks plus the output.
 
+Sorted chunks and final output use 64 KiB write batches with awaited backpressure. A batch can exceed that threshold by at most one bounded row; it is flushed before the next row is accepted. Output limits are checked before buffering, and the final batch is flushed before reporting success. A disk error removes partial output and temporary chunks.
+
+For a local performance comparison, generate the same gzip archive once, time only `diagnosticsTimeline()` in separate Node 24 processes before and after the change, and compare the output hashes. A 60,002-record fixture with out-of-order timestamps and one invalid line took 2.95–3.34 seconds with per-record writes and 0.69–0.72 seconds with batches; all outputs were byte-identical. The automated 60,003-record, multi-file test also crosses sort chunks and bounds total writes for chunks plus final output to twice the output size divided by 64 KiB, allowing eight final partial batches. Keep timing informational rather than setting a machine-dependent timeout assertion.
+
+For bounded-memory verification, stream 128,000 records of exactly 4 KiB into a 500 MiB source file, package it, and run the timeline with `node --max-old-space-size=128`. Keep individual payload strings below the sanitizer's truncation length so the output remains about 500 MiB. Measure elapsed time around collection, sample process RSS every 20 ms, then stream the output to check ordering, source names, record counts and secret removal without loading it into memory. This command performs no HTTP requests or database operations.
+
 ## Request IDs
 
 Framework plugin error notifications call the shared `errorToastOptions(error)` helper to pass `ToastOptions.requestId` from `ApiClientError.requestId`. Local clipboard failures have no HTTP request ID. The host toaster renders and copies that metadata. Existing server error bodies and request journals already carry the same ID, with warning/error completion records for failed requests. The host diagnostics implementation must preserve failed request correlation when applying its own minimum-level filter.

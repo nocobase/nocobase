@@ -8,6 +8,27 @@ import { AppCommand, UsageError } from './lib/command.ts';
 
 const MAX_INPUT = 512 * 1024 * 1024;
 const CHUNK_BYTES = 4 * 1024 * 1024;
+const WRITE_BYTES = 64 * 1024;
+
+/** Bound pending output and await disk writes before accepting another batch. */
+function bufferedWriter(handle: Awaited<ReturnType<typeof open>>) {
+  let pending: string[] = [];
+  let bytes = 0;
+  const flush = async () => {
+    if (!bytes) return;
+    await handle.writeFile(pending.join(''));
+    pending = [];
+    bytes = 0;
+  };
+  return {
+    flush,
+    async write(text: string) {
+      pending.push(text);
+      bytes += Buffer.byteLength(text);
+      if (bytes >= WRITE_BYTES) await flush();
+    },
+  };
+}
 const LEVELS: Record<string, number> = {
   trace: 10,
   debug: 20,
@@ -67,8 +88,10 @@ export async function diagnosticsTimeline(
     const file = path.join(temporary, `${chunks.length}.jsonl`);
     const handle = await open(file, 'wx', 0o600);
     try {
+      const writer = bufferedWriter(handle);
       for (const row of buffer.sort(compare))
-        await handle.writeFile(JSON.stringify(row) + '\n');
+        await writer.write(JSON.stringify(row) + '\n');
+      await writer.flush();
     } finally {
       await handle.close();
     }
@@ -163,6 +186,7 @@ export async function diagnosticsTimeline(
     await flush();
     output = await open(options.out, 'wx', 0o600);
     createdOutput = true;
+    const writer = bufferedWriter(output);
     const heads: (Row | undefined)[] = [];
     for (const file of chunks) {
       const iterator = boundedLogLines(
@@ -184,11 +208,12 @@ export async function diagnosticsTimeline(
       written += Buffer.byteLength(text);
       if (written > MAX_INPUT)
         throw new UsageError('Timeline output exceeds 512 MiB');
-      await output.writeFile(text);
+      await writer.write(text);
       entries++;
       const next = await iterators[index].next();
       heads[index] = next.done ? undefined : (JSON.parse(next.value!) as Row);
     }
+    await writer.flush();
     return { file: path.resolve(options.out), entries, omitted };
   } catch (error) {
     if (createdOutput) await rm(options.out, { force: true });

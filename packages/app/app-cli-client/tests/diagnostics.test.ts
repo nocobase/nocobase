@@ -1,8 +1,16 @@
-import { mkdir, writeFile, readFile, stat, readdir } from 'node:fs/promises';
+import {
+  mkdir,
+  writeFile,
+  readFile,
+  stat,
+  readdir,
+  open,
+} from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { create, Header } from 'tar';
 import { gzipSync } from 'node:zlib';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { diagnosticsTimeline } from '../src/diagnostics.ts';
 import { cli, cliEnv } from './packaged/helpers.ts';
 import { createServer } from 'node:http';
@@ -42,7 +50,21 @@ describe('本地诊断时间线', () => {
       'environment.json': '{}',
     });
     const out = path.join(root, 'timeline.jsonl');
-    const result = await diagnosticsTimeline({ bundle, out });
+    const probe = await open(path.join(root, 'write-probe'), 'wx', 0o600);
+    const writes = vi.spyOn(Object.getPrototypeOf(probe), 'writeFile');
+    let result;
+    try {
+      result = await diagnosticsTimeline({ bundle, out });
+      // Both the sorted chunks and final output must batch disk writes.
+      const outputBytes = (await stat(out)).size;
+      expect(writes.mock.calls.length).toBeLessThanOrEqual(
+        2 * Math.ceil(outputBytes / (64 * 1024)) + 8,
+      );
+      expect(writes.mock.calls.length).toBeGreaterThan(2);
+    } finally {
+      writes.mockRestore();
+      await probe.close();
+    }
     const text = await readFile(out, 'utf8');
     const lines = text
       .trim()
@@ -60,6 +82,38 @@ describe('本地诊断时间线', () => {
         file.startsWith('.diagnostics-timeline-'),
       ),
     ).toBe(false);
+  });
+  it('批量写盘失败时删除部分输出并清理排序分片', async () => {
+    const bundle = await archive({
+      'runner.log': row('2026-11-01T00:00:00Z', 'record').repeat(2000),
+    });
+    const out = path.join(root, 'failed-write.jsonl');
+    const probe = await open(path.join(root, 'failure-probe'), 'wx', 0o600);
+    const prototype = Object.getPrototypeOf(probe);
+    const original = prototype.writeFile;
+    let outputWrites = 0;
+    const writes = vi
+      .spyOn(prototype, 'writeFile')
+      .mockImplementation(function (this: typeof probe, ...args: unknown[]) {
+        // Fail after one successful batch has reached the final output.
+        if (existsSync(out) && ++outputWrites === 2)
+          return Promise.reject(new Error('disk write failed'));
+        return original.apply(this, args);
+      });
+    try {
+      await expect(diagnosticsTimeline({ bundle, out })).rejects.toThrow(
+        'disk write failed',
+      );
+      expect(await stat(out).catch(() => null)).toBeNull();
+      expect(
+        (await readdir(root)).some((file) =>
+          file.startsWith('.diagnostics-timeline-'),
+        ),
+      ).toBe(false);
+    } finally {
+      writes.mockRestore();
+      await probe.close();
+    }
   });
   it('按最低级别及请求 ID 筛选，并拒绝覆盖已有文件', async () => {
     const bundle = await archive({
