@@ -61,11 +61,9 @@ test('a project edited and deleted from its detail updates the searched, sorted 
     page.getByRole('heading', { name: 'Site 01', exact: true }),
   ).toBeVisible();
 
-  // The covered list keeps its rows mounted; pick the detail's own action.
-  await page
-    .getByRole('button', { name: 'Edit', exact: true })
-    .and(page.locator('[href$="/details/edit"]'))
-    .click();
+  // The detail is a drawer over the list, which keeps its rows mounted; pick the drawer's own action.
+  const drawer = page.getByRole('dialog');
+  await drawer.getByRole('button', { name: 'Edit', exact: true }).click();
   const name = page.getByRole('textbox', { name: 'Name' });
   await name.fill('Site 01 renamed');
   reads.length = 0;
@@ -80,10 +78,11 @@ test('a project edited and deleted from its detail updates the searched, sorted 
     path: testInfo.outputPath('1-detail-after-save.png'),
   });
 
-  await page
-    .getByRole('navigation', { name: 'Breadcrumb' })
-    .getByRole('link', { name: 'Projects', exact: true })
-    .click();
+  // Closing the drawer returns to the list it covered.
+  await drawer.getByRole('button', { name: 'Close', exact: true }).click();
+  // The pointer now rests on the header's hover-opened account menu; move it away as a person would.
+  const box = (await total.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await expect(
     page.getByRole('link', { name: 'Site 01 renamed', exact: true }),
   ).toBeVisible();
@@ -98,7 +97,7 @@ test('a project edited and deleted from its detail updates the searched, sorted 
   await page
     .getByRole('link', { name: 'Site 01 renamed', exact: true })
     .click();
-  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await drawer.getByRole('button', { name: 'Delete', exact: true }).click();
   const confirm = page.getByRole('alertdialog');
   await expect(confirm).toContainText('Delete “Site 01 renamed”?');
   await page.screenshot({ path: testInfo.outputPath('3-delete-confirm.png') });
