@@ -123,7 +123,7 @@ test('unrelated paths and empty changes skip the matrix', () => {
       'AGENTS.md',
       'packages/app/app-client/src/index.ts',
       'packages/libs/db-postgres-extra/src/index.ts',
-      '.github/workflows/v3-release-beta.yml',
+      '.github/workflows/v3-release.yml',
     ]),
     [],
   );

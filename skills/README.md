@@ -135,7 +135,7 @@ npx --yes @nocobase/app-installer@beta install /srv/nocobase/crm --archive /tmp/
 
 Use this to test a change before it is released: a change to a Skill, or to a package it drives, such as `create-app`, `app-installer`, a template or `app-cli`. The checkout is published to a local npm registry on your machine, and a shell is pointed at it, so the Skills can install the unreleased code. This snapshot registry uses `latest`: for this local test only, replace the creation tool and installer’s `@beta` with `@latest`, and set `--template-tag=latest`. Keep the published installation commands on `beta`.
 
-A global Skill is released by merging it into `v3`, while packages are released by the `v3-release-beta.yml` workflow. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
+A global Skill is released by merging it into `v3`, while packages are released by the `v3-release.yml` workflow. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
 
 ### Requirements
 

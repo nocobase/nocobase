@@ -17,6 +17,8 @@ const env = {
   GIT_AUTHOR_EMAIL: 't@t',
   GIT_COMMITTER_NAME: 't',
   GIT_COMMITTER_EMAIL: 't@t',
+  // The release workflows set it in their env.
+  PRO_BRANCH: 'develop',
 };
 const git = (cwd, ...args) =>
   execFileSync('git', args, { cwd, env, encoding: 'utf8' }).trim();
@@ -117,7 +119,7 @@ test('check refuses while a candidate is unpublished, or published but not merge
   assert.equal(unpublished.status, 1);
   assert.match(
     unpublished.stdout,
-    /::error::A joint NocoBase 3 beta release \(V3 Release Beta\) is still in flight/u,
+    /::error::A joint NocoBase 3 release \(V3 Release\) is still in flight/u,
   );
   assert.match(
     unpublished.stdout,
@@ -137,8 +139,53 @@ test('check refuses while a candidate is unpublished, or published but not merge
   assert.equal(unmerged.status, 1);
   assert.match(
     unmerged.stdout,
-    /created by a V3 Release Beta run it does not record\): tagged release-beta\/2026-11-11\.2 but not merged into Pro develop yet/u,
+    /created by a V3 Release run it does not record\): tagged release-beta\/2026-11-11\.2 but not merged into Pro develop yet/u,
   );
+});
+
+// A stable Pro release is tagged release/<batch>; its candidate is done on the same terms as a beta's.
+test('a candidate tagged with a stable release tag counts as released once Pro develop contains it', (t) => {
+  const { candidate, run, branches } = proRemote(t);
+  candidate('release-candidate/2026-12-01.1', {
+    tag: 'release/2026-12-01.1',
+    merge: true,
+  });
+  candidate('release-candidate/2026-12-01.2', { tag: 'release/2026-12-01.2' });
+  const check = run('check');
+  assert.equal(check.status, 1);
+  assert.match(
+    check.stdout,
+    /tagged release\/2026-12-01\.2 but not merged into Pro develop yet/u,
+  );
+  assert.doesNotMatch(check.stdout, /release-candidate\/2026-12-01\.1 /u);
+
+  const result = run(
+    'prune',
+    '--keep',
+    'release-candidate/2026-12-02.1',
+    '--superseded',
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.deepEqual(branches(), ['release-candidate/2026-12-01.2']);
+});
+
+test('the Pro branch comes from PRO_BRANCH', (t) => {
+  const { run } = proRemote(t);
+  const withoutBranch = { ...env };
+  delete withoutBranch.PRO_BRANCH;
+  const checkout = mkdtempSync(path.join(tmpdir(), 'pro-candidates-env-'));
+  t.after(() => rmSync(checkout, { recursive: true, force: true }));
+  const result = spawnSync(process.execPath, [script, 'check'], {
+    cwd: checkout,
+    env: withoutBranch,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stdout,
+    /::error::PRO_BRANCH must name the Pro branch\./u,
+  );
+  assert.equal(run('check').status, 0);
 });
 
 test('prune deletes published-and-merged and expired candidates, keeping the current batch and live ones', (t) => {

@@ -54,7 +54,9 @@ node -p "JSON.stringify(require('./package.json').nocobase, null, 2)"
 
 ## 3. Select the release channel and fetch both releases
 
-An explicit version wins. Otherwise use the template's `beta` dist-tag for a beta upgrade and `latest` for an explicit `latest` upgrade; when the user only asks to upgrade, keep the baseline's channel (`beta` for a beta baseline, `latest` for a stable one) and clarify any other prerelease channel. Dist-tags are independent pointers: `latest` can point at an older beta, so never pick the highest version across channels, and clarify if a requested stable target is a prerelease. A missing tag is no permission to use another channel.
+Resolve TARGET before fetching. An explicit version takes precedence, and an explicitly requested dist-tag, such as `beta`, uses that tag. If the user only asks to upgrade, prefer `latest` whatever release BASE came from: when `latest` resolves to a version newer than BASE by semantic version ordering, that version is TARGET. When it does not, and another dist-tag points to a version newer than BASE, name the tag and its version and ask before using it, since it is a prerelease line the user did not ask for; when no tag does, the application is already current. State the selected tag and resolved version in the upgrade plan.
+
+Before the first stable release, beta releases also move `latest`; afterward `latest` carries stable releases while `beta` follows only during a transition, then stops moving. Following `latest` keeps beta-created applications upgrading. A prerelease on `latest` is expected before a stable release exists; if the user explicitly requests stable, explain that no stable release exists yet and clarify. Never otherwise pick the highest version across tags or substitute for a missing requested tag.
 
 ```bash
 REGISTRY=https://registry.npmjs.org
@@ -62,8 +64,8 @@ TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
 npm view "$TEMPLATE" dist-tags --json --registry="$REGISTRY"
 
-# Set CHANNEL to beta or latest according to the selection above.
-CHANNEL=beta
+# Keep latest unless the selection above chose another tag.
+CHANNEL=latest
 TARGET=$(npm view "$TEMPLATE@$CHANNEL" version --registry="$REGISTRY")
 # For an explicitly requested version, assign that exact version to TARGET instead.
 ```
