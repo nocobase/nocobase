@@ -1,0 +1,31 @@
+# Preserve business behavior and control scope
+
+## Adaptation is not a ban on business-file edits
+
+The objective is correct multi-instance operation of the existing business, not a general redesign. Classify a change by its effect on business rules, workflows, observable behavior and architecture, not by which file it edits. Installing a backend is not permission to refactor unrelated features. A request to review remains read-only; an implementation request permits ordinary integration within its stated scope, not arbitrary production operations.
+
+| Change                                                                                                                                                                          | Handling                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Register an official commercial backend, select it for existing consumers, retain original service APIs and correct named selectors                                             | Proceed within the authorized adaptation task, following existing commercial package access rules. No extra architecture approval is needed merely to edit registration or configuration.                               |
+| Encode a cached Date as data and reconstruct it at the same internal boundary, preserving the caller's contract and TTL/invalidation behavior                                   | A behavior-preserving local adjustment can proceed with regression tests. Changing the public response or persistence model is not the same adjustment.                                                                 |
+| Replace an existing process-local mutex or event adapter with the host's supported service without changing ordering, waiting, error, authorization or delivery contracts       | Proceed only when equivalence is established. If the new semantics differ or are unknown, explain the gap and confirm the required behavior before changing it. Plugin installation alone does not replace custom code. |
+| Add cross-instance tests, preserve handlers and topics, or correct configuration so existing notification tasks run on either instance                                          | Ordinary adaptation; keep the existing business operation and side effects unchanged.                                                                                                                                   |
+| Change synchronous completion into acceptance plus asynchronous processing, change ordering/consistency or retry-visible effects, split services or add a dedicated Worker role | Architecture or execution-contract change: explain the alternatives and wait for user confirmation before implementing it.                                                                                              |
+| Introduce an Outbox, a new persistent idempotency model, compensating workflow or distributed transaction design                                                                | Explain why backend replacement is insufficient, data/operational impacts and options; obtain confirmation before implementation. Do not invent exactly-once guarantees.                                                |
+| Rebuild a commercial backend because the required package cannot be accessed                                                                                                    | Do not do this. Follow the existing commercial package access workflow; package unavailability does not authorize substitute implementation.                                                                            |
+
+## Necessary architecture changes
+
+When no behavior-preserving backend adaptation can meet the requirement, report the exact business path, evidence and remaining correctness risk. For example, a payment handler that can repeat a charge after crash recovery is not made safe merely by selecting Jobs Redis. A Redis lease alone does not prevent a stale process from writing after losing its lease.
+
+Describe why the minimal integration is insufficient, the smallest viable architecture or business-contract change, its effects on users/APIs/data, migration and rollback implications, and how it will be verified. Ask the user to approve a specific option before implementing the affected change. Preserve working behavior and continue independent work while waiting. Do not hide an unresolved correctness issue to satisfy the preference for leaving business code alone; keep the dependent rollout blocked.
+
+## Optional architecture improvements
+
+If the existing architecture can meet the requirement but another design offers a concrete benefit, compare the minimal adaptation with the optional improvement. State the benefit relevant to this App, implementation and operational cost, behavior differences, risks and verification. "More distributed" or "best practice" alone is not a reason.
+
+For example, keeping background consumers in each Web instance may satisfy the requirement. Dedicated Workers could improve load isolation, but introduce a deployment role and capacity policy. Present both choices and obtain confirmation before taking the redesign path. If the user chooses the minimal adaptation, deliver that without repeatedly proposing the rejected optimization.
+
+## Keep approvals scoped
+
+Use a prior explicit decision when it covers the proposed change; do not ask the same question again. Approval to install a plugin is not approval to change business semantics, and architecture approval is not authorization for production migration, outage or destructive cleanup. Follow the deployment workflow for those operations. Record accepted scope and unresolved decisions in project-owned guidance when writing is authorized, never in synchronized Skills.
