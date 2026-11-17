@@ -20,6 +20,7 @@ import {
   type CredentialServer,
 } from '../src/agent/git-credentials.ts';
 import type { NpmTokenSource } from '../src/agent/npm-credentials.ts';
+import { launch, writeRunConfig } from '../src/agent/npm-launcher.ts';
 import {
   NPM_DIR_ENV,
   PRIVATE_REGISTRY_ENV,
@@ -171,6 +172,38 @@ const leftovers = (target: Project) =>
   existsSync(target.npmDir) ? readdirSync(target.npmDir) : [];
 
 describe('the npm launcher', () => {
+  it('keeps credentials only in private temporary config files, never the child environment', () => {
+    const target = project({});
+    const config = writeRunConfig({ tool: 'pnpm', dir: target.npmDir, registry: privateRegistry.url, token: TOKEN, scope: true, env: { HOME: target.home, NPM_CONFIG_USERCONFIG: path.join(target.home, '.npmrc'), XDG_CONFIG_HOME: path.join(target.home, '.config') } });
+    try {
+      expect(JSON.stringify(config.env)).not.toContain(TOKEN);
+      expect(config.files.every(file => file.startsWith(`${target.npmDir}${path.sep}`))).toBe(true);
+      const file = config.env.NPM_CONFIG_USERCONFIG!;
+      expect(statSync(file).mode & 0o777).toBe(0o600);
+      expect(readFileSync(file, 'utf8')).toContain(`:_authToken=${TOKEN}`);
+    } finally { for (const file of config.files) rmSync(file, { recursive: true, force: true }); }
+    expect(leftovers(target)).toEqual([]);
+  });
+
+  it('returns the second exit code without putting the token on its command line or environment', async () => {
+    const target = project({});
+    const script = path.join(target.dir, 'command.cjs');
+    writeFileSync(script, `const fs = require('node:fs');
+const config = fs.readFileSync(process.env.NPM_CONFIG_USERCONFIG, 'utf8');
+if (JSON.stringify({argv:process.argv,env:process.env}).includes(${JSON.stringify(TOKEN)})) process.exit(99);
+if (!config.includes(':_authToken=')) { console.error('ERR_PNPM_FETCH_401 GET ${privateRegistry.url}@nocobase/x: Unauthorized - 401'); process.exit(8); }
+if (!config.includes('@nocobase:registry=${privateRegistry.url}')) process.exit(98);
+process.exit(23);
+`);
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const code = await launch({ tool: 'pnpm', command: [process.execPath, script], args: [], cwd: target.dir, env: { PATH: process.env.PATH, NPM_CONFIG_USERCONFIG: path.join(target.home, '.npmrc'), XDG_CONFIG_HOME: path.join(target.home, '.config'), [NPM_DIR_ENV]: target.npmDir, [PRIVATE_REGISTRY_ENV]: privateRegistry.url, NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket, NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce } });
+      expect(code).toBe(23);
+      expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+      expect(leftovers(target).filter(file => !file.startsWith('nocobase-scope-'))).toEqual([]);
+    } finally { await server.close(); }
+  });
+
   beforeAll(async () => {
     await mirror.start();
     await privateRegistry.start();
