@@ -40,11 +40,11 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 
 - User-facing strings (UI labels, messages, errors shown to end users) must go through the project's i18n layer (`t()` / `useTranslation()`); do not hardcode them. Add keys for both `en-US` and `zh-CN` when introducing new strings.
 
-## V3 Workflow Entry Points
+## V3 Workflows and V2 Workflow Entries
 
-Keep workflow YAML files directly in `.github/workflows/`; GitHub Actions does not support workflow subdirectories. Prefix every v3 workflow filename with `v3-`, including matching implementations on the v3 branches. V3 implementations live on `v3-develop` and are synchronized to `v3-main` through release promotion, with stable-line fixes synchronized back to `v3-develop`. The files on default branch `main` expose manual or scheduled entry points and dispatch the v3 implementation.
+NocoBase 3 lives on `v3`, the repository's default branch, and on `v3-main`; this branch (`main`) maintains v1/v2. All v3 workflows (`v3-*.yml`) live on the v3 branches and are run from there, so `main` keeps no v3 workflow files or dispatch entries. Do not add v3 workflows to `main`.
 
-Every v3 workflow change must include a synchronization check of its corresponding `main` entry. Implementation-only jobs and steps are picked up through dispatch to `v3-develop`, not copied into `main`; explicitly confirm that the entry still reaches the updated implementation. Workflow additions, deletions, renames, dispatch input changes and scheduled/default-branch trigger changes must update both sides in the same delivery. Keep workflow calls, dispatch filenames, path filters, tests and documentation consistent, coordinate the paired branch rollout, and preserve all existing v1/v2 workflow behavior.
+GitHub only offers a manual run for a `workflow_dispatch` workflow whose file exists on the default branch, so the default branch carries one thin entry per v1/v2 manual workflow on `main` (same filename, `name` and inputs) that dispatches the workflow on `main`; workflows that have never run are listed in `EXCLUDED` in `scripts/check-v2-workflow-entries.mjs` there instead. When a pull request on `main` adds, removes or renames a manual workflow, or changes its `name` or inputs, update its entry on the default branch first, then `main`; `.github/workflows/v2-workflow-entries.yml` fails the pull request until they match. See `.agents/rules/workflows-and-release.md` on the default branch ("V2 workflow entries on v3"). Preserve all existing v1/v2 workflow behavior.
 
 ## Pre-Commit Workflow
 
