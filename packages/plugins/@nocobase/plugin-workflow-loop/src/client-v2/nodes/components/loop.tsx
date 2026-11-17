@@ -118,7 +118,13 @@ function useLoopConditionMetaTree(): MetaTreeNode[] {
     ];
 
     return [
-      { ...existingScopeRoot, children: nextChildren, title: existingScopeRoot.title ?? t('Scope variables') },
+      {
+        ...existingScopeRoot,
+        // An empty upstream scope is disabled, but this loop has now contributed its own variables.
+        disabled: false,
+        children: nextChildren,
+        title: existingScopeRoot.title ?? t('Scope variables'),
+      },
       ...otherRoots,
     ];
   }, [flowEngine.context, loopScopeVariables, node?.id, node?.key, node?.title, t, workflowMetaTree]);
