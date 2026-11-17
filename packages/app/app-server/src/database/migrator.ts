@@ -122,11 +122,15 @@ export function createAppMigrator(
 ): AppMigrator {
   return {
     async latest(): Promise<AppMigrationRunResult> {
-      if (!hasMigrationDirectory(options)) {
+      const migrator = createDatabaseMigrator(options);
+      if (
+        !hasMigrationDirectory(options) &&
+        !(await migrator.history()).length
+      ) {
         return skippedMigrationResult();
       }
 
-      return completedRunResult(await createDatabaseMigrator(options).latest());
+      return completedRunResult(await migrator.latest());
     },
 
     async fresh(): Promise<AppMigrationRunResult> {
@@ -171,13 +175,15 @@ export function createAppMigrator(
     async rollback(
       rollbackOptions?: MigrationRollbackOptions,
     ): Promise<AppMigrationRollbackResult> {
-      if (!hasMigrationDirectory(options)) {
+      const migrator = createDatabaseMigrator(options);
+      if (
+        !hasMigrationDirectory(options) &&
+        !(await migrator.history()).length
+      ) {
         return skippedMigrationResult();
       }
 
-      return completedRollbackResult(
-        await createDatabaseMigrator(options).rollback(rollbackOptions),
-      );
+      return completedRollbackResult(await migrator.rollback(rollbackOptions));
     },
 
     // Unlocking needs no migration directory: the lock exists whether or not

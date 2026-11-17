@@ -405,8 +405,12 @@ class DefaultMigrator implements Migrator {
     const newestByPackage = new Map<string, string>();
     for (const migration of migrations) {
       const newest = newestByPackage.get(migration.packageName);
-      if (!newest || migration.name.localeCompare(newest) > 0)
-        newestByPackage.set(migration.packageName, migration.name);
+      const name = migration.migration.name;
+      if (
+        !newest ||
+        migrationVersion(name).localeCompare(migrationVersion(newest)) > 0
+      )
+        newestByPackage.set(migration.packageName, name);
     }
     const missing: MissingMigrationSource[] = [];
     for (const record of history) {
@@ -417,7 +421,12 @@ class DefaultMigrator implements Migrator {
       ) {
         if (rollbackBatch === undefined) {
           const newest = newestByPackage.get(record.packageName);
-          if (newest && record.name.localeCompare(newest) > 0) {
+          if (
+            newest &&
+            migrationVersion(record.name).localeCompare(
+              migrationVersion(newest),
+            ) > 0
+          ) {
             throw new Error(
               `${describeMissingSource(record)} The database is newer than the code: this record is newer than the package's newest source migration "${newest}". Restore a compatible package version before migrating.`,
             );
@@ -579,4 +588,9 @@ function nextBatch(history: MigrationHistoryRecord[]): number {
 
 function currentBatch(history: MigrationHistoryRecord[]): number {
   return history.reduce((batch, record) => Math.max(batch, record.batch), 0);
+}
+
+/** Only the filename timestamp orders versions; target hashes identify instances. */
+function migrationVersion(name: string): string {
+  return name.split('_', 1)[0] ?? name;
 }

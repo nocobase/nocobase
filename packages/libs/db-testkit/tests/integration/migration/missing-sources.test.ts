@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, expect, it } from 'vitest';
-import { createMigrator } from '../../../../db/src/index.js';
+import { createMigrator, loadMigrations } from '../../../../db/src/index.js';
 import { describeIntegrationDatabases } from '../helpers.js';
 
 const directories: string[] = [];
@@ -205,6 +205,78 @@ describeIntegrationDatabases('missing migration sources', (context) => {
     ).rejects.toThrow('missing from migration sources');
     expect(await migrator.history()).toEqual(history);
   });
+
+  it.each(['first', 'last'] as const)(
+    'warns when the parameterized target sorting %s is removed without changing the file version',
+    async (removedPosition) => {
+      const { directory, events, options } = await fixture();
+      const name = '202611170001_parameterized';
+      await source(directory, name, events);
+      const sources = ['alpha', 'beta'].map((target) => ({
+        packageName: 'parameterized-package',
+        directory,
+        parameters: { target },
+      }));
+      const installer = createMigrator({ ...options, sources });
+      await installer.latest();
+      const history = await installer.history();
+      const loaded = await loadMigrations({ sources });
+      const removed = loaded[removedPosition === 'first' ? 0 : 1];
+      const retained = loaded[removedPosition === 'first' ? 1 : 0];
+      expect(loaded[0].name.localeCompare(loaded[1].name)).toBeLessThan(0);
+      const migrator = createMigrator({
+        ...options,
+        sources: sources.filter(
+          (entry) => entry.parameters.target !== removed.parameters?.target,
+        ),
+      });
+      expect(await migrator.latest()).toMatchObject({
+        executed: [],
+        skipped: [retained.name],
+        warnings: [
+          {
+            kind: 'missing-source',
+            packageName: 'parameterized-package',
+            name: removed.name,
+          },
+        ],
+      });
+      expect(await migrator.history()).toEqual(history);
+      expect(await context.db(events).select('event')).toEqual([
+        { event: `up:${name}` },
+        { event: `up:${name}` },
+      ]);
+    },
+  );
+
+  it.each(['warn', 'error'] as const)(
+    'rejects a newer parameterized file version with policy %s',
+    async (onMissingSource) => {
+      const { directory, events, options } = await fixture();
+      const older = '202611170001_older';
+      const newer = '202611170002_newer';
+      await source(directory, older, events);
+      await source(directory, newer, events);
+      const migrator = createMigrator({
+        ...options,
+        onMissingSource,
+        sources: [
+          { packageName: 'app', directory, parameters: { target: 'alpha' } },
+        ],
+      });
+      await migrator.latest();
+      const history = await migrator.history();
+      await rm(join(directory, `${newer}.ts`));
+      await expect(migrator.latest()).rejects.toThrow(
+        'database is newer than the code',
+      );
+      expect(await migrator.history()).toEqual(history);
+      expect(await context.db(events).select('event').orderBy('id')).toEqual([
+        { event: `up:${older}` },
+        { event: `up:${newer}` },
+      ]);
+    },
+  );
 
   it.each(['warn', 'error'] as const)(
     'always rejects a database newer than the same package sources with policy %s',
