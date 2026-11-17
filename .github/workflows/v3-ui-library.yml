@@ -3,6 +3,7 @@ name: V3 UI Library
 on:
   push:
     branches:
+      - v3
       - v3-develop
     paths:
       - 'ui-library/**'
@@ -12,6 +13,7 @@ on:
       - 'pnpm-workspace.yaml'
   pull_request:
     branches:
+      - v3
       - v3-develop
       - v3-main
       - '*/v3-*'
@@ -24,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Upload the build to OSS (only publishes when the selected ref is v3-develop)'
+        description: 'Upload the build to OSS (only publishes when the selected ref is the default branch, v3)'
         type: boolean
         default: false
 
@@ -106,14 +108,14 @@ jobs:
       # Preview builds may use workspace exports. Publication must also support the oldest installable runtime.
       - name: Check published form runtime compatibility
         if: >-
-          (github.event_name == 'push' && github.ref == 'refs/heads/v3-develop') ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/v3-develop')
+          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
         run: node scripts/check-form-feedback-release.mjs
 
       - name: Publish to OSS
         if: >-
-          (github.event_name == 'push' && github.ref == 'refs/heads/v3-develop') ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/v3-develop')
+          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
         env:
           UI_LIBRARY_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
           UI_LIBRARY_ALI_OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}

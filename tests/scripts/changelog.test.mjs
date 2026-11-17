@@ -87,7 +87,7 @@ test('pull request numbers come from squash and merge commit subjects', () => {
   assert.deepEqual(
     extractPullRequestNumbers([
       'fix(db): x (#11168)',
-      'chore: merge release 2026-10-26.2 into v3-develop [skip ci]',
+      'chore: merge release 2026-10-26.2 into v3 [skip ci]',
       'Merge pull request #11001 from nocobase/feat/v3-x',
       'feat(agents): y (#11165) (#11168)',
     ]),

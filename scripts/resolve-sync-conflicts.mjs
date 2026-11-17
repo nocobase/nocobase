@@ -1,4 +1,4 @@
-// Resolve stable -> development sync conflicts: OSS v3-main -> v3-develop,
+// Resolve stable -> development sync conflicts: OSS v3-main -> v3,
 // or main -> develop in the independent Pro repository.
 //
 // 只处理规则确定的两类：

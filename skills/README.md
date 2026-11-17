@@ -23,9 +23,9 @@ npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 npx skills@latest add nocobase/skills-v3 --skill nocobase-app-installer -g
 ```
 
-Edit global entry instructions in this source directory; edit full plugin development guidance in `packages/app/app-skills/skills/nocobase-app-plugin-development/`. `.github/workflows/v3-skills-sync.yml` notifies the distribution repository when `skills/**` changes on `v3-develop`; there is no scheduled polling. The distribution workflow downloads the skills subtree at one immutable commit, preserving references, scripts, assets, executable modes and deletions. Identical content produces no commit. Its `.sync-source.json` records the source revision; failures remain visible in Actions and can be retried manually. The distribution script and its tests are maintained in `nocobase/skills-v3`.
+Edit global entry instructions in this source directory; edit full plugin development guidance in `packages/app/app-skills/skills/nocobase-app-plugin-development/`. `.github/workflows/v3-skills-sync.yml` notifies the distribution repository when `skills/**` changes on `v3` (formerly `v3-develop`), the default branch; there is no scheduled polling. The distribution workflow downloads the skills subtree at one immutable commit, preserving references, scripts, assets, executable modes and deletions. Identical content produces no commit. Its `.sync-source.json` records the source revision; failures remain visible in Actions and can be retried manually. The distribution script and its tests are maintained in `nocobase/skills-v3`.
 
-The source notifier reuses `vars.NOCOBASE_APP_ID` and `secrets.NOCOBASE_APP_PRIVATE_KEY`, requesting contents-write access only to `skills-v3`. The target publishes using its own `GITHUB_TOKEN`. The default-branch `main` workflow entry dispatches the `v3-develop` implementation with the same filename and no inputs; land the implementation first. Manual synchronization can also be run directly in the distribution repository.
+The source notifier reuses `vars.NOCOBASE_APP_ID` and `secrets.NOCOBASE_APP_PRIVATE_KEY`, requesting contents-write access only to `skills-v3`. The target publishes using its own `GITHUB_TOKEN`. It can also be dispatched manually from `v3`. Manual synchronization can also be run directly in the distribution repository.
 
 The source and distribution both use `nocobase-app-plugin-development`, avoiding the V2 `nocobase-plugin-development` name. Reinstall to migrate from an earlier global name; old global installations are not removed automatically. Determine whether an old installation belongs to V2 or V3 before removing it.
 
@@ -35,7 +35,7 @@ Rerun the install command to migrate installations from the old large-repository
 
 NocoBase 3 publishes its packages to the public npm registry. Both Skills keep the registry local to the command and write it as `${NOCOBASE_REGISTRY:-https://registry.npmjs.org}`. `NOCOBASE_REGISTRY` is normally unset; `pnpm unreleased:env` sets it to the local snapshot registry, and a private installation can set it to its own source. `create-app` records a non-public registry for the `@nocobase` scope in the generated project's `.npmrc`, while public npm needs no override. The user's own pnpm and npm configuration is not changed.
 
-Published installation commands select `beta` explicitly for the creation tool, application template and deployment installer. The Skills themselves still come from GitHub `v3-develop`; `npx skills` is a separate tool and does not need a beta tag.
+Published installation commands select `beta` explicitly for the creation tool, application template and deployment installer. The Skills themselves still come from GitHub `v3`; `npx skills` is a separate tool and does not need a beta tag.
 
 ## nocobase-create-app
 
@@ -50,7 +50,7 @@ Published installation commands select `beta` explicitly for the creation tool, 
 npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 ```
 
-The lightweight `nocobase/skills-v3` repository distributes the Skills from `v3-develop/skills/` without downloading the application repository. Add `-a claude-code`, or another agent's name, to install for one agent only. `nocobase/skills` remains the NocoBase 2 source.
+The lightweight `nocobase/skills-v3` repository distributes the Skills from `v3/skills/` without downloading the application repository. Add `-a claude-code`, or another agent's name, to install for one agent only. `nocobase/skills` remains the NocoBase 2 source.
 
 Plugin development uses the project's `.agents/skills/nocobase-app-plugin-development/SKILL.md`, synchronized from a compatible installed `@nocobase/app-skills`. Do not install a global copy. If it is missing, inspect the installed package and use the App upgrade guidance instead of independently updating one framework package.
 
@@ -135,7 +135,7 @@ npx --yes @nocobase/app-installer@beta install /srv/nocobase/crm --archive /tmp/
 
 Use this to test a change before it is released: a change to a Skill, or to a package it drives, such as `create-app`, `app-installer`, a template or `app-cli`. The checkout is published to a local npm registry on your machine, and a shell is pointed at it, so the Skills can install the unreleased code. This snapshot registry uses `latest`: for this local test only, replace the creation tool and installer’s `@beta` with `@latest`, and set `--template-tag=latest`. Keep the published installation commands on `beta`.
 
-A global Skill is released by merging it into `v3-develop`, while packages are released by the `v3-release-beta.yml` workflow. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
+A global Skill is released by merging it into `v3`, while packages are released by the `v3-release-beta.yml` workflow. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
 
 ### Requirements
 

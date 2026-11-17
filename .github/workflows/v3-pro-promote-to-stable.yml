@@ -260,7 +260,7 @@ jobs:
           git push --force origin "$SYNC"
           PR_URL=$(gh pr create --repo nocobase/nocobase3-pro \
             --title 'chore: sync promoted versions back to develop' \
-            --body "Sync stable versions back to develop, re-enter prerelease mode, and restore the OSS v3-develop commit \`$DEVELOP_OSS_SHA\`." \
+            --body "Sync stable versions back to develop, re-enter prerelease mode, and restore the OSS v3 commit \`$DEVELOP_OSS_SHA\`." \
             --base develop --head "$SYNC")
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
           gh pr merge --repo nocobase/nocobase3-pro "$PR_URL" --merge --delete-branch

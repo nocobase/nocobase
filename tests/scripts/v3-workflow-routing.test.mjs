@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  readdirSync,
   readFileSync,
   mkdtempSync,
   rmSync,
@@ -51,13 +52,14 @@ test('stacked v3 targets receive PR checks without widening direct-branch trigge
 
   assert.deepEqual(triggerBranches(changesets, 'pull_request'), [
     'v3-main',
+    'v3',
     'v3-develop',
     '*/v3-*',
   ]);
   assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
   assert.deepEqual(
     triggerBranches(workflow('pr-description'), 'pull_request'),
-    ['v3-main', 'v3-develop', '*/v3-*'],
+    ['v3-main', 'v3', 'v3-develop', '*/v3-*'],
   );
 
   const workflowPattern = '*/v3-*';
@@ -67,6 +69,7 @@ test('stacked v3 targets receive PR checks without widening direct-branch trigge
     'fix/v3-stacked-pr-routing',
     'docs/v3-release-notes',
     'feat/app-installer',
+    'v3',
     'v3-develop',
     'agent/PM-42',
     'feat/v3-routing/extra',
@@ -98,6 +101,58 @@ test('OSS releases write only the migrated repository and v3 branches', () => {
     assert.match(source, /RELEASE_RESULT_FEISHU_WEBHOOK_URL/u);
     assert.doesNotMatch(source, /gh pr merge[^\n]*--merge/u);
     assert.match(source, /gh pr merge[^\n]*--squash/u);
+  }
+});
+
+// GitHub's branch rename (v3-develop to v3) rewrites no files, so the workflows must work under either name: branch
+// filters list both, and everything else follows the repository's default branch instead of naming it.
+test('v3 workflows follow the default branch under its current and former name', () => {
+  const workflows = path.join(import.meta.dirname, '../../.github/workflows');
+  const defaultBranchGuard =
+    "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)";
+  for (const file of readdirSync(workflows).filter((name) =>
+    /\.ya?ml$/u.test(name),
+  )) {
+    const source = readFileSync(path.join(workflows, file), 'utf8');
+    const doc = parse(source);
+    for (const event of ['push', 'pull_request']) {
+      const branches = doc.on?.[event]?.branches;
+      if (!Array.isArray(branches) || !branches.includes('v3-develop'))
+        continue;
+      assert.ok(
+        branches.indexOf('v3') !== -1 &&
+          branches.indexOf('v3') < branches.indexOf('v3-develop'),
+        `${file} ${event} lists v3 before v3-develop`,
+      );
+    }
+    // Outside branch filters and comments, neither name of the default branch is written out.
+    const code = source
+      .split('\n')
+      .filter(
+        (line) =>
+          !/^\s*#/u.test(line) &&
+          !/^\s+- v3(?:-develop)?$/u.test(line) &&
+          !/branches: \[v3, v3-develop\]$/u.test(line),
+      )
+      .join('\n');
+    assert.doesNotMatch(
+      code,
+      /refs\/heads\/v3(?:-develop)?\b(?!-)|origin\/v3(?:-develop)?\b(?!-)|--base v3(?:-develop)?\b(?!-)|ref: v3(?:-develop)?$/mu,
+      file,
+    );
+    for (const [, ref] of code.matchAll(/github\.ref == ('[^']*')/gu))
+      assert.fail(`${file} compares github.ref with ${ref}`);
+    if (/\bDEFAULT_BRANCH\b/u.test(source)) {
+      assert.match(
+        source,
+        /DEFAULT_BRANCH: \$\{\{ github\.event\.repository\.default_branch \}\}/u,
+        file,
+      );
+      // github.event.repository is missing from schedule payloads.
+      assert.ok(!doc.on?.schedule, `${file} has a schedule`);
+    }
+    if (source.includes(defaultBranchGuard))
+      assert.ok(!doc.on?.schedule, `${file} has a schedule`);
   }
 });
 
@@ -139,18 +194,19 @@ test('site deployment uses the existing publish triggers without a migration gat
     assert.doesNotMatch(source, /V3_ASSET_DEPLOY_ENABLED/u);
     assert.match(
       source,
-      /github\.event_name == 'push' && github\.ref == 'refs\/heads\/v3-develop'/u,
+      /github\.event_name == 'push' && github\.ref == format\('refs\/heads\/\{0\}', github\.event\.repository\.default_branch\)/u,
     );
     assert.match(
       source,
       /github\.event_name == 'workflow_dispatch' && inputs\.publish/u,
     );
     assert.deepEqual(triggerBranches(source, 'pull_request'), [
+      'v3',
       'v3-develop',
       'v3-main',
       '*/v3-*',
     ]);
-    assert.deepEqual(triggerBranches(source, 'push'), ['v3-develop']);
+    assert.deepEqual(triggerBranches(source, 'push'), ['v3', 'v3-develop']);
     assert.match(source, /publish:[\s\S]*?default: false/u);
   }
   const docs = workflow('docs');

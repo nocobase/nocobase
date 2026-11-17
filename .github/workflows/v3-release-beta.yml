@@ -1,7 +1,7 @@
 name: V3 Release Beta
 
-# Release prereleases from v3-develop: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
-# and latest dist-tags. Versioning happens on an isolated release branch so v3-develop remains available while the release
+# Release prereleases from v3: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
+# and latest dist-tags. Versioning happens on an isolated release branch so v3 remains available while the release
 # is checked.
 #
 # The commercial plugins in nocobase/nocobase3-pro are released with it. pro-check builds, tests, and smoke-tests Pro against this release candidate before anything is published, so a change here that breaks a commercial plugin stops the open-source release too; fix Pro develop first, then use "Re-run failed jobs" (same open-source candidate, latest Pro develop) or, when the fix needs open-source changes merged after this run started, start a new run. Pro releases every package whose published @nocobase/* ranges reject this release (on beta that is any new major.minor.patch, not only a new major), together with Pro's own pending changesets: pro-candidate pushes the tested tree to release-candidate/<batch> in the Pro repository, and after npm pro-release publishes that commit. When Pro has nothing to publish, it is still tested and its publishing is skipped. skip_pro releases the open-source packages alone.
@@ -28,6 +28,10 @@ concurrency:
 
 permissions:
   contents: read
+
+env:
+  # v3 (formerly v3-develop), the repository's default branch: the release source and the merge-back target.
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
 
 # prepare versions the release and saves it as release-source-state. build and test both restore that state and run in parallel: tests read workspace packages from source, so they never needed the build output, and running them after the build only added their duration to every release. When Quality already passed on the release base, test is skipped and the smoke tests stop running the template suites; see "Check Quality on the release base".
 jobs:
@@ -57,10 +61,10 @@ jobs:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
 
-      - name: Check out v3-develop
+      - name: Check out v3
         uses: actions/checkout@v4
         with:
-          ref: v3-develop
+          ref: ${{ env.DEFAULT_BRANCH }}
           path: release-source
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -83,10 +87,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify v3-develop is in pre mode
+      - name: Verify v3 is in pre mode
         run: |
           if [ ! -f .changeset/pre.json ]; then
-            echo "::error::v3-develop is not in pre mode. Run changeset pre enter beta locally and commit it first."
+            echo "::error::v3 is not in pre mode. Run changeset pre enter beta locally and commit it first."
             exit 1
           fi
           MODE=$(node -p "require('./.changeset/pre.json').mode")
@@ -114,7 +118,7 @@ jobs:
         id: base
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # Quality (nocobase3-quality.yml in chenos/nocobase-ci) runs everything for each push to v3-develop that does not say [skip ci], and nocobase-bot mirrors its jobs as check runs of the nocobase GitHub App on the pushed commit. Its Test runs the same suites as the test shards here, and its create-app smoke tests run the template suites in applications generated from packed packages, as the smoke tests here do. Versioning changes manifests and changelogs, not what those suites run, so when all three passed on the release base the release skips test and its smoke tests skip the template suites; they still generate, install, build, and start applications from this release's own tarballs. Anything else, such as Quality still running or a [skip ci] merge back on top, runs the tests here as before.
+      # Quality (nocobase3-quality.yml in chenos/nocobase-ci) runs everything for each push to v3 that does not say [skip ci], and nocobase-bot mirrors its jobs as check runs of the nocobase GitHub App on the pushed commit. Its Test runs the same suites as the test shards here, and its create-app smoke tests run the template suites in applications generated from packed packages, as the smoke tests here do. Versioning changes manifests and changelogs, not what those suites run, so when all three passed on the release base the release skips test and its smoke tests skip the template suites; they still generate, install, build, and start applications from this release's own tarballs. Anything else, such as Quality still running or a [skip ci] merge back on top, runs the tests here as before.
       - name: Check Quality on the release base
         id: quality
         env:
@@ -596,7 +600,7 @@ jobs:
           SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
           RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
         run: |
-          git fetch --quiet --no-tags origin "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+          git fetch --quiet --no-tags origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
           git checkout --quiet --detach "$BASE_SHA"
           node scripts/release-state.mjs restore \
             --directory "$RUNNER_TEMP/release-state" \
@@ -681,7 +685,7 @@ jobs:
       - name: Explain how to unblock the release
         if: failure() && (steps.pro_install.outcome == 'failure' || steps.pro_build.outcome == 'failure' || steps.pro_verify.outcome == 'failure')
         run: |
-          MESSAGE='Pro develop failed to install, build, test, or smoke-test against this open-source release candidate, so nothing was published, open-source packages included. Fix Pro first: open a pull request against nocobase/nocobase3-pro develop that fixes the affected plugins and adds a changeset, and merge it. Then choose how to continue. Re-run failed jobs: this run keeps the same open-source release candidate, and the re-run Pro check checks out the latest Pro develop again and covers all of Pro, so use it when the Pro fix needs only open-source code already in this candidate (the fix may bump vendor/nocobase3 with pnpm nocobase3:sync, but only to a v3-develop commit this release already contains). Start a new V3 Release Beta instead when the Pro fix depends on open-source changes merged after this release started: a re-run never picks them up. In an emergency, run V3 Release Beta with skip_pro to release the open-source packages alone, then run V3 Release Pro Beta once Pro is fixed.'
+          MESSAGE='Pro develop failed to install, build, test, or smoke-test against this open-source release candidate, so nothing was published, open-source packages included. Fix Pro first: open a pull request against nocobase/nocobase3-pro develop that fixes the affected plugins and adds a changeset, and merge it. Then choose how to continue. Re-run failed jobs: this run keeps the same open-source release candidate, and the re-run Pro check checks out the latest Pro develop again and covers all of Pro, so use it when the Pro fix needs only open-source code already in this candidate (the fix may bump vendor/nocobase3 with pnpm nocobase3:sync, but only to a v3 commit this release already contains). Start a new V3 Release Beta instead when the Pro fix depends on open-source changes merged after this release started: a re-run never picks them up. In an emergency, run V3 Release Beta with skip_pro to release the open-source packages alone, then run V3 Release Pro Beta once Pro is fixed.'
           echo "::error title=Pro is broken by this release::$MESSAGE"
           {
             echo '### Pro is broken by this release'
@@ -829,7 +833,7 @@ jobs:
           SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
           RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
         run: |
-          git fetch --quiet --no-tags origin "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+          git fetch --quiet --no-tags origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
           git checkout --quiet --detach "$BASE_SHA"
           node scripts/release-state.mjs restore \
             --directory "$RUNNER_TEMP/release-state" \
@@ -1197,8 +1201,8 @@ jobs:
           else
             git tag "$RELEASE_TAG"
           fi
-          if [ -n "$(gh pr list --head "$RELEASE_BRANCH" --base v3-develop --state merged --json url --jq '.[].url')" ]; then
-            echo "$RELEASE_BRANCH was already merged into v3-develop; not pushing it again."
+          if [ -n "$(gh pr list --head "$RELEASE_BRANCH" --base "$DEFAULT_BRANCH" --state merged --json url --jq '.[].url')" ]; then
+            echo "$RELEASE_BRANCH was already merged into v3; not pushing it again."
           else
             git push origin "refs/heads/${RELEASE_BRANCH}:refs/heads/${RELEASE_BRANCH}"
           fi
@@ -1255,7 +1259,7 @@ jobs:
 
       # The tag preserves the exact tested candidate; squash its PR to follow the repository's merge policy.
       # Conflicts leave the candidate branch available for manual resolution.
-      - name: Merge back into v3-develop
+      - name: Merge back into v3
         if: '!inputs.dry_run'
         id: merge
         env:
@@ -1265,7 +1269,7 @@ jobs:
         run: |
           TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
           # A rerun finds the merge back an earlier attempt made, or the pull request it left open, such as one whose conflict was resolved and merged by hand.
-          MERGED_URL=$(gh pr list --head "$RELEASE_BRANCH" --base v3-develop --state merged --json url --jq '.[0].url // empty')
+          MERGED_URL=$(gh pr list --head "$RELEASE_BRANCH" --base "$DEFAULT_BRANCH" --state merged --json url --jq '.[0].url // empty')
           if [ -n "$MERGED_URL" ]; then
             echo "$RELEASE_BRANCH was already merged: $MERGED_URL"
             {
@@ -1275,27 +1279,27 @@ jobs:
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          PR_URL=$(gh pr list --head "$RELEASE_BRANCH" --base v3-develop --state open --json url --jq '.[0].url // empty')
+          PR_URL=$(gh pr list --head "$RELEASE_BRANCH" --base "$DEFAULT_BRANCH" --state open --json url --jq '.[0].url // empty')
           if [ -z "$PR_URL" ]; then
             PR_URL=$(gh pr create \
               --title "chore: release $RELEASE_BATCH [skip ci]" \
               --body "Prerelease \`$RELEASE_BATCH\` published to npm under the \`beta\` dist-tag. Per-package versions are in the workflow summary." \
-              --base v3-develop \
+              --base "$DEFAULT_BRANCH" \
               --head "$RELEASE_BRANCH")
           fi
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge release $RELEASE_BATCH into v3-develop [skip ci]" \
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge release $RELEASE_BATCH into v3 [skip ci]" \
             --body "current app-template-default version: $TEMPLATE_VERSION"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then
-            echo "::warning::Failed to merge the PR back into v3-develop; conflicts need manual work: $PR_URL"
+            echo "::warning::Failed to merge the PR back into v3; conflicts need manual work: $PR_URL"
             echo "merged=false" >> "$GITHUB_OUTPUT"
           else
             echo "merged=true" >> "$GITHUB_OUTPUT"
-            # pro-release returns Pro develop's submodule pointer to this commit on v3-develop.
+            # pro-release returns Pro develop's submodule pointer to this commit on v3.
             echo "sha=$(gh pr view "$PR_URL" --json mergeCommit --jq .mergeCommit.oid)" >> "$GITHUB_OUTPUT"
           fi
 
@@ -1313,7 +1317,7 @@ jobs:
           CONTENT: |
             版本 **${{ needs.prepare.outputs.batch }}** 已成功发布到 npm（dist-tag `beta`）。
 
-            但版本提交合回 `v3-develop` 时发生冲突，需要人工解决：
+            但版本提交合回 `v3` 时发生冲突，需要人工解决：
             ${{ steps.merge.outputs.url }}
 
             发版分支 `${{ needs.prepare.outputs.release_branch }}` 已保留，解决冲突后合并即可。
@@ -1371,7 +1375,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
-            ${{ needs.pro-check.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先在 Pro develop 上合并修复插件的 PR。如果修复只用到这次候选版本里已有的 OSS 代码，在这次运行上点「Re-run failed jobs」：重跑沿用同一个 OSS 候选版本，重跑的 Pro 检查会重新拉取最新的 Pro develop，并自己把 Pro 的测试和冒烟都跑一遍。如果修复依赖发版开始之后才合进 v3-develop 的 OSS 改动，重跑拿不到这些改动，要重新跑一次 V3 Release Beta。紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
+            ${{ needs.pro-check.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先在 Pro develop 上合并修复插件的 PR。如果修复只用到这次候选版本里已有的 OSS 代码，在这次运行上点「Re-run failed jobs」：重跑沿用同一个 OSS 候选版本，重跑的 Pro 检查会重新拉取最新的 Pro develop，并自己把 Pro 的测试和冒烟都跑一遍。如果修复依赖发版开始之后才合进 v3 的 OSS 改动，重跑拿不到这些改动，要重新跑一次 V3 Release Beta。紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
             ${{ needs.pro-wait.result == 'cancelled' && '等待独立 Pro 发版结束时，有另一个 Pro 发版也在排队，这次的等待被取消，OSS 和 Pro 都没有发布。等那些 Pro 发版结束后，重新跑一次 V3 Release Beta。' || '' }}
         run: ./scripts/feishu-notify.sh
 
@@ -1438,7 +1442,7 @@ jobs:
           token: ${{ steps.checkout_token.outputs.token }}
           persist-credentials: false
 
-      # The pinned commit is reachable only from the open-source release tag (v3-develop receives a squash merge), so the submodule is fetched by that tag instead of by actions/checkout.
+      # The pinned commit is reachable only from the open-source release tag (v3 receives a squash merge), so the submodule is fetched by that tag instead of by actions/checkout.
       - name: Check out the published release commit in the submodule
         env:
           CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
@@ -1454,7 +1458,7 @@ jobs:
           git -C vendor/nocobase3 remote add origin "$(git config --get submodule.vendor/nocobase3.url)"
           git -C vendor/nocobase3 fetch --quiet --no-tags origin \
             "+refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}" \
-            "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+            "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
           TAG_SHA=$(git -C vendor/nocobase3 rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
           test "$TAG_SHA" = "$GITLINK" || { echo "::error::$RELEASE_TAG points to $TAG_SHA, but the candidate pins $GITLINK"; exit 1; }
           git -C vendor/nocobase3 checkout --quiet --detach "$TAG_SHA"
@@ -1529,7 +1533,7 @@ jobs:
             echo "$TAG"
           done)
           if [ -n "$NEWER" ]; then
-            echo "::error::Another Pro beta was released after Pro develop was tested at $PRO_SHA: $(echo $NEWER). This candidate does not contain it and would publish the same versions, so nothing Pro was published. The open-source packages are already out. Delete the $CANDIDATE_BRANCH branch in nocobase/nocobase3-pro, then run V3 Release Pro Beta with oss_sha set to ${MERGE_SHA:-the open-source merge commit on v3-develop}."
+            echo "::error::Another Pro beta was released after Pro develop was tested at $PRO_SHA: $(echo $NEWER). This candidate does not contain it and would publish the same versions, so nothing Pro was published. The open-source packages are already out. Delete the $CANDIDATE_BRANCH branch in nocobase/nocobase3-pro, then run V3 Release Pro Beta with oss_sha set to ${MERGE_SHA:-the open-source merge commit on v3}."
             exit 1
           fi
 
@@ -1624,8 +1628,8 @@ jobs:
           trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" prune --keep "$BRANCH" --superseded
 
-      # The release commit pins the open-source release commit, which v3-develop does not contain because the release is squash-merged there. Pro develop must track v3-develop, so the release branch moves the pointer to the merged release commit before merging back, unless Pro develop already points at a descendant of it, which it keeps so the merge back never moves develop's pointer backwards; a pointer unrelated to the merged release commit is replaced by it with a warning. When the open-source merge back failed (merged is 'false'), it keeps Pro develop's current pointer instead; when release has not reported a merge at all, this job waits for release to be re-run. Pro develop may have moved since pro-candidate, so develop is merged into the release branch first. Its pnpm-workspace.yaml and pnpm-lock.yaml are taken from develop, so the Pro-owned entries develop added or changed (catalog, allowBuilds, overrides) survive; the gitlink is regenerated rather than merged, and sync-release-oss.mjs then re-syncs the upstream blocks of pnpm-workspace.yaml and regenerates the lockfile against the target pointer. A rerun starts from the release branch it already pushed. The write token is moved into a shell variable that is not exported, handed to gh explicitly, and put in the remote only to fetch and to push, so no install, sync, or conflict script this step runs can read it.
-      - name: Return the submodule pointer to v3-develop
+      # The release commit pins the open-source release commit, which v3 does not contain because the release is squash-merged there. Pro develop must track v3, so the release branch moves the pointer to the merged release commit before merging back, unless Pro develop already points at a descendant of it, which it keeps so the merge back never moves develop's pointer backwards; a pointer unrelated to the merged release commit is replaced by it with a warning. When the open-source merge back failed (merged is 'false'), it keeps Pro develop's current pointer instead; when release has not reported a merge at all, this job waits for release to be re-run. Pro develop may have moved since pro-candidate, so develop is merged into the release branch first. Its pnpm-workspace.yaml and pnpm-lock.yaml are taken from develop, so the Pro-owned entries develop added or changed (catalog, allowBuilds, overrides) survive; the gitlink is regenerated rather than merged, and sync-release-oss.mjs then re-syncs the upstream blocks of pnpm-workspace.yaml and regenerates the lockfile against the target pointer. A rerun starts from the release branch it already pushed. The write token is moved into a shell variable that is not exported, handed to gh explicitly, and put in the remote only to fetch and to push, so no install, sync, or conflict script this step runs can read it.
+      - name: Return the submodule pointer to v3
         if: '!inputs.dry_run'
         id: pointer
         env:
@@ -1652,20 +1656,20 @@ jobs:
             TARGET="$MERGE_SHA"
           elif [ "$MERGED" = false ]; then
             TARGET=$(git rev-parse refs/remotes/origin/develop:vendor/nocobase3)
-            echo "::warning::The open-source release did not merge back into v3-develop; $NAME keeps Pro develop's current pointer $TARGET."
+            echo "::warning::The open-source release did not merge back into v3; $NAME keeps Pro develop's current pointer $TARGET."
           else
-            echo "::error::The open-source release has not merged back into v3-develop yet (merged='${MERGED}'), so the commit Pro develop should point at is unknown. Pro is published and tagged; use \"Re-run failed jobs\" so that Publish beta finishes its merge back, and this job continues from here."
+            echo "::error::The open-source release has not merged back into v3 yet (merged='${MERGED}'), so the commit Pro develop should point at is unknown. Pro is published and tagged; use \"Re-run failed jobs\" so that Publish beta finishes its merge back, and this job continues from here."
             exit 1
           fi
-          # Never move Pro develop's pointer backwards: develop may have been bumped past the merged release commit since the open-source merge back. The submodule fetches v3-develop so the ancestry check sees both commits.
+          # Never move Pro develop's pointer backwards: develop may have been bumped past the merged release commit since the open-source merge back. The submodule fetches v3 so the ancestry check sees both commits.
           DEV_PTR=$(git rev-parse refs/remotes/origin/develop:vendor/nocobase3)
           if [ "$DEV_PTR" != "$TARGET" ]; then
-            git -C vendor/nocobase3 fetch --quiet --no-tags origin "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+            git -C vendor/nocobase3 fetch --quiet --no-tags origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
             if git -C vendor/nocobase3 merge-base --is-ancestor "$TARGET" "$DEV_PTR" 2> /dev/null; then
               echo "Pro develop already points at $DEV_PTR, which contains $TARGET; $NAME keeps develop's pointer."
               TARGET="$DEV_PTR"
             elif ! git -C vendor/nocobase3 merge-base --is-ancestor "$DEV_PTR" "$TARGET" 2> /dev/null; then
-              echo "::warning::Pro develop points at $DEV_PTR, which is neither an ancestor nor a descendant of $TARGET on v3-develop; $NAME moves the pointer to $TARGET."
+              echo "::warning::Pro develop points at $DEV_PTR, which is neither an ancestor nor a descendant of $TARGET on v3; $NAME moves the pointer to $TARGET."
             fi
           fi
           git config user.name 'nocobase[bot]'
@@ -1795,7 +1799,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
             OSS **${{ needs.prepare.outputs.batch }}** 已经发布，Pro 发布中断，失败原因见 Actions 日志里的报错。
-            多数情况下在这次运行上点「Re-run failed jobs」即可，它会接着已经打的 tag、已经推的分支和已经发布的包继续；如果报错是 OSS 还没合回 `v3-develop`，重跑会先让 Publish beta 完成合回。
+            多数情况下在这次运行上点「Re-run failed jobs」即可，它会接着已经打的 tag、已经推的分支和已经发布的包继续；如果报错是 OSS 还没合回 `v3`，重跑会先让 Publish beta 完成合回。
             如果报错是 Pro develop 和发版分支冲突，先按报错把 develop 手动合进发版分支并推上去，再重跑。
             如果报错是发版期间另有 Pro 预览版发布，不要重跑：按报错删掉候选分支，再用 V3 Release Pro Beta 单独发 Pro。
         run: bash "$RUNNER_TEMP/oss-tools/feishu-notify.sh"

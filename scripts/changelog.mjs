@@ -9,7 +9,7 @@
 //
 // Which pull requests a release contains:
 //   - beta (`nocobase-v3-beta/<batch>`, or legacy `release-beta/<batch>`): changes since the previous beta. Release
-//     commits never reach v3-develop (their pull request is squashed), so the range starts at the merge base of the previous
+//     commits never reach v3 (their pull request is squashed), so the range starts at the merge base of the previous
 //     beta tag and the release source rather than at the tag itself.
 //   - stable (`release/<batch>`): those merged into the release source since the previous stable release in the same
 //     way, which covers direct patches, plus every pull request the betas listed in CHANGELOG.md that no stable section
