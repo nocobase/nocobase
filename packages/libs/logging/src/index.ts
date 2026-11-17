@@ -5,3 +5,4 @@ export * from './logging.js';
 export * from './types.js';
 export * from './journal.js';
 export * from './output.js';
+export * from './lines.js';

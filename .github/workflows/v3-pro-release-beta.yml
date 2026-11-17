@@ -3,7 +3,7 @@ name: V3 Release Pro Beta
 # Run the commercial beta release on public-repository Actions minutes while every branch, tag, PR, and GitHub
 # Release remains in nocobase/nocobase3-pro. Commercial source and packages never leave a job as artifacts or caches.
 #
-# prepare selects the Pro develop and OSS v3-develop commits once. Then three jobs start together, each on its own freshly versioned tree of those commits: the check legs run Pro's tests (pnpm release:test, which needs no build) and the create-app smoke test, and release builds Pro (pnpm release:build) for publishing at the same time. Before writing anything, release waits for both legs and requires that each passed on exactly the tree it built (scripts/wait-for-pro-checks.mjs), so the build overlaps the checks instead of following them. The private packages/examples/** are neither built nor tested, as in the joint release.
+# prepare selects the Pro develop and OSS v3 commits once. Then three jobs start together, each on its own freshly versioned tree of those commits: the check legs run Pro's tests (pnpm release:test, which needs no build) and the create-app smoke test, and release builds Pro (pnpm release:build) for publishing at the same time. Before writing anything, release waits for both legs and requires that each passed on exactly the tree it built (scripts/wait-for-pro-checks.mjs), so the build overlaps the checks instead of following them. The private packages/examples/** are neither built nor tested, as in the joint release.
 
 on:
   workflow_dispatch:
@@ -47,6 +47,9 @@ jobs:
     name: Select what to release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # v3 (formerly v3-develop), the OSS repository's default branch, which Pro develop tracks.
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     outputs:
       release: ${{ steps.release_state.outputs.release }}
       pro_sha: ${{ steps.commits.outputs.pro_sha }}
@@ -114,7 +117,7 @@ jobs:
           OSS_SHA: ${{ inputs.oss_sha }}
         run: |
           if [ -z "$OSS_SHA" ]; then
-            OSS_SHA=$(git ls-remote https://github.com/nocobase/nocobase.git refs/heads/v3-develop | cut -f1)
+            OSS_SHA=$(git ls-remote https://github.com/nocobase/nocobase.git "refs/heads/$DEFAULT_BRANCH" | cut -f1)
           fi
           [[ "$OSS_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::'$OSS_SHA' is not a full OSS commit SHA"; exit 1; }
           echo "Releasing Pro develop $(git rev-parse HEAD) with OSS $OSS_SHA."
@@ -179,7 +182,7 @@ jobs:
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
           scope: '@nocobase'
 
-      - name: Freeze the OSS v3-develop snapshot and install
+      - name: Freeze the OSS v3 snapshot and install
         env:
           OSS_SHA: ${{ needs.prepare.outputs.oss_sha }}
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
@@ -287,7 +290,7 @@ jobs:
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
           scope: '@nocobase'
 
-      - name: Freeze the OSS v3-develop snapshot and install
+      - name: Freeze the OSS v3 snapshot and install
         id: oss
         env:
           OSS_SHA: ${{ needs.prepare.outputs.oss_sha }}

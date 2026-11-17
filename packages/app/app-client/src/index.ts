@@ -57,6 +57,7 @@ export {
 export {
   resolveToaster,
   toasterToken,
+  errorToastOptions,
   useToaster,
   type ToastAction,
   type Toaster,

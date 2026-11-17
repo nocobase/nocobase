@@ -100,7 +100,6 @@ catalog:
   oracledb: ^6.10.0
   pino: ^10.3.1
   pino-pretty: ^13.0.0
-  pino-roll: ^4.0.0
   postcss: ^8.5.3
   prettier: ^3.9.6
   publint: ^0.3.24

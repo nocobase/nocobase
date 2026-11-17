@@ -474,10 +474,7 @@ test('pro-release keeps the write token out of the remote between steps', async 
       step.slice(0, 200),
     );
   }
-  const pointer = runBlock(
-    publish,
-    'Return the submodule pointer to v3-develop',
-  );
+  const pointer = runBlock(publish, 'Return the submodule pointer to v3');
   assert.ok(
     pointer.startsWith('WRITE_TOKEN="$PRO_TOKEN"\nunset PRO_TOKEN GH_TOKEN\n'),
     pointer.slice(0, 200),
@@ -1206,11 +1203,12 @@ test('the pointer returns to the old commit only when the open-source merge back
     git(directory, 'clone', '-q', remote, checkout);
     return runStep(
       publish,
-      'Return the submodule pointer to v3-develop',
+      'Return the submodule pointer to v3',
       checkout,
       env,
       {
         NAME: name,
+        DEFAULT_BRANCH: 'v3',
         ...extra,
       },
     );
@@ -1221,7 +1219,7 @@ test('the pointer returns to the old commit only when the open-source merge back
     assert.notEqual(waiting.status, 0, merged);
     assert.match(
       waiting.stdout,
-      /::error::The open-source release has not merged back into v3-develop yet .*Re-run failed jobs/u,
+      /::error::The open-source release has not merged back into v3 yet .*Re-run failed jobs/u,
     );
   }
   const done = pointer({
@@ -1380,7 +1378,7 @@ server.listen(0, '127.0.0.1', () => {
   });
 }
 
-// A Pro repository whose develop pins the open-source `base`, a release candidate `name` that pins the release commit `source`, and v3-develop at `target`, the merged release commit. Pro develop then changes a Pro-owned catalog entry and adds one a plugin uses. Its sync scripts stand in for Pro's: the upstream block is the `# oss:` line, and the install is a real pnpm install against a local registry.
+// A Pro repository whose develop pins the open-source `base`, a release candidate `name` that pins the release commit `source`, and v3 (the default branch, formerly v3-develop) at `target`, the merged release commit. Pro develop then changes a Pro-owned catalog entry and adds one a plugin uses. Its sync scripts stand in for Pro's: the upstream block is the `# oss:` line, and the install is a real pnpm install against a local registry.
 async function mergeBackFixture(t) {
   const directory = mkdtempSync(path.join(tmpdir(), 'joint-pro-merge-back-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -1424,15 +1422,15 @@ async function mergeBackFixture(t) {
       stdio: 'ignore',
     });
 
-  // The open-source repository: the commit Pro develop pins, the release commit the candidate pins, and the merged release commit on v3-develop.
+  // The open-source repository: the commit Pro develop pins, the release commit the candidate pins, and the merged release commit on v3.
   const oss = path.join(directory, 'oss');
-  git(directory, 'init', '-q', '-b', 'v3-develop', oss);
+  git(directory, 'init', '-q', '-b', 'v3', oss);
   write(oss, 'VERSION', 'base\n');
   write(oss, 'scripts/resolve-sync-conflicts.mjs', '\n');
   const base = commit(oss, 'base');
   write(oss, 'VERSION', 'source\n');
   const source = commit(oss, 'release commit');
-  git(oss, 'checkout', '-q', '-B', 'v3-develop', base);
+  git(oss, 'checkout', '-q', '-B', 'v3', base);
   write(oss, 'VERSION', 'target\n');
   const target = commit(oss, 'merged release');
 
@@ -1551,12 +1549,14 @@ execFileSync('pnpm', ['install', '--no-frozen-lockfile'], { stdio: 'inherit', en
     git(checkout, 'submodule', 'update', '--init', '-q');
     return runStep(
       publish,
-      'Return the submodule pointer to v3-develop',
+      'Return the submodule pointer to v3',
       checkout,
       env,
       {
         RUNNER_TEMP: path.dirname(tools),
         NAME: name,
+        // The workflow sets it from github.event.repository.default_branch.
+        DEFAULT_BRANCH: 'v3',
         MERGED: 'true',
         MERGE_SHA: target,
         PRO_TOKEN: 'write-token',
@@ -1648,8 +1648,8 @@ test("the merge back keeps Pro develop's pointer when develop was bumped past th
     pointer,
   } = await mergeBackFixture(t);
 
-  // After the open-source merge back, v3-develop moves on and Pro develop is bumped to the newer commit.
-  git(oss, 'checkout', '-q', 'v3-develop');
+  // After the open-source merge back, v3 moves on and Pro develop is bumped to the newer commit.
+  git(oss, 'checkout', '-q', 'v3');
   write(oss, 'VERSION', 'newer\n');
   const newer = commit(oss, 'newer');
   git(seed, 'checkout', '-q', 'develop');

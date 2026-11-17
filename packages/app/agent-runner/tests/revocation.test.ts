@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -71,8 +71,15 @@ describe('permanent runner revocation', () => {
         expect(status.result.apps[0].revoked).toEqual(registration.revoked);
         const supervised = await cli(['service', 'run'], env);
         expect(supervised.code).toBe(process.platform === 'darwin' ? 0 : 3);
+        const logsDir = path.join(home, 'logs');
+        const journals = readdirSync(logsDir).filter((name) =>
+          /^runner\.\d{4}-\d{2}-\d{2}\.\d+\.log$/.test(name),
+        );
+        expect(journals.length).toBeGreaterThan(0);
         expect(
-          readFileSync(path.join(home, 'logs/runner.log'), 'utf8'),
+          journals
+            .map((name) => readFileSync(path.join(logsDir, name), 'utf8'))
+            .join('\n'),
         ).toContain('register again');
         expect(server.requests).toBe(before);
         await server.close();

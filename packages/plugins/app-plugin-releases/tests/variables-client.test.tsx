@@ -28,6 +28,9 @@ const mocks = vi.hoisted(() => ({
   toasts: [] as { type: string; title: string }[],
 }));
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  errorToastOptions: (
+    await importOriginal<typeof import('@nocobase/app-client')>()
+  ).errorToastOptions,
   copyText: (await importOriginal<typeof import('@nocobase/app-client')>())
     .copyText,
   ApiClientError: class extends Error {

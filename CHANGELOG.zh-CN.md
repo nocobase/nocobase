@@ -2,6 +2,35 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 优化
+
+- **[应用托管]** 托管 Host 可自动分配内部端口并在重启后恢复当前连接，固定端口冲突时会明确报错。 ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 修复
+
+- **[Agent]** 在慢速连接下打开会话时，避免重复加载会话列表。 ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[认证]** 访客登录后返回原访问页面，并保留查询条件和锚点。 ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
+## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
+
+### 🎉 新特性
+
+- **[插件生命周期]** Lifecycle 流程支持独立版本，创建记录时固定参数，并可一次补齐旧单实时参数、显示升级来源。 ([#11507](https://github.com/nocobase/nocobase/pull/11507))
+- **[命令行]** 支持创建子应用和扩展部署命令，并按请求路由到独立的 App Host。 ([#11557](https://github.com/nocobase/nocobase/pull/11557))
+- **[文件]** 支持为共用同一存储桶的文件仓库配置不同的上传存储目录。 ([#11565](https://github.com/nocobase/nocobase/pull/11565))
+
+### 🚀 优化
+
+- **[权限]** 应用可按发起人的权限授权 Agent 配置应用、发布到受保护环境及编辑知识库。 ([#11554](https://github.com/nocobase/nocobase/pull/11554))
+
+### 🐛 修复
+
+- **[API 密钥]** 默认支持创建和轮换名称最长为 100 个字符的 API 密钥，名称校验失败时返回客户端错误。 ([#11558](https://github.com/nocobase/nocobase/pull/11558))
+- **[服务端]** 修复服务器启用环境代理时子应用页面和 WebSocket 连接无法访问的问题。 ([#11564](https://github.com/nocobase/nocobase/pull/11564))
+- **[邮件]** 按协议和具体原因提示邮箱连接失败，并记录不含凭据的诊断日志。 ([#11566](https://github.com/nocobase/nocobase/pull/11566))
+
 ## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
 
 ### 🎉 新特性

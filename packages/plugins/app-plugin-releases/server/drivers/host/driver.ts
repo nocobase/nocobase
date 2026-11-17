@@ -1193,6 +1193,7 @@ function unionCapabilities(
 /** What a Host child's configuration file holds; see `writeHostConfig`. */
 export interface HostConfigFile {
   readonly artifactRead?: import('@nocobase/app-host/artifacts').ArtifactReadOptions;
+  readonly artifactWorker?: import('@nocobase/app-host/artifacts').ArtifactWorkerConfig;
   readonly memoryBudget?: import('@nocobase/app-host/registry').AppMemoryBudget;
   readonly maxActiveApps?: number;
   readonly artifact: AppDriveDiskConfig;
@@ -1221,6 +1222,9 @@ export async function writeHostConfig(
         mode: 'managed',
         ...(config.memoryBudget ? { memoryBudget: config.memoryBudget } : {}),
         ...(config.artifactRead ? { artifactRead: config.artifactRead } : {}),
+        ...(config.artifactWorker !== undefined
+          ? { artifactWorker: config.artifactWorker }
+          : {}),
         ...(config.maxActiveApps !== undefined
           ? { maxActiveApps: config.maxActiveApps }
           : {}),

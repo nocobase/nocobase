@@ -2,6 +2,35 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`release/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 改善
+
+- **[アプリホスティング]** 管理対象の Host は内部ポートを自動割り当てし、再起動後に接続を復元でき、固定ポートの競合は明確なエラーになります。 ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 不具合修正
+
+- **[Agent]** 低速な接続で会話を開く際に、会話一覧が重複して読み込まれる問題を修正しました。 ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[認証]** ログイン後に元のページへ戻り、クエリとフラグメントを保持します。 ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
+## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
+
+### 🎉 新機能
+
+- **[プラグインライフサイクル]** Lifecycle は独立したバージョンをサポートし、下書きを含むレコード作成時に全パラメーターを固定して、設定と状態ごとの期限を保護します。 ([#11507](https://github.com/nocobase/nocobase/pull/11507))
+- **[CLI]** 子アプリの作成とデプロイコマンド拡張をサポートし、リクエストごとに独立した App Host へルーティングします。 ([#11557](https://github.com/nocobase/nocobase/pull/11557))
+- **[ファイル]** 同じストレージバケットを共有するファイルリポジトリごとに、アップロード先ディレクトリを設定できるようになりました。 ([#11565](https://github.com/nocobase/nocobase/pull/11565))
+
+### 🚀 改善
+
+- **[権限]** アプリの設定、保護された環境へのデプロイ、ナレッジ編集を開始ユーザーの権限でエージェントに許可できます。 ([#11554](https://github.com/nocobase/nocobase/pull/11554))
+
+### 🐛 不具合修正
+
+- **[API キー]** 既定で最大 100 文字の名前の API キーを作成・ローテーションでき、名前の検証失敗はクライアントエラーとして返します。 ([#11558](https://github.com/nocobase/nocobase/pull/11558))
+- **[サーバー]** サーバーで環境プロキシを使用している場合でも、子アプリケーションのページと WebSocket 接続にアクセスできるようにしました。 ([#11564](https://github.com/nocobase/nocobase/pull/11564))
+- **[メール]** メール接続の失敗をプロトコルと原因別に表示し、認証情報を含まない診断ログを記録します。 ([#11566](https://github.com/nocobase/nocobase/pull/11566))
+
 ## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
 
 ### 🎉 新機能

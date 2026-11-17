@@ -94,3 +94,73 @@ it.each(['order', 'cursor', 'membership', 'filter'])(
     expect(f.read).toHaveBeenCalledOnce();
   },
 );
+
+it.each(['older', 'newer'])(
+  'waits for an in-flight list with a %s row without rereading it',
+  async (version) => {
+    vi.useFakeTimers();
+    const f = sdkController();
+    fixtures.push(f);
+    const first = detail('c1', '2026-10-30T10:00:00Z');
+    const changed = {
+      ...first,
+      updatedAt: '2026-10-30T11:00:00Z',
+      lastSeq: 3,
+      read: true,
+      seenSeq: 3,
+    } as ConversationDetail;
+    const row = version === 'older' ? first : { ...changed, lastSeq: 4 };
+    const response = {
+      pages: [{ items: [row], nextCursor: null }],
+      pageParams: [null],
+    };
+    const gate = Promise.withResolvers<typeof response>();
+    const read = vi.fn(() => gate.promise);
+    const key = chatKeys.list({ archived: false });
+    const observer = new QueryObserver(agentsQueryClient(), {
+      queryKey: key,
+      queryFn: read,
+      staleTime: Infinity,
+    });
+    off.push(observer.subscribe(() => {}));
+    f.controller.observeDetail(changed);
+    await vi.advanceTimersByTimeAsync(400);
+    expect(read).toHaveBeenCalledOnce();
+    gate.resolve(response);
+    await vi.advanceTimersByTimeAsync(400);
+    expect(read).toHaveBeenCalledOnce();
+    const cached = agentsQueryClient().getQueryData<typeof response>(key)!;
+    expect(cached.pages[0]!.items).toEqual([
+      version === 'older' ? changed : row,
+    ]);
+  },
+);
+
+it('preserves a causal trailing read when a real change arrives during the list read', async () => {
+  vi.useFakeTimers();
+  const f = sdkController();
+  fixtures.push(f);
+  const first = detail('c1', '2026-10-30T10:00:00Z');
+  const response = {
+    pages: [{ items: [first], nextCursor: null }],
+    pageParams: [null],
+  };
+  const gate = Promise.withResolvers<typeof response>();
+  const read = vi
+    .fn()
+    .mockReturnValueOnce(gate.promise)
+    .mockResolvedValue(response);
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.list({ archived: false }),
+    queryFn: read,
+    staleTime: Infinity,
+  });
+  off.push(observer.subscribe(() => {}));
+  f.controller.observeDetail(first);
+  f.controller.invalidateLists();
+  await vi.advanceTimersByTimeAsync(400);
+  expect(read).toHaveBeenCalledOnce();
+  gate.resolve(response);
+  await vi.advanceTimersByTimeAsync(400);
+  expect(read).toHaveBeenCalledTimes(2);
+});

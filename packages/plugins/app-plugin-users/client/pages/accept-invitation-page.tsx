@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 import {
   ApiClientError,
   AppLocalePreferenceContext,
@@ -102,8 +103,12 @@ function LanguageSelect(): ReactElement | null {
       className='h-8 shrink-0 rounded-md border border-input bg-transparent px-2 text-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
       value={locale}
       onChange={(event) => {
-        change(event.target.value).catch(() => {
-          toaster.show({ type: 'error', title: t('accept.errors.failed') });
+        change(event.target.value).catch((error: unknown) => {
+          toaster.show({
+            ...errorToastOptions(error),
+            type: 'error',
+            title: t('accept.errors.failed'),
+          });
         });
       }}
     >
@@ -319,9 +324,15 @@ function AcceptForm({
   if (session && !invitedSession && !done) {
     const signOut = async (): Promise<void> => {
       // Better Auth reports failures as data rather than throwing.
-      const result = await client.signOut().catch(() => ({ error: true }));
+      const result = await client
+        .signOut()
+        .catch((error: unknown) => ({ error }));
       if (result.error) {
-        toaster.show({ type: 'error', title: t('accept.signOutFailed') });
+        toaster.show({
+          ...errorToastOptions(result.error),
+          type: 'error',
+          title: t('accept.signOutFailed'),
+        });
         return;
       }
       await refresh();
@@ -337,8 +348,12 @@ function AcceptForm({
           className='w-full'
           variant='outline'
           onClick={() => {
-            signOut().catch(() => {
-              toaster.show({ type: 'error', title: t('accept.signOutFailed') });
+            signOut().catch((error: unknown) => {
+              toaster.show({
+                ...errorToastOptions(error),
+                type: 'error',
+                title: t('accept.signOutFailed'),
+              });
             });
           }}
         >

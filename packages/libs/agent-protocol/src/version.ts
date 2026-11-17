@@ -133,6 +133,7 @@ export function isProtocolSupported(version: number): boolean {
  *   `RUNNER_ROUTES.npmCredential`) only when an install needs it.
  */
 export const RUNNER_FEATURES = [
+  'diagnostics',
   'strictSession',
   'outputBlocks',
   'workspaceKey',

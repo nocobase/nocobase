@@ -32,7 +32,10 @@ const mocks = vi.hoisted(() => ({
   toasts: [] as { type: string; title: string }[],
   services: undefined as unknown,
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  errorToastOptions: (
+    await importOriginal<typeof import('@nocobase/app-client')>()
+  ).errorToastOptions,
   ApiClientError: class extends Error {},
   useApiClient: () => mocks,
   usePageBreadcrumb: () => undefined,

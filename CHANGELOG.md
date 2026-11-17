@@ -2,6 +2,35 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 Improvements
+
+- **[App host]** Managed Hosts can allocate internal ports automatically and recover their current connection after a restart, while fixed-port conflicts fail explicitly. ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 Bug Fixes
+
+- **[Agents]** Avoid redundant conversation list reloads when opening a conversation on a slow connection. ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[Authentication]** Return visitors to their original page with its query and fragment after signing in. ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
+## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
+
+### 🎉 New Features
+
+- **[Plugin lifecycle]** Lifecycle processes support independent versions, freeze record parameters at creation and supplement legacy live parameters once with visible upgrade provenance. ([#11507](https://github.com/nocobase/nocobase/pull/11507))
+- **[CLI]** Support child application creation and deployment command extensions, with request-based routing to independent App Hosts. ([#11557](https://github.com/nocobase/nocobase/pull/11557))
+- **[Files]** Configure separate upload storage directories for file repositories sharing the same storage bucket. ([#11565](https://github.com/nocobase/nocobase/pull/11565))
+
+### 🚀 Improvements
+
+- **[Permissions]** Let applications authorize agent configuration, protected deployments and knowledge editing through the initiating user's permissions. ([#11554](https://github.com/nocobase/nocobase/pull/11554))
+
+### 🐛 Bug Fixes
+
+- **[API keys]** Create and rotate API keys with names up to 100 characters by default and return name validation failures as client errors. ([#11558](https://github.com/nocobase/nocobase/pull/11558))
+- **[Server]** Keep child application pages and WebSocket connections accessible when the server uses an environment proxy. ([#11564](https://github.com/nocobase/nocobase/pull/11564))
+- **[Mail]** Explain mailbox connection failures by protocol and cause, with credential-safe diagnostic logs. ([#11566](https://github.com/nocobase/nocobase/pull/11566))
+
 ## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
 
 ### 🎉 New Features

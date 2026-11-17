@@ -1,9 +1,9 @@
 name: V3 V2 Workflow Entries
 
-# v3-develop carries one thin entry per v1/v2 manual (workflow_dispatch) workflow on main, so that those workflows stay
-# runnable once v3-develop becomes the default branch. This check compares the entries with main's workflows and fails
+# The default branch v3 (formerly v3-develop) carries one thin entry per v1/v2 manual (workflow_dispatch) workflow on
+# main, so that those workflows stay runnable from the default branch. This check compares the entries with main's workflows and fails
 # when main added, removed or renamed a manual workflow, or changed its name or inputs, without its entry following. See
-# .agents/rules/workflows-and-release.md ("V2 workflow entries on v3-develop").
+# .agents/rules/workflows-and-release.md ("V2 workflow entries on v3").
 #
 # It has no entry on main (like v3-pr-description.yml): it only runs on pull requests, on a schedule and on demand.
 # On a pull request a mismatch with main is only a warning, because an entry may legitimately land before the change on
@@ -14,6 +14,7 @@ name: V3 V2 Workflow Entries
 on:
   pull_request:
     branches:
+      - v3
       - v3-develop
       - v3-main
       - '*/v3-*'
@@ -22,7 +23,7 @@ on:
       - '!.github/workflows/v3-*.yml'
       - '.github/workflows/v3-v2-workflow-entries.yml'
       - 'scripts/check-v2-workflow-entries.mjs'
-  # A schedule only fires on the default branch. It starts working once v3-develop replaces main as the default branch.
+  # A schedule only fires on the default branch.
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:

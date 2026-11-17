@@ -140,7 +140,7 @@ test('boxes, tables and headings outside their sections or inside code blocks ar
   );
 });
 
-test('accepts the v2 template GitHub offers from the default branch', () => {
+test('accepts the v2 template from main', () => {
   const v2 = `<!--
 First of all, thank you for your contribution!
 -->

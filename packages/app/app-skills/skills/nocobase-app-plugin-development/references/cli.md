@@ -274,7 +274,7 @@ From the repository root, pass `--workspace-root .`: the command selects `app-te
 - For hooks, run the affected App build or dev startup and verify the expected artifact or behavior at the selected stage.
 - Build the target App and run `node dist/cli/index.js <topic> --help` to confirm that `commands` are present and `devCommands` are absent in the deployment.
 
-Current implementation and maintained examples, in the `nocobase/nocobase` repository on the `v3-develop` branch:
+Current implementation and maintained examples, in the `nocobase/nocobase` repository on the `v3` branch:
 
 - CLI plugin types (`packages/app/app-cli/src/plugins/types.ts`)
 - CLI plugin validation (`packages/app/app-cli/src/plugins/define.ts`)

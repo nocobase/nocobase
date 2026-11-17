@@ -1,0 +1,469 @@
+import {
+  mkdir,
+  writeFile,
+  readFile,
+  symlink,
+  utimes,
+  stat,
+  readdir,
+  truncate,
+  open,
+} from 'node:fs/promises';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+import { diagnosticsRecords } from '../src/core/diagnostics.ts';
+import { RunnerJournal, pruneRunnerLogs } from '../src/lib/journal.ts';
+import {
+  runnerPaths,
+  runLogPath,
+  runRawLogPath,
+  writeJsonAtomic,
+} from '../src/lib/home.ts';
+import { recordPath } from '../src/core/supervisor.ts';
+import {
+  tempDir,
+  removeDir,
+  cli,
+  cliEnv,
+  readDaemonLog,
+  PACKAGE_ROOT,
+} from './helpers.ts';
+import type { DiagnosticsRequest } from '../src/protocol/index.ts';
+const root = tempDir('runner-diagnostics-');
+afterAll(() => removeDir(root));
+const request = (): DiagnosticsRequest => ({
+  requestId: '7e53ca48-1bd0-4343-b027-b5d81bdb7d43',
+  window: {
+    since: '2026-11-01T00:00:00+08:00',
+    until: '2026-11-02T00:00:00+08:00',
+    runIds: ['selected'],
+  },
+  maxBytes: 131072,
+  expiresAt: new Date(Date.now() + 45000).toISOString(),
+});
+const entry = (msg: string) =>
+  JSON.stringify({ time: '2026-11-01T10:00:00Z', level: 'info', msg }) + '\n';
+async function records(home: string, input = request()) {
+  let data = '';
+  for await (const line of diagnosticsRecords(runnerPaths(home, home), input, {
+    version: 'fixture',
+    tools: [],
+  }))
+    data += line;
+  return data;
+}
+
+describe('执行机诊断与清理', () => {
+  it('GC 删除已结束运行的空崩溃文件，保留非空和存活运行的空文件', async () => {
+    const paths = runnerPaths(path.join(root, 'empty-stderr'));
+    const ended = runRawLogPath(paths, 'ended');
+    const active = runRawLogPath(paths, 'active');
+    const useful = runRawLogPath(paths, 'useful');
+    await mkdir(path.dirname(ended), { recursive: true });
+    await writeFile(ended, '');
+    await writeFile(active, '');
+    await writeFile(useful, 'native failure');
+    await writeJsonAtomic(recordPath(paths, 'active'), {
+      runId: 'active',
+      pid: process.pid,
+      log: runLogPath(paths, 'active'),
+    });
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+    });
+    expect(await stat(ended).catch(() => null)).toBeNull();
+    expect((await stat(active)).size).toBe(0);
+    expect(await readFile(useful, 'utf8')).toBe('native failure');
+  });
+  it('存活运行的过期空崩溃文件仍按时间清理，不受新鲜空文件保护影响', async () => {
+    const paths = runnerPaths(path.join(root, 'expired-stderr'));
+    const expired = runRawLogPath(paths, 'active');
+    await mkdir(path.dirname(expired), { recursive: true });
+    await writeFile(expired, '');
+    await utimes(expired, new Date(0), new Date(0));
+    await writeJsonAtomic(recordPath(paths, 'active'), {
+      runId: 'active',
+      pid: process.pid,
+      log: runLogPath(paths, 'active'),
+    });
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+    });
+    expect(await stat(expired).catch(() => null)).toBeNull();
+    expect(await stat(path.dirname(expired)).catch(() => null)).toBeNull();
+  });
+  it('运行日志默认在 50 MiB 停止并标注截断，新鲜文件不受总大小预算清理', async () => {
+    const paths = runnerPaths(path.join(root, 'fifty-mib'));
+    const file = runLogPath(paths, 'capped');
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, '');
+    await truncate(file, 50 * 1024 ** 2 - 1024);
+    const module = pathToFileURL(
+      path.join(PACKAGE_ROOT, 'src/lib/journal.ts'),
+    ).href;
+    const script =
+      'import { workerJournal } from ' +
+      JSON.stringify(module) +
+      '; const writer = workerJournal(' +
+      JSON.stringify(paths) +
+      ', "capped"); writer.log("x".repeat(2000)); writer.log("after-limit");';
+    execFileSync(process.execPath, [
+      '--import',
+      path.join(PACKAGE_ROOT, 'bin/source-hooks.js'),
+      '--input-type=module',
+      '-e',
+      script,
+    ]);
+    expect((await stat(file)).size).toBe(50 * 1024 ** 2);
+    const handle = await open(file);
+    const tail = Buffer.alloc(1024);
+    await handle.read(tail, 0, 1024, 50 * 1024 ** 2 - 1024);
+    await handle.close();
+    expect(tail.toString()).toContain('Log size limit reached');
+    expect(tail.toString()).not.toContain('after-limit');
+    const large = runLogPath(paths, 'recent-large');
+    await writeFile(large, '');
+    await truncate(large, 501 * 1024 ** 2);
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+    });
+    expect((await stat(large)).size).toBe(501 * 1024 ** 2);
+  });
+  it('删除空日期目录但保留正在运行的日志、非日期目录及符号链接', async () => {
+    const paths = runnerPaths(path.join(root, 'empty-dates'));
+    const runs = path.join(paths.logsDir, 'runs');
+    for (const date of ['2019-01-01', '2020-01-01', '2021-01-01', 'other'])
+      await mkdir(path.join(runs, date), { recursive: true });
+    const ended = runLogPath(paths, 'ended', '2019-01-01');
+    const active = runLogPath(paths, 'active', '2020-01-01');
+    for (const file of [ended, active]) {
+      await writeFile(file, entry('old'));
+      await utimes(file, new Date(0), new Date(0));
+    }
+    await utimes(active, new Date(), new Date());
+    await writeJsonAtomic(recordPath(paths, 'active'), {
+      runId: 'active',
+      pid: process.pid,
+      log: active,
+    });
+    const outside = path.join(root, 'outside-dates');
+    await mkdir(outside);
+    await writeFile(path.join(outside, 'keep.log'), entry('keep'));
+    await symlink(outside, path.join(runs, '2022-01-01'));
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+    });
+    expect((await readdir(runs)).sort()).toEqual([
+      '2020-01-01',
+      '2022-01-01',
+      'other',
+    ]);
+    expect(await stat(active)).toBeDefined();
+    expect(await stat(path.join(outside, 'keep.log'))).toBeDefined();
+  });
+  it('同一日志对象跨 UTC 午夜继续滚动，读取时覆盖全部日期和分段', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-11-01T23:59:59Z'));
+      const paths = runnerPaths(path.join(root, 'midnight'));
+      const writer = new RunnerJournal(paths.logsDir);
+      writer.write('before midnight\n');
+      vi.setSystemTime(new Date('2026-11-02T00:00:01Z'));
+      writer.write('after midnight\n');
+      writer.flush();
+      const files = await readdir(paths.logsDir);
+      expect(files.some((file) => file.startsWith('runner.2026-11-01.'))).toBe(
+        true,
+      );
+      expect(files.some((file) => file.startsWith('runner.2026-11-02.'))).toBe(
+        true,
+      );
+      expect(readDaemonLog(paths.logsDir)).toContain('before midnight');
+      expect(readDaemonLog(paths.logsDir)).toContain('after midnight');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('只收集相交 UTC 日期文件，排除日期外的指定运行和符号链接', async () => {
+    const home = path.join(root, 'dates');
+    const paths = runnerPaths(home, home);
+    await mkdir(paths.logsDir, { recursive: true });
+    for (const [date, msg] of [
+      ['2026-10-31', 'first'],
+      ['2026-11-01', 'second'],
+      ['2026-11-03', 'excluded'],
+    ])
+      await writeFile(
+        path.join(paths.logsDir, `runner.${date}.000000.log`),
+        entry(msg),
+      );
+    const selected = runLogPath(paths, 'selected', '2026-10-01');
+    await mkdir(path.dirname(selected), { recursive: true });
+    await writeFile(selected, entry('full-run'));
+    await writeFile(path.join(home, 'credential-fixture'), 'never-export-this');
+    await symlink(
+      path.join(home, 'credential-fixture'),
+      path.join(paths.logsDir, 'runner.2026-11-01.000001.log'),
+    );
+    const output = await records(home);
+    expect(output).toContain('first');
+    expect(output).toContain('second');
+    expect(output).not.toContain('full-run');
+    expect(output).not.toContain('excluded');
+    expect(output).not.toContain('never-export-this');
+    expect(
+      JSON.parse(output.trim().split('\n').at(-1)!).files.some(
+        (file: { dates: string[] }) => file.dates.includes('2026-10-01'),
+      ),
+    ).toBe(false);
+  });
+  it('按日期倒序，同日主日志先于运行日志使用容量预算', async () => {
+    const home = path.join(root, 'main-before-runs');
+    const paths = runnerPaths(home, home);
+    await mkdir(paths.logsDir, { recursive: true });
+    for (const date of ['2026-10-31', '2026-11-01']) {
+      await writeFile(
+        path.join(paths.logsDir, `runner.${date}.000000.log`),
+        entry('main'),
+      );
+      const run = runLogPath(paths, 'selected', date);
+      await mkdir(path.dirname(run), { recursive: true });
+      await writeFile(run, entry('run'));
+    }
+    const output = await records(home);
+    const manifest = JSON.parse(output.trim().split('\n').at(-1)!);
+    expect(manifest.files.map((file: { file: string }) => file.file)).toEqual([
+      'runner.2026-11-01.000000.log',
+      'runs/2026-11-01/selected.log',
+      'runner.2026-10-31.000000.log',
+      'runs/2026-10-31/selected.log',
+    ]);
+    expect(Buffer.byteLength(output)).toBeLessThanOrEqual(request().maxBytes);
+  });
+  it('工具探测输出再长也不突破环境记录协议上限', async () => {
+    let first = '';
+    for await (const line of diagnosticsRecords(
+      runnerPaths(path.join(root, 'environment')),
+      request(),
+      {
+        version: 'v'.repeat(1000),
+        tools: [{ tool: 't'.repeat(1000), version: 'v'.repeat(1000) }],
+      },
+    )) {
+      first = line;
+      break;
+    }
+    const environment = JSON.parse(first);
+    expect(environment.version).toHaveLength(100);
+    expect(environment.tools[0].tool).toHaveLength(50);
+    expect(environment.tools[0].version).toHaveLength(100);
+  });
+  it('超长单行和大源文件有界截断，秘密和后缀不会混入后续记录', async () => {
+    const home = path.join(root, 'large');
+    const paths = runnerPaths(home, home);
+    await mkdir(paths.logsDir, { recursive: true });
+    await writeFile(
+      path.join(paths.logsDir, 'runner.2026-11-01.000000.log'),
+      'x'.repeat(70000) +
+        'secret-tail\n' +
+        entry('api_key=fixture-sensitive-value') +
+        entry('bounded').repeat(10000),
+    );
+    const output = await records(home);
+    expect(Buffer.byteLength(output)).toBeLessThanOrEqual(request().maxBytes);
+    expect(output).not.toContain('fixture-sensitive-value');
+    expect(output).not.toContain('secret-tail');
+    expect(JSON.parse(output.trim().split('\n').at(-1)!).truncated).toBe(true);
+  });
+  it('最低级别不会丢失失败请求的关联 ID', async () => {
+    const home = path.join(root, 'request-id');
+    const paths = runnerPaths(home, home);
+    await mkdir(paths.logsDir, { recursive: true });
+    const input = request();
+    input.window.level = 'fatal';
+    await writeFile(
+      path.join(paths.logsDir, 'runner.2026-11-01.000000.log'),
+      JSON.stringify({
+        time: '2026-11-01T10:00:00Z',
+        level: 'warn',
+        msg: 'Request failed',
+        res: { status: 403 },
+        requestId: 'request-fixture',
+      }) +
+        '\n' +
+        entry('ordinary-info'),
+    );
+    const output = await records(home, input);
+    expect(output).toContain('request-fixture');
+    expect(output).not.toContain('ordinary-info');
+  });
+  it('日期与运行编号取交集，未传与空列表不同，不再限制为 64 份', async () => {
+    const home = path.join(root, 'intersection');
+    const paths = runnerPaths(home, home);
+    for (let index = 0; index < 70; index++) {
+      const file = runLogPath(paths, `chosen-${index}`, '2026-11-01');
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, entry(`chosen-${index}`));
+    }
+    const input = request();
+    input.window.runIds = Array.from({ length: 70 }, (_, i) => `chosen-${i}`);
+    const selected = JSON.parse(
+      (await records(home, input)).trim().split('\n').at(-1)!,
+    );
+    expect(selected.files).toHaveLength(70);
+    input.window.runIds = [];
+    expect(
+      JSON.parse((await records(home, input)).trim().split('\n').at(-1)!).files,
+    ).toHaveLength(0);
+    delete input.window.runIds;
+    expect(
+      JSON.parse((await records(home, input)).trim().split('\n').at(-1)!).files,
+    ).toHaveLength(70);
+  });
+  it('选中大文件与原始崩溃输出在大小上限内保留故障末尾，并明确说明截断', async () => {
+    const home = path.join(root, 'tail');
+    const paths = runnerPaths(home, home);
+    const file = runLogPath(paths, 'selected', '2026-11-01');
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(
+      file,
+      entry('front-only') +
+        entry('repeated').repeat(10000) +
+        entry('failure-at-the-end'),
+    );
+    await writeFile(
+      runRawLogPath(paths, 'selected', '2026-11-01'),
+      'native crash api_key=fixture-sensitive-value\nstack-final-frame\n',
+    );
+    const input = request();
+    const output = await records(home, input);
+    expect(output).toContain('failure-at-the-end');
+    expect(output).toContain('stack-final-frame');
+    expect(output).not.toContain('front-only');
+    expect(output).toContain('fixture-sensitive-value');
+    expect(output).toContain('retained the available tail');
+    expect(Buffer.byteLength(output)).toBeLessThanOrEqual(input.maxBytes);
+    expect(JSON.parse(output.trim().split('\n').at(-1)!).truncated).toBe(true);
+    const log = await cli(['logs', '--run', 'selected'], cliEnv(home));
+    expect(log.code).toBe(0);
+    expect(log.stdout).toContain('failure-at-the-end');
+    expect(log.stdout).toContain('stack-final-frame');
+    const short = await cli(
+      ['logs', '--run', 'selected', '--lines', '2'],
+      cliEnv(home),
+    );
+    expect(short.code).toBe(0);
+    expect(short.stdout.trim().split('\n')).toHaveLength(2);
+    expect(short.stdout).toContain('stack-final-frame');
+  });
+  it('GC 只按修改时间清理，不再为活动进程保留过期的历史日期', async () => {
+    const home = path.join(root, 'gc');
+    const paths = runnerPaths(home, home);
+    for (const id of ['active', 'ended']) {
+      const file = runLogPath(paths, id, '2020-01-01');
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, entry(id));
+      await writeFile(file.replace(/\.log$/, '.stderr'), 'native crash\n');
+      await utimes(file.replace(/\.log$/, '.stderr'), new Date(0), new Date(0));
+      await utimes(file, new Date(0), new Date(0));
+    }
+    await writeJsonAtomic(recordPath(paths, 'active'), {
+      runId: 'active',
+      pid: process.pid,
+      log: runLogPath(paths, 'active', '2020-01-01'),
+    });
+    await writeFile(
+      path.join(paths.logsDir, 'runner.2020-01-01.000000.log'),
+      entry('old'),
+    );
+    await utimes(
+      path.join(paths.logsDir, 'runner.2020-01-01.000000.log'),
+      new Date(0),
+      new Date(0),
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    const previousDaemon = path.join(
+      paths.logsDir,
+      `runner.${today}.000000.log`,
+    );
+    const currentDaemon = path.join(
+      paths.logsDir,
+      `runner.${today}.000001.log`,
+    );
+    for (const file of [previousDaemon, currentDaemon]) {
+      await writeFile(file, entry('daemon'));
+      await utimes(file, new Date(0), new Date(0));
+    }
+    await pruneRunnerLogs(paths, {
+      name: 'fixture',
+      agentTools: 'runner',
+      autoUpdate: false,
+      logRetentionDays: 7,
+    });
+    expect(
+      await stat(runRawLogPath(paths, 'active', '2020-01-01')).catch(
+        () => null,
+      ),
+    ).toBeNull();
+    expect(
+      await stat(runRawLogPath(paths, 'ended', '2020-01-01')).catch(() => null),
+    ).toBeNull();
+    expect(await stat(previousDaemon).catch(() => null)).toBeNull();
+    expect(await stat(currentDaemon).catch(() => null)).toBeNull();
+    expect(
+      await stat(runLogPath(paths, 'active', '2020-01-01')).catch(() => null),
+    ).toBeNull();
+    expect(
+      await stat(runLogPath(paths, 'ended', '2020-01-01')).catch(() => null),
+    ).toBeNull();
+    expect(
+      await stat(
+        path.join(paths.logsDir, 'runner.2020-01-01.000000.log'),
+      ).catch(() => null),
+    ).toBeNull();
+  });
+  it('原始堆栈逐行包装为 JSON，跨行私钥正文被脱敏', async () => {
+    const paths = runnerPaths(path.join(root, 'raw'));
+    const writer = new RunnerJournal(paths.logsDir);
+    writer.write(
+      'stack first\n-----BEGIN PRIVATE KEY-----\nprivate-fixture\n-----END PRIVATE KEY-----\n',
+    );
+    writer.writeError('crash stack\n');
+    writer.flush();
+    const lines = readDaemonLog(paths.logsDir)
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    expect(lines[0].msg).toBe('stack first');
+    expect(lines.at(-1).level).toBe('error');
+    expect(JSON.stringify(lines)).not.toContain('private-fixture');
+  });
+  it('原生命令只保留天数配置，并拒绝已移除的总大小设置', async () => {
+    const home = path.join(root, 'config');
+    const env = cliEnv(home);
+    expect(
+      (await cli(['config', 'set', 'log-retention', '14', '--json'], env)).code,
+    ).toBe(0);
+    expect(
+      (await cli(['config', 'set', 'log-max-size', '20M', '--json'], env)).code,
+    ).not.toBe(0);
+    const settings = JSON.parse(
+      await readFile(runnerPaths(home).settings, 'utf8'),
+    );
+    expect(settings.logRetentionDays).toBe(14);
+    expect(settings).not.toHaveProperty('logMaxSizeMB');
+    expect(
+      (await cli(['config', 'set', 'log-max-size', 'off'], env)).code,
+    ).not.toBe(0);
+  });
+});

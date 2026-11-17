@@ -1,3 +1,4 @@
+import { reportHostStartup } from './startup-handshake.ts';
 import {
   RejectedWakeGuard,
   rejectedWakeResponse,
@@ -119,6 +120,7 @@ export interface AppHostOptions {
   maxActiveApps?: number;
   memoryBudget?: import('./app-registry.ts').AppMemoryBudget;
   artifactRead?: import('./artifact-read.ts').ArtifactReadOptions;
+  artifactWorker?: import('./artifact-worker-options.js').ArtifactWorkerConfig;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   /** How long a page request to a stopped App waits before it gets the starting page (1500 ms by default). */
@@ -172,6 +174,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
       logger: logger.child({ component: 'artifact-resolver' }),
       expandedRevisionLimit: mode === 'managed' ? 3 : undefined,
       artifactRead: options.artifactRead,
+      artifactWorker: options.artifactWorker,
     });
   const backendServices: AppHostBackendServices = {
     logger: logger.child({ component: 'app-backend' }),
@@ -358,12 +361,13 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     server,
     async start() {
       const discoveredApps = await manager.initialize();
-      await new Promise<void>((resolve) => {
-        server.listen(
-          options.port ?? 3000,
-          options.host ?? '127.0.0.1',
-          resolve,
-        );
+      await new Promise<void>((resolve, reject) => {
+        const onError = (error: Error): void => reject(error);
+        server.once('error', onError);
+        server.listen(options.port ?? 3000, options.host ?? '127.0.0.1', () => {
+          server.off('error', onError);
+          resolve();
+        });
       });
 
       const address = server.address();
@@ -546,6 +550,7 @@ export async function startAppHostFromEnv(
     maxActiveApps: config.maxActiveApps,
     memoryBudget: config.memoryBudget,
     artifactRead: config.artifactRead,
+    artifactWorker: config.artifactWorker,
     idleTtlMs: config.idleTtlMs,
     evictionIntervalMs: config.evictionIntervalMs,
     activationHoldMs: config.activationHoldMs,
@@ -609,6 +614,12 @@ export async function startAppHostFromEnv(
   }
 
   await host.start();
+  if (host.mode === 'managed') {
+    const address = host.server.address();
+    if (!address || typeof address === 'string')
+      throw new Error('App host did not open a TCP listener');
+    await reportHostStartup({ port: address.port });
+  }
   return host;
 }
 

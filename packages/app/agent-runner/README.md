@@ -18,6 +18,7 @@ nocobase-runner update [--check] [--auto on|off]
 nocobase-runner gc [--apply] [--ended] [--older-than 14d] [--subject <key>] [--force]
 nocobase-runner config set min-free-disk 20G|10%|off
 nocobase-runner config set agent-tools runner|system
+nocobase-runner config set log-retention 7
 nocobase-runner config set artifact-ttl 24h|30m|2d|off
 nocobase-runner config set artifact-patterns node_modules,.next,.turbo|default
 nocobase-runner config models <tool> add|remove <model> | reset | show
@@ -191,3 +192,7 @@ Only a conversation payload with `outputBlocks: true` selects incremental Codex,
 The worker separately redacts and coalesces preview suffixes at about one second or 4 KiB, with UTF-8 boundaries. They use a bounded, memory-only best-effort transport. Each completed provider block supplies one full redacted canonical snapshot to the ordinary spool; fallback summaries therefore see complete text. A native Codex interruption acknowledgement, Claude SDK cancellation acknowledgement or Claude `max_tokens` stop preserves a bounded partial snapshot through the same completed-block event. Unconfirmed interruptions and provider crashes close unfinished previews without persisting fragments. Normal completion still emits one snapshot per block. The isolated scanner retains at most 2048 candidate characters, and the transport queues at most 64 small events. A failed or overloaded preview waits for the completed snapshot rather than introducing a recovery service.
 
 Partial snapshots retain at most 64 open blocks of 64 KiB UTF-8 text each (4 MiB payload per run), releasing the buffer when each block closes. Claude’s existing envelope-matching prefixes are bounded separately to the same block count and byte limit. A partial snapshot uses the existing `truncated` metadata; the worker withholds unresolved credential tails before storage, including at the buffer boundary. No preview delta is persisted, and claims, leases and run terminal states are unchanged.
+
+## Diagnostics journals
+
+Daemon logs rotate by UTC date through `@nocobase/logging`; each worker writes its own JSON-lines files under `logs/runs/<UTC-date>/`. Automatic GC and `gc --apply` retain seven days by modification time, configurable with `config set log-retention <days>`, without a total-size budget or protected-path list. Each worker JSON journal stops at 50 MiB with a truncation marker. Empty native stderr sidecars are removed at normal exit and by GC, while live empty sidecars and nonempty crash output are retained. Journal writes sanitize once; diagnostics upload source records without another runner-side redaction pass, and the server sanitizes them before building the bundle. `logs --follow` follows date and segment rotation. See the [diagnostics protocol](../../libs/agent-protocol/docs/diagnostics.md) for collection, limits, skipped runners and the local timeline command.
