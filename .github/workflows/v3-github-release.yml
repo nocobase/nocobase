@@ -1,6 +1,7 @@
 name: V3 GitHub Release
 
-# Create a GitHub Release for a nocobase-v3-beta/*, legacy release-beta/* or release/* aggregate tag.
+# Create a GitHub Release for a nocobase-v3/* (stable), nocobase-v3-beta/* (beta), legacy release-beta/* or release/*
+# aggregate tag.
 # Package tags on the same commit identify the packages that were actually published.
 # Reading those tags is repeatable and lets failed GitHub Release creation be retried.
 #
@@ -23,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Aggregate release tag, e.g. nocobase-v3-beta/2026-08-26.5'
+        description: 'Aggregate release tag, e.g. nocobase-v3/2026-12-01.1 or nocobase-v3-beta/2026-08-26.5'
         type: string
         required: true
 
@@ -70,14 +71,20 @@ jobs:
           repositories: nocobase
           permission-contents: write
 
-      # Keep the main repository's Latest release unchanged for both v3 channels.
-      # Existing releases are updated so this job can be retried independently.
+      # A v3 stable release takes the repository's Latest marker explicitly, so the newest stable release is the one
+      # GitHub shows as Latest; v2 releases from main must pass --latest=false (.agents/rules/release-channels.md). A
+      # beta is a prerelease and never takes it, and a legacy release/* tag keeps leaving it alone. Existing releases
+      # are updated so this job can be retried independently.
       - name: Create or update the GitHub Release
         env:
           GH_TOKEN: ${{ steps.release_token.outputs.token }}
           TAG: ${{ inputs.tag }}
         run: |
           case "$TAG" in
+            nocobase-v3/*)
+              FLAGS=(--latest)
+              TITLE="NocoBase v3 · ${TAG##*/}"
+              ;;
             nocobase-v3-beta/*|release-beta/*)
               FLAGS=(--prerelease --latest=false)
               TITLE="NocoBase v3 Beta · ${TAG##*/}"

@@ -56,6 +56,10 @@ test('parses beta and stable aggregate tags', () => {
     batch: '2026-08-27.1',
     channel: 'stable',
   });
+  assert.deepEqual(parseAggregateTag('nocobase-v3/2026-12-01.1'), {
+    batch: '2026-12-01.1',
+    channel: 'stable',
+  });
 });
 
 test('rejects tags that are not aggregate release tags', () => {
