@@ -10,6 +10,7 @@ import {
   type TestDatabase,
 } from '@nocobase/app-testing/server';
 import { createMigrator } from '@nocobase/db';
+import { bearer } from 'better-auth/plugins';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { apiKey } from '../server/api-keys.js';
@@ -75,7 +76,9 @@ describe('unscoped API key endpoint reachability', () => {
       connection: testDatabase.database.connection(),
       baseURL: BASE_URL,
       secret: 'development-secret-at-least-32-characters',
-      plugins: [apiKey()],
+      // Both application templates enable `bearer()` for CLI device sign-in; keep the
+      // same plugin set so the suite pins what a key reaches in a default App.
+      plugins: [apiKey(), bearer()],
       emailAndPassword: { enabled: true, autoSignIn: true },
       session: { storeSessionInDatabase: true },
       user: {
@@ -175,7 +178,7 @@ describe('unscoped API key endpoint reachability', () => {
     });
   });
 
-  it('allows GET /list-sessions and returns the unsigned sign-in token', async () => {
+  it('allows GET /list-sessions, whose token replays as a bearer sign-in session', async () => {
     const signedIn = await auth.getSession(new Headers({ cookie }));
     expect(signedIn?.user.id).toBe(ownerId);
     const token = signedIn!.session.token;
@@ -201,6 +204,25 @@ describe('unscoped API key endpoint reachability', () => {
         new Headers({ cookie: `better-auth.session_token=${token}` }),
       ),
     ).resolves.toBeNull();
+
+    // `bearer()` signs an unsigned bearer token itself (`requireSignature` is
+    // off by default), so the disclosed token is a full sign-in session that
+    // the key-only guards no longer recognize.
+    const asSession = { authorization: `Bearer ${token}` };
+    await expect(
+      auth.getSession(new Headers(asSession)),
+    ).resolves.toMatchObject({
+      user: { id: ownerId },
+      session: { id: signedIn!.session.id },
+    });
+    const minted = await request('/api-key/create', 'POST', asSession, {
+      name: 'successor',
+    });
+    expect(minted.status).toBe(200);
+    expect(await minted.json()).toMatchObject({ key: expect.any(String) });
+    const revoked = await request('/revoke-sessions', 'POST', asSession, {});
+    expect(revoked.status).toBe(200);
+    await expect(auth.getSession(new Headers({ cookie }))).resolves.toBeNull();
   });
 
   it('allows POST /sign-out without revoking the key or the owner’s sign-in', async () => {
