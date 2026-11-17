@@ -1,3 +1,4 @@
+import { reportHostStartup } from './startup-handshake.ts';
 import {
   RejectedWakeGuard,
   rejectedWakeResponse,
@@ -358,12 +359,13 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     server,
     async start() {
       const discoveredApps = await manager.initialize();
-      await new Promise<void>((resolve) => {
-        server.listen(
-          options.port ?? 3000,
-          options.host ?? '127.0.0.1',
-          resolve,
-        );
+      await new Promise<void>((resolve, reject) => {
+        const onError = (error: Error): void => reject(error);
+        server.once('error', onError);
+        server.listen(options.port ?? 3000, options.host ?? '127.0.0.1', () => {
+          server.off('error', onError);
+          resolve();
+        });
       });
 
       const address = server.address();
@@ -609,6 +611,12 @@ export async function startAppHostFromEnv(
   }
 
   await host.start();
+  if (host.mode === 'managed') {
+    const address = host.server.address();
+    if (!address || typeof address === 'string')
+      throw new Error('App host did not open a TCP listener');
+    await reportHostStartup({ port: address.port });
+  }
   return host;
 }
 
