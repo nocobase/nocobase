@@ -1,7 +1,8 @@
 /**
  * The private npm registry's token on demand (`RUNNER_ROUTES.npmCredential`, the `npmCredentials` feature): a runner
  * asks for it only when an install of its run needs NocoBase's private registry (`NOCOBASE_NPM_REGISTRY`), because the
- * repository declares that registry or an `@nocobase/*` package was not found on the one it used.
+ * repository declares that registry, an `@nocobase/*` package was not found on the one it used, or the private
+ * registry refused an unauthenticated request with HTTP 401/403.
  *
  * The answer is given only while the asking runner holds the run (`reports.holds`), for the attempt it names, under a
  * lease that has not run out, as for repository credentials (`git-credentials.ts`). The application gives the token

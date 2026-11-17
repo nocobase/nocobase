@@ -10,6 +10,7 @@ import {
   notFoundPackage,
   privateLines,
   privateRefused,
+  privateRefusedInNpmLog,
 } from '../src/agent/npm-registry.ts';
 import { NpmTokenSource } from '../src/agent/npm-credentials.ts';
 import { packageManagerScript } from '../src/agent/runner-tools.ts';
@@ -255,15 +256,86 @@ describe('the private npm registry rules', () => {
     ).toBe(false);
   });
 
+  it.each([
+    'https://pkg-v3.nocobase.com.evil.example/@nocobase/x',
+    'https://evil.example/pkg-v3.nocobase.com/@nocobase/x',
+    'https://evil.example/?registry=https://pkg-v3.nocobase.com/',
+    'https://pkg-v3.nocobase.com@evil.example/@nocobase/x',
+    'https://registry.npmjs.org/@nocobase/x',
+  ])('does not mistake %s for the private registry', (url) => {
+    expect(
+      privateRefused(`npm error 403 Forbidden - GET ${url}`, PRIVATE),
+    ).toBe(false);
+    expect(
+      privateRefused(
+        `ERR_PNPM_FETCH_401 GET ${url}: Unauthorized - 401`,
+        PRIVATE,
+      ),
+    ).toBe(false);
+  });
+
+  it.each([
+    'npm error 401 Unauthorized - GET https://PKG-V3.NOCOBASE.COM/@nocobase%2fx',
+    'npm error 403 Forbidden - GET https://pkg-v3.nocobase.com/@nocobase/x',
+    'npm error E403 GET https://pkg-v3.nocobase.com/@nocobase/x',
+    'ERR_PNPM_FETCH_403 GET https://pkg-v3.nocobase.com/@nocobase/x: Forbidden - 403',
+  ])('recognizes a private refusal in %s', (output) => {
+    expect(privateRefused(output, PRIVATE)).toBe(true);
+  });
+
+  it('requires the status and request URL in the same failure', () => {
+    expect(
+      privateRefused('E401\nGET https://pkg-v3.nocobase.com/x', PRIVATE),
+    ).toBe(false);
+    expect(
+      privateRefused(
+        'E401 GET https://other.example/x https://pkg-v3.nocobase.com/x',
+        PRIVATE,
+      ),
+    ).toBe(false);
+  });
+
+  it('accepts only private failed HTTP requests from npm debug records', () => {
+    expect(
+      privateRefusedInNpmLog(
+        '13 http fetch GET 401 https://pkg-v3.nocobase.com/@nocobase%2fx 30ms (cache skip)',
+        PRIVATE,
+      ),
+    ).toBe(true);
+    for (const url of [
+      'https://pkg-v3.nocobase.com.evil.example/x',
+      'https://other.example/?registry=https://pkg-v3.nocobase.com/',
+      'https://pkg-v3.nocobase.com@other.example/x',
+    ]) {
+      expect(
+        privateRefusedInNpmLog(`13 http fetch GET 401 ${url}`, PRIVATE),
+      ).toBe(false);
+    }
+    expect(
+      privateRefusedInNpmLog(
+        '13 verbose title 401 https://pkg-v3.nocobase.com/x',
+        PRIVATE,
+      ),
+    ).toBe(false);
+    expect(
+      privateRefusedInNpmLog(
+        '13 http fetch GET 200 https://pkg-v3.nocobase.com/x',
+        PRIVATE,
+      ),
+    ).toBe(false);
+  });
+
   it('hands only registry calls to the launcher, and every npx call', () => {
     const pnpm = packageManagerScript('pnpm', ['/n/node', '/p/pnpm.mjs'], {
       node: '/n/node',
       launcher: ['/r/npm-launcher.js'],
     });
     expect(pnpm).toContain(
-      `install|i|add|update|up|upgrade|dlx|fetch|install-test|it) exec '/n/node' '/r/npm-launcher.js' pnpm '/n/node' '/p/pnpm.mjs' -- "$@" ;;`,
+      `install|i|add|update|up|upgrade|dlx|create|fetch|install-test|it) exec '/n/node' '/r/npm-launcher.js' pnpm '/n/node' '/p/pnpm.mjs' -- "$@" ;;`,
     );
     expect(pnpm).toContain(`exec '/n/node' '/p/pnpm.mjs' "$@"`);
+    const npm = packageManagerScript('npm', ['/usr/bin/npm']);
+    expect(npm).toContain('exec|x|create|init|pack|');
     const npx = packageManagerScript('npm', ['/usr/bin/npx'], {
       always: true,
       node: '/n/node',
@@ -293,6 +365,7 @@ describe("the run's token", () => {
       'synthetic-token-1234',
     );
     expect(await source.get('declared')).toBe('synthetic-token-1234');
+    expect(await source.get('unauthorized')).toBe('synthetic-token-1234');
     expect(post).toHaveBeenCalledTimes(1);
     expect(post.mock.calls[0]?.slice(0, 2)).toEqual([
       '/api/agents/runners/runs/run-1/npmCredentials',
@@ -301,15 +374,13 @@ describe("the run's token", () => {
     expect(secrets).toEqual(['synthetic-token-1234']);
   });
 
-  it('keeps "none configured" for the run, asks again after a failure, and stops when the run is lost', async () => {
+  it('keeps failures and "none configured" for the run, and stops when the run is lost', async () => {
     let calls = 0;
     const lost: string[] = [];
     const source = new NpmTokenSource({
       client: client((async () => {
         calls += 1;
-        if (calls === 1) throw new Error('offline');
-        if (calls === 2) return { token: null };
-        throw new ApiError(409, 'LEASE_LOST', 'lost');
+        throw new Error('offline');
       }) as never),
       runId: 'run-1',
       attempt: 1,
@@ -317,9 +388,19 @@ describe("the run's token", () => {
       onLost: (code) => lost.push(code),
     });
     await expect(source.get('declared')).rejects.toThrow('offline');
-    expect(await source.get('declared')).toBeNull();
-    expect(await source.get('declared')).toBeNull();
-    expect(calls).toBe(2);
+    await expect(source.get('unauthorized')).rejects.toThrow('offline');
+    expect(calls).toBe(1);
+    const nonePost = vi.fn(async () => ({ token: null }));
+    const none = new NpmTokenSource({
+      client: client(nonePost as never),
+      runId: 'none',
+      attempt: 1,
+      onSecret: () => undefined,
+      onLost: () => undefined,
+    });
+    expect(await none.get('unauthorized')).toBeNull();
+    expect(await none.get('declared')).toBeNull();
+    expect(nonePost).toHaveBeenCalledTimes(1);
 
     const other = new NpmTokenSource({
       client: client((async () => {
