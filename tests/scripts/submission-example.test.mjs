@@ -73,7 +73,7 @@ test('the published submission example clears a corrected field after an invalid
   assert.deepEqual(errors, []);
 });
 
-test('the published example acquires its lock before async validation', async () => {
+test('the published example takes its lock only after validation and still writes once', async () => {
   let release;
   const validation = new Promise((resolve) => {
     release = resolve;
@@ -92,13 +92,13 @@ test('the published example acquires its lock before async validation', async ()
     writes++;
     return { record: { name: 'Order' } };
   });
+  // While validation runs nothing is saving, so leaving the form still asks before discarding its input.
   const first = submit();
-  assert.equal(controller.getSnapshot(), true);
-  await submit();
-  assert.equal(validations, 1);
-  assert.equal(writes, 0);
+  const second = submit();
+  assert.equal(controller.getSnapshot(), false);
   release();
-  await first;
+  await Promise.all([first, second]);
+  assert.equal(validations, 2);
   assert.equal(writes, 1);
   assert.equal(controller.getSnapshot(), false);
   assert.deepEqual(errors, []);
