@@ -116,9 +116,7 @@ export class MainDataSource extends SequelizeDataSource {
         ...filter,
       },
     });
-    const collections = loadedCollections.filter(
-      (collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from),
-    );
+    const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
     const loadedData = {};
     for (const collection of collections) {
       const c = db.getCollection(collection.name);
@@ -157,7 +155,14 @@ export class MainDataSource extends SequelizeDataSource {
     } catch (err) {
       ctx.log.error(err);
     }
-    const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
+    const toLoadCollections = collections.flatMap((collection) => {
+      const loaded = loadedCollections[collection.tableName];
+      // Imported physical table names may differ from the logical names used by the merge lookup.
+      return this.mergeWithLoadedCollections(
+        [collection],
+        loaded?.from === 'dbsync' ? { [collection.name]: loaded } : loadedCollections,
+      );
+    });
     const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
 
     for (const values of toLoadCollections) {
