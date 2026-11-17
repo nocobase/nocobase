@@ -15,6 +15,7 @@ import {
 import {
   NavigationGuardProvider,
   useNavigationGuard,
+  useSubmission,
 } from '@nocobase/app-client';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -2113,5 +2114,147 @@ describe('nested covering child pages', () => {
     window.dispatchEvent(reload);
     expect(reload.defaultPrevented).toBe(true);
     await waitFor(() => expect(history.path).toBe('/orders/new'));
+  });
+});
+
+describe('a FeedbackForm that validates before its save starts', () => {
+  // The submit pattern of submission.md: validate, then start the request through the submission controller. Only the
+  // request is the save, so a submit that is still validating, or failed validation, keeps the discard question.
+  let holdValidation = false;
+  let releaseValidation: (() => void) | undefined;
+  let requests = 0;
+  function ValidatedEdit() {
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    const submission = useSubmission({ scope: 'test:validated-edit' });
+    const [saved] = useState({ name: '' });
+    const form = useForm({ defaultValues: saved, shouldFocusError: false });
+    const submit = async () => {
+      let valid = false;
+      await form.handleSubmit(() => {
+        valid = true;
+      })();
+      if (!valid) return;
+      const result = await submission.run(form.getValues(), async () => {
+        requests += 1;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return true;
+      });
+      if (result) await navigate({ pathname: '..', search });
+    };
+    return (
+      <RouteDialog
+        title='Edit'
+        footer={
+          <>
+            <Actions />
+            <button type='submit' form='validated-edit'>
+              Save
+            </button>
+          </>
+        }
+      >
+        <FeedbackForm
+          id='validated-edit'
+          values={form.getValues}
+          savedValues={saved}
+          validationErrors={form.formState.errors}
+          submitting={submission.submitting}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await submit();
+          }}
+        >
+          <input
+            aria-label='Name'
+            {...form.register('name', {
+              validate: async (value) => {
+                if (holdValidation)
+                  await new Promise<void>((resolve) => {
+                    releaseValidation = resolve;
+                  });
+                return value.trim() ? true : 'Enter a name.';
+              },
+            })}
+          />
+          {form.formState.errors.name ? (
+            <p>{form.formState.errors.name.message}</p>
+          ) : null}
+        </FeedbackForm>
+      </RouteDialog>
+    );
+  }
+  function setup() {
+    const history: { path?: string } = {};
+    function Probe() {
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/edit?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='edit' element={<ValidatedEdit />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  beforeEach(() => {
+    sessionStorage.clear();
+    holdValidation = false;
+    releaseValidation = undefined;
+    requests = 0;
+  });
+
+  it('asks on Escape right after an invalid submit, while validation still runs and after it failed', async () => {
+    const history = setup();
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    holdValidation = true;
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(releaseValidation).toBeDefined());
+    await userEvent.type(name, 'A');
+    await userEvent.keyboard('{Escape}');
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    holdValidation = false;
+    await act(async () => releaseValidation!());
+    expect(await screen.findByText('Enter a name.')).toBeInTheDocument();
+    expect(name).toHaveValue('A');
+    await userEvent.keyboard('{Escape}');
+    expect(
+      await screen.findByRole('alertdialog', { name: 'Discard changes?' }),
+    ).toBeInTheDocument();
+    expect(history.path).toBe('/orders/edit?page=2');
+    expect(requests).toBe(0);
+  });
+
+  it('lets the save leave without asking once the input is valid', async () => {
+    const history = setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Enter a name.')).toBeInTheDocument();
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'A');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(requests).toBe(1);
   });
 });

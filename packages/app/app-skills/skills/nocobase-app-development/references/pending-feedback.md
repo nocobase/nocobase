@@ -29,7 +29,7 @@ function SaveEquipmentButton({
 }
 ```
 
-The form's submit handler calls `submission.run(input, execute)` before asynchronous validation or effects, following [submission protection](submission.md). Preserve the controller, server operation key, failure recovery and input. The button is presentation, not duplicate-write protection. Never use `submission.pending` as busy: an unknown outcome can remain recoverable after active work stops. Existing application guards may also contribute real request busy state. The standard Users editor retains its existing guard while consuming `submission.submitting`.
+The form's submit handler validates and then calls `submission.run(input, execute)` before any effects, following [submission protection](submission.md). Preserve the controller, server operation key, failure recovery and input. The button is presentation, not duplicate-write protection. Never use `submission.pending` as busy: an unknown outcome can remain recoverable after active work stops. Existing application guards may also contribute real request busy state. The standard Users editor retains its existing guard while consuming `submission.submitting`.
 
 Pass the real request's `pending` to Loading, a stable query key as `identity`, and a translated `label`.
 

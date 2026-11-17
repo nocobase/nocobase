@@ -62,7 +62,7 @@ export function formSnapshot(form: HTMLFormElement): string {
   return JSON.stringify([fields, widgets]);
 }
 
-/** Dispatched by `FeedbackForm` on its form, with `detail.phase` `'start'` or `'end'`, around its `onSubmit`. */
+/** Dispatched by `FeedbackForm` on its form, with `detail.phase` `'start'` or `'end'`, around its save: the request while it passes `submitting`, else its `onSubmit`. */
 /** The elements of every mounted discard scope, so a form belongs to the innermost one around it. */
 const scopes = new WeakSet<Element>();
 

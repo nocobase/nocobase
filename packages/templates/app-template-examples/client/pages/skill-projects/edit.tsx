@@ -125,7 +125,6 @@ function ProjectEditor({
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
   const busyRef = useRef(false);
-  const savingRef = useRef<Promise<void> | undefined>(undefined);
   const [attempted, setAttempted] = useState(false);
   const restoringInput = submission.pending && !attempted;
   const [confirmedMissing, setConfirmedMissing] = useState<
@@ -148,6 +147,12 @@ function ProjectEditor({
   }, [submission.pending]);
   const submit = async () => {
     if (!session || busyRef.current) return;
+    // Validate before the save starts: an invalid submit starts nothing, so leaving still asks "Discard changes?".
+    let valid = false;
+    await form.handleSubmit(() => {
+      valid = true;
+    })();
+    if (!valid || busyRef.current) return;
     busyRef.current = true;
     const recovering = submission.pending;
     const snapshot = { name: form.getValues('name'), id: project?.id };
@@ -156,11 +161,6 @@ function ProjectEditor({
     try {
       saved = await submission.run(snapshot, async (key, signal, input) => {
         setError(undefined);
-        let valid = false;
-        await form.handleSubmit(() => {
-          valid = true;
-        })();
-        if (!valid) return;
         setAttempted(true);
         return api.request<{ data: SkillProject }>({
           path: input.id
@@ -275,12 +275,7 @@ function ProjectEditor({
         submitting={submission.submitting}
         onSubmit={async (event) => {
           event.preventDefault();
-          // A repeated submit joins the running save instead of ending at once, so the FeedbackForm keeps reporting
-          // the save until it settles and the save's own navigation does not ask to discard the input.
-          savingRef.current ??= submit().finally(() => {
-            savingRef.current = undefined;
-          });
-          await savingRef.current;
+          await submit();
         }}
       >
         <fieldset

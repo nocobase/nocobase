@@ -122,7 +122,7 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 
 ## Standard submissions
 
-Standard Repository writes require an operation key through the registered submission provider. Forms share `useSubmission` across all entries before asynchronous validation; custom effectful APIs explicitly join the receipt transaction. Follow [submission protection](.agents/skills/nocobase-app-development/references/submission.md) and [source upgrades](.agents/skills/nocobase-app-upgrade/references/submission-upgrade.md). Merge copied source and verify retained customizations on upgrade.
+Standard Repository writes require an operation key through the registered submission provider. Forms share `useSubmission` across all entries, started once validation passes; custom effectful APIs explicitly join the receipt transaction. Follow [submission protection](.agents/skills/nocobase-app-development/references/submission.md) and [source upgrades](.agents/skills/nocobase-app-upgrade/references/submission-upgrade.md). Merge copied source and verify retained customizations on upgrade.
 
 ## Index
 

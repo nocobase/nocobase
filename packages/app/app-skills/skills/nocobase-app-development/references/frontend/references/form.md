@@ -12,7 +12,7 @@ Stack: react-hook-form, zod 4 with `@hookform/resolvers/zod`, `FeedbackForm` fro
 
 ## Shared submission lock and retry identity
 
-Every submit path goes through one `useSubmission({ scope })` controller from `@nocobase/app-client`, started before asynchronous validation, and sends its key as `Idempotency-Key` (or the Repository `idempotencyKey`). `submission.submitting` drives the buttons and the close lock; `submission.pending` (unknown outcome, same key kept for retry) never locks anything. The protocol is [submission protection](../../submission.md).
+Every submit path goes through one `useSubmission({ scope })` controller from `@nocobase/app-client`, started once validation passes, and sends its key as `Idempotency-Key` (or the Repository `idempotencyKey`). `submission.submitting` drives the buttons and the close lock; `submission.pending` (unknown outcome, same key kept for retry) never locks anything. The protocol is [submission protection](../../submission.md).
 
 ## Shared failure feedback
 
