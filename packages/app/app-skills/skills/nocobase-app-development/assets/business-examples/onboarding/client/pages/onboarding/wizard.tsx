@@ -100,6 +100,9 @@ function Frame({
   );
 }
 
+/** Cases created by this page's first save, until their detail page has read the mark once. */
+const createdCases = new Set<string>();
+
 export default function OnboardingWizard() {
   const { id } = useParams();
   const { t } = useTranslation();
@@ -110,21 +113,15 @@ export default function OnboardingWizard() {
   // Only the version first loaded is a restore: saving remounts the editor with a newer version.
   const version = request.data?.data.record.lifecycleVersion;
   const [restoredVersion, setRestoredVersion] = useState<number>();
-  // A case just created by its first save opens with this marker, which is then dropped so a reload counts as a restore.
-  const location = useLocation();
-  const navigate = useNavigate();
-  const created = !!(location.state as { created?: boolean } | null)?.created;
-  // Keep the creation origin until this page closes, even if detail arrives after the URL marker is cleared.
+  // A case just created by its first save is marked in memory rather than in the history entry, so a reload counts as
+  // a restore without a second navigation to clear the mark: that navigation raced the user's Close after saving.
+  const created = !!id && createdCases.has(id);
+  // Keep the creation origin until this page closes, after the mark itself is consumed.
   const [createdCaseId, setCreatedCaseId] = useState(created ? id : undefined);
   if (created && createdCaseId !== id) setCreatedCaseId(id);
   useEffect(() => {
-    if (created) {
-      void navigate(
-        { pathname: location.pathname, search: location.search },
-        { replace: true, state: null },
-      );
-    }
-  }, [created, id, location.pathname, location.search, navigate]);
+    if (created && id) createdCases.delete(id);
+  }, [created, id]);
   if (version !== undefined && restoredVersion === undefined)
     setRestoredVersion(version);
   if (id && (!request.data || request.error)) {
@@ -345,9 +342,10 @@ function Editor({
         announceDataChange({ scopes: [caseScope(result.data.id)] });
         if (!detail) {
           navigatingAfterSaveRef.current = true;
+          createdCases.add(result.data.id);
           await navigate(
             { pathname: `../${result.data.id}`, search: location.search },
-            { replace: true, state: { created: true } },
+            { replace: true },
           );
         }
       }

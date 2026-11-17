@@ -182,13 +182,8 @@ it('retains input while changing steps, validates conditions and recovers a priv
   await userEvent.click(
     screen.getByRole('button', { name: 'Close', exact: true }),
   );
-  // The list behind the dialog loads its first rows once the dialog closes; the real API can be slow under load.
   await userEvent.click(
-    await screen.findByRole(
-      'link',
-      { name: 'Example employee', exact: true },
-      { timeout: 5000 },
-    ),
+    await screen.findByRole('link', { name: 'Example employee', exact: true }),
   );
   expect(
     await screen.findByRole('heading', { name: 'Documents', exact: true }),
