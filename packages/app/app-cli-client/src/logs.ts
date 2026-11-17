@@ -302,8 +302,8 @@ export function logsExportInput(
     return result;
   };
   const days = options.days ?? 1;
-  if (!Number.isInteger(days) || days < 1 || days > 7)
-    throw new UsageError('Select one to seven days');
+  if (!Number.isSafeInteger(days) || days < 1)
+    throw new UsageError('Select a positive whole number of days');
   const since = options.since
     ? date(options.since)
     : new Date(
@@ -312,13 +312,11 @@ export function logsExportInput(
         today.getDate() - days + 1,
       );
   const last = options.until ? date(options.until) : today;
-  const earliest = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate() - 6,
-  );
-  if (since < earliest || last > today || since > last)
-    throw new UsageError('Select dates within the last seven days');
+  if (!Number.isFinite(since.getTime()) || !Number.isFinite(last.getTime()))
+    throw new UsageError('Invalid calendar date range');
+  if (last > today) throw new UsageError('Future dates cannot be exported');
+  if (since > last)
+    throw new UsageError('The first date must not follow the last date');
   const until = new Date(
     last.getFullYear(),
     last.getMonth(),
@@ -480,9 +478,9 @@ export function logsCommands(): Readonly<Record<string, Command.Class>> {
       'Export Studio and runner logs to a local archive.';
     static override flags = {
       days: Flags.integer({
-        description: 'Include this many local calendar days (1–7).',
+        description:
+          'Include this many local calendar days; the server enforces retention.',
         min: 1,
-        max: 7,
       }),
       since: Flags.string({
         description: 'First local date (YYYY-MM-DD), inclusive.',

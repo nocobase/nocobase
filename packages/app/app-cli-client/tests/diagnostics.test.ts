@@ -257,7 +257,7 @@ describe('日志导出命令', () => {
           'logs',
           'export',
           '--days',
-          '3',
+          '14',
           '--issue',
           'PM-1505',
           '--issue',
@@ -325,11 +325,23 @@ describe('日志导出命令', () => {
       appLog: true,
       requestLog: true,
     });
+    expect(logsExportInput({ days: 14, out: 'unused' }, now)).toMatchObject({
+      since: new Date(2026, 10, 3).toISOString(),
+      until: new Date(2026, 10, 17).toISOString(),
+    });
+    expect(
+      logsExportInput(
+        { since: '2026-11-03', until: '2026-11-16', out: 'unused' },
+        now,
+      ),
+    ).toMatchObject({ since: new Date(2026, 10, 3).toISOString() });
     for (const options of [
-      { days: 8 },
+      { days: 0 },
+      { days: 1.5 },
+      { days: Number.MAX_SAFE_INTEGER },
       { days: 3, since: '2026-11-15', until: '2026-11-16' },
       { since: '2026-11-15' },
-      { since: '2026-11-09', until: '2026-11-16' },
+      { since: '2026-11-16', until: '2026-11-15' },
       { since: '2026-11-16', until: '2026-11-17' },
       { since: '2026-02-31', until: '2026-11-16' },
     ])
