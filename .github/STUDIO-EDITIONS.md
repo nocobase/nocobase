@@ -26,3 +26,7 @@ The beta channel preserves a stable `latest` independently for each edition. The
 Run `node --test scripts/tests/studio-release-images.test.mjs scripts/tests/studio-release-workflow.test.mjs` and `actionlint .github/workflows/v3-studio-release.yml`. The publication tests exercise independent tag decisions, partial writes, lost responses, conflicting versions, newer moving aliases, malformed artifacts and registry failures. Preparation runs the publication tests before contacting the source repository.
 
 Protocol references: [OCI distribution](https://github.com/opencontainers/distribution-spec/blob/main/spec.md) and [GitHub failed-job reruns](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs).
+
+## Private package authentication
+
+Studio includes the private Kingbase driver from `https://pkg-v3.nocobase.com/`. Configure `PRO_NPM_TOKEN` with read access in both `nocobase/nocobase` and `2013xile/nocobase-ci`; secrets are not shared between repositories. The release and internal image workflows write a temporary user npmrc and pass `NPM_CONFIG_USERCONFIG` through the isolated edition build, then remove it even on failure. Dry runs also need package read access, but need no Docker publishing credential. The final prebuilt image requires no npm token. Studio preview, distribution and quality CI installations need the same read access in their respective CI repositories.
