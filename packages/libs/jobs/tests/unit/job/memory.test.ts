@@ -25,8 +25,10 @@ function create(attempts = 1, concurrency = 1) {
   const service = createJobExecutorService(
     {
       default: 'm',
-      m: { adapter: 'memory', attempts, concurrency },
-      other: { adapter: 'memory', attempts, concurrency },
+      backends: {
+        m: { adapter: 'memory', attempts, concurrency },
+        other: { adapter: 'memory', attempts, concurrency },
+      },
     },
     { appName: 'app', storagePath: directory },
   );
@@ -172,7 +174,7 @@ describe('ordinary memory queue', () => {
       }
     }
     const explicit = createJobExecutorService(
-      { default: 'memory', memory: { adapter: 'memory' } },
+      { default: 'memory', backends: { memory: { adapter: 'memory' } } },
       { appName: 'app', storagePath: directory },
     );
     services.push(explicit);
@@ -198,9 +200,11 @@ describe('ordinary memory queue', () => {
     const service = createJobExecutorService(
       {
         default: 'm',
-        m: { adapter: 'memory', attempts: 1 },
-        other: { adapter: 'memory', attempts: 3 },
-        elsewhere: { adapter: 'memory', attempts: 3, namespace: 'second' },
+        backends: {
+          m: { adapter: 'memory', attempts: 1 },
+          other: { adapter: 'memory', attempts: 3 },
+          elsewhere: { adapter: 'memory', attempts: 3, namespace: 'second' },
+        },
       },
       { appName: 'app', storagePath: directory },
     );

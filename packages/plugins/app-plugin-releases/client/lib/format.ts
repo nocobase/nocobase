@@ -12,6 +12,13 @@ export function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 }
 
+/** Memory as people read it: whole MiB below a GiB, GiB with at most one decimal above, no trailing `.0`. */
+export function formatMemory(bytes: number): string {
+  const mib = bytes / 1024 / 1024;
+  if (mib < 1024) return `${Math.round(mib).toString()} MiB`;
+  return `${String(Math.round((mib / 1024) * 10) / 10)} GiB`;
+}
+
 export function formatLabels(labels: Readonly<Record<string, string>>): string {
   return Object.entries(labels)
     .map(([key, value]) => `${key}=${value}`)

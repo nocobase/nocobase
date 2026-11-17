@@ -154,6 +154,15 @@ const ruRU: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Знания',
+    settingsSection: 'Знания',
+    settings: {
+      indexing: {
+        title: 'Индексация знаний',
+        read: 'Просмотр',
+        configure: 'Настройка',
+        rebuild: 'Перестроение',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Знания',

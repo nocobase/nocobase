@@ -20,7 +20,12 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { Runner } from '../../../shared/runners.js';
-import type { DatabaseConnection, ExpressionBuilder } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  Expression,
+  ExpressionBuilder,
+  SqlBool,
+} from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
 import type { RunBrief } from '../../../shared/briefs.js';
@@ -77,6 +82,7 @@ import {
   openRunsOnEach,
   pendingInputs,
   reposRepo,
+  runnerPreferenceOf,
   runsOfKey,
   runsRepo,
   toInput,
@@ -86,7 +92,7 @@ import {
   usageRepo,
   type RunRecord,
 } from './run.store.js';
-import type { SubjectRegistry } from './ports.js';
+import type { CancelRequest, SubjectRegistry } from './ports.js';
 import {
   readQueueWait,
   readWorkload,
@@ -217,6 +223,7 @@ export function queuedRun(result: EnqueueResult): RunEnqueued {
 }
 
 export interface RunFilter {
+  readonly visibility?: (eb: ExpressionBuilder) => Expression<SqlBool>;
   readonly subjectKind?: string;
   readonly subjectId?: string;
   readonly agentId?: string;
@@ -257,8 +264,16 @@ export interface RunService {
   readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
   addInput(runId: string, input: NewInput, outer?: Tx): Promise<string>;
-  /** A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. */
-  cancel(runId: string, byUserId: string | null, outer?: Tx): Promise<Run>;
+  /**
+   * A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. `request`
+   * reaches the subject's `onCancelRequested` unchanged.
+   */
+  cancel(
+    runId: string,
+    byUserId: string | null,
+    outer?: Tx,
+    request?: CancelRequest,
+  ): Promise<Run>;
   /**
    * Ends the queued runs on a subject, of one agent or of any, or of one agent on every subject; optionally only those
    * `actorUserId` woke. Held runs are left alone. Answers the runs it ended. In `outer`, joins the caller's transaction.
@@ -293,6 +308,7 @@ export interface RunService {
   list(filter: RunFilter): Promise<Run[]>;
   /** The agents that have a run on the subject (only the runs `involvingUserId` started or owns, when given), each once. */
   agentIds(filter: {
+    readonly visibility?: RunFilter['visibility'];
     readonly subjectKind: string;
     readonly subjectId: string;
     readonly involvingUserId?: string;
@@ -597,6 +613,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
         requestedByUserId: values.requestedByUserId,
         confirmedByUserId: values.confirmedByUserId,
         ownerUserId: values.ownerUserId,
+        // The actor's choice now: a later change applies to runs queued after it.
+        runnerPreference: await runnerPreferenceOf(
+          unit.conn,
+          values.actorUserId,
+        ),
         requires: cleanList([...values.requires]),
         acceptsInput: false,
         availableAt: values.availableAt ?? null,
@@ -1581,7 +1602,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         return insertInput(unit, run.id, input);
       }, outer),
 
-    cancel: (runId, byUserId, outer) =>
+    cancel: (runId, byUserId, outer, request) =>
       tx.run(async (unit) => {
         const run = await require(unit.conn, runId);
         if (isTerminal(run.status))
@@ -1606,6 +1627,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
                 ?.sink?.onCancelRequested?.(
                   unit,
                   toRun({ ...run, cancelledById: byUserId }),
+                  request,
                 );
             },
           );
@@ -1631,6 +1653,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
               cancelRequestedAt: now,
               cancelledById: byUserId,
             }),
+            request,
           );
           unit.emit({ type: 'run.changed', runId: run.id, status: run.status });
         }
@@ -2018,41 +2041,49 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return result;
     },
     async list(filter) {
-      const records = await runsRepo(tx.read()).findMany({
-        filter: (f) =>
-          f.and([
-            ...(filter.subjectKind
-              ? [f.string('subjectKind').eq(filter.subjectKind)]
-              : []),
-            ...(filter.subjectId
-              ? [f.string('subjectId').eq(filter.subjectId)]
-              : []),
-            ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
-            ...(filter.status
-              ? [
-                  f.or(
-                    (typeof filter.status === 'string'
-                      ? [filter.status]
-                      : filter.status
-                    ).map((status) => f.string('status').eq(status)),
-                  ),
-                ]
-              : []),
-            ...(filter.involvingUserId
-              ? [
-                  f.or([
-                    f.string('actorUserId').eq(filter.involvingUserId),
-                    f.string('ownerUserId').eq(filter.involvingUserId),
-                  ]),
-                ]
-              : []),
+      let query = tx.read().query.selectFrom('agRuns').selectAll();
+      for (const key of ['subjectKind', 'subjectId', 'agentId'] as const)
+        if (filter[key]) query = query.where(key, '=', filter[key]);
+      if (filter.status)
+        query = query.where(
+          'status',
+          'in',
+          typeof filter.status === 'string' ? [filter.status] : filter.status,
+        );
+      if (filter.involvingUserId)
+        query = query.where((eb) =>
+          eb.or([
+            eb('actorUserId', '=', filter.involvingUserId),
+            eb('ownerUserId', '=', filter.involvingUserId),
           ]),
+        );
+      if (filter.visibility) query = query.where(filter.visibility);
+      if (filter.cursor) {
+        const cursor = filter.cursor;
+        query = query.where((eb) =>
+          eb.or([
+            eb('createdAt', '<', cursor.createdAt),
+            eb.and([
+              eb('createdAt', '=', cursor.createdAt),
+              eb('id', '<', cursor.id),
+            ]),
+          ]),
+        );
+      }
+      const ids = await query
+        .clearSelect()
+        .select('id')
+        .orderBy('createdAt', 'desc')
+        .orderBy('id', 'desc')
+        .limit(Math.min(Math.max(filter.limit ?? 50, 1), 200))
+        .execute<{ id: string }>();
+      if (ids.length === 0) return [];
+      const records = await runsRepo(tx.read()).findMany({
+        filter: (f) => f.or(ids.map(({ id }) => f.string('id').eq(id))),
         sort: (sort) => [
           sort.field('createdAt').desc(),
           sort.field('id').desc(),
         ],
-        limit: Math.min(Math.max(filter.limit ?? 50, 1), 200),
-        ...(filter.cursor ? { cursor: filter.cursor } : {}),
       });
       return readRuns(records);
     },
@@ -2065,6 +2096,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         .distinct()
         .where('subjectKind', '=', filter.subjectKind)
         .where('subjectId', '=', filter.subjectId);
+      if (filter.visibility) query = query.where(filter.visibility);
       const userId = filter.involvingUserId;
       if (userId !== undefined)
         query = query.where((eb) =>
@@ -2199,6 +2231,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       const agent = await findAgent(conn, run.agentId);
       return {
         runId: run.id,
+        freshSession: run.freshSession === true,
         attempt: Number(run.attempt),
         status: run.status,
         agent: { id: run.agentId, name: agent?.name ?? run.agentId },

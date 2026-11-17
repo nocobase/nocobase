@@ -5,11 +5,11 @@
  *   message into the live session; Claude Code folds it into the running
  *   turn between tool rounds, or runs it as the next turn.
  * - The brief is appended to the `claude_code` system prompt preset; only
- *   project settings (the repository's .claude/) are loaded.
+ *   user, project and local settings are loaded by Claude Code.
  * - The run's skills come as a local plugin (`plugins: [{ type: 'local' }]`,
  *   https://code.claude.com/docs/en/agent-sdk/plugins).
  * - Permissions: none. Claude Code runs in `bypassPermissions` mode with no
- *   hooks; only deny rules in the settings it loads still refuse a call. The
+ *   runner-supplied hooks; native settings hooks and deny rules still apply. The
  *   runner is not a security boundary: run it as a dedicated user, in a
  *   container or in a VM. Claude Code refuses this mode as root.
  * - The executable is the `claude` on the runner's PATH, resolved to an
@@ -306,7 +306,8 @@ export class ClaudeAdapter implements AgentAdapter {
           options: {
             cwd,
             env: quietEnv(env, this.nonessentialTraffic),
-            settingSources: [],
+            // Read the user's provider/model configuration, never the probe directory's project settings.
+            settingSources: ['user'],
             abortController,
             pathToClaudeCodeExecutable: executable.path,
             stderr: () => {},
@@ -545,7 +546,7 @@ class ClaudeRun {
         preset: 'claude_code',
         append: session.systemPrompt,
       },
-      settingSources: ['project'],
+      settingSources: ['user', 'project', 'local'],
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       env: { ...session.env },

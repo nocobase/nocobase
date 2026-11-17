@@ -53,6 +53,7 @@ import {
   PromoteBody,
   RegisterImageReleaseBody,
   ReleasesAppSchema,
+  ReleasesSharedHostSchema,
   ReleasesCallerSchema,
   ReleasesConfigSchema,
   ReleasesConfigTemplateSchema,
@@ -235,6 +236,29 @@ export function createReleasesApi(
     }),
     (context) => {
       const data = services.environments.drivers(person(context));
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  // The runtimes environments share, for the environments page; outside `/environments`, where every segment names one.
+  api.get(
+    '/hosts',
+    settings('read'),
+    describeRoute({
+      tags,
+      summary: 'List shared app hosts',
+      operationId: 'releasesListHosts',
+      // The environments page's block; `app get` answers an App's own host.
+      ...cliRoute(false),
+      description:
+        'Requires the `rel.environments` `read` setting. Each runtime the environments with Apps share, once: its memory, how many Apps run or start on it against its limit, and its restart state — totals of the whole runtime, every environment on it included. An environment’s restore error only reaches those with the `manage` setting.',
+      responses: {
+        200: listResponse(ReleasesSharedHostSchema, ReleasesTotalMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const data = await services.releases.listHosts(person(context));
       return context.json({ data, meta: { total: data.length } });
     },
   );
@@ -863,7 +887,15 @@ export function createReleasesApi(
         command: 'app list',
         flags: {
           pageSize: { name: 'limit' },
-          environmentId: { name: 'env' },
+          environmentId: {
+            name: 'env',
+            description: 'An environment; repeat for more.',
+          },
+          runtimeState: {
+            name: 'state',
+            description:
+              'A runtime state (running, starting, pending, waiting, stopped, failed, unknown); repeat for more.',
+          },
           q: { name: 'search' },
           label: { description: 'A label (key=value); repeat for more.' },
         },
@@ -878,7 +910,7 @@ export function createReleasesApi(
         action: 'rel.apps/view',
       }),
       description:
-        'Requires the `view` action; lists the Apps it reaches. `q` searches, `label=key=value` (repeatable) filters by label.',
+        'Requires the `view` action; lists the Apps it reaches. `q` searches, `environmentId` (repeatable) keeps the Apps of those environments, `runtimeState` (repeatable) those whose runtime is in those states, and `label=key=value` (repeatable) filters by label; every filter applies before the page is cut, so `total` counts the matches.',
       responses: {
         200: listResponse(ReleasesAppSchema, ReleasesPageMeta),
         ...apiErrorResponses,
@@ -891,9 +923,8 @@ export function createReleasesApi(
         page: query.page,
         pageSize: query.pageSize,
         ...(query.q === undefined ? {} : { search: query.q }),
-        ...(query.environmentId === undefined
-          ? {}
-          : { environmentId: query.environmentId }),
+        environmentIds: query.environmentId,
+        runStates: query.runtimeState,
         labels: parseLabelFilter(query.label),
       });
       return context.json({ data: result.items, meta: pageMeta(result) });
@@ -1000,7 +1031,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only: agents and keys are refused.',
+        'Requires the `configure` action on the App. API keys are refused.',
       responses: {
         200: dataResponse(ReleasesAppSchema),
         ...apiErrorResponses,
@@ -1120,7 +1151,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. Secret values are masked and never returned.',
+        'Requires the `configure` action on the App. API keys are refused. Secret values are masked and never returned.',
       responses: {
         200: dataResponse(ReleasesConfigSchema),
         ...apiErrorResponses,
@@ -1156,7 +1187,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. Saves the running deployment’s `config.yml` and asks the runtime to reload it; a masked value keeps the stored secret, `secretChanges` set or remove secrets.',
+        'Requires the `configure` action on the App. API keys are refused. Saves the running deployment’s `config.yml` and asks the runtime to reload it; a masked value keeps the stored secret, `secretChanges` set or remove secrets.',
       responses: {
         200: dataResponse(
           ReleasesConfigSchema,
@@ -1242,7 +1273,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. It reaches the App with its next deployment. A name the runtime sets itself is refused (`VARIABLE_RESERVED`).',
+        'Requires the `configure` action on the App. API keys are refused. It reaches the App with its next deployment. A name the runtime sets itself is refused (`VARIABLE_RESERVED`).',
       responses: {
         200: dataResponse(ReleasesAppVariableSchema),
         ...apiErrorResponses,
@@ -1279,7 +1310,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. Removes the App’s value; its environment’s applies again.',
+        'Requires the `configure` action on the App. API keys are refused. Removes the App’s value; its environment’s applies again.',
       responses: {
         204: emptyResponse(),
         ...apiErrorResponses,
@@ -1688,7 +1719,8 @@ export function createReleasesApi(
         flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
         action: 'rel.apps/configure',
       }),
-      description: 'Requires the `configure` action on the App. People only.',
+      description:
+        'Requires the `configure` action on the App. API keys are refused.',
       responses: {
         200: dataResponse(ReleasesConfigTemplateSchema),
         ...apiErrorResponses,
@@ -1951,7 +1983,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. A protected environment is deployed only through a deployment request an approver approves (`POST /apps/{appId}/deploymentRequests`), so deploying there directly is refused. A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
+        'Requires the `deploy` action on the App. A protected environment also requires environment approval eligibility for direct deployment (the initiating person for an agent); resolved approvers take precedence, with `deploy-protected` on the App as fallback when none resolve; otherwise use a deployment request (`POST /apps/{appId}/deploymentRequests`). A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
       responses: {
         200: dataResponse(
           ReleasesDeploymentSchema,
@@ -2326,7 +2358,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. Asks for `releaseId` to be deployed, or with `rollbackToDeploymentId` for a rollback, to be approved by one of the environment’s approvers. On a protected environment this is the only way to deploy.',
+        'Requires the `deploy` action on the App. Asks for `releaseId` to be deployed, or with `rollbackToDeploymentId` for a rollback, to be approved by one of the environment’s approvers. Deployers without environment approval eligibility use this request.',
       responses: {
         201: dataResponse(
           ReleasesDeploymentRequestSchema,

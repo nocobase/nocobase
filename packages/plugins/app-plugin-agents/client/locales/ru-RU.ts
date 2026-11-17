@@ -629,6 +629,16 @@ const ruRU: LocaleResource<typeof enUS> = {
       restart: 'Перезапустите runner, чтобы обновить его статус.',
     },
     quota: {
+      ceilingReached: 'Порог квоты достигнут',
+      ceilingLabel: 'Приостановить при',
+      ceilingInput:
+        'Приостановить новые задачи {{tool}} при указанном проценте использования',
+      ceilingSave: 'Применить',
+      ceilingInvalid:
+        'Введите целое число от 1 до 100 или оставьте поле пустым.',
+      ceilingPaused:
+        'Один из периодов квоты достиг порога; новые затронутые задачи ждут сброса или изменения порога.',
+
       workspaceStatus: {
         active: 'Работа продолжается',
         ended: 'Завершено · очистка разрешена',
@@ -661,6 +671,11 @@ const ruRU: LocaleResource<typeof enUS> = {
       workspaceSize: 'Размер рабочего пространства: {{value}}',
       providers_one: 'У {{count}} провайдера исчерпана квота',
       providers_other: 'У {{count}} провайдера исчерпана квота',
+      models_one: 'У {{count}} модели исчерпана квота',
+      models_other: 'У {{count}} моделей исчерпана квота',
+      models_few: 'У {{count}} моделей исчерпана квота',
+      models_many: 'У {{count}} моделей исчерпана квота',
+      percent: '{{percent}}%',
       providers_few: 'У {{count}} провайдеров исчерпана квота',
       providers_many: 'У {{count}} провайдеров исчерпана квота',
       runColumns: {
@@ -705,7 +720,7 @@ const ruRU: LocaleResource<typeof enUS> = {
         'Снимайте её только после того, как убедитесь, что квота восстановлена. {{target}} сразу снова получит работу; если квота всё ещё исчерпана, следующий запуск снова её отметит.',
       observed: 'Последний отчёт {{time}}',
       usedPercent: 'Использовано {{percent}}%',
-      ok: 'OK',
+      noUsage: 'Пока нет данных о квоте',
       hint: 'Отметка снимается сама в известное время сброса или когда инструмент снова сообщит об остатке квоты. Снимайте её вручную только после того, как убедитесь, что квота восстановлена. Снимать отметки могут только владелец среды выполнения и администраторы.',
     },
     workspaces: {
@@ -781,8 +796,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       offlineNever: 'Не в сети',
     },
     toolUsage: {
-      label: 'Запуски по инструментам',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Запуски {{used}}/{{limit}}',
+      hint: 'Не более {{limit}} запусков {{tool}} одновременно; сейчас {{used}}',
     },
     toolSlots: {
       label: 'Лимиты по инструментам',
@@ -923,6 +938,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       show: 'Версия {{version}}: доступен более новый runner',
       available: 'Доступно обновление',
       badge: 'Можно обновить',
+      latest: 'Актуальная',
+      installed: 'Версия {{version}}',
       title: 'Более новый runner для {{name}}',
       description: 'Установлен {{version}}, это приложение раздаёт {{latest}}.',
       hint: 'Обновится сам, когда не будет работающих Agent. Чтобы обновить сейчас, выполните это на её хосте.',

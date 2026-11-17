@@ -116,6 +116,8 @@ export interface DatabaseSampleDataResult {
 
 /** A run as the operation left it: failed or not, every entry is printed before the command settles. */
 type DatabaseRun = AppDatabaseTasksResult & {
+  /** Retained internally so preparation failures keep their cause and reset facts. */
+  failure?: AppDatabaseTaskError;
   collections?: DatabaseCollectionsRefresh[];
   /** The lock a task could not take, which the command reports as `DATABASE_LOCKED` rather than a task failure. */
   lockBusy?: TaskLockBusyError;
@@ -137,10 +139,8 @@ export function collectionsRefreshAllowed(): boolean {
 }
 
 /**
- * Runs migrations and seeds as one plan, which is the same shape startup
- * executes. One plan is what makes `fresh` correct: a connection's schema is
- * rebuilt by its migrations task, and its seeds run after, against the
- * rebuilt schema.
+ * Runs migrations and seeds as one plan, the same shape startup executes.
+ * A fresh run resets every target before any migration or seed begins.
  */
 export async function runDatabaseApplyCommand(
   command: DatabaseCommandOutput,
@@ -643,9 +643,9 @@ async function executeWithApplication(
     );
   } catch (error) {
     if (error instanceof AppDatabaseTaskError) {
-      return isTaskLockBusyError(error.cause)
-        ? { ...error.result, lockBusy: error.cause }
-        : error.result;
+      return !error.preparation && isTaskLockBusyError(error.cause)
+        ? { ...error.result, failure: error, lockBusy: error.cause }
+        : { ...error.result, failure: error };
     }
     throw toDatabaseCommandError(error, flags.connection);
   }
@@ -712,18 +712,29 @@ function settle(result: DatabaseRun): DatabaseCommandResult {
     const failed = result.results.find((entry) => entry.status === 'failed');
     if (result.lockBusy) {
       throw databaseLocked(result.lockBusy, {
+        taskError: result.failure,
         ...(failed ? { failed } : {}),
         results: result.results,
         ...collections,
       });
     }
     throw new CommandError(
-      failed
-        ? `Database ${failed.kind} failed for connection "${failed.connection}": ${failed.error ?? 'unknown error'}`
-        : 'A database task failed.',
+      result.failure?.message ??
+        (failed
+          ? `Database ${failed.kind} failed for connection "${failed.connection}": ${failed.error ?? 'unknown error'}`
+          : 'A database task failed.'),
       {
         code: 'DATABASE_TASK_FAILED',
+        cause: result.failure,
         details: {
+          ...(result.failure?.preparation
+            ? {
+                preparation: result.failure.preparation,
+                resetConnections: result.failure.resetConnections,
+              }
+            : result.failure?.resetConnections.length
+              ? { resetConnections: result.failure.resetConnections }
+              : {}),
           ...(failed
             ? { connection: failed.connection, kind: failed.kind }
             : {}),
@@ -891,6 +902,7 @@ function forceRequired(
 function databaseLocked(
   lock: TaskLockBusyError,
   run: {
+    readonly taskError?: AppDatabaseTaskError;
     readonly failed?: AppDatabaseTaskResult;
     readonly results?: readonly AppDatabaseTaskResult[];
     readonly collections?: readonly DatabaseCollectionsRefresh[];
@@ -917,13 +929,17 @@ function databaseLocked(
     });
   }
   return new CommandError(
-    failed
-      ? `Database ${failed.kind} failed for connection "${connection}": ${lock.message}`
-      : lock.message,
+    run.taskError?.message ??
+      (failed
+        ? `Database ${failed.kind} failed for connection "${connection}": ${lock.message}`
+        : lock.message),
     {
       code: 'DATABASE_LOCKED',
       suggestions,
       details: {
+        ...(run.taskError?.resetConnections.length
+          ? { resetConnections: run.taskError.resetConnections }
+          : {}),
         connection,
         ...(failed ? { kind: failed.kind } : {}),
         table: lock.tableName,
@@ -1141,7 +1157,7 @@ async function confirmFresh(
   ];
   const lines = [
     `WARNING: this will delete all managed schema objects for: ${targets.join(', ') || 'none'}.`,
-    'Every migration and seed then runs again from an empty schema.',
+    'All selected connections are reset before any migration or seed runs. A later failure does not roll back earlier resets.',
   ];
   if (skipped.length) lines.push(`Skipped: ${skipped.join(', ')}.`);
   return confirm(command, lines);

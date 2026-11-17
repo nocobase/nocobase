@@ -98,6 +98,16 @@ describe('redactPatterns', () => {
       `//registry/:_authToken=npm_${'a'.repeat(36)}`,
       `//registry/:_authToken=${REDACTED}`,
     ],
+    [
+      'an npmrc token of any shape',
+      '//pkg-v3.nocobase.com/:_authToken=abc.DEF-123_xyz',
+      `//pkg-v3.nocobase.com/:_authToken=${REDACTED}`,
+    ],
+    [
+      'a quoted npmrc password',
+      '//registry/:_password = "c2VjcmV0"',
+      `//registry/:_password = "${REDACTED}"`,
+    ],
     ['a Slack token', 'xoxb-123456789012-abcdefABCDEF', REDACTED],
   ])('redacts %s', (_name, input, expected) => {
     expect(redactPatterns(input)).toBe(expected);

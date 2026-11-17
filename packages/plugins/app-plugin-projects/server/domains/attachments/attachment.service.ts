@@ -13,11 +13,14 @@
  * is deleted they are no longer listed or served, and the purge deletes them with the uploads attached to nothing for
  * `ORPHAN_HOURS`.
  */
+import {
+  assertFileUploadSize,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import {
   ATTACHMENTS_PER_REQUEST_MAX,
-  ATTACHMENT_SIZE_MAX,
   ORPHAN_HOURS,
   ISSUE_SCREENSHOTS_LIMIT,
   type IssueScreenshots,
@@ -66,6 +69,7 @@ export interface AttachmentContent {
 }
 
 export interface AttachmentService {
+  readonly uploadLimit: DriveUploadLimit;
   /** Bounded own and live comment files, oldest first; at most 100 returned. */
   listLimited(
     viewer: Viewer,
@@ -126,6 +130,7 @@ export interface AttachmentLinks {
 }
 
 export interface AttachmentDeps {
+  readonly limitForDisk: (disk?: string) => DriveUploadLimit;
   readonly tx: TxRunner;
   readonly activity: ActivityRecorder;
   readonly kinds: KindRegistry;
@@ -171,21 +176,13 @@ export function readAttachmentIds(value: unknown): string[] {
   return ids;
 }
 
-function checkSize(file: File): void {
-  if (file.size > ATTACHMENT_SIZE_MAX)
-    throw invalid(
-      'FILE_TOO_LARGE',
-      `A file may have at most ${ATTACHMENT_SIZE_MAX} bytes.`,
-      { maxBytes: ATTACHMENT_SIZE_MAX },
-    );
-}
-
 const iso = (value: Date | string) => new Date(value).toISOString();
 
 export function createAttachmentService(deps: AttachmentDeps): {
   readonly service: AttachmentService;
   readonly links: AttachmentLinks;
 } {
+  const uploadLimit = deps.limitForDisk();
   const now = deps.now ?? (() => new Date());
 
   function contentPath(id: string): string {
@@ -277,7 +274,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
 
   async function store(viewer: Viewer, file: File): Promise<string> {
     requireUploader(viewer);
-    checkSize(file);
+    assertFileUploadSize(file, uploadLimit);
     return deps.storage.store(file, uploaderOf(viewer.actor, viewer.userId));
   }
 
@@ -322,6 +319,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
   };
 
   const service: AttachmentService = {
+    uploadLimit,
     async listLimited(viewer, issueIdOrKey, limit = 100) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 100)
         throw invalid(

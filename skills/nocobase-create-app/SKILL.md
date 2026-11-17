@@ -28,15 +28,97 @@ This Skill gets a new project created, configured and running locally: source co
   Do not install either yourself unless the user asks. Check both versions again before continuing.
 - Create the application in the directory the user names, or in the current directory when it is empty. The directory must be new or empty, and its name becomes the application name: it starts with a lowercase letter or digit and contains only lowercase letters, digits, dots, dashes and underscores. If the directory is not empty or its name is invalid, ask the user for another one. Never overwrite files, and never create a nested project and move its files afterwards.
 
+## Choose the template
+
+Use Default for an ordinary application, Examples for exploring bundled examples, and `multi-portal` when the user asks for one application with multiple business entry points. Use `multi-app` when the user asks for a Main application that manages independent child applications, and `sub-app` for a child application that such a Main deploys (see Continue by creating a child application). Multi-portal, multi-app and sub-app are commercial Pro templates. Multi-portal is not a tenant or process isolation mechanism. Keep the user's explicit template choice.
+
+For Default and Examples, continue with Create below. For multi-portal, multi-app or sub-app, follow the commercial registry authentication steps below, verify access to the selected template package, then use that template's creation command instead of the public-registry command below.
+
+### Commercial multi-portal template
+
+The template, portal management plugin and portal generator are commercial packages downloaded from `https://pkg-v3.nocobase.com/`. Before creating files, check the existing login and access to the requested version or channel:
+
+```bash
+npm whoami --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg-v3.nocobase.com/
+```
+
+Reuse valid credentials. If authentication is missing or expired, use the host's secure secret-input tool when available, or have the user log in through their terminal:
+
+```bash
+pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
+```
+
+This intentionally configures the `@nocobase` scope for the commercial registry. The password prompt takes the registry read token. Do not ask for the token in chat, print credentials, put them in command arguments, or copy them into project files. For secure file delivery, create an isolated npm user config outside the project (directory mode 700, file mode 600), containing the scoped registry and host-scoped token. Pass its path through `NPM_CONFIG_USERCONFIG` to every download/install command; never print its contents or change the global login. Remove that temporary copy after verification, and explain that future installs need the user's own login. After login, check package access again. A successful `whoami` alone does not establish download permission. On 401/403, resolve authentication or package access; on 404 or a missing channel, confirm the package/version is published and accessible. Stop creation if unavailable; do not silently select Default or claim an unreleased package is available. For an explicitly requested local preview registry, use that registry and its test credentials instead.
+
+After access succeeds, create from the parent directory:
+
+```bash
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ npm_config_registry=https://registry.npmjs.org pnpm create @nocobase/app@beta <name> --template=multi-portal --template-tag=beta --json)
+```
+
+`multi-portal` resolves to `@nocobase/app-template-multi-portal` and honors `--template-tag`. With a create-app version that predates the alias, use `--template=@nocobase/app-template-multi-portal@beta` instead; a full package specifier ignores `--template-tag`, so include the channel or explicit version in the specifier. Reuse the user's chosen registry/version rather than replacing it with these defaults. Registry selection is explicit even after login because create-app otherwise defaults to public npm. The generated `.npmrc` contains the registry URL, not credentials.
+
+Create-app `0.1.0-beta.36` includes the private-registry installation fix: `NOCOBASE_REGISTRY` selects the template and the generated `@nocobase` scope, while third-party dependencies use the package manager's default registry. Keep that default public (or use the user's chosen public mirror); do not set it to a NocoBase-only private registry. The command installs dependencies automatically. Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then continue with Configure and Start. Postinstall synchronizes Skills; run `pnpm nocobase skills sync` only if synchronization failed or its files are missing.
+
+For an explicitly selected older create-app release such as `0.1.0-beta.35`, use `--no-install`, then run the following in the generated app. Also use this recovery command when a previous attempt already created files but failed at dependency installation; do not create the project again:
+
+```bash
+(cd <parent-directory>/<name> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry=https://registry.npmjs.org pnpm install)
+```
+
+Reuse the same authentication configuration for recovery. With `--no-install`, `ok: true` means scaffolding only and `dependenciesInstalled` is false. Confirm the project `.npmrc` has the intended `@nocobase:registry` URL without credentials. Once created, use the application's own `AGENTS.md`, `.agents/rules/multi-portal.md` and installed Skills for portal development. The portal command is `pnpm create @nocobase/portal`; generated portals start uninstalled and an authorized administrator installs them through System settings → Portals. Do not use `pnpm create:module` or replace business authorization with a grant to all users.
+
+### Commercial multi-app template
+
+`multi-app` resolves to `@nocobase/app-template-multi-app` from the Pro registry and honors `--template-tag`. It creates **Main only**, with application management capabilities. It does not generate `apps/sub` or require an `apps/` directory; independent child applications are added on demand.
+
+Reuse the commercial registry login and scoped authentication procedure above, but verify the multi-app package itself before creating files:
+
+```bash
+npm view @nocobase/app-template-multi-app@beta version --registry=https://pkg-v3.nocobase.com/
+```
+
+Check the selected generator's `--help` for `multi-app` in the supported template names. Once package access and alias support are confirmed, create Main from the parent directory:
+
+```bash
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ npm_config_registry=https://registry.npmjs.org pnpm create @nocobase/app@beta <name> --template multi-app --template-tag beta --json)
+```
+
+A generator without this alias, including create-app `0.1.0-beta.36`, can use `--template=@nocobase/app-template-multi-app@beta` instead; omit `--template-tag` because the package specifier already selects the channel. This still requires a published, accessible template. If the package or requested version is unavailable, report the blocker rather than substituting Default. For an explicitly requested unreleased preview, use the actual packed template artifact provided for that preview. Reuse the user's selected registry and version.
+
+Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then follow Configure and Start below. Once Main is running, offer the child-creation guide below before the final handover. Configure an available Releases App Host before creating managed instances; starting Main alone does not enable child deployment.
+
+### Continue by creating a child application
+
+After Main is configured and running, ask whether the user wants to create a child now. Do not create one automatically. If they decline, finish with Main's handover. If they agree, offer `<main-directory>/packages/child-app` as the default and accept a user-specified directory; resolve relative paths from Main. Reuse explicit choices instead of asking again. Require a new or empty target and never overwrite an existing application.
+
+Before creation, ask whether the child needs platform-wide SSO. Independent login is the default. Selecting SSO authorizes installing and configuring the commercial `@nocobase/app-plugin-platform-sso` package; merely requesting a child does not. Reuse the commercial registry authentication procedure and verify access to a compatible plugin version before installation. If access or required SSO configuration is unavailable, report the blocker rather than silently changing the login choice.
+
+When the user selected SSO, prefer the commercial `sub-app` template (`@nocobase/app-template-sub-app`), which already registers platform SSO and preinstalls the `deploy` CLI extension: verify it with `npm view @nocobase/app-template-sub-app@beta version --registry=https://pkg-v3.nocobase.com/` and check that the generator's `--help` lists `sub-app`, then use `--template sub-app` with `NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/` in the command below and skip the separate SSO plugin installation. If the template or alias is unavailable, use the Default procedure below. Otherwise create the child as an ordinary Default application, not another multi-app Main. Create its parent directory when needed and run from that parent with the target's basename; do not pass a slash-containing path or `.` as the application name. For the default location:
+
+```bash
+mkdir -p <main-directory>/packages
+(cd <main-directory>/packages && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta child-app --template default --template-tag beta --no-install --json)
+```
+
+Use `--no-install` so the workspace boundary can be checked before dependency installation; `dependenciesInstalled: false` is expected at this step. Main's default workspace includes `packages/*`. For a child nested under Main, preserve existing workspace settings and exclude that exact child from Main's `pnpm-workspace.yaml` package globs (for the default directory, append `!packages/child-app`). Keep the child's generated `pnpm-workspace.yaml` and its own lockfile; do not add it as a Main dependency. From the child directory, verify `pnpm root -w` points to the child's `node_modules` before running `pnpm install`. For a custom location, check any enclosing workspace and establish the same independent boundary. Do not relocate the user's requested target silently.
+
+Read the child's own `AGENTS.md`, install dependencies there, and follow Configure and Start for that child. Keep its configuration, database and storage independent from Main, and select a different local port. Keep child source and runtime files out of Main's deployment archive; Main consumes the child's separately built archive.
+
+If the user selected SSO, configure the child's `@nocobase` registry and reuse secure credentials before running `pnpm add @nocobase/app-plugin-platform-sso@<compatible-version>` in the child. `NOCOBASE_REGISTRY` alone does not configure `pnpm add`. Synchronize Skills if the installed plugin's guidance is missing, then follow `nocobase-app-plugin-platform-sso` for server/client/config registration and login verification, and `nocobase-app-plugin-multi-app` in Main for the platform-side setup. Installation alone does not enable SSO. Resolve the platform issuer, child origin/callback, application/client identity and securely supplied credentials; retain local recovery login unless the user explicitly requests a different policy. Without SSO, keep ordinary local authentication and do not install that plugin.
+
+Verify child startup and, when selected, the actual SSO flow before reporting them as working. Report Main and child directories, URLs, selected login mode and any remaining setup. Offer the installed multi-app Skill's next steps—build the child's `dist.tar.gz`, upload and publish a version in Main—without automatically deploying it.
+
 ## Create
 
 `pnpm create @nocobase/app@beta` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
 
 ```bash
-(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app@beta <name> --template-tag=beta --json)
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry=https://registry.npmjs.org pnpm create @nocobase/app@beta <name> --template-tag=beta --json)
 ```
 
-- NocoBase 3 packages, `@nocobase/create-app` included, are published to the public npm registry. The command sets that registry only for this process while allowing `NOCOBASE_REGISTRY` to select a private registry or an unreleased local snapshot; `create-app` uses the same registry for the template and dependency installation, and records only a non-public override in the project's `.npmrc`. Leave the user's pnpm configuration unchanged.
+- Open-source NocoBase 3 packages, `@nocobase/create-app` included, are published to public npm; commercial packages require the private registry described above. `NOCOBASE_REGISTRY` selects the template registry and a non-public `@nocobase` override in the generated `.npmrc`. Since create-app `0.1.0-beta.36`, automatic installation leaves third-party dependencies on the package manager's default registry. Keep the user's persistent pnpm configuration unchanged; preserve an explicitly chosen public mirror. For a local snapshot, authenticate/configure its `@nocobase` scope before launching `pnpm create`, so the creation tool itself also comes from that snapshot.
 - Use the `beta` channel for both the creation tool (`@nocobase/app@beta`) and the template (`--template-tag=beta`); selecting only the tool does not select the template channel. Do not fall back to `latest` if `beta` cannot be resolved. An explicit version or local snapshot requested by the user takes precedence.
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
@@ -63,15 +145,15 @@ Never delete the directory to retry.
 
 Work from the application directory from here on. Read its `AGENTS.md` now: it appeared after this session started, so it may not be loaded.
 
-`result.nextCommands` configure the application for SQLite and then start it. When a retried install left you without them, they are `pnpm nocobase config init`, `pnpm nocobase config check`, then `pnpm dev`. Unless the user has already named a database, ask which one they want before running them, and adapt them as the steps below describe: a database other than SQLite needs its driver, a `--dialect`, and a `config set` between `config init` and `config check`. Pass `--json` to every `pnpm nocobase config` command and act on the document it prints, not on the exit code alone: `ok` says whether it worked, `result` holds what it produced, and a failure's `error.code`, `error.suggestions` and `error.details` say what to do next.
+`result.nextCommands` configure the application for SQLite and then start it. When a retried install left you without them, they are `pnpm nocobase config init`, `pnpm nocobase config check`, then `pnpm dev`. Reuse any database choice already made in the session. For a disposable installation smoke test, state that SQLite will be used and proceed; for a lasting project with no database choice, ask before configuring it, and adapt them as the steps below describe: a database other than SQLite needs its driver, a `--dialect`, and a `config set` between `config init` and `config check`. Pass `--json` to every `pnpm nocobase config` command and act on the document it prints, not on the exit code alone: `ok` says whether it worked, `result` holds what it produced, and a failure's `error.code`, `error.suggestions` and `error.details` say what to do next.
 
-1. **Choose the database.** Use the one the user named, or ask. SQLite needs nothing installed: the template depends on its driver. For any other database, install its driver first, for example `pnpm add @nocobase/db-postgres@beta`.
+1. **Choose the database.** Use the session's choice, SQLite for an unspecified disposable smoke test, or ask for a lasting project. SQLite needs nothing installed: the template depends on its driver. For any other database, install its driver first, for example `pnpm add @nocobase/db-postgres@beta`.
 2. **`pnpm nocobase config init --dialect <dialect> --json`** writes `config.yml` from the application's `config.example.yml`, with generated secrets.
    - It installs nothing. When the driver is missing it writes nothing and fails with `error.code` `DRIVER_MISSING`; `error.suggestions[0].run` is the `pnpm add` that supplies it. Run that, then run `config init` again.
    - An application that is already configured is reported with `status: "success-noop"`, so re-running the sequence is safe.
    - `result.requiredSettings` lists the connection settings still at a placeholder.
 3. **`pnpm nocobase config set key=value … --json`** sets each of the `requiredSettings`, for example `database.connections.main.host=db.internal`. A password is always set from an environment variable; see Secrets below.
-4. **`pnpm nocobase config check --json`** must pass before the application is started. It loads the configuration without starting the application and connects to the database. A failure has `error.code` `CONFIG_INVALID` and its findings in `error.details.findings`; each names its key and, where there is one, a `fix` to run. Apply the fixes and run it again.
+4. **`pnpm nocobase config check --json`** must pass before the application is started. It validates configuration without starting the application; inspect each connection status. A SQLite connection reported as `skipped` is not proof that the native driver loads: application startup and migrations must succeed too. A failure has `error.code` `CONFIG_INVALID` and its findings in `error.details.findings`; each names its key and, where there is one, a `fix` to run. Apply the fixes and run it again.
 
 For the details of a particular database, read `.agents/skills/nocobase-app-development/references/database-connections.md` in the application.
 
@@ -80,6 +162,14 @@ If `pnpm nocobase config init --help` reports that the command does not exist, t
 ## Start
 
 The last of the `nextCommands`, `pnpm dev`, does not exit. Run it in the background and wait for the URL it prints: it prints a `Local:` line only once the application is ready, and the URL includes the application's path, such as `/main/`. Request that exact URL, for example with `curl -I`, expecting a successful response before reporting success. It refuses to start an application that is not configured; run `pnpm nocobase config check --json` and follow its fixes.
+
+## Installation smoke tests
+
+For an explicitly requested installation test, use published packages in a fresh disposable directory and record resolved versions. Verify dependency installation, configuration, successful server startup/migrations, and an HTTP response at the actual application entry. Respect the user's LAN-only preference and configure the public origin to the address used for login; do not infer login success from a homepage HTTP 200.
+
+For multi-portal smoke tests, also exercise `pnpm create @nocobase/portal@beta <name>` with the same scoped registry/authentication, verify Client/Server registration, sign in through the actual LAN origin, and verify the portal is initially uninstalled and can be installed by the administrator. Read the authenticated API document for request contracts; portal installation also requires an `Idempotency-Key` in `<13-digit Unix milliseconds>.<UUID>` form. Retain one key for retries of the same request. Check anonymous management access is rejected, and run `pnpm build` to validate the generated template and portal together. Do not add a sample portal to an ordinary new project unless requested.
+
+Distinguish HTTP/API verification from browser interaction, and report any workaround separately from the original command's result. A working app after recovery does not mean one-command creation passed. Clean up temporary credentials and session cookies, leaving the requested preview available.
 
 ## Secrets
 
@@ -111,9 +201,10 @@ If the Skills are not loaded but the user wants to keep working in this session 
 | `@nocobase/create-app` not found (404) when creating | Check the package name and public npm access. For a private snapshot, set `NOCOBASE_REGISTRY` to the registry that contains it and rerun the Create command. |
 | `Unknown option: 'registry'` when creating             | `pnpm create` takes no `--registry`. Run the Create command as written, with the registry in `npm_config_registry`. |
 | `@nocobase/...` not found (404) in the application   | Check the package name and version. For a private registry, confirm the project's `.npmrc` has the matching `@nocobase:registry` entry. |
+| Third-party package (for example `@tailwindcss/vite`) returns 404 from pkg-v3 | Keep `@nocobase:registry` private and run `npm_config_registry=https://registry.npmjs.org PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm install` in the existing app. Use create-app `0.1.0-beta.36` or a later release containing the fix for new apps; use `--no-install` only when deliberately retaining an older affected version. |
 | No version matches, or the newest one is ignored     | Set `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` for the command.                                                     |
 | `Could not locate the bindings file`                 | No prebuilt `better-sqlite3` binary matches this platform. Install a C++ toolchain, set `better-sqlite3: true` under `allowBuilds` in `pnpm-workspace.yaml`, then run `rm -rf node_modules && pnpm install`. |
 | A warning that the Skills could not be synchronized  | Run `pnpm nocobase skills sync` in the application.                                                          |
 | `pnpm dev` or `pnpm start` says it is not configured | Run `pnpm nocobase config init --json`, then `pnpm nocobase config check --json`, and follow the result.     |
 
-For an application walkthrough, see https://github.com/nocobase/nocobase/blob/v3-develop/docs/docs/en/capabilities/quick-start.md.
+For an application walkthrough, see https://github.com/nocobase/nocobase/blob/v3/docs/docs/en/capabilities/quick-start.md.

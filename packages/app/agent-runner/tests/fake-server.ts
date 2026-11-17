@@ -1,3 +1,5 @@
+import { gunzipSync } from 'node:zlib';
+import type { DiagnosticsRequest } from '../src/protocol/index.ts';
 // An in-memory application server that speaks the runner protocol, for driving the runner in tests. It keeps every
 // request body, lets a test queue runs, cancel them, add inputs, take a lease away, and make the events route fail.
 import { serve, type ServerType } from '@hono/node-server';
@@ -190,11 +192,22 @@ export class FakeServer {
     url: string;
     refresh: boolean;
   }[] = [];
+  /** The token `RUNNER_ROUTES.npmCredential` answers; null for none configured. */
+  npmToken: string | null = null;
+  /** Every npm token request, in order. */
+  readonly npmCredentialRequests: {
+    runId: string;
+    attempt: number;
+    reason: string;
+    package?: string;
+  }[] = [];
   /** Mount bundles by name, served at `RUNNER_ROUTES.mount`. */
   readonly mountBundles = new Map<string, MountBundle>();
   /** How many times each mount was fetched. */
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
+  diagnostics: DiagnosticsRequest | undefined;
+  readonly diagnosticsUploads: unknown[][] = [];
   upgrade: UpgradeNotice | undefined;
   toolsRefreshRequestId?: string;
   /** The protocol heartbeat answers say the server speaks while set; left out otherwise, as an older server does. */
@@ -558,6 +571,18 @@ export class FakeServer {
       return next();
     });
 
+    app.post(RUNNER_ROUTES.diagnostics, async (c) => {
+      const bytes = Buffer.from(await c.req.arrayBuffer());
+      this.diagnosticsUploads.push(
+        gunzipSync(bytes)
+          .toString('utf8')
+          .trim()
+          .split('\n')
+          .map((line) => JSON.parse(line)),
+      );
+      this.diagnostics = undefined;
+      return ok(c, { ok: true });
+    });
     app.post(RUNNER_ROUTES.heartbeat, async (c) => {
       const runner = c.get('runner' as never) as FakeRunner;
       runner.heartbeats.push((await c.req.json()) as HeartbeatRequest);
@@ -597,6 +622,7 @@ export class FakeServer {
         serverTime: new Date().toISOString(),
         enabledTools: this.enabledTools,
         detectTools: this.detectTools,
+        ...(this.diagnostics ? { diagnostics: this.diagnostics } : {}),
         ...(this.protocolVersion === undefined
           ? {}
           : { protocolVersion: this.protocolVersion }),
@@ -972,6 +998,26 @@ export class FakeServer {
       if ('reason' in answer)
         return error(c, answer.status, answer.reason, answer.message);
       return ok(c, answer);
+    });
+
+    app.post('/api/agents/runners/runs/:runId/npmCredentials', async (c) => {
+      const run = owned(c);
+      if (run instanceof Response) return run;
+      const body = (await c.req.json()) as {
+        attempt: number;
+        reason: string;
+        package?: string;
+      };
+      if (!active(run)) return error(c, 400, 'RUN_NOT_ACTIVE');
+      if (body.attempt !== run.payload.run.attempt)
+        return error(c, 409, 'LEASE_LOST');
+      this.npmCredentialRequests.push({
+        runId: run.payload.run.id,
+        attempt: body.attempt,
+        reason: body.reason,
+        ...(body.package === undefined ? {} : { package: body.package }),
+      });
+      return ok(c, { token: this.npmToken });
     });
 
     app.get('/api/agents/runners/runs/:runId/mounts/:name', (c) => {

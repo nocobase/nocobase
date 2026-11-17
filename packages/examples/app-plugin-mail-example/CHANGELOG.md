@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-mail-example
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-mail@1.0.0-beta.23
+
 ## 1.0.0-beta.12
 
 ### Patch Changes

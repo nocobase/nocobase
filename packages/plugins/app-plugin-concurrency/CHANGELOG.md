@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-concurrency
 
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+
+### Patch Changes
+
+- Updated dependencies [fb4659d]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+  - @nocobase/app-server@5.0.0-beta.2
+
 ## 0.1.0-beta.2
 
 ### Patch Changes

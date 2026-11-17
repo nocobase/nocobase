@@ -301,3 +301,7 @@ Trusted middleware can call `addRepositoryRequestConstraint(context, { repositor
 ## Inspecting registered plugins
 
 `app.registeredServerPlugins` is an immutable snapshot of explicit Server registrations, including provider-only and locales-only plugins. Each entry contains the resolved package identity, version, locations and static contribution counts. Reading it never imports plugins again, constructs providers or executes route factories. It establishes registration rather than configuration or actual use. `AppPluginApplication` makes the snapshot optional for compatibility with older and hand-composed hosts. Plugins exposing this information over HTTP must enforce their own access boundary and avoid returning filesystem locations or private plugin options.
+
+## Database task preparation
+
+Database tasks prepare all selected storage, reset all selected migration targets for fresh runs, await registered preparation hooks, determine installation state and then execute migrations and Seeds. This order applies with or without hooks. Multi-connection resets are not transactional: a migration failure can occur after every selected database has already been emptied. See [Database task phases and preparation hooks](docs/database-task-hooks.md) for registration, operation coverage, failures and resource ownership.

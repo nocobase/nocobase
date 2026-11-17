@@ -56,6 +56,8 @@ const frFR: LocaleResource<typeof enUS> = {
       subtaskAdded: 'a ajouté la sous-tâche',
       dependencyAdded: 'a ajouté la dépendance sur',
       dependencyRemoved: 'a supprimé la dépendance sur',
+      relationAdded: 'a ajouté une relation avec',
+      relationRemoved: 'a supprimé la relation avec',
       stageChanged: 'a changé la scène',
       autoMoveSkipped: 'n’a pas pu déplacer automatiquement la tâche vers',
     },
@@ -376,6 +378,9 @@ const frFR: LocaleResource<typeof enUS> = {
     projectRequired: 'Choisissez au moins un projet que vous dirigez.',
     projects: 'Projets',
     projectsHint: 'Les invités rejoignent ces projets en tant que membres.',
+    language: "Langue de l'e-mail",
+    languageHint:
+      "L'e-mail d'invitation et sa page d'inscription utilisent cette langue.",
     projectsPlaceholder: 'Choisir des projets',
     resend: 'Envoyer à nouveau',
     generateLink: 'Générer un nouveau lien',

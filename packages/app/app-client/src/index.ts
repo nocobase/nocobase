@@ -57,6 +57,7 @@ export {
 export {
   resolveToaster,
   toasterToken,
+  errorToastOptions,
   useToaster,
   type ToastAction,
   type Toaster,
@@ -150,7 +151,12 @@ export type {
 } from './plugins.js';
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
-export { useNavigationGuard } from './navigation-guard.js';
+export {
+  NavigationGuardContext,
+  useNavigationGuard,
+  type NavigationAttempt,
+  type NavigationGuard,
+} from './navigation-guard.js';
 
 export {
   useRealtimeTopic,

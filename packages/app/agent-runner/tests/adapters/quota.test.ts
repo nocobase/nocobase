@@ -108,3 +108,64 @@ it('keeps Claude weekly rejection when the default model was not reported', () =
     resetsAt: '2033-05-18T03:33:20.000Z',
   });
 });
+
+it('preserves all reported Claude windows and fills a missing top-level percentage from unifiedWindows', () => {
+  const info = {
+    status: 'allowed_warning',
+    rateLimitType: 'seven_day',
+    utilization: 0.76,
+    resetsAt: 1794376800,
+    overageStatus: 'rejected',
+    unifiedWindows: {
+      five_hour: { utilization: 0.14, resetsAt: 1794375000 },
+      seven_day: { utilization: 0.76, resetsAt: 1794376800 },
+    },
+  };
+  const report = claudeQuota(info);
+  expect(report?.windows).toHaveLength(2);
+  expect(report?.windows[0]).toMatchObject({
+    window: 'five_hour',
+    usedPercent: expect.closeTo(14),
+    exhausted: false,
+    resetsAt: '2026-11-11T05:30:00.000Z',
+  });
+  expect(report?.windows[1]).toMatchObject({
+    window: 'seven_day',
+    usedPercent: 76,
+    exhausted: false,
+  });
+  expect(
+    claudeQuota({ ...info, utilization: undefined })?.windows[1].usedPercent,
+  ).toBe(76);
+});
+it('scopes model windows and rejection to the relevant Claude window, ignoring malformed snapshots', () => {
+  const report = claudeQuota(
+    {
+      status: 'rejected',
+      rateLimitType: 'five_hour',
+      unifiedWindows: {
+        five_hour: { utilization: 1 },
+        seven_day: { utilization: 0.4 },
+        seven_day_opus: { utilization: 0.5 },
+        seven_day_sonnet: { utilization: 0.2 },
+        garbage: { utilization: 0.8 },
+        overage: null,
+      },
+    },
+    'claude-opus-4-6',
+  );
+  expect(report?.windows).toHaveLength(3);
+  expect(report?.windows.find((w) => w.window === 'five_hour')?.exhausted).toBe(
+    true,
+  );
+  expect(report?.windows.find((w) => w.window === 'seven_day')?.exhausted).toBe(
+    false,
+  );
+  expect(
+    report?.windows.find((w) => w.window === 'seven_day_opus'),
+  ).toMatchObject({ scope: 'model', target: 'claude-opus-4-6' });
+  expect(
+    claudeQuota({ unifiedWindows: { five_hour: { utilization: NaN } } })
+      ?.windows[0].usedPercent,
+  ).toBeUndefined();
+});

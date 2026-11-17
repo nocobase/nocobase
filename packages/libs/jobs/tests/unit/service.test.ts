@@ -58,8 +58,7 @@ describe('configuration fallback', () => {
   it('uses the named configuration when it exists', () => {
     const { service, created, onFallback } = harness({
       default: 'memory',
-      memory: { adapter: 'memory' },
-      'test-1': test,
+      backends: { memory: { adapter: 'memory' }, 'test-1': test },
     });
 
     service.getScheduleExecutor('scope-a', 'test-1');
@@ -82,7 +81,7 @@ describe('configuration fallback', () => {
   it('falls back to jobs.default when no name is given or the name is unknown', () => {
     const { service, created, onFallback } = harness({
       default: 'test-1',
-      'test-1': { ...test, namespace: '{crm}' },
+      backends: { 'test-1': { ...test, namespace: '{crm}' } },
     });
 
     const unnamed = service.getScheduleExecutor('scope-a');
@@ -96,7 +95,10 @@ describe('configuration fallback', () => {
 
   it.each([
     ['no jobs configuration', undefined],
-    ['a configuration without default', { memory: { adapter: 'memory' } }],
+    [
+      'a configuration without default',
+      { backends: { memory: { adapter: 'memory' } } },
+    ],
   ] as const)(
     'falls back to the built-in memory configuration with %s',
     (_label, config) => {
@@ -122,18 +124,23 @@ describe('configuration fallback', () => {
   );
 
   it('rejects a default that names no configuration', () => {
-    const { service } = harness({ default: 'test-2', 'test-1': test });
+    const { service } = harness({
+      default: 'test-2',
+      backends: { 'test-1': test },
+    });
 
     expect(() => service.getScheduleExecutor('scope-a')).toThrow(
-      /jobs\.default names "test-2"/u,
+      /jobs.default.*jobs.backends/u,
     );
   });
 
   it('fills a memory configuration without a persistence path from storage', () => {
     const { service, created } = harness({
       default: 'memory',
-      memory: { adapter: 'memory', concurrency: 2 },
-      disk: { adapter: 'memory', persistence: { path: './state' } },
+      backends: {
+        memory: { adapter: 'memory', concurrency: 2 },
+        disk: { adapter: 'memory', persistence: { path: './state' } },
+      },
     });
 
     service.getScheduleExecutor('scope-a');
@@ -151,7 +158,7 @@ describe('configuration fallback', () => {
   it('rejects an unknown adapter', () => {
     const { service } = harness({
       default: 'x',
-      x: { adapter: 'kafka' } as never,
+      backends: { x: { adapter: 'kafka' } as never },
     });
 
     expect(() => service.getScheduleExecutor('scope-a')).toThrow(
@@ -164,8 +171,7 @@ describe('executor identity', () => {
   it('returns one executor per scope and configuration', () => {
     const { service, created } = harness({
       default: 'r',
-      r: test,
-      m: { adapter: 'memory' },
+      backends: { r: test, m: { adapter: 'memory' } },
     });
 
     const first = service.getScheduleExecutor('scope-a');
@@ -179,7 +185,7 @@ describe('executor identity', () => {
   it('takes concurrency and attempts from the selected configuration', () => {
     const { service, created } = harness({
       default: 'r',
-      r: { ...test, concurrency: 5, attempts: 3 },
+      backends: { r: { ...test, concurrency: 5, attempts: 3 } },
     });
 
     service.getScheduleExecutor('scope-a');
@@ -192,7 +198,7 @@ describe('executor identity', () => {
     (settings) => {
       const { service } = harness({
         default: 'r',
-        r: { ...test, ...settings },
+        backends: { r: { ...test, ...settings } },
       });
 
       expect(() => service.getScheduleExecutor('scope-a')).toThrow(

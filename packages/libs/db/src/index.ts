@@ -487,3 +487,5 @@ export {
 export type { DatabaseTaskConfig } from './task-config.js';
 
 export { getRepositoryMutationIdentity } from './repository/mutation-identity.js';
+
+export { withDatabaseTaskLock } from './migration/task-lock.js';

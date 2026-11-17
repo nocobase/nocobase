@@ -4,13 +4,18 @@
       "name": "issue-table",
       "type": "registry:component",
       "title": "Issue Table",
-      "description": "The issues list: identifier, title with labels, status, priority, owner, executor and last update, with sorting and selection through callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.",
+      "description": "The issues list: identifier, title with labels, status drawn as its shape, priority, owner (a person or an agent's avatar), project and last update, with sorting, selection, extra columns, group rows and a compact phone layout through props and callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.",
       "categories": ["projects"],
       "meta": {
         "group": "Projects",
         "iframeHeight": 520
       },
-      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^2.0.0-beta.4",
+        "@nocobase/app-plugin-projects@^0.1.0-beta.8",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
       "registryDependencies": [
         "avatar",
         "badge",
@@ -18,12 +23,22 @@
         "checkbox",
         "table"
       ],
-      "docs": "Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow. Every word comes from the labels prop, English by default.",
+      "docs": "Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow; give a status its key to draw it as its shape (status-icon). Every word comes from the labels prop, English by default.",
       "files": [
         {
           "path": "issue-table.tsx",
           "type": "registry:component",
           "target": "client/components/issue-table.tsx"
+        },
+        {
+          "path": "status-icon.tsx",
+          "type": "registry:component",
+          "target": "client/components/status-icon.tsx"
+        },
+        {
+          "path": "status-shapes.ts",
+          "type": "registry:component",
+          "target": "client/components/status-shapes.ts"
         }
       ]
     },

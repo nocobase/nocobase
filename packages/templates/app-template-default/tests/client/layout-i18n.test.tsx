@@ -1,3 +1,4 @@
+import foundation from '@nocobase/app-plugin-foundation/client/plugin';
 import {
   ClientApplicationContext,
   NavigationGuardProvider,
@@ -7,10 +8,17 @@ import {
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
-import { act, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
@@ -37,6 +45,8 @@ vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => ({
   }),
 }));
 
+afterEach(() => vi.unstubAllGlobals());
+
 /** The page the shell opens on: the header names it. */
 const overview: AppClientRegisteredRoute = {
   id: 'overview',
@@ -62,6 +72,10 @@ async function setup(children: ReactNode) {
     applicationNamespace: 'test-app',
   });
   runtime.registerApplicationNamespace('test-app', locales);
+  runtime.registerNamespace(
+    '@nocobase/app-plugin-foundation',
+    foundation().locales!,
+  );
   await runtime.init('en-US');
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
@@ -109,4 +123,71 @@ describe('shell translations', () => {
       screen.getByRole('navigation', { name: 'Breadcrumb' }),
     ).toBeVisible();
   });
+});
+
+it('translates the settings navigation without a separate resources footer', async () => {
+  const settings: AppClientRegisteredRoute = {
+    ...overview,
+    id: 'settings',
+    name: 'settings',
+    path: '/settings',
+    packageName: 'test',
+    source: 'application',
+    auth: 'required',
+    authz: 'skip',
+    navigation: { title: 'settings.title' },
+  };
+  const runtime = await setup(<AppLayout routes={[overview, settings]} />);
+  const navigation = screen.getByRole('navigation', {
+    name: 'Application navigation',
+  });
+  const link = within(navigation).getByRole('link', {
+    name: 'System settings',
+  });
+  expect(link).toHaveAttribute('href', '/settings');
+  expect(link.closest('[data-slot="sidebar-content"]')).not.toBeNull();
+  expect(
+    screen.queryByRole('navigation', { name: 'Resources' }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(link);
+  await waitFor(() =>
+    expect(
+      within(navigation).getByRole('link', { name: 'System settings' }),
+    ).toHaveAttribute('aria-current', 'page'),
+  );
+  await act(() => runtime.changeLanguage('zh-CN'));
+  expect(
+    within(screen.getByRole('navigation', { name: '应用导航' })).getByRole(
+      'link',
+      { name: '系统设置' },
+    ),
+  ).toHaveAttribute('href', '/settings');
+});
+
+it('closes the mobile sidebar after opening System settings', async () => {
+  vi.stubGlobal('innerWidth', 375);
+  const settings: AppClientRegisteredRoute = {
+    ...overview,
+    id: 'settings',
+    name: 'settings',
+    path: '/settings',
+    packageName: 'test',
+    source: 'application',
+    auth: 'required',
+    authz: 'skip',
+    navigation: { title: 'settings.title' },
+  };
+  await setup(<AppLayout routes={[overview, settings]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+  const navigation = await screen.findByRole('navigation', {
+    name: 'Application navigation',
+  });
+  fireEvent.click(
+    within(navigation).getByRole('link', { name: 'System settings' }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('navigation', { name: 'Application navigation' }),
+    ).not.toBeInTheDocument(),
+  );
 });

@@ -65,7 +65,7 @@ defineAppRoutes([
 ]);
 ```
 
-Install the block with `yes n | pnpm exec shadcn add @nocobase/notification-logs-ui`. While Delivery logs is the module's only view, the page renders `NotificationLogsPage` from `#extensions/nocobase-notification-logs-ui/index` in a `PageContainer`; the block brings its own heading. When a second view such as Notification templates joins the group, render each view inside `SettingsModulePage` (titled with the module) and drop the block's own heading in the installed source, so the module has one heading above its tabs.
+Install the block with `yes n | pnpm exec shadcn add @nocobase/notification-logs-ui`. While Delivery logs is the module's only view, the page renders `NotificationLogsPage` from `#extensions/nocobase-notification-logs-ui/index` in a `PageContainer`; the block brings its own heading. When a second view such as Notification templates joins the group, render each view inside `SettingsModulePage` (titled with the module) and render the block as `<NotificationLogsPage showHeading={false} />`, so the module has one heading above its tabs. A copy installed before the block had `showHeading` needs the block updated first, or its heading removed in the installed source.
 
 ## Checks
 

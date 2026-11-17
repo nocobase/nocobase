@@ -45,7 +45,9 @@ function AlertDialogContent({
 }) {
   return (
     <AlertDialogPortal>
-      <AlertDialogOverlay />
+      {/* Base UI leaves out the backdrop of a dialog opened inside another one; render it anyway, so the layer below
+          takes no taps or clicks while this one is open (mobile.md M7.2). */}
+      <AlertDialogOverlay forceRender />
       <AlertDialogPrimitive.Popup
         data-slot='alert-dialog-content'
         data-size={size}

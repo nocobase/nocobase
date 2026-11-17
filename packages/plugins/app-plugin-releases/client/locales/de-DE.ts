@@ -69,15 +69,14 @@ const deDE: LocaleResource<typeof enUS> = {
             all: 'Bereitstellen (alle)',
           },
           deployProtected: {
-            title: 'Geschützte Bereitstellungen genehmigen',
+            title: 'In geschützten Umgebungen bereitstellen',
             description:
-              'Genehmigen Sie Bereitstellungen in geschützten Umgebungen, in denen keine Genehmiger benannt sind. Nur Menschen',
-            related:
-              'Geschützte Bereitstellungen genehmigen (die damit verbundenen)',
+              'Wenn keine Umgebungsgenehmiger ermittelt werden, Anfragen persönlich genehmigen oder selbst bzw. über einen Lauf direkt bereitstellen',
+            related: 'In geschützten Umgebungen bereitstellen (zugehörige)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:
               'Apps, die ich erstellt habe, und alle Apps, die sich auf mich beziehen',
-            all: 'Geschützte Bereitstellungen genehmigen (alle)',
+            all: 'In geschützten Umgebungen bereitstellen (alle)',
           },
           operate: {
             title: 'Starten und stoppen',
@@ -152,14 +151,11 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Apps',
       environments: 'Umgebungen bereitstellen',
     },
     apps: {
+      lastFailure: 'Letzter Fehler: {{detail}}',
       title: 'Apps',
-      description:
-        'Anwendungen, ihre Veröffentlichungen und der Ort, an dem sie bereitgestellt werden.',
-      search: 'Suche nach ID oder Name',
       create: 'App erstellen',
       id: 'App-ID',
       name: 'Name',
@@ -170,18 +166,28 @@ const deDE: LocaleResource<typeof enUS> = {
       labels: 'Etiketten',
       loadFailed: 'Die Apps konnten nicht geladen werden.',
       loadOneFailed: 'Die App konnte nicht geladen werden.',
-      emptyTitle: 'Noch keine Apps',
-      emptyNoAccess: 'Bitten Sie einen Administrator, eine App zu erstellen.',
-      emptyDescription:
-        'Erstellen Sie eine App, laden Sie dann eine Version hoch und stellen Sie sie in einer Umgebung bereit.',
-      noResults: 'Keine App entspricht der Suche.',
       created: '{{name}} erstellt.',
       createDescription:
         'Eine App wird in einer Umgebung bereitgestellt. Die Veröffentlichungen werden anschließend hochgeladen.',
       idHint:
         'Buchstaben, Ziffern, Unterstriche und Bindestriche; Teil seiner Adresse. Es kann sich später nicht mehr ändern.',
-      noEnvironment: 'Noch keine Umgebung',
       lastAccess: 'Letzter Besuch',
+      stateFilter: 'Status',
+      anyState: 'Jeder Status',
+      clearFilters: 'Filter zurücksetzen',
+      noMatches: 'Keine App passt zu den Filtern.',
+      runStates: {
+        running: 'Läuft',
+        starting: 'Startet',
+        pending: 'Noch nicht gestartet',
+        waiting: 'Wartet',
+        stopped: 'Gestoppt oder ruhend',
+        failed: 'Fehlgeschlagen',
+        unknown: 'Unbekannt',
+      },
+      page: 'Seite {{page}} von {{pages}}',
+      previousPage: 'Vorherige Seite',
+      nextPage: 'Nächste Seite',
     },
     advanced: 'Erweitert (optional)',
     labels: {
@@ -547,11 +553,7 @@ const deDE: LocaleResource<typeof enUS> = {
       title: 'Gemeinsamer App-Host',
       description:
         'Apps aller Umgebungen auf diesem Host teilen sich einen Prozess und dessen Speicher.',
-      summary:
-        '{{running}} von {{deployed}} bereitgestellten Apps laufen oder starten',
-      memory:
-        'Heap {{heapUsed}} von {{heapLimit}} · Prozessspeicher {{rss}} · {{available}} auf dem Server verfügbar',
-      memoryNote: 'Summen des gesamten Prozesses, nicht einer einzelnen App.',
+      environments: 'Umgebungen darauf: {{names}}',
       recycling: {
         pending:
           'Alter Code wird durch einen Neustart dieses Hosts freigegeben, sobald keine App mehr genutzt wird. Neue Versionen warten bis dahin; laufende Apps antworten weiter.',
@@ -560,15 +562,22 @@ const deDE: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: Die Apps konnten nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
-      columns: {
-        app: 'App',
-        state: 'Status',
-        why: 'Grund',
-        lastAccess: 'Letzter Zugriff',
-      },
-      hidden: 'Eine App, die Sie nicht sehen dürfen',
-      empty: 'Auf diesem Host läuft keine App.',
-      idle: 'Untätig; wird zuerst angehalten, wenn Platz gebraucht wird',
+      failed:
+        'Die App konnte nach dem Neustart ihres gemeinsamen Hosts nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
+      view: 'Host-Auslastung ansehen',
+      deployed: 'Bereitgestellt: {{count}}',
+      appsLabel: 'Laufend oder startend',
+      heapLabel: 'Heap',
+      processLabel: 'Prozessspeicher',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · keine Obergrenze',
+      available: '{{available}} noch frei auf dem Server',
+      wholeHost:
+        'Summen des gesamten Hosts mit allen Umgebungen darauf; der Speicher lässt sich nicht auf einzelne Apps aufteilen.',
+      viewAppsNote: 'Zeigt nur die Apps, die du sehen darfst.',
+      byEnvironment: 'Laufend oder startend, nach Umgebung:',
+    },
+    runtime: {
       holds: {
         requests: 'Bearbeitet Anfragen',
         connections: 'Offene Verbindungen',
@@ -583,6 +592,8 @@ const deDE: LocaleResource<typeof enUS> = {
         memory: 'Start abgelehnt: nicht genug Speicher',
         recycle: 'Start abgelehnt: neuer Code wartet auf den Host-Neustart',
       },
+      idle: 'Untätig; wird zuerst angehalten, wenn Platz gebraucht wird',
+      lastVisit: 'Letzter Besuch: {{time}}',
     },
     overview: {
       currentRelease: 'Aktuelle Version',
@@ -774,6 +785,12 @@ const deDE: LocaleResource<typeof enUS> = {
           'Es gibt keinen ersten Administrator, der angezeigt werden kann.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Seit {{seconds}} Sekunden wurden keine Daten des Release-Pakets empfangen. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTotalTimeout:
+          'Das Lesen des Release-Pakets hat {{seconds}} Sekunden überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTimeout:
+          'Das Zeitlimit zum Lesen des Release-Pakets wurde überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
         hostExited: 'Der Prozess der App wurde gestoppt, bevor sie bereit war.',
         hostDisabled: 'Der App-Host ist ausgeschaltet.',
         hostShutDown: 'Der App-Host wurde heruntergefahren.',
@@ -796,6 +813,18 @@ const deDE: LocaleResource<typeof enUS> = {
           'Der Test wurde nicht innerhalb von 20 Sekunden abgeschlossen.',
         hostNoSettings:
           'Die lokale Laufzeitumgebung nimmt keine Verbindungseinstellungen entgegen.',
+        recycleWait:
+          'Der App-Host gibt Speicher frei; die Bereitstellung wird danach fortgesetzt.',
+        recycleRetry:
+          'Der App-Host gibt noch Speicher frei, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        capacityExceeded:
+          'Dem App-Host fehlt Speicher oder ein freier Platz, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        replacementMemory:
+          'Dem App-Host fehlt Speicher, um die neue Version zu starten; die aktuelle läuft weiter. Versuchen Sie es später erneut.',
+        startQueueFull:
+          'Auf dem App-Host starten zu viele Apps. Versuchen Sie es später erneut.',
+        activeLimit:
+          'Die Anzahl laufender Apps hat ihr Limit erreicht. Versuchen Sie es später erneut.',
       },
       prefixed: {
         startFailed: 'Start fehlgeschlagen: {{detail}}',

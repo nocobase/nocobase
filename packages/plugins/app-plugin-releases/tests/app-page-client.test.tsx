@@ -30,7 +30,10 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   toasts: [] as { type: string; title: string }[],
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  errorToastOptions: (
+    await importOriginal<typeof import('@nocobase/app-client')>()
+  ).errorToastOptions,
   ApiClientError: class extends Error {
     public constructor(
       message: string,
@@ -394,6 +397,60 @@ describe('App page tabs', () => {
       expect.objectContaining({ title: 'Cancellation accepted.' }),
     );
   });
+
+  it.each([
+    [
+      'pending',
+      'Waiting for the host to restart',
+      'The app host is recycling memory; the deployment continues when it finishes.',
+    ],
+    [null, 'Queued · 1 ahead', 'Queued · 1 ahead'],
+  ] as const)(
+    'says a started deployment back in the queue waits for the recycle only while the host recycles (%s)',
+    async (recycling, badge, row) => {
+      serve({
+        ...summary(),
+        hasPendingDeployment: true,
+        pendingDeployment: { status: 'deploying', queueAhead: 1 },
+        host: {
+          id: 'in-process',
+          memory: null,
+          recycling,
+          deployed: 1,
+          running: 0,
+          maxActive: null,
+          failedEnvironments: [],
+        },
+      } as AppSummary);
+      const original = mocks.request.getMockImplementation()!;
+      mocks.request.mockImplementation((options: Sent) =>
+        options.path === 'releases/apps/shop/deployments'
+          ? Promise.resolve({
+              data: [
+                {
+                  ...deployment('retry', '1.2.0'),
+                  status: 'deploying',
+                  phase: 'starting',
+                  queueAhead: 1,
+                  cancellable: true,
+                },
+              ],
+              meta: { total: 1 },
+            })
+          : original(options),
+      );
+      // The overview shows the App's state and its recent deployments together.
+      renderPage();
+      expect((await screen.findAllByText(badge)).length).toBeGreaterThan(0);
+      // The recycle wait: under the badge and on the row; the queue: the badge and the row read the same.
+      expect(await screen.findAllByText(row)).toHaveLength(2);
+      expect(
+        screen.queryByText(
+          recycling ? 'Queued · 1 ahead' : 'Waiting for the host to restart',
+        ),
+      ).toBeNull();
+    },
+  );
 
   it('opens Settings from the URL, with the run mode, config.yml and deleting the App', async () => {
     serve(summary());

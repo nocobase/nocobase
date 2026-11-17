@@ -1,7 +1,7 @@
 name: V3 Merge Beta to Stable
 
-# Promote v3-develop versions on a temporary branch, merge into v3-main, then sync
-# back to v3-develop and re-enter prerelease mode. This does not publish to npm.
+# Promote v3 versions on a temporary branch, merge into v3-main, then sync
+# back to v3 and re-enter prerelease mode. This does not publish to npm.
 # Run v3-release-stable.yml separately; publication checks package versions against
 # the registry, so it does not depend on pending changesets still being present.
 #
@@ -28,11 +28,14 @@ jobs:
     name: Promote beta and merge into v3-main
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # v3 (formerly v3-develop) is the repository's default branch.
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - name: Check out v3-develop
+      - name: Check out v3
         uses: actions/checkout@v4
         with:
-          ref: v3-develop
+          ref: ${{ env.DEFAULT_BRANCH }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
@@ -40,7 +43,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -53,10 +55,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Missing pre mode indicates an unfinished promotion or manually changed state.
-      - name: Verify v3-develop is in pre mode
+      - name: Verify v3 is in pre mode
         run: |
           if [ ! -f .changeset/pre.json ]; then
-            echo "::error::v3-develop is not in pre mode — there is no prerelease to promote"
+            echo "::error::v3 is not in pre mode — there is no prerelease to promote"
             exit 1
           fi
           MODE=$(node -p "require('./.changeset/pre.json').mode")
@@ -193,22 +195,22 @@ jobs:
           fi
 
       # Merge before re-entering pre mode so the merge cannot remove the new pre.json.
-      - name: Merge back into v3-develop and re-enter pre mode
+      - name: Merge back into v3 and re-enter pre mode
         if: "!inputs.dry_run && steps.merge_main.outputs.merged == 'true'"
         id: merge_develop
         env:
           GH_TOKEN: ${{ steps.release_token.outputs.token }}
         run: |
-          git fetch origin v3-develop
+          git fetch origin "$DEFAULT_BRANCH"
           SYNC="chore/sync-$(date -u +%Y-%m-%d)"
-          git checkout -B "$SYNC" origin/v3-develop
+          git checkout -B "$SYNC" "origin/$DEFAULT_BRANCH"
 
           set +e
-          git merge --no-ff "origin/${{ steps.branch.outputs.name }}" -m "chore: sync promoted versions back to v3-develop [skip ci]"
+          git merge --no-ff "origin/${{ steps.branch.outputs.name }}" -m "chore: sync promoted versions back to v3 [skip ci]"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then
-            echo "::warning::Merging back into v3-develop hit conflicts that need manual work"
+            echo "::warning::Merging back into v3 hit conflicts that need manual work"
             echo "merged=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -219,14 +221,14 @@ jobs:
           git push --force origin "$SYNC"
 
           PR_URL=$(gh pr create \
-            --title "chore: sync promoted versions back to v3-develop [skip ci]" \
-            --body "Sync the promoted versions back to v3-develop and re-enter pre mode." \
-            --base v3-develop \
+            --title "chore: sync promoted versions back to v3 [skip ci]" \
+            --body "Sync the promoted versions back to v3 and re-enter pre mode." \
+            --base "$DEFAULT_BRANCH" \
             --head "$SYNC")
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge promoted versions back into v3-develop [skip ci]"
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge promoted versions back into v3 [skip ci]"
           RC2=$?
           set -e
           if [ $RC2 -ne 0 ]; then
@@ -242,39 +244,39 @@ jobs:
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://registry.npmjs.org
-          TITLE: NocoBase 3 v3-develop 合入 v3-main 失败
+          TITLE: NocoBase 3 v3 合入 v3-main 失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
-            `v3-develop` 合入 `v3-main` 时发生冲突：
+            `v3` 合入 `v3-main` 时发生冲突：
             ${{ steps.merge_main.outputs.url }}
 
             npm 尚未发布，没有产生不一致状态。
             分支 `${{ steps.branch.outputs.name }}` 已保留。
 
-            **注意**：`v3-develop` 仍处于已退出 pre 模式的状态，解决后需要
-            合回 v3-develop 并执行 `changeset pre enter beta`。
+            **注意**：`v3` 仍处于已退出 pre 模式的状态，解决后需要
+            合回 v3 并执行 `changeset pre enter beta`。
         run: ./scripts/feishu-notify.sh
 
-      - name: Notify v3-develop merge failure
+      - name: Notify v3 merge failure
         if: "!inputs.dry_run && steps.merge_main.outputs.merged == 'true' && steps.merge_develop.outputs.merged != 'true'"
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://registry.npmjs.org
-          TITLE: NocoBase 3 已合入 v3-main，但同步回 v3-develop 失败
+          TITLE: NocoBase 3 已合入 v3-main，但同步回 v3 失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
-            `v3-develop` 已合入 `v3-main`，可以发布了。
+            `v3` 已合入 `v3-main`，可以发布了。
 
-            但同步回 `v3-develop` 失败，需要人工处理：
+            但同步回 `v3` 失败，需要人工处理：
             ${{ steps.merge_develop.outputs.url || '（合并阶段就失败了，没有创建 PR）' }}
 
-            **v3-develop 目前不在 pre 模式**，处理完后需要执行：
+            **v3 目前不在 pre 模式**，处理完后需要执行：
             `pnpm changeset pre enter beta` 并提交。
         run: ./scripts/feishu-notify.sh
 
@@ -289,13 +291,13 @@ jobs:
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://registry.npmjs.org
-          TITLE: NocoBase 3 v3-develop 已合入 v3-main
+          TITLE: NocoBase 3 v3 已合入 v3-main
           STATUS: success
           STATUS_TEXT_SUCCESS: 待发布
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           TABLE_JSON: ${{ steps.changed.outputs.rows }}
           CONTENT: |
-            `v3-develop` 已合入 `v3-main`，版本号不再带 `-beta` 后缀，`v3-develop` 已重新进入 pre 模式。
+            `v3` 已合入 `v3-main`，版本号不再带 `-beta` 后缀，`v3` 已重新进入 pre 模式。
 
             **尚未发布到 npm。** 点 `v3-release-stable.yml` 完成发布（输入保持默认）。
 
@@ -317,7 +319,7 @@ jobs:
           STATUS_TEXT_FAILURE: 流程中断
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
-            `v3-develop` 合入 `v3-main` 的流程中断，没有发布到 npm。
+            `v3` 合入 `v3-main` 的流程中断，没有发布到 npm。
 
             失败发生在合并之前，分支状态没有变化，修好之后重新触发即可。
         run: ./scripts/feishu-notify.sh

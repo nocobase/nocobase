@@ -384,7 +384,12 @@ describe('model detection', () => {
     });
     const adapter = new ClaudeAdapter({
       searchPath: dir,
-      env: { PATH: dir, HOME: '/home/runner' },
+      env: {
+        PATH: dir,
+        HOME: '/home/runner',
+        CLAUDE_CONFIG_DIR: '/home/runner/custom-claude',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'provider-sonnet',
+      },
       exec: async (_file, args) =>
         args[0] === '--version'
           ? { code: 0, stdout: '9.0.0 (Claude Code)\n' }
@@ -406,10 +411,12 @@ describe('model detection', () => {
     const { options, closed } = calls[0]!;
     expect(closed).toBe(true);
     expect(options).toMatchObject({
-      settingSources: [],
+      settingSources: ['user'],
       env: {
         PATH: dir,
         HOME: '/home/runner',
+        CLAUDE_CONFIG_DIR: '/home/runner/custom-claude',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'provider-sonnet',
         CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
       },
       pathToClaudeCodeExecutable: path.join(dir, 'claude'),
@@ -485,7 +492,7 @@ describe('query options', () => {
       preset: 'claude_code',
       append: 'BRIEF',
     });
-    expect(options.settingSources).toEqual(['project']);
+    expect(options.settingSources).toEqual(['user', 'project', 'local']);
     expect(options.permissionMode).toBe('bypassPermissions');
     expect(options.allowDangerouslySkipPermissions).toBe(true);
     // Claude Code's nonessential traffic, which blocks its start, is off unless the runner's owner allows it.
@@ -503,7 +510,7 @@ describe('query options', () => {
       resume: 'prev',
     });
     expect(options.abortController).toBeInstanceOf(AbortController);
-    // The runner asks nothing: no permission callback and no hooks.
+    // No runner callbacks: filesystem hooks are left to Claude Code.
     expect(options.canUseTool).toBeUndefined();
     expect(options.hooks).toBeUndefined();
   });

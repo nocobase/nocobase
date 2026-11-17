@@ -17,6 +17,15 @@ export const notificationTemplateRoute = {
   navigation: { title: 'settings.notificationTemplates', icon: FileText },
   breadcrumb: { title: 'settings.notificationTemplates' },
   componentLoader: () => import('./notification-templates.js'),
+  children: [
+    // The template list renders the selected template in its own drawer, so this route only gives each template an
+    // address. The list page reads the parameter and renders no outlet.
+    {
+      name: 'notificationTemplate',
+      path: ':templateId',
+      componentLoader: () => import('./notification-templates.js'),
+    },
+  ],
 };
 
 /** Add the template view once to the existing module, preserving logs, paths and grants. */

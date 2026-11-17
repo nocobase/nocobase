@@ -353,3 +353,30 @@ it('executes the registered production job through real Jobs and resumes with th
   expect((await service().snapshot()).overview).toEqual(base);
   expect(collect).toHaveBeenCalledTimes(1);
 });
+
+it('submits no scan at start when told not to, yet delivers a generation that was already claimed', async () => {
+  const a = service();
+  await a.start(false, { scan: false });
+  expect(jobs).toHaveLength(0);
+  expect(await a.scanStatus()).toMatchObject({
+    status: 'idle',
+    needsScan: true,
+  });
+  // A previous kernel's snapshot is not refreshed automatically either.
+  const old = service('fixture-kernel-1');
+  await old.ensureScan();
+  await run(old);
+  await service('fixture-kernel-2').start(false, { scan: false });
+  expect(jobs).toHaveLength(1);
+  // A claim whose delivery was lost would otherwise stay queued: ensureScan() never resubmits a queued claim.
+  await a.ensureScan();
+  expect(jobs).toHaveLength(2);
+  jobs.pop();
+  await a.start(true, { scan: false });
+  expect(jobs).toHaveLength(2);
+  await run(a, 1);
+  expect(await a.snapshot()).toMatchObject({
+    status: 'succeeded',
+    overview: base,
+  });
+});

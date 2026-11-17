@@ -6,7 +6,10 @@ import { userAdministrationServiceToken } from '@nocobase/app-plugin-authenticat
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
-import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import {
+  jobExecutorServiceToken,
+  type AppJobsConfig,
+} from '@nocobase/app-server/jobs';
 import type { JobExecutor } from '@nocobase/jobs';
 import {
   driveManagerToken,
@@ -44,6 +47,7 @@ import {
   mailOutboundAttachmentStorageToken,
   mailStoreToken,
 } from '../tokens.js';
+import type { ImapSmtpMailProviderConfig } from '../adapters/imap-smtp/config.js';
 import { mailFailedPrecondition } from '../services/errors.js';
 
 // Keep this historical destination fixed: the current default no longer names a Dev page.
@@ -82,6 +86,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           registry,
           context: {
             publicBasePath: this.app.publicBasePath,
+            logger: container.has(loggingToken)
+              ? container
+                  .resolve(loggingToken)
+                  .getLogger()
+                  .child({ module: 'mail' })
+              : undefined,
             credentials: container.resolve(mailCredentialVaultToken),
           },
           resolveConfig: (account) =>
@@ -101,6 +111,10 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           mailOutboundAttachmentStorageToken,
         ),
         credentials: container.resolve(mailCredentialVaultToken),
+        resolveImapConfig: (account) =>
+          this.resolveProviderConfig(
+            account.provider,
+          ) as ImapSmtpMailProviderConfig,
         logger: container
           .resolve(loggingToken)
           .getLogger()
@@ -137,6 +151,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           registry,
           providerContext: {
             publicBasePath: this.app.publicBasePath,
+            logger: container.has(loggingToken)
+              ? container
+                  .resolve(loggingToken)
+                  .getLogger()
+                  .child({ module: 'mail' })
+              : undefined,
             credentials: container.resolve(mailCredentialVaultToken),
           },
           credentials: container.resolve(mailCredentialVaultToken),
@@ -169,9 +189,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   private jobsConfiguration(): string | undefined {
     const name = this.getMailConfig().jobs;
     if (name === undefined) return undefined;
-    const jobs = this.app.config.get<Record<string, unknown>>('jobs');
+    const jobs = this.app.config.get<AppJobsConfig>('jobs');
     // `jobs.default` holds a key, not a configuration, so it is rejected too.
-    const selected = jobs?.[name];
+    const selected =
+      name !== 'default' && jobs?.backends && Object.hasOwn(jobs.backends, name)
+        ? jobs.backends[name]
+        : undefined;
     if (!selected || typeof selected !== 'object') {
       throw new Error(
         `mail.jobs names "${name}", which is not a jobs configuration.`,

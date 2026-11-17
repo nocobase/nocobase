@@ -1,5 +1,183 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.15
+
+### Patch Changes
+
+- a2474ed: Refer to the NocoBase 3 source branch as `v3`, its new name, in Skills references, the Agents documentation and the Distributed Skill.
+- f8174b2: Wait for in-flight conversation lists before reconciling detail snapshots, avoiding duplicate reads when detail arrives first.
+- Updated dependencies [8647bb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
+## 2.0.0-beta.14
+
+### Minor Changes
+
+- b2e2a1e: Support DeepSeek's official Search API in Native OnlineAgent web search using existing model-service credentials and bounded source evidence.
+
+### Patch Changes
+
+- 3112daa: Derive dedicated CLI operation keys from explicitly marked OpenAPI header schemas. The CLI generates or reuses a key, preserves it in success and failure output, and reports uncertain results without replaying writes. Upgrade the CLI and server together for operation-key commands. Online shells expose authorized commands but refuse unsupported writes before sending. Ordinary headers and existing commands retain their behavior.
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-cli-client@0.1.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-cli-distribution@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
+## 2.0.0-beta.13
+
+### Minor Changes
+
+- e103671: Show each enabled coding tool's runs against its own concurrency limit beside its tag in the runtime list ("Runs 1/2"), instead of under the runtime's status.
+
+### Patch Changes
+
+- 8db22e3: Send files uploaded by conversation runs immediately with their replies and retain them with the conversation.
+- fb306c9: Expose composable server-side CLI distribution without registering Agents, while preserving existing Agents download credentials and installation protocols.
+- dd0a34f: Require the patched RE2JS release for agent output schema pattern validation.
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+- Updated dependencies [b33e134]
+- Updated dependencies [fb306c9]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-cli-distribution@0.1.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.35
+  - @nocobase/document-extractor@0.1.0-beta.2
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 2.0.0-beta.12
+
+### Minor Changes
+
+- 7884308: Show each enabled coding tool's quota beside its tag in the runtime list, and show only "Latest" or "Upgradable" in its version column. The runtime list now returns current tool quota marks, usage and pause thresholds.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- fcd59ee: Simplify runtime quota threshold settings, show them read-only to viewers, distinguish missing quota data, and format quota windows in days or hours.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [a6b6b7c]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.21
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-cli@1.0.0-beta.34
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
+## 2.0.0-beta.11
+
+### Minor Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
+### Patch Changes
+
+- ff549a1: Keep reading a conversation's new messages when a stream reconnection discards the page being read, so a run failure notice saved meanwhile is shown without reloading.
+- ff549a1: Keep a running chat response subscribed when a conversation read from before the current input still reports the conversation as idle, and report in `StreamState.finished` the response whose stream ended with the server's `finish`, so a stopped, cut-off or failed stream is no longer mistaken for a completed turn.
+- 7d9c0a4: Preserve Claude rate-limit snapshots across independent quota windows and let runtime owners configure usage ceilings that pause new work without interrupting active runs.
+- 7e97024: Filter agent runs by their subject visibility before listing, reporting or granting access to transcripts and realtime updates.
+- e1f584e: The notification Skill no longer tells an agent that in-app inbox writes need a CSRF token, matching the in-app plugin, whose writes are protected by the authentication plugin's origin check. The in-app Skill's description no longer promises a Client page the plugin does not contribute. The agents and in-app Skills name their package's `docs/` and `README.md` files instead of linking outside the Skill folder, so the links no longer break once the Skills are synchronized into an application's `.agents/skills/`, and the agents extension points table links to `online-agent.md` by its real name.
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+  - @nocobase/document-extractor@0.1.0-beta.1
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-cli@1.0.0-beta.33
+
+## 2.0.0-beta.10
+
+### Minor Changes
+
+- 411a9f3: Tell a subject's `onCancelRequested` which run asked for a stop (`CancelRequest.byRunId`), so an application can tell an agent cancelling its own work from a person stopping it.
+
+## 2.0.0-beta.9
+
+### Minor Changes
+
+- ac6c1eb: A runner asks the application for the token of NocoBase's private npm registry (`https://pkg-v3.nocobase.com/`) only when an install of a run needs it: when the repository's committed `.npmrc` points a scope or the registry at it, or after an `@nocobase/*` package was not found on the default registry, which it then retries once with the private registry. The token goes into a run-private npm configuration for that one command and is redacted from what the run reports. The machine's own npm and pnpm settings stay in effect except those pointing at the private registry, so a project that needs no private package never reaches it. Protocol version 16 adds the `npmCredentials` feature and `RUNNER_ROUTES.npmCredential`; applications register where the token comes from with `npmCredentialProviders`. Update the application before the runners.
+- d4d7b07: A person can choose which kind of runner their runs go to first: their own personal runners or the runners shared with the team (`runnerPreference` in the chat preferences, `auto` by default). A run keeps the choice its actor had when it was queued; runners of the other kind wait one more second before taking it, so they still take it when none of the preferred kind can. Claims read nothing more.
+
+### Patch Changes
+
+- a2dc459: Expose whether the current run starts an independent tool session so reviewers can verify their session before reviewing.
+- Updated dependencies [a2dc459]
+- Updated dependencies [2d18eb2]
+- Updated dependencies [6a51d28]
+- Updated dependencies [ac6c1eb]
+- Updated dependencies [3642d82]
+  - @nocobase/agent-protocol@0.1.0-beta.18
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.33
+  - @nocobase/app-cli-client@0.1.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+
+## 2.0.0-beta.7
+
+### Minor Changes
+
+- c635b6c: Preserve quota-limited work on its original Runner and resume its original tool session after quota resets. Support strict session restoration without automatic fallback to a new session, and let an explicit replacement run take over preserved work exactly once (`replacesRunId`).
+- 764fc1b: Share queued runs between runners in proportion to each runner's limit for the run's coding tool. A runner's claim now takes at most one run per request, and none when it takes jobs, so jobs are handed out at once. A run is handed out up to one second after it entered the queue, later the more of that tool the runner already runs against its limit, so idler runners take the next run first and a runner busy with one tool still takes another tool's runs at once. A claim that ends while it waits takes nothing. Runners need no update.
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- f37a169: Expose a single composer notice priority and clarify how to continue after an incompatible runtime refuses a message.
+- bf9857b: Clear a conversation's interrupted-stream state once it is idle and its history has caught up, including when a newer conversation read supersedes an explicit refresh.
+- 8c9cdae: Let runtime owners and administrators clear quota marks that have a known reset time, and lift a mark (and its notice) when the same window later reports quota left.
+- f37a169: Add `ChatSubmissions.restore()` so an application can put back a message an existing conversation refused before writing it, for example after a page reload, without sending it again.
+- 3eff32d: Add `GET /api/agents/runAgents`, which lists the agents with a run on one subject (removed and archived ones included, within the caller's run visibility), so a run history's agent filter offers only those agents.
+- 10aabd6: Start a fresh session when a runner agent switches between read-only and writable work, while preserving existing writable sessions.
+- faa534f: Allow applications to place fixed instructions before changing run details in independent-session prompts while retaining ordinary session reuse.
+- 4649c90: Keep temporary repository access failures queued with bounded backoff and structured diagnostics, independently of ordinary preparation failures, and retain actionable authorization refusals from running jobs.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-cli-client@0.1.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 2.0.0-beta.6
 
 ### Minor Changes

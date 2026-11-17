@@ -212,7 +212,10 @@ describe('app client routes', () => {
       ['settingsAi', [['knowledgeIndexing', '/knowledge/indexing']]],
       [
         'settingsSystem',
-        [['notificationManagement', '/settings/notifications/templates']],
+        [
+          ['notificationManagement', '/settings/notifications/templates'],
+          ['databaseExplorer', '/settings/database-explorer'],
+        ],
       ],
     ]);
     expect(catalog[2].modules[0].route).toMatchObject({
@@ -346,6 +349,8 @@ describe('app client routes', () => {
       },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
+      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
   });
 });

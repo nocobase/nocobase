@@ -4,13 +4,11 @@ import accessEnUS from '../../shared/locales/access.en-US.js';
 
 const ui = {
   nav: {
-    apps: 'Apps',
     environments: 'Deploy environments',
   },
   apps: {
     title: 'Apps',
-    description: 'Applications, their releases and where they are deployed.',
-    search: 'Search by ID or name',
+    lastFailure: 'Last failure: {{detail}}',
     create: 'Create app',
     id: 'App ID',
     name: 'Name',
@@ -21,18 +19,28 @@ const ui = {
     labels: 'Labels',
     loadFailed: 'Could not load the apps.',
     loadOneFailed: 'Could not load the app.',
-    emptyTitle: 'No apps yet',
-    emptyNoAccess: 'Ask an administrator to create an app.',
-    emptyDescription:
-      'Create an app, then upload a release and deploy it to an environment.',
-    noResults: 'No app matches the search.',
     created: '{{name}} created.',
     createDescription:
       'An app is deployed to one environment; its releases are uploaded afterwards.',
     idHint:
       'Letters, digits, underscores and hyphens; part of its address. It cannot change later.',
-    noEnvironment: 'No environment yet',
     lastAccess: 'Last visit',
+    stateFilter: 'State',
+    anyState: 'Any state',
+    clearFilters: 'Clear filters',
+    noMatches: 'No app matches the filters.',
+    runStates: {
+      running: 'Running',
+      starting: 'Starting',
+      pending: 'Not started yet',
+      waiting: 'Waiting',
+      stopped: 'Stopped or hibernating',
+      failed: 'Failed',
+      unknown: 'Unknown',
+    },
+    page: 'Page {{page}} of {{pages}}',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
   },
   advanced: 'Advanced (optional)',
   labels: {
@@ -382,10 +390,7 @@ const ui = {
     title: 'Shared app host',
     description:
       'Apps of every environment on this host share one process and its memory.',
-    summary: '{{running}} of {{deployed}} deployed apps running or starting',
-    memory:
-      'Heap {{heapUsed}} of {{heapLimit}} · process memory {{rss}} · {{available}} available on the server',
-    memoryNote: 'Totals of the whole process, not of any one app.',
+    environments: 'Environments on it: {{names}}',
     recycling: {
       pending:
         'Old code is freed by restarting this host once no app is in use. New versions wait until then; running apps keep serving.',
@@ -394,15 +399,22 @@ const ui = {
     },
     restoreFailed:
       '{{name}}: its apps could not be restored; retrying in the background.',
-    columns: {
-      app: 'App',
-      state: 'State',
-      why: 'Why',
-      lastAccess: 'Last access',
-    },
-    hidden: 'An app you cannot view',
-    empty: 'No app is running on this host.',
-    idle: 'Idle; stopped first when room is needed',
+    failed:
+      'The app could not be restored after its shared host restarted; retrying in the background.',
+    view: 'View host usage',
+    deployed: 'Deployed: {{count}}',
+    appsLabel: 'Running or starting',
+    heapLabel: 'Heap',
+    processLabel: 'Process memory',
+    ratio: '{{used}} / {{limit}}',
+    runningUnlimited: '{{running}} · no limit',
+    available: '{{available}} still free on the server',
+    wholeHost:
+      'Totals of the whole host, every environment on it included; memory cannot be divided among its apps.',
+    viewAppsNote: 'Lists only the apps you can view.',
+    byEnvironment: 'Running or starting, by environment:',
+  },
+  runtime: {
     holds: {
       requests: 'Serving requests',
       connections: 'Open connections',
@@ -417,6 +429,8 @@ const ui = {
       memory: 'Start refused: not enough memory',
       recycle: 'Start refused: new code waits for the host to restart',
     },
+    idle: 'Idle; stopped first when room is needed',
+    lastVisit: 'Last visit: {{time}}',
   },
   overview: {
     currentRelease: 'Current release',
@@ -591,6 +605,12 @@ const ui = {
       INITIAL_ADMIN_UNAVAILABLE: 'There is no first administrator to show.',
     },
     messages: {
+      artifactReadIdleTimeout:
+        'No data was received from the release package for {{seconds}} seconds. The deployment did not finish; try again.',
+      artifactReadTotalTimeout:
+        'Reading the release package exceeded {{seconds}} seconds. The deployment did not finish; try again.',
+      artifactReadTimeout:
+        'Reading the release package timed out. The deployment did not finish; try again.',
       hostExited: 'The app’s process stopped before it was ready.',
       hostDisabled: 'The app host is turned off.',
       hostShutDown: 'The app host has shut down.',
@@ -605,6 +625,18 @@ const ui = {
       notReady: 'It is not ready yet; try again in a moment.',
       checkTimeout: 'The test did not finish within 20 seconds.',
       hostNoSettings: 'The local runtime takes no connection settings.',
+      recycleWait:
+        'The app host is recycling memory; the deployment continues when it finishes.',
+      recycleRetry:
+        'The app host is still recycling memory, so the deployment did not finish. Try again later.',
+      capacityExceeded:
+        'The app host does not have enough memory or a free slot, so the deployment did not finish. Try again later.',
+      replacementMemory:
+        'The app host does not have enough memory to start the new version; the current one keeps running. Try again later.',
+      startQueueFull:
+        'Too many apps are starting on the app host. Try again later.',
+      activeLimit:
+        'The number of running apps has reached its limit. Try again later.',
     },
     prefixed: {
       startFailed: 'Start failed: {{detail}}',

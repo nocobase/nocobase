@@ -3,6 +3,12 @@
  * it. Values here are shared by both sides; everything else is a type, so nothing from `server/` reaches the browser.
  */
 
+/** Current registration facts without provider initialization or usage scans. */
+export interface FoundationRegistrations {
+  /** Null when the host does not expose registration facts. Never implies operational readiness. */
+  readonly serverPlugins: readonly string[] | null;
+}
+
 /** Built-in collector adapters, in their preferred display order; this is not the universe of available capabilities. */
 export const FOUNDATION_CAPABILITIES = [
   'dataModeling',

@@ -69,15 +69,14 @@ const frFR: LocaleResource<typeof enUS> = {
             all: 'Déployer (tous)',
           },
           deployProtected: {
-            title: 'Approuver les déploiements protégés',
+            title: 'Déployer dans des environnements protégés',
             description:
-              'Approuver les déploiements dans des environnements protégés qui ne nomment aucun approbateur ; les gens seulement',
-            related:
-              'Approuver les déploiements protégés (ceux qui leur sont liés)',
+              'Si aucun approbateur n’est résolu, approuver les demandes en personne ou déployer directement en personne ou par son exécution',
+            related: 'Déployer dans des environnements protégés (liés)',
             relatedLabel: "Ceux que j'ai créés",
             relatedHint:
               "Applications que j'ai créées et toutes les applications qui me concernent",
-            all: 'Approuver les déploiements protégés (tous)',
+            all: 'Déployer dans des environnements protégés (tous)',
           },
           operate: {
             title: 'Démarrer et arrêter',
@@ -152,13 +151,11 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Applications',
       environments: 'Déployer des environnements',
     },
     apps: {
+      lastFailure: 'Dernier échec : {{detail}}',
       title: 'Applications',
-      description: 'Applications, leurs versions et où elles sont déployées.',
-      search: 'Recherche par ID ou nom',
       create: 'Créer une application',
       id: "Identifiant de l'application",
       name: 'Nom',
@@ -169,18 +166,28 @@ const frFR: LocaleResource<typeof enUS> = {
       labels: 'Etiquettes',
       loadFailed: 'Impossible de charger les applications.',
       loadOneFailed: "Impossible de charger l'application.",
-      emptyTitle: "Aucune application pour l'instant",
-      emptyNoAccess: 'Demandez à un administrateur de créer une application.',
-      emptyDescription:
-        'Créez une application, puis téléchargez une version et déployez-la dans un environnement.',
-      noResults: 'Aucune application ne correspond à la recherche.',
       created: '{{name}} créé.',
       createDescription:
         'Une application est déployée dans un environnement ; ses sorties sont téléchargées par la suite.',
       idHint:
         "Lettres, chiffres, traits de soulignement et traits d'union ; une partie de son adresse. Cela ne peut pas changer plus tard.",
-      noEnvironment: "Pas encore d'environnement",
       lastAccess: 'Dernière visite',
+      stateFilter: 'État',
+      anyState: 'Tous les états',
+      clearFilters: 'Effacer les filtres',
+      noMatches: 'Aucune application ne correspond aux filtres.',
+      runStates: {
+        running: 'En cours d’exécution',
+        starting: 'En démarrage',
+        pending: 'Pas encore démarrée',
+        waiting: 'En attente',
+        stopped: 'Arrêtée ou en veille',
+        failed: 'En échec',
+        unknown: 'Inconnu',
+      },
+      page: 'Page {{page}} sur {{pages}}',
+      previousPage: 'Page précédente',
+      nextPage: 'Page suivante',
     },
     advanced: 'Avancé (facultatif)',
     labels: {
@@ -551,11 +558,7 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Hôte d’applications partagé',
       description:
         'Les applications de tous les environnements de cet hôte partagent un processus et sa mémoire.',
-      summary:
-        '{{running}} sur {{deployed}} applications déployées en cours d’exécution ou de démarrage',
-      memory:
-        'Tas {{heapUsed}} sur {{heapLimit}} · mémoire du processus {{rss}} · {{available}} disponibles sur le serveur',
-      memoryNote: 'Totaux du processus entier, pas d’une seule application.',
+      environments: 'Environnements sur cet hôte : {{names}}',
       recycling: {
         pending:
           'L’ancien code est libéré en redémarrant cet hôte dès qu’aucune application n’est utilisée. Les nouvelles versions attendent jusque-là ; les applications en cours continuent de répondre.',
@@ -564,15 +567,24 @@ const frFR: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}} : ses applications n’ont pas pu être restaurées ; nouvel essai en arrière-plan.',
-      columns: {
-        app: 'Application',
-        state: 'État',
-        why: 'Raison',
-        lastAccess: 'Dernier accès',
-      },
-      hidden: 'Une application que vous ne pouvez pas voir',
-      empty: 'Aucune application ne tourne sur cet hôte.',
-      idle: 'Inactive ; arrêtée en premier quand de la place est nécessaire',
+      failed:
+        'L’application n’a pas pu être restaurée après le redémarrage de son hôte partagé ; nouvel essai en arrière-plan.',
+      view: 'Voir l’occupation de l’hôte',
+      deployed: 'Déployées : {{count}}',
+      appsLabel: 'En cours ou en démarrage',
+      heapLabel: 'Tas',
+      processLabel: 'Mémoire du processus',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · sans limite',
+      available: '{{available}} encore libres sur le serveur',
+      wholeHost:
+        'Totaux de tout l’hôte, tous ses environnements compris ; la mémoire ne se répartit pas entre ses applications.',
+      viewAppsNote:
+        'Seules les applications que vous pouvez voir sont listées.',
+      byEnvironment:
+        "En cours d'exécution ou de démarrage, par environnement :",
+    },
+    runtime: {
       holds: {
         requests: 'Traite des requêtes',
         connections: 'Connexions ouvertes',
@@ -589,6 +601,8 @@ const frFR: LocaleResource<typeof enUS> = {
         recycle:
           'Démarrage refusé : le nouveau code attend le redémarrage de l’hôte',
       },
+      idle: 'Inactive ; arrêtée en premier quand de la place est nécessaire',
+      lastVisit: 'Dernière visite : {{time}}',
     },
     overview: {
       currentRelease: 'Version actuelle',
@@ -779,6 +793,12 @@ const frFR: LocaleResource<typeof enUS> = {
           "Il n'y a pas de premier administrateur à afficher.",
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Aucune donnée du paquet de version n’a été reçue pendant {{seconds}} secondes. Le déploiement n’a pas abouti ; réessayez.',
+        artifactReadTotalTimeout:
+          'La lecture du paquet de version a dépassé {{seconds}} secondes. Le déploiement n’a pas abouti ; réessayez.',
+        artifactReadTimeout:
+          'Le délai de lecture du paquet de version a expiré. Le déploiement n’a pas abouti ; réessayez.',
         hostExited:
           'Le processus de l’application s’est arrêté avant qu’elle ne soit prête.',
         hostDisabled: "L'hôte de l'application est désactivé.",
@@ -799,6 +819,18 @@ const frFR: LocaleResource<typeof enUS> = {
         checkTimeout: "Le test ne s'est pas terminé dans les 20 secondes.",
         hostNoSettings:
           'Le runtime local ne prend aucun paramètre de connexion.',
+        recycleWait:
+          'L’hôte d’applications libère de la mémoire ; le déploiement reprendra ensuite.',
+        recycleRetry:
+          'L’hôte d’applications libère encore de la mémoire, le déploiement n’a donc pas abouti. Réessayez plus tard.',
+        capacityExceeded:
+          'L’hôte d’applications manque de mémoire ou d’emplacement libre, le déploiement n’a donc pas abouti. Réessayez plus tard.',
+        replacementMemory:
+          'L’hôte d’applications manque de mémoire pour démarrer la nouvelle version ; la version actuelle continue de fonctionner. Réessayez plus tard.',
+        startQueueFull:
+          'Trop d’applications démarrent sur l’hôte. Réessayez plus tard.',
+        activeLimit:
+          'Le nombre d’applications en cours d’exécution a atteint sa limite. Réessayez plus tard.',
       },
       prefixed: {
         startFailed: 'Échec du démarrage : {{detail}}',

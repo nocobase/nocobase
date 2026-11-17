@@ -10,6 +10,7 @@ import {
   type ReactElement,
 } from 'react';
 import { useLocation } from 'react-router';
+import { OwnDiscardQuestion } from '../components/route-overlay.js';
 import { ConfirmAction } from '../pages/settings/shared.js';
 
 /* eslint-disable react-refresh/only-export-components -- the route boundary and its hook share one context */
@@ -256,6 +257,12 @@ export function usePageLeave(
   return {
     guard: controller.guard,
     allow: controller.allow,
-    dialog: boundary ? null : promptDialog(prompt),
+    // Rendered inside the form's overlay, where it also tells the overlay that this form asks its own question.
+    dialog: (
+      <>
+        <OwnDiscardQuestion />
+        {boundary ? null : promptDialog(prompt)}
+      </>
+    ),
   };
 }

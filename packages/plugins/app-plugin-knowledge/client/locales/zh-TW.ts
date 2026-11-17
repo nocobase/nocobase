@@ -137,6 +137,15 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: '知識',
+    settingsSection: '知識',
+    settings: {
+      indexing: {
+        title: '知識索引',
+        read: '檢視',
+        configure: '設定',
+        rebuild: '重建',
+      },
+    },
     businesses: {
       knowledge: {
         title: '知識',

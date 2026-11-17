@@ -108,6 +108,11 @@ export interface LoadMigrationsOptions {
 
 /** Configuration for a standalone Migrator, including its database dependency. */
 export interface CreateMigratorOptions extends LoadMigrationsOptions {
+  /** Select pending tasks while retaining every source for history validation. */
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
   readonly config?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
   readonly database: {

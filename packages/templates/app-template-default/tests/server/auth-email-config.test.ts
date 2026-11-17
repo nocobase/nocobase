@@ -111,3 +111,24 @@ it('accepts an entirely environment-configured shared sender without enabling re
     },
   });
 });
+
+it('loads the direct password-reset reference from the inherited environment mapping', async () => {
+  const config = new AppConfig();
+  await config.loadAll();
+  const defaults = defaultAppConfigs({ auth, mailers });
+  config.mergeDefaults(defaults({} as never));
+  config.defineSections(defaults.sections!);
+  await config.loadSectionEnvironment({
+    AUTH_PASSWORD_RESET_MAILER: 'system',
+    MAILERS_SYSTEM_PROVIDER: 'smtp',
+    MAILERS_SYSTEM_HOST: 'localhost',
+    MAILERS_SYSTEM_PORT: '2525',
+  });
+  expect(await config.validate()).toEqual([]);
+  expect(config.get('auth.passwordReset.mailer')).toBe('system');
+  expect(config.get('auth.passwordReset.enabled')).toBeUndefined();
+  expect(config.environmentVariableMappings()).toMatchObject({
+    AUTH_PASSWORD_RESET_MAILER: { path: 'auth.passwordReset.mailer' },
+  });
+  expect(config.publicValues()).not.toHaveProperty('auth.passwordReset');
+});

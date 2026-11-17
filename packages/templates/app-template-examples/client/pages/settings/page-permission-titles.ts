@@ -20,4 +20,6 @@ export const pagePermissionTitles: PagePermissionTitles = {
   'runtimes-connect': 'onlineAgent.connectRuntime',
   'skills-new': 'onlineAgent.newSkill',
   'skills-detail': 'onlineAgent.skillDetail',
+  // The template detail drawer shares the list page grant.
+  notificationTemplate: 'settings.notificationTemplates',
 };

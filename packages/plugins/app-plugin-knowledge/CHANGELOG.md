@@ -1,5 +1,101 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [85d7e34]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 788df3e: Batch knowledge directory metadata and node permissions across spaces, preserving visibility and archived-document counts. Provide a lightweight authorized project metadata query without issue or member totals.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [7884308]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- ad2e33e: Add `createKnowledgePlugin({ indexing: false })` and the client option `indexing: false` for applications without a vector index: no index backends, indexing routes, `kb.indexing` settings item or indexing entry are registered, and search keeps the built-in text match. The `kb.indexing` settings item now has translated titles and its own Knowledge group under administration.
+
+### Patch Changes
+
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/document-extractor@0.1.0-beta.1
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
+## 0.1.0-beta.18
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+- Updated dependencies [f37a169]
+- Updated dependencies [bf9857b]
+- Updated dependencies [8c9cdae]
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [f37a169]
+- Updated dependencies [3eff32d]
+- Updated dependencies [764fc1b]
+- Updated dependencies [10aabd6]
+- Updated dependencies [faa534f]
+- Updated dependencies [4649c90]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-agents@2.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

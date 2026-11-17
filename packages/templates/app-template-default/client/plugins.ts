@@ -1,4 +1,5 @@
 import foundation from '@nocobase/app-plugin-foundation/client';
+import applicationManifest from '../package.json' with { type: 'json' };
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
@@ -35,7 +36,13 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   scheduler(),
   mail(),
-  foundation({ settingsGroup: true }),
+  // The manifest is what the capability guide lists: every plugin this application declares.
+  foundation({
+    settingsGroup: true,
+    manifest: applicationManifest,
+    guideSettingsPath: '/settings',
+    navigation: false,
+  }),
 ]);
 
 export default clientPlugins;

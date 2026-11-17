@@ -158,6 +158,15 @@ const esES: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Conocimiento',
+    settingsSection: 'Conocimiento',
+    settings: {
+      indexing: {
+        title: 'Indexación del conocimiento',
+        read: 'Ver',
+        configure: 'Configurar',
+        rebuild: 'Reconstruir',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Conocimiento',

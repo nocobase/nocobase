@@ -130,6 +130,8 @@ When the template changes list-return behavior, read [list navigation upgrades](
 
 When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](references/list-feedback-upgrade.md). Reconcile copied components, request owners, translations and business empty content together, and verify both new and upgraded applications with retained permissions and records.
 
+When the template adds or changes cross-view updates after writes (`client/hooks/use-data-changes.ts` and the `scopes`/`merge` options of `useListData`), follow [data change upgrades](references/data-change-upgrade.md). Merge both hooks together, keep application changes to `useListData`, and migrate business pages one at a time; existing `Outlet` reload callbacks keep working until a page moves.
+
 Then ask the project which of those files it has also touched:
 
 ```bash
@@ -210,5 +212,7 @@ Compare BASE directly with TARGET and merge the resulting changes once. Check th
 When the target adds or changes the standard process UI sources, also follow [standard process management source upgrades](references/edge-cases.md#standard-process-management-source-upgrades): confirm existing process pages actually consume the merged components, while preserving explicit user customizations, parameters, grants and history.
 
 When the target introduces standard submission protection, follow [submission source upgrades](references/submission-upgrade.md) during planning and reconciliation. Dependency or version-marker changes alone do not update copied forms, custom actions or the application's receipt migrations. Verify both a fresh application and retained customized data.
+
+When the application defines lifecycles (`defineLifecycle()`) and the target adds definition versions, follow [lifecycle definition versions upgrade](references/lifecycle-versioning-upgrade.md) in the same upgrade: give every definition `key` and `version`, add and backfill each process's definition field from its creation log with a conflict list, move category assignments to the key, and plan the write window and deployment order. Missing values only warn in this release and are required in the next minor release. For lifecycle behavior changes or deletion during an upgrade, follow the [Git freezing decision and user-confirmed retirement rules](../nocobase-app-development/references/lifecycle-versions.md); an upgrade does not itself authorize deleting definition code, merged migrations or historical data.
 
 For a target that adds notification template administration, follow [notification template source reconciliation](references/notification-template-upgrade.md) in the same version-selected upgrade, preserving business renderers, workflows, permissions and channel configuration.

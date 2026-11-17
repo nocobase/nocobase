@@ -227,13 +227,17 @@ export class FoundationSnapshots implements FoundationService {
     }
   }
 
-  public async start(memory: boolean): Promise<void> {
+  /** `scan: false` submits no new scan; a generation already claimed is still delivered, or it would never run. */
+  public async start(
+    memory: boolean,
+    options: { readonly scan?: boolean } = {},
+  ): Promise<void> {
     if (memory) await this.recoverMemory();
     const row = await this.read();
     // Covers a process exit between the durable claim and backend acceptance. Duplicate deliveries share the claim.
     if (row?.kernelVersion === this.kernelVersion && row.status === 'queued')
       await this.submit(row);
-    else await this.ensureScan();
+    else if (options.scan !== false) await this.ensureScan();
   }
 
   public async run(

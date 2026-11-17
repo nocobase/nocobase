@@ -61,7 +61,10 @@ describe('ordinary service selection', () => {
       removeOnComplete: true,
       removeOnFail: 7,
     };
-    const { service, configs } = harness({ default: 'a', a: test, b: test });
+    const { service, configs } = harness({
+      default: 'a',
+      backends: { a: test, b: test },
+    });
     const a = service.getJobExecutor('scope');
     expect(service.getJobExecutor('scope', 'default')).toBe(a);
     expect(service.getJobExecutor('scope', 'unknown')).toBe(a);
@@ -95,17 +98,18 @@ describe('ordinary service selection', () => {
     });
   });
 
-  it('selects named memory without a default and preserves string alias fallback behavior', () => {
+  it('selects named memory without a default and preserves unknown name fallback behavior', () => {
     const { service, configs } = harness({
       default: 'm',
-      m: { adapter: 'memory', attempts: 5, concurrency: 2 },
-      alias: 'other',
-      other: { adapter: 'memory', attempts: 7 },
+      backends: {
+        m: { adapter: 'memory', attempts: 5, concurrency: 2 },
+        other: { adapter: 'memory', attempts: 7 },
+      },
     });
-    const executor = service.getJobExecutor('scope', 'alias');
+    const executor = service.getJobExecutor('scope', 'missing');
     expect(service.getJobExecutor('scope', 'm')).toBe(executor);
     expect(configs[0]).toMatchObject({ key: 'm', attempts: 5, concurrency: 2 });
-    const named = harness({ custom: { adapter: 'memory' } });
+    const named = harness({ backends: { custom: { adapter: 'memory' } } });
     named.service.getJobExecutor('scope', 'custom');
     expect(named.configs[0]).toMatchObject({ key: 'custom', builtIn: false });
   });
@@ -124,7 +128,7 @@ describe('ordinary service selection', () => {
     ]) {
       const { service, configs } = harness({
         default: 'm',
-        m: { adapter: 'memory', ...settings },
+        backends: { m: { adapter: 'memory', ...settings } },
       });
       expect(() => service.getJobExecutor('scope')).toThrow(
         /positive integer/u,

@@ -94,7 +94,6 @@ export { useAuthorLabel } from './pages/issues/detail/use-author-label.js';
 export { isBuiltInKind, useKindLabel } from './lib/kinds.js';
 export { useHasMentionableKinds } from './pages/issues/use-mention-candidates.js';
 export {
-  ATTACHMENT_SIZE_MB,
   useAttachmentUploads,
   type AttachmentUploads,
   type PendingUpload,

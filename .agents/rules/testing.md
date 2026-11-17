@@ -49,6 +49,10 @@ This applies to the version of any workspace package, whether the test owns it o
 
 The same reasoning covers anything else a release rewrites. Assert against the manifest, not against a copy of what it currently says.
 
+### Wait for a Control to Be Interactive Before Using It
+
+A control's accessible name is in the DOM before the component that owns it can respond: the label of a menu, popover, select or dialog trigger renders while the trigger is still mounting, and a click that lands then does nothing. Find such a trigger by the state that proves it is ready, such as `findByRole('button', { name, expanded: false })` for a menu, and click what that returned; then wait for the result, such as `findByRole('menu')`. Never click straight from `findByRole('button', { name })` or `getByText(label)` and then expect the overlay, because it passes on a fast machine and fails under CI load.
+
 ### Validation
 
 Run `lint`, `typecheck`, `test`, and `build` for the packages you modified, and for the packages that consume what you changed. Scope the run to those with `pnpm --filter <package>`; a workspace-wide `pnpm -r test` takes minutes and is CI's job, not a routine step after an edit.

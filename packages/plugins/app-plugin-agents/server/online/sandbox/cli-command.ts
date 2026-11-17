@@ -446,6 +446,11 @@ export function cliCommand(
           command.confirm + ' Nothing was done without explicit confirmation.',
           'CONFIRMATION_REQUIRED',
         );
+      if (command.idempotency && !asksHelp(rest))
+        throw usage(
+          'Operation-key commands require the installed CLI; no request was sent.',
+          'UNSUPPORTED_CAPABILITY',
+        );
       const parsed = await parseCommandLine(
         command,
         rest.includes('--json') || !json ? rest : [...rest, '--json'],

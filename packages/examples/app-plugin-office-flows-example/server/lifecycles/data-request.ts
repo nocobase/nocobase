@@ -1,3 +1,4 @@
+import { officeParameterContract } from '../services/parameter-snapshots.js';
 import {
   defineEffect,
   defineLifecycle,
@@ -46,6 +47,7 @@ export interface OfficeServices {
 export interface DataRequestTypes {
   record: DataRequest;
   state: DataRequestState;
+  parameters: import('@nocobase/lifecycle').JsonObject;
   services: OfficeServices;
 }
 
@@ -133,7 +135,7 @@ export const createOneTimeExtraction: EffectDefinition<DataRequestTypes> =
     async run({ record, services }) {
       if (record.frequency !== 'once' || !record.deliveryDate)
         return { skipped: true };
-      const calendar = await services.store.calendar();
+      const calendar = await services.store.calendar(String(record.id));
       const created = await services.store.createExtraction({
         requestId: idOf(record.id),
         periodKey: 'once',
@@ -155,6 +157,10 @@ export const createOneTimeExtraction: EffectDefinition<DataRequestTypes> =
 export const dataRequestLifecycle: Lifecycle<DataRequestTypes> =
   defineLifecycle<DataRequestTypes>({
     name: 'dataRequests',
+    ...officeParameterContract('dataRequests'),
+    key: 'dataRequests',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.dataRequests,
     initial: 'draft',
     states: [

@@ -116,7 +116,9 @@ export function ConversationPanelFrame({
           id={CHAT_PANEL_ID}
           {...marker}
           showCloseButton={false}
-          className='flex h-dvh max-h-dvh w-full max-w-none flex-col gap-0 rounded-none p-0 sm:max-w-none'
+          // Pinned to the top rather than centred: the keyboard fit shortens it from the bottom, so its composer ends
+          // where the keyboard begins.
+          className='top-0 left-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0 sm:max-w-none'
           data-testid='chat-panel'
           data-mode='mobile'
         >

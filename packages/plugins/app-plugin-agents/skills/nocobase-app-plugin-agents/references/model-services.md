@@ -15,3 +15,5 @@ Agents run on runners and do not use model services. The plugin keeps model serv
 ## Legacy vector collections
 
 Agents 2 removes the legacy vector collection service. Use the model gateway for Embedding; Knowledge owns its independent document indexing and storage. Before upgrading an existing integration, read `@nocobase/app-plugin-agents/docs/vectors-migration.md`. There is no automatic conversion of legacy collections.
+
+Native OnlineAgent web search supports DeepSeek's official Search API through the existing configured model service. Enable the existing `webSearch` tool; do not add a separate search tool or business gateway contract. Retrieval returns bounded findings and safe title/URL sources, without page bodies. The official root and `/v1` endpoints are admitted, and queries above 128 Unicode code points fail individually under the existing result contract. Read `docs/native-web-search.md` in this package for the shared timeout, cancellation and failure behavior, key protection and vendor billing.

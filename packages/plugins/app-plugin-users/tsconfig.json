@@ -13,6 +13,7 @@
     "package.ts",
     "database/**/*.ts",
     "server/**/*.ts",
+    "shared/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx"
   ]

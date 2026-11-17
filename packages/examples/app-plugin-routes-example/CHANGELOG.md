@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-routes-example
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 1.0.0-beta.24
 
 ### Patch Changes

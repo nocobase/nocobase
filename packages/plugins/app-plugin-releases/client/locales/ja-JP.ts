@@ -68,15 +68,14 @@ const jaJP: LocaleResource<typeof enUS> = {
             all: 'デプロイ(すべて)',
           },
           deployProtected: {
-            title: '保護された展開を承認する',
+            title: '保護された環境へのデプロイ',
             description:
-              '承認者を指定しない保護された環境への展開を承認します。人のみ',
-            related:
-              '保護されたデプロイメント (それらに関連するもの) を承認する',
+              '環境の承認者が解決されない場合、本人が申請を承認し、本人またはその実行が直接デプロイできます',
+            related: '保護された環境へのデプロイ（関連するもの）',
             relatedLabel: '私が作ったもの',
             relatedHint:
               '私が作成したアプリ、および私に関連するアプリケーション',
-            all: '保護された展開を承認する (すべて)',
+            all: '保護された環境へのデプロイ（すべて）',
           },
           operate: {
             title: 'スタートとストップ',
@@ -151,13 +150,11 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'アプリ',
       environments: '環境の展開',
     },
     apps: {
+      lastFailure: '前回の失敗：{{detail}}',
       title: 'アプリ',
-      description: 'アプリケーション、そのリリース、および展開場所。',
-      search: 'IDまたは名前で検索',
       create: 'アプリの作成',
       id: 'アプリID',
       name: '名前',
@@ -168,18 +165,28 @@ const jaJP: LocaleResource<typeof enUS> = {
       labels: 'ラベル',
       loadFailed: 'アプリを読み込めませんでした。',
       loadOneFailed: 'アプリを読み込めませんでした。',
-      emptyTitle: 'アプリはまだありません',
-      emptyNoAccess: '管理者にアプリの作成を依頼します。',
-      emptyDescription:
-        'アプリを作成し、リリースをアップロードして環境にデプロイします。',
-      noResults: '検索に一致するアプリはありません。',
       created: '{{name}} を作成しました。',
       createDescription:
         'アプリは 1 つの環境にデプロイされます。そのリリースは後でアップロードされます。',
       idHint:
         '文字、数字、アンダースコア、ハイフン。その住所の一部。後から変更することはできません。',
-      noEnvironment: 'まだ環境がありません',
       lastAccess: '最後の訪問',
+      stateFilter: '状態',
+      anyState: 'すべての状態',
+      clearFilters: 'フィルターをクリア',
+      noMatches: 'フィルターに一致するアプリはありません。',
+      runStates: {
+        running: '実行中',
+        starting: '起動中',
+        pending: '未起動',
+        waiting: '待機中',
+        stopped: '停止または休止中',
+        failed: '失敗',
+        unknown: '不明',
+      },
+      page: '{{page}} / {{pages}} ページ',
+      previousPage: '前のページ',
+      nextPage: '次のページ',
     },
     advanced: 'アドバンスト (オプション)',
     labels: {
@@ -539,11 +546,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '共有アプリホスト',
       description:
         'このホスト上のすべての環境のアプリが、1 つのプロセスとそのメモリを共有します。',
-      summary:
-        'デプロイ済み {{deployed}} 個のうち {{running}} 個が実行中または起動中',
-      memory:
-        'ヒープ {{heapUsed}} / {{heapLimit}} · プロセスメモリ {{rss}} · サーバーの空き {{available}}',
-      memoryNote: 'プロセス全体の合計で、個々のアプリの使用量ではありません。',
+      environments: 'このホストの環境：{{names}}',
       recycling: {
         pending:
           '使用中のアプリがなくなったら、このホストを再起動して古いコードを解放します。新しいバージョンはそれまで待機し、実行中のアプリは引き続き応答します。',
@@ -552,15 +555,22 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}：アプリを復元できませんでした。バックグラウンドで再試行しています。',
-      columns: {
-        app: 'アプリ',
-        state: '状態',
-        why: '理由',
-        lastAccess: '最終アクセス',
-      },
-      hidden: '表示権限のないアプリ',
-      empty: 'このホストで実行中のアプリはありません。',
-      idle: 'アイドル。空きが必要なときに最初に停止されます',
+      failed:
+        '共有ホストの再起動後にアプリを復元できませんでした。バックグラウンドで再試行しています。',
+      view: 'ホストの使用状況を見る',
+      deployed: 'デプロイ済み：{{count}}',
+      appsLabel: '実行中・起動中',
+      heapLabel: 'ヒープ',
+      processLabel: 'プロセスメモリ',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 上限なし',
+      available: 'サーバーの空き {{available}}',
+      wholeHost:
+        'ホスト全体（上のすべての環境を含む）の合計です。メモリはアプリごとに分けられません。',
+      viewAppsNote: '表示権限のあるアプリだけが一覧に出ます。',
+      byEnvironment: '環境別の実行中または起動中：',
+    },
+    runtime: {
       holds: {
         requests: 'リクエストを処理中',
         connections: '接続中',
@@ -575,6 +585,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         memory: '起動拒否：メモリ不足',
         recycle: '起動拒否：新しいコードはホストの再起動を待っています',
       },
+      idle: 'アイドル。空きが必要なときに最初に停止されます',
+      lastVisit: '最終アクセス：{{time}}',
     },
     overview: {
       currentRelease: '現在のリリース',
@@ -750,6 +762,12 @@ const jaJP: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '表示する最初の管理者がありません。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'リリースパッケージから {{seconds}} 秒間データを受信できませんでした。デプロイは完了していません。再試行してください。',
+        artifactReadTotalTimeout:
+          'リリースパッケージの読み取りが {{seconds}} 秒を超えました。デプロイは完了していません。再試行してください。',
+        artifactReadTimeout:
+          'リリースパッケージの読み取りがタイムアウトしました。デプロイは完了していません。再試行してください。',
         hostExited: 'アプリのプロセスが準備が整う前に停止しました。',
         hostDisabled: 'アプリホストがオフになっています。',
         hostShutDown: 'アプリホストがシャットダウンしました。',
@@ -766,6 +784,18 @@ const jaJP: LocaleResource<typeof enUS> = {
           'まだ準備ができていません。しばらくしてからもう一度試してください。',
         checkTimeout: 'テストは 20 秒以内に終了しませんでした。',
         hostNoSettings: 'ローカル 実行環境は接続設定を必要としません。',
+        recycleWait:
+          'アプリホストがメモリを回収しています。完了後にデプロイを続行します。',
+        recycleRetry:
+          'アプリホストはまだメモリを回収中のため、デプロイは完了しませんでした。しばらくしてから再試行してください。',
+        capacityExceeded:
+          'アプリホストのメモリまたは空き枠が不足しているため、デプロイは完了しませんでした。しばらくしてから再試行してください。',
+        replacementMemory:
+          'アプリホストのメモリが不足しているため新しいバージョンを起動できません。現在のバージョンは稼働を続けます。しばらくしてから再試行してください。',
+        startQueueFull:
+          '起動中のアプリが多すぎます。しばらくしてから再試行してください。',
+        activeLimit:
+          '実行中のアプリ数が上限に達しています。しばらくしてから再試行してください。',
       },
       prefixed: {
         startFailed: '起動に失敗しました: {{detail}}',

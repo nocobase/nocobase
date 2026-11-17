@@ -1,5 +1,83 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.12
+
+### Patch Changes
+
+- 0d2ce49: Fix a blank application caused by Demo Mode matching routes nested in same-path groups, such as the default template's System settings categories, and skip that matching while Demo Mode is off.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [c74760f]
+- Updated dependencies [74f1bf8]
+- Updated dependencies [1952789]
+- Updated dependencies [7884308]
+- Updated dependencies [a6b6b7c]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-cli@1.0.0-beta.34
+
+## 0.2.0-beta.11
+
+### Patch Changes
+
+- efa464a: Keep a demo visitor's language choice in their own browser session instead of the shared demo account. Demo Mode now isolates the `i18n.locale` preference that the language switcher saves, replacing the unused `locale` key, and Users shares that key between its client and server.
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [efa464a]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-cli@1.0.0-beta.33
+
+## 0.2.0-beta.10
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [f37a169]
+- Updated dependencies [bf9857b]
+- Updated dependencies [8c9cdae]
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [f37a169]
+- Updated dependencies [3eff32d]
+- Updated dependencies [764fc1b]
+- Updated dependencies [10aabd6]
+- Updated dependencies [faa534f]
+- Updated dependencies [4649c90]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-agents@2.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 0.2.0-beta.9
 
 ### Patch Changes

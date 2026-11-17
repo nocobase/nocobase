@@ -1,3 +1,5 @@
+import { uploadDiagnostics } from './diagnostics.ts';
+import { pruneRunnerLogs } from '../lib/journal.ts';
 // The runner daemon: one per machine (a pid file guards it), serving every application it is registered with.
 //
 // On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Once a
@@ -73,6 +75,7 @@ import {
   type WorkspacesResponse,
   routePath,
   NPM_UPGRADE_FEATURE,
+  DIAGNOSTICS_FEATURE,
   type RunnerFeature,
   type ToolInfo,
   type ToolLoad,
@@ -144,8 +147,11 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'gitCredentials',
   // Code host CLI wrappers with the run's credential (agent/host-tools.ts).
   'gitTools',
+  // The private npm registry's token, asked for only when an install needs it (agent/npm-launcher.ts).
+  'npmCredentials',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
+  DIAGNOSTICS_FEATURE,
 ];
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
@@ -217,6 +223,7 @@ interface AppLink {
   heartbeatTimer?: NodeJS.Timeout;
   heartbeatInFlight?: Promise<void>;
   reportedDetection?: AppLink['detection'];
+  diagnosticsUpload?: Promise<void>;
   capacity?: RunnerCapacity;
   capacitySource?: 'online' | 'legacyLocal';
   heartbeatHealthy?: boolean;
@@ -668,6 +675,11 @@ export class RunnerDaemon {
       try {
         while (this.claimsInFlight > 0) await delay(20, this.stopping.signal);
         const settings = await readSettings(paths);
+        await pruneRunnerLogs(paths, settings).catch((error: unknown) =>
+          log(
+            `gc: log cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
         const reporters = new Map<
           string,
           (request: WorkspacesRequest) => Promise<WorkspacesResponse>
@@ -938,6 +950,27 @@ export class RunnerDaemon {
       capacityChanged =
         JSON.stringify(link.capacity) !== JSON.stringify(capacity) ||
         link.capacitySource !== source;
+      if (response.diagnostics && !link.diagnosticsUpload) {
+        link.diagnosticsUpload = uploadDiagnostics(
+          link.client,
+          this.options.paths,
+          response.diagnostics,
+          {
+            version: runnerVersion(),
+            tools: tools.map((tool) => ({
+              tool: tool.kind,
+              version: tool.version,
+            })),
+          },
+          this.stopping.signal,
+        )
+          .catch((error: unknown) =>
+            log(`Diagnostics upload failed: ${String(error)}`),
+          )
+          .finally(() => {
+            link.diagnosticsUpload = undefined;
+          });
+      }
       if (!link.heartbeatHealthy) this.wake();
       link.heartbeatHealthy = true;
       link.capacityReportedAt = new Date().toISOString();

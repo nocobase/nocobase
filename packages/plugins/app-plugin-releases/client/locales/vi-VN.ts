@@ -70,15 +70,14 @@ const viVN: LocaleResource<typeof enUS> = {
             all: 'Triển khai (tất cả)',
           },
           deployProtected: {
-            title: 'Phê duyệt triển khai được bảo vệ',
+            title: 'Triển khai vào môi trường được bảo vệ',
             description:
-              'Phê duyệt việc triển khai vào các môi trường được bảo vệ mà không có người phê duyệt; chỉ có người',
-            related:
-              'Phê duyệt các triển khai được bảo vệ (những triển khai liên quan đến chúng)',
+              'Khi không xác định được người duyệt môi trường, duyệt yêu cầu trực tiếp hoặc triển khai bằng chính người đó hay lượt chạy của họ',
+            related: 'Triển khai vào môi trường được bảo vệ (liên quan)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:
               'Ứng dụng tôi đã tạo và mọi ứng dụng liên quan đến tôi',
-            all: 'Phê duyệt triển khai được bảo vệ (tất cả)',
+            all: 'Triển khai vào môi trường được bảo vệ (tất cả)',
           },
           operate: {
             title: 'Bắt đầu và dừng',
@@ -152,13 +151,11 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Ứng dụng',
       environments: 'Triển khai môi trường',
     },
     apps: {
+      lastFailure: 'Lỗi gần nhất: {{detail}}',
       title: 'Ứng dụng',
-      description: 'Các ứng dụng, bản phát hành và nơi chúng được triển khai.',
-      search: 'Tìm kiếm theo ID hoặc tên',
       create: 'Tạo ứng dụng',
       id: 'ID ứng dụng',
       name: 'Tên',
@@ -169,18 +166,28 @@ const viVN: LocaleResource<typeof enUS> = {
       labels: 'Nhãn',
       loadFailed: 'Không thể tải ứng dụng.',
       loadOneFailed: 'Không thể tải ứng dụng.',
-      emptyTitle: 'Chưa có ứng dụng nào',
-      emptyNoAccess: 'Yêu cầu quản trị viên tạo ứng dụng.',
-      emptyDescription:
-        'Tạo một ứng dụng, sau đó tải bản phát hành lên và triển khai nó vào một môi trường.',
-      noResults: 'Không có ứng dụng nào phù hợp với tìm kiếm.',
       created: '{{name}} đã được tạo.',
       createDescription:
         'Một ứng dụng được triển khai trên một môi trường; bản phát hành của nó được tải lên sau đó.',
       idHint:
         'Chữ cái, chữ số, dấu gạch dưới và dấu gạch nối; một phần địa chỉ của nó. Nó không thể thay đổi sau này.',
-      noEnvironment: 'Chưa có môi trường',
       lastAccess: 'Lần cuối ghé thăm',
+      stateFilter: 'Trạng thái',
+      anyState: 'Mọi trạng thái',
+      clearFilters: 'Xóa bộ lọc',
+      noMatches: 'Không có ứng dụng nào khớp bộ lọc.',
+      runStates: {
+        running: 'Đang chạy',
+        starting: 'Đang khởi động',
+        pending: 'Chưa khởi động',
+        waiting: 'Đang chờ',
+        stopped: 'Đã dừng hoặc ngủ đông',
+        failed: 'Thất bại',
+        unknown: 'Không rõ',
+      },
+      page: 'Trang {{page}} / {{pages}}',
+      previousPage: 'Trang trước',
+      nextPage: 'Trang sau',
     },
     advanced: 'Nâng cao (tùy chọn)',
     labels: {
@@ -544,11 +551,7 @@ const viVN: LocaleResource<typeof enUS> = {
       title: 'Máy chủ ứng dụng dùng chung',
       description:
         'Ứng dụng của mọi môi trường trên máy chủ này dùng chung một tiến trình và bộ nhớ của nó.',
-      summary:
-        '{{running}} trên {{deployed}} ứng dụng đã triển khai đang chạy hoặc đang khởi động',
-      memory:
-        'Heap {{heapUsed}} / {{heapLimit}} · bộ nhớ tiến trình {{rss}} · còn {{available}} trên máy chủ',
-      memoryNote: 'Tổng của cả tiến trình, không phải của một ứng dụng.',
+      environments: 'Môi trường trên máy chủ này: {{names}}',
       recycling: {
         pending:
           'Mã cũ được giải phóng bằng cách khởi động lại máy chủ này khi không còn ứng dụng nào được dùng. Phiên bản mới chờ đến lúc đó; ứng dụng đang chạy vẫn phục vụ.',
@@ -557,15 +560,22 @@ const viVN: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: không khôi phục được các ứng dụng; đang thử lại ở chế độ nền.',
-      columns: {
-        app: 'Ứng dụng',
-        state: 'Trạng thái',
-        why: 'Lý do',
-        lastAccess: 'Truy cập gần nhất',
-      },
-      hidden: 'Một ứng dụng bạn không có quyền xem',
-      empty: 'Không có ứng dụng nào đang chạy trên máy chủ này.',
-      idle: 'Rảnh; bị dừng trước khi cần chỗ',
+      failed:
+        'Không thể khôi phục ứng dụng sau khi máy chủ dùng chung khởi động lại; đang thử lại ở chế độ nền.',
+      view: 'Xem mức sử dụng máy chủ',
+      deployed: 'Đã triển khai: {{count}}',
+      appsLabel: 'Đang chạy hoặc khởi động',
+      heapLabel: 'Heap',
+      processLabel: 'Bộ nhớ tiến trình',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · không giới hạn',
+      available: 'Máy chủ còn trống {{available}}',
+      wholeHost:
+        'Tổng của cả máy chủ, gồm mọi môi trường trên đó; không thể chia bộ nhớ cho từng ứng dụng.',
+      viewAppsNote: 'Chỉ liệt kê các ứng dụng bạn được xem.',
+      byEnvironment: 'Đang chạy hoặc đang khởi động, theo môi trường:',
+    },
+    runtime: {
       holds: {
         requests: 'Đang xử lý yêu cầu',
         connections: 'Kết nối đang mở',
@@ -581,6 +591,8 @@ const viVN: LocaleResource<typeof enUS> = {
         memory: 'Từ chối khởi động: không đủ bộ nhớ',
         recycle: 'Từ chối khởi động: mã mới chờ máy chủ khởi động lại',
       },
+      idle: 'Rảnh; bị dừng trước khi cần chỗ',
+      lastVisit: 'Lần truy cập cuối: {{time}}',
     },
     overview: {
       currentRelease: 'Bản phát hành hiện tại',
@@ -764,6 +776,12 @@ const viVN: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: 'Không có quản trị viên đầu tiên hiển thị.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Không nhận được dữ liệu từ gói phát hành trong {{seconds}} giây. Việc triển khai chưa hoàn tất; hãy thử lại.',
+        artifactReadTotalTimeout:
+          'Việc đọc gói phát hành đã vượt quá {{seconds}} giây. Việc triển khai chưa hoàn tất; hãy thử lại.',
+        artifactReadTimeout:
+          'Đã hết thời gian đọc gói phát hành. Việc triển khai chưa hoàn tất; hãy thử lại.',
         hostExited: 'Quá trình của ứng dụng đã dừng trước khi sẵn sàng.',
         hostDisabled: 'Máy chủ ứng dụng bị tắt.',
         hostShutDown: 'Máy chủ ứng dụng đã tắt.',
@@ -780,6 +798,17 @@ const viVN: LocaleResource<typeof enUS> = {
         notReady: 'Nó vẫn chưa sẵn sàng; hãy thử lại sau giây lát.',
         checkTimeout: 'Bài kiểm tra không kết thúc trong vòng 20 giây.',
         hostNoSettings: 'Thời gian chạy cục bộ không có cài đặt kết nối.',
+        recycleWait:
+          'Máy chủ ứng dụng đang thu hồi bộ nhớ; việc triển khai sẽ tiếp tục khi hoàn tất.',
+        recycleRetry:
+          'Máy chủ ứng dụng vẫn đang thu hồi bộ nhớ nên việc triển khai chưa hoàn tất. Hãy thử lại sau.',
+        capacityExceeded:
+          'Máy chủ ứng dụng không đủ bộ nhớ hoặc chỗ trống nên việc triển khai chưa hoàn tất. Hãy thử lại sau.',
+        replacementMemory:
+          'Máy chủ ứng dụng không đủ bộ nhớ để khởi động phiên bản mới; phiên bản hiện tại vẫn chạy. Hãy thử lại sau.',
+        startQueueFull:
+          'Có quá nhiều ứng dụng đang khởi động trên máy chủ. Hãy thử lại sau.',
+        activeLimit: 'Số ứng dụng đang chạy đã đạt giới hạn. Hãy thử lại sau.',
       },
       prefixed: {
         startFailed: 'Khởi động không thành công: {{detail}}',

@@ -260,3 +260,6 @@ export const ISSUE_PROGRESS_MAX = 2_000;
 export const ISSUE_ACCEPTANCE_MAX = 20_000;
 export const ISSUE_PAGE_LIMIT = { default: 50, max: 100 } as const;
 export const ACTIVITY_PAGE_LIMIT = { default: 50, max: 200 } as const;
+
+/** The maximum number of parent edges traversed by grouped hierarchy reads. */
+export const ISSUE_HIERARCHY_DEPTH_MAX = 64;

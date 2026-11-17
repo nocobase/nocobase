@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NativeFileInputs } from '@nocobase/app-plugin-agents/server';
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import type { AgentsConfig } from '@nocobase/app-plugin-agents/server/tokens';
 import type { AppUIMessage } from '@nocobase/app-plugin-agents/shared/online-agent';
 import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
@@ -14,6 +15,12 @@ const rootDir = fileURLToPath(new URL('../..', import.meta.url));
 const ref = { modelService: 'deepseek', model: 'deepseek-flash' };
 const png =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+const inlineFiles = {
+  uploadLimit: DEFAULT_FILE_UPLOAD_LIMIT,
+  content: async () => {
+    throw new Error('No stored files in this fixture.');
+  },
+};
 let directory: string;
 let config: AgentsConfig;
 
@@ -35,6 +42,7 @@ afterAll(async () => {
 
 const createInputs = (baseUrl: string | null = null) =>
   new NativeFileInputs({
+    files: inlineFiles,
     config: config.fileInputs,
     connectionFor: async () => ({
       provider: 'deepseek',
@@ -202,6 +210,7 @@ it('lets deployment policy explicitly disable shared image forwarding', async ()
     env: { AUTH_SECRET: 'fixture-auth-secret-at-least-32-characters' },
   });
   const inputs = new NativeFileInputs({
+    files: inlineFiles,
     config: runtime.config.get<AgentsConfig>('agents')?.fileInputs,
     connectionFor: async () => ({
       provider: 'deepseek',

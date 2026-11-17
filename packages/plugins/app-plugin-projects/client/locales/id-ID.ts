@@ -55,6 +55,8 @@ const idID: LocaleResource<typeof enUS> = {
       subtaskAdded: 'menambahkan subtugas',
       dependencyAdded: 'menambahkan ketergantungan pada',
       dependencyRemoved: 'menghilangkan ketergantungan pada',
+      relationAdded: 'menambahkan relasi dengan',
+      relationRemoved: 'menghapus relasi dengan',
       stageChanged: 'mengubah panggung',
       autoMoveSkipped: 'tidak dapat memindahkan tugas secara otomatis ke',
     },
@@ -369,6 +371,9 @@ const idID: LocaleResource<typeof enUS> = {
     projectRequired: 'Pilih setidaknya satu proyek yang Anda pimpin.',
     projects: 'Proyek',
     projectsHint: 'Para undangan bergabung dalam proyek ini sebagai anggota.',
+    language: 'Bahasa email',
+    languageHint:
+      'Email undangan dan halaman pendaftarannya memakai bahasa ini.',
     projectsPlaceholder: 'Pilih proyek',
     resend: 'Kirim lagi',
     generateLink: 'Buat tautan baru',

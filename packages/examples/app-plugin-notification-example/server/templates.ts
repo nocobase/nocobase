@@ -2,9 +2,20 @@ import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   describeNotificationTemplateChannel,
+  notificationI18nText,
   notificationTemplateRegistryToken,
   type NotificationConfigInput,
+  type NotificationI18nText,
 } from '@nocobase/app-plugin-notification/server';
+
+/** Administrator-facing text, translated in the browser from this plugin's client locales. */
+function text(key: string, defaultValue: string): NotificationI18nText {
+  return {
+    ns: '@nocobase/app-plugin-notification-example',
+    key: `notificationTemplates.${key}`,
+    defaultValue,
+  };
+}
 
 /** The real sender and synthetic preview both use this English-only renderer. */
 export function renderTaskNotification(
@@ -41,30 +52,63 @@ export class TaskTemplateProvider extends ServiceProvider<AppPluginApplication> 
         registry.register({
           id: `notification-example.task-${event}`,
           contributor: '@nocobase/app-plugin-notification-example',
-          category: 'Tasks',
-          name: event === 'assigned' ? 'Task assigned' : 'Task updated',
+          contributorLabel: text('contributor', 'Notification examples'),
+          category: text('category', 'Tasks'),
+          name:
+            event === 'assigned'
+              ? text('assigned.name', 'Task assigned')
+              : text('updated.name', 'Task updated'),
           trigger:
             event === 'assigned'
-              ? 'A task is created.'
-              : 'A task is updated, including reassignment.',
+              ? text('assigned.trigger', 'A task is created.')
+              : text(
+                  'updated.trigger',
+                  'A task is changed, including when it is reassigned.',
+                ),
           recipients:
             event === 'assigned'
-              ? 'The assignee, including self-assignment.'
-              : 'The creator, previous assignee and new assignee, deduplicated and excluding the acting user.',
-          businessRule:
-            'Triggered by task actions; there is no separate notification switch.',
+              ? text(
+                  'assigned.recipients',
+                  'The assignee, even when they assigned the task to themselves.',
+                )
+              : text(
+                  'updated.recipients',
+                  'The creator, the previous assignee and the new assignee, each once. The person who made the change is not notified.',
+                ),
+          businessRule: text(
+            'businessRule',
+            'Sent whenever the task action happens. There is no separate switch to turn it off.',
+          ),
           locales: ['en-US'],
-          languagePolicy:
-            'English only, independent of the recipient or interface language. Other preview locales fall back to en-US.',
+          languagePolicy: text(
+            'languagePolicy',
+            "Always in English, whatever the recipient's language.",
+          ),
           variables: [
-            { name: 'title', description: 'Task title' },
-            { name: 'description', description: 'Task description' },
-            { name: 'status', description: 'Task status' },
+            {
+              name: 'title',
+              description: text('variables.title', 'Task title'),
+            },
+            {
+              name: 'description',
+              description: text('variables.description', 'Task description'),
+            },
+            {
+              name: 'status',
+              description: text('variables.status', 'Task status'),
+            },
           ],
           channels: () => [
             describeNotificationTemplateChannel(
               this.app.config.get<NotificationConfigInput>('notification'),
               'inbox',
+              {
+                label: text('channel', 'Task inbox'),
+                typeLabel: notificationI18nText(
+                  'templates.channelTypes.inApp',
+                  'In-app message',
+                ),
+              },
             ),
           ],
           render: (_locale, example) =>

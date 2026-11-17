@@ -2,8 +2,10 @@
  * Environments settings: where Apps are deployed. Reading lists them with their driver; a row opens the environment's
  * page at `:environmentId` (the child route, `environment-page.tsx`), where it is viewed and edited. Adding one is a
  * dialog (`components/environment-form.tsx`); a row's menu also checks the environment and deletes it. Outcomes are
- * toasts.
+ * toasts. Below the list, each app host environments share is shown once (`components/shared-host.tsx`); an App's page
+ * links to its host's block by its anchor.
  */
+import { useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArrowRightIcon,
@@ -11,14 +13,17 @@ import {
   PlugZapIcon,
   PlusIcon,
   ServerIcon,
+  ShieldXIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { useState, type ReactElement, type ReactNode } from 'react';
-import { Link, useNavigate, useOutlet } from 'react-router';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate, useOutlet } from 'react-router';
 
+import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type {
   EnvironmentListItem,
   EnvironmentRecord,
+  SharedHostView,
 } from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
 import { useConfirmDialog } from '../components/confirm-dialog.js';
@@ -28,6 +33,7 @@ import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { EnvironmentBadges } from '../components/release-badges.js';
 import { RowActions } from '../components/row-actions.js';
+import { SharedHostSection } from '../components/shared-host.js';
 import { EmptyState, ListSkeleton, LoadError } from '../components/states.js';
 import { Button } from '../components/ui/button.js';
 import { Dialog, DialogContent } from '../components/ui/dialog.js';
@@ -38,7 +44,13 @@ import {
 import { useDriverNames } from '../hooks/use-driver-names.js';
 import { useEnvironmentCheck } from '../hooks/use-environment-check.js';
 import { useNotify } from '../hooks/use-notify.js';
-import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
+import {
+  useLoad,
+  useMe,
+  useMeLoad,
+  useReleasesApi,
+} from '../hooks/use-releases.js';
+import { canEnterEnvironments } from '../lib/permissions.js';
 
 /** The page's heading, when the application that mounts it names the page in its own words. */
 export interface EnvironmentsPageProps {
@@ -50,6 +62,34 @@ export default function EnvironmentsPage(
   props: EnvironmentsPageProps,
 ): ReactElement {
   const outlet = useOutlet();
+  const me = useMeLoad();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
+  // Its route declares no grant (`routes.ts`): a route names one, and this page opens to either of two, as the server
+  // reads environments for either (`EnvironmentService.requireReader`). So the page decides, for itself and the
+  // environment's page below it.
+  if (!me.data)
+    return (
+      <PageContainer>
+        {me.error ? (
+          <LoadError
+            title={t('ui.environments.loadFailed')}
+            error={me.error}
+            onRetry={me.reload}
+          />
+        ) : (
+          <ListSkeleton />
+        )}
+      </PageContainer>
+    );
+  if (!canEnterEnvironments(me.data))
+    return (
+      <PageContainer>
+        <EmptyState
+          icon={<ShieldXIcon />}
+          title={t('ui.errors.reasons.FORBIDDEN')}
+        />
+      </PageContainer>
+    );
   if (outlet) return <>{outlet}</>;
   return <EnvironmentsList {...props} />;
 }
@@ -63,11 +103,30 @@ export function EnvironmentsList({
   const notify = useNotify();
   const navigate = useNavigate();
   const canManage = me.permissions.settings['rel.environments/manage'];
+  // The page is open to App readers too (they list and create Apps here); checking an environment needs the setting.
+  const canRead = me.permissions.settings['rel.environments/read'];
+  // An environment's Apps are read from `/apps`, which needs the Apps page and the `view` action on some App.
+  const canViewApps =
+    me.permissions.pages['rel-apps'] &&
+    me.permissions.scopes['rel.apps/view'] !== 'none';
   const environments = useLoad(
     () =>
       api.list<EnvironmentListItem>('environments').then((page) => page.items),
     'environments',
   );
+  // A secondary block: when it cannot be read the list still stands, so it is left out rather than failing the page.
+  const hosts = useLoad(
+    () => api.list<SharedHostView>('hosts').then((page) => page.items),
+    'hosts',
+  );
+  const { hash } = useLocation();
+  // An App's page links here to its host's block; the block exists only once the hosts are read.
+  useEffect(() => {
+    if (!hash || !hosts.data) return;
+    document
+      .getElementById(decodeURIComponent(hash.slice(1)))
+      ?.scrollIntoView({ block: 'start' });
+  }, [hash, hosts.data]);
   const { drivers, driverName, t } = useDriverNames();
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -191,10 +250,12 @@ export function EnvironmentsList({
                 {t('ui.environments.edit')}
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem onClick={() => void check(row.original)}>
-              <PlugZapIcon />
-              {t('ui.environments.check')}
-            </DropdownMenuItem>
+            {canRead ? (
+              <DropdownMenuItem onClick={() => void check(row.original)}>
+                <PlugZapIcon />
+                {t('ui.environments.check')}
+              </DropdownMenuItem>
+            ) : null}
             {canManage ? (
               <>
                 <DropdownMenuSeparator />
@@ -264,6 +325,13 @@ export function EnvironmentsList({
         }
       />
       {content}
+      {hosts.data?.map((host) => (
+        <SharedHostSection
+          key={host.id}
+          host={host}
+          canViewApps={canViewApps}
+        />
+      ))}
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
           {adding ? (

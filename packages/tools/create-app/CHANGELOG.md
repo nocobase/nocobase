@@ -1,5 +1,43 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.39
+
+### Patch Changes
+
+- 8339722: Recognize the commercial sub-app template alias for independent children with deployment tooling and platform SSO.
+
+## 0.1.0-beta.38
+
+### Patch Changes
+
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+
+## 0.1.0-beta.37
+
+### Minor Changes
+
+- cf13b3f: Support the commercial Main-only multi-app template alias with standard single-application creation and Skills synchronization. Keep commercial templates and plugins as licensed registry dependencies, scope private registry selection to NocoBase packages, and report recoverable installation failures without exposing credential settings.
+
+### Patch Changes
+
+- 9f74da7: Clarify that the commercial multi-app template creates Main only and children are added on demand. Keep the template alias while removing multi-application scaffolding and appDirectories processing. Main consumes child deployment archives rather than source directories.
+
+  Move multi-app scenario Skills out of the shared application guidance package; they are distributed by the commercial multi-app plugin.
+
+- 01c1cd5: Add --nocobase-registry and scope NOCOBASE_REGISTRY to @nocobase packages while respecting existing package-manager configuration. Keep --registry compatible with its legacy download behavior and display a migration warning, including in JSON output.
+
+## 0.1.0-beta.36
+
+### Patch Changes
+
+- 1e53e8d: Preserve the package manager default registry for third-party dependencies when creating an app from a private NocoBase registry.
+
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- b3a9540: Support the multi-portal template alias and document authenticated creation from the commercial registry.
+
 ## 0.1.0-beta.34
 
 ### Patch Changes

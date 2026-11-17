@@ -10,18 +10,21 @@ Declare the list's `navigation`, the detail's static `breadcrumb` fallback and t
 // In the detail page, before any early loading/error return.
 import { usePageBreadcrumb } from '@nocobase/app-client';
 import { useResolvedPath } from 'react-router';
-import { useRouteSearches } from '../../../routing/route-context.js';
+import { useAncestorSearch } from '../../../routing/route-context.js';
+import { PROJECT_LIST_KEYS } from './types.js';
 
 const owner = useResolvedPath('..').pathname;
 const detail = useResolvedPath('.').pathname;
-const searches = useRouteSearches();
 const listLevel = {
   label: t('projects.title'),
-  to: { pathname: owner, search: searches.get(owner) ?? '' },
+  to: { pathname: owner, search: useAncestorSearch(owner, PROJECT_LIST_KEYS) },
 };
 const recordLevel = {
   label: request.data?.data.name ?? t('projects.detail'),
-  to: { pathname: detail, search: searches.get(detail) ?? '' },
+  to: {
+    pathname: detail,
+    search: useAncestorSearch(detail, PROJECT_LIST_KEYS),
+  },
 };
 usePageBreadcrumb([listLevel, recordLevel]);
 // Pass { listLevel, recordLevel, reload: request.reload } through Outlet context.
@@ -36,6 +39,8 @@ usePageBreadcrumb([listLevel, recordLevel, { label: t('projects.edit') }]);
 // Cancel and a successful save navigate to recordLevel.to (replace: true).
 // A dialog's Cancel closes the dialog instead; never change overlay semantics.
 ```
+
+`useAncestorSearch` returns the query recorded when that level was last visited. After a direct entry or a reload of the detail or its edit URL nothing is recorded, so it takes the list's public keys from the current URL: the list links to a record with `search: location.search`, and the detail links on to its edit with the same query, so after a reload the arrow still returns to the same view, search, filters, sort and page. Declare those keys once beside the list's types (`PROJECT_LIST_KEYS`: the search and filter keys plus `TABLE_URL_KEYS` from `#hooks/use-table-url-state`), not in the list component, so the detail does not import the list. Name the detail's own parameters apart from them (`detailTab`, `contactsPage`); the allowlist keeps those out of the list URL. Never fall back to `''` with `searches.get(owner) ?? ''` in a record page: that is the defect where a reloaded edit returns to page 1 of an unfiltered list.
 
 Keep `listLevel` and the record's translated fallback title when loading, on 401/403, on missing records and on retryable failures. Keep the error explanation in the page; do not turn a failed record into a list, hide its parent, or claim it is successfully loaded. An edit's parent is the record detail even after switching detail tabs. Do not use `history.back()` or cut a URL segment to determine either parent.
 
@@ -68,7 +73,8 @@ const destination = (item: typeof fallback) =>
   navigationDestination(
     {
       pathname: item.pathname,
-      // For an explicit deep-link contract, substitute the validated, allowlisted public query.
+      // For an explicit deep-link contract, substitute the validated, allowlisted public query
+      // (as useAncestorSearch does for a nested record).
       search: searches.get(item.pathname) ?? '',
     },
     routes,
@@ -90,6 +96,7 @@ The route-search map keeps active ancestry only. A source outside that ancestry 
 
 - Declare list → dynamic record → independent edit together; ordinary nested routes, logical parents and two source tabs have explicit examples in the generated feature.
 - Check desktop breadcrumb and mobile arrow destinations against the same expected source, including search/filter/sort/order/page size/page and actual returned records. Use browser Back too. Repeated visits and the same record from two sources must stay isolated.
+- Open the list on a non-default view, search, sort and page 2, open a record and its edit, reload the edit URL, save, then click the header's parent arrow (and the desktop breadcrumb): the resulting list URL equals the one you started from, exactly, and shows the same rows. Checking that the detail URL still carries `page=2` is not enough.
 - Check detail-tab switches, edit → detail → list, direct entry, refresh, new tab, deleted source, loading, load failure and missing record. Preserve parent navigation in each record state.
 - Check permission pending/failure/revocation and a denied ancestor, external and malformed source, and a non-root deployment base. No unauthorized parent name or external navigation may appear.
 - Check home/list without an arrow, mobile without duplicate logo/back links, long English/Chinese titles, keyboard focus, a named parent link and `aria-current="page"`. Take real desktop/mobile screenshots.

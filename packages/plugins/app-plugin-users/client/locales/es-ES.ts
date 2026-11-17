@@ -6,8 +6,32 @@ const esES: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Cargando',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Usuarios',
+      category: 'Cuentas',
+      name: 'Invitación de usuario',
+      trigger:
+        'Un administrador invita a alguien, o reenvía una invitación, con el correo electrónico seleccionado.',
+      recipients:
+        'La persona invitada, en la dirección de correo introducida para ella.',
+      businessRule:
+        'Se envía cada vez que se crea o reenvía una invitación con el correo electrónico seleccionado. No hay un interruptor aparte para desactivarlo.',
+      languagePolicy:
+        'Se escribe en un solo idioma, elegido al invitar: el idioma de la interfaz de quien invita, salvo que se elija otro. Al reenviar se mantiene. Si ese idioma no tiene texto de correo, el correo usa el idioma predeterminado de la aplicación y el inglés.',
+      channel: 'Remitente del correo de invitación',
+      variables: {
+        app: 'Nombre de la aplicación',
+        inviter: 'Nombre de la persona que envió la invitación',
+        items: 'Roles o accesos que concede la invitación',
+        date: 'Cuándo caduca la invitación, en el idioma del correo y en UTC',
+        url: 'Enlace para aceptar la invitación; la vista previa usa un enlace ficticio',
+      },
+    },
+  },
   accept: {
     title: 'Acepta la invitación',
+    language: 'Idioma',
     description: '{{inviter}} te invitó.',
     summary: 'También te unirás: {{items}}',
     loading: 'Cargando la invitación…',

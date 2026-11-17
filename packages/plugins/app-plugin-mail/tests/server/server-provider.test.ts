@@ -210,7 +210,10 @@ describe('@nocobase/app-plugin-mail', () => {
       const { getJobExecutor, resolveRuntime } = createRuntime(
         {
           mail: {},
-          jobs: { default: 'memory', memory: { adapter: 'memory' } },
+          jobs: {
+            default: 'memory',
+            backends: { memory: { adapter: 'memory' } },
+          },
         },
         true,
       );
@@ -225,7 +228,10 @@ describe('@nocobase/app-plugin-mail', () => {
       const { getJobExecutor, resolveRuntime } = createRuntime(
         {
           mail: { jobs: 'mail' },
-          jobs: { default: 'memory', mail: { adapter: 'memory' } },
+          jobs: {
+            default: 'memory',
+            backends: { mail: { adapter: 'memory' } },
+          },
         },
         true,
       );
@@ -242,7 +248,10 @@ describe('@nocobase/app-plugin-mail', () => {
         const { getJobExecutor, resolveRuntime } = createRuntime(
           {
             mail: { jobs: name },
-            jobs: { default: 'memory', memory: { adapter: 'memory' } },
+            jobs: {
+              default: 'memory',
+              backends: { memory: { adapter: 'memory' } },
+            },
           },
           true,
         );

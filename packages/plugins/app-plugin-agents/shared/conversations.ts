@@ -31,8 +31,6 @@ export const CONVERSATION_TITLE_AGENT_MAX = 40;
 export const CONVERSATION_TITLE_MAX = 200;
 /** The longest message a person may send, in characters. */
 export const MESSAGE_CONTENT_MAX = 50_000;
-/** Per file sent with a message, in bytes. */
-export const CHAT_ATTACHMENT_SIZE_MAX: number = 20 * 1024 * 1024;
 /** Files sent with one message. */
 export const CHAT_ATTACHMENTS_PER_MESSAGE_MAX = 10;
 /** How long an upload not sent with a message is kept. */
@@ -828,10 +826,27 @@ export interface ChatAgent {
   readonly personalOnly: boolean;
 }
 
-/** The person's own chat settings ("Profile › Agent"). */
+/**
+ * Which kind of runner a person's runs go to first: `auto`, whichever fits and asks first; `personal`, their own
+ * runners; `team`, the runners shared with the team. Only a preference: the other kind takes the run about a second
+ * later when the preferred kind has no room, is offline or cannot run it.
+ */
+export const RUNNER_PREFERENCES = ['auto', 'personal', 'team'] as const;
+export type RunnerPreference = (typeof RUNNER_PREFERENCES)[number];
+
+/** A stored preference's reading: anything but `personal` or `team` (null when none is chosen) is `auto`. */
+export function toRunnerPreference(
+  value: string | null | undefined,
+): RunnerPreference {
+  return value === 'personal' || value === 'team' ? value : 'auto';
+}
+
+/** The person's own chat and agent settings ("Profile › Agent"). */
 export interface ChatPreferences {
   /** New conversations go to this agent while the person may wake it; null: the system default. */
   readonly defaultAgentId: string | null;
+  /** Which kind of runner their runs queued from now on go to first. */
+  readonly runnerPreference: RunnerPreference;
 }
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;

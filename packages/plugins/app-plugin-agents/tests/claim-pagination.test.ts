@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { claim, createHarness, type Harness } from './harness.js';
+import { claim, claimMany, createHarness, type Harness } from './harness.js';
 import { runsRepo } from '../server/core/runs/run.store.js';
 
 interface QueryEvents {
@@ -118,7 +118,7 @@ describe('bounded claim candidate pages', () => {
   it('retains the rest of a loaded page after a successful claim', async () => {
     const { ids, runner } = await fixture(50, 3);
     expect(
-      new Set((await claim(h, runner, 3)).map((payload) => payload.run.id)),
+      new Set((await claimMany(h, runner, 3)).map((payload) => payload.run.id)),
     ).toEqual(new Set(ids));
   });
 
@@ -173,7 +173,7 @@ describe('bounded claim candidate pages', () => {
       values: { priority: 1, createdAt: new Date(now - 2).toISOString() },
     });
     expect(
-      (await claim(h, runner, 2)).map((payload) => payload.run.id),
+      (await claimMany(h, runner, 2)).map((payload) => payload.run.id),
     ).toEqual([higherId, lowerId]);
   });
 
@@ -192,7 +192,7 @@ describe('bounded claim candidate pages', () => {
       values: { priority: 0, createdAt: new Date(now + 2).toISOString() },
     });
     expect(
-      (await claim(h, runner, 2)).map((payload) => payload.run.id),
+      (await claimMany(h, runner, 2)).map((payload) => payload.run.id),
     ).toEqual([higherId, lowerId]);
   });
 
@@ -211,17 +211,20 @@ describe('bounded claim candidate pages', () => {
       values: { priority: 0, createdAt },
     });
     expect(
-      (await claim(h, runner, 2)).map((payload) => payload.run.id),
+      (await claimMany(h, runner, 2)).map((payload) => payload.run.id),
     ).toEqual([lowerId, higherId]);
   });
 
   it('stops reading pages after transactional recheck finds the runner full', async () => {
     const { conn, runner } = await fixture(100, 1, true);
-    vi.spyOn(h.services.slots, 'held').mockResolvedValue({
-      jobs: 0,
-      runs: 1,
-      byTool: { claude: 1 },
-    });
+    // Free when the claim starts, full when its transaction checks again.
+    vi.spyOn(h.services.slots, 'held')
+      .mockResolvedValueOnce({ jobs: 0, runs: 0, byTool: {} })
+      .mockResolvedValue({
+        jobs: 0,
+        runs: 1,
+        byTool: { claude: 1 },
+      });
     const knex = await conn.client<QueryEvents>();
     const pages: string[] = [];
     const onQuery = ({ sql }: { sql: string }) => {

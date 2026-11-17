@@ -389,8 +389,16 @@ it('locks save and submit through refresh and replays an uncertain submission wi
         'The previous result is uncertain. Retry the same action with the original data before editing.',
       ),
     ).toBeVisible();
+    // An unknown outcome never locks the page: leaving asks, and "Keep editing" stays for the retry.
     await userEvent.click(
       screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    );
+    await screen.findByRole('alertdialog', {
+      name: 'Discard unsaved changes?',
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
     );
     expect(
       screen.getByRole('button', { name: 'Submit onboarding' }),

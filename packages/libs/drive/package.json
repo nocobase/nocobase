@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/drive",
-  "version": "0.1.0-beta.7",
+  "version": "0.1.0-beta.8",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -13,6 +13,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./upload-limits": {
+      "types": "./src/upload-limits.ts",
+      "import": "./src/upload-limits.ts"
     }
   },
   "files": [
@@ -24,6 +28,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./upload-limits": {
+        "types": "./dist/upload-limits.d.ts",
+        "import": "./dist/upload-limits.js"
       }
     },
     "access": "public"

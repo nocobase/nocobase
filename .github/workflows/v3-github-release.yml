@@ -17,6 +17,9 @@ on:
     secrets:
       NOCOBASE_APP_PRIVATE_KEY:
         required: true
+      # Only the website-changelog job uses it, to report a failure; without it the failure is a warning alone.
+      RELEASE_RESULT_FEISHU_WEBHOOK_URL:
+        required: false
   workflow_dispatch:
     inputs:
       tag:
@@ -110,3 +113,173 @@ jobs:
             echo
             echo "[$TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$(node -e 'console.log(encodeURIComponent(process.argv[1]))' "$TAG"))"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Commits this release's changelog to nocobase/website-v3 as homepage/content/changelog/<channel>-<version>.md, with
+  # .zh-CN.md and .ja-JP.md translations beside it, the entry the website's changelog page reads; a push to website-v3's main runs its site.yml, which builds and publishes
+  # www.nocobase.com, so the commit message must never suppress CI. scripts/website-changelog.mjs renders the entry
+  # from the tagged commit's CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md; a release without an English
+  # section has none. It runs once the GitHub Release exists, because the entry links to it. A manual dispatch of this
+  # workflow resends a tag, which is also how past releases are backfilled: an unchanged entry is not committed again,
+  # and a rewritten one keeps its publishedAt. All of an entry's files land in one commit.
+  #
+  # Requires the NocoBase App (vars.NOCOBASE_APP_ID) to be installed on nocobase/website-v3 with contents write; it is.
+  # Best effort: every failure is a warning and a Feishu card, and the release never fails because of the website. A
+  # release with no English section is not a failure and sends nothing.
+  website-changelog:
+    name: Publish the changelog to the website
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      # The workflow's own ref carries the script; only the tag's changelogs are read from the tagged commit, so a
+      # backfill of a tag cut before the script existed works too.
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Render the website entry
+        id: entry
+        continue-on-error: true
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git fetch --depth=1 --no-tags origin "+refs/tags/${TAG}:refs/tags/${TAG}"
+          node scripts/website-changelog.mjs "$TAG" > "$RUNNER_TEMP/website-entry.md"
+          if [ -s "$RUNNER_TEMP/website-entry.md" ]; then
+            echo "render=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$TAG has no English changelog section, so the website gets no entry for it"
+          fi
+
+      - name: Create a website token
+        id: website_token
+        if: steps.entry.outputs.render == 'true'
+        continue-on-error: true
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: website-v3
+          permission-contents: write
+
+      # The App token stays in this checkout's credentials so the next step can push; this job never pushes elsewhere.
+      - name: Check out the website
+        id: website
+        if: steps.website_token.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/website-v3
+          ref: main
+          path: website-v3
+          fetch-depth: 1
+          token: ${{ steps.website_token.outputs.token }}
+
+      # Releases of both channels may push at the same time. A rejected push starts again from the new main and renders
+      # the entry afresh rather than rebasing, because the commit only ever adds, replaces or removes this entry's files.
+      - name: Commit the entry to the website
+        id: commit
+        if: steps.website.outcome == 'success'
+        continue-on-error: true
+        working-directory: website-v3
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" -gt 1 ]; then
+              sleep $((attempt * 5))
+              git fetch --depth=1 origin main
+              git reset --hard --quiet FETCH_HEAD
+            fi
+            # Every file of the entry the script wrote, left unchanged or removed: the English file comes first.
+            output=$(node "$GITHUB_WORKSPACE/scripts/website-changelog.mjs" "$TAG" \
+              --root "$GITHUB_WORKSPACE" \
+              --out-dir homepage/content/changelog)
+            mapfile -t files <<< "$output"
+            if [ -z "${files[0]}" ]; then
+              echo "::notice::$TAG has no English changelog section, so the website gets no entry for it"
+              exit 0
+            fi
+            if git cat-file -e "HEAD:${files[0]}" 2> /dev/null; then verb=update; else verb=add; fi
+            git add --all -- "${files[@]}"
+            if git diff --cached --quiet; then
+              echo "The website already has the entry for $TAG."
+              exit 0
+            fi
+            git commit --quiet -m "chore(changelog): $verb $TAG"
+            if git push origin HEAD:main; then
+              echo "Committed ${files[*]} to nocobase/website-v3 ($verb)."
+              {
+                echo "### Website changelog"
+                echo
+                echo "Committed the \`${files[0]%.md}\` entry to [nocobase/website-v3](${{ github.server_url }}/nocobase/website-v3/commit/$(git rev-parse HEAD))."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Push attempt $attempt was rejected; retrying from the new main."
+          done
+          echo "Could not push to nocobase/website-v3 main after 5 attempts"
+          exit 1
+
+      - name: Report a failed website update
+        id: failed
+        if: >-
+          always() && (failure() || steps.entry.outcome == 'failure' || steps.website_token.outcome == 'failure'
+          || steps.website.outcome == 'failure' || steps.commit.outcome == 'failure')
+        env:
+          TAG: ${{ inputs.tag }}
+          # Each step runs only after the one before it succeeded, so at most one of them failed. STAGE is how the
+          # Feishu card names it: rendering (生成), the App token (申请 token), or reaching website-v3 (推送).
+          STEP: >-
+            ${{ steps.entry.outcome == 'failure' && 'Render the website entry'
+            || steps.website_token.outcome == 'failure' && 'Create a website token'
+            || steps.website.outcome == 'failure' && 'Check out the website'
+            || steps.commit.outcome == 'failure' && 'Commit the entry to the website'
+            || 'Check out the repository or set up Node.js' }}
+          STAGE: >-
+            ${{ steps.website_token.outcome == 'failure' && '申请 token'
+            || (steps.website.outcome == 'failure' || steps.commit.outcome == 'failure') && '推送'
+            || '生成' }}
+        run: |
+          {
+            echo "step=$STEP"
+            echo "stage=$STAGE"
+            # Aggregate tags hold only letters, digits, '.', '-' and one '/', so encoding the '/' is the whole escape.
+            echo "release_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG//\//%2F}"
+          } >> "$GITHUB_OUTPUT"
+          echo "::warning::The website changelog for $TAG was not published: \"$STEP\" failed. Run V3 GitHub Release with tag $TAG to resend it."
+
+      # Only a failure is reported; a published entry sends nothing.
+      - name: Notify Feishu about the failed website update
+        if: always() && steps.failed.outcome == 'success'
+        continue-on-error: true
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          TITLE: NocoBase 3 更新日志未发布到官网
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 需要人工重发
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RELEASE_URL: ${{ steps.failed.outputs.release_url }}
+          CONTENT: |
+            版本：`${{ inputs.tag }}`
+            失败环节：**${{ steps.failed.outputs.stage }}**（${{ steps.failed.outputs.step }}）
+
+            版本已正常发布，只是官网少了这一条。处理后手动运行 V3 GitHub Release，填入这个 tag 即可重发。
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "::warning::RELEASE_RESULT_FEISHU_WEBHOOK_URL is not set, so no Feishu notification was sent"
+            exit 0
+          fi
+          ./scripts/feishu-notify.sh

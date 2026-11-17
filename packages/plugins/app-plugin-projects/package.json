@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
   "description": "Projects, issues and collaboration for a NocoBase application.",
-  "version": "0.1.0-beta.26",
+  "version": "0.1.0-beta.32",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -299,6 +299,7 @@
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/drive": "workspace:^"
   }
 }

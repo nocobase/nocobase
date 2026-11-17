@@ -2,6 +2,8 @@
 
 Application-owned concurrency configuration, services, process-local Mutex instances and public implementation tools for NocoBase 3. Requires Node 24 ESM and compatible `@nocobase/app-server`, `@nocobase/service-provider` and `@nocobase/concurrency` peers supplied by the application.
 
+Only `default` and `backends` are accepted at the section root. Move every legacy direct entry into `backends`, including unused entries, and update application-owned TypeScript factories as well as YAML. Mixed formats are rejected after merging defaults; backend declarations alone do not select one. Keep adapter names, connection destinations, namespaces, business names and persistence paths unchanged; no data migration is required.
+
 ## Application integration
 
 Register the default `/server` export before business plugins in `server/plugins.ts`. Register `defineConcurrencyConfig()` from `/config` under `concurrency` in the application's configuration aggregator. Both application templates include these registrations and production dependencies.
@@ -13,7 +15,7 @@ import { defineServerPlugins } from '@nocobase/app-server/plugins';
 export default defineServerPlugins([concurrency]);
 ```
 
-The factory supplies `{ default: 'memory', memory: { adapter: 'mutex' } }`, declares `CONCURRENCY_DEFAULT` and publishes no browser fields. A host without a default selector uses an independent built-in local entry. Unknown names and invalid defaults fail instead of falling back. Common entry fields are `adapter`, optional `namespace` (defaults to the application name) and optional `ttl`. Mutex forbids `connection`; other implementations validate their own connection data without I/O. TTL is an integer in 1..2147483647 milliseconds. Configuration entries do not inherit from one another.
+The factory supplies `{ default: 'memory', backends: { memory: { adapter: 'mutex' } } }`, declares `CONCURRENCY_DEFAULT` and publishes no browser fields. A host without a default selector uses an independent built-in local entry. Unknown names and invalid defaults fail instead of falling back. Common entry fields are `adapter`, optional `namespace` (defaults to the application name) and optional `ttl`. Mutex forbids `connection`; other implementations validate their own connection data without I/O. TTL is an integer in 1..2147483647 milliseconds. Configuration entries do not inherit from one another.
 
 ## Business consumption
 

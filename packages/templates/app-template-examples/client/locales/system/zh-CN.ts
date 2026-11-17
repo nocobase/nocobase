@@ -1,3 +1,4 @@
+import databaseExplorer from '../../pages/settings/database-explorer/zh-CN.js';
 import settings from './settings-zh-CN.js';
 import type { SystemResource } from './en-US.js';
 import deviceApprovalZhCN from '#extensions/nocobase-device-approval/locales/zh-CN';
@@ -5,6 +6,7 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  databaseExplorer,
   pendingFeedback: {
     working: '正在处理…',
     longWait: '耗时比平常更长，您可以继续等待。',
@@ -158,6 +160,10 @@ const systemZhCN: SystemResource = {
   'navigation.brandHome': 'NocoBase 首页',
   'navigation.brandApps': 'NocoBase 应用',
   'routeOverlay.close': '关闭',
+  'routeOverlay.discardTitle': '放弃修改？',
+  'routeOverlay.discardDescription': '修改尚未保存，离开后将丢失。',
+  'routeOverlay.keepEditing': '继续编辑',
+  'routeOverlay.discard': '放弃',
   'status.deniedDescription': '你没有访问 {{label}} 的权限。',
   'status.routeFailedDescription':
     '无法加载 {{packageName}} 的路由 {{label}}。',
@@ -196,6 +202,7 @@ const systemZhCN: SystemResource = {
     signingOut: '正在退出…',
   },
   navigation: {
+    resources: '参考资料',
     home: '首页',
     open: '打开导航',
     close: '关闭导航',
@@ -213,6 +220,11 @@ const systemZhCN: SystemResource = {
     noResults: '无结果',
     sortAscending: '升序',
     sortDescending: '降序',
+    sort: '排序',
+    sortBy: '排序方式',
+    filters: '筛选',
+    filtersApplied: '筛选 · {{count}}',
+    selectPage: '全选本页',
     hideColumn: '隐藏',
     view: '视图',
     toggleColumns: '显示列',

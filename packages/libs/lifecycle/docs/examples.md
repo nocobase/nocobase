@@ -8,7 +8,7 @@ Sections 1–7, 9–12, 14, 15, 17–19, 21 and 25 are run by `tests/recipes.tes
 
 | Group                   | Sections                                                                                                                                                                                                                                                                                                                                                                       |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Modelling transitions   | [1. Route by amount](#1-route-by-amount) · [2. Approve through several levels](#2-approve-through-several-levels) · [3. Hand over, escalate, reassign](#3-hand-over-escalate-reassign) · [4. Withdraw or reopen](#4-withdraw-or-reopen) · [5. Freeze a rule at submission](#5-freeze-a-rule-at-submission)                                                                     |
+| Modelling transitions   | [1. Route by amount](#1-route-by-amount) · [2. Approve through several levels](#2-approve-through-several-levels) · [3. Hand over, escalate, reassign](#3-hand-over-escalate-reassign) · [4. Withdraw or reopen](#4-withdraw-or-reopen) · [5. Capture a business rule](#5-capture-a-business-rule-at-submission-without-configurable-parameters)                               |
 | Time                    | [6. Expire an idle request](#6-expire-an-idle-request) · [7. Remind before escalating](#7-remind-before-escalating) · [8. Act on a record's own deadline](#8-act-on-a-records-own-deadline)                                                                                                                                                                                    |
 | Effects and the outside | [9. A background process in steps](#9-a-background-process-in-steps) · [10. Pay and continue](#10-pay-and-continue-after-the-external-call) · [11. Confirm by webhook](#11-confirm-by-webhook) · [12. Refuse while an effect is in flight](#12-refuse-while-an-effect-is-in-flight) · [13. Write related data with the transition](#13-write-related-data-with-the-transition) |
 | Several records         | [14. Wait for every signer](#14-wait-for-every-signer) · [15. Wait for child tasks](#15-wait-for-child-tasks) · [16. Dispatch sub-records repeatedly](#16-dispatch-sub-records-repeatedly) · [17. Two lifecycles on one record](#17-two-lifecycles-on-one-record) · [18. Act on many records at once](#18-act-on-many-records-at-once)                                         |
@@ -165,9 +165,9 @@ reopen: {
 
 `except` and `'*'` cover non-final states only, so a reopenable `closed` is not marked `final`. They also pick up every state added later; list the source states by name when adding a stage should force a deliberate decision about withdrawal. The window above counts from the last transition; if other self-transitions in `closed` must not extend it, write a `closedAt` field in `set` and compare with that. Withdrawing while an effect is still working on the record is [section 12](#12-refuse-while-an-effect-is-in-flight).
 
-### 5. Freeze a rule at submission
+### 5. Capture a business rule at submission without configurable parameters
 
-Parameters are read when a transition fires, so a limit an administrator changes applies to records still on their way. To judge a record by the rule in force when it was submitted, copy the rule onto the record and read it back from there.
+For definitions without `parameterConfiguration`, the existing `parameters` / `parameterProvider` contract may resolve a rule when a transition fires. This example captures that rule as business data at submission. Configured definitions instead freeze every effective parameter in `runtime.create()`, including business drafts: administrator edits affect only newly created records. Use their immutable instance snapshot directly; do not introduce a second submission-time parameter freeze. See [configurable parameters](parameters.md).
 
 ```ts
 submit: {
@@ -184,7 +184,7 @@ submit: {
 // Later transitions and effects read record.autoApproveLimitAtSubmit.
 ```
 
-The same applies to effects: an effect reads the record when its attempt starts, not as it was when the transition fired. Payment terms that must not change while a payment is pending are either kept immutable in those states or captured onto the record by the transition that starts the payment.
+Effects read current business data when an attempt starts. Business terms outside the parameter contract can be kept immutable during payment or captured by the transition that starts it. Configured parameter values remain the creation snapshot during every effect attempt, retry and continuation.
 
 ## Time
 

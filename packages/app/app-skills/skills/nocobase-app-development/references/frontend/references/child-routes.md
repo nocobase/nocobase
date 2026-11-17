@@ -190,14 +190,16 @@ export default function ProjectReportsPage(): ReactElement {
       />
       <nav
         aria-label={t('projectReports.tabs.label')}
-        className='flex flex-wrap gap-1 border-b pb-2'
+        // One row that scrolls sideways on a phone, never wrapping (M2.2 in mobile.md); a page with a header-level
+        // record keeps the current tab in view as example/detail-page-tabs.md does.
+        className='flex gap-1 overflow-x-auto border-b pb-2'
       >
         {tabs.map((tab) => (
           // Tabs are page navigation, so use links. NavLink adds aria-current='page' to the current tab, and the selected style is based on it.
           <NavLink
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
+              'shrink-0 text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
             key={tab.path}
             to={tabState.destination(tab)}
@@ -254,7 +256,7 @@ Behavior:
 - Clicking a tab adds a history entry, and the content renders where the Outlet is; the sidebar keeps "Project reports" highlighted (tab routes have no menu entry, so the nearest ancestor is highlighted).
 - `useListTabs` derives the selected tab from the route. Give different datasets different `dataset` values and list every parameter owned by these lists in `parameterKeys`; changing datasets clears those keys and starts the destination at its defaults, retaining enclosing-page parameters. Display tabs for the same dataset share a `dataset` value and retain compatible state. Pass only accessible tabs and `pending: true` while permission checks load; an absent/deleted tab then replaces the URL with the first accessible tab. Keep the parent route mounted for unknown descendants (for example a final `:unavailableTab` child with a null component and children matching the declared detail paths, such as `:id`; static tab routes take precedence) so it can apply that fallback; the global unmatched-route redirect cannot infer a tab owner.
 
-Tabs are implemented as links because they are page navigation, announced as links with `aria-current` on the selected one. To borrow the button look, apply `buttonVariants` to `NavLink`. `<Button render={<NavLink />}>` would announce each tab as a button, which is right for an action that opens a route ("New project", [section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)) but not for navigation. The `tabs` primitive is for tabs inside one view that are not routes: it brings the ARIA tab keyboard behavior, and its `TabsTrigger` elements sit inside `TabsList` (the skill's composition rules). Using it for route tabs would mean keeping its selected value in sync with the URL yourself.
+Tabs stay on one row that scrolls sideways inside itself on a phone and never wrap ([M2.2 in the phone experience](../mobile.md#m2-navigation-tabs-and-returning)). Tabs are implemented as links because they are page navigation, announced as links with `aria-current` on the selected one. To borrow the button look, apply `buttonVariants` to `NavLink`. `<Button render={<NavLink />}>` would announce each tab as a button, which is right for an action that opens a route ("New project", [section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)) but not for navigation. The `tabs` primitive is for tabs inside one view that are not routes: it brings the ARIA tab keyboard behavior, and its `TabsTrigger` elements sit inside `TabsList` (the skill's composition rules). Using it for route tabs would mean keeping its selected value in sync with the URL yourself.
 
 ### A record detail page with tabs
 
@@ -498,14 +500,16 @@ export default function ProjectReportsPage(): ReactElement {
       />
       <nav
         aria-label={t('projectReports.tabs.label')}
-        className='flex flex-wrap gap-1 border-b pb-2'
+        // One row that scrolls sideways on a phone, never wrapping (M2.2 in mobile.md); a page with a header-level
+        // record keeps the current tab in view as example/detail-page-tabs.md does.
+        className='flex gap-1 overflow-x-auto border-b pb-2'
       >
         {tabs.map((tab) => (
           // Tabs are page navigation, so use links. NavLink adds aria-current='page' to the current tab, and the selected style is based on it.
           <NavLink
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
+              'shrink-0 text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
             key={tab.path}
             to={tabState.destination(tab)}

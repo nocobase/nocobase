@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream';
+import { ApiError } from '@nocobase/app-server/router';
 import { takeToolDetection } from '../../runners/tool-detection.js';
 /**
  * The runner endpoints (`RUNNER_ROUTES` of `@nocobase/agent-protocol`), mounted at `/api/agents/runners` beside the
@@ -66,6 +68,7 @@ import type { Runner } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
 import { createClaimScan, type ClaimScan } from '../../core/runs/claim.js';
 import { upgradeFields, upgradeFor } from '../../distribution/index.js';
+import { pause } from '../../kernel/clock.js';
 import { domainRouter } from '../../kernel/http.js';
 import { upgradeRequiredOf, type RunnerEnv } from '../../runners/index.js';
 import { ClaimQuery, JobParams } from '../schemas.js';
@@ -163,20 +166,6 @@ const LenientHeartbeatSchema: z.ZodType<HeartbeatRequest> = z.preprocess(
   },
   HeartbeatRequestSchema,
 );
-
-/** Waits `ms`, or until `signal` aborts. */
-function pause(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    if (signal.aborted) return resolve();
-    const timer = setTimeout(done, ms);
-    function done(): void {
-      clearTimeout(timer);
-      signal.removeEventListener('abort', done);
-      resolve();
-    }
-    signal.addEventListener('abort', done, { once: true });
-  });
-}
 
 export function createRunnerRoutes(
   services: Agents,
@@ -307,6 +296,9 @@ export function createRunnerRoutes(
         protocolVersion: PROTOCOL_VERSION,
         enabledTools: runner.enabledTools ?? [],
         detectTools: takeToolDetection(runner.id),
+        ...(runner.features.includes('diagnostics')
+          ? { diagnostics: services.diagnostics.take(runner.id) }
+          : {}),
         capacity: { slots: runner.slots, toolSlots: runner.toolSlots ?? {} },
         ...upgradeFields(upgrade),
         cancelRequested,
@@ -319,6 +311,62 @@ export function createRunnerRoutes(
           : {}),
       };
       return context.json({ data: response });
+    },
+  );
+
+  router.post(
+    '/diagnostics/:requestId',
+    authenticated,
+    served,
+    describeRoute({
+      tags,
+      summary: 'Upload requested runner diagnostics',
+      operationId: 'agentsRunnerDiagnostics',
+      ...cliRoute(false),
+      security: runnerKeySecurity,
+      parameters: [
+        protocolHeader,
+        {
+          name: 'requestId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/gzip': { schema: { type: 'string', format: 'binary' } },
+        },
+      },
+      responses: {
+        200: dataResponse(z.object({ ok: z.literal(true) })),
+        400: apiErrorResponse(400),
+        413: apiErrorResponse(413),
+        429: apiErrorResponse(429),
+        ...runnerKeyErrors,
+      },
+    }),
+    async (context) => {
+      if (
+        context.req.header('content-type') !== 'application/gzip' ||
+        !context.req.raw.body
+      )
+        throw new ApiError({
+          domain: 'agents',
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_ARGUMENT',
+          message: 'Expected gzip diagnostics records',
+        });
+      await services.diagnostics.accept(
+        context.get('runner').id,
+        context.req.param('requestId'),
+        Readable.fromWeb(
+          context.req.raw
+            .body as import('node:stream/web').ReadableStream<Uint8Array>,
+        ),
+      );
+      return context.json({ data: { ok: true } });
     },
   );
 
@@ -356,22 +404,21 @@ export function createRunnerRoutes(
   );
 
   // Runs and jobs share the runner's slots: jobs first (they are short and people wait on them), then runs. Jobs run
-  // no coding tool, so only runs are bounded by the runner's room per tool.
+  // no coding tool, so only runs are bounded by the runner's room per tool. One run per request: the runner asks
+  // again at once, and each claim waits by how busy the runner already is with the run's tool, so idler runners
+  // take the next run first (`ClaimService.claim`). A request that goes away while it waits takes nothing. A request
+  // that took jobs takes no run, so its jobs are not held by a run's wait: the runner asks again at once for the run.
   const claimWork = async (
     runner: Runner,
     request: ClaimRequest,
     scan: ClaimScan,
+    signal: AbortSignal,
   ) => {
     const { free } = request;
     const jobs = await services.jobs.runner.claim(runner, free);
     const runs =
-      free - jobs.length > 0
-        ? await services.claims.claim(
-            runner,
-            free - jobs.length,
-            request.tools,
-            scan,
-          )
+      jobs.length === 0 && free > 0
+        ? await services.claims.claim(runner, 1, request.tools, scan, signal)
         : [];
     return { runs, jobs };
   };
@@ -385,7 +432,7 @@ export function createRunnerRoutes(
       // Runner protocol: only a runner calls it.
       ...cliRoute(false),
       description: [
-        'Hands the runner up to `free` pieces of work for its free slots: jobs first, then agent runs. With `wait=true` and nothing to hand out, the request is held as a long poll for up to `pollTimeoutMs` (25 seconds by default) until work arrives, and then answers what it found, possibly nothing; the runner asks again at once. Without `wait`, it answers immediately.',
+        "Hands the runner work for its free slots: jobs first, up to `free`, or, when there is no job to hand out, at most one agent run. A run is handed out after a wait of up to one second after it entered the queue, longer the more of the run's coding tool the runner already holds against its limit for that tool, so the idlest runners take queued runs first; the runner asks again at once for the next. A run whose actor prefers personal or shared runners waits one second more for a runner of the other kind. A request that ends while it waits takes nothing. With `wait=true` and nothing to hand out, the request is held as a long poll for up to `pollTimeoutMs` (25 seconds by default) until work arrives, and then answers what it found, possibly nothing; the runner asks again at once. Without `wait`, it answers immediately.",
         '',
         'A runner of a protocol this application does not serve is given no work (its poll is still held). `jobs` is present only when jobs are handed out.',
       ].join('\n'),
@@ -413,23 +460,22 @@ export function createRunnerRoutes(
       const request = parseApiInput(ClaimRequestSchema, await jsonOf(context));
       const { free } = request;
       const scan = createClaimScan();
-      let work = await claimWork(runner, request, scan);
+      const { signal } = context.req.raw;
+      let work = await claimWork(runner, request, scan, signal);
       if (
         work.runs.length === 0 &&
         work.jobs.length === 0 &&
         free > 0 &&
         wait
       ) {
-        const outcome = await services.signal.wait(
-          pollTimeoutMs,
-          context.req.raw.signal,
-        );
+        const outcome = await services.signal.wait(pollTimeoutMs, signal);
         if (outcome !== 'aborted')
           // The runner may have been revoked while it waited.
           work = await claimWork(
             await authenticate(context, true),
             request,
             scan,
+            signal,
           );
       }
       // A runner of protocol 3 is never handed a job (it announces no job feature), so `jobs` stays out of its answer.

@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 import type { ToastOptions } from '@nocobase/app-client';
 import {
   UNSAFE_DataRouterContext,
@@ -53,6 +54,7 @@ export function useNotify(): Notify {
       error: (error, fallback) =>
         void toaster.show({
           type: 'error',
+          ...errorToastOptions(error),
           title: errorText(t, error, fallback ?? t('common.requestFailed')),
           ...(navigate ? suggestionAction(error, t, navigate) : {}),
         }),

@@ -32,11 +32,13 @@ function memoryService(
   const created = createQueueService(
     {
       default: 'memory',
-      memory: {
-        adapter: 'inMemory',
-        namespace,
-        persistence: { path: storagePath },
-        ...entry,
+      backends: {
+        memory: {
+          adapter: 'inMemory',
+          namespace,
+          persistence: { path: storagePath },
+          ...entry,
+        },
       },
     },
     {
@@ -96,10 +98,12 @@ describe('in-memory state file', () => {
     const second = createQueueService(
       {
         default: 'renamed',
-        renamed: {
-          adapter: 'inMemory',
-          namespace: 'memory-test',
-          persistence: { path: storage },
+        backends: {
+          renamed: {
+            adapter: 'inMemory',
+            namespace: 'memory-test',
+            persistence: { path: storage },
+          },
         },
       },
       {

@@ -36,8 +36,7 @@ export {
 } from '@nocobase/app-cli-client/install';
 
 /**
- * How the daemon's process exits once it stopped after updating itself: not 0, so a service that restarts only what
- * failed starts the new version too.
+ * How the daemon's process exits after updating itself. Older installed services also recognize this as a restart.
  */
 export const RESTART_EXIT_CODE = 75;
 

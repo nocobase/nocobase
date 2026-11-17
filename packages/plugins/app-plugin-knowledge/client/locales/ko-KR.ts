@@ -152,6 +152,15 @@ const koKR: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: '지식',
+    settingsSection: '지식',
+    settings: {
+      indexing: {
+        title: '지식 인덱싱',
+        read: '보기',
+        configure: '구성',
+        rebuild: '재구축',
+      },
+    },
     businesses: {
       knowledge: {
         title: '지식',

@@ -38,9 +38,11 @@ import type { AppQueueConfig } from '@nocobase/app-server/queue';
 
 const queue: AppConfigFactory<AppQueueConfig> = defineAppConfig(
   ({ paths }) => ({
-    memory: {
-      adapter: 'inMemory',
-      persistence: { path: paths.storage('queue') },
+    backends: {
+      memory: {
+        adapter: 'inMemory',
+        persistence: { path: paths.storage('queue') },
+      },
     },
   }),
 );
@@ -50,20 +52,23 @@ export default queue;
 
 ## Configuring it
 
-The `queue` section has the same shape as `jobs`: `default` names one key, and every other key is one complete configuration. Keys never inherit from each other, and the section declares configurations, not queues: `queue.producer('reports')` creates the `reports` queue on the default key without any key mentioning it.
+Only `default` and `backends` are accepted at the section root. Move every legacy direct entry into `backends`, including unused entries, and update application-owned TypeScript factories as well as YAML. Mixed formats are rejected after merging defaults; backend declarations alone do not select one. Keep adapter names, connection destinations, namespaces, business names and persistence paths unchanged; no data migration is required.
+
+The `queue` section has the same shape as `jobs`: `default` names one key in the `backends` map, whose entries are complete configurations. Keys never inherit from each other, and the section declares configurations, not queues: `queue.producer('reports')` creates the `reports` queue on the default key without any key mentioning it.
 
 A queue's key is chosen when its first entry point is obtained: the `configKey` argument when that key exists, otherwise the key `queue.default` names, otherwise the built-in memory configuration `{ adapter: 'inMemory' }` with its state files under `storage/queue`. A queue stays bound to that key within the service, and asking for it under a key that resolves differently throws. Outside development the built-in configuration is reported once as a warning; set `queue.default: memory` to choose it explicitly and silence the report, or `queue.default: redis` to share queues across instances.
 
 ```yaml
 queue:
   default: memory
-  memory:
-    adapter: inMemory
-    namespace: crm # Defaults to the application name.
-    concurrency: 4
-    rateLimit: { max: 10, duration: 1000 }
-    attempts: 3
-    backoff: { type: exponential, delay: 1000 }
+  backends:
+    memory:
+      adapter: inMemory
+      namespace: crm # Defaults to the application name.
+      concurrency: 4
+      rateLimit: { max: 10, duration: 1000 }
+      attempts: 3
+      backoff: { type: exponential, delay: 1000 }
 ```
 
 | Field                                      | Default                              | Meaning                                                                                                              |
@@ -80,7 +85,7 @@ queue:
 | `setupTimeoutMs`                           | `10000`                              | Initialization budget of each queue                                                                                  |
 | `shutdownTimeoutMs`, `cancellationGraceMs` | `30000`, `5000`                      | Wait for running jobs at shutdown, then send the shutdown signal and wait this much longer                           |
 
-A section in the former format — `connections`, `worker` and `jobs` — is ignored with one warning. Its `default` is ignored too unless it names a key of the current format, so an application that has not migrated its configuration starts on the built-in memory configuration instead of failing.
+Legacy top-level entries, unknown top-level fields, and mixed old/new configurations are errors even when unselected or without `default`. The historical `connections`/`worker`/`jobs` normalization and warning-only Memory fallback have been removed: migrate to `queue.backends.<name>` and preserve the default name. An invalid or nonexistent default target fails rather than selecting Memory.
 
 The namespace and the logical queue name identify a physical queue; the configuration key does not. Renaming a key or re-pointing `default` keeps reaching the same jobs as long as the backend, the connection target and the namespace stay the same. `appName` is not unique across deployments, so deployments sharing a Redis set distinct namespaces.
 

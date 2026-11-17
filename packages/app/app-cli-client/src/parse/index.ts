@@ -31,5 +31,11 @@ export type {
   CliEnvDefault,
   CliManifest,
   CliParameter,
+  CliIdempotency,
   CliWithheldCommand,
 } from './manifest.ts';
+
+export {
+  validateOperationCommand,
+  validateOperationKey,
+} from './idempotency.ts';

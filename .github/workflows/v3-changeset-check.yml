@@ -2,12 +2,13 @@ name: V3 Changeset Check
 
 # Validate changeset syntax and require coverage for files that enter published packages.
 # The release:skip label records intentional exceptions. Prerelease state is expected on
-# v3-develop; v3-guard-main.yml rejects it only on pull requests targeting v3-main.
+# v3; v3-guard-main.yml rejects it only on pull requests targeting v3-main.
 
 on:
   pull_request:
     branches:
       - v3-main
+      - v3
       - v3-develop
       - '*/v3-*'
     paths-ignore:
@@ -31,7 +32,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js

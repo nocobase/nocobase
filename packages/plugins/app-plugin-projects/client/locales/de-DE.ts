@@ -58,6 +58,8 @@ const deDE: LocaleResource<typeof enUS> = {
       subtaskAdded: 'hat die Unteraufgabe hinzugefügt',
       dependencyAdded: 'fügte die Abhängigkeit von hinzu',
       dependencyRemoved: 'entfernte die Abhängigkeit von',
+      relationAdded: 'verknüpfte die Aufgabe mit',
+      relationRemoved: 'entfernte die Verknüpfung mit',
       stageChanged: 'wechselte die Bühne',
       autoMoveSkipped: 'konnte die Aufgabe nicht automatisch verschieben nach',
     },
@@ -388,6 +390,9 @@ const deDE: LocaleResource<typeof enUS> = {
     projects: 'Projekte',
     projectsHint:
       'Eingeladene Personen treten diesen Projekten als Mitglieder bei.',
+    language: 'E-Mail-Sprache',
+    languageHint:
+      'Die Einladungs-E-Mail und ihre Registrierungsseite verwenden diese Sprache.',
     projectsPlaceholder: 'Projekte auswählen',
     resend: 'Erneut senden',
     generateLink: 'Neuen Link generieren',

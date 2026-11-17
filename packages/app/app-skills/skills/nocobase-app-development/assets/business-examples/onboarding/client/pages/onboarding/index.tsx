@@ -79,23 +79,26 @@ export default function OnboardingPage() {
           <AlertDescription>{t('onboarding.denied')}</AlertDescription>
         </Alert>
       ) : null}
-      <div className='flex flex-wrap gap-3'>
+      {/* The search box and the status filter share one row on a phone too (mobile.md M4.1). */}
+      <div className='flex items-center gap-2'>
         <Input
-          className='max-w-sm'
+          className='min-w-0 flex-1 md:max-w-sm md:flex-none'
           aria-label={t('onboarding.search')}
           placeholder={t('onboarding.search')}
           value={q}
           onChange={(e) => filter('q', e.target.value)}
         />
-        <Choice
-          label={t('onboarding.all')}
-          value={status}
-          onChange={(v) => filter('status', v)}
-          options={['draft', 'submitted'].map((id) => ({
-            id,
-            name: t(`onboarding.${id || 'all'}`),
-          }))}
-        />
+        <div className='w-36 shrink-0 md:w-48'>
+          <Choice
+            label={t('onboarding.all')}
+            value={status}
+            onChange={(v) => filter('status', v)}
+            options={['draft', 'submitted'].map((id) => ({
+              id,
+              name: t(`onboarding.${id || 'all'}`),
+            }))}
+          />
+        </div>
       </div>
       {request.error ? (
         <Alert variant='destructive'>
@@ -117,6 +120,27 @@ export default function OnboardingPage() {
         onPaginationChange={table.onPaginationChange}
         showSelectedCount={false}
         emptyMessage={t('onboarding.empty')}
+        // Phones show one card per person (mobile.md M3): the name and status, then the work email.
+        renderCard={(row) => (
+          <div className='flex flex-col gap-1 rounded-lg border p-4 text-sm'>
+            <div className='flex flex-wrap items-center justify-between gap-2'>
+              <RecordLink
+                to={{ pathname: row.original.id, search: location.search }}
+                className='min-w-0 break-words'
+              >
+                {row.original.fullName || t('onboarding.draft')}
+              </RecordLink>
+              <span className='text-muted-foreground'>
+                {t(`onboarding.${row.original.status}`)}
+              </span>
+            </div>
+            {row.original.workEmail ? (
+              <span className='break-all text-muted-foreground'>
+                {row.original.workEmail}
+              </span>
+            ) : null}
+          </div>
+        )}
       />
       <Outlet context={{ reload: request.reload }} />
     </PageContainer>

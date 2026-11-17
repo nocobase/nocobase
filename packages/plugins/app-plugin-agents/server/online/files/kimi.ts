@@ -4,7 +4,7 @@ import type {
   ExtractResponse,
   TextExtractor,
 } from '@nocobase/document-extractor';
-import { CHAT_ATTACHMENT_SIZE_MAX } from '../../../shared/conversations.js';
+
 import {
   baseUrlOf,
   headersOf,
@@ -84,7 +84,10 @@ class KimiExtractor {
     let result: ExtractResponse;
     try {
       signal.throwIfAborted();
-      if (request.bytes.byteLength > CHAT_ATTACHMENT_SIZE_MAX)
+      if (
+        options.maxInputBytes !== undefined &&
+        request.bytes.byteLength > options.maxInputBytes
+      )
         throw new ByteLimitError();
       if (
         !Number.isSafeInteger(maxChars) ||

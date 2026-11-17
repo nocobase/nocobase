@@ -52,14 +52,16 @@ describe('application config', () => {
     });
 
     expect(runtime.config.get<AppJobsConfig>('jobs')).toEqual({
-      memory: {
-        adapter: 'memory',
-        persistence: { path: runtime.paths.storage('jobs') },
-      },
       default: 'redis',
-      redis: {
-        adapter: 'redis',
-        connection: { host: '127.0.0.1', port: 6379 },
+      backends: {
+        memory: {
+          adapter: 'memory',
+          persistence: { path: runtime.paths.storage('jobs') },
+        },
+        redis: {
+          adapter: 'redis',
+          connection: { host: '127.0.0.1', port: 6379 },
+        },
       },
     });
   });
@@ -103,15 +105,19 @@ describe('application config', () => {
     expect(runtime.config.get('logging.file.name')).toBe('app');
     // No default: queues run on the built-in memory configuration until one is named.
     expect(runtime.config.get<AppQueueConfig>('queue')).toEqual({
-      memory: {
-        adapter: 'inMemory',
-        persistence: { path: runtime.paths.storage('queue') },
+      backends: {
+        memory: {
+          adapter: 'inMemory',
+          persistence: { path: runtime.paths.storage('queue') },
+        },
       },
     });
     expect(runtime.config.get<AppJobsConfig>('jobs')).toEqual({
-      memory: {
-        adapter: 'memory',
-        persistence: { path: runtime.paths.storage('jobs') },
+      backends: {
+        memory: {
+          adapter: 'memory',
+          persistence: { path: runtime.paths.storage('jobs') },
+        },
       },
     });
     expect(runtime.config.get<AppSessionConfigInput>('session')!.default).toBe(
@@ -203,7 +209,9 @@ describe('application config', () => {
     expect(runtime.config.get('server.port')).toBe(14001);
     expect(runtime.config.get('server.startLog')).toBe(false);
     expect(runtime.config.get('queue.redis')).toBeUndefined();
-    expect(runtime.config.get('queue.memory.adapter')).toBe('inMemory');
+    expect(runtime.config.get('queue.backends.memory.adapter')).toBe(
+      'inMemory',
+    );
     expect(runtime.config.get('session.stores.redis.host')).toBe('127.0.0.1');
     expect(runtime.config.get('logging.console.pretty')).toBe(false);
     expect(runtime.config.get('session.cookie.secure')).toBe(true);

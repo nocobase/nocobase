@@ -61,13 +61,13 @@ const koKR: LocaleResource<typeof enUS> = {
             all: '배포(전체)',
           },
           deployProtected: {
-            title: '보호된 배포 승인',
+            title: '보호된 환경에 배포',
             description:
-              '승인자가 지정되지 않은 보호된 환경으로의 배포를 승인합니다. 사람만 가능합니다',
-            related: '보호된 배포 승인(관련된 앱)',
+              '환경 승인자를 확인할 수 없으면 본인이 요청을 승인하거나 본인 또는 해당 실행이 직접 배포할 수 있습니다',
+            related: '보호된 환경에 배포 (관련 항목)',
             relatedLabel: '내가 만든 앱',
             relatedHint: '내가 만든 앱과 애플리케이션이 나와 연결한 앱',
-            all: '보호된 배포 승인(전체)',
+            all: '보호된 환경에 배포 (전체)',
           },
           operate: {
             title: '시작 및 중지',
@@ -139,13 +139,11 @@ const koKR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: '앱',
       environments: '배포 환경',
     },
     apps: {
+      lastFailure: '마지막 실패: {{detail}}',
       title: '앱',
-      description: '애플리케이션과 릴리스, 배포 위치입니다.',
-      search: 'ID 또는 이름으로 검색',
       create: '앱 만들기',
       id: '앱 ID',
       name: '이름',
@@ -156,17 +154,28 @@ const koKR: LocaleResource<typeof enUS> = {
       labels: '라벨',
       loadFailed: '앱을 불러올 수 없습니다.',
       loadOneFailed: '앱을 불러올 수 없습니다.',
-      emptyTitle: '아직 앱이 없습니다',
-      emptyNoAccess: '관리자에게 앱 생성을 요청하세요.',
-      emptyDescription: '앱을 만든 뒤 릴리스를 업로드하고 환경에 배포하세요.',
-      noResults: '검색과 일치하는 앱이 없습니다.',
       created: '{{name}}을(를) 만들었습니다.',
       createDescription:
         '앱은 하나의 환경에 배포되며 릴리스는 나중에 업로드합니다.',
       idHint:
         '영문자, 숫자, 밑줄, 하이픈을 사용하며 주소의 일부가 됩니다. 나중에 변경할 수 없습니다.',
-      noEnvironment: '아직 환경이 없습니다',
       lastAccess: '마지막 방문',
+      stateFilter: '상태',
+      anyState: '모든 상태',
+      clearFilters: '필터 지우기',
+      noMatches: '필터와 일치하는 앱이 없습니다.',
+      runStates: {
+        running: '실행 중',
+        starting: '시작 중',
+        pending: '아직 시작 안 됨',
+        waiting: '대기 중',
+        stopped: '중지 또는 휴면',
+        failed: '실패',
+        unknown: '알 수 없음',
+      },
+      page: '{{pages}}페이지 중 {{page}}페이지',
+      previousPage: '이전 페이지',
+      nextPage: '다음 페이지',
     },
     advanced: '고급(선택)',
     labels: {
@@ -521,11 +530,7 @@ const koKR: LocaleResource<typeof enUS> = {
       title: '공유 앱 호스트',
       description:
         '이 호스트의 모든 환경의 앱이 하나의 프로세스와 메모리를 공유합니다.',
-      summary:
-        '배포된 앱 {{deployed}}개 중 {{running}}개가 실행 중이거나 시작 중',
-      memory:
-        '힙 {{heapUsed}} / {{heapLimit}} · 프로세스 메모리 {{rss}} · 서버에서 사용 가능 {{available}}',
-      memoryNote: '개별 앱이 아닌 전체 프로세스의 합계입니다.',
+      environments: '이 호스트의 환경: {{names}}',
       recycling: {
         pending:
           '사용 중인 앱이 없을 때 이 호스트를 재시작해 이전 코드를 해제합니다. 새 버전은 그때까지 대기하며 실행 중인 앱은 계속 요청을 처리합니다.',
@@ -534,15 +539,22 @@ const koKR: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: 앱을 복원할 수 없어 백그라운드에서 다시 시도하는 중입니다.',
-      columns: {
-        app: '앱',
-        state: '상태',
-        why: '이유',
-        lastAccess: '마지막 접근',
-      },
-      hidden: '볼 수 없는 앱',
-      empty: '이 호스트에서 실행 중인 앱이 없습니다.',
-      idle: '유휴 상태, 공간이 필요하면 먼저 중지됨',
+      failed:
+        '공유 호스트가 다시 시작된 후 앱을 복원하지 못했습니다. 백그라운드에서 다시 시도합니다.',
+      view: '호스트 사용 현황 보기',
+      deployed: '배포됨: {{count}}',
+      appsLabel: '실행 또는 시작 중',
+      heapLabel: '힙',
+      processLabel: '프로세스 메모리',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 제한 없음',
+      available: '서버에 {{available}} 남음',
+      wholeHost:
+        '이 호스트 전체(모든 환경 포함)의 합계이며, 메모리는 앱별로 나눌 수 없습니다.',
+      viewAppsNote: '볼 수 있는 앱만 표시됩니다.',
+      byEnvironment: '환경별 실행 중 또는 시작 중:',
+    },
+    runtime: {
       holds: {
         requests: '요청 처리 중',
         connections: '열린 연결',
@@ -557,6 +569,8 @@ const koKR: LocaleResource<typeof enUS> = {
         memory: '시작 거부: 메모리 부족',
         recycle: '시작 거부: 새 코드가 호스트 재시작을 기다리는 중',
       },
+      idle: '유휴 상태, 공간이 필요하면 먼저 중지됨',
+      lastVisit: '마지막 방문: {{time}}',
     },
     overview: {
       currentRelease: '현재 릴리스',
@@ -727,6 +741,12 @@ const koKR: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '표시할 첫 번째 관리자가 없습니다.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '릴리스 패키지에서 {{seconds}}초 동안 데이터를 받지 못했습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
+        artifactReadTotalTimeout:
+          '릴리스 패키지 읽기가 {{seconds}}초를 초과했습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
+        artifactReadTimeout:
+          '릴리스 패키지 읽기 시간이 초과되었습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
         hostExited: '앱 프로세스가 준비되기 전에 중지되었습니다.',
         hostDisabled: '앱 호스트가 꺼져 있습니다.',
         hostShutDown: '앱 호스트가 종료되었습니다.',
@@ -742,6 +762,17 @@ const koKR: LocaleResource<typeof enUS> = {
         notReady: '아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.',
         checkTimeout: '테스트가 20초 안에 끝나지 않았습니다.',
         hostNoSettings: '로컬 실행 환경에는 연결 설정이 없습니다.',
+        recycleWait:
+          '앱 호스트가 메모리를 회수하는 중입니다. 완료되면 배포를 계속합니다.',
+        recycleRetry:
+          '앱 호스트가 아직 메모리를 회수하는 중이라 배포가 완료되지 않았습니다. 나중에 다시 시도하세요.',
+        capacityExceeded:
+          '앱 호스트의 메모리나 빈 슬롯이 부족하여 배포가 완료되지 않았습니다. 나중에 다시 시도하세요.',
+        replacementMemory:
+          '앱 호스트의 메모리가 부족하여 새 버전을 시작할 수 없습니다. 현재 버전은 계속 실행됩니다. 나중에 다시 시도하세요.',
+        startQueueFull: '시작 중인 앱이 너무 많습니다. 나중에 다시 시도하세요.',
+        activeLimit:
+          '실행 중인 앱 수가 한도에 도달했습니다. 나중에 다시 시도하세요.',
       },
       prefixed: {
         startFailed: '시작 실패: {{detail}}',

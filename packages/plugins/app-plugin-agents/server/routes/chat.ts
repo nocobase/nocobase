@@ -3,6 +3,7 @@
  * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
  * bounded snapshots; everyone else receives 404. Changing the team's default chat agent needs `agents.agents` manage.
  */
+import { limitBytes, fileTooLarge } from '@nocobase/app-plugin-file/server';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -27,7 +28,6 @@ import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 
 import {
-  CHAT_ATTACHMENT_SIZE_MAX,
   CHAT_ATTACHMENTS_PER_MESSAGE_MAX,
   CONVERSATION_SOURCE_PATTERN,
   CONVERSATION_TITLE_MAX,
@@ -44,7 +44,6 @@ import {
   PageContextSchema,
 } from '../core/conversations/index.js';
 import { RUN_SELF_ACTION } from '../core/callers/index.js';
-import { fileTooLarge } from '../core/conversations/attachments.js';
 import { forbidden, invalid } from '../kernel/errors.js';
 import {
   decodePageToken,
@@ -724,7 +723,7 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: CHAT_ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(services.chatAttachments.uploadLimit),
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -824,7 +823,7 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: CHAT_ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(services.chatAttachments.uploadLimit),
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -1472,9 +1471,13 @@ export function createChatRoutes(
       operationId: 'agentsUpdateChatPreferences',
       ...cliRoute({
         command: 'conversation preferences update',
-        flags: { defaultAgentId: { name: 'default-agent' } },
+        flags: {
+          defaultAgentId: { name: 'default-agent' },
+          runnerPreference: { name: 'runner-preference' },
+        },
       }),
-      description: "Sets the caller's own default chat agent.",
+      description:
+        "Sets the caller's own default chat agent and which kind of runner their runs go to first. The runner preference applies to runs queued after the change.",
       responses: {
         200: dataResponse(ChatDefaultAgentSchema),
         ...apiErrorResponses,
@@ -1538,19 +1541,22 @@ export function createChatRoutes(
 
   router.post(
     '/chatAttachments',
-    guard,
+    personOrRun,
     describeRoute({
       tags,
       summary: 'Upload a file to send in chat',
       operationId: 'agentsUploadChatAttachment',
-      ...cliRoute({ command: 'conversation attachment upload' }),
-      description: `One file as the \`file\` field of a multipart body, at most ${CHAT_ATTACHMENT_SIZE_MAX} bytes. It is the caller's alone until it is sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
+      // Hosts admit run credentials together with their upload action; keep the default personal upload policy.
+      ...cliRoute({
+        command: 'conversation attachment upload',
+      }),
+      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. With an application-admitted conversation run token, immediately sends the file in that run's reply and retains it with the conversation; no Markdown link is needed. Otherwise it is the caller's alone until sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(MessageAttachmentSchema, 'Stored.'),
         413: apiErrorResponse(
           413,
-          `The file is over ${CHAT_ATTACHMENT_SIZE_MAX} bytes (\`UPLOAD_TOO_LARGE\`).`,
+          `The file is over ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB (\`FILE_TOO_LARGE\`).`,
         ),
         503: apiErrorResponse(
           503,
@@ -1560,9 +1566,9 @@ export function createChatRoutes(
       },
     }),
     bodyLimit({
-      maxSize: CHAT_ATTACHMENT_SIZE_MAX + ENVELOPE,
+      maxSize: limitBytes(services.chatAttachments.uploadLimit) + ENVELOPE,
       onError: () => {
-        throw fileTooLarge();
+        throw fileTooLarge(services.chatAttachments.uploadLimit);
       },
     }),
     async (context) => {
@@ -1575,10 +1581,13 @@ export function createChatRoutes(
       const file = body.file;
       if (!(file instanceof File))
         throw invalid('Send one file as multipart form data, as `file`.');
-      return context.json(
-        { data: await services.chatAttachments.upload(me(context), file) },
-        201,
+      const attachment = await services.chatAttachments.upload(
+        me(context),
+        file,
       );
+      const run = context.get('caller').run;
+      if (run) await conversations.attachFromRun(run.id, attachment.id);
+      return context.json({ data: attachment }, 201);
     },
   );
   router.delete(

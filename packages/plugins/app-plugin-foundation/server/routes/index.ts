@@ -27,6 +27,7 @@ import {
   ScanStatusSchema,
   CollectionsQuery,
   CollectionItemSchema,
+  RegistrationsSchema,
 } from './schemas.js';
 
 const tags = ['Foundation'];
@@ -58,6 +59,35 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       }
       await next();
     });
+
+    routes.get(
+      '/registrations',
+      describeRoute({
+        tags,
+        summary: 'Read current server plugin registrations',
+        operationId: 'foundationGetRegistrations',
+        description:
+          'Reads static runtime registration facts without scanning, constructing providers or accessing configuration values. Requires unrestricted access.',
+        responses: {
+          200: dataResponse(RegistrationsSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      (context) =>
+        context.json({
+          data: {
+            serverPlugins: app.registeredServerPlugins
+              ? [
+                  ...new Set(
+                    app.registeredServerPlugins.map(
+                      (plugin) => plugin.packageName,
+                    ),
+                  ),
+                ]
+              : null,
+          },
+        }),
+    );
 
     routes.get(
       '/overview',

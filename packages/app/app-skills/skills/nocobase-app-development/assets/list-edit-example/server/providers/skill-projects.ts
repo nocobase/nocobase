@@ -1,19 +1,57 @@
 import { randomUUID } from 'node:crypto';
-import { type DatabaseConnection, RepositoryError } from '@nocobase/db';
+import {
+  type DatabaseConnection,
+  type FilterBuilder,
+  RepositoryError,
+} from '@nocobase/db';
 import { ApiError } from '@nocobase/app-server/router';
 
 export class SkillProjectsService {
   constructor(private readonly connection: DatabaseConnection) {}
-  async list() {
+  async list(
+    query: { q?: string; sort?: 'name'; order?: 'asc' | 'desc' } = {},
+  ) {
     const repository = this.connection.repository('skillProjects');
+    const filter = query.q
+      ? {
+          filter: (f: FilterBuilder) => f.string('name').includes(query.q!),
+        }
+      : {};
     const [data, total] = await Promise.all([
       repository.findMany({
+        ...filter,
         limit: 100,
-        sort: (sort) => [sort.field('id').asc()],
+        sort: (sort) =>
+          query.sort === 'name'
+            ? [
+                query.order === 'desc'
+                  ? sort.field('name').desc()
+                  : sort.field('name').asc(),
+                sort.field('id').asc(),
+              ]
+            : [sort.field('id').asc()],
       }),
-      repository.count(),
+      repository.count(filter),
     ]);
     return { data, meta: { total } };
+  }
+  /** Counts for the page's metric; independent of the list's search. */
+  async summary() {
+    return {
+      total: await this.connection.repository('skillProjects').count(),
+    };
+  }
+  async remove(id: string) {
+    try {
+      await this.connection
+        .repository('skillProjects')
+        .deleteOne({ filter: { id } });
+    } catch (error) {
+      if (error instanceof RepositoryError && error.code === 'RECORD_NOT_FOUND')
+        throw missingProject();
+      throw error;
+    }
+    return { id };
   }
   async get(id: string) {
     const record = await this.connection

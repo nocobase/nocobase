@@ -1,5 +1,101 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.25
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- 2a63164: Paginate app lists in the database, scan label and runtime filters in bounded batches, and index both environment and global ordering. Treat search text literally.
+- Updated dependencies [3112daa]
+- Updated dependencies [f60b678]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-host@0.1.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 6102557: Keep the expanded release when the App Host refuses a deployment for memory or capacity, so the retry after a recycle or a Host restart reuses it instead of extracting it again, and stop appending an unset active app limit to capacity errors. Show one state per app in the Releases app list and app overview, with a pending deployment taking precedence and the runtime's last failure as its detail, and word capacity refusals and the recycle wait in every supported language.
+- Updated dependencies [b33e134]
+- Updated dependencies [6102557]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-host@0.1.0-beta.23
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+
+## 0.1.0-beta.20
+
+### Minor Changes
+
+- f8bbdf9: Apps are listed and created on their environment's page; there is no separate apps list or menu entry, and the apps path alone (`/releases` by default) leads to the environments. An environment's apps show each app's runtime state (why on hover or a tap), filter by it and page through 100 at a time, kept in the address (`?runtimeState=`, `?page=`). The environments pages open to either the `rel.environments` `read` setting or the apps page grant (`page:rel-apps`), so environment readers and app readers both keep an entry: the route declares no grant (`authz: 'skip'`, its menu entry shown to every signed-in user) and the page turns away anyone with neither. An environment's apps and Create App need the apps grants; the Variables tab, the connection check, managing environments and the capacity card still need the setting. Create App opens there (`<environments>/:environmentId/apps/new`, for those with `rel.apps/create`) with the environment fixed; the old `<apps>/new` address leads to the environment its `?environmentId=` names, or to the environments (`ReleasesNewAppRedirect`), and Create App no longer fails when the page under it hands no outlet context. A shared host's capacity card splits its running apps by environment (`environments[].running` in `GET /api/releases/hosts`), each linking to that environment filtered to its running and starting apps. `ReleasesAppsPage` is removed.
+- 437f24f: Show each shared app host once on the environments page as a capacity card — apps running against its limit, heap and process memory, restart state — linking to its running apps in the apps list (`GET /api/releases/hosts`, which needs the `rel.environments` `read` setting). The apps list shows each app's runtime state, with why on hover or a tap, and filters by environment and runtime state (`environmentId` and `runtimeState`, repeatable, applied before paging). An app's page says in one line why the host affects it — waiting for a slot or memory, not restored after the host restarted (`runtime.unrestored`), or the host restarting — instead of repeating the whole host. The App Host reports its `maxActiveApps` limit in its status counters.
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- 8b82537: Admit preview applications by fixed capacity slots without rejecting transient heap usage, and force Host rotation through a single maximum-wait timer.
+- fb4659d: Use live memory headroom and serialized bounded cold starts instead of static application slots, and recycle shared Hosts under memory pressure with whole-Host busy protection, atomic ingress handoff, bounded request drain after the maximum wait, background recovery that keeps management available, one retry for capacity-rejected deployments, status-aware idle activity and retryable proxy responses during Host restart/recovery.
+- b2fd67a: Let page descriptions use the available header width while preserving space for actions.
+- fb4659d: Show who shares an App's app host: a section on the App page lists the Apps of every environment running, starting, waiting or failed on it, why each holds a slot or waits (requests, connections, always running, recent use; not enough memory, the active App limit, a pending host restart), the shared process's memory as one total, a pending or running host restart, and environments whose Apps could not be restored. App badges show a refused start as waiting for a free slot, memory or the host restart.
+- Updated dependencies [fb4659d]
+- Updated dependencies [7508a76]
+- Updated dependencies [8b82537]
+- Updated dependencies [fb4659d]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [fb4659d]
+- Updated dependencies [437f24f]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-host@0.1.0-beta.21
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 0.1.0-beta.19
 
 ### Minor Changes

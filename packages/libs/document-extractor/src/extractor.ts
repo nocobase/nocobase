@@ -53,7 +53,11 @@ class Extractor {
   ): Promise<ExtractResponse> {
     if (options.signal?.aborted)
       return Promise.resolve(failure('Extraction was cancelled.', 'aborted'));
-    if (request.bytes.byteLength > this.maxInputBytes)
+    const maxInputBytes =
+      options.maxInputBytes === undefined
+        ? this.maxInputBytes
+        : positive(options.maxInputBytes, 'maxInputBytes');
+    if (request.bytes.byteLength > maxInputBytes)
       return Promise.resolve(
         failure('The document exceeds its byte budget.', 'too-large'),
       );

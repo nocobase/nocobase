@@ -1111,7 +1111,12 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
               type: 'file',
               url: part.url,
               mediaType: part.mediaType,
-              ...(part.filename ? { filename: part.filename } : {}),
+              // The SDK retains provider metadata on streamed file parts, but drops filename.
+              ...(part.filename
+                ? {
+                    providerMetadata: { nocobase: { filename: part.filename } },
+                  }
+                : {}),
             });
           if (part.type !== 'text' && part.type !== 'reasoning')
             execution.published.add(source.partId);

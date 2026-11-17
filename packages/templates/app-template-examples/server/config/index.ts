@@ -21,6 +21,7 @@ import queueExample from './queue-example.js';
 import jobs from './jobs.js';
 import scheduler from './scheduler.js';
 import caching from './caching.js';
+import realtime from './realtime.js';
 import i18n from './i18n.js';
 import app from './app.js';
 import api from './api.js';
@@ -28,6 +29,7 @@ import database from './database.js';
 import snowflake from './snowflake.js';
 import users from './users.js';
 import knowledge from './knowledge.js';
+import foundation from './foundation.js';
 
 const defaultConfigs: AppConfigFactory<{
   agents: ReturnType<typeof agents>;
@@ -48,6 +50,7 @@ const defaultConfigs: AppConfigFactory<{
   jobs: ReturnType<typeof jobs>;
   scheduler: ReturnType<typeof scheduler>;
   caching: ReturnType<typeof caching>;
+  realtime: ReturnType<typeof realtime>;
   i18n: ReturnType<typeof i18n>;
   app: ReturnType<typeof app>;
   api: ReturnType<typeof api>;
@@ -55,6 +58,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
   knowledge: ReturnType<typeof knowledge>;
+  foundation: ReturnType<typeof foundation>;
   mail: ReturnType<typeof mail>;
 }> = defaultAppConfigs({
   mailers,
@@ -75,6 +79,7 @@ const defaultConfigs: AppConfigFactory<{
   jobs,
   scheduler,
   caching,
+  realtime,
   i18n,
   app,
   api,
@@ -82,6 +87,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake,
   users,
   knowledge,
+  foundation,
   mail,
 });
 

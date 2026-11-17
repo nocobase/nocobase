@@ -35,6 +35,8 @@ export interface AppServerLocalesSnapshot {
 }
 
 export interface AppServerDatabaseSnapshot {
+  /** Absent for legacy default-connection contributions. */
+  readonly connection?: string;
   readonly packageName: string;
   readonly migrations?: {
     readonly configured: string;
@@ -128,48 +130,80 @@ export function inspectResolvedAppServerPlugins(
       });
     });
 
-    const configuredMigrations = plugin.definition.database?.migrations;
-    const configuredSeeds = plugin.definition.database?.seeds;
-    if (configuredMigrations || configuredSeeds) {
-      database.push({
-        packageName: plugin.metadata.packageName,
-        ...(configuredMigrations
-          ? {
-              migrations: {
-                configured: configuredMigrations,
-                ...(plugin.metadata.migrationsDirectory
-                  ? { resolved: plugin.metadata.migrationsDirectory }
-                  : {}),
-              },
-            }
-          : {}),
-        ...(configuredSeeds
-          ? {
-              seeds: {
-                configured: configuredSeeds,
-                ...(plugin.metadata.seedsDirectory
-                  ? { resolved: plugin.metadata.seedsDirectory }
-                  : {}),
-              },
-            }
-          : {}),
-      });
-    }
-    if (configuredMigrations && !plugin.metadata.migrationsDirectory) {
-      issues.push({
-        code: 'SERVER_MIGRATIONS_DIRECTORY_MISSING',
-        severity: 'error',
-        packageName: plugin.metadata.packageName,
-        message: `${plugin.metadata.packageName} declares migrations at ${path.resolve(plugin.metadata.baseDir, configuredMigrations)}, but the directory could not be resolved.`,
-      });
-    }
-    if (configuredSeeds && !plugin.metadata.seedsDirectory) {
-      issues.push({
-        code: 'SERVER_SEEDS_DIRECTORY_MISSING',
-        severity: 'error',
-        packageName: plugin.metadata.packageName,
-        message: `${plugin.metadata.packageName} declares seeds at ${path.resolve(plugin.metadata.baseDir, configuredSeeds)}, but the directory could not be resolved.`,
-      });
+    const databaseEntries = [
+      {
+        connection: undefined as string | undefined,
+        definition: plugin.definition.database,
+        metadata: plugin.metadata,
+      },
+      ...Object.entries(plugin.definition.database?.connections ?? {}).map(
+        ([connection, definition]) => ({
+          connection,
+          definition: {
+            migrations:
+              definition.migrations ?? `./database/${connection}/migrations`,
+            seeds: definition.seeds ?? `./database/${connection}/seeds`,
+          },
+          metadata: plugin.metadata.connections?.[connection],
+        }),
+      ),
+    ];
+    for (const entry of databaseEntries) {
+      const configuredMigrations = entry.definition?.migrations;
+      const configuredSeeds = entry.definition?.seeds;
+      if (configuredMigrations || configuredSeeds) {
+        database.push({
+          packageName: plugin.metadata.packageName,
+          ...(entry.connection ? { connection: entry.connection } : {}),
+          ...(configuredMigrations
+            ? {
+                migrations: {
+                  configured: configuredMigrations,
+                  ...(entry.metadata?.migrationsDirectory
+                    ? { resolved: entry.metadata?.migrationsDirectory }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(configuredSeeds
+            ? {
+                seeds: {
+                  configured: configuredSeeds,
+                  ...(entry.metadata?.seedsDirectory
+                    ? { resolved: entry.metadata?.seedsDirectory }
+                    : {}),
+                },
+              }
+            : {}),
+        });
+      }
+      if (
+        configuredMigrations &&
+        !entry.metadata?.migrationsDirectory &&
+        (entry.connection === undefined ||
+          plugin.definition.database?.connections?.[entry.connection]
+            ?.migrations)
+      ) {
+        issues.push({
+          code: 'SERVER_MIGRATIONS_DIRECTORY_MISSING',
+          severity: 'error',
+          packageName: plugin.metadata.packageName,
+          message: `${plugin.metadata.packageName} declares migrations at ${path.resolve(plugin.metadata.baseDir, configuredMigrations)}, but the directory could not be resolved.`,
+        });
+      }
+      if (
+        configuredSeeds &&
+        !entry.metadata?.seedsDirectory &&
+        (entry.connection === undefined ||
+          plugin.definition.database?.connections?.[entry.connection]?.seeds)
+      ) {
+        issues.push({
+          code: 'SERVER_SEEDS_DIRECTORY_MISSING',
+          severity: 'error',
+          packageName: plugin.metadata.packageName,
+          message: `${plugin.metadata.packageName} declares seeds at ${path.resolve(plugin.metadata.baseDir, configuredSeeds)}, but the directory could not be resolved.`,
+        });
+      }
     }
 
     const configuredJobs = plugin.definition.queue?.jobs ?? [];
@@ -195,8 +229,12 @@ export function inspectResolvedAppServerPlugins(
         serviceProviders: plugin.definition.serviceProviders.length,
         routes: plugin.definition.routes.length,
         locales: plugin.definition.locales !== undefined,
-        migrations: configuredMigrations !== undefined,
-        seeds: configuredSeeds !== undefined,
+        migrations: databaseEntries.some(
+          (entry) => entry.definition?.migrations !== undefined,
+        ),
+        seeds: databaseEntries.some(
+          (entry) => entry.definition?.seeds !== undefined,
+        ),
         jobLocations: configuredJobs.length,
       },
     };

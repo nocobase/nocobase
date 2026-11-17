@@ -5,12 +5,14 @@ import {
   appendJournal,
   pruneJournals,
   sanitizeLog,
+  serializeJournalEntry,
   validateJournalPolicy,
   type JournalEntry,
   type JournalPolicy,
 } from './journal.js';
 
 export interface FileLogOptions extends JournalPolicy {
+  retentionOnly?: boolean;
   directory?: string;
   name?: string;
   maxFileSizeMB?: number;
@@ -162,7 +164,9 @@ interface DirectoryWriter {
 }
 const directories = new Map<string, DirectoryWriter>();
 /** Shared across named loggers and hosted lifecycle writers in the same process. */
-export function createLogOutput(options: LogOutputOptions): Writable {
+export function createLogOutput(
+  options: LogOutputOptions,
+): Writable & { writeEntry(entry: JournalEntry): void } {
   const file = normalizeFileOptions(options.file);
   const consoleStream =
     options.console?.stream === 'stderr' ? process.stderr : process.stdout;
@@ -187,16 +191,17 @@ export function createLogOutput(options: LogOutputOptions): Writable {
   let filename = '';
   let part = 0;
   let date = '';
-  return new Writable({
-    write(chunk: Buffer, _encoding, done) {
-      try {
-        const entry = sanitizeLog(
-          JSON.parse(chunk.toString('utf8')),
-        ) as JournalEntry;
-        if (directory && manager) {
-          try {
+  const writeEntry = (entry: JournalEntry) => {
+    try {
+      let line: string | undefined;
+      if (directory && manager) {
+        try {
+          const owner = manager;
+          let rotated = false;
+          appendJournal((serialized) => {
+            line = serialized;
             const today = new Date().toISOString().slice(0, 10);
-            const shared = manager.files.get(file.name!);
+            const shared = owner.files.get(file.name!);
             if (shared) {
               date = shared.date;
               part = shared.part;
@@ -223,7 +228,7 @@ export function createLogOutput(options: LogOutputOptions): Writable {
               }
               filename = '';
             }
-            let rotated = !filename;
+            rotated = !filename;
             filename = path.join(
               directory,
               `${file.name}.${date}.${String(part).padStart(6, '0')}.log`,
@@ -244,7 +249,7 @@ export function createLogOutput(options: LogOutputOptions): Writable {
               rotated = true;
             }
             // Rotate before a complete record would overflow; never discard the boundary record.
-            const bytes = Buffer.byteLength(JSON.stringify(entry)) + 1;
+            const bytes = Buffer.byteLength(serialized);
             let size = 0;
             try {
               size = statSync(filename).size;
@@ -259,54 +264,70 @@ export function createLogOutput(options: LogOutputOptions): Writable {
               );
               rotated = true;
             }
-            manager.files.set(file.name!, { date, part });
-            manager.lastFile = path.basename(filename);
-            appendJournal(
-              filename,
-              entry,
-              Math.max(file.maxFileSizeMB!, bytes / 1024 / 1024 + 0.001),
-            );
-            if (rotated || Date.now() - manager.lastCleanup > 60000) {
-              manager.lastCleanup = Date.now();
-              const owner = manager;
-              manager.cleanup = manager.cleanup
-                .then(() =>
-                  pruneJournals(
-                    directory,
-                    {
-                      retentionDays: file.retentionDays,
-                      maxSizeMB: file.maxTotalSizeMB,
-                    },
-                    owner.lastFile,
-                  ),
-                )
-                .catch((error: unknown) =>
-                  reportLoggingFailure('Log cleanup failed', error),
-                );
-            }
-          } catch (error) {
-            reportLoggingFailure('Log file output failed', error);
+            owner.files.set(file.name!, { date, part });
+            owner.lastFile = path.basename(filename);
+            return {
+              file: filename,
+              maxSizeMB: Math.max(
+                file.maxFileSizeMB!,
+                bytes / 1024 / 1024 + 0.001,
+              ),
+            };
+          }, entry);
+          if (rotated || Date.now() - manager.lastCleanup > 60000) {
+            manager.lastCleanup = Date.now();
+            const owner = manager;
+            manager.cleanup = manager.cleanup
+              .then(() =>
+                pruneJournals(
+                  directory,
+                  {
+                    retentionDays: file.retentionDays,
+                    maxSizeMB: file.maxTotalSizeMB,
+                  },
+                  owner.lastFile,
+                  { retentionOnly: file.retentionOnly },
+                ),
+              )
+              .catch((error: unknown) =>
+                reportLoggingFailure('Log cleanup failed', error),
+              );
           }
+        } catch (error) {
+          reportLoggingFailure('Log file output failed', error);
         }
-        if (options.console?.enabled) {
-          consoleStream.write(
-            options.console.pretty
-              ? prettyEntry(entry, color)
-              : JSON.stringify(entry) + '\n',
-          );
-        }
-      } catch (error) {
-        reportLoggingFailure('Log output failed', error);
       }
-      done();
-    },
-    final(done) {
-      const pending = manager?.cleanup ?? Promise.resolve();
-      void pending.finally(() => {
-        if (manager && --manager.references === 0 && directory)
-          directories.delete(directory);
+      if (options.console?.enabled) {
+        line ??= serializeJournalEntry(entry);
+        consoleStream.write(
+          options.console.pretty
+            ? prettyEntry(JSON.parse(line) as JournalEntry, color)
+            : line,
+        );
+      }
+    } catch (error) {
+      reportLoggingFailure('Log output failed', error);
+    }
+  };
+  return Object.assign(
+    new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        try {
+          writeEntry(JSON.parse(chunk.toString('utf8')) as JournalEntry);
+        } catch (error) {
+          reportLoggingFailure('Log output failed', error);
+        }
         done();
-      });
-    },
-  });
+      },
+      final(done) {
+        const pending = manager?.cleanup ?? Promise.resolve();
+        void pending.finally(() => {
+          if (manager && --manager.references === 0 && directory)
+            directories.delete(directory);
+          done();
+        });
+      },
+    }),
+    { writeEntry },
+  );
 }

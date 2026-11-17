@@ -45,6 +45,7 @@ import {
   type RepoAuthSource,
 } from '../core/checkout.ts';
 import type { SpoolEvent } from '../core/events.ts';
+import type { NpmTokenSource } from './npm-credentials.ts';
 
 /** The environment variables the helper finds the worker's socket and the run's nonce in. */
 export const CREDENTIAL_SOCKET_ENV = 'NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET';
@@ -315,6 +316,8 @@ interface HelperRequest {
   readonly action?: unknown;
   readonly index?: unknown;
   readonly password?: unknown;
+  readonly reason?: unknown;
+  readonly package?: unknown;
 }
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -326,21 +329,42 @@ function sameNonce(given: unknown, nonce: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** Serves `broker` to the helper on a new Unix socket for this run. */
+/**
+ * Serves `broker` to the helper on a new Unix socket for this run, and `npm` to the npm launcher (npm-launcher.ts,
+ * action `npmToken`).
+ */
 export async function serveGitCredentials(
-  broker: GitCredentialBroker,
+  broker: GitCredentialBroker | undefined,
   home: string,
+  npm?: NpmTokenSource,
 ): Promise<CredentialServer> {
   const socket = await credentialSocketPath(home);
   const nonce = randomBytes(24).toString('hex');
   const answer = async (request: HelperRequest): Promise<object> => {
     if (!sameNonce(request.nonce, nonce))
       return { ok: false, message: 'This helper does not belong to the run.' };
+    if (request.action === 'npmToken') {
+      if (npm === undefined)
+        return { ok: false, message: 'This run gives no npm token.' };
+      const reason = request.reason === 'declared' ? 'declared' : 'notFound';
+      try {
+        const token = await npm.get(
+          reason,
+          typeof request.package === 'string' ? request.package : undefined,
+        );
+        return { ok: true, token };
+      } catch (error) {
+        return {
+          ok: false,
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
     const url =
       typeof request.index === 'number'
-        ? broker.urls[request.index]
+        ? broker?.urls[request.index]
         : undefined;
-    if (url === undefined)
+    if (url === undefined || broker === undefined)
       return { ok: false, message: 'Not one of the run’s repositories.' };
     if (request.action === 'erase') {
       const erased =

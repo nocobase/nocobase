@@ -16,6 +16,7 @@ import {
 
 import {
   NavigationGuardContext,
+  type NavigationAttempt,
   type NavigationGuard,
 } from './navigation-guard.js';
 
@@ -67,24 +68,27 @@ export function NavigationGuardProvider({
       generationRef.current += 1;
     };
   }, [incoming]);
-  const allows = useCallback((): boolean | Promise<boolean> => {
-    if (restoringRef.current) return false;
-    const remaining = [...guards];
-    const next = (): boolean | Promise<boolean> => {
-      const guard = remaining.shift();
-      if (!guard) return true;
-      const decision = guard();
-      return typeof decision === 'boolean'
-        ? decision && next()
-        : decision.then((allowed) => allowed && next());
-    };
-    return next();
-  }, [guards]);
+  const allows = useCallback(
+    (attempt: NavigationAttempt): boolean | Promise<boolean> => {
+      if (restoringRef.current) return false;
+      const remaining = [...guards];
+      const next = (): boolean | Promise<boolean> => {
+        const guard = remaining.shift();
+        if (!guard) return true;
+        const decision = guard(attempt);
+        return typeof decision === 'boolean'
+          ? decision && next()
+          : decision.then((allowed) => allowed && next());
+      };
+      return next();
+    },
+    [guards],
+  );
   const requestNavigation = useCallback(
-    (proceed: () => void): void => {
+    (attempt: NavigationAttempt, proceed: () => void): void => {
       if (pendingRef.current) return;
       const generation = generationRef.current;
-      const decision = allows();
+      const decision = allows(attempt);
       if (typeof decision === 'boolean') {
         if (decision) proceed();
         return;
@@ -107,13 +111,13 @@ export function NavigationGuardProvider({
     () => ({
       ...navigator,
       push: (...args) => {
-        requestNavigation(() => {
+        requestNavigation({ action: 'push' }, () => {
           approvedRef.current = { index: historyIndex(navigator), delta: 1 };
           navigator.push(...args);
         });
       },
       replace: (...args) => {
-        requestNavigation(() => {
+        requestNavigation({ action: 'replace' }, () => {
           approvedRef.current = { index: historyIndex(navigator), delta: 0 };
           navigator.replace(...args);
         });
@@ -162,7 +166,7 @@ export function NavigationGuardProvider({
       const allowed =
         wasApproved ||
         (await Promise.resolve()
-          .then(allows)
+          .then(() => allows({ action: 'pop' }))
           .catch(() => false));
       if (!active) return;
       if (allowed) {

@@ -1,3 +1,4 @@
+import { DatabaseTaskHooks, databaseTaskHooksToken } from './task-hooks.js';
 import {
   ServiceProvider,
   type ServiceContainer,
@@ -50,6 +51,12 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
   public readonly name: string = '@nocobase/app-server/database';
 
   public override register(): void {
+    if (!this.app.container.has(databaseTaskHooksToken)) {
+      this.app.container.instance(
+        databaseTaskHooksToken,
+        new DatabaseTaskHooks(),
+      );
+    }
     // Registered even without a database, so a plugin can always register its samples; they then never run.
     if (!this.app.container.has(sampleDataToken)) {
       this.app.container.singleton(sampleDataToken, () =>
@@ -83,14 +90,19 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       contributions: this.app.databaseTaskContributions,
       autoRun: true,
     });
-    // All SQLite connections must be usable by runtime services even without automatic tasks.
+    // Task targets are prepared by the executor; other connections must still
+    // be usable by runtime services when automatic tasks are disabled.
+    const targets = new Set(
+      plan.filter((task) => !task.skipReason).map((task) => task.connection),
+    );
     await prepareAppDatabaseStorage(
       config,
       this.app.paths,
-      Object.keys(config.connections),
+      Object.keys(config.connections).filter((name) => !targets.has(name)),
     );
     const database = container.resolve(databaseManagerToken);
     const result = await executeAppDatabasePlan(database, config, plan, {
+      contributions: this.app.databaseTaskContributions,
       runtimeConfig: this.app.config,
       container: this.app.container,
       paths: this.app.paths,

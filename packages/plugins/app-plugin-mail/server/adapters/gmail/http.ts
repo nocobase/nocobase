@@ -1,3 +1,4 @@
+import type { MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailProviderError,
   MailProviderReasonCode,
@@ -50,9 +51,10 @@ export async function gmailRequest<T>(
   accessToken: string,
   path: string,
   init: RequestInit,
+  fetcher: MailFetch = fetchWithTimeout,
 ): Promise<MailProviderResult<T>> {
   try {
-    const response = await fetchWithTimeout(`${apiBase(config)}${path}`, {
+    const response = await fetcher(`${apiBase(config)}${path}`, {
       ...init,
       headers: {
         ...init.headers,

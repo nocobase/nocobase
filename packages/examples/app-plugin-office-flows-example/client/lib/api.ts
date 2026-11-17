@@ -1,3 +1,4 @@
+import type { ParameterSnapshot } from '@nocobase/lifecycle';
 import type { ApiClient } from '@nocobase/app-client';
 
 import { OFFICE_FLOWS_ROUTES } from '../../shared/routes.js';
@@ -51,6 +52,7 @@ export interface Trace {
 }
 
 export interface RecordView {
+  readonly parameterSnapshot?: ParameterSnapshot | null;
   readonly record: Plain;
   readonly description: Description;
   readonly available: readonly Available[];

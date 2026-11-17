@@ -1,3 +1,4 @@
+import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
@@ -562,6 +563,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 // Users and Permission management join the Accounts and permissions category with their original URLs and ids;
 // Notifications joins the System category.
 const routes: readonly AppClientRouteContribution[] =
-  includeNotificationTemplateRoutes([appRoutes, systemSettingsRoutes], true);
+  includeNotificationTemplateRoutes(
+    [appRoutes, systemSettingsRoutes, databaseExplorerRoutes],
+    true,
+  );
 
 export default routes;

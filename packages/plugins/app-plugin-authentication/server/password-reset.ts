@@ -19,13 +19,15 @@ type ResetData = Parameters<ResetSender>[0];
 
 export interface PasswordResetConfig {
   readonly enabled?: boolean;
+  /** Named application mailer; omission retains existing inline/channel/default selection. */
+  readonly mailer?: string;
   /** @deprecated Legacy applications only. Configure mailers instead. */
   readonly emailChannel?: string;
   readonly template?: (data: ResetData, appName: string) => EmailMessage;
 }
 
 export interface PasswordResetServices {
-  /** The built-in sender chosen by the assembly owner, which also closes it. */
+  /** A caller-created sender. Auth uses it but does not close or revalidate it. */
   readonly sender?: MailSendView;
   /** Whether `sender` came from a deprecated notification channel. */
   readonly legacySender?: boolean;
@@ -75,15 +77,24 @@ export class PasswordResetPolicy {
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
     if (this.available) {
+      if (custom && config.mailer !== undefined)
+        services.warning?.(
+          'auth.passwordReset.mailer is unused; auth.emailAndPassword.sendResetPassword takes precedence.',
+        );
       if (custom && email !== undefined)
         services.warning?.(
           'auth.email is unused for password reset; auth.emailAndPassword.sendResetPassword takes precedence.',
         );
-      if (config.emailChannel !== undefined && (custom || email !== undefined))
+      if (
+        config.emailChannel !== undefined &&
+        (custom || config.mailer !== undefined || email !== undefined)
+      )
         services.warning?.(
           custom
             ? 'auth.passwordReset.emailChannel is unused; auth.emailAndPassword.sendResetPassword takes precedence.'
-            : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
+            : config.mailer !== undefined
+              ? 'auth.passwordReset.emailChannel is unused; auth.passwordReset.mailer takes precedence.'
+              : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
         );
       if (
         this.automatic &&
@@ -91,7 +102,7 @@ export class PasswordResetPolicy {
         services.legacySender === true
       )
         services.warning?.(
-          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers; legacy applications remain supported.',
+          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers and auth.passwordReset.mailer; legacy applications remain supported.',
         );
     }
     this.sender = this.available
@@ -109,25 +120,36 @@ export class PasswordResetPolicy {
       : undefined;
   }
 
-  public async eligible(userId: string): Promise<boolean> {
-    const user = await this.connection.query
-      .selectFrom('user')
-      .select(['id', 'kind', 'disabledAt', 'deletedAt'])
-      .where('id', '=', userId)
-      .executeTakeFirst();
+  public async eligible(
+    userId: string,
+    adapter?: Pick<
+      AuthContext['internalAdapter'],
+      'findUserById' | 'findCredentialAccount'
+    >,
+  ): Promise<boolean> {
+    // Request checks must use Better Auth's adapter so they join its current transaction.
+    const user = adapter
+      ? await adapter.findUserById(userId)
+      : await this.connection.query
+          .selectFrom('user')
+          .select(['id', 'kind', 'disabledAt', 'deletedAt'])
+          .where('id', '=', userId)
+          .executeTakeFirst();
     if (
       !user ||
-      user.kind === 'service' ||
-      user.disabledAt != null ||
-      user.deletedAt != null
+      Reflect.get(user, 'kind') === 'service' ||
+      Reflect.get(user, 'disabledAt') != null ||
+      Reflect.get(user, 'deletedAt') != null
     )
       return false;
-    const credential = await this.connection.query
-      .selectFrom('account')
-      .select('password')
-      .where('userId', '=', userId)
-      .where('providerId', '=', 'credential')
-      .executeTakeFirst();
+    const credential = adapter
+      ? await adapter.findCredentialAccount(userId)
+      : await this.connection.query
+          .selectFrom('account')
+          .select('password')
+          .where('userId', '=', userId)
+          .where('providerId', '=', 'credential')
+          .executeTakeFirst();
     return (
       typeof credential?.password === 'string' && credential.password.length > 0
     );
@@ -211,7 +233,7 @@ export class PasswordResetPolicy {
                   ...adapter,
                   findUserByEmail: async (email, options) => {
                     const user = await adapter.findUserByEmail(email, options);
-                    return user && !(await this.eligible(user.user.id))
+                    return user && !(await this.eligible(user.user.id, adapter))
                       ? null
                       : user;
                   },
@@ -228,7 +250,7 @@ export class PasswordResetPolicy {
                       await adapter.findVerificationValue(identifier);
                     return value &&
                       identifier.startsWith('reset-password:') &&
-                      !(await this.eligible(value.value))
+                      !(await this.eligible(value.value, adapter))
                       ? null
                       : value;
                   },
@@ -245,7 +267,13 @@ export class PasswordResetPolicy {
                 await ctx.context.internalAdapter.findVerificationValue(
                   `reset-password:${token}`,
                 );
-              if (verification && !(await this.eligible(verification.value)))
+              if (
+                verification &&
+                !(await this.eligible(
+                  verification.value,
+                  ctx.context.internalAdapter,
+                ))
+              )
                 throw APIError.from('BAD_REQUEST', {
                   code: 'INVALID_TOKEN',
                   message: 'Invalid token.',
@@ -255,7 +283,7 @@ export class PasswordResetPolicy {
                 ctx.context.internalAdapter = {
                   ...adapter,
                   updatePassword: async (userId, password) => {
-                    if (!(await this.eligible(userId)))
+                    if (!(await this.eligible(userId, adapter)))
                       throw APIError.from('BAD_REQUEST', {
                         code: 'INVALID_TOKEN',
                         message: 'Invalid token.',
@@ -265,7 +293,7 @@ export class PasswordResetPolicy {
                     );
                   },
                   createAccount: async (account) => {
-                    if (!(await this.eligible(account.userId)))
+                    if (!(await this.eligible(account.userId, adapter)))
                       throw APIError.from('BAD_REQUEST', {
                         code: 'INVALID_TOKEN',
                         message: 'Invalid token.',
@@ -344,11 +372,18 @@ export class PasswordResetPolicy {
   }
 
   public async guardWrite(
-    context: { path?: string; context: object } | null | undefined,
+    context:
+      | { path?: string; context: Pick<AuthContext, 'internalAdapter'> }
+      | null
+      | undefined,
   ): Promise<void> {
     if (context?.path !== '/reset-password') return;
     const userId = this.resetWrites.getStore();
-    if (!this.available || !userId || !(await this.eligible(userId)))
+    if (
+      !this.available ||
+      !userId ||
+      !(await this.eligible(userId, context.context.internalAdapter))
+    )
       throw APIError.from('BAD_REQUEST', {
         code: 'INVALID_TOKEN',
         message: 'Invalid token.',

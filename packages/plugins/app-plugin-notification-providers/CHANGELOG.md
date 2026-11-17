@@ -1,5 +1,33 @@
 # @nocobase/app-plugin-notification-providers
 
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- dd0a34f: Upgrade SMTP sending to Nodemailer 10 with its bundled declarations and security fixes. The framework's Node.js 24 requirement already satisfies Nodemailer 10's Node.js 20 minimum.
+
+  Align Notification Providers' SMTP test dependency with the shared transport so its mocks intercept the runtime version.
+
+- Updated dependencies [dd0a34f]
+  - @nocobase/mailer@1.0.0-beta.3
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 1.0.0-beta.19
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [fb4659d]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+
 ## 1.0.0-beta.18
 
 ### Minor Changes

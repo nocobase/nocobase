@@ -1,5 +1,62 @@
 # @nocobase/app-plugin-notification-in-app
 
+## 2.0.0-beta.6
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-notification@2.0.0-beta.9
+
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- e1f584e: The notification Skill no longer tells an agent that in-app inbox writes need a CSRF token, matching the in-app plugin, whose writes are protected by the authentication plugin's origin check. The in-app Skill's description no longer promises a Client page the plugin does not contribute. The agents and in-app Skills name their package's `docs/` and `README.md` files instead of linking outside the Skill folder, so the links no longer break once the Skills are synchronized into an application's `.agents/skills/`, and the agents extension points table links to `online-agent.md` by its real name.
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.8
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
+## 2.0.0-beta.3
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 2.0.0-beta.2
 
 ### Patch Changes

@@ -601,6 +601,14 @@ const viVN: LocaleResource<typeof enUS> = {
     pathHint:
       'Runner tìm công cụ lập trình bằng PATH của chính nó. Trong terminal mà which codex / which claude hoạt động, hãy chạy lại nocobase-runner service install và khởi động lại dịch vụ (hoặc chạy lại nocobase-runner start) để nó nhận đúng PATH.',
     quota: {
+      ceilingReached: 'Đã đạt ngưỡng hạn mức',
+      ceilingLabel: 'Tạm dừng tại',
+      ceilingInput: 'Tạm dừng công việc {{tool}} mới khi đạt phần trăm đã dùng',
+      ceilingSave: 'Áp dụng',
+      ceilingInvalid: 'Nhập phần trăm nguyên từ 1 đến 100 hoặc để trống.',
+      ceilingPaused:
+        'Một cửa sổ hạn mức đã chạm ngưỡng; công việc mới liên quan chờ đặt lại hoặc thay đổi ngưỡng.',
+
       workspaceStatus: {
         active: 'Công việc vẫn tiếp tục',
         ended: 'Đã kết thúc · cho phép dọn dẹp',
@@ -631,6 +639,9 @@ const viVN: LocaleResource<typeof enUS> = {
       workspaceSize: 'Kích thước không gian làm việc: {{value}}',
       providers_one: 'Nhà cung cấp {{count}} đạt hạn ngạch',
       providers_other: 'Nhà cung cấp {{count}} theo hạn ngạch',
+      models_one: '{{count}} mô hình hết hạn ngạch',
+      models_other: '{{count}} mô hình hết hạn ngạch',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Nhiệm vụ / cuộc trò chuyện',
         agent: 'Tác nhân',
@@ -673,7 +684,7 @@ const viVN: LocaleResource<typeof enUS> = {
         'Chỉ xóa sau khi xác nhận hạn ngạch đã được khôi phục. {{target}} nhận việc trở lại ngay; nếu hạn ngạch vẫn hết, lần chạy tiếp theo sẽ đánh dấu lại.',
       observed: '{{time}} được báo cáo lần cuối',
       usedPercent: '{{percent}}% đã sử dụng',
-      ok: 'Được rồi',
+      noUsage: 'Chưa có dữ liệu hạn mức',
       hint: 'Dấu tự xóa vào thời điểm đặt lại đã biết, hoặc khi công cụ báo lại còn hạn ngạch. Chỉ xóa thủ công sau khi xác nhận hạn ngạch đã được khôi phục. Chỉ chủ sở hữu môi trường chạy và quản trị viên mới có thể xóa dấu.',
     },
     workspaces: {
@@ -749,8 +760,8 @@ const viVN: LocaleResource<typeof enUS> = {
       offlineNever: 'Ngoại tuyến',
     },
     toolUsage: {
-      label: 'Chạy bằng công cụ mã hóa',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Chạy {{used}}/{{limit}}',
+      hint: 'Tối đa {{limit}} lượt chạy {{tool}} cùng lúc; đang chạy {{used}}',
     },
     toolSlots: {
       label: 'Giới hạn cho mỗi công cụ mã hóa',
@@ -889,6 +900,8 @@ const viVN: LocaleResource<typeof enUS> = {
       show: 'Phiên bản {{version}}: đã có phiên bản mới hơn',
       available: 'Đã có bản cập nhật',
       badge: 'Có thể nâng cấp',
+      latest: 'Mới nhất',
+      installed: 'Phiên bản {{version}}',
       title: 'Á hậu mới hơn cho {{name}}',
       description: 'Đã cài đặt {{version}}, ứng dụng này phục vụ {{latest}}.',
       hint: 'Nó tự cập nhật khi không có Agent nào đang chạy. Để cập nhật nó ngay bây giờ, hãy chạy cái này trên máy chủ của nó.',

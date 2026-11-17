@@ -60,6 +60,7 @@ export class MailAccountsService {
         input.status,
       );
       updated = { ...account, status: input.status };
+      this.dependencies.outbox.accountChanged?.(updated);
       if (updated.status !== account.status) {
         notifyMailMessageChange(
           this.dependencies.messageChangeNotifier,
@@ -87,6 +88,10 @@ export class MailAccountsService {
     ) {
       throw mailAccountNotFound();
     }
+    this.dependencies.outbox.accountChanged?.({
+      ...account,
+      status: 'removing',
+    });
     const activeSyncRun =
       await this.dependencies.store.findActiveSyncRun(accountId);
     if (activeSyncRun) {

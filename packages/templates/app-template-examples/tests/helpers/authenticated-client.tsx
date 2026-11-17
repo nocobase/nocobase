@@ -89,12 +89,20 @@ export async function renderAuthenticatedClient(
 function createClientTestServer() {
   return createTestApp({
     createServer: createStandaloneServer,
+    // Local preview origins must not change test cookie security or trusted origins.
+    server: {
+      env: {
+        APP_PUBLIC_ORIGIN: 'http://localhost',
+        BETTER_AUTH_TRUSTED_ORIGINS: 'http://localhost',
+      },
+    },
     connections: ['main', 'analytics'],
     config: {
       logging: { enabled: false },
       app: { publicOrigin: 'http://localhost' },
       auth: {
         secret: 'test-auth-secret-at-least-32-characters',
+        trustedOrigins: ['http://localhost'],
         emailAndPassword: { disableSignUp: false },
         advanced: { disableOriginCheck: false, disableCSRFCheck: false },
       },

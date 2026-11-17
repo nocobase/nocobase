@@ -9,7 +9,7 @@
 //
 // Top-level configuration fields: base, out, locale, viewport, colorScheme, theme, hide (elements hidden in screenshots;
 // none by default), shots. Each shot: name, path, setup (steps run before the page opens), steps,
-// waitUntil, viewport, colorScheme, theme, locale, fullPage, settle (milliseconds to wait before the screenshot),
+// waitUntil, viewport, isMobile, hasTouch, colorScheme, theme, locale, fullPage, settle (milliseconds to wait before the screenshot),
 // screenshot (false skips the final screenshot). colorScheme and theme are saved as the application's own appearance
 // choices, so they win over client.app.defaultColorScheme and client.app.defaultTheme in config.yml.
 // Steps: click, fill ([selector, value]), type ([selector, text] or { selector, text, delay }: types one key at a time
@@ -222,6 +222,14 @@ async function shoot(options) {
       // Playwright emulates only light and dark; for system, leave the browser's own preference in place.
       colorScheme: toContextColorScheme(shot.colorScheme ?? spec.colorScheme),
       deviceScaleFactor: shot.deviceScaleFactor ?? spec.deviceScaleFactor ?? 1,
+      // Phone emulation: the meta viewport, touch events and coarse-pointer media queries a phone would have.
+      isMobile: shot.isMobile ?? spec.isMobile ?? false,
+      hasTouch:
+        shot.hasTouch ??
+        spec.hasTouch ??
+        shot.isMobile ??
+        spec.isMobile ??
+        false,
     });
     const hide = spec.hide ?? [];
     if (hide.length > 0) {
@@ -305,6 +313,13 @@ async function shoot(options) {
         await runStep(page, context, step, state);
       if (shot.screenshot !== false) {
         await page.waitForTimeout(shot.settle ?? 500);
+        // A page that scrolls sideways fails the phone layout (mobile.md, M1.2); record its widths for the report.
+        const overflow = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        }));
+        if (overflow.scrollWidth > overflow.viewportWidth)
+          entry.horizontalOverflow = overflow;
         const file = path.join(out, `${shot.name}.png`);
         await page.screenshot({ path: file, fullPage: shot.fullPage ?? false });
         entry.files.push(file);

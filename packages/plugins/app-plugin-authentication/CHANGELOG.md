@@ -1,5 +1,48 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.23
+
+### Patch Changes
+
+- 8647bb2: Return visitors to the original application path, query and fragment after signing in.
+
+## 2.0.0-beta.22
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- Updated dependencies [dd0a34f]
+  - @nocobase/mailer@1.0.0-beta.3
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 2.0.0-beta.21
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 2.0.0-beta.20
+
+### Minor Changes
+
+- 7508a76: Move the password-reset mailer reference from auth.email.mailer to auth.passwordReset.mailer. Update existing references directly; the old field is no longer accepted. Keep private inline SMTP/Resend settings, existing environment mappings, callbacks and default sender selection.
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [fb4659d]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 2.0.0-beta.19
 
 ### Patch Changes

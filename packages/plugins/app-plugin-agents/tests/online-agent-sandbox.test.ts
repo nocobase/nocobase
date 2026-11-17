@@ -196,6 +196,7 @@ async function fixture(
   const alice = await signIn('Alice');
   const bob = await signIn('Bob');
   const attachments = createChatAttachments({
+    limitForDisk: () => ({ maxFileSizeMb: 20 }),
     tx: h.services.tx,
     basePath: () => '/main',
     storage: createChatFileStorage({

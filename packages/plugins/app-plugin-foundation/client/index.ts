@@ -1,17 +1,20 @@
 // The plugin's public client surface. The default export is the registration factory an application lists in
 // its client/plugins.ts.
 export { default, type FoundationClientOptions } from './plugin.js';
+export { CAPABILITY_GUIDE_ACCESS } from './access.js';
 export {
   groupFoundationNavigation,
   type FoundationNavigationNode,
 } from './navigation.js';
 export {
+  capabilityGuideDefinitions,
   createFoundationRoutes,
   foundationDefinition,
   type FoundationRouteOptions,
 } from './routes.js';
 export {
   fetchFoundationOverview,
+  fetchFoundationRegistrations,
   useFoundationOverview,
   type FoundationLoadError,
   type FoundationOverviewState,

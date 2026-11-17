@@ -4,16 +4,16 @@ Memory is the default, isolated to one service and needs no infrastructure. Redi
 
 ```yaml
 realtime:
-  adapter: redis
   namespace: orders-production
-  redis:
+  broker:
+    adapter: redis
     connection:
       host: 127.0.0.1
       port: 6379
     setupTimeoutMs: 5000
 ```
 
-The configuration paths and namespace default (app.name, otherwise `default`) are unchanged. Unselected Redis configuration does not require the plugin or open connections. An explicitly selected unknown or unregistered adapter fails startup; a connection failure never falls back to Memory. Config check is not a network or plugin-enablement check. Server registration does not automatically contribute a configuration factory or environment mappings.
+Broker selection and implementation options live under `realtime.broker`; service `namespace`, authorization/session timers and all `limits` stay at `realtime`. Namespace still defaults to app.name, otherwise `default`. With no broker the service uses inMemory; an explicit broker requires a non-empty adapter. Legacy `realtime.adapter` and `realtime.redis` fail with migration instructions even when new fields also exist. An unknown or unregistered adapter fails startup; a connection failure never falls back to Memory. Config check is not a network or plugin-enablement check. Register `defineRealtimeConfig()` from `@nocobase/app-server/realtime` in the application's default config map; Default and Examples do this with empty defaults. It contributes no environment mappings or public browser fields. See the target App upgrade Skill's Realtime reference for configuration migration and coordinated rollback.
 
 Standalone consumers keep the core service and change only the factory import:
 

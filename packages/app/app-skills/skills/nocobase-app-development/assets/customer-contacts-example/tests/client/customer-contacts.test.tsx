@@ -678,3 +678,142 @@ it('restarts the picker wait for each search and announces a slow next page outs
     vi.useRealTimers();
   }
 });
+
+it('shows cards and a filter sheet with the applied count on a phone', async () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  const calls: ApiCall[] = [];
+  await mount((call) => {
+    if (call.path === 'customerContacts/customers') {
+      calls.push(call);
+      return list([customer]);
+    }
+    throw new Error(`Unexpected ${call.path}`);
+  }, '/customer-contacts?ownerId=crm-rep');
+
+  const card = within(await screen.findByRole('list'))
+    .getAllByRole('listitem')
+    .at(0)!;
+  expect(within(card).getByRole('link', { name: 'Acorn 01' })).toBeVisible();
+  expect(within(card).getByText('Active')).toBeVisible();
+  expect(await within(card).findByText('Alex Rivera')).toBeVisible();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Filters · 1' }));
+  const sheet = await screen.findByRole('dialog', { name: 'Filters' });
+  await userEvent.click(
+    within(sheet).getByRole('combobox', { name: 'Status' }),
+  );
+  await userEvent.click(await screen.findByRole('option', { name: 'Paused' }));
+  await waitFor(() =>
+    expect(calls.at(-1)?.query).toMatchObject({
+      status: 'paused',
+      ownerId: 'crm-rep',
+      page: '1',
+    }),
+  );
+  // The sheet is a temporary panel: closing it keeps the filters, which live in the URL.
+  await userEvent.keyboard('{Escape}');
+  expect(
+    await screen.findByRole('button', { name: 'Filters · 2' }),
+  ).toBeVisible();
+});
+
+it('selects and clears the whole page from the phone cards and keeps the batch target across widths', async () => {
+  let phone = true;
+  const listeners = new Set<() => void>();
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    get matches() {
+      return phone;
+    },
+    media: query,
+    addEventListener: (_: string, listener: () => void) =>
+      listeners.add(listener),
+    removeEventListener: (_: string, listener: () => void) =>
+      listeners.delete(listener),
+  }));
+  const setPhone = (next: boolean) => {
+    phone = next;
+    act(() => {
+      for (const listener of listeners) listener();
+    });
+  };
+  const birch = { ...customer, id: 'customer-02', name: 'Birch 02' };
+  const cedar = { ...customer, id: 'customer-11', name: 'Cedar 11' };
+  await mount(({ path, query }) => {
+    if (path === 'customerContacts/customers') {
+      if (query?.status === 'paused') return list([]);
+      return Number(query?.page) === 2
+        ? list([cedar], 2, 12)
+        : list([customer, birch], 1, 12);
+    }
+    throw new Error(`Unexpected ${path}`);
+  });
+  // The page re-renders its select-all checkbox, so query it each time.
+  // Its accessible name is the page's own label ("Select all customers on this page") or, where the checkbox takes
+  // its name from the wrapping label, the visible text; find it inside that label so both resolve the same control.
+  const selectAll = () =>
+    within(
+      screen.getByText('Select all on this page').closest('label')!,
+    ).getByRole('checkbox');
+  await screen.findByText('Select all on this page');
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+
+  // One card selected: the page is partly selected.
+  await userEvent.click(
+    screen.getByRole('checkbox', { name: 'Select Acorn 01' }),
+  );
+  expect(selectAll()).toHaveAttribute('aria-checked', 'mixed');
+  // One tap on the label selects the rest of the page.
+  await userEvent.click(screen.getByText('Select all on this page'));
+  await screen.findByText('2 selected on this page');
+  expect(selectAll()).toHaveAttribute('aria-checked', 'true');
+
+  // The selection survives a switch to the desktop table and back.
+  setPhone(false);
+  expect(await screen.findByRole('table')).toBeVisible();
+  expect(screen.getByText('2 selected on this page')).toBeVisible();
+  setPhone(true);
+  await waitFor(() =>
+    expect(screen.queryByRole('table')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText('2 selected on this page')).toBeVisible();
+
+  // A second tap clears the page; a third selects it again, and the batch action targets exactly this page.
+  await userEvent.click(selectAll());
+  expect(screen.queryByText(/selected on this page/u)).not.toBeInTheDocument();
+  await userEvent.click(selectAll());
+  await screen.findByText('2 selected on this page');
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Edit selected customers' }),
+  );
+  await screen.findByText('This assignment will change 2 selected customers.');
+  await userEvent.keyboard('{Escape}');
+  await waitFor(() =>
+    expect(
+      screen.queryByText('This assignment will change 2 selected customers.'),
+    ).not.toBeInTheDocument(),
+  );
+
+  // Selection is scoped to the page and the query: paging and filtering clear it.
+  // Closing the batch dialog without applying keeps the page's selection.
+  expect(screen.getByText('2 selected on this page')).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: /next page/i }));
+  await screen.findByRole('checkbox', { name: 'Select Cedar 11' });
+  expect(screen.queryByText(/selected on this page/u)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByText('Select all on this page'));
+  await screen.findByText('1 selected on this page');
+  await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+  const sheet = await screen.findByRole('dialog', { name: 'Filters' });
+  await userEvent.click(
+    within(sheet).getByRole('combobox', { name: 'Status' }),
+  );
+  await userEvent.click(await screen.findByRole('option', { name: 'Paused' }));
+  await userEvent.keyboard('{Escape}');
+  await screen.findByText('No results');
+  expect(screen.queryByText(/selected on this page/u)).not.toBeInTheDocument();
+});

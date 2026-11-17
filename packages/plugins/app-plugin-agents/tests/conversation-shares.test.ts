@@ -528,6 +528,7 @@ describe('conversation snapshots', () => {
       { id: 'bob', name: 'Bob' },
     ]);
     const attachments = createChatAttachments({
+      limitForDisk: () => ({ maxFileSizeMb: 20 }),
       tx: h.services.tx,
       basePath: () => '/main',
       storage: {

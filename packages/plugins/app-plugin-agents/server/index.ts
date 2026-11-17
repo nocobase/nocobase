@@ -38,3 +38,11 @@ export type {
 } from './online/agent/types.js';
 export { RunSchema } from './routes/schemas.js';
 export { runMachineViewerFor } from './core/runs/execution-view.js';
+
+export type {
+  RunnerDiagnostics,
+  RunnerDiagnosticsCollection,
+  RunnerDiagnosticsFile,
+  RunnerDiagnosticsProgress,
+  RunnerDiagnosticsResult,
+} from './runners/diagnostics.js';

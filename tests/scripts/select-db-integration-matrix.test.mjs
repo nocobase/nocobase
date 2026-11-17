@@ -142,6 +142,12 @@ const claimPagination = {
   tests: 'tests/claim-pagination.test.ts',
 };
 
+const appPagination = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-releases',
+  tests: 'tests/list-apps-paging.test.ts tests/migrations.test.ts',
+}));
+
 const artifactKeyMigration = {
   dialect: 'mssql',
   filter: '@nocobase/app-plugin-releases',
@@ -176,7 +182,14 @@ test('release migration changes select the SQL Server upgrade regression', () =>
     'packages/plugins/app-plugin-releases/database/migrations/202610260002_rel_bound_artifact_keys.ts',
     'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
   ])
-    assert.deepEqual(selectPackageSuites([file]), [artifactKeyMigration], file);
+    assert.deepEqual(
+      selectPackageSuites([file]),
+      [
+        ...(file.includes('/database/migrations/') ? appPagination : []),
+        artifactKeyMigration,
+      ],
+      file,
+    );
   assert.deepEqual(
     selectPackageSuites([
       'packages/plugins/app-plugin-releases/server/plugin.ts',
@@ -364,6 +377,7 @@ test('missing or unavailable comparison commits conservatively select every data
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
     assert.deepEqual(plan.suites, [
+      ...appPagination,
       ...receiptConcurrency,
       ...withdrawalConcurrency,
       claimConcurrency,
@@ -400,4 +414,19 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
     });
     assert.equal(readFileSync(output, 'utf8'), expected);
   }
+});
+
+test('app pagination selects both server dialects for service, migration and test changes', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-releases/server/services/releases.ts',
+    'packages/plugins/app-plugin-releases/tests/list-apps-paging.test.ts',
+    'packages/plugins/app-plugin-releases/tests/migrations.test.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), appPagination, file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-releases/client/pages/environment-page.tsx',
+    ]),
+    [],
+  );
 });

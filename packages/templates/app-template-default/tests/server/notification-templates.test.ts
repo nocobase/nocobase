@@ -73,8 +73,14 @@ describe('configured Default', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'users.invitation',
+          localeMode: 'separate',
           channels: [
-            { name: 'system', type: 'email', configured: true, enabled: true },
+            expect.objectContaining({
+              name: 'system',
+              type: 'email',
+              configured: true,
+              enabled: true,
+            }),
           ],
         }),
       ]),

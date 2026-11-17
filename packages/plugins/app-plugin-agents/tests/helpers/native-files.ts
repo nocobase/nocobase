@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { MockLanguageModelV4 } from 'ai/test';
 import { NativeFileInputs } from '../../server/online/files/service.js';
 import type { NativeSessionStore } from '../../server/online/agent/persistence/store.js';
@@ -25,7 +26,14 @@ export function fixtureFileInputs(
       apiKey: null,
     }),
     createModel: () => fixtureModel(model),
-    files,
+    files: {
+      uploadLimit: DEFAULT_FILE_UPLOAD_LIMIT,
+      content: files
+        ? (...args) => files.content(...args)
+        : async () => {
+            throw new Error('No stored files in this fixture.');
+          },
+    },
     config: {
       profiles: [
         {

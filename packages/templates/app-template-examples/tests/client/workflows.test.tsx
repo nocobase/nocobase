@@ -1,4 +1,7 @@
-import { useRealtimeRefresh } from '@nocobase/app-client';
+import {
+  useRealtimeRefresh,
+  NavigationGuardProvider,
+} from '@nocobase/app-client';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { BackButton } from '../../client/components/back-button.js';
@@ -32,6 +35,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { format, parseISO } from 'date-fns';
@@ -119,12 +123,14 @@ async function view(
     <I18nProvider runtime={runtime}>
       <NamespaceScope ns={namespace}>
         <MemoryRouter initialEntries={[path]}>
-          <RouteTreeProvider routes={routes}>
-            <PageBreadcrumbProvider>
-              <Breadcrumbs />
-              {children}
-            </PageBreadcrumbProvider>
-          </RouteTreeProvider>
+          <NavigationGuardProvider>
+            <RouteTreeProvider routes={routes}>
+              <PageBreadcrumbProvider>
+                <Breadcrumbs />
+                {children}
+              </PageBreadcrumbProvider>
+            </RouteTreeProvider>
+          </NavigationGuardProvider>
         </MemoryRouter>
       </NamespaceScope>
     </I18nProvider>,
@@ -191,12 +197,15 @@ const detail: WorkflowExecutionDetail = {
   workflow: {
     id: 'lifecycle.expenses',
     name: 'expenses',
+    version: 1,
+    versions: [{ name: 'expenses', version: 1 }],
     source: 'lifecycle',
     states: 4,
     transitions: 4,
     executionCount: 1,
     lastExecutedAt: null,
   },
+  definition: { name: 'expenses', version: 1, executionCount: 1 },
   description: describeLifecycle(expenseLifecycle),
   parameters: {},
   diagram: '',
@@ -304,6 +313,8 @@ describe('workflow management pages', () => {
         {
           id: 'office.dataRequests',
           name: 'dataRequests',
+          version: 1,
+          versions: [{ name: 'dataRequests', version: 1 }],
           source: 'office',
           states: 4,
           transitions: 5,
@@ -931,6 +942,8 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
       {
         id: 'lifecycle.expenses',
         name: 'expenses',
+        version: 1,
+        versions: [{ name: 'expenses', version: 1 }],
         source: 'lifecycle',
         states: 4,
         transitions: 5,
@@ -1245,6 +1258,56 @@ it.each(['en-US', 'zh-CN'])(
   },
 );
 
+it('names the selected version once in the definition header', async () => {
+  const versioned = {
+    ...detail,
+    workflow: {
+      ...detail.workflow,
+      version: 2,
+      versions: [
+        { name: 'expenses', version: 1 },
+        { name: 'expenses-v2', version: 2 },
+      ],
+      executionCount: 5,
+    },
+    definition: { name: 'expenses-v2', version: 2, executionCount: 3 },
+  };
+  api.request.mockImplementation(async ({ path }) => ({
+    data:
+      path === 'workflows/categories'
+        ? []
+        : path.endsWith('/parameters')
+          ? { kind: 'lifecycle', revision: 0, groups: [], values: {} }
+          : versioned,
+  }));
+  const copy = enUS.workflows;
+  await view(
+    <Routes>
+      <Route path='/workflows' element={<WorkflowsPage />}>
+        <Route path='definitions/:workflowId' element={<DefinitionPage />} />
+      </Route>
+    </Routes>,
+    'en-US',
+    '/workflows/definitions/lifecycle.expenses?version=2',
+  );
+  const header = (
+    await screen.findByRole('heading', {
+      name: (name) => name.startsWith(copy.names.expenses),
+      level: 1,
+    })
+  ).closest('header');
+  if (!header) throw new Error('Definition header is missing.');
+  // The version select is the only place the header names the version.
+  expect(header.textContent?.match(/Version 2/g)).toHaveLength(1);
+  const executionsLink = within(header).getByRole('link', {
+    name: copy.executionCountLink.replace('{{count}}', '3'),
+  });
+  expect(executionsLink).toHaveAttribute(
+    'href',
+    `/workflows/executions?workflowId=${encodeURIComponent(versioned.workflow.id)}&version=2`,
+  );
+});
+
 it('omits list navigation on execution detail routes', async () => {
   await view(
     <Routes>
@@ -1465,6 +1528,7 @@ it('reloads the complete office snapshot after a conflict before the next inline
         method: 'PUT',
         json: {
           kind: 'office',
+          definition: 'dataRequests',
           expectedRevision: 2,
           values: {
             holidays: [

@@ -1,3 +1,7 @@
+import {
+  DiagnosticsRequestSchema,
+  type DiagnosticsRequest,
+} from './diagnostics.js';
 /**
  * The runner's side of the protocol (`RUNNER_ROUTES`): registering, staying connected, claiming runs and reporting on
  * them.
@@ -588,6 +592,7 @@ export const UpgradeRequiredSchema: z.ZodType<UpgradeRequired> = z.object({
 export interface HeartbeatResponse {
   /** Re-detect tools and acknowledge this request in a heartbeat with the new report. */
   readonly toolsRefreshRequestId?: string;
+  readonly diagnostics?: DiagnosticsRequest;
   readonly enabledTools?: readonly AgentTool[];
   readonly detectTools?: boolean;
   readonly capacity?: RunnerCapacity;
@@ -618,6 +623,7 @@ export interface HeartbeatResponse {
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
   toolsRefreshRequestId: z.string().min(1).max(64).optional(),
+  diagnostics: DiagnosticsRequestSchema.optional(),
   enabledTools: z.array(AgentToolSchema).optional(),
   detectTools: z.boolean().optional(),
   capacity: RunnerCapacitySchema.optional(),

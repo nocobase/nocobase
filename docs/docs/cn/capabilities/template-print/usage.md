@@ -41,4 +41,4 @@ description: 准备业务模板，确定数据来源与输出格式，并验证�
 
 ## 开发参考
 
-进一步阅读[模板打印能力包说明](https://github.com/nocobase/nocobase/blob/v3-develop/packages/plugins/app-plugin-template-print/README.md)和[可运行的示例插件](https://github.com/nocobase/nocobase/blob/v3-develop/packages/examples/app-plugin-template-print-example/README.md)。示例插件拥有自己的演示数据与接口，不应直接当作业务应用的通用打印服务。
+进一步阅读[模板打印能力包说明](https://github.com/nocobase/nocobase/blob/v3/packages/plugins/app-plugin-template-print/README.md)和[可运行的示例插件](https://github.com/nocobase/nocobase/blob/v3/packages/examples/app-plugin-template-print-example/README.md)。示例插件拥有自己的演示数据与接口，不应直接当作业务应用的通用打印服务。

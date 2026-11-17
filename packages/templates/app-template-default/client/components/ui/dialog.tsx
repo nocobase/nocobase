@@ -49,7 +49,9 @@ function DialogContent({
   const { t } = useTranslation();
   return (
     <DialogPortal>
-      <DialogOverlay />
+      {/* Base UI leaves out the backdrop of a dialog opened inside another one; render it anyway, so the layer below
+          takes no taps or clicks while this one is open (mobile.md M7.2). */}
+      <DialogOverlay forceRender />
       <DialogPrimitive.Popup
         data-slot='dialog-content'
         className={cn(

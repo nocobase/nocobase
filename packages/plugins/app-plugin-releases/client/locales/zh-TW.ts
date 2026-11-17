@@ -60,12 +60,13 @@ const zhTW: LocaleResource<typeof enUS> = {
             all: '部署（全部）',
           },
           deployProtected: {
-            title: '批准受保護的部署',
-            description: '批准部署到沒有指定批准者的受保護環境；僅限人',
-            related: '批准受保護的部署（與其相關的部署）',
+            title: '部署至受保護環境',
+            description:
+              '未解析出環境審批人時，本人可審批申請，本人或其執行可直接部署',
+            related: '部署至受保護環境（與自己相關的）',
             relatedLabel: '我建立的',
             relatedHint: '我建立的應用程式，以及任何與我相關的應用程式',
-            all: '批准受保護的部署（全部）',
+            all: '部署至受保護環境（全部）',
           },
           operate: {
             title: '啟動與停止',
@@ -135,13 +136,11 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: '應用程式',
       environments: '部署環境',
     },
     apps: {
       title: '應用程式',
-      description: '應用程式、其版本以及部署位置。',
-      search: '依 ID 或姓名搜尋',
+      lastFailure: '上次失敗：{{detail}}',
       create: '建立應用程式',
       id: '應用程式 ID',
       name: '名稱',
@@ -152,15 +151,26 @@ const zhTW: LocaleResource<typeof enUS> = {
       labels: '標籤',
       loadFailed: '無法載入應用程式。',
       loadOneFailed: '無法載入應用程式。',
-      emptyTitle: '還沒有應用程式',
-      emptyNoAccess: '請求管理員建立應用程式。',
-      emptyDescription: '建立應用程式，然後上傳版本並將其部署到環境中。',
-      noResults: '沒有與搜尋相符的應用程式。',
       created: '{{name}} 建立。',
       createDescription: '一個應用程式部署到一個環境；隨後上傳其版本。',
       idHint: '字母、數字、底線和連字元；其地址的一部分。以後無法改變。',
-      noEnvironment: '還沒有環境',
       lastAccess: '最後一次訪問',
+      stateFilter: '狀態',
+      anyState: '全部狀態',
+      clearFilters: '清除篩選',
+      noMatches: '沒有符合篩選條件的應用。',
+      runStates: {
+        running: '執行中',
+        starting: '啟動中',
+        pending: '尚未啟動',
+        waiting: '排隊等待',
+        stopped: '已停止或休眠',
+        failed: '失敗',
+        unknown: '未知',
+      },
+      page: '第 {{page}} / {{pages}} 頁',
+      previousPage: '上一頁',
+      nextPage: '下一頁',
     },
     advanced: '進階（可選）',
     labels: {
@@ -502,25 +512,28 @@ const zhTW: LocaleResource<typeof enUS> = {
     sharedHost: {
       title: '共用應用宿主',
       description: '這個宿主上所有環境的應用共用一個程序和它的記憶體。',
-      summary: '已部署 {{deployed}} 個應用，{{running}} 個執行或啟動中',
-      memory:
-        '堆積 {{heapUsed}} / {{heapLimit}} · 程序記憶體 {{rss}} · 伺服器可用 {{available}}',
-      memoryNote: '這是整個程序的總量，不是某個應用的佔用。',
+      environments: '使用它的環境：{{names}}',
       recycling: {
         pending:
           '沒有應用在使用時，會重新啟動這個宿主來釋放舊程式碼。新版本要等到那時才能啟動；執行中的應用照常服務。',
         restarting: '這個宿主正在重新啟動，恢復前它的應用會提示「稍後重試」。',
       },
       restoreFailed: '{{name}}：應用恢復失敗，背景重試中。',
-      columns: {
-        app: '應用',
-        state: '狀態',
-        why: '原因',
-        lastAccess: '最近存取',
-      },
-      hidden: '你無權查看的應用',
-      empty: '這個宿主上沒有執行中的應用。',
-      idle: '閒置，需要空間時優先停止',
+      failed: '共用宿主重新啟動後未能恢復這個應用，正在背景重試。',
+      view: '查看宿主佔用',
+      deployed: '已部署：{{count}}',
+      appsLabel: '執行或啟動中',
+      heapLabel: '堆積',
+      processLabel: '程序記憶體',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 不限',
+      available: '伺服器還剩 {{available}}',
+      wholeHost:
+        '這是整個宿主的總量，包含它上面的所有環境；記憶體分不到單個應用。',
+      viewAppsNote: '只列出你有權查看的應用。',
+      byEnvironment: '按環境，執行或啟動中：',
+    },
+    runtime: {
       holds: {
         requests: '正在處理請求',
         connections: '有活動連線',
@@ -535,6 +548,8 @@ const zhTW: LocaleResource<typeof enUS> = {
         memory: '啟動被拒：記憶體不足',
         recycle: '啟動被拒：新程式碼要等宿主重新啟動回收',
       },
+      idle: '閒置，需要空間時優先停止',
+      lastVisit: '最近存取：{{time}}',
     },
     overview: {
       currentRelease: '當前版本',
@@ -695,6 +710,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '沒有顯示第一個管理員。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '讀取發佈套件時連續 {{seconds}} 秒未收到資料，部署未完成，請重試。',
+        artifactReadTotalTimeout:
+          '讀取發佈套件超過 {{seconds}} 秒，部署未完成，請重試。',
+        artifactReadTimeout: '讀取發佈套件逾時，部署未完成，請重試。',
         hostExited: '應用程式的程式在準備就緒之前停止。',
         hostDisabled: '應用程式主機已關閉。',
         hostShutDown: '應用程式主機已關閉。',
@@ -709,6 +729,14 @@ const zhTW: LocaleResource<typeof enUS> = {
         notReady: '還沒準備好；稍後再試。',
         checkTimeout: '測試未在 20 秒內完成。',
         hostNoSettings: '本機運作時不採用任何連線設定。',
+        recycleWait: '預覽服務正在回收記憶體，完成後繼續部署。',
+        recycleRetry: '預覽服務仍在回收記憶體，部署未完成。請稍後重試。',
+        capacityExceeded:
+          '預覽服務記憶體不足或執行中的應用程式已達上限，部署未完成。請稍後重試。',
+        replacementMemory:
+          '預覽服務記憶體不足，無法啟動新版本，目前版本繼續執行。請稍後重試。',
+        startQueueFull: '同時啟動的應用程式過多，請稍後重試。',
+        activeLimit: '執行中的應用程式已達上限，請稍後重試。',
       },
       prefixed: {
         startFailed: '啟動失敗：{{detail}}',

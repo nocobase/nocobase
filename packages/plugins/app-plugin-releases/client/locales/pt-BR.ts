@@ -69,15 +69,14 @@ const ptBR: LocaleResource<typeof enUS> = {
             all: 'Implantar (todos)',
           },
           deployProtected: {
-            title: 'Aprovar implantações protegidas',
+            title: 'Implantar em ambientes protegidos',
             description:
-              'Aprovar implantações em ambientes protegidos que não nomeiam aprovadores; apenas pessoas',
-            related:
-              'Aprovar implantações protegidas (aquelas relacionadas a elas)',
+              'Quando nenhum aprovador do ambiente for resolvido, aprovar solicitações pessoalmente ou implantar diretamente como essa pessoa ou sua execução',
+            related: 'Implantar em ambientes protegidos (relacionados)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:
               'Aplicativos que criei e qualquer aplicativo relacionado a mim',
-            all: 'Aprovar implantações protegidas (todas)',
+            all: 'Implantar em ambientes protegidos (todos)',
           },
           operate: {
             title: 'Iniciar e parar',
@@ -151,13 +150,11 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplicativos',
       environments: 'Implantar ambientes',
     },
     apps: {
+      lastFailure: 'Última falha: {{detail}}',
       title: 'Aplicativos',
-      description: 'Aplicativos, suas versões e onde são implantados.',
-      search: 'Pesquise por ID ou nome',
       create: 'Criar aplicativo',
       id: 'ID do aplicativo',
       name: 'Nome',
@@ -168,18 +165,28 @@ const ptBR: LocaleResource<typeof enUS> = {
       labels: 'Etiquetas',
       loadFailed: 'Não foi possível carregar os aplicativos.',
       loadOneFailed: 'Não foi possível carregar o aplicativo.',
-      emptyTitle: 'Nenhum aplicativo ainda',
-      emptyNoAccess: 'Peça a um administrador para criar um aplicativo.',
-      emptyDescription:
-        'Crie um aplicativo, carregue uma versão e implante-o em um ambiente.',
-      noResults: 'Nenhum aplicativo corresponde à pesquisa.',
       created: '{{name}} criado.',
       createDescription:
         'Um aplicativo é implantado em um ambiente; seus lançamentos são carregados posteriormente.',
       idHint:
         'Letras, dígitos, sublinhados e hífens; parte do seu endereço. Não pode mudar mais tarde.',
-      noEnvironment: 'Nenhum ambiente ainda',
       lastAccess: 'Última visita',
+      stateFilter: 'Estado',
+      anyState: 'Qualquer estado',
+      clearFilters: 'Limpar filtros',
+      noMatches: 'Nenhum app corresponde aos filtros.',
+      runStates: {
+        running: 'Em execução',
+        starting: 'Iniciando',
+        pending: 'Ainda não iniciado',
+        waiting: 'Aguardando',
+        stopped: 'Parado ou hibernando',
+        failed: 'Com falha',
+        unknown: 'Desconhecido',
+      },
+      page: 'Página {{page}} de {{pages}}',
+      previousPage: 'Página anterior',
+      nextPage: 'Próxima página',
     },
     advanced: 'Avançado (opcional)',
     labels: {
@@ -551,11 +558,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       title: 'Host de apps compartilhado',
       description:
         'Os apps de todos os ambientes deste host compartilham um processo e sua memória.',
-      summary:
-        '{{running}} de {{deployed}} apps implantados em execução ou iniciando',
-      memory:
-        'Heap {{heapUsed}} de {{heapLimit}} · memória do processo {{rss}} · {{available}} disponíveis no servidor',
-      memoryNote: 'Totais do processo inteiro, não de um app.',
+      environments: 'Ambientes nele: {{names}}',
       recycling: {
         pending:
           'O código antigo é liberado reiniciando este host quando nenhum app estiver em uso. Novas versões aguardam até lá; os apps em execução continuam atendendo.',
@@ -564,15 +567,22 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: não foi possível restaurar seus apps; tentando novamente em segundo plano.',
-      columns: {
-        app: 'App',
-        state: 'Estado',
-        why: 'Motivo',
-        lastAccess: 'Último acesso',
-      },
-      hidden: 'Um app que você não pode ver',
-      empty: 'Nenhum app em execução neste host.',
-      idle: 'Ocioso; parado primeiro quando é preciso espaço',
+      failed:
+        'O app não pôde ser restaurado após o reinício do host compartilhado; tentando novamente em segundo plano.',
+      view: 'Ver uso do host',
+      deployed: 'Implantados: {{count}}',
+      appsLabel: 'Em execução ou iniciando',
+      heapLabel: 'Heap',
+      processLabel: 'Memória do processo',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · sem limite',
+      available: '{{available}} ainda livres no servidor',
+      wholeHost:
+        'Totais do host inteiro, com todos os ambientes nele; a memória não pode ser dividida entre os apps.',
+      viewAppsNote: 'Mostra apenas os apps que você pode ver.',
+      byEnvironment: 'Em execução ou iniciando, por ambiente:',
+    },
+    runtime: {
       holds: {
         requests: 'Atendendo requisições',
         connections: 'Conexões abertas',
@@ -588,6 +598,8 @@ const ptBR: LocaleResource<typeof enUS> = {
         memory: 'Início recusado: memória insuficiente',
         recycle: 'Início recusado: o código novo aguarda o reinício do host',
       },
+      idle: 'Ocioso; parado primeiro quando é preciso espaço',
+      lastVisit: 'Última visita: {{time}}',
     },
     overview: {
       currentRelease: 'Versão atual',
@@ -774,6 +786,12 @@ const ptBR: LocaleResource<typeof enUS> = {
           'Não há primeiro administrador para mostrar.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Nenhum dado do pacote da versão foi recebido por {{seconds}} segundos. A implantação não foi concluída; tente novamente.',
+        artifactReadTotalTimeout:
+          'A leitura do pacote da versão excedeu {{seconds}} segundos. A implantação não foi concluída; tente novamente.',
+        artifactReadTimeout:
+          'O tempo de leitura do pacote da versão esgotou. A implantação não foi concluída; tente novamente.',
         hostExited:
           'O processo do aplicativo foi interrompido antes de estar pronto.',
         hostDisabled: 'O host do aplicativo está desativado.',
@@ -793,6 +811,18 @@ const ptBR: LocaleResource<typeof enUS> = {
         checkTimeout: 'O teste não foi concluído em 20 segundos.',
         hostNoSettings:
           'O ambiente de execução local não requer configurações de conexão.',
+        recycleWait:
+          'O host de aplicativos está liberando memória; a implantação continua quando terminar.',
+        recycleRetry:
+          'O host de aplicativos ainda está liberando memória, então a implantação não foi concluída. Tente novamente mais tarde.',
+        capacityExceeded:
+          'O host de aplicativos não tem memória suficiente ou vaga livre, então a implantação não foi concluída. Tente novamente mais tarde.',
+        replacementMemory:
+          'O host de aplicativos não tem memória suficiente para iniciar a nova versão; a atual continua em execução. Tente novamente mais tarde.',
+        startQueueFull:
+          'Há aplicativos demais iniciando no host. Tente novamente mais tarde.',
+        activeLimit:
+          'O número de aplicativos em execução atingiu o limite. Tente novamente mais tarde.',
       },
       prefixed: {
         startFailed: 'Falha na inicialização: {{detail}}',

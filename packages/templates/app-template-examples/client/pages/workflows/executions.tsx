@@ -13,7 +13,7 @@ import type {
   WorkflowSummary,
   WorkflowExecutionPage,
 } from '../../../shared/workflows.js';
-import { DataState } from './shared.js';
+import { DataState, VersionSelect } from './shared.js';
 import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 
 export default function ExecutionsPage(): ReactElement {
@@ -27,7 +27,7 @@ export default function ExecutionsPage(): ReactElement {
   const [search, setSearch] = useSearchParams();
   const nameFilter = useUrlSearch({
     param: 'name',
-    resetParams: ['page', 'workflowId'],
+    resetParams: ['page', 'workflowId', 'version'],
   });
   const normalizedName = nameFilter.search;
   const catalog = useWorkflowData<{ data: readonly WorkflowSummary[] }>(
@@ -36,6 +36,12 @@ export default function ExecutionsPage(): ReactElement {
   const workflows = catalog.data?.data ?? [];
   const order = search.get('order') === 'oldest' ? 'oldest' : 'newest';
   const workflowId = search.get('workflowId') ?? '';
+  const rawVersion = Number(search.get('version'));
+  // A version only narrows a selected process.
+  const version =
+    workflowId && Number.isSafeInteger(rawVersion) && rawVersion > 0
+      ? rawVersion
+      : undefined;
   const rawPage = Number(search.get('page') ?? 1);
   const page =
     Number.isInteger(rawPage) && rawPage > 0 && rawPage <= 1000 ? rawPage : 1;
@@ -44,6 +50,7 @@ export default function ExecutionsPage(): ReactElement {
     pageSize: '20',
     ...(order === 'oldest' ? { order } : {}),
     ...(workflowId ? { workflowId } : {}),
+    ...(version !== undefined ? { version: String(version) } : {}),
     ...(normalizedName ? { q: normalizedName } : {}),
   }).toString();
   const request = useWorkflowData<WorkflowExecutionPage>(
@@ -64,6 +71,7 @@ export default function ExecutionsPage(): ReactElement {
         const workflow = workflows.find(
           (item) => item.id === execution.workflowId,
         );
+        const versioned = (workflow?.versions.length ?? 0) > 1;
         return {
           id: `${execution.workflowId}:${execution.recordId}`,
           record: (
@@ -83,11 +91,21 @@ export default function ExecutionsPage(): ReactElement {
               <RecordLink
                 to={{
                   pathname: `/workflows/definitions/${execution.workflowId}`,
-                  search: location.search,
+                  // Open the definition at the version this record runs.
+                  search: versioned
+                    ? new URLSearchParams({
+                        version: String(execution.version),
+                      }).toString()
+                    : location.search,
                 }}
               >
                 {workflow ? labels.title(workflow) : execution.workflowId}
               </RecordLink>
+              {versioned && (
+                <Badge variant='outline' className='ml-2 align-middle'>
+                  {t('workflows.versionShort', { version: execution.version })}
+                </Badge>
+              )}
             </>
           ),
           state: (
@@ -115,12 +133,27 @@ export default function ExecutionsPage(): ReactElement {
               {selectedWorkflow ? labels.title(selectedWorkflow) : workflowId}
             </Badge>
           )}
+          {selectedWorkflow && selectedWorkflow.versions.length > 1 && (
+            <VersionSelect
+              versions={selectedWorkflow.versions}
+              value={version}
+              allLabel={t('workflows.allVersions')}
+              onChange={(next) => {
+                const params = new URLSearchParams(search);
+                if (next === undefined) params.delete('version');
+                else params.set('version', String(next));
+                params.delete('page');
+                setSearch(params);
+              }}
+            />
+          )}
           {(workflowId || nameFilter.text) && (
             <Button
               variant='ghost'
               onClick={() =>
                 nameFilter.clear((params) => {
                   params.delete('workflowId');
+                  params.delete('version');
                   params.delete('page');
                 })
               }

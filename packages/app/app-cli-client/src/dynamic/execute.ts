@@ -11,6 +11,7 @@ import { pipeline } from 'node:stream/promises';
 import { readErrorBody, type DownloadResult } from '@nocobase/agent-protocol';
 
 import { AppApiError } from '../lib/http.ts';
+import { fileRequest } from './upload.ts';
 
 /** A saved download: where it went, and a line saying so. */
 export interface Saved {
@@ -21,13 +22,27 @@ export interface Saved {
 export async function send(
   url: URL,
   init: RequestInit,
-  options: { readonly fetch?: typeof fetch; readonly timeoutMs?: number },
+  options: {
+    readonly fetch?: typeof fetch;
+    readonly timeoutMs?: number;
+    readonly signal?: AbortSignal;
+    readonly strictResponse?: boolean;
+  },
 ): Promise<unknown> {
+  const fileBody = init.body instanceof FormData || init.body instanceof Blob;
+  const timeout = AbortSignal.timeout(
+    options.timeoutMs ?? (fileBody ? 30 * 60_000 : 120_000),
+  );
+  const signals = [timeout, init.signal, options.signal].filter(
+    (signal): signal is AbortSignal => signal != null,
+  );
+  const signal = AbortSignal.any(signals);
   let response: Response;
   try {
-    response = await (options.fetch ?? fetch)(url, {
+    // Keep the injected fetch contract; production file bodies use Node's backpressured HTTP pipe.
+    response = await (options.fetch ?? (fileBody ? fileRequest : fetch))(url, {
       ...init,
-      signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
+      signal,
     });
   } catch (error) {
     throw new AppApiError(
@@ -36,11 +51,24 @@ export async function send(
       `Could not reach ${url.origin}: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  const text = await response.text().catch(() => '');
+  const text = await response.text().catch(() => {
+    if (!options.strictResponse) return '';
+    throw new AppApiError(
+      response.status,
+      'RESPONSE_READ_FAILED',
+      'Could not read the server response; the request outcome is unknown.',
+    );
+  });
   let parsed: unknown;
   try {
     parsed = text === '' ? undefined : JSON.parse(text);
   } catch {
+    if (response.ok && options.strictResponse)
+      throw new AppApiError(
+        response.status,
+        'UNEXPECTED_RESPONSE',
+        'The server returned invalid JSON; the request outcome is unknown.',
+      );
     parsed = undefined;
   }
   if (!response.ok) {
@@ -59,6 +87,17 @@ export async function send(
       `${init.method ?? 'GET'} ${url.pathname} answered ${response.status}`,
     );
   }
+  if (
+    options.strictResponse &&
+    response.ok &&
+    response.status !== 204 &&
+    (!parsed || typeof parsed !== 'object' || !('data' in parsed))
+  )
+    throw new AppApiError(
+      response.status,
+      'UNEXPECTED_RESPONSE',
+      'The server returned no API result; the request outcome is unknown.',
+    );
   return parsed;
 }
 
@@ -117,13 +156,22 @@ export async function download(
   url: URL,
   init: RequestInit,
   out: string | undefined,
-  options: { readonly fetch?: typeof fetch; readonly timeoutMs?: number },
+  options: {
+    readonly fetch?: typeof fetch;
+    readonly timeoutMs?: number;
+    readonly signal?: AbortSignal;
+  },
 ): Promise<Saved> {
   let response: Response;
   try {
     response = await (options.fetch ?? fetch)(url, {
       ...init,
-      signal: AbortSignal.timeout(options.timeoutMs ?? 30 * 60_000),
+      signal: AbortSignal.any([
+        AbortSignal.timeout(options.timeoutMs ?? 30 * 60_000),
+        ...[init.signal, options.signal].filter(
+          (signal): signal is AbortSignal => signal != null,
+        ),
+      ]),
     });
   } catch (error) {
     throw new AppApiError(

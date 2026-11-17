@@ -11,7 +11,19 @@ import {
   type FoundationOverview,
   type FoundationSnapshot,
   type FoundationScanStatus,
+  type FoundationRegistrations,
 } from '../shared/foundation.js';
+
+export async function fetchFoundationRegistrations(
+  api: ApiClient,
+): Promise<FoundationRegistrations> {
+  const { data } = await api.request<{
+    readonly data: FoundationRegistrations;
+  }>({
+    path: `${FOUNDATION_NAMESPACE}/registrations`,
+  });
+  return data;
+}
 
 export async function fetchFoundationOverview(
   api: ApiClient,

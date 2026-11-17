@@ -6,6 +6,10 @@
  * work handlers of the registered kinds (`kernel/work.ts`). Notices are planned in each transaction (`domains/notices`).
  * The kinds of principal (`kernel/kinds.ts`) come from `projectsKindsToken`, where other plugins register theirs.
  */
+import {
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import type { DatabaseManager } from '@nocobase/db';
 
 import type { ProjectsAccess } from './tokens.js';
@@ -108,6 +112,7 @@ import {
 } from './domains/attachments/index.js';
 
 export interface ProjectsDeps {
+  readonly limitForDisk?: (disk?: string) => DriveUploadLimit;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /** The roles, kept by the application (`projectsAccessToken`). */
@@ -205,6 +210,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
       disk: () => 'local',
     });
   const attachments = createAttachmentService({
+    limitForDisk: deps.limitForDisk ?? (() => DEFAULT_FILE_UPLOAD_LIMIT),
     tx,
     activity,
     kinds,

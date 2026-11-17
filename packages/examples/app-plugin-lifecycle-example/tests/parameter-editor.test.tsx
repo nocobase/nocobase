@@ -2,10 +2,17 @@ import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ParameterGroupView } from '../shared/parameter-configuration.js';
 import type { ParameterApi } from '../client/lib/parameter-api.js';
+import { SnapshotOrigins } from '../client/components/parameter-history.js';
 import { ParameterEditor } from '../client/components/parameter-editor.js';
 import { boundParameterGroups } from '../client/components/parameter-binding-editor.js';
 import { describeLifecycle } from '@nocobase/lifecycle';
@@ -30,7 +37,7 @@ const group: ParameterGroupView = {
     {
       lifecycle: 'expenses',
       field: 'financeLimit',
-      readMode: 'snapshot',
+
       bindings: [{ state: 'awaitingManager' }],
     },
   ],
@@ -63,7 +70,6 @@ async function editor(
     history: async () => ({
       snapshot: null,
       usages: [],
-      current: {},
       recorded: false,
     }),
   };
@@ -113,7 +119,11 @@ describe('shared parameter editor', () => {
       const copy = locale === 'zh-CN' ? zhCN : enUS;
       for (const field of Object.values(copy.parameters.fields)) {
         expect(screen.getByLabelText(field.title)).toHaveValue(3);
-        expect(screen.getByText(field.description)).toBeInTheDocument();
+        expect(
+          within(screen.getByText(field.title).parentElement!).getByText(
+            field.description,
+          ),
+        ).toBeInTheDocument();
       }
     },
   );
@@ -179,4 +189,45 @@ describe('shared parameter editor', () => {
       [],
     );
   });
+});
+
+it('identifies only supplemented fields in a mixed historical expense snapshot', async () => {
+  const runtime = await createTestI18nRuntime({
+    locale: 'en-US',
+    namespaces: { [NAMESPACE]: { 'en-US': async () => ({ default: enUS }) } },
+  });
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <SnapshotOrigins
+        snapshot={{
+          scope: 'demo',
+          lifecycle: 'expenses',
+          recordId: '1',
+          at: '2026-10-01T00:00:00.000Z',
+          revision: 7,
+          values: { financeLimit: 3000, escalateAfterMinutes: 5 },
+          sources: {
+            financeLimit: {
+              group: 'expenseThresholds',
+              schemaVersion: 1,
+              revision: 2,
+              origin: 'configuration',
+            },
+            escalateAfterMinutes: {
+              group: 'expenseTiming',
+              schemaVersion: 1,
+              revision: 7,
+              origin: 'upgrade',
+            },
+          },
+        }}
+      />
+    </TestI18nProvider>,
+  );
+  expect(
+    screen.getByText(
+      'escalateAfterMinutes: Added during upgrade using configuration revision 7',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/financeLimit/)).not.toBeInTheDocument();
 });

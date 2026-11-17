@@ -82,6 +82,61 @@ describe('source-owned template directory', () => {
     ]);
   });
 
+  it('keeps translatable text as namespace, key and default only, and defaults the locale mode', () => {
+    const registry = new NotificationTemplateRegistry();
+    const name = {
+      ns: 'example',
+      key: 'templates.assigned',
+      defaultValue: 'Task assigned',
+      extra: 'must-not-escape',
+    };
+    registry.register(
+      definition({
+        name,
+        contributorLabel: {
+          ns: 'example',
+          key: 'source',
+          defaultValue: 'Tasks',
+        },
+        channels: () => [
+          {
+            name: 'inbox',
+            type: 'in-app',
+            typeLabel: {
+              ns: 'n',
+              key: 'inApp',
+              defaultValue: 'In-app message',
+            },
+            configured: true,
+            enabled: true,
+          },
+        ],
+      }),
+    );
+    registry.register(
+      definition({ id: 'example.combined', localeMode: 'combined' }),
+    );
+    const view = registry.get('example.assigned');
+    expect(view).toMatchObject({
+      name: {
+        ns: 'example',
+        key: 'templates.assigned',
+        defaultValue: 'Task assigned',
+      },
+      contributorLabel: { defaultValue: 'Tasks' },
+      localeMode: 'separate',
+      channels: [{ typeLabel: { defaultValue: 'In-app message' } }],
+    });
+    expect(view?.channels[0]).not.toHaveProperty('label');
+    expect(JSON.stringify(view)).not.toContain('must-not-escape');
+    expect(registry.get('example.combined')?.localeMode).toBe('combined');
+    expect(() =>
+      registry.register(
+        definition({ id: 'example.bad', localeMode: 'mixed' as never }),
+      ),
+    ).toThrow('unknown locale mode');
+  });
+
   it('separates missing configuration from disabled channels without exposing transport fields', () => {
     expect(describeNotificationTemplateChannel(undefined, 'email')).toEqual({
       name: 'email',
@@ -100,6 +155,19 @@ describe('source-owned template directory', () => {
     };
     expect(describeNotificationTemplateChannel(config, 'email')).toEqual({
       name: 'email',
+      type: 'smtp',
+      configured: true,
+      enabled: false,
+    });
+    expect(
+      describeNotificationTemplateChannel(config, 'email', {
+        label: 'Support mailbox',
+        typeLabel: { ns: 'n', key: 'email', defaultValue: 'Email' },
+      }),
+    ).toEqual({
+      name: 'email',
+      label: 'Support mailbox',
+      typeLabel: { ns: 'n', key: 'email', defaultValue: 'Email' },
       type: 'smtp',
       configured: true,
       enabled: false,

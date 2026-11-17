@@ -10,6 +10,8 @@ import {
   defineServerPlugin,
   defineServerPlugins,
   resolveAppServerPlugins,
+  createAppDatabaseTaskContributions,
+  inspectResolvedAppServerPlugins,
 } from '../src/plugins/index.js';
 import { defineApiRoutes, defineRootRoutes } from '../src/router/index.js';
 import { Hono } from 'hono';
@@ -255,3 +257,80 @@ function writePackage(rootDir: string, packageName: string, version: string) {
     }),
   );
 }
+
+it('resolves and inspects named module connections without adding them to flat default tasks', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'module-connections-'));
+  tempDirs.push(root);
+  writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify({ name: '@acme/app-module-lab', version: '1.0.0' }),
+  );
+  for (const name of ['main', 'audit'])
+    for (const kind of ['migrations', 'seeds'])
+      mkdirSync(path.join(root, 'database', name, kind), { recursive: true });
+  const definition = defineServerPlugin({
+    packageName: '@acme/app-module-lab',
+    baseDir: root,
+    database: { connections: { main: {}, audit: {} } },
+  });
+  const resolved = resolveAppServerPlugins(
+    root,
+    defineServerPlugins([definition]),
+  );
+  const contributions = createAppDatabaseTaskContributions(resolved);
+  expect(contributions.migrations).toEqual([]);
+  expect(contributions.connections?.audit.migrations).toEqual([
+    {
+      packageName: definition.packageName,
+      directory: path.join(root, 'database/audit/migrations'),
+    },
+  ]);
+  expect(
+    inspectResolvedAppServerPlugins(resolved).database.map(
+      (entry) => entry.connection,
+    ),
+  ).toEqual(['main', 'audit']);
+  expect(Object.isFrozen(definition.database?.connections?.main)).toBe(true);
+  const missing = defineServerPlugin({
+    packageName: definition.packageName,
+    baseDir: root,
+    database: {
+      connections: { main: {}, audit: { migrations: './missing' }, empty: {} },
+    },
+  });
+  const inspection = inspectResolvedAppServerPlugins(
+    resolveAppServerPlugins(root, defineServerPlugins([missing])),
+  );
+  expect(inspection.issues).toHaveLength(1);
+  expect(inspection.issues[0].code).toBe('SERVER_MIGRATIONS_DIRECTORY_MISSING');
+  // Connection names that coincide with object properties remain ordinary names.
+  const inherited = createAppDatabaseTaskContributions(
+    resolveAppServerPlugins(
+      root,
+      defineServerPlugins([
+        defineServerPlugin({
+          packageName: definition.packageName,
+          baseDir: root,
+          database: {
+            connections: {
+              constructor: { migrations: './database/main/migrations' },
+            },
+          },
+        }),
+      ]),
+    ),
+  );
+  expect(inherited.connections?.['constructor'].migrations).toHaveLength(1);
+  expect(() =>
+    resolveAppServerPlugins(
+      root,
+      defineServerPlugins([
+        defineServerPlugin({
+          packageName: definition.packageName,
+          baseDir: root,
+          database: { connections: { '../outside': {} } },
+        }),
+      ]),
+    ),
+  ).toThrow('Invalid database connection');
+});

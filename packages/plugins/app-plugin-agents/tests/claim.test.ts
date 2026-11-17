@@ -1,7 +1,13 @@
 import { RunPayloadSchema, SkillBundleSchema } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { claim, createHarness, skillMd, type Harness } from './harness.js';
+import {
+  claim,
+  claimRepeatedly,
+  createHarness,
+  skillMd,
+  type Harness,
+} from './harness.js';
 
 describe('claiming', () => {
   let h: Harness;
@@ -339,7 +345,7 @@ describe('claiming', () => {
     const first = await h.enqueue(agentId, '1');
     const second = await h.enqueue(agentId, '2');
     expect(await claim(h, elsewhere, 4)).toEqual([]);
-    const claimed = await claim(h, holder, 4);
+    const claimed = await claimRepeatedly(h, holder, 4);
     expect(claimed.map((payload) => payload.run.id)).toEqual([first, second]);
     expect(claimed[0].workspace.dirs).toEqual([
       { kind: 'directory', path: directory, initPrompt: 'Run make setup.' },
@@ -562,7 +568,10 @@ describe('claiming', () => {
     );
     const claimed = (
       await Promise.all(
-        runners.flatMap((runner) => [claim(h, runner, 3), claim(h, runner, 3)]),
+        runners.flatMap((runner) => [
+          claimRepeatedly(h, runner, 3),
+          claimRepeatedly(h, runner, 3),
+        ]),
       )
     ).flat();
     const ids = claimed.map((payload) => payload.run.id);

@@ -79,11 +79,22 @@ it.each(['claude', 'gemini'] as const)(
     const initial = detect.mock.calls.length;
     authenticated = true;
     server.toolsRefreshRequestId = 'refresh-one';
+    server.diagnostics = {
+      requestId: '7e53ca48-1bd0-4343-b027-b5d81bdb7d43',
+      window: {
+        since: new Date(Date.now() - 60_000).toISOString(),
+        until: new Date().toISOString(),
+        runIds: [],
+      },
+      maxBytes: 131072,
+      expiresAt: new Date(Date.now() + 45_000).toISOString(),
+    };
     await waitFor(
       () => server.lastHeartbeat()?.toolsRefreshCompletedId === 'refresh-one',
       5000,
     );
     expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(true);
+    await waitFor(() => server.diagnosticsUploads.length === 1, 5000);
     expect(detect).toHaveBeenCalledTimes(initial + 2);
     const sent = server.runners.values().next().value!.heartbeatsSent;
     await waitFor(
@@ -146,10 +157,12 @@ it('refreshes stale detection before claiming even when the next heartbeat is no
   expect(detect).toHaveBeenCalledTimes(initial + 2);
 });
 
-// Protocol 15 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
+// Protocol 16 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
 const legacyFeatures = z.object({
   features: z.array(
     z.enum([
+      'diagnostics',
+      'npmCredentials',
       'strictSession',
       'outputBlocks',
       'workspaceKey',

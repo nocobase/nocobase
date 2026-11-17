@@ -11,7 +11,9 @@ declare module '@nocobase/app-plugin-concurrency/server' {
 }
 const config: AppConcurrencyConfig = {
   default: 'shared',
-  shared: { adapter: 'typeTest', connection: { host: 'localhost' } },
+  backends: {
+    shared: { adapter: 'typeTest', connection: { host: 'localhost' } },
+  },
 };
 // @ts-expect-error Non-mutex adapters require their declared connection.
 const missing: ConcurrencyConfigEntry = { adapter: 'typeTest' };

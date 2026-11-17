@@ -5,7 +5,9 @@ export function ExamplePageContainer({
 }: {
   readonly children: ReactNode;
 }): ReactElement {
-  return <section className='w-full space-y-6 p-6 md:p-8'>{children}</section>;
+  return (
+    <section className='w-full space-y-6 p-4 sm:p-6 md:p-8'>{children}</section>
+  );
 }
 
 export function ExamplePageHeader({

@@ -15,12 +15,15 @@
  * page can also open for the context a sent message carried).
  */
 import {
+  limitBytes,
+  DEFAULT_FILE_UPLOAD_LIMIT,
+} from '@nocobase/app-plugin-file/client';
+import {
   filterText,
   selectionPreview,
   type ChatContextChip,
 } from '@nocobase/app-plugin-agents/client/chat';
 import {
-  CHAT_ATTACHMENT_SIZE_MAX,
   CHAT_ATTACHMENTS_PER_MESSAGE_MAX,
   MESSAGE_CONTENT_MAX,
   type MessageAttachment,
@@ -156,7 +159,7 @@ export interface AgentComposerAttachments {
   discard?(attachment: MessageAttachment): void;
   /** Files per message; `CHAT_ATTACHMENTS_PER_MESSAGE_MAX` by default. */
   readonly maxCount?: number;
-  /** Bytes per file; `CHAT_ATTACHMENT_SIZE_MAX` by default. */
+  /** Bytes per file; defaults to the Drive attachment limit. */
   readonly maxSize?: number;
   /** Receives the function that adds files (dropped on the view around the box); returns what undoes it. */
   readonly registerAdd?: (add: (files: readonly File[]) => void) => () => void;
@@ -615,7 +618,7 @@ export function AgentComposer({
   const [tooMany, setTooMany] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const maxCount = attachments?.maxCount ?? CHAT_ATTACHMENTS_PER_MESSAGE_MAX;
-  const maxSize = attachments?.maxSize ?? CHAT_ATTACHMENT_SIZE_MAX;
+  const maxSize = attachments?.maxSize ?? limitBytes(DEFAULT_FILE_UPLOAD_LIMIT);
   const attachmentsRef = useRef(attachments);
   // Handlers and the uploads read the box as last rendered.
   useLayoutEffect(() => {

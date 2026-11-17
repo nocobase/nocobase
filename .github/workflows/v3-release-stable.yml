@@ -35,6 +35,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # v3 (formerly v3-develop), the repository's default branch, which a stable release synchronizes back into.
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
 # prepare versions the release and saves it as release-source-state. build and test both restore that state and run in
 # parallel: tests read workspace packages from source, so they never needed the build output, and running them after
 # the build only added their duration to every release.
@@ -76,7 +80,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -104,12 +107,12 @@ jobs:
             exit 1
           fi
 
-      - name: Reject v3-develop
+      - name: Reject v3
         env:
           BRANCH: ${{ inputs.branch }}
         run: |
-          if [ "$BRANCH" = "v3-develop" ]; then
-            echo "::error::Use v3-release-beta.yml to release from v3-develop"
+          if [ "$BRANCH" = "$DEFAULT_BRANCH" ]; then
+            echo "::error::Use v3-release-beta.yml to release from $DEFAULT_BRANCH"
             exit 1
           fi
 
@@ -216,12 +219,13 @@ jobs:
             node scripts/list-package-versions.mjs --table
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # The root CHANGELOG.md and CHANGELOG.zh-CN.md gain this release's section, written by scripts/changelog.mjs from
-      # the type and bilingual changelog of each pull request merged since the previous stable release, together with
-      # those the betas listed that no stable section lists yet (.github/pull_request_template.md). The release commit
-      # carries both files, so even a promotion with no changesets now pushes a release branch and merges it back. The
-      # script comes from the workflow tooling checkout and reads pull requests with this job's read-only token. Best
-      # effort: a failure warns, puts both files back as they were, and the release goes on without the section.
+      # The root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md gain this release's section, written by
+      # scripts/changelog.mjs from the type and the English, Chinese and Japanese changelog of each pull request merged
+      # since the previous stable release, together with those the betas listed that no stable section lists yet
+      # (.github/pull_request_template.md). The release commit carries the three files, so even a promotion with no
+      # changesets now pushes a release branch and merges it back. The script comes from the workflow tooling checkout
+      # and reads pull requests with this job's read-only token. Best effort: a failure warns, puts the files back as
+      # they were, and the release goes on without the section.
       - name: Write the changelog
         env:
           GH_TOKEN: ${{ github.token }}
@@ -230,7 +234,7 @@ jobs:
         run: |
           if ! node ../scripts/changelog.mjs --tag "$TAG" --repo "$REPO" --root .; then
             echo "::warning::Writing the changelog failed; $TAG has no changelog section."
-            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
               if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
                 git checkout HEAD -- "$file"
               else
@@ -303,7 +307,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -378,7 +381,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [plugins, others]
+        shard: [agents, plugins, others]
     steps:
       - name: Check out workflow code
         uses: actions/checkout@v4
@@ -411,7 +414,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -479,7 +481,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -554,7 +555,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -710,17 +710,17 @@ jobs:
             echo "merged=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Sync into v3-develop
+      - name: Sync into v3
         if: "!inputs.dry_run && inputs.branch == 'v3-main' && needs.prepare.outputs.has_changes == 'true' && steps.merge.outputs.merged == 'true'"
         id: sync
         env:
           BATCH: ${{ needs.prepare.outputs.batch }}
         run: |
-          git fetch origin v3-main v3-develop
-          git checkout -B v3-develop origin/v3-develop
+          git fetch origin v3-main "$DEFAULT_BRANCH"
+          git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
 
           set +e
-          git merge --no-ff origin/v3-main -m "chore: sync $BATCH into v3-develop [skip ci]"
+          git merge --no-ff origin/v3-main -m "chore: sync $BATCH into v3 [skip ci]"
           MERGE_RC=$?
           set -e
 
@@ -734,10 +734,10 @@ jobs:
               {
                 echo "::warning::Conflicts that cannot be resolved automatically — sync by hand"
                 echo
-                echo "npm publish succeeded and v3-main is updated; only the sync back to v3-develop failed."
-                echo "Remote v3-develop is untouched. Run this locally:"
+                echo "npm publish succeeded and v3-main is updated; only the sync back to $DEFAULT_BRANCH failed."
+                echo "Remote $DEFAULT_BRANCH is untouched. Run this locally:"
                 echo
-                echo "  git checkout v3-develop && git pull"
+                echo "  git checkout $DEFAULT_BRANCH && git pull"
                 echo "  git merge origin/v3-main"
                 echo "  node scripts/resolve-sync-conflicts.mjs"
                 echo "  # resolve the remaining source conflicts, then commit and push"
@@ -745,16 +745,16 @@ jobs:
               echo "synced=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            git commit -m "chore: sync $BATCH into v3-develop [skip ci]"
+            git commit -m "chore: sync $BATCH into v3 [skip ci]"
           fi
 
           if [ ! -f .changeset/pre.json ]; then
-            echo "::warning::v3-develop lost pre.json after the merge — aborting the push"
+            echo "::warning::v3 lost pre.json after the merge — aborting the push"
             echo "synced=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git push origin v3-develop
+          git push origin "$DEFAULT_BRANCH"
           echo "synced=true" >> "$GITHUB_OUTPUT"
 
       - name: Notify merge failure
@@ -785,14 +785,14 @@ jobs:
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://registry.npmjs.org
-          TITLE: NocoBase 3 稳定版已发布，但同步到 v3-develop 需要人工处理
+          TITLE: NocoBase 3 稳定版已发布，但同步到 v3 需要人工处理
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
             版本 **${{ needs.prepare.outputs.batch }}** 已发布到 npm 并合进 `v3-main`。
 
-            但同步到 `v3-develop` 时有无法自动解决的源码冲突。远端 `v3-develop` 未被修改，请手工合并 `origin/v3-main` 并运行 `node scripts/resolve-sync-conflicts.mjs`。
+            但同步到 `v3` 时有无法自动解决的源码冲突。远端 `v3` 未被修改，请手工合并 `origin/v3-main` 并运行 `node scripts/resolve-sync-conflicts.mjs`。
             **不同步的话，下一次转正会覆盖掉这个补丁。**
         run: ../scripts/feishu-notify.sh
 
@@ -818,7 +818,7 @@ jobs:
 
             ${{ needs.prepare.outputs.rows && '本次发布的 package：' || '本次发布的 package 见 GitHub Release。' }}
 
-            ${{ steps.sync.outputs.synced == 'true' && '补丁已同步到 v3-develop。' || '' }}
+            ${{ steps.sync.outputs.synced == 'true' && '补丁已同步到 v3。' || '' }}
         run: ../scripts/feishu-notify.sh
 
       - name: Notify release failure
@@ -875,5 +875,6 @@ jobs:
       tag: ${{ needs.release.outputs.tag }}
     secrets:
       NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+      RELEASE_RESULT_FEISHU_WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
     permissions:
       contents: read

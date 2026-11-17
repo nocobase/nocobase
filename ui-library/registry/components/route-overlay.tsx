@@ -15,6 +15,7 @@ import {
 } from 'react';
 import { useLocation, useNavigate, type To } from 'react-router';
 
+import { DiscardScope } from '#components/discard-guard';
 import { Button } from '#components/ui/button';
 import {
   Dialog,
@@ -34,6 +35,9 @@ import {
 } from '@nocobase/app-client/route-containers';
 import { cn } from 'cn';
 
+// The template's own forms that ask their own question render it inside the overlay; see `discard-guard.tsx`.
+export { OwnDiscardQuestion } from '#components/discard-guard';
+
 export interface RouteOverlayProps {
   readonly title: ReactNode;
   readonly description?: ReactNode;
@@ -43,6 +47,21 @@ export interface RouteOverlayProps {
   readonly closeTo?: To;
   /** Runs before every close; resolving `false` keeps the overlay open, for example to guard unsaved changes. */
   readonly beforeClose?: () => boolean | Promise<boolean>;
+  /**
+   * Unsaved changes the overlay cannot see by itself (guideline T3.9, mobile.md M7.4). Every route overlay asks
+   * "Discard changes?" before every way out — ×, Esc, the backdrop, Cancel through `close()`, browser back and
+   * forward, the phone's back gesture and links — while a `FeedbackForm` inside has unsaved input, and reloading or
+   * closing the tab then gets the browser's warning. A `FeedbackForm` given `values={form.getValues}` and
+   * `savedValues` is unsaved whenever its values differ from the saved ones, whatever changed them (a Select, a date,
+   * a relation, an upload, a restored draft); one without them is unsaved once the user typed or changed a native
+   * field in it. `dirty` adds what neither shows (a function is read when leaving): `false` or `undefined` never
+   * switches off unsaved input the overlay found, and a saved draft does not count as saved. Passing it also counts
+   * typing in any other `<form>` inside the overlay. Leaving does not ask during the save itself (while the
+   * `FeedbackForm` is still running its `onSubmit`: navigate or `close()` from it), and still asks while the save
+   * button is disabled, because the input is still there to lose. After a save that failed or was rejected, browser back
+   * and a reload still ask.
+   */
+  readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
 }
 
@@ -62,14 +81,39 @@ const ParentPopupContext =
  * `beforeClose` move to the host and its children render in the host's body. On any other route it opens its own.
  * The host context comes from `@nocobase/app-client`, so a plugin's own copy of this component joins the same panel.
  */
-export function RouteOverlay(
-  props: RouteOverlayProps & { readonly drawer?: boolean },
-): ReactElement {
+export function RouteOverlay({
+  dirty,
+  children,
+  ...props
+}: RouteOverlayProps & { readonly drawer?: boolean }): ReactElement {
   const host = useContext(RouteOverlayHostContext);
+  // Always on inside an application, whether or not the page passes `dirty`: a page cannot leave out the question by
+  // leaving out the prop.
+  const content = (
+    <OverlayDiscardScope dirty={dirty}>{children}</OverlayDiscardScope>
+  );
   return host ? (
-    <HostedRouteOverlay host={host} {...props} />
+    <HostedRouteOverlay host={host} {...props}>
+      {content}
+    </HostedRouteOverlay>
   ) : (
-    <RouteOverlayFrame {...props} />
+    <RouteOverlayFrame {...props}>{content}</RouteOverlayFrame>
+  );
+}
+
+/** The overlay's discard question, over the forms in the panel it renders inside. */
+function OverlayDiscardScope({
+  dirty,
+  children,
+}: {
+  readonly dirty?: boolean | (() => boolean);
+  readonly children?: ReactNode;
+}): ReactNode {
+  const popupRef = useContext(ParentPopupContext);
+  return (
+    <DiscardScope containerRef={popupRef} dirty={dirty}>
+      {children}
+    </DiscardScope>
   );
 }
 

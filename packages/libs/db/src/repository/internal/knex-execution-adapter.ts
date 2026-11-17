@@ -1411,23 +1411,27 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         column: qualified(rootAlias, column(plan.collection, item.path[0])),
         direction: item.direction,
         nulls: item.nulls ?? 'last',
+        nonNullable: isNonNullableSortField(plan.collection, item.path[0]),
       };
     });
     const rankAlias = unusedInternalAlias(usedAliases, '_distinct_rank');
     const partitionSql = distinct.map(() => '??').join(', ');
     const orderSql = sortFields
-      .map(
-        (field) =>
-          `case when ?? is null then ${field.nulls === 'last' ? 1 : 0} else ${
-            field.nulls === 'last' ? 0 : 1
-          } end asc, ?? ${field.direction}`,
+      .map((field) =>
+        field.nonNullable
+          ? `?? ${field.direction}`
+          : `case when ?? is null then ${field.nulls === 'last' ? 1 : 0} else ${
+              field.nulls === 'last' ? 0 : 1
+            } end asc, ?? ${field.direction}`,
       )
       .join(', ');
     const rankBindings = [
       ...distinct.map((field) =>
         qualified(rootAlias, column(plan.collection, field)),
       ),
-      ...sortFields.flatMap((field) => [field.column, field.column]),
+      ...sortFields.flatMap((field) =>
+        field.nonNullable ? [field.column] : [field.column, field.column],
+      ),
       rankAlias,
     ];
     const inner = tableQuery(client, plan.collection, rootAlias).select([
@@ -1489,6 +1493,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
             ? 'last'
             : 'first'
           : field.nulls,
+        field.nonNullable,
       );
     }
     if (plan.limit !== undefined) query.limit(plan.limit);
@@ -3684,6 +3689,10 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
               'Relation ranking requires direct scalar Field sort.',
             );
           const name = qualified(alias, item.path[0]);
+          if (isNonNullableSortField(resolved.target, item.path[0])) {
+            bindings.push(name);
+            return `?? ${item.direction}`;
+          }
           bindings.push(name, name);
           const last = (item.nulls ?? 'last') === 'last';
           return `case when ?? is null then ${last ? 1 : 0} else ${last ? 0 : 1} end asc, ?? ${item.direction}`;
@@ -3915,6 +3924,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         qualified(sourceAlias, column(collection, item.path[0])),
         item.direction,
         item.nulls ?? 'last',
+        isNonNullableSortField(collection, item.path[0]),
       );
       return;
     }
@@ -4432,13 +4442,33 @@ function qualified(alias: string, columnName: string): string {
   return `${alias}.${columnName}`;
 }
 
+/** Only direct table columns retain their schema nullability through ranking. */
+function isNonNullableSortField(
+  collection: CollectionDefinition,
+  name: string,
+): boolean {
+  if (collection.kind && collection.kind !== 'table') return false;
+  const field = scalarFields(collection).find((field) => field.name === name);
+  // A primary key alone is insufficient: SQLite permits nullable text keys.
+  return Boolean(
+    field &&
+    (field.nullable === false ||
+      (field.type === 'increments' && field.nullable !== true)),
+  );
+}
+
 function applyOrderBy(
   query: Knex.QueryBuilder,
   client: Knex,
   value: string | Knex.QueryBuilder | Knex.Raw,
   direction: 'asc' | 'desc',
   nulls: 'first' | 'last',
+  nonNullable = false,
 ): void {
+  if (nonNullable) {
+    query.orderBy(value, direction);
+    return;
+  }
   const nullValue = typeof value === 'string' ? client.ref(value) : value;
   query.orderBy(
     client.raw(

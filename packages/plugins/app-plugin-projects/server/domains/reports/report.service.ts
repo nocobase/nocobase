@@ -36,7 +36,7 @@ import type { FilterBuilder, FilterNode } from '@nocobase/db';
 
 import type { StatusDefinition } from '../../../shared/issues.js';
 import { FIXED_STATUSES } from '../../../shared/statuses.js';
-import type { Viewer } from '../../access/viewer.js';
+import { scopeOf, type Viewer } from '../../access/viewer.js';
 import { oneOf } from '../../kernel/db.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { visibleIssues } from '../issues/issue.access.js';
@@ -715,17 +715,24 @@ export function createIssueReports(deps: {
       // Three reads whatever the number of issues: the issues, those the viewer may see, and their projects.
       const rows = await conn.query
         .selectFrom('pmIssues')
-        .select(['id', 'identifier', 'title', 'projectId'])
+        .select(['id', 'identifier', 'title', 'projectId', 'deletedAt'])
         .where('id', 'in', wanted)
-        .execute<Pick<IssueRow, 'id' | 'identifier' | 'title' | 'projectId'>>();
+        .execute<
+          Pick<
+            IssueRow,
+            'id' | 'identifier' | 'title' | 'projectId' | 'deletedAt'
+          >
+        >();
       const visible = new Set(
-        (
-          await conn.repository<IssueRow>('pmIssues').findMany({
-            filter: (f) =>
-              f.and([oneOf(f, 'id', wanted), visibleIssues(f, viewer)]),
-            select: (select) => select.fields('id'),
-          })
-        ).map((row) => row.id),
+        scopeOf(viewer, 'pm.issues', 'view') === 'all' && !viewer.projectIds
+          ? rows.filter((row) => !row.deletedAt).map((row) => row.id)
+          : (
+              await conn.repository<IssueRow>('pmIssues').findMany({
+                filter: (f) =>
+                  f.and([oneOf(f, 'id', wanted), visibleIssues(f, viewer)]),
+                select: (select) => select.fields('id'),
+              })
+            ).map((row) => row.id),
       );
       const projectIds = [
         ...new Set(rows.map((row) => row.projectId).filter(Boolean)),

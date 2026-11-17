@@ -512,6 +512,55 @@ describe('the Docker backend', () => {
     ).toEqual([]);
   });
 
+  it.each(['stop', 'stopped-spec', 'restore'] as const)(
+    'purges Docker resources after %s without making the stopped App routable',
+    async (mode) => {
+      const first = await startHost();
+      const spec = specFor('site', v1, { scope: scope() });
+      await first.host.management.applyDeployment(spec);
+      if (mode === 'stop') await first.host.management.stopDeployment('site');
+      else
+        await first.host.management.applyDeploymentSet({
+          revision: 2,
+          deployments: [{ ...spec, desiredState: 'stopped' }],
+        });
+      expect(first.host.registry.has('site')).toBe(false);
+      expect(appContainers('site')).toHaveLength(0);
+      expect(docker.volumes.has('t-site-storage')).toBe(true);
+      expect((await fetch(`${first.url}/site/`)).status).toBe(404);
+      let host = first.host;
+      if (mode === 'restore') {
+        await host.close('restart');
+        hosts.splice(hosts.indexOf(host), 1);
+        host = (await startHost({ dir: first.dir })).host;
+        await host.management.restoreDeploymentSet({
+          scope: scope(),
+          revision: 3,
+          deployments: [{ ...spec, desiredState: 'stopped' }],
+        });
+        expect(host.registry.has('site')).toBe(false);
+      }
+      await host.management.removeDeployment('site', { purgeData: true });
+      expect(docker.volumes.has('t-site-storage')).toBe(false);
+      expect(
+        [...docker.images.keys()].filter((image) =>
+          image.startsWith('t-site:'),
+        ),
+      ).toEqual([]);
+    },
+  );
+
+  it('retains the Docker data volume when removing a stopped App without purgeData', async () => {
+    const { host } = await startHost();
+    await host.management.applyDeployment(
+      specFor('site', v1, { scope: scope() }),
+    );
+    await host.management.stopDeployment('site');
+    await host.management.removeDeployment('site', { purgeData: false });
+    expect(appContainers('site')).toHaveLength(0);
+    expect(docker.volumes.has('t-site-storage')).toBe(true);
+  });
+
   it('reads the container log as journal pages', async () => {
     const { host } = await startHost();
     await host.management.applyDeployment(

@@ -14,7 +14,7 @@ App issued is being rejected. The default configuration resolves a key into its 
 This package is Better Auth's
 [API Key plugin](https://www.better-auth.com/docs/plugins/api-key) plus the
 `apikey` migration. `apiKey` is wrapped
-only to supply three defaults, all overridable; its name, options and behaviour
+only to supply four defaults, all overridable; its name, options and behaviour
 are Better Auth's, and Better Auth's documentation applies unchanged.
 
 ## Public surfaces
@@ -54,10 +54,10 @@ Only step 1 leaves the `apikey` table created and no endpoints mounted. Only
 step 2 mounts endpoints against a table that does not exist, and every call
 fails at the database.
 
-### The three defaults
+### The four defaults
 
 `apiKey()` supplies `enableSessionForAPIKeys: true`, `rateLimit: { enabled:
-false }` and `requireName: true`, so an App normally passes nothing.
+false }`, `requireName: true` and `maximumNameLength: 100`, so an App normally passes nothing. The name limit matches scoped key creation and rotation; an application can override it.
 
 `enableSessionForAPIKeys` is the one that has to be set. Better Auth defaults
 it off, and with it off a key authenticates nothing: keys are still
@@ -69,7 +69,7 @@ day, which is a quota for issuing keys rather than for using them. Pass
 `{ enabled: true, maxRequests: 1000, timeWindow: 60_000 }` for a quota the App
 actually wants.
 
-All three are overridable, and passing all three back reproduces Better Auth's
+All four are overridable, and passing all four back reproduces Better Auth's
 own behaviour exactly.
 
 ## Call the API with a key
@@ -89,32 +89,22 @@ To find out what the App's API offers, read its OpenAPI document with the same k
 
 ## What a key can reach, and what it cannot
 
-A key is its owner, so it reaches the Better Auth endpoints a Session reaches.
-Verified against `@better-auth/api-key` 1.7.1 with only an `x-api-key` header:
+An unscoped key authenticates as its owner, but some Better Auth endpoints require a stored sign-in session. Verified with this plugin's default `apiKey()` configuration, `better-auth` and `@better-auth/api-key` 1.7.21, database-backed sessions, the `bearer()` plugin both application templates enable, and `x-api-key` as the only authentication header (no cookie or bearer token). The source regression suite is `packages/plugins/app-plugin-api-keys/tests/endpoint-reachability.test.ts`; run it again when upgrading Better Auth. These results include this plugin's guards, rather than describing the upstream API Key plugin alone.
 
-| Endpoint                                                 | Result                     |
-| -------------------------------------------------------- | -------------------------- |
-| `POST /api-key/create`, `GET /api-key/list`              | reachable                  |
-| `POST /update-user`                                      | reachable                  |
-| `GET /list-sessions`                                     | reachable                  |
-| `POST /sign-out`                                         | reachable                  |
-| `POST /delete-user`, `/change-email`, `/revoke-sessions` | 401                        |
-| `POST /change-password`                                  | requires `currentPassword` |
+| Endpoint                                                                                                        | Result                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api-key/create`, `GET /api-key/list`, `GET /api-key/get`, `POST /api-key/update`, `POST /api-key/delete` | 403 `API_KEY_SESSION_FORBIDDEN` — this plugin requires a sign-in to manage keys                                                              |
+| `POST /update-user`                                                                                             | 200 — updates the owner's profile                                                                                                            |
+| `GET /list-sessions`                                                                                            | 200 — returns session rows including the unsigned session `token`                                                                            |
+| `POST /sign-out`                                                                                                | 200 — leaves the key and existing sign-in sessions valid                                                                                     |
+| `POST /delete-user`, `POST /change-email`, `POST /revoke-sessions`                                              | 401 `UNAUTHORIZED`                                                                                                                           |
+| `POST /change-password`                                                                                         | 401 `UNAUTHORIZED` with a valid body, even with the correct `currentPassword`; omitting `currentPassword` gives 400 `VALIDATION_ERROR` first |
 
-Two consequences to plan for:
+**No key manages keys directly.** This plugin refuses every `/api-key/*` endpoint to a request authenticated by a key, scoped or not, with `API_KEY_SESSION_FORBIDDEN`. App-owned key-management routes apply `requireSignInSession()` after `auth.required()`.
 
-- **A key mints keys.** The successor holds its own expiry and revocation, and
-  nothing links it to the key that made it. Revoking a leaked key means
-  reviewing the owner's whole list, not deleting the one key you know about.
-- **`/list-sessions` returns the unsigned session token.** The cookie is
-  `token.signature`, so replaying the token alone does not authenticate; it
-  becomes a takeover only if the auth secret leaks too or cookie signing is
-  off.
+**`/list-sessions` turns an unscoped key into a sign-in session.** It returns each session's `token`, the unsigned half of the `token.signature` session cookie. Replayed as a cookie the token alone does not authenticate, but both application templates enable Better Auth's `bearer()` plugin (for CLI device sign-in), and with its default `requireSignature: false` it signs a bearer token itself. `Authorization: Bearer <token>` is therefore the owner's full sign-in session, not a key session: the guards above do not apply to it, so it can create new keys, revoke sessions and reach every endpoint a sign-in reaches. The regression suite pins this. A leaked unscoped key must be treated as a leaked sign-in: revoke the key, revoke the owner's sessions, and review every key the owner holds.
 
-An App that wants either closed adds its own Better Auth `before` hook
-rejecting those paths when the API key header is present. Match on the header
-rather than on the resolved Session, and place the hook before the plugin's
-own, or the Session is minted and returned first.
+In an App with the default templates' `bearer()`, close this path in one of two ways: give every key a scope (a scoped key cannot use account endpoints other than `/get-session`), or reject `/list-sessions` in the App's Better Auth `hooks.before` when an API key header is present. Check the configured key header names (`x-api-key` by default) rather than a resolved Session: the App's hook runs before plugin hooks resolve the key.
 
 ## Other constraints
 
@@ -135,7 +125,7 @@ own, or the Session is minted and returned first.
 ## Ownership
 
 The plugin owns the `apikey` table, the `@better-auth/api-key` version, and
-the three defaults. The App owns its two `config/auth.ts` files, any
+the four defaults. The App owns its two `config/auth.ts` files, any
 option it overrides there, and any page it builds for managing keys.
 
 Never write the `apikey` table directly. Its `key` column holds a hash, and a
@@ -152,7 +142,7 @@ row inserted by hand authenticates nothing.
 
 ## Trusted server extensions
 
-`apiKey()` also accepts a configuration array, each with a unique `configId`. The three NocoBase defaults apply to each entry and remain overridable. A non-Session configuration must never share the default Session configuration’s identity. Verification checks the actual stored configuration, so presenting such a key in `x-api-key` does not grant its owner’s Session.
+`apiKey()` also accepts a configuration array, each with a unique `configId`. The four NocoBase defaults apply to each entry and remain overridable. A non-Session configuration must never share the default Session configuration’s identity. Verification checks the actual stored configuration, so presenting such a key in `x-api-key` does not grant its owner’s Session.
 
 `new ApiKeyService(authentication, configId)` provides trusted database-backed `create({ userId, name, expiresIn? })`, `get(id)`, `verify(secret)`, `disable(id)` and `remove(id)` operations. Create returns `{ key, secret }` once; summaries never include the stored hash. Get, disable and remove are configuration-bound; disable and remove are repeatable. Missing configurations fail closed. The service uses the registered Better Auth configuration, endpoints and formal Authentication plugin API. Secondary storage is not supported by this service.
 

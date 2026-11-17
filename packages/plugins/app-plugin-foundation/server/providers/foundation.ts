@@ -7,6 +7,7 @@ import { databaseManagerToken } from '@nocobase/db';
 import type { JobExecutor } from '@nocobase/jobs';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import type { FoundationConfig } from '../../config.js';
 import { DefaultFoundationService } from '../services/foundation.js';
 import { runtimeProviderEvidence } from '../provider-inventory.js';
 import { foundationServiceToken } from '../tokens.js';
@@ -71,7 +72,11 @@ export class FoundationProvider extends ServiceProvider<AppPluginApplication> {
     if (!selected || selected.adapter === 'memory')
       await this.service!.recoverMemory();
     await this.executor!.setup();
-    await this.service!.start(false);
+    await this.service!.start(false, {
+      scan:
+        this.app.config.get<FoundationConfig>('foundation')?.scanOnStart !==
+        false,
+    });
   }
 
   public override async shutdown(): Promise<void> {

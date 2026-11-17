@@ -357,3 +357,125 @@ it('hydrates narrow count candidates without materializing unrelated visible rec
     client.removeListener('query-response', listener);
   }
 });
+
+it('starts unfinished project reads in the requested project while retaining visible ancestors and explicit follows', async () => {
+  const h = await harness();
+  const viewer = admin(h);
+  const selected = await h.services.projects.create(viewer, {
+    name: 'Selected scope',
+  });
+  const other = await h.services.projects.create(viewer, {
+    name: 'Other scope',
+  });
+  const parent = await h.services.issues.create(viewer, {
+    title: 'Visible context',
+    projectId: other.id,
+  });
+  await move(h, parent, 'done');
+  const child = await h.services.issues.create(viewer, {
+    title: 'Scoped child',
+    parentIssueId: parent.id,
+  });
+  await h.services.issues.update(viewer, child.id, {
+    revision: child.revision,
+    projectId: selected.id,
+  });
+  const followed = await h.services.issues.create(viewer, {
+    title: 'Explicit history',
+    projectId: other.id,
+  });
+  await move(h, followed, 'done');
+  const conn = h.database.connection();
+  const template = await conn.query
+    .selectFrom('pmIssues')
+    .selectAll()
+    .where('id', '=', child.id)
+    .executeTakeFirstOrThrow();
+  await conn.query
+    .insertInto('pmIssues')
+    .values(
+      Array.from({ length: 140 }, (_, n) => ({
+        ...template,
+        id: `project-record-${n}`,
+        identifier: `P-${n}`,
+        parentIssueId: null,
+        projectId: n < 12 ? selected.id : other.id,
+      })),
+    )
+    .execute();
+  const result = await h.services.issueQueries.hierarchy(
+    viewer,
+    { projectId: selected.id },
+    { unfinishedOnly: true, includeIds: [followed.id] },
+  );
+  expect(result.issues).toHaveLength(15);
+  expect(result.matchingIds).toHaveLength(13);
+  expect(result.issues.map((issue) => issue.id)).toEqual(
+    expect.arrayContaining([parent.id, followed.id, child.id]),
+  );
+  const source = await h.services.issueQueries.hierarchySource(viewer, {
+    projectId: selected.id,
+  });
+  const client = await conn.client<Knex>();
+  const rows = await client
+    .from(
+      client.raw('(?) as seeds', [
+        client.raw(source.scoped.sql, [
+          ...source.scoped.parameters,
+        ] as Knex.RawBinding[]),
+      ]),
+    )
+    .select('id');
+  expect(rows).toHaveLength(13);
+  expect(
+    await queries(h, () =>
+      h.services.issueQueries.hierarchy(
+        viewer,
+        { projectId: selected.id },
+        { unfinishedOnly: true, includeIds: [followed.id] },
+      ),
+    ),
+  ).toBeLessThanOrEqual(4);
+});
+
+it('bounds ancestor reads for imported deep project chains', async () => {
+  const h = await harness();
+  const viewer = admin(h);
+  const selected = await h.services.projects.create(viewer, {
+    name: 'Deep leaf project',
+  });
+  const other = await h.services.projects.create(viewer, {
+    name: 'Ancestor project',
+  });
+  const templateIssue = await h.services.issues.create(viewer, {
+    title: 'Template',
+    projectId: other.id,
+  });
+  const conn = h.database.connection();
+  const template = await conn.query
+    .selectFrom('pmIssues')
+    .selectAll()
+    .where('id', '=', templateIssue.id)
+    .executeTakeFirstOrThrow();
+  await conn.query
+    .insertInto('pmIssues')
+    .values(
+      Array.from({ length: 70 }, (_, n) => ({
+        ...template,
+        id: `depth-${n}`,
+        identifier: `DEPTH-${n}`,
+        parentIssueId: n ? `depth-${n - 1}` : null,
+        projectId: n === 69 ? selected.id : other.id,
+      })),
+    )
+    .execute();
+  const hierarchy = await h.services.issueQueries.hierarchy(
+    viewer,
+    { projectId: selected.id },
+    { unfinishedOnly: true },
+  );
+  expect(hierarchy.issues).toHaveLength(65);
+  expect(hierarchy.issues.some((issue) => issue.id === 'depth-5')).toBe(true);
+  expect(hierarchy.issues.some((issue) => issue.id === 'depth-4')).toBe(false);
+  expect(hierarchy.matchingIds).toEqual(['depth-69']);
+});

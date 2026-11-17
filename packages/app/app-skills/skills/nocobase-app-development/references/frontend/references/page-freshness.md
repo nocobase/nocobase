@@ -4,7 +4,7 @@ Ordinary lists, detail pages, settings and dashboards have no persistent action 
 
 ## New pages
 
-Start with the business actions the page needs. Do not add a Refresh icon, even when the page displays externally changing data. Successful writes update the current record from the response and invalidate related lists. Keep existing subscription, reconnect and visibility recovery. Progress views must receive completion through their existing event/snapshot mechanism; do not replace a removed button with unnecessary high-frequency polling. Loading and stale-data feedback remain visible independently of a button.
+Start with the business actions the page needs. Do not add a Refresh icon, even when the page displays externally changing data. Successful writes update the current record from the response and invalidate related lists, counts and cards through [declared data scopes](data-changes.md). Keep existing subscription, reconnect and visibility recovery. Progress views must receive completion through their existing event/snapshot mechanism; do not replace a removed button with unnecessary high-frequency polling. Loading and stale-data feedback remain visible independently of a button.
 
 Rescan, synchronize, recheck, regenerate and reset sample data are business operations. Preserve their authorization, confirmation where required, pending state and automatic result update. Name the actual operation; do not substitute browser reload for it. Retry after a failed read repeats that read, never a potentially committed write.
 

@@ -3,14 +3,21 @@ import type { DriverContract, SignedURLOptions } from 'flydrive/types';
 
 export type DriveVisibility = 'public' | 'private';
 
-export interface FsDriveDiskConfig {
+export interface DriveUploadOptions {
+  /** Single-file upload limit in MiB; omitted values use DEFAULT_FILE_UPLOAD_LIMIT. */
+  maxFileSizeMb?: number;
+}
+
+export type DriveUploadLimit = { readonly maxFileSizeMb: number };
+
+export interface FsDriveDiskConfig extends DriveUploadOptions {
   driver: 'fs';
   location: string;
   visibility: DriveVisibility;
   url?: string;
 }
 
-export interface S3DriveDiskConfig {
+export interface S3DriveDiskConfig extends DriveUploadOptions {
   driver: 's3';
   bucket: string;
   region: string;
@@ -28,7 +35,7 @@ export interface S3DriveDiskConfig {
   visibility: DriveVisibility;
 }
 
-export interface OssDriveDiskConfig {
+export interface OssDriveDiskConfig extends DriveUploadOptions {
   driver: 'oss';
   region: string;
   bucket: string;
@@ -57,7 +64,8 @@ export type AppDriveDiskConfig =
   FsDriveDiskConfig | S3DriveDiskConfig | OssDriveDiskConfig;
 
 /** Creates a driver synchronously on first use, without a bound receiver. */
-export type DriveDriverFactory = (this: void) => DriverContract;
+export type DriveDriverFactory = ((this: void) => DriverContract) &
+  DriveUploadOptions;
 
 export type AppDriveDiskDefinition = AppDriveDiskConfig | DriveDriverFactory;
 
@@ -70,7 +78,10 @@ export type NocoBaseDriveDisk = Disk;
 
 export type NocoBaseDriveManager = DriveManager<
   Record<string, () => DriverContract>
->;
+> & {
+  readonly limits: Readonly<Record<string, DriveUploadLimit>>;
+  getUploadLimit(disk?: string): DriveUploadLimit;
+};
 
 export interface FlydriveFakesConfig {
   location: string | URL;

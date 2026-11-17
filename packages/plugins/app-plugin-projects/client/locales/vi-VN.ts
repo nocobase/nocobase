@@ -56,6 +56,8 @@ const viVN: LocaleResource<typeof enUS> = {
       subtaskAdded: 'đã thêm nhiệm vụ con',
       dependencyAdded: 'đã thêm sự phụ thuộc vào',
       dependencyRemoved: 'đã loại bỏ sự phụ thuộc vào',
+      relationAdded: 'đã thêm liên kết với',
+      relationRemoved: 'đã xóa liên kết với',
       stageChanged: 'thay đổi sân khấu',
       autoMoveSkipped: 'không thể tự động chuyển nhiệm vụ sang',
     },
@@ -369,6 +371,8 @@ const viVN: LocaleResource<typeof enUS> = {
     projects: 'Dự án',
     projectsHint:
       'Những người được mời tham gia các dự án này với tư cách là thành viên.',
+    language: 'Ngôn ngữ email',
+    languageHint: 'Email mời và trang đăng ký dùng ngôn ngữ này.',
     projectsPlaceholder: 'Chọn dự án',
     resend: 'Gửi lại',
     generateLink: 'Tạo liên kết mới',

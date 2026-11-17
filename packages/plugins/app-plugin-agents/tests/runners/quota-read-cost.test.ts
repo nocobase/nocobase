@@ -108,15 +108,14 @@ it('bounds directory rows to one page and excludes private detail fields from th
   expect(detail.body.data.workspaceUsage.count).toBe(1000);
   expect(detail.body.data.workspaceUsage.workspaces).toEqual([]);
   const list = await h.request('GET', '/agents/runners', { user: 'alice' });
-  for (const field of [
-    'policy',
-    'variables',
-    'unavailableModels',
-    'quotaUsage',
-    'load',
-    'quotaRevision',
-  ])
+  for (const field of ['policy', 'variables', 'load', 'quotaRevision'])
     expect(list.body.data[0]).not.toHaveProperty(field);
+  // Quota is listed per tool: only current tool quota, never other unavailable models.
+  expect(list.body.data[0]).toMatchObject({
+    unavailableModels: [],
+    quotaUsage: [],
+    quotaLimits: null,
+  });
   const page = await h.request(
     'GET',
     `/agents/runners/${runner.runnerId}/workspaces?page=2&pageSize=25&unknown=ignored`,

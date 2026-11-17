@@ -45,3 +45,7 @@ Keep the identity-keyed `SessionPreparation` boundary: mounted private list cond
 ## Page data freshness
 
 Follow the synchronized [page data freshness rules](../skills/nocobase-app-development/references/frontend/references/page-freshness.md): ordinary pages have no persistent Refresh action. Preserve contextual read retries, write invalidation and live progress updates. Dependency upgrades do not rewrite application-owned pages or installed Registry source; reconcile them through the template upgrade workflow.
+
+## Features and extensions
+
+Features and extensions belongs in System settings under the System category, alongside Database Explorer. Use the permission-filtered settings catalog rather than a separate sidebar footer entry. Its detail breadcrumb includes System settings and returns to the filtered catalog. The homepage retains its discovery link.

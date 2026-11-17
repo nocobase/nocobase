@@ -68,6 +68,7 @@ async function fixture(languageModel = model()) {
   let counter = 0;
   const ids = { next: () => `backend-${++counter}` };
   const attachments = createChatAttachments({
+    limitForDisk: () => ({ maxFileSizeMb: 20 }),
     tx: h.services.tx,
     basePath: () => '',
     storage: {

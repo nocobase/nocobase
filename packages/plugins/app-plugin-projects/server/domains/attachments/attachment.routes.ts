@@ -3,8 +3,11 @@
  * acts as the signed-in person; the service decides what they may read and change.
  */
 import {
-  ApiError,
-  apiErrorHandler,
+  limitBytes,
+  fileTooLarge,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
+import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -17,16 +20,12 @@ import {
 import type { Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 
-import {
-  ATTACHMENT_SIZE_MAX,
-  type Attachment,
-} from '../../../shared/attachments.js';
+import { type Attachment } from '../../../shared/attachments.js';
 import { viewerOf, type ViewerEnv } from '../../access/request.js';
 import { invalid } from '../../kernel/errors.js';
 import {
   boundedList,
   domainRouter,
-  PROJECTS_DOMAIN,
   tags,
   personOrRunSecurity,
 } from '../../kernel/http.js';
@@ -46,21 +45,13 @@ import type { AttachmentService } from './attachment.service.js';
 /** Room for the multipart envelope around one file. */
 const ENVELOPE = 64 * 1024;
 
-const sizeLimit = bodyLimit({
-  maxSize: ATTACHMENT_SIZE_MAX + ENVELOPE,
-  onError: (context) =>
-    apiErrorHandler(
-      new ApiError({
-        status: 'INVALID_ARGUMENT',
-        reason: 'FILE_TOO_LARGE',
-        domain: PROJECTS_DOMAIN,
-        message: `A file may have at most ${ATTACHMENT_SIZE_MAX} bytes.`,
-        metadata: { maxBytes: ATTACHMENT_SIZE_MAX },
-        httpStatus: 413,
-      }),
-      context,
-    ),
-});
+const sizeLimit = (limit: DriveUploadLimit) =>
+  bodyLimit({
+    maxSize: limitBytes(limit) + ENVELOPE,
+    onError: () => {
+      throw fileTooLarge(limit);
+    },
+  });
 
 const uploadErrors = {
   400: apiErrorResponse(
@@ -69,7 +60,7 @@ const uploadErrors = {
   ),
   413: apiErrorResponse(
     413,
-    `When the file is over ${ATTACHMENT_SIZE_MAX} bytes (\`FILE_TOO_LARGE\`).`,
+    `When the file is over the configured size limit (\`FILE_TOO_LARGE\`).`,
   ),
 };
 
@@ -138,7 +129,7 @@ export function createAttachmentRoutes(
         command: 'attachment upload',
         action: 'pm.attachments/upload',
       }),
-      description: `Needs \`upload\` on \`pm.attachments\`. One file as the \`file\` field of a multipart body, at most ${ATTACHMENT_SIZE_MAX} bytes. The upload is attached to nothing until it is sent with a comment (\`attachmentIds\`); one left so for 24 hours is purged.`,
+      description: `Needs \`upload\` on \`pm.attachments\`. One file as the \`file\` field of a multipart body, at most ${attachments.uploadLimit.maxFileSizeMb} MB. The upload is attached to nothing until it is sent with a comment (\`attachmentIds\`); one left so for 24 hours is purged.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(AttachmentSchema),
@@ -146,7 +137,7 @@ export function createAttachmentRoutes(
         ...uploadErrors,
       },
     }),
-    sizeLimit,
+    sizeLimit(attachments.uploadLimit),
     async (context) =>
       context.json(
         {
@@ -351,7 +342,7 @@ export function createIssueAttachmentRoutes(
         action: 'pm.attachments/upload',
         examples: ['issue attachment add PM-12 --file design.png'],
       }),
-      description: `Needs \`upload\` on \`pm.attachments\` and \`edit\` on the issue. One file as the \`file\` field of a multipart body, at most ${ATTACHMENT_SIZE_MAX} bytes.`,
+      description: `Needs \`upload\` on \`pm.attachments\` and \`edit\` on the issue. One file as the \`file\` field of a multipart body, at most ${attachments.uploadLimit.maxFileSizeMb} MB.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(AttachmentSchema),
@@ -361,7 +352,7 @@ export function createIssueAttachmentRoutes(
       },
     }),
     apiValidator('param', IssueParams),
-    sizeLimit,
+    sizeLimit(attachments.uploadLimit),
     async (context) =>
       context.json(
         {

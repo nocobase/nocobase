@@ -57,6 +57,8 @@ const esES: LocaleResource<typeof enUS> = {
       subtaskAdded: 'añadió la subtarea',
       dependencyAdded: 'agregó la dependencia de',
       dependencyRemoved: 'eliminó la dependencia de',
+      relationAdded: 'agregó una relación con',
+      relationRemoved: 'eliminó la relación con',
       stageChanged: 'cambió el escenario',
       autoMoveSkipped: 'no pudo mover la tarea automáticamente a',
     },
@@ -375,6 +377,9 @@ const esES: LocaleResource<typeof enUS> = {
     projectRequired: 'Elige al menos un proyecto que lideres.',
     projects: 'Proyectos',
     projectsHint: 'Los invitados se unen a estos proyectos como miembros.',
+    language: 'Idioma del correo',
+    languageHint:
+      'El correo de invitación y su página de registro usan este idioma.',
     projectsPlaceholder: 'Elegir proyectos',
     resend: 'Enviar de nuevo',
     generateLink: 'Generar nuevo enlace',

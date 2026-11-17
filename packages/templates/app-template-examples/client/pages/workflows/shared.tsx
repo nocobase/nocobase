@@ -5,6 +5,14 @@ import type { ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#components/ui/select';
+import type { WorkflowVersion } from '../../../shared/workflows.js';
 
 export function DataState({
   loading,
@@ -66,5 +74,65 @@ export function DataState({
         )}
       </AlertDescription>
     </Alert>
+  );
+}
+
+/**
+ * Picks one version of a process. "Latest" only means the largest number:
+ * the entry points that create records choose their version in code.
+ */
+export function VersionSelect({
+  versions,
+  value,
+  onChange,
+  allLabel,
+}: {
+  readonly versions: readonly WorkflowVersion[];
+  readonly value: number | undefined;
+  readonly onChange: (version: number | undefined) => void;
+  /** Offers "every version" as `undefined` when set. */
+  readonly allLabel?: string;
+}): ReactElement {
+  const { t } = useTranslation();
+  const latest = versions.at(-1)?.version;
+  const items = [
+    ...(allLabel ? [{ value: 'all', label: allLabel }] : []),
+    ...[...versions].reverse().map(({ version }) => ({
+      value: String(version),
+      label:
+        version === latest
+          ? t('workflows.latestVersion', { version })
+          : t('workflows.versionLabel', { version }),
+    })),
+  ];
+  return (
+    <Select
+      items={items}
+      value={
+        value === undefined
+          ? allLabel
+            ? 'all'
+            : String(latest)
+          : String(value)
+      }
+      onValueChange={(next: string | null) =>
+        onChange(!next || next === 'all' ? undefined : Number(next))
+      }
+    >
+      <SelectTrigger
+        size='sm'
+        className='w-44 font-normal tracking-normal'
+        aria-label={t('workflows.version')}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

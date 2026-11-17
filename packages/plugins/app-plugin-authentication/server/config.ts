@@ -32,6 +32,10 @@ export const AUTH_PUBLIC_PATHS: readonly string[] = [
 
 /** The environment variables that set `auth` fields, which this plugin reads. */
 const AUTH_ENVIRONMENT = {
+  AUTH_PASSWORD_RESET_MAILER: envString('passwordReset.mailer', {
+    required: false,
+    description: 'Named application mailer for password reset.',
+  }),
   AUTH_EMAIL_PROVIDER: envString('email.provider', {
     required: false,
     description: 'Authentication email provider: smtp or resend.',
@@ -85,21 +89,16 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   auth,
   context,
 ) => {
-  if (
-    auth.email &&
-    typeof auth.email === 'object' &&
-    'mailer' in auth.email &&
-    context.get
-  ) {
+  if (auth.passwordReset?.mailer !== undefined) {
     try {
       assertMailerReference(
-        (context.get('mailers') ?? {}) as MailersConfig,
-        auth.email.mailer,
-        'auth.email.mailer',
+        (context.get?.('mailers') ?? {}) as MailersConfig,
+        auth.passwordReset.mailer,
+        'auth.passwordReset.mailer',
       );
     } catch (error) {
       context.error(
-        'email.mailer',
+        'passwordReset.mailer',
         error instanceof Error ? error.message : 'Invalid mailer reference.',
       );
     }
@@ -177,11 +176,16 @@ export function defineAuthConfig(
 ): AppConfigFactory<AuthConfig> {
   if (
     definition.public?.some(
-      (path) => path === 'email' || path.startsWith('email.'),
+      (path) =>
+        path === 'email' ||
+        path.startsWith('email.') ||
+        path === 'passwordReset' ||
+        path === 'passwordReset.mailer' ||
+        path.startsWith('passwordReset.mailer.'),
     )
   )
     throw new Error(
-      'Authentication email configuration must remain private. Remove email fields from public configuration.',
+      'Authentication email configuration must remain private. Remove email and password-reset mailer fields from public configuration.',
     );
   const extra =
     definition.validate === undefined

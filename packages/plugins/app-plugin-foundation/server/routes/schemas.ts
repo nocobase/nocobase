@@ -7,7 +7,17 @@ import {
   type FoundationCollectionPage,
   type FoundationSnapshot,
   type FoundationScanStatus,
+  type FoundationRegistrations,
 } from '../../shared/foundation.js';
+
+export const RegistrationsSchema: z.ZodType<FoundationRegistrations> = z
+  .object({
+    serverPlugins: z.array(z.string()).nullable().meta({
+      description:
+        'Explicitly registered server plugin package names. Null when unavailable. Registration does not establish configuration, migrations or operational readiness.',
+    }),
+  })
+  .meta({ ref: 'FoundationRegistrations' });
 
 export const OverviewQuery: z.ZodType<Record<string, never>> = z.strictObject(
   {},

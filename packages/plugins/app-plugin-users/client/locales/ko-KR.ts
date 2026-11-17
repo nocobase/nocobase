@@ -6,8 +6,31 @@ const koKR: LocaleResource<typeof enUS> = {
   page: {
     loading: '로드 중',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: '사용자',
+      category: '계정',
+      name: '사용자 초대',
+      trigger:
+        '관리자가 이메일을 선택하여 사람을 초대하거나 초대를 다시 보낼 때.',
+      recipients: '초대받은 사람. 해당 사람에게 입력된 이메일 주소로 보냅니다.',
+      businessRule:
+        '이메일을 선택하여 초대를 만들거나 다시 보낼 때마다 발송됩니다. 따로 끌 수 있는 스위치는 없습니다.',
+      languagePolicy:
+        '초대할 때 정한 한 가지 언어로 작성됩니다. 기본값은 초대한 사람의 화면 언어이며 다른 언어를 고를 수 있습니다. 다시 보내도 같은 언어를 사용합니다. 해당 언어의 이메일 문구가 없으면 애플리케이션 기본 언어와 영어로 보냅니다.',
+      channel: '초대 이메일 발신 설정',
+      variables: {
+        app: '애플리케이션 이름',
+        inviter: '초대를 보낸 사람의 이름',
+        items: '초대로 부여되는 역할 또는 접근 권한',
+        date: '초대 만료 시각(이메일 언어, UTC 기준)',
+        url: '초대를 수락하는 링크. 미리 보기에서는 가상의 링크를 사용합니다',
+      },
+    },
+  },
   accept: {
     title: '초대 수락',
+    language: '언어',
     description: '{{inviter}} 님이 초대했습니다.',
     summary: '다음에도 참여하게 됩니다: {{items}}',
     loading: '초대를 불러오는 중…',

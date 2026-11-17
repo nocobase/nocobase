@@ -7,6 +7,9 @@ export const onboardingLifecycle = defineLifecycle<{
   state: 'draft' | 'submitted';
 }>({
   name: 'onboarding',
+  key: 'onboarding',
+  version: 1,
+  definitionField: 'lifecycleDefinition',
   collection: 'onboardingCases',
   initial: 'draft',
   states: ['draft', { name: 'submitted', final: true }],

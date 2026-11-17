@@ -416,6 +416,11 @@ const docActions = {
 /** The knowledge API on a router of its own; `viewerOf` names the caller. */
 export interface KnowledgeRouteOptions {
   readonly acceptOnlineAgent?: boolean;
+  /**
+   * `false` leaves out what only semantic indexing uses: the chunking settings, the list of documents not yet indexed
+   * and indexing a document again. A document's sections (`GET /docs/:docId/index`) stay. Defaults to `true`.
+   */
+  readonly indexing?: boolean;
 }
 export function createKnowledgeRoutes(
   knowledge: Knowledge,
@@ -552,108 +557,110 @@ export function createKnowledgeRoutes(
     },
   );
 
-  routes.get(
-    '/chunking',
-    describeRoute({
-      tags,
-      summary: 'Get how a space is cut into sections',
-      operationId: 'knowledgeGetChunking',
-      description:
-        'Requires a registered knowledge indexer. For someone who reads the space: the application’s default chunking, the space’s own override and the one in effect, and whether its documents are being cut again.',
-      responses: {
-        200: dataResponse(KnowledgeChunkingConfigSchema),
-        ...apiErrorResponses,
-        400: semanticSearchUnavailable,
-        404: spaceNotFound,
-      },
-      ...cliRoute({
-        command: 'kb chunking get',
-        flags: { scopeId: OWNER_FLAG },
+  if (options.indexing !== false) {
+    routes.get(
+      '/chunking',
+      describeRoute({
+        tags,
+        summary: 'Get how a space is cut into sections',
+        operationId: 'knowledgeGetChunking',
+        description:
+          'Requires a registered knowledge indexer. For someone who reads the space: the application’s default chunking, the space’s own override and the one in effect, and whether its documents are being cut again.',
+        responses: {
+          200: dataResponse(KnowledgeChunkingConfigSchema),
+          ...apiErrorResponses,
+          400: semanticSearchUnavailable,
+          404: spaceNotFound,
+        },
+        ...cliRoute({
+          command: 'kb chunking get',
+          flags: { scopeId: OWNER_FLAG },
+        }),
       }),
-    }),
-    apiValidator('query', SpaceOnlyQuery),
-    async (c) => {
-      requireSemanticSearch();
-      return c.json({
-        data: await knowledge.chunking.get(
+      apiValidator('query', SpaceOnlyQuery),
+      async (c) => {
+        requireSemanticSearch();
+        return c.json({
+          data: await knowledge.chunking.get(
+            viewer(c),
+            spaceOf(c.req.valid('query')),
+          ),
+        });
+      },
+    );
+    routes.put(
+      '/chunking',
+      describeRoute({
+        tags,
+        summary: 'Set how a space is cut into sections',
+        operationId: 'knowledgeUpdateChunking',
+        description:
+          'Requires a registered knowledge indexer and `manage` on the space. `override` replaces the application’s default for this space, or null follows it again. When the chunking in effect changes, every document of the space is cut again in the background, and re-indexed when semantic search is on.',
+        responses: {
+          200: dataResponse(KnowledgeChunkingConfigSchema),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The application has no such space (`INVALID_SCOPE`), the chunking is out of range (`INVALID_CHUNKING`), or no knowledge indexer is registered (`SEMANTIC_SEARCH_UNAVAILABLE`).',
+          ),
+          404: spaceNotFound,
+        },
+        ...cliRoute({
+          command: 'kb chunking set',
+          flags: { scopeId: OWNER_FLAG },
+          bodyFile: 'file',
+          examples: ['kb chunking set --file ./chunking.json'],
+        }),
+      }),
+      apiValidator('json', ChunkingBody),
+      async (c) => {
+        const body = c.req.valid('json');
+        requireSemanticSearch();
+        return c.json({
+          data: await knowledge.chunking.set(
+            viewer(c),
+            spaceOf(body),
+            body.override,
+          ),
+        });
+      },
+    );
+    routes.get(
+      '/indexing',
+      describeRoute({
+        tags,
+        summary: 'List the documents of a space not yet semantically indexed',
+        operationId: 'knowledgeListUnindexedDocs',
+        description:
+          'The documents of the space the caller reads with sections still waiting for or failing their embedding, failed first, at most 50. Empty, with `meta.enabled` false, while semantic search is off.',
+        responses: {
+          200: listResponse(
+            KnowledgeUnindexedDocSchema,
+            KnowledgeIndexingMetaSchema,
+          ),
+          ...apiErrorResponses,
+          400: unknownSpace,
+          404: spaceNotFound,
+        },
+        // The space home's list; `kb doc index` reads one document.
+        ...cliRoute(false),
+      }),
+      apiValidator('query', SpaceOnlyQuery),
+      async (c) => {
+        const found = await knowledge.indexing.unfinished(
           viewer(c),
           spaceOf(c.req.valid('query')),
-        ),
-      });
-    },
-  );
-  routes.put(
-    '/chunking',
-    describeRoute({
-      tags,
-      summary: 'Set how a space is cut into sections',
-      operationId: 'knowledgeUpdateChunking',
-      description:
-        'Requires a registered knowledge indexer and `manage` on the space. `override` replaces the application’s default for this space, or null follows it again. When the chunking in effect changes, every document of the space is cut again in the background, and re-indexed when semantic search is on.',
-      responses: {
-        200: dataResponse(KnowledgeChunkingConfigSchema),
-        ...apiErrorResponses,
-        400: apiErrorResponse(
-          400,
-          'The application has no such space (`INVALID_SCOPE`), the chunking is out of range (`INVALID_CHUNKING`), or no knowledge indexer is registered (`SEMANTIC_SEARCH_UNAVAILABLE`).',
-        ),
-        404: spaceNotFound,
+        );
+        return c.json({
+          data: found ?? [],
+          meta: {
+            enabled: found !== null,
+            notifications: knowledge.indexing.notifications(),
+          },
+        });
       },
-      ...cliRoute({
-        command: 'kb chunking set',
-        flags: { scopeId: OWNER_FLAG },
-        bodyFile: 'file',
-        examples: ['kb chunking set --file ./chunking.json'],
-      }),
-    }),
-    apiValidator('json', ChunkingBody),
-    async (c) => {
-      const body = c.req.valid('json');
-      requireSemanticSearch();
-      return c.json({
-        data: await knowledge.chunking.set(
-          viewer(c),
-          spaceOf(body),
-          body.override,
-        ),
-      });
-    },
-  );
-  routes.get(
-    '/indexing',
-    describeRoute({
-      tags,
-      summary: 'List the documents of a space not yet semantically indexed',
-      operationId: 'knowledgeListUnindexedDocs',
-      description:
-        'The documents of the space the caller reads with sections still waiting for or failing their embedding, failed first, at most 50. Empty, with `meta.enabled` false, while semantic search is off.',
-      responses: {
-        200: listResponse(
-          KnowledgeUnindexedDocSchema,
-          KnowledgeIndexingMetaSchema,
-        ),
-        ...apiErrorResponses,
-        400: unknownSpace,
-        404: spaceNotFound,
-      },
-      // The space home's list; `kb doc index` reads one document.
-      ...cliRoute(false),
-    }),
-    apiValidator('query', SpaceOnlyQuery),
-    async (c) => {
-      const found = await knowledge.indexing.unfinished(
-        viewer(c),
-        spaceOf(c.req.valid('query')),
-      );
-      return c.json({
-        data: found ?? [],
-        meta: {
-          enabled: found !== null,
-          notifications: knowledge.indexing.notifications(),
-        },
-      });
-    },
-  );
+    );
+  }
 
   routes.get(
     '/subjects',
@@ -1097,41 +1104,42 @@ export function createKnowledgeRoutes(
         ),
       }),
   );
-  routes.post(
-    '/docs/:docId/reindex',
-    describeRoute({
-      tags,
-      summary: 'Index a document’s sections again',
-      operationId: 'knowledgeReindexDoc',
-      description:
-        'Requires `edit`. Queues its sections for embedding again, the failed ones included; nothing happens while semantic search is off. Answers where they stand.',
-      responses: {
-        200: {
-          description: 'Index snapshot and notification coverage.',
-          content: {
-            'application/json': {
-              schema: resolver(KnowledgeDocIndexResponseSchema),
+  if (options.indexing !== false)
+    routes.post(
+      '/docs/:docId/reindex',
+      describeRoute({
+        tags,
+        summary: 'Index a document’s sections again',
+        operationId: 'knowledgeReindexDoc',
+        description:
+          'Requires `edit`. Queues its sections for embedding again, the failed ones included; nothing happens while semantic search is off. Answers where they stand.',
+        responses: {
+          200: {
+            description: 'Index snapshot and notification coverage.',
+            content: {
+              'application/json': {
+                schema: resolver(KnowledgeDocIndexResponseSchema),
+              },
             },
           },
+          ...apiErrorResponses,
+          404: docNotFoundResponse,
         },
-        ...apiErrorResponses,
-        404: docNotFoundResponse,
-      },
-      ...cliRoute({
-        command: 'kb doc reindex',
-        flags: { docId: { name: 'doc' } },
+        ...cliRoute({
+          command: 'kb doc reindex',
+          flags: { docId: { name: 'doc' } },
+        }),
       }),
-    }),
-    docParam,
-    async (c) =>
-      c.json({
-        meta: { notifications: knowledge.indexing.notifications() },
-        data: await knowledge.indexing.reindex(
-          viewer(c),
-          c.req.valid('param').docId,
-        ),
-      }),
-  );
+      docParam,
+      async (c) =>
+        c.json({
+          meta: { notifications: knowledge.indexing.notifications() },
+          data: await knowledge.indexing.reindex(
+            viewer(c),
+            c.req.valid('param').docId,
+          ),
+        }),
+    );
 
   routes.get(
     '/docs/:docId/permissions',

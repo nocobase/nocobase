@@ -96,17 +96,25 @@ export function ProjectForm({
   );
 
   // No generic: the types are inferred from zodResolver(schema).
+  // What is saved, as the form shows it: the record when editing, the blank values when creating. The FeedbackForm
+  // compares the current values with these, so the overlay asks before discarding any difference (M7.4).
+  const saved = useMemo(
+    () => ({
+      name: project?.name ?? '',
+      owner: project?.owner ?? '',
+      status: project?.status ?? ('planning' as const),
+    }),
+    [project],
+  );
   const form = useForm({
     shouldFocusError: false,
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: project?.name ?? '',
-      owner: project?.owner ?? '',
-      status: project?.status ?? 'planning',
-    },
+    // A form that restores a draft starts from it, `defaultValues: draft ?? saved`, and still passes `saved` below:
+    // the draft is unsaved input, so leaving with it asks.
+    defaultValues: saved,
   });
 
-  // Report unsaved changes to the container, which asks before closing ("beforeClose" in overlay.md).
+  // Only for a container that is not an overlay (create-page.md guards its page itself); an overlay reads the values.
   const { isDirty } = form.formState;
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -200,6 +208,10 @@ export function ProjectForm({
 
   return (
     <FeedbackForm
+      // The enclosing RouteDialog or RouteDrawer asks "Discard changes?" whenever these differ, whatever changed them:
+      // typing, the status Select, a picker, an upload or a restored draft (section 2.5 of overlay.md).
+      values={form.getValues}
+      savedValues={saved}
       submitting={form.formState.isSubmitting}
       validationErrors={form.formState.errors}
       error={rootError}
@@ -305,4 +317,4 @@ export function ProjectForm({
 | `onSubmitted(project)`           | The save succeeded; the argument is the record the endpoint returned. The form has already shown the success message; the caller must not show another |
 | `onSubmittingChange(submitting)` | `true` when submission starts, `false` when it ends; on success, `false` comes before `onSubmitted` is called                                          |
 | `onNotFound()`                   | When editing, the endpoint returned 404                                                                                                                |
-| `onDirtyChange(dirty)`           | Whether any field differs from its default value; the container uses it to confirm closing with unsaved changes (guideline T3.9)                       |
+| `onDirtyChange(dirty)`           | Whether any field differs from its default value, for a container on an ordinary page; `RouteDialog`, `RouteDrawer` and `RouteChildPage` need nothing  |

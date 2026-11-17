@@ -135,6 +135,15 @@ const zhCN: KnowledgeClientResource = {
   },
   access: {
     businessSection: '知识库',
+    settingsSection: '知识库',
+    settings: {
+      indexing: {
+        title: '知识库索引',
+        read: '查看',
+        configure: '配置',
+        rebuild: '重建',
+      },
+    },
     businesses: {
       knowledge: {
         title: '知识',

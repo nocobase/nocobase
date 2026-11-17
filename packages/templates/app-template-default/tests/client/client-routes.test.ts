@@ -59,6 +59,7 @@ describe('app client routes', () => {
     expect(pagePaths(built.routes)).toEqual([
       '/settings/notifications/logs',
       '/settings/notifications/templates',
+      '/settings/notifications/templates/:templateId',
     ]);
     expect(built.routes[0].children[0].children).toHaveLength(1);
     const created = includeNotificationTemplateRoutes([shell], true);
@@ -131,10 +132,13 @@ describe('app client routes', () => {
     expect(pagePaths(built.routes)).toEqual([
       '/settings/notification-logs',
       '/settings/notifications/templates',
+      '/settings/notifications/templates/:templateId',
     ]);
     expect(pageAuthorizations(built.routes)).toEqual([
       { name: 'notificationLogs', authorizedAs: 'existing.notification.logs' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
+      // A template's own address keeps the list page's grant.
+      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
     ]);
     expect(built.routes[0].children).toHaveLength(1);
   });
@@ -186,16 +190,17 @@ describe('app client routes', () => {
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
   });
 
-  it('keeps a bare application free of settings modules and supports settings registration as business capabilities are developed', async () => {
-    // Only the settings home, which lists what the viewer may open and grants nothing itself.
+  it('includes database browsing and supports business settings registration', async () => {
+    // The built-in database browser joins the settings home without enabling business administration.
     expect(
       pagePaths(resolveRoutes().routes).filter((path) =>
         path.startsWith('/settings'),
       ),
-    ).toEqual(['/settings']);
+    ).toEqual(['/settings', '/settings/database-explorer']);
     const built = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-template-default',
@@ -231,6 +236,7 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
     for (const loader of componentLoadersIn(built.routes))
       await expect(loader()).resolves.toMatchObject({

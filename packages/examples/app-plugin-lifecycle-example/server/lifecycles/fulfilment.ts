@@ -105,6 +105,9 @@ function newerEvent({
 export const fulfilmentLifecycle: Lifecycle<FulfilmentTypes> =
   defineLifecycle<FulfilmentTypes>({
     name: 'fulfilments',
+    key: 'fulfilments',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.fulfilments,
     initial: 'preparing',
     create: {

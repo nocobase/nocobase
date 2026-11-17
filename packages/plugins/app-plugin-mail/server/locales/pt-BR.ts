@@ -4,6 +4,23 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   errors: {
+    connectionAuthenticationFailed:
+      'Falha na autenticação {{protocol}}. Verifique o login e a senha ou senha de aplicativo.',
+    connectionHostNotFound:
+      'Não foi possível resolver o host {{protocol}}. Verifique o nome do servidor.',
+    connectionConnectionRefused:
+      'A conexão {{protocol}} foi recusada. Verifique o host, a porta e a disponibilidade do servidor.',
+    connectionConnectionTimeout:
+      'A conexão {{protocol}} expirou. Verifique o servidor e a rede.',
+    connectionCertificateInvalid:
+      'Falha na validação do certificado {{protocol}}. Verifique o certificado e o nome do host.',
+    connectionTlsFailed:
+      'Falha na negociação TLS de {{protocol}}. Verifique SSL/STARTTLS e a porta.',
+    connectionConnectionFailed:
+      'Falha na conexão {{protocol}}. Verifique o servidor e a rede.',
+    connectionConnectionLost:
+      'A conexão {{protocol}} foi perdida. Tente novamente.',
+
     imapMoveLocationChanged:
       'A pasta ou cópia selecionada mudou. Sincronize a caixa de correio e abra novamente a pasta de origem.',
     imapMoveNotWritable:

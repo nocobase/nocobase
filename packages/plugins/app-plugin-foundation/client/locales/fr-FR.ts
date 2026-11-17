@@ -6,6 +6,9 @@ const frFR: FoundationResource = {
     foundation: 'Socle de l’application',
     foundationDescription:
       'Les capacités NocoBase sur lesquelles repose cette application.',
+    capabilityGuide: 'Fonctionnalités et extensions',
+    capabilityGuideDescription:
+      'Découvrez comment utiliser les fonctionnalités disponibles dans cette application pour vos besoins métier.',
   },
   page: {
     otherCapabilities: 'Autres capacités',

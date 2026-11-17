@@ -13,7 +13,41 @@ import { createNotificationMailer } from '../server/invitations/notification-mai
 import { registerInvitationTemplate } from '../server/invitations/template.js';
 import { buildInvitationEmail } from '../server/invitations/mail.js';
 
-it('previews exactly the real invitation builder in all languages without selecting a recipient or sender', async () => {
+it('registers administrator text as keys that exist in the client locales', async () => {
+  const { default: enUS } = await import('../client/locales/en-US.js');
+  const registry = new NotificationTemplateRegistry();
+  const container = new ServiceContainer();
+  container.instance(notificationTemplateRegistryToken, registry);
+  await registerInvitationTemplate({
+    container,
+    config: { get: () => undefined },
+  } as never);
+  const view = registry.get('users.invitation')!;
+  const texts = [
+    view.contributorLabel,
+    view.category,
+    view.name,
+    view.trigger,
+    view.recipients,
+    view.businessRule,
+    view.languagePolicy,
+    view.channels[0]?.label,
+    ...view.variables.map((variable) => variable.description),
+  ];
+  for (const text of texts) {
+    if (typeof text !== 'object' || text.ns !== '@nocobase/app-plugin-users')
+      throw new Error('Expected a Users translation key.');
+    const translated = text.key
+      .split('.')
+      .reduce<unknown>(
+        (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+        enUS,
+      );
+    expect(translated).toBe(text.defaultValue);
+  }
+});
+
+it('previews the real invitation builder in the selected language without selecting a recipient or sender', async () => {
   const container = new ServiceContainer();
   const registry = new NotificationTemplateRegistry();
   container.instance(notificationTemplateRegistryToken, registry);
@@ -21,15 +55,17 @@ it('previews exactly the real invitation builder in all languages without select
     container,
     config: { get: () => undefined },
   } as never);
-  const expected = await buildInvitationEmail({
-    to: 'unused@example.invalid',
-    appTitle: 'Sample workspace',
-    inviterName: 'Sample administrator',
-    summary: ['Sample member role'],
-    expiresAt: new Date('2030-01-02T12:00:00.000Z'),
-    url: 'https://example.invalid/invitation/synthetic',
-  });
+  const titles = new Set<string>();
   for (const locale of registry.get('users.invitation')!.locales) {
+    const expected = await buildInvitationEmail({
+      to: 'unused@example.invalid',
+      appTitle: 'Sample workspace',
+      inviterName: 'Sample administrator',
+      summary: ['Sample member role'],
+      expiresAt: new Date('2030-01-02T12:00:00.000Z'),
+      url: 'https://example.invalid/invitation/synthetic',
+      locale,
+    });
     const result = await registry.preview('users.invitation', locale);
     expect(result?.content).toEqual({
       title: expected.subject,
@@ -37,11 +73,29 @@ it('previews exactly the real invitation builder in all languages without select
       html: expected.html,
     });
     expect(result?.definition.body).toContain('{{date}}');
+    expect(result?.content.html).not.toContain('<hr>');
     expect(JSON.stringify(result)).not.toContain('unused@example.invalid');
+    titles.add(expected.subject);
   }
-  expect(registry.get('users.invitation')?.channels).toEqual([
-    { name: 'system-email', type: 'email', configured: false, enabled: null },
-  ]);
+  // Switching the preview language changes the content.
+  expect(titles.size).toBe(12);
+  expect(registry.get('users.invitation')).toMatchObject({
+    localeMode: 'separate',
+    name: {
+      ns: '@nocobase/app-plugin-users',
+      key: 'notificationTemplates.invitation.name',
+      defaultValue: 'User invitation',
+    },
+    channels: [
+      {
+        name: 'system-email',
+        type: 'email',
+        typeLabel: { key: 'templates.channelTypes.email' },
+        configured: false,
+        enabled: null,
+      },
+    ],
+  });
   release?.();
   expect(registry.list()).toEqual([]);
 });
@@ -115,7 +169,7 @@ it.each([
     } as never;
     const release = await registerInvitationTemplate(app);
     const channels = registry.get('users.invitation')?.channels;
-    expect(channels).toEqual([
+    expect(channels).toMatchObject([
       { name: selected, type: 'email', configured: true, enabled },
     ]);
     expect(JSON.stringify(registry.list())).not.toContain('synthetic-secret');

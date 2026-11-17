@@ -49,6 +49,24 @@ describe('knowledge files', () => {
     await h?.close();
   });
 
+  it('stores and reads a knowledge upload above the default 20 MiB attachment limit', async () => {
+    const bytes = new Uint8Array(20 * 1024 * 1024 + 1);
+    bytes[0] = 42;
+    bytes[bytes.length - 1] = 99;
+    const doc = await h.knowledge.files.upload(
+      h.user('lead'),
+      project,
+      new File([bytes], 'large.png', { type: 'image/png' }),
+    );
+    expect(doc.file?.size).toBe(bytes.length);
+    const content = await h.knowledge.files.content(h.user('lead'), doc.id);
+    expect(
+      Buffer.from(await new Response(content.body).arrayBuffer()).equals(
+        Buffer.from(bytes),
+      ),
+    ).toBe(true);
+  });
+
   it('uploads a file whose text is extracted after, and searched', async () => {
     const { files, docs } = h.knowledge;
     const uploaded = await files.upload(

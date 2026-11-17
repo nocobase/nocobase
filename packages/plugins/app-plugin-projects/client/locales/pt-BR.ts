@@ -54,6 +54,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       subtaskAdded: 'adicionou a subtarefa',
       dependencyAdded: 'adicionou a dependência em',
       dependencyRemoved: 'removeu a dependência de',
+      relationAdded: 'adicionou uma relação com',
+      relationRemoved: 'removeu a relação com',
       stageChanged: 'mudou de cenário',
       autoMoveSkipped: 'não conseguiu mover a tarefa automaticamente para',
     },
@@ -368,6 +370,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     projectRequired: 'Escolha pelo menos um projeto que você lidera.',
     projects: 'Projetos',
     projectsHint: 'Os convidados ingressam nesses projetos como membros.',
+    language: 'Idioma do e-mail',
+    languageHint:
+      'O e-mail de convite e a página de cadastro usam este idioma.',
     projectsPlaceholder: 'Escolha projetos',
     resend: 'Enviar novamente',
     generateLink: 'Gerar novo link',

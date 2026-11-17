@@ -25,14 +25,43 @@ import {
 
 const REFUSED_TOAST_ID = 'demo-mode-refused';
 
+/**
+ * The registered routes as the router nests them. Registered paths are absolute and a pathless group carries its
+ * parent's path, so each path is made relative to its parent's, as the application router does; a route at its
+ * parent's own path, or an ancestor's, nests with an empty path.
+ */
 function entryRoutes(
   routes: readonly AppClientRegisteredRoute[],
+  parentPath = '',
 ): RouteObject[] {
-  return routes.map((route) => ({
-    path: route.path,
-    handle: route.auth,
-    children: entryRoutes(route.children ?? []),
-  }));
+  return routes.map((route) => {
+    const inside = parentPath.startsWith(`${route.path.replace(/\/$/, '')}/`);
+    const path = !parentPath
+      ? route.path
+      : route.path === parentPath || inside
+        ? ''
+        : route.path.slice(parentPath === '/' ? 1 : parentPath.length + 1);
+    return {
+      path,
+      handle: route.auth,
+      children: entryRoutes(
+        route.children ?? [],
+        inside ? parentPath : route.path,
+      ),
+    };
+  });
+}
+
+/** Whether the page at `pathname` needs a signed-in visitor, so Demo Mode enters an account before showing it. */
+function demoEntryRequired(
+  routes: readonly AppClientRegisteredRoute[],
+  pathname: string,
+): boolean {
+  return (
+    pathname === '/' ||
+    matchRoutes(entryRoutes(routes), pathname)?.at(-1)?.route.handle ===
+      'required'
+  );
 }
 
 /** Whether a finished request's response says the server refused one of its writes. */
@@ -61,10 +90,11 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
       app.config.public.get('demoMode.enabled') === true,
   );
   const { pathname } = useLocation();
-  const routes = useMemo(() => entryRoutes(app.runtime.routes), [app]);
-  const required =
-    pathname === '/' ||
-    matchRoutes(routes, pathname)?.at(-1)?.route.handle === 'required';
+  // Only a demo enters accounts, so a disabled one never matches routes.
+  const required = useMemo(
+    () => enabled && demoEntryRequired(app.runtime.routes, pathname),
+    [app, enabled, pathname],
+  );
   const previousPathRef = useRef(pathname);
 
   useEffect(() => {

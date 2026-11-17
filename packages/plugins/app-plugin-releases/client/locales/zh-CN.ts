@@ -4,11 +4,12 @@ import type enUS from './en-US.js';
 const zhCN: typeof enUS = {
   ...accessZhCN,
   ui: {
-    nav: { apps: '应用', environments: '部署环境' },
+    nav: {
+      environments: '部署环境',
+    },
     apps: {
       title: '应用',
-      description: '应用、它们的版本，以及部署在哪里。',
-      search: '按 ID 或名称搜索',
+      lastFailure: '上次失败：{{detail}}',
       create: '创建应用',
       id: '应用 ID',
       name: '名称',
@@ -19,16 +20,27 @@ const zhCN: typeof enUS = {
       labels: '标签',
       loadFailed: '应用加载失败。',
       loadOneFailed: '应用加载失败。',
-      emptyTitle: '还没有应用',
-      emptyNoAccess: '请管理员创建应用。',
-      emptyDescription: '先创建应用，再上传版本并部署到环境。',
-      noResults: '没有符合搜索的应用。',
       created: '已创建 {{name}}。',
       createDescription: '应用部署到一个环境；创建后再上传它的版本。',
       idHint:
         '字母、数字、下划线和连字符，会出现在访问地址里，创建后不能修改。',
-      noEnvironment: '还没有环境',
       lastAccess: '最近访问',
+      stateFilter: '状态',
+      anyState: '全部状态',
+      clearFilters: '清除筛选',
+      noMatches: '没有符合筛选条件的应用。',
+      runStates: {
+        running: '运行中',
+        starting: '启动中',
+        pending: '尚未启动',
+        waiting: '排队等待',
+        stopped: '已停止或休眠',
+        failed: '失败',
+        unknown: '未知',
+      },
+      page: '第 {{page}} / {{pages}} 页',
+      previousPage: '上一页',
+      nextPage: '下一页',
     },
     advanced: '高级（可选）',
     labels: {
@@ -364,25 +376,28 @@ const zhCN: typeof enUS = {
     sharedHost: {
       title: '共享应用宿主',
       description: '这个宿主上所有环境的应用共用一个进程和它的内存。',
-      summary: '已部署 {{deployed}} 个应用，{{running}} 个运行或启动中',
-      memory:
-        '堆 {{heapUsed}} / {{heapLimit}} · 进程内存 {{rss}} · 服务器可用 {{available}}',
-      memoryNote: '这是整个进程的总量，不是某个应用的占用。',
+      environments: '使用它的环境：{{names}}',
       recycling: {
         pending:
           '没有应用在使用时，会重启这个宿主来释放旧代码。新版本要等到那时才能启动；正在运行的应用照常服务。',
         restarting: '这个宿主正在重启，恢复前它的应用会提示“稍后重试”。',
       },
       restoreFailed: '{{name}}：应用恢复失败，后台重试中。',
-      columns: {
-        app: '应用',
-        state: '状态',
-        why: '原因',
-        lastAccess: '最近访问',
-      },
-      hidden: '你无权查看的应用',
-      empty: '这个宿主上没有正在运行的应用。',
-      idle: '闲置，需要空间时优先停止',
+      failed: '共享宿主重启后未能恢复这个应用，正在后台重试。',
+      view: '查看宿主占用',
+      deployed: '已部署：{{count}}',
+      appsLabel: '运行或启动中',
+      heapLabel: '堆',
+      processLabel: '进程内存',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 不限',
+      available: '服务器还剩 {{available}}',
+      wholeHost:
+        '这是整个宿主的总量，包含它上面的所有环境；内存分不到单个应用。',
+      viewAppsNote: '只列出你有权查看的应用。',
+      byEnvironment: '按环境，运行或启动中：',
+    },
+    runtime: {
       holds: {
         requests: '正在处理请求',
         connections: '有活动连接',
@@ -397,6 +412,8 @@ const zhCN: typeof enUS = {
         memory: '启动被拒：内存不足',
         recycle: '启动被拒：新代码要等宿主重启回收',
       },
+      idle: '闲置，需要空间时优先停止',
+      lastVisit: '最近访问：{{time}}',
     },
     overview: {
       currentRelease: '当前版本',
@@ -557,6 +574,11 @@ const zhCN: typeof enUS = {
         INITIAL_ADMIN_UNAVAILABLE: '没有可显示的初始管理员。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '读取发布包时连续 {{seconds}} 秒没有收到数据，部署未完成，请重试。',
+        artifactReadTotalTimeout:
+          '读取发布包超过 {{seconds}} 秒，部署未完成，请重试。',
+        artifactReadTimeout: '读取发布包超时，部署未完成，请重试。',
         hostExited: '应用进程在就绪前退出了。',
         hostDisabled: '应用宿主未启用。',
         hostShutDown: '应用宿主已关闭。',
@@ -571,6 +593,14 @@ const zhCN: typeof enUS = {
         notReady: '尚未就绪，请稍后再试。',
         checkTimeout: '测试在 20 秒内没有完成。',
         hostNoSettings: '本机运行时不需要连接设置。',
+        recycleWait: '预览服务正在回收内存，完成后继续部署。',
+        recycleRetry: '预览服务仍在回收内存，部署未完成。请稍后重试。',
+        capacityExceeded:
+          '预览服务内存不足或运行中的应用已达到上限，部署未完成。请稍后重试。',
+        replacementMemory:
+          '预览服务内存不足，无法启动新版本，当前版本继续运行。请稍后重试。',
+        startQueueFull: '同时启动的应用过多，请稍后重试。',
+        activeLimit: '运行中的应用已达到上限，请稍后重试。',
       },
       prefixed: {
         startFailed: '启动失败：{{detail}}',

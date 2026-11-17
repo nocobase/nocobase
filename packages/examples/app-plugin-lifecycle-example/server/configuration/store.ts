@@ -17,48 +17,10 @@ export const PARAMETER_COLLECTIONS: Readonly<
   snapshots: 'lifecycleExampleParameterSnapshots',
   usages: 'lifecycleExampleParameterUsages',
 };
+/** Runtime facts and configuration are both identified by the concrete definition name. */
 export function exampleParameterRegistration<T extends LifecycleTypes>(
   store: LifecycleParameterStore,
-  lifecycle: string,
+  _name: string,
 ): ParameterConfigurationRegistration<T> {
-  return {
-    store: workflowParameterStore(store, lifecycle),
-    scope: () => 'demo',
-    ...(lifecycle === 'expenses'
-      ? {
-          legacyRecord: (record: T['record']) => record.parameterContract !== 1,
-          snapshotRequired: (record: T['record']) => record.status !== 'draft',
-        }
-      : {}),
-  };
-}
-
-/** Configuration belongs to a workflow; historical facts already include its name. */
-export function workflowParameterKey(lifecycle: string, group: string): string {
-  return `lifecycle.${lifecycle}.${group}`;
-}
-export function workflowParameterStore(
-  store: LifecycleParameterStore,
-  lifecycle: string,
-): LifecycleParameterStore {
-  return {
-    read: (scope, group, transaction) =>
-      store.read(scope, workflowParameterKey(lifecycle, group), transaction),
-    save: (input, transaction) =>
-      store.save(
-        {
-          ...input,
-          group: {
-            ...input.group,
-            key: workflowParameterKey(lifecycle, input.group.key),
-          },
-        },
-        transaction,
-      ),
-    snapshot: (...args) => store.snapshot(...args),
-    saveSnapshot: (...args) => store.saveSnapshot(...args),
-    usage: (...args) => store.usage(...args),
-    saveUsage: (...args) => store.saveUsage(...args),
-    listUsage: (...args) => store.listUsage(...args),
-  };
+  return { store, scope: () => 'demo' };
 }

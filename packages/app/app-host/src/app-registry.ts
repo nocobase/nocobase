@@ -881,6 +881,12 @@ export class AppRuntimeRegistry {
   isRotationPending(): boolean {
     return this.rotationPending;
   }
+  /** The configured `maxActiveApps`, or null when none limits how many Apps run at once. */
+  activeAppLimit(): number | null {
+    return this.maxActiveApps === Number.MAX_SAFE_INTEGER
+      ? null
+      : this.maxActiveApps;
+  }
 
   /** Once ingress is gated, existing responses may finish until the bounded drain expires. */
   drainIngress(timeoutMs: number): Promise<boolean> {
@@ -1306,6 +1312,8 @@ export class AppRuntimeRegistry {
       this.logger?.warn(
         {
           appId: definition.id,
+          reason: waiting,
+          maxActiveApps: this.activeAppLimit(),
           memory: this.memoryUsage(),
           rotationPending: this.rotationPending,
           occupants: [...occupied().keys()].map((id) => ({

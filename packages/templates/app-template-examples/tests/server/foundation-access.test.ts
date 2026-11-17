@@ -34,11 +34,12 @@ test('serves documented Foundation evidence only to an unrestricted administrato
   const overview = await root.fetch('/foundation/overview');
   expect(overview.status).toBe(200);
   const { data } = await overview.json();
+  // Test applications start without the scan; the Refresh below submits one.
   expect(data).toEqual(
     expect.objectContaining({
       kernelVersion: expect.any(String),
-      status: expect.stringMatching(/^(queued|running|succeeded|failed)$/),
-      needsScan: expect.any(Boolean),
+      status: 'idle',
+      needsScan: true,
     }),
   );
   expect(

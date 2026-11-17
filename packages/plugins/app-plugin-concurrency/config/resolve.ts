@@ -79,29 +79,29 @@ function resolveEntry(
   value: unknown,
   appName: string,
 ): ResolvedConcurrencyConfig {
-  const entry = object(value, key);
+  const entry = object(value, `backends.${key}`);
   for (const field of Reflect.ownKeys(entry)) {
     if (typeof field !== 'string' || !COMMON_FIELDS.has(field))
-      fail(key, 'Unknown configuration field.');
+      fail(`backends.${key}`, 'Unknown configuration field.');
   }
-  const adapter = nonempty(entry.adapter, `${key}.adapter`);
+  const adapter = nonempty(entry.adapter, `backends.${key}.adapter`);
   if (adapter === 'mutex' && Object.hasOwn(entry, 'connection'))
-    fail(`${key}.connection`, 'Mutex does not accept a connection.');
+    fail(`backends.${key}.connection`, 'Mutex does not accept a connection.');
   const resolved = {
     key,
     adapter,
     namespace: nonempty(
       entry.namespace === undefined ? appName : entry.namespace,
-      `${key}.namespace`,
+      `backends.${key}.namespace`,
     ),
     ...(entry.ttl === undefined
       ? {}
-      : { ttl: positive(entry.ttl, `${key}.ttl`) }),
+      : { ttl: positive(entry.ttl, `backends.${key}.ttl`) }),
     ...(Object.hasOwn(entry, 'connection')
       ? {
           connection: frozenCopy(
-            object(entry.connection, `${key}.connection`),
-            `${key}.connection`,
+            object(entry.connection, `backends.${key}.connection`),
+            `backends.${key}.connection`,
           ),
         }
       : {}),
@@ -116,11 +116,24 @@ export function resolveConcurrencyConfig(
   nonempty(appName, 'appName');
   const section = value === undefined ? {} : object(value, 'concurrency');
   const entries = new Map<string, ResolvedConcurrencyConfig>();
-  for (const key of Reflect.ownKeys(section)) {
-    if (key === 'default') continue;
+  for (const field of Reflect.ownKeys(section)) {
+    if (field === 'default' || field === 'backends') continue;
+    if (typeof field !== 'string' || !NAME.test(field))
+      fail(
+        'concurrency',
+        'Unknown top-level configuration field. Use concurrency.backends.',
+      );
+    fail(
+      field,
+      `Uses the old configuration format. Move it to concurrency.backends.${field}; keep concurrency.default set to its backend name when selected.`,
+    );
+  }
+  const backends =
+    section.backends === undefined ? {} : object(section.backends, 'backends');
+  for (const key of Reflect.ownKeys(backends)) {
     if (typeof key !== 'string' || !NAME.test(key))
-      fail('concurrency', 'Invalid configuration name.');
-    entries.set(key, resolveEntry(key, section[key], appName));
+      fail('backends', 'Invalid configuration name.');
+    entries.set(key, resolveEntry(key, backends[key], appName));
   }
   let defaultKey: string;
   if (section.default === undefined) {
@@ -133,7 +146,10 @@ export function resolveConcurrencyConfig(
   } else {
     defaultKey = nonempty(section.default, 'default');
     if (defaultKey === 'default' || !entries.has(defaultKey))
-      fail('default', 'Must name an existing configuration.');
+      fail(
+        'default',
+        'Must name an existing configuration in concurrency.backends.',
+      );
   }
   return { defaultKey, entries };
 }

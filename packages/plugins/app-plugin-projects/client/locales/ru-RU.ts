@@ -54,6 +54,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       subtaskAdded: 'добавил(а) подзадачу',
       dependencyAdded: 'добавил(а) зависимость от',
       dependencyRemoved: 'удалил(а) зависимость от',
+      relationAdded: 'добавил(а) связь с',
+      relationRemoved: 'удалил(а) связь с',
       stageChanged: 'сменил(а) этап',
       autoMoveSkipped: 'не удалось автоматически перевести задачу в',
     },
@@ -369,6 +371,9 @@ const ruRU: LocaleResource<typeof enUS> = {
     projectRequired: 'Выберите хотя бы один проект, которым вы руководите.',
     projects: 'Проекты',
     projectsHint: 'Приглашённые присоединятся к этим проектам как участники.',
+    language: 'Язык письма',
+    languageHint:
+      'Письмо с приглашением и страница регистрации будут на этом языке.',
     projectsPlaceholder: 'Выберите проекты',
     resend: 'Отправить снова',
     generateLink: 'Создать новую ссылку',

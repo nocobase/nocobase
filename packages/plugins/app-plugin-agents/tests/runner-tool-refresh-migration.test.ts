@@ -11,7 +11,7 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202611080003_ag_add_runner_tool_refresh', {
+describeMigration('202611170001_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
     await expectCollection('agRuns').toHaveField('failureParams', {
@@ -25,6 +25,10 @@ describeMigration('202611080003_ag_add_runner_tool_refresh', {
     await expectCollection('agConversations').toHaveField('showInChatList', {
       type: 'boolean',
       nullable: false,
+    });
+    await expectCollection('agRunners').toHaveField('quotaLimits', {
+      type: 'json',
+      nullable: true,
     });
     await expectCollection('agRunners').toHaveField('enabledTools', {
       type: 'json',
@@ -59,6 +63,10 @@ describeMigration('202611080003_ag_add_runner_tool_refresh', {
     await expectCollection('agConversations').toHaveField('showInChatList', {
       type: 'boolean',
       nullable: false,
+    });
+    await expectCollection('agRunners').toHaveField('quotaLimits', {
+      type: 'json',
+      nullable: true,
     });
     await expectCollection('agRunners').toHaveField('enabledTools', {
       type: 'json',

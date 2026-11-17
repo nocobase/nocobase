@@ -16,6 +16,8 @@ import {
   LeaseRequestSchema,
   LeaseResponseSchema,
   MountBundleSchema,
+  NpmCredentialRequestSchema,
+  NpmCredentialSchema,
   SkillBundleSchema,
   StartRequestSchema,
   StartResponseSchema,
@@ -66,7 +68,13 @@ export function mountRunnerRunRoutes(
   router: Hono<RunnerEnv>,
   services: Pick<
     Agents,
-    'reports' | 'claims' | 'skills' | 'mounts' | 'tx' | 'gitCredentials'
+    | 'reports'
+    | 'claims'
+    | 'skills'
+    | 'mounts'
+    | 'tx'
+    | 'gitCredentials'
+    | 'npmCredentials'
   >,
 ): void {
   const runParam = apiValidator('param', RunParams);
@@ -250,6 +258,43 @@ export function mountRunnerRunRoutes(
     async (context) =>
       context.json({
         data: await services.gitCredentials.issue(
+          context.get('runner'),
+          context.req.valid('param').runId,
+          context.req.valid('json'),
+        ),
+      }),
+  );
+  // The private npm registry's token, while the runner holds this attempt of the run.
+  router.post(
+    '/:runId/npmCredentials',
+    describeRoute({
+      tags,
+      summary: "Get the private npm registry's token for a run",
+      operationId: 'agentsRunnerGetRunNpmCredential',
+      description:
+        "The token of NocoBase's private npm registry (`NOCOBASE_NPM_REGISTRY`) the application gives, or `token: null` when it has none, while the runner holds the named attempt of the run under a live lease (the `npmCredentials` feature). A runner asks only when an install of the run needs that registry; `reason` and `package` are recorded. The token is never stored by the agents plugin.",
+      // Runner protocol: only a runner calls it.
+      ...cliRoute(false),
+      security: runnerKeySecurity,
+      parameters: [protocolHeader],
+      responses: {
+        200: dataResponse(NpmCredentialSchema),
+        ...heldWorkErrors,
+        403: apiErrorResponse(
+          403,
+          'Another runner holds the run (`RUN_NOT_OWNED`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'The run is no longer this runner’s: the lease was lost or ran out, or another attempt took it (`LEASE_LOST`).',
+        ),
+      },
+    }),
+    runParam,
+    apiValidator('json', NpmCredentialRequestSchema),
+    async (context) =>
+      context.json({
+        data: await services.npmCredentials.issue(
           context.get('runner'),
           context.req.valid('param').runId,
           context.req.valid('json'),
