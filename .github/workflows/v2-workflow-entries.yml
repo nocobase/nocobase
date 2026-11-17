@@ -1,10 +1,12 @@
 name: V2 workflow entries
 
-# v3-develop carries one thin entry per manual (workflow_dispatch) workflow in this directory, with the same filename,
-# name and inputs, so those workflows stay runnable once v3-develop becomes the default branch. This check fails a
-# pull request that adds, removes or renames a manual workflow, or changes its name or inputs, while the entry on
-# v3-develop does not match. To change a manual workflow, update the entry on v3-develop first, then this branch.
-# A workflow that has never run can instead be added to EXCLUDED in scripts/check-v2-workflow-entries.mjs on v3-develop.
+# The default branch (currently v3, formerly v3-develop) carries one thin entry per manual (workflow_dispatch) workflow in this
+# directory, with the same filename, name and inputs, so those workflows stay runnable from the default branch. This
+# check fails a pull request that adds, removes or renames a manual workflow, or changes its name or inputs, while the
+# entry on the default branch does not match. To change a manual workflow, update the entry on the default branch first,
+# then this branch. A workflow that has never run can instead be added to EXCLUDED in
+# scripts/check-v2-workflow-entries.mjs on the default branch. v3 workflows (v3-*.yml) live on the default branch itself
+# and are not compared. The default branch is read from the event, so a rename needs no change here.
 # This workflow has no workflow_dispatch trigger, so it needs no entry itself.
 
 on:
@@ -24,6 +26,8 @@ jobs:
     name: V2 workflow entries
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - name: Check out this pull request's workflows
         uses: actions/checkout@v4
@@ -31,11 +35,11 @@ jobs:
           persist-credentials: false
           sparse-checkout: .github/workflows
 
-      - name: Check out the entries on v3-develop
+      - name: Check out the entries on the default branch
         uses: actions/checkout@v4
         with:
-          ref: v3-develop
-          path: v3-develop
+          ref: ${{ env.DEFAULT_BRANCH }}
+          path: default-branch
           persist-credentials: false
           sparse-checkout: |
             .github/workflows
@@ -48,18 +52,18 @@ jobs:
 
       - name: Install yaml next to the script
         run: |
-          script=v3-develop/scripts/check-v2-workflow-entries.mjs
+          script=default-branch/scripts/check-v2-workflow-entries.mjs
           if [ ! -f "$script" ]; then
-            echo "::error::$script does not exist on v3-develop. It is added there by the v3-v2-workflow-entries check; merge that first."
+            echo "::error::scripts/check-v2-workflow-entries.mjs does not exist on the default branch $DEFAULT_BRANCH. It is added there by the v3-v2-workflow-entries check; merge that first."
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/check"
           cp "$script" "$RUNNER_TEMP/check/"
           npm install --prefix "$RUNNER_TEMP/check" --no-save --no-package-lock --no-audit --no-fund yaml@2.9.0
 
-      - name: Compare this pull request with the entries on v3-develop
+      - name: Compare this pull request with the entries on the default branch
         run: >
           node "$RUNNER_TEMP/check/check-v2-workflow-entries.mjs"
           --main .github/workflows
-          --entries v3-develop/.github/workflows
+          --entries default-branch/.github/workflows
           --mismatch error
