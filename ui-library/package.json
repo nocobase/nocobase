@@ -75,7 +75,7 @@
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
-    "shadcn": "catalog:",
+    "shadcn": "^4.18.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
