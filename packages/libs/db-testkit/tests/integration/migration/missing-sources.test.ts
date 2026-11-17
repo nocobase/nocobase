@@ -42,8 +42,10 @@ describeIntegrationDatabases('missing migration sources', (context) => {
     async (onMissingSource) => {
       const { directory, events, options } = await fixture();
       const pluginDirectory = join(directory, 'plugin');
+      const secondPluginDirectory = join(directory, 'second-plugin');
       const appDirectory = join(directory, 'app');
       await mkdir(pluginDirectory);
+      await mkdir(secondPluginDirectory);
       await mkdir(appDirectory);
       const names = [
         '202611170001_plugin_first',
@@ -51,10 +53,14 @@ describeIntegrationDatabases('missing migration sources', (context) => {
         '202611170003_app',
       ];
       await source(pluginDirectory, names[0], events);
-      await source(pluginDirectory, names[1], events);
+      await source(secondPluginDirectory, names[1], events);
       await source(appDirectory, names[2], events);
       const sources = [
         { packageName: 'removed-plugin', directory: pluginDirectory },
+        {
+          packageName: 'second-removed-plugin',
+          directory: secondPluginDirectory,
+        },
         { packageName: 'app', directory: appDirectory },
       ];
       const installer = createMigrator({ ...options, sources });
@@ -62,7 +68,7 @@ describeIntegrationDatabases('missing migration sources', (context) => {
       const history = await installer.history();
       const migrator = createMigrator({
         ...options,
-        sources: sources.slice(1),
+        sources: sources.slice(2),
         onMissingSource,
       });
       expect((await migrator.latest()).warnings).toEqual([]);
@@ -76,6 +82,7 @@ describeIntegrationDatabases('missing migration sources', (context) => {
         const text = (error as Error).message;
         for (const name of names.slice(0, 2)) expect(text).toContain(name);
         expect(text).toContain('removed-plugin');
+        expect(text).toContain('second-removed-plugin');
         expect(text).toContain('Restore compatible versions');
         expect(text).toContain('roll back before uninstalling');
         expect(text).toContain('new forward migration');
@@ -236,6 +243,40 @@ describeIntegrationDatabases('missing migration sources', (context) => {
       ).toEqual([`up:${older}`, `up:${newer}`]);
     },
   );
+
+  it('enforces checksum policy on the target batch before any down', async () => {
+    const { directory, events, options } = await fixture();
+    const names = ['202611170001_changed', '202611170002_unchanged'];
+    for (const name of names) await source(directory, name, events);
+    const migrator = createMigrator({ ...options, directory });
+    await migrator.latest();
+    const history = await migrator.history();
+    await writeFile(
+      join(directory, `${names[0]}.ts`),
+      '\n// rebuilt target\n',
+      { flag: 'a' },
+    );
+    const strict = createMigrator({
+      ...options,
+      directory,
+      onChecksumMismatch: 'error',
+    });
+    for (const dryRun of [true, false]) {
+      await expect(strict.rollback({ dryRun })).rejects.toThrow(
+        'checksum changed',
+      );
+      expect(await migrator.history()).toEqual(history);
+      expect(await context.db(events).select('event').orderBy('id')).toEqual(
+        names.map((name) => ({ event: `up:${name}` })),
+      );
+    }
+    const result = await migrator.rollback();
+    expect(result.rolledBack).toEqual([...names].reverse());
+    expect(result.warnings).toMatchObject([
+      { packageName: 'app', name: names[0] },
+    ]);
+    expect(await migrator.history()).toEqual([]);
+  });
 
   it.each(['warn', 'error'] as const)(
     'lists all missing and irreversible target migrations before any down with policy %s',
