@@ -19,6 +19,8 @@
 //    `@nocobase:registry=<private>` with the credential and runs the command once more, with that exit code. Later
 //    installs of the same repository in the run use the private registry for `@nocobase` at once; another repository
 //    of the run starts from step 3 again.
+//    A failed unauthenticated request to the private registry with HTTP 401/403 triggers the same scoped retry,
+//    with reason `unauthorized`, including outside a repository. Other registries' authorization failures do not.
 //
 // When the application has no token it says so on stderr, naming where an administrator sets it. The token reaches
 // only the run's files, which the launcher removes after the command and the worker removes with the run's npm
@@ -39,6 +41,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { NpmCredentialReason } from '../protocol/index.ts';
 
 import {
   DEFAULT_PRIVATE_REGISTRY,
@@ -253,7 +256,7 @@ type TokenAnswer =
 /** Asks the worker for the private registry's token through the run's socket. */
 export function askToken(
   env: Env,
-  reason: 'declared' | 'notFound',
+  reason: NpmCredentialReason,
   missing?: MissingPackage,
 ): Promise<TokenAnswer> {
   const socket = env[SOCKET_ENV];
@@ -374,7 +377,7 @@ const described = (missing: MissingPackage): string =>
 
 async function tokenFor(
   env: Env,
-  reason: 'declared' | 'notFound',
+  reason: NpmCredentialReason,
   missing?: MissingPackage,
 ): Promise<string | null> {
   const answer = await askToken(env, reason, missing);
@@ -445,19 +448,30 @@ export async function launch(options: LaunchOptions): Promise<number> {
   }
 
   const first = await attempt(null, false);
-  if (first.code === 0 || project.nocobaseElsewhere) return first.code;
-  const missing = notFoundPackage(first.tail, registry);
-  if (missing === null) return first.code;
-  const token = await tokenFor(env, 'notFound', missing);
+  if (first.code === 0) return first.code;
+  const unauthorized = privateRefused(first.tail, registry);
+  const missing = project.nocobaseElsewhere
+    ? null
+    : notFoundPackage(first.tail, registry);
+  if (!unauthorized && missing === null) return first.code;
+  const token = await tokenFor(
+    env,
+    unauthorized ? 'unauthorized' : 'notFound',
+    missing ?? undefined,
+  );
   if (token === null) {
     say(
-      `${described(missing)} was not found on the default registry (404) and needs the NocoBase private registry (${registry}): ${SETTINGS_HINT}.`,
+      unauthorized
+        ? `the NocoBase private registry (${registry}) refused the unauthenticated request, and no token is configured: ${SETTINGS_HINT}.`
+        : `${described(missing!)} was not found on the default registry (404) and needs the NocoBase private registry (${registry}): ${SETTINGS_HINT}.`,
     );
     return first.code;
   }
   writeFileSync(marker, '', { mode: 0o600 });
   say(
-    `${described(missing)} was not found on the default registry; retrying once with the NocoBase private registry (${registry}).`,
+    unauthorized
+      ? `the NocoBase private registry refused the unauthenticated request; retrying once with the NocoBase private registry (${registry}).`
+      : `${described(missing!)} was not found on the default registry; retrying once with the NocoBase private registry (${registry}).`,
   );
   return refused(await attempt(token, true), token).code;
 }

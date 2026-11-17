@@ -79,6 +79,20 @@ describe('the private npm registry token on demand', () => {
       `npm credential issued run=${runId} reason=notFound package=@nocobase/plugin-private@1.0.0`,
     ]);
     expect(lines.join('\n')).not.toContain(TOKEN);
+    const unauthorized = await ask(runner, runId, {
+      attempt: 1,
+      reason: 'unauthorized',
+    });
+    expect(unauthorized.status).toBe(200);
+    expect(unauthorized.body.data).toEqual({ token: TOKEN });
+    expect(requests.at(-1)).toMatchObject({
+      reason: 'unauthorized',
+      run: { id: runId },
+    });
+    expect(info.mock.calls.at(-1)?.[0]).toBe(
+      `npm credential issued run=${runId} reason=unauthorized`,
+    );
+    expect(JSON.stringify(info.mock.calls)).not.toContain(TOKEN);
   });
 
   it('refuses a malformed request, another runner, another attempt and a run past its lease', async () => {

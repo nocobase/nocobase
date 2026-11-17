@@ -123,13 +123,22 @@ function install(
   target: Project,
   server: CredentialServer,
   env: Record<string, string> = {},
+  args: string[] = ['install'],
+  registry = privateRegistry.url,
+  tool: 'pnpm' | 'npm' = 'pnpm',
 ): Promise<Result> {
   const pnpm = bundledPnpmEntry();
   if (pnpm === undefined) throw new Error('The runner has no bundled pnpm.');
   return new Promise((resolve) => {
     const child = spawn(
       process.execPath,
-      [...npmLauncherEntry(), 'pnpm', process.execPath, pnpm, '--', 'install'],
+      [
+        ...npmLauncherEntry(),
+        tool,
+        ...(tool === 'pnpm' ? [process.execPath, pnpm] : ['npm']),
+        '--',
+        ...args,
+      ],
       {
         cwd: target.dir,
         env: {
@@ -140,7 +149,7 @@ function install(
           ...PINNED_PNPM_ENV,
           pnpm_config_store_dir: path.join(scratch, 'store'),
           [NPM_DIR_ENV]: target.npmDir,
-          [PRIVATE_REGISTRY_ENV]: privateRegistry.url,
+          [PRIVATE_REGISTRY_ENV]: registry,
           NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket,
           NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce,
           ...env,
@@ -170,6 +179,111 @@ describe('the npm launcher', () => {
       await privateRegistry.stop();
     };
   });
+
+  it.each([401, 403])(
+    'retries a private HTTP %i once without a project npmrc, for npm and pnpm',
+    async (status) => {
+      const registry = new Registry(
+        scratch,
+        ['@nocobase/fx-private'],
+        TOKEN,
+        status,
+      );
+      await registry.start();
+      try {
+        for (const tool of ['npm', 'pnpm'] as const) {
+          const target = project({ '@nocobase/fx-private': '1.0.0' });
+          const { server, asked } = await worker(TOKEN);
+          try {
+            const result = await install(
+              target,
+              server,
+              {},
+              ['install', `--@nocobase:registry=${registry.url}`],
+              registry.url,
+              tool,
+            );
+            expect(result).toMatchObject({ code: 0 });
+            expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+            expect(
+              registry.seen.some((request) => request.auth === undefined),
+            ).toBe(true);
+            expect(
+              registry.seen.some(
+                (request) => request.auth === `Bearer ${TOKEN}`,
+              ),
+            ).toBe(true);
+            expect(result.output).not.toContain(TOKEN);
+            expect(leftovers(target)).toHaveLength(1);
+          } finally {
+            await server.close();
+          }
+        }
+      } finally {
+        await registry.stop();
+      }
+    },
+  );
+
+  it.each([401, 403])(
+    'does not request a token for another registry returning HTTP %i',
+    async (status) => {
+      const registry = new Registry(scratch, [], TOKEN, status);
+      await registry.start();
+      const target = project({ '@nocobase/fx-private': '1.0.0' });
+      const { server, asked } = await worker(TOKEN);
+      try {
+        const result = await install(target, server, {}, [
+          'install',
+          `--@nocobase:registry=${registry.url}`,
+        ]);
+        expect(result.code).not.toBe(0);
+        expect(asked).toEqual([]);
+        expect(
+          registry.seen.every((request) => request.auth === undefined),
+        ).toBe(true);
+        expect(leftovers(target)).toEqual([]);
+      } finally {
+        await server.close();
+        await registry.stop();
+      }
+    },
+  );
+
+  it.each([null, 'invalid-token'])(
+    'stops after an unauthorized request with token %s',
+    async (token) => {
+      const registry = new Registry(scratch, [], TOKEN, 401);
+      await registry.start();
+      const target = project({ '@nocobase/fx-private': '1.0.0' });
+      const { server, asked } = await worker(token);
+      try {
+        const result = await install(
+          target,
+          server,
+          {},
+          ['install', `--@nocobase:registry=${registry.url}`],
+          registry.url,
+        );
+        expect(result.code).not.toBe(0);
+        expect(asked).toEqual([{ reason: 'unauthorized', pkg: undefined }]);
+        expect(registry.seen).toHaveLength(token === null ? 1 : 2);
+        expect(result.output).toContain('Settings › License');
+        expect(result.output).toContain(
+          token === null ? 'no token is configured' : 'refused the token',
+        );
+        expect(result.output).not.toContain('invalid-token');
+        expect(
+          leftovers(target).filter(
+            (file) => !file.startsWith('nocobase-scope-'),
+          ),
+        ).toEqual([]);
+      } finally {
+        await server.close();
+        await registry.stop();
+      }
+    },
+  );
 
   it('installs public packages from the machine’s registry and asks for no token', async () => {
     const target = project({

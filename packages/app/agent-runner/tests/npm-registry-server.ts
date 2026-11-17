@@ -36,6 +36,7 @@ export class Registry {
     names: readonly string[],
     /** Answers 404 to a request without `Bearer <token>`, as NocoBase's private registry does. */
     private readonly token?: string,
+    private readonly rejectionStatus = 404,
   ) {
     for (const name of names)
       this.packages.set(name, tarball(scratch, name, '1.0.0'));
@@ -49,7 +50,7 @@ export class Registry {
         this.token !== undefined &&
         request.headers.authorization !== `Bearer ${this.token}`
       ) {
-        response.writeHead(404).end('{}');
+        response.writeHead(this.rejectionStatus).end('{}');
         return;
       }
       const tgz = /^\/(.+)\/-\/.+\.tgz$/u.exec(url);
