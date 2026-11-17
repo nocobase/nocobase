@@ -2,6 +2,20 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 新特性
+
+- **[Agent]**
+  - 导出脱敏运行环境日志并合并本地时间线，支持实时收集进度及服务端配置的日期范围。 ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - 支持为空闲的 Runner 对话选择执行机，发送下一条消息时生效并保留历史。 ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 优化
+
+- **[界面]** 使用与分类标签样式一致的菜单查看工作流版本，并可复用 UI Library 中的版本选择组件。 ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[应用托管]** 支持配置预览发布包的校验与解压超时时间。 ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** 升级 Skill 默认升级到 `latest` 版本，用 beta 创建的应用在正式版发布后也能继续升级。 ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
 ## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
 
 ### 🚀 优化
