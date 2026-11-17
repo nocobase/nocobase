@@ -53,7 +53,7 @@ for (const file of files) {
           `@nocobase:registry=https://pkg-v3.nocobase.com/\n//pkg-v3.nocobase.com/:_authToken=${token}\n`,
         );
         assert.match(cleanups[i], /if: \$\{\{ always\(\) \}\}/u);
-        const cleanup = cleanups[i].match(/^        run: (.+)$/mu)?.[1];
+        const cleanup = cleanups[i].match(/^ {8}run: (.+)$/mu)?.[1];
         assert.ok(cleanup);
         assert.equal(
           spawnSync('bash', ['-e', '-c', cleanup], {
