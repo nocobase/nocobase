@@ -30,7 +30,8 @@ export interface DataTableSearchProps {
 
 /**
  * The list's search box for `DataTable`'s `search`: a magnifier inside the field, applied 300ms after typing pauses
- * and at once on Enter, never in the middle of an IME composition. It needs no separate search button (mobile.md
+ * and at once on Enter or when focus leaves the field (such as a click that opens a row, so the search lands on the
+ * list before the row's route), never in the middle of an IME composition. It needs no separate search button (mobile.md
  * M4.1), and it follows the applied value when the URL changes elsewhere, such as Clear filters or browser back.
  */
 export function DataTableSearch({
@@ -54,14 +55,24 @@ export function DataTableSearch({
     setSeen(value);
     if (value !== sent) setText(value);
   }
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const apply = () => {
+    clearTimeout(timerRef.current);
+    if (composing || text.trim() === value) return;
+    setSent(text.trim());
+    onSearchRef.current(text.trim());
+  };
   useEffect(() => {
     if (composing || text.trim() === value) return;
     const timer = setTimeout(() => {
       setSent(text.trim());
       onSearchRef.current(text.trim());
     }, debounceMs);
+    timerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [text, value, composing, debounceMs]);
+    // `sent` re-arms the timer after an applied search the URL has not taken yet, such as one sent just as a row
+    // opened; the list then holds it until it is current again.
+  }, [text, value, composing, debounceMs, sent]);
   return (
     <InputGroup data-slot='data-table-search' className='min-w-0 flex-1'>
       <InputGroupAddon>
@@ -83,10 +94,9 @@ export function DataTableSearch({
         onKeyDown={(event) => {
           if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
           event.preventDefault();
-          if (text.trim() === value) return;
-          setSent(text.trim());
-          onSearchRef.current(text.trim());
+          apply();
         }}
+        onBlur={apply}
       />
     </InputGroup>
   );

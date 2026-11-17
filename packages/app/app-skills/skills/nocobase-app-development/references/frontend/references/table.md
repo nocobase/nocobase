@@ -15,7 +15,7 @@ Search and filters always run on the server, as endpoint parameters.
 
 ## Delete and recover a list
 
-Use the application hooks; do not reimplement request or page correction per page: `useListLocation()` (`#hooks/use-list-location`) gives `params`, `setParams` and `active`; `useListData` (`#hooks/use-list-data`) reads; `useTableUrlState` (`#hooks/use-table-url-state`) holds page and sort.
+Use the application hooks; do not reimplement request or page correction per page: `useListLocation()` (`#hooks/use-list-location`) gives `params`, `setParams` and `active` (while a child covers the list, `setParams` holds the change until the list is shown again, so a late search never rewrites the child's URL); `useListData` (`#hooks/use-list-data`) reads; `useTableUrlState` (`#hooks/use-table-url-state`) holds page and sort.
 
 - After a confirmed delete, announce it: `announceDataChange({ scopes: [scope], results: { [scope]: null } })` ([`data-changes.md`](data-changes.md)). Do not subtract from a cached total; the list reads again and `useTableUrlState` corrects an out-of-range page (at most two corrective reads, then a "list changed" error until Retry).
 - A batch waits for `Promise.allSettled`, keeps each failure with its error, then announces once. A rejected delete keeps the list and URL and shows the error. After an unknown outcome, announce the scopes without results; never resend a delete automatically.
@@ -91,7 +91,7 @@ Extend `client/components/` compositions only with optional props that keep the 
 
 Search, filters, page and sort live in the URL (T1.7); the request is built from the URL, never from input state.
 
-- Search is `DataTableSearch` (`value`, `onSearch`, `label`, optional `placeholder`, `debounceMs`). It owns the typed text, applies it 300 ms after typing pauses or on Enter, never mid-IME composition, and follows the URL when it changes elsewhere. `onSearch` writes `q` with `{ replace: true }` and deletes `page`. Never hand-make a search input or bind an `<Input>` to `searchParams` (it loses IME input, A7). The `placeholder` names the searched fields (T1.1).
+- Search is `DataTableSearch` (`value`, `onSearch`, `label`, optional `placeholder`, `debounceMs`). It owns the typed text, applies it 300 ms after typing pauses, on Enter or when focus leaves the box, never mid-IME composition, and follows the URL when it changes elsewhere. `onSearch` writes `q` with `{ replace: true }` and deletes `page`. Never hand-make a search input or bind an `<Input>` to `searchParams` (it loses IME input, A7). The `placeholder` names the searched fields (T1.1).
 - Each filter control has its own `aria-label`, writes its parameter and deletes `page`; `'all'`, `null` and unknown values mean no filter.
 - `clearFilters` removes `q`, the filters and `page` in one `setParams`, keeping sort and page size, then focuses the search box (A6).
 - A list below another page (a record's tab, a drawer) names its parameters after what it lists (`ordersQ`) and never touches the parent's `q` or `status`.
