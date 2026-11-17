@@ -3,7 +3,7 @@ import { appendFileSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const editions = ['studio', 'studio-ee'];
+export const editions = ['studio', 'studio-ee', 'studio-ce'];
 const architectures = ['amd64', 'arm64'];
 const indexType = 'application/vnd.oci.image.index.v1+json';
 const manifestTypes = [
@@ -194,7 +194,7 @@ export async function publishImages(registry, plan, platforms) {
     !['beta', 'latest'].includes(plan.channel) ||
     JSON.stringify(plan.images.map((image) => image.edition)) !==
       JSON.stringify(editions) ||
-    platforms.length !== 4
+    platforms.length !== editions.length * architectures.length
   )
     throw new Error('Invalid release plan.');
   const ready = [];
@@ -239,7 +239,7 @@ export async function publishImages(registry, plan, platforms) {
       manifests,
       annotations: {
         'org.opencontainers.image.description':
-          image.edition === 'studio' ? 'NocoBase Studio' : 'NocoBase Studio EE',
+          { studio: 'NocoBase Studio', 'studio-ee': 'NocoBase Studio EE', 'studio-ce': 'NocoBase Studio CE' }[image.edition],
         'org.opencontainers.image.revision': plan.commit,
         'org.opencontainers.image.version': plan.version,
         'com.nocobase.studio.edition': image.edition,
@@ -251,7 +251,7 @@ export async function publishImages(registry, plan, platforms) {
       throw new Error(
         `Refusing to overwrite ${image.repository}:${plan.version}.`,
       );
-    // Validate both editions before performing any write.
+    // Validate all editions before performing any write.
     for (const [tag, before] of Object.entries(image.aliases)) {
       const now = await registry.digest(image.repository, tag);
       if (now !== before && now !== digest)
@@ -261,7 +261,7 @@ export async function publishImages(registry, plan, platforms) {
     }
     ready.push({ ...image, body, digest });
   }
-  // Publish both immutable versions before advancing any moving tag.
+  // Publish all immutable versions before advancing any moving tag.
   for (const image of ready) {
     const current = await registry.digest(image.repository, plan.version);
     if (current && current !== image.digest)
@@ -306,7 +306,7 @@ if (
     );
     output('image_plan', JSON.stringify(plan));
     for (const image of plan.images) {
-      const prefix = image.edition === 'studio' ? '' : 'ee_';
+      const prefix = { studio: '', 'studio-ee': 'ee_', 'studio-ce': 'ce_' }[image.edition];
       appendFileSync(
         process.env.GITHUB_OUTPUT,
         `${prefix}tags<<EOF\n${image.tags.join('\n')}\nEOF\n`,
@@ -331,6 +331,6 @@ if (
       platforms,
     );
     for (const { edition, digest } of result)
-      output(edition === 'studio' ? 'digest' : 'ee_digest', digest);
+      output({ studio: 'digest', 'studio-ee': 'ee_digest', 'studio-ce': 'ce_digest' }[edition], digest);
   } else throw new Error('Use prepare or publish.');
 }
