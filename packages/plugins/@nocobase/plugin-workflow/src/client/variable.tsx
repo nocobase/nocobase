@@ -15,6 +15,7 @@ import WorkflowPlugin from '.';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE } from './locale';
 import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
+import { adaptScopeVariables } from './adaptScopeVariables';
 
 // The field-tree builder + its shared constants/types now live in client-v2 and are shared by both canvases (ADR-0003).
 // Re-exported here so existing v1 import sites (`from '../variable'`) are unchanged. Delete on legacy-canvas
@@ -62,7 +63,7 @@ export const triggerOptions = {
 export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
-  useOptions(options: UseVariableOptions & { current: any }) {
+  useOptions(options: UseVariableOptions & { current?: { key: string } }) {
     const { fieldNames = defaultFieldNames, current } = options;
     const { instructions } = usePlugin(WorkflowPlugin);
     const source = useNodeContext();
@@ -77,7 +78,7 @@ export const scopeOptions = {
           key: node.key,
           [fieldNames.value]: node.key,
           [fieldNames.label]: node.title ?? `#${node.id}`,
-          [fieldNames.children]: subOptions,
+          [fieldNames.children]: adaptScopeVariables(subOptions, fieldNames),
         });
       }
     });
