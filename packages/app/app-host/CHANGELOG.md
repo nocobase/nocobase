@@ -1,5 +1,11 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 375c285: Use OS-assigned ports for managed Hosts and discover their actual listeners through session-bound IPC readiness. Preserve strict explicit ports, reject bind failures without trusting unrelated HTTP listeners, and expose the current ready management client without starting a Host.
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

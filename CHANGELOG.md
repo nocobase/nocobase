@@ -2,6 +2,17 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 Improvements
+
+- **[App host]** Managed Hosts can allocate internal ports automatically and recover their current connection after a restart, while fixed-port conflicts fail explicitly. ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 Bug Fixes
+
+- **[Agents]** Avoid redundant conversation list reloads when opening a conversation on a slow connection. ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[Authentication]** Return visitors to their original page with its query and fragment after signing in. ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
 ## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
 
 ### 🎉 New Features

@@ -2,6 +2,17 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`release/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 改善
+
+- **[アプリホスティング]** 管理対象の Host は内部ポートを自動割り当てし、再起動後に接続を復元でき、固定ポートの競合は明確なエラーになります。 ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 不具合修正
+
+- **[Agent]** 低速な接続で会話を開く際に、会話一覧が重複して読み込まれる問題を修正しました。 ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[認証]** ログイン後に元のページへ戻り、クエリとフラグメントを保持します。 ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
 ## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
 
 ### 🎉 新機能

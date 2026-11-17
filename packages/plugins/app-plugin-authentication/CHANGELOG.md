@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.23
+
+### Patch Changes
+
+- 8647bb2: Return visitors to the original application path, query and fragment after signing in.
+
 ## 2.0.0-beta.22
 
 ### Patch Changes

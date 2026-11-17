@@ -2,6 +2,17 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 优化
+
+- **[应用托管]** 托管 Host 可自动分配内部端口并在重启后恢复当前连接，固定端口冲突时会明确报错。 ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 修复
+
+- **[Agent]** 在慢速连接下打开会话时，避免重复加载会话列表。 ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[认证]** 访客登录后返回原访问页面，并保留查询条件和锚点。 ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
 ## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
 
 ### 🎉 新特性
