@@ -60,7 +60,7 @@ nocobase-create-app Skill に従い、現在の空のディレクトリに、デ
 プロジェクトを保存する親ディレクトリで、次のコマンドを実行します。
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check

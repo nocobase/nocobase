@@ -21,10 +21,10 @@ Creating an application synchronizes its development Skills into `.agents/skills
 
 ## 1. Create and start the application
 
-In the directory where you keep projects, run this command to obtain the creation tool and default application template from the npm beta channel and install dependencies:
+In the directory where you keep projects, run this command to obtain the creation tool and default application template from npm and install dependencies:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta northstar-logistics --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app northstar-logistics
 ```
 
 Enter the application directory, initialize its configuration, and start it. This example uses SQLite, which requires no separate database service:

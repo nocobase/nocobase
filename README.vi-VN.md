@@ -60,7 +60,7 @@ Làm theo Skill nocobase-create-app để tạo và khởi chạy ứng dụng N
 Chạy các lệnh sau từ thư mục cha nơi bạn lưu các dự án:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check

@@ -44,11 +44,11 @@
             },
             {
               "context": "本地 · app 项目根目录",
-              "code": "npx --yes @nocobase/app-installer@beta install \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --origin https://purchase.example.com \\\n  --base-path /main \\\n  --port 13000 --name nocobase-purchase \\\n  --set-from-env users.initialAdmin.password=INITIAL_ADMIN_PASSWORD \\\n  --json",
+              "code": "npx --yes @nocobase/app-installer install \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --origin https://purchase.example.com \\\n  --base-path /main \\\n  --port 13000 --name nocobase-purchase \\\n  --set-from-env users.initialAdmin.password=INITIAL_ADMIN_PASSWORD \\\n  --json",
               "language": "bash"
             },
             {
-              "text": "安装器会上传部署包、生成配置、执行迁移并启动应用。示例使用 @beta；接入 CI 时建议固定已验证的安装器版本。"
+              "text": "安装器会上传部署包、生成配置、执行迁移并启动应用。示例使用最新版安装器；接入 CI 时建议固定已验证的安装器版本。"
             }
           ]
         },
@@ -74,7 +74,7 @@
             },
             {
               "context": "本地 · app 项目根目录",
-              "code": "npx --yes @nocobase/app-installer@beta status \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase --json\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
+              "code": "npx --yes @nocobase/app-installer status \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase --json\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
               "language": "bash"
             },
             {
@@ -91,7 +91,7 @@
             },
             {
               "context": "本地 · app 项目根目录",
-              "code": "npx --yes @nocobase/app-installer@beta upgrade \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --json",
+              "code": "npx --yes @nocobase/app-installer upgrade \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --json",
               "language": "bash"
             },
             {

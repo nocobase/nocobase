@@ -83,7 +83,7 @@ pnpm build --target linux-x64 --node-version 24 --tar
 **本地 · app 项目根目录**
 
 ```bash
-npx --yes @nocobase/app-installer@beta install \
+npx --yes @nocobase/app-installer install \
   --ssh deploy@server.example.com \
   --dir /srv/apps/purchase \
   --archive storage/exports/dist.tar.gz \
@@ -94,7 +94,7 @@ npx --yes @nocobase/app-installer@beta install \
   --json
 ```
 
-安装器会上传部署包、生成配置、执行迁移并启动应用。示例使用 @beta；接入 CI 时建议固定已验证的安装器版本。
+安装器会上传部署包、生成配置、执行迁移并启动应用。示例使用最新版安装器；接入 CI 时建议固定已验证的安装器版本。
 
 ### 3. 配置开机启动并检查 {#pm2-verify}
 
@@ -117,7 +117,7 @@ pm2 save
 **本地 · app 项目根目录**
 
 ```bash
-npx --yes @nocobase/app-installer@beta status \
+npx --yes @nocobase/app-installer status \
   --ssh deploy@server.example.com \
   --dir /srv/apps/purchase --json
 
@@ -134,7 +134,7 @@ curl --fail --silent --show-error \
 **本地 · app 项目根目录**
 
 ```bash
-npx --yes @nocobase/app-installer@beta upgrade \
+npx --yes @nocobase/app-installer upgrade \
   --ssh deploy@server.example.com \
   --dir /srv/apps/purchase \
   --archive storage/exports/dist.tar.gz \

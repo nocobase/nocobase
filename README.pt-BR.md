@@ -60,7 +60,7 @@ Siga a Skill nocobase-create-app para criar e iniciar uma aplicação NocoBase 3
 Execute os comandos a seguir no diretório pai onde você mantém seus projetos:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check

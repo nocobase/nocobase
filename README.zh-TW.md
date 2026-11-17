@@ -60,7 +60,7 @@ npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 在用於存放專案的父目錄中執行：
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check

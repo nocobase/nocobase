@@ -60,7 +60,7 @@ nocobase-create-app Skill에 따라 현재 빈 디렉터리에 기본 템플릿�
 프로젝트를 보관하는 상위 디렉터리에서 다음 명령을 실행하세요.
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
