@@ -12,6 +12,7 @@ import { loggingToken } from '@nocobase/app-server/logging';
 import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import type { AppConfigAccessor } from '@nocobase/app-server/config';
 import { normalizeBasePath } from '@nocobase/app-server/support';
+import { resolveArtifactWorkerOptions } from '@nocobase/app-host/artifacts';
 import { AppHostSupervisor } from '@nocobase/app-host/supervisor';
 import { databaseManagerToken } from '@nocobase/db';
 import type { AppDriveConfig } from '@nocobase/drive';
@@ -125,6 +126,7 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
                 activationWaitMs: host.activationWaitMs,
                 memoryBudget: host.memoryBudget,
                 artifactRead: host.artifactRead,
+                artifactWorker: host.artifactWorker,
                 maxActiveApps: host.maxActiveApps,
               }),
             ...(host.publicUrl ? { publicUrl: host.publicUrl } : {}),
@@ -281,6 +283,8 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
       throw new Error(
         'Release management needs a `releases` configuration with `artifact` and `dataDir`.',
       );
+    // Validate before starting either child, including when the in-process Host is disabled.
+    resolveArtifactWorkerOptions(config.host?.artifactWorker);
     return config;
   }
 }
