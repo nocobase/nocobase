@@ -148,6 +148,14 @@ export const DataTypeTransformers = {
       return new Date(value);
     },
   },
+  dateOnly: {
+    date(value: Date) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, '0');
+      const day = String(value.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+  },
 };
 
 export function toDbType(value: any, type: string) {
