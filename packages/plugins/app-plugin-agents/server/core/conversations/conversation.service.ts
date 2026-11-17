@@ -617,6 +617,22 @@ export function createConversationService(
     );
   }
 
+  async function selectableRunners(
+    conn: DatabaseConnection,
+    record: ConversationRecord,
+    prepared: unknown,
+  ) {
+    if (record.mode !== 'runner' || jsonObject(record.metadata).onlineAgent)
+      throw invalid('Only Runner conversations can switch runtimes.');
+    const agent = await pickAgent(conn, record.userId, record.agentId);
+    const directories = await projectWorkspace(conn, refOf(record), prepared);
+    return deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: record.userId,
+      scopes: directories.scopes,
+      workspaceKey: Boolean(record.projectId),
+    });
+  }
+
   async function effortOptions(
     conn: DatabaseConnection,
     agent: Agent,
@@ -2683,9 +2699,63 @@ export function createConversationService(
       return detail(userId, id);
     },
 
-    async switchRunner(userId, id) {
+    async runners(userId, id) {
+      const record = await owned(tx.read(), userId, id);
+      const prepared = record.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
+      return (await selectableRunners(tx.read(), record, prepared)).map(
+        (runner) => runnerOf(runner.id, runner),
+      );
+    },
+
+    async switchRunner(userId, id, runnerId) {
+      // Preparing project access happens outside the write transaction, after checking ownership.
+      const current = await owned(tx.read(), userId, id);
+      const prepared =
+        runnerId && current.projectId
+          ? await workspace?.prepare(userId)
+          : undefined;
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
+        if (runnerId !== undefined) {
+          if (record.archivedAt)
+            throw conflict(
+              'Restore the conversation before changing runtimes.',
+              { reason: 'archived' },
+            );
+          if (
+            deps.runnerBusy?.(id) ||
+            runnerBinding(record.metadata)?.closingRunId ||
+            (await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [id])).length
+          )
+            throw conflict(
+              'Finish the conversation’s pending work before changing runtimes.',
+              { reason: 'busy' },
+            );
+          const candidates = await selectableRunners(
+            unit.conn,
+            record,
+            prepared,
+          );
+          if (!candidates.some((runner) => runner.id === runnerId))
+            throw invalid(
+              'The selected runtime is no longer available for this conversation.',
+              { reason: 'runnerUnavailable' },
+            );
+          if (record.runnerId === runnerId) return;
+          await conversationsRepo(unit.conn).updateMany({
+            filter: { id },
+            // A new thread prevents resuming a stale native session when switching back to an earlier runtime.
+            values: {
+              runnerId,
+              thread: Number(record.thread) + 1,
+              updatedAt: now(),
+            },
+          });
+          changed(unit, record);
+          return;
+        }
         if (!record.runnerId) return;
         await conversationsRepo(unit.conn).updateMany({
           filter: { id },

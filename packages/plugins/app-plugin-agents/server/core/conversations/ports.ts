@@ -20,6 +20,7 @@ import type {
   ChatAgent,
   ConversationAttentionCounts,
   ConversationUsage,
+  ConversationRunner,
   ConversationLink,
   ConversationLinkView,
   ConversationNotice,
@@ -289,9 +290,16 @@ export interface ConversationService {
   markNoticed(conversationId: string, seq: number): Promise<void>;
   /**
    * Unbinds the conversation from its runner: the next run goes to whichever runner takes it first, which binds it,
-   * starting a fresh session with the conversation's history. The old directory is left to the runner's cleanup.
+   * starting a fresh session with the conversation's history. With runnerId, pins an eligible runtime while idle
+   * and advances the tool thread. The old directory is left to the runner's cleanup.
    */
-  switchRunner(userId: string, id: string): Promise<ConversationDetail>;
+  switchRunner(
+    userId: string,
+    id: string,
+    runnerId?: string,
+  ): Promise<ConversationDetail>;
+  /** Online runtimes eligible for the owner's current Runner agent and project. */
+  runners(userId: string, id: string): Promise<ConversationRunner[]>;
   /** Changes the agent of an idle Runner conversation, preserving history and links; its next message starts a fresh session. */
   switchAgent(
     userId: string,

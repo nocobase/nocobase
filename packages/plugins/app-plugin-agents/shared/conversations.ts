@@ -610,6 +610,8 @@ export const CHAT_ROUTES = {
   markRead: 'agents/conversations/:conversationId/markRead',
   markSeen: 'agents/conversations/:conversationId/markSeen',
   switchRunner: 'agents/conversations/:conversationId/switchRunner',
+  runners: 'agents/conversations/:conversationId/runners',
+  selectRunner: 'agents/conversations/:conversationId/selectRunner',
   switchAgent: 'agents/conversations/:conversationId/switchAgent',
   links: 'agents/conversations/:conversationId/links',
   attention: 'agents/conversationAttention',

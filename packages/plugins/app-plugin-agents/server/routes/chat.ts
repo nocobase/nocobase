@@ -1055,6 +1055,74 @@ export function createChatRoutes(
         ),
       }),
   );
+  router.get(
+    '/conversations/:conversationId/runners',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List eligible conversation runtimes',
+      operationId: 'agentsConversationRunners',
+      ...cliRoute(false),
+      description:
+        'Owner only. Online runtimes allowed to run this conversation’s current Agent and project.',
+      responses: {
+        200: dataResponse(
+          z.array(
+            z.object({
+              id: z.string(),
+              name: z.string().nullable(),
+              status: z.enum(['online', 'offline', 'revoked', 'missing']),
+            }),
+          ),
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) =>
+      context.json({
+        data: await conversations.runners(me(context), conversationId(context)),
+      }),
+  );
+  router.post(
+    '/conversations/:conversationId/selectRunner',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Change a conversation’s runtime',
+      operationId: 'agentsSelectConversationRunner',
+      ...cliRoute({
+        command: 'conversation select-runner',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      }),
+      description:
+        'Owner only. Selects an eligible online runtime for an idle conversation. The next message starts a fresh tool session with the history; unpushed files stay on the previous runtime.',
+      responses: {
+        200: dataResponse(ConversationDetailSchema),
+        409: apiErrorResponse(
+          409,
+          'Pending work or an archived conversation prevents selecting a runtime.',
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator(
+      'json',
+      z.strictObject({ runnerId: z.string().trim().min(1).max(64) }),
+    ),
+    async (context) =>
+      context.json({
+        data: await conversations.switchRunner(
+          me(context),
+          conversationId(context),
+          context.req.valid('json').runnerId,
+        ),
+      }),
+  );
   const acts: Record<
     'markRead' | 'stop' | 'switchRunner',
     {
@@ -1067,6 +1135,18 @@ export function createChatRoutes(
       readonly conflict?: string;
     }
   > = {
+    switchRunner: {
+      act: (userId, id) => conversations.switchRunner(userId, id),
+      operationId: 'agentsSwitchConversationRunner',
+      cli: {
+        command: 'conversation switch-runner',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      },
+      summary: 'Unbind a conversation from its runner',
+      description:
+        "Owner only. The next run goes to whichever eligible runner takes it first, which binds the conversation and starts a fresh session with the conversation's history; queued runs wait for it. The old working directory is left to the old runner's cleanup.",
+    },
     markRead: {
       act: (userId, id) => conversations.markRead(userId, id),
       operationId: 'agentsMarkConversationRead',
@@ -1088,18 +1168,6 @@ export function createChatRoutes(
       summary: "Stop a conversation's agent",
       description:
         'Processes a cancellation request. The returned execution may remain running until actual termination and canonical history synchronization; request success does not mean the agent has stopped.',
-    },
-    switchRunner: {
-      act: (userId, id) => conversations.switchRunner(userId, id),
-      operationId: 'agentsSwitchConversationRunner',
-      cli: {
-        command: 'conversation switch-runner',
-        args: ['conversationId'],
-        flags: { conversationId: { name: 'conversation' } },
-      },
-      summary: 'Unbind a conversation from its runner',
-      description:
-        "Owner only. The next run goes to whichever eligible runner takes it first, which binds the conversation and starts a fresh session with the conversation's history; queued runs wait for it. The old working directory is left to the old runner's cleanup.",
     },
   };
   for (const [verb, item] of Object.entries(acts))
