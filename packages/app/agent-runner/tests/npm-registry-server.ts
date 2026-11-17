@@ -50,7 +50,14 @@ export class Registry {
         this.token !== undefined &&
         request.headers.authorization !== `Bearer ${this.token}`
       ) {
-        response.writeHead(this.rejectionStatus).end('{}');
+        response
+          .writeHead(
+            this.rejectionStatus,
+            this.rejectionStatus === 401
+              ? { 'www-authenticate': 'Bearer realm="nocobase-pro-registry"' }
+              : {},
+          )
+          .end('{}');
         return;
       }
       const tgz = /^\/(.+)\/-\/.+\.tgz$/u.exec(url);

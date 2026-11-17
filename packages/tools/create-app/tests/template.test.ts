@@ -255,6 +255,9 @@ describe('downloadTemplate', () => {
         requests.push(request.url ?? '');
         response.writeHead(mode === '401' ? 401 : mode === '403' ? 403 : 404, {
           'content-type': 'application/json',
+          ...(mode === '401'
+            ? { 'www-authenticate': 'Bearer realm="nocobase-pro-registry"' }
+            : {}),
         });
         response.end(JSON.stringify({ error: 'Not found' }));
       });
@@ -294,7 +297,7 @@ describe('downloadTemplate', () => {
                   : registryUrl,
           }),
         ).rejects.toThrow(
-          mode === '401' || mode === '403'
+          mode === '403'
             ? new RegExp(`${mode}.*GET ${registryUrl}`, 'u')
             : source,
         );

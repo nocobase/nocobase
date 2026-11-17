@@ -230,6 +230,19 @@ export function privateRefused(output: string, registry: string): boolean {
   });
 }
 
+/** npm hides the request URL for Bearer challenges, but records it in its own debug log. */
+export function privateRefusedInNpmLog(
+  output: string,
+  registry: string,
+): boolean {
+  return output.split(/[\r\n]+/u).some((line) => {
+    const match = /^\d+ http fetch GET 40[13] (https?:\/\/[^\s"'<>]+)/iu.exec(
+      line,
+    );
+    return match !== null && isPrivate(match[1], registry);
+  });
+}
+
 /** The words a pnpm or npm call reaches a registry with; any other call runs without the launcher. */
 export const REGISTRY_COMMANDS: Readonly<
   Record<'pnpm' | 'npm', readonly string[]>

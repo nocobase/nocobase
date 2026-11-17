@@ -30,9 +30,16 @@ import { execFileSync, spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import {
   existsSync,
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
   mkdirSync,
+  mkdtempSync,
+  openSync,
   readdirSync,
   readFileSync,
+  readSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -52,12 +59,15 @@ import {
   notFoundPackage,
   privateLines,
   privateRefused,
+  privateRefusedInNpmLog,
   type Declaration,
   type MissingPackage,
 } from './npm-registry.ts';
 
 const SOCKET_ENV = 'NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET';
 const NONCE_ENV = 'NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE';
+/** A child launcher reports credential handling to its parent without passing any credential. */
+const HANDLED_ENV = 'NOCOBASE_RUNNER_NPM_HANDLED';
 /** Marks that a repository's installs use the private registry for `@nocobase` (step 3 happened for it). */
 const FALLBACK_MARKER = 'nocobase-scope';
 
@@ -327,6 +337,47 @@ export function askToken(
 interface Outcome {
   readonly code: number;
   readonly tail: string;
+  readonly privateRefusal?: boolean;
+}
+
+/** Reads only this attempt's isolated npm logs, bounded like command output, without publishing their contents. */
+function npmLogRefused(dir: string, registry: string): boolean {
+  let names: string[];
+  try {
+    if (!lstatSync(dir).isDirectory()) return false;
+    names = readdirSync(dir);
+  } catch {
+    return false;
+  }
+  for (const name of names
+    .filter((name) => name.endsWith('-debug-0.log'))
+    .slice(-10)) {
+    let fd: number | undefined;
+    try {
+      if (!lstatSync(path.join(dir, name)).isFile()) continue;
+      fd = openSync(
+        path.join(dir, name),
+        constants.O_RDONLY | constants.O_NOFOLLOW,
+      );
+      const stat = fstatSync(fd);
+      if (!stat.isFile()) continue;
+      const buffer = Buffer.alloc(Math.min(stat.size, TAIL_BYTES));
+      const size = readSync(
+        fd,
+        buffer,
+        0,
+        buffer.length,
+        Math.max(0, stat.size - buffer.length),
+      );
+      if (privateRefusedInNpmLog(buffer.toString('utf8', 0, size), registry))
+        return true;
+    } catch {
+      // Missing, replaced or unreadable logs provide no evidence of a private-registry failure.
+    } finally {
+      if (fd !== undefined) closeSync(fd);
+    }
+  }
+  return false;
 }
 
 /** Runs the command with its output passed through, keeping the end of it. */
@@ -400,6 +451,44 @@ export interface LaunchOptions {
 
 /** Runs the command as the header says; answers its exit code. */
 export async function launch(options: LaunchOptions): Promise<number> {
+  const dir = options.env[NPM_DIR_ENV];
+  if (!dir)
+    return (
+      await runCommand([...options.command, ...options.args], options.env)
+    ).code;
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const commandDir = mkdtempSync(path.join(dir, 'command-'));
+  const handled = path.join(commandDir, 'handled');
+  const parent = options.env[HANDLED_ENV];
+  try {
+    return await launchCommand(
+      { ...options, env: { ...options.env, [HANDLED_ENV]: handled } },
+      commandDir,
+    );
+  } finally {
+    // Propagate only to another launcher-owned directory within this run, never to a path from command output.
+    if (
+      existsSync(handled) &&
+      parent &&
+      path.basename(parent) === 'handled' &&
+      path.dirname(path.dirname(parent)) === path.resolve(dir) &&
+      path.basename(path.dirname(parent)).startsWith('command-')
+    ) {
+      try {
+        if (lstatSync(path.dirname(parent)).isDirectory())
+          writeFileSync(parent, '', { mode: 0o600, flag: 'wx' });
+      } catch {
+        /* The parent may have already ended or received another child's notification. */
+      }
+    }
+    rmSync(commandDir, { recursive: true, force: true });
+  }
+}
+
+async function launchCommand(
+  options: LaunchOptions,
+  commandDir: string,
+): Promise<number> {
   const { tool, env } = options;
   const command = [...options.command, ...options.args];
   const dir = env[NPM_DIR_ENV];
@@ -415,19 +504,35 @@ export async function launch(options: LaunchOptions): Promise<number> {
     scope: boolean,
   ): Promise<Outcome> => {
     const config = writeRunConfig({ tool, dir, registry, token, scope, env });
+    const logs = path.join(
+      commandDir,
+      `logs-${randomBytes(4).toString('hex')}`,
+    );
+    if (tool === 'npm') {
+      mkdirSync(logs, { mode: 0o700 });
+      withoutVariable(config.env, 'npm_config_logs_dir');
+      withoutVariable(config.env, 'npm_config_logs_max');
+      config.env.NPM_CONFIG_LOGS_DIR = logs;
+      config.env.NPM_CONFIG_LOGS_MAX = '10';
+    }
     try {
-      return await runCommand(command, config.env);
+      const outcome = await runCommand(command, config.env);
+      return {
+        ...outcome,
+        privateRefusal:
+          privateRefused(outcome.tail, registry) ||
+          (tool === 'npm' &&
+            outcome.code !== 0 &&
+            /\bE40[13]\b/u.test(outcome.tail) &&
+            npmLogRefused(logs, registry)),
+      };
     } finally {
       for (const file of config.files)
         rmSync(file, { recursive: true, force: true });
     }
   };
   const refused = (outcome: Outcome, token: string | null): Outcome => {
-    if (
-      outcome.code !== 0 &&
-      token !== null &&
-      privateRefused(outcome.tail, registry)
-    )
+    if (outcome.code !== 0 && token !== null && outcome.privateRefusal)
       say(
         'the NocoBase private registry refused the token: ask an administrator to replace the NocoBase private registry token in Settings › License.',
       );
@@ -435,6 +540,7 @@ export async function launch(options: LaunchOptions): Promise<number> {
   };
 
   if (project.private || scoped) {
+    writeFileSync(env[HANDLED_ENV]!, '', { mode: 0o600 });
     const token = await tokenFor(
       env,
       project.private ? 'declared' : 'notFound',
@@ -448,12 +554,13 @@ export async function launch(options: LaunchOptions): Promise<number> {
   }
 
   const first = await attempt(null, false);
-  if (first.code === 0) return first.code;
-  const unauthorized = privateRefused(first.tail, registry);
+  if (first.code === 0 || existsSync(env[HANDLED_ENV]!)) return first.code;
+  const unauthorized = first.privateRefusal;
   const missing = project.nocobaseElsewhere
     ? null
     : notFoundPackage(first.tail, registry);
   if (!unauthorized && missing === null) return first.code;
+  writeFileSync(env[HANDLED_ENV]!, '', { mode: 0o600 });
   const token = await tokenFor(
     env,
     unauthorized ? 'unauthorized' : 'notFound',

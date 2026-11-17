@@ -10,6 +10,7 @@ import {
   notFoundPackage,
   privateLines,
   privateRefused,
+  privateRefusedInNpmLog,
 } from '../src/agent/npm-registry.ts';
 import { NpmTokenSource } from '../src/agent/npm-credentials.ts';
 import { packageManagerScript } from '../src/agent/runner-tools.ts';
@@ -289,6 +290,36 @@ describe('the private npm registry rules', () => {
     expect(
       privateRefused(
         'E401 GET https://other.example/x https://pkg-v3.nocobase.com/x',
+        PRIVATE,
+      ),
+    ).toBe(false);
+  });
+
+  it('accepts only private failed HTTP requests from npm debug records', () => {
+    expect(
+      privateRefusedInNpmLog(
+        '13 http fetch GET 401 https://pkg-v3.nocobase.com/@nocobase%2fx 30ms (cache skip)',
+        PRIVATE,
+      ),
+    ).toBe(true);
+    for (const url of [
+      'https://pkg-v3.nocobase.com.evil.example/x',
+      'https://other.example/?registry=https://pkg-v3.nocobase.com/',
+      'https://pkg-v3.nocobase.com@other.example/x',
+    ]) {
+      expect(
+        privateRefusedInNpmLog(`13 http fetch GET 401 ${url}`, PRIVATE),
+      ).toBe(false);
+    }
+    expect(
+      privateRefusedInNpmLog(
+        '13 verbose title 401 https://pkg-v3.nocobase.com/x',
+        PRIVATE,
+      ),
+    ).toBe(false);
+    expect(
+      privateRefusedInNpmLog(
+        '13 http fetch GET 200 https://pkg-v3.nocobase.com/x',
         PRIVATE,
       ),
     ).toBe(false);
