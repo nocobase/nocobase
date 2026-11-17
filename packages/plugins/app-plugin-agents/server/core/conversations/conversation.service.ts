@@ -1753,6 +1753,11 @@ export function createConversationService(
       );
     if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
       throw invalid('Agent selection requires a Runner realtime message.');
+    if (
+      request.runnerId !== undefined &&
+      (!realtime || !request.runnerId.trim())
+    )
+      throw invalid('Runtime selection requires a Runner realtime message.');
     const content = request.content;
     const attachmentIds = readAttachmentIds(request.attachmentIds);
     if (
@@ -1768,7 +1773,11 @@ export function createConversationService(
       throw invalid('This application takes no files in chat.', {
         field: 'attachmentIds',
       });
-    await owned(tx.read(), userId, id);
+    const before = await owned(tx.read(), userId, id);
+    const preparedRunnerWorkspace =
+      request.runnerId && before.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
     // Resolved before the transaction: resolvers read through the services of the plugins that own the kinds.
     const context = request.context
       ? await deps.contextKinds.resolve(tx.read(), userId, request.context)
@@ -1808,6 +1817,16 @@ export function createConversationService(
           );
         const targetId = request.agentId ?? record.agentId;
         const switching = targetId !== record.agentId;
+        if (
+          request.runnerId !== undefined &&
+          (switching ||
+            realtime.queue ||
+            record.archivedAt ||
+            record.mode !== 'runner')
+        )
+          throw conflict(
+            'Select a runtime in an idle, unarchived Runner conversation without changing agents.',
+          );
         if ((realtime.config.agentId ?? 'online') !== targetId)
           throw conflict('Start a new conversation to choose another agent.');
         if (
@@ -1887,6 +1906,33 @@ export function createConversationService(
             true,
           );
           binding = runnerBinding(record.metadata)!;
+        }
+        if (request.runnerId !== undefined) {
+          const candidates = await selectableRunners(
+            unit.conn,
+            record,
+            preparedRunnerWorkspace,
+          );
+          if (!candidates.some((runner) => runner.id === request.runnerId))
+            throw invalid(
+              'The selected runtime is no longer available for this conversation.',
+              {
+                reason: 'runnerUnavailable',
+              },
+            );
+          if (request.runnerId !== record.runnerId) {
+            // A fresh thread avoids resuming stale tool state when returning to a previous machine.
+            const values = {
+              runnerId: request.runnerId,
+              thread: Number(record.thread) + 1,
+              updatedAt: now(),
+            };
+            await conversationsRepo(unit.conn).updateMany({
+              filter: { id },
+              values,
+            });
+            record = { ...record, ...values };
+          }
         }
         if (!isDeepStrictEqual(binding.config, realtime.config))
           await conversationsRepo(unit.conn).updateMany({
@@ -2709,53 +2755,9 @@ export function createConversationService(
       );
     },
 
-    async switchRunner(userId, id, runnerId) {
-      // Preparing project access happens outside the write transaction, after checking ownership.
-      const current = await owned(tx.read(), userId, id);
-      const prepared =
-        runnerId && current.projectId
-          ? await workspace?.prepare(userId)
-          : undefined;
+    async switchRunner(userId, id) {
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
-        if (runnerId !== undefined) {
-          if (record.archivedAt)
-            throw conflict(
-              'Restore the conversation before changing runtimes.',
-              { reason: 'archived' },
-            );
-          if (
-            deps.runnerBusy?.(id) ||
-            runnerBinding(record.metadata)?.closingRunId ||
-            (await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [id])).length
-          )
-            throw conflict(
-              'Finish the conversation’s pending work before changing runtimes.',
-              { reason: 'busy' },
-            );
-          const candidates = await selectableRunners(
-            unit.conn,
-            record,
-            prepared,
-          );
-          if (!candidates.some((runner) => runner.id === runnerId))
-            throw invalid(
-              'The selected runtime is no longer available for this conversation.',
-              { reason: 'runnerUnavailable' },
-            );
-          if (record.runnerId === runnerId) return;
-          await conversationsRepo(unit.conn).updateMany({
-            filter: { id },
-            // A new thread prevents resuming a stale native session when switching back to an earlier runtime.
-            values: {
-              runnerId,
-              thread: Number(record.thread) + 1,
-              updatedAt: now(),
-            },
-          });
-          changed(unit, record);
-          return;
-        }
         if (!record.runnerId) return;
         await conversationsRepo(unit.conn).updateMany({
           filter: { id },

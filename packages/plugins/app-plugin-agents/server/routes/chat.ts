@@ -205,6 +205,15 @@ const NativeSendSchema = z.strictObject({
   selectedModel: SelectedModel.optional(),
 });
 const SendSchema = NativeSendSchema.extend({
+  runnerId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe(
+      'Select an eligible runtime when sending an idle Runner message. Binding and message are committed together; unpushed files remain on the previous runtime.',
+    ),
   effort: z
     .string()
     .min(1)
@@ -771,6 +780,10 @@ export function createChatRoutes(
       );
       const parts: Exclude<UserModelMessage['content'], string> =
         request.message.parts;
+      if (request.runnerId && agent.backend !== 'runner')
+        throw invalid(
+          'Only Runner conversations can select a runtime when sending.',
+        );
       if (request.agentId && agent.backend !== 'runner')
         throw invalid(
           'Only Runner conversations can select an agent when sending.',
@@ -782,6 +795,7 @@ export function createChatRoutes(
         );
       await agent.send([{ role: 'user', content: parts }], {
         agentId: request.agentId,
+        runnerId: request.runnerId,
         effort: request.effort,
         attachmentIds: [[...(request.attachmentIds ?? [])]],
         clientId: request.message.id,
@@ -1083,44 +1097,6 @@ export function createChatRoutes(
     async (context) =>
       context.json({
         data: await conversations.runners(me(context), conversationId(context)),
-      }),
-  );
-  router.post(
-    '/conversations/:conversationId/selectRunner',
-    guard,
-    describeRoute({
-      tags,
-      summary: 'Change a conversation’s runtime',
-      operationId: 'agentsSelectConversationRunner',
-      ...cliRoute({
-        command: 'conversation select-runner',
-        args: ['conversationId'],
-        flags: { conversationId: { name: 'conversation' } },
-      }),
-      description:
-        'Owner only. Selects an eligible online runtime for an idle conversation. The next message starts a fresh tool session with the history; unpushed files stay on the previous runtime.',
-      responses: {
-        200: dataResponse(ConversationDetailSchema),
-        409: apiErrorResponse(
-          409,
-          'Pending work or an archived conversation prevents selecting a runtime.',
-        ),
-        404: noConversation,
-        ...apiErrorResponses,
-      },
-    }),
-    conversationParam,
-    apiValidator(
-      'json',
-      z.strictObject({ runnerId: z.string().trim().min(1).max(64) }),
-    ),
-    async (context) =>
-      context.json({
-        data: await conversations.switchRunner(
-          me(context),
-          conversationId(context),
-          context.req.valid('json').runnerId,
-        ),
       }),
   );
   const acts: Record<

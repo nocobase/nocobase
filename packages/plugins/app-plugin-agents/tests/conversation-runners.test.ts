@@ -240,132 +240,11 @@ describe('conversations bound to a runner', () => {
     });
     expect(detail.run).toMatchObject({ status: 'queued' });
   });
-  it('selects a named runtime and starts fresh even when returning to an earlier runtime', async () => {
+
+  async function nativeFixture() {
     h = await createHarness();
-    const agentId = await h.createAgent();
     const one = await h.registerRunner({ name: 'rise-vm1' });
     const two = await h.registerRunner({ name: 'dev-2' });
-    const id = (await domain().create(ALICE, { agentId })).id;
-    const first = await domain().send(ALICE, id, { content: 'Remember 42' });
-    await claim(h, one);
-    await answer(one, first.run!.id, 'Noted 42');
-    const path = `/agents/conversations/${id}/selectRunner`;
-    const changed = await h.request('POST', path, {
-      user: ALICE,
-      body: { runnerId: two.runnerId },
-    });
-    expect(changed.status).toBe(200);
-    expect(changed.body.data.runner.id).toBe(two.runnerId);
-    expect(changed.body.data.run).toBeNull();
-    const second = await domain().send(ALICE, id, {
-      content: 'Remember 99 too',
-    });
-    expect(await claim(h, one)).toEqual([]);
-    const [onTwo] = await claim(h, two);
-    expect(onTwo.prompt.session).toBe('fresh');
-    expect(onTwo.prompt.system).toContain('Noted 42');
-    await answer(two, second.run!.id, 'Noted 99', 'session-two');
-    await domain().switchRunner(ALICE, id, one.runnerId);
-    await domain().send(ALICE, id, { content: 'What did we remember?' });
-    const [back] = await claim(h, one);
-    expect(back.prompt.session).toBe('fresh');
-    expect(back.prompt.system).toContain('Noted 99');
-  });
-
-  it('lists only eligible online runtimes and rejects stale, private and incompatible selections', async () => {
-    h = await createHarness();
-    const agentId = await h.createAgent();
-    const available = await h.registerRunner({ name: 'available' });
-    const privateRunner = await h.registerRunner({
-      name: 'private',
-      trust: 'ownerOnly',
-      ownerUserId: 'bob',
-    });
-    const incompatible = await h.registerRunner({
-      name: 'disabled-tool',
-      enabledTools: [],
-    });
-    const id = (await domain().create(ALICE, { agentId })).id;
-    const path = `/agents/conversations/${id}`;
-    expect((await h.request('GET', `${path}/runners`)).status).toBe(401);
-    expect(
-      (await h.request('GET', `${path}/runners`, { user: 'bob' })).status,
-    ).toBe(404);
-    const listed = await h.request('GET', `${path}/runners`, { user: ALICE });
-    expect(listed.status).toBe(200);
-    expect(listed.body.data.map((runner: { id: string }) => runner.id)).toEqual(
-      [available.runnerId],
-    );
-    expect(
-      (
-        await h.request('POST', `${path}/selectRunner`, {
-          body: { runnerId: available.runnerId },
-        })
-      ).status,
-    ).toBe(401);
-    expect(
-      (
-        await h.request('POST', `${path}/selectRunner`, {
-          user: 'bob',
-          body: { runnerId: available.runnerId },
-        })
-      ).status,
-    ).toBe(404);
-    await setRunner(available.runnerId, { status: 'offline' });
-    for (const runnerId of [
-      privateRunner.runnerId,
-      incompatible.runnerId,
-      available.runnerId,
-      'missing',
-    ]) {
-      const result = await h.request('POST', `${path}/selectRunner`, {
-        user: ALICE,
-        body: { runnerId },
-      });
-      expect(result.status).toBe(400);
-      expect((await domain().get(ALICE, id)).runner).toBeNull();
-    }
-    expect(
-      (
-        await h.request('POST', `${path}/selectRunner`, {
-          user: ALICE,
-          body: { runnerId: '' },
-        })
-      ).status,
-    ).toBe(400);
-  });
-
-  it('rejects targeted switching during queued or running work and for archived conversations', async () => {
-    h = await createHarness();
-    const agentId = await h.createAgent();
-    const one = await h.registerRunner();
-    const two = await h.registerRunner();
-    const id = (await domain().create(ALICE, { agentId })).id;
-    const sent = await domain().send(ALICE, id, { content: 'Work' });
-    await expect(
-      domain().switchRunner(ALICE, id, two.runnerId),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    await claim(h, one);
-    await expect(
-      domain().switchRunner(ALICE, id, two.runnerId),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    await answer(one, sent.run!.id, 'Done');
-    await h.database
-      .connection()
-      .repository('agConversations')
-      .updateMany({
-        filter: { id },
-        values: { archivedAt: h.clock.now().toISOString() },
-      });
-    await expect(
-      domain().switchRunner(ALICE, id, two.runnerId),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    expect((await domain().get(ALICE, id)).runner?.id).toBe(one.runnerId);
-  });
-  it('hands off a native Runner conversation after its stream settles and protects finalization', async () => {
-    h = await createHarness();
-    const one = await h.registerRunner();
-    const two = await h.registerRunner();
     const agentId = await h.createAgent({ source: 'runner' });
     const context: OnlineAgentContext = {
       user: { id: ALICE },
@@ -375,37 +254,143 @@ describe('conversations bound to a runner', () => {
       } as AuthorizationContext,
     };
     const agent = await h.services.onlineAgent.realtime(context, { agentId });
-    await agent.send([{ role: 'user', content: 'Remember native history' }]);
+    const drain = async () => {
+      const reader = (await agent.receive())?.getReader();
+      if (reader) while (!(await reader.read()).done);
+    };
+    await agent.send([{ role: 'user', content: 'Remember 42' }]);
     const [first] = await claim(h, one);
-    await answer(one, first.run.id, 'Saved native history');
-    const stream = await agent.receive();
-    if (stream) {
-      const reader = stream.getReader();
-      while (!(await reader.read()).done);
-    }
-    expect(await agent.status()).toBe('idle');
+    await answer(one, first.run.id, 'Noted 42');
+    await drain();
     const id = agent.sessionId;
-    await domain().switchRunner(ALICE, id, two.runnerId);
-    // Use the already-created native facade, as an open browser stream does.
-    await agent.send([
-      { role: 'user', content: 'Continue on the new runtime' },
-    ]);
+    const repo = h.database.connection().repository('agConversations');
+    const record = () => repo.findOne({ filter: { id } });
+    return { one, two, agent, id, drain, repo, record };
+  }
+
+  it('switches only with an accepted message and starts fresh when returning to a previous runtime', async () => {
+    const { one, two, agent, id, drain } = await nativeFixture();
+    // Reading choices is side-effect free; selection is part of the next message.
+    expect(
+      (await domain().runners(ALICE, id)).map((runner) => runner.id),
+    ).toContain(two.runnerId);
+    expect((await domain().get(ALICE, id)).runner?.id).toBe(one.runnerId);
+    await agent.send([{ role: 'user', content: 'Remember 99 too' }], {
+      runnerId: two.runnerId,
+    });
+    expect((await domain().get(ALICE, id)).runner?.id).toBe(two.runnerId);
     expect(await claim(h, one)).toEqual([]);
     const [next] = await claim(h, two);
     expect(next.prompt.session).toBe('fresh');
-    expect(next.prompt.system).toContain('Saved native history');
-    await answer(two, next.run.id, 'Continued');
-    const secondStream = await agent.receive();
-    if (secondStream) {
-      const reader = secondStream.getReader();
-      while (!(await reader.read()).done);
+    expect(next.prompt.system).toContain('Noted 42');
+    await answer(two, next.run.id, 'Noted 99', 'session-two');
+    await drain();
+    await agent.send([{ role: 'user', content: 'What do you remember?' }], {
+      runnerId: one.runnerId,
+    });
+    const [back] = await claim(h, one);
+    expect(back.prompt.session).toBe('fresh');
+    expect(back.prompt.system).toContain('Noted 99');
+  });
+
+  it('lists only eligible online runtimes and refuses stale, private and incompatible choices at send', async () => {
+    const { one, two, agent, id, record } = await nativeFixture();
+    const privateRunner = await h.registerRunner({
+      name: 'private',
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+    });
+    const incompatible = await h.registerRunner({
+      name: 'disabled-tool',
+      enabledTools: [],
+    });
+    const path = `/agents/conversations/${id}/runners`;
+    expect((await h.request('GET', path)).status).toBe(401);
+    expect((await h.request('GET', path, { user: 'bob' })).status).toBe(404);
+    const listed = await h.request('GET', path, { user: ALICE });
+    expect(listed.status).toBe(200);
+    expect(
+      listed.body.data.map((runner: { id: string }) => runner.id).sort(),
+    ).toEqual([one.runnerId, two.runnerId].sort());
+    await setRunner(two.runnerId, { status: 'offline' });
+    const sendPath = `/agents/conversations/${id}/messages`;
+    const body = {
+      runnerId: two.runnerId,
+      message: {
+        id: 'runtime-selection',
+        role: 'user',
+        parts: [{ type: 'text', text: 'Switch' }],
+      },
+    };
+    expect((await h.request('POST', sendPath, { body })).status).toBe(401);
+    expect(
+      (await h.request('POST', sendPath, { user: 'bob', body })).status,
+    ).toBe(404);
+    expect(
+      (await h.request('POST', sendPath, { user: ALICE, body })).status,
+    ).toBe(400);
+    const before = await record();
+    for (const runnerId of [
+      two.runnerId,
+      privateRunner.runnerId,
+      incompatible.runnerId,
+      'missing',
+    ]) {
+      await expect(
+        agent.send([{ role: 'user', content: 'Not admitted' }], { runnerId }),
+      ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+      const after = await record();
+      expect(after).toMatchObject({
+        runnerId: before!.runnerId,
+        thread: before!.thread,
+        lastSeq: before!.lastSeq,
+      });
     }
-    const repo = h.database.connection().repository('agConversations');
-    const record = await repo.findOne({ filter: { id } });
-    const metadata = record!.metadata as Record<string, unknown>;
+  });
+
+  it('rolls back the runtime and thread if attachment admission fails', async () => {
+    const { two, agent, record } = await nativeFixture();
+    const before = await record();
+    await expect(
+      agent.send([{ role: 'user', content: 'Invalid upload' }], {
+        runnerId: two.runnerId,
+        attachmentIds: [['not-my-upload']],
+      }),
+    ).rejects.toBeDefined();
+    expect(await record()).toMatchObject({
+      runnerId: before!.runnerId,
+      thread: before!.thread,
+      lastSeq: before!.lastSeq,
+    });
+  });
+
+  it('rejects runtime changes while queued, running, finalizing or archived', async () => {
+    const { one, two, agent, id, drain, repo, record } = await nativeFixture();
+    const send = () =>
+      agent.send([{ role: 'user', content: 'Switch' }], {
+        runnerId: two.runnerId,
+      });
+    await agent.send([{ role: 'user', content: 'Work' }]);
+    await expect(send()).rejects.toBeDefined();
+    const [work] = await claim(h, one);
+    await expect(
+      agent.queue([{ role: 'user', content: 'Switch while busy' }], {
+        runnerId: two.runnerId,
+      }),
+    ).rejects.toBeDefined();
+    await expect(send()).rejects.toBeDefined();
+    await answer(one, work.run.id, 'Done');
+    await drain();
+    await repo.updateMany({
+      filter: { id },
+      values: { archivedAt: h.clock.now().toISOString() },
+    });
+    await expect(send()).rejects.toMatchObject({ code: 'CONFLICT' });
+    const metadata = (await record())!.metadata as Record<string, unknown>;
     await repo.updateMany({
       filter: { id },
       values: {
+        archivedAt: null,
         metadata: {
           ...metadata,
           runnerOnlineAgent: {
@@ -415,8 +400,18 @@ describe('conversations bound to a runner', () => {
         },
       },
     });
-    await expect(
-      domain().switchRunner(ALICE, id, one.runnerId),
-    ).rejects.toMatchObject({ code: 'CONFLICT', details: { reason: 'busy' } });
+    await expect(send()).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect((await domain().get(ALICE, id)).runner?.id).toBe(one.runnerId);
+  });
+
+  it('keeps the native session when sending with the current runtime', async () => {
+    const { one, agent, record } = await nativeFixture();
+    const before = await record();
+    await agent.send([{ role: 'user', content: 'Stay here' }], {
+      runnerId: one.runnerId,
+    });
+    expect((await record())!.thread).toBe(before!.thread);
+    const [next] = await claim(h, one);
+    expect(next.prompt.session).toBe('resume');
   });
 });

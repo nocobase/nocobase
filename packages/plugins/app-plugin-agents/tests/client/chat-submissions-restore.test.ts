@@ -20,6 +20,7 @@ const refused = {
   clientId: 'kept-1',
   createdAt: '2026-11-06T00:00:00.000Z',
   agentId: 'other-agent',
+  runnerId: 'chosen-runtime',
   content: 'Hello',
   context: undefined,
   attachments: [
@@ -85,11 +86,19 @@ it('sends a restored message again with its agent once it is put back', async ()
   }));
   const submissions = queue({ sendMessage } as never);
   submissions.restore(refused);
-  const { agentId, content, context, attachments, conversationId, editorKey } =
-    submissions.editRejected('kept-1')!;
+  const {
+    agentId,
+    runnerId,
+    content,
+    context,
+    attachments,
+    conversationId,
+    editorKey,
+  } = submissions.editRejected('kept-1')!;
   expect(
     submissions.submit({
       agentId,
+      runnerId,
       content,
       context,
       attachments,
@@ -105,8 +114,30 @@ it('sends a restored message again with its agent once it is put back', async ()
     'c',
     expect.objectContaining({
       agentId: 'other-agent',
+      runnerId: 'chosen-runtime',
       content: 'Hello',
       attachmentIds: ['f1'],
     }),
   );
+});
+
+it('captures the pending runtime with the submission and sends it unchanged', async () => {
+  const sendMessage = vi.fn(() => new Promise<never>(() => {}));
+  const submissions = queue({ sendMessage });
+  submissions.submit({
+    content: 'Next turn',
+    context: undefined,
+    attachments: [],
+    conversationId: 'c',
+    editorKey: 'panel:c',
+    create: {},
+    runnerId: 'target',
+  });
+  await vi.waitFor(() =>
+    expect(sendMessage).toHaveBeenCalledWith(
+      'c',
+      expect.objectContaining({ runnerId: 'target', content: 'Next turn' }),
+    ),
+  );
+  expect(submissions.snapshot()[0].runnerId).toBe('target');
 });
