@@ -291,7 +291,15 @@ function renderApplication(
   } = {},
 ): void {
   const clientRoutes = [
-    createRoute('home', '/', 'required', HomePage, 'application'),
+    createRoute(
+      'home',
+      '/',
+      'required',
+      HomePage,
+      'application',
+      undefined,
+      true,
+    ),
     ...routes,
   ];
   const authClient = createTestAuthClient(authenticated);

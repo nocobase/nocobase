@@ -302,9 +302,8 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
-    // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
-    // no permission change can leave a user signed in with nowhere to land.
-    authz: 'skip',
+    // The landing page is a business-facing entry and must be grantable in Page access.
+    authz: { resource: { type: 'page', id: 'home' }, action: 'access' },
     auth: 'required',
     componentLoader: () => import('./pages/home.js'),
     name: 'home',

@@ -13,11 +13,8 @@ import {
 } from '@nocobase/app-plugin-foundation/capability-guide';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
-import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
-import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
-import settingsRoutes from '../../client/pages/settings/routes.js';
 import {
   routeKey,
   buildRouteNavigation,
@@ -51,12 +48,7 @@ describe('default Foundation integration', () => {
   });
 
   it('keeps Foundation beside business settings without changing its protected URL', async () => {
-    const runtime = await resolveAppRuntime(
-      defineAppRuntime({
-        ...appRuntime,
-        routes: () => [...createApplicationRoutes(), settingsRoutes],
-      }),
-    );
+    const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());
     expect(menu.some(({ route }) => route.name === 'foundationSettings')).toBe(
       false,

@@ -280,6 +280,36 @@ describe('application shell', () => {
       screen.queryByRole('button', { name: 'Theme' }),
     ).not.toBeInTheDocument();
   });
+
+  it('lands on an accessible page when Home is denied', async () => {
+    const orders = createRoute(
+      'orders',
+      '/orders',
+      'required',
+      () => <h2>Orders page</h2>,
+      'application',
+      'Orders',
+      true,
+    );
+    renderApplication('/', true, [orders], {
+      authorization: {
+        can: vi.fn(async (requirement) =>
+          typeof requirement === 'object' &&
+          requirement.resource.type === 'page'
+            ? requirement.resource.id !== 'home'
+            : true,
+        ),
+      },
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Orders page' }),
+    ).toBeVisible();
+    expect(within(sidebar()).queryByRole('link', { name: 'Home' })).toBeNull();
+    expect(await findSidebarLink('Orders')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
 });
 
 function renderApplication(
@@ -291,7 +321,15 @@ function renderApplication(
   } = {},
 ): void {
   const clientRoutes = [
-    createRoute('home', '/', 'required', HomePage, 'application'),
+    createRoute(
+      'home',
+      '/',
+      'required',
+      HomePage,
+      'application',
+      undefined,
+      true,
+    ),
     ...routes,
   ];
   const authClient = createTestAuthClient(authenticated);

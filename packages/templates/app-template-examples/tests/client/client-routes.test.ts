@@ -273,8 +273,7 @@ describe('app client routes', () => {
       { name: 'skill-projects-detail-edit', authorizedAs: 'skill-projects' },
       { name: 'skill-projects-edit', authorizedAs: 'skill-projects' },
       { name: 'knowledge', authorizedAs: 'knowledge' },
-      // The landing page opted out of page authorization, so it is reachable by every signed-in user.
-      { name: 'home', authorizedAs: null },
+      { name: 'home', authorizedAs: 'home' },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.

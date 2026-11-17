@@ -1,7 +1,7 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
 import { useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { Outlet, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation } from 'react-router';
 
 import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
@@ -24,6 +24,8 @@ import { HeaderActions } from './components/header-actions.js';
 import { AppSidebarFooter } from './components/sidebar-footer.js';
 import {
   useRouteNavigation,
+  firstAccessiblePage,
+  routeKey,
   selectedNavigationId,
 } from '../routing/route-navigation.js';
 
@@ -46,11 +48,15 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
   const { t } = useTranslation();
   const { items: menuItems, denied, loading } = useRouteNavigation(routes);
   const access = useMemo(() => ({ denied, loading }), [denied, loading]);
-  const selectedKey = selectedNavigationId(
-    routes,
-    useLocation().pathname,
-    denied,
+  const location = useLocation();
+  const home = routes.find(
+    (route) => route.path === '/' && route.componentLoader,
   );
+  const landing =
+    !loading && location.pathname === '/' && home && denied.has(routeKey(home))
+      ? firstAccessiblePage(menuItems)
+      : undefined;
+  const selectedKey = selectedNavigationId(routes, location.pathname, denied);
   const navigationLabel = t('navigation.label', {
     defaultValue: 'Application navigation',
   });
@@ -85,7 +91,7 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
             moved by the page's scrolling nor stretched by its height. */}
                 <div className='h-full overflow-y-auto'>
                   <RouteLeaveBoundary hidden={loading}>
-                    <Outlet />
+                    {landing ? <Navigate to={landing} replace /> : <Outlet />}
                   </RouteLeaveBoundary>
                 </div>
               </main>
