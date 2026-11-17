@@ -35,6 +35,11 @@ import {
   type ArtifactReadOptions,
 } from './artifact-read.js';
 
+import {
+  resolveArtifactWorkerOptions,
+  type ArtifactWorkerConfig,
+} from './artifact-worker-options.js';
+
 export interface AppHostConfig {
   mode: AppHostMode;
   server: {
@@ -53,6 +58,7 @@ export interface AppHostConfig {
   maxActiveApps?: number;
   memoryBudget?: AppMemoryBudget;
   artifactRead?: ArtifactReadOptions;
+  artifactWorker?: ArtifactWorkerConfig;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   /** How long a page request to a stopped App waits for it before answering with a starting page. */
@@ -230,6 +236,9 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     maxActiveApps: optionalPositiveInteger(hostConfig, 'maxActiveApps'),
     artifactRead: resolveArtifactReadOptions(
       hostConfig.cut('artifactRead').raw(),
+    ),
+    artifactWorker: resolveArtifactWorkerOptions(
+      hostConfig.get('artifactWorker') as ArtifactWorkerConfig | undefined,
     ),
     ...(hostConfig.has('memoryBudget')
       ? {

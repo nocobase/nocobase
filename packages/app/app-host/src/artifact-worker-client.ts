@@ -1,7 +1,7 @@
 import { fork } from 'node:child_process';
 import { deploymentSignal } from './deployment-control.js';
 
-const WORKER_TIMEOUT_MS = 120_000;
+import { resolveArtifactWorkerOptions } from './artifact-worker-options.js';
 const KILL_GRACE_MS = 1_000;
 
 export interface ArtifactWorkerOptions {
@@ -87,11 +87,12 @@ export function artifactWorker(
   options: ArtifactWorkerOptions = {},
 ): Promise<string> {
   const signal = options.signal ?? deploymentSignal();
-  const timeoutMs = options.timeoutMs ?? WORKER_TIMEOUT_MS;
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0)
-    return Promise.reject(
-      new Error('Artifact worker timeout must be a positive integer'),
-    );
+  let timeoutMs: number;
+  try {
+    ({ timeoutMs } = resolveArtifactWorkerOptions(options));
+  } catch (error) {
+    return Promise.reject(error as Error);
+  }
   let started = false;
   return new Promise((resolve, reject) => {
     // Queued cancellation returns immediately; the queue entry later skips the fork.

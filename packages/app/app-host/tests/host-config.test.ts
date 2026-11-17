@@ -26,6 +26,40 @@ afterEach(async () => {
 });
 
 describe('loadAppHostConfig', () => {
+  it.each([undefined, 600_000, 1, 2_147_483_647])(
+    'loads the artifact worker deadline: %s',
+    async (timeoutMs) => {
+      const rootDir = await createTempDirectory();
+      await writeFile(
+        path.join(rootDir, 'config.json'),
+        JSON.stringify({
+          host: { artifactWorker: { timeoutMs } },
+        }),
+      );
+      expect(
+        (await loadAppHostConfig({ rootDir, environment: {} })).artifactWorker,
+      ).toEqual({ timeoutMs: timeoutMs ?? 120_000 });
+    },
+  );
+
+  it.each([0, -1, 1.5, '600000', 2_147_483_648, null])(
+    'rejects an invalid artifact worker deadline at configuration load: %s',
+    async (timeoutMs) => {
+      const rootDir = await createTempDirectory();
+      await writeFile(
+        path.join(rootDir, 'config.json'),
+        JSON.stringify({
+          host: { artifactWorker: { timeoutMs } },
+        }),
+      );
+      await expect(
+        loadAppHostConfig({ rootDir, environment: {} }),
+      ).rejects.toThrow(
+        'host.artifactWorker.timeoutMs: expected an integer from 1 to 2147483647',
+      );
+    },
+  );
+
   it('defaults artifact read deadlines and preserves individual overrides', async () => {
     const rootDir = await createTempDirectory();
     expect(
