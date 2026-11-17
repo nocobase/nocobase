@@ -1,3 +1,4 @@
+import { pruneRunnerLogs } from '../lib/journal.ts';
 import { Flags, type Interfaces } from '@oclif/core';
 
 import { gcRunTemps } from '../core/run-temp.ts';
@@ -112,6 +113,7 @@ export default class Gc extends RunnerCommand {
     const apply = flags.apply === true;
     const force = flags.force === true;
     const settings = await readSettings(this.paths);
+    if (apply) await pruneRunnerLogs(this.paths, settings);
     const threshold = minFreeDisk(settings);
     const entries = await scanWorkspaces(this.paths);
     const before = await readDisk(this.paths.workRoot);

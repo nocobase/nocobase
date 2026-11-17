@@ -26,8 +26,13 @@ import {
 } from './supervisor.ts';
 import { RunWorker } from '../agent/worker.ts';
 
+import { workerJournal } from '../lib/journal.ts';
+const journal = workerJournal(
+  runnerPaths(),
+  process.env.NOCOBASE_RUNNER_LOG_ID ?? 'unknown',
+);
 function log(message: string): void {
-  process.stdout.write(`${new Date().toISOString()} ${message}\n`);
+  journal.log(message);
 }
 
 async function readStdin(): Promise<string> {
@@ -76,6 +81,7 @@ async function runJob(
 
 async function main(): Promise<number> {
   const job = JSON.parse(await readStdin()) as WorkerJob;
+  const settings = await readSettings(runnerPaths());
   if (job.kind === 'job') return runJob(job);
   const payload = RunPayloadSchema.parse(job.payload);
   const paths = runnerPaths();
@@ -96,7 +102,6 @@ async function main(): Promise<number> {
     phase: 'spawned',
     log: '',
   };
-  const settings = await readSettings(paths);
   const seenGroups = new Set<number>();
   const observeGroups = async () => {
     for (const group of groupsBelow(process.pid, await listProcesses()))
@@ -188,6 +193,7 @@ async function exit(code: number): Promise<never> {
   );
   if (left.processes > 0)
     log(`worker: stopped ${left.processes} process(es) the run left behind`);
+  journal?.flush();
   process.exit(code);
 }
 

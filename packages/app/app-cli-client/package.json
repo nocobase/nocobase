@@ -70,7 +70,9 @@
     "@nocobase/agent-protocol": "workspace:*",
     "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/logging": "workspace:^",
+    "tar": "catalog:"
   },
   "devDependencies": {
     "@hono/node-server": "catalog:",

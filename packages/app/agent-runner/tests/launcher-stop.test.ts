@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { expect, it } from 'vitest';
 
@@ -12,6 +12,7 @@ import {
   cli,
   cliEnv,
   registerRunner,
+  readDaemonLog,
   removeDir,
   tempDir,
   workRootOf,
@@ -33,8 +34,7 @@ it('stops a launcher during backoff and refuses duplicate foreground, background
     const closed = new Promise<number | null>((resolve) =>
       launcher!.on('close', resolve),
     );
-    const log = () =>
-      existsSync(paths.daemonLog) ? readFileSync(paths.daemonLog, 'utf8') : '';
+    const log = () => readDaemonLog(paths.logsDir);
     await waitFor(() => log().includes('retrying in 10 seconds'));
     const owner = await readLauncherPid(paths);
     expect(owner?.pid).toBe(launcher.pid);
@@ -61,7 +61,11 @@ it('stops a launcher during backoff and refuses duplicate foreground, background
     expect(log()).not.toContain('retrying in 20 seconds');
     expect(log()).not.toContain('starting for');
     // Releasing ownership permits an explicit later start, without stale launcher records.
-    expect((await cli(['start'], env)).code).toBe(0);
+    const restarted = await cli(['start'], env);
+    expect(restarted.code).toBe(0);
+    expect(restarted.stdout.trim().endsWith(`Logs: ${paths.logsDir}`)).toBe(
+      true,
+    );
     expect((await cli(['stop'], env)).code).toBe(0);
   } finally {
     await cli(['stop', '--timeout', '0'], env);
@@ -96,9 +100,9 @@ it('forces a stopped daemon through its launcher, then remains stopped beyond th
     expect(await readLauncherPid(paths)).toBeUndefined();
     expect(await readDaemonPid(paths)).toBeUndefined();
     expect(existsSync(paths.daemonPid)).toBe(false);
-    const afterStop = readFileSync(paths.daemonLog, 'utf8');
+    const afterStop = readDaemonLog(paths.logsDir);
     await sleep(10_100);
-    expect(readFileSync(paths.daemonLog, 'utf8')).toBe(afterStop);
+    expect(readDaemonLog(paths.logsDir)).toBe(afterStop);
     expect(afterStop).toContain('Runner ended with signal SIGKILL');
     expect(afterStop.split('starting for')).toHaveLength(2);
     expect(afterStop).not.toContain('retrying in');

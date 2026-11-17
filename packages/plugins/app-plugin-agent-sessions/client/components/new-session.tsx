@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
  * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
@@ -565,6 +566,7 @@ function NewSessionContent({
                 setSessionId(createUuid());
                 toaster.show({
                   type: 'error',
+                  ...errorToastOptions(error),
                   title:
                     error instanceof ApiClientError && error.status < 500
                       ? errorText(error, t('errors.generic'))

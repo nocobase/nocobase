@@ -81,6 +81,7 @@ export const clientMocks = {
     return {
       createUuid: actual.createUuid,
       copyText: actual.copyText,
+      errorToastOptions: actual.errorToastOptions,
       NavigationGuardProvider: actual.NavigationGuardProvider,
       useNavigationGuard: actual.useNavigationGuard,
       UnsavedChangesContext: actual.UnsavedChangesContext,

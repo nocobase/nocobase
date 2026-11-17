@@ -301,7 +301,8 @@
     "yaml": "catalog:",
     "zod": "catalog:",
     "@nocobase/acp-bridge": "workspace:^",
-    "@nocobase/app-cli-distribution": "workspace:^"
+    "@nocobase/app-cli-distribution": "workspace:^",
+    "@nocobase/logging": "workspace:^"
   },
   "peerDependencies": {
     "@ai-sdk/react": "catalog:",

@@ -1,4 +1,10 @@
-import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdirSync,
+  writeFileSync,
+  symlinkSync,
+  existsSync,
+} from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -81,6 +87,26 @@ describe('claiming and pruning the shared store', () => {
       }),
     );
   };
+
+  it('日志清理失败只记录错误，仍回收过期工作目录', async () => {
+    const runner = await daemon(async () => true);
+    const paths = runnerPaths(home, `${home}-work`);
+    mkdirSync(paths.logsDir, { recursive: true });
+    const outside = path.join(home, 'other-logs');
+    mkdirSync(outside);
+    writeFileSync(path.join(outside, 'untouched.log'), 'keep');
+    symlinkSync(outside, path.join(paths.logsDir, 'runs'));
+    abandoned();
+    const log = vi.spyOn(runner['options'], 'log');
+    await runner.collectGarbage();
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('gc: log cleanup failed:'),
+    );
+    expect(existsSync(path.join(paths.workRoot, 'app', 'abandoned-task'))).toBe(
+      false,
+    );
+    expect(existsSync(path.join(outside, 'untouched.log'))).toBe(true);
+  });
 
   /** Holds a real server response after it has assigned any leases, before the daemon receives it. */
   const holdClaim = (runner: RunnerDaemon) => {

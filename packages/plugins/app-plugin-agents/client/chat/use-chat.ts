@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 /**
  * The chat's data: the agents the viewer may chat with, a conversation and its messages kept current (the per-user
  * realtime topic says what changed, then the page fetches `messages?after=<lastSeq>`; while a run is open it also
@@ -622,6 +623,7 @@ export function useConversationActions(): ConversationActions {
     if (!lifetime?.active()) return;
     void toaster.show({
       type: 'error',
+      ...errorToastOptions(error),
       title: errorText(t, error, t('common.requestFailed')),
     });
   };

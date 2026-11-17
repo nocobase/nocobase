@@ -40,8 +40,7 @@
   },
   "dependencies": {
     "pino": "catalog:",
-    "pino-pretty": "catalog:",
-    "pino-roll": "catalog:"
+    "pino-pretty": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

@@ -425,3 +425,7 @@ The templates' copied `FeedbackForm` component supplies native field discovery, 
 ## Pending feedback
 
 `usePendingFeedback(busy, identity?)` is presentation only. It returns `{ visible, longWaiting }`: visible after 300ms and longWaiting after 10 seconds of actual continuous busy state. Completion clears both immediately. A changed stable identity (compared with `Object.is`) resets the display age; unmount clears timers. No minimum waiting period is imposed. Set locks, request state and `aria-busy` from the real lifecycle, never from this delayed result. Ten seconds is guidance rather than a timeout. The request owner remains responsible for permission boundaries, cancellation and stale responses. The UI Library Loading and PendingButton recipes and both templates provide the default visual adapters.
+
+## Correlating error notifications
+
+When reporting an API failure, pass `...errorToastOptions(error)` from `@nocobase/app-client` into `toaster.show({ type: 'error', title, ...errorToastOptions(error) })`. The helper preserves `ApiClientError.requestId` for the host toaster to display and copy; ordinary local errors have no request ID. Keep the error's translated title and any existing action unchanged.
