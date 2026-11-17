@@ -2,6 +2,20 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 New Features
+
+- **[Agents]**
+  - Export sanitized runtime logs and merge local timelines, with live collection progress and server-configured export date ranges. ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - Choose the runtime for the next message in an idle Runner conversation while keeping its history. ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 Improvements
+
+- **[Interface]** View workflow versions through a menu styled consistently with category tags, and reuse the version selector from the UI Library. ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[App host]** Allow operators to configure preview archive checksum and extraction timeouts. ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** The upgrade Skill now upgrades to the `latest` release by default, so applications created from a beta keep receiving updates after the stable release. ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
 ## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
 
 ### 🚀 Improvements
