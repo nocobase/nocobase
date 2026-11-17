@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.15
+
+### Patch Changes
+
+- a2474ed: Refer to the NocoBase 3 source branch as `v3`, its new name, in Skills references, the Agents documentation and the Distributed Skill.
+- f8174b2: Wait for in-flight conversation lists before reconciling detail snapshots, avoiding duplicate reads when detail arrives first.
+- Updated dependencies [8647bb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
 ## 2.0.0-beta.14
 
 ### Minor Changes
