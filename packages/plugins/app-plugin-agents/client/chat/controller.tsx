@@ -116,13 +116,33 @@ export class ChatController {
     }
   }
   /** Reuse a detail snapshot when replacing its row cannot change membership, order or a page cursor. */
-  private syncLists(detail: ConversationDetail): void {
-    const client = agentsQueryClient();
-    for (const query of client
+  private syncLists(
+    detail: ConversationDetail,
+    lists = agentsQueryClient()
       .getQueryCache()
-      .findAll({ queryKey: chatKeys.lists })) {
+      .findAll({ queryKey: chatKeys.lists }),
+  ): void {
+    const client = agentsQueryClient();
+    for (const query of lists) {
       const filter = query.queryKey[3] as ConversationListQuery | undefined;
       if (filter?.archived === true) continue;
+      if (query.state.fetchStatus !== 'idle') {
+        const active = this.lifetime();
+        // A detail observation is not a new event: compare the completed list before deciding to reread it.
+        void query.promise?.then(
+          () => {
+            if (
+              active() &&
+              client.getQueryCache().get(query.queryHash) === query
+            )
+              this.syncLists(detail, [query]);
+          },
+          () => {
+            // The query owns its error and retry policy.
+          },
+        );
+        continue;
+      }
       const data = query.state.data as
         { pages: ConversationPage[] } | undefined;
       const pageIndex =
@@ -149,7 +169,6 @@ export class ChatController {
       if (
         !row ||
         !sameOrder ||
-        query.state.fetchStatus !== 'idle' ||
         row.archivedAt !== detail.archivedAt ||
         row.showInChatList !== detail.showInChatList ||
         filter?.q ||
