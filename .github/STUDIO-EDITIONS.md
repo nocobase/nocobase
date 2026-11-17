@@ -31,7 +31,6 @@ Protocol references: [OCI distribution](https://github.com/opencontainers/distri
 
 Studio includes the private Kingbase driver from `https://pkg-v3.nocobase.com/`. Configure `PRO_NPM_TOKEN` with read access in both `nocobase/nocobase` and `2013xile/nocobase-ci`; secrets are not shared between repositories. The release and internal image workflows write a temporary user npmrc and pass `NPM_CONFIG_USERCONFIG` through the isolated edition build, then remove it even on failure. Dry runs also need package read access, but need no Docker publishing credential. The final prebuilt image requires no npm token. Studio preview, distribution and quality CI installations need the same read access in their respective CI repositories.
 
-
 ## Community image
 
 The formal release matrix includes `studio-ce`, `studio` and `studio-ee` on amd64 and arm64. CE is displayed as NocoBase Studio CE and has no License, Requester or Quality plugin. The source's shared composition table controls preparation and artifact validation; the release workflow does not remove files from an existing artifact. Both paid images keep License, including the private npm token service. License Key types remain professional/enterprise.

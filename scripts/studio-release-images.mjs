@@ -238,8 +238,11 @@ export async function publishImages(registry, plan, platforms) {
       mediaType: indexType,
       manifests,
       annotations: {
-        'org.opencontainers.image.description':
-          { studio: 'NocoBase Studio', 'studio-ee': 'NocoBase Studio EE', 'studio-ce': 'NocoBase Studio CE' }[image.edition],
+        'org.opencontainers.image.description': {
+          studio: 'NocoBase Studio',
+          'studio-ee': 'NocoBase Studio EE',
+          'studio-ce': 'NocoBase Studio CE',
+        }[image.edition],
         'org.opencontainers.image.revision': plan.commit,
         'org.opencontainers.image.version': plan.version,
         'com.nocobase.studio.edition': image.edition,
@@ -306,7 +309,9 @@ if (
     );
     output('image_plan', JSON.stringify(plan));
     for (const image of plan.images) {
-      const prefix = { studio: '', 'studio-ee': 'ee_', 'studio-ce': 'ce_' }[image.edition];
+      const prefix = { studio: '', 'studio-ee': 'ee_', 'studio-ce': 'ce_' }[
+        image.edition
+      ];
       appendFileSync(
         process.env.GITHUB_OUTPUT,
         `${prefix}tags<<EOF\n${image.tags.join('\n')}\nEOF\n`,
@@ -331,6 +336,13 @@ if (
       platforms,
     );
     for (const { edition, digest } of result)
-      output({ studio: 'digest', 'studio-ee': 'ee_digest', 'studio-ce': 'ce_digest' }[edition], digest);
+      output(
+        {
+          studio: 'digest',
+          'studio-ee': 'ee_digest',
+          'studio-ce': 'ce_digest',
+        }[edition],
+        digest,
+      );
   } else throw new Error('Use prepare or publish.');
 }

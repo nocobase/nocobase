@@ -358,7 +358,6 @@ test('registry PUT sends the exact index bytes and verifies the published digest
   );
 });
 
-
 test('an existing CE version prevents every image publication', async () => {
   const f = fixture();
   f.tags.set(`nocobase/studio-ce:${version}`, digest('existing CE'));
