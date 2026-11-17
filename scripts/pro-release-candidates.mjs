@@ -1,17 +1,18 @@
-// Find the joint beta release candidates in nocobase/nocobase3-pro and decide which are still in flight.
+// Find the joint release candidates in nocobase/nocobase3-pro and decide which are still in flight.
 //
-// Usage, from a Pro checkout whose `origin` can read (check) or write (prune) the Pro repository:
+// Usage, from a Pro checkout whose `origin` can read (check) or write (prune) the Pro repository, with PRO_BRANCH naming
+// the Pro branch releases merge back into (the release workflows set it):
 //   node pro-release-candidates.mjs check
 //   node pro-release-candidates.mjs prune --keep release-candidate/<YYYY-MM-DD.N>
 //   node pro-release-candidates.mjs prune --keep release-candidate/<YYYY-MM-DD.N> --superseded
 //
-// v3-release-beta.yml pushes the tested Pro tree to release-candidate/<OSS batch> before the open-source packages are published, and its pro-release job publishes that commit, tags it release-beta/<batch>, merges it into Pro develop, and only then deletes the branch. A candidate is therefore in flight until both have happened: a release-beta/* tag points at its commit, and Pro develop contains it. Until then, its run may still publish Pro, so:
+// v3-release.yml pushes the tested Pro tree to release-candidate/<OSS batch> before the open-source packages are published, and its pro-release job publishes that commit, tags it with its release tag (release-beta/<batch> for a beta, release/<batch> for a stable release), merges it into Pro develop, and only then deletes the branch. A candidate is therefore in flight until both have happened: a release tag points at its commit, and Pro develop contains it. Until then, its run may still publish Pro, so:
 //
-// - `check` is the first step of the standalone Pro beta and promotion workflows. It fails when a candidate is in flight, because a Pro release of its own would publish the same versions or take the same release-beta/* name.
+// - `check` is the first step of the standalone Pro release (v3-pro-release.yml). It fails when a candidate is in flight, because a Pro release of its own would publish the same versions or take the same release name.
 // - `prune` runs in pro-candidate just before it pushes a new candidate, and deletes the candidates that are no longer in flight, other than the one named by --keep.
-// - `prune --superseded` runs in pro-release once this run's Pro beta is published. It also deletes every other candidate no release-beta/* tag points at: such a candidate is left by a run that failed before publishing, typically in its open-source jobs, and can no longer be resumed, because its pro-release refuses to publish once a Pro beta its develop did not contain was released, which this one just was. A candidate a release-beta/* tag points at was published and still waits for its merge back, so it is kept.
+// - `prune --superseded` runs in pro-release once this run's Pro release is published. It also deletes every other candidate no release tag points at: such a candidate is left by a run that failed before publishing, typically in its open-source jobs, and can no longer be resumed, because its pro-release refuses to publish once a Pro release its develop did not contain was made, which this one just was. A candidate a release tag points at was published and still waits for its merge back, so it is kept.
 //
-// pro-candidate records the URL of the V3 Release Beta run that pushed a candidate in its commit message (`OSS-Run: <url>`), so `check` can link each blocking candidate to its run.
+// pro-candidate records the URL of the V3 Release run that pushed a candidate in its commit message (`OSS-Run: <url>`), so `check` can link each blocking candidate to its run.
 //
 // A candidate older than 30 days is stale either way: GitHub re-runs a workflow run only within 30 days of it, so its run can no longer publish anything. `check` ignores it with a warning and `prune` deletes it. Only branches named release-candidate/<YYYY-MM-DD.N> are considered; anything else under release-candidate/ is left alone.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -20,6 +21,15 @@ import process from 'node:process';
 const candidatePattern =
   /^refs\/heads\/(release-candidate\/\d{4}-\d{2}-\d{2}\.\d+)$/u;
 export const staleAfterSeconds = 30 * 24 * 3600;
+// The release tags of both channels.
+export const releaseTagPatterns = ['release-beta/*', 'release/*'];
+
+// The Pro branch releases merge back into, which the workflows name once in PRO_BRANCH.
+function proBranch() {
+  const branch = process.env.PRO_BRANCH;
+  if (!branch) throw new Error('PRO_BRANCH must name the Pro branch.');
+  return branch;
+}
 
 function git(cwd, ...args) {
   return execFileSync('git', args, {
@@ -33,6 +43,7 @@ function git(cwd, ...args) {
 export function listCandidates({
   cwd = process.cwd(),
   now = Date.now() / 1000,
+  branch: base = proBranch(),
 } = {}) {
   git(
     cwd,
@@ -40,8 +51,10 @@ export function listCandidates({
     '--quiet',
     '--force',
     'origin',
-    '+refs/tags/release-beta/*:refs/tags/release-beta/*',
-    '+refs/heads/develop:refs/remotes/origin/develop',
+    ...releaseTagPatterns.map(
+      (pattern) => `+refs/tags/${pattern}:refs/tags/${pattern}`,
+    ),
+    `+refs/heads/${base}:refs/remotes/origin/${base}`,
   );
   const heads = git(
     cwd,
@@ -66,13 +79,20 @@ export function listCandidates({
       'origin',
       `+${ref}:refs/pro-candidates/${branch}`,
     );
-    const tags = git(cwd, 'tag', '--points-at', sha, '-l', 'release-beta/*')
+    const tags = git(
+      cwd,
+      'tag',
+      '--points-at',
+      sha,
+      '-l',
+      ...releaseTagPatterns,
+    )
       .split('\n')
       .filter(Boolean);
     const merged =
       spawnSync(
         'git',
-        ['merge-base', '--is-ancestor', sha, 'refs/remotes/origin/develop'],
+        ['merge-base', '--is-ancestor', sha, `refs/remotes/origin/${base}`],
         { cwd },
       ).status === 0;
     const committed = Number(git(cwd, 'log', '-1', '--format=%ct', sha));
@@ -105,7 +125,7 @@ function describe({ branch, sha, tags, committed, run }) {
       : 'not published yet';
   const origin = run
     ? `created by ${run}`
-    : 'created by a V3 Release Beta run it does not record';
+    : 'created by a V3 Release run it does not record';
   return `${branch} (${sha.slice(0, 12)}, created ${created}, ${origin}): ${state}`;
 }
 
@@ -115,20 +135,20 @@ export function checkNoCandidateInFlight(options) {
     ({ released, stale }) => !released && stale,
   )) {
     console.log(
-      `::warning::Ignoring ${describe(candidate)}. It is older than 30 days, so its V3 Release Beta run can no longer be re-run; delete the branch once you have confirmed it.`,
+      `::warning::Ignoring ${describe(candidate)}. It is older than 30 days, so its V3 Release run can no longer be re-run; delete the branch once you have confirmed it.`,
     );
   }
   const inFlight = candidates.filter(
     ({ released, stale }) => !released && !stale,
   );
   if (inFlight.length === 0) {
-    console.log('No joint beta release is in flight.');
+    console.log('No joint release is in flight.');
     return;
   }
   const lines = [
-    'A joint NocoBase 3 beta release (V3 Release Beta) is still in flight in nocobase/nocobase3-pro, so this Pro release would publish the same versions or take the same release-beta name:',
+    'A joint NocoBase 3 release (V3 Release) is still in flight in nocobase/nocobase3-pro, so this Pro release would publish the same versions or take the same release name:',
     ...inFlight.map((candidate) => `  ${describe(candidate)}`),
-    'Finish that release first: open its V3 Release Beta run, linked above, and use "Re-run failed jobs"; it publishes the candidate, merges it into Pro develop, and deletes the branch. If that run is truly abandoned, delete its branch in nocobase/nocobase3-pro and start this workflow again:',
+    'Finish that release first: open its V3 Release run, linked above, and use "Re-run failed jobs"; it publishes the candidate, merges it into Pro develop, and deletes the branch. If that run is truly abandoned, delete its branch in nocobase/nocobase3-pro and start this workflow again:',
     ...inFlight.map(
       ({ branch }) =>
         `  git push https://github.com/nocobase/nocobase3-pro.git --delete ${branch}`,
@@ -161,7 +181,7 @@ export function pruneCandidates({ keep, superseded = false, ...options }) {
       ? 'published and merged into Pro develop'
       : stale
         ? 'its run can no longer be re-run'
-        : `never published, and superseded by the Pro beta this run released (${describe(candidate)})`;
+        : `never published, and superseded by the Pro release this run made (${describe(candidate)})`;
     console.log(`Deleted ${branch}: ${reason}.`);
   }
 }

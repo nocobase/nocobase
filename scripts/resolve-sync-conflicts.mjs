@@ -1,5 +1,5 @@
-// Resolve stable -> development sync conflicts: OSS v3-main -> v3,
-// or main -> develop in the independent Pro repository.
+// Resolve the conflicts of merging Pro develop into a Pro release branch, which pro-release in v3-release.yml does
+// before the release branch is merged back (it runs this file from the vendor/nocobase3 submodule).
 //
 // 只处理规则确定的两类：
 //   package.json  版本号取较大者，其余字段走 git 正常三方合并
