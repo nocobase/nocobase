@@ -191,7 +191,17 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     );
   }
   const host = required(hostConfig.string('server.host'), 'host.server.host');
-  const port = positiveInteger(hostConfig, 'server.port');
+  const port = hostConfig.integer('server.port');
+  if (
+    port === undefined ||
+    !Number.isInteger(port) ||
+    port < (mode === 'managed' ? 0 : 1) ||
+    port > 65535
+  ) {
+    throw new Error(
+      `Invalid app-host config: host.server.port must be an integer from ${mode === 'managed' ? 0 : 1} through 65535`,
+    );
+  }
   const revisions = hostConfig.string('appRevisionsDir');
   const appRevisionsDir = resolveConfigDirectory(
     revisions ?? 'storage/apps/revisions',

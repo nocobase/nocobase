@@ -60,6 +60,28 @@ describe('loadAppHostConfig', () => {
     },
   );
 
+  it('accepts an OS-assigned listener in managed mode', async () => {
+    const rootDir = await createTempDirectory();
+    const config = await loadAppHostConfig({
+      rootDir,
+      environment: { APP_HOST_MODE: 'managed', APP_HOST_PORT: '0' },
+    });
+    expect(config.server.port).toBe(0);
+  });
+
+  it.each(['-1', '65536', '1.5'])(
+    'rejects an invalid listener port %s',
+    async (port) => {
+      const rootDir = await createTempDirectory();
+      await expect(
+        loadAppHostConfig({
+          rootDir,
+          environment: { APP_HOST_MODE: 'managed', APP_HOST_PORT: port },
+        }),
+      ).rejects.toThrow();
+    },
+  );
+
   it('defaults artifact read deadlines and preserves individual overrides', async () => {
     const rootDir = await createTempDirectory();
     expect(

@@ -100,6 +100,10 @@ APP_HOST_MODE=managed app-host
 
 The mode is fixed for the lifetime of the host process. A managed host never
 falls back to standalone discovery when its Hub connection is unavailable.
+A managed supervisor uses an OS-assigned TCP port when `port` is omitted or `0`. The child binds once and reports the actual port over its launch-session IPC channel before readiness checks begin; the supervisor never probes and releases a prospective port. An explicit positive port is strict: a bind conflict fails startup with `EADDRINUSE`, even if an unrelated server on that port answers health checks. Read the current endpoint from `getInfo().targetUrl` and the actual ready listener from `getInfo().port` after each start or restart. Wildcard bind addresses resolve to loopback connection targets. Standalone supervisors keep their existing default-port selection.
+
+`getReadyManagementClient()` observes the ready child's IPC client without starting it, returning `null` when unavailable. Resolve it for each operation instead of retaining a client across child restarts. Runtime endpoints and clients may change; persistent revisions, volumes, control data and application-owned node identities do not.
+
 The spawning supervisor automatically restarts an unexpectedly exited managed
 host with bounded exponential backoff and replays its latest accepted deployment set.
 The current runtime capability is `in-process`; Worker and Process backends can
