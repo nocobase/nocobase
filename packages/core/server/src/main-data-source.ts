@@ -8,8 +8,15 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { CollectionOptions, DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
+import {
+  CollectionOptions,
+  DataSourceOptions,
+  FieldOptions,
+  SequelizeDataSource,
+  tableInfo,
+} from '@nocobase/data-source-manager';
 import { Collection, Model } from '@nocobase/database';
+import { QueryTypes } from 'sequelize';
 
 type MainDataSourceStatus = 'loaded' | 'loading';
 
@@ -46,40 +53,17 @@ export class MainDataSource extends SequelizeDataSource {
     return diffTables.map((name) => ({ name }));
   }
 
-  private async tables2Collections(
-    tableNames: (
-      | string
-      | {
-          tableName: string;
-          schema?: string;
-        }
-    )[],
-  ): Promise<CollectionOptions[]> {
-    const db = this.collectionManager.db;
-    const results = await Promise.all(
-      tableNames.map(async (tableName) => {
-        let tableInfo: { tableName: string; schema?: string };
-        if (typeof tableName === 'string') {
-          tableInfo = { tableName };
-          if (db.options.schema) {
-            tableInfo.schema = db.options.schema;
-          }
-        } else {
-          tableInfo = tableName;
-        }
-
-        try {
-          return await this.introspector.getCollection({ tableInfo });
-        } catch (e) {
-          if (e.message.includes('No description found for')) {
-            return null;
-          }
-
-          throw e;
-        }
-      }),
-    );
-    return results.filter(Boolean);
+  private async readTable(table: string | tableInfo): Promise<CollectionOptions | null> {
+    const info =
+      typeof table === 'string' ? { tableName: table, schema: this.collectionManager.db.options.schema } : table;
+    try {
+      return await this.introspector.getCollection({ tableInfo: info });
+    } catch (e) {
+      if (e.message.includes('No description found for')) {
+        return null;
+      }
+      throw e;
+    }
   }
 
   async loadTables(ctx: Context, tables: string[]) {
@@ -92,7 +76,7 @@ export class MainDataSource extends SequelizeDataSource {
     if (toAddTables.length) {
       try {
         this.status = 'loading';
-        const results = await this.tables2Collections(toAddTables);
+        const results = (await Promise.all(toAddTables.map((table) => this.readTable(table)))).filter(Boolean);
         const values = results.map((result) => ({
           ...result,
           from: 'dbsync',
@@ -107,66 +91,77 @@ export class MainDataSource extends SequelizeDataSource {
     }
   }
 
-  private async getLoadedCollections(filter?: any) {
+  private async getLoadedCollections(names?: string[]) {
     const db = this.collectionManager.db;
     const loadedCollections = await db.getRepository('collections').find({
       appends: ['fields'],
       filter: {
         hidden: false,
-        ...filter,
+        ...(names?.length ? { name: names } : {}),
       },
     });
-    const collections = loadedCollections.filter(
-      (collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from),
-    );
-    const loadedData = {};
-    for (const collection of collections) {
-      const c = db.getCollection(collection.name);
-      // Use the physical table/view name so view collections whose logical name
-      // differs from `viewName` can still be matched during introspection sync.
-      loadedData[c.model.tableName] = {
-        ...collection.toJSON(),
-        fields: collection.fields.map((field: Model) => {
-          const f = c.getField(field.name);
-          return {
-            columnName: f?.columnName(),
-            ...field.toJSON(),
-          };
-        }),
-      };
-    }
-    return loadedData;
+    return loadedCollections.filter((collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from));
   }
 
-  async syncFieldsFromDatabase(ctx: any, collectionNames?: string[]) {
-    let filter = {};
-    if (collectionNames?.length) {
-      filter = {
-        name: collectionNames,
-      };
-    }
+  private async getPureInheritedColumns(collection: Collection) {
+    const rows = await collection.db.sequelize.query<{ attname: string }>(
+      `SELECT a.attname FROM pg_catalog.pg_attribute a
+       JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = :schema AND c.relname = :table AND a.attnum > 0 AND NOT a.attisdropped
+         AND a.attinhcount > 0 AND NOT a.attislocal`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { schema: collection.collectionSchema(), table: collection.model.tableName },
+      },
+    );
+    return new Set(rows.map(({ attname }) => attname));
+  }
+
+  async syncFieldsFromDatabase(ctx: Context, collectionNames?: string[]) {
     const db = this.collectionManager.db;
-    const loadedCollections = await this.getLoadedCollections(filter);
-    const tableNames = Object.values(loadedCollections).map(({ name }) => {
-      const collection = db.getCollection(name);
-      return collection.getTableNameWithSchema();
-    });
-    let collections = [];
-    try {
-      collections = await this.tables2Collections(tableNames);
-    } catch (err) {
-      ctx.log.error(err);
-    }
-    const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
+    const loadedCollections = await this.getLoadedCollections(collectionNames);
     const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
 
-    for (const values of toLoadCollections) {
+    // Keep the logical collection paired with its physical table, including when schemas reuse a table name.
+    const sources = await Promise.all(
+      loadedCollections.map(async (loaded: Model) => {
+        const collection = db.getCollection(loaded.name);
+        const incoming = await this.readTable(collection.getTableNameWithSchema());
+        const inherited =
+          incoming && db.inDialect('postgres') && collection.isInherited()
+            ? await this.getPureInheritedColumns(collection)
+            : new Set<string>();
+        return { loaded, collection, incoming, inherited };
+      }),
+    );
+
+    for (const { loaded, collection, incoming, inherited } of sources) {
+      if (!incoming) continue;
+      const configuredFields: FieldOptions[] = [];
+      const inheritedOverrides: FieldOptions[] = [];
+      for (const field of loaded.fields as Model[]) {
+        const options = field.toJSON<FieldOptions>();
+        const columnName = collection.getField(options.name)?.columnName();
+        if (inherited.has(columnName || options.field || options.name)) {
+          inheritedOverrides.push(options);
+        } else {
+          configuredFields.push({ columnName, ...options });
+        }
+      }
+
+      // Only child-owned columns participate in the diff. An existing override of an inherited column
+      // has no independently defined storage; keep the user's configuration verbatim.
+      incoming.fields = incoming.fields.filter((field) => !inherited.has(field.field || field.name));
+      const [values] = this.mergeWithLoadedCollections([incoming], {
+        [incoming.name]: { ...loaded.toJSON(), name: collection.name, fields: configuredFields },
+      });
+      values.fields.push(...inheritedOverrides);
       if (values.schema === currentSchema) {
         delete values.schema;
       }
 
-      const existsFields = loadedCollections[values.tableName].fields;
-      const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
+      const deletedFields = configuredFields.filter((field) => !values.fields.some((f) => f.name === field.name));
 
       await db.sequelize.transaction(async (transaction) => {
         for (const field of deletedFields) {
