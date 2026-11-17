@@ -91,7 +91,9 @@ export function artifactWorker(
   try {
     ({ timeoutMs } = resolveArtifactWorkerOptions(options));
   } catch (error) {
-    return Promise.reject(error as Error);
+    return Promise.reject(
+      error instanceof Error ? error : new Error(String(error)),
+    );
   }
   let started = false;
   return new Promise((resolve, reject) => {
