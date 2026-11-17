@@ -1152,6 +1152,7 @@ export class ChatController {
       {
         body: {
           ...(input.agentId ? { agentId: input.agentId } : {}),
+          ...(input.runnerId ? { runnerId: input.runnerId } : {}),
           ...(input.effort !== undefined ? { effort: input.effort } : {}),
           ...(input.context ? { context: input.context } : {}),
           ...(input.attachmentIds?.length
