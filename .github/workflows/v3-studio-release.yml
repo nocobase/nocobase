@@ -381,9 +381,24 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      - name: Configure private npm read access
+        env:
+          PRO_NPM_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: |
+          if [ -z "$PRO_NPM_TOKEN" ]; then
+            echo "::error::PRO_NPM_TOKEN must grant read access to pkg-v3.nocobase.com."
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' \
+            '@nocobase:registry=https://pkg-v3.nocobase.com/' \
+            "//pkg-v3.nocobase.com/:_authToken=$PRO_NPM_TOKEN" \
+            > "$RUNNER_TEMP/studio-npmrc"
+
       # The isolated edition build installs the frozen graph and verifies the final artifact.
       - name: Build edition dist
         env:
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/studio-npmrc
           TMPDIR: ${{ runner.temp }}
           EDITION: ${{ matrix.edition }}
           TARGET: ${{ matrix.target }}
@@ -391,6 +406,10 @@ jobs:
         run: |
           pnpm build:image --edition "$EDITION" --target "$TARGET" \
             --source-ref "$COMMIT" --out "$RUNNER_TEMP/studio-image"
+
+      - name: Remove private npm credentials
+        if: ${{ always() }}
+        run: rm -f "$RUNNER_TEMP/studio-npmrc"
 
       - name: Sign in to the registry
         if: ${{ !inputs.dry_run }}
