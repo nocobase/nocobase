@@ -8,6 +8,7 @@ import {
   createMigrator,
   loadMigrations,
   type ChecksumMismatch,
+  type MigrationWarning,
   type CreateMigratorOptions,
   type DatabaseManager,
   type MigrationRepairOptions,
@@ -79,7 +80,7 @@ export interface AppMigrationRunResult {
   batch?: number;
   executed?: string[];
   skipped?: string[];
-  warnings?: ChecksumMismatch[];
+  warnings?: MigrationWarning[];
 }
 
 export interface AppMigrationRollbackResult {
@@ -89,7 +90,7 @@ export interface AppMigrationRollbackResult {
   rolledBack?: string[];
   /** The batch's history records, in the order they roll back. */
   records?: MigrationHistoryRecord[];
-  warnings?: ChecksumMismatch[];
+  warnings?: MigrationWarning[];
   dryRun?: boolean;
 }
 
@@ -220,6 +221,7 @@ function createDatabaseMigratorOptions(
     lockTableName: options.config.lockTableName,
     extensions: options.config.extensions,
     onChecksumMismatch: options.config.onChecksumMismatch,
+    onMissingSource: options.config.onMissingSource,
     onStaleLock: options.onStaleLock,
     taskFilter: options.taskFilter,
   };

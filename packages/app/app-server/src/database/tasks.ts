@@ -18,6 +18,7 @@ import {
 import {
   resolveDatabaseDriver,
   type ChecksumMismatch,
+  type MigrationWarning,
   type DatabaseDriverRegistration,
   type DatabaseManager,
   type MigrationHistoryRecord,
@@ -75,7 +76,7 @@ export interface AppDatabaseTaskResult {
   released?: boolean;
   lockReason?: 'not-held' | 'active';
   /** Checksum drift tolerated by the `warn` policy during a run. */
-  warnings?: ChecksumMismatch[];
+  warnings?: MigrationWarning[];
   /** Records a repair rewrote, or that a dry run would rewrite. */
   repaired?: ChecksumMismatch[];
   /** Migrations or seeds a run would execute, as a dry run reports them. */

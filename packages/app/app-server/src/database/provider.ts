@@ -107,7 +107,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       container: this.app.container,
       paths: this.app.paths,
     });
-    this.reportChecksumWarnings(result);
+    this.reportTaskWarnings(result);
     this.prepareSampleData(config, plan, result, database);
     await this.refreshCollections(config, result, database);
   }
@@ -193,13 +193,25 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
    * Automatic startup tasks have no console to report to, so drift tolerated by
    * the `warn` policy is only visible if it reaches the application log.
    */
-  private reportChecksumWarnings(result: AppDatabaseTasksResult): void {
+  private reportTaskWarnings(result: AppDatabaseTasksResult): void {
     const { container } = this.app;
     if (!container.has(loggingToken)) return;
     let logger: Logger | undefined;
     for (const entry of result.results) {
       for (const warning of entry.warnings ?? []) {
         logger ??= container.resolve(loggingToken).getLogger('database');
+        if ('kind' in warning) {
+          logger.warn(
+            {
+              connection: entry.connection,
+              kind: entry.kind,
+              package: warning.packageName,
+              name: warning.name,
+            },
+            `Executed migration "${warning.name}" is missing from migration sources. Package: "${warning.packageName}". History is retained.`,
+          );
+          continue;
+        }
         logger.warn(
           {
             connection: entry.connection,
