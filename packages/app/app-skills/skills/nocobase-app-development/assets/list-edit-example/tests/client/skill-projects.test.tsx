@@ -13,6 +13,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -889,12 +890,21 @@ it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
   'asks before leaving through %s after a failed save with an unknown outcome, and discarding leaves',
   async (way) => {
     let writes = 0;
-    let back!: () => void;
+    let back: (() => void) | undefined;
     function HistoryBack() {
       const navigate = useNavigate();
-      back = () => void navigate(-1);
+      useEffect(() => {
+        back = () => void navigate(-1);
+        return () => {
+          back = undefined;
+        };
+      }, [navigate]);
       return null;
     }
+    const navigateBack = () => {
+      if (!back) throw new Error('History back is not mounted');
+      act(() => back());
+    };
     await render(
       <>
         <Routes>{projectRoutes}</Routes>
@@ -929,7 +939,7 @@ it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
     expect(writes).toBe(1);
     const leave = async () => {
       if (way === 'Escape') await userEvent.keyboard('{Escape}');
-      else if (way === 'back') act(() => back());
+      else if (way === 'back') navigateBack();
       else if (way === 'backdrop')
         await userEvent.click(
           screen
@@ -1181,12 +1191,21 @@ it('shows each project as a card with its detail link and edit action on a phone
 
 it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do', async () => {
   // Browser back (the phone's back gesture) never calls the dialog's beforeClose; the page's navigation guard asks.
-  let back!: () => void;
+  let back: (() => void) | undefined;
   function HistoryBack() {
     const navigate = useNavigate();
-    back = () => void navigate(-1);
+    useEffect(() => {
+      back = () => void navigate(-1);
+      return () => {
+        back = undefined;
+      };
+    }, [navigate]);
     return null;
   }
+  const navigateBack = () => {
+    if (!back) throw new Error('History back is not mounted');
+    act(() => back());
+  };
   await render(
     <>
       <Routes>{projectRoutes}</Routes>
@@ -1201,7 +1220,7 @@ it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do
   await openRowEdit(userEvent);
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.type(name, ' draft');
-  act(() => back());
+  navigateBack();
   expect(
     await screen.findByRole('alertdialog', {
       name: enUS['routeOverlay.discardTitle'],
@@ -1216,7 +1235,7 @@ it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do
   expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
     'Alpha draft',
   );
-  act(() => back());
+  navigateBack();
   await userEvent.click(
     await screen.findByRole('button', {
       name: enUS['routeOverlay.discard'],
