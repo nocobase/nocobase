@@ -205,7 +205,7 @@ describe('per-attempt worktrees', () => {
     expect((await finish(c)).pushed).toBe(true);
     expect(remoteHead()).toBe(head);
   });
-  it.each(['dev', 'v3-develop'])(
+  it.each(['dev', 'v3'])(
     'delivers first and subsequent real commits for %s repositories',
     async (defaultBranch) => {
       const bare = path.join(root, 'origin-repo.git');

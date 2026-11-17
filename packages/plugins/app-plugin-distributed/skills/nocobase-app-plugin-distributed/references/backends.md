@@ -1,6 +1,6 @@
 # Backend configuration
 
-These shapes were checked against the NocoBase `v3-develop` source at `dca7088f7e88a75e22147f4c4fa8ddd1853836a4`. Verify the application's installed versions before applying them. Redis implementation options and compatibility belong to each installed commercial package; this public Skill does not bundle those implementations.
+These shapes were checked against the NocoBase `v3` source at `dca7088f7e88a75e22147f4c4fa8ddd1853836a4`. Verify the application's installed versions before applying them. Redis implementation options and compatibility belong to each installed commercial package; this public Skill does not bundle those implementations.
 
 | Service     | Application configuration                                    | Redis runtime package                    | Local behavior                                                                        |
 | ----------- | ------------------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------- |
