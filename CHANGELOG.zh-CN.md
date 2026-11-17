@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.47](https://github.com/nocobase/nocobase/compare/v2.2.46...v2.2.47) - 2026-11-17
+
+### 🐛 修复
+
+- **[client-v2]** 修复一对多区块中，目标表配置多个记录唯一标识字段时删除记录失败的问题，包含 v1 和 v2 批量删除。 ([#11423](https://github.com/nocobase/nocobase/pull/11423))
+
+- **[数据源：主数据库]** 修复从主数据库加载的表无法同步字段的问题，并保留物理表名带配置前缀时已有字段的元数据 ([#11327](https://github.com/nocobase/nocobase/pull/11327))
+
+- **[迁移管理]** 修复 PostgreSQL 迁移时多行字段中以 `--` 开头的行丢失、换行符改变或导出的数据无法恢复的问题。
+
+- **[数据源：外部 Oracle]** Oracle Thin 现在按配置的 Schema 列出数据表，标记已选但不可用的历史表，并在新提交的表不可用时提示错误。
+
 ## [v2.2.46](https://github.com/nocobase/nocobase/compare/v2.2.45...v2.2.46) - 2026-11-12
 
 ### 🐛 修复

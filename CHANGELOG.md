@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.47](https://github.com/nocobase/nocobase/compare/v2.2.46...v2.2.47) - 2026-11-17
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed hasMany record deletion when the target collection uses multiple record identifier fields, including bulk deletion in v1 and v2. ([#11423](https://github.com/nocobase/nocobase/pull/11423))
+
+- **[Data source: Main]** Fixed field synchronization for tables loaded from the main database and preserved existing field metadata when imported physical table names include the configured prefix ([#11327](https://github.com/nocobase/nocobase/pull/11327))
+
+- **[Migration manager]** Fixed PostgreSQL migrations losing lines that begin with `--` in multiline fields, changing line endings, or failing to restore the exported data.
+
+- **[Data source: External Oracle]** Oracle Thin now lists tables from the configured schema, flags previously selected tables that are unavailable, and reports an error when a newly selected table is unavailable.
+
 ## [v2.2.46](https://github.com/nocobase/nocobase/compare/v2.2.45...v2.2.46) - 2026-11-12
 
 ### 🐛 Bug Fixes
