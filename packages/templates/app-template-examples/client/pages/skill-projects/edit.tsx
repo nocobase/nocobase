@@ -125,6 +125,9 @@ function ProjectEditor({
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
   const busyRef = useRef(false);
+  // One submit at a time, validation included, so a repeated submit cannot write again once the first has saved. It
+  // is not the save: leaving while validation runs still asks.
+  const enteredRef = useRef(false);
   const [attempted, setAttempted] = useState(false);
   const restoringInput = submission.pending && !attempted;
   const [confirmedMissing, setConfirmedMissing] = useState<
@@ -146,13 +149,21 @@ function ProjectEditor({
     return () => window.removeEventListener('beforeunload', warn);
   }, [submission.pending]);
   const submit = async () => {
-    if (!session || busyRef.current) return;
+    if (!session || enteredRef.current) return;
+    enteredRef.current = true;
+    try {
+      await save();
+    } finally {
+      enteredRef.current = false;
+    }
+  };
+  const save = async () => {
     // Validate before the save starts: an invalid submit starts nothing, so leaving still asks "Discard changes?".
     let valid = false;
     await form.handleSubmit(() => {
       valid = true;
     })();
-    if (!valid || busyRef.current) return;
+    if (!valid) return;
     busyRef.current = true;
     const recovering = submission.pending;
     const snapshot = { name: form.getValues('name'), id: project?.id };
