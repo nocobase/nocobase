@@ -916,6 +916,8 @@ jobs:
             while IFS= read -r tag; do
               if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${EE_IMAGE_REPOSITORY}:${tag}\`"; fi
             done <<< "$EE_TAGS"
+            echo
+            echo "Studio CE index \`${CE_DIGEST}\`, tagged:"
             while IFS= read -r tag; do
               if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${CE_IMAGE_REPOSITORY}:${tag}\`"; fi
             done <<< "$CE_TAGS"
