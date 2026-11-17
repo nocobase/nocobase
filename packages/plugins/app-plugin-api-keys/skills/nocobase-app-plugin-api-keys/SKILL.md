@@ -89,32 +89,22 @@ To find out what the App's API offers, read its OpenAPI document with the same k
 
 ## What a key can reach, and what it cannot
 
-A key is its owner, so it reaches the Better Auth endpoints a Session reaches.
-Verified against `@better-auth/api-key` 1.7.1 with only an `x-api-key` header:
+An unscoped key authenticates as its owner, but some Better Auth endpoints require a stored sign-in session. Verified with this plugin's default `apiKey()` configuration, `better-auth` and `@better-auth/api-key` 1.7.21, database-backed sessions, and `x-api-key` as the only authentication header (no cookie or bearer token). The source regression suite is `packages/plugins/app-plugin-api-keys/tests/endpoint-reachability.test.ts`; run it again when upgrading Better Auth. These results include this plugin's guards, rather than describing the upstream API Key plugin alone.
 
-| Endpoint                                                 | Result                     |
-| -------------------------------------------------------- | -------------------------- |
-| `POST /api-key/create`, `GET /api-key/list`              | reachable                  |
-| `POST /update-user`                                      | reachable                  |
-| `GET /list-sessions`                                     | reachable                  |
-| `POST /sign-out`                                         | reachable                  |
-| `POST /delete-user`, `/change-email`, `/revoke-sessions` | 401                        |
-| `POST /change-password`                                  | requires `currentPassword` |
+| Endpoint                                                                                                        | Result                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api-key/create`, `GET /api-key/list`, `GET /api-key/get`, `POST /api-key/update`, `POST /api-key/delete` | 403 `API_KEY_SESSION_FORBIDDEN` — this plugin requires a sign-in to manage keys                                                              |
+| `POST /update-user`                                                                                             | 200 — updates the owner's profile                                                                                                            |
+| `GET /list-sessions`                                                                                            | 200 — returns session rows including the unsigned session `token`                                                                            |
+| `POST /sign-out`                                                                                                | 200 — leaves the key and existing sign-in sessions valid                                                                                     |
+| `POST /delete-user`, `POST /change-email`, `POST /revoke-sessions`                                              | 401 `UNAUTHORIZED`                                                                                                                           |
+| `POST /change-password`                                                                                         | 401 `UNAUTHORIZED` with a valid body, even with the correct `currentPassword`; omitting `currentPassword` gives 400 `VALIDATION_ERROR` first |
 
-Two consequences to plan for:
+**No key manages keys.** This plugin refuses every `/api-key/*` endpoint to a key, scoped or not, with `API_KEY_SESSION_FORBIDDEN`. A leaked key cannot mint successors or revoke keys; the App needs no additional `before` hook for these paths. App-owned key-management routes apply `requireSignInSession()` after `auth.required()`.
 
-- **A key mints keys.** The successor holds its own expiry and revocation, and
-  nothing links it to the key that made it. Revoking a leaked key means
-  reviewing the owner's whole list, not deleting the one key you know about.
-- **`/list-sessions` returns the unsigned session token.** The cookie is
-  `token.signature`, so replaying the token alone does not authenticate; it
-  becomes a takeover only if the auth secret leaks too or cookie signing is
-  off.
+**`/list-sessions` still discloses the unsigned session token.** The session cookie is `token.signature`; the regression suite verifies that replaying the disclosed token alone as a cookie does not authenticate. The signature requires the auth secret, so a holder of both the token and that secret can forge a session cookie.
 
-An App that wants either closed adds its own Better Auth `before` hook
-rejecting those paths when the API key header is present. Match on the header
-rather than on the resolved Session, and place the hook before the plugin's
-own, or the Session is minted and returned first.
+To close `/list-sessions` to keys, give the key a scope, or reject that path in the App's Better Auth `hooks.before` when an API key header is present. Check the configured key header names (`x-api-key` by default) rather than a resolved Session: the App's hook runs before plugin hooks resolve the key. A scoped key already cannot use account endpoints other than `/get-session`.
 
 ## Other constraints
 
