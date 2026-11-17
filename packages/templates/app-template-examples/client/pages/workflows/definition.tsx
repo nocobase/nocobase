@@ -133,6 +133,7 @@ export default function DefinitionPage(): ReactElement {
           <>
             {versioned && (
               <VersionSelect
+                appearance='tag'
                 versions={loaded.workflow.versions}
                 value={loaded.definition.version}
                 onChange={(next) => {

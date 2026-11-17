@@ -1306,6 +1306,24 @@ it('names the selected version once in the definition header', async () => {
     'href',
     `/workflows/executions?workflowId=${encodeURIComponent(versioned.workflow.id)}&version=2`,
   );
+  const versionMenu = await within(header).findByRole('button', {
+    name: copy.version,
+    expanded: false,
+  });
+  await userEvent.click(versionMenu);
+  const menu = await screen.findByRole('menu');
+  expect(
+    within(menu).getByRole('menuitemradio', { name: /Version 2/ }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await userEvent.click(
+    within(menu).getByRole('menuitemradio', { name: 'Version 1' }),
+  );
+  await waitFor(() =>
+    expect(api.request).toHaveBeenCalledWith({
+      path: `workflows/definitions/${versioned.workflow.id}`,
+      query: { version: '1' },
+    }),
+  );
 });
 
 it('omits list navigation on execution detail routes', async () => {

@@ -5,13 +5,7 @@ import type { ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#components/ui/select';
+import { WorkflowVersionSelect } from '#extensions/nocobase-workflow-management/version-select';
 import type { WorkflowVersion } from '../../../shared/workflows.js';
 
 export function DataState({
@@ -86,53 +80,31 @@ export function VersionSelect({
   value,
   onChange,
   allLabel,
+  appearance = 'field',
 }: {
   readonly versions: readonly WorkflowVersion[];
   readonly value: number | undefined;
   readonly onChange: (version: number | undefined) => void;
   /** Offers "every version" as `undefined` when set. */
   readonly allLabel?: string;
+  readonly appearance?: 'field' | 'tag';
 }): ReactElement {
   const { t } = useTranslation();
   const latest = versions.at(-1)?.version;
-  const items = [
-    ...(allLabel ? [{ value: 'all', label: allLabel }] : []),
-    ...[...versions].reverse().map(({ version }) => ({
-      value: String(version),
-      label:
-        version === latest
-          ? t('workflows.latestVersion', { version })
-          : t('workflows.versionLabel', { version }),
-    })),
-  ];
   return (
-    <Select
-      items={items}
-      value={
-        value === undefined
-          ? allLabel
-            ? 'all'
-            : String(latest)
-          : String(value)
-      }
-      onValueChange={(next: string | null) =>
-        onChange(!next || next === 'all' ? undefined : Number(next))
-      }
-    >
-      <SelectTrigger
-        size='sm'
-        className='w-44 font-normal tracking-normal'
-        aria-label={t('workflows.version')}
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <WorkflowVersionSelect
+      versions={versions.map(({ version }) => ({
+        version,
+        label:
+          version === latest
+            ? t('workflows.latestVersion', { version })
+            : t('workflows.versionLabel', { version }),
+      }))}
+      value={value}
+      onChange={onChange}
+      label={t('workflows.version')}
+      allLabel={allLabel}
+      appearance={appearance}
+    />
   );
 }
