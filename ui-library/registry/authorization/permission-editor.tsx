@@ -62,7 +62,6 @@ import {
   type PermissionModule,
   type PermissionNotice,
   type PermissionQuickSet,
-  type PermissionRisk,
   type PermissionScopeSlot,
 } from './permission-editor-model.js';
 
@@ -98,7 +97,6 @@ export interface PermissionEditorLabels {
   readonly scopeFor: (action: string, scope?: string) => string;
   readonly followHint: string;
   readonly riskHint: string;
-  readonly risk: (risk: PermissionRisk) => string;
   readonly managed: string;
   readonly visibleMenus: (visible: number, total: number) => string;
   readonly unsaved: string;
@@ -160,8 +158,8 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
     scope ? `${action}: ${scope}` : `Data scope of ${action}`,
   followHint:
     'Other actions follow the view scope; they can be narrower, never wider.',
-  riskHint: 'High-risk permissions are never turned on automatically.',
-  risk: (risk) => (risk === 'high' ? 'High risk' : 'Sensitive'),
+  riskHint:
+    'Enable all and requirements leave out some permissions here, such as granting roles; turn those on yourself.',
   managed: 'Managed by the application',
   visibleMenus: (visible, total) => `${visible} of ${total} menus visible`,
   unsaved: 'Unsaved changes',
@@ -204,28 +202,6 @@ const DOT: Record<PermissionMenuState, string> = {
   partial: 'bg-primary/40',
   off: 'bg-muted-foreground/25',
 };
-
-function RiskTag({
-  risk,
-  labels,
-}: {
-  readonly risk: PermissionRisk;
-  readonly labels: PermissionEditorLabels;
-}): ReactElement {
-  return (
-    <span
-      data-slot='permission-risk'
-      className={cn(
-        'inline-flex shrink-0 items-center rounded-full px-1.5 text-xs leading-5 font-medium',
-        risk === 'high'
-          ? 'bg-destructive/10 text-destructive'
-          : 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-      )}
-    >
-      {labels.risk(risk)}
-    </span>
-  );
-}
 
 function ScopeSelect({
   label,
@@ -391,7 +367,6 @@ function ActionRow({
           >
             {action.label}
           </label>
-          {action.risk && <RiskTag risk={action.risk} labels={labels} />}
         </div>
         {(description || action.managed) && (
           <p

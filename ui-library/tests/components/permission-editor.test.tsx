@@ -150,7 +150,8 @@ describe('two-column permission editor', () => {
       'Same as view (Their department)',
     );
     expect(trigger('Data scope of Edit contracts')).toBeDisabled();
-    expect(screen.getByText('Sensitive')).toBeInTheDocument();
+    // Risky actions are not tagged; Enable all still leaves them off.
+    expect(screen.queryByText('Sensitive')).toBeNull();
   });
 
   it('turns on View with an action and updates counts and visibility', async () => {
@@ -310,11 +311,13 @@ describe('two-column permission editor', () => {
     expect(
       screen.getByText('Anyone who can edit roles can grant any permission.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('High risk')).toBeInTheDocument();
+    expect(screen.queryByText('High risk')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     await user.click(within(tree).getByRole('button', { name: /^Contracts/ }));
     await user.click(screen.getByRole('button', { name: 'Next: Orders' }));
     expect(screen.getByRole('heading', { name: 'Orders' })).toBeInTheDocument();
+    // The last business menu stops there instead of leading into Administration.
+    expect(screen.queryByRole('button', { name: /^Next:/ })).toBeNull();
   });
 
   it('explains public menus and unrestricted roles without controls', async () => {

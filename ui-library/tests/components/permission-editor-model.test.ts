@@ -445,6 +445,29 @@ describe('permission editor model', () => {
     expect(nextMenu(modules, 'contracts')?.id).toBe('payments');
     expect(nextMenu(modules, 'payments')?.id).toBe('shipments');
     expect(nextMenu(modules, 'shipments')).toBeUndefined();
+    const withAdministration: readonly PermissionModule[] = [
+      ...modules,
+      {
+        id: 'settings',
+        label: 'Settings',
+        administration: true,
+        menus: [
+          {
+            id: 'roles',
+            label: 'Roles',
+            actions: [{ id: 'roles.view', label: 'View roles', view: true }],
+          },
+          {
+            id: 'users',
+            label: 'Users',
+            actions: [{ id: 'users.view', label: 'View users', view: true }],
+          },
+        ],
+      },
+    ];
+    // Business menus stop at their end; Administration leads through its own menus.
+    expect(nextMenu(withAdministration, 'shipments')).toBeUndefined();
+    expect(nextMenu(withAdministration, 'roles')?.id).toBe('users');
   });
 
   it('filters the tree by menu or action name', () => {

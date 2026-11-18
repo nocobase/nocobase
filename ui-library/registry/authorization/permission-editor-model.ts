@@ -294,7 +294,13 @@ export function nextMenu(
   modules: readonly PermissionModule[],
   menuId: string,
 ): PermissionMenu | undefined {
-  const menus = allMenus(modules);
+  // Business menus lead only to business menus: the last one stops instead of jumping into Administration.
+  const owner = modules.find((module) =>
+    module.menus.some((menu) => menu.id === menuId),
+  );
+  const menus = modules
+    .filter((module) => !!module.administration === !!owner?.administration)
+    .flatMap((module) => module.menus);
   const index = menus.findIndex((menu) => menu.id === menuId);
   return menus
     .slice(index + 1)
