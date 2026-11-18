@@ -72,10 +72,16 @@ export default function DefaultAccessPage(): ReactElement {
           defaultValue: value.defaultValue ?? value.key,
         });
   const resources = catalog.data ? ruleResources(catalog.data.data) : [];
-  const labels = ruleResourceLabels(resources, text, {
-    business: t('settings.defaultAccess.kindBusiness'),
-    table: t('settings.defaultAccess.kindTable'),
-  });
+  const labels = ruleResourceLabels(resources, text, (title, kind) =>
+    t('settings.defaultAccess.kindLabel', {
+      title,
+      kind: t(
+        kind === 'table'
+          ? 'settings.defaultAccess.kindTable'
+          : 'settings.defaultAccess.kindBusiness',
+      ),
+    }),
+  );
   const name = (rule: DefaultAccessRule): string =>
     labels.get(resourceKey(rule.resource)) ?? rule.resource.id;
   const summary = (rule: DefaultAccessRule): string => {

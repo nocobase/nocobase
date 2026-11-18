@@ -25,6 +25,7 @@ const settings = {
   defaultAccess: {
     kindBusiness: '业务操作',
     kindTable: '数据表',
+    kindLabel: '{{title}}（{{kind}}）',
     noResourcesShort: '暂无可配置的业务对象',
     scopeInvalid: '请重新选择有效的数据范围或完善筛选条件。',
 

@@ -29,6 +29,7 @@ const settings = {
   defaultAccess: {
     kindBusiness: 'business operations',
     kindTable: 'data table',
+    kindLabel: '{{title}} ({{kind}})',
     noResourcesShort: 'No configurable objects available',
     scopeInvalid:
       'Choose a valid data scope or complete its filter conditions.',

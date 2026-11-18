@@ -85,7 +85,7 @@ export function ruleResources(
 export function ruleResourceLabels(
   resources: readonly CatalogResource[],
   text: (value: LocalizedText) => string,
-  kinds: { readonly business: string; readonly table: string },
+  label: (title: string, kind: 'business' | 'table') => string,
 ): ReadonlyMap<string, string> {
   const titles = resources.map((resource) => text(resource.title));
   return new Map(
@@ -95,7 +95,10 @@ export function ruleResourceLabels(
       return [
         resourceKey(resource),
         shared
-          ? `${title} (${resource.type === 'database.collection' ? kinds.table : kinds.business})`
+          ? label(
+              title,
+              resource.type === 'database.collection' ? 'table' : 'business',
+            )
           : title,
       ];
     }),

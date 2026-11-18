@@ -215,16 +215,14 @@ it('titles data with registered collection titles and tells same-named business 
     ruleScopes(resources[0], registered).map((scope) => text(scope.title)),
   ).toEqual(['Customers']);
   expect([
-    ...ruleResourceLabels(resources, text, {
-      business: 'business operations',
-      table: 'data table',
-    }).values(),
+    ...ruleResourceLabels(resources, text, (title, kind) =>
+      kind === 'table'
+        ? `${title} (data table)`
+        : `${title} (business operations)`,
+    ).values(),
   ]).toEqual(['Customers (business operations)', 'Customers (data table)']);
   // A name used once stays as it is.
   expect([
-    ...ruleResourceLabels(resources.slice(0, 1), text, {
-      business: 'business operations',
-      table: 'data table',
-    }).values(),
+    ...ruleResourceLabels(resources.slice(0, 1), text, () => 'unused').values(),
   ]).toEqual(['Customers']);
 });

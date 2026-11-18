@@ -110,10 +110,16 @@ function DefaultAccessFormBody(): ReactElement {
     ? scopes.length > 0
     : Boolean(catalog.data && editableRule(value, scopes, catalog.data.data));
   const readOnly = !canWrite || busy || (!creating && !supported);
-  const resourceLabels = ruleResourceLabels(resources, text, {
-    business: t('settings.defaultAccess.kindBusiness'),
-    table: t('settings.defaultAccess.kindTable'),
-  });
+  const resourceLabels = ruleResourceLabels(resources, text, (title, kind) =>
+    t('settings.defaultAccess.kindLabel', {
+      title,
+      kind: t(
+        kind === 'table'
+          ? 'settings.defaultAccess.kindTable'
+          : 'settings.defaultAccess.kindBusiness',
+      ),
+    }),
+  );
   const options = resources
     .filter(
       (entry) =>
