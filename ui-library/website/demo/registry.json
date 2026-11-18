@@ -581,11 +581,6 @@
           "path": "inbox/inbox-data.ts",
           "type": "registry:example",
           "target": "client/extensions/nocobase-inbox-demo/inbox-data.ts"
-        },
-        {
-          "path": "inbox/inbox-plans.tsx",
-          "type": "registry:example",
-          "target": "client/extensions/nocobase-inbox-demo/inbox-plans.tsx"
         }
       ]
     },
