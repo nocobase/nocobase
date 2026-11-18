@@ -593,6 +593,7 @@ function MenuRows({
                   variant='link'
                   size='xs'
                   className='col-start-2 h-auto justify-self-start p-0 text-xs'
+                  style={{ marginInlineStart: `${depth * 1.25}rem` }}
                   onClick={() => onOpenAction(node.opensWith!)}
                 >
                   {labels.opensWith(
