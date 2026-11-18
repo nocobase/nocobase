@@ -65,6 +65,7 @@ const mail = vi.hoisted(() => ({
   startAuthorization: vi.fn(),
   startSync: vi.fn(),
   updateAccount: vi.fn(),
+  previewSyncFolders: vi.fn(),
 }));
 
 vi.mock('../../client/runtime.js', () => ({ useMailClient: () => mail }));
@@ -682,6 +683,99 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     );
   });
 
+  it('starts the first import of a connected account with the chosen folders', async () => {
+    const pending = {
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: [],
+    };
+    mail.listAccounts.mockResolvedValue([pending]);
+    mail.listFolders.mockResolvedValue(folders());
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...pending,
+      syncFolderIds: input.syncFolderIds ?? undefined,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Choose folders to start syncing',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Folders to sync',
+    });
+    await waitFor(() =>
+      expect(mail.listFolders).toHaveBeenCalledWith('account-1', {
+        includeUnsynced: true,
+      }),
+    );
+    fireEvent.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'All folders, including folders created later',
+      }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sent' }));
+    expect(within(dialog).getByText('2 of 3 folders selected')).toBeVisible();
+    expect(
+      within(dialog).getByText(/your own replies may be missing/),
+    ).toBeVisible();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start sync' }));
+
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Archive'],
+      }),
+    );
+    // Nothing is stored yet, so a new account is never asked to confirm deletions.
+    expect(mail.previewSyncFolders).not.toHaveBeenCalled();
+  });
+
+  it('confirms how many local messages a narrower selection deletes', async () => {
+    mail.listFolders.mockResolvedValue(folders());
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 12 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Folders' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Folders to sync',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'All folders, including folders created later',
+      }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(
+      await within(dialog).findByText(
+        '12 local messages are in no selected folder and will be deleted from this app. Messages on the mail server are not affected.',
+      ),
+    ).toBeVisible();
+    expect(mail.previewSyncFolders).toHaveBeenCalledWith('account-1', [
+      'INBOX',
+      'Sent',
+    ]);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Delete and save' }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent'],
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+
   it('requires confirmation before removing an account', async () => {
     await renderPage(<MailAccountsPage />);
 
@@ -719,6 +813,22 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     );
   });
 });
+
+function folders() {
+  return [
+    ['INBOX', 'Inbox', 'inbox'],
+    ['Sent', 'Sent', 'sent'],
+    ['Archive', 'Archive', 'archive'],
+  ].map(([providerFolderId, name, type]) => ({
+    id: `folder-${providerFolderId}`,
+    accountId: 'account-1',
+    providerFolderId,
+    name,
+    type,
+    kind: 'folder',
+    synced: true,
+  }));
+}
 
 async function renderPage(ui: ReactElement): Promise<RenderedApp> {
   return renderWithApp(ui, {

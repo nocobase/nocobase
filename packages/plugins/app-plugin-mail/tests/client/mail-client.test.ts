@@ -181,6 +181,21 @@ describe('MailClient', () => {
         displayName: 'User',
       },
     });
+    await client.previewSyncFolders('account/1', ['INBOX']);
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/previewSyncFolders',
+      method: 'POST',
+      json: { syncFolderIds: ['INBOX'] },
+    });
+    await client.listFolders('account/1', { includeUnsynced: true });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+      query: { includeUnsynced: 'true' },
+    });
+    await client.listFolders('account/1');
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+    });
   });
 
   it('requests page-numbered log pages and reads the total from meta', async () => {

@@ -39,41 +39,44 @@ Mail publishes the user-scoped realtime topic `mail:messages` with `{ kind: 'mai
 
 ## Providers and accounts
 
-| Method   | Path                                      | Request / result                                                                                                                                                                                                         |
-| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET`    | `/providers`                              | Returns `MailProviderView[]`.                                                                                                                                                                                            |
-| `POST`   | `/authorizations`                         | Provider `type` and `name`, optional `scopes`, and required `initialSyncReceivedAfter`; returns `201` and `MailAuthorizationStartResult`.                                                                                |
-| `POST`   | `/accounts/connect`                       | Provider `type` and `name`, `address`, optional `displayName`, `username`, required `password`, and required `initialSyncReceivedAfter`; verifies the credentials, then returns `201` and the created `MailAccountView`. |
-| `GET`    | `/accounts`                               | Returns the current user's `MailAccountView[]`.                                                                                                                                                                          |
-| `PATCH`  | `/accounts/:accountId`                    | Optional `status` (`active` or `suspended`); returns the updated `MailAccountView`.                                                                                                                                      |
-| `DELETE` | `/accounts/:accountId`                    | Starts the asynchronous, durable account removal; returns `202` with the account in its `removing` status, or `202` with no body when the removal already finished.                                                      |
-| `GET`    | `/settings/accounts`                      | Admin overview (`mail.admin`); returns `MailManagedAccountView[]`.                                                                                                                                                       |
-| `GET`    | `/settings/syncRuns`                      | Admin view of every user's sync runs, newest first, paged with `page` and `pageSize`; `canManage` marks the caller's own.                                                                                                |
-| `GET`    | `/settings/submissions`                   | Admin view of every user's submissions, newest first, paged with `page` and `pageSize`.                                                                                                                                  |
-| `GET`    | `/management/accounts`                    | Management overview (`mail.management`); returns `MailManagedAccountView[]`.                                                                                                                                             |
-| `GET`    | `/management/accounts/:accountId/folders` | Returns folders for the selected account; `404 MAIL_ACCOUNT_NOT_FOUND` when the account does not exist.                                                                                                                  |
+| Method   | Path                                      | Request / result                                                                                                                                                                                                                                                    |
+| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/providers`                              | Returns `MailProviderView[]`.                                                                                                                                                                                                                                       |
+| `POST`   | `/authorizations`                         | Provider `type` and `name`, optional `scopes`, required `initialSyncReceivedAfter`, and optional `syncFolderIds` (`[]` or `null`, see below); returns `201` and `MailAuthorizationStartResult`.                                                                     |
+| `POST`   | `/accounts/connect`                       | Provider `type` and `name`, `address`, optional `displayName`, `username`, required `password`, required `initialSyncReceivedAfter`, and optional `syncFolderIds` (`[]` or `null`); verifies the credentials, then returns `201` and the created `MailAccountView`. |
+| `GET`    | `/accounts`                               | Returns the current user's `MailAccountView[]`.                                                                                                                                                                                                                     |
+| `PATCH`  | `/accounts/:accountId`                    | Optional `status` (`active` or `suspended`) and optional `syncFolderIds` (1–1000 known Provider folder IDs, or `null` for every folder); returns the updated `MailAccountView`.                                                                                     |
+| `POST`   | `/accounts/:accountId/previewSyncFolders` | `syncFolderIds` as for `PATCH`; changes nothing and returns `{ removedMessageCount }`, the local messages saving that selection would delete.                                                                                                                       |
+| `DELETE` | `/accounts/:accountId`                    | Starts the asynchronous, durable account removal; returns `202` with the account in its `removing` status, or `202` with no body when the removal already finished.                                                                                                 |
+| `GET`    | `/settings/accounts`                      | Admin overview (`mail.admin`); returns `MailManagedAccountView[]`.                                                                                                                                                                                                  |
+| `GET`    | `/settings/syncRuns`                      | Admin view of every user's sync runs, newest first, paged with `page` and `pageSize`; `canManage` marks the caller's own.                                                                                                                                           |
+| `GET`    | `/settings/submissions`                   | Admin view of every user's submissions, newest first, paged with `page` and `pageSize`.                                                                                                                                                                             |
+| `GET`    | `/management/accounts`                    | Management overview (`mail.management`); returns `MailManagedAccountView[]`.                                                                                                                                                                                        |
+| `GET`    | `/management/accounts/:accountId/folders` | Returns folders for the selected account; `404 MAIL_ACCOUNT_NOT_FOUND` when the account does not exist.                                                                                                                                                             |
 
 `/settings/accounts` and `/management/accounts` return the same list for two different pages, each gated by its own page permission.
 
+`syncFolderIds` is the account's synchronization scope. Absent (or `null` when writing) means every folder, including folders created later; a list names the only folders synchronized; `[]` marks an account connected with `syncFolderIds: []` whose owner has not chosen yet, which lists its folders and imports nothing. Changing the scope with `PATCH` requires an active account, cancels the active run and starts an initial sync for the new scope, which deletes local messages left in no selected folder (the mail server is untouched); `previewSyncFolders` reports that count beforehand. An unknown or empty selection is `400 INVALID_ARGUMENT` on field `syncFolderIds`.
+
 ## Identities, signatures, labels, and templates
 
-| Method   | Path                                           | Request / result                                                                        |
-| -------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `GET`    | `/accounts/:accountId/identities`              | Returns `MailIdentity[]`.                                                               |
-| `PATCH`  | `/accounts/:accountId/identities/:identityId`  | Optional `displayName`; returns the updated `MailIdentity`.                             |
-| `GET`    | `/accounts/:accountId/signatures`              | Returns `MailSignature[]`.                                                              |
-| `POST`   | `/accounts/:accountId/signatures`              | Creates a signature from name, text/html content, and default selection; returns `201`. |
-| `PATCH`  | `/accounts/:accountId/signatures/:signatureId` | Updates the sent fields of a signature (`name`, `text`, `html`, `isDefault`).           |
-| `DELETE` | `/accounts/:accountId/signatures/:signatureId` | Deletes a signature; returns `204`.                                                     |
-| `GET`    | `/accounts/:accountId/folders`                 | Returns the current user's folders for the account.                                     |
-| `GET`    | `/labels`                                      | Returns the current user's labels.                                                      |
-| `POST`   | `/labels`                                      | Creates a label from `MailSaveLabelInput`; returns `201`.                               |
-| `PATCH`  | `/labels/:labelId`                             | Updates the sent fields of a label (`name`, `color`).                                   |
-| `DELETE` | `/labels/:labelId`                             | Deletes a label; returns `204`.                                                         |
-| `GET`    | `/templates`                                   | Returns the current user's `MailTemplate[]`.                                            |
-| `POST`   | `/templates`                                   | Creates a template from `MailSaveTemplateInput`; returns `201`.                         |
-| `PATCH`  | `/templates/:templateId`                       | Updates the sent fields of a template (`name`, `subject`, `text`, `html`).              |
-| `DELETE` | `/templates/:templateId`                       | Deletes a template; returns `204`.                                                      |
+| Method   | Path                                           | Request / result                                                                                       |
+| -------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`    | `/accounts/:accountId/identities`              | Returns `MailIdentity[]`.                                                                              |
+| `PATCH`  | `/accounts/:accountId/identities/:identityId`  | Optional `displayName`; returns the updated `MailIdentity`.                                            |
+| `GET`    | `/accounts/:accountId/signatures`              | Returns `MailSignature[]`.                                                                             |
+| `POST`   | `/accounts/:accountId/signatures`              | Creates a signature from name, text/html content, and default selection; returns `201`.                |
+| `PATCH`  | `/accounts/:accountId/signatures/:signatureId` | Updates the sent fields of a signature (`name`, `text`, `html`, `isDefault`).                          |
+| `DELETE` | `/accounts/:accountId/signatures/:signatureId` | Deletes a signature; returns `204`.                                                                    |
+| `GET`    | `/accounts/:accountId/folders`                 | Returns the account's synchronized folders; `includeUnsynced=true` returns every folder with `synced`. |
+| `GET`    | `/labels`                                      | Returns the current user's labels.                                                                     |
+| `POST`   | `/labels`                                      | Creates a label from `MailSaveLabelInput`; returns `201`.                                              |
+| `PATCH`  | `/labels/:labelId`                             | Updates the sent fields of a label (`name`, `color`).                                                  |
+| `DELETE` | `/labels/:labelId`                             | Deletes a label; returns `204`.                                                                        |
+| `GET`    | `/templates`                                   | Returns the current user's `MailTemplate[]`.                                                           |
+| `POST`   | `/templates`                                   | Creates a template from `MailSaveTemplateInput`; returns `201`.                                        |
+| `PATCH`  | `/templates/:templateId`                       | Updates the sent fields of a template (`name`, `subject`, `text`, `html`).                             |
+| `DELETE` | `/templates/:templateId`                       | Deletes a template; returns `204`.                                                                     |
 
 ## Messages, conversations, attachments, and sending
 
