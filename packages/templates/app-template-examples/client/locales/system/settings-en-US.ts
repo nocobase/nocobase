@@ -303,6 +303,7 @@ const settings = {
     emptyPage:
       '“{{menu}}” is checked, but this role cannot view {{object}} yet, so the page opens empty.',
     openView: 'Turn on “{{action}}”',
+    opensWith: 'Shown with “{{action}}”',
     attention_one: '{{count}} menu needs attention',
     attention_other: '{{count}} menus need attention',
     objects: 'Business objects',

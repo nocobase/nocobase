@@ -281,6 +281,7 @@ const settings = {
     emptyPage:
       '「{{menu}}」菜单已勾选，但这个角色还不能查看{{object}}，打开后会是空页面。',
     openView: '去开启「{{action}}」',
+    opensWith: '随「{{action}}」显示，去业务对象设置',
     attention_one: '{{count}} 个菜单需要注意',
     attention_other: '{{count}} 个菜单需要注意',
     objects: '业务对象',

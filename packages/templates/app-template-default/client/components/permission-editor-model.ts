@@ -27,8 +27,9 @@ export interface PermissionScopeSlot {
   /**
    * Follows the View scope of the same object: unset means "Same as view", and only narrower options are offered. An
    * action id follows the first scope of that action instead. It may name another object's View, such as a Contacts
-   * action reading customers following Customers' View, so an object's data scope is set in one place; such a slot
-   * follows only while that action is on, and otherwise uses its own default.
+   * action reading customers following Customers' View, so an object's data scope is set in one place. That View is
+   * then a requirement of the action: turning the action on turns it on, and turning it off asks before turning the
+   * action off too, so the slot never falls back to a wider scope of its own.
    */
   readonly followsView?: boolean | string | undefined;
   /**
@@ -89,8 +90,9 @@ export interface PermissionMenuNode {
   readonly children?: readonly PermissionMenuNode[] | undefined;
   readonly uses?: PermissionMenuUses | undefined;
   /**
-   * The entry opens with this action rather than a menu permission of its own, such as a settings page guarded by
-   * reading its resource: checking the menu turns the action on, and the action being on checks the menu.
+   * The entry has no menu permission of its own and shows while this action is on, such as a settings page guarded
+   * by reading its resource. Its checkbox is read-only: checking menus never changes an object's permissions, so the
+   * editor points to the object instead.
    */
   readonly opensWith?: string | undefined;
 }
@@ -204,9 +206,20 @@ export function requirementsOf(
   object: PermissionObject,
   action: PermissionAction,
 ): readonly string[] {
-  if (action.requires) return action.requires;
   const view = viewActionOf(object);
-  return view && view.id !== action.id ? [view.id] : [];
+  const own =
+    action.requires ?? (view && view.id !== action.id ? [view.id] : []);
+  // A slot following another object's View reads that object's records within its scope: without that View it would
+  // have no scope to follow, so it requires it. Turning the View off then asks before turning this action off too.
+  const followed = (action.scopes ?? []).flatMap((slot) =>
+    typeof slot.followsView === 'string' &&
+    slot.followsView !== action.id &&
+    !object.actions.some((item) => item.id === slot.followsView) &&
+    !own.includes(slot.followsView)
+      ? [slot.followsView]
+      : [],
+  );
+  return followed.length ? [...own, ...followed] : own;
 }
 
 function viewSlotOf(object: PermissionObject): PermissionScopeSlot | undefined {
@@ -744,14 +757,24 @@ export function isMenuChecked(
   return value.menus.includes(node.id);
 }
 
-/** A leaf's checkbox, or a group's from the menus under it that need a permission. */
+/** Whether a menu's checkbox can change: it has its own menu permission, or a group holds one that does. */
+export function isMenuToggleable(node: PermissionMenuNode): boolean {
+  return menuLeaves([node]).some((leaf) => !leaf.public && !leaf.opensWith);
+}
+
+/**
+ * A leaf's checkbox, or a group's from the menus under it that it can check: those with a menu permission of their
+ * own, or, when it has none, every menu that needs a permission.
+ */
 export function menuCheckState(
   node: PermissionMenuNode,
   value: PermissionValue,
 ): PermissionCheckState {
   if (!node.children?.length)
     return isMenuChecked(node, value) ? 'checked' : 'unchecked';
-  const leaves = menuLeaves(node.children).filter((leaf) => !leaf.public);
+  const needed = menuLeaves(node.children).filter((leaf) => !leaf.public);
+  const own = needed.filter((leaf) => !leaf.opensWith);
+  const leaves = own.length ? own : needed;
   const checked = leaves.filter((leaf) => isMenuChecked(leaf, value)).length;
   if (!leaves.length) return 'checked';
   return checked === 0
@@ -786,55 +809,20 @@ function findMenu(
 }
 
 /**
- * The actions turned off with a menu that opens with one, and what needs them: the host asks before turning them
- * off. Empty when nothing besides the menus would change.
- */
-export function menuDependents(
-  objects: readonly PermissionObject[],
-  nodes: readonly PermissionMenuNode[],
-  value: PermissionValue,
-  id: string,
-): readonly PermissionAction[] {
-  const node = findMenu(nodes, id);
-  if (!node) return [];
-  const actions = menuLeaves([node])
-    .map((leaf) => leaf.opensWith)
-    .filter((action): action is string =>
-      Boolean(action && value.grants[action]),
-    );
-  return dependentsOf(objects, value.grants, actions).filter(
-    (action) => !actions.includes(action.id),
-  );
-}
-
-/**
- * Check or clear a menu, or every menu of a group. Public menus never change. A menu that opens with an action turns
- * it on with its requirements, or off with what needs it.
+ * Check or clear a menu, or every menu of a group. Only menu permissions change: public menus and menus that open
+ * with an action stay as they are, and no object permission is ever turned on or off.
  */
 export function setMenuChecked(
-  objects: readonly PermissionObject[],
   nodes: readonly PermissionMenuNode[],
   value: PermissionValue,
   id: string,
   checked: boolean,
-): {
-  readonly value: PermissionValue;
-  readonly notices: readonly PermissionNotice[];
-} {
+): PermissionValue {
   const node = findMenu(nodes, id);
-  if (!node) return { value, notices: [] };
-  const leaves = menuLeaves([node]).filter((leaf) => !leaf.public);
+  if (!node) return value;
   const menus = new Set(value.menus);
-  let grants = value.grants;
-  const notices: PermissionNotice[] = [];
-  for (const leaf of leaves) {
-    if (leaf.opensWith) {
-      if (Boolean(grants[leaf.opensWith]) === checked) continue;
-      const change = setActionEnabled(objects, grants, leaf.opensWith, checked);
-      grants = change.grants;
-      notices.push(...change.notices);
-      continue;
-    }
+  for (const leaf of menuLeaves([node])) {
+    if (leaf.public || leaf.opensWith) continue;
     if (checked) menus.add(leaf.id);
     else menus.delete(leaf.id);
   }
@@ -845,7 +833,7 @@ export function setMenuChecked(
       .map((leaf) => leaf.id)
       .filter((menu) => menus.has(menu) && !value.menus.includes(menu)),
   ];
-  return { value: { menus: ordered, grants }, notices };
+  return { menus: ordered, grants: value.grants };
 }
 
 /** Menus that need a permission, and how many of them this draft shows. */

@@ -173,8 +173,9 @@ function storedValue(
 
 /**
  * Stored grants for a draft. Actions the editor does not show and the policies of unchanged choices are kept as
- * stored. Followers store a copy of the value of the View they follow, which may be another object's. A checked menu opens its pages and an unchecked one closes them,
- * whatever the objects' actions are.
+ * stored. Followers store a copy of the value of the View they follow, which may be another object's, and no records
+ * while that View is off. A checked menu opens its pages and an unchecked one closes them, whatever the objects'
+ * actions are.
  */
 export function grantsFromDraft(
   value: PermissionValue,
@@ -213,6 +214,12 @@ export function grantsFromDraft(
           !resolving.has(scope.follows)
         ) {
           scopes[scope.key] = scopesOf(scope.follows)[viewScope];
+          continue;
+        }
+        // The View it follows is off: it has no scope to follow, and its own default could be wider than what the role
+        // may read of that object, so it reaches no records until that View is on again.
+        if (!draft[scope.follows]) {
+          scopes[scope.key] = storedValue(NO_SCOPE, original, undefined);
           continue;
         }
       }

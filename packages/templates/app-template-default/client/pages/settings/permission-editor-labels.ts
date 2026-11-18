@@ -21,6 +21,7 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
       noMenus: k('noMenus'),
       emptyPage: (menu, object) => k('emptyPage', { menu, object }),
       openView: (action) => k('openView', { action }),
+      opensWith: (action) => k('opensWith', { action }),
       attention: (count) => k('attention', { count }),
       objects: k('objects'),
       search: k('search'),

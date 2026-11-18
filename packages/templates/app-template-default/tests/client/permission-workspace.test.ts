@@ -30,7 +30,10 @@ import {
 import {
   applyQuickSet,
   menusUsing,
+  dependentsOf,
   narrowerOptions,
+  setActionEnabled,
+  setMenuChecked,
   setScopeValue,
   type PermissionGrants,
   type PermissionValue,
@@ -338,6 +341,29 @@ describe('role permission workspace', () => {
     const sets = ws.objects.find(
       (object) => object.id === 'settings:authorization.permission-sets',
     )!;
+    // Checking the whole System settings group, sensitive entries included, and clearing it again never changes
+    // what the role may do with an object: entries opened by an action stay as they are.
+    const grants: PermissionGrants = {
+      [permissionRowId(
+        { type: 'settings', id: 'authorization.permission-sets' },
+        'update',
+      )]: {},
+    };
+    const all = setMenuChecked(
+      ws.menus,
+      { menus: [], grants },
+      settings.id,
+      true,
+    );
+    expect(all.grants).toBe(grants);
+    expect(all.menus).not.toContain(roles.id);
+    const none = setMenuChecked(ws.menus, all, settings.id, false);
+    expect(none).toEqual({ menus: [], grants });
+    expect(
+      grantsFromDraft(all, {}, [], ws).filter(
+        (grant) => grant.resource.type !== 'page',
+      ),
+    ).toEqual(grantsFromDraft(none, {}, [], ws));
     // A settings page guarded by an action opens with it.
     expect(roles.opensWith).toBe(
       permissionRowId(
@@ -656,7 +682,19 @@ describe('role permission workspace', () => {
       'own',
     );
     expect(change.grants[contract('sign')]?.scopes).toEqual({});
-    // With the contacts View off, the scope keeps its own default.
+    // The contacts View is a requirement of signing: turning it off asks first and turns signing off with it.
+    expect(
+      dependentsOf(ws.objects, grants, [contact('view')]).map(
+        (action) => action.id,
+      ),
+    ).toEqual([contract('sign')]);
+    expect(
+      setActionEnabled(ws.objects, grants, contact('view'), false).grants[
+        contract('sign')
+      ],
+    ).toBeUndefined();
+    // A stored role that signs without the contacts View never falls back to the scope's own, wider default: it is
+    // saved with no signer records and reloads that way.
     const alone = grantsFromDraft(
       value({ [contract('view')]: {}, [contract('sign')]: {} }),
       {},
@@ -668,7 +706,10 @@ describe('role permission workspace', () => {
         .find((grant) => grant.resource.id === 'contracts')
         ?.actions.find((entry) => entry.action === 'sign')?.policy?.scopes
         ?.signers,
-    ).toBe('own');
+    ).toBe('');
+    expect(
+      draftFromGrants(alone, ws).draft.grants[contract('sign')]?.scopes,
+    ).toEqual({ signers: NO_SCOPE });
   });
 
   it('keeps stored scope keys the catalog does not declare', async () => {

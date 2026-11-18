@@ -46,9 +46,10 @@ import {
   effectiveScopeValue,
   followedObject,
   filterObjects,
+  findAction,
+  isMenuToggleable,
   menuCheckState,
   menuCount,
-  menuDependents,
   menusUsing,
   menuWarnings,
   narrowerOptions,
@@ -104,6 +105,8 @@ export interface PermissionEditorLabels {
   readonly noMenus: string;
   readonly emptyPage: (menu: string, object: string) => string;
   readonly openView: (action: string) => string;
+  /** A menu without a permission of its own: it shows while this action is on, set on the object. */
+  readonly opensWith: (action: string) => string;
   readonly attention: (count: number) => string;
   readonly objects: string;
   readonly search: string;
@@ -179,6 +182,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   emptyPage: (menu, object) =>
     `“${menu}” is checked, but this role cannot view ${object} yet, so the page opens empty.`,
   openView: (action) => `Turn on “${action}”`,
+  opensWith: (action) => `Shown with “${action}”`,
   attention: (count) =>
     `${count} ${count === 1 ? 'menu needs' : 'menus need'} attention`,
   objects: 'Business objects',
@@ -520,6 +524,7 @@ function MenuRows({
   labels,
   idPrefix,
   onCheck,
+  onOpenAction,
 }: {
   readonly nodes: readonly PermissionMenuNode[];
   readonly depth: number;
@@ -529,6 +534,7 @@ function MenuRows({
   readonly labels: PermissionEditorLabels;
   readonly idPrefix: string;
   readonly onCheck: (node: PermissionMenuNode, checked: boolean) => void;
+  readonly onOpenAction: (actionId: string) => void;
 }): ReactElement {
   return (
     <>
@@ -555,7 +561,9 @@ function MenuRows({
                 id={controlId}
                 checked={state === 'checked'}
                 indeterminate={state === 'mixed'}
-                disabled={readOnly || Boolean(node.public)}
+                disabled={
+                  readOnly || Boolean(node.public) || !isMenuToggleable(node)
+                }
                 className='data-disabled:cursor-not-allowed data-disabled:opacity-50 data-indeterminate:border-primary data-indeterminate:bg-primary/60'
                 onCheckedChange={(checked: boolean) =>
                   onCheck(node, state === 'mixed' ? true : checked)
@@ -579,6 +587,20 @@ function MenuRows({
                   </span>
                 )}
               </label>
+              {!group && node.opensWith && (
+                <Button
+                  type='button'
+                  variant='link'
+                  size='xs'
+                  className='col-start-2 h-auto justify-self-start p-0 text-xs'
+                  onClick={() => onOpenAction(node.opensWith!)}
+                >
+                  {labels.opensWith(
+                    findAction(objects, node.opensWith)?.action.label ??
+                      node.opensWith,
+                  )}
+                </Button>
+              )}
               {!group && uses.length > 0 && (
                 <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
                   <ObjectTags
@@ -599,6 +621,7 @@ function MenuRows({
                 labels={labels}
                 idPrefix={idPrefix}
                 onCheck={onCheck}
+                onOpenAction={onOpenAction}
               />
             )}
           </Fragment>
@@ -835,24 +858,15 @@ export function PermissionEditor({
     );
   };
   const check = (node: PermissionMenuNode, checked: boolean): void => {
-    if (readOnly || node.public) return;
-    const apply: PendingDisable['apply'] = (draft) =>
-      setMenuChecked(objects, menus, draft, node.id, checked);
-    const dependents = checked
-      ? []
-      : menuDependents(objects, menus, value, node.id);
-    if (dependents.length && !dependents.some((item) => item.managed)) {
-      ask(
-        words.confirmDisable(
-          [node.label],
-          dependents.map((item) => item.label),
-        ),
-        apply,
-      );
-      return;
-    }
-    const change = apply(value);
-    commitValue(change.value, change.notices);
+    if (readOnly || node.public || !isMenuToggleable(node)) return;
+    commitValue(setMenuChecked(menus, value, node.id, checked), []);
+  };
+  const openAction = (actionId: string): void => {
+    const found = findAction(objects, actionId);
+    if (!found) return;
+    select(found.object.id);
+    setTab('objects');
+    requestAnimationFrame(() => titleRef.current?.focus());
   };
   const openView = (warning: PermissionMenuWarning): void => {
     select(warning.object.id);
@@ -1024,6 +1038,7 @@ export function PermissionEditor({
               labels={words}
               idPrefix={`${id}-menu`}
               onCheck={check}
+              onOpenAction={openAction}
             />
           </ul>
         </div>
