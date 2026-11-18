@@ -32,6 +32,8 @@ const ruRU: LocaleResource<typeof enUS> = {
   'files.next': 'Следующий файл',
   'files.loadingPreview': 'Загрузка предпросмотра...',
   'files.downloadFile': 'Скачать файл',
+  'files.htmlPage': 'Страница',
+  'files.htmlSource': 'Исходный код',
   'files.previewUnavailable': 'Для этого типа файлов предпросмотр недоступен.',
   'files.imageFailed':
     'Не удалось показать изображение. Возможно, оно повреждено или имеет неподдерживаемый формат.',

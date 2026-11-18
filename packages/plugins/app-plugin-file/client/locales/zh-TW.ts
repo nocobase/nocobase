@@ -32,6 +32,8 @@ const zhTW: LocaleResource<typeof enUS> = {
   'files.next': '下一個檔案',
   'files.loadingPreview': '載入預覽...',
   'files.downloadFile': '下載檔案',
+  'files.htmlPage': '頁面效果',
+  'files.htmlSource': '原始碼',
   'files.previewUnavailable': '此檔案型別無法預覽。',
   'files.imageFailed': '此影像無法顯示。它可能已損壞或格式不受支援。',
   'files.officeFailed': 'Office Online 無法載入此檔案。',

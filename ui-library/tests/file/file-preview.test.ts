@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  htmlPreviewDocument,
   isSafeImagePreview,
   resolveFilePreviewKind,
   resolveOfficeOpenXmlFormat,
@@ -89,9 +90,51 @@ describe('file preview resolution', () => {
   it('keeps active content unsupported even with a previewable extension', () => {
     expect(
       resolveFilePreviewKind(
-        fileRecord({ filename: 'unsafe.md', mimeType: 'text/html' }),
+        fileRecord({ filename: 'unsafe.md', mimeType: 'image/svg+xml' }),
       ),
     ).toBe('unsupported');
+  });
+
+  it.each([
+    ['text/html', 'page.html'],
+    ['text/html; charset=utf-8', 'PAGE.HTM'],
+    ['application/octet-stream', 'page.html'],
+    ['', 'page.htm'],
+    ['image/png', 'page.html'],
+    ['text/html', 'page.md'],
+    ['text/html', 'page'],
+  ])('previews HTML from %s and %s', (mimeType, filename) => {
+    const file = fileRecord({ mimeType, filename });
+    expect(resolveFilePreviewKind(file)).toBe('html');
+    expect(isSafeImagePreview(file)).toBe(false);
+  });
+
+  it.each([
+    ['image/svg+xml', 'drawing.svg'],
+    ['text/html', 'drawing.svg'],
+    ['image/svg+xml', 'page.html'],
+    ['application/xml', 'data.xml'],
+    ['text/xml', 'page.html'],
+    ['text/html', 'data.xml'],
+    ['application/xhtml+xml', 'page.xhtml'],
+    ['text/html', 'page.xhtml'],
+    ['application/xhtml+xml', 'page.html'],
+    ['application/rss+xml', 'feed.html'],
+  ])(
+    'keeps SVG, XML and XHTML unsupported from %s and %s',
+    (mimeType, filename) => {
+      expect(resolveFilePreviewKind(fileRecord({ mimeType, filename }))).toBe(
+        'unsupported',
+      );
+    },
+  );
+
+  it('puts the preview policy before anything the file contains', () => {
+    const source =
+      '<!DOCTYPE html><html><head><script>1</script></head></html>';
+    expect(htmlPreviewDocument(source)).toBe(
+      `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">${source}`,
+    );
   });
 
   it.each([

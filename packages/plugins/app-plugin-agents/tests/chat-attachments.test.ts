@@ -197,6 +197,27 @@ describe('chat attachments', () => {
     expect((await upload(ALICE, '')).status).toBe(400);
   });
 
+  it('serves an HTML upload as a sandboxed download, never as a document', async () => {
+    h = await createHarness();
+    const file = await uploaded(
+      ALICE,
+      'page.html',
+      '<script>parent.document</script>',
+      'text/html',
+    );
+    for (const download of [false, true]) {
+      const served = await content(file.id, { user: ALICE, download });
+      expect(served.status).toBe(200);
+      expect(served.headers.get('content-disposition')).toMatch(
+        /^attachment; /u,
+      );
+      expect(served.headers.get('content-security-policy')).toBe(
+        "sandbox; default-src 'none'",
+      );
+      expect(served.headers.get('x-content-type-options')).toBe('nosniff');
+    }
+  });
+
   it('sends files with a message, shows them to the owner only, and refuses ids that are not the sender’s uploads', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

@@ -1,6 +1,6 @@
 /**
  * One file previewed in place with the file plugin's preview components: images, PDFs (through a local blob, the
- * route serving them as it does), text and Markdown, audio and video, and DOCX, XLSX and PPTX rendered in the browser.
+ * route serving them as it does), text and Markdown, HTML in a script-only sandbox, audio and video, and DOCX, XLSX and PPTX rendered in the browser.
  * What cannot be shown offers its download. The bytes are only ever read at the file's `contentUrl`.
  */
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
@@ -62,7 +62,7 @@ export function FilePreview({
   }, [sourceUrl, kind]);
   const url = kind === 'pdf' ? blobUrl : sourceUrl;
   useEffect(() => {
-    if (!url || !['text', 'markdown'].includes(kind)) return undefined;
+    if (!url || !['text', 'markdown', 'html'].includes(kind)) return undefined;
     const controller = new AbortController();
     void fetch(url, {
       credentials: fileUrlCredentials(url),

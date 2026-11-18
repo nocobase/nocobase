@@ -36,6 +36,8 @@ const jaJP: LocaleResource<typeof enUS> = {
   'files.next': '次のファイル',
   'files.loadingPreview': 'プレビューを読み込んでいます...',
   'files.downloadFile': 'ダウンロードファイル',
+  'files.htmlPage': 'ページ表示',
+  'files.htmlSource': 'ソース',
   'files.previewUnavailable':
     'このファイル形式ではプレビューを利用できません。',
   'files.imageFailed':

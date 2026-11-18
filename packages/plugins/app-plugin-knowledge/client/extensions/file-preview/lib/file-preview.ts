@@ -7,6 +7,7 @@ export type FilePreviewKind =
   | 'video'
   | 'text'
   | 'markdown'
+  | 'html'
   | 'ooxml'
   | 'office'
   | 'unsupported';
@@ -27,6 +28,13 @@ const ACTIVE_EXTENSIONS: ReadonlySet<string> = new Set([
   '.xhtml',
   '.xml',
 ]);
+const HTML_MIME_TYPE = 'text/html';
+const HTML_EXTENSIONS: ReadonlySet<string> = new Set(['.htm', '.html']);
+// The preview document may run its own inline scripts and styles but load
+// nothing: no requests, frames, fonts or remote images, the application's
+// API included. The sandbox around it gives it an opaque origin as well.
+export const HTML_PREVIEW_CONTENT_SECURITY_POLICY =
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:";
 const OFFICE_OPEN_XML_EXTENSIONS: Readonly<
   Record<string, OfficeOpenXmlFormat>
 > = {
@@ -80,8 +88,18 @@ export function fileExtension(filename: string): string {
   return dot < 0 ? '' : filename.slice(dot).toLowerCase();
 }
 
+function normalizeMimeType(value: string): string {
+  return value.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+}
+
+// Active markup runs script when a browser treats it as a document.
+export function isActiveMarkupMimeType(value: string): boolean {
+  const mimeType = normalizeMimeType(value);
+  return ACTIVE_MIME_TYPES.has(mimeType) || mimeType.endsWith('+xml');
+}
+
 export function isSafeImagePreview(file: FileRecord): boolean {
-  const mimeType = file.mimeType.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+  const mimeType = normalizeMimeType(file.mimeType);
   return (
     mimeType.startsWith('image/') &&
     mimeType !== 'image/svg+xml' &&
@@ -89,14 +107,30 @@ export function isSafeImagePreview(file: FileRecord): boolean {
   );
 }
 
+// HTML is the one active markup previewed, and only in a sandboxed frame. A file
+// that also claims to be SVG, XML or XHTML, by its name or its type, stays
+// unsupported, so a conflicting pair never chooses the more capable preview.
+function isHtmlPreview(mimeType: string, extension: string): boolean {
+  const htmlExtension = HTML_EXTENSIONS.has(extension);
+  const htmlMimeType = mimeType === HTML_MIME_TYPE;
+  if (!htmlExtension && !htmlMimeType) return false;
+  if (ACTIVE_EXTENSIONS.has(extension) && !htmlExtension) return false;
+  return !isActiveMarkupMimeType(mimeType) || htmlMimeType;
+}
+
+// The policy comes first so the browser applies it before it parses anything
+// of the file; the file's own policies can only narrow it further.
+export function htmlPreviewDocument(source: string): string {
+  return `<!doctype html><meta http-equiv="Content-Security-Policy" content="${HTML_PREVIEW_CONTENT_SECURITY_POLICY}">${source}`;
+}
+
 export function resolveOfficeOpenXmlFormat(
   file: FileRecord,
 ): OfficeOpenXmlFormat | undefined {
-  const mimeType = file.mimeType.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+  const mimeType = normalizeMimeType(file.mimeType);
   const extension = fileExtension(file.filename);
   if (
-    ACTIVE_MIME_TYPES.has(mimeType) ||
-    mimeType.endsWith('+xml') ||
+    isActiveMarkupMimeType(mimeType) ||
     ACTIVE_EXTENSIONS.has(extension) ||
     OFFICE_EXTENSIONS.has(extension)
   ) {
@@ -109,14 +143,10 @@ export function resolveOfficeOpenXmlFormat(
 }
 
 export function resolveFilePreviewKind(file: FileRecord): FilePreviewKind {
-  const mimeType = file.mimeType.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+  const mimeType = normalizeMimeType(file.mimeType);
   const extension = fileExtension(file.filename);
-  if (
-    ACTIVE_MIME_TYPES.has(mimeType) ||
-    mimeType.endsWith('+xml') ||
-    ACTIVE_EXTENSIONS.has(extension)
-  ) {
-    return 'unsupported';
+  if (isActiveMarkupMimeType(mimeType) || ACTIVE_EXTENSIONS.has(extension)) {
+    return isHtmlPreview(mimeType, extension) ? 'html' : 'unsupported';
   }
   if (mimeType === 'text/markdown' || extension === '.md') return 'markdown';
   if (resolveOfficeOpenXmlFormat(file)) return 'ooxml';

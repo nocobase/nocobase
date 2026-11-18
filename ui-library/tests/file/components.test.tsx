@@ -308,6 +308,59 @@ it('previews a Repository record as text and shows safe image thumbnails', async
   );
 });
 
+it('previews HTML in a script-only sandbox and switches to its source', async () => {
+  const source = '<h1>Report</h1><script>document.title = "ran";</script>';
+  const fetcher = vi.fn(async () => new Response(source));
+  vi.stubGlobal('fetch', fetcher);
+  const user = userEvent.setup();
+  render(
+    <FilePreviewDialog
+      files={[record({ filename: 'report.html', mimeType: 'text/html' })]}
+      open
+      onOpenChange={() => undefined}
+    />,
+  );
+  const frame = await screen.findByTitle('report.html');
+  expect(frame.tagName).toBe('IFRAME');
+  expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+  expect(frame).toHaveAttribute('referrerpolicy', 'no-referrer');
+  expect(frame).not.toHaveAttribute('src');
+  const srcdoc = frame.getAttribute('srcdoc') ?? '';
+  expect(srcdoc).toMatch(
+    /^<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; [^"]*">/u,
+  );
+  expect(srcdoc.endsWith(source)).toBe(true);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+
+  await user.click(screen.getByRole('tab', { name: 'Source' }));
+  expect(screen.getByText(source)).toBeInTheDocument();
+  expect(screen.queryByTitle('report.html')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('tab', { name: 'Page' }));
+  expect(await screen.findByTitle('report.html')).toBeInTheDocument();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  ['drawing.svg', 'image/svg+xml'],
+  ['data.xml', 'application/xml'],
+  ['page.xhtml', 'application/xhtml+xml'],
+])('offers only a download for %s', async (filename, mimeType) => {
+  const fetcher = vi.fn(async () => new Response('<svg></svg>'));
+  vi.stubGlobal('fetch', fetcher);
+  render(
+    <FilePreviewDialog
+      files={[record({ filename, mimeType })]}
+      open
+      onOpenChange={() => undefined}
+    />,
+  );
+  expect(
+    await screen.findByText('Preview is unavailable for this file type.'),
+  ).toBeInTheDocument();
+  expect(document.querySelector('iframe')).toBeNull();
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
 it('replaces an image that fails to decode with a download fallback', async () => {
   const onDownload = vi.fn();
   const { FilePreviewContent } =

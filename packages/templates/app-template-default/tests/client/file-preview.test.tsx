@@ -99,3 +99,22 @@ it('shows the denied content response without trying a third-party viewer', asyn
   expect(document.querySelector('iframe')).toBeNull();
   expect(screen.queryByRole('button', { name: /Download/ })).toBeNull();
 });
+
+it('preinstalled preview renders HTML in a script-only sandbox', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>().mockResolvedValue(new Response('<h1>Report</h1>')),
+  );
+  render(
+    <FilePreviewDialog
+      files={[{ ...file('html'), mimeType: 'text/html' }]}
+      open
+      onOpenChange={vi.fn()}
+    />,
+  );
+  const frame = await screen.findByTitle('attachment.html');
+  expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+  expect(frame.getAttribute('srcdoc')).toMatch(
+    /^<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; .*<h1>Report<\/h1>$/u,
+  );
+});

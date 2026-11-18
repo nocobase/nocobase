@@ -34,6 +34,8 @@ const esES: LocaleResource<typeof enUS> = {
   'files.next': 'Siguiente archivo',
   'files.loadingPreview': 'Cargando vista previa...',
   'files.downloadFile': 'Descargar archivo',
+  'files.htmlPage': 'Página',
+  'files.htmlSource': 'Código fuente',
   'files.previewUnavailable':
     'La vista previa no está disponible para este tipo de archivo.',
   'files.imageFailed':

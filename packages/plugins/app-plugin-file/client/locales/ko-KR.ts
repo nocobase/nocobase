@@ -33,6 +33,8 @@ const koKR: LocaleResource<typeof enUS> = {
   'files.next': '다음 파일',
   'files.loadingPreview': '미리 보기를 불러오는 중...',
   'files.downloadFile': '파일 다운로드',
+  'files.htmlPage': '페이지',
+  'files.htmlSource': '소스',
   'files.previewUnavailable': '이 파일 형식은 미리 볼 수 없습니다.',
   'files.imageFailed':
     '이미지를 표시할 수 없습니다. 손상되었거나 지원되지 않는 형식일 수 있습니다.',

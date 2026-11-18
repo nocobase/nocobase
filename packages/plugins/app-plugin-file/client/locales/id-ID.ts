@@ -33,6 +33,8 @@ const idID: LocaleResource<typeof enUS> = {
   'files.next': 'Berkas selanjutnya',
   'files.loadingPreview': 'Memuat pratinjau...',
   'files.downloadFile': 'Unduh berkas',
+  'files.htmlPage': 'Halaman',
+  'files.htmlSource': 'Sumber',
   'files.previewUnavailable': 'Pratinjau tidak tersedia untuk jenis file ini.',
   'files.imageFailed':
     'Gambar ini tidak dapat ditampilkan. Mungkin rusak atau dalam format yang tidak didukung.',

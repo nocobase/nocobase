@@ -1823,6 +1823,7 @@ describe('attachments over HTTP', () => {
     expect(served.headers.get('content-security-policy')).toBe(
       "sandbox; default-src 'none'",
     );
+    expect(served.headers.get('x-content-type-options')).toBe('nosniff');
     expect(
       (await call(`/attachments/${picture.id}/content`, { role: 'none' }))
         .status,

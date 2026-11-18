@@ -31,6 +31,8 @@ const messages = {
   'files.next': 'Next file',
   'files.loadingPreview': 'Loading preview...',
   'files.downloadFile': 'Download file',
+  'files.htmlPage': 'Page',
+  'files.htmlSource': 'Source',
   'files.previewUnavailable': 'Preview is unavailable for this file type.',
   'files.imageFailed':
     'This image could not be displayed. It may be corrupted or in an unsupported format.',
