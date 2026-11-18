@@ -4,7 +4,7 @@
       "name": "permission-editor",
       "type": "registry:component",
       "title": "Permission Editor",
-      "description": "A controlled two-column permission editor: a menu tree with status dots and counts, and the selected menu’s actions with switches, a view scope that other actions follow or narrow, multi-scope actions, dependencies and risk tags.",
+      "description": "A controlled two-column permission editor: a menu tree with status dots and counts, and the selected menu’s actions with switches, a view scope that other actions follow or narrow, multi-scope actions, and dependencies that never turn risky actions on automatically.",
       "categories": ["authorization"],
       "meta": {
         "group": "Authorization",

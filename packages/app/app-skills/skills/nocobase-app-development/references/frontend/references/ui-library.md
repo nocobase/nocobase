@@ -150,7 +150,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A controlled two-column permission editor: a menu tree with status dots and counts, and the selected menu’s actions with switches, a view scope that other actions follow or narrow, multi-scope actions, dependencies and risk tags.
+A controlled two-column permission editor: a menu tree with status dots and counts, and the selected menu’s actions with switches, a view scope that other actions follow or narrow, multi-scope actions, and dependencies that never turn risky actions on automatically.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
