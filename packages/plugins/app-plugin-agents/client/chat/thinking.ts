@@ -16,8 +16,8 @@ import { useChatPanel } from './provider.js';
 
 /**
  * A conversation's saved level as the chat shows it: `provider-default` when none is saved. A saved value that is not
- * a standard level is shown as it is, so no level reads as chosen and choosing any one saves it; such a value is
- * refused when the conversation runs (`REASONING_LEVEL_INVALID`).
+ * a standard level (only an earlier preview build saved one) is shown as it is, so no level reads as chosen and
+ * choosing any one saves a valid level.
  */
 export function shownThinking(
   value: string | undefined,
