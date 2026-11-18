@@ -289,36 +289,32 @@ export function ExtractedText({
 }
 
 /**
- * Keeps Esc closing the dialog while a frame inside `area` (a PDF, an Office viewer) holds the focus: key presses
+ * Keeps Esc closing the dialog while a frame inside `areaRef` (a PDF, an Office viewer) holds the focus: key presses
  * there never reach this document. A frame whose document can be read (served from here, not a PDF) gets its own
- * Esc listener and keeps its keyboard; any other one hands the focus back to `area` as soon as it takes it, so the
+ * Esc listener and keeps its keyboard; any other one hands the focus back to `areaRef` as soon as it takes it, so the
  * frame still scrolls and takes clicks.
  */
 function useEscapeFromFrames(
   open: boolean,
-  area: { readonly current: HTMLElement | null },
-  onClose: () => void,
+  areaRef: { readonly current: HTMLElement | null },
+  onOpenChange: (open: boolean) => void,
 ): void {
-  const close = useRef(onClose);
-  close.current = onClose;
   useEffect(() => {
     if (!open) return undefined;
     const listened = new Set<Document>();
+    const timers = new Set<number>();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close.current();
+      if (event.key === 'Escape') onOpenChange(false);
     };
     const onBlur = () => {
       // The focus has moved into a frame by the time the window loses it.
-      window.setTimeout(() => {
+      const timer = window.setTimeout(() => {
+        timers.delete(timer);
         const frame = document.activeElement;
-        if (!(frame instanceof HTMLIFrameElement)) return;
-        if (!area.current?.contains(frame)) return;
-        let inner: Document | null = null;
-        try {
-          inner = frame.contentDocument;
-        } catch {
-          inner = null;
-        }
+        const area = areaRef.current;
+        if (!(frame instanceof HTMLIFrameElement) || !area?.contains(frame))
+          return;
+        const inner = readableDocument(frame);
         if (inner && inner.contentType !== 'application/pdf') {
           if (!listened.has(inner)) {
             listened.add(inner);
@@ -326,15 +322,26 @@ function useEscapeFromFrames(
           }
           return;
         }
-        area.current.focus({ preventScroll: true });
+        area.focus({ preventScroll: true });
       }, 0);
+      timers.add(timer);
     };
     window.addEventListener('blur', onBlur);
     return () => {
       window.removeEventListener('blur', onBlur);
+      for (const timer of timers) window.clearTimeout(timer);
       for (const inner of listened) inner.removeEventListener('keydown', onKey);
     };
-  }, [open, area]);
+  }, [open, areaRef, onOpenChange]);
+}
+
+/** A frame's document, or null when another origin serves it. */
+function readableDocument(frame: HTMLIFrameElement): Document | null {
+  try {
+    return frame.contentDocument;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -361,8 +368,8 @@ export function FilePreviewDialog({
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const record = recordOf(file, at);
   const markdown = isMarkdown(file);
-  const area = useRef<HTMLDivElement>(null);
-  useEscapeFromFrames(open, area, () => onOpenChange(false));
+  const areaRef = useRef<HTMLDivElement>(null);
+  useEscapeFromFrames(open, areaRef, onOpenChange);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -411,7 +418,7 @@ export function FilePreviewDialog({
           </DialogClose>
         </div>
         <div
-          ref={area}
+          ref={areaRef}
           tabIndex={-1}
           className={cn(
             'min-h-0 flex-1 outline-none',

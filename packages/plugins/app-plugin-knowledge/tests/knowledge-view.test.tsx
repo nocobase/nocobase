@@ -1664,7 +1664,7 @@ describe('a file entry', () => {
         .getAllByRole('button')
         .map((button) => button.textContent?.trim())
         .filter(Boolean),
-    ).toEqual(['History', 'View sections', 'Permissions']);
+    ).toEqual(['History', 'View sections', 'Permissions', 'Close']);
   });
 
   it("previews Markdown with the documents' rendering and full screen only from the Preview tab", async () => {
@@ -1728,7 +1728,9 @@ describe('a file entry', () => {
     );
     await press(within(text).getByRole('button', { name: 'Copy' }));
     await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith('# Readme\n\nTag it, then deploy.'),
+      expect(writeText).toHaveBeenCalledWith(
+        '# Readme\n\nTag it, then deploy.',
+      ),
     );
     expect(await screen.findByText('Copied.')).toBeInTheDocument();
   });
@@ -1759,12 +1761,12 @@ describe('a file entry', () => {
         ).not.toBeInTheDocument(),
       );
 
-    let dialog = await open();
+    await open();
     await userEvent.keyboard('{Escape}');
     await closed();
 
     // A frame whose document can be read listens for Esc itself.
-    dialog = await open();
+    let dialog = await open();
     let frame = dialog.querySelector('iframe')!;
     frame.focus();
     fireEvent.blur(window);
