@@ -148,12 +148,14 @@ const OBJECTS: readonly PermissionObject[] = [
         description: 'Approve contracts awaiting approval.',
         scopes: [
           { id: 'records', label: 'Contracts', followsView: true },
-          // Approving also reads the customer: an extra scope titled with that object's registered title.
+          // Approving also reads the customer: an extra scope titled with that object's registered title. It follows
+          // Customers' View, so the customer scope is set once, on the Customers object.
           {
             id: 'customers',
             label: 'Customers',
             options: RECORDS,
             defaultValue: 'team',
+            followsView: 'customers.view',
           },
           {
             id: 'amount',

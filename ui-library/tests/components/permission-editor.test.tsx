@@ -113,16 +113,18 @@ function Host({
   initial,
   onChange,
   tab,
+  items = objects,
 }: {
   readonly initial: PermissionValue;
   readonly onChange?: (next: PermissionValue) => void;
   readonly tab?: 'menus' | 'objects';
+  readonly items?: readonly PermissionObject[];
 }): ReactElement {
   const [value, setValue] = useState(initial);
   return (
     <PermissionEditor
       menus={menus}
-      objects={objects}
+      objects={items}
       value={value}
       defaultTab={tab}
       onChange={(next) => {
@@ -484,6 +486,73 @@ describe('business objects tab', () => {
     expect(within(list).getByText('1 of 4 on')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Disable all' }));
     expect(within(list).getAllByText('Off').length).toBeGreaterThan(0);
+  });
+
+  it('shows a slot reading another object as following that object’s View', async () => {
+    const user = userEvent.setup();
+    const items: readonly PermissionObject[] = [
+      {
+        id: 'contracts',
+        label: 'Contracts',
+        actions: [
+          {
+            id: 'contracts.view',
+            label: 'View contracts',
+            view: true,
+            scopes: [{ id: 'records', options: RECORDS }],
+          },
+          {
+            id: 'contracts.approve',
+            label: 'Approve contracts',
+            scopes: [
+              { id: 'records', label: 'Contracts', followsView: true },
+              {
+                id: 'customers',
+                label: 'Customers',
+                options: RECORDS,
+                followsView: 'customers.view',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'customers',
+        label: 'Customers',
+        actions: [
+          {
+            id: 'customers.view',
+            label: 'View customers',
+            view: true,
+            scopes: [{ id: 'records', options: RECORDS }],
+          },
+        ],
+      },
+    ];
+    render(
+      <Host
+        tab='objects'
+        items={items}
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            'contracts.approve': {},
+            'customers.view': { scopes: { records: 'department' } },
+          },
+        }}
+      />,
+    );
+    expect(trigger('Approve contracts: Customers')).toHaveTextContent(
+      'Same as Customers view (Their department)',
+    );
+    await user.click(trigger('Approve contracts: Customers'));
+    expect(
+      screen.getAllByRole('option').map((option) => option.textContent?.trim()),
+    ).toEqual([
+      'Same as Customers view (Their department)',
+      'Their own records',
+    ]);
   });
 
   it('filters objects by action name', async () => {
