@@ -1022,3 +1022,62 @@ it('lists current tool quota with each visible runtime, as its own read shows it
   expect(later?.unavailableModels).toEqual([]);
   expect(later?.quotaUsage.map((u) => u.window)).toEqual(['seven_day']);
 });
+
+it('retires missing Codex windows after a complete snapshot, including earlier samples in the same batch', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({
+    tools: [{ kind: 'codex', authenticated: true }],
+  });
+  const agent = await h.createAgent({
+    modelEntries: [{ tool: 'codex', model: null }],
+  });
+  const runId = await h.enqueue(agent);
+  expect((await claim(h, runner))[0].run.id).toBe(runId);
+  const monthly = {
+    scope: 'tool' as const,
+    target: '',
+    window: '43200m',
+    usedPercent: 52,
+    exhausted: false,
+    resetsAt: null,
+  };
+  const weekly = { ...monthly, window: '10080m', usedPercent: 0 };
+  for (const tool of ['codex', 'claude'] as const) {
+    await h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, tool, null, {
+        windows: [monthly],
+      }),
+    );
+  }
+  const events = [
+    { windows: [monthly, weekly] },
+    { replacesUsage: true, windows: [weekly] },
+  ].map((quota, i) => ({
+    seq: i + 1,
+    at: h.clock.now().toISOString(),
+    type: 'status',
+    content: 'quota',
+    meta: { quota },
+  }));
+  const post = () =>
+    h.request('POST', `/agents/runners/runs/${runId}/events`, {
+      runnerKey: runner.key,
+      body: { events },
+    });
+  expect((await post()).status).toBe(200);
+  const after = await h.services.runners.get(runner.runnerId);
+  expect(
+    after.quotaUsage?.map(({ tool, window, usedPercent }) => [
+      tool,
+      window,
+      usedPercent,
+    ]),
+  ).toEqual([
+    ['claude', '43200m', 52],
+    ['codex', '10080m', 0],
+  ]);
+  expect((await post()).status).toBe(200);
+  expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
+    after.quotaRevision,
+  );
+});
