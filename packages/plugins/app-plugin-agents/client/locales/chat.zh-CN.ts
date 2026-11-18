@@ -6,7 +6,7 @@ const chatZhCN: ChatLocale = {
       levels: {
         default: '默认',
         off: '关闭',
-        minimal: '最低',
+        minimal: '极低',
         low: '低',
         medium: '中',
         high: '高',

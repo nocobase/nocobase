@@ -274,9 +274,6 @@ export {
   CHAT_THINKING_STORAGE_KEY,
   readThinking,
   rememberThinking,
-  restoredThinking,
   shownThinking,
-  thinkingControlOf,
   useThinkingMemory,
-  type ThinkingControl,
 } from './chat/thinking.js';

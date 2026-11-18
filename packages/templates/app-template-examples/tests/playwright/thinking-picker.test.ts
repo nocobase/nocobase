@@ -69,41 +69,15 @@ for (const width of [1440, 375, 412]) {
             baseUrl: fixture.url,
             apiKey: 'isolated-local-fixture-only',
             enabled: true,
+            // No model declares thinking levels: every Online chat model offers all of them.
             models: [
               {
                 value: 'levels',
                 label: 'Atlas Pro Extended Reasoning',
                 kind: 'chat',
-                reasoning: { levels: ['off', 'low', 'medium', 'high'] },
               },
-              {
-                value: 'many',
-                label: 'Orbit Max',
-                kind: 'chat',
-                reasoning: {
-                  levels: [
-                    'off',
-                    'minimal',
-                    'low',
-                    'medium',
-                    'high',
-                    'xhigh',
-                    'max',
-                  ],
-                },
-              },
-              {
-                value: 'toggle',
-                label: 'Nova Reasoner',
-                kind: 'chat',
-                reasoning: { levels: ['off', 'high'] },
-              },
-              {
-                value: 'basic',
-                label: 'Text Basic',
-                kind: 'chat',
-                reasoning: false,
-              },
+              { value: 'many', label: 'Orbit Max', kind: 'chat' },
+              { value: 'basic', label: 'Text Basic', kind: 'chat' },
             ],
           },
         });
@@ -131,6 +105,16 @@ for (const width of [1440, 375, 412]) {
         await expect(
           control.getByRole('menuitemradio', { name: 'Default', exact: true }),
         ).toBeChecked();
+        await expect(control.getByRole('menuitemradio')).toHaveText([
+          'Default',
+          'Off',
+          'Minimal',
+          'Low',
+          'Medium',
+          'High',
+          'Extra high',
+          'Max',
+        ]);
         await control
           .getByRole('menuitemradio', { name: 'High', exact: true })
           .click();
@@ -142,7 +126,7 @@ for (const width of [1440, 375, 412]) {
           await screenshot({
             path: path.join(
               process.env.E2E_SCREENSHOT_DIR,
-              `thinking-b1-${width}-levels.png`,
+              `thinking-${width}-levels.png`,
             ),
           });
         }
@@ -167,7 +151,7 @@ for (const width of [1440, 375, 412]) {
           await screenshot({
             path: path.join(
               process.env.E2E_SCREENSHOT_DIR,
-              `thinking-b1-${width}-summary.png`,
+              `thinking-${width}-summary.png`,
             ),
           });
         }
@@ -257,7 +241,7 @@ for (const width of [1440, 375, 412]) {
               await screenshot({
                 path: path.join(
                   process.env.E2E_SCREENSHOT_DIR,
-                  `thinking-b1-${width}-${theme}-${dark ? 'dark' : 'light'}.png`,
+                  `thinking-${width}-${theme}-${dark ? 'dark' : 'light'}.png`,
                 ),
               });
               if (width === 1440) {
@@ -279,29 +263,17 @@ for (const width of [1440, 375, 412]) {
             }
           }
         }
-        await modelRow('toggle').click();
-        const toggle = control.getByRole('switch');
-        await expect(defaultChoice).toBeChecked();
-        await expect(toggle).not.toBeChecked();
-        await page.mouse.move(0, 0);
-        await defaultChoice.press('ArrowRight');
-        await expect(toggle).toBeFocused();
-        await page.keyboard.press('Space');
-        await expect(toggle).toBeChecked();
-        await toggle.click();
-        await expect(toggle).not.toBeChecked();
-        await expect(defaultChoice).not.toBeChecked();
-        await defaultChoice.click();
-        await expect(defaultChoice).toBeChecked();
+        // A model whose id no list names offers every level, and the menu stays open.
         await modelRow('basic').click();
-        await expect(menu).toHaveCount(0);
-        await expect(picker).toHaveText('Text Basic');
+        await expect(menu).toBeVisible();
+        await expect(picker).toContainText('Text Basic');
+        await expect(control.getByRole('menuitemradio')).toHaveCount(8);
+        await control
+          .getByRole('menuitemradio', { name: 'Off', exact: true })
+          .click();
         await expect(
           picker.getByTestId('agent-picker-model-summary'),
-        ).toHaveCount(0);
-        await expect(picker).toBeFocused();
-        await picker.click();
-        await expect(control).toHaveCount(0);
+        ).toHaveText('· Off');
         await modelRow('levels').click();
         await expect(
           control.getByRole('menuitemradio', { name: 'High', exact: true }),
@@ -375,7 +347,7 @@ for (const width of [1440, 375, 412]) {
             await screenshot({
               path: path.join(
                 process.env.E2E_SCREENSHOT_DIR,
-                'thinking-b1-412-zh-CN.png',
+                'thinking-412-zh-CN.png',
               ),
             });
           }

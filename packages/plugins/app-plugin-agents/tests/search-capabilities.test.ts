@@ -1,16 +1,8 @@
 import { expect, it } from 'vitest';
 import {
   mergeModelCapabilities,
-  resolveModelCapabilities as resolveAll,
-} from '../server/online/capabilities.js';
-
-/** Search and image admission only; thinking levels have their own tests (`model-reasoning.test.ts`). */
-const resolveModelCapabilities = (
-  ...args: Parameters<typeof resolveAll>
-): Omit<ReturnType<typeof resolveAll>, 'reasoning'> => {
-  const { reasoning: _reasoning, ...rest } = resolveAll(...args);
-  return rest;
-};
+  resolveModelCapabilities,
+} from '../server/online/search/capabilities.js';
 
 it('applies explicit model false over provider true instead of using truthy fallback', () => {
   const definition = {

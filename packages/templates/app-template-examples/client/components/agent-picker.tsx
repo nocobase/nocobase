@@ -30,7 +30,6 @@ import type {
   OfflineReason,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import type {
-  ModelCapabilities,
   ModelRef,
   ModelService,
 } from '@nocobase/app-plugin-agents/shared/models';
@@ -291,14 +290,9 @@ export interface AgentPickerModels {
   readonly value: ModelRef | null;
   readonly onSelect: (model: ModelRef) => void;
   /** Optional inline controls for the selected model. Non-null controls keep its row open on selection. */
-  readonly renderSettings?: (
-    model: ModelRef,
-    capabilities: ModelCapabilities | undefined,
-  ) => ReactElement | null;
+  readonly renderSettings?: (model: ModelRef) => ReactElement | null;
   /** A compact, accessible summary beside the selected model's name, even while the menu is closed. */
-  readonly summary?: (
-    capabilities: ModelCapabilities | undefined,
-  ) => { text: string; label: string } | null;
+  readonly summary?: () => { text: string; label: string } | null;
   /** Blocks only model choices, never the Runner choices. */
   readonly disabled?: boolean;
 }
@@ -432,10 +426,7 @@ export function AgentPicker({
     : name;
   // A field holding no agent shows the words alone, as a select shows its choice.
   const avatarless = !toolbar && !shown && !chosen;
-  const summary =
-    modelTrigger && selectedModel
-      ? models?.summary?.(selectedModel.model.capabilities)
-      : null;
+  const summary = modelTrigger && selectedModel ? models?.summary?.() : null;
   return (
     <DropdownMenu
       modal={!models}
@@ -653,10 +644,7 @@ export function AgentPicker({
                       !bound &&
                       selectedModel?.service.name === service.name &&
                       selectedModel.model.value === model.value;
-                    const settings = models.renderSettings?.(
-                      ref,
-                      model.capabilities,
-                    );
+                    const settings = models.renderSettings?.(ref);
                     return (
                       <div
                         key={JSON.stringify([service.name, model.value])}

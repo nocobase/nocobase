@@ -1,10 +1,7 @@
+import { thinkingLevelText } from '@nocobase/app-plugin-agents/client/chat';
 import {
-  thinkingControlOf,
-  thinkingLevelText,
-} from '@nocobase/app-plugin-agents/client/chat';
-import type {
-  ModelCapabilities,
-  ReasoningLevel,
+  REASONING_LEVELS,
+  type ReasoningLevel,
 } from '@nocobase/app-plugin-agents/shared/models';
 import { BrainIcon } from 'lucide-react';
 import { useLayoutEffect, useRef, type ReactElement } from 'react';
@@ -14,28 +11,27 @@ import {
   DropdownMenuRadioItem,
 } from '#components/ui/dropdown-menu';
 import { Separator } from '#components/ui/separator';
-import { Switch } from '#components/ui/switch';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
 
 export interface ThinkingMenuProps {
-  readonly capabilities: ModelCapabilities | undefined;
   readonly value: ReasoningLevel;
   readonly onChange: (level: ReasoningLevel) => void;
   readonly disabled?: boolean;
 }
 
-/** Inline settings for the selected Online model, never a Runner agent. */
+/**
+ * Inline settings for the selected Online model, never a Runner agent: every level, whatever the model. Whether the
+ * provider applies one is up to its SDK package and the provider itself.
+ */
 export function ThinkingMenu({
-  capabilities,
   value,
   onChange,
   disabled,
-}: ThinkingMenuProps): ReactElement | null {
+}: ThinkingMenuProps): ReactElement {
   const { t } = useChatTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const control = thinkingControlOf(capabilities);
   const reveal = (element: HTMLElement | null) => {
     const scroll = scrollRef.current;
     if (!scroll || !element || !scroll.contains(element)) return;
@@ -50,13 +46,8 @@ export function ThinkingMenu({
   useLayoutEffect(() => {
     reveal(scrollRef.current?.querySelector('[aria-checked="true"]') ?? null);
   }, [value]);
-  if (control.kind === 'none') return null;
   const label = (level: ReasoningLevel) => thinkingLevelText(level, t);
-  const state =
-    control.kind === 'toggle' && value !== 'default' && value !== 'off'
-      ? t('chat.thinking.on')
-      : label(value);
-  const name = t('chat.thinking.choose', { level: state });
+  const name = t('chat.thinking.choose', { level: label(value) });
   const itemClass =
     'min-h-7 min-w-7 shrink-0 justify-center px-2 py-1 text-xs whitespace-nowrap focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden';
   return (
@@ -69,7 +60,7 @@ export function ThinkingMenu({
         if (
           !disabled &&
           next !== value &&
-          control.levels.includes(next as ReasoningLevel)
+          REASONING_LEVELS.includes(next as ReasoningLevel)
         ) {
           onChange(next as ReasoningLevel);
         }
@@ -79,7 +70,7 @@ export function ThinkingMenu({
           return;
         const items = Array.from(
           event.currentTarget.querySelectorAll<HTMLElement>(
-            '[role="menuitemradio"]:not([aria-disabled="true"]), [role="switch"]:not([disabled])',
+            '[role="menuitemradio"]:not([aria-disabled="true"])',
           ),
         );
         const index = items.indexOf(event.target as HTMLElement);
@@ -116,55 +107,34 @@ export function ThinkingMenu({
         {label('default')}
       </DropdownMenuRadioItem>
       <Separator orientation='vertical' className='h-4 shrink-0' />
-      {control.kind === 'toggle' ? (
-        <span className='flex min-w-0 items-center gap-3 px-2 text-xs text-muted-foreground'>
-          <span aria-hidden='true'>{label('off')}</span>
-          <Switch
-            size='sm'
-            checked={value !== 'default' && value !== 'off'}
-            disabled={disabled}
-            aria-label={name}
-            data-testid='chat-thinking-switch'
-            onCheckedChange={(checked) =>
-              onChange(checked ? control.on : 'off')
-            }
-            onKeyDown={(event) => {
-              if (event.key === ' ' || event.key === 'Enter')
-                event.stopPropagation();
-            }}
-          />
-          <span aria-hidden='true'>{t('chat.thinking.on')}</span>
-        </span>
-      ) : (
-        <div
-          ref={scrollRef}
-          className='min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]'
-          data-testid='chat-thinking-levels'
-        >
-          <div className='flex w-max min-w-full items-center gap-0.5 rounded-lg bg-muted p-0.5'>
-            {control.levels
-              .filter((level) => level !== 'default')
-              .map((level) => (
-                <DropdownMenuRadioItem
-                  key={level}
-                  value={level}
-                  disabled={disabled}
-                  closeOnClick={false}
-                  onFocus={(event) => reveal(event.currentTarget)}
-                  className={cn(
-                    itemClass,
-                    'min-w-max flex-auto',
-                    value === level
-                      ? 'bg-background font-medium text-foreground shadow-xs'
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {label(level)}
-                </DropdownMenuRadioItem>
-              ))}
-          </div>
+      <div
+        ref={scrollRef}
+        className='min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]'
+        data-testid='chat-thinking-levels'
+      >
+        <div className='flex w-max min-w-full items-center gap-0.5 rounded-lg bg-muted p-0.5'>
+          {REASONING_LEVELS.filter((level) => level !== 'default').map(
+            (level) => (
+              <DropdownMenuRadioItem
+                key={level}
+                value={level}
+                disabled={disabled}
+                closeOnClick={false}
+                onFocus={(event) => reveal(event.currentTarget)}
+                className={cn(
+                  itemClass,
+                  'min-w-max flex-auto',
+                  value === level
+                    ? 'bg-background font-medium text-foreground shadow-xs'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {label(level)}
+              </DropdownMenuRadioItem>
+            ),
+          )}
         </div>
-      )}
+      </div>
     </DropdownMenuRadioGroup>
   );
 }

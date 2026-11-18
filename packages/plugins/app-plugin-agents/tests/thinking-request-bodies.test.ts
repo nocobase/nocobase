@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { streamText } from 'ai';
 import { reasoningOf } from '../server/online/gateway.js';
 import { languageModel } from '../server/online/providers.js';
-import { builtinReasoning } from '../server/online/capabilities.js';
+import { thinkingWarnings } from '../server/online/agent/thinking.js';
 import type { ModelProviderName } from '../shared/models.js';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -12,6 +12,7 @@ async function bodyFor(
   provider: ModelProviderName,
   model: string,
   level: string,
+  baseUrl: string | null = null,
 ): Promise<Record<string, unknown>> {
   const bodies: Record<string, unknown>[] = [];
   vi.stubGlobal(
@@ -25,10 +26,7 @@ async function bodyFor(
     }),
   );
   const result = streamText({
-    model: languageModel(
-      { provider, baseUrl: null, apiKey: 'offline-key' },
-      model,
-    ),
+    model: languageModel({ provider, baseUrl, apiKey: 'offline-key' }, model),
     prompt: 'Hi',
     reasoning: reasoningOf(level),
     maxRetries: 0,
@@ -117,16 +115,12 @@ const cases: {
 ];
 
 it.each(cases)(
-  'sends $provider $model the levels its built-in list declares',
+  'sends $provider $model the level it was given, turned into the provider’s parameter',
   async ({ provider, model, off, on, absent }) => {
-    const levels = builtinReasoning(provider, model)?.levels ?? [];
-    if (levels.includes('off'))
+    if (Object.keys(off).length)
       expect(await bodyFor(provider, model, 'off')).toMatchObject(off);
-    else expect(Object.keys(off)).toEqual([]);
-    if (on.level !== 'default') {
-      expect(levels).toContain(on.level);
+    if (on.level !== 'default')
       expect(await bodyFor(provider, model, on.level)).toMatchObject(on.body);
-    }
     const defaults = await bodyFor(provider, model, 'default');
     for (const key of absent) expect(defaults).not.toHaveProperty(key);
     expect(
@@ -136,13 +130,101 @@ it.each(cases)(
   },
 );
 
-it('declares only default for a model id it does not know exactly', () => {
+it('passes every level on for a model id no list names, over an OpenAI-compatible endpoint too', async () => {
+  for (const level of ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
+    expect(
+      await bodyFor('openai', 'gpt-5.6-terra-2026-11-01', level),
+    ).toMatchObject({ reasoning: expect.objectContaining({ effort: level }) });
   expect(
-    builtinReasoning('openai', 'gpt-5.6-terra-2026-11-01'),
-  ).toBeUndefined();
-  expect(builtinReasoning('anthropic', 'Claude-Opus-4-7')).toBeUndefined();
-  expect(
-    builtinReasoning('openai-compatible', 'gpt-5.6-terra'),
-  ).toBeUndefined();
-  expect(builtinReasoning('google', '__proto__')).toBeUndefined();
+    await bodyFor(
+      'openai-compatible',
+      'my-alias',
+      'high',
+      'https://example.test/v1',
+    ),
+  ).toMatchObject({ reasoning_effort: 'high' });
+});
+
+const completion = {
+  id: 'stub',
+  object: 'chat.completion',
+  created: 1,
+  model: 'stub',
+  choices: [
+    {
+      index: 0,
+      message: { role: 'assistant', content: 'ok' },
+      finish_reason: 'stop',
+    },
+  ],
+  usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+};
+
+it.each([
+  {
+    model: 'deepseek-flash',
+    provider: 'deepseek',
+    level: 'medium',
+    type: 'compatibility',
+  },
+  {
+    model: 'qwen3.8-flash',
+    provider: 'alibaba',
+    level: 'max',
+    type: 'unsupported',
+  },
+] as const)(
+  'reports $provider’s $type warning about $level as the notice’s details',
+  async ({ provider, model, level, type }) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify(completion), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
+    );
+    const result = streamText({
+      model: languageModel(
+        { provider, baseUrl: null, apiKey: 'offline-key' },
+        model,
+      ),
+      prompt: 'Hi',
+      reasoning: reasoningOf(level),
+      maxRetries: 0,
+    });
+    await result.consumeStream();
+    const warnings = await result.warnings;
+    expect(warnings).toContainEqual(
+      expect.objectContaining({ type, feature: 'reasoning' }),
+    );
+    expect(thinkingWarnings(warnings)).toContain(level);
+  },
+);
+
+it('fails the call as usual when the provider refuses the level, without trying another', async () => {
+  const fetch = vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({ error: { message: 'stub', type: 'invalid' } }),
+        { status: 400, headers: { 'content-type': 'application/json' } },
+      ),
+  );
+  vi.stubGlobal('fetch', fetch);
+  const errors: unknown[] = [];
+  const result = streamText({
+    model: languageModel(
+      { provider: 'openai', baseUrl: null, apiKey: 'offline-key' },
+      'gpt-6-astra',
+    ),
+    prompt: 'Hi',
+    reasoning: reasoningOf('off'),
+    maxRetries: 0,
+    onError: ({ error }) => void errors.push(error),
+  });
+  await result.consumeStream();
+  expect(errors).toHaveLength(1);
+  expect(fetch).toHaveBeenCalledTimes(1);
 });

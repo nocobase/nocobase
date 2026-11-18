@@ -1153,17 +1153,6 @@ const idID: LocaleResource<typeof enUS> = {
         'OpenCode mengirimkan x-opencode-session dengan setiap permintaan (satu id sesi per percakapan). Ini melayani setiap keluarga model melalui API-nya sendiri: DeepSeek, GLM, Kimi dan MiMo melalui DeepSeek atau OpenAI-compatible, Claude, MiniMax dan Qwen melalui Anthropic, GPT dan Grok melalui OpenAI. Tambahkan layanan dari setiap jenis yang Anda perlukan, semuanya dengan basis URL ini.',
     },
     models: {
-      reasoning: {
-        label: 'Tingkat berpikir',
-        field: 'Tingkat berpikir {{name}}',
-        auto: 'Otomatis',
-        none: 'Tidak didukung',
-        custom: 'Kustom',
-        builtin: 'Bawaan: {{levels}}',
-        builtinNone: 'Bawaan: hanya bawaan penyedia',
-        unsaved: 'Tingkat bawaan tampil setelah disimpan',
-        empty: 'Pilih setidaknya satu tingkat.',
-      },
       title: 'Model',
       description:
         'Periksa model yang ditawarkan layanan ini, dan jelaskan kegunaan masing-masing model: Agent penjawab model obrolan, penyematan teks indeks model untuk pencarian, peringkat ulang model hasil pencarian pesanan. Model penyematan mungkin meminta vektor dengan ukuran tertentu.',

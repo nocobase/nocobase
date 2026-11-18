@@ -1190,17 +1190,6 @@ const frFR: LocaleResource<typeof enUS> = {
         "OpenCode envoie x-opencode-session à chaque requête (un identifiant de session par conversation). Il dessert chaque famille de modèles à travers son propre API : DeepSeek, GLM, Kimi et MiMo jusqu'à DeepSeek ou OpenAI-compatible, Claude, MiniMax et Qwen jusqu'à Anthropic, GPT et Grok jusqu'à OpenAI. Ajoutez un service de chaque type dont vous avez besoin, le tout avec cette base URL.",
     },
     models: {
-      reasoning: {
-        label: 'Niveaux de réflexion',
-        field: 'Niveaux de réflexion de {{name}}',
-        auto: 'Automatique',
-        none: 'Non pris en charge',
-        custom: 'Personnalisé',
-        builtin: 'Intégrés : {{levels}}',
-        builtinNone: 'Intégrés : par défaut uniquement',
-        unsaved: 'Les niveaux intégrés s’affichent après l’enregistrement',
-        empty: 'Choisissez au moins un niveau.',
-      },
       title: 'Modèles',
       description:
         "Vérifiez les modèles proposés par ce service et indiquez à quoi chacun sert : les modèles de chat répondent aux Agents, intègrent le texte d'index des modèles pour la recherche, reclassent les modèles dans l'ordre des résultats de recherche. Un modèle d'intégration peut demander des vecteurs d'une taille.",

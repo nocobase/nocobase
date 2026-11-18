@@ -260,6 +260,45 @@ describe('model services', () => {
     ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
   });
 
+  it('refuses a model’s thinking levels and ignores ones an earlier build saved', async () => {
+    h = await createHarness();
+    await h.services.models.services.create(local());
+    for (const reasoning of [false, { levels: ['off', 'high'] }])
+      expect(
+        (
+          await h.request('PATCH', '/agents/services/local', {
+            ...ADMIN,
+            body: { models: [{ value: 'mock-model', reasoning }] },
+          })
+        ).status,
+      ).toBe(400);
+    expect(
+      (
+        await h.request('PATCH', '/agents/services/local', {
+          ...ADMIN,
+          body: { models: [{ value: 'mock-model' }] },
+        })
+      ).status,
+    ).toBe(200);
+    await h.database
+      .connection()
+      .repository('agModelServices')
+      .updateMany({
+        filter: { name: 'local' },
+        values: { models: [{ value: 'mock-model', reasoning: false }] },
+      });
+    const [service] = await h.services.models.services.list();
+    expect(service!.models).toEqual([
+      {
+        value: 'mock-model',
+        label: 'mock-model',
+        kind: 'chat',
+        capabilities: { webSearch: false },
+        dimensions: null,
+      },
+    ]);
+  });
+
   it('serves the routes behind agents.services read and manage', async () => {
     h = await createHarness();
     const reader = { user: 'bob', can: ['agents.services/read'] };

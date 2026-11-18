@@ -3,14 +3,9 @@ import { WebSearchBudget } from '../../search/budget.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
 import {
   THINKING_NOTICE_IDS,
-  capabilitiesReader,
-  executionThinking,
-  thinkingAdjustedNotice,
   thinkingWarningNotice,
   thinkingWarnings,
-  validateThinking,
   type ThinkingNotice,
-  type ThinkingSelection,
 } from '../thinking.js';
 import { effectiveTools } from '../configuration.js';
 import { FileInputError } from '../../files/errors.js';
@@ -52,7 +47,7 @@ import {
   type AppUIMessageMetadata,
 } from '../../../../shared/online-agent.js';
 import { MESSAGE_CONTENT_MAX } from '../../../../shared/conversations.js';
-import type { ModelRef } from '../../../../shared/models.js';
+import { isReasoningLevel, type ModelRef } from '../../../../shared/models.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
 import { reasoningOf } from '../../gateway.js';
@@ -148,7 +143,6 @@ export class NativeOnlineAgent {
       ReturnType<OnlineAgentSessionManager['load']>
     >['config'];
     let sdkFailure = false;
-    let thinking!: ThinkingSelection;
     const thinkingNotices: ThinkingNotice[] = [];
     let waitingApprovals = false;
     let background = false;
@@ -187,22 +181,12 @@ export class NativeOnlineAgent {
         selected.modelService !== session.model.modelService ||
         selected.model !== session.model.model;
       config = structuredClone(config);
-      const capabilities = capabilitiesReader(this.deps.webSearch, selected);
       await validateWebSearch(
         config,
         selected,
         this.deps.webSearch,
         changedModel && input?.overrides?.webSearch === undefined,
-        capabilities,
       );
-      if (input?.overrides)
-        await validateThinking(
-          config,
-          input.overrides.thinking,
-          capabilities,
-          changedModel,
-        );
-      thinking = await executionThinking(config.thinking, capabilities);
       model = await this.deps.model(selected, id);
       const searchBudget = new WebSearchBudget();
       const entryContext: Omit<OnlineAgentToolContext, 'execution'> =
@@ -424,9 +408,6 @@ export class NativeOnlineAgent {
       }
       return;
     }
-    // The level this execution runs with is said in its answer when it is not the conversation's.
-    if (thinking.adjusted)
-      thinkingNotices.push(thinkingAdjustedNotice(thinking.adjusted));
     let privateMessage: UIMessage = priorMessage
       ? structuredClone(priorMessage)
       : { id: messageId, role: 'assistant', parts: [], metadata };
@@ -483,7 +464,7 @@ export class NativeOnlineAgent {
         toolsContext: Object.fromEntries(
           Object.keys(tools).map((name) => [name, toolContext]),
         ),
-        reasoning: reasoningOf(thinking.level),
+        reasoning: reasoningOf(config.thinking),
         abortSignal: execution.abort.signal,
         maxRetries: 0,
         stopWhen: stepCountIs(20),
@@ -547,10 +528,11 @@ export class NativeOnlineAgent {
         if (projected) output?.write(projected);
       }
       await generated.responseMessages;
-      if (thinking.level !== 'default') {
+      // The provider package's warnings about the level it was sent are said in the answer.
+      if (isReasoningLevel(config.thinking) && config.thinking !== 'default') {
         const warned = thinkingWarnings(await generated.warnings);
         if (warned)
-          thinkingNotices.push(thinkingWarningNotice(thinking.level, warned));
+          thinkingNotices.push(thinkingWarningNotice(config.thinking, warned));
       }
       if (sdkFailure) outcome = 'failed';
       else if (execution.abort.signal.aborted) outcome = 'cancelled';

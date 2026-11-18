@@ -25,12 +25,11 @@ const agentChatZhCN: AgentChatLocale = {
     thinking: {
       title: '思考等级',
       choose: '思考等级：{{level}}',
-      on: '开启',
       useDefault: '改用厂商默认设置',
       levels: {
         default: '默认',
         off: '关闭',
-        minimal: '最低',
+        minimal: '极低',
         low: '低',
         medium: '中',
         high: '高',

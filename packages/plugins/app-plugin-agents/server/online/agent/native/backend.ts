@@ -2,7 +2,6 @@ import type { NativeExecutionRequest } from './types.js';
 import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import { resendOptions } from '../messages/resend.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
-import { capabilitiesReader, validateThinking } from '../thinking.js';
 import type { NativeFileInputs } from '../../files/service.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
@@ -217,15 +216,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
         : (initial.defaultModel ?? (await this.deps.defaultModel())));
     if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
-    const capabilities = capabilitiesReader(this.deps.webSearch, model);
-    await validateWebSearch(
-      config,
-      model,
-      this.deps.webSearch,
-      false,
-      capabilities,
-    );
-    await validateThinking(config, options.thinking, capabilities, false);
+    await validateWebSearch(config, model, this.deps.webSearch);
     await this.deps.model(model, '');
     this.available();
     return this.deps.sessions.create(context.user.id, kind, config, model, {
@@ -362,15 +353,12 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       const changed =
         model.modelService !== session.model.modelService ||
         model.model !== session.model.model;
-      const capabilities = capabilitiesReader(this.deps.webSearch, model);
       await validateWebSearch(
         config,
         model,
         this.deps.webSearch,
         changed && options.webSearch === undefined,
-        capabilities,
       );
-      await validateThinking(config, options.thinking, capabilities, changed);
       await this.deps.model(model, id);
       this.available();
       await this.deps.sessions.configure(context.user.id, id, config, model);

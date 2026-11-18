@@ -23,7 +23,6 @@ export interface AgentChatLocale {
     readonly thinking: {
       readonly title: string;
       readonly choose: string;
-      readonly on: string;
       readonly useDefault: string;
       readonly levels: {
         readonly default: string;
@@ -374,7 +373,6 @@ const agentChatEnUS: AgentChatLocale = {
     thinking: {
       title: 'Thinking level',
       choose: 'Thinking level: {{level}}',
-      on: 'On',
       useDefault: 'Use the provider default',
       levels: {
         default: 'Default',

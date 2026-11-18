@@ -1152,17 +1152,6 @@ const jaJP: LocaleResource<typeof enUS> = {
         'OpenCode は、リクエストごとに x-opencode-session を送信します（会話ごとに 1 つのセッション ID）。モデルの種類に応じて API が異なります。DeepSeek、GLM、Kimi、MiMo は DeepSeek または OpenAI 互換 API、Claude、MiniMax、Qwen は Anthropic API、GPT、Grok は OpenAI API を使用します。必要な API の種類ごとにサービスを追加し、すべてにこのベース URL を設定してください。',
     },
     models: {
-      reasoning: {
-        label: '思考レベル',
-        field: '{{name}} の思考レベル',
-        auto: '自動',
-        none: '非対応',
-        custom: 'カスタム',
-        builtin: '組み込み：{{levels}}',
-        builtinNone: '組み込み：デフォルトのみ',
-        unsaved: '保存後に組み込みレベルを表示します',
-        empty: '少なくとも 1 つのレベルを選択してください。',
-      },
       title: 'モデル',
       description:
         'このサービスが提供するモデルを確認し、それぞれの目的を説明します。チャット モデルはAgentsに応答し、埋め込みモデルは検索用のテキストにインデックスを付け、再ランク付けモデルは検索結果を並べ替えます。埋め込みモデルは、あるサイズのベクトルを要求する場合があります。',

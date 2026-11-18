@@ -1,5 +1,4 @@
 import {
-  thinkingControlOf,
   thinkingLevelText,
   useAgentText,
 } from '@nocobase/app-plugin-agents/client/chat';
@@ -15,21 +14,15 @@ import { AgentPicker, type AgentPickerModels } from '#components/agent-picker';
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';
 import { ThinkingMenu, type ThinkingMenuProps } from './thinking-menu.js';
 
-type ThinkingChoice = Omit<ThinkingMenuProps, 'capabilities'>;
+type ThinkingChoice = ThinkingMenuProps;
 
 function modelSummary(
   thinking: ThinkingChoice | undefined,
   t: ReturnType<typeof useChatTranslation>['t'],
 ): AgentPickerModels['summary'] {
-  return (capabilities) => {
-    const control = thinkingControlOf(capabilities);
-    if (!thinking || control.kind === 'none') return null;
-    const text =
-      control.kind === 'toggle' &&
-      thinking.value !== 'default' &&
-      thinking.value !== 'off'
-        ? t('chat.thinking.on')
-        : thinkingLevelText(thinking.value, t);
+  if (!thinking) return undefined;
+  return () => {
+    const text = thinkingLevelText(thinking.value, t);
     return { text, label: t('chat.thinking.choose', { level: text }) };
   };
 }
@@ -38,10 +31,7 @@ function modelSettings(
   thinking?: ThinkingChoice,
 ): AgentPickerModels['renderSettings'] {
   if (!thinking) return undefined;
-  return (_model, capabilities) =>
-    thinkingControlOf(capabilities).kind === 'none' ? null : (
-      <ThinkingMenu {...thinking} capabilities={capabilities} />
-    );
+  return () => <ThinkingMenu {...thinking} />;
 }
 
 export interface NewChatChoiceProps {

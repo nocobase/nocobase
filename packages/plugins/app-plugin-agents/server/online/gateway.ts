@@ -50,7 +50,7 @@ import type {
   WebSearchItem,
   WebSearchResult,
 } from '../../shared/web-search.js';
-import { resolveModelCapabilities } from './capabilities.js';
+import { resolveModelCapabilities } from './search/capabilities.js';
 import {
   searchItem,
   unverifiedSearchItem,

@@ -14,7 +14,6 @@ import {
   useChatAgents,
   useChatModels,
   useConversationModel,
-  restoredThinking,
   shownThinking,
   useThinkingMemory,
   useChatPanel,
@@ -29,7 +28,6 @@ import {
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
 import type {
-  ModelCapabilities,
   ModelRef,
   ReasoningLevel,
 } from '@nocobase/app-plugin-agents/shared/models';
@@ -367,27 +365,16 @@ function ConversationBody({
       ?.models.find((item) => item.value === searchModel.model)?.capabilities
       ?.webSearch,
   );
-  const capabilitiesOf = (
-    ref: ModelRef | null | undefined,
-  ): ModelCapabilities | undefined =>
-    ref
-      ? catalog.data
-          ?.find((service) => service.name === ref.modelService)
-          ?.models.find((item) => item.value === ref.model)?.capabilities
-      : undefined;
   // The conversation's saved level wins; what is remembered per model only applies when switching to one.
   const thinkingValue: ReasoningLevel = nativeConversation
     ? shownThinking(configuration.data?.thinking)
     : (chosenThinking ?? 'default');
   /**
-   * A new conversation starts with the level remembered for its model, or explicitly with the default when the
-   * model no longer takes it; only without a remembered level does the Agent's own default apply.
+   * A new conversation starts with the level remembered for its model; only without one does the Agent's own default
+   * apply. A remembered value that is not a standard level reads as none.
    */
   const newThinking = (selected: ModelRef): ReasoningLevel | undefined =>
-    restoredThinking(
-      thinkingMemory.remembered(selected),
-      capabilitiesOf(selected),
-    );
+    thinkingMemory.remembered(selected) ?? undefined;
   const searchEnabled = nativeConversation
     ? configuration.data?.webSearch === true
     : chosenSearch && searchSupported;
@@ -1082,10 +1069,8 @@ function ConversationBody({
                       )
                         return;
                       // The level remembered for the new model comes along in the same change.
-                      const thinking = restoredThinking(
-                        thinkingMemory.remembered(selected),
-                        capabilitiesOf(selected),
-                      );
+                      const thinking =
+                        thinkingMemory.remembered(selected) ?? undefined;
                       selectModel.mutate(
                         thinking === undefined
                           ? selected

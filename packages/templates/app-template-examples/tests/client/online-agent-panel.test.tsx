@@ -435,12 +435,8 @@ it('groups native models by service and submits the selected service/model pair'
 
 it.each([
   ['inherits the Agent default without a remembered level', null, undefined],
-  ['restores a remembered level the model still takes', 'high', 'high'],
-  [
-    'explicitly resets a remembered level the model no longer takes',
-    'xhigh',
-    'default',
-  ],
+  ['restores a remembered level', 'high', 'high'],
+  ['restores a remembered max for a model with no known levels', 'max', 'max'],
 ] as const)(
   'starts a new conversation with its model’s thinking level: %s',
   async (_name, remembered, expected) => {
@@ -451,10 +447,7 @@ it.each([
           models: [
             {
               ...models.data[0].models[0],
-              capabilities: {
-                webSearch: false,
-                reasoning: { levels: ['off', 'low', 'high'] },
-              },
+              capabilities: { webSearch: false },
             },
           ],
         },
@@ -481,7 +474,8 @@ it.each([
     expect(screen.getByTestId('chat-thinking-control')).toBeVisible();
     expect(
       screen.getByRole('menuitemradio', {
-        name: expected === 'high' ? 'High' : 'Default',
+        name:
+          expected === 'high' ? 'High' : expected === 'max' ? 'Max' : 'Default',
       }),
     ).toBeChecked();
     await user.keyboard('{Escape}');
@@ -547,10 +541,7 @@ it('keeps the draft when switching between a model and a Runner and omits native
         models: [
           {
             ...models.data[0].models[0],
-            capabilities: {
-              webSearch: false,
-              reasoning: { levels: ['off', 'low', 'high'] },
-            },
+            capabilities: { webSearch: false },
           },
         ],
       },

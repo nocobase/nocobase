@@ -9,15 +9,11 @@ import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
-import type {
-  ModelCapabilities,
-  ModelReasoning,
-  ModelRef,
-} from '../shared/models.js';
+import type { ModelCapabilities } from '../shared/models.js';
 import type { RealtimeOnlineAgent } from '../server/online/agent/contracts.js';
 
-const withOff = { modelService: 'fixture', model: 'with-off' };
-const lowOnly = { modelService: 'fixture', model: 'low-only' };
+const withOff = { modelService: 'fixture', model: 'gpt-6-astra' };
+const unknownModel = { modelService: 'fixture', model: 'my-alias' };
 const plain = { modelService: 'fixture', model: 'plain' };
 const actor: OnlineAgentContext = {
   user: { id: 'alice' },
@@ -40,12 +36,8 @@ afterEach(async () => {
   h = undefined;
 });
 
-/** A native service whose models take the levels in `levels`, recording the `reasoning` each call was sent. */
+/** A native service recording the `reasoning` each call was sent. */
 async function fixture(
-  levels: Record<string, ModelReasoning | undefined> = {
-    'with-off': { levels: ['off', 'low', 'medium', 'high', 'xhigh', 'max'] },
-    'low-only': { levels: ['low'] },
-  },
   warnings: { type: 'unsupported'; feature: string; details?: string }[] = [],
 ) {
   h = await createHarness();
@@ -96,12 +88,9 @@ async function fixture(
         };
       },
     });
-  const capabilities = vi.fn(
-    async (ref: ModelRef): Promise<ModelCapabilities> => {
-      const reasoning = levels[ref.model];
-      return reasoning ? { webSearch: false, reasoning } : { webSearch: false };
-    },
-  );
+  const capabilities = vi.fn(async (): Promise<ModelCapabilities> => ({
+    webSearch: false,
+  }));
   const configurator = new OnlineAgentConfigurator();
   const errors: unknown[] = [];
   const service = new OnlineAgentService({
@@ -120,7 +109,7 @@ async function fixture(
     onError: (error: unknown) => errors.push(error),
   });
   owners.push(service);
-  return { service, sessions, configurator, sent, capabilities, levels };
+  return { service, sessions, configurator, sent, capabilities };
 }
 
 async function send(agent: RealtimeOnlineAgent) {
@@ -154,43 +143,39 @@ it('refuses a thinking level that is not a standard one, from a request or a sco
   ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
 });
 
-it('refuses off for a model that cannot turn thinking off, and sends none for one that can', async () => {
+it('sends every level for any model, off as none, with no list of the levels a model takes', async () => {
   const f = await fixture();
-  await expect(
-    f.service.realtime(actor, { selectedModel: lowOnly, thinking: 'off' }),
-  ).rejects.toMatchObject({
-    details: { reason: 'REASONING_LEVEL_UNSUPPORTED' },
-  });
   const agent = await f.service.realtime(actor, {
-    selectedModel: withOff,
+    selectedModel: unknownModel,
     thinking: 'off',
   });
   await send(agent);
-  expect(f.sent).toEqual(['none']);
-  await expect(
-    f.service.configure(actor, agent.sessionId, { thinking: 'off' }, lowOnly),
-  ).rejects.toMatchObject({
-    details: { reason: 'REASONING_LEVEL_UNSUPPORTED' },
-  });
-  await expect(
-    agent.send(messages, {
-      overrides: { thinking: 'off' },
-      selectedModel: lowOnly,
-    }),
-  ).rejects.toMatchObject({
-    details: { reason: 'REASONING_LEVEL_UNSUPPORTED' },
-  });
-  // Switching without naming a level resets an off the new model cannot take.
+  await f.service.configure(
+    actor,
+    agent.sessionId,
+    { thinking: 'minimal' },
+    withOff,
+  );
+  await send(agent);
+  // A model switch without a new level keeps the conversation's level as it is.
   const switched = await f.service.configure(
     actor,
     agent.sessionId,
     {},
-    lowOnly,
+    unknownModel,
   );
   expect(switched).toMatchObject({
-    thinking: 'default',
-    selectedModel: lowOnly,
+    thinking: 'minimal',
+    selectedModel: unknownModel,
   });
+  await agent.send(messages, {
+    overrides: { thinking: 'off' },
+    selectedModel: withOff,
+  });
+  await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
+  expect(f.sent).toEqual(['none', 'minimal', 'none']);
+  expect(await notices(agent)).toEqual([]);
+  expect(f.capabilities).not.toHaveBeenCalled();
 });
 
 it('passes max and the levels that turn thinking on to the SDK as they are, and default as the provider default', async () => {
@@ -208,45 +193,8 @@ it('passes max and the levels that turn thinking on to the SDK as they are, and 
   expect(await notices(agent)).toEqual([]);
 });
 
-it('runs a level the model no longer takes at the nearest lower one, or the provider default, and says so', async () => {
-  const f = await fixture();
-  const agent = await f.service.realtime(actor, {
-    selectedModel: withOff,
-    thinking: 'high',
-  });
-  // An administrator narrows the model's levels after the conversation chose one.
-  f.levels['with-off'] = { levels: ['low'] };
-  await send(agent);
-  f.levels['with-off'] = { levels: ['medium'] };
-  await f.service.configure(actor, agent.sessionId, { thinking: 'minimal' });
-  await send(agent);
-  f.levels['with-off'] = { levels: ['off', 'high'] };
-  await f.service.configure(actor, agent.sessionId, { thinking: 'off' });
-  f.levels['with-off'] = undefined;
-  await send(agent);
-  expect(f.sent).toEqual(['low', 'provider-default', 'provider-default']);
-  expect(await notices(agent)).toEqual([
-    expect.objectContaining({
-      type: 'thinkingAdjusted',
-      params: { requested: 'high', used: 'low' },
-    }),
-    expect.objectContaining({
-      type: 'thinkingAdjusted',
-      params: { requested: 'minimal', used: 'default' },
-    }),
-    expect.objectContaining({
-      type: 'thinkingAdjusted',
-      params: { requested: 'off', used: 'default' },
-    }),
-  ]);
-  // The conversation keeps its own level; only the runs were adjusted.
-  expect(
-    (await f.sessions.load('alice', agent.sessionId)).config.thinking,
-  ).toBe('off');
-});
-
 it('records the provider package’s warning about the level it was sent', async () => {
-  const f = await fixture(undefined, [
+  const f = await fixture([
     {
       type: 'unsupported',
       feature: 'reasoning',
@@ -278,15 +226,4 @@ it('uses a code scope’s level as the Agent default, and the conversation’s c
   await f.service.configure(actor, agent.sessionId, { thinking: 'low' });
   await send(agent);
   expect(f.sent).toEqual(['high', 'low']);
-});
-
-it('reads a model’s capabilities only for a level other than default', async () => {
-  const f = await fixture();
-  const agent = await f.service.realtime(actor, { selectedModel: withOff });
-  await send(agent);
-  expect(f.capabilities).not.toHaveBeenCalled();
-  await f.service.configure(actor, agent.sessionId, { thinking: 'high' });
-  expect(f.capabilities).not.toHaveBeenCalled();
-  await send(agent);
-  expect(f.capabilities).toHaveBeenCalledTimes(1);
 });

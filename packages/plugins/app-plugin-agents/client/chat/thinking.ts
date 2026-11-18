@@ -1,6 +1,6 @@
 /**
- * The thinking level a person chooses in the chat, as plain data and one hook: which control a model's levels call for
- * (`thinkingControlOf`), and the level last chosen for each model, remembered in this browser per application,
+ * The thinking level a person chooses in the chat, as plain data and one hook. Every online chat model offers every
+ * level (`REASONING_LEVELS`). The level last chosen for each model is remembered in this browser per application,
  * person and `modelService:model` (`useThinkingMemory`). The conversation's own level is saved on the server and
  * always wins; what is remembered only picks the level when a person switches to a model, or starts a conversation
  * with one. Every storage access is guarded (private windows, blocked storage).
@@ -9,60 +9,14 @@ import { useCallback, useReducer } from 'react';
 
 import {
   isReasoningLevel,
-  reasoningLevelsOf,
-  supportedReasoningLevel,
-  REASONING_ENABLED_LEVELS,
-  type ModelCapabilities,
   type ModelRef,
   type ReasoningLevel,
 } from '../../shared/models.js';
 import { useChatPanel } from './provider.js';
 
-/**
- * The control a model's levels call for: `none` when it takes only `default`; `toggle` when it takes `off` and one
- * level that turns thinking on (`on`), shown as a switch between off and that level beside a way back to `default`;
- * `menu` for anything else, listing `levels`. Every control keeps `default` selectable.
- */
-export type ThinkingControl =
-  | { readonly kind: 'none' }
-  | {
-      readonly kind: 'toggle';
-      readonly levels: readonly ReasoningLevel[];
-      readonly on: ReasoningLevel;
-    }
-  | { readonly kind: 'menu'; readonly levels: readonly ReasoningLevel[] };
-
-export function thinkingControlOf(
-  capabilities: ModelCapabilities | undefined,
-): ThinkingControl {
-  const levels = reasoningLevelsOf(capabilities?.reasoning);
-  if (levels.length < 2) return { kind: 'none' };
-  const enabled = levels.filter((level) =>
-    (REASONING_ENABLED_LEVELS as readonly string[]).includes(level),
-  );
-  if (levels.includes('off') && enabled.length === 1)
-    return { kind: 'toggle', levels, on: enabled[0] };
-  return { kind: 'menu', levels };
-}
-
 /** A conversation's saved level as a level the chat shows: `default` for none and for one that is not standard. */
 export function shownThinking(value: string | undefined): ReasoningLevel {
   return isReasoningLevel(value) ? value : 'default';
-}
-
-/**
- * The level to switch to with a model: the one remembered for it while the model still takes it, `default` when it no
- * longer does, and undefined (keep the conversation's) when none is remembered.
- */
-export function restoredThinking(
-  remembered: ReasoningLevel | null,
-  capabilities: ModelCapabilities | undefined,
-): ReasoningLevel | undefined {
-  if (remembered === null) return undefined;
-  return supportedReasoningLevel(remembered, capabilities?.reasoning) ===
-    remembered
-    ? remembered
-    : 'default';
 }
 
 /** Where the levels chosen per model are kept; the application's scope (its path and the person) follows it. */
