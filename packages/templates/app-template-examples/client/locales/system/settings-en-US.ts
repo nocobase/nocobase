@@ -134,7 +134,8 @@ const settings = {
   users: 'Users',
   roles: 'Roles and permissions',
   usersDescription: 'Manage accounts, access and active sessions.',
-  rolesDescription: 'Define what each role can access and do.',
+  rolesDescription:
+    'Set the menus each role sees and what it may do with each kind of business data.',
   userSearch: 'Search names, usernames or emails',
   roleSearch: 'Search role names',
   newUser: 'New user',
@@ -318,6 +319,7 @@ const settings = {
     viewOnly: 'View only',
     disableAll: 'Disable all',
     sameAsView: 'Same as view ({{scope}})',
+    sameAsObjectView: 'Same as {{object}} view ({{scope}})',
     scopeFor: 'Data scope of {{action}}',
     scopeForSlot: '{{action}}: {{scope}}',
     scopeNote:

@@ -36,6 +36,8 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
       viewOnly: k('viewOnly'),
       disableAll: k('disableAll'),
       sameAsView: (scope) => k('sameAsView', { scope }),
+      sameAsObjectView: (object, scope) =>
+        k('sameAsObjectView', { object, scope }),
       scopeFor: (action, scope) =>
         scope
           ? k('scopeForSlot', { action, scope })

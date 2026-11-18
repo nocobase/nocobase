@@ -30,8 +30,11 @@ export interface PermissionScopeBinding {
   readonly fields: readonly string[];
   /** Hidden scopes keep their stored value. */
   readonly visible: boolean;
-  /** Unset in the draft means the View action's stored value. */
-  readonly follows: boolean;
+  /**
+   * The editor id of the View action this scope follows: its own object's View, or another object's View for a scope
+   * on that object's records. Unset in the draft means that View's stored value.
+   */
+  readonly follows?: string | undefined;
   readonly defaultValue: string;
 }
 
@@ -39,8 +42,6 @@ export interface PermissionBinding {
   readonly resource: { readonly type: string; readonly id: string };
   readonly action: string;
   readonly view: boolean;
-  /** The View action followers copy their scope from. */
-  readonly viewId?: string | undefined;
   readonly scopes: readonly PermissionScopeBinding[];
 }
 
@@ -122,20 +123,23 @@ export function draftFromGrants(
     const entry = storedAction(grants, binding.resource, binding.action);
     if (!entry) continue;
     const stored = storedScopes(entry);
-    const view = binding.viewId
-      ? workspace.bindings.get(binding.viewId)
-      : undefined;
-    const viewStored = view
-      ? storedScopes(storedAction(grants, view.resource, view.action))[
-          view.scopes[0]?.key ?? ''
-        ]
-      : undefined;
     const scopes: Record<string, string> = {};
     for (const scope of binding.scopes) {
       if (!scope.visible) continue;
       const value = stored[scope.key];
-      // A follower stored with View's own value follows View.
-      if (scope.follows && view && same(value, viewStored)) continue;
+      // A follower stored with the value of the View it follows, while that View is granted, follows it.
+      const view = scope.follows
+        ? workspace.bindings.get(scope.follows)
+        : undefined;
+      const viewEntry = view
+        ? storedAction(grants, view.resource, view.action)
+        : undefined;
+      if (
+        view &&
+        viewEntry &&
+        same(value, storedScopes(viewEntry)[view.scopes[0]?.key ?? ''])
+      )
+        continue;
       const selection = scopeSelection(value);
       scopes[scope.key] = selection;
       if (selection === CUSTOM_FILTER)
@@ -169,7 +173,7 @@ function storedValue(
 
 /**
  * Stored grants for a draft. Actions the editor does not show and the policies of unchanged choices are kept as
- * stored. Followers store a copy of View's value. A checked menu opens its pages and an unchecked one closes them,
+ * stored. Followers store a copy of the value of the View they follow, which may be another object's. A checked menu opens its pages and an unchecked one closes them,
  * whatever the objects' actions are.
  */
 export function grantsFromDraft(
@@ -180,9 +184,12 @@ export function grantsFromDraft(
 ): readonly PermissionGrant[] {
   const draft = value.grants;
   const resolved = new Map<string, Readonly<Record<string, unknown>>>();
+  // Two Views may follow each other through extra scopes; one being resolved is not followed again.
+  const resolving = new Set<string>();
   const scopesOf = (id: string): Readonly<Record<string, unknown>> => {
     const cached = resolved.get(id);
     if (cached) return cached;
+    resolving.add(id);
     const binding = workspace.bindings.get(id)!;
     const entry = storedAction(original, binding.resource, binding.action);
     const stored = storedScopes(entry);
@@ -196,11 +203,16 @@ export function grantsFromDraft(
         continue;
       }
       const selection = chosen[scope.key];
-      if (selection === undefined && scope.follows && binding.viewId) {
-        const view = workspace.bindings.get(binding.viewId);
+      if (selection === undefined && scope.follows) {
+        const view = workspace.bindings.get(scope.follows);
         const viewScope = view?.scopes[0]?.key;
-        if (view && viewScope && draft[binding.viewId]) {
-          scopes[scope.key] = scopesOf(binding.viewId)[viewScope];
+        if (
+          view &&
+          viewScope &&
+          draft[scope.follows] &&
+          !resolving.has(scope.follows)
+        ) {
+          scopes[scope.key] = scopesOf(scope.follows)[viewScope];
           continue;
         }
       }
@@ -210,6 +222,7 @@ export function grantsFromDraft(
         filters[filterKey(id, scope.key)] ?? filterOf(original),
       );
     }
+    resolving.delete(id);
     resolved.set(id, scopes);
     return scopes;
   };

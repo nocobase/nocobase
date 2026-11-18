@@ -86,6 +86,7 @@ const source = {
                 { name: 'update', title: 'Edit' },
                 { name: 'approve', title: 'Approve' },
                 { name: 'refund', title: 'Refund' },
+                { name: 'sign', title: 'Sign' },
               ],
               dataScopes: {
                 view: [scope('records', 'contracts', 'own')],
@@ -93,6 +94,11 @@ const source = {
                 approve: [
                   scope('records', 'contracts'),
                   scope('departments', 'departments'),
+                ],
+                // Signing also reads the contract's contacts, another object's records.
+                sign: [
+                  scope('records', 'contracts'),
+                  scope('signers', 'contacts', 'own'),
                 ],
               },
             },
@@ -197,7 +203,7 @@ const selection: PermissionWorkspaceSelection = {
     {
       type: 'composite',
       id: 'contracts',
-      actions: ['view', 'update', 'approve', 'refund'],
+      actions: ['view', 'update', 'approve', 'refund', 'sign'],
       risks: { refund: 'high' },
       scopeOrder: ['allRecords', 'department', 'own'],
     },
@@ -264,6 +270,7 @@ describe('role permission workspace', () => {
       'Edit',
       'Approve',
       'Refund',
+      'Sign',
     ]);
     const [view, edit, approve, refund] = contracts.actions;
     expect(view).toMatchObject({ view: true });
@@ -602,6 +609,65 @@ describe('role permission workspace', () => {
         .find((grant) => grant.resource.id === 'contract-contacts')
         ?.actions.find((entry) => entry.action === 'update')?.policy?.scopes,
     ).toEqual({ records: 'own' });
+  });
+
+  it('lets a scope on another object’s records follow that object’s View, set in one place', async () => {
+    const { workspace: ws } = await workspace();
+    const contracts = objectOf(ws, 'Contracts')!;
+    const sign = contracts.actions.find(
+      (action) => action.id === contract('sign'),
+    )!;
+    expect(sign.scopes?.map((slot) => slot.followsView)).toEqual([
+      true,
+      contact('view'),
+    ]);
+    const grants: PermissionGrants = {
+      [contract('view')]: { scopes: { records: 'allRecords' } },
+      [contract('sign')]: {},
+      [contact('view')]: { scopes: { records: 'department' } },
+    };
+    // Never wider than the contacts View; without declared subsets only No records is provably inside it.
+    expect(
+      narrowerOptions(contracts, grants, sign.scopes![1]!, ws.objects).map(
+        (option) => option.value,
+      ),
+    ).toEqual([NO_SCOPE]);
+    // Saved, signing stores the contacts View's value; reloaded, it follows that View again.
+    const stored = grantsFromDraft(value(grants), {}, [], ws);
+    expect(
+      stored
+        .find((grant) => grant.resource.id === 'contracts')
+        ?.actions.find((entry) => entry.action === 'sign')?.policy?.scopes,
+    ).toEqual({ records: 'allRecords', signers: 'department' });
+    expect(draftFromGrants(stored, ws).draft.grants[contract('sign')]).toEqual(
+      {},
+    );
+    // Narrowing the contacts View sends a wider signer scope back to following it.
+    const change = setScopeValue(
+      ws.objects,
+      {
+        ...grants,
+        [contact('view')]: { scopes: { records: 'allRecords' } },
+        [contract('sign')]: { scopes: { signers: 'department' } },
+      },
+      contact('view'),
+      'records',
+      'own',
+    );
+    expect(change.grants[contract('sign')]?.scopes).toEqual({});
+    // With the contacts View off, the scope keeps its own default.
+    const alone = grantsFromDraft(
+      value({ [contract('view')]: {}, [contract('sign')]: {} }),
+      {},
+      [],
+      ws,
+    );
+    expect(
+      alone
+        .find((grant) => grant.resource.id === 'contracts')
+        ?.actions.find((entry) => entry.action === 'sign')?.policy?.scopes
+        ?.signers,
+    ).toBe('own');
   });
 
   it('keeps stored scope keys the catalog does not declare', async () => {

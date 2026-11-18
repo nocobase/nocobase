@@ -405,7 +405,41 @@ export function permissionWorkspace(
     );
   };
 
-  /** One business object: View first, and every other action's scope on View's collection follows View. */
+  const viewNameOf = (
+    entry: PermissionWorkspaceSelection['business'][number],
+    resource: CatalogResource,
+  ): string | undefined => {
+    const selected = resource.actions.filter((action) =>
+      entry.actions.includes(action.name),
+    );
+    return (
+      entry.view ??
+      selected.find((action) => action.name === 'view')?.name ??
+      selected.find((action) => action.name === 'read')?.name
+    );
+  };
+
+  /** Each business object's View by the collection it reads, so a scope on that collection anywhere follows it. */
+  const viewsByCollection = new Map<string, string>();
+  for (const entry of selection.business) {
+    const resource = catalog.get(resourceKey(entry));
+    const viewName = resource ? viewNameOf(entry, resource) : undefined;
+    const collection = viewName
+      ? resource?.dataScopes?.[viewName]?.[0]?.collection
+      : undefined;
+    if (
+      resource &&
+      viewName &&
+      collection &&
+      !viewsByCollection.has(collection)
+    )
+      viewsByCollection.set(collection, permissionRowId(resource, viewName));
+  }
+
+  /**
+   * One business object: View first. Every other scope on View's collection follows View, and a scope on another
+   * object's records follows that object's View, so each object's data scope is set in one place.
+   */
   const businessObject = (
     entry: PermissionWorkspaceSelection['business'][number],
     resource: CatalogResource,
@@ -414,10 +448,7 @@ export function permissionWorkspace(
       entry.actions.includes(action.name),
     );
     if (!selected.length) return undefined;
-    const viewName =
-      entry.view ??
-      selected.find((action) => action.name === 'view')?.name ??
-      selected.find((action) => action.name === 'read')?.name;
+    const viewName = viewNameOf(entry, resource);
     const viewId = viewName ? permissionRowId(resource, viewName) : undefined;
     const viewCollection = viewName
       ? resource.dataScopes?.[viewName]?.[0]?.collection
@@ -434,37 +465,53 @@ export function permissionWorkspace(
       const scopes = declared.filter((scope) =>
         permissionScopeVisible(resource, action.name, scope.key, selection),
       );
-      const follows = (collection: string): boolean =>
-        !isView && viewId !== undefined && collection === viewCollection;
-      const slots: PermissionScopeSlot[] = scopes.map((scope) => ({
-        id: scope.key,
-        ...(scopes.length > 1
-          ? {
-              label: text(
-                permissionScopeTitle(
-                  resource,
-                  scope,
-                  selection,
-                  action.name,
-                  registeredTitles,
+      // The View this scope follows: this object's, or the one of the object whose records it reads.
+      const follows = (collection: string): string | undefined => {
+        if (collection === viewCollection) return isView ? undefined : viewId;
+        const other = viewsByCollection.get(collection);
+        return other && other !== id ? other : undefined;
+      };
+      const slots: PermissionScopeSlot[] = scopes.map((scope) => {
+        const leader = follows(scope.collection);
+        return {
+          id: scope.key,
+          ...(scopes.length > 1
+            ? {
+                label: text(
+                  permissionScopeTitle(
+                    resource,
+                    scope,
+                    selection,
+                    action.name,
+                    registeredTitles,
+                  ),
                 ),
-              ),
-            }
-          : {}),
-        options: scopeOptions(
-          scope.recordAccess,
-          entry.scopeOrder,
-          follows(scope.collection),
-        ),
-        ...(follows(scope.collection)
-          ? { followsView: true }
-          : {
-              defaultValue: scope.defaultValue ? scope.defaultValue : NO_SCOPE,
-            }),
-        ...(isView
-          ? { narrower: narrowerScopes(scope.recordAccess, entry.scopeSubsets) }
-          : {}),
-      }));
+              }
+            : {}),
+          options: scopeOptions(
+            scope.recordAccess,
+            entry.scopeOrder,
+            leader !== undefined,
+          ),
+          ...(leader !== undefined && leader === viewId
+            ? { followsView: true }
+            : {
+                // Another object's View is followed only while it is on; otherwise this default applies.
+                ...(leader ? { followsView: leader } : {}),
+                defaultValue: scope.defaultValue
+                  ? scope.defaultValue
+                  : NO_SCOPE,
+              }),
+          ...(isView
+            ? {
+                narrower: narrowerScopes(
+                  scope.recordAccess,
+                  entry.scopeSubsets,
+                ),
+              }
+            : {}),
+        };
+      });
       const description =
         entry.actionDescriptions?.[action.name] ?? action.description;
       actions.push({
@@ -489,7 +536,6 @@ export function permissionWorkspace(
         resource: { type: resource.type, id: resource.id },
         action: action.name,
         view: isView,
-        viewId: isView ? undefined : viewId,
         scopes: declared.map((scope) => ({
           key: scope.key,
           collection: scope.collection,
@@ -550,7 +596,6 @@ export function permissionWorkspace(
       ? resource.action
       : available[0]?.name;
     if (!viewName) return undefined;
-    const viewId = permissionRowId(resource, viewName);
     const risks = { ...SENSITIVE[key], ...ESCALATION[key] };
     const actions: PermissionAction[] = [];
     for (const action of [
@@ -572,7 +617,6 @@ export function permissionWorkspace(
         resource: { type: resource.type, id: resource.id },
         action: action.name,
         view: isView,
-        ...(isView ? {} : { viewId }),
         scopes: [],
       });
     }

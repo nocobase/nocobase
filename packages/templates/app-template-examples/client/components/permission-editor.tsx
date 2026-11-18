@@ -44,6 +44,7 @@ import {
   canViewObject,
   dependentsOf,
   effectiveScopeValue,
+  followedObject,
   filterObjects,
   menuCheckState,
   menuCount,
@@ -118,6 +119,8 @@ export interface PermissionEditorLabels {
   readonly viewOnly: string;
   readonly disableAll: string;
   readonly sameAsView: (scope: string) => string;
+  /** A slot following another object's View, such as the customers a Contacts action reads. */
+  readonly sameAsObjectView: (object: string, scope: string) => string;
   readonly scopeFor: (action: string, scope?: string) => string;
   readonly scopeNote: (options: readonly string[]) => string;
   readonly followHint: string;
@@ -192,6 +195,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   viewOnly: 'View only',
   disableAll: 'Disable all',
   sameAsView: (scope) => `Same as view (${scope})`,
+  sameAsObjectView: (object, scope) => `Same as ${object} view (${scope})`,
   scopeFor: (action, scope) =>
     scope ? `${action}: ${scope}` : `Data scope of ${action}`,
   scopeNote: (options) =>
@@ -282,6 +286,7 @@ function ScopeSelect({
 
 function ScopeControl({
   object,
+  objects,
   action,
   slot,
   grants,
@@ -290,6 +295,7 @@ function ScopeControl({
   onScope,
 }: {
   readonly object: PermissionObject;
+  readonly objects: readonly PermissionObject[];
   readonly action: PermissionAction;
   readonly slot: PermissionScopeSlot;
   readonly grants: PermissionGrants;
@@ -298,25 +304,27 @@ function ScopeControl({
   readonly onScope: (slotId: string, value: string | undefined) => void;
 }): ReactElement | null {
   const accessibleName = labels.scopeFor(action.label, slot.label);
-  const options = slotOptions(object, slot);
-  const own = ownScopeValue(object, grants, action, slot);
-  const viewValue = viewScopeValue(object, grants, slot);
+  const options = slotOptions(object, slot, objects);
+  const own = ownScopeValue(object, grants, action, slot, objects);
+  const viewValue = viewScopeValue(object, grants, slot, objects);
   if (slot.followsView && viewValue !== undefined) {
-    const viewLabel = viewScopeLabel(object, grants, slot) ?? viewValue;
-    const narrower = narrowerOptions(object, grants, slot);
+    const viewLabel =
+      viewScopeLabel(object, grants, slot, objects) ?? viewValue;
+    const narrower = narrowerOptions(object, grants, slot, objects);
+    const other = followedObject(object, slot, objects, grants);
+    const same = other
+      ? labels.sameAsObjectView(other.label, viewLabel)
+      : labels.sameAsView(viewLabel);
     if (!narrower.length)
       return (
         <span className='flex min-h-7 items-center text-xs text-muted-foreground'>
-          {labels.sameAsView(viewLabel)}
+          {same}
         </span>
       );
     return (
       <ScopeSelect
         label={accessibleName}
-        options={[
-          { value: FOLLOW, label: labels.sameAsView(viewLabel) },
-          ...narrower,
-        ]}
+        options={[{ value: FOLLOW, label: same }, ...narrower]}
         value={own ?? FOLLOW}
         following={own === undefined}
         disabled={disabled}
@@ -331,7 +339,7 @@ function ScopeControl({
     <ScopeSelect
       label={accessibleName}
       options={options}
-      value={effectiveScopeValue(object, grants, action, slot) ?? ''}
+      value={effectiveScopeValue(object, grants, action, slot, objects) ?? ''}
       disabled={disabled}
       onChange={(next) => onScope(slot.id, next)}
     />
@@ -340,6 +348,7 @@ function ScopeControl({
 
 function ActionRow({
   object,
+  objects,
   action,
   grants,
   readOnly,
@@ -349,6 +358,7 @@ function ActionRow({
   onScope,
 }: {
   readonly object: PermissionObject;
+  readonly objects: readonly PermissionObject[];
   readonly action: PermissionAction;
   readonly grants: PermissionGrants;
   readonly readOnly: boolean;
@@ -411,6 +421,7 @@ function ActionRow({
         <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
           <ScopeControl
             object={object}
+            objects={objects}
             action={action}
             slot={inline}
             grants={grants}
@@ -439,6 +450,7 @@ function ActionRow({
               <div className='min-w-0 @min-[44rem]/permissions:w-60'>
                 <ScopeControl
                   object={object}
+                  objects={objects}
                   action={action}
                   slot={slot}
                   grants={grants}
@@ -544,7 +556,7 @@ function MenuRows({
                 checked={state === 'checked'}
                 indeterminate={state === 'mixed'}
                 disabled={readOnly || Boolean(node.public)}
-                className='data-indeterminate:border-primary data-indeterminate:bg-primary/60'
+                className='data-disabled:cursor-not-allowed data-disabled:opacity-50 data-indeterminate:border-primary data-indeterminate:bg-primary/60'
                 onCheckedChange={(checked: boolean) =>
                   onCheck(node, state === 'mixed' ? true : checked)
                 }
@@ -1035,6 +1047,7 @@ export function PermissionEditor({
       <ActionRow
         key={action.id}
         object={object}
+        objects={objects}
         action={action}
         grants={value.grants}
         readOnly={readOnly}
