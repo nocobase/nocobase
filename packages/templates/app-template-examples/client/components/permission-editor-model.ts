@@ -22,8 +22,17 @@ export interface PermissionScopeSlot {
   readonly options?: readonly PermissionScopeOption[] | undefined;
   /** The value an enabled action uses before anyone picks one. Defaults to the first option. */
   readonly defaultValue?: string | undefined;
-  /** Follows the View scope of the same menu: unset means "Same as view", and only narrower options are offered. */
-  readonly followsView?: boolean | undefined;
+  /**
+   * Follows the View scope of the same menu: unset means "Same as view", and only narrower options are offered. An
+   * action id follows the first scope of that action instead, such as the View of a second resource on the menu.
+   */
+  readonly followsView?: boolean | string | undefined;
+  /**
+   * On a slot others follow: for each value, the values provably narrower than it. When set, only these pairs count
+   * as narrower; otherwise the option order does, widest first. Use it when options filter different things, such as
+   * a region and a confidentiality flag, so neither contains the other.
+   */
+  readonly narrower?: Readonly<Record<string, readonly string[]>> | undefined;
   /** Extra controls for the selected value, such as a custom filter. */
   readonly configuration?: ReactNode;
 }
@@ -170,12 +179,28 @@ function viewSlotOf(menu: PermissionMenu): PermissionScopeSlot | undefined {
   return viewActionOf(menu)?.scopes?.[0];
 }
 
+/** The action and slot a follower follows: the menu's View, or the action its `followsView` names. */
+function leaderOf(
+  menu: PermissionMenu,
+  slot: PermissionScopeSlot | undefined,
+): { action: PermissionAction; slot: PermissionScopeSlot } | undefined {
+  if (slot && !slot.followsView) return undefined;
+  const action =
+    typeof slot?.followsView === 'string'
+      ? menu.actions.find((item) => item.id === slot.followsView)
+      : viewActionOf(menu);
+  const leader = action?.scopes?.[0];
+  return action && leader && leader !== slot
+    ? { action, slot: leader }
+    : undefined;
+}
+
 export function slotOptions(
   menu: PermissionMenu,
   slot: PermissionScopeSlot,
 ): readonly PermissionScopeOption[] {
   if (slot.followsView && !slot.options?.length)
-    return viewSlotOf(menu)?.options ?? [];
+    return leaderOf(menu, slot)?.slot.options ?? [];
   return slot.options ?? [];
 }
 
@@ -188,18 +213,29 @@ export function ownScopeValue(
 ): string | undefined {
   const value = grants[action.id]?.scopes?.[slot.id];
   if (value !== undefined) return value;
-  if (slot.followsView && viewSlotOf(menu)) return undefined;
+  if (slot.followsView && leaderOf(menu, slot)) return undefined;
   return slot.defaultValue ?? slotOptions(menu, slot)[0]?.value;
 }
 
-/** The View action's current scope value, or undefined when the menu has no scoped View. */
+/**
+ * The current value of the scope a follower slot follows; the menu's View scope without a slot. Undefined when there
+ * is no scoped leader.
+ */
 export function viewScopeValue(
   menu: PermissionMenu,
   grants: PermissionGrants,
+  slot?: PermissionScopeSlot,
 ): string | undefined {
   const view = viewActionOf(menu);
-  const slot = view?.scopes?.[0];
-  return view && slot ? ownScopeValue(menu, grants, view, slot) : undefined;
+  const viewSlot = view?.scopes?.[0];
+  const leader = slot
+    ? leaderOf(menu, slot)
+    : view && viewSlot
+      ? { action: view, slot: viewSlot }
+      : undefined;
+  return leader
+    ? ownScopeValue(menu, grants, leader.action, leader.slot)
+    : undefined;
 }
 
 /** The scope that actually applies to an action slot, resolving "Same as view". */
@@ -211,44 +247,58 @@ export function effectiveScopeValue(
 ): string | undefined {
   return (
     ownScopeValue(menu, grants, action, slot) ??
-    (slot.followsView ? viewScopeValue(menu, grants) : undefined)
+    (slot.followsView ? viewScopeValue(menu, grants, slot) : undefined)
   );
 }
 
-/** The position of a value in the View scope's order, widest first; -1 when View does not list it. */
-function viewRank(menu: PermissionMenu, value: string | undefined): number {
-  const options = viewSlotOf(menu)?.options ?? [];
-  return value === undefined
-    ? -1
-    : options.findIndex((option) => option.value === value);
+/** Whether a leader slot lists a value among its options. */
+function listed(leader: PermissionScopeSlot, value: string): boolean {
+  return (leader.options ?? []).some((option) => option.value === value);
 }
 
-/** The label of the current View scope, for "Same as view (X)". */
+/** Whether `value` is provably narrower than `than` on a leader slot: its declared pairs, else its option order. */
+function isNarrower(
+  leader: PermissionScopeSlot,
+  value: string,
+  than: string,
+): boolean {
+  if (!listed(leader, value) || !listed(leader, than) || value === than)
+    return false;
+  if (leader.narrower) return leader.narrower[than]?.includes(value) ?? false;
+  const options = leader.options ?? [];
+  const rank = (key: string): number =>
+    options.findIndex((option) => option.value === key);
+  return rank(value) > rank(than);
+}
+
+/** The label of the scope a follower follows; the menu's View scope without a slot. For "Same as view (X)". */
 export function viewScopeLabel(
   menu: PermissionMenu,
   grants: PermissionGrants,
+  slot?: PermissionScopeSlot,
 ): string | undefined {
-  const value = viewScopeValue(menu, grants);
+  const value = viewScopeValue(menu, grants, slot);
   if (value === undefined) return undefined;
+  const leader = slot ? leaderOf(menu, slot)?.slot : viewSlotOf(menu);
   return (
-    viewSlotOf(menu)?.options?.find((option) => option.value === value)
-      ?.label ?? value
+    leader?.options?.find((option) => option.value === value)?.label ?? value
   );
 }
 
 /**
- * Options of a follower that are provably narrower than the current View scope, offered besides "Same as view".
- * Both sides are ranked by View's own order; an option View does not list is never offered.
+ * Options of a follower that are provably narrower than the scope it follows, offered besides "Same as view". Both
+ * sides are judged by the leader's options; an option the leader does not list is never offered.
  */
 export function narrowerOptions(
   menu: PermissionMenu,
   grants: PermissionGrants,
   slot: PermissionScopeSlot,
 ): readonly PermissionScopeOption[] {
-  const current = viewRank(menu, viewScopeValue(menu, grants));
-  if (current === -1) return [];
-  return slotOptions(menu, slot).filter(
-    (option) => viewRank(menu, option.value) > current,
+  const leader = leaderOf(menu, slot);
+  const current = viewScopeValue(menu, grants, slot);
+  if (!leader || current === undefined) return [];
+  return slotOptions(menu, slot).filter((option) =>
+    isNarrower(leader.slot, option.value, current),
   );
 }
 
@@ -565,12 +615,11 @@ export function setScopeValue(
   if (!found || !grant || found.action.managed) return { grants, notices: [] };
   const { menu, action } = found;
   const slot = action.scopes?.find((item) => item.id === slotId);
-  // A follower is never wider than View, and one equal to it simply follows it.
+  // A follower is never wider than what it follows, and one equal to it simply follows it.
   const chosen =
     value !== undefined &&
-    slot?.followsView &&
-    !action.view &&
-    viewSlotOf(menu) &&
+    slot &&
+    leaderOf(menu, slot) &&
     !narrowerOptions(menu, grants, slot).some(
       (option) => option.value === value,
     )
@@ -583,37 +632,46 @@ export function setScopeValue(
     ...grants,
     [actionId]: { ...grant, scopes },
   };
-  const viewSlot = viewSlotOf(menu);
-  if (!action.view || !viewSlot || viewSlot.id !== slotId)
-    return { grants: next, notices: [] };
-  const viewIndex = viewRank(menu, viewScopeValue(menu, next));
   const reset: string[] = [];
+  let leaderLabel = '';
   for (const other of menu.actions) {
     const otherGrant = next[other.id];
     if (other.id === actionId || !otherGrant?.scopes) continue;
     const otherScopes: Record<string, string> = { ...otherGrant.scopes };
     let changed = false;
     let wider = false;
-    for (const slot of other.scopes ?? []) {
-      const own = otherScopes[slot.id];
-      if (!slot.followsView || own === undefined) continue;
-      const index = viewRank(menu, own);
-      // Only a value provably no narrower than View goes back to following it. One equal to View follows it quietly:
-      // nothing the user chose is lost.
-      if (index !== -1 && index <= viewIndex) {
-        delete otherScopes[slot.id];
-        changed = true;
-        if (index < viewIndex) wider = true;
+    for (const follower of other.scopes ?? []) {
+      const own = otherScopes[follower.id];
+      const leader = leaderOf(menu, follower);
+      if (
+        own === undefined ||
+        leader?.action.id !== actionId ||
+        leader.slot.id !== slotId
+      )
+        continue;
+      const current = viewScopeValue(menu, next, follower);
+      // A value the leader lists and that is not provably narrower goes back to following it. One equal to the
+      // leader follows it quietly: nothing the user chose is lost. An unlisted value is kept as stored.
+      if (
+        current === undefined ||
+        !listed(leader.slot, own) ||
+        isNarrower(leader.slot, own, current)
+      )
+        continue;
+      delete otherScopes[follower.id];
+      changed = true;
+      if (own !== current) {
+        wider = true;
+        leaderLabel = viewScopeLabel(menu, next, follower) ?? current;
       }
     }
     if (changed) next[other.id] = { ...otherGrant, scopes: otherScopes };
     if (wider) reset.push(other.label);
   }
-  const viewLabel = viewScopeLabel(menu, next) ?? '';
   return {
     grants: next,
     notices: reset.length
-      ? [{ kind: 'scope-reset', view: viewLabel, actions: reset }]
+      ? [{ kind: 'scope-reset', view: leaderLabel, actions: reset }]
       : [],
   };
 }

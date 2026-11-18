@@ -357,6 +357,11 @@ const settings = {
     chooseUser: 'Choose a user',
     noUsers: 'No users',
     noRoleUsers: 'No user has this role yet',
+    noMatchingUsers: 'No matching users',
+    searchUsers: 'Find a user',
+    searchPlaceholder: 'Name or email',
+    moreUsers:
+      'Showing {{shown}} of {{total}} users; search to find the others.',
     hint: 'A role is previewed through a user who holds it. The result includes the user’s other roles and the default, sharing and restriction rules.',
     roles: 'Effective roles',
     effect: {

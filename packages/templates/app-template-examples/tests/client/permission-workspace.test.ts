@@ -26,6 +26,11 @@ import {
   sameGrants,
   unconfiguredFilter,
 } from '../../client/pages/settings/permissions-model.js';
+import {
+  applyQuickSet,
+  narrowerOptions,
+  setScopeValue,
+} from '../../client/components/permission-editor-model.js';
 import enUS from '../../client/locales/en-US.js';
 
 const lookup = (key: string): unknown =>
@@ -88,6 +93,19 @@ const source = {
                 ],
               },
             },
+            {
+              type: 'composite',
+              id: 'contract-contacts',
+              title: 'Contacts',
+              actions: [
+                { name: 'view', title: 'View' },
+                { name: 'update', title: 'Edit' },
+              ],
+              dataScopes: {
+                view: [scope('records', 'contacts')],
+                update: [scope('records', 'contacts')],
+              },
+            },
           ],
         },
       ],
@@ -109,6 +127,12 @@ const source = {
                 { name: 'read', title: 'Read' },
                 { name: 'update', title: 'Update' },
               ],
+            },
+            {
+              type: 'settings',
+              id: 'authorization.inspector',
+              title: 'Permission check',
+              actions: [{ name: 'inspect', title: 'Inspect' }],
             },
           ],
         },
@@ -174,7 +198,7 @@ const selection: PermissionWorkspaceSelection = {
   ],
 };
 
-async function workspace() {
+async function workspace(chosen: PermissionWorkspaceSelection = selection) {
   const { routes } = await resolveAppRuntime(
     defineAppRuntime({
       ...appRuntime,
@@ -182,7 +206,7 @@ async function workspace() {
     }),
   );
   return {
-    workspace: permissionWorkspace(source, routes, {}, words, selection),
+    workspace: permissionWorkspace(source, routes, {}, words, chosen),
   };
 }
 
@@ -429,5 +453,146 @@ describe('role permission workspace', () => {
       },
     ]);
     expect(draftFromGrants(grants, ws)).toEqual({ draft, filters });
+  });
+
+  it('offers Edit only scopes provably inside View', async () => {
+    const values = async (chosen: PermissionWorkspaceSelection) => {
+      const { workspace: ws } = await workspace(chosen);
+      const contracts = menuOf(ws, 'Fixture contracts')!;
+      const edit = contracts.actions[1]!;
+      const grants = {
+        [contract('view')]: { scopes: { records: 'department' } },
+        [contract('update')]: {},
+      };
+      return {
+        offered: narrowerOptions(contracts, grants, edit.scopes![0]!).map(
+          (option) => option.value,
+        ),
+        // Picking an unrelated scope keeps Edit on Same as view.
+        picked: setScopeValue(
+          ws.modules,
+          grants,
+          contract('update'),
+          'records',
+          'own',
+        ).grants[contract('update')]?.scopes,
+      };
+    };
+    // Their department and Their own filter different fields: neither is known to hold the other.
+    expect(await values(selection)).toEqual({
+      offered: [NO_SCOPE],
+      picked: {},
+    });
+    const nested: PermissionWorkspaceSelection = {
+      business: [
+        { ...selection.business[0]!, scopeSubsets: { department: ['own'] } },
+      ],
+    };
+    expect(await values(nested)).toEqual({
+      offered: ['own', NO_SCOPE],
+      picked: { records: 'own' },
+    });
+  });
+
+  it('lets a second resource on a menu follow its own View', async () => {
+    const { workspace: ws } = await workspace({
+      business: [
+        selection.business[0]!,
+        {
+          type: 'composite',
+          id: 'contract-contacts',
+          menu: 'fixtureContracts',
+          actions: ['view', 'update'],
+          scopeOrder: ['allRecords', 'department', 'own'],
+        },
+      ],
+    });
+    const contracts = menuOf(ws, 'Fixture contracts')!;
+    const contactsView = permissionRowId(
+      { type: 'composite', id: 'contract-contacts' },
+      'view',
+    );
+    const contactsEdit = permissionRowId(
+      { type: 'composite', id: 'contract-contacts' },
+      'update',
+    );
+    const edit = contracts.actions.find(
+      (action) => action.id === contactsEdit,
+    )!;
+    expect(edit.scopes?.[0]?.followsView).toBe(contactsView);
+    // Contacts View narrowed to Their own sends a wider contacts Edit back to it, whatever the contracts View is.
+    const change = setScopeValue(
+      ws.modules,
+      {
+        [contract('view')]: { scopes: { records: 'allRecords' } },
+        [contactsView]: { scopes: { records: 'allRecords' } },
+        [contactsEdit]: { scopes: { records: 'department' } },
+      },
+      contactsView,
+      'records',
+      'own',
+    );
+    expect(change.grants[contactsEdit]?.scopes).toEqual({});
+    expect(change.notices).toHaveLength(1);
+    // Saved, the contacts Edit stores the contacts View's value.
+    const stored = grantsFromDraft(change.grants, {}, [], ws);
+    expect(
+      stored
+        .find((grant) => grant.resource.id === 'contract-contacts')
+        ?.actions.find((entry) => entry.action === 'update')?.policy?.scopes,
+    ).toEqual({ records: 'own' });
+  });
+
+  it('keeps stored scope keys the catalog does not declare', async () => {
+    const { workspace: ws } = await workspace();
+    const original: PermissionGrant[] = [
+      {
+        resource: { type: 'composite', id: 'contracts' },
+        actions: [
+          {
+            action: 'view',
+            policy: {
+              type: 'composite',
+              scopes: { records: 'department', pluginSlot: 'kept' },
+            },
+          },
+        ],
+      },
+      {
+        resource: { type: 'page', id: 'fixture-contracts' },
+        actions: [{ action: 'access' }],
+      },
+    ];
+    const { draft, filters } = draftFromGrants(original, ws);
+    expect(
+      sameGrants(grantsFromDraft(draft, filters, original, ws), original),
+    ).toBe(true);
+    const changed = grantsFromDraft(
+      { [contract('view')]: { scopes: { records: 'own' } } },
+      filters,
+      original,
+      ws,
+    );
+    expect(
+      changed.find((grant) => grant.resource.id === 'contracts')?.actions[0]
+        ?.policy?.scopes,
+    ).toEqual({ records: 'own', pluginSlot: 'kept' });
+  });
+
+  it('leaves checking other users’ permissions out of Enable all', async () => {
+    const { workspace: ws } = await workspace();
+    const inspect = permissionRowId(
+      { type: 'settings', id: 'authorization.inspector' },
+      'inspect',
+    );
+    const menu = ws.modules
+      .flatMap((module) => module.menus)
+      .find((item) => item.actions.some((action) => action.id === inspect))!;
+    expect(menu.actions.find((action) => action.id === inspect)).toMatchObject({
+      risk: 'sensitive',
+    });
+    const { grants } = applyQuickSet(ws.modules, {}, menu, 'all');
+    expect(grants[inspect]).toBeUndefined();
+    expect(Object.keys(grants).length).toBeGreaterThan(0);
   });
 });

@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
+import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
 import { useSettingsData } from './hooks.js';
 import { PermissionManagementPage } from './permission-management-page.js';
@@ -28,7 +29,20 @@ import { permissionWorkspace } from './permission-workspace.js';
 import { SettingsError, SettingsLoading } from './shared.js';
 
 const ALL_ROLES = '__all__';
+/** The most checks, subject ids or users one request of the authorization routes takes. */
 const BATCH = 100;
+
+function chunks<T>(items: readonly T[]): T[][] {
+  const result: T[][] = [];
+  for (let offset = 0; offset < items.length; offset += BATCH)
+    result.push(items.slice(offset, offset + BATCH));
+  return result;
+}
+
+const statusOf = (error: unknown): unknown =>
+  typeof error === 'object' && error !== null
+    ? Reflect.get(error, 'status')
+    : undefined;
 
 interface Decisions {
   readonly user: string;
@@ -62,34 +76,56 @@ export default function PermissionCheckPage(): ReactElement {
   const roles = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
   );
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const [chosen, setChosen] = useState<{ value: string; label: string }>();
   const [usersResult, setUsersResult] = useState<{
-    readonly role: string | undefined;
+    readonly key: string;
     readonly items?: readonly SubjectOption[];
+    readonly total?: number;
     readonly error?: unknown;
   }>();
+  // A role's members are resolved in batches the resolve route accepts and searched here; any role searches the
+  // server's user directory, a page at a time.
+  const usersKey = JSON.stringify([role, role ? '' : query]);
   useEffect(() => {
     let active = true;
     const load = role
       ? authz.listAssignments(role).then(async (assignments) => {
-          const ids = assignments
-            .filter((item) => item.subject.type === 'user')
-            .map((item) => item.subject.id);
-          return ids.length
-            ? authz.resolveSubjects('inspector', 'user', ids)
-            : [];
+          const ids = [
+            ...new Set(
+              assignments
+                .filter((item) => item.subject.type === 'user')
+                .map((item) => item.subject.id),
+            ),
+          ];
+          const pages = await Promise.all(
+            chunks(ids).map((batch) =>
+              authz.resolveSubjects('inspector', 'user', batch),
+            ),
+          );
+          const items = pages.flat();
+          return { items, total: items.length };
         })
-      : authz
-          .listSubjects('inspector', 'user', { page: 1, pageSize: 100 })
-          .then((page) => page.items);
+      : authz.listSubjects('inspector', 'user', {
+          ...(query ? { search: query } : {}),
+          page: 1,
+          pageSize: BATCH,
+        });
     load.then(
-      (items) => active && setUsersResult({ role, items }),
-      (error: unknown) => active && setUsersResult({ role, error }),
+      ({ items, total }) =>
+        active && setUsersResult({ key: usersKey, items, total }),
+      (error: unknown) => active && setUsersResult({ key: usersKey, error }),
     );
     return () => {
       active = false;
     };
-  }, [authz, role]);
-  const usersCurrent = usersResult?.role === role ? usersResult : undefined;
+  }, [authz, role, query, usersKey]);
+  const usersCurrent = usersResult?.key === usersKey ? usersResult : undefined;
   const users = usersCurrent?.items;
 
   const workspace = useMemo(
@@ -158,23 +194,42 @@ export default function PermissionCheckPage(): ReactElement {
     };
   }, [authz, user, workspace]);
 
+  // Inspecting does not require reading roles: without that permission the check covers any role only.
+  const rolesDenied = statusOf(roles.error) === 403;
   const roleItems = [
     { value: ALL_ROLES, label: t('settings.permissionCheck.anyRole') },
     ...[...(roles.data?.data ?? [])]
       .map((item) => ({ value: item.key, label: text(item.title ?? item.key) }))
       .sort((a, b) => a.label.localeCompare(b.label, i18n.language)),
   ];
-  const userItems = (users ?? []).map((item) => ({
-    value: item.id,
-    label: text(item.title),
-  }));
+  const needle = query.toLocaleLowerCase(i18n.language);
+  const found = (users ?? [])
+    .map((item) => ({ value: item.id, label: text(item.title) }))
+    .filter(
+      (item) =>
+        !role ||
+        !needle ||
+        item.label.toLocaleLowerCase(i18n.language).includes(needle),
+    );
+  // The chosen user stays selectable while a search shows others.
+  const userItems =
+    chosen &&
+    chosen.value === user &&
+    !found.some((item) => item.value === user)
+      ? [chosen, ...found]
+      : found;
+  const totalUsers = role ? found.length : (usersCurrent?.total ?? 0);
   const update = (key: 'role' | 'user', value: string | undefined): void =>
     setParams(
       (old) => {
         const next = new URLSearchParams(old);
         if (value) next.set(key, value);
         else next.delete(key);
-        if (key === 'role') next.delete('user');
+        if (key === 'role') {
+          next.delete('user');
+          setSearch('');
+          setQuery('');
+        }
         return next;
       },
       { replace: true },
@@ -207,50 +262,56 @@ export default function PermissionCheckPage(): ReactElement {
   return (
     <PermissionManagementPage tab='permission-check'>
       <div className='flex flex-col gap-4'>
-        <div className='grid gap-3 sm:grid-cols-2 lg:max-w-2xl'>
-          <div className='flex flex-col gap-1.5'>
-            <Label>{t('settings.permissionCheck.role')}</Label>
-            <Select
-              items={roleItems}
-              value={role ?? ALL_ROLES}
-              onValueChange={(value) =>
-                update(
-                  'role',
-                  !value || value === ALL_ROLES ? undefined : String(value),
-                )
-              }
-            >
-              <SelectTrigger aria-label={t('settings.permissionCheck.role')}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {roleItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className='grid gap-3 sm:grid-cols-3 lg:max-w-4xl'>
+          {rolesDenied ? null : (
+            <div className='flex flex-col gap-1.5'>
+              <Label>{t('settings.permissionCheck.role')}</Label>
+              <Select
+                items={roleItems}
+                value={role ?? ALL_ROLES}
+                onValueChange={(value) =>
+                  update(
+                    'role',
+                    !value || value === ALL_ROLES ? undefined : String(value),
+                  )
+                }
+              >
+                <SelectTrigger aria-label={t('settings.permissionCheck.role')}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className='flex flex-col gap-1.5'>
             <Label>{t('settings.permissionCheck.user')}</Label>
             <Select
               items={userItems}
               value={user ?? null}
-              onValueChange={(value) =>
-                update('user', value ? String(value) : undefined)
-              }
+              onValueChange={(value) => {
+                const next = value ? String(value) : undefined;
+                setChosen(userItems.find((item) => item.value === next));
+                update('user', next);
+              }}
             >
               <SelectTrigger
                 aria-label={t('settings.permissionCheck.user')}
-                disabled={!users?.length}
+                disabled={!userItems.length}
               >
                 <SelectValue
                   placeholder={t(
-                    users && !users.length
-                      ? role
-                        ? 'settings.permissionCheck.noRoleUsers'
-                        : 'settings.permissionCheck.noUsers'
+                    users && !userItems.length
+                      ? query
+                        ? 'settings.permissionCheck.noMatchingUsers'
+                        : role
+                          ? 'settings.permissionCheck.noRoleUsers'
+                          : 'settings.permissionCheck.noUsers'
                       : 'settings.permissionCheck.chooseUser',
                   )}
                 />
@@ -264,11 +325,32 @@ export default function PermissionCheckPage(): ReactElement {
               </SelectContent>
             </Select>
           </div>
+          <div className='flex flex-col gap-1.5'>
+            <Label htmlFor='permission-check-search'>
+              {t('settings.permissionCheck.searchUsers')}
+            </Label>
+            <Input
+              id='permission-check-search'
+              type='search'
+              value={search}
+              placeholder={t('settings.permissionCheck.searchPlaceholder')}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
         </div>
         <p className='text-sm text-muted-foreground'>
           {t('settings.permissionCheck.hint')}
+          {totalUsers > found.length
+            ? ` ${t('settings.permissionCheck.moreUsers', {
+                shown: found.length,
+                total: totalUsers,
+              })}`
+            : ''}
         </p>
         <SettingsError error={options.error} retry={options.reload} />
+        {rolesDenied ? null : (
+          <SettingsError error={roles.error} retry={roles.reload} />
+        )}
         <SettingsError error={usersCurrent?.error} />
         <SettingsError error={decided?.error} />
         {options.loading ? (

@@ -45,8 +45,13 @@ export interface PermissionWorkspaceSelection {
     readonly risks?: Readonly<Record<string, PermissionRisk>>;
     /** Actions that must be on first, by action name of the same resource. Defaults to the view action. */
     readonly requires?: Readonly<Record<string, readonly string[]>>;
-    /** Record access keys from the widest to the narrowest; the catalog order otherwise. */
+    /** Display order of record access keys, widest first; the catalog order otherwise. It implies no nesting. */
     readonly scopeOrder?: readonly string[];
+    /**
+     * Record access keys provably inside another, by the outer key. All records holds every key and every key holds
+     * no records; other pairs are unrelated unless listed here, so Edit is never offered a scope View may not cover.
+     */
+    readonly scopeSubsets?: Readonly<Record<string, readonly string[]>>;
     readonly scopeTitles?: Readonly<Record<string, LocalizedText>>;
     readonly actionScopeTitles?: Readonly<
       Record<string, Readonly<Record<string, LocalizedText>>>
@@ -139,6 +144,13 @@ const ESCALATION: Readonly<
     'revoke-sessions': 'sensitive',
     disable: 'sensitive',
   },
+};
+
+/** Actions that reveal what others may do or hold: tagged so Enable all leaves them for a deliberate choice. */
+const SENSITIVE: Readonly<
+  Record<string, Readonly<Record<string, PermissionRisk>>>
+> = {
+  'settings:authorization.inspector': { inspect: 'sensitive' },
 };
 
 const BASIC_ACTIONS = new Set([
@@ -250,7 +262,30 @@ export function permissionWorkspace(
     ];
   };
 
-  /** Actions of business resources placed on one menu; the first resource's view action is the menu's View. */
+  /** For each record access key, the keys provably inside it, so followers are offered only real subsets. */
+  const narrowerScopes = (
+    keys: readonly string[],
+    subsets: Readonly<Record<string, readonly string[]>> | undefined,
+  ): Record<string, readonly string[]> => {
+    const all = [...keys, NO_SCOPE];
+    return Object.fromEntries(
+      all.map((key) => [
+        key,
+        all.filter(
+          (inner) =>
+            inner !== key &&
+            (key === 'allRecords' ||
+              inner === NO_SCOPE ||
+              (subsets?.[key]?.includes(inner) ?? false)),
+        ),
+      ]),
+    );
+  };
+
+  /**
+   * Actions of business resources placed on one menu; the first resource's view action is the menu's View. Every
+   * resource's other actions follow its own view action's scope on the same collection.
+   */
   const businessActions = (
     menuId: string,
     entries: readonly (typeof selection.business)[number][],
@@ -288,7 +323,9 @@ export function permissionWorkspace(
         );
         const slots: PermissionScopeSlot[] = scopes.map((scope) => {
           const follows =
-            primary && !isView && scope.collection === viewCollection;
+            !isView &&
+            viewId !== undefined &&
+            scope.collection === viewCollection;
           const defaultValue = scope.defaultValue
             ? scope.defaultValue
             : NO_SCOPE;
@@ -311,7 +348,17 @@ export function permissionWorkspace(
               entry.scopeOrder,
               follows,
             ),
-            ...(follows ? { followsView: true } : { defaultValue }),
+            ...(follows
+              ? { followsView: primary ? true : viewId! }
+              : { defaultValue }),
+            ...(isView
+              ? {
+                  narrower: narrowerScopes(
+                    scope.recordAccess,
+                    entry.scopeSubsets,
+                  ),
+                }
+              : {}),
           };
         });
         const requires = entry.requires?.[action.name]?.map((name) =>
@@ -352,7 +399,7 @@ export function permissionWorkspace(
           resource: { type: resource.type, id: resource.id },
           action: action.name,
           view: isView,
-          viewId: primary ? viewId : undefined,
+          viewId: isView ? undefined : viewId,
           scopes: (resource.dataScopes?.[action.name] ?? []).map((scope) => ({
             key: scope.key,
             collection: scope.collection,
@@ -363,7 +410,10 @@ export function permissionWorkspace(
               scope.key,
               selection,
             ),
-            follows: primary && !isView && scope.collection === viewCollection,
+            follows:
+              !isView &&
+              viewId !== undefined &&
+              scope.collection === viewCollection,
             defaultValue: scope.defaultValue ?? '',
           })),
         });
@@ -571,8 +621,8 @@ export function permissionWorkspace(
         const title: LocalizedText = catalogResource?.title ?? {
           key: 'settings.userPermissions',
         };
-        const risks = ESCALATION[key] ?? {};
-        if (Object.keys(risks).length)
+        const risks = { ...SENSITIVE[key], ...ESCALATION[key] };
+        if (ESCALATION[key])
           notices.push(
             t(
               `settings.escalation.${resource.type === 'user' ? 'users' : 'roles'}`,

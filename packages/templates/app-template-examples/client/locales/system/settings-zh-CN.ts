@@ -333,6 +333,10 @@ const settings = {
     chooseUser: '选择用户',
     noUsers: '没有用户',
     noRoleUsers: '还没有用户拥有该角色',
+    noMatchingUsers: '没有匹配的用户',
+    searchUsers: '查找用户',
+    searchPlaceholder: '姓名或邮箱',
+    moreUsers: '显示 {{total}} 个用户中的 {{shown}} 个，搜索可找到其他用户。',
     hint: '角色通过拥有它的用户来预览，结果包含该用户的其他角色，以及默认范围、共享和限制规则。',
     roles: '生效的角色',
     effect: {

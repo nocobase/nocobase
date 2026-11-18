@@ -297,9 +297,9 @@ function ScopeControl({
   const accessibleName = labels.scopeFor(action.label, slot.label);
   const options = slotOptions(menu, slot);
   const own = ownScopeValue(menu, grants, action, slot);
-  const viewValue = viewScopeValue(menu, grants);
-  if (slot.followsView && !action.view && viewValue !== undefined) {
-    const viewLabel = viewScopeLabel(menu, grants) ?? viewValue;
+  const viewValue = viewScopeValue(menu, grants, slot);
+  if (slot.followsView && viewValue !== undefined) {
+    const viewLabel = viewScopeLabel(menu, grants, slot) ?? viewValue;
     const narrower = narrowerOptions(menu, grants, slot);
     if (!narrower.length)
       return (

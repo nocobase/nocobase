@@ -261,6 +261,146 @@ describe('permission editor model', () => {
     expect(change.notices).toEqual([]);
   });
 
+  it('offers only declared subsets when View options filter different things', () => {
+    // Region and Public filter different fields: a public project can be in another region.
+    const projects = {
+      id: 'projects',
+      label: 'Projects',
+      actions: [
+        {
+          id: 'projects.view',
+          label: 'View',
+          view: true,
+          scopes: [
+            {
+              id: 'records',
+              options: [
+                { value: 'all', label: 'All records' },
+                { value: 'region', label: 'Their region' },
+                { value: 'public', label: 'Public projects' },
+                { value: 'none', label: 'No records' },
+              ],
+              narrower: {
+                all: ['region', 'public', 'none'],
+                region: ['none'],
+                public: ['none'],
+              },
+            },
+          ],
+        },
+        {
+          id: 'projects.edit',
+          label: 'Edit',
+          scopes: [{ id: 'records', followsView: true }],
+        },
+      ],
+    } satisfies PermissionModule['menus'][number];
+    const projectModules: readonly PermissionModule[] = [
+      { id: 'sales', label: 'Sales', menus: [projects] },
+    ];
+    const edit = projects.actions[1]!;
+    const slot = edit.scopes[0]!;
+    const regional: PermissionGrants = {
+      'projects.view': { scopes: { records: 'region' } },
+      'projects.edit': {},
+    };
+    expect(
+      narrowerOptions(projects, regional, slot).map((option) => option.value),
+    ).toEqual(['none']);
+    // Public is not inside Their region, so choosing it keeps Edit on Same as view.
+    const picked = setScopeValue(
+      projectModules,
+      regional,
+      'projects.edit',
+      'records',
+      'public',
+    );
+    expect(picked.grants['projects.edit']?.scopes).toEqual({});
+    // Edit on Public under View All goes back to Same as view when View becomes Their region.
+    const change = setScopeValue(
+      projectModules,
+      {
+        'projects.view': { scopes: { records: 'all' } },
+        'projects.edit': { scopes: { records: 'public' } },
+      },
+      'projects.view',
+      'records',
+      'region',
+    );
+    expect(change.grants['projects.edit']?.scopes).toEqual({});
+    expect(change.notices).toEqual([
+      { kind: 'scope-reset', view: 'Their region', actions: ['Edit'] },
+    ]);
+    expect(effectiveScopeValue(projects, change.grants, edit, slot)).toBe(
+      'region',
+    );
+  });
+
+  it('lets a second resource on a menu follow its own View', () => {
+    const people = {
+      id: 'people',
+      label: 'Customers and contacts',
+      actions: [
+        {
+          id: 'customers.view',
+          label: 'View customers',
+          view: true,
+          scopes: [{ id: 'records', options: RECORDS }],
+        },
+        {
+          id: 'contacts.view',
+          label: 'View contacts',
+          requires: ['customers.view'],
+          scopes: [{ id: 'records', options: RECORDS }],
+        },
+        {
+          id: 'contacts.edit',
+          label: 'Edit contacts',
+          requires: ['contacts.view'],
+          scopes: [{ id: 'records', followsView: 'contacts.view' }],
+        },
+      ],
+    } satisfies PermissionModule['menus'][number];
+    const peopleModules: readonly PermissionModule[] = [
+      { id: 'crm', label: 'CRM', menus: [people] },
+    ];
+    const edit = people.actions[2]!;
+    const slot = edit.scopes[0]!;
+    const grants: PermissionGrants = {
+      'customers.view': { scopes: { records: 'all' } },
+      'contacts.view': { scopes: { records: 'department' } },
+      'contacts.edit': {},
+    };
+    expect(effectiveScopeValue(people, grants, edit, slot)).toBe('department');
+    expect(
+      narrowerOptions(people, grants, slot).map((option) => option.value),
+    ).toEqual(['own']);
+    // All records is wider than the contacts' own View, though the menu's View allows it.
+    expect(
+      setScopeValue(peopleModules, grants, 'contacts.edit', 'records', 'all')
+        .grants['contacts.edit']?.scopes,
+    ).toEqual({});
+    const change = setScopeValue(
+      peopleModules,
+      {
+        ...grants,
+        'contacts.view': { scopes: { records: 'all' } },
+        'contacts.edit': { scopes: { records: 'department' } },
+      },
+      'contacts.view',
+      'records',
+      'own',
+    );
+    expect(change.grants['contacts.edit']?.scopes).toEqual({});
+    expect(change.notices).toEqual([
+      {
+        kind: 'scope-reset',
+        view: 'Their own records',
+        actions: ['Edit contacts'],
+      },
+    ]);
+  });
+
   it('keeps the scopes of a multi-scope action independent of View', () => {
     const grants: PermissionGrants = {
       'contracts.view': { scopes: { records: 'all' } },

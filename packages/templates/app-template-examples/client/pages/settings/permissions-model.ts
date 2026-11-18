@@ -173,7 +173,8 @@ export function grantsFromDraft(
     const entry = storedAction(original, binding.resource, binding.action);
     const stored = storedScopes(entry);
     const chosen = draft[id]?.scopes ?? {};
-    const scopes: Record<string, unknown> = {};
+    // Keys the catalog does not declare for this action, such as a plugin's own, are kept as stored.
+    const scopes: Record<string, unknown> = { ...stored };
     for (const scope of binding.scopes) {
       const original = stored[scope.key];
       if (!scope.visible) {
