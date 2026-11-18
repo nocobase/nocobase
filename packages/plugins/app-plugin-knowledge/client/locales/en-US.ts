@@ -216,7 +216,6 @@ const enUS = {
       count_other: '{{count}} documents',
       archivedCount_one: '{{count}} archived document',
       archivedCount_other: '{{count}} archived documents',
-      selectTarget: 'Open {{title}}',
       target: 'Create in {{title}}',
       chooseTarget: 'Choose a project or system knowledge to create in',
       expandAll: 'Expand all',
@@ -319,6 +318,17 @@ const enUS = {
       uploaded_other:
         'Uploaded {{count}} files; their text is being extracted.',
       download: 'Download',
+      fullscreen: 'Full screen',
+      close: 'Close',
+      olderVersion: 'Version {{version}} (older version)',
+      textHint_one:
+        'AI search and answers use exactly this text · {{count}} line',
+      textHint_other:
+        'AI search and answers use exactly this text · {{count}} lines',
+      copy: 'Copy',
+      copied: 'Copied.',
+      copyFailed:
+        'Copying is unavailable here; select the text and copy it yourself.',
       version: 'Version {{version}}',
       statusHint: {
         parsing:
@@ -400,6 +410,7 @@ const enUS = {
       contents: 'Contents',
       edit: 'Edit',
       rename: 'Rename',
+      properties: 'Properties and summary',
       history: 'History',
       verify: 'Mark verified',
       verifiedToast: 'Marked verified.',

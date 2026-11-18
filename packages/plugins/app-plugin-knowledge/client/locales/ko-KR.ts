@@ -217,7 +217,6 @@ const koKR: LocaleResource<typeof enUS> = {
       count_other: '문서 {{count}}개',
       archivedCount_one: '보관된 문서 {{count}}개',
       archivedCount_other: '보관된 문서 {{count}}개',
-      selectTarget: '{{title}} 열기',
       target: '{{title}}에 만들기',
       chooseTarget: '만들 프로젝트 또는 시스템 지식을 선택하세요',
       expandAll: '모두 펼치기',
@@ -322,6 +321,17 @@ const koKR: LocaleResource<typeof enUS> = {
       uploaded_other:
         '파일 {{count}}개를 업로드했습니다. 텍스트를 추출하는 중입니다.',
       download: '다운로드',
+      fullscreen: '전체 화면',
+      close: '닫기',
+      olderVersion: '버전 {{version}} (이전 버전)',
+      textHint_one:
+        'AI 검색과 답변은 이 텍스트를 그대로 사용합니다 · {{count}}줄',
+      textHint_other:
+        'AI 검색과 답변은 이 텍스트를 그대로 사용합니다 · {{count}}줄',
+      copy: '복사',
+      copied: '복사했습니다.',
+      copyFailed:
+        '여기서는 자동으로 복사할 수 없습니다. 텍스트를 선택해 직접 복사하세요.',
       version: '버전 {{version}}',
       statusHint: {
         parsing:
@@ -403,6 +413,7 @@ const koKR: LocaleResource<typeof enUS> = {
       contents: '목차',
       edit: '편집',
       rename: '이름 바꾸기',
+      properties: '속성 및 요약',
       history: '기록',
       verify: '검증됨으로 표시',
       verifiedToast: '검증됨으로 표시했습니다.',
