@@ -9,7 +9,11 @@ import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
-import { REASONING_LEVELS, type ModelCapabilities } from '../shared/models.js';
+import {
+  REASONING_LEVELS,
+  type ModelCapabilities,
+  type ReasoningLevel,
+} from '../shared/models.js';
 import type { RealtimeOnlineAgent } from '../server/online/agent/contracts.js';
 
 const withOff = { modelService: 'fixture', model: 'gpt-6-astra' };
@@ -128,24 +132,19 @@ async function notices(agent: RealtimeOnlineAgent) {
     .map((part) => (part.type === 'data-notice' ? part.data : null));
 }
 
-it('refuses a thinking level that is not one of the SDK’s seven, from a request or a scope', async () => {
+it('refuses a code scope whose thinking level is not one of the seven where the scope is resolved', async () => {
   const f = await fixture();
-  for (const thinking of ['deep', 'default', 'off', 'max'])
+  // From JavaScript or a provider function, where the type does not reach.
+  f.configurator.registerOnlineAgentScope('broken', {
+    thinking: 'max' as ReasoningLevel,
+  });
+  f.configurator.registerOnlineAgentScope('provided', () => ({
+    thinking: 'off' as ReasoningLevel,
+  }));
+  for (const scope of ['broken', 'provided'])
     await expect(
-      f.service.realtime(actor, { selectedModel: withOff, thinking }),
-    ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
-  const agent = await f.service.realtime(actor, { selectedModel: withOff });
-  for (const thinking of ['default', 'off', 'max'])
-    await expect(
-      f.service.configure(actor, agent.sessionId, { thinking }),
-    ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
-  await expect(
-    agent.send(messages, { overrides: { thinking: 'off' } }),
-  ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
-  f.configurator.registerOnlineAgentScope('broken', { thinking: 'max' });
-  await expect(
-    f.service.realtime(actor, { selectedModel: withOff, scope: ['broken'] }),
-  ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
+      f.service.realtime(actor, { selectedModel: withOff, scope: [scope] }),
+    ).rejects.toThrow(/thinking must be one of/);
   expect(f.sent).toEqual([]);
 });
 
@@ -212,26 +211,6 @@ it('sends the provider default when neither a scope nor the conversation names a
   const agent = await f.service.realtime(actor, { selectedModel: withOff });
   await send(agent);
   expect(f.sent).toEqual(['provider-default']);
-});
-
-it('refuses to run a conversation whose saved level is not a standard one until one is chosen', async () => {
-  const f = await fixture();
-  const agent = await f.service.realtime(actor, { selectedModel: withOff });
-  const session = await f.sessions.load(actor.user.id, agent.sessionId);
-  // A value saved before the levels were the SDK's own.
-  await f.sessions.configure(
-    actor.user.id,
-    agent.sessionId,
-    { ...session.config, thinking: 'off' },
-    session.model,
-  );
-  await expect(agent.send(messages)).rejects.toMatchObject({
-    details: { reason: 'REASONING_LEVEL_INVALID' },
-  });
-  expect(f.sent).toEqual([]);
-  await f.service.configure(actor, agent.sessionId, { thinking: 'none' });
-  await send(agent);
-  expect(f.sent).toEqual(['none']);
 });
 
 it('records the provider package’s warning about the level it was sent', async () => {
@@ -329,5 +308,12 @@ it('uses a code scope’s level as the Agent default, and the conversation’s c
   await send(agent);
   await f.service.configure(actor, agent.sessionId, { thinking: 'low' });
   await send(agent);
-  expect(f.sent).toEqual(['high', 'low']);
+  // An update that leaves the level out keeps the conversation's; an explicit provider-default replaces it.
+  await f.service.configure(actor, agent.sessionId, {});
+  await send(agent);
+  await f.service.configure(actor, agent.sessionId, {
+    thinking: 'provider-default',
+  });
+  await send(agent);
+  expect(f.sent).toEqual(['high', 'low', 'low', 'provider-default']);
 });

@@ -3,7 +3,7 @@ import { streamText } from 'ai';
 import { languageModel } from '../server/online/providers.js';
 import { thinkingWarnings } from '../server/online/agent/thinking.js';
 import {
-  REASONING_ENABLED_LEVELS,
+  REASONING_LEVELS,
   type ModelProviderName,
   type ReasoningLevel,
 } from '../shared/models.js';
@@ -134,7 +134,7 @@ it.each(cases)(
 );
 
 it('passes every level on for a model id no list names, over an OpenAI-compatible endpoint too', async () => {
-  for (const level of REASONING_ENABLED_LEVELS)
+  for (const level of REASONING_LEVELS.slice(2))
     expect(
       await bodyFor('openai', 'gpt-5.6-terra-2026-11-01', level),
     ).toMatchObject({ reasoning: expect.objectContaining({ effort: level }) });

@@ -49,11 +49,7 @@ export type OnlineAgentScope = {
   tool?: string[];
   skill?: string[];
   model?: string[];
-  /**
-   * The thinking level: a code scope's is the Agent's default, and what the conversation chooses comes after it. A
-   * value outside the type (from JavaScript or an HTTP request) is still refused at run time with
-   * `REASONING_LEVEL_INVALID`.
-   */
+  /** The thinking level: a code scope's is the Agent's default, and what the conversation chooses comes after it. */
   thinking?: ReasoningLevel;
   webSearch?: boolean;
   permissions?: never;
@@ -72,11 +68,8 @@ export type OnlineAgentConfig = {
   toolVersions: Record<string, string>;
   /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
   model?: string[];
-  /**
-   * The conversation's thinking level. A value saved before the levels were the SDK's own may be another string; the
-   * conversation refuses to run with it (`REASONING_LEVEL_INVALID`) until a standard level is chosen.
-   */
-  thinking?: string;
+  /** The conversation's thinking level; the provider's default when absent. */
+  thinking?: ReasoningLevel;
   webSearch?: boolean;
 };
 export type OnlineAgentToolDefinition<

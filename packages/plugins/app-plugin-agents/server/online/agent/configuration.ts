@@ -4,7 +4,7 @@ import { registerSandboxTools } from '../sandbox/tools.js';
 import type { Tool } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
-import { assertReasoningLevel } from './thinking.js';
+import { isReasoningLevel } from '../../../shared/models.js';
 import { jsonSafe, strictJson } from './messages/json.js';
 import type {
   OnlineAgentJson,
@@ -254,7 +254,11 @@ export class OnlineAgentConfigurator {
         hasModel = true;
       }
       if (scope.thinking !== undefined) {
-        assertReasoningLevel(scope.thinking);
+        // Scopes come from code, possibly JavaScript or a provider function: checked here, where each is resolved.
+        if (!isReasoningLevel(scope.thinking))
+          throw invalid(
+            'thinking must be one of provider-default, none, minimal, low, medium, high or xhigh.',
+          );
         result.thinking = scope.thinking;
       }
       if (scope.webSearch !== undefined) {

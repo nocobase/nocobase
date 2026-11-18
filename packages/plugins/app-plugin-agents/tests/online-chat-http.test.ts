@@ -609,7 +609,7 @@ it('accepts declared business variables but rejects browser policy overrides on 
   );
 });
 
-it('refuses a thinking level other than the seven SDK values, of any type, on create and configure, and saves each as it is', async () => {
+it('refuses a thinking level other than the seven, of any type, on create and configure, and saves each as it is', async () => {
   const f = await fixture();
   const created = await f.request('/conversations', 'POST', {});
   expect(created.status).toBe(201);
@@ -629,10 +629,9 @@ it('refuses a thinking level other than the seven SDK values, of any type, on cr
       await f.request('/conversations', 'POST', { config: { thinking } }),
       await f.request(path, 'PATCH', { config: { thinking } }),
     ]) {
+      // The ordinary validation error, naming the field.
       expect(response.status).toBe(400);
-      expect(JSON.stringify(await response.json())).toContain(
-        'REASONING_LEVEL_INVALID',
-      );
+      expect(JSON.stringify(await response.json())).toContain('thinking');
     }
   }
   for (const thinking of ['provider-default', 'none', 'xhigh']) {
@@ -650,6 +649,29 @@ it('refuses a thinking level other than the seven SDK values, of any type, on cr
     (await (await f.request(`/conversations/${freshId}/config`)).json()).data
       .thinking,
   ).toBe('none');
+});
+
+it('keeps the saved thinking level when a configuration update leaves it out, and resets it on an explicit provider-default', async () => {
+  const f = await fixture();
+  const created = await f.request('/conversations', 'POST', {
+    config: { thinking: 'xhigh' },
+  });
+  const path = `/conversations/${(await created.json()).data.id}/config`;
+  const thinking = async () =>
+    (await (await f.request(path)).json()).data.thinking;
+  expect(await thinking()).toBe('xhigh');
+  expect(
+    (await f.request(path, 'PATCH', { config: { webSearch: false } })).status,
+  ).toBe(200);
+  expect(await thinking()).toBe('xhigh');
+  expect(
+    (
+      await f.request(path, 'PATCH', {
+        config: { thinking: 'provider-default' },
+      })
+    ).status,
+  ).toBe(200);
+  expect(await thinking()).toBe('provider-default');
 });
 
 it('filters visibility before pagination for HTTP and its derived CLI, preserving owned direct reads', async () => {

@@ -2,7 +2,6 @@ import type { NativeExecutionRequest } from './types.js';
 import { WebSearchBudget } from '../../search/budget.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
 import {
-  assertReasoningLevel,
   THINKING_NOTICE_IDS,
   thinkingWarningNotice,
   thinkingWarnings,
@@ -144,7 +143,7 @@ export class NativeOnlineAgent {
     >['config'];
     let sdkFailure = false;
     const thinkingNotices: ThinkingNotice[] = [];
-    let thinking: ReasoningLevel = 'provider-default';
+    let thinking: ReasoningLevel | undefined;
     let waitingApprovals = false;
     let background = false;
     let result: OnlineAgentJson | undefined;
@@ -178,11 +177,8 @@ export class NativeOnlineAgent {
         !config.model.includes(`${selected.modelService}/${selected.model}`)
       )
         throw invalid('The selected model is outside this configuration.');
-      // The level goes to the SDK as it is; one saved before the levels were the SDK's own is refused, not translated.
-      if (config.thinking !== undefined) {
-        assertReasoningLevel(config.thinking);
-        thinking = config.thinking;
-      }
+      // The level goes to the SDK as it is; the provider's default when neither a scope nor the conversation names one.
+      thinking = config.thinking ?? 'provider-default';
       const changedModel =
         selected.modelService !== session.model.modelService ||
         selected.model !== session.model.model;

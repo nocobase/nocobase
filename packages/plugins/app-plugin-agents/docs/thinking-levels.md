@@ -1,6 +1,6 @@
 # Thinking levels of online agents
 
-A native (online) conversation chooses how hard its model thinks before answering. The level is one of the seven values of the Vercel AI SDK's `reasoning` call option (`LanguageModelV4CallOptions['reasoning']`): `provider-default` (the provider's own setting), `none` (thinking off), or a level that turns thinking on: `minimal`, `low`, `medium`, `high` or `xhigh`. The same value is used everywhere: the chat's choices, the HTTP API and its document, the saved conversation, the level remembered per model in the browser and the SDK call. The server passes it to the SDK unchanged, and the provider's SDK package turns it into the provider's own parameter; this plugin keeps no provider-specific mapping. The chat shows the levels as Default, Off, Minimal, Low, Medium, High and Extra high; those are only labels.
+A native (online) conversation chooses how hard its model thinks before answering. The level is one of `REASONING_LEVELS` in `shared/models.ts`, the one list NocoBase keeps, from which the `ReasoningLevel` type is derived: `provider-default` (the provider's own setting), `none` (thinking off), or a level that turns thinking on: `minimal`, `low`, `medium`, `high` or `xhigh`. These are the values the Vercel AI SDK's `reasoning` call option uses; NocoBase does not tie its type to the SDK's, and decides for itself whether to follow a level the SDK adds later. The same value is used everywhere: the chat's choices, the HTTP API and its document, the saved conversation, the level remembered per model in the browser and the SDK call. The server passes it to the SDK unchanged, and the provider's SDK package turns it into the provider's own parameter; this plugin keeps no provider-specific mapping. The chat shows the levels as Default, Off, Minimal, Low, Medium, High and Extra high; those are only labels.
 
 ## Every model offers every level
 
@@ -16,20 +16,21 @@ Offering a level does not mean the provider applies it. Depending on the provide
 
 ## What the server checks
 
-| When                                   | What                                             | Result                                           |
-| -------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
-| Create, configure, send with overrides | `thinking` is not one of the seven values        | 400 `REASONING_LEVEL_INVALID`                    |
-| Send                                   | the saved level is not one of the seven values   | 400 `REASONING_LEVEL_INVALID`, nothing is sent   |
-| Model service create or update         | a model names `reasoning`                        | 400                                              |
-| Gateway `stream()`                     | `model.reasoning` is not one of the seven values | `REASONING_LEVEL_INVALID`, nothing is sent       |
-| Execution                              | the provider package warns about thinking        | `thinking-warning` notice, saved with the answer |
-| Execution                              | the provider refuses the request                 | the call fails as usual                          |
+Levels are checked where they enter, once, and passed on as typed values afterwards.
 
-Values that are not the SDK's, such as `default`, `off` or `max`, are refused, never translated. A conversation saved with one by an earlier build of this feature does not run until a level is chosen again; the chat shows it with no level checked, so choosing any level saves a valid one. A model switch keeps the conversation's level. A code scope's `thinking` is the Agent's default, and the conversation's choice comes after it. Runner conversations refuse `thinking`; they keep using `effort`.
+| Where                                | What                                      | Result                                                    |
+| ------------------------------------ | ----------------------------------------- | --------------------------------------------------------- |
+| HTTP create and configuration update | `config.thinking` is not one of the seven | 400, the ordinary validation error naming the field       |
+| A code scope, when it is resolved    | `thinking` is not one of the seven        | the conversation is refused (`thinking must be one of …`) |
+| Model service create or update       | a model names `reasoning`                 | 400                                                       |
+| Execution                            | the provider package warns about thinking | `thinking-warning` notice, saved with the answer          |
+| Execution                            | the provider refuses the request          | the call fails as usual                                   |
 
-The model gateway's `stream()` (`models.gateway` of `agentsToken`) takes the same seven values as `model.reasoning` and passes them to the SDK unchanged, `none` included; without one it uses `provider-default`, and any other value is refused before a request is made. It does not take a Runner `effort`.
+The HTTP schema is `z.enum(REASONING_LEVELS).optional()`, so the API document lists the seven values; `default`, `off`, `max` and values of other types are refused, never translated. A configuration update that leaves `thinking` out keeps the conversation's level; an explicit `provider-default` replaces it with the provider's own setting. Without a level from the conversation or a scope, `provider-default` is sent. A model switch keeps the conversation's level. A code scope's `thinking` is the Agent's default, and the conversation's choice comes after it. Runner conversations refuse `thinking`; they keep using `effort`.
 
-The `thinking-warning` notice is an ordinary `data-notice` part of the answer, shown in the conversation's language. An execution adds one for every `unsupported` or `compatibility` warning the SDK reports whose feature names reasoning or thinking (`reasoning`, `reasoning "none"`, `reasoningEffort`, `thinking.type "disabled"` and the like), at any level, `provider-default` included. Answers saved by earlier builds may carry a `thinking-adjusted` notice; it still shows, and no execution writes one any more.
+The execution and the model gateway's `stream()` (`models.gateway` of `agentsToken`) take the level as a typed `ReasoningLevel` and pass it to the SDK unchanged, `none` included; the gateway uses `provider-default` without one. Neither checks it again, and the gateway does not take a Runner `effort`. A conversation an earlier preview build of this feature saved with `default`, `off` or `max` is not checked when it runs: the value reaches the provider package as it is, which may report it as unsupported (shown as a `thinking-warning` notice) or send it to a provider that refuses the call. Choosing any level in the chat saves a valid one; no migration rewrites those rows.
+
+The `thinking-warning` notice is an ordinary `data-notice` part of the answer, shown in the conversation's language. An execution adds one for every `unsupported` or `compatibility` warning the SDK reports whose feature is a thinking setting: it starts with `reasoning`, a `reasoning…` setting such as `reasoningEffort`, `thinking`, `extended thinking` or `providerOptions.<provider>.thinking`, followed by a space, a dot or nothing. A tool or model id that merely contains the word, such as `provider-defined tool custom.thinking_search`, does not count, at any level, `provider-default` included. Answers saved by earlier builds may carry a `thinking-adjusted` notice; it still shows, and no execution writes one any more.
 
 ## Cost
 

@@ -11,7 +11,6 @@
     "tests/online-agent-json.type-test.ts",
     "tests/ai-form.type-test.tsx",
     "tests/online-agent-backend.type-test.ts",
-    "tests/vectors-removal.type-test.ts",
-    "tests/thinking-levels.type-test.ts"
+    "tests/vectors-removal.type-test.ts"
   ]
 }

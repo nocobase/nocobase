@@ -705,7 +705,7 @@ export interface CreateConversationRequest {
     agentId?: string;
     context?: { variable?: OnlineChatJson };
     scope?: string[];
-    /** One of the seven levels; anything else is refused with `REASONING_LEVEL_INVALID`. */
+    /** One of `REASONING_LEVELS`; omitted keeps the Agent's default. */
     thinking?: ReasoningLevel;
     webSearch?: boolean;
   };

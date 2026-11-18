@@ -1,30 +1,4 @@
-import {
-  isReasoningLevel,
-  type ReasoningLevel,
-} from '../../../shared/models.js';
-import type { streamText } from 'ai';
-import { invalid } from '../../kernel/errors.js';
-
-type SdkReasoning = NonNullable<Parameters<typeof streamText>[0]['reasoning']>;
-/** `ReasoningLevel` is exactly the SDK's `reasoning`: this fails to compile when either gains or loses a value. */
-const sameAsSdk: [ReasoningLevel, SdkReasoning] extends [
-  SdkReasoning,
-  ReasoningLevel,
-]
-  ? true
-  : false = true;
-void sameAsSdk;
-
-/** A `thinking` a scope or a request names, refused unless it is a standard level. */
-export function assertReasoningLevel(
-  value: unknown,
-): asserts value is ReasoningLevel {
-  if (!isReasoningLevel(value))
-    throw invalid(
-      'thinking must be one of provider-default, none, minimal, low, medium, high or xhigh.',
-      { reason: 'REASONING_LEVEL_INVALID' },
-    );
-}
+import type { ReasoningLevel } from '../../../shared/models.js';
 
 /**
  * The ids of the thinking notices an execution replaces when it adds its own. `thinking-adjusted` is no longer

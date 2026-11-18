@@ -47,7 +47,6 @@ import {
   type ModelRef,
   type ReasoningLevel,
 } from '../../shared/models.js';
-import { assertReasoningLevel } from './agent/thinking.js';
 import type {
   WebSearchItem,
   WebSearchResult,
@@ -129,10 +128,7 @@ export type ModelEvent =
     };
 
 export interface ModelRequest {
-  /**
-   * With the thinking level, passed to the SDK's `reasoning` unchanged; `provider-default` when absent. Any other value
-   * is refused with `REASONING_LEVEL_INVALID` before a request is made.
-   */
+  /** With the thinking level, passed to the SDK's `reasoning` unchanged; `provider-default` when absent. */
   readonly model: ModelRef & { readonly reasoning?: ReasoningLevel };
   readonly messages: readonly ModelMessage[];
   readonly tools?: readonly ModelToolSpec[];
@@ -636,7 +632,6 @@ export function createModelGateway(
     request: ModelRequest,
   ): AsyncGenerator<ModelEvent, void, undefined> {
     const { reasoning = 'provider-default' } = request.model;
-    assertReasoningLevel(reasoning);
     const connection = await source.connectionFor(request.model);
     const { signal } = request;
     const calls: ModelToolCall[] = [];

@@ -372,19 +372,4 @@ describe('the model gateway', () => {
       else expect(sent).not.toHaveProperty('reasoning_effort');
     }
   });
-
-  it('refuses a thinking level outside the seven before it calls the provider', async () => {
-    for (const reasoning of ['default', 'off', 'max', 'bogus', false, null])
-      await expect(
-        collect(
-          gateway.stream({
-            model: { ...model, reasoning: reasoning as ReasoningLevel },
-            messages: [{ role: 'user', content: 'Hello?' }],
-          }),
-        ),
-      ).rejects.toMatchObject({
-        details: { reason: 'REASONING_LEVEL_INVALID' },
-      });
-    expect(mock.requests).toHaveLength(0);
-  });
 });
