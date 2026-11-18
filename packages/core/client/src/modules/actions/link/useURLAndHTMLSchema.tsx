@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { useFieldSchema } from '@formily/react';
+import { Schema, useFieldSchema } from '@formily/react';
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
@@ -17,16 +17,17 @@ import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
 
-export const getVariableComponentWithScope = (Com, data = []) => {
+export const getVariableComponentWithScope = (Com, data = [], blockSchema?: Schema) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
+    const uiSchema = blockSchema ?? fieldSchema;
     const { form } = useFormBlockContext();
     const record = useRecord();
     const scope = useVariableOptions({
-      collectionField: { uiSchema: fieldSchema },
+      collectionField: { uiSchema },
       form,
       record,
-      uiSchema: fieldSchema,
+      uiSchema,
       noDisabled: true,
     });
     return <Com {...props} scope={data.concat(scope).filter(Boolean)} />;
