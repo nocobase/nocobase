@@ -67,11 +67,19 @@ export function thinkingWarningNotice(
 }
 
 /**
+ * The setting a provider package names as a warning's feature when the warning is about thinking: the call option
+ * (`reasoning`, `reasoning "none"`), a reasoning setting (`reasoningEffort`, `reasoningHistory 'preserved' …`), the
+ * thinking setting or a path inside it (`thinking`, `thinking.type "disabled"`, `providerOptions.anthropic.thinking`)
+ * or `extended thinking`. The setting starts the feature and ends at a space, a dot or the end, so a tool ID, a model ID
+ * or any other name that merely contains the word (`provider-defined tool custom.thinking_search`,
+ * `dynamic tool loading for model "moonshot-v1-thinking"`) is not one.
+ */
+const THINKING_FEATURE =
+  /^(?:providerOptions\.[\w-]+\.)?(?:extended thinking|thinking|reasoning(?:[A-Z]\w*)?)(?=$|[\s.])/;
+
+/**
  * The SDK's warnings about thinking, as one line; undefined when there are none. A warning counts when it is
- * `unsupported` or `compatibility` and the feature it is about is reasoning or thinking in any form the provider
- * packages use (`reasoning`, `reasoning "none"`, `reasoningEffort`, `thinking.type "disabled"`, …). Quoted parts of the
- * feature are values, such as a model ID or a setting's value, not the feature itself, so they are left out:
- * `dynamic tool loading for model "moonshot-v1-thinking"` is about tools.
+ * `unsupported` or `compatibility` and its feature is a thinking setting (see `THINKING_FEATURE`).
  */
 export function thinkingWarnings(
   warnings:
@@ -86,15 +94,10 @@ export function thinkingWarnings(
   const found = (warnings ?? []).filter(
     (warning) =>
       (warning.type === 'unsupported' || warning.type === 'compatibility') &&
-      /reasoning|thinking/i.test(featureName(warning.feature)),
+      THINKING_FEATURE.test(warning.feature ?? ''),
   );
   if (!found.length) return undefined;
   return found
     .map((warning) => warning.details ?? warning.feature ?? warning.type)
     .join(' ');
-}
-
-/** A warning's feature without its quoted values. */
-function featureName(feature: string | undefined): string {
-  return (feature ?? '').replace(/"[^"]*"|'[^']*'|`[^`]*`/g, '');
 }

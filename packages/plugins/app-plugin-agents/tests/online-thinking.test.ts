@@ -295,21 +295,29 @@ it.each([
   },
 );
 
-it('does not save a warning about another feature as a thinking notice', async () => {
+it.each([
   // What @ai-sdk/moonshotai reports for dynamic tools on a model ID that happens to contain "thinking".
-  const f = await fixture([
-    {
-      type: 'unsupported',
-      feature: 'dynamic tool loading for model "moonshot-v1-thinking"',
-      details:
-        'Moonshot documents dynamic tool loading only for Kimi K3. The dynamic system message has been omitted.',
-    },
-  ]);
-  const agent = await f.service.realtime(actor, { selectedModel: withOff });
-  await send(agent);
-  expect(f.sent).toEqual(['provider-default']);
-  expect(await notices(agent)).toEqual([]);
-});
+  {
+    type: 'unsupported' as const,
+    feature: 'dynamic tool loading for model "moonshot-v1-thinking"',
+    details:
+      'Moonshot documents dynamic tool loading only for Kimi K3. The dynamic system message has been omitted.',
+  },
+  // What @ai-sdk/moonshotai and @ai-sdk/openai-compatible report for a provider-defined tool they cannot send.
+  {
+    type: 'unsupported' as const,
+    feature: 'provider-defined tool custom.thinking_search',
+  },
+])(
+  'does not save a warning about $feature as a thinking notice',
+  async (warning) => {
+    const f = await fixture([warning]);
+    const agent = await f.service.realtime(actor, { selectedModel: withOff });
+    await send(agent);
+    expect(f.sent).toEqual(['provider-default']);
+    expect(await notices(agent)).toEqual([]);
+  },
+);
 
 it('uses a code scope’s level as the Agent default, and the conversation’s choice over it', async () => {
   const f = await fixture();

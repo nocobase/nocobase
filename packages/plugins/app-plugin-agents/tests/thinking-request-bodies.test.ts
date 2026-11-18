@@ -287,6 +287,29 @@ it('leaves out a warning about another feature even when the model ID names thin
   expect(thinkingWarnings(warnings)).toBeUndefined();
 });
 
+// Features the locked provider packages report; the thinking ones are counted, the others are not.
+it.each([
+  ['reasoning', true],
+  ['reasoning "none"', true],
+  ['reasoningEffort', true],
+  ['reasoningHistory \'preserved\' is not supported by model "kimi-k2"', true],
+  ['thinking', true],
+  ['thinking.type "disabled"', true],
+  ['extended thinking', true],
+  ['providerOptions.anthropic.thinking', true],
+  ['provider-defined tool custom.thinking_search', false],
+  ['dynamic tool loading for model "moonshot-v1-thinking"', false],
+  ['providerOptions.anthropic.effort', false],
+  ['temperature', false],
+] as const)(
+  'counts a warning about %s as a thinking warning: %s',
+  (feature, counted) => {
+    expect(
+      thinkingWarnings([{ type: 'unsupported', feature, details: 'why' }]),
+    ).toBe(counted ? 'why' : undefined);
+  },
+);
+
 it('fails the call as usual when the provider refuses the level, without trying another', async () => {
   const fetch = vi.fn(
     async () =>
