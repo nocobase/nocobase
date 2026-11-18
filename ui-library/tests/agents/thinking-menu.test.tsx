@@ -424,3 +424,93 @@ it('keeps the menu mounted and blocks repeat changes while saving a level', asyn
     expect(control()).toHaveAccessibleName('Thinking level: High'),
   );
 });
+
+function OpenNew() {
+  const { openChat } = useChatPanel();
+  useLayoutEffect(
+    () => openChat({ conversationId: null, agentId: 'online' }),
+    [openChat],
+  );
+  return null;
+}
+
+it.each([
+  ['inherits the Agent default until a level is chosen', false, undefined],
+  ['sends provider-default once Default is chosen', true, 'provider-default'],
+] as const)(
+  'starts a new conversation without a remembered level: %s',
+  async (_name, chooseDefault, expected) => {
+    const normal = host.request.getMockImplementation()!;
+    host.request.mockImplementation(async (input) => {
+      if (input.path === 'agents/chatAgents')
+        return {
+          data: [
+            {
+              id: 'online',
+              name: 'Online agent',
+              description: null,
+              nameText: null,
+              descriptionText: null,
+              avatar: null,
+              isSystemDefault: true,
+              isMyDefault: false,
+              availability: { online: true, reason: null, onlineRunners: 0 },
+            },
+          ],
+          meta: {},
+        };
+      if (input.path === 'agents/conversations' && input.method === 'POST')
+        return { data: detail };
+      return normal(input);
+    });
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <MemoryRouter>
+          <ChatProvider>
+            <OpenNew />
+            <ConversationView conversationId={null} />
+          </ChatProvider>
+        </MemoryRouter>
+      </TestI18nProvider>,
+    );
+    const user = userEvent.setup();
+    const picker = await screen.findByTestId('chat-agent-picker');
+    await waitFor(() => expect(picker).toBeEnabled());
+    await user.click(picker);
+    await user.click(
+      await screen.findByRole('menuitem', { name: /Second model/ }),
+    );
+    for (const item of screen.getAllByRole('menuitemradio'))
+      expect(item).not.toBeChecked();
+    expect(control()).toHaveAccessibleName('Thinking level');
+    expect(screen.queryByTestId('agent-picker-model-summary')).toBeNull();
+    if (chooseDefault) {
+      await user.click(screen.getByRole('menuitemradio', { name: 'Default' }));
+      await waitFor(() =>
+        expect(
+          screen.getByRole('menuitemradio', { name: 'Default' }),
+        ).toBeChecked(),
+      );
+      expect(summary()).toHaveTextContent('· Default');
+    }
+    await user.keyboard('{Escape}');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Message to the agent' }),
+      'Think about it{Enter}',
+    );
+    await waitFor(() =>
+      expect(
+        host.request.mock.calls.some(
+          ([input]) =>
+            input.path === 'agents/conversations' && input.method === 'POST',
+        ),
+      ).toBe(true),
+    );
+    const creation = host.request.mock.calls.find(
+      ([input]) =>
+        input.path === 'agents/conversations' && input.method === 'POST',
+    )![0];
+    expect(creation.json.selectedModel).toEqual(second);
+    expect(creation.json.config?.thinking).toBe(expected);
+  },
+);

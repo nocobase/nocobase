@@ -434,17 +434,29 @@ it('groups native models by service and submits the selected service/model pair'
 });
 
 it.each([
-  ['inherits the Agent default without a remembered level', null, undefined],
-  ['restores a remembered level', 'high', 'high'],
-  ['restores a remembered none', 'none', 'none'],
+  [
+    'inherits the Agent default without a remembered level',
+    null,
+    undefined,
+    false,
+  ],
+  [
+    'sends provider-default once Default is chosen without a remembered level',
+    null,
+    'provider-default',
+    true,
+  ],
+  ['restores a remembered level', 'high', 'high', false],
+  ['restores a remembered none', 'none', 'none', false],
   [
     'restores a remembered provider-default',
     'provider-default',
     'provider-default',
+    false,
   ],
 ] as const)(
   'starts a new conversation with its model’s thinking level: %s',
-  async (_name, remembered, expected) => {
+  async (_name, remembered, expected, chooseDefault) => {
     host.catalog.mockResolvedValue({
       data: [
         {
@@ -477,16 +489,28 @@ it.each([
       await screen.findByRole('menuitem', { name: /Chat.*Local/ }),
     );
     expect(screen.getByTestId('chat-thinking-control')).toBeVisible();
-    expect(
-      screen.getByRole('menuitemradio', {
-        name:
-          expected === 'high'
-            ? 'High'
-            : expected === 'none'
-              ? 'Off'
-              : 'Default',
-      }),
-    ).toBeChecked();
+    if (chooseDefault) {
+      // Nothing is checked until a level is chosen, so choosing Default is a change.
+      for (const item of screen.getAllByRole('menuitemradio'))
+        expect(item).not.toBeChecked();
+      expect(screen.queryByTestId('agent-picker-model-summary')).toBeNull();
+      await user.click(screen.getByRole('menuitemradio', { name: 'Default' }));
+    }
+    if (expected === undefined) {
+      for (const item of screen.getAllByRole('menuitemradio'))
+        expect(item).not.toBeChecked();
+      expect(screen.queryByTestId('agent-picker-model-summary')).toBeNull();
+    } else
+      expect(
+        screen.getByRole('menuitemradio', {
+          name:
+            expected === 'high'
+              ? 'High'
+              : expected === 'none'
+                ? 'Off'
+                : 'Default',
+        }),
+      ).toBeChecked();
     await user.keyboard('{Escape}');
     await user.type(
       screen.getByRole('textbox', { name: 'Message to the agent' }),

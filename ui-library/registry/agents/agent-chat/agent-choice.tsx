@@ -22,6 +22,8 @@ function modelSummary(
 ): AgentPickerModels['summary'] {
   if (!thinking) return undefined;
   return () => {
+    // A level not chosen yet is left to the Agent's default, which the chat does not know.
+    if (thinking.value === undefined) return null;
     const text = thinkingLevelText(thinking.value, t);
     return { text, label: t('chat.thinking.choose', { level: text }) };
   };

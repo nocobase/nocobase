@@ -1,5 +1,6 @@
 import { thinkingLevelText } from '@nocobase/app-plugin-agents/client/chat';
 import {
+  isReasoningLevel,
   REASONING_LEVELS,
   type ReasoningLevel,
 } from '@nocobase/app-plugin-agents/shared/models';
@@ -16,8 +17,11 @@ import { cn } from 'cn';
 import { useChatTranslation } from './chat-i18n.js';
 
 export interface ThinkingMenuProps {
-  /** The level shown as chosen; a saved value that is not a standard level checks none, so any choice saves. */
-  readonly value: ReasoningLevel | (string & {});
+  /**
+   * The level shown as chosen. Undefined is a level not chosen yet, which the Agent's default decides: nothing is
+   * checked, so choosing Default sends `provider-default`. A saved value that is not a standard level checks none too.
+   */
+  readonly value: ReasoningLevel | (string & {}) | undefined;
   readonly onChange: (level: ReasoningLevel) => void;
   readonly disabled?: boolean;
 }
@@ -48,23 +52,22 @@ export function ThinkingMenu({
     reveal(scrollRef.current?.querySelector('[aria-checked="true"]') ?? null);
   }, [value]);
   const label = (level: string) => thinkingLevelText(level, t);
-  const name = t('chat.thinking.choose', { level: label(value) });
+  const name =
+    value === undefined
+      ? t('chat.thinking.title')
+      : t('chat.thinking.choose', { level: label(value) });
   const itemClass =
     'min-h-7 min-w-7 shrink-0 justify-center px-2 py-1 text-xs whitespace-nowrap focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden';
   return (
     <DropdownMenuRadioGroup
-      value={value}
+      // A controlled group with nothing checked while no level is chosen.
+      value={value ?? ''}
       aria-label={name}
       data-testid='chat-thinking-control'
       className='mx-1 mb-1 flex min-w-0 items-center gap-1.5 py-1 pl-3 pr-1'
       onValueChange={(next) => {
-        if (
-          !disabled &&
-          next !== value &&
-          REASONING_LEVELS.includes(next as ReasoningLevel)
-        ) {
-          onChange(next as ReasoningLevel);
-        }
+        if (!disabled && next !== value && isReasoningLevel(next))
+          onChange(next);
       }}
       onKeyDownCapture={(event) => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
