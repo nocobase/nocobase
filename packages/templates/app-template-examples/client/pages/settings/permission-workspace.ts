@@ -408,7 +408,7 @@ export function permissionWorkspace(
               follows,
             ),
             ...(follows
-              ? { followsView: primary ? true : viewId! }
+              ? { followsView: primary ? true : viewId }
               : { defaultValue }),
             ...(isView
               ? {
