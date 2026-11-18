@@ -102,7 +102,9 @@ import { EventSpool } from '../core/events.ts';
 import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { ensurePnpmStore } from '../core/pnpm-store.ts';
-import { writeRunnerTools } from './runner-tools.ts';
+import { writePackageManagers, writeRunnerTools } from './runner-tools.ts';
+import { NpmTokenSource, npmDir, removeNpmDir } from './npm-credentials.ts';
+import { PRIVATE_REGISTRY_ENV } from './npm-registry.ts';
 import { removeHostToolWrappers, writeHostTools } from './host-tools.ts';
 import {
   agentCwd,
@@ -364,6 +366,9 @@ export class RunWorker {
   private readonly client: ApiClient;
   private readonly redactor: GrowingRedactor;
   private readonly broker: GitCredentialBroker | undefined;
+  private readonly npmToken: NpmTokenSource | undefined;
+  /** The run's npm directory (npm-launcher.ts), removed when it ends. */
+  private npmDir: string | undefined;
   private credentialServer: CredentialServer | undefined;
   /** Where the run's host tool wrappers are (host-tools.ts), removed when it ends. */
   private hostToolsDir: string | undefined;
@@ -474,6 +479,14 @@ export class RunWorker {
             log: this.deps.log,
           })
         : undefined;
+    this.npmToken = new NpmTokenSource({
+      client: this.client,
+      runId: this.runId,
+      attempt: payload.run.attempt,
+      onSecret: (secret) => this.redactor.add([secret]),
+      onLost: (code) => this.end({ kind: 'lost', code }),
+      log: this.deps.log,
+    });
     for (const input of payload.inputs) this.inputs.set(input.id, input);
   }
 
@@ -687,7 +700,12 @@ export class RunWorker {
       }
       this.lease.stop();
       this.broker?.close();
+      this.npmToken?.close();
       await this.credentialServer?.close().catch(() => undefined);
+      if (this.npmDir !== undefined)
+        await removeNpmDir(this.npmDir).catch((error: unknown) =>
+          log(`npm directory retained: ${this.npmDir}: ${String(error)}`),
+        );
       if (this.hostToolsDir !== undefined)
         await removeHostToolWrappers(this.hostToolsDir).catch(() => undefined);
       if (this.statusTimer !== undefined) clearInterval(this.statusTimer);
@@ -837,20 +855,21 @@ export class RunWorker {
       payload.tool.kind === 'codex'
         ? await prepareCodexHome(path.join(sessionDir, 'codex-home'))
         : undefined;
-    const runnerTools =
-      deps.settings.agentTools === 'system'
-        ? []
-        : await writeRunnerTools(binDir);
+    let runnerTools: string[] = [];
+    if (deps.settings.agentTools === 'system')
+      await writePackageManagers(binDir);
+    else runnerTools = await writeRunnerTools(binDir);
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const cwd = agentCwd(context);
-    if (this.broker !== undefined && this.broker.urls.length > 0) {
-      this.credentialServer = await serveGitCredentials(
-        this.broker,
-        deps.paths.home,
-      );
-    }
+    this.npmDir = npmDir(runnerDir);
+    await mkdir(this.npmDir, { recursive: true, mode: 0o700 });
+    this.credentialServer = await serveGitCredentials(
+      this.broker,
+      deps.paths.home,
+      this.npmToken,
+    );
     const credentialHelper =
-      this.broker !== undefined && this.credentialServer !== undefined
+      this.broker !== undefined && this.broker.urls.length > 0
         ? {
             helper: await installCredentialHelper(
               path.join(deps.paths.home, 'helpers'),
@@ -885,6 +904,14 @@ export class RunWorker {
       pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
+      npm: {
+        dir: this.npmDir,
+        socket: this.credentialServer.socket,
+        nonce: this.credentialServer.nonce,
+        ...(process.env[PRIVATE_REGISTRY_ENV]
+          ? { registry: process.env[PRIVATE_REGISTRY_ENV] }
+          : {}),
+      },
       ...(deps.settings.passEnv === undefined
         ? {}
         : { passEnv: deps.settings.passEnv }),
@@ -947,8 +974,14 @@ export class RunWorker {
     this.deliverInPrompt(claimed, 'prompt');
     for (;;) {
       this.lastActivity = Date.now();
+      if (payload.session?.strict && !this.sessionId)
+        return this.finishFailed(
+          'sessionUnavailable',
+          'The original session id was not reported. Restore the session or explicitly change Agent.',
+        );
       const handle = adapter.start({
         ...(payload.outputBlocks ? { outputBlocks: true } : {}),
+        strictSession: payload.session?.strict,
         workDir: cwd,
         prompt,
         systemPrompt: system,

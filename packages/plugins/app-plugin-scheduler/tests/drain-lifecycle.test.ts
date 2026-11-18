@@ -21,7 +21,7 @@ it.each([false, true])(
     const db = await createSchedulerDatabase();
     const jobs = await createMemoryScheduleService({
       default: 'test',
-      test: { adapter: 'memory', concurrency: 2, attempts: 1 },
+      backends: { test: { adapter: 'memory', concurrency: 2, attempts: 1 } },
     });
     const config = new AppConfig();
     await config.loadAll();

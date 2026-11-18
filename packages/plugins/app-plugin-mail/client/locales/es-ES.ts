@@ -42,6 +42,16 @@ const esES: LocaleResource<typeof enUS> = {
     refresh: 'Actualizar',
   },
   workspace: {
+    imapSourceRequired:
+      'Abra la carpeta de origen antes de mover o eliminar este mensaje.',
+    imapTrashMissing:
+      'Esta cuenta no tiene papelera. Use su cliente de correo.',
+    deleteUnsupported:
+      'Esta cuenta no permite eliminar mensajes. Use su cliente de correo.',
+    imapScheduled:
+      'Cancele el envío programado antes de eliminar este borrador.',
+    invalidRecipient:
+      'Corrija la dirección de correo electrónico o el nombre para mostrar: {{value}}. Use como máximo 100 destinatarios por campo.',
     senderLabel: 'De',
     attachmentNumber: 'Adjunto {{number}}',
     pendingDelivery:

@@ -26,7 +26,7 @@ import type { ToolSlotsDraft } from '../../lib/tool-slots.js';
 import { ToolStateTag } from './runner-cells.js';
 import { ToolLimitInput } from './tool-slots-fields.js';
 import { quotaTargets } from './quota-targets.js';
-import { QuotaCell, QuotaClearConfirmation } from './quota.js';
+import { QuotaCell, QuotaClearDialog } from './quota.js';
 
 /** One form state, rendered as full-width rows on desktop and one card per tool on phones. */
 export function ToolTable({
@@ -74,8 +74,6 @@ export function ToolTable({
           target,
         )
       : t(`tools.${tool}`);
-  const confirming = (tool: AgentTool, target: string) =>
-    selected?.tool === tool && selected.model === target;
   const confirm = () => {
     if (selected)
       clear.mutate({
@@ -85,9 +83,9 @@ export function ToolTable({
         window: selected.window ?? 'account',
       });
   };
-  const confirmation = (tool: AgentTool, target: string) => (
-    <QuotaClearConfirmation
-      name={nameOf(tool, target)}
+  const dialog = (
+    <QuotaClearDialog
+      name={selected ? nameOf(selected.tool, selected.model) : null}
       pending={clear.isPending}
       onClear={confirm}
       onCancel={() => setSelected(null)}
@@ -137,6 +135,7 @@ export function ToolTable({
   if (phone)
     return (
       <div className='space-y-3'>
+        {dialog}
         {tools.map((tool) => (
           <div
             key={tool}
@@ -149,26 +148,13 @@ export function ToolTable({
               {state(tool)}
               <span className='ml-auto flex items-center'>{toggle(tool)}</span>
             </div>
-            <div
-              className={
-                confirming(tool, '')
-                  ? 'border-t bg-destructive/5 p-3'
-                  : 'border-t p-3'
-              }
-            >
-              {confirming(tool, '') ? confirmation(tool, '') : quota(tool)}
-            </div>
+            <div className='border-t p-3'>{quota(tool)}</div>
             {quotaTargets(runner, tool).map((target) => (
-              <div
-                key={target}
-                className={`border-t p-3 ${confirming(tool, target) ? 'bg-destructive/5' : 'bg-muted/30'}`}
-              >
+              <div key={target} className='border-t bg-muted/30 p-3'>
                 <div className='mb-1 text-xs font-medium text-muted-foreground'>
                   {nameOf(tool, target)}
                 </div>
-                {confirming(tool, target)
-                  ? confirmation(tool, target)
-                  : quota(tool, target)}
+                {quota(tool, target)}
               </div>
             ))}
             <div className='flex items-center justify-between gap-3 border-t px-3 py-2 text-xs'>
@@ -194,11 +180,12 @@ export function ToolTable({
     );
   return (
     <div className='w-full rounded-lg border'>
+      {dialog}
       <Table className='table-fixed'>
         <colgroup>
-          <col className='w-32' />
-          <col className='w-12' />
-          <col className='w-40' />
+          <col className='w-36' />
+          <col className='w-14' />
+          <col className='w-28' />
           <col />
           <col className='w-28' />
           <col className='w-20' />
@@ -221,9 +208,6 @@ export function ToolTable({
               <TableRow
                 data-testid={`runner-tool-${tool}`}
                 data-enabled={enabledTools.includes(tool)}
-                className={
-                  confirming(tool, '') ? '[&>td]:bg-destructive/5' : undefined
-                }
               >
                 <TableCell className='whitespace-normal'>
                   <span
@@ -252,33 +236,20 @@ export function ToolTable({
                 <TableCell>
                   <div className='flex items-center'>{state(tool)}</div>
                 </TableCell>
-                {confirming(tool, '') ? (
-                  <TableCell colSpan={3}>{confirmation(tool, '')}</TableCell>
-                ) : (
-                  <>
-                    <TableCell>
-                      <div className='flex items-center'>{quota(tool)}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className='flex items-center'>{limit(tool)}</div>
-                    </TableCell>
-                    <TableCell className='text-right tabular-nums'>
-                      <div className='flex items-center justify-end'>
-                        {runner.activeByTool?.[tool] ?? 0}
-                      </div>
-                    </TableCell>
-                  </>
-                )}
+                <TableCell>
+                  <div className='flex items-center'>{quota(tool)}</div>
+                </TableCell>
+                <TableCell>
+                  <div className='flex items-center'>{limit(tool)}</div>
+                </TableCell>
+                <TableCell className='text-right tabular-nums'>
+                  <div className='flex items-center justify-end'>
+                    {runner.activeByTool?.[tool] ?? 0}
+                  </div>
+                </TableCell>
               </TableRow>
               {quotaTargets(runner, tool).map((target) => (
-                <TableRow
-                  key={target}
-                  className={
-                    confirming(tool, target)
-                      ? '[&>td]:bg-destructive/5'
-                      : 'bg-muted/30'
-                  }
-                >
+                <TableRow key={target} className='bg-muted/30'>
                   <TableCell
                     colSpan={3}
                     className='pl-6 text-xs text-muted-foreground'
@@ -289,9 +260,7 @@ export function ToolTable({
                   </TableCell>
                   <TableCell colSpan={3}>
                     <div className='flex items-center'>
-                      {confirming(tool, target)
-                        ? confirmation(tool, target)
-                        : quota(tool, target)}
+                      {quota(tool, target)}
                     </div>
                   </TableCell>
                 </TableRow>

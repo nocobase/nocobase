@@ -165,7 +165,7 @@ const deDE: LocaleResource<typeof enUS> = {
     record: 'Datensatz',
     notes: 'Notizen',
     save: 'Speichern',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     loading: 'Wird geladen…',
     empty: 'Keine zugänglichen Aufzeichnungen',
     readOnly: 'Schreibgeschützt',

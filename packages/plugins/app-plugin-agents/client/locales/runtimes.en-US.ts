@@ -2,6 +2,14 @@
 const runtimesEnUS = {
   runtimes: {
     quota: {
+      ceilingReached: 'Quota threshold reached',
+      ceilingLabel: 'Pause at',
+      ceilingInput: 'Pause new {{tool}} work at percent used',
+      ceilingSave: 'Apply',
+      ceilingInvalid: 'Enter a whole percentage from 1 to 100, or leave blank.',
+      ceilingPaused:
+        'Usage ceiling reached for a quota window; affected new work waits until reset or the ceiling changes.',
+
       workspaceStatus: {
         active: 'Work continues',
         ended: 'Ended · cleanup allowed',
@@ -33,6 +41,9 @@ const runtimesEnUS = {
       workspaceSize: 'Workspace size: {{value}}',
       providers_one: '{{count}} provider at quota',
       providers_other: '{{count}} providers at quota',
+      models_one: '{{count}} model at quota',
+      models_other: '{{count}} models at quota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Issue / conversation',
         agent: 'Agent',
@@ -70,11 +81,13 @@ const runtimesEnUS = {
       near: 'Near limit',
       clear: 'Clear',
       clearMark: 'Clear mark',
-      confirm: 'Clear this mark? {{target}} gets work again.',
+      confirmTitle: 'Clear the quota mark on {{target}}?',
+      confirm:
+        'Clear it only after confirming the quota is restored. {{target}} gets work again right away; if the quota is still used up, the next run marks it again.',
       observed: 'Last reported {{time}}',
       usedPercent: '{{percent}}% used',
-      ok: 'OK',
-      hint: 'Known reset times restore eligibility automatically. For unknown resets, restore the quota and clear the mark. Only the runtime owner and administrators can clear marks.',
+      noUsage: 'No quota data yet',
+      hint: 'A mark clears by itself at a known reset time, or when the tool reports quota left again. Clear it by hand only after confirming the quota is restored. Only the runtime owner and administrators can clear marks.',
     },
     workspaces: {
       paused:
@@ -146,8 +159,8 @@ const runtimesEnUS = {
       offlineNever: 'Offline',
     },
     toolUsage: {
-      label: 'Runs by coding tool',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Runs {{used}}/{{limit}}',
+      hint: 'At most {{limit}} {{tool}} runs at once; {{used}} running now',
     },
     toolSlots: {
       label: 'Limits per coding tool',
@@ -287,6 +300,8 @@ const runtimesEnUS = {
       show: 'Version {{version}}: a newer runner is available',
       available: 'Update available',
       badge: 'Upgradable',
+      latest: 'Latest',
+      installed: 'Version {{version}}',
       title: 'A newer runner for {{name}}',
       description: 'Installed {{version}}, this application serves {{latest}}.',
       hint: 'It updates itself once no agent is running. To update it now, run this on its host.',

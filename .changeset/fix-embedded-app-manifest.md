@@ -2,4 +2,4 @@
 '@nocobase/app-server': patch
 ---
 
-Read the built application manifest when an embedded deployment has no root manifest, so the page and OpenAPI document show the application's name and version.
+Read embedded applications' names and versions from dist/package.json for browser configuration and OpenAPI documents when the root manifest is absent.

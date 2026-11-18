@@ -1,3 +1,6 @@
+import type { I18nRuntime } from '@nocobase/i18n';
+import type { UserPreferencesService } from '../preferences/service.js';
+import type { InvitationWork } from '../invitations/lifecycle.js';
 import { lockUserForAdministration } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 import type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
@@ -47,6 +50,8 @@ export function createUserRoleScopeRegistry(): UserRoleScopeRegistry {
 
 export interface CreateUserManagementServiceOptions {
   readonly database: DatabaseManager;
+  /** @internal Provider-owned tracking shared with transaction bindings. */
+  readonly invitationWork?: InvitationWork;
   readonly connection?: DatabaseConnection;
   readonly users: UserAdministrationService;
   readonly roleScopes: UserRoleScopeRegistry;
@@ -61,6 +66,10 @@ export interface CreateUserManagementServiceOptions {
   readonly mailer?: InvitationMailer;
   /** Links use publicOrigin when configured, or the origin each caller passes. */
   readonly site?: InvitationSite;
+  /** The application's languages, for an invitation's language; absent in an application assembled without i18n. */
+  readonly i18n?: Pick<I18nRuntime, 'getLocales' | 'getDefaultLocale'>;
+  /** Keeps the language an invited person accepted in as their new account's. */
+  readonly preferences?: Pick<UserPreferencesService, 'set'>;
 }
 
 export function createUserManagementService(
@@ -101,17 +110,25 @@ class DefaultUserManagementService implements UserManagementService {
       ...(services.onRoleScopesChanged
         ? { onRoleScopesChanged: services.onRoleScopesChanged }
         : {}),
+      ...(services.i18n ? { i18n: services.i18n } : {}),
+      ...(services.preferences ? { preferences: services.preferences } : {}),
     });
   }
 
   invite: InvitationManager['invite'] = (input) =>
-    this.invitations.invite(input);
+    this.services.invitationWork
+      ? this.services.invitationWork.run(() => this.invitations.invite(input))
+      : this.invitations.invite(input);
   listInvitations: InvitationManager['listInvitations'] = (input) =>
     this.invitations.listInvitations(input);
   getInvitation: InvitationManager['getInvitation'] = (id) =>
     this.invitations.getInvitation(id);
   resendInvitation: InvitationManager['resendInvitation'] = (id, input) =>
-    this.invitations.resendInvitation(id, input);
+    this.services.invitationWork
+      ? this.services.invitationWork.run(() =>
+          this.invitations.resendInvitation(id, input),
+        )
+      : this.invitations.resendInvitation(id, input);
   revokeInvitation: InvitationManager['revokeInvitation'] = (id) =>
     this.invitations.revokeInvitation(id);
   lookupInvitation: InvitationManager['lookupInvitation'] = (token) =>

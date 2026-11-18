@@ -1,3 +1,4 @@
+import { waitForHostListening } from './startup-handshake.ts';
 import { captureChildOutput } from './child-output.js';
 import { createDiagnosticLogger, type Logger } from '@nocobase/logging';
 import type { DeploymentLogListener } from './deployment-log.js';
@@ -48,6 +49,7 @@ export interface AppHostSupervisorOptions {
   configPath?: string;
   childOutputDir?: string;
   host?: string;
+  /** Managed children use an OS-assigned port when omitted or zero. Explicit ports never fall back. */
   port?: number;
   /** Match the loaded package's source or compiled entrypoint with `auto`. */
   driver?: AppHostDriver | 'auto';
@@ -115,6 +117,8 @@ export interface AppHostSupervisorInfo {
   driver: AppHostDriver;
   status: AppHostSupervisorStatus;
   targetUrl?: string;
+  /** Actual local listener port, available only while ready. */
+  port?: number;
   pid?: number;
   activeLeases: number;
   appRevisionsDir?: string;
@@ -134,7 +138,7 @@ interface ManagedChild {
   management?: IpcHostManagementClient;
   entrypoint?: string;
   port: number;
-  targetUrl: URL;
+  targetUrl?: URL;
 }
 
 interface AppHostLaunchOptions {
@@ -216,6 +220,16 @@ export class AppHostSupervisor {
     this.childOutputDir = options.childOutputDir;
     this.host = options.host ?? '127.0.0.1';
     this.configuredPort = options.port;
+    if (
+      options.port !== undefined &&
+      (!Number.isInteger(options.port) ||
+        options.port < 0 ||
+        options.port > MAX_TCP_PORT)
+    ) {
+      throw new RangeError(
+        'App host port must be an integer between 0 and 65535',
+      );
+    }
     this.entrypoint = options.entrypoint;
     this.tsxCli = options.tsxCli;
     this.tsconfig = options.tsconfig;
@@ -289,7 +303,9 @@ export class AppHostSupervisor {
       driver: this.driver,
       status: this.status,
       targetUrl:
-        this.externalUrl?.toString() ?? this.managedChild?.targetUrl.toString(),
+        this.externalUrl?.toString() ??
+        this.managedChild?.targetUrl?.toString(),
+      port: this.status === 'ready' ? this.managedChild?.port : undefined,
       pid: this.managedChild?.child.pid,
       activeLeases: this.activeLeases,
       appRevisionsDir: this.appRevisionsDir,
@@ -325,7 +341,7 @@ export class AppHostSupervisor {
 
     this.clearAutomaticRestartTimer();
 
-    if (this.managedChild && this.status === 'ready') {
+    if (this.managedChild?.targetUrl && this.status === 'ready') {
       return this.managedChild.targetUrl;
     }
 
@@ -341,7 +357,7 @@ export class AppHostSupervisor {
     }
   }
 
-  async stop(reason = 'app-host stopped'): Promise<void> {
+  async stop(reason = 'app-host stopped', timeoutMs?: number): Promise<void> {
     this.clearAutomaticRestartTimer();
     if (this.externalUrl || !this.enabled || !this.managedChild) {
       return;
@@ -351,7 +367,7 @@ export class AppHostSupervisor {
       return await this.stopPromise;
     }
 
-    this.stopPromise = this.stopManagedChild(reason);
+    this.stopPromise = this.stopManagedChild(reason, timeoutMs);
     try {
       await this.stopPromise;
     } finally {
@@ -359,7 +375,10 @@ export class AppHostSupervisor {
     }
   }
 
-  async restart(reason = 'app-host restarted'): Promise<URL> {
+  async restart(
+    reason = 'app-host restarted',
+    options: { shutdownTimeoutMs?: number } = {},
+  ): Promise<URL> {
     if (this.externalUrl || this.driver === 'external') {
       throw new Error(
         'App host is external and cannot be restarted by the supervisor',
@@ -369,7 +388,7 @@ export class AppHostSupervisor {
       throw new Error('App host is disabled');
     }
 
-    await this.stop(reason);
+    await this.stop(reason, options.shutdownTimeoutMs);
     return await this.ensureStarted();
   }
 
@@ -416,6 +435,13 @@ export class AppHostSupervisor {
     return (await this.getManagementClient()).removeDeployment(appId);
   }
 
+  /** Observe the current ready child without starting or restarting a Host. */
+  getReadyManagementClient(): HostManagementService | null {
+    return this.status === 'ready'
+      ? (this.managedChild?.management ?? null)
+      : null;
+  }
+
   async getManagementClient(): Promise<HostManagementService> {
     if (this.mode !== 'managed') {
       throw new Error('App host management client requires managed mode');
@@ -456,7 +482,17 @@ export class AppHostSupervisor {
       this.status = 'stopped';
       throw new Error('App host supervisor is shut down');
     }
-    const targetUrl = new URL(`http://${this.host}:${port}`);
+    // Wildcard bind addresses are not connection targets; bracket IPv6 addresses in URLs.
+    const connectHost =
+      this.host === '0.0.0.0'
+        ? '127.0.0.1'
+        : this.host === '::'
+          ? '::1'
+          : this.host;
+    const target = (actualPort: number): URL =>
+      new URL(
+        `http://${connectHost.includes(':') ? `[${connectHost}]` : connectHost}:${actualPort}`,
+      );
     this.session = this.mode === 'managed' ? randomUUID() : null;
     const launchOptions = this.resolveLaunchOptions(port);
 
@@ -498,7 +534,7 @@ export class AppHostSupervisor {
       management,
       entrypoint: launchOptions.entrypoint,
       port,
-      targetUrl,
+      targetUrl: port ? target(port) : undefined,
     };
 
     this.pipeChildLogs(child);
@@ -524,6 +560,21 @@ export class AppHostSupervisor {
     });
 
     try {
+      const actualPort =
+        this.mode === 'managed'
+          ? await waitForHostListening(
+              child,
+              this.session!,
+              this.startTimeoutMs,
+            )
+          : port;
+      if (port && actualPort !== port)
+        throw new Error('App host did not bind the explicitly configured port');
+      const targetUrl = target(actualPort);
+      if (!this.managedChild || this.managedChild.child !== child)
+        throw new Error('App host exited before readiness');
+      this.managedChild.port = actualPort;
+      this.managedChild.targetUrl = targetUrl;
       await this.waitForReady(targetUrl);
       this.status = 'ready';
       for (const listener of this.readyListeners) {
@@ -541,7 +592,10 @@ export class AppHostSupervisor {
     }
   }
 
-  private async stopManagedChild(reason: string): Promise<void> {
+  private async stopManagedChild(
+    reason: string,
+    timeoutMs = this.shutdownTimeoutMs,
+  ): Promise<void> {
     const managed = this.managedChild;
     if (!managed) {
       this.status = this.enabled ? 'stopped' : 'disabled';
@@ -550,14 +604,16 @@ export class AppHostSupervisor {
 
     this.status = 'stopping';
     this.diagnostic.info(`Stopping app-host child process: ${reason}`);
-    const exitPromise = waitForChildExit(managed.child, this.shutdownTimeoutMs);
+    const exitPromise = waitForChildExit(managed.child, timeoutMs);
     managed.child.kill('SIGTERM');
 
     await exitPromise.catch((error: unknown) => {
       this.diagnostic.warn(
         error instanceof Error ? error.message : String(error),
       );
+      const killed = waitForChildExit(managed.child, 1_000);
       managed.child.kill('SIGKILL');
+      return killed;
     });
 
     this.managedChild = null;
@@ -725,6 +781,7 @@ export class AppHostSupervisor {
   }
 
   private async resolvePort(): Promise<number> {
+    if (this.mode === 'managed') return this.configuredPort ?? 0;
     if (this.configuredPort) {
       return this.configuredPort;
     }

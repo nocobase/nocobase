@@ -26,6 +26,8 @@ const messages = {
   'files.retry': 'Erneut versuchen',
   'files.done': 'Erledigt',
   'files.uploading': 'Hochladen',
+  'files.longWait':
+    'Wird noch hochgeladen. Warten Sie weiter oder brechen Sie ab.',
   'files.failed': 'Fehlgeschlagen',
   'files.pending': 'Ausstehend',
   'files.previous': 'Vorherige Datei',

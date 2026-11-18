@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseConnection, Row } from '@nocobase/db';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
-import type { LifecycleRuntime } from '@nocobase/lifecycle';
+import type { LifecycleRecord, LifecycleRuntime } from '@nocobase/lifecycle';
 import { ApiError } from '@nocobase/app-server/router';
 import {
   amount,
@@ -194,7 +194,12 @@ export class ProcurementService {
         filter: { requestId: id },
         sort: (s) => s.field('position').asc(),
       });
-    const view = await this.runtime.view('procurement', id, { id: actor.id });
+    // The version the request is bound to, whichever is the latest.
+    const view = await this.runtime.view(
+      this.runtime.recordLifecycle('procurement', row as LifecycleRecord),
+      id,
+      { id: actor.id },
+    );
     const editable =
       actor.request &&
       row.applicantId === actor.id &&
@@ -475,13 +480,18 @@ export class ProcurementService {
           'Only the designated reviewer can decide.',
           'PERMISSION_DENIED',
         );
-      const result = await this.runtime.fire('procurement', id, transition, {
-        actor: { id: actor.id },
-        manual: true,
-        expect: { version },
-        requestId,
-        transaction: tx,
-      });
+      const result = await this.runtime.fire(
+        this.runtime.recordLifecycle('procurement', row as LifecycleRecord),
+        id,
+        transition,
+        {
+          actor: { id: actor.id },
+          manual: true,
+          expect: { version },
+          requestId,
+          transaction: tx,
+        },
+      );
       return { id, replayed: result.replayed === true };
     });
   }

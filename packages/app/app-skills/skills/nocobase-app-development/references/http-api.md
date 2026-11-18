@@ -61,6 +61,8 @@ There are two pagination styles, and a list uses one of them:
 
 `pageSize` defaults to 20 and is capped at 100; a route that needs a larger cap keeps it and says why in a comment. Search is `q`, ordering is `orderBy`.
 
+When a filter selects several values of the same field, accept them in one request and document and validate the encoding (for example, comma-separated enum values with OR semantics): splitting by value multiplies requests and makes pagination and totals inconsistent. Right: `GET /orders?status=open,closed`; wrong: separate `status=open` and `status=closed` requests merged in the client. Reject unknown values and bound the number of values through `apiValidator()` like any other input.
+
 A bounded configuration list, such as providers, roles, templates or catalogs, may skip paging, but it still answers `{ data, meta }` with at least `meta.total`. Every other list pages. `meta` may carry fields beyond the standard ones when a list has more to say about itself.
 
 Data formats:

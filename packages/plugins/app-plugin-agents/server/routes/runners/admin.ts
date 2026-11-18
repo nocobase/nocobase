@@ -312,7 +312,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime workspaces (GET /agents/runners/:runnerId/workspaces) for directory diagnostics.",
+        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime workspaces (GET /agents/runners/:runnerId/workspaces) for directory diagnostics. Quota carries only tool quota marks and usage whose reset has not passed, with the pause thresholds; the runtime's own read has the rest.",
       responses: {
         200: listResponse(RunnerListItemSchema),
         ...apiErrorResponses,
@@ -360,13 +360,14 @@ export function createAdminRoutes(
         if ((await runnerRights(context, runner, inactive)).see)
           visible.push(runner);
       const takes = await takesOf(visible);
+      const now = services.clock.now().getTime();
       const data = await Promise.all(
         visible.map(async (runner): Promise<RunnerListItem> => {
           const summary = await summarizeRunner(context, runner, takes, {
             held,
             inactive,
           });
-          return runnerListItem(summary);
+          return runnerListItem(summary, now);
         }),
       );
       return context.json({ data, meta: { total: data.length } });
@@ -692,6 +693,8 @@ export function createAdminRoutes(
     describeRoute({
       tags,
       summary: 'Clear a runtime quota mark',
+      description:
+        'Removes the selected quota mark, whether or not its reset time is known, so the runtime takes that work again at once. Clear it only after the quota is restored: the next exhausted report marks it again.',
       operationId: 'agentsClearRunnerQuota',
       ...cliRoute({
         command: 'runtime quota clear',
@@ -703,13 +706,9 @@ export function createAdminRoutes(
         ...apiErrorResponses,
         403: apiErrorResponse(
           403,
-          'Only the runtime owner or a runtime administrator may clear an unknown-reset quota mark.',
+          'Only the runtime owner or a runtime administrator may clear a quota mark.',
         ),
         404: notVisible,
-        400: apiErrorResponse(
-          400,
-          'A known reset clears automatically (QUOTA_RESET_KNOWN, FAILED_PRECONDITION).',
-        ),
         409: apiErrorResponse(
           409,
           'A concurrent quota change requires retrying (REVISION_CONFLICT).',
@@ -721,7 +720,7 @@ export function createAdminRoutes(
       'json',
       z.strictObject({
         tool: AgentToolSchema.describe(
-          'The coding tool whose unknown-reset mark is selected.',
+          'The coding tool whose quota mark is selected.',
         ),
         scope: z
           .enum(['tool', 'provider', 'model'])

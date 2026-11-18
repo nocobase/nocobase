@@ -162,6 +162,7 @@ export const clientMocks = {
       refreshRealtimeQueries: actual.refreshRealtimeQueries,
       useRealtimeReadiness: () => true,
       copyText: actual.copyText,
+      errorToastOptions: actual.errorToastOptions,
       UnsavedChangesContext: actual.UnsavedChangesContext,
       useGuardedClose: actual.useGuardedClose,
       useUnsavedChanges: actual.useUnsavedChanges,

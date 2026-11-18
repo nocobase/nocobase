@@ -26,6 +26,7 @@ const messages = {
   'files.retry': 'Tentar novamente',
   'files.done': 'Concluído',
   'files.uploading': 'Carregando',
+  'files.longWait': 'Ainda enviando. Continue aguardando ou cancele.',
   'files.failed': 'Falha',
   'files.pending': 'Pendente',
   'files.previous': 'Arquivo anterior',

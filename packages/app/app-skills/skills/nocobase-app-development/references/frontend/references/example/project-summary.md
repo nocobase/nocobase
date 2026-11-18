@@ -12,19 +12,13 @@ Rules: ["Loading data in a component" in `api.md`](../api.md#loading-data-in-a-c
 // client/pages/projects/project-summary.tsx
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { AlertCircleIcon, RefreshCwIcon } from 'lucide-react';
+import { AlertCircleIcon } from 'lucide-react';
 import { type ReactElement, useEffect, useRef, useState } from 'react';
 
 import { SessionExpiredAlert } from '#components/session-expired-alert';
 import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '#components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '#components/ui/card';
 import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 
@@ -154,26 +148,13 @@ export function ProjectSummary({
     <Card ref={cardRef} tabIndex={-1}>
       <CardHeader>
         <CardTitle>{project?.name ?? t('projects.detail.title')}</CardTitle>
-        {project ? (
-          <CardAction>
-            {/* Keep the content while reloading, and show the loading state only on the button (guideline I4). */}
-            <Button
-              variant='outline'
-              size='sm'
-              disabled={loading}
-              onClick={reload}
-            >
-              {loading ? (
-                <Spinner data-icon='inline-start' />
-              ) : (
-                <RefreshCwIcon data-icon='inline-start' />
-              )}
-              {t('projects.actions.refresh')}
-            </Button>
-          </CardAction>
-        ) : null}
       </CardHeader>
-      <CardContent>{body}</CardContent>
+      <CardContent>
+        {loading && project !== undefined && (
+          <Spinner aria-label={t('status.loading')} />
+        )}
+        {body}
+      </CardContent>
     </Card>
   );
 }

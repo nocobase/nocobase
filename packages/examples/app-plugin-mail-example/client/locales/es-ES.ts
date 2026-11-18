@@ -117,7 +117,7 @@ const esES: LocaleResource<typeof enUS> = {
     preparing: 'Preparando datos del buzón de demostración…',
     retry: 'Reintentar configuración',
     openWorkspace: 'Abrir espacio de trabajo de correo',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     loading: 'Cargando…',
   },
 };

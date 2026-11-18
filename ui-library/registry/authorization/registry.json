@@ -53,7 +53,7 @@
         "@nocobase/data-table",
         "@nocobase/record-link"
       ],
-      "docs": "Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.",
+      "docs": "Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization; pass loading={active && request.loading && listState === 'ready'} so a same-query refresh shows the table's standard refresh indicator while a refresh-failure retry is announced only by its retry button. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.",
       "files": [
         {
           "path": "role-list.tsx",

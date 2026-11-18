@@ -24,6 +24,8 @@ const realEntries = path.resolve(
   import.meta.dirname,
   '../../.github/workflows',
 );
+const DEFAULT_BRANCH_GUARD =
+  "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)";
 
 function mainWorkflow({
   name = 'Release',
@@ -55,7 +57,7 @@ on:
         type: ${type}
 ${extra}jobs:
   dispatch:
-${guard ? "    if: ${{ github.ref == 'refs/heads/v3-develop' }}\n" : ''}    runs-on: ubuntu-latest
+${guard ? `    if: \${{ ${guard === true ? DEFAULT_BRANCH_GUARD : guard} }}\n` : ''}    runs-on: ubuntu-latest
     steps:
       - env:
           WORKFLOW_FILE: ${workflowFile}
@@ -168,7 +170,7 @@ test('reports a different name and different inputs with the update order', () =
   assert.equal(name.errors.length, 1);
   assert.match(
     name.errors[0].message,
-    /update the entry on v3-develop first, then main/u,
+    /update the entry on v3 first, then main/u,
   );
   const inputs = run(
     { 'release.yml': mainWorkflow() },
@@ -195,11 +197,18 @@ test('structural findings stay errors in warn mode', () => {
       /only trigger/u,
     ],
     guard: [entryWorkflow('release.yml', { guard: false }), /guarded/u],
+    // A literal branch name stops matching once the default branch is renamed.
+    literalGuard: [
+      entryWorkflow('release.yml', {
+        guard: "github.ref == 'refs/heads/v3-develop'",
+      }),
+      /guarded/u,
+    ],
     file: [
       entryWorkflow('release.yml', { workflowFile: 'other.yml' }),
       /WORKFLOW_FILE/u,
     ],
-    ref: [entryWorkflow('release.yml', { ref: 'v3-develop' }), /ref "main"/u],
+    ref: [entryWorkflow('release.yml', { ref: 'v3' }), /ref "main"/u],
   };
   for (const [label, [content, pattern]] of Object.entries(cases)) {
     const result = run(main, { 'release.yml': content }, 'warn');
@@ -246,7 +255,7 @@ test('the command line exits 0, 1 and 2 and prints annotations', () => {
   }
 });
 
-test('every real entry on v3-develop passes the structural checks', () => {
+test('every real entry on the default branch passes the structural checks', () => {
   // Main is not part of this checkout, so compare the entries with themselves: only the structural checks can fail.
   const files = readdirSync(realEntries).filter(
     (file) => /\.ya?ml$/u.test(file) && !file.startsWith('v3-'),

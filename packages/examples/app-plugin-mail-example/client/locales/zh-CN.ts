@@ -108,7 +108,7 @@ const messages = {
     preparing: '正在准备示例邮箱数据…',
     retry: '重试初始化',
     openWorkspace: '打开邮箱工作区',
-    refresh: '刷新',
+    retryRead: '重试',
     loading: '正在加载…',
   },
 };

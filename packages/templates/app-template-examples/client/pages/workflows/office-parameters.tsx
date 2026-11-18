@@ -15,6 +15,8 @@ import {
   type OfficeWorkflowParameters,
   type OfficeWorkflowValues,
 } from '@nocobase/app-plugin-office-flows-example/client';
+import { DatePicker } from '#components/date-picker';
+import { formatDateOnly, parseDateOnly } from '#lib/date-only';
 import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
 import { Input } from '#components/ui/input';
@@ -110,6 +112,7 @@ export function OfficeParameterEditor({
   disabled = false,
   configuration,
   path,
+  definition,
   onBusyChange,
   onDirtyChange,
   onSaved,
@@ -118,6 +121,7 @@ export function OfficeParameterEditor({
   saveRef?: Ref<{ save: () => Promise<boolean> }>;
   configuration: OfficeWorkflowParameters;
   path: string;
+  definition: string;
   onBusyChange: (value: boolean) => void;
   onDirtyChange: (value: boolean) => void;
   onSaved?: (configuration: OfficeWorkflowParameters) => void;
@@ -195,6 +199,7 @@ export function OfficeParameterEditor({
         method: 'PUT',
         json: {
           kind: 'office',
+          definition,
           values: draft,
           expectedRevision: saved.revision,
           ...(organization
@@ -621,24 +626,27 @@ export function OfficeParameterEditor({
               key={index}
               className='grid gap-2 rounded-lg border p-3 sm:grid-cols-2'
             >
-              <label>
-                {t('workflows.parameterFields.date')}
-                <Input
-                  type='date'
+              <div>
+                <label htmlFor={`${id}-holiday-${index}`}>
+                  {t('workflows.parameterFields.date')}
+                </label>
+                <DatePicker
+                  id={`${id}-holiday-${index}`}
+                  clearable
                   disabled={locked}
-                  value={row.date}
-                  onChange={(event) =>
+                  value={parseDateOnly(row.date)}
+                  onChange={(date) =>
                     change({
                       ...draft,
                       holidays: draft.holidays!.map((item, offset) =>
                         offset === index
-                          ? { ...item, date: event.target.value }
+                          ? { ...item, date: formatDateOnly(date) }
                           : item,
                       ),
                     })
                   }
                 />
-              </label>
+              </div>
               <label>
                 {t('workflows.parameterFields.name')}
                 <Input

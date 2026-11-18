@@ -13,3 +13,4 @@ export * from './policy.js';
 export * from './workspaces.js';
 
 export * from './output-redactor.js';
+export * from './diagnostics.js';

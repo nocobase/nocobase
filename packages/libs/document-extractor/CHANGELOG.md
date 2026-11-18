@@ -1,5 +1,23 @@
 # @nocobase/document-extractor
 
+## 0.1.0-beta.2
+
+### Patch Changes
+
+- dd0a34f: Keep fresh production installations on patched argparse 1 and ansi-regex 5 releases. Upgrading argparse within its compatible major removes the vulnerable Lodash 3 dependency without forcing Lodash across major versions.
+- dd0a34f: Resolve a patched PDF.js release for officeparser document extraction and verify PDF text extraction with its local worker.
+- dd0a34f: Use the npm-published @e965/xlsx 0.20.3 distribution of SheetJS to fix prototype pollution and regular expression denial of service while preserving XLS, XLSM, XLSX and CSV extraction. Registry dependencies allow applications to install with pnpm's default subdependency protections.
+
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

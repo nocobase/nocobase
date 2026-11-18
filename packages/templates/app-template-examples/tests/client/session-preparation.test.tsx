@@ -1,5 +1,6 @@
 import {
   ClientApplicationContext,
+  NavigationGuardProvider,
   realtimeClientToken,
   type ClientApplication,
 } from '@nocobase/app-client';
@@ -130,23 +131,25 @@ async function setup() {
           <Capture />
           <AuthorizationProvider>
             <MemoryRouter>
-              <AppRouter
-                clientRoutes={[
-                  route,
-                  {
-                    id: 'login',
-                    name: 'login',
-                    path: '/login',
-                    auth: 'guest',
-                    authz: 'skip',
-                    source: 'application',
-                    packageName: 'test',
-                    componentLoader: async () => ({
-                      default: () => <p>Login route</p>,
-                    }),
-                  },
-                ]}
-              />
+              <NavigationGuardProvider>
+                <AppRouter
+                  clientRoutes={[
+                    route,
+                    {
+                      id: 'login',
+                      name: 'login',
+                      path: '/login',
+                      auth: 'guest',
+                      authz: 'skip',
+                      source: 'application',
+                      packageName: 'test',
+                      componentLoader: async () => ({
+                        default: () => <p>Login route</p>,
+                      }),
+                    },
+                  ]}
+                />
+              </NavigationGuardProvider>
             </MemoryRouter>
           </AuthorizationProvider>
         </AuthenticationProvider>

@@ -49,13 +49,14 @@ const { generateDatabaseManifests } =
   await import('@nocobase/dev-config/build/database-manifests');
 const { default: spawn } = await import('cross-spawn');
 const { readCliHooks, runHookStage } = await import('./utils/cli-hooks.mjs');
+const { resolveBuildWorkspacePackages, buildNodeOptions } =
+  await import('./utils/build-workspace.mjs');
+
+// Applies to compiler, bundler and hook subprocesses; callers can still choose their own heap limit.
+process.env.NODE_OPTIONS = buildNodeOptions(process.env.NODE_OPTIONS);
 
 const rootDir = path.resolve(process.env.NOCOBASE_TOOL_ROOT || process.cwd());
 const distDir = path.join(rootDir, 'dist');
-// Read rather than written as a literal: this script ships into generated applications, whose name is their own.
-const appPackageName = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'),
-).name;
 // Taken once, before anything is built, so every file the build writes agrees on when it was made.
 const builtAt = new Date().toISOString();
 
@@ -120,18 +121,6 @@ function copyCollectionMetadata() {
   );
 }
 
-const envOutputPath = path.join(distDir, '.env');
-// The variables a deployed server reads from `dist/.env`: the server settings the templates' `server` section declares
-// in `env`. A key belongs here only while something reads it — a key copied into `dist/.env` that nothing reads looks
-// like a setting and does nothing. `APP_BASE_PATH` is not one of them: the build is not tied to a mount path, so the
-// deployment chooses it, and a value copied from the build machine would silently pick one for it.
-const serverEnvKeys = new Set([
-  'NODE_ENV',
-  'APP_SERVER_HOST',
-  'APP_SERVER_PORT',
-  'APP_SERVER_START_LOG',
-]);
-
 const parseEnv = (content) => {
   const parsed = {};
   const linePattern =
@@ -190,48 +179,12 @@ const readEnvFiles = (files, baseEnv = {}) => {
   return env;
 };
 
-const formatEnvValue = (value) => {
-  if (/^[A-Za-z0-9_./:@%+-]*$/.test(value)) {
-    return value;
-  }
-
-  return JSON.stringify(value);
-};
-
 // The same two files the server runtime loads through `loadStandaloneAppEnv`. Vite is handed this set too, so the
 // client and the server are built from one environment; nothing else may read `.env` files on its own.
 const applicationEnvFiles = [
   path.join(rootDir, '.env'),
   path.join(rootDir, '.env.local'),
 ];
-
-const writeDistEnv = () => {
-  const env = readEnvFiles(applicationEnvFiles, process.env);
-  const entries = Object.entries(env).filter(([key]) => serverEnvKeys.has(key));
-
-  if (entries.length === 0) {
-    console.log('\n> Extract environment');
-    console.log(
-      'No supported server environment entries found; skipped dist/.env',
-    );
-    return;
-  }
-
-  fs.mkdirSync(distDir, { recursive: true });
-  const content = entries
-    .map(([key, value]) => `${key}=${formatEnvValue(value)}`)
-    .join('\n');
-
-  fs.writeFileSync(envOutputPath, `${content}\n`, { mode: 0o600 });
-
-  console.log('\n> Extract environment');
-  console.log(
-    `Generated ${path.relative(rootDir, envOutputPath)} from ${applicationEnvFiles
-      .filter((envFile) => fs.existsSync(envFile))
-      .map((envFile) => path.basename(envFile))
-      .join(', ')}`,
-  );
-};
 
 /**
  * Records what a deployment cannot read back from the built files. `relocatable` says the client was built with a
@@ -279,22 +232,27 @@ fs.rmSync(distDir, { recursive: true, force: true });
 // hook writing to a directory about to be deleted would succeed, leave nothing behind, and report nothing wrong.
 runHookStage(buildHooks, 'beforeBuild', run);
 
-// `^...` selects every workspace package this one depends on, transitively, which is exactly the set whose `dist`
-// the steps below read. Spelling the set out by hand drifted instead: `@nocobase/config` was missing from the list
-// and a template built on its own failed at "Generate server package" with `Missing ../../libs/config/dist`.
-//
-// Only needed when a template is built alone. `pnpm -r build` already orders dependencies first, and it runs the two
-// templates concurrently — where each plugin's build clears its `dist` before tsc refills it, so one template can
-// observe the other's empty `dist` and fail with a misleading "Missing .../dist".
-//
-// A generated application can own packages too. Build them before typechecking or bundling either application half;
-// their declarations and client exports may point to dist, which does not exist on a clean checkout.
+// pnpm's transitive selector also follows each dependency's devDependencies, including entire example applications.
+// Select the application closure explicitly, then let pnpm order those packages. A workspace-wide build already
+// orders dependencies and sets the skip flag; nested application builds must not rebuild or clear shared output.
 if (process.env.NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD !== '1') {
-  run('Build workspace dependencies', 'pnpm', [
-    '--filter',
-    `${appPackageName}^...`,
-    'build',
-  ]);
+  const dependencies = resolveBuildWorkspacePackages(rootDir);
+  if (dependencies.length) {
+    run(
+      'Build workspace dependencies',
+      'pnpm',
+      [
+        '-r',
+        '--workspace-concurrency=2',
+        ...dependencies.flatMap((name) => ['--filter', name]),
+        '--if-present',
+        'build',
+      ],
+      {
+        env: { ...process.env, NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD: '1' },
+      },
+    );
+  }
 }
 
 run('Typecheck client', 'pnpm', ['exec', 'tsc']);
@@ -328,7 +286,7 @@ await generateDatabaseManifests({
   outputDir: path.join(distDir, 'database'),
 });
 
-writeDistEnv();
+// Runtime configuration belongs to the deployment. Reading build inputs for Vite must not serialize them into dist/.env.
 // The deployment contract: every environment variable the application reads, with what each sets and whether a
 // deployment must supply it. Built from the sources, which declare the variables, and from config.example.yml; a
 // failure fails the build, because a deployment tool reads this file to know what to ask for.
@@ -394,7 +352,7 @@ run('Verify server dependencies', 'node', [
 runHookStage(buildHooks, 'afterBuild', run);
 
 console.log(
-  '\nBuild complete: dist/client, dist/server, dist/cli, dist/.env, dist/variables.json, and dist/package.json',
+  '\nBuild complete: dist/client, dist/server, dist/cli, dist/variables.json, and dist/package.json',
 );
 
 // Opt-in, because the archive is only wanted when the build is being shipped somewhere, and packing several hundred

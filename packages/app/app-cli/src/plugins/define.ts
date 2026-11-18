@@ -20,6 +20,8 @@ const COMMAND_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)*$/;
  */
 export function pluginTopicFor(packageName: string): string {
   const unscoped = packageName.slice(packageName.indexOf('/') + 1);
+  if (unscoped.startsWith('app-portal-'))
+    return unscoped.slice('app-portal-'.length);
   if (unscoped.startsWith('app-plugin-')) {
     return unscoped.slice('app-plugin-'.length);
   }
@@ -80,6 +82,8 @@ export function defineCliPlugin(
   // set grew once already — a plugin contributing only build hooks is legitimate and has no commands to declare.
   if (
     commands.length === 0 &&
+    !definition.rootCommand &&
+    !definition.devRootCommand &&
     Object.keys(buildHooks).length === 0 &&
     Object.keys(devHooks).length === 0
   ) {
@@ -98,6 +102,19 @@ export function defineCliPlugin(
     if (typeof command?.run !== 'function') {
       throw new Error(
         `CLI command "${topic} ${name}" from ${packageName} is not an oclif Command class.`,
+      );
+    }
+  }
+
+  if (definition.rootCommand && definition.devRootCommand) {
+    throw new Error(
+      `CLI plugin ${packageName} declares both rootCommand and devRootCommand.`,
+    );
+  }
+  for (const command of [definition.rootCommand, definition.devRootCommand]) {
+    if (command !== undefined && typeof command.run !== 'function') {
+      throw new Error(
+        `The root command from ${packageName} is not an oclif Command class.`,
       );
     }
   }
@@ -131,6 +148,10 @@ export function defineCliPlugin(
     ...(Object.keys(topics).length === 0
       ? {}
       : { topics: Object.freeze(topics) }),
+    ...(definition.rootCommand ? { rootCommand: definition.rootCommand } : {}),
+    ...(definition.devRootCommand
+      ? { devRootCommand: definition.devRootCommand }
+      : {}),
     commands: Object.freeze({ ...definition.commands }),
     devCommands: Object.freeze({ ...definition.devCommands }),
     buildHooks,

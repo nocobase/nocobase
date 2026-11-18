@@ -13,7 +13,7 @@ The Default template ships these; Examples adds `badge`, `card`, `field`, `selec
 | `button`, `dropdown-menu`, `input`, `label`, `popover`, `spinner`, `toast`, `tooltip` | The shell, the sign-in pages and the Appearance popover |
 | `dialog`                                                                              | `RouteDialog` and `RouteDrawer`                         |
 
-A date field is the application's own `DatePicker`, composed from the `calendar` and `popover` primitives as shadcn's Date Picker guide does ([`form.md`](form.md)); add `calendar` in the same run as the primitives a page needs, such as `yes n | pnpm exec shadcn add card calendar`. A table is the application's own `DataTable`, built from the `table` primitive ([`table.md`](table.md#1-choosing-a-table-component)).
+A date field is the application's own `DatePicker` in `client/components/date-picker.tsx`, composed once from the `calendar`, `popover` and `button` primitives as shadcn's Date Picker page does; follow the four steps in [Dates in `form.md`](form.md#dates), which start from the official example and a tested reference composition. Add `calendar` in the same run as the primitives a page needs, such as `yes n | pnpm exec shadcn add card calendar`. A table is the application's own `DataTable`, built from the `table` primitive ([`table.md`](table.md#1-choosing-a-table-component)).
 
 A file that imports any other primitive — `field`, `card`, `alert`, `badge`, `skeleton`, `empty`, `alert-dialog`, `sheet`, `checkbox` and so on — compiles only after it is added. Check `client/components/ui/` first (or the `components` list of `pnpm exec shadcn info --json`), add everything missing in one run, then format what the run created:
 

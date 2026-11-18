@@ -4,6 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  PeopleAvatars,
   PropertyCard,
   PropertyLink,
   PropertyLongText,
@@ -270,4 +271,23 @@ describe('property copying on HTTP', () => {
       );
     },
   );
+});
+
+it('uses CJK name endings in people avatars and preserves Latin abbreviations', () => {
+  render(
+    <PeopleAvatars
+      label='Followers'
+      people={[
+        { id: '1', name: '周 建国' },
+        { id: '2', name: '欧阳娜娜' },
+        { id: '3', name: 'Li Lei' },
+        { id: '4', name: 'Alice' },
+      ]}
+    />,
+  );
+  const group = screen.getByRole('group', { name: 'Followers' });
+  expect(within(group).getByText('建国')).toBeVisible();
+  expect(within(group).getByText('娜娜')).toBeVisible();
+  expect(within(group).getByText('LL')).toBeVisible();
+  expect(within(group).getByText('AL')).toBeVisible();
 });

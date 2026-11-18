@@ -117,7 +117,7 @@ const viVN: LocaleResource<typeof enUS> = {
     preparing: 'Đang chuẩn bị dữ liệu hộp thư demo…',
     retry: 'Thử lại thiết lập',
     openWorkspace: 'Mở không gian làm việc của thư',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     loading: 'Đang tải…',
   },
 };

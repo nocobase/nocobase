@@ -102,6 +102,75 @@ describe('scheduled draft lifecycle', () => {
   });
   const drafts = () =>
     store.listMessages('user', { folderIds: [MAIL_LOCAL_DRAFT_FOLDER_ID] });
+  it('saves unfinished and empty drafts, then leaves them editable after failed validation', async () => {
+    const draft = await service.saveDraft(actor, {
+      ...input,
+      scheduledAt: undefined,
+      to: [{ address: '"Doe, Jane" <' }],
+      text: '',
+      html: '',
+    });
+    expect(draft.to).toEqual([{ address: '"Doe, Jane" <' }]);
+    await expect(
+      service.sendMessage(actor, {
+        ...input,
+        scheduledAt: undefined,
+        draftMessageId: draft.id,
+        to: draft.to,
+      }),
+    ).rejects.toMatchObject({
+      status: 'INVALID_ARGUMENT',
+      field: 'to.0.address',
+    });
+    expect(
+      (await store.getMessage('user', input.accountId, draft.id))?.draft,
+    ).toBe(true);
+    expect(
+      await store.getSubmissionByIdempotencyKey(
+        input.accountId,
+        input.idempotencyKey,
+      ),
+    ).toBeUndefined();
+    expect(send).not.toHaveBeenCalled();
+    const saved = await service.saveDraft(actor, {
+      ...input,
+      scheduledAt: undefined,
+      draftMessageId: draft.id,
+      to: [],
+      text: '',
+      html: '',
+    });
+    expect(saved.to).toEqual([]);
+    await expect(
+      service.sendMessage(actor, {
+        ...input,
+        scheduledAt: undefined,
+        draftMessageId: draft.id,
+        to: [{ name: 'Doe, Jane', address: 'jane@example.com' }],
+      }),
+    ).resolves.toMatchObject({ status: 'accepted' });
+    expect(send).toHaveBeenCalledOnce();
+  });
+  it('rejects old invalid scheduled input before claiming or resolving the provider', async () => {
+    const queued = await service.sendMessage(actor, input);
+    const scheduled = await store.getScheduledSubmission(queued.id);
+    const claim = vi.spyOn(store, 'claimSubmission');
+    await expect(
+      operation.execute(
+        actor,
+        {
+          ...scheduled!.input,
+          to: [{ address: 'Old Name <old@example.com>' }],
+        },
+        { scheduledDelivery: true },
+      ),
+    ).rejects.toMatchObject({
+      status: 'INVALID_ARGUMENT',
+      field: 'to.0.address',
+    });
+    expect(claim).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
   async function deliver(id: string) {
     const scheduled = await store.getScheduledSubmission(id);
     if (!scheduled) throw new Error('Missing scheduled input');

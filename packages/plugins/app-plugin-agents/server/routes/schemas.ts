@@ -1,3 +1,9 @@
+export {
+  DistTargetParams,
+  DistFileParams,
+  DistTargetQuery,
+  DownloadTokenSchema,
+} from '@nocobase/app-cli-distribution';
 /**
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
@@ -69,6 +75,7 @@ import {
   CONVERSATION_SOURCE_PATTERN,
   MESSAGE_ROLES,
   OFFLINE_REASONS,
+  RUNNER_PREFERENCES,
   TITLE_SOURCES,
   type ChatAgent,
   type ChatPreferences,
@@ -105,7 +112,6 @@ import {
 import {
   RUNNER_STATUSES,
   RUNNER_TRUST,
-  type DownloadToken,
   type RegistrationToken,
   type RegistrationTokenSummary,
   type RegistrationTokenInput,
@@ -247,18 +253,6 @@ export const RunMountParams: z.ZodType<{ runId: string; name: string }> =
 export const CommandParams: z.ZodType<{ commandId: string }> = z.object({
   commandId: id.describe('The command identifier.'),
 });
-export const DistTargetParams: z.ZodType<{ product: string; target: string }> =
-  z.object({ product: id, target: id });
-export const DistFileParams: z.ZodType<{
-  product: string;
-  version: string;
-  file: string;
-}> = z.object({
-  product: id,
-  version: id.describe('The version to read or restore.'),
-  file: id.describe('The file to upload.'),
-});
-
 export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
   z.object({ includeArchived: queryBoolean.optional() });
 
@@ -295,6 +289,14 @@ export const AuditListQuery: z.ZodType<Paging> = z.object({
   pageToken: pageToken.describe(
     'The continuation token returned by the previous page.',
   ),
+});
+
+export const RunAgentsQuery: z.ZodType<{
+  readonly subjectKind: string;
+  readonly subjectId: string;
+}> = z.object({
+  subjectKind: id.describe('The kind of subject.'),
+  subjectId: id.describe('The subject identifier.'),
 });
 
 export const RunListQuery: z.ZodType<
@@ -502,17 +504,6 @@ export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
   wait: queryBoolean.optional(),
 });
 
-export const DistTargetQuery: z.ZodType<{
-  format?: 'json' | 'env' | undefined;
-  accept?: string | undefined;
-}> = z.object({
-  format: z.enum(['json', 'env']).optional(),
-  accept: z.string().max(200).optional().meta({
-    description:
-      'The other answers the caller understands, comma-separated. `npm`: when the application has no tarball of the product but names its npm package, answer that package and exact version (`kind: npm`) instead of 404. Unknown values are ignored.',
-  }),
-});
-
 export const VariableValueInput: z.ZodType<{
   value?: string;
   teamRunnersOnly?: boolean;
@@ -541,8 +532,16 @@ export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
       .describe('The revision last read; reject if the record has changed.'),
   });
 
+const RunnerQuotaLimitsSchema = z.partialRecord(
+  AgentToolSchema,
+  z.number().int().min(1).max(100),
+);
+
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
+    quotaLimits: RunnerQuotaLimitsSchema.nullable().describe(
+      'Pause new runs when a reported quota window reaches this percentage used. Omitted tools have no ceiling. Running work is unaffected.',
+    ),
     name: z.string().trim().min(1).max(200).describe('The name to display.'),
     trust: z
       .enum(RUNNER_TRUST)
@@ -1236,6 +1235,16 @@ const runObject = z.object({
   actualEffortSource: z.string().nullable().optional(),
   actualEffortAt: dateTime.nullable().optional(),
   machineHidden: z.boolean().optional(),
+  runnerPinId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The original Runner holding preserved quota work.'),
+  sessionId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The original tool session for strict continuation.'),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',
@@ -1299,6 +1308,7 @@ const runObject = z.object({
   cancelledById: z.string().nullable(),
   failureReason: FailureReasonSchema.nullable(),
   failureDetail: z.string().nullable(),
+  failureParams: z.record(z.string(), z.unknown()).nullable().optional(),
   summary: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -1653,6 +1663,7 @@ export const ConversationLinkSchema: z.ZodType<ConversationLink> = z
       .object({
         key: z.string().nullable(),
         title: z.string(),
+        targetUpdatedAt: dateTime.optional(),
         status: z.string().nullable(),
         url: z.string().nullable(),
       })
@@ -1731,6 +1742,7 @@ const conversationSummaryObject = z.object({
       }),
     })
     .nullable()
+    .optional()
     .meta({
       description:
         'The runner the conversation is bound to: the first that took a run on it, which alone takes the next ones. Null until then, and after switchRunner.',
@@ -1739,8 +1751,9 @@ const conversationSummaryObject = z.object({
   seenSeq: z
     .number()
     .int()
+    .optional()
     .meta({ description: 'How far the owner has seen it (markSeen).' }),
-  needsYou: ConversationNeedsYouSchema.nullable().meta({
+  needsYou: ConversationNeedsYouSchema.nullable().optional().meta({
     description:
       'What waits for the owner: a reply or failure until they see it, a question until they write.',
   }),
@@ -1750,6 +1763,9 @@ export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
   conversationSummaryObject.meta({ ref: 'AgentsConversationSummary' });
 
 const conversationDetailObject = conversationSummaryObject.extend({
+  snapshot: z
+    .object({ cutoffSeq: z.number().int(), snapshotAt: z.string() })
+    .optional(),
   effort: z.string().nullable().optional(),
   availability,
   canFallback: z.boolean(),
@@ -1942,6 +1958,10 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
   defaultAgentId: z.string().nullable(),
+  runnerPreference: z.enum(RUNNER_PREFERENCES).meta({
+    description:
+      'Which kind of runner runs queued from now on go to first: auto (whichever fits and asks first), personal (their own runners) or team (shared runners). The other kind takes a run about a second later when the preferred kind cannot.',
+  }),
 });
 
 export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
@@ -2034,6 +2054,7 @@ const runnerObject = z.object({
     description:
       'The product it runs as and updates itself to (`nocobase-runner`, or a CLI that carries the runner); null when it reported none.',
   }),
+  quotaLimits: RunnerQuotaLimitsSchema.nullable().optional(),
   protocolVersion: z.number().int(),
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ToolInfoSchema),
@@ -2094,7 +2115,9 @@ const runnerObject = z.object({
         resetsAt: z
           .string()
           .nullable()
-          .describe('Known reset instant; null means manual recovery.'),
+          .describe(
+            'Known reset instant; null when the reset time is unknown.',
+          ),
         observedAt: z
           .string()
           .describe('When the usage snapshot was accepted.'),
@@ -2179,9 +2202,7 @@ const runnerSummaryObject = runnerObject
     canManageTools: z.boolean().optional(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
-    canClearQuota: z
-      .boolean()
-      .describe('The viewer may clear an unknown-reset quota mark.'),
+    canClearQuota: z.boolean().describe('The viewer may clear a quota mark.'),
     recentRunsCount: z
       .number()
       .int()
@@ -2317,17 +2338,6 @@ export const RegistrationTokenSummarySchema: z.ZodType<RegistrationTokenSummary>
     createdAt: dateTime,
     expiresAt: dateTime,
   });
-
-export const DownloadTokenSchema: z.ZodType<DownloadToken> = z.object({
-  token: z.string().meta({
-    description:
-      'The download token, shown only in this answer; the install script downloads the CLI with it.',
-  }),
-  expiresAt: dateTime,
-  maxDownloads: z.number().int().meta({
-    description: 'How many tarball downloads it allows, retries included.',
-  }),
-});
 
 /** A run's context as its subject assembles it: free-form, by subject kind. */
 export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z

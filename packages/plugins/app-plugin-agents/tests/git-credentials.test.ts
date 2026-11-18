@@ -1,3 +1,4 @@
+import { createGitCredentialService } from '../server/core/runs/git-credentials.js';
 import type { RunGit } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -708,5 +709,91 @@ describe('repository credentials on demand', () => {
         },
       },
     ]);
+  });
+  it('keeps the denial protocol response when saving its structured reason fails', async () => {
+    h = await createHarness();
+    repos(APP);
+    provide({
+      issue: async () => {
+        throw new RepoAccessError('denied', 'Reconnect your account.', {
+          code: 'authorizationExpired',
+        });
+      },
+    });
+    const runId = await h.enqueue(await h.createAgent());
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials'] as never,
+    });
+    await claim(h, runner);
+    const conn = h.services.tx.read();
+    const repository = conn.repository.bind(conn);
+    const repo = repository('agRuns');
+    const writeError = new Error('Synthetic metadata write failure');
+    vi.spyOn(conn, 'repository').mockImplementation(((
+      ...args: Parameters<typeof conn.repository>
+    ) => {
+      if (args[0] !== 'agRuns') return repository(...args);
+      const original = repo;
+      return new Proxy(original, {
+        get(target, property) {
+          if (property === 'updateMany')
+            return async () => {
+              throw writeError;
+            };
+          const value = Reflect.get(target, property);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+    }) as typeof conn.repository);
+    const onError = vi.fn();
+    const service = createGitCredentialService({
+      tx: h.services.tx,
+      clock: h.clock,
+      reports: h.services.reports,
+      repoAccess: h.services.repoAccess,
+      onError,
+    });
+    await expect(
+      service.issue({ id: runner.runnerId }, runId, { attempt: 1, url: APP }),
+    ).rejects.toMatchObject({
+      code: 'REPO_ACCESS_DENIED',
+      message: 'Reconnect your account.',
+    });
+    expect(onError).toHaveBeenCalledWith(
+      expect.stringContaining('could not save the repository refusal reason'),
+      writeError,
+    );
+  });
+
+  it('persists a structured refusal only while this runner still holds the attempt', async () => {
+    h = await createHarness();
+    repos(APP);
+    provide({
+      issue: async () => {
+        throw new RepoAccessError('denied', 'Reconnect your account.', {
+          code: 'authorizationExpired',
+          phase: 'authorization',
+          host: 'github.com',
+        });
+      },
+    });
+    const agentId = await h.createAgent();
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials'] as never,
+    });
+    await claim(h, runner);
+    expect((await ask(runner, runId, { attempt: 1, url: APP })).status).toBe(
+      403,
+    );
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      failureParams: { code: 'authorizationExpired' },
+    });
+    await h.services.runs.cancel(runId, 'owner');
+    const before = (await h.services.runs.get(runId)).failureParams;
+    expect(
+      (await ask(runner, runId, { attempt: 1, url: APP })).status,
+    ).not.toBe(200);
+    expect((await h.services.runs.get(runId)).failureParams).toEqual(before);
   });
 });

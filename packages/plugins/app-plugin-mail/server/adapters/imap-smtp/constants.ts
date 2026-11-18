@@ -8,7 +8,7 @@ export const IMAP_SMTP_CAPABILITIES: MailProviderDefinition['capabilities'] = {
   folders: true,
   labels: false,
   drafts: false,
-  moveMessage: false,
+  moveMessage: true,
   aliases: false,
 };
 
@@ -25,3 +25,5 @@ export const MAX_IMAP_RAW_COMPARE_BUDGET: number = 8 * 1024 * 1024;
 export const MAX_IMAP_PROVIDER_ID_LENGTH: number = 500;
 export const MAX_IMAP_VERIFY_STATE_BYTES: number = 1024 * 1024;
 export const MAX_IMAP_VERIFY_ATTEMPTS: number = 5;
+export const MAX_IMAP_RECHECK_IDENTITIES: number = 1000;
+export const IMAP_RECHECK_BATCH_SIZE: number = 100;

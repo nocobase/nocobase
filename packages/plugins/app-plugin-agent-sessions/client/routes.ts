@@ -40,6 +40,7 @@ export function agentSessionsRoute(
       ]);
       const value = {
         cli: options.cli,
+        ...(options.renderHeader ? { renderHeader: options.renderHeader } : {}),
         connectPrompt: options.connectPrompt ?? null,
         linkPanels: options.linkPanels ?? {},
         ...(options.sessionMarks ? { sessionMarks: options.sessionMarks } : {}),

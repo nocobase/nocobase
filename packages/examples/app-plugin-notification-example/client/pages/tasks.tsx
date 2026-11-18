@@ -153,9 +153,15 @@ export default function TasksPage(): ReactElement {
                 </span>
               </CardTitle>
               <div className='flex gap-2'>
-                <Button variant='outline' disabled={loading} onClick={refresh}>
-                  {t('tasks.refresh')}
-                </Button>
+                {error && (
+                  <Button
+                    variant='outline'
+                    disabled={loading}
+                    onClick={refresh}
+                  >
+                    {t('tasks.retryRead')}
+                  </Button>
+                )}
                 <Button
                   disabled={loading || !users.length}
                   onClick={() => setDrawerOpen(true)}

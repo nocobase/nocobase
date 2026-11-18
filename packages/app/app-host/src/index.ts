@@ -1,3 +1,8 @@
+import { reportHostStartup } from './startup-handshake.ts';
+import {
+  RejectedWakeGuard,
+  rejectedWakeResponse,
+} from './rejected-wake-guard.js';
 /**
  * This file is part of the NocoBase (R) project.
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
@@ -113,6 +118,9 @@ export interface AppHostOptions {
   /** Where a managed Host records deployment outcomes (`getOperation`); in memory when omitted. */
   operations?: OperationLog;
   maxActiveApps?: number;
+  memoryBudget?: import('./app-registry.ts').AppMemoryBudget;
+  artifactRead?: import('./artifact-read.ts').ArtifactReadOptions;
+  artifactWorker?: import('./artifact-worker-options.js').ArtifactWorkerConfig;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   /** How long a page request to a stopped App waits before it gets the starting page (1500 ms by default). */
@@ -165,6 +173,8 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         artifact.driver === 'fs' ? artifact.location : undefined,
       logger: logger.child({ component: 'artifact-resolver' }),
       expandedRevisionLimit: mode === 'managed' ? 3 : undefined,
+      artifactRead: options.artifactRead,
+      artifactWorker: options.artifactWorker,
     });
   const backendServices: AppHostBackendServices = {
     logger: logger.child({ component: 'app-backend' }),
@@ -179,6 +189,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     resolveFactory: (definition) => moduleLoader.resolveFactory(definition),
     backends,
     maxActiveApps: options.maxActiveApps,
+    memoryBudget: options.memoryBudget,
     idleTtlMs: options.idleTtlMs,
     evictionIntervalMs: options.evictionIntervalMs,
     logger: logger.child({ component: 'app-runtime' }),
@@ -188,7 +199,9 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     holdMs: options.activationHoldMs ?? DEFAULT_ACTIVATION_HOLD_MS,
     waitMs: options.activationWaitMs ?? DEFAULT_ACTIVATION_WAIT_MS,
   };
+  const rejectedWake = new RejectedWakeGuard();
   const manager = new HostManager({
+    closeRequests: () => server.closeAllConnections(),
     logger,
     mode,
     registry,
@@ -256,7 +269,14 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         }
 
         const response = definition.server
-          ? await dispatchAppServer(req, path, registry, appId, onDemand)
+          ? await dispatchAppServer(
+              req,
+              path,
+              registry,
+              appId,
+              onDemand,
+              rejectedWake,
+            )
           : notFoundResponse();
         await applyFetchResponse(res, response);
         return;
@@ -290,6 +310,14 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
   };
 
   const server = createServer((req, res) => {
+    const release = registry.enterRequest();
+    if (!release) {
+      res.writeHead(503, { 'retry-after': '2' });
+      res.end('Host memory recycling; retry shortly');
+      return;
+    }
+    res.once('finish', release);
+    res.once('close', release);
     const requestPromise = handleRequest(req, res);
     requestPromise.catch((error: unknown) => {
       logger.error({ err: error }, 'Unhandled request error');
@@ -300,14 +328,20 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
   });
 
   server.on('upgrade', (req, socket, head) => {
+    const release = registry.enterRequest();
+    if (!release) {
+      rejectWebSocketUpgrade(socket, 503, new Headers({ 'retry-after': '2' }));
+      return;
+    }
     const upgradePromise = dispatchAppWebSocket(
       req,
       socket,
       head,
       registry,
       onDemand,
+      rejectedWake,
     );
-    upgradePromise.catch((error: unknown) => {
+    void upgradePromise.finally(release).catch((error: unknown) => {
       logger.error({ err: error }, 'WebSocket upgrade failed');
       rejectWebSocketUpgrade(
         socket,
@@ -327,12 +361,13 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     server,
     async start() {
       const discoveredApps = await manager.initialize();
-      await new Promise<void>((resolve) => {
-        server.listen(
-          options.port ?? 3000,
-          options.host ?? '127.0.0.1',
-          resolve,
-        );
+      await new Promise<void>((resolve, reject) => {
+        const onError = (error: Error): void => reject(error);
+        server.once('error', onError);
+        server.listen(options.port ?? 3000, options.host ?? '127.0.0.1', () => {
+          server.off('error', onError);
+          resolve();
+        });
       });
 
       const address = server.address();
@@ -353,7 +388,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
       }
     },
     async close(reason = 'host shutdown') {
-      await new Promise<void>((resolve, reject) => {
+      const listenerClosed = new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {
             reject(error);
@@ -368,11 +403,12 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         }
       });
 
+      server.closeIdleConnections?.();
       await manager.persistLifecycleState().catch((error: unknown) => {
         logger.warn({ err: error }, 'Failed to record app lifecycle state');
       });
       // An external service keeps running for the next Host to take over; in-process runtimes are destroyed.
-      await registry.releaseAll(reason);
+      await Promise.all([registry.releaseAll(reason), listenerClosed]);
       await logging.close();
     },
   };
@@ -384,17 +420,23 @@ async function dispatchAppServer(
   registry: AppRuntimeRegistry,
   appId: string,
   onDemand: OnDemandActivationOptions,
+  rejectedWake: RejectedWakeGuard,
 ): Promise<Response> {
+  const revision = requestRevision(registry, appId);
+  if (!registry.isActive(appId) && rejectedWake.blocks(revision, req))
+    return rejectedWakeResponse();
   const runtime = await activateForRequest(registry, appId, req, onDemand);
   if (runtime instanceof Response) return runtime;
   const request = toFetchRequest(req, {
     basePath: runtime.basePath,
     signal: runtime.signal,
   });
-  return runtime.dispatch(request, {
+  const response = await runtime.dispatch(request, {
     method: req.method,
     path,
   });
+  rejectedWake.record(revision, req, response.status);
+  return response;
 }
 
 async function dispatchAppWebSocket(
@@ -403,6 +445,7 @@ async function dispatchAppWebSocket(
   head: Buffer,
   registry: AppRuntimeRegistry,
   onDemand: OnDemandActivationOptions,
+  rejectedWake: RejectedWakeGuard,
 ): Promise<void> {
   if (!isWebSocketUpgrade(req)) {
     rejectWebSocketUpgrade(socket, 400);
@@ -437,6 +480,12 @@ async function dispatchAppWebSocket(
     return;
   }
 
+  const revision = requestRevision(registry, appId);
+  if (!registry.isActive(appId) && rejectedWake.blocks(revision, req)) {
+    const response = rejectedWakeResponse();
+    rejectWebSocketUpgrade(socket, response.status, response.headers);
+    return;
+  }
   const runtime = await activateForUpgrade(registry, appId, onDemand);
   if (!runtime) {
     rejectWebSocketUpgrade(socket, 503, new Headers({ 'retry-after': '2' }));
@@ -451,6 +500,11 @@ async function dispatchAppWebSocket(
     path,
   });
 
+  rejectedWake.record(
+    revision,
+    req,
+    result instanceof Response ? result.status : result ? 101 : 404,
+  );
   if (result instanceof Response) {
     rejectWebSocketUpgrade(socket, result.status, result.headers);
     return;
@@ -494,6 +548,9 @@ export async function startAppHostFromEnv(
     appVolumesDir: config.appVolumesDir,
     artifact: config.artifact,
     maxActiveApps: config.maxActiveApps,
+    memoryBudget: config.memoryBudget,
+    artifactRead: config.artifactRead,
+    artifactWorker: config.artifactWorker,
     idleTtlMs: config.idleTtlMs,
     evictionIntervalMs: config.evictionIntervalMs,
     activationHoldMs: config.activationHoldMs,
@@ -557,6 +614,12 @@ export async function startAppHostFromEnv(
   }
 
   await host.start();
+  if (host.mode === 'managed') {
+    const address = host.server.address();
+    if (!address || typeof address === 'string')
+      throw new Error('App host did not open a TCP listener');
+    await reportHostStartup({ port: address.port });
+  }
   return host;
 }
 
@@ -978,4 +1041,14 @@ function numberFromValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value)
     ? value
     : undefined;
+}
+
+function requestRevision(registry: AppRuntimeRegistry, appId: string): string {
+  const definition = registry.definition(appId);
+  return JSON.stringify([
+    appId,
+    definition?.rootDir,
+    definition?.desiredVersion,
+    definition?.configVersion,
+  ]);
 }

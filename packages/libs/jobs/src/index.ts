@@ -1,3 +1,4 @@
+export { validateJobsConfig } from './validate-config.js';
 export {
   Job,
   JobHandlerNotRegisteredError,

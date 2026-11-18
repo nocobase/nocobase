@@ -3,6 +3,13 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
     quota: {
+      ceilingReached: '已达额度阈值',
+      ceilingLabel: '暂停接活阈值',
+      ceilingInput: '{{tool}} 已用额度达到多少百分比时暂停接活',
+      ceilingSave: '应用',
+      ceilingInvalid: '请输入 1 至 100 的整数百分比，或留空。',
+      ceilingPaused: '某额度窗口已达到阈值，受影响的新任务等待重置或调整上限。',
+
       workspaceStatus: {
         active: '工作进行中',
         ended: '已结束 · 可清理',
@@ -33,6 +40,9 @@ const runtimesZhCN: RuntimesLocale = {
       workspaceSize: '工作目录总占用：{{value}}',
       providers_one: '{{count}} 个服务商额度用完',
       providers_other: '{{count}} 个服务商额度用完',
+      models_one: '{{count}} 个模型额度用完',
+      models_other: '{{count}} 个模型额度用完',
+      percent: '{{percent}}%',
       runColumns: {
         issue: '任务 / 对话',
         agent: 'Agent',
@@ -70,11 +80,13 @@ const runtimesZhCN: RuntimesLocale = {
       near: '接近上限',
       clear: '清除',
       clearMark: '清除标记',
-      confirm: '清除此标记？{{target}} 将可继续领取工作。',
+      confirmTitle: '清除 {{target}} 的额度标记？',
+      confirm:
+        '确认额度已恢复后再清除。清除后 {{target}} 立即可以继续领取工作；如果额度其实仍未恢复，下次运行会重新标记。',
       observed: '上次报告 {{time}}',
       usedPercent: '已用 {{percent}}%',
-      ok: '正常',
-      hint: '已知恢复时间到点后自动恢复领取资格；未知时请在额度恢复后手动清除。只有执行机主人和管理员可以清除。',
+      noUsage: '暂无额度数据',
+      hint: '已知恢复时间到点或工具上报额度未用完时自动解除；手动清除前请确认额度已恢复。只有执行机主人和管理员可以清除。',
     },
     workspaces: {
       paused: '空间恢复前暂停领取新任务，现有运行继续。',
@@ -132,8 +144,8 @@ const runtimesZhCN: RuntimesLocale = {
     revokedList_other: '{{count}} 个已吊销的运行环境',
     lastSeen: '最近在线 {{time}}',
     toolUsage: {
-      label: '各编码工具的运行数',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '并发 {{used}}/{{limit}}',
+      hint: '{{tool}} 最多同时运行 {{limit}} 个，当前 {{used}} 个',
     },
     toolSlots: {
       label: '按编码工具限制',
@@ -277,6 +289,8 @@ const runtimesZhCN: RuntimesLocale = {
       show: '版本 {{version}}：runner 有新版本',
       available: '有可用更新',
       badge: '可升级',
+      latest: '最新',
+      installed: '版本 {{version}}',
       title: '{{name}} 的 runner 有新版本',
       description: '已安装 {{version}}，本应用提供 {{latest}}。',
       hint: '没有 Agent 运行时它会自动更新。如需立即更新，在它所在的主机上运行：',

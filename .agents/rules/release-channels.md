@@ -1,0 +1,45 @@
+# Release Channels
+
+Read this before changing `v3-release.yml`, `v3-pro-release.yml`, `v3-github-release.yml`, `.changeset/pre.json`, or anything that decides how a release is named, tagged or published.
+
+## How the Channel Is Chosen
+
+There is one release workflow, V3 Release (`v3-release.yml`), and one for Pro alone, V3 Release Pro (`v3-pro-release.yml`). Neither takes a channel input: `scripts/release-channel.mjs` reads `.changeset/pre.json` on the release base. Mode `pre` is the beta channel. No `pre.json`, or mode `exit` (written by `changeset pre exit`; the next `changeset version` releases every package still at a prerelease version as its final version and deletes `pre.json` and `.changeset/pre/`), is the stable channel. Pro's own `.changeset/pre.json` is read by the same rule, and a release whose open-source and Pro channels differ stops with an `::error` before it publishes anything. Pro's branch (`develop` until it is renamed `main`) is the `PRO_BRANCH` env of each of the two workflows.
+
+|                         | Beta                                                              | Stable                                                                                               |
+| ----------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Versions                | `X.Y.Z-beta.N`                                                    | `X.Y.Z`                                                                                              |
+| npm dist-tags           | `beta` and `latest`                                               | `latest`, plus `beta` during the transition                                                          |
+| Aggregate tag           | `nocobase-v3-beta/<batch>`                                        | `nocobase-v3/<batch>`                                                                                |
+| Internal release branch | `release-beta/<batch>`                                            | `release/<batch>`                                                                                    |
+| Pro tag and dist-tags   | `release-beta/<batch>`; `beta` and `latest`                       | `release/<batch>`; `latest`, plus `beta` during the transition                                       |
+| GitHub Release          | prerelease, `--latest=false`, titled `NocoBase v3 Beta · <batch>` | takes the repository's Latest marker (`--latest`), titled `NocoBase v3 · <batch>`; Pro's takes Pro's |
+| Root changelog section  | pull requests since the previous beta                             | pull requests since the previous stable release; the first one starts after the last beta            |
+
+A batch is `<UTC date>.<n>`, and `<n>` counts the tags of both channels for that day (`nocobase-v3-beta/`, `nocobase-v3/`, `release-beta/`, `release/`), so names never collide. Feishu messages say 正式版 for a stable release and 预览版 for a beta.
+
+## Merging the Release Back
+
+The release commit is tagged on its release branch, then merged back into `v3` through a pull request with a merge commit (`gh pr merge --merge`), as Pro's release branches are merged into Pro's branch. A squash merge left the tagged commit on no branch once the release branch was deleted, so GitHub showed "This commit does not belong to any branch" on every release tag; with a merge commit every tag is an ancestor of `v3`. The repository allows merge commits only for the nocobase GitHub App: "Allow merge commits" is enabled, and a ruleset on `v3` and `v3-main` allows only squash merges, with the App (ID 979192) as its only bypass actor. Without that setting the merge back fails, the release reports it, and the release branch stays for a manual merge.
+
+## Publishing the First Stable Release
+
+A dry run versions the branch it is dispatched from, while a real release always releases `v3`. So the open-source half of a stable release can be rehearsed at any time: push a branch of `v3` with only `pnpm changeset pre exit` committed, and run V3 Release from it with `dry_run: true` and `skip_pro: true` (Pro pins only commits on `v3`, so its stable path is first exercised in step 5 below). Delete the branch afterwards.
+
+1. Optionally publish a last beta with V3 Release, so the stable release contains nothing that was not in a beta.
+2. Open a pull request into `v3` that runs `pnpm changeset pre exit`, which sets `.changeset/pre.json` to mode `exit`; it needs no changeset of its own. From its merge on, every V3 Release run is a stable release, so merge it only when the next release should be stable. `node scripts/validate-changesets.mjs` applies its prerelease-only rule only in mode `pre`: in mode `exit` a `major` changeset of an `X.0.0-beta.N` package releases `X.0.0`, which is what leaving the prerelease means, so it is no longer rejected. `v3-guard-main.yml` keeps guarding only `v3-main`.
+3. Open a pull request into Pro's branch in nocobase/nocobase3-pro that runs `pnpm changeset pre exit` there, and merge it together with the one above: while only one of them is merged, V3 Release and V3 Release Pro stop with a channel mismatch.
+4. Prerequisite owned outside this branch: `scripts/release/changelogAndRelease.js` on v2's `main` must create its GitHub Releases with `--latest=false` before the first stable v3 release, or the next v2 release takes the Latest marker back.
+5. Run V3 Release with `dry_run: true` and check the run: "Choose the release channel" prints `channel=stable, exiting=true`; every package in the "Stable release" summary table lost its `-beta.N` suffix; in both "Test Pro with this release" legs, "Decide whether Pro releases" says every Pro package is released, "Version Pro packages" lists them all at final versions, and the smoke leg installed them against the stable open-source tarballs, which is what proves their peer ranges accept them; "Write the changelog" prints `Previous beta release: nocobase-v3-beta/<last batch>`, and the summary's entry count matches the pull requests merged since that beta.
+6. Run V3 Release without `dry_run`. Confirm `nocobase-v3/<batch>` is the Latest GitHub Release, `npm view @nocobase/app-server dist-tags` shows `latest` and `beta` on the new version, and `v3` contains the release tag (`git merge-base --is-ancestor nocobase-v3/<batch> origin/v3`).
+7. Replace `@beta` and `--template-tag=beta` in install commands in this repository, in nocobase/nocobase3-pro, and in nocobase/website-v3, then deploy the documentation. `packages/tools/create-app/src/lib/template.ts` keeps `TEMPLATE_TAGS = ['latest', 'beta']`.
+8. The `beta` dist-tag keeps following stable releases through the steps named "Transition" in both workflows, so old `@beta` commands install current versions. Remove them once the documentation has said `@latest` for a while (at least one minor release); after that `beta` stays on the last version it pointed at until a new prerelease line uses it.
+
+## After the First Stable Release
+
+- Remove the beta branches of `v3-release.yml` and `v3-pro-release.yml`, the "Transition" steps, and the beta cases of `scripts/release-channel.mjs` once no new prerelease line is planned.
+- Remove the prerelease-only rules from `scripts/validate-changesets.mjs`, `.changeset/README.md` and [pull-requests-and-changesets.md](pull-requests-and-changesets.md).
+- Turn `v3-guard-main.yml` into a guard on pull requests into `v3` that rejects `.changeset/pre.json` and `-beta` versions.
+- Remove `v3-develop` from branch filters here and from the fallbacks in nocobase-bot, 2013xile/nocobase-ci, chenos/nocobase-ci, nocobase/nocobase3-pro and Studio.
+- Delete `v3-main` once Studio has decided which branch it releases from, together with its branch filters, the ruleset entry and its mentions.
+- Rename Pro's `develop` to `main`: change `PRO_BRANCH` in both workflows, and the `--branch develop` that Pro's `sync-release-oss.mjs` reads as the name of the open-source line, together with Pro's own scripts.

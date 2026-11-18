@@ -29,6 +29,18 @@ const sharedFiles = new Set([
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
   ...['postgres', 'mysql'].map((dialect) => ({
+    paths: [
+      'packages/plugins/app-plugin-releases/server/services/releases.ts',
+      'packages/plugins/app-plugin-releases/database/migrations/',
+      'packages/plugins/app-plugin-releases/tests/list-apps-paging.test.ts',
+      'packages/plugins/app-plugin-releases/tests/migrations.test.ts',
+    ],
+    dialect,
+    filter: '@nocobase/app-plugin-releases',
+    tests: ['tests/list-apps-paging.test.ts', 'tests/migrations.test.ts'],
+  })),
+
+  ...['postgres', 'mysql'].map((dialect) => ({
     // A losing receipt claim must roll back before reading the committed winner on each server dialect.
     paths: [
       'packages/app/app-server/src/router/idempotency.ts',
@@ -84,6 +96,16 @@ export const packageSuites = [
     filter: '@nocobase/app-plugin-agents',
     tests: ['tests/claim-pagination.test.ts'],
   },
+  ...['postgres', 'mysql'].map((dialect) => ({
+    // A replacement that read an older REPEATABLE READ snapshot before the agent lock must not also take a retried run.
+    paths: [
+      'packages/plugins/app-plugin-agents/server/core/runs/run.service.ts',
+      'packages/plugins/app-plugin-agents/tests/quota-replacement-race.test.ts',
+    ],
+    dialect,
+    filter: '@nocobase/app-plugin-agents',
+    tests: ['tests/quota-replacement-race.test.ts'],
+  })),
   {
     // SQL Server requires rebuilding the unique index before shrinking the legacy artifact-key column.
     paths: [

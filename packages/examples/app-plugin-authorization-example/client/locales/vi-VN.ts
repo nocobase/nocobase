@@ -165,7 +165,7 @@ const viVN: LocaleResource<typeof enUS> = {
     record: 'Bản ghi',
     notes: 'Ghi chú',
     save: 'Lưu',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     loading: 'Đang tải…',
     empty: 'Không có bản ghi nào có thể truy cập được',
     readOnly: 'Chỉ đọc',

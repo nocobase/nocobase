@@ -5,6 +5,11 @@ import path from 'node:path';
 import { Application } from '@nocobase/app-server/application';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { resolveAppScopePaths } from '@nocobase/app-server/runtime';
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import { createJobExecutorService } from '@nocobase/jobs';
+import { createTestDatabase } from '@nocobase/app-testing/server';
+import { databaseManagerToken } from '@nocobase/db';
+import { fileURLToPath } from 'node:url';
 import { afterEach, expect, it } from 'vitest';
 
 import { writeModuleManifest } from '../../server/module-manifest.js';
@@ -84,13 +89,38 @@ it.each(['source', 'standalone', 'embedded'] as const)(
     );
     const config = new AppConfig();
     await config.loadAll();
+    config.mergeDefaults({ app: { name: 'fixture' } });
     const app = new Application({ paths, config });
+    const database = await createTestDatabase();
+    await database.migrate([
+      {
+        packageName: '@nocobase/app-plugin-foundation',
+        directory: fileURLToPath(
+          new URL('../../database/migrations', import.meta.url),
+        ),
+      },
+    ]);
+    app.container.instance(databaseManagerToken, database.database);
+    const jobs = createJobExecutorService(undefined, {
+      appName: 'fixture',
+      storagePath: paths.storage('jobs'),
+    });
+    app.container.instance(jobExecutorServiceToken, jobs);
+    const completed = new Promise<void>((resolve, reject) => {
+      jobs
+        .getJobExecutor('@nocobase/app-plugin-foundation')
+        .subscribe((event) => {
+          if (event.name === 'JobEnd') resolve();
+          if (event.name === 'JobError') reject(event.error);
+        });
+    });
     app.addServiceProvider(FoundationProvider);
     await app.start();
     try {
-      const overview = await app.container
-        .resolve(foundationServiceToken)
-        .overview();
+      const service = app.container.resolve(foundationServiceToken);
+      await completed;
+      expect((await service.snapshot()).status).toBe('succeeded');
+      const overview = await service.overview();
       expect(overview.inventory).toMatchObject({
         complete: true,
         unreadable: [],
@@ -121,6 +151,8 @@ it.each(['source', 'standalone', 'embedded'] as const)(
       });
     } finally {
       await app.shutdown();
+      await jobs.shutdown();
+      await database.destroy();
     }
   },
 );

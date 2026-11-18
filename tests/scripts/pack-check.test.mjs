@@ -130,6 +130,28 @@ test('rejects a compiled package that also publishes its runtime-resolved source
   );
 });
 
+test('rejects a private package unless private packages are skipped', async (t) => {
+  const repoRoot = await createTestRepo(t);
+  await createPackage(repoRoot, 'libs/alpha', '@nocobase/alpha');
+  const examplePath = path.join(repoRoot, 'packages/examples/example');
+  await mkdir(examplePath, { recursive: true });
+  await writeFile(
+    path.join(examplePath, 'package.json'),
+    JSON.stringify({
+      name: '@nocobase/example',
+      version: '0.0.1',
+      private: true,
+    }),
+  );
+
+  await assert.rejects(discoverPackages(repoRoot), /must not be private/u);
+  const packages = await discoverPackages(repoRoot, { skipPrivate: true });
+  assert.deepEqual(
+    packages.map(({ manifest }) => manifest.name),
+    ['@nocobase/alpha'],
+  );
+});
+
 test('requires every discovered package to have a changelog', async (t) => {
   const repoRoot = await createTestRepo(t);
   await createPackage(repoRoot, 'libs/missing-changelog', '@nocobase/missing', {

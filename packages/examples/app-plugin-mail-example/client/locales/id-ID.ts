@@ -117,7 +117,7 @@ const idID: LocaleResource<typeof enUS> = {
     preparing: 'Mempersiapkan data kotak surat demo…',
     retry: 'Coba lagi pengaturannya',
     openWorkspace: 'Buka ruang kerja email',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     loading: 'Memuat…',
   },
 };

@@ -1,3 +1,6 @@
+import { LoadingDemo } from './demo/components/loading.js';
+import { PendingButtonDemo } from './demo/components/pending-button.js';
+import { TaskProgressDemo } from './demo/components/task-progress.js';
 import { ListFeedbackDemo } from './demo/components/list-feedback.js';
 import { FileComponentUiDemo } from './demo/file/file-component-ui.js';
 import { NotificationLogsUiDemo } from './demo/notification/notification-logs-ui.js';
@@ -81,6 +84,7 @@ import {
 } from './components/ui/sidebar';
 import { Separator } from './components/ui/separator';
 import { TooltipProvider } from './components/ui/tooltip';
+import { AgentChatDetailsDemo } from './demo/agents/agent-chat-details.js';
 import { AgentChatDemo } from './demo/agents/agent-chat';
 import { AgentComposerDemo } from './demo/agents/agent-composer';
 import { AgentPickerDemo } from './demo/agents/agent-picker';
@@ -175,6 +179,15 @@ const itemPreviews: Record<string, ItemPreview> = {
   },
   'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
+  loading: { path: '/demo/components/loading', icon: ListChecks },
+  'pending-button': {
+    path: '/demo/components/pending-button',
+    icon: ListChecks,
+  },
+  'task-progress': {
+    path: '/demo/components/task-progress',
+    icon: ListChecks,
+  },
   'list-feedback': { path: '/demo/components/list-feedback', icon: ListChecks },
   'setup-readiness': {
     path: '/demo/components/setup-readiness',
@@ -253,6 +266,10 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: MessageSquareText,
   },
   'agent-picker': { path: '/demo/agents/agent-picker', icon: UserRoundSearch },
+  'agent-chat-details': {
+    path: '/demo/agents/agent-chat-details',
+    icon: BotMessageSquare,
+  },
   'agent-chat': { path: '/demo/agents/agent-chat', icon: BotMessageSquare },
   inbox: { path: '/demo/inbox/inbox', icon: Inbox },
   'inbox-button': { path: '/demo/inbox/inbox-button', icon: BellDot },
@@ -321,6 +338,11 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
   }
+  if (pathname.startsWith('/demo/components/loading')) return <LoadingDemo />;
+  if (pathname.startsWith('/demo/components/pending-button'))
+    return <PendingButtonDemo />;
+  if (pathname.startsWith('/demo/components/task-progress'))
+    return <TaskProgressDemo />;
   if (pathname.startsWith('/demo/components/list-feedback'))
     return <ListFeedbackDemo />;
   if (pathname.startsWith('/demo/components/setup-readiness'))
@@ -401,6 +423,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/agents/agent-picker')) {
     return <AgentPickerDemo />;
   }
+  if (pathname.startsWith('/demo/agents/agent-chat-details'))
+    return <AgentChatDetailsDemo />;
   if (pathname.startsWith('/demo/agents/agent-chat')) {
     return <AgentChatDemo />;
   }

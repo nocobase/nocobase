@@ -1,7 +1,7 @@
 import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { claim, createHarness, type Harness } from './harness.js';
+import { claimRepeatedly, createHarness, type Harness } from './harness.js';
 
 /** Held and queued runs of one kind: `held` running ones that reported twice, then `queued` waiting ones. */
 async function seed(h: Harness, held: number, queued: number) {
@@ -9,7 +9,7 @@ async function seed(h: Harness, held: number, queued: number) {
   const agent = await h.createAgent({ maxConcurrentRuns: held });
   for (let index = 0; index < held; index += 1)
     await h.enqueue(agent, `held-${index}`);
-  const payloads = await claim(h, runner, held);
+  const payloads = await claimRepeatedly(h, runner, held);
   expect(payloads).toHaveLength(held);
   for (const payload of payloads) {
     const runId = payload.run.id as string;

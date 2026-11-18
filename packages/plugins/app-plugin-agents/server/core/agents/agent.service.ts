@@ -153,7 +153,11 @@ export interface AgentService {
     ids: readonly string[],
   ): Promise<Map<string, string>>;
   /** Every agent's name, removed ones and the application's own included, read on `conn`. */
-  directory(conn: DatabaseConnection): Promise<AgentName[]>;
+  /** Every agent's name, removed ones included; with `ids`, only those agents'. */
+  directory(
+    conn: DatabaseConnection,
+    ids?: readonly string[],
+  ): Promise<AgentName[]>;
   /** The agent when it can be given work: enabled, with a tool and model, read on `conn`. */
   findWorkable(conn: DatabaseConnection, id: string): Promise<Agent | null>;
   /** The agents that can be given work, by name, read on `conn`. */

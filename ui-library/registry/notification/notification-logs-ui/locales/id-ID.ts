@@ -12,7 +12,7 @@ const idID: NotificationResource = {
     description:
       'Lacak pengiriman notifikasi dan setiap upaya penyedia. Badan pesan, penerima, dan token sewa disunting.',
     refreshing: 'Menyegarkan…',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     deliveriesShown: 'Pengiriman ditampilkan',
     needAttention: 'Perlu perhatian',
     unavailable: 'Log tidak tersedia',

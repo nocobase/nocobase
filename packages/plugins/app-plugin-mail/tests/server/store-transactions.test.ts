@@ -40,6 +40,42 @@ describe('Mail persistence transaction ownership', () => {
     await destroyMailTestDatabase(database);
   });
 
+  it.each([false, true])(
+    'only checkpoints an initial partial run after history is complete (%s)',
+    async (historyComplete) => {
+      const run = await store.createSyncRun({
+        id: fixtureIds.syncRun,
+        accountId: fixtureIds.account,
+        requestedBy: 'user-1',
+        mode: 'initial',
+        policy: { batchSize: 100, receivedAfter: '2026-01-01T00:00:00.000Z' },
+      });
+      const claimed = await store.claimSyncRun(
+        run.id,
+        0,
+        'preparing',
+        'lease',
+        new Date(Date.now() + 60_000).toISOString(),
+      );
+      await store.commitSyncStep({
+        run: claimed!,
+        messages: [],
+        phase: 'completed',
+        status: 'partial',
+        historyComplete,
+        changeCursor: { value: 'safe-checkpoint' },
+        createNextTask: false,
+      });
+      expect(await store.getSyncCursor(fixtureIds.account)).toEqual(
+        historyComplete ? { value: 'safe-checkpoint' } : undefined,
+      );
+      expect(await store.getSyncRun(run.id)).toMatchObject({
+        status: 'partial',
+        historyComplete,
+      });
+    },
+  );
+
   it.each(['lost lease', 'outbox conflict'] as const)(
     'rolls back mailbox changes and checkpoints after a %s',
     async (failure) => {

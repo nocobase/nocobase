@@ -12,7 +12,7 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
-import { releasesToken } from '../tokens.js';
+import { releasesAccessToken, releasesToken } from '../tokens.js';
 import { createReleasesApi } from './api.js';
 
 /** `/api/releases`, authenticated by the application's authentication and authorization plugins. */
@@ -44,8 +44,19 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           services.callerOf(
             (context as Context<AuthorizationEnv>).get('authz').identity,
           ),
-        securityLog: (event, details) =>
-          security?.info({ event, ...details }, event),
+        securityLog: (event, details, context) =>
+          security?.info(
+            {
+              event,
+              ...details,
+              ...(context && container.has(releasesAccessToken)
+                ? container
+                    .resolve(releasesAccessToken)
+                    .securityLogContextOf?.(context)
+                : {}),
+            },
+            event,
+          ),
       }),
     );
     return router;

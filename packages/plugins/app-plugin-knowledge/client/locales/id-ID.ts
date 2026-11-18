@@ -155,6 +155,15 @@ const idID: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Pengetahuan',
+    settingsSection: 'Pengetahuan',
+    settings: {
+      indexing: {
+        title: 'Pengindeksan pengetahuan',
+        read: 'Baca',
+        configure: 'Konfigurasi',
+        rebuild: 'Bangun ulang',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Pengetahuan',
@@ -173,7 +182,7 @@ const idID: LocaleResource<typeof enUS> = {
           propose: {
             title: 'Usulkan ilmu',
             description:
-              'Usulkan perubahan bagi seseorang yang dapat mengedit untuk memutuskan; agen apa yang dapat diberikan',
+              'Usulkan perubahan bagi seseorang yang dapat mengedit untuk memutuskan; Agent apa yang dapat diberikan',
             related: 'Usulkan pengetahuan (ruang yang berhubungan dengannya)',
             relatedLabel: 'Ruang yang berhubungan dengan saya',
             relatedHint:
@@ -324,7 +333,7 @@ const idID: LocaleResource<typeof enUS> = {
       statusHint: {
         parsing:
           'Teks sedang diekstraksi; pencarian menemukan file setelah siap.',
-        ready: 'Teksnya diekstraksi, jadi pencari dan agen membacanya.',
+        ready: 'Teksnya diekstraksi, jadi pencari dan Agent membacanya.',
         failed: 'Teks tidak dapat diekstraksi.',
         unsupported:
           'Teks tidak diekstraksi dari file jenis ini; itu disimpan apa adanya.',
@@ -410,7 +419,7 @@ const idID: LocaleResource<typeof enUS> = {
       archive: 'Arsipkan',
       archiveTitle: 'Arsipkan “{{title}}”?',
       archiveDescription:
-        'Ia menghilang dari pohon dan dari agen. Anda dapat memulihkannya nanti; versinya disimpan.',
+        'Ia menghilang dari pohon dan dari Agent. Anda dapat memulihkannya nanti; versinya disimpan.',
       archivedToast: 'Diarsipkan.',
       restore: 'Pulihkan',
       restoredToast: 'Dipulihkan.',
@@ -429,7 +438,7 @@ const idID: LocaleResource<typeof enUS> = {
       editing: 'Pengeditan',
       proposing: 'Mengusulkan perubahan',
       properties: 'Properti',
-      propertiesHint: 'Agen dan tautan apa yang membaca tentang dokumen ini.',
+      propertiesHint: 'Agent dan tautan apa yang membaca tentang dokumen ini.',
       nothingToPreview: 'Belum ada yang bisa dipratinjau.',
       reasonPlaceholder:
         'Mengapa hal ini harus berubah, bagi siapa pun yang memutuskan',
@@ -438,9 +447,9 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Judul',
       slug: 'Siput',
       slugHint:
-        'Huruf kecil, angka dan tanda hubung; bagaimana agen dan tautan menamainya. Dibiarkan kosong, dibuat sesuai judul.',
+        'Huruf kecil, angka dan tanda hubung; bagaimana Agent dan tautan menamainya. Dibiarkan kosong, dibuat sesuai judul.',
       summary: 'Ringkasan',
-      summaryHint: 'Agen satu baris membaca indeks.',
+      summaryHint: 'Agent satu baris membaca indeks.',
       content: 'Konten',
       contentPlaceholder: 'Markdown',
       write: 'Tulis',

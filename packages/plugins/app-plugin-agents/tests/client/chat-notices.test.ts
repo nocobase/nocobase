@@ -1,6 +1,6 @@
 import { fileInputFailureTitles } from '../../shared/file-input-failures.js';
 import { createTestI18nRuntime } from '@nocobase/i18n/testing';
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { noticeText } from '../../client/chat/message-model.js';
 import locales from '../../client/locales/index.js';
@@ -184,8 +184,37 @@ it.each(['en-US', 'zh-CN'] as const)(
     });
     expect(errorText(t, error, 'Failed')).toBe(
       locale === 'en-US'
-        ? 'This runner cannot run the selected Agent. Switch runner or start a new conversation.'
-        : '此执行机无法运行所选 Agent。请更换执行机或新建对话。',
+        ? 'This runtime cannot run the selected Agent. Switch runtime to continue.'
+        : '当前运行环境无法运行所选 Agent。请更换运行环境后继续。',
     );
   },
 );
+
+import {
+  chatNoticeKind,
+  type ChatNoticeKind,
+} from '../../client/chat/notices.js';
+
+const priorities: ChatNoticeKind[] = [
+  'notSent',
+  'waiting',
+  'runtime',
+  'agent',
+  'review',
+];
+describe('composer notice priority', () => {
+  it('has no notice when the conversation can continue', () => {
+    expect(chatNoticeKind({})).toBeNull();
+  });
+  // Every combination, including stale results together with a new refusal or wait.
+  for (let mask = 1; mask < 32; mask += 1) {
+    const active = priorities.filter((_, index) =>
+      Boolean(mask & (1 << index)),
+    );
+    it(`shows only ${active[0]} for ${active.join(', ')}`, () => {
+      expect(
+        chatNoticeKind(Object.fromEntries(active.map((kind) => [kind, true]))),
+      ).toBe(active[0]);
+    });
+  }
+});

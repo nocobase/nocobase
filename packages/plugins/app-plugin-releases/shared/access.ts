@@ -59,7 +59,7 @@ export type SettingsKey = {
  * | `configure`        | read and change the App's configuration and settings, labels and expiry                |
  * | `upload`           | upload releases, request upload tickets, promote releases into the App, label releases |
  * | `deploy`           | deploy and roll back on an unprotected environment, request a deployment anywhere      |
- * | `deploy-protected` | approve deployments to a protected environment that names no approvers; people only   |
+ * | `deploy-protected` | fallback approval eligibility when no environment approvers resolve   |
  * | `operate`          | start, stop and restart                                                                |
  * | `delete`           | delete the App with its data                                                           |
  */
@@ -185,15 +185,18 @@ export function actionText(
 }
 
 /**
- * Actions an agent or a key may never perform, whatever its grants: the assembling application marks a caller as an
+ * Actions a key may never perform, whatever its grants: the assembling application marks a caller as an
  * agent (`ReleasesAccess.actorKindOf`), a request made with a scoped credential is a key, and the plugin refuses these
- * for both.
+ * for keys.
  */
 export const HUMAN_ONLY_ACTIONS: readonly AppAction[] = [
   'deploy-protected',
   'delete',
   'configure',
 ];
+
+/** Actions an agent may never perform, whatever the represented person's permissions. */
+export const AGENT_REFUSED_ACTIONS: readonly AppAction[] = ['delete'];
 
 /** What a caller may do, decided once per request by the assembling application. */
 export interface ReleasesPermissions {
@@ -302,7 +305,7 @@ type KeyScopeAccess =
  *   CI has no need to create them.
  * - `releases.environments`: read lists the environments, write manages them.
  *
- * Whatever its scope, a key never deploys directly to a protected environment, and nobody else does either; it may ask
+ * Whatever its scope, a key never deploys directly to a protected environment; it may ask
  * for a deployment there (a deployment request) when it may deploy the App.
  */
 export const KEY_SCOPE_GROUPS: readonly {

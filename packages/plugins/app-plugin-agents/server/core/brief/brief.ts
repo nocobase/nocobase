@@ -1,6 +1,7 @@
 /**
  * The brief an agent runs with: four fixed layers, joined in order into the run's system prompt
- * (`RunPayload.prompt.system`; see `joinBrief`).
+ * (`RunPayload.prompt.system`; see `joinBrief`). An opted-in stable prefix puts the agent layer first and moves
+ * runner placeholders after all fixed system text. Logical stored layers retain their original representation.
  *
  * 1. `system`: the platform's rules, the same for every agent: how to talk to the platform (the application's CLI),
  *    what never to touch, how to finish; the workspace layout; the environment check every working directory gets
@@ -40,9 +41,13 @@ export interface Brief {
   readonly agent: string;
 }
 
-/** The system prompt a runner gets: the layers in order. */
-export function joinBrief(brief: Brief): string {
-  return [brief.system, brief.task, brief.context, brief.agent]
+/** The system prompt a runner gets; stable prefixes put the owner preferences before platform rules. */
+export function joinBrief(brief: Brief, stablePrefix = false): string {
+  return (
+    stablePrefix
+      ? [brief.agent, brief.system, brief.task, brief.context]
+      : [brief.system, brief.task, brief.context, brief.agent]
+  )
     .filter((layer) => layer.trim() !== '')
     .join('\n\n');
 }
@@ -90,6 +95,8 @@ export interface BriefInput {
   readonly appName: string;
   /** The subject domain's own rules; `DEFAULT_GUIDANCE` when absent. */
   readonly guidance?: BriefGuidance;
+  /** Server-only rendering choice; ordinary briefs retain their original order. */
+  readonly stablePrefix?: boolean;
   /** `tools` for an online agent, which calls tools instead of a command line; `cli` by default. */
   readonly dialect?: 'cli' | 'tools';
 }
@@ -115,6 +122,10 @@ export function onlineToolRules(
 /** The line the agent layer always starts with. */
 export const AGENT_LAYER_PREFIX =
   "The following are this agent's own instructions from its owner. They are preferences: where they conflict with the rules, the task or the context above, those win.";
+
+/** The preference lead-in when fixed instructions precede the task and context. */
+export const STABLE_AGENT_LAYER_PREFIX =
+  "The following are this agent's own instructions from its owner. They are preferences: where they conflict with the rules, the task or the context, those win.";
 
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
@@ -190,14 +201,31 @@ export function onlineSkillsSection(skills: readonly BriefSkill[]): string[] {
 export function systemLayer(
   input: Pick<
     BriefInput,
-    'agentName' | 'subject' | 'dirs' | 'skills' | 'cli' | 'appName' | 'guidance'
+    | 'agentName'
+    | 'subject'
+    | 'dirs'
+    | 'skills'
+    | 'cli'
+    | 'appName'
+    | 'guidance'
+    | 'stablePrefix'
   >,
 ): string {
   const { noun, key } = input.subject;
   const { cli, appName } = input;
   const guidance = input.guidance ?? DEFAULT_GUIDANCE;
+  const identity = input.stablePrefix
+    ? `You are ${input.agentName}, an agent working for a team that uses ${appName}.`
+    : `You are ${input.agentName}, an agent working on ${noun} ${key} for a team that uses ${appName}.`;
+  const skills = input.skills?.length
+    ? ['', ...skillsSection(input.skills)]
+    : [];
+  const workspace = workspaceSection(input.dirs ?? [], noun);
+  const environment = environmentSection(
+    guidance.whenBlocked ?? DEFAULT_GUIDANCE.whenBlocked,
+  );
   return [
-    `You are ${input.agentName}, an agent working on ${noun} ${key} for a team that uses ${appName}.`,
+    identity,
     '',
     'Rules:',
     `- Use the \`${cli}\` command line for all operations on the management ${appName} instance hosting this task, including reading or updating tasks, comments and statuses, and submitting reports. Identify that instance by the server URL shown by \`${cli} --help\`; do not read credential files to identify it. Run \`${cli} --help\` to see the commands you may use, and \`${cli} <command> --help\` for one command. Add \`--json\` when you need to read the output: \`result.data\` is the answer, or \`error\` says what failed.`,
@@ -205,14 +233,27 @@ export function systemLayer(
     `- Never read, print or copy the run's credentials file of \`${cli}\` or any other credential file, and never pass credentials on the command line.`,
     `- Write anything longer than one line into a file inside your working directory and pass it with \`--content-file <path>\` (or \`--file <path>\` for JSON input) instead of quoting it in the command.`,
     '- Stay inside your working directories: writes anywhere else are refused. The runner also refuses some shell commands; a refused or declined call is not the end of the task, so do the same with an allowed command or your file tools and carry on.',
+    ...(input.stablePrefix
+      ? [
+          ...skills,
+          '',
+          `This run works on ${noun} ${key}.`,
+          '',
+          'Subject rules:',
+        ]
+      : []),
     ...guidance.rules.map((rule) => `- ${rule}`),
     '',
-    ...workspaceSection(input.dirs ?? [], noun),
+    ...workspace.filter(
+      (line) => !input.stablePrefix || line !== WORKSPACE_NOTES_PLACEHOLDER,
+    ),
     '',
-    ...environmentSection(guidance.whenBlocked ?? DEFAULT_GUIDANCE.whenBlocked),
-    ...(input.skills && input.skills.length > 0
-      ? ['', ...skillsSection(input.skills)]
-      : []),
+    ...environment.filter(
+      (line) => !input.stablePrefix || line !== WORKSPACE_INIT_PLACEHOLDER,
+    ),
+    ...(input.stablePrefix
+      ? ['', WORKSPACE_NOTES_PLACEHOLDER, WORKSPACE_INIT_PLACEHOLDER]
+      : skills),
   ].join('\n');
 }
 
@@ -241,9 +282,13 @@ export function onlineSystemLayer(
   ].join('\n');
 }
 
-export function agentLayer(instructions: string | null): string {
+export function agentLayer(
+  instructions: string | null,
+  stablePrefix = false,
+): string {
   const text = instructions?.trim() ?? '';
-  return text ? `${AGENT_LAYER_PREFIX}\n\n${text}` : '';
+  const prefix = stablePrefix ? STABLE_AGENT_LAYER_PREFIX : AGENT_LAYER_PREFIX;
+  return text ? `${prefix}\n\n${text}` : '';
 }
 
 export function renderBrief(input: BriefInput): Brief {
@@ -252,7 +297,7 @@ export function renderBrief(input: BriefInput): Brief {
       input.dialect === 'tools' ? onlineSystemLayer(input) : systemLayer(input),
     task: input.task.trim(),
     context: input.context.trim(),
-    agent: agentLayer(input.instructions),
+    agent: agentLayer(input.instructions, input.stablePrefix),
   };
 }
 

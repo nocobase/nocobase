@@ -205,7 +205,7 @@ const blockerRefs = (blockers: readonly Blocker[]) =>
   }));
 
 /** The skips recorded on the issue's activity. */
-const RECORDED_SKIPS: ReadonlySet<string> = new Set([
+export const RECORDED_SKIPS: ReadonlySet<string> = new Set([
   'waitingOwner',
   'blocked',
   'dormant',

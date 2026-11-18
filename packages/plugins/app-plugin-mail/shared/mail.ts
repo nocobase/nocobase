@@ -628,12 +628,14 @@ export interface MailUpdateMessageLabelsInput {
 }
 
 export interface MailMoveMessageInput {
+  readonly sourceProviderFolderId?: string;
   readonly accountId: string;
   readonly messageId: string;
   readonly providerFolderId: string;
 }
 
 export interface MailDeleteMessageInput {
+  readonly sourceProviderFolderId?: string;
   readonly accountId: string;
   readonly messageId: string;
   readonly permanently?: boolean;

@@ -1,6 +1,6 @@
 # Screenshot tool
 
-`capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions and 4xx/5xx requests to `screenshots/capture-log.json`. The full workflow uses it in its acceptance review (step 4 of [`../ui-workflow.md`](../ui-workflow.md)). It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install: in an application without it run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
+`capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions, 4xx/5xx requests and any sideways page overflow (`horizontalOverflow`, measured before the final screenshot) to `screenshots/capture-log.json`. The full workflow uses it in its acceptance review (step 4 of [`../ui-workflow.md`](../ui-workflow.md)). It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install: in an application without it run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
 
 ```bash
 # 1. Save the sign-in session: a browser window opens, the user signs in themselves, and the script never touches the password
@@ -26,9 +26,17 @@ The sign-in session is saved to `storage/ui-workflow/auth.json` (`storage/` is i
     { "name": "dark", "path": "/projects", "colorScheme": "dark" },
     { "name": "spacious", "path": "/projects", "theme": "default" },
     {
-      "name": "mobile",
+      "name": "phone-small",
       "path": "/projects",
-      "viewport": { "width": 375, "height": 812 }
+      "viewport": { "width": 375, "height": 667 },
+      "isMobile": true
+    },
+    {
+      "name": "phone-large",
+      "path": "/projects",
+      "viewport": { "width": 412, "height": 915 },
+      "isMobile": true,
+      "locale": "en-US"
     },
     {
       "name": "forbidden",
@@ -77,18 +85,19 @@ The sign-in session is saved to `storage/ui-workflow/auth.json` (`storage/` is i
 }
 ```
 
-At the top level, the configuration can set `base`, `out`, `locale`, `viewport`, `colorScheme`, `theme` and `hide` (elements hidden in screenshots; by default the development toolbar `#agent-annotations-root` is hidden). Each shot can set:
+At the top level, the configuration can set `base`, `out`, `locale`, `viewport`, `colorScheme`, `theme` and `hide` (selectors explicitly hidden in screenshots; empty by default). Each shot can set:
 
-| Field                            | Description                                                                                                                                                                                                    |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `path`                           | Path within the application, for example `/projects?status=active`                                                                                                                                             |
-| `setup`                          | Steps run before the page opens; suited to `delay`, `block` and `fulfill`                                                                                                                                      |
-| `steps`                          | Steps run after the page opens                                                                                                                                                                                 |
-| `waitUntil`                      | What to wait for when opening the page; defaults to `networkidle`                                                                                                                                              |
-| `colorScheme`, `theme`           | `light`, `dark` or `system`, and a preset id such as `compact` or `default`. Saved as the visitor's own appearance choice, so they win over `client.app.defaultColorScheme` and `defaultTheme` in `config.yml` |
-| `viewport`, `locale`, `fullPage` | Viewport, language, whether to capture the full page                                                                                                                                                           |
-| `settle`                         | Milliseconds to wait before the final screenshot; defaults to 500                                                                                                                                              |
-| `screenshot`                     | When `false`, no screenshot is taken at the end (only mid-flow screenshots are used)                                                                                                                           |
+| Field                            | Description                                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path`                           | Path within the application, for example `/projects?status=active`                                                                                                                                                                                                                                            |
+| `setup`                          | Steps run before the page opens; suited to `delay`, `block` and `fulfill`                                                                                                                                                                                                                                     |
+| `steps`                          | Steps run after the page opens                                                                                                                                                                                                                                                                                |
+| `waitUntil`                      | What to wait for when opening the page; defaults to `networkidle`                                                                                                                                                                                                                                             |
+| `colorScheme`, `theme`           | `light`, `dark` or `system`, and a preset id such as `compact` or `default`. Saved as the visitor's own appearance choice, so they win over `client.app.defaultColorScheme` and `defaultTheme` in `config.yml`                                                                                                |
+| `viewport`, `locale`, `fullPage` | Viewport, language, whether to capture the full page                                                                                                                                                                                                                                                          |
+| `isMobile`, `hasTouch`           | Emulate a phone: the meta viewport, touch events and coarse-pointer media queries; `hasTouch` defaults to `isMobile`. Use them with a phone `viewport` for [the phone checks](../mobile.md#m10-verifying-the-phone-experience). They do not show a soft keyboard, the browser's dynamic toolbar or safe areas |
+| `settle`                         | Milliseconds to wait before the final screenshot; defaults to 500                                                                                                                                                                                                                                             |
+| `screenshot`                     | When `false`, no screenshot is taken at the end (only mid-flow screenshots are used)                                                                                                                                                                                                                          |
 
 ## Steps
 

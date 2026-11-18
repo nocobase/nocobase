@@ -1,4 +1,8 @@
 import {
+  MAIL_CONNECTION_REASONS,
+  MailProviderRequestError,
+} from '../services/errors.js';
+import {
   authenticationToken,
   type AuthEnv,
 } from '@nocobase/app-plugin-authentication';
@@ -1130,7 +1134,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         { '204': emptyResponse() },
         {
           description:
-            'Moves the message to the trash, or deletes it at the Provider when `permanently` is `true`.',
+            'Moves the message to the trash, or deletes it at the Provider when `permanently` is `true`. For IMAP soft deletion, sourceProviderFolderId selects the actual source folder. Omission is compatible only with one verified source; ambiguous sources, missing Trash, unsafe server capabilities and uncertain outcomes return explicit MAIL_IMAP_MOVE_* or MAIL_IMAP_TRASH_NOT_FOUND reasons. Never automatically retry an uncertain move.',
           errors: {
             400: 'The account is not active (`MAIL_ACCOUNT_INACTIVE`) or must be reconnected because the mail Provider no longer accepts its authorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), the draft is scheduled (`MAIL_DRAFT_SCHEDULED`), or the mail Provider is not configured (`MAIL_PROVIDER_UNAVAILABLE`), cannot delete messages (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`), or rejected the request (`MAIL_PROVIDER_REQUEST_FAILED`).',
             404: true,
@@ -1147,6 +1151,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           accountId,
           messageId,
           permanently: context.req.valid('query').permanently,
+          sourceProviderFolderId:
+            context.req.valid('query').sourceProviderFolderId,
         });
         return context.body(null, 204);
       },
@@ -1216,6 +1222,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         'Move a message to another folder',
         { '200': dataResponse(MailMessageSchema) },
         {
+          description:
+            'For IMAP, sourceProviderFolderId selects one actual source folder. Omission requires exactly one verified source. MAIL_IMAP_MOVE_SOURCE_REQUIRED rejects ambiguous or stale sources; MAIL_IMAP_MOVE_UNSUPPORTED reports an unsafe server; MAIL_IMAP_MOVE_OUTCOME_UNKNOWN requires mailbox verification and must not be automatically retried. Other providers ignore the optional source.',
           errors: {
             400: 'The account is not active (`MAIL_ACCOUNT_INACTIVE`) or must be reconnected because the mail Provider no longer accepts its authorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), the message is a scheduled or local-only draft (`MAIL_DRAFT_SCHEDULED`, `MAIL_DRAFT_LOCAL_ONLY`), `providerFolderId` names no folder of the account (`MAIL_FOLDER_NOT_FOUND`), or the mail Provider is not configured (`MAIL_PROVIDER_UNAVAILABLE`), cannot move messages (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`), or rejected the move (`MAIL_PROVIDER_REQUEST_FAILED`).',
             404: true,
@@ -1234,6 +1242,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
             accountId,
             messageId,
             providerFolderId: context.req.valid('json').providerFolderId,
+            sourceProviderFolderId:
+              context.req.valid('json').sourceProviderFolderId,
           }),
         });
       },
@@ -1735,14 +1745,37 @@ function attachmentResponse(
   return new Response(content.stream, { headers });
 }
 
+function connectionLocalized(
+  context: Context,
+  error: unknown,
+): { localizedMessage?: { locale: string; message: string } } {
+  const reason =
+    error instanceof MailError &&
+    error.cause instanceof MailProviderRequestError
+      ? error.cause.reasonCode
+      : isMailProviderError(error)
+        ? error.reasonCode
+        : undefined;
+  for (const protocol of ['imap', 'smtp']) {
+    for (const suffix of MAIL_CONNECTION_REASONS) {
+      if (reason === `${protocol}${suffix}`)
+        return localized(context, `errors.connection${suffix}`, {
+          protocol: protocol.toUpperCase(),
+        });
+    }
+  }
+  return {};
+}
+
 /** The request's translation of a Mail message key, as the error body's `localizedMessage`. */
 function localized(
   context: Context,
   key: string,
+  params?: { protocol: string },
 ): { localizedMessage?: { locale: string; message: string } } {
   try {
     const locale = getRequestLocale(context);
-    const message = getRequestTranslator(context, MAIL_NAMESPACE)(key);
+    const message = getRequestTranslator(context, MAIL_NAMESPACE)(key, params);
     return locale && message ? { localizedMessage: { locale, message } } : {};
   } catch {
     // A router mounted without the i18n middleware answers without a translation.
@@ -1808,8 +1841,11 @@ function toMailApiError(error: unknown, context: Context): unknown {
           context,
           error.reason === 'MAIL_ACCOUNT_CREDENTIALS_INVALID'
             ? 'errors.accountCredentialsInvalid'
-            : 'errors.invalidRequest',
+            : /^(?:to|cc|bcc|recipients)(?:\.|$)/u.test(error.field ?? '')
+              ? 'errors.invalidRecipient'
+              : 'errors.invalidRequest',
         ),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     }
@@ -1836,11 +1872,12 @@ function toMailApiError(error: unknown, context: Context): unknown {
       message: error.message,
       ...localized(
         context,
-        error.reason === 'MAIL_MESSAGE_NOT_FOUND'
-          ? 'errors.messageNotFound'
-          : error.reason === 'MAIL_SYNC_RUN_NOT_FOUND'
-            ? 'errors.syncRunNotFound'
-            : 'errors.requestFailed',
+        imapMoveLocale(error.reason) ??
+          (error.reason === 'MAIL_MESSAGE_NOT_FOUND'
+            ? 'errors.messageNotFound'
+            : error.reason === 'MAIL_SYNC_RUN_NOT_FOUND'
+              ? 'errors.syncRunNotFound'
+              : 'errors.requestFailed'),
       ),
       cause: error,
     });
@@ -1878,6 +1915,7 @@ function mailProviderApiError(
         message: 'The mail Provider is rate limiting requests.',
         metadata,
         ...localized(context, 'errors.providerRateLimited'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     case 'UNAVAILABLE':
@@ -1888,6 +1926,7 @@ function mailProviderApiError(
         message: 'The mail Provider could not be reached.',
         metadata,
         ...localized(context, 'errors.providerUnavailable'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     case 'REAUTHORIZATION_REQUIRED':
@@ -1899,6 +1938,7 @@ function mailProviderApiError(
           'The mail Provider no longer accepts the account authorization; reconnect the account.',
         metadata,
         ...localized(context, 'errors.reauthorizationRequired'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
     case 'REJECTED':
@@ -1909,6 +1949,7 @@ function mailProviderApiError(
         message: 'The mail Provider rejected the request.',
         metadata,
         ...localized(context, 'errors.requestFailed'),
+        ...connectionLocalized(context, error),
         cause: error,
       });
   }
@@ -1957,4 +1998,17 @@ function safeContentType(value: string): string {
   return /^[\w!#$&^_.+-]+\/[\w!#$&^_.+-]+(?:\s*;[^\r\n]*)?$/u.test(value)
     ? value
     : 'application/octet-stream';
+}
+
+function imapMoveLocale(reason: string): string | undefined {
+  return (
+    {
+      MAIL_IMAP_MOVE_SOURCE_REQUIRED: 'errors.imapMoveSourceRequired',
+      MAIL_IMAP_MOVE_LOCATION_CHANGED: 'errors.imapMoveLocationChanged',
+      MAIL_IMAP_MOVE_NOT_WRITABLE: 'errors.imapMoveNotWritable',
+      MAIL_IMAP_MOVE_UNSUPPORTED: 'errors.imapMoveUnsupported',
+      MAIL_IMAP_TRASH_NOT_FOUND: 'errors.imapTrashNotFound',
+      MAIL_IMAP_MOVE_OUTCOME_UNKNOWN: 'errors.imapMoveOutcomeUnknown',
+    } as Record<string, string>
+  )[reason];
 }

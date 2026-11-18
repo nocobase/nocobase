@@ -12,6 +12,8 @@ const locales: LocaleLoaders = {
   'de-DE': () => import('./de-DE.js'),
   'vi-VN': () => import('./vi-VN.js'),
   'id-ID': () => import('./id-ID.js'),
+  'ru-RU': () => import('./ru-RU.js'),
+  'ko-KR': () => import('./ko-KR.js'),
 };
 
 export default locales;

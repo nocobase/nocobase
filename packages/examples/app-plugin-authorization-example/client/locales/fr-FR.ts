@@ -165,7 +165,7 @@ const frFR: LocaleResource<typeof enUS> = {
     record: 'Enregistrement',
     notes: 'Notes',
     save: 'Enregistrer',
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     loading: 'Chargement…',
     empty: 'Aucun dossier accessible',
     readOnly: 'Lecture seule',

@@ -82,4 +82,4 @@ pnpm --filter @nocobase/app-plugin-authentication build
 
 ## Independent password reset email
 
-Configure `auth.email` with SMTP or Resend and explicitly enable `auth.passwordReset.enabled` through `defineAuthConfig`. Authentication owns the sender without requiring notification or mailbox plugins. See [authentication email configuration](skills/nocobase-app-plugin-authentication/references/authentication-email.md) for examples, environment variables, precedence and migration from the deprecated legacy channel configuration.
+Configure a named service with `auth.passwordReset.mailer` (or retain inline SMTP/Resend in `auth.email`) and explicitly enable `auth.passwordReset.enabled` through `defineAuthConfig`. Authentication owns the sender without requiring notification or mailbox plugins. See [authentication email configuration](skills/nocobase-app-plugin-authentication/references/authentication-email.md) for examples, environment variables, precedence and migration from the deprecated legacy channel configuration.

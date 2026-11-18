@@ -36,9 +36,57 @@ export function useRouteSearches(): ReadonlyMap<string, string> {
   return useContext(RouteSearchContext);
 }
 
+/**
+ * The query to link back to an ancestor page with, such as a detail's list.
+ *
+ * It is the query recorded when the ancestor was last visited. After a direct entry or a reload nothing is recorded,
+ * so it takes the ancestor's public keys from the current URL instead, where the links that led here carried them
+ * (a list links to its records with its own query). Only the listed keys are taken: a detail's own parameters never
+ * reach its list.
+ */
+export function useAncestorSearch(
+  pathname: string,
+  publicKeys: readonly string[],
+): string {
+  const searches = useRouteSearches();
+  const { search } = useLocation();
+  const recorded = searches.get(pathname.replace(/\/+$/u, '') || '/');
+  if (recorded !== undefined) return recorded;
+  const kept = new URLSearchParams();
+  for (const [key, value] of new URLSearchParams(search)) {
+    if (publicKeys.includes(key)) kept.append(key, value);
+  }
+  const query = kept.toString();
+  return query ? `?${query}` : '';
+}
+
 const RouteTreeContext = createContext<readonly AppClientRegisteredRoute[]>([]);
+
+/** The shell's page permission check (`useRouteNavigation`), shared so pages reuse it instead of checking again. */
+export interface RouteAccess {
+  /** Route keys the viewer may not open. */
+  readonly denied: ReadonlySet<string>;
+  /** The check is still running; `denied` is not yet known. */
+  readonly loading: boolean;
+}
+
+const DEFAULT_ACCESS: RouteAccess = { denied: new Set(), loading: false };
+const RouteAccessContext = createContext<RouteAccess>(DEFAULT_ACCESS);
+
 export interface RouteTreeProviderProps extends PropsWithChildren {
   readonly routes: readonly AppClientRegisteredRoute[];
+  /** The shell's page permission result; without it every route counts as open. */
+  readonly access?: RouteAccess;
+}
+
+/** The registered business route tree the shell renders. */
+export function useRouteTree(): readonly AppClientRegisteredRoute[] {
+  return useContext(RouteTreeContext);
+}
+
+/** Which routes the viewer may open, from the shell's single permission check. */
+export function useRouteAccess(): RouteAccess {
+  return useContext(RouteAccessContext);
 }
 
 /**
@@ -51,6 +99,7 @@ export interface RouteTreeProviderProps extends PropsWithChildren {
 export function RouteTreeProvider({
   children,
   routes,
+  access,
 }: RouteTreeProviderProps): ReactElement {
   const location = useLocation();
   const pathname = location.pathname.replace(/\/+$/u, '') || '/';
@@ -74,9 +123,11 @@ export function RouteTreeProvider({
   }
   return (
     <RouteTreeContext.Provider value={routes}>
-      <RouteSearchContext.Provider value={queries}>
-        {children}
-      </RouteSearchContext.Provider>
+      <RouteAccessContext.Provider value={access ?? DEFAULT_ACCESS}>
+        <RouteSearchContext.Provider value={queries}>
+          {children}
+        </RouteSearchContext.Provider>
+      </RouteAccessContext.Provider>
     </RouteTreeContext.Provider>
   );
 }

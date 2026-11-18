@@ -74,7 +74,12 @@ function IdentityChat({
       <AIFormRegistryProvider>
         <AIToolRendererProvider renderers={toolRenderers}>
           {/* Remembers the agent a new conversation last went to, for this person. */}
-          <ChatProvider memoryScope={userId}>{children}</ChatProvider>
+          <ChatProvider
+            memoryScope={userId}
+            conversationPath={(id) => `/chat/${encodeURIComponent(id)}`}
+          >
+            {children}
+          </ChatProvider>
         </AIToolRendererProvider>
       </AIFormRegistryProvider>
     </OnlineAgentIdentityScope>

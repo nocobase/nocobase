@@ -174,9 +174,15 @@ export default function AtomicPage(): ReactElement {
     <PageContainer>
       <PageHeader
         actions={
-          <Button variant='outline' disabled={loading || busy} onClick={reload}>
-            {t('refresh')}
-          </Button>
+          error && (
+            <Button
+              variant='outline'
+              disabled={loading || busy}
+              onClick={reload}
+            >
+              {t('retryRead')}
+            </Button>
+          )
         }
         description={t('atomicIntro')}
         title={t('atomicTitle')}

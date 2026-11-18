@@ -70,7 +70,12 @@ export async function validateConfigSections(
   for (const [section, rules] of sections) {
     issues.push(...publicPathIssues(current, section, rules.public));
     const value = readPath(current, [section]);
-    const context = createValidationContext(section, overrides, issues);
+    const context = createValidationContext(
+      section,
+      overrides,
+      issues,
+      current,
+    );
     for (const validator of rules.validators) {
       try {
         await (validator as ConfigValidator<unknown>)(value ?? {}, context);
@@ -120,6 +125,7 @@ function createValidationContext(
   section: string,
   overrides: ConfigMap,
   issues: ConfigIssue[],
+  current: ConfigMap,
 ): ConfigValidationContext {
   const push = (
     level: ConfigIssue['level'],
@@ -135,6 +141,7 @@ function createValidationContext(
     });
   };
   return {
+    get: (path) => readPath(current, splitPath(path)),
     error: (path, message, options) => push('error', path, message, options),
     warning: (path, message, options) =>
       push('warning', path, message, options),

@@ -9,7 +9,12 @@ import {
 } from '@nocobase/app-server/router';
 import type { DatabaseManager } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
-import type { Hono, MiddlewareHandler } from 'hono';
+import { Hono, type MiddlewareHandler } from 'hono';
+import { I18nRuntime, createI18nMiddleware } from '@nocobase/i18n/server';
+import locales from '../../server/locales/index.js';
+import enUS from '../../server/locales/en-US.js';
+import zhCN from '../../server/locales/zh-CN.js';
+import { AGENT_SESSIONS_NAMESPACE } from '../../server/errors.js';
 import { describe, expect, vi } from 'vitest';
 
 import {
@@ -29,7 +34,7 @@ import { fakeFiles } from '../helpers/files.js';
  */
 async function mount(
   database: DatabaseManager,
-  options: { readonly images?: ImageStorage } = {},
+  options: { readonly images?: ImageStorage; readonly locale?: string } = {},
 ): Promise<Hono> {
   const required =
     (options?: { readonly scopedKeys?: boolean }): MiddlewareHandler =>
@@ -74,7 +79,15 @@ async function mount(
     agentSessionsToken,
     new AgentSessionsService({ database, ...options }),
   );
-  return apiRoutes.createRouter({ container } as never);
+  const router = apiRoutes.createRouter({ container } as never);
+  if (!options.locale) return router;
+  const runtime = new I18nRuntime({
+    defaultLocale: options.locale,
+    locales: ['en-US', 'zh-CN'],
+  });
+  runtime.registerNamespace(AGENT_SESSIONS_NAMESPACE, locales);
+  await runtime.init(options.locale);
+  return new Hono().use('*', createI18nMiddleware(runtime)).route('/', router);
 }
 
 function call(
@@ -325,7 +338,25 @@ describe('the agent sessions routes', () => {
         )?.requestId ?? '';
       expect(requestId).not.toBe('');
     });
-    const discovery = { status: 'unsupported', choices: [] };
+    const discovery = {
+      status: 'available',
+      choices: [
+        {
+          id: 'agent',
+          name: 'n'.repeat(201),
+          currentValue: 'web-fetch',
+          options: [
+            {
+              value: 'web-fetch',
+              name: 'Web fetch',
+              description: 'w'.repeat(1944),
+            },
+            { value: 'v'.repeat(201), name: 'Invalid' },
+            { value: 'other', name: 'Other' },
+          ],
+        },
+      ],
+    };
     expect(
       (
         await call(
@@ -338,8 +369,187 @@ describe('the agent sessions routes', () => {
         )
       ).status,
     ).toBe(204);
-    expect(await (await pending).json()).toEqual({ data: discovery });
+    expect(await (await pending).json()).toEqual({
+      data: {
+        status: 'available',
+        choices: [
+          {
+            id: 'agent',
+            name: 'n'.repeat(200),
+            currentValue: 'web-fetch',
+            options: [
+              {
+                value: 'web-fetch',
+                name: 'Web fetch',
+                description: 'w'.repeat(1000),
+              },
+              { value: 'other', name: 'Other' },
+            ],
+          },
+        ],
+      },
+    });
   });
+  test('accepts old bridge state with long display text and discards invalid identifiers without weakening ownership', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const {
+      data: { computerId },
+    } = await (
+      await call(router, 'POST', '/bridge/register', 'u1', {
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        computerId: null,
+        bridgeStartedAt: 'bridge-1',
+        computer,
+      })
+    ).json();
+    const { data: session } = await (
+      await call(router, 'POST', '/sessions', 'u1', {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou',
+        content: [{ type: 'text', text: 'Hello' }],
+      })
+    ).json();
+    const input = {
+      computerId,
+      sessionId: session.id,
+      batch: 1,
+      bridgeStartedAt: 'bridge-1',
+      events: [],
+      state: {
+        acpSessionId: 's1',
+        agent: 'test agent',
+        commands: [],
+        title: null,
+        context: null,
+        choices: [
+          {
+            id: 'bad',
+            name: 'Bad',
+            currentValue: 'v'.repeat(201),
+            options: [],
+          },
+          {
+            id: 'mode',
+            name: 'n'.repeat(201),
+            currentValue: 'ask',
+            options: [
+              { value: 'ask', name: 'Ask', description: 'w'.repeat(1944) },
+              { value: 'v'.repeat(201), name: 'Invalid' },
+              { value: 'full', name: 'Full access' },
+            ],
+          },
+        ],
+      },
+    };
+    expect(
+      (await call(router, 'POST', '/bridge/report', undefined, input)).status,
+    ).toBe(401);
+    expect(
+      (await call(router, 'POST', '/bridge/report', 'u2', input)).status,
+    ).toBe(404);
+    expect(
+      (await call(router, 'POST', '/bridge/report', 'u1', input, computerId))
+        .status,
+    ).toBe(200);
+    const { data: saved } = await (
+      await call(router, 'GET', `/sessions/${session.id}`, 'u1')
+    ).json();
+    expect(saved.state.choices).toEqual([
+      {
+        id: 'mode',
+        name: 'n'.repeat(200),
+        currentValue: 'ask',
+        options: [
+          { value: 'ask', name: 'Ask', description: 'w'.repeat(1000) },
+          { value: 'full', name: 'Full access' },
+        ],
+      },
+    ]);
+  });
+
+  for (const [locale, message] of [
+    ['en-US', enUS.errors.discoveryFailed],
+    ['zh-CN', zhCN.errors.discoveryFailed],
+  ]) {
+    test(`gives recovery steps before the CLI discovery error in ${locale}`, async ({
+      database,
+    }) => {
+      const router = await mount(database, { locale });
+      const {
+        data: { computerId },
+      } = (await (
+        await call(router, 'POST', '/bridge/register', 'u1', {
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          computerId: null,
+          bridgeStartedAt: 'bridge-1',
+          computer,
+        })
+      ).json()) as { data: { computerId: string } };
+      const pending = call(
+        router,
+        'POST',
+        `/computers/${computerId}/discoverChoices`,
+        'u1',
+        { agentId: 'codex', cwd: '/home/zhou', settings: {} },
+      );
+      let requestId = '';
+      await vi.waitFor(async () => {
+        const { data } = (await (
+          await call(
+            router,
+            'POST',
+            '/bridge/poll',
+            'u1',
+            {
+              computerId,
+              wait: false,
+              protocol: BRIDGE_PROTOCOL_VERSION,
+              bridgeStartedAt: 'bridge-1',
+            },
+            computerId,
+          )
+        ).json()) as {
+          data: { commands: { type: string; requestId: string }[] };
+        };
+        requestId =
+          data.commands.find((command) => command.type === 'discoverChoices')
+            ?.requestId ?? '';
+        expect(requestId).not.toBe('');
+      });
+      const detail = 'Invalid Skill installation record: skills.json';
+      await call(
+        router,
+        'POST',
+        '/bridge/reply',
+        'u1',
+        {
+          computerId,
+          requestId,
+          listing: null,
+          discovery: null,
+          error: detail,
+        },
+        computerId,
+      );
+      const response = await pending;
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as {
+        error: {
+          reason: string;
+          localizedMessage: { locale: string; message: string };
+        };
+      };
+      expect(body.error.reason).toBe('AGENT_SESSIONS_DISCOVERY_FAILED');
+      expect(body.error.localizedMessage).toEqual({
+        locale,
+        message: `${message} ${detail}`,
+      });
+    });
+  }
+
   test('declare themselves for the API document', async ({ database }) => {
     const router = await mount(database);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);

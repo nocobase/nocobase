@@ -318,7 +318,7 @@ const idID: LocaleResource<typeof enUS> = {
   cancel: 'Batal',
   search: 'Cari berdasarkan nama / nomor / ID',
   apply: 'Cari',
-  refresh: 'Segarkan',
+  retryRead: 'Coba lagi',
   previous: 'Sebelumnya',
   next: 'Berikutnya',
   page: 'Halaman {{page}}',
@@ -326,6 +326,9 @@ const idID: LocaleResource<typeof enUS> = {
   empty: 'Belum ada catatan. Buat rekaman pertama untuk memulai.',
   loading: 'Memuat…',
   listFeedback: {
+    refreshing: 'Memuat ulang',
+    longWait:
+      'Ini memakan waktu lebih lama dari biasanya. Anda dapat terus menunggu.',
     loading: 'Memuat',
     empty: 'Belum ada data',
     noResults: 'Tidak ada hasil',
@@ -357,7 +360,7 @@ const idID: LocaleResource<typeof enUS> = {
   traceHint:
     'Permintaan dan hasil terbaru menunjukkan API yang digunakan oleh layar ini.',
   error: 'Operasi gagal.',
-  loadError: 'Tidak dapat memuat catatan. Coba lagi dengan Segarkan.',
+  loadError: 'Tidak dapat memuat catatan. Coba lagi.',
   conflict:
     'Pesanan ini berubah sejak Anda membukanya. Segarkan dan buka kembali sebelum mengedit.',
   choicesHint:

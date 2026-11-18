@@ -502,28 +502,32 @@ test('keeps extraction side by side and preserves drafts across scenario tabs', 
       contact.getByRole('button', { name: 'Use example', exact: true }),
     ).toHaveCount(0);
     await scene.capture('structured-extraction-desktop.png');
-    await page.getByRole('button', { name: 'Appearance', exact: true }).hover();
     await page
-      .getByRole('radiogroup', { name: 'Color mode' })
-      .getByText('Dark', { exact: true })
+      .getByRole('button', { name: 'Open account menu', exact: true })
+      .hover();
+    await page.getByRole('menuitem', { name: 'Theme', exact: true }).hover();
+    await page
+      .getByRole('menuitemradio', { name: 'Dark', exact: true })
       .click();
     await page
-      .getByRole('radiogroup', { name: 'Theme', exact: true })
-      .getByText('Spacious', { exact: true })
+      .getByRole('menuitemradio', { name: 'Spacious', exact: true })
       .click();
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await expect(page.locator('html')).toHaveClass(/dark/);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'default');
     await scene.capture('structured-extraction-dark-spacious.png');
-    await page.getByRole('button', { name: 'Appearance', exact: true }).hover();
     await page
-      .getByRole('radiogroup', { name: 'Color mode' })
-      .getByText('Light', { exact: true })
+      .getByRole('button', { name: 'Open account menu', exact: true })
+      .hover();
+    await page.getByRole('menuitem', { name: 'Theme', exact: true }).hover();
+    await page
+      .getByRole('menuitemradio', { name: 'Light', exact: true })
       .click();
     await page
-      .getByRole('radiogroup', { name: 'Theme', exact: true })
-      .getByText('Compact', { exact: true })
+      .getByRole('menuitemradio', { name: 'Compact', exact: true })
       .click();
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await expect(page.locator('html')).not.toHaveClass(/dark/);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'compact');

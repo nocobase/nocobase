@@ -16,6 +16,8 @@ import { ServiceContainer } from '@nocobase/service-provider';
 import type { Knex } from 'knex';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { I18nRuntime } from '@nocobase/i18n';
+import { resolveUserLocale } from '../server/preferences/locale.js';
 import createUserPreferences from '../database/migrations/202610020201_create_user_preferences.js';
 import {
   createUserPreferencesService,
@@ -110,6 +112,55 @@ describe('user preferences', () => {
     await testDatabase.destroy();
   });
 
+  it('reads a preference through the caller transaction without acquiring a second connection', async () => {
+    await database.transaction(async (connection) => {
+      const now = new Date();
+      await connection.query
+        .insertInto('userPreferences')
+        .values({
+          id: 'transaction-locale',
+          userId: 'ann',
+          key: 'i18n.locale',
+          value: '"zh-CN"',
+          createdAt: now,
+          updatedAt: now,
+        })
+        .execute();
+      await expect(service.get('ann', 'i18n.locale', connection)).resolves.toBe(
+        'zh-CN',
+      );
+    });
+  });
+
+  it('resolves durable recipient languages through a fresh service, validating types and supported tags', async () => {
+    const runtime = new I18nRuntime({
+      defaultLocale: 'zh-CN',
+      locales: ['en-US', 'zh-CN'],
+    });
+    await runtime.init();
+    await service.set('ann', 'i18n.locale', 'en-US');
+    const fresh = createUserPreferencesService({ database });
+    await expect(resolveUserLocale(fresh, runtime, 'ann')).resolves.toBe(
+      'en-US',
+    );
+    await expect(resolveUserLocale(fresh, runtime, 'bob')).resolves.toBe(
+      'zh-CN',
+    );
+    for (const invalid of [null, 42, {}, ['en-US'], 'xx-invalid', 'en']) {
+      await service.set('ann', 'i18n.locale', invalid);
+      await expect(resolveUserLocale(fresh, runtime, 'ann')).resolves.toBe(
+        'zh-CN',
+      );
+    }
+    await expect(
+      resolveUserLocale(
+        fresh,
+        { getLocales: () => [], getDefaultLocale: () => 'bad' },
+        'ann',
+      ),
+    ).resolves.toBe('en-US');
+  });
+
   it('keeps each person’s values on the server, by key', async () => {
     await service.set('ann', 'theme.mode', 'dark');
     await service.set('ann', 'inbox.chime', false);
@@ -189,19 +240,36 @@ describe('user preferences', () => {
       200,
     );
     expect(
-      (await send('PATCH', '', { locale: 'zh-CN', 'inbox.chime': false }))
-        .status,
+      (
+        await send('PATCH', '', {
+          'i18n.locale': 'zh-CN',
+          'inbox.chime': false,
+        })
+      ).status,
     ).toBe(200);
     expect(await (await send('GET', '')).json()).toEqual({
-      data: { 'inbox.chime': false, locale: 'zh-CN', 'theme.mode': 'dark' },
+      data: {
+        'inbox.chime': false,
+        'i18n.locale': 'zh-CN',
+        'theme.mode': 'dark',
+      },
     });
     expect((await send('PUT', '/Bad', { value: 1 })).status).toBe(400);
     expect((await send('PUT', '/theme.mode', {})).status).toBe(400);
 
     signedIn = 'bob';
+    const stale = await send('PUT', '/i18n.locale', {
+      value: 'en-US',
+      expectedUserId: 'ann',
+    });
+    expect(stale.status).toBe(409);
+    expect((await send('GET', '?expectedUserId=ann')).status).toBe(409);
+    await expect(stale.json()).resolves.toMatchObject({
+      error: { reason: 'USER_PREFERENCE_IDENTITY_CHANGED' },
+    });
     expect(await (await send('GET', '')).json()).toEqual({ data: {} });
     signedIn = 'ann';
-    expect((await send('DELETE', '/locale')).status).toBe(204);
+    expect((await send('DELETE', '/i18n.locale')).status).toBe(204);
     await expect(service.list('ann')).resolves.toEqual({
       'inbox.chime': false,
       'theme.mode': 'dark',

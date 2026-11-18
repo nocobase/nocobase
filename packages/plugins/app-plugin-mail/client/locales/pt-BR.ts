@@ -43,6 +43,15 @@ const ptBR: LocaleResource<typeof enUS> = {
     refresh: 'Atualizar',
   },
   workspace: {
+    imapSourceRequired:
+      'Abra a pasta de origem antes de mover ou excluir esta mensagem.',
+    imapTrashMissing:
+      'Esta conta não tem uma pasta Lixeira. Use seu cliente de e-mail.',
+    deleteUnsupported:
+      'Esta conta não permite exclusão. Use seu cliente de e-mail.',
+    imapScheduled: 'Cancele o envio agendado antes de excluir este rascunho.',
+    invalidRecipient:
+      'Corrija o endereço de e-mail ou o nome de exibição: {{value}}. Use no máximo 100 destinatários por campo.',
     senderLabel: 'De',
     attachmentNumber: 'Anexo {{number}}',
     pendingDelivery:

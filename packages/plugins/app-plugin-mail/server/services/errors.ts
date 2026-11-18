@@ -120,7 +120,21 @@ export function isMailProviderError(
   );
 }
 
+export const MAIL_CONNECTION_REASONS = [
+  'AuthenticationFailed',
+  'HostNotFound',
+  'ConnectionRefused',
+  'ConnectionTimeout',
+  'CertificateInvalid',
+  'TlsFailed',
+  'ConnectionFailed',
+  'ConnectionLost',
+] as const;
+
 const PUBLIC_REASON_CODES = new Set([
+  ...['imap', 'smtp'].flatMap((protocol) =>
+    MAIL_CONNECTION_REASONS.map((reason) => `${protocol}${reason}`),
+  ),
   'gmailRateLimitExceeded',
   'gmailUserRateLimitExceeded',
   'gmailDailyLimitExceeded',
@@ -166,7 +180,7 @@ export function classifyMailProviderError(
 
 /**
  * A Provider failure thrown to the caller of a synchronous operation. It carries the adapter's `MailProviderError`
- * fields on itself, so code that reads `code`, `category` or `retryable` off a caught error keeps working, and the
+ * classification fields on itself, so code that reads `code`, `category` or `retryable` off a caught error keeps working, and the
  * HTTP API answers it by its `kind` rather than with an opaque 500.
  */
 export class MailProviderRequestError
@@ -183,12 +197,10 @@ export class MailProviderRequestError
 
   public constructor(
     error: MailProviderError,
-    options: { readonly cause?: unknown } = {},
+    _options: { readonly cause?: unknown } = {},
   ) {
-    super(
-      error.message,
-      options.cause === undefined ? undefined : { cause: options.cause },
-    );
+    // Detailed provider diagnostics are recorded at the credential-aware boundary.
+    super('Mail provider request failed.');
     this.name = 'MailProviderRequestError';
     this.code = error.code;
     this.category = error.category;

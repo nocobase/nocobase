@@ -4,6 +4,7 @@
  * (`releasesAccessToken`), may widen what "related" means, resolves approvers and marks agents, registers deployment
  * drivers (`releasesDriversToken`) and hears what happens (`releasesEventsToken`).
  */
+import type { Context } from 'hono';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
   createServiceToken,
@@ -27,6 +28,10 @@ import type { Releases } from './composition.js';
  * nothing.
  */
 export interface ReleasesAccess {
+  /** Optional diagnostic fields from the authenticated request, never from upload input. */
+  securityLogContextOf?(
+    context: Pick<Context, 'get'>,
+  ): Readonly<Record<string, unknown>>;
   /** What a signed-in caller may do, decided once per request. */
   permissionsOf(identity: AuthorizationIdentity): Promise<ReleasesPermissions>;
   /**
@@ -35,15 +40,19 @@ export interface ReleasesAccess {
    */
   permissionsOfUser(userId: string): Promise<ReleasesPermissions>;
   /**
-   * Whether the caller is a person or an agent acting for one. Agents are refused `deploy-protected`, `configure`
-   * and `delete` whatever they hold, and never decide a deployment request. Defaults to `human`. Asked for a
+   * Whether the caller is a person or an agent acting for one. Agents are refused `delete` whatever they hold, and never decide a deployment request. Defaults to `human`. Asked for a
    * scoped identity too: `agent` makes it an agent's (such as an agent's run bounded by its scope) rather than a key's.
    */
   actorKindOf?(identity: AuthorizationIdentity): 'human' | 'agent';
-  /** Apps beyond the ones the users created that count as related to any of them for an action (for listing). */
+  /**
+   * Apps beyond the ones the users created that count as related to any of them for an action (for listing). With
+   * `among`, only which of those Apps are: answer it in a fixed number of reads, however many Apps the application
+   * has (a polled read asks it about the Apps sharing a runtime).
+   */
   relatedAppIds?(
     userIds: readonly string[],
     action: AppAction,
+    among?: readonly string[],
   ): Promise<readonly string[]>;
   /** Whether one App counts as related to any of the users for an action, beyond the ones they created. */
   isRelated?(
@@ -54,11 +63,11 @@ export interface ReleasesAccess {
   /**
    * The user IDs who may decide a deployment request. Defaults to the environment's `approvers` taken as user IDs;
    * with none, anyone holding `deploy-protected` on the App (`deploy` on an unprotected environment), other than the
-   * requester, may decide.
+   * requester, may decide. Also used for direct deployment; only the App ID is supplied.
    */
   approversOf?(
     environment: EnvironmentRecord,
-    request: DeploymentRequestView,
+    request: Pick<DeploymentRequestView, 'appId'>,
   ): Promise<readonly string[]>;
 }
 
@@ -110,6 +119,13 @@ export type ReleasesEvent =
     }
   | {
       readonly type: 'deployment.succeeded' | 'deployment.rolledBack';
+      readonly app: AppView;
+      readonly deployment: DeploymentView;
+      readonly release: ReleaseView;
+      readonly actor: ActorRef;
+    }
+  | {
+      readonly type: 'deployment.cancelled';
       readonly app: AppView;
       readonly deployment: DeploymentView;
       readonly release: ReleaseView;

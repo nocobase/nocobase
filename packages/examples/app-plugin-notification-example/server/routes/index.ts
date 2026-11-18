@@ -19,6 +19,7 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 import { taskInvalidationToken } from '../task-realtime.js';
+import { renderTaskNotification } from '../templates.js';
 
 import {
   CreateTaskInput,
@@ -506,15 +507,7 @@ async function sendTaskNotification(
     messages: {
       inbox: {
         to: recipientId,
-        title:
-          event === 'assigned'
-            ? `New task: ${task.title}`
-            : `Task updated: ${task.title}`,
-        body: [
-          `Task: ${task.title}`,
-          `Description: ${task.description}`,
-          `Status: ${task.status}`,
-        ].join('\n'),
+        ...renderTaskNotification(task, event),
         target: { type: 'route', path: `${TASK_PAGE_PATH}/${task.id}` },
       },
     },

@@ -81,6 +81,7 @@ export const clientMocks = {
     return {
       createUuid: actual.createUuid,
       copyText: actual.copyText,
+      errorToastOptions: actual.errorToastOptions,
       NavigationGuardProvider: actual.NavigationGuardProvider,
       useNavigationGuard: actual.useNavigationGuard,
       UnsavedChangesContext: actual.UnsavedChangesContext,
@@ -90,6 +91,7 @@ export const clientMocks = {
       usePageBreadcrumb: actual.usePageBreadcrumb,
       ApiClientError: FakeApiError,
       useApiClient: () => api,
+      ClientApplicationContext: actual.ClientApplicationContext,
       useToaster: () => ({
         show: (options: { type?: string; title: unknown }) => {
           toasts.push(options);

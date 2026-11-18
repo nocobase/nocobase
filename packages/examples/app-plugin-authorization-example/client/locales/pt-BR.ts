@@ -164,7 +164,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     record: 'Registro',
     notes: 'Notas',
     save: 'Salvar',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     loading: 'Carregando…',
     empty: 'Nenhum registro acessível',
     readOnly: 'Somente leitura',

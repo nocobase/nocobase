@@ -11,6 +11,7 @@
  * Who sees what: a caller who may see every run (`allRuns`, which the application decides) counts every run, anyone
  * else the runs they started or own; either way only runs on subjects they may see (`SubjectReports.describe`).
  */
+import { runVisibility } from '../runs/access.js';
 import type { DatabaseConnection, SelectQuery } from '@nocobase/db';
 
 import {
@@ -235,22 +236,6 @@ function runRow(row: Row, prefix = ''): ReportRunRow {
   };
 }
 
-/** Only the runs the caller started or owns, unless they may see every run. */
-function callersRuns<Q extends SelectQuery<Row, Row>>(
-  query: Q,
-  caller: ReportCaller,
-  table = 'agRuns',
-): Q {
-  return caller.allRuns
-    ? query
-    : (query.where((eb) =>
-        eb.or([
-          eb(`${table}.actorUserId`, '=', caller.userId),
-          eb(`${table}.ownerUserId`, '=', caller.userId),
-        ]),
-      ) as Q);
-}
-
 export function createReportService(deps: {
   readonly tx: TxRunner;
   readonly clock: Clock;
@@ -258,6 +243,21 @@ export function createReportService(deps: {
   readonly subjects: SubjectRegistry;
   readonly nativeAvailable: () => Promise<boolean>;
 }): ReportService {
+  async function callersRuns<Q extends SelectQuery<Row, Row>>(
+    query: Q,
+    caller: ReportCaller,
+    table = 'agRuns',
+  ): Promise<Q> {
+    return query.where(
+      await runVisibility(
+        deps.tx.read(),
+        deps.subjects,
+        caller.userId,
+        caller.allRuns,
+        table,
+      ),
+    ) as Q;
+  }
   /** What the subjects' domains say of the runs' subjects, by `kind:id`; unknown kinds are visible and in no group. */
   async function factsOf(
     conn: DatabaseConnection,
@@ -302,7 +302,9 @@ export function createReportService(deps: {
       const fact = facts.get(`${run.subjectKind}:${run.subjectId}`);
       return (
         fact !== undefined &&
-        fact.visible &&
+        (deps.subjects.get(run.subjectKind)?.visibleSubjects
+          ? true
+          : fact.visible) &&
         (!groupId || fact.group?.id === groupId)
       );
     });
@@ -318,8 +320,8 @@ export function createReportService(deps: {
     let query = conn.query.selectFrom('agRuns').select([...RUN_COLUMNS]);
     if (range.start) query = query.where('createdAt', '>=', range.start);
     if (range.end) query = query.where('createdAt', '<', range.end);
-    return (await callersRuns(query, caller).execute<Row>()).map((row) =>
-      runRow(row),
+    return (await (await callersRuns(query, caller)).execute<Row>()).map(
+      (row) => runRow(row),
     );
   }
 
@@ -337,8 +339,15 @@ export function createReportService(deps: {
       readonly userId?: string | null;
     },
   ) {
+    const visibility = await runVisibility(
+      conn,
+      deps.subjects,
+      caller.userId,
+      caller.allRuns,
+      'run',
+    );
     const ofRuns = <Q extends SelectQuery<Row, Row>>(query: Q): Q => {
-      let scoped = callersRuns(query, caller, 'run');
+      let scoped = query.where(visibility) as Q;
       if (filter.agentId)
         scoped = scoped.where('run.agentId', '=', filter.agentId) as Q;
       if (filter.userId)
@@ -543,8 +552,8 @@ export function createReportService(deps: {
           .where('subjectId', 'in', [...new Set(query.subjects.ids)]);
         if (query.start) select = select.where('createdAt', '>=', query.start);
         if (query.end) select = select.where('createdAt', '<', query.end);
-        found = (await callersRuns(select, caller).execute<Row>()).map((row) =>
-          runRow(row),
+        found = (await (await callersRuns(select, caller)).execute<Row>()).map(
+          (row) => runRow(row),
         );
       } else found = await runsQueued(conn, caller, query);
       const { runs } = await countable(conn, caller, found, query.groupId);

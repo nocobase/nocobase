@@ -1,4 +1,9 @@
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+} from '../../client/components/ui/dropdown-menu';
+import {
   createAppSidebarPreferenceStore,
   SidebarPreferenceProvider,
 } from '../../client/layouts/use-sidebar-preference.js';
@@ -35,7 +40,14 @@ export default function Fixture() {
           </AppSidebar>
           <main className='min-w-0 flex-1 space-y-6 overflow-y-auto p-6'>
             <div className='flex flex-wrap gap-2'>
-              <ThemeSettings />
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button />}>
+                  Account
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <ThemeSettings />
+                </DropdownMenuContent>
+              </DropdownMenu>
               <AppSidebarToggle />
             </div>
             <h1 className='text-3xl'>Theme tokens · 主题样式</h1>

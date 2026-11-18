@@ -6,7 +6,15 @@ import {
 } from '@nocobase/app-plugin-authentication/testing';
 import type { Application } from '@nocobase/app-server/application';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+import {
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { createStandaloneServer } from '../../server/standalone.js';
 import { ArticlesService } from '../../server/providers/articles-service.js';
@@ -14,7 +22,7 @@ import { ArticlesService } from '../../server/providers/articles-service.js';
 let testApp: TestApp;
 let db: DatabaseManager;
 let session: TestSession;
-beforeEach(async () => {
+beforeAll(async () => {
   testApp = await createTestApp({
     createServer: createStandaloneServer,
     connections: ['main', 'analytics'],
@@ -28,10 +36,6 @@ beforeEach(async () => {
     },
   });
   db = testApp.database;
-  await testApp.connection.query
-    .deleteFrom('articles')
-    .allowAllRows()
-    .execute();
   const member = {
     name: 'Article author',
     email: 'author@example.test',
@@ -46,8 +50,16 @@ beforeEach(async () => {
     throw new Error(`Registration failed: ${await registered.text()}`);
   session = await signIn(testApp, member);
 });
+beforeEach(async () => {
+  await testApp.connection.query
+    .deleteFrom('articles')
+    .allowAllRows()
+    .execute();
+});
 afterEach(async () => {
   vi.restoreAllMocks();
+});
+afterAll(async () => {
   await testApp?.close();
 });
 it('reaches the database service only after availability, authentication, size and validation gates pass', async () => {

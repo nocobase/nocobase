@@ -126,7 +126,10 @@ describe('SchedulerProvider', () => {
       'names the jobs configuration scheduler.jobs selects',
       {
         scheduler: { jobs: 'redis-scheduler' },
-        jobs: { default: 'redis', 'redis-scheduler': { adapter: 'redis' } },
+        jobs: {
+          default: 'redis',
+          backends: { 'redis-scheduler': { adapter: 'redis' } },
+        },
       },
       'redis-scheduler',
     ],
@@ -163,7 +166,7 @@ describe('SchedulerProvider', () => {
     const provider = new SchedulerProvider(
       application(container, {
         scheduler: { jobs: 'redis-typo' },
-        jobs: { default: 'redis', redis: { adapter: 'redis' } },
+        jobs: { default: 'redis', backends: { redis: { adapter: 'redis' } } },
       }),
     );
     provider.register();

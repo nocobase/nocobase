@@ -171,7 +171,9 @@ it.each([
   'fr-FR',
   'id-ID',
   'ja-JP',
+  'ko-KR',
   'pt-BR',
+  'ru-RU',
   'vi-VN',
 ])(
   'renders unavailable model state without mutating the saved JSON in %s',

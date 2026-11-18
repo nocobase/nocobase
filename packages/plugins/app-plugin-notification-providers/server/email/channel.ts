@@ -97,12 +97,16 @@ function isEmail(value: string): boolean {
   return value.length <= 320 && /^[^\s@]+@[^\s@]+$/.test(value);
 }
 
+/** Recipient and message of every email channel; the sending provider comes from configuration. */
+export interface EmailNotificationSchema {
+  readonly recipient: EmailRecipient;
+  readonly message: EmailMessage;
+}
+
 declare module '@nocobase/app-plugin-notification' {
   interface NotificationChannelSchemas {
-    smtp: {
-      readonly recipient: EmailRecipient;
-      readonly message: EmailMessage;
-    };
-    resend: NotificationChannelSchemas['smtp'];
+    email: EmailNotificationSchema;
+    smtp: EmailNotificationSchema;
+    resend: EmailNotificationSchema;
   }
 }

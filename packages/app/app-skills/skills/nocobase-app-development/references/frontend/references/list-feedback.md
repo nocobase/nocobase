@@ -51,7 +51,7 @@ const canShowCreate =
   columns={columns}
   data={rows}
   listState={state}
-  loading={request.loading}
+  loading={active && request.loading}
   onRetry={request.reload}
   onClearFilters={clearFilters}
   emptyMessage={<BusinessEmptyContent />}
@@ -63,29 +63,34 @@ const canShowCreate =
 Pass server pagination/sorting props as described in `table.md`; the snippet omits them for clarity. Only use a successful current-query total for page correction. While correcting an out-of-range page with a positive total, use loading feedback rather than claiming the list is empty. For cards, render `ListFeedbackActions` in their existing controls and `ListFeedback` around the mapped rows:
 
 ```tsx
-<div className='flex flex-wrap items-center gap-2'>
-  <SearchAndFilters />
-  <ListFeedbackActions
-    state={state}
-    onClear={clearFilters}
-    onRetry={retry}
-    busy={request.isFetching}
-  />
-</div>
-<ListFeedback state={state} empty={businessEmpty}>
-  <ProjectCards rows={rows} />
-</ListFeedback>
+<>
+  <div className='flex flex-wrap items-center gap-2'>
+    <SearchAndFilters />
+    <ListFeedbackActions
+      state={state}
+      onClear={clearFilters}
+      onRetry={retry}
+      busy={active && request.loading}
+    />
+  </div>
+  {active || state !== 'loading' ? (
+    <ListFeedback state={state} empty={businessEmpty}>
+      <ProjectCards rows={rows} />
+    </ListFeedback>
+  ) : null}
+</>
 ```
 
-| Snapshot                                                              | Feedback                                                                         |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Initial pending, disabled without data, or previous-query placeholder | Loading icon and short label; never empty                                        |
-| Successful empty, no effective filters                                | No data yet; authorized create remains in the page header                        |
-| Successful empty with effective filters                               | No results; clear filters stays in the existing toolbar                          |
-| HTTP 403, including after successful cached data                      | Access denied; hide cached rows, make no existence probe, and hide header create |
-| HTTP 401                                                              | Session expired; hide cached rows and use the existing sign-in flow              |
-| Network, timeout or server failure without current-query data         | Unable to load list; retry the same query from the existing toolbar              |
-| Same-query refresh failure with successful data                       | Keep prior data and show one stale-data line; retry from the existing toolbar    |
+| Snapshot                                                      | Feedback                                                                         |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Active initial pending or previous-query placeholder          | Loading icon and short label; never empty                                        |
+| Inactive without current data                                 | No loading, long-wait, empty or cached-row feedback; resume the read on return   |
+| Successful empty, no effective filters                        | No data yet; authorized create remains in the page header                        |
+| Successful empty with effective filters                       | No results; clear filters stays in the existing toolbar                          |
+| HTTP 403, including after successful cached data              | Access denied; hide cached rows, make no existence probe, and hide header create |
+| HTTP 401                                                      | Session expired; hide cached rows and use the existing sign-in flow              |
+| Network, timeout or server failure without current-query data | Unable to load list; retry the same query from the existing toolbar              |
+| Same-query refresh failure with successful data               | Keep prior data and show one stale-data line; retry from the existing toolbar    |
 
 `resolveListState` neither fetches nor caches. It recognizes structured `ApiClientError.status`; it never parses error messages or infers permission from an empty array. Keep one request owner per list and use the app-owned `useListData` hook for list queries. Its response path distinguishes current results from the previous query, and `reload` cancels obsolete work before the next request. Do not put retry counters in keys or turn errors into empty arrays. A failed refresh of a successful empty response is still a refresh failure; do not stack the previous empty message beneath the stale-data line. Keep custom empty content scoped to unfiltered successful emptiness.
 

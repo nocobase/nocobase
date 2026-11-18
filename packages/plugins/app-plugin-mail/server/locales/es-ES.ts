@@ -4,6 +4,37 @@ import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
   errors: {
+    connectionAuthenticationFailed:
+      'Falló la autenticación {{protocol}}. Compruebe el usuario y la contraseña o contraseña de aplicación.',
+    connectionHostNotFound:
+      'No se pudo resolver el host {{protocol}}. Compruebe el nombre del servidor.',
+    connectionConnectionRefused:
+      'Se rechazó la conexión {{protocol}}. Compruebe el host, el puerto y la disponibilidad del servidor.',
+    connectionConnectionTimeout:
+      'La conexión {{protocol}} agotó el tiempo de espera. Compruebe el servidor y la red.',
+    connectionCertificateInvalid:
+      'Falló la validación del certificado {{protocol}}. Compruebe el certificado y el nombre del host.',
+    connectionTlsFailed:
+      'Falló la negociación TLS de {{protocol}}. Compruebe SSL/STARTTLS y el puerto.',
+    connectionConnectionFailed:
+      'Falló la conexión {{protocol}}. Compruebe el servidor y la red.',
+    connectionConnectionLost:
+      'Se perdió la conexión {{protocol}}. Inténtelo de nuevo.',
+
+    imapMoveLocationChanged:
+      'La carpeta o copia seleccionada ha cambiado. Sincronice el buzón y vuelva a abrir la carpeta de origen.',
+    imapMoveNotWritable:
+      'La carpeta seleccionada no permite esta operación. Revise los permisos del buzón.',
+    imapMoveSourceRequired:
+      'Abra la carpeta de origen antes de mover o eliminar este mensaje.',
+    imapMoveUnsupported:
+      'Este servidor no puede mover mensajes de forma segura. Use su cliente de correo.',
+    imapTrashNotFound:
+      'Esta cuenta no tiene papelera. Use su cliente de correo.',
+    imapMoveOutcomeUnknown:
+      'El movimiento está incompleto o su resultado es desconocido. Compruebe el buzón antes de volver a intentarlo.',
+    invalidRecipient:
+      'Corrija las direcciones de correo electrónico y los nombres para mostrar de los destinatarios antes de enviar.',
     accessDenied: 'Se requiere acceso al correo.',
     idempotencyConflict:
       'La clave de idempotencia ya está asociada con otra solicitud.',

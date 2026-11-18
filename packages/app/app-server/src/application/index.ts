@@ -1,3 +1,4 @@
+import { MailSenderFactoryProvider } from '../mailers/index.js';
 import type { AppRuntimeLogging } from '../logging/config.js';
 import { loggingToken } from '../logging/token.js';
 import { Hono, type ExecutionContext } from 'hono';
@@ -33,11 +34,11 @@ import {
   isForwardedTo,
   type ApiForwardedRoutes,
 } from '../router/openapi/document.js';
-import { normalizeBasePath, resolveAppName } from '../support/index.js';
 import {
   readAppPackage,
   type AppPackageIdentity,
 } from '../support/app-package.js';
+import { normalizeBasePath, resolveAppName } from '../support/index.js';
 import {
   ServiceContainer,
   type ServiceProviderLifecycle,
@@ -184,6 +185,7 @@ export class Application<
       await this.start();
       return this.getWebSocketHandler()(request, env);
     };
+    this.addServiceProvider(MailSenderFactoryProvider);
     this.addServiceProvider(RouterProvider);
     if (this.usesDefaultWebSocket) {
       this.addServiceProvider(RealtimeProvider);
@@ -526,10 +528,10 @@ export class Application<
    * The document's title and version, from the application's `package.json` or else its name, and its server: the
    * public base path the API is served under.
    */
-  private describeApiDocument(): ApiDocsDescription {
+  private async describeApiDocument(): Promise<ApiDocsDescription> {
     let manifest: AppPackageIdentity = {};
     try {
-      manifest = readAppPackage(this.paths.rootDir);
+      manifest = await readAppPackage(this.paths.rootDir);
     } catch {
       // An application assembled without a manifest, such as one in a test, is named by its configuration.
     }

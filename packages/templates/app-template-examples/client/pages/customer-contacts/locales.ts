@@ -1,5 +1,4 @@
 export const enUS = {
-  refresh: 'Refresh',
   signIn: 'Sign in',
   title: 'Customers and contacts',
   description:
@@ -21,10 +20,13 @@ export const enUS = {
   paused: 'Paused',
   closed: 'Closed',
   clear: 'Clear filters',
+  filters: 'Filters',
+  filtersApplied: 'Filters · {{count}}',
   select: 'Select a record',
   unavailable: 'Record unavailable',
   selected: '{{count}} selected on this page',
   selectRow: 'Select {{name}}',
+  selectAll: 'Select all customers on this page',
   edit: 'Edit',
   editCustomer: 'Edit customer',
   newContact: 'New contact',
@@ -77,7 +79,6 @@ export const enUS = {
   invalid: 'Check the highlighted fields.',
 };
 export const zhCN: Record<keyof typeof enUS, string> = {
-  refresh: '刷新',
   signIn: '登录',
   title: '客户与联系人',
   description: '练习按权限选择关联记录和批量修改当前页客户。',
@@ -98,10 +99,13 @@ export const zhCN: Record<keyof typeof enUS, string> = {
   paused: '暂停',
   closed: '已关闭',
   clear: '清除筛选',
+  filters: '筛选',
+  filtersApplied: '筛选 · {{count}}',
   select: '选择记录',
   unavailable: '记录不可用',
   selected: '已选择当前页 {{count}} 条',
   selectRow: '选择 {{name}}',
+  selectAll: '选择本页全部客户',
   edit: '编辑',
   editCustomer: '编辑客户',
   newContact: '新建联系人',

@@ -12,8 +12,8 @@ import {
 const context = { namespace: 'test', config: {} };
 
 describe('application-local realtime brokers', () => {
-  it('defaults to Memory without inspecting unused extension settings', async () => {
-    const options = realtimeServiceOptions({ redis: 'not selected' }, 'app');
+  it('defaults to Memory without a broker', async () => {
+    const options = realtimeServiceOptions({}, 'app');
     expect(options.namespace).toBe('app');
     expect(realtimeServiceOptions().namespace).toBe('default');
     await options.broker?.shutdown();
@@ -33,8 +33,10 @@ describe('application-local realtime brokers', () => {
     expect(() => registry.create('inMemory', context)).toThrow(
       /already been selected/u,
     );
-    expect(() => realtimeServiceOptions({ adapter: 'typo' })).toThrow(/typo/u);
-    expect(() => realtimeServiceOptions({ adapter: ' ' })).toThrow(
+    expect(() =>
+      realtimeServiceOptions({ broker: { adapter: 'typo' } }),
+    ).toThrow(/not registered/u);
+    expect(() => realtimeServiceOptions({ broker: { adapter: ' ' } })).toThrow(
       /non-empty/u,
     );
   });
@@ -92,7 +94,7 @@ describe('application-local realtime brokers', () => {
   it('preserves the helper first two arguments and forwards extension config and logger', () => {
     const registry = createRealtimeBrokerRegistry();
     const factory = vi.fn(createInMemoryBroker);
-    const config = { adapter: 'extension', redis: { connection: {} } };
+    const config = { broker: { adapter: 'extension', connection: {} } };
     registry.register('extension', factory);
     realtimeServiceOptions(config, 'name', registry);
     expect(factory).toHaveBeenCalledWith({

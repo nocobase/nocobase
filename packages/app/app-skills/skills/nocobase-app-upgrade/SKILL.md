@@ -58,9 +58,9 @@ If `nocobase.templatePackage` is missing, use the confirmed package name for `TE
 
 ## 3. Select the release channel and fetch both releases
 
-Resolve the user's requested channel before choosing TARGET. An explicit version takes precedence. For a beta upgrade, use the template's `beta` dist-tag; for an explicit `latest` upgrade, use its `latest` dist-tag. If the user only asks to upgrade, retain the baseline's channel: use `beta` for a beta baseline and `latest` for a stable baseline; clarify other prerelease channels instead of guessing. State the selected channel and resolved version in the upgrade plan.
+Resolve TARGET before fetching. An explicit version takes precedence, and an explicitly requested dist-tag, such as `beta`, uses that tag. If the user only asks to upgrade, prefer `latest` whatever release BASE came from: when `latest` resolves to a version newer than BASE by semantic version ordering, that version is TARGET. When it does not, and another dist-tag points to a version newer than BASE, name the tag and its version and ask before using it, since it is a prerelease line the user did not ask for; when no tag does, the application is already current. State the selected tag and resolved version in the upgrade plan.
 
-The tags are independent pointers, not a version ordering: `beta` tracks beta releases, while `latest` is npm's default tag and can still point to an older beta before a stable release exists. Do not assume `latest` is newer or stable, or choose the highest version across all channels. If the user asks for a stable release but `latest` resolves to a prerelease, explain that the tag does not provide a stable target and clarify before proceeding. A missing requested tag is not permission to fall back to another channel.
+`latest` comes first because of how NocoBase 3 publishes: every beta release has also moved `latest`, so before the first stable release `latest` and `beta` point to the same version. From the first stable release on, `latest` carries stable releases and `beta` follows them only for a transition period, after which it stays on the last version it pointed at. An application created from a beta therefore keeps upgrading by following `latest`, while retaining `beta` would leave it stuck once the transition ends. Before a stable release exists `latest` still resolves to a beta; that is expected, not an error. If the user explicitly asks for a stable release and `latest` resolves to a prerelease, explain that no stable release exists yet and clarify before proceeding. Do not otherwise pick the highest version across all tags, and do not treat a missing requested tag as permission to fall back to another.
 
 ```bash
 REGISTRY=https://registry.npmjs.org
@@ -68,8 +68,8 @@ TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
 npm view "$TEMPLATE" dist-tags --json --registry="$REGISTRY"
 
-# Set CHANNEL to beta or latest according to the selection above.
-CHANNEL=beta
+# Keep latest unless the selection above chose another tag.
+CHANNEL=latest
 TARGET=$(npm view "$TEMPLATE@$CHANNEL" version --registry="$REGISTRY")
 # For an explicitly requested version, assign that exact version to TARGET instead.
 ```
@@ -124,9 +124,13 @@ When the target adds standard form feedback, follow [form feedback source upgrad
 
 When the template changes the permission workspace, follow [Permission editor source upgrades](references/edge-cases.md#permission-editor-source-upgrades). Merge copied permission models and translations while preserving application-specific descriptions, grants and role behavior; a dependency update alone does not update them.
 
+When the template introduces or changes the System settings structure (one settings entry, a home page of cards, tabs inside a module), follow [System settings navigation upgrades](references/settings-navigation-upgrade.md). Merge the navigation transform, routing, settings pages and locales, and move existing administration pages into categories without changing their names, paths or authorization; updating dependencies alone keeps the old navigation.
+
 When the template changes list-return behavior, read [list navigation upgrades](references/list-navigation-upgrade.md). Merge the routing context, breadcrumb and back-link sources together, and examine application-owned detail links and forms; updating dependencies alone does not update these copied sources.
 
 When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](references/list-feedback-upgrade.md). Reconcile copied components, request owners, translations and business empty content together, and verify both new and upgraded applications with retained permissions and records.
+
+When the template adds or changes cross-view updates after writes (`client/hooks/use-data-changes.ts` and the `scopes`/`merge` options of `useListData`), follow [data change upgrades](references/data-change-upgrade.md). Merge both hooks together, keep application changes to `useListData`, and migrate business pages one at a time; existing `Outlet` reload callbacks keep working until a page moves.
 
 Then ask the project which of those files it has also touched:
 
@@ -208,3 +212,7 @@ Compare BASE directly with TARGET and merge the resulting changes once. Check th
 When the target adds or changes the standard process UI sources, also follow [standard process management source upgrades](references/edge-cases.md#standard-process-management-source-upgrades): confirm existing process pages actually consume the merged components, while preserving explicit user customizations, parameters, grants and history.
 
 When the target introduces standard submission protection, follow [submission source upgrades](references/submission-upgrade.md) during planning and reconciliation. Dependency or version-marker changes alone do not update copied forms, custom actions or the application's receipt migrations. Verify both a fresh application and retained customized data.
+
+When the application defines lifecycles (`defineLifecycle()`) and the target adds definition versions, follow [lifecycle definition versions upgrade](references/lifecycle-versioning-upgrade.md) in the same upgrade: give every definition `key` and `version`, add and backfill each process's definition field from its creation log with a conflict list, move category assignments to the key, and plan the write window and deployment order. Missing values only warn in this release and are required in the next minor release. For lifecycle behavior changes or deletion during an upgrade, follow the [Git freezing decision and user-confirmed retirement rules](../nocobase-app-development/references/lifecycle-versions.md); an upgrade does not itself authorize deleting definition code, merged migrations or historical data.
+
+For a target that adds notification template administration, follow [notification template source reconciliation](references/notification-template-upgrade.md) in the same version-selected upgrade, preserving business renderers, workflows, permissions and channel configuration.

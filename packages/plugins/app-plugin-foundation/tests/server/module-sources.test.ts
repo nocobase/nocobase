@@ -15,7 +15,10 @@ import ts from 'typescript';
 import { businessModules } from '../../client/business-modules.js';
 import { writeModuleManifest } from '../../server/module-manifest.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { collectModuleSources } from '../../server/module-sources.js';
+import {
+  collectModuleSources,
+  SourceGraph,
+} from '../../server/module-sources.js';
 
 const directories: string[] = [];
 async function fixture(files: Record<string, string>): Promise<string> {
@@ -498,12 +501,12 @@ describe('static module dependencies', () => {
       'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
       'client/page.ts':
         Array.from(
-          { length: 401 },
+          { length: 2001 },
           (_, i) => `import {v${i}} from '@/v${i}';`,
         ).join('') +
-        `export default ()=>[${Array.from({ length: 401 }, (_, i) => `v${i}`).join(',')}];`,
+        `export default ()=>[${Array.from({ length: 2001 }, (_, i) => `v${i}`).join(',')}];`,
     };
-    for (let i = 0; i < 401; i++)
+    for (let i = 0; i < 2001; i++)
       files[`client/v${i}.ts`] = `export const v${i}=${i};`;
     const result = await collectModuleSources(await fixture(files));
     expect(result.routes[0]).toMatchObject({ providers: [], complete: false });
@@ -984,6 +987,152 @@ describe('static module dependencies', () => {
     ]);
   });
 
+  it.each([
+    'selected-tool',
+    'unselected-candidate',
+    'unknown-candidate',
+    'registry-write',
+    'returned-registry-write',
+    'returned-registry-escape',
+    'object-write',
+    'returned-object-write',
+    'returned-object-alias-write',
+    'captured-container-escape',
+    'terminal-handler',
+    'terminal-return-call',
+    'local-return',
+    'terminal-local-call',
+    'terminal-nested-call',
+    'terminal-before-closure',
+    'terminal-nested-before-closure',
+    'delete-tool',
+    'delete-nested-property',
+    'delete-aliased-property',
+    'oversized-registry',
+  ])(
+    'follows only a proven %s tool chain to its database service',
+    async (kind) => {
+      const registry = `import {bindGetMyHrProfile} from './profile.js';export function collectTools(container){const profile=bindGetMyHrProfile(container);return [profile];}export function findTool(tools,name){for(const tool of tools){if(tool.definition.name===name)return tool;}throw new Error('TOOL_NOT_AVAILABLE');}export function executeTool(tools,name,actor,input){const tool=findTool(tools,name);return tool.execute(actor,input);}`;
+      const effectiveRegistry =
+        kind === 'returned-registry-write'
+          ? registry.replace(
+              'const tool=findTool(tools,name);',
+              `tools.push({definition:{name:'injected'},execute(){return undefined;}});const tool=findTool(tools,name);`,
+            )
+          : kind === 'returned-registry-escape'
+            ? registry.replace(
+                'const tool=findTool(tools,name);',
+                `external(tools);const tool=findTool(tools,name);`,
+              )
+            : kind === 'returned-object-write'
+              ? registry.replace(
+                  'const tool=findTool(tools,name);',
+                  `tools[0].definition.name='other';const tool=findTool(tools,name);`,
+                )
+              : kind === 'returned-object-alias-write'
+                ? registry.replace(
+                    'const tool=findTool(tools,name);',
+                    `const selected=tools[0];selected.definition.name='other';const tool=findTool(tools,name);`,
+                  )
+                : registry;
+      const toolObject = `{definition:{name:'getMyHrProfile'},execute(actor,input){if(input.invalid)throw new Error('invalid');${kind === 'captured-container-escape' ? `external(container);` : ''}${['local-return', 'terminal-local-call', 'terminal-nested-call'].includes(kind) ? 'stop();' : ''}const deps=resolveDependencies(container);return invoke({actor,deps});}}`;
+      const toolValue =
+        kind === 'object-write'
+          ? `const tool=${toolObject};tool.definition.name='other';return tool;`
+          : `return ${toolObject};`;
+      const profile = `import {authorizationToken} from '@nocobase/app-plugin-authorization/server';import {hrCoreServiceToken} from './tokens.js';function resolveDependencies(container){return {core:container.resolve(hrCoreServiceToken),authz:container.resolve(authorizationToken)};}function invoke(ctx){return ctx.deps.core.myHrProfile({userId:ctx.actor.id,authz:ctx.deps.authz},'en');}${['local-return', 'terminal-local-call', 'terminal-nested-call'].includes(kind) ? `function stop(){${kind === 'terminal-nested-call' ? 'fail();' : kind === 'local-return' ? 'return;' : `throw new Error('stop');`}}${kind === 'terminal-nested-call' ? `function fail(){throw new Error('fail');}` : ''}` : ''}export function bindGetMyHrProfile(container){${toolValue}}${kind === 'captured-container-escape' ? `import {external} from 'unknown';` : ''}`;
+      const toolElements =
+        kind === 'oversized-registry'
+          ? Array.from({ length: 33 }, () => 'profile').join(',')
+          : 'profile';
+      const registrySource =
+        kind === 'returned-registry-escape'
+          ? `import {external} from 'unknown';${effectiveRegistry}`
+          : kind === 'unselected-candidate'
+            ? `import {unselected} from '@nocobase/unselected-db';${registry.replace(
+                'return [profile];',
+                `return [profile,{definition:{name:'other'},execute(){return unselected();}}];`,
+              )}`
+            : kind === 'unknown-candidate'
+              ? registry.replace(
+                  'return [profile];',
+                  'return [profile, unknownTool];',
+                )
+              : kind === 'registry-write'
+                ? registry.replace(
+                    'return [profile];',
+                    `const tools=[profile];tools.push({definition:{name:'other'},execute(){return undefined;}});return tools;`,
+                  )
+                : [
+                      'delete-tool',
+                      'delete-nested-property',
+                      'delete-aliased-property',
+                    ].includes(kind)
+                  ? registry.replace(
+                      'return [profile];',
+                      kind === 'delete-tool'
+                        ? `const tools=[profile];delete tools[0];return tools;`
+                        : kind === 'delete-nested-property'
+                          ? `const tools=[profile];delete tools[0].execute;return tools;`
+                          : `const tools=[profile];const selected=tools[0];delete selected.execute;return tools;`,
+                    )
+                  : [
+                        'terminal-before-closure',
+                        'terminal-nested-before-closure',
+                      ].includes(kind)
+                    ? registry
+                        .replace(
+                          'return [profile];',
+                          `stop();return [profile];`,
+                        )
+                        .replace(
+                          'export function findTool',
+                          `${kind === 'terminal-nested-before-closure' ? `function fail(){throw new Error('fail');}` : ''}function stop(){${kind === 'terminal-nested-before-closure' ? 'fail();' : `throw new Error('stop');`}}export function findTool`,
+                        )
+                    : kind === 'oversized-registry'
+                      ? registry.replace(
+                          'return [profile];',
+                          `return [${toolElements}];`,
+                        )
+                      : effectiveRegistry;
+      const toolInvocation = `executeTool(app.container.resolve(toolCatalogToken),'getMyHrProfile',{id:'fixture-user'},{})`;
+      const handler =
+        kind === 'terminal-handler'
+          ? `()=>{throw new Error('stopped');return ${toolInvocation};}`
+          : kind === 'terminal-return-call'
+            ? `()=>{return opaque();return ${toolInvocation};}`
+            : `()=>${toolInvocation}`;
+      const routeSource = `${kind === 'terminal-return-call' ? `import {opaque} from 'unknown';` : ''}import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {executeTool} from '../tools/registry.js';import {toolCatalogToken,catalogToken} from '../providers/index.js';export default defineApiRoutes(app=>{const router=new Hono();const child=new Hono();const catalog=app.container.resolve(catalogToken);child.get('/profile',${handler});child.get('/',()=>catalog.list());return router.route('/catalog',child);});`;
+      const root = await fixture({
+        'client/routes.ts': `export default [{name:'profile-tool',componentLoader:()=>import('./page.js')},{name:'catalog-witness',componentLoader:()=>import('./witness.js')}];`,
+        'client/page.js': `import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'catalog/profile'});`,
+        'client/witness.js': `import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'catalog'});`,
+        'server/routes/index.ts': routeSource,
+        'server/tools/registry.ts': registrySource,
+        'server/tools/profile.ts': profile,
+        'server/tools/tokens.ts': `import {createServiceToken} from '@nocobase/service-provider';export const hrCoreServiceToken=createServiceToken('hr/core');`,
+        'server/providers/index.ts': `import {createServiceToken} from '@nocobase/service-provider';import {databaseManagerToken} from '@nocobase/db';import {hrCoreServiceToken} from '../tools/tokens.js';import {collectTools} from '../tools/registry.js';export const toolCatalogToken=createServiceToken('tools');export const catalogToken=createServiceToken('catalog');class Core{constructor(db){this.db=db;}myHrProfile(ctx,locale){return this.db.connection().repository('employees').findMany();}}class Catalog{constructor(db){this.db=db;}list(){return this.db.connection().repository('catalog').findMany();}}export default class Provider{register(){this.app.container.singleton(hrCoreServiceToken,()=>new Core(this.app.container.resolve(databaseManagerToken)));this.app.container.singleton(toolCatalogToken,()=>collectTools(this.app.container));this.app.container.singleton(catalogToken,()=>new Catalog(this.app.container.resolve(databaseManagerToken)));}}`,
+      });
+      const result = await collectModuleSources(root);
+      const toolProviders =
+        result.routes.find((route) => route.routeName === 'profile-tool')
+          ?.apiProviders ?? [];
+      if (
+        kind === 'selected-tool' ||
+        kind === 'unselected-candidate' ||
+        kind === 'local-return'
+      )
+        expect(toolProviders).toContain('@nocobase/db');
+      else expect(toolProviders).not.toContain('@nocobase/db');
+      if (kind === 'unselected-candidate')
+        expect(toolProviders).not.toContain('@nocobase/unselected-db');
+      expect(
+        result.routes.find((route) => route.routeName === 'catalog-witness')
+          ?.apiProviders,
+      ).toEqual(['@nocobase/db', '@nocobase/service-provider']);
+    },
+  );
+
   it('keeps API client bindings scoped and excludes an unreferenced router', async () => {
     const root = await fixture({
       'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
@@ -1174,4 +1323,219 @@ describe('static module dependencies', () => {
       complete: false,
     });
   });
+});
+
+it('discovers form requests after repeated UI helpers without expanding invocation contexts', async () => {
+  // A bounded literal helper repeated in a page used to spend the endpoint call budget before reaching its form.
+  const helper = `function label(key){const palette=[${Array.from({ length: 3000 }, (_, i) => i % 10).join(',')}];return key;}`;
+  const labels = Array.from(
+    { length: 36 },
+    (_, i) => `label('label.${i}');`,
+  ).join('');
+  const root = await fixture({
+    'client/routes.ts': `export default [{name:'certifications',componentLoader:()=>import('./page.js')}];`,
+    'client/page.tsx': `${helper}
+import {useApiClient} from '@nocobase/app-client';
+function Form({certification,onSaved}){const api=useApiClient();async function submit(event){event.preventDefault();const json={name:'Example'};const result=certification?await api.request({path:\`talent/certifications/\${encodeURIComponent(certification.id)}\`,method:'PATCH',json}):await api.request({path:'talent/certifications',method:'POST',json});onSaved(result.data.id);}return <form onSubmit={event=>void submit(event)}/>;}
+export default function Page(){${labels}return <Form/>;}`,
+    'server/routes/index.ts': `export default [];`,
+  });
+  const result = await collectModuleSources(root);
+  expect(result.routes[0]?.apiEvidence).toBeUndefined();
+  // Verify discovery directly so missing backend declarations cannot hide a request regression.
+  const ast = ts.createSourceFile(
+    'page.tsx',
+    await readFile(path.join(root, 'client/page.tsx'), 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const { SourceEvidence } = await import('../../server/source-evidence.js');
+  const { pageRequests } = await import('../../server/request-evidence.js');
+  const analysis = new SourceEvidence([{ file: 'page.tsx', ast }], new Map());
+  const selected = analysis.collect('page.tsx');
+  expect(
+    pageRequests(
+      [...selected.nodes.values()].map((nodes) => ({ nodes })),
+      analysis,
+    ),
+  ).toEqual(
+    expect.arrayContaining([
+      { method: 'PATCH', path: 'talent/certifications/:dynamic' },
+      { method: 'POST', path: 'talent/certifications' },
+    ]),
+  );
+});
+
+it('keeps ordinary translation data spreads complete during page discovery', async () => {
+  const root = await fixture({
+    'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
+    'client/page.tsx': `import {useApiClient} from '@nocobase/app-client';import {useTranslation} from 'react-i18next';export default function Page(){const {t}=useTranslation();const values={employee:'Example'};const api=useApiClient();t('errors.generic',{defaultValue:'',...values});return api.request({path:'items',method:'GET'});}`,
+    'server/routes/index.ts': `export default [];`,
+  });
+  const result = await collectModuleSources(root);
+  expect(result.routes[0]?.complete).toBe(true);
+});
+
+it('selects only the actual imported export of a registered package', async () => {
+  const dependency = await fixture({
+    'package.json': JSON.stringify({
+      name: 'file-source',
+      version: '1.0.0',
+      exports: { './server': { import: './server/index.ts' } },
+    }),
+    'server/index.ts': `export function construct(options) { return [{name: options.name}]; }`,
+    'server/unrelated.ts': `throw new Error('Do not scan this file');`,
+  });
+  const root = await fixture({
+    'client/routes.ts': `export default [];`,
+    'server/routes/index.ts': `import {construct} from 'file-source/server'; export default construct({name:'records'});`,
+  });
+  const graph = await SourceGraph.create(root);
+  await graph.prepare((await graph.entry())!, [
+    {
+      name: 'file-source',
+      version: '1.0.0',
+      rootDir: dependency,
+      evidence: 'serverRegistration',
+    },
+  ]);
+  const analysis = graph.analysis!;
+  const importer = analysis
+    .evidenceSources()
+    .find(
+      (source) => source.fileName === path.join(root, 'server/routes/index.ts'),
+    )!;
+  const statement = importer.statements[0] as ts.ImportDeclaration;
+  expect(analysis.isExternalImport(statement)).toBe(true);
+  expect(analysis.importedSource(statement)?.fileName).toBe(
+    path.join(dependency, 'server/index.ts'),
+  );
+  expect(
+    analysis
+      .evidenceSources()
+      .some((source) => source.fileName.endsWith('server/unrelated.ts')),
+  ).toBe(false);
+});
+
+it.each(['missing-root', 'wrong-name', 'wrong-version', 'escaped-export'])(
+  'does not substitute an unproven registered implementation: %s',
+  async (mode) => {
+    const dependency = await fixture({
+      'package.json': JSON.stringify({
+        name: mode === 'wrong-name' ? 'different-source' : 'file-source',
+        version: '1.0.0',
+        exports: {
+          './server': {
+            import:
+              mode === 'escaped-export' ? '../outside.ts' : './server/index.ts',
+          },
+        },
+      }),
+      'server/index.ts': `export function construct(options) { return [{name: options.name}]; }`,
+    });
+    const root = await fixture({
+      'client/routes.ts': `export default [];`,
+      'server/routes/index.ts': `import {construct} from 'file-source/server'; export default construct({name:'records'});`,
+    });
+    const graph = await SourceGraph.create(root);
+    await graph.prepare((await graph.entry())!, [
+      {
+        name: 'file-source',
+        version: mode === 'wrong-version' ? '2.0.0' : '1.0.0',
+        rootDir:
+          mode === 'missing-root'
+            ? path.join(dependency, 'missing')
+            : dependency,
+        evidence: 'serverRegistration',
+      },
+    ]);
+    const analysis = graph.analysis!;
+    const importer = analysis
+      .evidenceSources()
+      .find(
+        (source) =>
+          source.fileName === path.join(root, 'server/routes/index.ts'),
+      )!;
+    expect(
+      analysis.importedSource(importer.statements[0] as ts.ImportDeclaration),
+    ).toBeUndefined();
+    expect(
+      analysis
+        .evidenceSources()
+        .some(
+          (source) =>
+            source.fileName === path.join(dependency, 'server/index.ts'),
+        ),
+    ).toBe(false);
+  },
+);
+
+it.each(['token', 'schema', 'RuntimeService'])(
+  'keeps runtime-only %s imports external instead of reading their package graph',
+  async (name) => {
+    const dependency = await fixture({
+      'package.json': JSON.stringify({
+        name: 'runtime-package',
+        version: '1.0.0',
+        exports: { './server': { import: './server/index.ts' } },
+      }),
+      'server/index.ts':
+        'export const token={};export const schema={};export class RuntimeService{};',
+    });
+    const root = await fixture({
+      'client/routes.ts': 'export default [];',
+      'server/routes/index.ts': `import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {${name}} from 'runtime-package/server';export default defineApiRoutes(app=>{const router=new Hono();router.get('/items',c=>unknown(${name}));return router;});`,
+    });
+    const watched: string[] = [];
+    const graph = await SourceGraph.create(root, {
+      async watch(file) {
+        watched.push(file);
+      },
+      unreadable() {},
+    });
+    await graph.prepare((await graph.entry())!, [
+      {
+        name: 'runtime-package',
+        version: '1.0.0',
+        rootDir: dependency,
+        evidence: 'serverRegistration',
+      },
+    ]);
+    expect(watched.some((file) => file.startsWith(dependency + path.sep))).toBe(
+      false,
+    );
+  },
+);
+
+it('selects declaration factories through a called local wrapper and exported alias', async () => {
+  const dependency = await fixture({
+    'package.json': JSON.stringify({
+      name: 'declaration-package',
+      version: '1.0.0',
+      exports: { './server': { import: './server/index.ts' } },
+    }),
+    'server/index.ts': 'export const construct=()=>[];',
+  });
+  const root = await fixture({
+    'client/routes.ts': 'export default [];',
+    'server/routes/index.ts':
+      "import {construct} from 'declaration-package/server';function create(){return construct();}const routes=create();export default routes;",
+  });
+  const watched: string[] = [];
+  const graph = await SourceGraph.create(root, {
+    async watch(file) {
+      watched.push(file);
+    },
+    unreadable() {},
+  });
+  await graph.prepare((await graph.entry())!, [
+    {
+      name: 'declaration-package',
+      version: '1.0.0',
+      rootDir: dependency,
+      evidence: 'serverRegistration',
+    },
+  ]);
+  expect(watched).toContain(path.join(dependency, 'server/index.ts'));
 });

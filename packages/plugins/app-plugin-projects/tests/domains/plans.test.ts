@@ -121,6 +121,42 @@ async function failure(promise: Promise<unknown>) {
 }
 
 describe('rehearsal', () => {
+  it('does not disclose invisible issue fields or dependency baselines in refused rehearsals', async () => {
+    const one = await h.services.issues.create(alice(), {
+      title: 'Private issue',
+    });
+    const two = await h.services.issues.create(alice(), {
+      title: 'Private dependency',
+    });
+    await h.services.subtasks.addDependency(alice(), one.id, {
+      dependsOnIssueId: two.id,
+      type: 'blockedBy',
+    });
+    const response = await h.services.plans.rehearse(
+      h.viewer('bob', 'none'),
+      plan([
+        {
+          op: 'issue.update',
+          params: { issue: one.id, set: { title: 'Denied' } },
+        },
+        {
+          op: 'dependency',
+          params: { action: 'remove', issue: one.id, dependsOn: two.id },
+        },
+      ]),
+    );
+    expect(response.ok).toBe(false);
+    expect(response.rows).toHaveLength(2);
+    for (const row of response.rows)
+      expect(row).toMatchObject({
+        ok: false,
+        error: { code: 'NOT_FOUND' },
+        target: null,
+        baseline: null,
+      });
+    expect(JSON.stringify(response)).not.toContain('Private');
+  });
+
   it('runs every row and leaves nothing behind: no rows, no events, no queued work', async () => {
     const existing = await h.services.issues.create(alice(), { title: 'Old' });
     events = [];

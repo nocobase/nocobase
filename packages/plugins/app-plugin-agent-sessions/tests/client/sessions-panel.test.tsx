@@ -585,3 +585,44 @@ it('uses the host mode title and new action above search and state filters, with
   expect(screen.queryByRole('region', { name: 'Sessions' })).toBeNull();
   expect(screen.getByRole('heading', { name: 'My Agent' })).toBeVisible();
 });
+
+it('keeps an explicit list entry even in a wide panel and forwards a host header for saved and empty sessions', async () => {
+  const header = vi.fn(
+    (props: import('../../client/config.js').AgentSessionHeaderProps) => (
+      <header>
+        <h2>{props.title}</h2>
+        <button onClick={props.onBack}>Host list</button>
+        {props.session && (
+          <button onClick={props.onToggleDetails}>Host details</button>
+        )}
+      </header>
+    ),
+  );
+  const panel = await setup({
+    view: { kind: 'list' },
+    showHistory: true,
+    renderHeader: header,
+  });
+  expect(
+    await screen.findByRole('link', { name: /Tidy the release notes/ }),
+  ).toBeVisible();
+  expect(header).not.toHaveBeenCalled();
+  panel.update({ view: { kind: 'session', sessionId: 'session' } });
+  expect(
+    await screen.findByRole('button', { name: 'Host details' }),
+  ).toBeVisible();
+  expect(header.mock.calls.at(-1)?.[0]).toMatchObject({
+    panel: true,
+    session: { id: 'session' },
+    computerName: 'Work laptop',
+    computerOnline: true,
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Host list' }));
+  expect(panel.onViewChange).toHaveBeenCalledWith({ kind: 'list' });
+  panel.update({ view: { kind: 'new' } });
+  expect(
+    await screen.findByRole('button', { name: 'Host list' }),
+  ).toBeVisible();
+  expect(header.mock.calls.at(-1)?.[0].session).toBeUndefined();
+  expect(screen.queryByRole('button', { name: 'Host details' })).toBeNull();
+});

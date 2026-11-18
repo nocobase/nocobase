@@ -70,6 +70,7 @@ import {
 } from '../components/release-badges.js';
 import { RowActions } from '../components/row-actions.js';
 import { Section } from '../components/section.js';
+import { SharedHostNotice } from '../components/shared-host.js';
 import { EmptyState, ListSkeleton, LoadError } from '../components/states.js';
 import { Tag } from '../components/tag.js';
 import { Alert, AlertAction, AlertTitle } from '../components/ui/alert.js';
@@ -103,6 +104,7 @@ import {
   type ConfigSecretDrafts,
 } from '../lib/config-secrets.js';
 import { ReleasesDeleteAppImpactContext } from '../lib/delete-app-impact.js';
+import { appStateDetail, deploymentWaitOf } from '../lib/app-state.js';
 import { messageText } from '../lib/errors.js';
 import { formatDate, formatSize, labelsHeader } from '../lib/format.js';
 import { useReleasesLinks, useReleasesPaths } from '../lib/paths.js';
@@ -159,6 +161,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
       releases.reload();
       requests.reload();
     },
+    () => deployments.reload(),
   );
   const summary = app.data;
   const origin = useContext(ReleasesAppOriginContext);
@@ -433,10 +436,18 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         requestTo={requestTo}
         deployments={items}
         currentId={summary.app.currentDeploymentId}
+        recycling={summary.host?.recycling ?? null}
         canRollback={canDeploy}
         canReadLogs={canOnApp(me, 'read-logs', summary)}
         busy={busy}
         onRollback={(id) => void rollback(id)}
+        onCancel={(id) =>
+          void run(
+            `cancel:${id}`,
+            () => api.send('POST', `apps/${appId}/deployments/${id}/cancel`),
+            t('ui.deployments.cancelAccepted'),
+          )
+        }
       />
     ) : deployments.error !== undefined ? (
       <LoadError
@@ -448,6 +459,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
       <ListSkeleton rows={2} />
     );
 
+  const stateDetail = appStateDetail(t, summary);
   const overview = (
     <>
       {canDeploy ? (
@@ -459,9 +471,11 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
       <dl className='grid gap-x-6 gap-y-4 rounded-lg border bg-card p-4 text-sm sm:grid-cols-2 lg:grid-cols-3'>
         <Overview label={t('ui.apps.state')}>
           <AppStateBadge summary={summary} />
-          {summary.runtime.error ? (
-            <p className='mt-1.5 text-xs text-destructive wrap-anywhere'>
-              {messageText(t, summary.runtime.error)}
+          {stateDetail ? (
+            <p
+              className={`mt-1.5 text-xs wrap-anywhere ${summary.hasPendingDeployment ? 'text-muted-foreground' : 'text-destructive'}`}
+            >
+              {stateDetail}
             </p>
           ) : null}
         </Overview>
@@ -507,6 +521,10 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         </Overview>
       </dl>
       {origin ? <origin.Origin appId={appId} /> : null}
+      <SharedHostNotice
+        summary={summary}
+        canReadEnvironments={canReadEnvironments}
+      />
       <Section
         title={t('ui.overview.recent')}
         actions={
@@ -533,7 +551,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         actions={
           canOnApp(me, 'upload', summary) && !summary.environment.runsImages ? (
             <>
-              {/* The native file input stays hidden: its button and "No file chosen" follow the browser's language. */}
+              {/* ui-component-exception: Hidden native file chooser; the existing translated upload button owns its visible label. */}
               <input
                 ref={fileInputRef}
                 type='file'
@@ -878,10 +896,12 @@ function DeploymentTable({
   requestTo,
   deployments,
   currentId,
+  recycling,
   canRollback,
   canReadLogs,
   busy,
   onRollback,
+  onCancel,
 }: {
   readonly appId: string;
   /** The App's pending request, first. */
@@ -889,10 +909,13 @@ function DeploymentTable({
   readonly requestTo: (requestId: string) => To;
   readonly deployments: readonly DeploymentItem[];
   readonly currentId: string | null;
+  /** Whether the App's shared runtime is recycling (`AppHostView.recycling`), which a queued deployment may wait for. */
+  readonly recycling: 'pending' | 'restarting' | null;
   readonly canRollback: boolean;
   readonly canReadLogs: boolean;
   readonly busy: string | null;
   readonly onRollback: (deploymentId: string) => void;
+  readonly onCancel: (deploymentId: string) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const api = useReleasesApi();
@@ -987,14 +1010,26 @@ function DeploymentTable({
               wording='ui.requests.status'
             />
           );
+        const wait = deploymentWaitOf(item.deployment, recycling);
         return (
           <div className='min-w-0'>
             <StatusTag
               status={item.deployment.status}
               wording='ui.deployments.statuses'
             />
+            {wait ? (
+              <p className='mt-1 text-xs text-muted-foreground'>
+                {wait === 'recycle'
+                  ? t('ui.errors.messages.recycleWait')
+                  : t('ui.deployments.queueAhead', {
+                      ahead: item.deployment.queueAhead,
+                    })}
+              </p>
+            ) : null}
             {item.deployment.error ? (
-              <p className='mt-1 text-xs text-destructive wrap-anywhere'>
+              <p
+                className={`mt-1 text-xs wrap-anywhere ${item.deployment.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}
+              >
                 {messageText(t, item.deployment.error)}
               </p>
             ) : null}
@@ -1062,13 +1097,15 @@ function DeploymentTable({
           canRollback &&
           deployment.status === 'succeeded' &&
           deployment.id !== currentId;
-        if (!canReadLogs && !rollbackable) return null;
+        const cancellable = canRollback && deployment.cancellable;
+        if (!canReadLogs && !rollbackable && !cancellable) return null;
         return (
           <RowActions
             name={deployment.release?.version ?? deployment.id}
             busy={
               logs[deployment.id] === 'loading' ||
-              busy === `rollback:${deployment.id}`
+              busy === `rollback:${deployment.id}` ||
+              busy === `cancel:${deployment.id}`
             }
           >
             {canReadLogs ? (
@@ -1077,6 +1114,15 @@ function DeploymentTable({
                 {logs[deployment.id]
                   ? t('ui.deployments.hideLogs')
                   : t('ui.deployments.logs')}
+              </DropdownMenuItem>
+            ) : null}
+            {cancellable ? (
+              <DropdownMenuItem
+                disabled={busy !== null}
+                onClick={() => onCancel(deployment.id)}
+              >
+                <BanIcon />
+                {t('ui.deployments.cancel')}
               </DropdownMenuItem>
             ) : null}
             {rollbackable ? (

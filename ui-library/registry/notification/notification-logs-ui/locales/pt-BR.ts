@@ -13,7 +13,7 @@ const ptBR: NotificationResource = {
     description:
       'Rastreie a entrega da notificação e cada tentativa do provedor. Os corpos das mensagens, os destinatários e os tokens de arrendamento são editados.',
     refreshing: 'Refrescante…',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     deliveriesShown: 'Entregas mostradas',
     needAttention: 'Precisa de atenção',
     unavailable: 'Registros indisponíveis',

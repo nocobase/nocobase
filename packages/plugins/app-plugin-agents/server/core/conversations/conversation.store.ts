@@ -92,6 +92,8 @@ export interface MessageRecord {
 export interface PreferencesRecord {
   readonly userId: string;
   readonly defaultAgentId: string | null;
+  /** `personal` or `team`; null: `auto`. */
+  readonly runnerPreference?: string | null;
   readonly onlineAgent?: JsonColumn;
   readonly updatedAt: string;
 }

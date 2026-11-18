@@ -2,6 +2,37 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    connectionAuthenticationFailed:
+      '{{protocol}} authentication failed. Check the login name and password or app password.',
+    connectionHostNotFound:
+      '{{protocol}} host could not be resolved. Check the server hostname.',
+    connectionConnectionRefused:
+      '{{protocol}} connection was refused. Check the host, port and server availability.',
+    connectionConnectionTimeout:
+      '{{protocol}} connection timed out. Check the server and network settings.',
+    connectionCertificateInvalid:
+      '{{protocol}} certificate validation failed. Check the certificate and hostname.',
+    connectionTlsFailed:
+      '{{protocol}} TLS negotiation failed. Check the SSL/STARTTLS settings and port.',
+    connectionConnectionFailed:
+      '{{protocol}} connection failed. Check the server and network settings.',
+    connectionConnectionLost: '{{protocol}} connection was lost. Try again.',
+
+    imapMoveLocationChanged:
+      'The selected folder or copy changed. Synchronize and open the source folder again.',
+    imapMoveNotWritable:
+      'The selected folder does not allow this operation. Check its mailbox permissions.',
+    imapMoveSourceRequired:
+      'Open the source folder before moving or deleting this message.',
+    imapMoveUnsupported:
+      'This server cannot safely move messages. Use your mail client.',
+    imapTrashNotFound:
+      'This account has no Trash folder. Use your mail client.',
+    imapMoveOutcomeUnknown:
+      'The move is incomplete or its result is unknown. Verify the mailbox before retrying.',
+
+    invalidRecipient:
+      'Correct the recipient email addresses and display names before sending.',
     accessDenied: 'Mail access is required.',
     idempotencyConflict:
       'The idempotency key is already associated with another request.',

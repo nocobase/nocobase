@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: 'Meus agentes',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: 'Fechar',
@@ -28,7 +28,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     fold: 'Ocultar sessões',
     expand: 'Mostrar sessões',
     label: 'Sessões',
-    title: 'Meus agentes',
+    title: 'My Agents',
     archived: 'Arquivado',
     archivedView:
       'Escolha uma sessão arquivada para lê-la. Sua sessão aberta e seu rascunho não enviado são mantidos.',
@@ -52,7 +52,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       earlier: 'Anteriormente',
     },
     empty:
-      'Ainda não há sessões. Comece um para conversar com um agente em seu computador.',
+      'Ainda não há sessões. Comece um para conversar com um Agent em seu computador.',
     noArchived: 'Nenhuma sessão arquivada.',
     noMatch: 'Nenhuma sessão correspondente.',
     more: 'Mostrar mais',
@@ -69,14 +69,15 @@ const ptBR: LocaleResource<typeof enUS> = {
     count_other: 'Tarefas {{count}}',
     none: 'Sem tarefas',
     empty:
-      'Esta sessão ainda não possui tarefas. Peça ao agente para transformar o que você discutiu em tarefas.',
+      'Esta sessão ainda não possui tarefas. Peça ao Agent para transformar o que você discutiu em tarefas.',
     created_one: 'Tarefa {{count}} criada',
     created_other: 'Tarefas {{count}} criadas',
     start_one: 'Iniciar tarefa {{count}}',
     start_other: 'Iniciar tarefas {{count}}',
     startOne: 'Iniciar',
     skip: 'Agora não',
-    startHint: 'Os agentes no tempo de execução planejam e fazem o trabalho.',
+    startHint:
+      'Os agentes no ambiente de execução planejam e fazem o trabalho.',
     notStarted: 'Não iniciado',
     started_one: 'iniciou {{count}}',
     started_other: 'iniciou {{count}}',
@@ -98,15 +99,15 @@ const ptBR: LocaleResource<typeof enUS> = {
     settingsOffline:
       'Este computador está offline. Reconecte sua ponte para carregar as configurações e enviar.',
     settingsLoading: 'Carregando configurações…',
-    settingsFailed: 'Não foi possível carregar as configurações do agente.',
+    settingsFailed: 'Não foi possível carregar as configurações do Agent.',
     settingsRetry: 'Tentar novamente as configurações',
-    settingsReset: 'Usar padrões do agente',
+    settingsReset: 'Usar padrões do Agent',
     settingsUnsupported:
-      'Este agente não expõe configurações. Seus padrões serão usados.',
+      'Este Agent não expõe configurações. Seus padrões serão usados.',
     settingsEmpty:
-      'Este agente não possui configurações configuráveis. Seus padrões serão usados.',
+      'Este Agent não possui configurações configuráveis. Seus padrões serão usados.',
     pickComputer: 'Escolha um computador',
-    noAgent: 'Nenhum agente disponível',
+    noAgent: 'Nenhum Agent disponível',
     folder: 'Diretório no computador',
     placeholder:
       'Diga o que você precisa. Várias coisas ao mesmo tempo, ou uma captura de tela, estão bem.',
@@ -114,11 +115,11 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Os agentes funcionam com acesso total no diretório que você escolher, como em seu próprio terminal.',
     noComputer: 'Conecte seu computador primeiro',
     noComputerHint:
-      'As sessões são executadas no seu próprio computador: o agente trabalha lá conectado com sua própria conta, nas pastas que você permitir, e as conversas são mantidas aqui. Conecte-o uma vez e ele estará online sempre que o computador estiver ligado. My Agent ajuda a discutir e esclarecer requisitos, registrar tarefas e acompanhar o progresso; depois de iniciá-los, o gerente de projeto do Studio coordena os agentes para desenvolvê-los.',
+      'As sessões são executadas no seu próprio computador: o Agent trabalha lá conectado com sua própria conta, nas pastas que você permitir, e as conversas são mantidas aqui. Conecte-o uma vez e ele estará online sempre que o computador estiver ligado. My Agent ajuda a discutir e esclarecer requisitos, registrar tarefas e acompanhar o progresso; depois de iniciá-los, o gerente de projeto do Studio coordena os Agents para desenvolvê-los.',
     allOffline: 'Seus computadores estão off-line',
     offlineHint:
       'Execute isto no computador para mantê-lo conectado a cada login.',
-    noAgentTitle: 'Nenhum agente está pronto neste computador',
+    noAgentTitle: 'Nenhum Agent está pronto neste computador',
     noAgentHint:
       'Instale qualquer um deles e entre com seu próprio comando. A ponte verifica a cada minuto e lista-os após a configuração e inicialização serem bem-sucedidas, sem conectar novamente.',
     supported: 'Compatível: {{names}}',
@@ -128,9 +129,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     computers: 'Meus computadores',
     manageComputers: 'Gerenciar meus computadores…',
     agents: 'Agentes neste computador',
-    availableAgents: 'Agentes disponíveis',
+    availableAgents: 'Agents disponíveis',
     agentsHint:
-      'Somente agentes instalados são listados. A ponte verifica a cada minuto; a configuração e a inicialização devem ser concluídas antes que o agente esteja pronto.',
+      'Somente Agents instalados são listados. A ponte verifica a cada minuto; a configuração e a inicialização devem ser concluídas antes que o Agent esteja pronto.',
     alsoSupported: 'Também suportado: {{names}}',
     thisComputer: 'Este computador',
     recentFolders: 'Usado recentemente',
@@ -152,10 +153,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     offline: '{{computer}} está offline',
     offlineBody:
       'A conversa e as suas tarefas ficam aqui guardadas para serem lidas normalmente. A sessão continua quando o computador estiver de volta.',
-    working: 'O agente está trabalhando…',
+    working: 'O Agent está trabalhando…',
     startup: {
-      starting: 'Iniciando o agente em seu computador…',
-      opening: 'Abrindo sessão do agente…',
+      starting: 'Iniciando o Agent em seu computador…',
+      opening: 'Abrindo sessão do Agent…',
       configuring: 'Aplicando configurações…',
     },
     answering: 'Respondendo',
@@ -177,7 +178,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     usage: 'Uso',
     contextLabel: 'Contexto',
     context: 'Contexto {{used}} de tokens {{size}}',
-    cost: 'Custo até agora: {{cost}}',
+    costLabel: 'Custo',
     tokens: {
       input: 'Entrada',
       cached: 'Em cache',
@@ -197,7 +198,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     expand: 'Expandir entrada',
     collapse: 'Recolher entrada',
     placeholder: 'Responda ou pergunte o próximo passo…',
-    busy: 'O agente está atendendo. Sua mensagem vai assim que terminar.',
+    busy: 'O Agent está atendendo. Sua mensagem vai assim que terminar.',
     waiting:
       'Responda a solicitação acima ou escreva uma mensagem para enviar depois.',
     offline: 'O computador está off-line.',
@@ -208,7 +209,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     removeImage: 'Remover imagem',
     attached: 'Acompanha a mensagem',
     removeAttached: 'Remover {{name}}',
-    commands: 'Os comandos do agente',
+    commands: 'Os comandos do Agent',
     mentions: 'Mencione uma tarefa',
     keys: {
       send: 'enviar',
@@ -261,11 +262,11 @@ const ptBR: LocaleResource<typeof enUS> = {
       delete_other: 'arquivos {{count}} excluídos',
       move_one: 'arquivo {{count}} movido',
       move_other: 'arquivos {{count}} movidos',
-      search_one: 'pesquisou uma vez',
+      search_one: 'pesquisou {{count}} vez',
       search_other: 'pesquisou vezes {{count}}',
       execute_one: 'executou o comando {{count}}',
       execute_other: 'executou comandos {{count}}',
-      think_one: 'pensou uma vez',
+      think_one: 'pensou {{count}} vez',
       think_other: 'pensou {{count}} vezes',
       fetch_one: 'página {{count}} buscada',
       fetch_other: 'páginas {{count}} buscadas',
@@ -330,7 +331,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     offline: 'Off-line',
     title: 'Meus computadores',
     description:
-      'Esses computadores executam apenas suas próprias sessões e os agentes trabalham como você. As máquinas que executam o trabalho em segundo plano da equipe são gerenciadas separadamente.',
+      'Esses computadores executam apenas suas próprias sessões e os Agents trabalham como você. As máquinas que executam o trabalho em segundo plano da equipe são gerenciadas separadamente.',
     none: 'Nenhum computador está conectado ainda.',
     online: 'On-line',
     lastSeen: 'Visto pela última vez {{time}}',
@@ -341,7 +342,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       failed: 'não foi possível iniciar',
     },
     recheckHint:
-      'Enquanto estiver conectada, a ponte verifica automaticamente os agentes novamente a cada minuto.',
+      'Enquanto estiver conectada, a ponte verifica automaticamente os Agents novamente a cada minuto.',
     ready: 'Pronto',
     name: 'Nome',
     system: 'Sistema',
@@ -360,7 +361,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     foldersChosenHint: 'As sessões podem funcionar apenas nestas pastas.',
     add: 'Conecte um computador',
     steps: {
-      agent: 'Instale um agente de codificação e faça login nele',
+      agent: 'Instale um Agent de codificação e faça login nele',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI e mais: faça login com seu próprio comando. Use o modelo mais forte que puder.',
       login: 'Faça login com sua conta',

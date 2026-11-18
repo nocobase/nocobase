@@ -31,12 +31,13 @@ import {
 } from 'react';
 import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
 import { PlusIcon } from 'lucide-react';
+import { cn } from 'cn';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { StatusBadge } from '#components/status-badge';
-import { Spinner } from '#components/ui/spinner';
+import { RowActions } from '#components/row-actions';
 import {
   Select,
   SelectTrigger,
@@ -45,25 +46,6 @@ import {
   SelectItem,
 } from '#components/ui/select';
 import { ConfirmAction, SettingsError } from './shared.js';
-
-function UsersRefreshing(): ReactElement | null {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    // Fast background reads should not flash feedback on overlay close.
-    const timer = setTimeout(() => setVisible(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-  return visible ? (
-    <span
-      role='status'
-      className='flex items-center gap-2 text-sm text-muted-foreground'
-    >
-      <Spinner aria-hidden='true' className='size-4' />
-      {t('settings.loading')}
-    </span>
-  ) : null;
-}
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canUpdate = useUserPermission('update', user.id);
@@ -122,32 +104,30 @@ function UserActions({
       setRequestBusy(false);
     }
   };
-  if (!canRevoke && !(user.disabledAt ? canEnable : canDisable)) return <></>;
   return (
-    <div className='flex items-center justify-end gap-2 whitespace-nowrap'>
-      {!user.disabledAt && canDisable && (
-        <Button
-          variant='outline'
-          size='xs'
-          onClick={() => setAction('disable')}
-        >
-          {t('settings.disable')}
-        </Button>
-      )}
-      {user.disabledAt && canEnable && (
-        <Button variant='outline' size='xs' onClick={() => setAction('enable')}>
-          {t('settings.enable')}
-        </Button>
-      )}
-      {canRevoke && (
-        <Button
-          variant='outline'
-          size='xs'
-          onClick={() => setAction('revokeSessions')}
-        >
-          {t('settings.revokeSessions')}
-        </Button>
-      )}
+    <>
+      <RowActions
+        label={t('settings.actionsFor', { name: user.name })}
+        actions={[
+          !user.disabledAt &&
+            canDisable && {
+              key: 'disable',
+              label: t('settings.disable'),
+              onClick: () => setAction('disable'),
+            },
+          Boolean(user.disabledAt) &&
+            canEnable && {
+              key: 'enable',
+              label: t('settings.enable'),
+              onClick: () => setAction('enable'),
+            },
+          canRevoke && {
+            key: 'revokeSessions',
+            label: t('settings.revokeSessions'),
+            onClick: () => setAction('revokeSessions'),
+          },
+        ]}
+      />
       <ConfirmAction
         open={Boolean(action)}
         title={t(
@@ -173,7 +153,7 @@ function UserActions({
         onCancel={() => setAction(undefined)}
         onConfirm={() => void run()}
       />
-    </div>
+    </>
   );
 }
 
@@ -515,11 +495,6 @@ export default function UsersPage(): ReactElement {
               {t('settings.clear')}
             </Button>
           )}
-          <div className='ml-auto flex h-8 w-28 items-center justify-end'>
-            {active && hasCurrentResponse && request.loading && request.data ? (
-              <UsersRefreshing />
-            ) : null}
-          </div>
         </div>
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
@@ -536,13 +511,21 @@ export default function UsersPage(): ReactElement {
           {...tableState}
           manualSorting
           showSelectedCount={false}
-          loading={request.loading}
+          loading={active && request.loading}
+          loadingIdentity={requestPath}
           listState={listState}
           onRetry={request.reload}
           onClearFilters={clearFilters}
         />
         {request.data && (
-          <p className='text-sm text-muted-foreground'>
+          // A previous query's total keeps its line but is never shown as the current one.
+          <p
+            className={cn(
+              'text-sm text-muted-foreground',
+              !hasCurrentResponse && 'invisible',
+            )}
+            aria-hidden={!hasCurrentResponse || undefined}
+          >
             {t('settings.total', { count: request.data.meta.total })}
           </p>
         )}

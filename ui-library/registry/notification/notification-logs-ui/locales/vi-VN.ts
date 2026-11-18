@@ -13,7 +13,7 @@ const viVN: NotificationResource = {
     description:
       'Theo dõi việc gửi thông báo và mọi nỗ lực của nhà cung cấp. Nội dung thư, người nhận và mã thông báo cho thuê được sắp xếp lại.',
     refreshing: 'Sảng khoái…',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     deliveriesShown: 'Đã giao hàng',
     needAttention: 'Cần chú ý',
     unavailable: 'Nhật ký không có sẵn',

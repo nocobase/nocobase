@@ -7,6 +7,8 @@ import { readLauncherPid } from '../core/launcher.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, type DaemonPid } from '../core/loop.ts';
 import { isAlive } from '../core/supervisor.ts';
+import { readSettings } from '../lib/config.ts';
+import { stopService } from '../core/service.ts';
 
 export default class Stop extends RunnerCommand {
   static override summary: string = 'Stop the runner daemon.';
@@ -16,13 +18,21 @@ export default class Stop extends RunnerCommand {
     timeout: Interfaces.OptionFlag<number>;
   } = {
     timeout: Flags.integer({
-      description: 'Seconds to wait before killing the daemon.',
+      description:
+        'Seconds to wait before killing a non-service daemon; services use their manager’s timeout.',
       default: 30,
     }),
   };
 
   async run(): Promise<{ stopped: boolean; pid?: number }> {
     const { flags } = await this.parse(Stop);
+    const settings = await readSettings(this.paths);
+    let serviceStopped = false;
+    if (settings.serviceLabel !== undefined) {
+      serviceStopped = await stopService(settings.serviceLabel);
+    }
+    // A foreground or background start can share the home of a stopped or uninstalled service.
+    // Stop the manager first to cancel automatic restarts, then clean up any remaining manual daemon.
     const launcher = await readLauncherPid(this.paths);
     const running = await readDaemonPid(this.paths);
     if (launcher !== undefined) {
@@ -61,6 +71,10 @@ export default class Stop extends RunnerCommand {
       return { stopped: true, pid: running?.pid ?? launcher.pid };
     }
     if (running === undefined) {
+      if (serviceStopped) {
+        this.log('Runner service stopped.');
+        return { stopped: true };
+      }
       this.log('The runner is not running.');
       return { stopped: false };
     }

@@ -23,6 +23,10 @@ const jaJP: LocaleResource<typeof enUS> = {
   tooLarge: 'ファイルが最大サイズを超えています',
   rejected: 'ファイルタイプは許可されていません',
   uploadFailed: 'アップロードに失敗しました',
+  cancelUpload: 'アップロードをキャンセル',
+  retryUpload: 'アップロードを再試行',
+  uploadLongWait:
+    'アップロード中です。このまま待つか、キャンセルしてください。',
   preview: 'プレビュー',
   download: 'ダウンロード',
   remove: '削除',

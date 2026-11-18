@@ -41,9 +41,11 @@ import {
 import type { AppJobsConfig } from '@nocobase/app-server/jobs';
 
 const jobs: AppConfigFactory<AppJobsConfig> = defineAppConfig(({ paths }) => ({
-  memory: {
-    adapter: 'memory',
-    persistence: { path: paths.storage('jobs') },
+  backends: {
+    memory: {
+      adapter: 'memory',
+      persistence: { path: paths.storage('jobs') },
+    },
   },
 }));
 
@@ -56,13 +58,16 @@ export default jobs;
 
 ## Configuring it
 
-The `jobs` section maps configuration keys to configurations, and `default` names the one used when a consumer names none. A deployment selects one in `config.yml`:
+Only `default` and `backends` are accepted at the section root. Move every legacy direct entry into `backends`, including unused entries, and update application-owned TypeScript factories as well as YAML. Mixed formats are rejected after merging defaults; backend declarations alone do not select one. Keep adapter names, connection destinations, namespaces, business names and persistence paths unchanged; no data migration is required.
+
+The `jobs.backends` map holds named configurations, and `default` names the one used when a consumer names none. A deployment selects one in `config.yml`:
 
 ```yaml
 jobs:
   default: memory
-  memory:
-    adapter: memory
+  backends:
+    memory:
+      adapter: memory
 ```
 
 | Option             | Adapter | Meaning                                                                                                                                                                                           |
@@ -81,7 +86,7 @@ A consumer's configuration is chosen as follows:
 
 Redis is not bundled. Install and register `@nocobase/app-plugin-jobs-redis` on every producer and consumer before selecting `adapter: redis`. Its `./config` export owns Redis connection and retention types; these are no longer exported by `@nocobase/jobs`. A selected backend that has no registered adapter throws `JobsBackendNotRegisteredError`; there is no Memory fallback. An unused Redis configuration does not require the plugin. Keep the application's existing Redis configuration, namespace and scope unchanged during migration; see the commercial plugin README for configuration and rolling-upgrade requirements.
 
-When upgrading an application generated from an older template, add `adapter: redis` explicitly to every Redis Jobs entry in `config.yml` that previously relied on the template's TypeScript defaults. Templates now provide only Memory defaults; `jobs.redis.connection` alone does not identify a Redis backend. Preserve existing connection, namespace and scope values, and install and register the commercial Server plugin before selecting those configurations.
+When upgrading an application generated from an older template, add `adapter: redis` explicitly to every Redis Jobs entry in `config.yml` that previously relied on the template's TypeScript defaults. Templates now provide only Memory defaults; `jobs.backends.redis.connection` alone does not identify a Redis backend. Preserve existing connection, namespace and scope values, and install and register the commercial Server plugin before selecting those configurations.
 
 ### Backend extension contract
 

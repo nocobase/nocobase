@@ -23,9 +23,11 @@ import { FOUNDATION_NAMESPACE } from '../../shared/foundation.js';
 import { foundationServiceToken } from '../tokens.js';
 import {
   OverviewQuery,
-  OverviewSchema,
+  SnapshotSchema,
+  ScanStatusSchema,
   CollectionsQuery,
   CollectionItemSchema,
+  RegistrationsSchema,
 } from './schemas.js';
 
 const tags = ['Foundation'];
@@ -59,28 +61,99 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     });
 
     routes.get(
+      '/registrations',
+      describeRoute({
+        tags,
+        summary: 'Read current server plugin registrations',
+        operationId: 'foundationGetRegistrations',
+        description:
+          'Reads static runtime registration facts without scanning, constructing providers or accessing configuration values. Requires unrestricted access.',
+        responses: {
+          200: dataResponse(RegistrationsSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      (context) =>
+        context.json({
+          data: {
+            serverPlugins: app.registeredServerPlugins
+              ? [
+                  ...new Set(
+                    app.registeredServerPlugins.map(
+                      (plugin) => plugin.packageName,
+                    ),
+                  ),
+                ]
+              : null,
+          },
+        }),
+    );
+
+    routes.get(
       '/overview',
       describeRoute({
         tags,
         summary: 'Get what the application uses of NocoBase Core',
         operationId: 'foundationGetOverview',
         description:
-          'Every NocoBase Core capability with its status, evidence, statistics and providing packages. Failed reads leave information pending or retain reliable observations with their original checkedAt; incomplete file discovery never produces exact current totals. Unknown extensions do not discard observed statistics or create read failures; data-modeling statistics exclude known system tables without asserting ownership or exhaustive coverage. Collected read-only and cached for 30 seconds; refresh=true collects again. History is application-service-local and cleared on restart or a changed scope. Requires unrestricted access, such as the root Permission Set.',
+          'Reads the saved snapshot without scanning. Results retain their actual completion time and scanned kernel version. Only first use, a changed running kernel or an explicit POST starts a background scan. Requires unrestricted access. GET refresh and countRecords flags are no longer supported.',
         responses: {
-          200: dataResponse(OverviewSchema),
+          200: dataResponse(SnapshotSchema),
           ...apiErrorResponses,
         },
       }),
       apiValidator('query', OverviewQuery),
       async (context) => {
-        const { refresh, countRecords } = context.req.valid('query');
-        const data = await container.resolve(foundationServiceToken).overview({
-          refresh: refresh === true,
-          countRecords: countRecords === true,
-        });
+        const data = await container.resolve(foundationServiceToken).snapshot();
         return context.json({ data });
       },
     );
+
+    routes.get(
+      '/scanStatus',
+      describeRoute({
+        tags,
+        summary: 'Read the background scan status',
+        operationId: 'foundationGetScanStatus',
+        responses: {
+          200: dataResponse(ScanStatusSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      async (context) =>
+        context.json({
+          data: await container.resolve(foundationServiceToken).scanStatus(),
+        }),
+    );
+
+    for (const action of ['ensureScan', 'refresh', 'countRecords'] as const) {
+      routes.post(
+        `/${action}`,
+        describeRoute({
+          tags,
+          summary:
+            action === 'ensureScan'
+              ? 'Ensure the first or changed-kernel background scan'
+              : action === 'refresh'
+                ? 'Refresh the saved foundation in the background'
+                : 'Count observed records explicitly in the background',
+          operationId: `foundation${action[0].toUpperCase()}${action.slice(1)}`,
+          description:
+            'Returns after enqueueing. Concurrent submissions reuse an active scan. A failed attempt retains the last reliable snapshot. Counts run only through countRecords; retry a count after any active structural scan finishes.',
+          responses: {
+            200: dataResponse(ScanStatusSchema),
+            ...apiErrorResponses,
+          },
+        }),
+        async (context) =>
+          context.json({
+            data: await container.resolve(foundationServiceToken).ensureScan({
+              ...(action === 'refresh' ? { refresh: true } : {}),
+              ...(action === 'countRecords' ? { countRecords: true } : {}),
+            }),
+          }),
+      );
+    }
 
     routes.get(
       '/collections',

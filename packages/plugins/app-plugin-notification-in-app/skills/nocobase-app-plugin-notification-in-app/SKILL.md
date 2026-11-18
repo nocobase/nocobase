@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-notification-in-app
-description: 'Use when agents need to register, verify, or diagnose the NocoBase durable in-app inbox, its development-only Client page, or realtime refresh behavior.'
+description: 'Use when agents need to register, verify, or diagnose the NocoBase durable in-app inbox, the inbox components an application renders in its own page, or realtime refresh behavior.'
 argument-hint: '[action: register|verify|diagnose] [application]'
 allowed-tools: Bash, Read, Write, Grep, Glob
 owner: notification
@@ -65,10 +65,10 @@ Rules:
 
 # Reference Loading Map
 
-| Reference                                                     | Use When                                                                                     | Notes                                               |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| [Inbox Integration Contract](references/inbox-integration.md) | integrating, customizing, verifying, or diagnosing the inbox                                 | Required packages, routes, events, ownership, tests |
-| [Plugin README](../../README.md)                              | confirming Server registration, route behavior, pagination, origin checks, or user isolation | Package-level public contract                       |
+| Reference                                                                             | Use When                                                                                     | Notes                                               |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| [Inbox Integration Contract](references/inbox-integration.md)                         | integrating, customizing, verifying, or diagnosing the inbox                                 | Required packages, routes, events, ownership, tests |
+| Plugin README (`README.md` in the `@nocobase/app-plugin-notification-in-app` package) | confirming Server registration, route behavior, pagination, origin checks, or user isolation | Package-level public contract                       |
 
 # Safety Gate
 
@@ -124,4 +124,4 @@ Final response must include:
 # References
 
 - [Inbox Integration Contract](references/inbox-integration.md): use for the complete application integration and diagnosis contract.
-- [Plugin README](../../README.md): use for Server registration, API, pagination, origin-check, and user-isolation behavior.
+- Plugin README (`README.md` in the `@nocobase/app-plugin-notification-in-app` package): use for Server registration, API, pagination, origin-check, and user-isolation behavior.

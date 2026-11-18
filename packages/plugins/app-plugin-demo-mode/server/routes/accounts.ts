@@ -85,7 +85,7 @@ export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
         operationId: 'demoModeSignInDefaultAccount',
         security: [],
         description:
-          'Creates an ordinary session for an existing enabled Super Admin when an anonymous visitor opens the home page in Demo Mode. Existing sessions are retained. Does nothing outside Demo Mode, with quick sign-in disabled or when no enabled Super Admin exists.',
+          'Creates an ordinary session for an existing enabled Super Admin when an anonymous visitor opens the home page or a protected application route in Demo Mode. Existing sessions are retained. Does nothing outside Demo Mode, with quick sign-in disabled or when no enabled Super Admin exists.',
         responses: {
           200: dataResponse(DemoDefaultSignInSchema),
           400: apiErrorResponse(400),

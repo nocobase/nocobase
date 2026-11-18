@@ -1,4 +1,5 @@
 import { WEB_SEARCH_RETRIEVAL_INSTRUCTIONS } from './search/prompts.js';
+import { deepseekSearch } from './search/deepseek.js';
 import { WebSearchBudget } from './search/budget.js';
 /**
  * The model gateway online agents' runs call (`ModelGateway`): the catalog of what the enabled model services offer,
@@ -843,6 +844,8 @@ export function createModelGateway(
             );
             const querySignal = AbortSignal.any([group, timeout.signal]);
             try {
+              if (connection.provider === 'deepseek')
+                return await deepseekSearch(connection, query, querySignal);
               const { evidence: evidenceOf, ...call } = createSearchCall(
                 connection,
                 request.model.model,

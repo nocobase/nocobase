@@ -27,6 +27,11 @@ import { SkillProjectsService } from '../providers/skill-projects.js';
 const Project = z.object({ id: z.string(), name: z.string() });
 const Input = z.strictObject({ name: z.string().trim().min(1).max(100) });
 const Params = z.object({ id: z.string().uuid() });
+const ListQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  sort: z.literal('name').optional(),
+  order: z.enum(['asc', 'desc']).optional(),
+});
 const Header = z.object({ 'idempotency-key': z.string() });
 const access = {
   resource: { type: 'page', id: 'skill-projects' },
@@ -69,10 +74,26 @@ export const skillProjectsRoutes = defineApiRoutes(async (app: Application) => {
       operationId: 'skillProjectsList',
       summary: 'List projects',
       description:
-        'Requires skill-projects page access. Returns at most 100 records with a total count.',
+        'Requires skill-projects page access. Returns at most 100 records whose name contains `q`, ordered by ascending ID or by `sort=name` and `order`, with the matching total.',
       responses: { 200: listResponse(Project), ...apiErrorResponses },
     }),
-    async (c) => c.json(await service.list()),
+    apiValidator('query', ListQuery),
+    async (c) => c.json(await service.list(c.req.valid('query'))),
+  );
+  router.get(
+    '/summary',
+    describeRoute({
+      tags: ['Examples'],
+      operationId: 'skillProjectsSummary',
+      summary: 'Count projects',
+      description:
+        'Requires skill-projects page access. Returns the total number of projects regardless of any list search.',
+      responses: {
+        200: dataResponse(z.object({ total: z.number().int() })),
+        ...apiErrorResponses,
+      },
+    }),
+    async (c) => c.json({ data: await service.summary() }),
   );
   router.get(
     '/:id',
@@ -197,6 +218,42 @@ export const skillProjectsRoutes = defineApiRoutes(async (app: Application) => {
             'The update committed, but the project has since been removed.',
         });
       }
+      return c.json({ data: result.data });
+    },
+  );
+  router.delete(
+    '/:id',
+    describeRoute({
+      tags: ['Examples'],
+      operationId: 'skillProjectsDelete',
+      summary: 'Delete a project',
+      description:
+        'Requires page access and an Idempotency-Key. Commits the deletion and receipt atomically; retrying the same key after a lost response replays the original result. A missing project returns 404 and records nothing.',
+      responses: {
+        200: dataResponse(z.object({ id: z.string() })),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', Params),
+    apiValidator('header', Header),
+    async (c) => {
+      const id = c.req.valid('param').id;
+      const result = await executeIdempotentMutation({
+        connection,
+        key: c.req.valid('header')['idempotency-key'],
+        principal: `${app.appName}:${c.get('auth')!.user.id}`,
+        operation: `skillProjects/${id}/delete`,
+        input: { id },
+        authorize: async () => {
+          await c.get('authz').require(access);
+        },
+        authorizeReplay: async () => {
+          await c.get('authz').require(access);
+        },
+        execute: (transaction) =>
+          new SkillProjectsService(transaction).remove(id),
+      });
+      c.header('Idempotency-Replayed', String(result.replayed));
       return c.json({ data: result.data });
     },
   );

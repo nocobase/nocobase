@@ -1,6 +1,11 @@
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, type ReactElement, type ReactNode } from 'react';
+import {
+  useLayoutEffect,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import {
   AlertDialog,
@@ -29,14 +34,25 @@ export function UnsavedChangesBoundary({
 }): ReactElement {
   const { t } = useTranslation();
   const { answer } = guard;
+  const [portal, setPortal] = useState<HTMLDivElement | null>(null);
   // A dialog held in component state keeps its guard while closed: a question still open when its content goes away
   // (the submit closed it) must not come back when it reopens.
-  useEffect(() => () => answer(false), [answer]);
+  useLayoutEffect(() => {
+    // A portal nested below a host element is outside that element's DOM. Activity hiding the form does not hide
+    // this separate portal, and its state updates can wait until recovery. Conceal it during effect disconnection.
+    if (!guard.asking || !portal) return;
+    return () => {
+      if (portal) portal.style.display = 'none';
+      answer(false);
+    };
+  }, [answer, guard.asking, portal]);
   return (
     <UnsavedChangesContext.Provider value={guard.scope}>
       {children}
       {/* Inside the dialog, so Escape closes only the confirmation. */}
       <AlertDialog
+        // A completed question gets a fresh dialog store; reconnecting a hidden tree must not revive its old modal.
+        key={guard.asking ? 'asking' : 'idle'}
         open={guard.asking}
         onOpenChange={(open) => {
           if (!open) answer(false);
@@ -44,7 +60,7 @@ export function UnsavedChangesBoundary({
       >
         {/* `AlertDialogContent` with a forced backdrop: Base UI renders a nested dialog's backdrop only when forced
             (as `RouteOverlay` does), and without one the form behind stays clickable while asking. */}
-        <AlertDialogPortal>
+        <AlertDialogPortal ref={setPortal}>
           <AlertDialogOverlay forceRender />
           <AlertDialogPrimitive.Popup
             data-slot='alert-dialog-content'

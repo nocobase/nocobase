@@ -29,11 +29,13 @@ export function useAppSummary(
   appId: string,
   load: () => Promise<AppSummary>,
   onDeploymentChanged: () => void,
+  onDeploymentProgress?: () => void,
 ): AppSummaryLoader {
   const [state, setState] = useState<SummaryState>({ appId, loading: true });
   const reloadRef = useRef<() => Promise<void>>(async () => undefined);
   const fetchLatest = useEffectEvent(load);
   const deploymentChanged = useEffectEvent(onDeploymentChanged);
+  const deploymentProgress = useEffectEvent(() => onDeploymentProgress?.());
 
   useEffect(() => {
     let active = true;
@@ -79,6 +81,7 @@ export function useAppSummary(
           denied = false;
           setState({ appId, data: next, loading: false });
           if (changed) deploymentChanged();
+          else if (next.hasPendingDeployment) deploymentProgress();
         } catch (reason) {
           if (!active || requestRevision !== revision) continue;
           failures += 1;

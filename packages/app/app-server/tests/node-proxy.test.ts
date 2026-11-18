@@ -1,12 +1,15 @@
-import {
+import http, {
+  Agent,
   createServer,
   request as httpRequest,
   type Server,
   type IncomingMessage,
 } from 'node:http';
+import https from 'node:https';
+import { getCACertificates, setDefaultCACertificates } from 'node:tls';
 import { once } from 'node:events';
 import { gzipSync, gunzipSync } from 'node:zlib';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -30,6 +33,11 @@ import {
 const servers: Server[] = [];
 const apps: StandaloneServer[] = [];
 const directories: string[] = [];
+const tlsFixture = (name: string) =>
+  readFileSync(
+    new URL(`./fixtures/proxy-tls/${name}.pem`, import.meta.url),
+    'utf8',
+  );
 
 afterEach(async () => {
   for (const app of apps.splice(0)) await app.close();
@@ -46,6 +54,286 @@ afterEach(async () => {
 });
 
 describe('standalone proxy', () => {
+  it.each(['https', 'wss'] as const)(
+    'forwards %s directly with a trusted certificate and closes its TLS connection on shutdown',
+    async (transport) => {
+      let intercepted = 0;
+      const environmentProxy = createServer();
+      environmentProxy.on('connect', (_request, socket) => {
+        intercepted++;
+        socket.destroy();
+      });
+      const environmentProxyUrl = await listen(environmentProxy);
+      let received: IncomingMessage | undefined;
+      const upstream = https.createServer(
+        { key: tlsFixture('server-key'), cert: tlsFixture('server-cert') },
+        (req, res) => {
+          received = req;
+          res.setHeader('set-cookie', 'session=child; Path=/crm/');
+          res.end('secure child');
+        },
+      );
+      upstream.on('upgrade', (req, socket) => {
+        received = req;
+        socket.write(
+          'HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n',
+        );
+        socket.on('data', (chunk) => socket.write(chunk));
+      });
+      const target = await listen(upstream);
+      target.protocol = 'https:';
+      const previousCertificates = getCACertificates();
+      const previousAgent = https.globalAgent;
+      const environmentAgent = new https.Agent({
+        proxyEnv: { HTTPS_PROXY: environmentProxyUrl.href, NO_PROXY: '' },
+      });
+      setDefaultCACertificates([...previousCertificates, tlsFixture('ca')]);
+      https.globalAgent = environmentAgent;
+      try {
+        const { app, server, url } = await startProxy(() => target);
+        const connected = once(upstream, 'secureConnection');
+        if (transport === 'https') {
+          const response = await app.fetch(
+            new Request(`${url}/crm/?q=1`, {
+              headers: { cookie: 'session=demo', origin: url },
+            }),
+          );
+          expect(response.status).toBe(200);
+          expect(await response.text()).toBe('secure child');
+          expect(response.headers.getSetCookie()).toEqual([
+            'session=child; Path=/crm/',
+          ]);
+        } else {
+          const response = await upgrade(url, '/crm/?q=1', url);
+          expect(response.status).toBe(101);
+          const echoed = once(response.socket!, 'data');
+          response.socket!.write('secure ping');
+          expect(String((await echoed)[0])).toBe('secure ping');
+        }
+        expect(received?.url).toBe('/crm/?q=1');
+        expect(received?.headers).toMatchObject({
+          host: new URL(url).host,
+          'x-forwarded-host': new URL(url).host,
+          cookie: 'session=demo',
+          origin: url,
+        });
+        expect(intercepted).toBe(0);
+        // The global HTTPS agent still uses the environment proxy for other callers.
+        await expect(
+          new Promise((resolve, reject) => {
+            https.get(target, resolve).once('error', reject);
+          }),
+        ).rejects.toThrow();
+        expect(intercepted).toBe(1);
+
+        const [socket] = await connected;
+        expect(socket.destroyed).toBe(false);
+        const closed = once(socket, 'close');
+        await shutdownNodeAppServer(app, server, 'SIGTERM', {
+          httpDrainTimeoutMs: 100,
+          forceExitTimeoutMs: 1000,
+        });
+        await closed;
+        expect(socket.destroyed).toBe(true);
+      } finally {
+        https.globalAgent = previousAgent;
+        environmentAgent.destroy();
+        setDefaultCACertificates(previousCertificates);
+      }
+    },
+  );
+
+  it.each([
+    ['https', 'untrusted'],
+    ['wss', 'untrusted'],
+    ['https', 'wrong hostname'],
+    ['wss', 'wrong hostname'],
+  ] as const)(
+    'rejects %s upstream certificates with %s',
+    async (transport, failure) => {
+      const received = vi.fn(
+        (_req: IncomingMessage, res: http.ServerResponse) => res.end('unsafe'),
+      );
+      const upgraded = vi.fn(
+        (_req: IncomingMessage, socket: import('node:stream').Duplex) =>
+          socket.end(),
+      );
+      const upstream = https.createServer(
+        {
+          key: tlsFixture('server-key'),
+          cert: tlsFixture(
+            failure === 'untrusted' ? 'server-cert' : 'wrong-host-cert',
+          ),
+        },
+        received,
+      );
+      upstream.on('upgrade', upgraded);
+      const target = await listen(upstream);
+      target.protocol = 'https:';
+      const previousCertificates = getCACertificates();
+      if (failure === 'wrong hostname') {
+        setDefaultCACertificates([...previousCertificates, tlsFixture('ca')]);
+      }
+      try {
+        // Confirm the fixture fails for the intended TLS reason, not connectivity.
+        await expect(
+          new Promise((resolve, reject) => {
+            https.get(target, { agent: false }, resolve).once('error', reject);
+          }),
+        ).rejects.toMatchObject({
+          code:
+            failure === 'untrusted'
+              ? 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+              : 'ERR_TLS_CERT_ALTNAME_INVALID',
+        });
+        const { app, url } = await startProxy(() => target);
+        const response =
+          transport === 'https'
+            ? await app.fetch(new Request(`${url}/crm/`))
+            : await upgrade(url, '/crm/ws', url);
+        expect(response.status).toBe(transport === 'https' ? 502 : 503);
+        expect(received).not.toHaveBeenCalled();
+        expect(upgraded).not.toHaveBeenCalled();
+      } finally {
+        setDefaultCACertificates(previousCertificates);
+      }
+    },
+  );
+
+  it.each(['http', 'websocket'] as const)(
+    'forwards %s directly when the global agent uses an environment proxy',
+    async (transport) => {
+      let intercepted = 0;
+      const environmentProxy = await listen(
+        createServer((_req, res) => {
+          intercepted++;
+          res.end('environment proxy');
+        }),
+      );
+      let received: IncomingMessage | undefined;
+      const upstream = createServer((req, res) => {
+        received = req;
+        res.setHeader('set-cookie', 'session=child; Path=/crm/');
+        res.end('child');
+      });
+      upstream.on('upgrade', (req, socket) => {
+        received = req;
+        socket.end(
+          'HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n',
+        );
+      });
+      const target = await listen(upstream);
+      const { app, url } = await startProxy(() => target);
+      const previousAgent = http.globalAgent;
+      const environmentAgent = new Agent({
+        proxyEnv: { HTTP_PROXY: environmentProxy.href, NO_PROXY: '' },
+      });
+      http.globalAgent = environmentAgent;
+      try {
+        if (transport === 'http') {
+          const response = await app.fetch(
+            new Request(`${url}/crm/?q=1`, {
+              headers: { cookie: 'session=demo', origin: url },
+            }),
+          );
+          expect(response.status).toBe(200);
+          expect(await response.text()).toBe('child');
+          expect(response.headers.getSetCookie()).toEqual([
+            'session=child; Path=/crm/',
+          ]);
+        } else {
+          const response = await upgrade(url, '/crm/?q=1', url);
+          response.socket?.destroy();
+          expect(response.status).toBe(101);
+        }
+        expect(received?.url).toBe('/crm/?q=1');
+        expect(received?.headers).toMatchObject({
+          host: new URL(url).host,
+          'x-forwarded-host': new URL(url).host,
+          cookie: 'session=demo',
+          origin: url,
+        });
+        expect(intercepted).toBe(0);
+        // Ordinary outbound requests must still use the configured global agent.
+        const body = await new Promise<string>((resolve, reject) => {
+          const req = http.get(target, (res) => {
+            let text = '';
+            res.on('data', (chunk) => {
+              text += String(chunk);
+            });
+            res.on('end', () => resolve(text));
+          });
+          req.on('error', reject);
+        });
+        expect(body).toBe('environment proxy');
+        expect(intercepted).toBe(1);
+      } finally {
+        http.globalAgent = previousAgent;
+        environmentAgent.destroy();
+      }
+    },
+  );
+
+  it('resolves each request to its own upstream without sharing mutable routing state', async () => {
+    const one = await listen(
+      createServer((req, res) => res.end(`one:${req.url}`)),
+    );
+    const two = await listen(
+      createServer((req, res) => res.end(`two:${req.url}`)),
+    );
+    const { url } = await startProxy((request) =>
+      new URL(request.url).pathname.startsWith('/two/') ? two : one,
+    );
+    const results = await Promise.all(
+      ['/one/a?x=1', '/two/b', '/one/c', '/two/d'].map(async (path) =>
+        (await fetch(url + path)).text(),
+      ),
+    );
+    expect(results).toEqual([
+      'one:/one/a?x=1',
+      'two:/two/b',
+      'one:/one/c',
+      'two:/two/d',
+    ]);
+  });
+
+  it('resolves each WebSocket upgrade to its own upstream from the original path and query', async () => {
+    const accept = (name: string) => {
+      const upstream = createServer();
+      upstream.on('upgrade', (req, socket) => {
+        socket.end(
+          `HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Protocol: ${name}\r\nX-Upstream-Url: ${req.url}\r\n\r\n`,
+        );
+      });
+      return upstream;
+    };
+    const one = await listen(accept('one'));
+    const two = await listen(accept('two'));
+    const seen: string[] = [];
+    const { url } = await startProxy((request) => {
+      const { pathname, search } = new URL(request.url);
+      seen.push(pathname + search);
+      return pathname.startsWith('/two/') ? two : one;
+    });
+    const [first, second] = await Promise.all([
+      upgrade(url, '/one/ws?channel=1', url),
+      upgrade(url, '/two/ws?channel=2', url),
+    ]);
+    first.socket?.destroy();
+    second.socket?.destroy();
+    expect([
+      first.status,
+      first.protocol,
+      first.headers['x-upstream-url'],
+    ]).toEqual([101, 'one', '/one/ws?channel=1']);
+    expect([
+      second.status,
+      second.protocol,
+      second.headers['x-upstream-url'],
+    ]).toEqual([101, 'two', '/two/ws?channel=2']);
+    expect(seen.sort()).toEqual(['/one/ws?channel=1', '/two/ws?channel=2']);
+  });
+
   it('routes before the app mount and preserves bodies, public headers, cookies and redirects', async () => {
     const upstream = createServer(async (req, res) => {
       const chunks: Buffer[] = [];
@@ -113,17 +401,24 @@ describe('standalone proxy', () => {
     expect(redirect.headers.get('location')).toBe('/crm/login');
   });
 
-  it('resolves a new target per request and distinguishes unavailable and failed upstreams', async () => {
+  it('returns retryable responses across unavailable targets and connection failures, then recovers', async () => {
     let target: URL | null = null;
     const { url } = await startProxy(() => target);
-    expect((await fetch(`${url}/crm/`)).status).toBe(503);
+    const unavailable = await fetch(`${url}/crm/`);
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get('retry-after')).toBe('2');
+    expect(unavailable.headers.get('cache-control')).toBe('no-store');
     target = await listen(createServer((_req, res) => res.end('first')));
     expect(await (await fetch(`${url}/crm/`)).text()).toBe('first');
     const second = createServer((_req, res) => res.end('second'));
     target = await listen(second);
     expect(await (await fetch(`${url}/crm/`)).text()).toBe('second');
     await new Promise<void>((resolve) => second.close(() => resolve()));
-    expect((await fetch(`${url}/crm/`)).status).toBe(502);
+    const failed = await fetch(`${url}/crm/`);
+    expect(failed.status).toBe(503);
+    expect(failed.headers.get('retry-after')).toBe('2');
+    target = await listen(createServer((_req, res) => res.end('recovered')));
+    expect(await (await fetch(`${url}/crm/`)).text()).toBe('recovered');
     expect(await (await fetch(`${url}/hub/status`)).text()).toBe('hub');
   });
 
@@ -263,18 +558,22 @@ describe('standalone proxy', () => {
     expect(server.listening).toBe(false);
   });
 
-  it('returns 503 and 502 for WebSocket targets without falling through to the local handler', async () => {
+  it('returns retryable 503 for unavailable WebSocket targets without falling through to the local handler', async () => {
     let target: URL | null = null;
     const { url } = await startProxy(() => target);
-    expect((await upgrade(url, '/crm/ws', url)).status).toBe(503);
+    const unavailable = await upgrade(url, '/crm/ws', url);
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers['retry-after']).toBe('2');
     const upstream = createServer();
     target = await listen(upstream);
     await new Promise<void>((resolve) => upstream.close(() => resolve()));
-    expect((await upgrade(url, '/crm/ws', url)).status).toBe(502);
+    const failed = await upgrade(url, '/crm/ws', url);
+    expect(failed.status).toBe(503);
+    expect(failed.headers['retry-after']).toBe('2');
   });
 });
 
-async function startProxy(target: () => URL | null) {
+async function startProxy(target: (request: Request) => URL | null) {
   const directory = mkdtempSync(path.join(tmpdir(), 'nocobase-proxy-'));
   directories.push(directory);
   const definition = defineStandaloneServer({
@@ -345,11 +644,13 @@ function upgrade(
   browserOrigin: string,
 ): Promise<{
   status: number;
+  headers: IncomingMessage['headers'];
   socket?: import('node:stream').Duplex;
   protocol?: string;
 }> {
   return new Promise((resolve, reject) => {
     const req = httpRequest(new URL(pathname, origin), {
+      agent: false,
       headers: {
         connection: 'Upgrade',
         upgrade: 'websocket',
@@ -364,11 +665,12 @@ function upgrade(
     req.once('error', reject);
     req.once('response', (res) => {
       res.resume();
-      resolve({ status: res.statusCode! });
+      resolve({ status: res.statusCode!, headers: res.headers });
     });
     req.once('upgrade', (res, socket) =>
       resolve({
         status: res.statusCode!,
+        headers: res.headers,
         socket,
         protocol: res.headers['sec-websocket-protocol'] as string,
       }),

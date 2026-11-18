@@ -97,6 +97,14 @@ const CliCommandSchema = z
         'The request path, the base path included, with `{name}` placeholders.',
     }),
     parameters: z.array(CliParameterSchema),
+    idempotency: z
+      .object({
+        header: z.string(),
+        flag: z.literal('operation-key'),
+        minLength: z.number().int(),
+        maxLength: z.number().int().optional(),
+      })
+      .optional(),
     readBinding: z
       .object({
         path: z.string(),

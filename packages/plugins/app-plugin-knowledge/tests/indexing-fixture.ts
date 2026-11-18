@@ -70,10 +70,12 @@ export async function indexingFixture(
   const service = createJobExecutorService(
     {
       default: 'local',
-      local: {
-        adapter: 'memory',
-        attempts: options.attempts ?? 1,
-        concurrency: options.concurrency ?? 1,
+      backends: {
+        local: {
+          adapter: 'memory',
+          attempts: options.attempts ?? 1,
+          concurrency: options.concurrency ?? 1,
+        },
       },
     },
     { appName: 'kb-fixture', storagePath: h.storage },

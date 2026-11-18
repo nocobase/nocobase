@@ -2,6 +2,10 @@ import { StreamOutput } from './stream-output.ts';
 /** Drives a catalog agent through the same ACP client used by personal sessions. */
 import { execFile } from 'node:child_process';
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
+import {
+  requireRecoverableSession,
+  sessionUnavailable,
+} from './session-recovery.ts';
 import type { AgentSpec } from '@nocobase/acp-bridge/catalog';
 import type { ResolvedAgent } from '@nocobase/acp-bridge/client';
 import {
@@ -18,6 +22,7 @@ import {
 import type { SessionNotification } from '@nocobase/acp-bridge/client';
 import { programFingerprint } from './program-fingerprint.ts';
 import { withDetectionEnvironment } from './detection.ts';
+import { detectExec } from './detect-exec.ts';
 import { EventQueue } from './echo.ts';
 import { capInput, capText } from './codex/util.ts';
 import type {
@@ -136,6 +141,23 @@ export function createAcpAdapter(
   };
 }
 
+/** The version reported by dsh's CLI, preserving prerelease identifiers. */
+async function dshVersion(
+  command: string,
+  env: Record<string, string>,
+  signal: AbortSignal,
+): Promise<string | undefined> {
+  try {
+    const result = await detectExec(env)(command, ['--version'], { signal });
+    if (result.code !== 0) return undefined;
+    return result.stdout.match(
+      /(?:^|\s)v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)(?:\s|$)/u,
+    )?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
 async function inspect(
   spec: AgentSpec,
   env: Record<string, string>,
@@ -157,6 +179,21 @@ async function inspect(
         `${resolved.command} answers to ${spec.identify!.args.join(' ')} like a different program.`,
       ),
     };
+  if (spec.id === 'dsh' && !env.DEEPSEEK_API_KEY?.trim())
+    return {
+      installed: true,
+      path: resolved.command,
+      authenticated: false,
+      status: 'needsLogin',
+      statusReason: 'notLoggedIn',
+      statusDetail: statusDetailOf(
+        'Set DEEPSEEK_API_KEY and pass it to the runner with --pass-env DEEPSEEK_API_KEY, then detect again.',
+      ),
+    };
+  const cliVersion =
+    spec.id === 'dsh'
+      ? await dshVersion(resolved.command, env, signal)
+      : undefined;
   return withDetectionEnvironment(
     signal,
     async (cwd, guardedEnv) => {
@@ -200,7 +237,10 @@ async function inspect(
                   }),
                 ).values(),
               ];
-        const version = process.initialize.agentInfo?.version;
+        const version =
+          spec.id === 'dsh'
+            ? cliVersion
+            : process.initialize.agentInfo?.version;
         const safeVersion =
           version &&
           version.length <= 64 &&
@@ -547,6 +587,8 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             },
           )
         : undefined;
+      if (session.resumeSessionId && !resumed)
+        requireRecoverableSession(session);
       const opened =
         resumed ??
         (await process.agent.request(methods.agent.session.new, {
@@ -626,6 +668,8 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         };
       return { exit: 'completed', usage, sessionId, summary };
     } catch (error) {
+      const unavailable = sessionUnavailable(error);
+      if (unavailable) return unavailable;
       if (session.outputBlocks && cancelled) flushStreamChunk();
       return {
         exit: cancelled ? 'aborted' : 'error',

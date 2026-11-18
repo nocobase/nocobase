@@ -25,13 +25,9 @@ export interface BriefPreview {
   readonly scenario: string;
   /** The made-up subject. */
   readonly subject: { readonly key: string; readonly title: string | null };
-  /**
-   * The system prompt as the runner or the online executor receives it is `platform` followed by `agentPrompt`.
-   * `platform` is everything before the agent's own prompt: the rules, the task, the context and the English lead-in to
-   * the agent's prompt. The runner's placeholders are shown annotated.
-   */
+  /** The platform's prompt text, with runner placeholders annotated and the owner's instructions separated for display. */
   readonly platform: string;
-  /** The agent's own prompt as written, which ends the system prompt; empty when the agent has none. */
+  /** The agent's own prompt as written; empty when the agent has none. Its position depends on the subject's layout. */
   readonly agentPrompt: string;
   /** The first message: the turn the agent is given, with what woke it. */
   readonly firstMessage: string;

@@ -16,7 +16,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { listWorkspacePackages } from './workspace-packages.mjs';
+import { parse, stringify } from 'yaml';
+import {
+  findWorkspaceRoot,
+  listWorkspacePackages,
+} from './workspace-packages.mjs';
 
 const rootDir = path.resolve(process.env.NOCOBASE_TOOL_ROOT || process.cwd());
 const distDir = path.join(rootDir, 'dist');
@@ -192,6 +196,48 @@ const writeDistWorkspace = () => {
       '',
     ].join('\n'),
   );
+  // Runtime resolution rules must survive the fresh deployment install, including their catalog references.
+  const patchRoot = findWorkspaceRoot(rootDir) ?? rootDir;
+  const workspacePath = path.join(patchRoot, 'pnpm-workspace.yaml');
+  const workspaceSettings = fs.existsSync(workspacePath)
+    ? (parse(fs.readFileSync(workspacePath, 'utf8')) ?? {})
+    : {};
+  if (Object.keys(workspaceSettings.overrides ?? {}).length)
+    fs.appendFileSync(
+      distWorkspacePath,
+      stringify({
+        ...(workspaceSettings.catalog
+          ? { catalog: workspaceSettings.catalog }
+          : {}),
+        ...(workspaceSettings.catalogs
+          ? { catalogs: workspaceSettings.catalogs }
+          : {}),
+        overrides: workspaceSettings.overrides,
+      }),
+    );
+  // Runtime patches are part of the deployable dependency contract, not just the development install.
+  const patches = workspaceSettings.patchedDependencies ?? {};
+  const copied = {};
+  for (const [specifier, file] of Object.entries(patches)) {
+    if (typeof file !== 'string')
+      throw new Error(`Invalid patch path for ${specifier}`);
+    const source = path.resolve(patchRoot, file);
+    const relative = path.relative(patchRoot, source);
+    if (relative.startsWith('..') || path.isAbsolute(relative))
+      throw new Error(`Patch must be inside the application: ${file}`);
+    const target = path.join(
+      'patches',
+      `${Object.keys(copied).length}-${path.basename(file)}`,
+    );
+    fs.mkdirSync(path.join(distDir, 'patches'), { recursive: true });
+    fs.copyFileSync(source, path.join(distDir, target));
+    copied[specifier] = toPosix(target);
+  }
+  if (Object.keys(copied).length)
+    fs.appendFileSync(
+      distWorkspacePath,
+      stringify({ patchedDependencies: copied, allowUnusedPatches: true }),
+    );
 };
 
 /**
@@ -240,11 +286,16 @@ const addExternalPackage = (
 ) => {
   if (externalPackageNames.has(packageName)) return;
 
-  const version =
-    getInstalledVersion(packageName, sourcePackageDir) ??
-    getInstalledVersion(packageName) ??
+  const declared =
     getDeclaredVersion(sourcePackage, packageName) ??
     getDeclaredVersion(rootPackage, packageName);
+  // A tarball may contain a version unavailable on npm (for example, the official SheetJS releases).
+  const version =
+    declared && /^https?:\/\//u.test(declared)
+      ? declared
+      : (getInstalledVersion(packageName, sourcePackageDir) ??
+        getInstalledVersion(packageName) ??
+        declared);
 
   if (!version) {
     throw new Error(

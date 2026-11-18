@@ -127,6 +127,7 @@ export const CATALOG_IDS = [
   'cline',
   'amp',
   'vibe',
+  'dsh',
 ] as const;
 export type CatalogAgentId = (typeof CATALOG_IDS)[number];
 export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
@@ -299,5 +300,13 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       launchers: [program('vibe-acp', [], [localBin])],
       allowAll: true,
       signIn: 'vibe',
+    },
+    {
+      id: 'dsh',
+      name: 'DeepSeek Harness',
+      launchers: [program('dsh', ['--profile', 'acp'])],
+      allowAll: true,
+      signIn: 'export DEEPSEEK_API_KEY=...',
+      permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
     },
   ];

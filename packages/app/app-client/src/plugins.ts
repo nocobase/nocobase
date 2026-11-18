@@ -41,6 +41,32 @@ export interface AppClientRouteComponentModule {
 export type AppClientRouteComponentLoader =
   () => Promise<AppClientRouteComponentModule>;
 
+/**
+ * How a page presents itself, declared so the application can build that container before the page module, its
+ * authorization check or its data arrive: a `content` page fills the content area, a `child-page` covers the page that
+ * opened it, and a `dialog` or `drawer` is a modal overlay. Waiting, denial and load failures then render inside that
+ * container instead of where the page's outlet happens to sit.
+ *
+ * Omitting it keeps the earlier contract: the component builds its own container once it has loaded, and the
+ * application only renders a page-sized placeholder until then. Nothing infers a presentation from the route depth.
+ */
+export type AppClientRoutePresentationKind =
+  'content' | 'child-page' | 'dialog' | 'drawer';
+
+export interface AppClientRoutePresentation {
+  readonly kind: AppClientRoutePresentationKind;
+  /**
+   * The overlay's title while the page is not ready, as a static translation key in the route's package. Required
+   * for `dialog` and `drawer`, rejected otherwise. It must not depend on the record the page shows.
+   */
+  readonly title?: string;
+  /**
+   * The translation namespace of `title`. Defaults to the package that registers the route; a plugin whose route
+   * definitions an application registers under its own package names its own package here.
+   */
+  readonly namespace?: string;
+}
+
 export interface AppClientRoutePageDefinition {
   /** Group name in this package, or packageName:name for another package; contribution roots only. */
   readonly parent?: string;
@@ -51,6 +77,7 @@ export interface AppClientRoutePageDefinition {
   readonly authz?: AppClientRouteAuthz;
   readonly breadcrumb?: AppClientRouteBreadcrumb;
   readonly navigation?: AppClientRouteNavigation;
+  readonly presentation?: AppClientRoutePresentation;
   readonly componentLoader: AppClientRouteComponentLoader;
   readonly children?: readonly AppClientRouteDefinition[];
 }
@@ -65,6 +92,7 @@ export interface AppClientRouteGroupDefinition {
   readonly navigation: AppClientRouteNavigation;
   readonly children: readonly AppClientRouteDefinition[];
   readonly componentLoader?: never;
+  readonly presentation?: never;
 }
 
 export type AppClientRouteDefinition =
@@ -77,6 +105,7 @@ export interface AppClientRegisteredRoute {
   readonly authz: AppClientRouteAuthz;
   readonly breadcrumb?: AppClientRouteBreadcrumb;
   readonly navigation?: AppClientRouteNavigation;
+  readonly presentation?: AppClientRoutePresentation;
   readonly componentLoader?: AppClientRouteComponentLoader;
   readonly children?: readonly AppClientRegisteredRoute[];
   readonly id: string;
@@ -108,6 +137,11 @@ export interface AppClientRouteNavigation {
   /** Lower values appear first among siblings; defaults to 0, with ties in registration order. */
   readonly order?: number;
   readonly title: string;
+  /**
+   * One sentence saying what the entry is for, as a translation key like `title`. Menus ignore it; an overview such
+   * as a settings home shows it under the title.
+   */
+  readonly description?: string;
   readonly icon?: AppClientRouteIcon;
 }
 
@@ -136,6 +170,11 @@ export interface AppClientRouteComponentOverrideDefinition {
   readonly routeId: string;
   readonly componentLoader: AppClientRouteComponentLoader;
   readonly componentEntry?: string;
+  /**
+   * The replacement component's presentation. An override never inherits the route's: one that omits it builds its
+   * own container, as overrides did before presentations existed, so an older override is not wrapped in a second one.
+   */
+  readonly presentation?: AppClientRoutePresentation;
 }
 
 export interface AppClientSourceExtension {
@@ -598,6 +637,10 @@ export function applyClientRouteComponentOverrides(
     nodes.flatMap((node) => [node, ...flatten(node.children ?? [])]);
   const routesById = new Map(flatten(routes).map((route) => [route.id, route]));
   const loadersByRouteId = new Map<string, AppClientRouteComponentLoader>();
+  const presentationsByRouteId = new Map<
+    string,
+    AppClientRoutePresentation | undefined
+  >();
 
   for (const override of overrides) {
     const routeId = override.routeId.trim();
@@ -626,6 +669,16 @@ export function applyClientRouteComponentOverrides(
       );
     }
     loadersByRouteId.set(routeId, override.componentLoader);
+    presentationsByRouteId.set(
+      routeId,
+      override.presentation === undefined
+        ? undefined
+        : normalizePresentation(
+            override.presentation,
+            routeId,
+            routesById.get(routeId)!.packageName,
+          ),
+    );
   }
 
   const replace = (
@@ -634,10 +687,15 @@ export function applyClientRouteComponentOverrides(
     Object.freeze(
       nodes.map((route) => {
         const loader = loadersByRouteId.get(route.id);
+        const presentation = presentationsByRouteId.get(route.id);
+        const { presentation: _replaced, ...rest } = route;
         return Object.freeze({
-          ...route,
+          ...(loader ? rest : route),
           ...(loader
-            ? { componentLoader: wrapRouteComponentLoader(loader, route.id) }
+            ? {
+                componentLoader: wrapRouteComponentLoader(loader, route.id),
+                ...(presentation ? { presentation } : {}),
+              }
             : {}),
           ...(route.children ? { children: replace(route.children) } : {}),
         });
@@ -700,6 +758,65 @@ function normalizeTitle(
     );
   }
   return normalized;
+}
+
+const ROUTE_PRESENTATION_KINDS: ReadonlySet<string> = new Set([
+  'content',
+  'child-page',
+  'dialog',
+  'drawer',
+]);
+
+function normalizePresentation(
+  presentation: AppClientRoutePresentation,
+  id: string,
+  packageName: string,
+): AppClientRoutePresentation {
+  const kind = (presentation as { kind?: unknown } | null)?.kind;
+  if (typeof kind !== 'string' || !ROUTE_PRESENTATION_KINDS.has(kind))
+    throw new Error(
+      `Client route "${id}" presentation must be one of content, child-page, dialog or drawer.`,
+    );
+  const overlay = kind === 'dialog' || kind === 'drawer';
+  if (!overlay) {
+    if (
+      presentation.title !== undefined ||
+      presentation.namespace !== undefined
+    )
+      throw new Error(
+        `Client route "${id}" presentation "${kind}" cannot declare a title or namespace.`,
+      );
+    return Object.freeze({ kind: kind as AppClientRoutePresentationKind });
+  }
+  if (typeof presentation.title !== 'string')
+    throw new Error(
+      `Client route "${id}" presentation "${kind}" must define a title.`,
+    );
+  const namespace = presentation.namespace?.trim();
+  if (presentation.namespace !== undefined && !namespace)
+    throw new Error(
+      `Client route "${id}" presentation namespace must not be empty.`,
+    );
+  return Object.freeze({
+    kind,
+    title: normalizeTitle(presentation.title, id, packageName),
+    ...(namespace ? { namespace } : {}),
+  });
+}
+
+function normalizeNavigation(
+  navigation: AppClientRouteNavigation,
+  id: string,
+  packageName: string,
+): AppClientRouteNavigation {
+  const { description, ...rest } = navigation;
+  const trimmed = description?.trim();
+  return Object.freeze({
+    ...rest,
+    title: normalizeTitle(navigation.title, id, packageName),
+    // A blank description is no description, so an overview never shows an empty line.
+    ...(trimmed ? { description: trimmed } : {}),
+  });
 }
 
 interface RouteResolveContext {
@@ -769,11 +886,18 @@ function resolveRouteTree(
         `Client route "${name}" cannot use reserved path "${path}" unless auth is "guest".`,
       );
     const navigation = route.navigation
-      ? Object.freeze({
-          ...route.navigation,
-          title: normalizeTitle(route.navigation.title, id, packageName),
-        })
+      ? normalizeNavigation(route.navigation, id, packageName)
       : undefined;
+    const declaredPresentation =
+      'presentation' in route ? route.presentation : undefined;
+    if (declaredPresentation !== undefined && !isPage)
+      throw new Error(
+        `Client route group "${id}" cannot declare presentation.`,
+      );
+    const presentation =
+      declaredPresentation === undefined
+        ? undefined
+        : normalizePresentation(declaredPresentation, id, packageName);
     if (
       navigation &&
       isPage &&
@@ -818,6 +942,7 @@ function resolveRouteTree(
       source,
       ...(breadcrumb ? { breadcrumb } : {}),
       ...(navigation ? { navigation } : {}),
+      ...(presentation ? { presentation } : {}),
       authz,
       ...(isPage
         ? {

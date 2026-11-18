@@ -13,6 +13,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     schedules: 'Agendamentos',
   },
   jobs: {
+    longWait:
+      'Está demorando mais que o normal. Você pode continuar aguardando.',
+    failed:
+      'O trabalho parou: {{reason}}. Crie um novo trabalho para tentar novamente.',
     title: 'Trabalhos em segundo plano',
     description:
       'Cada trabalho espera na fila, depois funciona por dez segundos e relata 10% de progresso a cada segundo. O progresso chega em WebSocket enquanto esta página está aberta.',
@@ -80,6 +84,16 @@ const ptBR: LocaleResource<typeof enUS> = {
     running: 'Em execução',
     completed: 'Concluído',
     failed: 'Falha',
+  },
+  taskProgress: {
+    queued: 'Aguardando início',
+    running: 'Em andamento',
+    completed: 'Concluído',
+    failed: 'Falhou',
+    canceled: 'Cancelado',
+    count: '{{processed}} de {{total}}',
+    processed: '{{processed}} processados',
+    background: 'Continua em execução se você sair desta página.',
   },
 };
 

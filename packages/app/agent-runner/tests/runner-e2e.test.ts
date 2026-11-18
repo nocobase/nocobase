@@ -81,6 +81,130 @@ describe('runner end to end', () => {
     return started;
   };
 
+  it('原生执行机在心跳后异步上传诊断，继续认领并由独立工作进程写 JSON 日志', async () => {
+    const paths = runnerPaths(home);
+    const date = new Date().toISOString().slice(0, 10);
+    mkdirSync(paths.logsDir, { recursive: true });
+    writeFileSync(
+      path.join(paths.logsDir, `runner.${date}.000000.log`),
+      JSON.stringify({
+        time: new Date().toISOString(),
+        level: 'info',
+        msg: 'api_key=fixture-sensitive-value',
+      }) + '\n',
+    );
+    const run = server.enqueue({ workspace: { dirs: [], env: [] } });
+    server.diagnostics = {
+      requestId: '7e53ca48-1bd0-4343-b027-b5d81bdb7d43',
+      window: {
+        since: `${date}T00:00:00Z`,
+        until: new Date(
+          Date.parse(`${date}T00:00:00Z`) + 86400000,
+        ).toISOString(),
+        runIds: [],
+      },
+      maxBytes: 131072,
+      expiresAt: new Date(Date.now() + 45000).toISOString(),
+    };
+    daemon();
+    await waitFor(
+      () => server.diagnosticsUploads.length === 1,
+      undefined,
+      'diagnostics upload',
+    );
+    await waitFor(
+      () => run.status === 'completed',
+      undefined,
+      'worker completion',
+    );
+    expect(JSON.stringify(server.diagnosticsUploads)).toContain(
+      'fixture-sensitive-value',
+    );
+    const log = path.join(
+      paths.logsDir,
+      'runs',
+      date,
+      `${run.payload.run.id}.log`,
+    );
+    const records = readFileSync(log, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    const raw = path.join(
+      paths.logsDir,
+      'runs',
+      date,
+      run.payload.run.id + '.stderr',
+    );
+    await waitFor(
+      () => !existsSync(raw),
+      undefined,
+      'empty crash sidecar removed',
+    );
+    expect(records.length).toBeGreaterThan(0);
+    expect(
+      records.every(
+        (entry) =>
+          entry.time &&
+          entry.runId === run.payload.run.id &&
+          typeof entry.msg === 'string',
+      ),
+    ).toBe(true);
+    expect(
+      [...server.runners.values()][0].heartbeats.at(-1)?.features,
+    ).toContain('diagnostics');
+  });
+
+  it('工作进程导入前失败和直接写 fd 的输出仍可收集', async () => {
+    const preload = path.join(scratch, 'worker-import-failure.mjs');
+    writeFileSync(
+      preload,
+      "import { writeSync } from 'node:fs'; if (process.argv.some((arg) => arg.startsWith('--nocobase-runner-run='))) { writeSync(1, 'native-stdout-fixture\\n'); writeSync(2, 'native-stderr-fixture api_key=fixture-sensitive-value\\n'); await import('./missing-worker-import-fixture.mjs'); }",
+    );
+    env.NODE_OPTIONS = [env.NODE_OPTIONS, `--import=${preload}`]
+      .filter(Boolean)
+      .join(' ');
+    const run = server.enqueue({ workspace: { dirs: [], env: [] } });
+    daemon();
+    await waitFor(
+      () => run.status === 'failed',
+      undefined,
+      'worker import failure',
+    );
+    const paths = runnerPaths(home);
+    const date = new Date().toISOString().slice(0, 10);
+    const raw = path.join(
+      paths.logsDir,
+      'runs',
+      date,
+      `${run.payload.run.id}.stderr`,
+    );
+    const native = readFileSync(raw, 'utf8');
+    expect(native).toContain('native-stdout-fixture');
+    expect(native).toContain('missing-worker-import-fixture');
+    let output = '';
+    const { diagnosticsRecords } = await import('../src/core/diagnostics.ts');
+    for await (const line of diagnosticsRecords(
+      paths,
+      {
+        requestId: '7e53ca48-1bd0-4343-b027-b5d81bdb7d43',
+        window: {
+          since: `${date}T00:00:00Z`,
+          until: new Date(Date.parse(date) + 86400000).toISOString(),
+          runIds: [run.payload.run.id],
+        },
+        maxBytes: 131072,
+        expiresAt: new Date(Date.now() + 45000).toISOString(),
+      },
+      { version: 'fixture', tools: [] },
+    ))
+      output += line;
+    expect(output).toContain('native-stdout-fixture');
+    expect(output).toContain('native-stderr-fixture');
+    expect(output).toContain('missing-worker-import-fixture');
+    expect(output).toContain('fixture-sensitive-value');
+  });
+
   it('registers with features and tools, and heartbeats', async () => {
     const runner = [...server.runners.values()][0];
     expect(runner?.register).toMatchObject({
@@ -303,7 +427,19 @@ describe('runner end to end', () => {
     expect(envOutput).toContain('DEPLOY_TOKEN=[REDACTED]');
     expect(JSON.stringify(events)).not.toContain('secret-value');
     expect(envOutput).not.toContain('should-not-leak');
-    expect(envOutput).not.toMatch(/^NOCOBASE_RUNNER_/m);
+    // Of the runner's own variables only where the npm launcher finds the run's socket and npm directory, never its
+    // configuration or key.
+    expect(
+      envOutput!
+        .split('\n')
+        .filter((line) => line.startsWith('NOCOBASE_RUNNER_'))
+        .map((line) => line.slice(0, line.indexOf('=')))
+        .sort(),
+    ).toEqual([
+      'NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE',
+      'NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET',
+      'NOCOBASE_RUNNER_NPM_DIR',
+    ]);
     // The real home of the user the runner runs as, not one inside the work directory.
     expect(envOutput).toMatch(/^HOME=/m);
     expect(envOutput).not.toContain(`HOME=${workDir}`);

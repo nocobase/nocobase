@@ -6,7 +6,7 @@ import {
   type ResendProviderConfig,
 } from '@nocobase/mailer';
 
-/** One private sender owned by Authentication, independent of notification channels. */
+/** Private legacy inline configuration. Named references belong to passwordReset.mailer. */
 export type AuthEmailConfig =
   Omit<SmtpProviderConfig, 'enabled'> | Omit<ResendProviderConfig, 'enabled'>;
 

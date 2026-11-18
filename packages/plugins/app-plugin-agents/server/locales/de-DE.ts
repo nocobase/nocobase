@@ -15,9 +15,9 @@ const deDE: LocaleResource<typeof enUS> = {
           edit: {
             title: 'Change Agents und Fähigkeiten',
             description:
-              'Ändern Sie die Einstellungen, Fähigkeiten und Variablen eines Agenten, archivieren, wiederherstellen und löschen Sie ihn und bearbeiten Sie Fähigkeiten. Einem Agenten werden keine Befugnisse eingeräumt, die über die des Herausgebers hinausgehen',
+              'Ändern Sie die Einstellungen, Fähigkeiten und Variablen eines Agent, archivieren, wiederherstellen und löschen Sie ihn und bearbeiten Sie Fähigkeiten. Einem Agent werden keine Befugnisse eingeräumt, die über die des Herausgebers hinausgehen',
             related:
-              'Agenten und Fähigkeiten ändern (Agenten, die sie besitzen, und Fähigkeiten, die sie erstellt haben)',
+              'Agents und Fähigkeiten ändern (Agents, die sie besitzen, und Fähigkeiten, die sie erstellt haben)',
             relatedLabel:
               'Agenten, die ich besitze, und Fähigkeiten, die ich erstellt habe',
             relatedHint:
@@ -43,7 +43,7 @@ const deDE: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agenten',
         description:
-          'Siehe Agenten, Fähigkeiten und Läufe; Agenten und Fähigkeiten ändern, Läufe abbrechen und wiederholen.',
+          'Siehe Agents, Fähigkeiten und Läufe; Agents und Fähigkeiten ändern, Läufe abbrechen und wiederholen.',
       },
       runners: {
         title: 'Laufzeitumgebungen',

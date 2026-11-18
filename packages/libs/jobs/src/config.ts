@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { validateJobsConfig } from './validate-config.js';
 
 /** Common options plus adapter-owned fields, preserved without filtering. */
 export interface JobsAdapterConfig {
@@ -16,7 +17,7 @@ export interface MemoryJobsAdapterConfig extends JobsAdapterConfig {
 
 export interface JobsConfig {
   readonly default?: string;
-  readonly [name: string]: JobsAdapterConfig | string | undefined;
+  readonly backends?: Readonly<Record<string, JobsAdapterConfig>>;
 }
 
 export interface ResolvedJobsConfig {
@@ -46,18 +47,22 @@ export function selectJobsConfig(
   config: JobsConfig | undefined,
   name: string | undefined,
 ): JobsConfigSelection {
+  validateJobsConfig(config);
   if (name !== undefined && name !== 'default') {
-    const named = config?.[name];
+    const named =
+      config?.backends && Object.hasOwn(config.backends, name)
+        ? config.backends[name]
+        : undefined;
     if (named !== undefined && typeof named !== 'string')
       return { key: name, config: named };
   }
   const defaultKey = config?.default;
   if (defaultKey === undefined)
     return { key: BUILT_IN_MEMORY_KEY, config: undefined };
-  const selected = defaultKey === 'default' ? undefined : config?.[defaultKey];
-  if (selected === undefined || typeof selected === 'string')
+  const selected = config?.backends?.[defaultKey];
+  if (selected === undefined)
     throw new Error(
-      `jobs.default names "${defaultKey}", which is not a jobs configuration.`,
+      'jobs.default must name an existing configuration in jobs.backends.',
     );
   return { key: defaultKey, config: selected };
 }

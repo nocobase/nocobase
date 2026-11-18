@@ -6,7 +6,7 @@ const write = process.stdout.write.bind(process.stdout);
 let gated = false;
 process.stdout.write = (...args) => {
   const result = write(...args);
-  if (!gated && String(args[0]).includes('ready\n')) {
+  if (!gated && String(args[0]).includes('ready')) {
     gated = true;
     readSync(3, Buffer.alloc(1), 0, 1, null);
   }

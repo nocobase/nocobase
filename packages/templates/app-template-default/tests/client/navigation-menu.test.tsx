@@ -1,4 +1,8 @@
 import {
+  collapseSettingsNavigation,
+  SETTINGS_GROUP,
+} from '../../client/lib/navigation-transform.js';
+import {
   createAppSidebarPreferenceStore,
   SidebarPreferenceProvider,
 } from '../../client/layouts/use-sidebar-preference.js';
@@ -492,3 +496,42 @@ describe('sidebar shell', () => {
     );
   });
 });
+
+it.each(['expanded', 'collapsed', 'mobile'])(
+  'separates settings from business links in the %s sidebar',
+  async (mode) => {
+    if (mode === 'collapsed') setCollapsed(true);
+    if (mode === 'mobile') vi.stubGlobal('innerWidth', 390);
+    const settingsHome = { ...page('settingsHome'), navigation: undefined };
+    const users = page('Users');
+    const settings = {
+      route: {
+        ...page(SETTINGS_GROUP),
+        navigation: { title: 'System settings' },
+        componentLoader: undefined,
+        children: [settingsHome, users],
+      },
+      children: [
+        { route: settingsHome, children: [] },
+        { route: users, children: [] },
+      ],
+    };
+    const business = [
+      { route: page('Home'), children: [] },
+      { route: page('Projects'), children: [] },
+    ];
+    const items = collapseSettingsNavigation([...business, settings]);
+    render(shell(items), { wrapper: I18n });
+    if (mode === 'mobile')
+      fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+    const home = await screen.findByRole('link', { name: 'Home' });
+    const projects = screen.getByRole('link', { name: 'Projects' });
+    const configuration = screen.getByRole('link', { name: 'System settings' });
+    expect(home.closest('ul')).toBe(projects.closest('ul'));
+    expect(configuration.closest('ul')).not.toBe(home.closest('ul'));
+    expect(configuration).toHaveAttribute('href', '/settingsHome');
+    expect(
+      collapseSettingsNavigation([...business, { ...settings, children: [] }]),
+    ).toEqual(business);
+  },
+);

@@ -31,6 +31,8 @@
 //   ~/.nocobase-runner-work/.pnpm-store/          the pnpm store every run shares (core/pnpm-store.ts)
 import {
   chmod,
+  lstat,
+  unlink,
   mkdir,
   readFile,
   rename,
@@ -68,7 +70,6 @@ export interface RunnerPaths {
   capacity: string;
   runsDir: string;
   logsDir: string;
-  daemonLog: string;
   reposDir: string;
   cliDir: string;
   skillsDir: string;
@@ -97,7 +98,6 @@ export function runnerPaths(
     capacity: path.join(home, 'capacity.json'),
     runsDir: path.join(home, 'runs'),
     logsDir,
-    daemonLog: path.join(logsDir, 'runner.log'),
     reposDir: path.join(home, 'repos'),
     cliDir: path.join(home, 'cli'),
     skillsDir: path.join(home, 'skills'),
@@ -117,8 +117,21 @@ export async function ensureHome(paths: RunnerPaths): Promise<void> {
   await chmod(paths.home, 0o700);
 }
 
-export function runLogPath(paths: RunnerPaths, runId: string): string {
-  return path.join(paths.logsDir, 'runs', `${safeName(runId)}.log`);
+export function runLogPath(
+  paths: RunnerPaths,
+  runId: string,
+  date: string = new Date().toISOString().slice(0, 10),
+): string {
+  return path.join(paths.logsDir, 'runs', date, `${safeName(runId)}.log`);
+}
+
+/** The worker's inherited fd output is separate from its JavaScript-owned JSON journal. */
+export function runRawLogPath(
+  paths: RunnerPaths,
+  runId: string,
+  date: string = new Date().toISOString().slice(0, 10),
+): string {
+  return runLogPath(paths, runId, date).replace(/\.log$/, '.stderr');
 }
 
 /** A string safe to use as one path segment. */
@@ -152,4 +165,13 @@ export async function writeJsonAtomic(
 
 export async function removeFile(file: string): Promise<void> {
   await rm(file, { force: true });
+}
+
+export async function removeEmptyStderr(file: string): Promise<void> {
+  try {
+    const stats = await lstat(file);
+    if (stats.isFile() && stats.size === 0) await unlink(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
 }

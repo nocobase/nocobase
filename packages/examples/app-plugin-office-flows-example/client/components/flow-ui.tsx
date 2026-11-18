@@ -457,16 +457,37 @@ export function History({
       ),
     })),
   ].sort((left, right) => text(right.at).localeCompare(text(left.at)));
-  if (!entries.length)
-    return (
-      <p className='text-sm text-muted-foreground'>{t('common.noHistory')}</p>
-    );
   return (
-    <ol className='space-y-3 border-l pl-4'>
-      {entries.map((entry) => (
-        <li key={entry.key}>{entry.node}</li>
-      ))}
-    </ol>
+    <div className='space-y-3'>
+      {view.parameterSnapshot && (
+        <details>
+          <summary>{t('common.parameterSnapshot')}</summary>
+          <ul className='space-y-1 text-sm text-muted-foreground'>
+            {Object.entries(view.parameterSnapshot.sources)
+              .filter(([, source]) => source.origin === 'upgrade')
+              .map(([field, source]) => (
+                <li key={field}>
+                  {field}:{' '}
+                  {t('common.upgradeSource', { revision: source.revision })}
+                </li>
+              ))}
+          </ul>
+          <pre className='overflow-auto text-xs'>
+            {JSON.stringify(view.parameterSnapshot, null, 2)}
+          </pre>
+        </details>
+      )}
+      {!entries.length && (
+        <p className='text-sm text-muted-foreground'>{t('common.noHistory')}</p>
+      )}
+      {entries.length > 0 && (
+        <ol className='space-y-3 border-l pl-4'>
+          {entries.map((entry) => (
+            <li key={entry.key}>{entry.node}</li>
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
 

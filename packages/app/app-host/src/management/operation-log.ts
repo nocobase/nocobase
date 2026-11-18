@@ -188,7 +188,7 @@ export class FileOperationLog implements OperationLog {
         const stored = await this.read(file);
         if (!stored) continue;
         if (
-          stored.state === 'running' &&
+          (stored.state === 'running' || stored.state === 'queued') &&
           stored.owner?.bootId !== this.owner.bootId
         ) {
           await this.write({
@@ -201,7 +201,7 @@ export class FileOperationLog implements OperationLog {
           });
           continue;
         }
-        if (stored.state !== 'running') {
+        if (stored.state !== 'running' && stored.state !== 'queued') {
           const at = Date.parse(stored.finishedAt ?? stored.startedAt);
           finished.push({
             file,

@@ -76,13 +76,12 @@ export interface QueueConfigEntry<A extends QueueAdapter = QueueAdapter> {
 }
 
 /**
- * The `queue` configuration section: `default` names the key used when a
- * queue names none or an unknown one; every other key defines one
- * configuration.
+ * The `queue` configuration section: `default` names a configuration in
+ * `backends` used when a queue names none or an unknown one.
  */
 export interface QueueConfig {
   readonly default?: string;
-  readonly [key: string]: QueueConfigEntry | string | undefined;
+  readonly backends?: Readonly<Record<string, QueueConfigEntry>>;
 }
 
 /**

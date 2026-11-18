@@ -13,6 +13,8 @@ it.each([
   { name: 'de-DE', load: () => import('../client/locales/de-DE.js') },
   { name: 'vi-VN', load: () => import('../client/locales/vi-VN.js') },
   { name: 'id-ID', load: () => import('../client/locales/id-ID.js') },
+  { name: 'ru-RU', load: () => import('../client/locales/ru-RU.js') },
+  { name: 'ko-KR', load: () => import('../client/locales/ko-KR.js') },
 ])(
   'explains vector databases and configuration steps in both audiences ($name)',
   async ({ load }) => {

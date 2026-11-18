@@ -113,7 +113,30 @@ export interface AppLifecycleView {
   lastAccessedAt: string | null;
   /** The last activation failure, while it is recent enough to stop a request from retrying at once. */
   lastFailure: { at: string; error: string } | null;
+  /**
+   * Why the App holds a slot while it runs or starts, as capacity admission sees it: `requests` and `connections` in
+   * flight, `starting`, another `operation` (a deployment or a stop), `resident` (it never stops when idle), `busy`
+   * (not idle in another way) or `recent` (requested within the last minute). Absent while it holds nothing.
+   */
+  holds?: AppHoldReason[];
+  /**
+   * Why its last start was refused, for a minute after the refusal or until it starts: `capacity` (the active App limit
+   * or the cold-start queue), `memory` (the Host's memory budget) or `recycle` (the Host loads no new code until it is
+   * restarted to free the old). Absent otherwise.
+   */
+  waiting?: AppWaitReason;
 }
+
+export type AppHoldReason =
+  | 'requests'
+  | 'connections'
+  | 'starting'
+  | 'operation'
+  | 'resident'
+  | 'busy'
+  | 'recent';
+
+export type AppWaitReason = 'capacity' | 'memory' | 'recycle';
 
 export interface AppRuntimeEndpoint {
   kind: 'in-process' | 'local-http' | 'external-http';
@@ -223,6 +246,8 @@ export interface AppSnapshot {
   state: AppState;
   endpoint: AppRuntimeEndpoint;
   activeRequests: number;
+  /** Open WebSockets, separate from HTTP requests and upgrade handshakes. */
+  activeConnections?: number;
   createdAt: string;
   updatedAt: string;
   lastAccessedAt: string | null;

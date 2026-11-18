@@ -123,7 +123,7 @@ test('unrelated paths and empty changes skip the matrix', () => {
       'AGENTS.md',
       'packages/app/app-client/src/index.ts',
       'packages/libs/db-postgres-extra/src/index.ts',
-      '.github/workflows/v3-release-beta.yml',
+      '.github/workflows/v3-release.yml',
     ]),
     [],
   );
@@ -141,6 +141,12 @@ const claimPagination = {
   filter: '@nocobase/app-plugin-agents',
   tests: 'tests/claim-pagination.test.ts',
 };
+
+const appPagination = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-releases',
+  tests: 'tests/list-apps-paging.test.ts tests/migrations.test.ts',
+}));
 
 const artifactKeyMigration = {
   dialect: 'mssql',
@@ -176,7 +182,14 @@ test('release migration changes select the SQL Server upgrade regression', () =>
     'packages/plugins/app-plugin-releases/database/migrations/202610260002_rel_bound_artifact_keys.ts',
     'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
   ])
-    assert.deepEqual(selectPackageSuites([file]), [artifactKeyMigration], file);
+    assert.deepEqual(
+      selectPackageSuites([file]),
+      [
+        ...(file.includes('/database/migrations/') ? appPagination : []),
+        artifactKeyMigration,
+      ],
+      file,
+    );
   assert.deepEqual(
     selectPackageSuites([
       'packages/plugins/app-plugin-releases/server/plugin.ts',
@@ -230,6 +243,27 @@ test('claim pagination changes select the PostgreSQL boundary and competition su
   ]) {
     assert.ok(!selectPackageSuites([file]).includes(claimPagination), file);
   }
+});
+
+const replacementRace = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-agents',
+  tests: 'tests/quota-replacement-race.test.ts',
+}));
+
+test('run replacement changes select the REPEATABLE READ interleaving on both server dialects', () => {
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/server/core/runs/run.service.ts',
+    ]),
+    [claimConcurrency, ...replacementRace],
+  );
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/tests/quota-replacement-race.test.ts',
+    ]),
+    replacementRace,
+  );
 });
 
 const receiptConcurrency = ['postgres', 'mysql'].map((dialect) => ({
@@ -343,10 +377,12 @@ test('missing or unavailable comparison commits conservatively select every data
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
     assert.deepEqual(plan.suites, [
+      ...appPagination,
       ...receiptConcurrency,
       ...withdrawalConcurrency,
       claimConcurrency,
       claimPagination,
+      ...replacementRace,
       artifactKeyMigration,
     ]);
   }
@@ -378,4 +414,19 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
     });
     assert.equal(readFileSync(output, 'utf8'), expected);
   }
+});
+
+test('app pagination selects both server dialects for service, migration and test changes', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-releases/server/services/releases.ts',
+    'packages/plugins/app-plugin-releases/tests/list-apps-paging.test.ts',
+    'packages/plugins/app-plugin-releases/tests/migrations.test.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), appPagination, file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-releases/client/pages/environment-page.tsx',
+    ]),
+    [],
+  );
 });

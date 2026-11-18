@@ -18,36 +18,6 @@ const templates = ['default', 'examples'].map((kind) => {
   };
 });
 const [baseline] = templates;
-// PM-450 removes annotations only from Default; Examples keeps this development tool.
-// Normalize only these exact fragments so all remaining build configuration stays compared.
-const examplesAnnotationViteFragments = [
-  "import agentAnnotations from '@gchust/agent-annotations/vite';\n",
-  `const AGENT_ANNOTATIONS_DISABLED_VALUES = new Set(['false', '0', 'no', 'off']);
-
-function isAgentAnnotationsEnabled(value: string | undefined): boolean {
-  const normalized = value?.trim().toLowerCase();
-  return !normalized || !AGENT_ANNOTATIONS_DISABLED_VALUES.has(normalized);
-}
-
-`,
-  `  const annotationsEnabled = isAgentAnnotationsEnabled(
-    env.AGENT_ANNOTATIONS_ENABLED,
-  );
-`,
-  `      ...(annotationsEnabled
-        ? [
-            agentAnnotations({
-              root: __dirname,
-              clientExtensions: [
-                path.resolve(__dirname, 'client/agent-annotations-host.ts'),
-              ],
-            }),
-          ]
-        : []),
-`,
-  "          '**/.agent-annotations/**',\n",
-];
-const annotationDockerIgnore = '**/.agent-annotations\n';
 const runtimeExtensions = ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs'];
 const builtins = new Set(
   builtinModules.flatMap((name) => [name, name.replace(/^node:/u, '')]),
@@ -200,8 +170,8 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
         "import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';",
     );
     replaceOnce(
-      '        <ThemeSettings />',
-      '        <ChatHeaderButton />\n        <ThemeSettings />',
+      '        <UserMenu />',
+      '        <ChatHeaderButton />\n        <UserMenu />',
     );
   }
   return source;
@@ -209,23 +179,6 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
 
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
-
-  if (template.kind === 'examples') {
-    const fragments =
-      file === 'vite.config.ts'
-        ? examplesAnnotationViteFragments
-        : file === 'Dockerfile.dockerignore'
-          ? [annotationDockerIgnore]
-          : [];
-    for (const fragment of fragments) {
-      assert.equal(
-        source.split(fragment).length - 1,
-        1,
-        `${template.kind}: ${file} must retain exactly one annotation fragment: ${fragment}`,
-      );
-      source = source.replace(fragment, '');
-    }
-  }
 
   // The image recipe is shared. Only the template's own directory, named in the usage comment, differs; it is
   // normalized to Default's before comparing.
@@ -236,9 +189,60 @@ function sharedFrameworkSource(template, file) {
     );
   }
 
-  // Keep product identity local while comparing the shared layout.
+  // Default omits the template name; Examples retains it in the footer, tooltip and accessible name.
+  // Normalize only the exact name-related fragments so the rest of the shared layout stays compared.
   if (file === 'client/layouts/components/sidebar-footer.tsx') {
-    source = source.replace("'Examples Template'", "'Default Template'");
+    if (template.kind === 'default') {
+      assert.doesNotMatch(
+        source,
+        /templateName|app\.displayName|Default Template/u,
+      );
+    } else {
+      const nameFragments = [
+        [
+          " * The application's sidebar footer: the NocoBase slogan's two lines, then the template's name and its version, each\n" +
+            ' * on its own line. In icon mode only the shield remains, and a tooltip carries the same text.',
+          " * The application's sidebar footer: the NocoBase slogan's two lines, then the application's version.\n" +
+            ' * In icon mode only the shield remains, and a tooltip carries the same text.',
+        ],
+        [
+          "  const templateName = publicConfig.get('app.displayName', 'Examples Template');\n",
+          '',
+        ],
+        [
+          '${brandPartnership} ${buildReliableSystems} ${templateName} ${versionLabel}',
+          '${brandPartnership} ${buildReliableSystems} ${versionLabel}',
+        ],
+        [
+          "            <span className='mt-1 opacity-70'>\n" +
+            '              {templateName} {versionLabel}\n' +
+            '            </span>',
+          "            <span className='mt-1 opacity-70'>{versionLabel}</span>",
+        ],
+        [
+          '          {/* Name and version stay on one line each; a long name is cut off, with the whole name as its title. */}\n' +
+            '          <p\n' +
+            "            className='mt-1 truncate text-muted-foreground'\n" +
+            '            title={templateName}\n' +
+            '          >\n' +
+            '            {templateName}\n' +
+            '          </p>\n' +
+            "          <p className='truncate text-muted-foreground' title={versionLabel}>",
+          '          <p\n' +
+            "            className='mt-1 truncate text-muted-foreground'\n" +
+            '            title={versionLabel}\n' +
+            '          >',
+        ],
+      ];
+      for (const [before, after] of nameFragments) {
+        assert.equal(
+          source.split(before).length - 1,
+          1,
+          `${template.kind}: ${file} must retain exactly one name fragment: ${before}`,
+        );
+        source = source.replace(before, after);
+      }
+    }
   }
   return source;
 }
@@ -246,40 +250,32 @@ function sharedFrameworkSource(template, file) {
 // These are shared framework mechanisms, not product pages or plugin composition.
 // Compare both directions so adding a build helper in only one template also fails.
 for (const template of templates) {
-  test(`${template.kind} keeps its intended development annotation integration`, () => {
+  test(`${template.kind} does not integrate development annotations`, () => {
     for (const file of ['vite.config.ts', 'Dockerfile.dockerignore']) {
       const source = readFileSync(path.join(template.directory, file), 'utf8');
-      if (template.kind === 'default') {
-        assert.doesNotMatch(
-          source,
-          /agent[-_]?annotations|annotationsEnabled/iu,
-        );
-      }
-      // The exact Examples integration is asserted while normalizing; nothing else may differ.
+      assert.doesNotMatch(source, /agent[-_]?annotations|annotationsEnabled/iu);
       assert.equal(
         sharedFrameworkSource(template, file),
         sharedFrameworkSource(baseline, file),
         `${template.kind}: ${file}`,
       );
     }
-    const annotationPackage = '@gchust/agent-annotations';
-    if (template.kind === 'default') {
-      for (const field of [
-        'dependencies',
-        'devDependencies',
-        'peerDependencies',
-        'optionalDependencies',
-      ]) {
-        assert.equal(template.manifest[field]?.[annotationPackage], undefined);
-      }
-    } else {
-      assert.ok(template.manifest.devDependencies?.[annotationPackage]);
+    for (const field of [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]) {
+      assert.equal(
+        template.manifest[field]?.['@gchust/agent-annotations'],
+        undefined,
+      );
     }
     assert.equal(
       existsSync(
         path.join(template.directory, 'client/agent-annotations-host.ts'),
       ),
-      template.kind === 'examples',
+      false,
     );
   });
 

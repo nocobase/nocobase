@@ -6,13 +6,39 @@ const frFR: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Chargement',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Utilisateurs',
+      category: 'Comptes',
+      name: "Invitation d'utilisateur",
+      trigger:
+        "Un administrateur invite une personne, ou renvoie une invitation, avec l'option e-mail sélectionnée.",
+      recipients: "La personne invitée, à l'adresse e-mail saisie pour elle.",
+      businessRule:
+        "Envoyé à chaque création ou renvoi d'une invitation avec l'option e-mail sélectionnée. Aucun interrupteur séparé ne permet de le désactiver.",
+      languagePolicy:
+        "Rédigé dans une seule langue, choisie lors de l'invitation : la langue d'interface de la personne qui invite, sauf si une autre est choisie. Le renvoi la conserve. Si cette langue n'a pas de texte d'e-mail, l'e-mail utilise la langue par défaut de l'application et l'anglais.",
+      channel: "Expéditeur de l'e-mail d'invitation",
+      variables: {
+        app: "Nom de l'application",
+        inviter: "Nom de la personne qui a envoyé l'invitation",
+        items: "Rôles ou accès accordés par l'invitation",
+        date: "Date d'expiration de l'invitation, dans la langue de l'e-mail et en UTC",
+        url: "Lien pour accepter l'invitation ; l'aperçu utilise un lien fictif",
+      },
+    },
+  },
   accept: {
     title: "Accepter l'invitation",
+    language: 'Langue',
     description: '{{inviter}} vous a invité.',
     summary: 'Vous rejoindrez également : {{items}}',
     loading: "Chargement de l'invitation…",
     email: 'E-mail',
     name: 'Nom',
+    username: 'Nom d’utilisateur (facultatif)',
+    usernameHint:
+      'Vous pouvez utiliser ce nom d’utilisateur pour vous connecter.',
     password: 'Mot de passe',
     nameRequired: 'Entrez votre nom.',
     passwordTooShort:
@@ -26,6 +52,7 @@ const frFR: LocaleResource<typeof enUS> = {
     signOutFailed: 'Impossible de se déconnecter.',
     existingAccount:
       'Cette adresse possède déjà un compte. Connectez-vous avec pour continuer.',
+    alreadyHaveAccount: 'Vous avez déjà un compte ? Connectez-vous',
     goToLogin: 'Allez vous connecter',
     errors: {
       notFound: "Ce lien d'invitation n'est pas valide.",
@@ -33,6 +60,8 @@ const frFR: LocaleResource<typeof enUS> = {
       accepted: 'Cette invitation a déjà été acceptée.',
       revoked: 'Cette invitation a été révoquée.',
       password: 'Le mot de passe ne répond pas aux exigences.',
+      usernameConflict:
+        'Ce nom est déjà utilisé comme nom d’utilisateur ou adresse e-mail. Choisissez-en un autre.',
       accountConflict: 'Un compte avec cette adresse ne peut pas être créé.',
       failed: "Quelque chose s'est mal passé. Veuillez réessayer.",
     },

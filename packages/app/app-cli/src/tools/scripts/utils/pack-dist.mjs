@@ -45,7 +45,21 @@ const OPTIONAL_ENTRIES = ['Dockerfile', 'Dockerfile.dockerignore'];
  * guarantee rather than the cleanup: a step added later that does install into `dist` would otherwise reintroduce
  * them, and the resulting archive would fail only on a deployment.
  */
-const isShimDirectory = (entryPath) => entryPath.split('/').includes('.bin');
+// Only the application's runtime paths are excluded. Dependencies may legitimately ship config.yml, storage/ or
+// .env.example as resources; matching basenames throughout node_modules would damage those packages.
+const includeEntry = (entryPath) => {
+  const parts = entryPath.replaceAll('\\', '/').split('/').filter(Boolean);
+  if (parts.includes('.bin')) return false;
+  if (parts[0] !== 'dist') return true;
+  const name = parts[1];
+  return !(
+    name === '.env' ||
+    name?.startsWith('.env.') ||
+    name === 'config.yml' ||
+    name === 'config.yaml' ||
+    name === 'storage'
+  );
+};
 
 if (!fs.existsSync(distDir)) {
   throw new Error('Missing dist. Run pnpm build first.');
@@ -59,27 +73,38 @@ if (missing.length > 0) {
 }
 
 fs.mkdirSync(storageDir, { recursive: true });
-fs.rmSync(archivePath, { force: true });
+// Keep the last usable archive until its replacement is complete. The temporary directory is on the same
+// filesystem so rename publishes the finished file without exposing a partially written gzip stream.
+const temporaryDirectory = fs.mkdtempSync(
+  path.join(storageDir, '.dist-archive-'),
+);
+const temporaryArchive = path.join(temporaryDirectory, 'dist.tar.gz');
 
 // `sync` rather than the promise this returns without it. On a tree this size that promise never settles: the
 // archive is written, the event loop drains with it still pending, and Node exits on the unsettled await — leaving a
 // plausible-looking file that `tar -tzf` cannot read to the end. A truncated archive that reports success is the
 // worst outcome available here, and the synchronous path costs about eight seconds.
-create(
-  {
-    cwd: rootDir,
-    file: archivePath,
-    filter: (entryPath) => !isShimDirectory(entryPath),
-    gzip: true,
-    sync: true,
-  },
-  [
-    ...OPTIONAL_ENTRIES.filter((entry) =>
-      fs.existsSync(path.join(rootDir, entry)),
-    ),
-    ...ARCHIVE_ENTRIES,
-  ],
-);
+try {
+  create(
+    {
+      cwd: rootDir,
+      file: temporaryArchive,
+      filter: includeEntry,
+      gzip: true,
+      sync: true,
+      strict: true,
+    },
+    [
+      ...OPTIONAL_ENTRIES.filter((entry) =>
+        fs.existsSync(path.join(rootDir, entry)),
+      ),
+      ...ARCHIVE_ENTRIES,
+    ],
+  );
+  fs.renameSync(temporaryArchive, archivePath);
+} finally {
+  fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+}
 
 console.log(
   `Packed ${path.relative(rootDir, archivePath)} (${formatMegabytes(fs.statSync(archivePath).size)}).`,

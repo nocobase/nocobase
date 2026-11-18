@@ -6,8 +6,7 @@ import { useContext, type ReactElement } from 'react';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { AppSummary, Labels } from '../../shared/releases.js';
 import { ReleasesAppOriginContext } from '../lib/app-origin.js';
-import { appStateOf } from '../lib/app-state.js';
-import { messageText } from '../lib/errors.js';
+import { appStateDetail, appStateOf } from '../lib/app-state.js';
 import { ReleasesSystemLabelsContext } from '../lib/system-labels.js';
 import { SystemLabelChip } from './labels-editor.js';
 import { Tag, type Tone } from './tag.js';
@@ -18,14 +17,22 @@ const APP_STATE_TONE: Readonly<Record<string, Tone>> = {
   pending: 'blue',
   starting: 'blue',
   deploying: 'blue',
+  queued: 'grey',
+  cancelling: 'amber',
   stopped: 'grey',
   stoppedOnDemand: 'grey',
   dormant: 'violet',
+  waitingCapacity: 'amber',
+  waitingMemory: 'amber',
+  waitingRecycle: 'amber',
   failed: 'red',
   unknown: 'grey',
 };
 
-/** The App's runtime state; deploying while a deployment is pending. The runtime's error shows on hover. */
+/**
+ * The App's one state (`appStateOf`); what explains it shows on hover: the wait of a deployment refused for capacity,
+ * else the runtime's last error, as a last failure while a deployment is pending.
+ */
 export function AppStateBadge({
   summary,
 }: {
@@ -37,19 +44,22 @@ export function AppStateBadge({
     <Tag
       tone={APP_STATE_TONE[state] ?? 'grey'}
       dot
-      title={
-        summary.runtime.error
-          ? messageText(t, summary.runtime.error)
-          : undefined
-      }
+      title={appStateDetail(t, summary, state) ?? undefined}
     >
-      {t(`ui.state.${state}`)}
+      {state === 'queued' && summary.pendingDeployment?.queueAhead != null
+        ? t('ui.deployments.queueAhead', {
+            ahead: summary.pendingDeployment.queueAhead,
+          })
+        : ['queued', 'cancelling'].includes(state)
+          ? t(`ui.deployments.statuses.${state}`)
+          : t(`ui.state.${state}`)}
     </Tag>
   );
 }
 
 const STATUS_TONE: Readonly<Record<string, Tone>> = {
   queued: 'grey',
+  cancelling: 'amber',
   deploying: 'blue',
   succeeded: 'green',
   failed: 'red',

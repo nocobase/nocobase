@@ -31,7 +31,9 @@ test('real production page guards, local OAuth persistence, success/failure retu
       name: 'Sign in to the acceptance application',
     }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/main\/login$/);
+  await expect(page).toHaveURL(
+    `${baseURL}login?redirect=${encodeURIComponent('/mail/accounts')}`,
+  );
   expect(mailReads).toEqual([]);
   expect((await context.request.get(`${api}/mail/accounts`)).status()).toBe(
     401,

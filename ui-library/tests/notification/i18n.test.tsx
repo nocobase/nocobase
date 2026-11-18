@@ -4,11 +4,16 @@ import {
 } from '@nocobase/i18n/testing';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import enUS from '../../registry/notification/notification-logs-ui/locales/en-US.js';
 import zhCN from '../../registry/notification/notification-logs-ui/locales/zh-CN.js';
-import { NotificationLogsPage } from '../../registry/notification/notification-logs-ui/page.js';
+import koKR from '../../registry/notification/notification-logs-ui/locales/ko-KR.js';
+import ruRU from '../../registry/notification/notification-logs-ui/locales/ru-RU.js';
+import {
+  NotificationLogsPage,
+  NotificationLogsView,
+} from '../../registry/notification/notification-logs-ui/page.js';
 
 vi.mock('@nocobase/app-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/app-client')>();
@@ -44,18 +49,27 @@ it('translates installed notification log source using application-owned resourc
   await screen.findByText('No deliveries yet');
   await act(() => runtime.changeLanguage('zh-CN'));
   expect(screen.getByRole('heading', { name: '通知日志' })).toBeVisible();
-  expect(screen.getByRole('button', { name: '刷新' })).toBeVisible();
+  expect(
+    screen.queryByRole('button', { name: '刷新' }),
+  ).not.toBeInTheDocument();
   expect(screen.queryByText('No deliveries yet')).not.toBeInTheDocument();
 });
 
-it.each(['en-US', 'zh-CN'] as const)(
-  'ships all rendered keys in %s',
+const shippedLocales = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+  'ko-KR': koKR,
+  'ru-RU': ruRU,
+} as const;
+
+it.each(Object.keys(shippedLocales) as (keyof typeof shippedLocales)[])(
+  'renders the empty logs state in %s',
   async (locale) => {
     const runtime = await createTestI18nRuntime({
       locale,
       application: {
         namespace: 'app',
-        resources: locale === 'en-US' ? enUS : zhCN,
+        resources: shippedLocales[locale],
       },
     });
     render(
@@ -64,7 +78,39 @@ it.each(['en-US', 'zh-CN'] as const)(
       </TestI18nProvider>,
     );
     await screen.findByText(
-      (locale === 'en-US' ? enUS : zhCN).notificationLogs.logs.emptyTitle,
+      shippedLocales[locale].notificationLogs.logs.emptyTitle,
     );
+  },
+);
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'offers only contextual read recovery in %s',
+  async (locale) => {
+    const resource = locale === 'en-US' ? enUS : zhCN;
+    const runtime = await createTestI18nRuntime({
+      locale,
+      application: { namespace: 'app', resources: resource },
+    });
+    const loadLogs = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Unavailable'))
+      .mockResolvedValue([]);
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <NotificationLogsView loadLogs={loadLogs} />
+      </TestI18nProvider>,
+    );
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: resource.notificationLogs.logs.retryRead,
+      }),
+    );
+    await screen.findByText(resource.notificationLogs.logs.emptyTitle);
+    expect(loadLogs).toHaveBeenCalledTimes(2);
+    expect(
+      screen.queryByRole('button', {
+        name: resource.notificationLogs.logs.retryRead,
+      }),
+    ).not.toBeInTheDocument();
   },
 );

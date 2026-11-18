@@ -126,10 +126,12 @@ describe('QueueServiceProvider', () => {
   it('uses the configured default and namespace without warning', async () => {
     const { app, container, logger } = await application({
       default: 'memory',
-      memory: {
-        adapter: 'inMemory',
-        namespace: 'crm-queue',
-        persistence: { path: path.join(rootDir, 'custom') },
+      backends: {
+        memory: {
+          adapter: 'inMemory',
+          namespace: 'crm-queue',
+          persistence: { path: path.join(rootDir, 'custom') },
+        },
       },
     });
     const provider = new QueueServiceProvider(app, { nodeEnv: 'production' });
@@ -147,7 +149,7 @@ describe('QueueServiceProvider', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('ignores the former queue configuration with one warning', async () => {
+  it('rejects the former queue configuration without warning or local fallback', async () => {
     const { app, container, logger } = await application({
       default: 'sync',
       connections: { sync: { driver: 'sync' } },
@@ -156,16 +158,12 @@ describe('QueueServiceProvider', () => {
     const provider = new QueueServiceProvider(app, { nodeEnv: 'development' });
     provider.register();
     const queue = container.resolve(queueServiceToken);
-    queue.producer('legacy');
-
-    await provider.start();
-    await queue.producer('legacy').publish('x', {});
-    await provider.shutdown();
-
-    expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
-      {},
-      expect.stringMatching(/removed connections\/worker\/jobs format/u),
+    expect(() => queue.producer('legacy')).toThrow(
+      /queue.backends.connections/u,
     );
+    await expect(provider.start()).rejects.toThrow(/old configuration format/u);
+    await provider.shutdown();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
   it('shuts down safely when the service was never created', async () => {

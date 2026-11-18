@@ -16,6 +16,13 @@ export const DEFAULT_HTTP_DRAIN_TIMEOUT_MS: number = 30_000;
 export const DEFAULT_FORCE_EXIT_TIMEOUT_MS: number = 35_000;
 
 /**
+ * How long a client may take to send one whole request, body included. Node's own default of five minutes cuts off
+ * an upload of about 100 MB over a slow link, such as a build archive sent to a deployment API, with HTTP 408. The
+ * header phase keeps Node's separate 60 second `headersTimeout`.
+ */
+export const DEFAULT_HTTP_REQUEST_TIMEOUT_MS: number = 10 * 60_000;
+
+/**
  * Total shutdown budget, when the host supplies one. A supervisor that kills
  * the process after a fixed wait — `tsx watch` escalates to SIGKILL after five
  * seconds — makes the 30 second default unreachable, and a hard kill during
@@ -45,6 +52,8 @@ export interface StartNodeAppServerOptions {
   readonly onListen?: (info: AddressInfo) => void;
   readonly logger?: NodeAppServerLogger;
   readonly registerProcessSignals?: boolean;
+  /** Node's `requestTimeout`; `0` turns it off. */
+  readonly requestTimeoutMs?: number;
   readonly httpDrainTimeoutMs?: number;
   readonly forceExitTimeoutMs?: number;
 }
@@ -124,6 +133,10 @@ export function startNodeAppServer(
         fetch: withoutConnectionHeaders(app.fetch),
         hostname: options.hostname,
         port: options.port,
+        serverOptions: {
+          requestTimeout:
+            options.requestTimeoutMs ?? DEFAULT_HTTP_REQUEST_TIMEOUT_MS,
+        },
       },
       (info) => {
         listening = true;

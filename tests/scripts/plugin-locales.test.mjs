@@ -36,10 +36,14 @@ for (const section of ['plugins', 'examples', 'libs']) {
           path.join(directory, 'index.ts'),
           import.meta.url,
         );
-        assert.deepEqual(Object.keys(loaders), SUPPORTED_LOCALES);
+        const locales = Object.keys(loaders);
+        assert.deepEqual(
+          locales.slice(0, SUPPORTED_LOCALES.length),
+          SUPPORTED_LOCALES,
+        );
         const runtime = new I18nRuntime({
           defaultLocale: 'en-US',
-          locales: SUPPORTED_LOCALES,
+          locales,
         });
         runtime.registerNamespace(namespace, loaders);
         await runtime.init('en-US');
@@ -55,7 +59,7 @@ for (const section of ['plugins', 'examples', 'libs']) {
             message: getRequestTranslator(context, namespace)(key),
           }),
         );
-        for (const locale of SUPPORTED_LOCALES) {
+        for (const locale of locales) {
           await runtime.changeLanguage(locale);
           const copy = flattenValues((await loaders[locale]()).default);
           for (const [name, text] of Object.entries(copy)) {

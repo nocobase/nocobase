@@ -6,25 +6,30 @@ import {
   act,
   fireEvent,
   render,
+  renderHook,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
 import { useEffect, useRef, type ReactElement } from 'react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { labelsHeader, uploadLabels } from '../client/lib/format.js';
+import { newAppTarget, ReleasesPathsContext } from '../client/lib/paths.js';
 import enUS from '../client/locales/en-US.js';
 import zhCN from '../client/locales/zh-CN.js';
-import { allPermissions, noPermissions } from '../shared/access.js';
+import { allPermissions } from '../shared/access.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   permissions: undefined as unknown,
   toasts: [] as { type: string; title: string }[],
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  errorToastOptions: (
+    await importOriginal<typeof import('@nocobase/app-client')>()
+  ).errorToastOptions,
   ApiClientError: class extends Error {
     public constructor(
       message: string,
@@ -79,6 +84,7 @@ import { ApiClientError } from '@nocobase/app-client';
 import { ActorName } from '../client/components/actor-name.js';
 import { PeoplePicker } from '../client/components/people-picker.js';
 import { errorText, messageText } from '../client/lib/errors.js';
+import { useNotify } from '../client/hooks/use-notify.js';
 import {
   ReleasesPeoplePickerContext,
   type PeoplePickerProps,
@@ -104,7 +110,7 @@ import {
   policySummary,
 } from '../client/lib/runtime-policy.js';
 import { ReleasesSystemLabelsContext } from '../client/lib/system-labels.js';
-import AppsPage, { AppsCatalog } from '../client/pages/apps-page.js';
+import AppsOutlet from '../client/pages/apps-outlet.js';
 import NewAppPage from '../client/pages/new-app-page.js';
 import { useState } from 'react';
 import plugin from '../client/plugin.js';
@@ -141,6 +147,28 @@ function Asker({
 }
 
 describe('client', () => {
+  it('错误提示保留真实 API 请求 ID，本地错误不带请求 ID', async () => {
+    mocks.toasts.length = 0;
+    const { ApiClientError } = await vi.importActual<
+      typeof import('@nocobase/app-client')
+    >('@nocobase/app-client');
+    const { result } = renderHook(() => useNotify());
+    result.current.error(
+      new ApiClientError('Request failed', {
+        status: 500,
+        method: 'POST',
+        url: '/api/releases/apps',
+        requestId: 'request-fixture',
+      }),
+    );
+    expect(mocks.toasts.at(-1)).toMatchObject({
+      type: 'error',
+      requestId: 'request-fixture',
+    });
+    result.current.error(new Error('Local failure'));
+    expect(mocks.toasts.at(-1)).toMatchObject({ type: 'error' });
+    expect(mocks.toasts.at(-1)).not.toHaveProperty('requestId');
+  });
   it('routes the declared pages at configurable paths', () => {
     const { routes } = createReleasesRoutes({
       appsPath: 'deploy/apps',
@@ -155,6 +183,10 @@ describe('client', () => {
       resource: { type: 'page', id: 'rel-apps' },
       action: 'access',
     });
+    // The environments open to either the environments setting or the Apps page, which a route cannot name: the page
+    // decides (`environments-client.test.tsx`).
+    expect(routes[1]?.authz).toBe('skip');
+    expect(routes[1]?.auth).toBe('required');
   });
 
   it('registers no routes with routes: false', () => {
@@ -170,88 +202,76 @@ describe('client', () => {
     expect(contribution ?? []).toEqual([]);
   });
 
+  it('leads Create App’s old address to the one environment it names, or to the environments', () => {
+    const paths = { apps: '/apps', environments: '/envs' };
+    expect(newAppTarget('?environmentId=staging', paths)).toBe(
+      '/envs/staging/apps/new',
+    );
+    expect(
+      newAppTarget(
+        '?environmentId=a&environmentId=b&runtimeState=running',
+        paths,
+      ),
+    ).toBe('/envs');
+    expect(newAppTarget('', paths)).toBe('/envs');
+  });
+
   it('has the same keys in both locales', () => {
     expect(keys(zhCN).sort()).toEqual(keys(enUS).sort());
   });
 
-  it('lists Apps and offers creation only with the create grant', async () => {
-    const answer = (permissions: unknown) => (options: { path: string }) => {
-      if (options.path === 'releases/me')
-        return Promise.resolve({
-          data: { userId: 'u', kind: 'human', permissions },
-        });
-      if (options.path === 'releases/apps')
-        return Promise.resolve({
-          data: [
-            {
-              app: {
-                id: 'shop',
-                name: 'Shop',
-                labels: { branch: 'main' },
-              },
-              environment: {
-                id: 'prod',
-                name: 'Production',
-                protected: true,
-                runsImages: false,
-              },
-              runtime: {
-                available: true,
-                state: 'running',
-                version: '1.0.0',
-                startedAt: null,
-                error: null,
-              },
-              url: null,
-              currentVersion: '1.0.0',
-              hasReleases: true,
-              hasPendingDeployment: false,
-            },
-          ],
-          meta: { total: 1, page: 1, pageSize: 100 },
-        });
-      if (options.path === 'releases/environments')
-        return Promise.resolve({ data: [], meta: { total: 0 } });
-      return Promise.resolve({ data: [], meta: { total: 0 } });
+  it('has no Apps list or menu entry: the Apps path alone leads to the environments, its children still open', async () => {
+    const { routes } = createReleasesRoutes() as unknown as {
+      routes: readonly {
+        name: string;
+        navigation?: unknown;
+        children?: { name: string; path: string }[];
+      }[];
     };
-    mocks.request.mockImplementation(answer(noPermissions()));
+    // The environments page is the plugin's only entry; an App, a request and Create App's old address stay below.
+    expect(
+      routes.filter((route) => route.navigation).map((route) => route.name),
+    ).toEqual(['rel-environments']);
+    expect(routes[0]?.children?.map((child) => child.path)).toEqual([
+      'new',
+      'requests/:requestId',
+      ':appId',
+    ]);
+    function Where(): ReactElement {
+      const location = useLocation();
+      return <span data-testid='where'>{location.pathname}</span>;
+    }
     const view = render(
-      <MemoryRouter>
-        <AppsCatalog />
+      <MemoryRouter initialEntries={['/releases']}>
+        <ReleasesPathsContext.Provider
+          value={{ apps: '/releases', environments: '/envs' }}
+        >
+          <Routes>
+            <Route path='/releases' element={<AppsOutlet />}>
+              <Route path=':appId' element={<p>App page</p>} />
+            </Route>
+            <Route path='/envs' element={<Where />} />
+          </Routes>
+        </ReleasesPathsContext.Provider>
       </MemoryRouter>,
     );
-    expect(await screen.findByText('Shop')).toBeInTheDocument();
-    expect(screen.getByText('Protected')).toBeInTheDocument();
-    expect(screen.getByText('branch=main')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
+    expect(await screen.findByTestId('where')).toHaveTextContent('/envs');
     view.unmount();
-
-    mocks.request.mockImplementation(answer(allPermissions()));
     render(
-      <MemoryRouter>
-        <AppsCatalog />
+      <MemoryRouter initialEntries={['/releases/shop']}>
+        <Routes>
+          <Route path='/releases' element={<AppsOutlet />}>
+            <Route path=':appId' element={<p>App page</p>} />
+          </Route>
+        </Routes>
       </MemoryRouter>,
     );
-    await waitFor(() =>
-      expect(
-        screen.getByRole('link', { name: 'Create app' }),
-      ).toBeInTheDocument(),
-    );
-
-    // Refresh reads the Apps and the pending requests again.
-    const reads = (path: string) =>
-      mocks.request.mock.calls.filter(
-        ([options]) => (options as { path: string }).path === path,
-      ).length;
-    const apps = reads('releases/apps');
-    const requests = reads('releases/deploymentRequests');
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(reads('releases/apps')).toBe(apps + 1));
-    expect(reads('releases/deploymentRequests')).toBe(requests + 1);
+    expect(await screen.findByText('App page')).toBeInTheDocument();
   });
 
-  it('opens Create App over the list at `new` and the new App in its place', async () => {
+  it('opens Create App over an environment at `apps/new`, the environment fixed, and the new App in its place', async () => {
     const sent: { path: string; method?: string; json?: unknown }[] = [];
+    const reload = vi.fn();
     mocks.request.mockImplementation(
       (options: { path: string; method?: string; json?: unknown }) => {
         sent.push(options);
@@ -259,11 +279,8 @@ describe('client', () => {
           return Promise.resolve({
             data: { userId: 'u', kind: 'human', permissions: allPermissions() },
           });
-        if (options.path === 'releases/environments')
-          return Promise.resolve({
-            data: [{ id: 'staging', name: 'Staging' }],
-            meta: { total: 1 },
-          });
+        if (options.path === 'releases/environments/staging')
+          return Promise.resolve({ data: { id: 'staging', name: 'Staging' } });
         if (options.method === 'POST' && options.path === 'releases/apps')
           return Promise.resolve({ data: {} });
         return Promise.resolve({ data: [], meta: { total: 0 } });
@@ -273,28 +290,27 @@ describe('client', () => {
       return <span data-testid='where'>{useLocation().pathname}</span>;
     }
     render(
-      <MemoryRouter initialEntries={['/apps']}>
+      <MemoryRouter initialEntries={['/envs/staging/apps/new']}>
         <Routes>
-          <Route path='/apps' element={<AppsPage />}>
-            <Route path='new' element={<NewAppPage />} />
-            <Route path=':appId' element={<Where />} />
+          <Route
+            path='/envs/:environmentId'
+            element={<Outlet context={{ reload }} />}
+          >
+            <Route path='apps/new' element={<NewAppPage />} />
           </Route>
+          <Route path='/releases/:appId' element={<Where />} />
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
-    let dialog = await screen.findByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const dialog = await screen.findByRole('dialog');
+    // The App goes to the environment it is created from, which cannot be changed here.
+    const environment = within(dialog).getByLabelText('Environment');
+    await waitFor(() => expect(environment).toHaveValue('Staging'));
+    expect(environment).toHaveAttribute('readonly');
+    expect(environment).toBeDisabled();
     expect(
-      sent.filter(
-        (item) => item.method === 'POST' && item.path === 'releases/apps',
-      ),
-    ).toHaveLength(0);
-    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
-    dialog = await screen.findByRole('dialog');
-    // The list stays behind the dialog.
-    expect(screen.getByText('No apps yet')).toBeInTheDocument();
+      within(dialog).queryByRole('combobox', { name: 'Environment' }),
+    ).toBeNull();
     fireEvent.change(within(dialog).getByLabelText('Name'), {
       target: { value: 'Shop' },
     });
@@ -319,7 +335,10 @@ describe('client', () => {
       ).toBeEnabled(),
     );
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create app' }));
-    expect(await screen.findByTestId('where')).toHaveTextContent('/apps/shop');
+    expect(await screen.findByTestId('where')).toHaveTextContent(
+      '/releases/shop',
+    );
+    expect(reload).toHaveBeenCalledTimes(1);
     expect(
       sent.find(
         (item) => item.method === 'POST' && item.path === 'releases/apps',
@@ -430,18 +449,15 @@ describe('client', () => {
                 permissions: allPermissions(),
               },
             });
-          if (options.path === 'releases/environments')
+          if (options.path === 'releases/environments/staging')
             return Promise.resolve({
-              data: [
-                {
-                  id: 'staging',
-                  name: 'Staging',
-                  defaultIdleStopMinutes: 1,
-                  defaultDormantAfterHours: 0.5,
-                  maxApps: 2,
-                },
-              ],
-              meta: { total: 1 },
+              data: {
+                id: 'staging',
+                name: 'Staging',
+                defaultIdleStopMinutes: 1,
+                defaultDormantAfterHours: 0.5,
+                maxApps: 2,
+              },
             });
           if (options.method === 'POST' && options.path === 'releases/apps') {
             sent.push(options.json);
@@ -461,16 +477,15 @@ describe('client', () => {
         return <span data-testid='where'>{useLocation().pathname}</span>;
       }
       render(
-        <MemoryRouter initialEntries={['/apps']}>
+        <MemoryRouter initialEntries={['/envs/staging/apps/new']}>
           <Routes>
-            <Route path='/apps' element={<AppsPage />}>
-              <Route path='new' element={<NewAppPage />} />
-              <Route path=':appId' element={<Where />} />
+            <Route path='/envs/:environmentId'>
+              <Route path='apps/new' element={<NewAppPage />} />
             </Route>
+            <Route path='/releases/:appId' element={<Where />} />
           </Routes>
         </MemoryRouter>,
       );
-      fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
       const dialog = await screen.findByRole('dialog');
       fireEvent.change(within(dialog).getByLabelText('Name'), {
         target: { value: 'Shop' },
@@ -564,7 +579,7 @@ describe('client', () => {
       }
       fireEvent.click(createButton);
       expect(await screen.findByTestId('where')).toHaveTextContent(
-        '/apps/shop',
+        '/releases/shop',
       );
       expect(sent).toEqual([payload, payload]);
     },
@@ -619,6 +634,66 @@ describe('client', () => {
     expect(messageText(t, 'Something else broke.')).toBe(
       'Something else broke.',
     );
+    expect(
+      messageText(
+        t,
+        '[ARTIFACT_READ_TIMEOUT] Reading the release package timed out: no data received for 1250 ms. Deploy the release again.',
+      ),
+    ).toBe(
+      enUS.ui.errors.messages.artifactReadIdleTimeout.replace(
+        '{{seconds}}',
+        '1.25',
+      ),
+    );
+    expect(
+      messageText(
+        t,
+        '[ARTIFACT_READ_TIMEOUT] Reading the release package timed out: the attempt exceeded 90000 ms. Deploy the release again.',
+      ),
+    ).toBe(
+      enUS.ui.errors.messages.artifactReadTotalTimeout.replace(
+        '{{seconds}}',
+        '90',
+      ),
+    );
+    expect(
+      messageText(t, '[ARTIFACT_READ_TIMEOUT] Unknown timeout detail'),
+    ).toBe(enUS.ui.errors.messages.artifactReadTimeout);
+    // A capacity refusal reads as a retryable failure, without the Host's code or its unset-limit sentinel.
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] App Host capacity exceeded: insufficient memory or active application capacity; retry later maxActiveApps=9007199254740991',
+      ),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] Waiting for Host memory recycling; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.recycleRetry);
+    // As the Host reports it: wrapped in the App it was about, in a deployment and on the runtime.
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] App "demo" failed to reload: Waiting for Host memory recycling; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.recycleRetry);
+    expect(
+      messageText(
+        t,
+        'App "demo" failed to reload: App Host capacity exceeded: insufficient memory or active application capacity; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(
+      messageText(t, '[APP_CAPACITY_EXCEEDED] Something the Host said'),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(messageText(t, 'Waiting for Host memory recycling')).toBe(
+      enUS.ui.errors.messages.recycleWait,
+    );
+    expect(
+      messageText(t, '[APP_CREATE_FAILED] App "shop" failed to initialize'),
+    ).toBe('App "shop" failed to initialize');
     const refused = new ApiClientError('App ID may contain only letters.', {
       status: 400,
       reason: 'INVALID_APP_ID',
@@ -785,6 +860,84 @@ describe('client', () => {
     ).toBe(
       'ui.policy.activation.onDemand · ui.policy.idleSummary{"minutes":10} · ui.policy.dormantSummary{"hours":24}',
     );
+  });
+
+  it('shows one state per App: a pending deployment first, with the last failure as its detail', () => {
+    const summary = (
+      pendingDeployment: {
+        status: 'queued' | 'deploying' | 'cancelling';
+        queueAhead: number | null;
+      } | null,
+      recycling: 'pending' | 'restarting' | null = null,
+    ) =>
+      ({
+        app: { activation: 'eager', currentDeploymentId: 'd1' },
+        host: { recycling },
+        runtime: {
+          state: 'failed',
+          error:
+            '[APP_CAPACITY_EXCEEDED] Active app capacity exceeded and no idle app can be evicted. maxActiveApps=9007199254740991',
+        },
+        hasPendingDeployment: pendingDeployment !== null,
+        pendingDeployment,
+      }) as never;
+    const lastFailure = `Last failure: ${enUS.ui.errors.messages.activeLimit}`;
+    const cases = [
+      [
+        { status: 'queued', queueAhead: 2 },
+        null,
+        'Queued · 2 ahead',
+        lastFailure,
+      ],
+      [
+        { status: 'deploying', queueAhead: null },
+        null,
+        enUS.ui.state.deploying,
+        lastFailure,
+      ],
+      // Refused for capacity, it waits while its shared runtime recycles memory.
+      [
+        { status: 'deploying', queueAhead: 0 },
+        'pending',
+        enUS.ui.state.waitingRecycle,
+        enUS.ui.errors.messages.recycleWait,
+      ],
+      [
+        { status: 'deploying', queueAhead: 0 },
+        'restarting',
+        enUS.ui.state.waitingRecycle,
+        enUS.ui.errors.messages.recycleWait,
+      ],
+      // The retry after the recycle, queued behind other work: queued, not recycling.
+      [
+        { status: 'deploying', queueAhead: 1 },
+        null,
+        'Queued · 1 ahead',
+        lastFailure,
+      ],
+      [
+        { status: 'cancelling', queueAhead: null },
+        'pending',
+        enUS.ui.deployments.statuses.cancelling,
+        lastFailure,
+      ],
+    ] as const;
+    for (const [pending, recycling, label, detail] of cases) {
+      const view = render(
+        <AppStateBadge summary={summary(pending, recycling)} />,
+      );
+      const tag = screen.getByText(label);
+      expect(screen.queryByText(enUS.ui.state.failed)).toBeNull();
+      expect(tag.closest('[title]')?.getAttribute('title')).toBe(detail);
+      view.unmount();
+    }
+    // Once the deployment is over, the runtime's own state shows with its reason, and no queue label stays behind.
+    render(<AppStateBadge summary={summary(null)} />);
+    const failed = screen.getByText(enUS.ui.state.failed);
+    expect(failed.closest('[title]')?.getAttribute('title')).toBe(
+      enUS.ui.errors.messages.activeLimit,
+    );
+    expect(screen.queryByText(/Queued|Deploying/)).toBeNull();
   });
 
   it('says a stopped on-demand App starts on a visit, and a dormant one is prepared on a visit', () => {

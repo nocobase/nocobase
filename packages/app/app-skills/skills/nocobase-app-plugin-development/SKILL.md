@@ -21,6 +21,7 @@ These English references adapt the plugin development guide into task-specific i
 | Register, configure, upgrade, disable, unregister, or diagnose plugin integration                     | [Registration and lifecycle](references/registration.md)             |
 | Choose Client components, ServiceProviders, React Providers, configuration, or API access             | [Client architecture](references/client.md)                          |
 | Define Server configuration defaults, environment mappings, validation, or browser-visible fields    | [Plugin configuration](references/configuration.md)                  |
+| Migrate Concurrency, Jobs or Queue backend selectors and existing application factories | [Strict backend configuration](references/backends-configuration.md) |
 | Build or change any plugin UI                                                                         | [Shared UI design and host acceptance](references/ui-design.md), then [shadcn components and styling](references/client-components.md) |
 | Add business pages, menus, Tabs, route dialogs/drawers, child routes, or page overrides                 | [Client routing](references/client-routing.md)                       |
 | Design configuration entities, settings permissions, routed editors and safe saves                    | [System settings](references/system-settings.md)                     |

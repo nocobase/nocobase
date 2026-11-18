@@ -1,5 +1,68 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.23
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- 761fb01: Let the application server enforce log export retention while validating date format, order and future dates locally.
+- Updated dependencies [761fb01]
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+
+## 0.1.0-beta.22
+
+### Minor Changes
+
+- 3112daa: Derive dedicated CLI operation keys from explicitly marked OpenAPI header schemas. The CLI generates or reuses a key, preserves it in success and failure output, and reports uncertain results without replaying writes. Upgrade the CLI and server together for operation-key commands. Online shells expose authorized commands but refuse unsupported writes before sending. Ordinary headers and existing commands retain their behavior.
+
+### Patch Changes
+
+- 3112daa: Generate CLI operation keys in the existing web client's timestamp.UUID format so native mutation receipts accept default calls. Require declared length bounds to allow 50-character keys, reject incompatible UUID-only schemas, and document the native 24-hour retry window without changing server receipt validation.
+- 3112daa: Keep large CLI file uploads within bounded memory and allow multipart commands up to 30 minutes to complete, while closing file streams on cancellation or failure.
+
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [1952789]
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- Updated dependencies [a2dc459]
+- Updated dependencies [ac6c1eb]
+  - @nocobase/agent-protocol@0.1.0-beta.18
+
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- Updated dependencies [c635b6c]
+  - @nocobase/agent-protocol@0.1.0-beta.17
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 49daa11: Restart running ACP services after CLI updates and tolerate newer Skill registry formats without rewriting them.
+
+  When upgrading from a CLI version without this fix through `<bin> update`, run `<bin> acp service restart` once after the upgrade to restart the existing background connections.
+
+- Updated dependencies [bfddb40]
+  - @nocobase/acp-bridge@1.0.0-beta.5
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

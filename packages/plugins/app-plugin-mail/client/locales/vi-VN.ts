@@ -42,6 +42,15 @@ const viVN: LocaleResource<typeof enUS> = {
     refresh: 'Làm mới',
   },
   workspace: {
+    imapSourceRequired:
+      'Mở thư mục nguồn trước khi di chuyển hoặc xóa thư này.',
+    imapTrashMissing:
+      'Tài khoản này không có thư mục Thùng rác. Hãy dùng ứng dụng email của bạn.',
+    deleteUnsupported:
+      'Tài khoản này không hỗ trợ xóa. Hãy dùng ứng dụng email của bạn.',
+    imapScheduled: 'Hủy lịch gửi trước khi xóa bản nháp này.',
+    invalidRecipient:
+      'Sửa địa chỉ email hoặc tên hiển thị: {{value}}. Mỗi trường chỉ được có tối đa 100 người nhận.',
     senderLabel: 'Từ',
     attachmentNumber: 'Tệp đính kèm {{number}}',
     pendingDelivery:

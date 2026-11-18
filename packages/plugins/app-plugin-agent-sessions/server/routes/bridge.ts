@@ -1,5 +1,6 @@
 import {
   BridgeCommandSchema,
+  normalizeSessionChoices,
   PollRequestSchema,
   PromptRequestSchema,
   RegisterRequestSchema,
@@ -21,6 +22,24 @@ import { z } from 'zod';
 
 import { bridgeCaller, COMPUTER_KEY_SCHEME } from '../computer-key.js';
 import type { AgentSessionsService } from '../service.js';
+
+// Older bridges may send unbounded display text. Keep strict wire validation after isolating bad choices.
+function normalizeChoices(input: unknown): unknown {
+  if (!input || typeof input !== 'object') return input;
+  const body = input as Record<string, unknown>;
+  const normalize = (value: unknown): unknown => {
+    if (!value || typeof value !== 'object') return value;
+    const state = value as Record<string, unknown>;
+    return Array.isArray(state.choices)
+      ? { ...state, choices: normalizeSessionChoices(state.choices) }
+      : value;
+  };
+  return {
+    ...body,
+    state: normalize(body.state),
+    discovery: normalize(body.discovery),
+  };
+}
 
 const tags = ['AgentSessions'];
 // Signed in as the person, or with the computer's key.
@@ -162,7 +181,7 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
         ),
       },
     }),
-    apiValidator('json', ReportRequestSchema),
+    apiValidator('json', z.preprocess(normalizeChoices, ReportRequestSchema)),
     async (context) => {
       const request = context.req.valid('json');
       return context.json({
@@ -189,7 +208,7 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
         404: computerNotFound,
       },
     }),
-    apiValidator('json', ReplyRequestSchema),
+    apiValidator('json', z.preprocess(normalizeChoices, ReplyRequestSchema)),
     async (context) => {
       const request = context.req.valid('json');
       await service.reply(

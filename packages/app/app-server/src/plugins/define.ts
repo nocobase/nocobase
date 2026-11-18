@@ -28,7 +28,20 @@ export function defineServerPlugin<TConfig = object>(
     serviceProviders: Object.freeze([...(definition.serviceProviders ?? [])]),
     routes: Object.freeze([...(definition.routes ?? [])]),
     database: definition.database
-      ? Object.freeze({ ...definition.database })
+      ? Object.freeze({
+          ...definition.database,
+          ...(definition.database.connections
+            ? {
+                connections: Object.freeze(
+                  Object.fromEntries(
+                    Object.entries(definition.database.connections).map(
+                      ([name, config]) => [name, Object.freeze({ ...config })],
+                    ),
+                  ),
+                ),
+              }
+            : {}),
+        })
       : undefined,
     queue: definition.queue
       ? Object.freeze({

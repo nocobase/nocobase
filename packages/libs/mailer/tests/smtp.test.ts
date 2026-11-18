@@ -35,6 +35,9 @@ async function receiver(stall = false, rejectRecipient = false) {
           if (!stall) socket.write('250 queued\r\n');
         } else if (line.startsWith('EHLO'))
           socket.write('250-local.test\r\n250 PIPELINING\r\n');
+        // Nodemailer can pipeline DATA after RCPT; a rejected envelope must not accept message data.
+        else if (line === 'DATA' && rejectRecipient)
+          socket.write('503 no accepted recipients\r\n');
         else if (line === 'DATA') {
           data = true;
           message = '';
@@ -166,9 +169,20 @@ it('cancels a stalled SMTP submission on close and never resubmits it', async ()
     subject: 'Synthetic',
   });
   await vi.waitFor(() => expect(smtp.messages).toHaveLength(1));
-  await transport.close();
+  const closing = transport.close();
+  expect(transport.close()).toBe(closing);
+  await closing;
   expect((await sending).status).toBe('submission_unknown');
   await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
   expect(smtp.messages).toHaveLength(1);
+  expect(smtp.connections()).toBe(1);
+  expect(
+    (
+      await transport.send({
+        to: 'recipient@example.test',
+        subject: 'After close',
+      })
+    ).status,
+  ).toBe('failed');
   expect(smtp.connections()).toBe(1);
 });

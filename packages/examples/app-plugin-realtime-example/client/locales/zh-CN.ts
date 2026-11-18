@@ -1,6 +1,7 @@
 import type { RealtimeExampleResource } from './en-US.js';
 const zhCN: RealtimeExampleResource = {
   business: {
+    longWait: '耗时比平常更长，您可以继续等待。',
     scenarios: '实时业务场景',
     tabs: {
       tasks: '任务协作',
@@ -79,6 +80,7 @@ const zhCN: RealtimeExampleResource = {
       emptyHelp: '前往任务协作，创建一个分派给自己的任务后返回这里。',
     },
     exports: {
+      ready: '{{count}} 行已就绪。可在此下载 CSV，文件保留在此列表中。',
       missing: '此导出文件已不可用，请重新导出当前任务。',
       title: '任务导出',
       description: '在后台导出您有权查看的任务，完成后下载 CSV 文件。',
@@ -204,6 +206,16 @@ const zhCN: RealtimeExampleResource = {
     expired: '演示数据已过期，重新加载以创建新房间。',
     capacity: '演示服务繁忙，请稍后重试。',
     subscription: '订阅失败，请重新连接或恢复权限后重试。',
+  },
+  taskProgress: {
+    queued: '等待开始',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已处理 {{processed}}',
+    background: '离开此页面后任务会继续运行。',
   },
 };
 export default zhCN;

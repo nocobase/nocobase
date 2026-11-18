@@ -13,12 +13,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Aplicativos',
         description:
-          'Aplicativos, seus lançamentos, implantações e tempo de execução.',
+          'Aplicativos, seus lançamentos, implantações e ambiente de execução.',
         actions: {
           view: {
             title: 'Ver aplicativos',
             description:
-              'Veja Apps, seus lançamentos, implantações e status de tempo de execução',
+              'Veja Apps, seus lançamentos, implantações e status de ambiente de execução',
             related: 'Ver aplicativos (aqueles relacionados a eles)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:

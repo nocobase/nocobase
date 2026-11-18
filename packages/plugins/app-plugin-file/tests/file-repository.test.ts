@@ -73,7 +73,9 @@ async function fixture(
     databaseSize,
     databaseJsonField,
     createCustomDriver,
+    diskLimits = {},
   }: {
+    diskLimits?: Record<string, number>;
     publicBasePath?: string;
     storageUrl?: string;
     databaseSize?: (value: unknown) => unknown;
@@ -122,12 +124,18 @@ async function fixture(
   const drive = createDriveManager({
     default: 'local',
     disks: {
-      local: { driver: 'fs', location: root, visibility: 'private' },
+      local: {
+        driver: 'fs',
+        location: root,
+        visibility: 'private',
+        maxFileSizeMb: diskLimits.local,
+      },
       public: {
         driver: 'fs',
         location: path.join(root, 'public'),
         visibility: 'public',
         url: storageUrl,
+        maxFileSizeMb: diskLimits.public,
       },
       ...(createCustomDriver ? { custom: () => createCustomDriver(root) } : {}),
     },
@@ -135,6 +143,7 @@ async function fixture(
   const manager = new ServerFileRepositoryManager(db, drive);
   const files = manager.repository('attachments', {
     disk: overrides.disk ?? 'local',
+    storagePrefix: overrides.storagePrefix,
     accessPath: overrides.accessPath ?? '/uploads/attachments',
     policy: overrides.policy ?? openPolicy,
   });
@@ -196,10 +205,213 @@ async function fixture(
     api,
     client,
     apiRouter: apiRouter!,
+    container,
   };
 }
 const file = (name = 'hello.txt', text = 'hello'): File =>
   new File([text], name, { type: 'text/plain' });
+
+describe('storage directories', () => {
+  it.each([
+    [undefined, 'objects/'],
+    ['contracts', 'contracts/'],
+    ['expenses/receipts', 'expenses/receipts/'],
+    ['', ''],
+    ['  /expenses//receipts///  ', 'expenses/receipts/'],
+    ['///', ''],
+    ['  ', ''],
+    ['contracts.v1/_archive-2026', 'contracts.v1/_archive-2026/'],
+  ])(
+    'uses prefix %j for server and HTTP uploads',
+    async (storagePrefix, expected) => {
+      const { files, client, drive, router } = await fixture({ storagePrefix });
+      const records = [
+        (await files.uploadOne({ file: file('Report.PDF') })).record,
+        ...(await files.uploadMany({ files: [file('no-extension'), file()] }))
+          .records,
+        (await client.uploadOne({ file: file('Report.PDF') })).record,
+        ...(await client.uploadMany({ files: [file('no-extension'), file()] }))
+          .records,
+      ];
+      for (const record of records) {
+        expect(record.key).toBe(
+          `${expected}${record.id}${record.ext ? `.${record.ext}` : ''}`,
+        );
+        expect(await drive.use('local').get(record.key)).toBe('hello');
+        const response = await router.request(
+          `/main/uploads/attachments/${record.id}${record.ext ? `.${record.ext}` : ''}`,
+        );
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe('hello');
+        expect(
+          await files.findOne({ filter: { id: record.id } }),
+        ).toMatchObject({ key: record.key });
+      }
+    },
+  );
+
+  it('rejects invalid prefixes at declaration and repository creation before storage', async () => {
+    const { manager, drive } = await fixture();
+    const put = vi.spyOn(drive.use('local'), 'putStream');
+    const invalid: unknown[] = [
+      '.',
+      '..',
+      '../contracts',
+      'contracts/..',
+      'contracts/./drafts',
+      'contracts/../drafts',
+      'contracts\\drafts',
+      'contracts /drafts',
+      'contracts/ drafts',
+      'my contracts',
+      ' / / ',
+      'contracts\n',
+      '\tcontracts',
+      'contracts/\u0000drafts',
+      'contracts/\u007fdrafts',
+      'contracts/\u0085drafts',
+      'C:/contracts',
+      '%2e%2e/contracts',
+      null,
+      123,
+      {},
+      () => 'contracts',
+    ];
+    for (const storagePrefix of invalid) {
+      const options = {
+        disk: 'local',
+        accessPath: '/uploads/attachments',
+        storagePrefix: storagePrefix as string,
+        policy: openPolicy,
+      };
+      expect(() => manager.repository('attachments', options)).toThrow(
+        'storagePrefix',
+      );
+      expect(() =>
+        defineFileRepositoryApiRoutes({
+          repositories: [
+            { ...options, name: 'attachments', actions: { uploadOne: {} } },
+          ],
+        }),
+      ).toThrow('storagePrefix');
+    }
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it.each(['uploadOne', 'uploadMany'])(
+    'ignores request storage paths in %s',
+    async (action) => {
+      const { router, files } = await fixture({ storagePrefix: 'contracts' });
+      const body = new FormData();
+      body.append('file', file());
+      body.append('storagePrefix', '../../outside');
+      body.append('key', 'outside/override.txt');
+      const response = await router.request(
+        `/main/api/attachments/${action}?storagePrefix=outside`,
+        { method: 'POST', body },
+      );
+      expect(response.status).toBe(201);
+      const [record] = await files.findMany();
+      expect(record!.key).toBe(`contracts/${record!.id}.txt`);
+    },
+  );
+
+  it.each(['stream', 'redirect'] as const)(
+    'keeps old keys accessible after changing the prefix in %s mode',
+    async (accessMode) => {
+      const { client, container, files, manager } = await fixture({
+        disk: 'public',
+        accessMode,
+      });
+      const old = (await client.uploadOne({ file: file() })).record;
+      const router = new Hono();
+      for (const contribution of defineFileRepositoryApiRoutes({
+        repositories: [
+          {
+            name: 'attachments',
+            disk: 'public',
+            storagePrefix: 'contracts',
+            accessMode,
+            policy: openPolicy,
+            actions: { uploadOne: {} },
+          },
+        ],
+      })) {
+        router.route(
+          contribution.scope === 'api' ? '/main/api' : '/main',
+          await contribution.createRouter({
+            container,
+            publicBasePath: '/main',
+          }),
+        );
+      }
+      const body = new FormData();
+      body.append('file', file());
+      const uploaded = await router.request('/main/api/attachments/uploadOne', {
+        method: 'POST',
+        body,
+      });
+      expect(uploaded.status).toBe(201);
+      const current = manager.repository('attachments', {
+        disk: 'public',
+        storagePrefix: 'contracts',
+        accessPath: '/uploads/attachments',
+        policy: openPolicy,
+      });
+      const records = await current.findMany();
+      expect(records).toHaveLength(2);
+      expect(old.key).toBe(`objects/${old.id}.txt`);
+      expect(records.find((record) => record.id !== old.id)!.key).toMatch(
+        /^contracts\//,
+      );
+      for (const record of records) {
+        expect(await current.getStorageUrl(record)).toBe(
+          `https://cdn.example.test/storage/${record.key}`,
+        );
+        expect(current.getUrl(record)).toBe(files.getUrl(record));
+        const response = await router.request(`/main${current.getUrl(record)}`);
+        expect(response.status).toBe(accessMode === 'stream' ? 200 : 302);
+        if (accessMode === 'stream')
+          expect(await response.text()).toBe('hello');
+        else
+          expect(response.headers.get('location')).toBe(
+            await current.getStorageUrl(record),
+          );
+      }
+    },
+  );
+});
+
+describe('upload policy boundaries', () => {
+  it('leaves direct repository uploads unrestricted and preserves public HTTP body limits', async () => {
+    const f = await fixture({}, { diskLimits: { local: 1 } });
+    const bytes = new Uint8Array(2 * 1024 * 1024);
+    const uploaded = new File([bytes], 'limit.bin');
+    const repository = f.manager.repository('attachments', {
+      disk: 'local',
+      accessPath: '/uploads/attachments',
+      policy: openPolicy,
+    });
+    expect((await repository.uploadOne({ file: uploaded })).record.size).toBe(
+      bytes.length,
+    );
+    expect(
+      (await repository.uploadMany({ files: [uploaded] })).createdCount,
+    ).toBe(1);
+    expect((await f.client.uploadOne({ file: uploaded })).record.size).toBe(
+      bytes.length,
+    );
+    await expect(
+      f.client.uploadOne({
+        file: new File([new Uint8Array(5 * 1024 * 1024)], 'body.bin'),
+      }),
+    ).rejects.toMatchObject({
+      status: 413,
+      reason: 'BODY_TOO_LARGE',
+      domain: 'file',
+    });
+  });
+});
 
 describe('server repository and Client API', () => {
   it('uploads, queries metadata, and downloads content through a custom disk factory', async () => {
@@ -234,23 +446,31 @@ describe('server repository and Client API', () => {
 
   it('encloses uploads in a caller transaction and removes objects on rollback', async () => {
     const { db, manager, drive } = await fixture();
-    let rolledBackKey = '';
+    const rolledBackKeys: string[] = [];
     await expect(
       db.transaction(async (transaction) => {
         const files = manager.repository('attachments', {
           disk: 'local',
           accessPath: '/files',
           policy: openPolicy,
+          storagePrefix: 'expenses/receipts',
           transaction,
         });
         const result = await files.uploadOne({ file: file() });
-        rolledBackKey = result.record.key;
-        expect(await transaction.repository('attachments').count()).toBe(1);
+        const batch = await files.uploadMany({
+          files: [file(), file('second.txt')],
+        });
+        for (const record of [result.record, ...batch.records]) {
+          rolledBackKeys.push(record.key);
+          expect(record.key).toBe(`expenses/receipts/${record.id}.txt`);
+        }
+        expect(await transaction.repository('attachments').count()).toBe(3);
         throw new Error('Rollback upload');
       }),
     ).rejects.toThrow('Rollback upload');
     expect(await db.repository('attachments').count()).toBe(0);
-    expect(await drive.use('local').exists(rolledBackKey)).toBe(false);
+    for (const key of rolledBackKeys)
+      expect(await drive.use('local').exists(key)).toBe(false);
     const result = await db.transaction(async (transaction) =>
       manager
         .repository('attachments', {
@@ -604,7 +824,9 @@ describe('server repository and Client API', () => {
     ).toBe(500);
   });
   it('cleans every object when batch metadata or DB insertion fails', async () => {
-    const { files, drive, root, db } = await fixture();
+    const { files, drive, root, db } = await fixture({
+      storagePrefix: 'expenses/receipts',
+    });
     const disk = drive.use('local');
     vi.spyOn(disk, 'getMetaData').mockRejectedValueOnce(
       new Error('metadata unavailable'),
@@ -612,7 +834,7 @@ describe('server repository and Client API', () => {
     await expect(files.uploadMany({ files: [file(), file()] })).rejects.toThrow(
       'metadata unavailable',
     );
-    expect(await readdir(path.join(root, 'objects'))).toEqual([]);
+    expect(await readdir(path.join(root, 'expenses/receipts'))).toEqual([]);
     vi.restoreAllMocks();
     await db.builder().alterCollection('attachments', {
       addFields: [
@@ -622,9 +844,34 @@ describe('server repository and Client API', () => {
     await expect(
       files.uploadMany({ files: [file(), file()] }),
     ).rejects.toThrow();
-    expect(await readdir(path.join(root, 'objects'))).toEqual([]);
+    expect(await readdir(path.join(root, 'expenses/receipts'))).toEqual([]);
     expect(await files.count()).toBe(0);
   });
+  it.each(['', 'expenses/receipts'])(
+    'cleans a partially written object under prefix %j',
+    async (storagePrefix) => {
+      const { files, drive, root } = await fixture({ storagePrefix });
+      const disk = drive.use('local');
+      const original = disk.putStream.bind(disk);
+      const put = vi
+        .spyOn(disk, 'putStream')
+        .mockImplementationOnce(async (...args) => {
+          await original(...args);
+          throw new Error('write acknowledgement lost');
+        });
+      const remove = vi.spyOn(disk, 'delete');
+      await expect(files.uploadOne({ file: file() })).rejects.toThrow(
+        'write acknowledgement lost',
+      );
+      const key = put.mock.calls[0]![0];
+      expect(remove).toHaveBeenCalledWith(key);
+      expect(await disk.exists(key)).toBe(false);
+      expect(
+        await readdir(storagePrefix ? path.join(root, storagePrefix) : root),
+      ).toEqual([]);
+      expect(await files.count()).toBe(0);
+    },
+  );
   it('reports failed compensation without hiding the upload failure', async () => {
     const { files, drive } = await fixture();
     vi.spyOn(drive.use('local'), 'getMetaData').mockRejectedValueOnce(
@@ -739,6 +986,7 @@ describe('upload boundary and access modes', () => {
   it('uses record.disk and signed URLs, with no-store and no redirect loops', async () => {
     const { files, client, router, drive } = await fixture({
       accessMode: 'redirect',
+      storagePrefix: 'expenses/receipts',
     });
     const { record } = await client.uploadOne({ file: file() });
     const signed = vi

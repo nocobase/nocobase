@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { JsonObject } from '@nocobase/lifecycle';
 import type { ParameterConfigurationService } from '../services/parameter-configuration.js';
 import { signedInUser, tags } from './api.js';
-import { ActAsQuery } from './schemas.js';
+import { ActAsQuery, ParameterSnapshotSchema } from './schemas.js';
 
 const workflowQuery = ActAsQuery.extend({
   workflow: z.string().min(1).max(100),
@@ -228,10 +228,28 @@ export function configurationRoutes(
   router.get(
     `${base}/parameterHistory/:lifecycle/:recordId`,
     permission('read'),
-    describe(
-      'lifecycleExampleParameterHistory',
-      'Read actual historical values separately from current effective values',
-    ),
+    describeRoute({
+      tags,
+      operationId: 'lifecycleExampleParameterHistory',
+      summary:
+        'Read the actual immutable instance snapshot and parameter usage',
+      description:
+        'Existing drafts also have frozen parameters. Missing or invalid snapshots fail instead of exposing current configuration.',
+      responses: {
+        200: dataResponse(
+          z.object({
+            snapshot: ParameterSnapshotSchema,
+            usages: z.array(object),
+            recorded: z.boolean(),
+          }),
+        ),
+        400: apiErrorResponse(400),
+        401: apiErrorResponse(401),
+        403: apiErrorResponse(403),
+        404: apiErrorResponse(404),
+        500: apiErrorResponse(500),
+      },
+    }),
     apiValidator(
       'param',
       z.object({

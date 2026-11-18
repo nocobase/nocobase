@@ -215,15 +215,20 @@ Using `bg-background` because it "looks right" puts a page-colored block inside 
 
 ### Common layouts
 
-| Scenario                               | Classes                                             |
-| -------------------------------------- | --------------------------------------------------- |
-| Toolbar                                | `flex flex-wrap items-center gap-2`                 |
-| Search box width                       | `w-full sm:max-w-xs`                                |
-| Filter control width (a `Select`)      | `w-full sm:w-40`                                    |
-| Stat card grid                         | `grid gap-4 sm:grid-cols-2 xl:grid-cols-4`          |
-| "Label — value" pairs in a detail view | `grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 text-sm` |
-| Limiting form width                    | `max-w-2xl`                                         |
-| Table in a card                        | See below                                           |
+| Scenario                               | Classes                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Toolbar                                | `flex flex-wrap items-center gap-2` (on phones: the search box, then one row of compact controls, M4.1) |
+| Search box width                       | `w-full md:max-w-xs`                                                                                    |
+| Inline filter control (a `Select`)     | `hidden md:flex md:w-40` beside a `md:hidden` "Filters" button that opens the same controls in a sheet  |
+| Filter control inside the phone sheet  | `w-full`                                                                                                |
+| Stat card grid                         | `grid grid-cols-2 gap-4 xl:grid-cols-4`                                                                 |
+| "Label — value" pairs in a detail view | `grid gap-1 text-sm sm:grid-cols-[8rem_1fr] sm:gap-x-4 sm:gap-y-3`                                      |
+| Main column with a side column         | `grid gap-6 md:grid-cols-[minmax(0,1fr)_20rem]`, side content after the main content in source order    |
+| Tabs or links in one sideways row      | `flex overflow-x-auto` with `shrink-0` items (M2.2)                                                     |
+| Limiting form width                    | `max-w-2xl`                                                                                             |
+| Table in a card                        | See below                                                                                               |
+
+These are the phone-first defaults of [the phone experience](../mobile.md). A filter that is the page's only one may stay inline at `w-full md:w-40`. Several filters are written once, as a component the page renders both inline (`hidden md:flex`) and inside the phone sheet, so both write the same URL parameters.
 
 **Table in a card.** Put a `DataTable` in the card's `CardContent` as it is. There it drops its own frame and reaches the card's edges, and its first and last cells take the card's `--card-spacing` (`size='sm'` makes it smaller), so the text lines up with the card's title while the row lines and the hover color span the whole card. Do not give that `CardContent` `px-0` or write the table from `Table` by hand. A list in a card has plain headers and `pagination={false}` (guideline T5.3). The recent projects of [`example/project-dashboard.md`](example/project-dashboard.md) are a complete one.
 
@@ -246,7 +251,7 @@ Merge class names with `cn()` from the `cn` package (`import { cn } from 'cn'`),
 
 ```tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { RefreshCwIcon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { Button } from '#components/ui/button';
@@ -256,10 +261,10 @@ import {
   TooltipTrigger,
 } from '#components/ui/tooltip';
 
-export function RefreshButton({
-  onRefresh,
+export function EditButton({
+  onEdit,
 }: {
-  readonly onRefresh: () => void;
+  readonly onEdit: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -269,14 +274,14 @@ export function RefreshButton({
           <Button
             variant='outline'
             size='icon'
-            aria-label={t('projects.actions.refresh')}
-            onClick={onRefresh}
+            aria-label={t('projects.actions.edit')}
+            onClick={onEdit}
           />
         }
       >
-        <RefreshCwIcon />
+        <PencilIcon />
       </TooltipTrigger>
-      <TooltipContent>{t('projects.actions.refresh')}</TooltipContent>
+      <TooltipContent>{t('projects.actions.edit')}</TooltipContent>
     </Tooltip>
   );
 }

@@ -4,7 +4,7 @@ import {
   type ProvisionedTestDatabases,
 } from '@nocobase/db-testing';
 // @vitest-environment node
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -158,8 +158,16 @@ it('prints every planned task of a partial failure, then fails with them in its 
           kind: 'seeds',
           status: 'not-run',
         }),
-        expect.objectContaining({ connection: 'erp', status: 'not-run' }),
-        expect.objectContaining({ connection: 'erp', status: 'not-run' }),
+        expect.objectContaining({
+          connection: 'erp',
+          status: 'skipped',
+          reason: 'external',
+        }),
+        expect.objectContaining({
+          connection: 'erp',
+          status: 'skipped',
+          reason: 'external',
+        }),
       ],
     },
   });
@@ -353,6 +361,64 @@ it('uses migration sources contributed by the application factory', async () => 
       }),
     ]),
   );
+});
+
+it('prints missing-source warnings with retained history during apply and rollback', async () => {
+  const { runtime, command, migration, paths, withDatabase } = await fixture();
+  migration('main');
+  await runDatabaseApplyCommand(command, { all: false }, runtime);
+  const history = await withDatabase((database) =>
+    database
+      .createMigrator({ directory: paths.database('main/migrations') })
+      .history(),
+  );
+  rmSync(paths.database('main/migrations/001_create.ts'));
+  writeFileSync(
+    paths.database('main/migrations/002_new.ts'),
+    `
+import { defineMigration } from '@nocobase/db';
+export default defineMigration({ name: '002_new', async up() {}, async down() {} });
+`,
+  );
+  const warning = {
+    kind: 'missing-source',
+    packageName: 'test-app',
+    name: '001_create',
+  };
+  command.log.mockClear();
+  const applied = await runDatabaseApplyCommand(
+    command,
+    { all: false },
+    runtime,
+  );
+  expect(applied.results[0]).toMatchObject({
+    executed: ['002_new'],
+    warnings: [warning],
+  });
+  expect(command.log).toHaveBeenCalledWith(
+    'WARNING: executed migration is missing from migration sources: 001_create (test-app). History is retained.',
+  );
+  expect(command.log.mock.calls.flat().join('\n')).not.toContain('db repair');
+  command.log.mockClear();
+  const rolledBack = await runDatabaseRollbackCommand(
+    command,
+    { all: false, force: true },
+    runtime,
+  );
+  expect(rolledBack.results[0]).toMatchObject({
+    rolledBack: ['002_new'],
+    warnings: [warning],
+  });
+  expect(command.log).toHaveBeenCalledWith(
+    'WARNING: executed migration is missing from migration sources: 001_create (test-app). History is retained.',
+  );
+  expect(
+    await withDatabase((database) =>
+      database
+        .createMigrator({ directory: paths.database('main/migrations') })
+        .history(),
+    ),
+  ).toEqual(history);
 });
 
 it('warns about checksum drift and repairs it across both task kinds', async () => {

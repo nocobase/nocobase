@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   claim,
+  claimRepeatedly,
   createHarness,
   type Harness,
   type RegisteredRunner,
@@ -811,6 +812,7 @@ describe('run lifecycle', () => {
       subjectRef: { kind: 'sample', id: '1' },
       actorUserId: 'owner',
       cancelRequested: false,
+      freshSession: false,
     });
     expect(
       self.body.data.inputs.map((input: { id: string }) => input.id),
@@ -837,6 +839,29 @@ describe('run lifecycle', () => {
     });
     expect(after.status).toBe(401);
     expect(after.body.error.reason).toBe('RUN_TOKEN_INVALID');
+  });
+
+  it('reports an independent session to the held run token', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    await h.services.runs.enqueue({
+      agentId,
+      subject: { kind: 'sample', id: '1' },
+      actorUserId: 'owner',
+      freshSession: true,
+      input: {
+        type: 'comment',
+        actor: { kind: 'user', id: 'owner', name: 'Owner' },
+        text: 'Please review.',
+      },
+    });
+    const runner = await h.registerRunner();
+    const [payload] = await claim(h, runner);
+    const self = await h.request('GET', '/agents/runs/current', {
+      runToken: payload.cli.credential.content.token,
+    });
+    expect(self.status).toBe(200);
+    expect(self.body.data.freshSession).toBe(true);
   });
 
   it('refuses a runner that never held the run', async () => {
@@ -924,10 +949,12 @@ describe('run lifecycle', () => {
     });
 
     const runner = await h.registerRunner({ slots: 5 });
-    const first = (await claim(h, runner, 5)).map((p) => p.run.id).sort();
+    const first = (await claimRepeatedly(h, runner, 5))
+      .map((p) => p.run.id)
+      .sort();
     expect(first).toEqual([merged.runId, past.runId].sort());
     h.clock.advance(10 * 60_000);
-    expect((await claim(h, runner, 5)).map((p) => p.run.id)).toEqual([
+    expect((await claimRepeatedly(h, runner, 5)).map((p) => p.run.id)).toEqual([
       delayed.runId,
     ]);
     await expect(

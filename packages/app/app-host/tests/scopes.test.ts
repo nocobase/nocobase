@@ -684,6 +684,28 @@ describe('management over IPC', () => {
     try {
       server.attach();
       expect((await client.describeHost()).backends[0]?.name).toBe('fake');
+      const cancelledSpec = {
+        ...spec('cancelled'),
+        scope: serviceScope('staging'),
+      };
+      const cancelled = client
+        .applyDeployment(cancelledSpec)
+        .catch((error: unknown) => error);
+      expect(
+        await client.cancelDeployment('cancelled-d1', 'cancelled', {
+          scope: cancelledSpec.scope,
+        }),
+      ).toBe('cancelled');
+      expect(await cancelled).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+      await expect(client.applyDeployment(cancelledSpec)).rejects.toMatchObject(
+        { code: 'DEPLOYMENT_CANCELLED' },
+      );
+      expect(
+        await client.deploymentProgress('cancelled-d1', 'cancelled', {
+          scope: cancelledSpec.scope,
+        }),
+      ).toBeNull();
+
       expect(await client.checkScope(serviceScope('staging'))).toMatchObject({
         ok: true,
       });
@@ -713,6 +735,16 @@ describe('management over IPC', () => {
         }),
       ).rejects.toMatchObject({ code: 'APP_OWNED_BY_OTHER_SCOPE' });
       await client.removeDeployment('b', { purgeData: false });
+      expect(await client.prepareRotation({ pauseOnly: true })).toBe(false);
+      expect((await client.getStatus()).counters?.rotationPending).toBe(true);
+      const release = host.registry.enterRequest()!;
+      expect(await client.prepareRotation({})).toBe(false);
+      release();
+      expect(await client.prepareRotation({})).toBe(true);
+      await expect(
+        client.startDeployment({ ...spec('c'), scope }),
+      ).rejects.toMatchObject({ code: 'HOST_DRAINING' });
+      expect(await client.prepareRotation({ resume: true })).toBe(false);
       expect(child.listenerCount('message')).toBe(0);
     } finally {
       server.close();

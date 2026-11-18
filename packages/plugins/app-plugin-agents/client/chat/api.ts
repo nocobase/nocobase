@@ -14,6 +14,9 @@ import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import {
   chatPath,
   type ChatAgent,
+  type ConversationShare,
+  type ConversationLink,
+  type ConversationShareCandidate,
   type OnlineChatConfigSnapshot,
   type ChatPreferences,
   type ChatPreferencesPatch,
@@ -53,6 +56,31 @@ export class ChatApi {
 
   public constructor(api: ApiClient) {
     this.api = api;
+  }
+
+  public conversationLinks(id: string): Promise<ConversationLink[]> {
+    return this.get(`${chatPath('conversation', id)}/links`);
+  }
+
+  public async shareCandidates(
+    id: string,
+  ): Promise<ConversationShareCandidate[]> {
+    return this.get(`${chatPath('conversation', id)}/shareCandidates`);
+  }
+  public async shares(id: string): Promise<ConversationShare[]> {
+    return this.get(`${chatPath('conversation', id)}/shares`);
+  }
+  public share(id: string, userId: string): Promise<ConversationShare> {
+    return this.send(
+      `${chatPath('conversation', id)}/shares/${encodeURIComponent(userId)}`,
+      'PUT',
+    );
+  }
+  public revokeShare(id: string, userId: string): Promise<void> {
+    return this.api.request({
+      path: `${chatPath('conversation', id)}/shares/${encodeURIComponent(userId)}`,
+      method: 'DELETE',
+    });
   }
 
   public configuration(

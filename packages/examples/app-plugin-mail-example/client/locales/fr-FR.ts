@@ -120,7 +120,7 @@ const frFR: LocaleResource<typeof enUS> = {
       'Préparation des données de la boîte aux lettres de démonstration…',
     retry: 'Réessayer la configuration',
     openWorkspace: "Ouvrir l'espace de travail de messagerie",
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     loading: 'Chargement…',
   },
 };

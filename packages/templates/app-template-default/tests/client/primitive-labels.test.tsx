@@ -82,7 +82,7 @@ describe('labels built into the shipped primitives', () => {
     expect(close).toHaveAttribute('data-slot', 'toast-close');
   });
 
-  it('labels brand loading and allows decorative inline indicators', () => {
+  it('labels brand loading and allows decorative inline indicators', async () => {
     const { rerender } = render(<BrandSpinner />, { wrapper: I18n });
     expect(
       screen.getByRole('status', { name: zhCN['status.loading'] }),
@@ -91,7 +91,7 @@ describe('labels built into the shipped primitives', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     rerender(<Loading label='正在加载客户' />);
     expect(
-      screen.getByRole('status', { name: '正在加载客户' }),
+      await screen.findByRole('status', { name: '正在加载客户' }),
     ).toHaveTextContent('正在加载客户');
   });
 

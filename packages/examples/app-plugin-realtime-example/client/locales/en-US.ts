@@ -2,6 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   business: {
+    longWait: 'This is taking longer than usual. You can keep waiting.',
     scenarios: 'Realtime scenarios',
     tabs: {
       tasks: 'Tasks',
@@ -85,6 +86,8 @@ const enUS = {
         'Create a task assigned to yourself in Tasks, then come back here.',
     },
     exports: {
+      ready:
+        '{{count}} rows are ready. Download the CSV here; it stays in this list.',
       missing:
         'This export file is no longer available. Create a new export to download your current tasks.',
       title: 'Task exports',
@@ -227,6 +230,16 @@ const enUS = {
     capacity: 'The demonstration is busy. Try again later.',
     subscription:
       'The subscription failed. Reconnect or retry after access is restored.',
+  },
+  taskProgress: {
+    queued: 'Waiting to start',
+    running: 'In progress',
+    completed: 'Completed',
+    failed: 'Failed',
+    canceled: 'Canceled',
+    count: '{{processed}} of {{total}}',
+    processed: '{{processed}} processed',
+    background: 'It keeps running if you leave this page.',
   },
 };
 export type RealtimeExampleResource = LocaleResource<typeof enUS>;

@@ -522,6 +522,9 @@ describe('a trigger refused on a sweep', () => {
     const services: Services = { runtime: () => runtime, calls: [] };
     runtime.register(orders, { services });
     runtime.register(reminders, { services });
+    // These definitions predate key, version and definitionField; what the
+    // sweeps say is the subject here, not the registration warnings.
+    logger.warn.mockClear();
     const order = store.insertRecord('orders', {
       status: 'open',
       lifecycleVersion: 0,

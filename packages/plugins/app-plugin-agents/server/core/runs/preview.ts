@@ -12,6 +12,7 @@ import { invalid, notFound } from '../../kernel/errors.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { findAgent } from '../agents/index.js';
 import {
+  STABLE_AGENT_LAYER_PREFIX,
   annotatePlaceholders,
   firstTurn,
   renderTurnPrompt,
@@ -47,15 +48,22 @@ export interface BriefPreviewer {
   readonly sections: BriefSectionRegistry;
 }
 
-/**
- * The system prompt in two: the platform's part, with the runner's placeholders annotated, and the agent's own prompt,
- * which ends it as written (`joinBrief` puts it last, after a fixed English lead-in that stays with the platform's part).
- */
+/** The platform text and the owner's instructions, separated for display regardless of their execution order. */
 export function splitPrompt(
   prompt: string,
   instructions: string | null,
 ): Pick<BriefPreview, 'platform' | 'agentPrompt'> {
   const own = instructions?.trim() ?? '';
+  const prefix = STABLE_AGENT_LAYER_PREFIX;
+  const first = own && prompt.startsWith(`${prefix}\n\n${own}\n\n`);
+  if (first) {
+    return {
+      platform: annotatePlaceholders(
+        `${prefix}\n\n${prompt.slice(prefix.length + own.length + 4)}`,
+      ),
+      agentPrompt: own,
+    };
+  }
   const at =
     own && prompt.endsWith(own) ? prompt.length - own.length : prompt.length;
   return {

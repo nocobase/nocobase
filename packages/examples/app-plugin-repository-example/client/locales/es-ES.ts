@@ -319,7 +319,7 @@ const esES: LocaleResource<typeof enUS> = {
   cancel: 'Cancelar',
   search: 'Buscar por nombre/número/ID',
   apply: 'Buscar',
-  refresh: 'Actualizar',
+  retryRead: 'Reintentar',
   previous: 'Anterior',
   next: 'Siguiente',
   page: 'Página {{page}}',
@@ -327,6 +327,8 @@ const esES: LocaleResource<typeof enUS> = {
   empty: 'Aún no hay registros. Cree el primer registro para comenzar.',
   loading: 'Cargando…',
   listFeedback: {
+    refreshing: 'Actualizando',
+    longWait: 'Está tardando más de lo habitual. Puede seguir esperando.',
     loading: 'Cargando',
     empty: 'Aún no hay datos',
     noResults: 'No hay resultados',

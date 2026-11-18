@@ -1,3 +1,4 @@
+import { reportHostStartup } from './startup-handshake.ts';
 import process from 'node:process';
 
 import { watchStartupShutdownSignals } from '@nocobase/app-server/node';
@@ -55,8 +56,9 @@ export function runAppHostCli(options: StartAppHostOptions = {}): void {
       process.once('SIGINT', handleShutdownSignal);
       process.once('SIGTERM', handleShutdownSignal);
     })
-    .catch((error: unknown) => {
+    .catch(async (error: unknown) => {
       startupSignals.dispose();
+      await reportHostStartup({ error });
       console.error(error);
       process.exit(1);
     });

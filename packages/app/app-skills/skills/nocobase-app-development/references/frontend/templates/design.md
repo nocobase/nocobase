@@ -8,7 +8,7 @@ Use this as a temporary design document only for the full workflow; durable desi
 | Routes        | `/<path>`; child routes: `/<path>/:id` (detail drawer), and on a page with tabs `/<path>/:id/<tab>/edit` under every tab for each overlay its header opens …                                                                                                                                                                              |
 | Navigation    | Sidebar menu "[name]", icon `<LucideIcon>`; or: not shown in navigation                                                                                                                                                                                                                                                                   |
 | Permissions   | All signed-in users (`authz: 'skip'`) / App page: the page grant `page:<id>`, and the business action `composite:<id>` `<action>` its endpoints check (a page grant authorizes no endpoint) / settings page: the settings item `settings:<id>` (`read`; writes check `update`), registered on the server and checked by its endpoints too |
-| Page template | [`ui-guidelines.md`](../ui-guidelines.md) T1 list page / T2 detail view / T3 form / T4 settings page / T5 dashboard                                                                                                                                                                                                                       |
+| Page template | [`ui-guidelines.md`](../ui-guidelines.md) T1 list page / T2 detail view / T3 form / T4 settings page / T5 dashboard; phone layout in section 8                                                                                                                                                                                            |
 
 ## 1. Goals
 
@@ -51,7 +51,7 @@ Sketch only structure that established patterns and references do not already ex
 │ <Title>                     [+ Primary action]  │
 │ <One-sentence description>                      │
 └─────────────────────────────────────────────────┘
-[Search…] [Filter ▾] [Clear filters]
+[Search…] [Filter ▾] [Clear filters]          (phone: [Search…] / [Filters · n] [Sort])
 ┌ Table ──────────────────────────────────────────┐
 │ Column 1 │ Column 2 │ Column 3 │ ⋯              │
 └─────────────────────────────────────────────────┘
@@ -96,9 +96,15 @@ Link existing copy keys for reused patterns; specify new or changed wording in e
 | --- | ----- | ----- |
 |     |       |       |
 
-## 8. Adaptation
+## 8. Phone layout and adaptation
 
-How the page looks and behaves in the dark theme and on narrow screens (375px).
+Decide this with the page structure, not after it ([the phone experience](../mobile.md)). One row per page or overlay; say "same as desktop" only where nothing changes:
+
+| Page / region | Main task on a phone and first screen | Phone pattern (cards, Filters sheet, one-row tabs, stacked fields, steps …) | Card actions: the row's menu items, or M3.1 case (a)/(b)/(c); select all when selectable | What moves into a disclosure, and where | Exceptions kept on purpose (M3.4, M5.4) and why |
+| ------------- | ------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
+|               |                                       |                                                                             |                                                                                          |                                         |                                                 |
+
+For a list, sketch its first screen at 375×667: the title row with the primary action (a list keeps one; several kept buttons on a non-list page take a counted row under the title), view tabs if any, the one search/Filters/Sort row, and where the first card starts (M1.1, M4.1). Also state the dark theme, long Chinese and English text, touch alternatives for any hover, double-click or drag interaction, and keyboard or safe-area concerns for fixed bars and forms near the bottom. Map the phone decisions to acceptance criteria below (checked at 375×667, a 390–412px width and desktop).
 
 ## 9. Acceptance criteria
 

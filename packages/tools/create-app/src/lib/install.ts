@@ -7,7 +7,6 @@ const VERIFY_TIMEOUT_MS = 60 * 1000;
 
 export interface InstallOptions {
   directory: string;
-  registry?: string;
   onOutput?: (chunk: string) => void;
 }
 
@@ -15,14 +14,9 @@ export interface InstallOptions {
 export async function installDependencies(
   options: InstallOptions,
 ): Promise<void> {
-  const args = ['install'];
-
-  if (options.registry) {
-    args.push(`--registry=${options.registry}`);
-  }
-
   try {
-    await runCommand('pnpm', args, {
+    // The generated .npmrc selects the NocoBase scope; preserve the user's default registry for other packages.
+    await runCommand('pnpm', ['install'], {
       cwd: options.directory,
       timeoutMs: INSTALL_TIMEOUT_MS,
       onOutput: options.onOutput,
@@ -30,7 +24,7 @@ export async function installDependencies(
   } catch (error) {
     if (error instanceof CommandFailedError) {
       throw new Error(
-        `Installing dependencies failed.\n${error.stderr || error.message}`,
+        `Installing dependencies failed.\n${installationFailureDetail(error)}`,
         { cause: error },
       );
     }
@@ -39,6 +33,14 @@ export async function installDependencies(
   }
 }
 
+/** pnpm reports fetch failures on stdout. Keep stable diagnostics, not credential-bearing configuration dumps. */
+function installationFailureDetail(error: CommandFailedError): string {
+  const code = /^\[(ERR_PNPM_[A-Z0-9_]+)\]/mu.exec(error.stdout)?.[1];
+  if (code && /(?:401|403|AUTH)/u.test(code)) {
+    return `${code}: Registry access was denied. Check the selected registry, authorized login, commercial license and access to the required package versions. Log in securely, then retry pnpm install in the existing project. Never put registry tokens in source files or command arguments.`;
+  }
+  return code ?? (error.stderr || error.message);
+}
 export interface DriverVerification {
   ok: boolean;
   /** Set when the driver installed but cannot be loaded, with an explanation of the likely cause. */

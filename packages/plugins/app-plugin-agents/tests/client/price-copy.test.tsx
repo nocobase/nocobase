@@ -53,6 +53,8 @@ it('names the configuration save action in every language and submits edited pri
     'de-DE': 'Preis für Example speichern',
     'vi-VN': 'Lưu giá của Example',
     'id-ID': 'Simpan harga Example',
+    'ru-RU': 'Сохранить цену Example',
+    'ko-KR': 'Example 가격 저장',
   };
   for (const [language, label] of Object.entries(labels)) {
     await act(() => runtime.changeLanguage(language));

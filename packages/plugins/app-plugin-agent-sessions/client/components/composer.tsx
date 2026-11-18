@@ -1,6 +1,6 @@
 /**
- * Where a person writes to the agent. Enter sends, Shift+Enter breaks the line, and while the agent is answering a
- * message waits for the turn to end unless sent with ⌘↩ (Ctrl+Enter), which stops the turn first. Pasted, dropped or
+ * Where a person writes to the agent. On phones Enter breaks the line; on desktop Enter sends and Shift+Enter
+ * breaks the line. While the agent answers, a message waits unless sent with ⌘↩ (Ctrl+Enter), which stops the turn. Pasted, dropped or
  * picked images go with the message. A message that starts with `/` offers the agent's own commands, and `#` offers
  * what the message can mention, such as an issue, which then goes with it. What the host attached, such as the page
  * it was opened from, shows above the message until removed and goes with the next message sent.
@@ -39,6 +39,7 @@ import {
   type Attachment,
 } from '../lib/attachments.js';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePhone } from '../use-phone.js';
 import { useSessionMemory } from '../use-session-memory.js';
 import { useSessionSurface } from '../config.js';
 import { StatusPill } from './status-pill.js';
@@ -131,6 +132,7 @@ export function Composer({
       .flatMap((part) => (part.type === 'text' ? [part.text] : []))
       .join('\n\n'),
   );
+  const phone = usePhone();
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
   const [images, setImages] = useSessionMemory<Pending[]>(
@@ -302,7 +304,9 @@ export function Composer({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (event.nativeEvent.isComposing) return;
+    if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)
+      return;
+    if (phone && event.key === 'Enter') return;
     if (suggestions.length > 0) {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
@@ -599,7 +603,7 @@ export function Composer({
           </div>
         </div>
       </div>
-      {hints && (
+      {hints && !phone && (
         <p className='text-muted-foreground mt-2 hidden flex-wrap gap-x-4 gap-y-1 px-1 text-[11px] @md/agent-session:flex'>
           {keys.map(([combo, label]) => (
             <span key={label} className='inline-flex items-center gap-1'>

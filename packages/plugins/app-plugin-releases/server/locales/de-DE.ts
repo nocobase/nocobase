@@ -13,12 +13,12 @@ const deDE: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Apps',
         description:
-          'Apps, ihre Veröffentlichungen, Bereitstellungen und Laufzeit.',
+          'Apps, ihre Veröffentlichungen, Bereitstellungen und Laufzeitumgebung.',
         actions: {
           view: {
             title: 'Apps anzeigen',
             description:
-              'Siehe Apps, ihre Releases, Bereitstellungen und Laufzeitstatus',
+              'Siehe Apps, ihre Releases, Bereitstellungen und Laufzeitumgebungstatus',
             related: 'Apps anzeigen (die damit verbundenen)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:

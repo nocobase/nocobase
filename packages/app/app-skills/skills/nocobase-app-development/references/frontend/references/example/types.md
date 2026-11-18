@@ -20,7 +20,12 @@ The frontend types live in the page folder, in `client/pages/projects/types.ts`,
 
 ```ts
 // client/pages/projects/types.ts
+import { TABLE_URL_KEYS } from '#hooks/use-table-url-state';
+
 export const PROJECT_STATUSES = ['planning', 'active', 'done'] as const;
+
+/** The list's public URL keys. A record or create page returning to the list carries only these (navigation.md). */
+export const PROJECT_LIST_KEYS = ['q', 'status', ...TABLE_URL_KEYS] as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 

@@ -11,15 +11,16 @@
         "react-markdown@^10.1.0",
         "remark-gfm@^4.0.1",
         "@nocobase/i18n@^1.0.0-beta.4",
-        "@silurus/ooxml@0.85.1"
+        "@silurus/ooxml@0.85.1",
+        "@nocobase/app-client@^4.0.0-beta.9"
       ],
       "registryDependencies": [
         "button",
         "dialog",
-        "spinner",
-        "@nocobase/attachment-list"
+        "@nocobase/attachment-list",
+        "@nocobase/loading"
       ],
-      "docs": "Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.",
+      "docs": "Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them. Uploads report no byte progress: each uploading item shows an indeterminate wait whose mark appears after 300ms and a long-wait note after 10 seconds, with a real cancel that aborts the request; failures keep the file for Retry, and unmounting aborts every upload. Never invent a percentage.",
       "meta": {
         "group": "File",
         "iframeHeight": 740

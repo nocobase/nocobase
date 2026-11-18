@@ -221,6 +221,10 @@ Access: supporting contract reached through a public signature; no package-entry
 
 ```ts
 export interface FunctionModule {
+  /** SQL LOWER for portable ASCII case-insensitive matching; Unicode casing follows the database. */
+  lower(
+    column: ReferenceExpression | Expression<unknown>,
+  ): Expression<string | null>;
   count<T = number>(
     column: ReferenceExpression | Expression<unknown>,
   ): AggregateExpression<T>;

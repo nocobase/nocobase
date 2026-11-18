@@ -1,4 +1,12 @@
 import {
+  resolveMailSenderFactory,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers';
+import {
+  createPasswordResetSender,
+  type PasswordResetSenderSelection,
+} from '../reset-sender.js';
+import {
   createAppCookieScope,
   joinBasePath,
   normalizeBasePath,
@@ -42,7 +50,11 @@ import { createAuthStorage } from '../auth-storage.js';
 import { authenticationToken } from '../tokens.js';
 import { userAdministrationServiceToken } from '../tokens.js';
 import { createUserAdministrationService } from '../user-administration.js';
-import { type AuthConfig, resolveAuthSecrets } from '../config.js';
+import {
+  type AuthConfig,
+  resolveAuthSecrets,
+  registrationFeedbackWarning,
+} from '../config.js';
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: 'half';
@@ -71,7 +83,29 @@ export class AuthenticationProvider<
 > extends ServiceProvider<TApplication> {
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
+  private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
+  /** This Provider owns the reset sender and closes it alongside Auth's native work. */
+  private resetSender?: PasswordResetSenderSelection;
+  private shutdownPromise?: Promise<void>;
+
   public override register(): void {
+    // Freeze only the sender selection; other auth settings keep their lazy read so later defaults still apply.
+    const auth = this.app.config.get<AuthConfig>('auth') ?? {};
+    this.emailSnapshot = {
+      email: auth.email && structuredClone(auth.email),
+      passwordReset: auth.passwordReset && { ...auth.passwordReset },
+    };
+    // Select now so an invalid reference fails startup; no transport is allocated until the first send.
+    const mailerFactory = resolveMailSenderFactory(
+      this.app.container,
+      this.app.config.get<MailersConfig>('mailers') ?? {},
+    );
+    this.resetSender = createPasswordResetSender(mailerFactory, {
+      ...this.emailSnapshot,
+      legacyChannels: this.app.config.get<{
+        channels?: Readonly<Record<string, unknown>>;
+      }>('notification')?.channels,
+    });
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -123,6 +157,18 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
+    const warning = registrationFeedbackWarning(
+      this.app.config.get<AuthConfig>('auth') ?? {},
+    );
+    if (warning && this.app.container.has(loggingToken)) {
+      this.app.container
+        .resolve(loggingToken)
+        .getLogger('auth')
+        .warn(
+          { configKey: 'auth.emailAndPassword.autoSignIn', fix: warning.fix },
+          warning.message,
+        );
+    }
     // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
     if (this.app.container.has(cliToken))
       this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });
@@ -140,8 +186,15 @@ export class AuthenticationProvider<
     );
   }
 
-  public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(authenticationToken)?.close();
+  public override shutdown(): Promise<void> {
+    this.shutdownPromise ??= settleShutdown(
+      [
+        () => this.app.container.resolveIfCreated(authenticationToken)?.close(),
+        () => this.resetSender?.sender?.close(),
+      ],
+      'Authentication provider shutdown failed.',
+    );
+    return this.shutdownPromise;
   }
 
   private createAuthentication(container: ServiceResolver): Auth {
@@ -188,15 +241,10 @@ export class AuthenticationProvider<
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
       ...authConfig,
+      ...this.emailSnapshot,
       passwordResetServices: {
-        legacyChannels:
-          authConfig.passwordReset?.enabled === true &&
-          !authConfig.emailAndPassword?.sendResetPassword &&
-          authConfig.email === undefined
-            ? this.app.config.get<{
-                channels?: Readonly<Record<string, unknown>>;
-              }>('notification')?.channels
-            : undefined,
+        sender: this.resetSender?.sender,
+        legacySender: this.resetSender?.legacy,
         increment: (key) =>
           caching
             .getCounter({ namespace: 'password-reset-rate-limit' })
@@ -260,6 +308,33 @@ export class AuthenticationProvider<
       );
     return auth;
   }
+}
+
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
 }
 
 export interface CookiePrefixOptions {

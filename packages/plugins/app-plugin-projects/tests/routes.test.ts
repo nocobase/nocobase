@@ -1253,6 +1253,15 @@ describe('dependencies over HTTP', () => {
           (activity) => activity.action === 'dependency_removed',
         ),
       ).toEqual([
+        // The conversion ended the relation, which B recorded as well.
+        expect.objectContaining({
+          details: expect.objectContaining({
+            dependencyId: related.dependencyId,
+            dependsOnIssueId: b.id,
+            identifier: a.identifier,
+            type: 'relatedTo',
+          }),
+        }),
         expect.objectContaining({
           details: expect.objectContaining({
             dependencyId: related.dependencyId,
@@ -1290,7 +1299,8 @@ describe('dependencies over HTTP', () => {
         final.activities.filter(
           (activity) =>
             activity.action === 'dependency_removed' &&
-            activity.details.type === 'relatedTo',
+            activity.details.type === 'relatedTo' &&
+            activity.details.dependencyId === blocker.dependencyId,
         ),
       ).toEqual([
         expect.objectContaining({
@@ -1496,6 +1506,50 @@ describe('dependencies over HTTP', () => {
 });
 
 describe('comments over HTTP', () => {
+  it.each(['waitingOwner', 'blocked', 'dormant', 'limited', 'denied'] as const)(
+    'returns recorded work skips for a saved comment: %s',
+    async (reason) => {
+      h.services.kinds.add({
+        key: 'bot',
+        mention: { candidates: () => Promise.resolve([]) },
+        work: {
+          onCommentCreated: (_tx, change) =>
+            Promise.resolve([
+              {
+                kind: 'bot',
+                principalId: 'builder',
+                subjectId: change.issue.id,
+                triggerType: 'mention',
+                started: false,
+                skipped: reason,
+              },
+            ]),
+        },
+      });
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Held work',
+      });
+      const path = `/issues/${issue.id}/comments`;
+      const body = JSON.stringify({
+        content: 'Go [@Builder](mention://bot/builder)',
+      });
+      expect((await call(path, { method: 'POST', body })).status).toBe(401);
+      expect(
+        (await call(path, { role: 'none', method: 'POST', body })).status,
+      ).toBe(404);
+      const posted = await call(path, { role: 'member', method: 'POST', body });
+      expect(posted.status).toBe(201);
+      expect(await posted.json()).toMatchObject({
+        data: {
+          comment: { content: 'Go [@Builder](mention://bot/builder)' },
+          triggered: [],
+          skipped:
+            reason === 'denied' ? [] : [{ kind: 'bot', id: 'builder', reason }],
+        },
+      });
+    },
+  );
+
   it('rejects message and provenance on public comment writes and keeps the read permission boundary', async () => {
     const issue = await h.services.issues.create(h.viewer('alice'), {
       title: 'Display message',
@@ -1632,6 +1686,86 @@ describe('attachments over HTTP', () => {
     });
   };
 
+  it('defaults to 20 MiB and returns 413 just above the single-file limit', async () => {
+    const response = await upload(
+      '/attachments',
+      new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'large.bin'),
+    );
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({
+      error: {
+        reason: 'FILE_TOO_LARGE',
+        message: 'A file may have at most 20 MB.',
+      },
+    });
+  });
+
+  it('uses 1 MiB for both issue and comment uploads, including both 413 guards', async () => {
+    await h.close();
+    h = await createHarness(
+      {},
+      {
+        default: 'large',
+        disks: {
+          large: {
+            driver: 'fs',
+            location: '/unused',
+            visibility: 'private',
+            maxFileSizeMb: 1,
+          },
+        },
+      },
+    );
+    await h.addUser('alice', 'Alice');
+    const customContainer = new ServiceContainer();
+    customContainer.instance(projectsToken, h.services);
+    customContainer.instance(
+      authenticationToken,
+      container.resolve(authenticationToken),
+    );
+    customContainer.instance(
+      authorizationToken,
+      container.resolve(authorizationToken),
+    );
+    customContainer.instance(
+      projectsAccessToken,
+      container.resolve(projectsAccessToken),
+    );
+    const customApi = await apiRoutes.createRouter({
+      appName: 'main',
+      publicBasePath: '',
+      config: { app: { name: 'main', publicBasePath: '' } },
+      paths: createAppPaths({ rootDir: '/tmp/projects-routes' }),
+      router: new Hono(),
+      container: customContainer,
+    } as AppPluginApplication);
+    router = new Hono().route('/api', customApi);
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Custom limit',
+    });
+    for (const path of ['/attachments', `/issues/${issue.id}/attachments`]) {
+      for (const bytes of [
+        1 * 1024 * 1024,
+        1 * 1024 * 1024 + 1,
+        2 * 1024 * 1024,
+      ]) {
+        const response = await upload(
+          path,
+          new File([new Uint8Array(bytes)], 'limit.bin'),
+        );
+        expect(response.status).toBe(bytes === 1 * 1024 * 1024 ? 201 : 413);
+        if (response.status === 413)
+          expect(await response.json()).toMatchObject({
+            error: {
+              reason: 'FILE_TOO_LARGE',
+              message: 'A file may have at most 1 MB.',
+              metadata: { maxFileSizeMb: 1 },
+            },
+          });
+      }
+    }
+  });
+
   it('uploads, sends with a comment, serves and removes files', async () => {
     await call('/issues', {
       role: 'member',
@@ -1733,7 +1867,7 @@ describe('attachments over HTTP', () => {
       error: {
         status: 'INVALID_ARGUMENT',
         reason: 'FILE_TOO_LARGE',
-        domain: 'projects',
+        domain: 'file',
       },
     });
   });

@@ -38,6 +38,21 @@ function checkAuth(stage) {
 }
 
 function options(current, model = 'first', effort = 'low') {
+  if (variant === 'long-choices')
+    return [
+      {
+        id: 'mode',
+        name: 'Mode',
+        category: 'mode',
+        type: 'select',
+        currentValue: current,
+        options: [
+          { value: 'ask', name: 'Ask', description: 'w'.repeat(1944) },
+          { value: 'x'.repeat(201), name: 'Invalid value' },
+          { value: 'full', name: 'Full access' },
+        ],
+      },
+    ];
   if (variant === 'empty') return [];
   if (variant === 'fixed')
     return [

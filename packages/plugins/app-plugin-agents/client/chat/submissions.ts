@@ -12,6 +12,7 @@ import { createClientId } from './client-id.js';
 export interface SubmissionSend {
   readonly effort?: string | null;
   readonly agentId?: string;
+  readonly runnerId?: string;
   readonly content: string;
   readonly clientId: string;
   readonly context?: PageContext;
@@ -31,6 +32,7 @@ export interface SubmissionInput {
   readonly effort?: string | null;
   /** Final pending Runner selection, captured together with this message. */
   readonly agentId?: string;
+  readonly runnerId?: string;
   readonly content: string;
   readonly context: PageContext | undefined;
   readonly attachments: readonly MessageAttachment[];
@@ -212,6 +214,7 @@ export class ChatSubmissions {
       const result = await this.deadline(
         this.api.sendMessage(id, {
           ...(record.agentId ? { agentId: record.agentId } : {}),
+          ...(record.runnerId ? { runnerId: record.runnerId } : {}),
           ...(record.effort !== undefined ? { effort: record.effort } : {}),
           content: record.content,
           clientId: record.clientId,
@@ -254,6 +257,12 @@ export class ChatSubmissions {
     }
     if (changed) this.publish();
   }
+  /**
+   * Looks for an uncertain message in the saved history and confirms it once it appears. It never concludes the send
+   * failed: the request may have timed out only in the page while the server still writes it, so an idle conversation
+   * whose history lacks the message proves nothing. Only a refusal the server returns before writing (`refused`)
+   * makes a send `notSubmitted`.
+   */
   public async reconcile(clientId: string): Promise<void> {
     const record = this.records.find((item) => item.clientId === clientId);
     if (!record?.conversationId || record.status !== 'unknown') return;
@@ -300,6 +309,31 @@ export class ChatSubmissions {
     if (record?.status !== 'unknown' || record.released) return false;
     record.released = true;
     record.operation += 1;
+    this.publish();
+    return true;
+  }
+  /**
+   * Puts back a message an existing conversation refused before writing it, as the application kept it across a
+   * reload; it is not sent again. Refused when its conversation already has a message in flight or it is known.
+   */
+  public restore(
+    record: SubmissionInput & {
+      readonly conversationId: string;
+      readonly clientId: string;
+      readonly createdAt: string;
+      readonly error?: unknown;
+    },
+  ): boolean {
+    if (
+      this.records.some((item) => item.clientId === record.clientId) ||
+      this.blocked(record.conversationId, record.editorKey)
+    )
+      return false;
+    this.records.push({
+      ...record,
+      operation: 0,
+      status: 'notSubmitted',
+    });
     this.publish();
     return true;
   }

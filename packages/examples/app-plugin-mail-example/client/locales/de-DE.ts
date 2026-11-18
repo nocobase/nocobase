@@ -117,7 +117,7 @@ const deDE: LocaleResource<typeof enUS> = {
     preparing: 'Demo-Postfachdaten werden vorbereitet…',
     retry: 'Wiederholen Sie die Einrichtung',
     openWorkspace: 'Mail-Arbeitsbereich öffnen',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     loading: 'Wird geladen…',
   },
 };

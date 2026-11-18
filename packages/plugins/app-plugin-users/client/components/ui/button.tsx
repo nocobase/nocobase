@@ -7,7 +7,7 @@ import { cn } from 'cn';
 
 export type ButtonProps = ButtonPrimitive.Props & {
   readonly size?: 'default' | 'sm' | 'lg' | 'icon' | 'icon-sm';
-  readonly variant?: 'default' | 'outline' | 'ghost' | 'destructive';
+  readonly variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'link';
 };
 
 const buttonVariants = cva(
@@ -18,6 +18,7 @@ const buttonVariants = cva(
         default: 'bg-primary text-primary-foreground hover:bg-primary/80',
         outline: 'border-border bg-background hover:bg-muted',
         ghost: 'hover:bg-muted',
+        link: 'text-primary underline-offset-4 hover:underline',
         destructive:
           'bg-destructive/10 text-destructive hover:bg-destructive/20',
       },

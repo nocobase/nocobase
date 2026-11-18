@@ -1,5 +1,106 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 7f138bc: Report protocol-specific mailbox connection failures with localized explanations and credential-safe structured diagnostics for connection, synchronization, IDLE, and sending failures.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- a1af7f0: Require imapflow 2.2.9 or later, which IMAP synchronization needs to read each message's email ID.
+- dd0a34f: Upgrade SMTP sending to Nodemailer 10 with its bundled declarations and security fixes. The framework's Node.js 24 requirement already satisfies Nodemailer 10's Node.js 20 minimum.
+
+  Align Notification Providers' SMTP test dependency with the shared transport so its mocks intercept the runtime version.
+
+- 44cb25f: Import new IMAP messages promptly during mailbox verification and between synchronization runs.
+
+  Screen historical copies without downloading out-of-range bodies, yield slow imports for new arrivals, and resume history-complete partial synchronization safely.
+
+  Share the top-page history budget across folders in each call and commit bounded top history pages and new folder copies earlier, with redacted notification-to-commit timing for diagnosing slow delivery.
+
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- 1724828: Speed up IMAP synchronization with batched copy verification, tolerate concurrent mailbox changes, and reuse idle connections for attachment downloads.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+
+## 1.0.0-beta.22
+
+### Patch Changes
+
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 1.0.0-beta.21
+
+### Minor Changes
+
+- 139e754: Support safe IMAP selected-copy moves and deletion to Trash, with explicit source folders, durable protection for incomplete moves, attachment relocation, and visible deletion eligibility explanations.
+
+  Discard stale IMAP content results whose attachment locations were retired or protected by a move, preserving the current message and allowing a fresh content retry.
+
+### Patch Changes
+
+- 6cc8acf: Show the last two non-whitespace characters of CJK names in default text avatars, with a shared avatar initials utility that preserves existing Latin and email fallback rules.
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- 4027fde: Parse and preserve recipient display names, show invalid recipients beside composer fields, and reject invalid single or bulk sending requests before creating deliveries while keeping unfinished drafts editable.
+
 ## 1.0.0-beta.19
 
 ### Patch Changes

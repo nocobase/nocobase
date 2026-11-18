@@ -3,6 +3,57 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Modelos de notificação',
+    coverage:
+      'Notificações que o sistema envia automaticamente e como elas são. Notificações enviadas por fluxos de trabalho ou código personalizado podem não aparecer aqui. Esta página é somente para leitura.',
+    filters: 'Filtrar modelos',
+    search: 'Pesquisar modelos',
+    category: 'Categoria',
+    channel: 'Canal',
+    all: 'Todos',
+    details: 'Detalhes do modelo',
+    close: 'Fechar',
+    providedBy: 'Fornecido por {{name}}',
+    trigger: 'Quando é enviado',
+    recipients: 'Quem recebe',
+    businessRule: 'Condições de envio',
+    languagePolicy: 'Idioma',
+    combined:
+      'Uma única mensagem contém todos os idiomas ({{languages}}). Todos os destinatários recebem o mesmo conteúdo.',
+    singleLocale: 'Enviado somente em {{language}}.',
+    status: 'Canais de envio',
+    statusHelp:
+      'Mostra se cada canal está configurado. Não testa a conexão nem confirma que as mensagens são entregues.',
+    configured: 'Configurado',
+    unconfigured: 'Não configurado',
+    enabled: 'Ativado',
+    disabled: 'Desativado',
+    variables: 'Variáveis',
+    variablesHelp:
+      'Marcadores substituídos por valores reais quando a notificação é enviada.',
+    language: 'Idioma',
+    synthetic:
+      'Usa dados de exemplo fictícios. A pré-visualização nunca envia notificações.',
+    definition: 'Modelo com variáveis',
+    preview: 'Pré-visualização',
+    html: 'Versão HTML (exibida como código)',
+    technical: 'Detalhes técnicos',
+    templateId: 'ID do modelo',
+    package: 'Pacote',
+    channelNames: 'Nomes dos canais',
+    channelTypes: {
+      inApp: 'Mensagem no aplicativo',
+      email: 'E-mail',
+    },
+    loading: 'Carregando…',
+    failed: 'Não foi possível carregar os modelos.',
+    forbidden: 'Você não tem permissão para ver os modelos de notificação.',
+    notFound: 'Este modelo não existe mais.',
+    retry: 'Tentar novamente',
+    empty: 'Ainda não há modelos de notificação.',
+    noResults: 'Nenhum modelo corresponde a estes filtros.',
+  },
   logs: {
     deliveryOperations: 'Operações de entrega',
     recipeDescription:

@@ -154,6 +154,15 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Kiến thức',
+    settingsSection: 'Kiến thức',
+    settings: {
+      indexing: {
+        title: 'Lập chỉ mục kiến thức',
+        read: 'Xem',
+        configure: 'Cấu hình',
+        rebuild: 'Xây dựng lại',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Kiến thức',
@@ -171,7 +180,7 @@ const viVN: LocaleResource<typeof enUS> = {
           propose: {
             title: 'Đề xuất kiến thức',
             description:
-              'Đề xuất thay đổi để người có thể chỉnh sửa quyết định; những đại lý nào có thể được cung cấp',
+              'Đề xuất thay đổi để người có thể chỉnh sửa quyết định; những Agents nào có thể được cung cấp',
             related: 'Đề xuất kiến thức (không gian liên quan đến chúng)',
             relatedLabel: 'Không gian liên quan đến tôi',
             relatedHint: 'Ứng dụng quyết định không gian nào liên quan đến ai',
@@ -319,7 +328,7 @@ const viVN: LocaleResource<typeof enUS> = {
         parsing:
           'Văn bản đang được trích xuất; tìm kiếm sẽ tìm thấy tập tin khi nó đã sẵn sàng.',
         ready:
-          'Văn bản của nó được trích xuất, vì vậy bộ phận tìm kiếm và đại lý sẽ đọc nó.',
+          'Văn bản của nó được trích xuất, vì vậy bộ phận tìm kiếm và Agents sẽ đọc nó.',
         failed: 'Không thể trích xuất văn bản.',
         unsupported:
           'Văn bản không được trích xuất từ các tệp thuộc loại này; nó được lưu trữ như cũ.',
@@ -405,7 +414,7 @@ const viVN: LocaleResource<typeof enUS> = {
       archive: 'Lưu trữ',
       archiveTitle: 'Lưu trữ “{{title}}”?',
       archiveDescription:
-        'Nó biến mất khỏi cây và khỏi các tác nhân. Bạn có thể khôi phục nó sau; phiên bản của nó được giữ lại.',
+        'Nó biến mất khỏi cây và khỏi các Agents. Bạn có thể khôi phục nó sau; phiên bản của nó được giữ lại.',
       archivedToast: 'Đã lưu trữ.',
       restore: 'Khôi phục',
       restoredToast: 'Đã khôi phục.',
@@ -424,7 +433,7 @@ const viVN: LocaleResource<typeof enUS> = {
       editing: 'Chỉnh sửa',
       proposing: 'Đề xuất thay đổi',
       properties: 'Thuộc tính',
-      propertiesHint: 'Những tác nhân và liên kết nào đọc về tài liệu này.',
+      propertiesHint: 'Những Agents và liên kết nào đọc về tài liệu này.',
       nothingToPreview: 'Chưa có gì để xem trước.',
       reasonPlaceholder:
         'Tại sao điều này nên thay đổi, cho bất cứ ai quyết định',
@@ -433,9 +442,9 @@ const viVN: LocaleResource<typeof enUS> = {
       title: 'Tiêu đề',
       slug: 'Sên',
       slugHint:
-        'Chữ thường, chữ số và dấu gạch nối; làm thế nào các đại lý và liên kết đặt tên cho nó. Để trống, nó được làm từ tiêu đề.',
+        'Chữ thường, chữ số và dấu gạch nối; làm thế nào các Agents và liên kết đặt tên cho nó. Để trống, nó được làm từ tiêu đề.',
       summary: 'Tóm tắt',
-      summaryHint: 'Một dòng tác nhân đọc trong chỉ mục.',
+      summaryHint: 'Một dòng Agents đọc trong chỉ mục.',
       content: 'Nội dung',
       contentPlaceholder: 'Markdown',
       write: 'Viết',

@@ -13,12 +13,12 @@ const deDE: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Apps',
         description:
-          'Apps, ihre Veröffentlichungen, Bereitstellungen und Laufzeit.',
+          'Apps, ihre Veröffentlichungen, Bereitstellungen und Laufzeitumgebung.',
         actions: {
           view: {
             title: 'Apps anzeigen',
             description:
-              'Siehe Apps, ihre Releases, Bereitstellungen und Laufzeitstatus',
+              'Siehe Apps, ihre Releases, Bereitstellungen und Laufzeitumgebungstatus',
             related: 'Apps anzeigen (die damit verbundenen)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:
@@ -69,15 +69,14 @@ const deDE: LocaleResource<typeof enUS> = {
             all: 'Bereitstellen (alle)',
           },
           deployProtected: {
-            title: 'Geschützte Bereitstellungen genehmigen',
+            title: 'In geschützten Umgebungen bereitstellen',
             description:
-              'Genehmigen Sie Bereitstellungen in geschützten Umgebungen, in denen keine Genehmiger benannt sind. Nur Menschen',
-            related:
-              'Geschützte Bereitstellungen genehmigen (die damit verbundenen)',
+              'Wenn keine Umgebungsgenehmiger ermittelt werden, Anfragen persönlich genehmigen oder selbst bzw. über einen Lauf direkt bereitstellen',
+            related: 'In geschützten Umgebungen bereitstellen (zugehörige)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:
               'Apps, die ich erstellt habe, und alle Apps, die sich auf mich beziehen',
-            all: 'Geschützte Bereitstellungen genehmigen (alle)',
+            all: 'In geschützten Umgebungen bereitstellen (alle)',
           },
           operate: {
             title: 'Starten und stoppen',
@@ -152,14 +151,11 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Apps',
       environments: 'Umgebungen bereitstellen',
     },
     apps: {
+      lastFailure: 'Letzter Fehler: {{detail}}',
       title: 'Apps',
-      description:
-        'Anwendungen, ihre Veröffentlichungen und der Ort, an dem sie bereitgestellt werden.',
-      search: 'Suche nach ID oder Name',
       create: 'App erstellen',
       id: 'App-ID',
       name: 'Name',
@@ -170,18 +166,28 @@ const deDE: LocaleResource<typeof enUS> = {
       labels: 'Etiketten',
       loadFailed: 'Die Apps konnten nicht geladen werden.',
       loadOneFailed: 'Die App konnte nicht geladen werden.',
-      emptyTitle: 'Noch keine Apps',
-      emptyNoAccess: 'Bitten Sie einen Administrator, eine App zu erstellen.',
-      emptyDescription:
-        'Erstellen Sie eine App, laden Sie dann eine Version hoch und stellen Sie sie in einer Umgebung bereit.',
-      noResults: 'Keine App entspricht der Suche.',
       created: '{{name}} erstellt.',
       createDescription:
         'Eine App wird in einer Umgebung bereitgestellt. Die Veröffentlichungen werden anschließend hochgeladen.',
       idHint:
         'Buchstaben, Ziffern, Unterstriche und Bindestriche; Teil seiner Adresse. Es kann sich später nicht mehr ändern.',
-      noEnvironment: 'Noch keine Umgebung',
       lastAccess: 'Letzter Besuch',
+      stateFilter: 'Status',
+      anyState: 'Jeder Status',
+      clearFilters: 'Filter zurücksetzen',
+      noMatches: 'Keine App passt zu den Filtern.',
+      runStates: {
+        running: 'Läuft',
+        starting: 'Startet',
+        pending: 'Noch nicht gestartet',
+        waiting: 'Wartet',
+        stopped: 'Gestoppt oder ruhend',
+        failed: 'Fehlgeschlagen',
+        unknown: 'Unbekannt',
+      },
+      page: 'Seite {{page}} von {{pages}}',
+      previousPage: 'Vorherige Seite',
+      nextPage: 'Nächste Seite',
     },
     advanced: 'Erweitert (optional)',
     labels: {
@@ -214,9 +220,9 @@ const deDE: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Wird bei der Bereitstellung und bei jedem Neustart der Laufzeit gestartet.',
+          'Wird bei der Bereitstellung und bei jedem Neustart der Laufzeitumgebung gestartet.',
         onDemand:
-          'Wird beim ersten Besuch nach einer Bereitstellung oder einem Laufzeitneustart gestartet.',
+          'Wird beim ersten Besuch nach einer Bereitstellung oder einem Laufzeitumgebungneustart gestartet.',
       },
       idleLabel: 'Halten Sie an, wenn Sie keinen Besuch abstatten',
       dormantLabel: 'Winterschlaf halten, wenn er nicht besucht wird',
@@ -253,6 +259,9 @@ const deDE: LocaleResource<typeof enUS> = {
       stopped: 'Angehalten',
       stoppedOnDemand: 'Angehalten (beginnt bei Besuch)',
       dormant: 'Winterschlaf (bei Besuch vorbereitet)',
+      waitingCapacity: 'Wartet auf freien Platz',
+      waitingMemory: 'Wartet auf Speicher',
+      waitingRecycle: 'Wartet auf Host-Neustart',
       failed: 'Fehlgeschlagen',
       unknown: 'Unbekannt',
       deploying: 'Bereitstellung',
@@ -301,6 +310,12 @@ const deDE: LocaleResource<typeof enUS> = {
         'Diese Umgebung ist geschützt. Geben Sie zum Bereitstellen {{appId}} ein.',
     },
     deployments: {
+      cancel: 'Bereitstellung abbrechen',
+      replaced: 'Durch eine neuere Bereitstellung ersetzt.',
+      cancelAccepted: 'Abbruch angenommen.',
+      queueAhead: 'In Warteschlange · {{ahead}} davor',
+      restartHint:
+        'Bereitstellung unterbrochen. Stellen Sie die Version erneut bereit.',
       title: 'Bereitstellungen',
       kind: 'Freundlich',
       status: 'Status',
@@ -317,6 +332,8 @@ const deDE: LocaleResource<typeof enUS> = {
       hideLogs: 'Protokolle ausblenden',
       noLogs: 'Keine Protokollzeilen.',
       statuses: {
+        cancelling: 'Wird abgebrochen',
+        cancelled: 'Abgebrochen',
         queued: 'In der Warteschlange',
         deploying: 'Bereitstellung',
         succeeded: 'Erfolgreich',
@@ -517,7 +534,7 @@ const deDE: LocaleResource<typeof enUS> = {
           syntax: 'Zeile {{line}}: Schreiben Sie es als KEY=Wert.',
           name: 'Zeile {{line}}: {{name}} ist kein gültiger Name. Verwenden Sie Großbuchstaben, Ziffern und Unterstriche, beginnend mit einem Buchstaben.',
           reserved:
-            'Zeile {{line}}: {{name}} wird von der Laufzeit gesetzt und kann keine Variable sein.',
+            'Zeile {{line}}: {{name}} wird von der Laufzeitumgebung gesetzt und kann keine Variable sein.',
           duplicate:
             'Zeile {{line}}: {{name}} ist bereits auf einer früheren Zeile festgelegt.',
           unterminated:
@@ -531,6 +548,52 @@ const deDE: LocaleResource<typeof enUS> = {
       deployments: 'Bereitstellungen',
       variables: 'Variablen',
       settings: 'Einstellungen',
+    },
+    sharedHost: {
+      title: 'Gemeinsamer App-Host',
+      description:
+        'Apps aller Umgebungen auf diesem Host teilen sich einen Prozess und dessen Speicher.',
+      environments: 'Umgebungen darauf: {{names}}',
+      recycling: {
+        pending:
+          'Alter Code wird durch einen Neustart dieses Hosts freigegeben, sobald keine App mehr genutzt wird. Neue Versionen warten bis dahin; laufende Apps antworten weiter.',
+        restarting:
+          'Dieser Host startet neu. Seine Apps antworten „gleich erneut versuchen“, bis sie zurück sind.',
+      },
+      restoreFailed:
+        '{{name}}: Die Apps konnten nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
+      failed:
+        'Die App konnte nach dem Neustart ihres gemeinsamen Hosts nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
+      view: 'Host-Auslastung ansehen',
+      deployed: 'Bereitgestellt: {{count}}',
+      appsLabel: 'Laufend oder startend',
+      heapLabel: 'Heap',
+      processLabel: 'Prozessspeicher',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · keine Obergrenze',
+      available: '{{available}} noch frei auf dem Server',
+      wholeHost:
+        'Summen des gesamten Hosts mit allen Umgebungen darauf; der Speicher lässt sich nicht auf einzelne Apps aufteilen.',
+      viewAppsNote: 'Zeigt nur die Apps, die du sehen darfst.',
+      byEnvironment: 'Laufend oder startend, nach Umgebung:',
+    },
+    runtime: {
+      holds: {
+        requests: 'Bearbeitet Anfragen',
+        connections: 'Offene Verbindungen',
+        starting: 'Startet',
+        operation: 'Wird bereitgestellt oder angehalten',
+        resident: 'Läuft dauerhaft',
+        busy: 'Beschäftigt',
+        recent: 'In der letzten Minute genutzt',
+      },
+      waiting: {
+        capacity: 'Start abgelehnt: App-Limit oder Startwarteschlange voll',
+        memory: 'Start abgelehnt: nicht genug Speicher',
+        recycle: 'Start abgelehnt: neuer Code wartet auf den Host-Neustart',
+      },
+      idle: 'Untätig; wird zuerst angehalten, wenn Platz gebraucht wird',
+      lastVisit: 'Letzter Besuch: {{time}}',
     },
     overview: {
       currentRelease: 'Aktuelle Version',
@@ -578,7 +641,7 @@ const deDE: LocaleResource<typeof enUS> = {
       clear: 'Löschen Sie {{path}}',
     },
     settings: {
-      edit: 'Laufzeit und Labels',
+      edit: 'Laufzeitumgebung und Labels',
       editShort: 'Bearbeiten',
       editDescription:
         'Wann die App ausgeführt wird und wie sie gekennzeichnet ist. Änderungen werden übernommen, ohne dass ein Neustart erforderlich ist.',
@@ -637,6 +700,10 @@ const deDE: LocaleResource<typeof enUS> = {
           'Die Konfiguration wurde gespeichert, die App konnte sie jedoch nicht neu laden.',
         CONFIG_TOO_LARGE: 'Die Konfiguration ist zu groß.',
         CONFIRMATION_REQUIRED: 'Geben Sie zur Bestätigung die App-ID ein.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Die Bereitstellung wechselt bereits die Version oder ist abgeschlossen.',
+        CANCELLATION_UNSUPPORTED:
+          'Dieser Bereitstellungstreiber unterstützt keinen Abbruch.',
         DEPLOYMENT_IN_PROGRESS:
           'Die Bereitstellung dieser App ist bereits im Gange.',
         DEPLOYMENT_NOT_FOUND: 'Die Bereitstellung ist nicht vorhanden.',
@@ -707,7 +774,7 @@ const deDE: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Erforderliche Variablen sind nicht festgelegt: {{names}}. Legen Sie sie in den Variablen der App oder ihrer Umgebung fest und stellen Sie sie dann erneut bereit.',
         VARIABLE_RESERVED:
-          'Dieser Name wird von der Laufzeit festgelegt und kann keine Variable sein.',
+          'Dieser Name wird von der Laufzeitumgebung festgelegt und kann keine Variable sein.',
         INVALID_VARIABLE_NAME:
           'Ein Variablenname besteht aus Großbuchstaben, Ziffern und Unterstrichen, beginnend mit einem Buchstaben.',
         INVALID_VARIABLE_VALUE: 'Der Wert ist zu lang.',
@@ -718,6 +785,12 @@ const deDE: LocaleResource<typeof enUS> = {
           'Es gibt keinen ersten Administrator, der angezeigt werden kann.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Seit {{seconds}} Sekunden wurden keine Daten des Release-Pakets empfangen. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTotalTimeout:
+          'Das Lesen des Release-Pakets hat {{seconds}} Sekunden überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTimeout:
+          'Das Zeitlimit zum Lesen des Release-Pakets wurde überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
         hostExited: 'Der Prozess der App wurde gestoppt, bevor sie bereit war.',
         hostDisabled: 'Der App-Host ist ausgeschaltet.',
         hostShutDown: 'Der App-Host wurde heruntergefahren.',
@@ -730,16 +803,28 @@ const deDE: LocaleResource<typeof enUS> = {
           'Der Host hat nicht berichtet, wie die Bereitstellung verlaufen ist.',
         interrupted:
           'Die Bereitstellung wurde durch einen Neustart unterbrochen.',
-        notReported: 'Die Laufzeit hat die App nicht gemeldet.',
+        notReported: 'Die Laufzeitumgebung hat die App nicht gemeldet.',
         notRunning: 'Die App läuft nach dem Neustart nicht.',
         deploymentNotReported:
-          'Die Laufzeit hat die Bereitstellung nicht gemeldet.',
+          'Die Laufzeitumgebung hat die Bereitstellung nicht gemeldet.',
         notReady:
           'Es ist noch nicht fertig; Versuchen Sie es gleich noch einmal.',
         checkTimeout:
           'Der Test wurde nicht innerhalb von 20 Sekunden abgeschlossen.',
         hostNoSettings:
-          'Die lokale Laufzeit nimmt keine Verbindungseinstellungen entgegen.',
+          'Die lokale Laufzeitumgebung nimmt keine Verbindungseinstellungen entgegen.',
+        recycleWait:
+          'Der App-Host gibt Speicher frei; die Bereitstellung wird danach fortgesetzt.',
+        recycleRetry:
+          'Der App-Host gibt noch Speicher frei, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        capacityExceeded:
+          'Dem App-Host fehlt Speicher oder ein freier Platz, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        replacementMemory:
+          'Dem App-Host fehlt Speicher, um die neue Version zu starten; die aktuelle läuft weiter. Versuchen Sie es später erneut.',
+        startQueueFull:
+          'Auf dem App-Host starten zu viele Apps. Versuchen Sie es später erneut.',
+        activeLimit:
+          'Die Anzahl laufender Apps hat ihr Limit erreicht. Versuchen Sie es später erneut.',
       },
       prefixed: {
         startFailed: 'Start fehlgeschlagen: {{detail}}',
@@ -834,7 +919,7 @@ const deDE: LocaleResource<typeof enUS> = {
       policyDescription: 'Wer darf hier eingesetzt werden?',
       appDefaults: 'Apps',
       appDefaultsDescription:
-        'Höchstens so viele Apps und wenn eine App, die ohne eigene Laufzeitrichtlinie erstellt wurde, stoppt und in den Ruhezustand wechselt. Leer: keine Grenze, niemals.',
+        'Höchstens so viele Apps und wenn eine App, die ohne eigene Laufzeitumgebungrichtlinie erstellt wurde, stoppt und in den Ruhezustand wechselt. Leer: keine Grenze, niemals.',
       maxApps: 'Die meisten Apps',
       defaultIdle: 'Stopp nach (Minuten ohne Besuch)',
       defaultDormant: 'Ruhend nach (Stunden ohne Besuch)',

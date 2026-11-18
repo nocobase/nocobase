@@ -2,6 +2,7 @@ import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useId, useState } from 'react';
 import { useOutletContext } from 'react-router';
+import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Button } from '#components/ui/button';
@@ -111,11 +112,14 @@ export default function CustomerBatchPage() {
       ) : !ids.length ? (
         <p>{t('customerContacts.noSelection')}</p>
       ) : (
-        <form
+        <FeedbackForm
           id={formId}
-          onSubmit={(e) => {
+          // The new value is unsaved input; choosing which field to change is not.
+          values={() => ({ status, ownerId })}
+          savedValues={{ status: 'active', ownerId: '' }}
+          onSubmit={async (e) => {
             e.preventDefault();
-            void submit();
+            await submit();
           }}
           className='flex flex-col gap-4'
         >
@@ -152,7 +156,7 @@ export default function CustomerBatchPage() {
               onValidityChange={setValidOwner}
             />
           )}
-        </form>
+        </FeedbackForm>
       )}
     </RouteDialog>
   );

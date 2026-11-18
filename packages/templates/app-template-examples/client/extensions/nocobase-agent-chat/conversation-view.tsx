@@ -1,3 +1,4 @@
+import { SnapshotView } from './snapshot-view.js';
 import { useConversationActions } from './conversation-actions.js';
 import {
   ChatExtensionsContext,
@@ -157,6 +158,13 @@ export function ConversationView({
       </div>
     );
   }
+  if (detail.data?.snapshot)
+    return (
+      <SnapshotView
+        key={`${conversationId}:${detail.data.updatedAt}`}
+        conversation={detail.data}
+      />
+    );
   return (
     <ConversationBody
       key={

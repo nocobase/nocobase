@@ -210,13 +210,15 @@ test('measures the production cleanup on synthetic PostgreSQL data and shared Re
     createJobExecutorService(
       {
         default: 'redis',
-        redis: {
-          adapter: 'redis',
-          connection: {
-            host: '127.0.0.1',
-            port: Number(process.env.REDIS_PORT),
+        backends: {
+          redis: {
+            adapter: 'redis',
+            connection: {
+              host: '127.0.0.1',
+              port: Number(process.env.REDIS_PORT),
+            },
+            namespace: `pm386-${process.pid}`,
           },
-          namespace: `pm386-${process.pid}`,
         },
       },
       { appName: 'pm386', storagePath: process.env.PM386_REPORT_DIR! },

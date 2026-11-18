@@ -84,6 +84,7 @@ export interface KnowledgeHarness {
 }
 
 export interface HarnessOptions {
+  readonly actorAuthorization?: 'initiator';
   readonly proposals?: boolean;
   /** The largest file stored. */
   readonly maxBytes?: number;
@@ -116,6 +117,7 @@ export async function createKnowledgeHarness(
   const sees = (userId: string, project: ProjectFacts) =>
     !project.seenBy || project.seenBy.includes(userId);
   const access: KnowledgeAccessResolver = {
+    actorAuthorization: options.actorAuthorization,
     space: (space) =>
       space.scope === 'system'
         ? SYSTEM

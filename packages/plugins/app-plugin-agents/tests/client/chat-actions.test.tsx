@@ -37,6 +37,9 @@ function Row() {
       <button onClick={() => a.archive.mutate({ id: 'c', archived: true })}>
         Archive
       </button>
+      <button onClick={() => a.archive.mutate({ id: 'c', archived: false })}>
+        Restore
+      </button>
       <button onClick={() => a.markRead('c')}>Read</button>
     </>
   );
@@ -124,3 +127,31 @@ it.each([false, true])(
     }
   },
 );
+
+it.each(['Archive', 'Restore'])(
+  'invalidates archived caches after %s succeeds',
+  async (action) => {
+    host.request.mockResolvedValue({ data: { id: 'c', title: 'Saved' } });
+    render(<Tree identity='A' />);
+    const key = [...chatKeys.lists, { archived: true }];
+    agentsQueryClient().setQueryData(key, {
+      pages: [{ items: [{ id: 'c' }] }],
+    });
+    fireEvent.click(screen.getByText(action));
+    await waitFor(() =>
+      expect(agentsQueryClient().getQueryState(key)?.isInvalidated).toBe(true),
+    );
+  },
+);
+it('retains archived data and reports restore failure', async () => {
+  host.request.mockRejectedValue(new Error('Restore failed'));
+  render(<Tree identity='A' />);
+  const key = [...chatKeys.lists, { archived: true }];
+  const data = { pages: [{ items: [{ id: 'c' }] }] };
+  agentsQueryClient().setQueryData(key, data);
+  fireEvent.click(screen.getByText('Restore'));
+  await waitFor(() => expect(host.show).toHaveBeenCalled());
+  expect(host.show.mock.calls[0][0].type).toBe('error');
+  expect(agentsQueryClient().getQueryData(key)).toEqual(data);
+  expect(agentsQueryClient().getQueryState(key)?.isInvalidated).toBe(false);
+});

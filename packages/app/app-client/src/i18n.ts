@@ -38,8 +38,8 @@ export interface CreateAppI18nRuntimeOptions {
 /**
  * Reads the visitor's language preference for this application's full mount path.
  *
- * Storage is the source of truth on the client, so the first frame renders in the right language without waiting for
- * the server. Access is guarded because a browser can refuse it outright in private modes.
+ * Storage supplies an initial browser hint. An identity integration replaces it with the signed-in user's
+ * validated server preference after authentication. Access is guarded because a browser can refuse it outright in private modes.
  * The old shared key is deliberately ignored: its choice may belong to another application on the same origin.
  */
 export function readStoredLocale(): Locale | undefined {

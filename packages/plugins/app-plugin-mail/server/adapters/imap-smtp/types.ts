@@ -10,6 +10,8 @@ export interface ImapFolderCursor {
 
 export interface ImapSyncCursor {
   readonly version: 1;
+  /** Keep the import boundary when a history-complete partial resumes incrementally. */
+  readonly receivedAfter?: string;
   readonly folders: Readonly<Record<string, ImapFolderCursor>>;
   readonly verify?: ImapVerifyState;
 }
@@ -35,7 +37,9 @@ export interface ImapOperationSnapshot {
   readonly messageId: string;
   readonly providerMessageId: string;
   readonly source: ImapIdSource;
-  readonly operation: 'flags' | 'delete';
+  readonly operation: 'flags' | 'delete' | 'move';
+  readonly sourceProviderFolderId?: string;
+  readonly destinationProviderFolderId?: string;
 }
 
 export interface ImapLocationTuple {
@@ -52,6 +56,7 @@ export interface ImapStoredLocation extends ImapLocationTuple {
   readonly source?: ImapIdSource;
   readonly status: ImapLocationStatus;
   readonly updatedAt: string;
+  readonly invalidationReason?: string;
 }
 
 /** One fetched copy, verified in this step, with the identity chosen for it. */
@@ -91,10 +96,23 @@ export interface ImapVerifyFolder {
 
 /** First verification pass, kept in the change cursor until the second pass compares it. */
 export interface ImapVerifyState {
-  readonly attempts: number;
-  readonly excluded?: readonly string[];
+  readonly attempts?: number;
+  readonly excluded?: Readonly<
+    Record<string, Pick<ImapVerifyFolder, 'uidValidity' | 'uids'>>
+  >;
   readonly folders?: Readonly<Record<string, ImapVerifyFolder>>;
+  readonly rechecks?: readonly ImapExcludedRecheck[];
 }
+
+/** A bounded batch of committed identities and the exclusion folders still to search. */
+export interface ImapExcludedRecheck {
+  readonly identities: readonly ImapRecheckIdentity[];
+  readonly folders: readonly string[];
+}
+
+export type ImapRecheckIdentity =
+  | { readonly emailId: string; readonly rfcMessageId?: undefined }
+  | { readonly emailId?: undefined; readonly rfcMessageId: string };
 
 /**
  * Account-bound persistence given to one IMAP adapter instance. It exposes only
@@ -112,7 +130,11 @@ export interface ImapLocationPersistence {
   bindMessage(
     messageId: string,
     providerMessageId: string,
-    operation: 'flags' | 'delete',
+    operation: 'flags' | 'delete' | 'move',
+    move?: {
+      readonly sourceProviderFolderId?: string;
+      readonly destinationProviderFolderId: string;
+    },
   ): Promise<{
     readonly persistence: ImapLocationPersistence;
     readonly snapshot: ImapOperationSnapshot;
@@ -129,6 +151,18 @@ export interface ImapLocationPersistence {
   ): Promise<readonly ImapStoredLocation[]>;
   /** Valid and pending copies of the account, for verification. */
   listKnownLocations(): Promise<readonly ImapStoredLocation[]>;
+  getPushRequestedAt(): Promise<string | undefined>;
+  beginMove(): Promise<ImapMoveState>;
+  rememberMoveDestination(
+    state: ImapMoveState,
+    copy: ImapCopyEvidence,
+  ): Promise<ImapMoveState>;
+  commitMoved(
+    state: ImapMoveState,
+    attachments: readonly import('../../../shared/mail.js').NormalizedMailAttachment[],
+    flags: { readonly read: boolean; readonly starred: boolean },
+  ): Promise<string>;
+  releaseMove(state: ImapMoveState): Promise<void>;
   commitFlags(
     location: ImapStoredLocation,
     flags: { readonly read?: boolean; readonly starred?: boolean },
@@ -138,4 +172,11 @@ export interface ImapLocationPersistence {
     input: import('../../contracts/persistence.js').MailSyncStepCommit,
     evidence: ImapSyncEvidence,
   ): Promise<import('../../../shared/mail.js').MailSyncRun>;
+}
+
+/** Durable protection for exactly one selected source and its confirmed destination. */
+export interface ImapMoveState {
+  readonly token: string;
+  readonly source: ImapStoredLocation;
+  readonly destination?: ImapStoredLocation;
 }

@@ -162,7 +162,7 @@ export default {
     record: 'Record',
     notes: 'Notes',
     save: 'Save',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     loading: 'Loading…',
     empty: 'No accessible records',
     readOnly: 'Read only',

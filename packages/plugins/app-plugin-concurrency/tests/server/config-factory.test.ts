@@ -44,16 +44,16 @@ describe('public concurrency configuration factory', () => {
     const resolved = await runtime('{}');
     expect(resolved.config.get('concurrency')).toEqual({
       default: 'memory',
-      memory: { adapter: 'mutex' },
+      backends: { memory: { adapter: 'mutex' } },
     });
   });
   it('applies declared environment selection above file and defaults', async () => {
     const resolved = await runtime(
-      'concurrency:\n  default: memory\n  alternate:\n    adapter: mutex\n    ttl: 2000\n',
+      'concurrency:\n  default: memory\n  backends:\n    alternate:\n      adapter: mutex\n      ttl: 2000\n',
       { CONCURRENCY_DEFAULT: 'alternate' },
     );
     expect(resolved.config.get('concurrency.default')).toBe('alternate');
-    expect(resolved.config.get('concurrency.alternate')).toEqual({
+    expect(resolved.config.get('concurrency.backends.alternate')).toEqual({
       adapter: 'mutex',
       ttl: 2000,
     });
@@ -64,7 +64,7 @@ describe('public concurrency configuration factory', () => {
       {
         level: 'error',
         path: 'concurrency.default',
-        message: 'Must name an existing configuration.',
+        message: 'Must name an existing configuration in concurrency.backends.',
       },
     ]);
   });

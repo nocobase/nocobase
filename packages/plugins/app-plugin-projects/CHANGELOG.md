@@ -1,5 +1,198 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-plugin-users@2.0.0-beta.21
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+- Updated dependencies [38854ec]
+- Updated dependencies [85d7e34]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- dd0a34f: Resolve a patched PDF.js release for officeparser document extraction and verify PDF text extraction with its local worker.
+- 902c376: Emit a `project.changed` domain event when a project's members, visibility or lead change, so listeners that keep per-person state about its issues can read them again.
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- c74760f: Invitation emails are written in one language instead of every supported language. The language is chosen when inviting (`locale` on the invite endpoints, defaulting to the inviter's interface language and then the application's default), kept on the invitation and reused by resends. Only a language without email text falls back to the application's default language and English. The subject follows the email's language, and the expiry is formatted for that language and marked as UTC.
+
+  The accept page opens in the invitation's language, offers a language picker, and stores the language on screen as the new account's language. Lookups return the invitation's `locale`, and accepting takes an optional `locale`. Projects' invite dialog gains an email language field. The notification template preview now renders each language separately. Traditional Chinese and Japanese wording and list separators are corrected.
+
+  This adds the migration `202611110001_user_invitation_locale`, which adds a nullable `userInvitations.locale` column. Existing invitations keep a null language and use the resending person's language.
+
+### Patch Changes
+
+- 788df3e: Batch knowledge directory metadata and node permissions across spaces, preserving visibility and archived-document counts. Provide a lightweight authorized project metadata query without issue or member totals.
+- dd92f18: Index human task executors so attention queries can combine executor assignments with the existing owner index instead of scanning a large issue table.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- fe0bfbc: Reduce project task grouping work by selecting authorized project seeds before traversing ancestors, and bound hierarchy traversal depth.
+- Updated dependencies [44bf26a]
+- Updated dependencies [c74760f]
+- Updated dependencies [74f1bf8]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-notification@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
+## 0.1.0-beta.29
+
+### Minor Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
+### Patch Changes
+
+- 7e97024: Filter agent runs by their subject visibility before listing, reporting or granting access to transcripts and realtime updates.
+- Updated dependencies [d88875e]
+- Updated dependencies [efa464a]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-plugin-users@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.8
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- 126f7ae: Record a `relatedTo` link on both issues' activity when it is added, removed or converted, naming the other issue, and add the `activity.actions.relationAdded` and `activity.actions.relationRemoved` wording in every locale. A `blockedBy` dependency is still recorded only on the issue that waits.
+- 1309649: Name the person who created a project on its `project.created` event (`creatorUserId`, or null when a service account created it), so listeners can set up the new project for its creator.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- 7c25f88: Keep issue, sub-issue and project dialog actions translated when the application hosts their route containers.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- Updated dependencies [215795d]
+- Updated dependencies [9601146]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-plugin-users@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [4411984]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-users@2.0.0-beta.14
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+  - @nocobase/app-plugin-notification@2.0.0-beta.4
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- a71b814: Include recorded work skip reasons in comment creation responses so callers can distinguish saved comments from work held by a run limit.
+- Updated dependencies [5a4ebe0]
+  - @nocobase/app-plugin-users@2.0.0-beta.13
+
 ## 0.1.0-beta.23
 
 ### Patch Changes

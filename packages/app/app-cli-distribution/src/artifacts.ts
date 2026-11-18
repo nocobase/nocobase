@@ -1,0 +1,358 @@
+/**
+ * Distribution: the runner (`nocobase-runner`) and the application's CLI (such as `acme`), served by the application
+ * itself as tarballs, so nothing is published to a registry: one per target, each bundling Node, or one for every
+ * target (`UNIVERSAL_TARGET`, `nocobase cli build --universal`) that runs on the machine's own Node.js 24 or newer.
+ *
+ * `nocobase cli build` of `@nocobase/app-cli` (`--runner` for the runner) builds each product into a directory of its
+ * own, with its own manifest, so the products are built and mounted apart (in CI, one artifact each):
+ *
+ *   <dir>/<channel>/<product>/manifest.json
+ *   <dir>/<channel>/<product>/<version>/<product>-v<version>-<target>.tar.gz
+ *
+ * where a product's manifest lists its versions with each target's file (relative to the product's directory),
+ * SHA-256 and size. A target without a file of its own gets the version's universal one, if it has one, answered with
+ * `universal: true`; a file built for the target wins over it. The application serves one channel (`agents.dist.channel`, `stable` by default); a product's
+ * current version is the one `agents.dist.versions` pins, or the highest the channel has. Only files a manifest lists
+ * are ever served.
+ *
+ * A product the directory has no current version of may instead be named on the npm registry (`agents.dist.npm`: its
+ * package and exact version), answered only to callers that understand it (`npmPackage`). The directory always wins.
+ */
+import { createReadStream, type ReadStream } from 'node:fs';
+import { readdir, readFile, stat } from 'node:fs/promises';
+import path from 'node:path';
+
+import {
+  compareVersions,
+  DIST_PRODUCT_PATTERN,
+  DIST_ROUTES,
+  DIST_TARGET_PATTERN,
+  EXACT_VERSION_PATTERN,
+  NPM_PACKAGE_PATTERN,
+  ProtocolError,
+  routePath,
+  type DistArtifact,
+  type DistManifest,
+  UNIVERSAL_TARGET,
+  type DistNpmPackage,
+} from '@nocobase/agent-protocol';
+import { z } from 'zod';
+
+function notFound(what: 'Product' | 'File'): ProtocolError {
+  return new ProtocolError(
+    what === 'Product' ? 'PRODUCT_NOT_FOUND' : 'DIST_FILE_NOT_FOUND',
+    `${what} not found.`,
+  );
+}
+
+/** `agents.dist` in the application's configuration. */
+export interface DistConfig {
+  /** Where the built tarballs are; `storage/runners/dist` of the application by default. */
+  readonly dir?: string;
+  /** Which channel to serve: `stable` by default. */
+  readonly channel?: string;
+  /** A version to serve per product instead of the channel's highest, such as `{ acme: '0.3.1' }`. */
+  readonly versions?: Readonly<Record<string, string>>;
+  /**
+   * The npm package and exact version each product is published as, such as
+   * `{ 'nocobase-runner': { package: '@nocobase/agent-runner', version: '1.0.0' } }`: answered instead of a tarball
+   * only when `dir` has no current version of the product, and only to callers that understand it (`DistNpmPackage`).
+   */
+  readonly npm?: Readonly<Record<string, DistNpmSource>>;
+}
+
+/** One product of `DistConfig.npm`. */
+export interface DistNpmSource {
+  readonly package: string;
+  /** An exact version, never a range. */
+  readonly version: string;
+}
+
+const DistNpmConfigSchema = z.record(
+  z.string().regex(DIST_PRODUCT_PATTERN),
+  z.object({
+    package: z.string().max(214).regex(NPM_PACKAGE_PATTERN),
+    version: z.string().max(64).regex(EXACT_VERSION_PATTERN),
+  }),
+);
+
+export const DEFAULT_CHANNEL = 'stable';
+
+const StoredTargetSchema = z.object({
+  file: z.string().min(1),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/u),
+  size: z.number().int().nonnegative(),
+});
+
+const StoredVersionsSchema = z.record(
+  z.string(),
+  z.object({ targets: z.record(z.string(), StoredTargetSchema) }),
+);
+
+/** The manifest of one product, `<channel>/<product>/manifest.json`, with files relative to the product's directory. */
+const ProductManifestSchema = z.object({
+  schema: z.literal(1),
+  product: z.string().regex(DIST_PRODUCT_PATTERN),
+  bin: z.string().optional(),
+  versions: StoredVersionsSchema,
+});
+
+/** Every product's manifest of the channel, with files relative to the channel's directory. */
+interface StoredManifest {
+  readonly products: Record<
+    string,
+    { bin?: string; versions: z.infer<typeof StoredVersionsSchema> }
+  >;
+}
+
+/** A file the application may serve, found through the manifest. */
+export interface DistFile {
+  /** The platform it is built for: `UNIVERSAL_TARGET` for the one that serves every platform. */
+  readonly target: string;
+  readonly path: string;
+  readonly sha256: string;
+  readonly size: number;
+  open(): ReadStream;
+}
+
+export interface DistService {
+  readonly channel: string;
+  /** What the channel serves now; empty when nothing was built. */
+  manifest(): Promise<DistManifest>;
+  /** The current `product` for `target`, or null. */
+  find(product: string, target: string): Promise<DistArtifact | null>;
+  /** Like `find`, but 404: `PLATFORM_UNSUPPORTED` with the targets there are, or `NOT_FOUND` for no such product. */
+  resolve(product: string, target: string): Promise<DistArtifact>;
+  /** A file the manifest lists (any version on the channel); 404 otherwise. */
+  file(product: string, version: string, name: string): Promise<DistFile>;
+  /**
+   * The npm package to install `product` from (`DistConfig.npm`), or null when none is configured or the directory has
+   * a current version of the product, which is then served as a tarball exactly as without it. Only for callers that
+   * understand the answer: the resolve route's `accept=npm`, a runner with the `npm` feature.
+   */
+  npmPackage(product: string): Promise<DistNpmPackage | null>;
+}
+
+export function createArtifactStore(config: DistConfig = {}): DistService {
+  const channel = config.channel ?? DEFAULT_CHANNEL;
+  const npmSources = parseNpmSources(config.npm);
+  const channelDir =
+    config.dir === undefined ? null : path.resolve(config.dir, channel);
+  let cache: { key: string; manifest: StoredManifest } | undefined;
+
+  /** Each product's manifest file with its modification time, or nothing when there is none. */
+  const manifestFiles = async (): Promise<
+    { file: string; product: string; mtimeMs: number }[]
+  > => {
+    if (channelDir === null) return [];
+    const found: { file: string; product: string; mtimeMs: number }[] = [];
+    let entries: string[];
+    try {
+      entries = (await readdir(channelDir)).sort();
+    } catch {
+      return found;
+    }
+    for (const product of entries) {
+      if (!DIST_PRODUCT_PATTERN.test(product)) continue;
+      const file = path.join(channelDir, product, 'manifest.json');
+      try {
+        found.push({ file, product, mtimeMs: (await stat(file)).mtimeMs });
+      } catch {
+        // A product not built yet.
+      }
+    }
+    return found;
+  };
+
+  const readManifest = async (file: string): Promise<unknown> => {
+    try {
+      return JSON.parse(await readFile(file, 'utf8')) as unknown;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const load = async (): Promise<StoredManifest | null> => {
+    const files = await manifestFiles();
+    if (files.length === 0) {
+      cache = undefined;
+      return null;
+    }
+    const key = files
+      .map((entry) => `${entry.file}:${entry.mtimeMs}`)
+      .join('|');
+    if (cache?.key === key) return cache.manifest;
+    const merged: StoredManifest = { products: {} };
+    for (const entry of files) {
+      const raw = await readManifest(entry.file);
+      const product = entry.product;
+      const parsed = ProductManifestSchema.safeParse(raw);
+      if (!parsed.success || parsed.data.product !== product) {
+        console.error(
+          `Agents: ${entry.file} is not the distribution manifest of ${product}.`,
+        );
+        continue;
+      }
+      // Its files are relative to the product's directory; the merged ones are relative to the channel's.
+      const versions: StoredManifest['products'][string]['versions'] = {};
+      for (const [version, stored] of Object.entries(parsed.data.versions))
+        versions[version] = {
+          targets: Object.fromEntries(
+            Object.entries(stored.targets).map(([target, file]) => [
+              target,
+              { ...file, file: path.posix.join(product, file.file) },
+            ]),
+          ),
+        };
+      merged.products[product] = {
+        ...(parsed.data.bin === undefined ? {} : { bin: parsed.data.bin }),
+        versions,
+      };
+    }
+    cache = { key, manifest: merged };
+    return merged;
+  };
+
+  const currentVersion = (
+    stored: StoredManifest,
+    product: string,
+  ): string | null => {
+    const versions = Object.keys(stored.products[product]?.versions ?? {});
+    const pinned = config.versions?.[product];
+    if (pinned !== undefined) return versions.includes(pinned) ? pinned : null;
+    return versions.sort(compareVersions).at(-1) ?? null;
+  };
+
+  const artifact = (
+    stored: StoredManifest,
+    product: string,
+    target: string,
+  ): DistArtifact | null => {
+    const version = currentVersion(stored, product);
+    if (version === null) return null;
+    const targets = stored.products[product]?.versions[version]?.targets;
+    const own = targets?.[target];
+    const entry = own ?? targets?.[UNIVERSAL_TARGET];
+    if (entry === undefined) return null;
+    return {
+      product,
+      version,
+      target,
+      url: routePath(DIST_ROUTES.file, {
+        product,
+        version,
+        file: path.posix.basename(entry.file),
+      }),
+      sha256: entry.sha256,
+      size: entry.size,
+      channel,
+      ...(own === undefined ? { universal: true } : {}),
+    };
+  };
+
+  return {
+    channel,
+
+    async manifest() {
+      const stored = await load();
+      const products: Record<string, { version: string; targets: string[] }> =
+        {};
+      for (const product of Object.keys(stored?.products ?? {})) {
+        const version = stored && currentVersion(stored, product);
+        if (!stored || version === null) continue;
+        products[product] = {
+          version,
+          targets: Object.keys(
+            stored.products[product]?.versions[version]?.targets ?? {},
+          ).sort(),
+        };
+      }
+      return { channel, products };
+    },
+
+    async find(product, target) {
+      const stored = await load();
+      return stored ? artifact(stored, product, target) : null;
+    },
+
+    async resolve(product, target) {
+      if (!DIST_PRODUCT_PATTERN.test(product)) throw notFound('Product');
+      if (!DIST_TARGET_PATTERN.test(target))
+        throw new ProtocolError(
+          'PLATFORM_UNSUPPORTED',
+          `${target} is not a platform name such as darwin-arm64 or linux-x64.`,
+        );
+      const stored = await load();
+      const found = stored ? artifact(stored, product, target) : null;
+      if (found) return found;
+      const version = stored ? currentVersion(stored, product) : null;
+      if (!stored || version === null)
+        throw new ProtocolError(
+          'NOT_FOUND',
+          `This application serves no ${product} on the ${channel} channel. Build it with nocobase cli build.`,
+        );
+      const targets = Object.keys(
+        stored.products[product]?.versions[version]?.targets ?? {},
+      ).sort();
+      throw new ProtocolError(
+        'PLATFORM_UNSUPPORTED',
+        `${product} ${version} is not built for ${target}; it is for ${targets.join(', ') || 'no platform'}.`,
+        { targets },
+      );
+    },
+
+    async file(product, version, name) {
+      const stored = await load();
+      const targets = stored?.products[product]?.versions[version]?.targets;
+      const found = Object.entries(targets ?? {}).find(
+        ([, candidate]) => path.posix.basename(candidate.file) === name,
+      );
+      if (!found || channelDir === null) throw notFound('File');
+      const [target, entry] = found;
+      const file = path.resolve(channelDir, entry.file);
+      if (!file.startsWith(`${path.resolve(channelDir, product)}${path.sep}`))
+        throw notFound('File');
+      let size: number;
+      try {
+        size = (await stat(file)).size;
+      } catch {
+        throw notFound('File');
+      }
+      return {
+        target,
+        path: file,
+        sha256: entry.sha256,
+        size,
+        open: () => createReadStream(file),
+      };
+    },
+
+    async npmPackage(product) {
+      const source = npmSources[product];
+      if (source === undefined) return null;
+      const stored = await load();
+      if (stored && currentVersion(stored, product) !== null) return null;
+      return {
+        kind: 'npm',
+        product,
+        version: source.version,
+        package: source.package,
+        channel,
+      };
+    },
+  };
+}
+
+/** `agents.dist.npm`, checked when the service is created so a wrong entry fails the start rather than an install. */
+function parseNpmSources(
+  npm: DistConfig['npm'],
+): Readonly<Record<string, DistNpmSource>> {
+  const parsed = DistNpmConfigSchema.safeParse(npm ?? {});
+  if (!parsed.success)
+    throw new Error(
+      `agents.dist.npm names each product's npm package and exact version, such as { nocobase-runner: { package: '@nocobase/agent-runner', version: '1.0.0' } }: ${parsed.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; ')}`,
+    );
+  return parsed.data;
+}

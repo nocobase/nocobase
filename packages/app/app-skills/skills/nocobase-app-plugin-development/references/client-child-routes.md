@@ -250,6 +250,8 @@ export default function OrderEditPage() {
 
 Both components accept `title` (required), `description`, `children`, `footer`, `closeTo`, `beforeClose`, and `className`. Route matching controls whether the overlay exists.
 
+For a declared presentation, the host renders `title`, `description` and `footer` outside the page's local providers and `NamespaceScope`. Slot components translate with the explicit plugin namespace (`useTranslation(PLUGIN_NAMESPACE)`) or provide their own `NamespaceScope`; `presentation.namespace` only affects the static waiting title. Pass other local values as props or wrap the slot in the required provider. The shared overlay close context is available in the host.
+
 ### 4. Close the overlay
 
 Call `useRouteOverlay()` only in a descendant component rendered inside the `RouteDialog` or `RouteDrawer` being closed, including a component passed as `footer`. The provider is inside the overlay wrapper. The page component that returns the wrapper is outside that provider and must not call the hook for that overlay.

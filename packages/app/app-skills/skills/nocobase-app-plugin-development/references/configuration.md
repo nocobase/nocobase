@@ -10,6 +10,8 @@ Keep paths in `env`, `public` and validation errors relative to the section: `pa
 
 Publish the factory through a documented package export, such as `@example/app-plugin-reading-list/config`. Its consumer is the application's Server composition; importing it must not start a service or read process-wide environment variables. The example [manifest](../assets/testing-example/package.json) shows the source export, while a release must also have the corresponding compiled export and declaration files described in [package contracts](plugin-foundation.md).
 
+For application-owned Concurrency, Jobs and Queue sections, follow the [strict backend configuration and migration guide](backends-configuration.md). Named entries belong under `backends`; validation must inspect the merged user configuration, not only new factory defaults.
+
 ## Register the factory in the application
 
 Add the section to the application's existing `defaultAppConfigs()` map and register the Server plugin separately. The complete fixture's [runtime](../assets/testing-example/tests/fixtures/app/server/runtime.ts) shows both steps together with authentication, authorization and database prerequisites. In a generated application, preserve its other sections and its normal configuration-file loading:

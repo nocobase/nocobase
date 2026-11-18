@@ -157,6 +157,51 @@ describe('app client', () => {
     expect(normalizeAppClientBasename('/portal/')).toBe('/portal');
   });
 
+  it('passes the application hidden-tab timeout to its shared realtime client', async () => {
+    vi.useFakeTimers();
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden');
+    const close = vi.fn();
+    class MockWebSocket {
+      readyState = 1;
+      close = close;
+    }
+    vi.stubGlobal('WebSocket', MockWebSocket);
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([]),
+      }),
+      {
+        rawConfig: {
+          api: {
+            baseURL: 'http://localhost/main/api',
+            realtimeHiddenDisconnectMs: 25,
+          },
+        },
+      },
+    );
+    const app = new ClientApplication({
+      runtime,
+      createRenderConfig: () => ({ routes: null }),
+    });
+    try {
+      await app.start();
+      const realtime = app.services.resolve(realtimeClientToken);
+      realtime.watch('test:topic');
+      expect(realtime.connected).toBe(true);
+      await vi.advanceTimersByTimeAsync(25);
+      expect(realtime.connected).toBe(false);
+      expect(close).toHaveBeenCalledOnce();
+    } finally {
+      await app.shutdown();
+      visibility.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('gives the pages a query cache with the defaults Refine gave it', async () => {
     let pageRead: QueryClient | undefined;
     function PageReader(): null {

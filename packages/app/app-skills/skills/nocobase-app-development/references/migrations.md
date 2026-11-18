@@ -16,7 +16,7 @@ pnpm nocobase db apply
 
 This applies pending migrations and then pending seeds for `database.default`, including registered plugins, ordered by name across all sources. Both halves run only what is pending, so on an already-migrated database it applies seeds alone. The template defaults to `main`. Plugin migrations, seeds and runtime default reads/writes always use this same connection; changing `database.default` changes the application system database.
 
-Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited.
+Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited. To create a record only when it is missing, check `exists({ filter })` and then `createOne`; never write `upsertOne({ ..., update: {} })`, because an empty `update` is rejected and the failed seed stops startup.
 
 ## Sample data and demo systems
 
@@ -43,7 +43,7 @@ Manual execution ignores `autoRun`. `--connection` and `--all` are mutually excl
 
 `pnpm nocobase db reset` is a destructive reset for managed connections. It removes the managed schema objects — which clears migration and seed history along with every row in a managed table — then reruns all currently visible migrations and seeds from empty. It never calls migration `down()`. In an interactive terminal it asks for confirmation. CI and non-interactive terminals require `--force`, so use `pnpm nocobase db reset --force` only when the target is intentionally disposable. It is rejected for an explicitly selected external connection; `--all` processes managed connections and reports external connections as skipped. It is limited to connections with a registered driver reset capability.
 
-`pnpm nocobase db rollback` runs `down()` for every migration in the latest batch, newest first, and deletes its history records. The batch is the unit the history records, so a batch that mixed application and plugin migrations rolls back as one: the confirmation lists every migration and the package it belongs to before anything runs. It fails, having run nothing, when any migration in the batch is irreversible or has no `down()`. Data in anything those migrations drop is lost, and seeds are not re-run, so rows a seed inserted into a table the batch recreates are not restored. CI and non-interactive terminals require `--force`.
+`pnpm nocobase db rollback` runs `down()` for every migration in the latest batch, newest first, and deletes its history records. The batch is the unit the history records, so a batch that mixed application and plugin migrations rolls back as one: the confirmation lists every migration and the package it belongs to before anything runs. It preflights the entire target batch before any `down()` and lists every missing source, irreversible migration or missing `down()` together. A missing target always fails, including an uninstalled plugin and regardless of `onMissingSource`; restore a compatible plugin or package version and roll back before uninstalling, or use a new forward migration to adjust the schema. Missing sources and checksum drift in older batches only warn; strict checksum validation applies only to the target batch. `--dry-run` performs the same preflight without changing schema or history. Data in anything those migrations drop is lost, and seeds are not re-run, so rows a seed inserted into a table the batch recreates are not restored. CI and non-interactive terminals require `--force`.
 
 `pnpm nocobase db redo` is `db rollback` followed by `db apply`, which is what correcting an unmerged migration needs.
 
@@ -118,7 +118,9 @@ Review `server/plugins.ts` and each registered plugin’s migration declarations
 
 ## Checksum drift
 
-A checksum recorded when a migration or seed ran no longer matching its current source means the file changed after it was executed. By default the run reports the drift and continues: `pnpm nocobase db apply` prints a warning, startup logs one through the application logger, and `--json` carries it in the entry's `warnings`, under `result.results`. Set `onChecksumMismatch: 'error'` on a connection's `migrations` or `seeds` configuration — or at the top level — to refuse to run instead. A record whose migration is missing from the sources entirely always fails, whatever the policy says.
+A checksum recorded when a migration or seed ran no longer matching its current source means the file changed after it was executed. By default the run reports the drift and continues: `pnpm nocobase db apply` prints a warning, startup logs one through the application logger, and `--json` carries it in the entry's `warnings`, under `result.results`. Set `onChecksumMismatch: 'error'` on a connection's `migrations` or `seeds` configuration — or at the top level — to refuse to run instead.
+
+For missing applied migration sources, `onMissingSource` defaults to `warn`: forward runs report each missing migration in a participating package and continue, preserving its history and skipping re-execution. Set `onMissingSource: 'error'` on a connection's `migrations` configuration, or through the legacy top-level migration configuration, for strict validation. History belonging to packages no longer in the migration sources, such as uninstalled plugins, is skipped regardless of this policy. A missing record newer than the same package's newest available migration source always fails as a downgrade, even under `warn`; when no source remains in that package, there is no newest migration to compare and the configured policy applies. Rollback requires every source in its target batch, as described above.
 
 `pnpm nocobase db repair` rewrites the recorded checksums to match the current sources, which is how the warning is cleared once the change is confirmed intentional. One command covers both migrations and seeds. It executes nothing and changes no schema or data. Preview with `--dry-run` first; `--dry-run --json` is the form to run in CI when drift should gate a deploy. It never deletes a history record, so a repair cannot make an executed migration run again.
 
@@ -139,6 +141,7 @@ Set `onChecksumMismatch: 'error'` per connection when both halves of that trade 
 - `pnpm nocobase db apply` applies cleanly on an empty database and on an already-migrated one.
 - The physical schema matches what the migration declared, checked against a real test database rather than the builder's return value.
 - Running the same seed twice changes nothing.
+- With sample data enabled (`APP_SAMPLE_DATA=true`), the first start on an empty database runs every sample seed and `pnpm dev` reaches its `Local:` URL; a generated seed is not done until that start succeeds.
 - For the per-file checks — filename against exported `name`, immutability, `down` ordering — follow the `nocobase-db` Skill's own verification list.
 
 ## Compiled migration and seed manifests

@@ -14,6 +14,7 @@ import {
   readFileSync,
   readlinkSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -55,6 +56,7 @@ function buildStandIn(
       'case "${1:-} ${2:-}" in',
       '  "status --json") printf \'{\\n  "running": true,\\n  "apps": [{ "server": "%s" }]\\n}\\n\' "$STAND_IN_SERVER" ;;',
       '  "register --server") [ -z "${STAND_IN_REGISTER_FAILS:-}" ] || exit 3 ;;',
+      '  "acp service") [ -z "${STAND_IN_RESTART_FAILS:-}" ] || exit 1 ;;',
       'esac',
       '',
     ].join('\n'),
@@ -241,6 +243,9 @@ describe('install script', () => {
       `+ curl -fSL --progress-bar -H x-nocobase-registration-token: ${token}`,
     );
     expect(result.stdout).toContain(`Downloading acme 0.7.0 for ${target}`);
+    expect(result.stdout).not.toContain(
+      `+ ${prefix}/current/bin/acme acp service restart`,
+    );
     expect(result.stdout).toContain(
       `Downloading ${RUNNER_PRODUCT} 0.2.0 for ${target}`,
     );
@@ -352,6 +357,7 @@ describe('install script', () => {
     expect(again.code).toBe(0);
     expect(again.stdout).toContain('The token was used already');
     const calls = readFileSync(log, 'utf8');
+    expect(calls).not.toContain('acme acp service restart');
     expect(calls).not.toContain(`${RUNNER_PRODUCT} register`);
     expect(calls).toContain(
       `${RUNNER_PRODUCT} service install --label com.example.test-runner`,
@@ -374,13 +380,24 @@ describe('install script', () => {
     expect(readFileSync(log, 'utf8')).toContain(
       `${RUNNER_PRODUCT} register --server`,
     );
+    expect(readFileSync(log, 'utf8')).not.toContain('acme acp service restart');
   });
 
   it('installs a runtime of an application that serves no CLI', async () => {
     const script = path.join(root, 'no-cli.sh');
     writeFileSync(script, installScript({ cli: 'other' }));
     const runnerPrefix = path.join(root, 'no-cli-runner');
-    const { stdout } = await execFileAsync(
+    const prefix = path.join(root, 'no-cli');
+    const bin = path.join(prefix, 'versions', 'old', 'bin');
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      path.join(bin, 'other'),
+      '#!/bin/sh\necho "other $*" >> "$STAND_IN_LOG"\n',
+    );
+    chmodSync(path.join(bin, 'other'), 0o755);
+    symlinkSync('versions/old', path.join(prefix, 'current'));
+    const log = path.join(root, 'no-cli-calls.log');
+    const { stdout, stderr } = await execFileAsync(
       'sh',
       [
         script,
@@ -390,7 +407,7 @@ describe('install script', () => {
         '--token',
         await newToken(),
         '--prefix',
-        path.join(root, 'no-cli'),
+        prefix,
         '--runner-prefix',
         runnerPrefix,
         '--bin-dir',
@@ -401,14 +418,19 @@ describe('install script', () => {
         env: {
           PATH: process.env.PATH ?? '/usr/bin:/bin',
           HOME: path.join(root, 'home'),
-          STAND_IN_LOG: path.join(root, 'calls.log'),
+          STAND_IN_LOG: log,
           STAND_IN_SERVER: base,
           NOCOBASE_CLI_TARGET: target,
         },
       },
     );
     expect(stdout).toContain(`${base} serves no other CLI`);
-    expect(existsSync(path.join(root, 'no-cli'))).toBe(false);
+    expect(stdout).not.toContain('Could not restart background connections');
+    expect(stderr).not.toContain('acp service restart');
+    expect(readFileSync(log, 'utf8')).not.toContain(
+      'other acp service restart',
+    );
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/old');
     expect(readlinkSync(path.join(runnerPrefix, 'current'))).toBe(
       'versions/0.2.0',
     );
@@ -530,7 +552,25 @@ describe('install script, the CLI alone', () => {
     expect(
       JSON.parse(readFileSync(path.join(prefix, 'install.json'), 'utf8')),
     ).toEqual({ prefix, binLink: path.join(binDir, 'acme'), mode: 'cli' });
-    expect(existsSync(log)).toBe(false);
+    expect(readFileSync(log, 'utf8')).toBe('acme acp service restart\n');
+
+    // Reinstalling the same version with a fresh token leaves current unchanged.
+    writeFileSync(log, '');
+    const same = await install([
+      '--server',
+      base,
+      '--token',
+      await downloadToken(),
+      '--prefix',
+      prefix,
+      '--bin-dir',
+      binDir,
+    ]);
+    expect(same.code).toBe(0);
+    expect(same.stdout).toContain(
+      'acme 0.7.0 for linux-x64 is already installed',
+    );
+    expect(readFileSync(log, 'utf8')).toBe('');
 
     // Again with a token that is used up: what is installed is kept.
     const again = await install([
@@ -545,6 +585,58 @@ describe('install script, the CLI alone', () => {
     ]);
     expect(again.code).toBe(0);
     expect(again.stdout).toContain('acme is installed in');
+    expect(readFileSync(log, 'utf8')).toBe('');
+  });
+
+  it('restarts ACP through the new current after upgrading an existing CLI', async () => {
+    const prefix = path.join(root, 'upgrade');
+    const oldBin = path.join(prefix, 'versions', '0.6.0', 'bin');
+    mkdirSync(oldBin, { recursive: true });
+    writeFileSync(
+      path.join(oldBin, 'acme'),
+      '#!/bin/sh\necho "old $*" >> "$STAND_IN_LOG"\n',
+    );
+    chmodSync(path.join(oldBin, 'acme'), 0o755);
+    symlinkSync('versions/0.6.0', path.join(prefix, 'current'));
+    const log = path.join(root, 'upgrade-calls.log');
+    const result = await install(
+      [
+        '--server',
+        base,
+        '--token',
+        await downloadToken(),
+        '--prefix',
+        prefix,
+        '--bin-dir',
+        path.join(root, 'upgrade-bin'),
+      ],
+      { STAND_IN_LOG: log },
+    );
+    expect(result.code).toBe(0);
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.7.0');
+    expect(readFileSync(log, 'utf8')).toBe('acme acp service restart\n');
+  });
+
+  it('preserves successful installation when restarting ACP fails', async () => {
+    const prefix = path.join(root, 'restart-failure');
+    const result = await install(
+      [
+        '--server',
+        base,
+        '--token',
+        await downloadToken(),
+        '--prefix',
+        prefix,
+        '--bin-dir',
+        path.join(root, 'restart-failure-bin'),
+      ],
+      { STAND_IN_RESTART_FAILS: '1' },
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain(
+      'Could not restart background connections. Run acme acp service restart to retry.',
+    );
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.7.0');
   });
 
   it('defaults --server to the address it was served from', async () => {

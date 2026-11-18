@@ -9,8 +9,7 @@ import { App } from './app';
 document.documentElement.dataset.theme = 'compact';
 revealScrollbarsWhileScrolling();
 
-// Registry items translate through @nocobase/i18n, so the preview mounts a runtime the way an application does. It
-// registers no resources, which leaves every string at its English default.
+// Registry items translate through @nocobase/i18n, so the preview mounts a runtime the way an application does.
 // Many demos sit on one long page, and a form that focuses a field when it mounts (the sign-in form's autoFocus)
 // would scroll the page to itself. Focus that no recent click or key press asked for keeps the page where it is.
 let lastInput = Number.NEGATIVE_INFINITY;
@@ -28,9 +27,18 @@ HTMLElement.prototype.focus = function focusWithoutJump(
   focus.call(this, unprompted ? { preventScroll: true, ...options } : options);
 };
 
-const i18n = new I18nRuntime({ defaultLocale: 'en-US', locales: ['en-US'] });
+const i18n = new I18nRuntime({
+  defaultLocale: 'en-US',
+  locales: ['en-US', 'zh-CN'],
+});
+// `?lang=zh-CN` previews the blocks that ship locale files in Chinese, the way an application merges them.
+i18n.registerApplicationNamespace('@nocobase/ui-library-preview', {
+  'en-US': () => import('../registry/agents/agent-chat/locales/en-US.js'),
+  'zh-CN': () => import('../registry/agents/agent-chat/locales/zh-CN.js'),
+});
+const lang = new URLSearchParams(window.location.search).get('lang');
 
-void i18n.init().then(() => {
+void i18n.init(lang === 'zh-CN' ? 'zh-CN' : 'en-US').then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <I18nProvider runtime={i18n}>

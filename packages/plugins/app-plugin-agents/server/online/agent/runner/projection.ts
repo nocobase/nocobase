@@ -313,20 +313,21 @@ export function runnerUIMessages(
               },
             },
       );
-    } else
+    } else if (row.content.content)
       message.parts.push({
         type: 'text',
         text: row.content.content,
         state: 'done',
       });
-    message.metadata!.sourceRecords!.push({
-      recordId: row.id,
-      seq: row.seq,
-      partId,
-      partIndex: index,
-      ...(output ? { output } : {}),
-      createdAt: row.createdAt,
-    });
+    if (message.parts.length > index)
+      message.metadata!.sourceRecords!.push({
+        recordId: row.id,
+        seq: row.seq,
+        partId,
+        partIndex: index,
+        ...(output ? { output } : {}),
+        createdAt: row.createdAt,
+      });
     for (const file of row.attachments ?? []) {
       message.parts.push({
         type: 'file',
@@ -633,12 +634,14 @@ export async function runnerUIPage(
   lastSeq: number,
   query: NativeHistoryQuery,
   basePath: string,
+  cutoffSeq?: number,
 ): Promise<NativeHistoryPage> {
   const repo = messagesRepo(tx.read());
   const rows = await repo.findMany({
     filter: (f) =>
       f.and([
         f.string('conversationId').eq(id),
+        ...(cutoffSeq === undefined ? [] : [f.number('seq').lte(cutoffSeq)]),
         ...(query.ids
           ? [
               f.or(
@@ -677,6 +680,9 @@ export async function runnerUIPage(
         filter: (f) =>
           f.and([
             f.string('conversationId').eq(id),
+            ...(cutoffSeq === undefined
+              ? []
+              : [f.number('seq').lte(cutoffSeq)]),
             f.or([
               f.string('role').eq('assistant'),
               f.string('role').eq('user'),
@@ -697,6 +703,9 @@ export async function runnerUIPage(
         filter: (f) =>
           f.and([
             f.string('conversationId').eq(id),
+            ...(cutoffSeq === undefined
+              ? []
+              : [f.number('seq').lte(cutoffSeq)]),
             f.number('seq').gte(minimum),
             f.number('seq').lte(maximum),
           ]),

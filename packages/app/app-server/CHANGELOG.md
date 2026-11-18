@@ -1,5 +1,135 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.7
+
+### Patch Changes
+
+- 38854ec: Keep internal HTTP and WebSocket forwarding connected directly to the configured upstream when an environment proxy is enabled.
+- 8339722: Pass the incoming request to standalone proxy target resolution so applications can route HTTP and WebSocket traffic to the appropriate upstream.
+
+## 5.0.0-beta.6
+
+### Minor Changes
+
+- 3112daa: Derive dedicated CLI operation keys from explicitly marked OpenAPI header schemas. The CLI generates or reuses a key, preserves it in success and failure output, and reports uncertain results without replaying writes. Upgrade the CLI and server together for operation-key commands. Online shells expose authorized commands but refuse unsupported writes before sending. Ordinary headers and existing commands retain their behavior.
+
+### Patch Changes
+
+- 3112daa: Generate CLI operation keys in the existing web client's timestamp.UUID format so native mutation receipts accept default calls. Require declared length bounds to allow 50-character keys, reject incompatible UUID-only schemas, and document the native 24-hour retry window without changing server receipt validation.
+
+## 5.0.0-beta.5
+
+### Minor Changes
+
+- 44bf26a: Allow plugins to contribute an application-local synchronous ID implementation with asynchronous initialization while retaining the host ID provider and public service token. Select and cache the implementation on first generation, preserving early-resolved references without per-ID container lookups. Document initialization ordering and plugin-owned cleanup.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+
+## 5.0.0-beta.4
+
+### Minor Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
+### Patch Changes
+
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+  - @nocobase/drive@0.1.0-beta.8
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 5.0.0-beta.3
+
+### Minor Changes
+
+- 2d18eb2: Support named connection contributions with database/<connection> migration and seed directories, keeping legacy flat plugin tasks on the default connection. Support application-owned database task coordination and pending-task selection while retaining complete history validation. Expose the database task lease for module lifecycle operations, recognize scoped app-plugin and app-module packages in CLI registration, removal and Skills, preserve third-party dependency patches in standalone builds, and prevent explicitly stopped deployments from restarting on incoming traffic while retaining their backend resource cleanup. Pass the complete connection inventory through both startup and CLI coordination.
+- 3642d82: Add application-local database preparation hooks and use the same storage preparation, reset, hook and migration/Seed phases with or without hooks. Fresh runs now reset all selected migration targets before any business task, with no cross-connection rollback. Report preparation failures and confirmed resets without expanding successful CLI JSON output.
+
+### Patch Changes
+
+- Updated dependencies [2d18eb2]
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 5.0.0-beta.2
+
+### Minor Changes
+
+- 7d970d6: Group application realtime broker selection and implementation options under realtime.broker, preserving the local default and service-level settings. Reject legacy adapter/redis paths with migration guidance, and validate explicitly configured brokers without filling missing adapters from template defaults. Redis deployments must upgrade the host and matching commercial plugin together and migrate code defaults, YAML, environment mappings and configuration scripts; rollback must restore matching configuration.
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+
+### Patch Changes
+
+- fb4659d: Use live memory headroom and serialized bounded cold starts instead of static application slots, and recycle shared Hosts under memory pressure with whole-Host busy protection, atomic ingress handoff, bounded request drain after the maximum wait, background recovery that keeps management available, one retry for capacity-rejected deployments, status-aware idle activity and retryable proxy responses during Host restart/recovery.
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/realtime@1.0.0-beta.2
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/queue@1.0.0-beta.11
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 5.0.0-beta.1
+
+### Patch Changes
+
+- 87f1ea5: Give a request ten minutes to arrive instead of Node's five, so a large upload over a slow link is no longer cut off with HTTP 408.
+
+## 5.0.0-beta.0
+
+### Major Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+### Minor Changes
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+
+### Patch Changes
+
+- Updated dependencies [5934070]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/caching@1.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/mailer@1.0.0-beta.2
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 5.0.0-beta
+
+### Breaking changes
+
+Remove the deprecated `@nocobase/app-server/mailer` subpath, including `Mailer`, `mailerToken`, `createMailer`, `MailerProvider` and the notification configuration helpers. Create exclusive senders through `@nocobase/app-server/mailers`; import notification configuration declarations and validation from `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML and environment-variable mappings remain supported.
+
 ## 4.0.0-beta.0
 
 ### Major Changes

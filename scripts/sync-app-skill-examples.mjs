@@ -10,12 +10,15 @@ const skill = path.join(
 );
 const files = [
   'client/pages/skill-projects/index.tsx',
+  'client/pages/skill-projects/detail.tsx',
   'client/pages/skill-projects/edit.tsx',
   'client/pages/skill-projects/locales.ts',
+  'client/pages/skill-projects/scopes.ts',
   'server/routes/skill-projects.ts',
   'server/providers/skill-projects.ts',
   'database/main/migrations/202611030001_create_skill_projects.ts',
   'tests/client/skill-projects.test.tsx',
+  'tests/client/skill-projects-changes.test.tsx',
   'tests/server/skill-projects.test.ts',
   'tests/database/skill-projects-migration.test.ts',
 ];
@@ -31,6 +34,7 @@ const procurement = [
   'server/providers/procurement-reset.ts',
   'server/lifecycles/procurement.ts',
   'database/main/migrations/202611040001_create_procurement.ts',
+  'database/main/migrations/202611130004_procurement_definition_binding.ts',
   'database/main/seeds/202611040001_procurement.ts',
   'database/main/seeds/202611040002_procurement_samples.ts',
   'cli/commands/procurement-reset.ts',
@@ -71,6 +75,7 @@ const onboarding = [
   'server/providers/onboarding-reset.ts',
   'server/lifecycles/onboarding.ts',
   'database/main/migrations/202611050001_create_onboarding.ts',
+  'database/main/migrations/202611130005_onboarding_definition_binding.ts',
   'database/main/seeds/202611050001_onboarding.ts',
   'database/main/seeds/202611050002_onboarding_samples.ts',
   'cli/commands/onboarding-reset.ts',
@@ -80,7 +85,14 @@ const onboarding = [
   'tests/playwright/onboarding.test.ts',
   'docs/onboarding.md',
 ];
+// The application-owned single-date picker composition and its behavior tests.
+const datePicker = [
+  'client/components/date-picker.tsx',
+  'client/lib/date-only.ts',
+  'tests/client/date-picker.test.tsx',
+];
 const mappings = [
+  ...datePicker.map((file) => [file, `date-picker-example/${file}`]),
   ...onboarding.map((file) => [file, `business-examples/onboarding/${file}`]),
   ...files.map((file) => [file, `list-edit-example/${file}`]),
   ...customerContacts.map((file) => [
@@ -130,6 +142,7 @@ async function list(directory, prefix = '') {
   return result;
 }
 for (const directory of [
+  'date-picker-example',
   'list-edit-example',
   'customer-contacts-example',
   'business-examples',

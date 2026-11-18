@@ -1036,3 +1036,46 @@ describe('every shipped Skill', () => {
     expect(existsSync(dest(env, 'codex', 'someone-elses'))).toBe(true);
   });
 });
+
+describe('newer Skill registries', () => {
+  it.each([
+    { version: 3, targets: [{ future: true }] },
+    { version: 10, installations: {} },
+  ])(
+    'reads $version as empty and preserves all files across session preparation, sync and install',
+    async (newer) => {
+      const env = fixture();
+      await installSkills(env, ['codex', 'claude']);
+      const file = path.join(env.stateHome, 'skills.json');
+      writeFileSync(file, JSON.stringify(newer));
+      const before = readFileSync(file);
+      const modified = statSync(file).mtimeMs;
+      const skillFiles = [codex(env), claude(env)].map((dir) => ({
+        dir,
+        bytes: readFileSync(path.join(dir, 'SKILL.md')),
+        modified: statSync(dir).mtimeMs,
+      }));
+      expect(
+        (await skillsStatus(env)).targets.every((target) => !target.registered),
+      ).toBe(true);
+      for (const tool of ['codex', 'claude'])
+        await expect(prepareSessionSkill(env, tool)).resolves.toBeUndefined();
+      const synced = await syncInstalledSkills(env);
+      expect(synced.targets).toEqual([]);
+      expect(synced.warnings).toEqual([expect.stringContaining('Update acme')]);
+      for (const dryRun of [false, true])
+        await expect(
+          installSkills(env, ['codex', 'claude'], dryRun),
+        ).rejects.toMatchObject({ code: 'SKILLS_NEWER_REGISTRY' });
+      expect(readFileSync(file)).toEqual(before);
+      expect(statSync(file).mtimeMs).toBe(modified);
+      for (const skill of skillFiles) {
+        expect(readFileSync(path.join(skill.dir, 'SKILL.md'))).toEqual(
+          skill.bytes,
+        );
+        expect(statSync(skill.dir).mtimeMs).toBe(skill.modified);
+      }
+      expect(readdirSync(env.stateHome)).toEqual(['skills.json']);
+    },
+  );
+});

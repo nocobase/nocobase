@@ -141,7 +141,10 @@ describe('File Repository example pages', () => {
       target: { files: [first] },
     });
     await waitFor(() =>
-      expect(repository.uploadOne).toHaveBeenCalledWith({ file: first }),
+      expect(repository.uploadOne).toHaveBeenCalledWith(
+        { file: first },
+        { signal: expect.any(AbortSignal) },
+      ),
     );
     await screen.findByText('one.png');
 
@@ -151,9 +154,12 @@ describe('File Repository example pages', () => {
       target: { files: [second, third] },
     });
     await waitFor(() =>
-      expect(repository.uploadMany).toHaveBeenCalledWith({
-        files: [second, third],
-      }),
+      expect(repository.uploadMany).toHaveBeenCalledWith(
+        {
+          files: [second, third],
+        },
+        { signal: expect.any(AbortSignal) },
+      ),
     );
     await screen.findByText('two.png');
     expect(screen.getByText('three.png')).toBeInTheDocument();

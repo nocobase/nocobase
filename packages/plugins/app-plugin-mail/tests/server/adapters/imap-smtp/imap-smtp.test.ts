@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => {
     mailbox: false as false | { uidValidity: bigint },
     search: vi.fn(),
     fetch: vi.fn(),
+    fetchAll: vi.fn(),
     fetchOne: vi.fn(),
     download: vi.fn(),
     messageFlagsAdd: vi.fn(),
@@ -114,8 +115,186 @@ describe('IMAP/SMTP mail Provider', () => {
     mocks.imap.exec.mockResolvedValue({ next: vi.fn() });
     mocks.imap.messageFlagsAdd.mockResolvedValue(true);
     mocks.imap.download.mockReset();
+    mocks.imap.fetchAll.mockResolvedValue([]);
     mocks.imap.fetch.mockImplementation(async function* () {});
   });
+
+  it.each(['imap', 'smtp'] as const)(
+    'logs %s connection failures without exposing credentials',
+    async (protocol) => {
+      const logger = { warn: vi.fn() };
+      const runtime = { ...context(), logger };
+      const cause = Object.assign(
+        new Error('Rejected secret user@example.com'),
+        {
+          code: 'EAUTH',
+          response: '535 secret user@example.com',
+          command: 'AUTH PLAIN c2VjcmV0',
+          accessToken: 'unlogged-token',
+        },
+      );
+      (protocol === 'imap'
+        ? mocks.imap.connect
+        : mocks.verify
+      ).mockRejectedValueOnce(cause);
+      const result = await imapSmtpMailProviderDefinition.connection!.connect(
+        runtime,
+        config(),
+        {
+          address: 'user@example.com',
+          username: 'user@example.com',
+          password: 'secret',
+        },
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        error: {
+          category: 'authentication',
+          reasonCode: `${protocol}AuthenticationFailed`,
+        },
+      });
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          event: 'mail.account.connect_failed',
+          protocol,
+          stage: 'auth',
+          host: config()[protocol].host,
+          port: config()[protocol].port,
+          durationMs: expect.any(Number),
+          secure: true,
+          starttls: 'disabled',
+        }),
+        expect.any(String),
+      );
+      const logs = JSON.stringify(logger.warn.mock.calls);
+      for (const secret of [
+        'secret',
+        'user@example.com',
+        'unlogged-token',
+        'c2VjcmV0',
+        'stack',
+      ])
+        expect(logs).not.toContain(secret);
+      expect(mocks.imap.close).not.toHaveBeenCalled();
+      expect(mocks.close).toHaveBeenCalled();
+      if (protocol === 'imap') expect(mocks.verify).not.toHaveBeenCalled();
+    },
+  );
+
+  it('logs pool connection failures and SMTP send failures with the account and actual protocol', async () => {
+    const logger = { warn: vi.fn() };
+    const provider = await imapSmtpMailProviderDefinition.createAdapter(
+      { ...context(), logger },
+      config(),
+      account(),
+    );
+    mocks.imap.connect.mockRejectedValueOnce(
+      Object.assign(new Error('secret user@example.com credential-1'), {
+        code: 'ECONNREFUSED',
+      }),
+    );
+    expect(await provider.listFolders!({ limit: 10 })).toMatchObject({
+      ok: false,
+      error: { reasonCode: 'imapConnectionRefused' },
+    });
+    mocks.sendMail.mockRejectedValueOnce(
+      Object.assign(new Error('secret credential-1 user@example.com'), {
+        code: 'ESOCKET',
+        originalCode: 'ERR_SSL_WRONG_VERSION_NUMBER',
+      }),
+    );
+    expect(await provider.sendMessage!(sentInput())).toMatchObject({
+      status: 'failed',
+      error: { reasonCode: 'smtpTlsFailed' },
+    });
+    expect(logger.warn.mock.calls.map(([fields]) => fields)).toEqual([
+      expect.objectContaining({
+        accountId: 'account-1',
+        protocol: 'imap',
+        stage: 'connect',
+        code: 'ECONNREFUSED',
+      }),
+      expect.objectContaining({
+        accountId: 'account-1',
+        protocol: 'smtp',
+        stage: 'tls',
+        code: 'ERR_SSL_WRONG_VERSION_NUMBER',
+        transportCode: 'ESOCKET',
+      }),
+    ]);
+    for (const secret of ['secret', 'credential-1', 'user@example.com'])
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+    await provider.close!();
+  });
+
+  it('does not turn a missing-message NO or rejected recipient into a connection failure', async () => {
+    const logger = { warn: vi.fn() };
+    const adapter = await imapSmtpMailProviderDefinition.createAdapter(
+      { ...context(), logger },
+      config(),
+      account(),
+    );
+    mocks.imap.fetchOne.mockRejectedValueOnce(
+      Object.assign(new Error('The message no longer exists'), {
+        code: 'NO',
+        serverResponseCode: 'NONEXISTENT',
+        responseText: 'No such message',
+      }),
+    );
+    const missing = await adapter.getMessage!(
+      encodeMessageLocator({ folder: 'INBOX', uidValidity: '1', uid: 1 }),
+    );
+    expect(missing).toMatchObject({
+      ok: false,
+      error: { category: 'provider' },
+    });
+    if (!missing.ok) expect(missing.error.reasonCode).toBeUndefined();
+    mocks.sendMail.mockRejectedValueOnce(
+      Object.assign(new Error('Recipient refused'), {
+        code: 'EENVELOPE',
+        responseCode: 550,
+      }),
+    );
+    const rejected = await adapter.sendMessage!(sentInput());
+    expect(rejected).toMatchObject({
+      status: 'failed',
+      error: { code: 'EENVELOPE', category: 'recipient' },
+    });
+    if (rejected.status !== 'accepted')
+      expect(rejected.error.reasonCode).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        protocol: 'smtp',
+        stage: 'send',
+        code: 'EENVELOPE',
+        category: 'recipient',
+      }),
+      expect.any(String),
+    );
+    await adapter.close!();
+  });
+
+  it.each([
+    new DOMException('Request cancelled', 'AbortError'),
+    Object.assign(new Error('Cancelled by caller'), { code: 'ETIMEDOUT' }),
+  ])(
+    'does not show a connection failure for cancelled requests: %s',
+    async (reason) => {
+      const adapter = await imapSmtpMailProviderDefinition.createAdapter(
+        context(),
+        config(),
+        account(),
+      );
+      const result = await adapter.listFolders!({
+        limit: 10,
+        signal: AbortSignal.abort(reason),
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.reasonCode).toBeUndefined();
+      expect(mocks.imap.connect).not.toHaveBeenCalled();
+      await adapter.close!();
+    },
+  );
 
   it('keeps oversized and missing bodies visible without blocking later UIDs', async () => {
     mocks.imap.list.mockResolvedValue([{ path: 'INBOX', name: 'Inbox' }]);
@@ -779,7 +958,7 @@ describe('IMAP/SMTP mail Provider', () => {
       folders: true,
       labels: false,
       drafts: false,
-      moveMessage: false,
+      moveMessage: true,
       aliases: false,
     });
     expect(imapSmtpMailProviderDefinition.connection).toBeDefined();
@@ -1225,7 +1404,7 @@ describe('IMAP/SMTP mail Provider', () => {
     mocks.imap.fetch.mockImplementation(async function* (
       uids: number[] | string,
     ) {
-      yield fetchedMessage(String(uids).startsWith('1:') ? 1 : 2);
+      yield fetchedMessage(Number(String(uids).split(':')[0]));
     });
     const adapter = await imapSmtpMailProviderDefinition.createAdapter(
       context(),
@@ -1237,16 +1416,35 @@ describe('IMAP/SMTP mail Provider', () => {
     if (!result.ok) throw new Error(result.error.message);
     const cursor = JSON.parse(String(result.value.nextCursor.value));
     expect(result.value.hasMore).toBe(true);
-    expect(cursor.folders.Projects).toEqual({
-      uidValidity: '1',
-      uidNext: 1,
+    // No extra STATUS/SELECT for a folder after the first completed import.
+    // Its absent checkpoint means start from UID 1 when it is first visited.
+    expect(cursor.folders.Projects).toBeUndefined();
+    const second = await adapter.listChanges!({
+      limit: 1,
+      cursor: result.value.nextCursor,
     });
+    if (!second.ok) throw new Error(second.error.message);
+    const third = await adapter.listChanges!({
+      limit: 1,
+      cursor: second.value.nextCursor,
+    });
+    if (!third.ok) throw new Error(third.error.message);
+    expect(
+      [result, second, third].flatMap((page) =>
+        page.value.messages.map((message) => message.providerMessageId),
+      ),
+    ).toEqual([
+      encodeMessageLocator({ folder: 'INBOX', uidValidity: '1', uid: 1 }),
+      encodeMessageLocator({ folder: 'Projects', uidValidity: '1', uid: 1 }),
+      encodeMessageLocator({ folder: 'Projects', uidValidity: '1', uid: 2 }),
+    ]);
+    expect(third.value.hasMore).toBe(false);
   });
 
   it.each([
     ['IMAP', 'EAUTH', 'authentication'],
     ['SMTP', 'ETIMEDOUT', 'timeout'],
-    ['SMTP', 'CERT_HAS_EXPIRED', 'provider'],
+    ['SMTP', 'CERT_HAS_EXPIRED', 'configuration'],
   ] as const)(
     'does not store credentials after %s verification fails with %s',
     async (endpoint, code, category) => {
@@ -1277,7 +1475,7 @@ describe('IMAP/SMTP mail Provider', () => {
     ['ETIMEDOUT', 'timeout', true],
     ['ECONNRESET', 'network', true],
     ['EPIPE', 'network', true],
-    ['CERT_HAS_EXPIRED', 'provider', false],
+    ['CERT_HAS_EXPIRED', 'configuration', false],
   ] as const)(
     'classifies IMAP %s failures without returning partial data',
     async (code, category, retryable) => {
@@ -1291,7 +1489,13 @@ describe('IMAP/SMTP mail Provider', () => {
       );
       expect(await adapter.listFolders!({ limit: 100 })).toEqual({
         ok: false,
-        error: { code, category, retryable, message: 'Provider failure' },
+        error: {
+          code,
+          category,
+          retryable,
+          message: 'Provider failure',
+          reasonCode: `imap${{ EAUTH: 'AuthenticationFailed', ETIMEDOUT: 'ConnectionTimeout', ECONNRESET: 'ConnectionLost', EPIPE: 'ConnectionFailed', CERT_HAS_EXPIRED: 'CertificateInvalid' }[code]}`,
+        },
       });
       await adapter.close?.();
     },
@@ -1804,7 +2008,7 @@ function expectMailProviderCompatibility(
   expect(adapter.updateLabels).toBeUndefined();
   expect(adapter.saveDraft).toBeUndefined();
   expect(adapter.updateDraft).toBeUndefined();
-  expect(adapter.moveMessage).toBeUndefined();
+  expect(adapter.moveMessage).toEqual(expect.any(Function));
 }
 
 function sentInput(): MailProviderSendInput {

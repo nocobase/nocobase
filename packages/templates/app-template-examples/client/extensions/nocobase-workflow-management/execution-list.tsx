@@ -27,7 +27,8 @@ export interface WorkflowExecutionListProps {
   status?: ReactNode;
   empty?: ReactNode;
   labels: {
-    refresh: string;
+    /** Legacy adapter label; ready lists no longer render a Refresh control. */
+    refresh?: string;
     record: string;
     workflow: string;
     state: string;
@@ -72,9 +73,6 @@ export function WorkflowExecutionList({
     <section className='flex flex-col gap-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='flex flex-wrap items-center gap-2'>{filters}</div>
-        <Button variant='outline' disabled={loading} onClick={onRefresh}>
-          {labels.refresh}
-        </Button>
       </div>
       {status}
       {(listState !== undefined || loaded || loading) && (

@@ -106,7 +106,7 @@ export function NavigationMenu({
   for (const item of items) {
     const last = runs.at(-1);
     if (isSection(item)) runs.push(item);
-    else if (Array.isArray(last)) last.push(item);
+    else if (Array.isArray(last) && !item.startGroup) last.push(item);
     else runs.push([item]);
   }
   return (

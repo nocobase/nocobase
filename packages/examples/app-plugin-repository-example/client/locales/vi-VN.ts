@@ -318,7 +318,7 @@ const viVN: LocaleResource<typeof enUS> = {
   cancel: 'Hủy',
   search: 'Tìm kiếm theo tên/số/ID',
   apply: 'Tìm kiếm',
-  refresh: 'Làm mới',
+  retryRead: 'Thử lại',
   previous: 'Trước',
   next: 'Tiếp theo',
   page: 'Trang {{page}}',
@@ -326,6 +326,8 @@ const viVN: LocaleResource<typeof enUS> = {
   empty: 'Chưa có hồ sơ nào. Tạo bản ghi đầu tiên để bắt đầu.',
   loading: 'Đang tải…',
   listFeedback: {
+    refreshing: 'Đang làm mới',
+    longWait: 'Việc này lâu hơn bình thường. Bạn có thể tiếp tục chờ.',
     loading: 'Đang tải',
     empty: 'Chưa có dữ liệu',
     noResults: 'Không có kết quả',
@@ -357,7 +359,7 @@ const viVN: LocaleResource<typeof enUS> = {
   traceHint:
     'Yêu cầu và kết quả mới nhất hiển thị API được màn hình này sử dụng.',
   error: 'Thao tác không thành công.',
-  loadError: 'Không thể tải bản ghi. Thử lại bằng Làm mới.',
+  loadError: 'Không thể tải bản ghi. Vui lòng thử lại.',
   conflict:
     'Thứ tự này đã thay đổi kể từ khi bạn mở nó. Làm mới và mở lại nó trước khi chỉnh sửa.',
   choicesHint:

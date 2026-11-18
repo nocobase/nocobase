@@ -63,6 +63,11 @@ export interface AppSeedRepairResult {
 }
 
 export interface CreateAppSeederOptions {
+  /** Select pending tasks while retaining every source for history validation. */
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
   runtimeConfig?: DatabaseTaskConfig;
   container?: ServiceResolver;
   database: DatabaseManager;
@@ -119,7 +124,7 @@ export function createAppSeeder(options: CreateAppSeederOptions): AppSeeder {
       const seeds = await loadSeeds(createDatabaseSeederOptions(options));
       // A fresh run drops the seed history with the rest of the schema.
       return pendingTasksResult(
-        seeds,
+        options.taskFilter ? seeds.filter(options.taskFilter) : seeds,
         pendingOptions.fresh || pendingOptions.withoutHistory
           ? []
           : await createDatabaseSeeder(options).history(),
@@ -171,6 +176,7 @@ function createDatabaseSeederOptions(
     extensions: options.config.extensions,
     onChecksumMismatch: options.config.onChecksumMismatch,
     onStaleLock: options.onStaleLock,
+    taskFilter: options.taskFilter,
     ...(options.sample ? { sample: options.sample } : {}),
   };
 

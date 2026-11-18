@@ -1,14 +1,23 @@
 import {
+  assertMailerReference,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers/config';
+import {
   defineAppConfig,
   envString,
   type AppConfigDefinition,
   type AppConfigFactory,
   type EnvironmentMapping,
+  type ConfigValidator,
 } from '@nocobase/app-server/config';
 
 import type { UsersConfig } from './tokens.js';
 
 export type { InitialAdminConfig, UsersConfig } from './tokens.js';
+export {
+  describeInvitationEmailChannel,
+  type InvitationEmailChannelState,
+} from './invitations/channel.js';
 
 /**
  * The environment variables that set `users` fields. All three are read once, while the user table is still empty,
@@ -42,11 +51,42 @@ export const USERS_ENVIRONMENT: Readonly<Record<string, EnvironmentMapping>> = {
 export function defineUsersConfig(
   definition: Partial<AppConfigDefinition<UsersConfig>> = {},
 ): AppConfigFactory<UsersConfig> {
+  const validate: ConfigValidator<UsersConfig> = (config, context) => {
+    if (config.invitations?.mailer !== undefined && context.get) {
+      try {
+        assertMailerReference(
+          (context.get('mailers') ?? {}) as MailersConfig,
+          config.invitations.mailer,
+          'users.invitations.mailer',
+        );
+      } catch (error) {
+        context.error(
+          'invitations.mailer',
+          error instanceof Error ? error.message : 'Invalid mailer reference.',
+        );
+      }
+    }
+    for (const key of ['mailer', 'emailChannel'] as const) {
+      const value = config.invitations?.[key];
+      if (
+        value !== undefined &&
+        (typeof value !== 'string' || !value.trim() || value !== value.trim())
+      )
+        context.error(
+          `invitations.${key}`,
+          'Must be a non-empty trimmed string.',
+        );
+    }
+  };
+  const extra =
+    definition.validate === undefined
+      ? []
+      : Array.isArray(definition.validate)
+        ? (definition.validate as readonly ConfigValidator<UsersConfig>[])
+        : [definition.validate as ConfigValidator<UsersConfig>];
   return defineAppConfig<UsersConfig>({
     defaults: definition.defaults ?? {},
-    ...(definition.validate === undefined
-      ? {}
-      : { validate: definition.validate }),
+    validate: [validate, ...extra],
     public: definition.public ?? [],
     env: { ...USERS_ENVIRONMENT, ...definition.env },
   });

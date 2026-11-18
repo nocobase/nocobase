@@ -69,7 +69,7 @@ const pages = {
   },
   errors: {
     boundRunnerIncompatible:
-      'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
+      'This runtime cannot run the selected Agent. Switch runtime to continue.',
     CONFLICT: 'It changed in the meantime. Reload and try again.',
     REVISION_CONFLICT: 'It changed in the meantime. Reload and try again.',
     FORBIDDEN: 'You are not allowed to do this.',
@@ -110,6 +110,7 @@ const pages = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: 'Unavailable now',
@@ -568,6 +569,8 @@ const pages = {
     checkoutFailed: 'The repository checkout failed.',
     toolAuth: 'The coding tool is not signed in on the runtime.',
     toolQuota: 'The coding tool ran out of quota.',
+    sessionUnavailable:
+      'The original coding-tool session could not be resumed.',
     toolRateLimit: 'The coding tool was rate limited.',
     toolNetwork: 'The coding tool could not reach its service.',
     toolProcess: 'The coding tool exited unexpectedly.',
@@ -579,8 +582,7 @@ const pages = {
     policyRefused: 'No runtime’s policy lets it take this work.',
     prepareNetwork:
       'The runtime could not reach the repository host while preparing the run.',
-    repoAccessUnavailable:
-      'A repository’s credential could not be issued just now; the run will be tried again.',
+    repoAccessUnavailable: 'Repository access is temporarily unavailable.',
     repoAccessDenied:
       'The application will not issue a credential for one of the run’s repositories.',
     unknown: 'The run failed.',

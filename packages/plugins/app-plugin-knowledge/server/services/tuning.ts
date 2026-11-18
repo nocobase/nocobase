@@ -1,3 +1,4 @@
+import { authorizationReader } from './access.js';
 /**
  * How documents are cut and searched, as the application sets it (`KnowledgeSettingsSource`, the defaults until it
  * binds its own with `Knowledge.bindSettings`), and each space's own chunking (`kbSpaces.settings.chunking`, set by
@@ -248,7 +249,8 @@ export function createChunkingService(
       effective: own ?? defaults,
       rechunking:
         record !== null && settingsOf(record.settings).rechunk === true,
-      canManage: rights.manage && !viewer.actor,
+      canManage:
+        rights.manage && !authorizationReader(context.access, viewer).actor,
     };
   }
 
@@ -258,7 +260,7 @@ export function createChunkingService(
     async set(viewer, space, override) {
       const access = createAccessCheck(context, viewer);
       const rights = await access.requireRead(space);
-      if (!rights.manage || viewer.actor)
+      if (!rights.manage || authorizationReader(context.access, viewer).actor)
         throw forbidden(
           'Only someone who manages the space may change how it is cut.',
         );

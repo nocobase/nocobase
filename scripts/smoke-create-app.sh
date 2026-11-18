@@ -18,6 +18,7 @@
 #     --create-app-version 0.1.0-beta.12 \
 #     --template @nocobase/app-template-default@0.1.0-beta.12 \
 #     [--workdir DIR] [--timeout SECONDS] [--dialect DIALECT] [--config FILE] [--json] [--internal-packages]
+#     [--test-project all|node|client|none]
 
 set -euo pipefail
 
@@ -31,6 +32,7 @@ DIALECT=''
 CONFIG=''
 JSON_OUTPUT=0
 INTERNAL_PACKAGES=0
+TEST_PROJECT=all
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -44,6 +46,7 @@ while [ $# -gt 0 ]; do
     --config) CONFIG="$2"; shift 2 ;;
     --json) JSON_OUTPUT=1; shift ;;
     --internal-packages) INTERNAL_PACKAGES=1; shift ;;
+    --test-project) TEST_PROJECT="$2"; shift 2 ;;
     --app-name) APP_NAME="$2"; shift 2 ;;
     -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
@@ -54,6 +57,11 @@ if [ -z "$REGISTRY" ] || [ -z "$CREATE_APP_VERSION" ] || [ -z "$TEMPLATE" ]; the
   echo "::error::--registry, --create-app-version and --template are all required" >&2
   exit 2
 fi
+
+case "$TEST_PROJECT" in
+  all|node|client|none) ;;
+  *) echo "::error::--test-project must be all, node, client, or none" >&2; exit 2 ;;
+esac
 
 if [ -z "$WORKDIR" ]; then
   WORKDIR="$(mktemp -d)"
@@ -88,8 +96,7 @@ export PNPM_CONFIG_MINIMUM_RELEASE_AGE=0
 export PNPM_CONFIG_REGISTRY="$REGISTRY"
 export npm_config_registry="$REGISTRY"
 export NPM_CONFIG_REGISTRY="$REGISTRY"
-# create-app reads this when --registry is not given; passing both keeps the generated application's install pointed
-# at the same place even if the flag handling changes.
+# create-app persists this registry for @nocobase dependencies in the generated application.
 export NOCOBASE_REGISTRY="$REGISTRY"
 
 # An override that silently did not apply would test packages from the wrong registry and report success, so it is
@@ -113,7 +120,7 @@ echo "workdir:     $WORKDIR"
 
 cd "$WORKDIR"
 
-CREATE_ARGS=("@nocobase/app@$CREATE_APP_VERSION" "$APP_NAME" "--registry=$REGISTRY" "--template=$TEMPLATE")
+CREATE_ARGS=("@nocobase/app@$CREATE_APP_VERSION" "$APP_NAME" "--template=$TEMPLATE")
 if [ "$JSON_OUTPUT" = 1 ]; then
   pnpm create "${CREATE_ARGS[@]}" --json > "$WORKDIR/create.json"
   # --create-app-version may name a release from before create-app printed the application CLI's envelope, whose
@@ -177,13 +184,23 @@ if [ "$INTERNAL_PACKAGES" = 1 ]; then
   echo "::endgroup::"
 fi
 
-echo "::group::Test the application with pnpm test"
-if ! pnpm test 2>&1 | tee "$TEST_LOG"; then
+if [ "$TEST_PROJECT" = none ]; then
+  # The caller has already run these suites against the same source, so only the lifecycle checks below remain.
+  echo "Skipping the application tests: --test-project none"
+else
+  echo "::group::Test the application with pnpm test"
+  TEST_ARGS=()
+  if [ "$TEST_PROJECT" != all ]; then
+    # Each CI shard runs a complete project. An empty selection must never count as a passing shard.
+    TEST_ARGS=(--project "$TEST_PROJECT" --passWithNoTests=false)
+  fi
+  if ! pnpm test "${TEST_ARGS[@]}" 2>&1 | tee "$TEST_LOG"; then
+    echo "::endgroup::"
+    echo "::error::pnpm test failed"
+    exit 1
+  fi
   echo "::endgroup::"
-  echo "::error::pnpm test failed"
-  exit 1
 fi
-echo "::endgroup::"
 
 echo "::group::Boot the application with pnpm dev"
 
@@ -510,4 +527,8 @@ if ! node --input-type=module -e '
   exit 1
 fi
 echo "::endgroup::"
-echo "create-app smoke test passed: $TEMPLATE passed test, dev, build, start, archive deployment, and retarget for $OTHER_TARGET."
+PASSED_CHECKS='test, dev, build, start'
+if [ "$TEST_PROJECT" = none ]; then
+  PASSED_CHECKS='dev, build, start'
+fi
+echo "create-app smoke test passed: $TEMPLATE passed $PASSED_CHECKS, archive deployment, and retarget for $OTHER_TARGET."

@@ -1,3 +1,5 @@
+import { InvitationWork } from '../invitations/lifecycle.js';
+import { registerInvitationTemplate } from '../invitations/template.js';
 import { createApplicationUserRoleScope } from '../services/permission-set-scope.js';
 import { databaseManagerToken } from '@nocobase/db';
 import {
@@ -7,6 +9,7 @@ import {
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { AppIdentityConfig } from '@nocobase/app-server/config';
+import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 
 import { createNotificationMailer } from '../invitations/notification-mailer.js';
@@ -40,12 +43,31 @@ const USER_ACTIONS = new Set([
 /** The cap `UserAdministrationService.list` applies to a page. */
 const ACCOUNT_PAGE_SIZE = 100;
 
+function startShutdownOperation(
+  operation: () => void | Promise<void>,
+): Promise<void> {
+  try {
+    return Promise.resolve(operation());
+  } catch (error) {
+    return Promise.reject(
+      error instanceof Error
+        ? error
+        : new Error('Users shutdown operation failed.', { cause: error }),
+    );
+  }
+}
+
 export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-users';
   private releasePermissionSetScope?: () => void;
   private releaseSubjectType?: () => void;
+  private releaseInvitationTemplate?: () => void;
+
+  private readonly invitationWork = new InvitationWork();
+  private invitationMailer?: ReturnType<typeof createNotificationMailer>;
 
   public override register(): void {
+    this.invitationMailer = createNotificationMailer(this.app);
     this.app.container.singleton(userRoleScopeRegistryToken, () =>
       createUserRoleScopeRegistry(),
     );
@@ -63,7 +85,8 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       const identity = this.app.config.get<AppIdentityConfig>('app');
       return createUserManagementService({
         database: resolver.resolve(databaseManagerToken),
-        mailer: createNotificationMailer(this.app),
+        mailer: this.invitationMailer,
+        invitationWork: this.invitationWork,
         site: {
           ...(identity?.publicOrigin
             ? { publicOrigin: identity.publicOrigin }
@@ -74,6 +97,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
         },
         users: resolver.resolve(userAdministrationServiceToken),
         roleScopes: resolver.resolve(userRoleScopeRegistryToken),
+        preferences: resolver.resolve(userPreferencesServiceToken),
+        ...(resolver.has(i18nToken)
+          ? { i18n: resolver.resolve(i18nToken) }
+          : {}),
         ...(permissionSets === undefined ? {} : { permissionSets }),
         onRoleScopesChanged: (userId) =>
           permissionSets?.notifyAssignmentsChanged({
@@ -84,7 +111,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     });
   }
 
-  public override boot(): Promise<void> {
+  public override async boot(): Promise<void> {
+    this.releaseInvitationTemplate ??= await registerInvitationTemplate(
+      this.app,
+    );
     if (
       !this.releasePermissionSetScope &&
       this.app.container.has(authorizationToken) &&
@@ -175,12 +205,31 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     return Promise.resolve();
   }
 
+  private shutdownPromise?: Promise<void>;
+
   public override shutdown(): Promise<void> {
+    this.releaseInvitationTemplate?.();
+    this.releaseInvitationTemplate = undefined;
+    this.shutdownPromise ??= this.closeInvitations();
+    return this.shutdownPromise;
+  }
+
+  private async closeInvitations(): Promise<void> {
+    this.invitationWork.stop();
+    const results = await Promise.allSettled([
+      startShutdownOperation(() => this.invitationMailer?.close()),
+      startShutdownOperation(() => this.invitationWork.wait()),
+    ]);
     this.releasePermissionSetScope?.();
     this.releasePermissionSetScope = undefined;
     this.releaseSubjectType?.();
     this.releaseSubjectType = undefined;
-    return Promise.resolve();
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length)
+      throw new AggregateError(
+        failures.map((result): unknown => result.reason),
+        'Invitation shutdown failed.',
+      );
   }
 
   /**

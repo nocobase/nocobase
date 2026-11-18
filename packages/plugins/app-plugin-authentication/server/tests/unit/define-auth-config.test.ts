@@ -15,7 +15,7 @@ async function validate(
   await config.loadAll();
   const defaults = defaultAppConfigs({
     auth: defineAuthConfig({
-      defaults: { emailAndPassword: { enabled: true, autoSignIn: false } },
+      defaults: { emailAndPassword: { enabled: true, autoSignIn: true } },
       ...(extra ? { validate: extra } : {}),
     }),
   });
@@ -25,6 +25,36 @@ async function validate(
 }
 
 describe('defineAuthConfig', () => {
+  it('warns about ambiguous unsigned-in registration without changing an explicit override', async () => {
+    const { config, issues } = await validate({
+      emailAndPassword: { autoSignIn: false },
+    });
+    expect(config.get('auth.emailAndPassword.autoSignIn')).toBe(false);
+    expect(issues).toEqual([
+      expect.objectContaining({
+        level: 'warning',
+        path: 'auth.emailAndPassword.autoSignIn',
+        fix: expect.stringContaining('server/config/auth.ts or config.yml'),
+      }),
+    ]);
+    expect(config.publicValues()).toEqual({
+      auth: { emailAndPassword: { enabled: true } },
+    });
+  });
+
+  it.each([
+    { autoSignIn: true },
+    { autoSignIn: false, enabled: false },
+    { autoSignIn: false, disableSignUp: true },
+    { autoSignIn: false, requireEmailVerification: true },
+    { autoSignIn: false, onExistingUserSignUp: async () => {} },
+  ])(
+    'does not warn about alternative registration flows: %j',
+    async (emailAndPassword) => {
+      expect((await validate({ emailAndPassword })).issues).toEqual([]);
+    },
+  );
+
   it('publishes whether password sign-up is open, and nothing else', async () => {
     const { config, issues } = await validate({
       secret: 'a-real-secret',
@@ -81,11 +111,14 @@ describe('defineAuthConfig', () => {
 });
 
 describe('authentication email configuration', () => {
-  it('refuses to publish authentication email credentials', () => {
-    expect(() =>
-      defineAuthConfig({ defaults: {}, public: ['email.apiKey'] }),
-    ).toThrow('must remain private');
-  });
+  it.each(['email.apiKey', 'passwordReset', 'passwordReset.mailer'])(
+    'refuses to publish private sender configuration: %s',
+    (path) => {
+      expect(() => defineAuthConfig({ defaults: {}, public: [path] })).toThrow(
+        'must remain private',
+      );
+    },
+  );
   it.each([
     [{ provider: 'smtp', port: 587 }, 'auth.email.host'],
     [{ provider: 'smtp', host: 'smtp.test', port: '587' }, 'auth.email.port'],
@@ -124,6 +157,7 @@ describe('authentication email configuration', () => {
     ],
     [null, 'auth.email'],
     [{}, 'auth.email.provider'],
+    [{ mailer: 'system' }, 'auth.email.provider'],
   ])(
     'rejects invalid explicit email without falling back: %j',
     async (email, path) => {

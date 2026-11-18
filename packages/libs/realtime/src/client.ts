@@ -57,6 +57,8 @@ export interface RealtimeClient {
   close(this: void): void;
 }
 export interface RealtimeClientOptions {
+  /** Disconnect after this long hidden; reconnect when visible. Defaults to ten minutes; zero disables it. */
+  readonly hiddenDisconnectMs?: number;
   readonly pingInterval?: number;
   readonly pongTimeout?: number;
   readonly subscriptionTimeout?: number;
@@ -93,6 +95,9 @@ export function createRealtimeClient(
   let wasReady = false;
   let manuallyClosed = false;
   let recoveryInstalled = false;
+  let hiddenTimer: ReturnType<typeof setTimeout> | undefined;
+  let hiddenSince: number | undefined;
+  let suspended = false;
   const topics = new Map<string, Topic>();
   const openListeners = new Set<() => void>();
   const readyListeners = new Set<() => void>();
@@ -196,6 +201,8 @@ export function createRealtimeClient(
     },
     close() {
       manuallyClosed = true;
+      clearTimeout(hiddenTimer);
+      hiddenTimer = undefined;
       clearTimeout(reconnectTimer);
       reconnectTimer = undefined;
       disposeSocket();
@@ -204,7 +211,7 @@ export function createRealtimeClient(
     },
   };
   function recover(): void {
-    if (manuallyClosed || !topics.size) return;
+    if (manuallyClosed || !topics.size || suspendIfDue()) return;
     if (!client.connected) {
       client.reconnect();
       return;
@@ -219,7 +226,56 @@ export function createRealtimeClient(
     }
   }
   function recoverVisible(): void {
-    if (document.visibilityState === 'visible') recover();
+    if (document.visibilityState === 'hidden') {
+      watchHidden();
+      return;
+    }
+    clearTimeout(hiddenTimer);
+    hiddenTimer = undefined;
+    hiddenSince = undefined;
+    suspended = false;
+    recover();
+  }
+  function watchHidden(): void {
+    if (
+      typeof document === 'undefined' ||
+      document.visibilityState !== 'hidden'
+    ) {
+      clearTimeout(hiddenTimer);
+      hiddenTimer = undefined;
+      hiddenSince = undefined;
+      suspended = false;
+      return;
+    }
+    const timeout = options.hiddenDisconnectMs ?? 10 * 60_000;
+    if (timeout <= 0) return;
+    hiddenSince ??= Date.now();
+    if (hiddenTimer || suspended) return;
+    hiddenTimer = setTimeout(
+      () => {
+        hiddenTimer = undefined;
+        suspendIfDue();
+      },
+      Math.max(0, hiddenSince + timeout - Date.now()),
+    );
+  }
+  function suspendIfDue(): boolean {
+    watchHidden();
+    const timeout = options.hiddenDisconnectMs ?? 10 * 60_000;
+    if (
+      hiddenSince !== undefined &&
+      timeout > 0 &&
+      Date.now() - hiddenSince >= timeout
+    ) {
+      suspended = true;
+      clearTimeout(hiddenTimer);
+      hiddenTimer = undefined;
+      clearTimeout(reconnectTimer);
+      reconnectTimer = undefined;
+      disposeSocket();
+      setState('idle');
+    }
+    return suspended;
   }
   function installRecovery(): void {
     if (recoveryInstalled) return;
@@ -307,8 +363,10 @@ export function createRealtimeClient(
   }
   function connect(): void {
     if (typeof WebSocket === 'undefined' || !topics.size) return;
-    if (socket && socket.readyState < 2) return;
     manuallyClosed = false;
+    installRecovery();
+    if (suspendIfDue()) return;
+    if (socket && socket.readyState < 2) return;
     installRecovery();
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
@@ -511,7 +569,7 @@ export function createRealtimeClient(
     for (const listener of [...errorListeners]) notify(() => listener(error));
   }
   function scheduleReconnect(): void {
-    if (manuallyClosed || !topics.size) return;
+    if (manuallyClosed || !topics.size || suspendIfDue()) return;
     clearTimeout(reconnectTimer);
     setState('reconnecting');
     const maximum = Math.max(1, options.reconnectMaxInterval ?? 30_000);

@@ -365,6 +365,35 @@ describe('demo quick sign-in', () => {
     expect(await signedInUser(cookie)).toBe(ids.bob);
   });
 
+  it.each(['expired', 'revoked'])(
+    'enters Super Admin when the previous session is %s',
+    async (state) => {
+      const cookie = cookieOf(
+        await call('POST', '/demoMode/accounts/bob/signIn'),
+      );
+      const session = await auth.getSession(new Headers({ cookie }));
+      expect(session?.user.id).toBe(ids.bob);
+      const query = testDatabase.database.query();
+      if (state === 'expired')
+        await query
+          .updateTable('session')
+          .set({ expiresAt: new Date(0) })
+          .where('id', '=', session!.session.id)
+          .execute();
+      else
+        await query
+          .deleteFrom('session')
+          .where('id', '=', session!.session.id)
+          .execute();
+      const response = await call('POST', '/demoMode/accounts/signInDefault', {
+        cookie,
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ data: { signedIn: true } });
+      expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
+    },
+  );
+
   it('leaves normal entry available when no enabled Super Admin exists', async () => {
     for (const candidates of [[], [ids.cat!], [ids.robot!]]) {
       administratorIds = candidates;

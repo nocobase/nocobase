@@ -92,6 +92,11 @@ export interface SeedSampleOptions {
 
 /** Configuration for a standalone Seeder, including its database dependency. */
 export interface CreateSeederOptions extends LoadSeedsOptions {
+  /** Select pending tasks while retaining every source for history validation. */
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
   /** Sample seeds are recorded as skipped unless this enables them. */
   readonly sample?: SeedSampleOptions;
   readonly config?: DatabaseTaskConfig;

@@ -88,3 +88,25 @@ test('the catalog groups items by their group and leaves examples out as entries
   );
   assert.doesNotMatch(catalog, /^### device-approval-demo$/mu);
 });
+
+// An add-on can extend the base recipe in the base recipe's installed directory.
+test('an add-on names its actual installed directory rather than inventing one from its item name', () => {
+  const section = itemSection(
+    {
+      ...block,
+      name: 'agent-chat-details',
+      files: [
+        {
+          path: 'linked-chat-panel.tsx',
+          target: 'client/extensions/nocobase-agent-chat/linked-chat-panel.tsx',
+        },
+      ],
+    },
+    [],
+  );
+  assert.match(
+    section,
+    /- Installs to: `client\/extensions\/nocobase-agent-chat\/`/u,
+  );
+  assert.doesNotMatch(section, /nocobase-agent-chat-details\//u);
+});

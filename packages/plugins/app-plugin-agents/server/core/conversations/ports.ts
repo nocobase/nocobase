@@ -1,3 +1,8 @@
+import type { ConversationShares } from './shares.js';
+import type {
+  NativeHistoryQuery,
+  NativeHistoryPage,
+} from '../../online/agent/types.js';
 /**
  * The conversation API the rest of the application uses: the HTTP routes, the application's extensions, and later the
  * platform.
@@ -15,6 +20,7 @@ import type {
   ChatAgent,
   ConversationAttentionCounts,
   ConversationUsage,
+  ConversationRunner,
   ConversationLink,
   ConversationLinkView,
   ConversationNotice,
@@ -191,6 +197,14 @@ export interface MessageReadOptions {
 }
 
 export interface ConversationService {
+  readonly shares: ConversationShares;
+  /** Recipient history without creating an executable facade. Null for the owner. */
+  snapshotMessages(
+    userId: string,
+    id: string,
+    query: NativeHistoryQuery,
+  ): Promise<NativeHistoryPage | null>;
+
   /** The `conversation` subject kind of runs; registered once, by the composition. */
   readonly binding: SubjectBinding;
   /** Where plugins register how references of their kinds in a page context resolve. */
@@ -212,6 +226,7 @@ export interface ConversationService {
     request: CreateConversationRequest,
     runnerConfig?: OnlineAgentConfig,
   ): Promise<ConversationDetail>;
+  /** Read permission, not ownership: recipients receive `snapshot`. Never use this read alone to authorize a host write. */
   get(userId: string, id: string): Promise<ConversationDetail>;
   /** Rename (the title becomes the owner's) and archive or unarchive. */
   update(
@@ -246,7 +261,7 @@ export interface ConversationService {
   ): Promise<{ readonly seq: number; readonly run: SendMessageResult['run'] }>;
   /**
    * Takes back a message queued while the agent worked (`queue`), while its runner has not taken it: it stays in the
-   * history, marked withdrawn, and the agent never sees it.
+   * history, marked withdrawn, and the agent never sees it. An initial unclaimed turn ends through guarded queued withdrawal.
    */
   withdraw(userId: string, id: string, messageId: string): Promise<void>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */
@@ -278,13 +293,15 @@ export interface ConversationService {
    * starting a fresh session with the conversation's history. The old directory is left to the runner's cleanup.
    */
   switchRunner(userId: string, id: string): Promise<ConversationDetail>;
+  /** Online runtimes eligible for the owner's current Runner agent and project. */
+  runners(userId: string, id: string): Promise<ConversationRunner[]>;
   /** Changes the agent of an idle Runner conversation, preserving history and links; its next message starts a fresh session. */
   switchAgent(
     userId: string,
     id: string,
     agentId: string,
   ): Promise<ConversationDetail>;
-  /** Cancels the conversation's open runs: a queued one at once, a working one is asked to stop. */
+  /** Cancels open runs; after a working Runner turn stops, queued messages it never received continue in the next turn. */
   stop(userId: string, id: string): Promise<ConversationDetail>;
   /**
    * Deletes the owner's conversation for good: its open runs are cancelled, its messages, files, links and kept
@@ -371,6 +388,8 @@ export interface ConversationService {
   };
   /** Turns the run's new text events into assistant messages; nothing for runs on other subjects. */
   syncRun(runId: string): Promise<Run>;
+  /** Sends an uploaded file as part of the conversation run's current reply; other subjects do nothing. */
+  attachFromRun(runId: string, fileId: string): Promise<void>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
   chatAgents(userId: string): Promise<ChatAgent[]>;

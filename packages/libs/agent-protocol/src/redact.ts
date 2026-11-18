@@ -71,6 +71,13 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
     pattern: /\bgithub_pat_[A-Za-z0-9_]{22,255}/gu,
   },
   { name: 'npm token', pattern: /\bnpm_[A-Za-z0-9]{36}\b/gu },
+  {
+    // A registry credential in an npmrc line: `//registry.example/:_authToken=…`, `_auth`, `_password`.
+    name: 'npmrc credential',
+    pattern:
+      /(:_(?:authToken|auth|password)\s*=\s*["']?)(?!\[REDACTED\])[^\s"']+/giu,
+    replacement: `$1${REDACTED}`,
+  },
   { name: 'Slack token', pattern: /\bxox[abposr]-[A-Za-z0-9-]{10,}/gu },
   {
     name: 'Google API key',

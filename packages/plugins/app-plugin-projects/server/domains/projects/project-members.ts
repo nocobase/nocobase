@@ -35,7 +35,8 @@ export function createProjectMembers(deps: {
           !(await deps.users.isPerson(tx.conn, input.userId))
         )
           throw invalid('INVALID_USER', 'userId is not an active user.');
-        await addMember(tx.conn, deps.ids.next(), projectId, input.userId);
+        if (await addMember(tx.conn, deps.ids.next(), projectId, input.userId))
+          tx.emit({ type: 'project.changed', projectId });
         return listMembers(tx.conn, projectId);
       }),
 
@@ -47,6 +48,7 @@ export function createProjectMembers(deps: {
             'Choose another project lead before removing this member.',
           );
         await removeMember(tx.conn, projectId, userId);
+        tx.emit({ type: 'project.changed', projectId });
         return listMembers(tx.conn, projectId);
       }),
   };

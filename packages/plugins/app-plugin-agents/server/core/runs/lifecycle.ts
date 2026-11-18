@@ -1,3 +1,4 @@
+import { waitForQuota } from './quota-wait.js';
 import { OutputPreview } from './output-preview.js';
 import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 /**
@@ -484,19 +485,36 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           .filter((parsed) => parsed.success);
         if (run.tool && quotaReports.length) {
           const latest = new Map<string, QuotaReport['windows'][number]>();
-          for (const parsed of quotaReports)
-            if (parsed.success)
-              for (const window of parsed.data.windows)
-                latest.set(
-                  JSON.stringify([window.scope, window.target, window.window]),
-                  window,
-                );
+          let replacesUsage = false;
+          for (const { data } of quotaReports) {
+            if (
+              run.tool === 'codex' &&
+              data.replacesUsage &&
+              data.windows.every(
+                (w) => w.scope === 'tool' && w.target === '' && !w.exhausted,
+              )
+            ) {
+              replacesUsage = true;
+              // An earlier snapshot in this batch can already contain a retired window.
+              for (const [key, window] of latest)
+                if (window.scope === 'tool' && !window.exhausted)
+                  latest.delete(key);
+            }
+            for (const window of data.windows)
+              latest.set(
+                JSON.stringify([window.scope, window.target, window.window]),
+                window,
+              );
+          }
           await deps.onQuota?.(
             unit,
             runner.id,
             run.tool as AgentTool,
             run.model ?? null,
-            { windows: [...latest.values()] },
+            {
+              windows: [...latest.values()],
+              ...(replacesUsage ? { replacesUsage: true } : {}),
+            },
             {
               runId: run.id,
               agentId: run.agentId,
@@ -784,6 +802,21 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           request.sessionId,
           request.reason === 'contextOverflow',
         );
+        if (
+          run.cancelRequestedAt === null &&
+          deps.subjects.get(run.subjectKind)?.quotaWait &&
+          (request.reason === 'toolQuota' ||
+            (run.runnerPinId && request.reason === 'sessionUnavailable'))
+        ) {
+          const waiting = await waitForQuota(unit, deps, run, request);
+          if (!waiting)
+            throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');
+          secrets.forget(runSecretsKey(run.id));
+          return {
+            status: waiting.status,
+            ...(waiting.availableAt ? { retryAt: waiting.availableAt } : {}),
+          };
+        }
         if (isRetryable(request.reason) && run.cancelRequestedAt === null) {
           const outcome = await requeueRun(
             unit,

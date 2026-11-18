@@ -9,9 +9,11 @@
   },
   "include": [
     "package.ts",
+    "config.ts",
     "cli/**/*.ts",
     "shared/**/*.ts",
     "server/**/*.ts",
+    "database/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx"
   ]

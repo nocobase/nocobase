@@ -42,6 +42,8 @@ const admin = await signIn(app, DEFAULT_ADMIN_CREDENTIALS);
 const users = await admin.fetch('/users');
 ```
 
+Every configuration file `createTestAppConfig()` writes, and so every application `createTestApp()` and `createAppTest()` start, sets `foundation: { scanOnStart: false }`: App Foundation submits no background scan when a test application starts, so a test does not spend seconds of CPU on it or wait for it on close. An application without App Foundation never reads the section. A test that needs the start-up scan passes `config: { foundation: { scanOnStart: true } }`; other `foundation` keys it passes are merged with the default.
+
 ## With Vitest
 
 ```ts

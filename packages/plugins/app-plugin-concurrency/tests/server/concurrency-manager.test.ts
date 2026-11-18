@@ -3,7 +3,10 @@ import { ConcurrentConfigurationError } from '@nocobase/concurrency';
 import { ManagedConcurrencyService } from '../../server/services/concurrency.js';
 
 async function service(
-  config: unknown = { default: 'memory', memory: { adapter: 'mutex' } },
+  config: unknown = {
+    default: 'memory',
+    backends: { memory: { adapter: 'mutex' } },
+  },
 ) {
   const host = new ManagedConcurrencyService({
     appName: 'crm',
@@ -19,7 +22,7 @@ describe('concurrency manager facade', () => {
     vi.useFakeTimers();
     const host = await service({
       default: 'memory',
-      memory: { adapter: 'mutex', ttl: 1000 },
+      backends: { memory: { adapter: 'mutex', ttl: 1000 } },
     });
     try {
       const manager = await host.getManager();
@@ -71,8 +74,10 @@ describe('concurrency manager facade', () => {
   });
   it('reserves mutex namespace before concurrent initialization, including the fallback', async () => {
     const host = await service({
-      a: { adapter: 'mutex' },
-      b: { adapter: 'mutex', namespace: 'other' },
+      backends: {
+        a: { adapter: 'mutex' },
+        b: { adapter: 'mutex', namespace: 'other' },
+      },
     });
     try {
       await expect(host.getManager('a')).rejects.toThrow('owns this namespace');
@@ -86,9 +91,11 @@ describe('concurrency manager facade', () => {
     }
     const explicit = await service({
       default: 'base',
-      base: { adapter: 'mutex', namespace: 'base' },
-      a: { adapter: 'mutex' },
-      b: { adapter: 'mutex' },
+      backends: {
+        base: { adapter: 'mutex', namespace: 'base' },
+        a: { adapter: 'mutex' },
+        b: { adapter: 'mutex' },
+      },
     });
     try {
       const results = await Promise.allSettled([
@@ -107,7 +114,7 @@ describe('concurrency manager facade', () => {
     vi.useFakeTimers();
     const host = await service({
       default: 'memory',
-      memory: { adapter: 'mutex', ttl: 5 },
+      backends: { memory: { adapter: 'mutex', ttl: 5 } },
     });
     const manager = await host.getManager();
     const ttl = vi.fn(() => undefined);
@@ -135,13 +142,15 @@ describe('concurrency manager facade', () => {
   it('does not switch even uninitialized configurations when caller config changes', async () => {
     const config = {
       default: 'memory',
-      memory: { adapter: 'mutex' },
-      later: { adapter: 'mutex', namespace: 'later', ttl: 10 },
+      backends: {
+        memory: { adapter: 'mutex' },
+        later: { adapter: 'mutex', namespace: 'later', ttl: 10 },
+      },
     };
     const host = await service(config);
     try {
       config.default = 'later';
-      config.later.namespace = 'crm';
+      config.backends.later.namespace = 'crm';
       expect(await host.getManager()).toBe(await host.getManager('memory'));
       await expect(host.getManager('later')).resolves.toBeDefined();
     } finally {

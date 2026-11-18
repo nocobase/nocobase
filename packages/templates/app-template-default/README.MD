@@ -12,7 +12,7 @@ Complete the target’s requirements in that same upgrade: reconcile dependencie
 
 ## Default and Examples
 
-Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home and, for unrestricted administrators only, System settings → App foundation. Foundation is installed and registered on both Client and Server; its read-only overview is available at `/foundation` under the application base path. As business capabilities are developed, the app development skill reconciles missing core administration on every iteration and registers the prepared Users and Roles and permissions contribution (`client/pages/settings/routes.ts`); each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
+Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home and, for unrestricted administrators only, System settings with App foundation and Database Explorer; Database Explorer is also shown to anyone granted its `page:database-explorer/access` page permission. Foundation is installed and registered on both Client and Server; its read-only overview is available at `/foundation` under the application base path. As business capabilities are developed, the app development skill reconciles missing core administration on every iteration and registers the prepared Users and Roles and permissions contribution (`client/pages/settings/routes.ts`); each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
 
 Existing Default installations retain their data when example plugins are unregistered. If an installation already ran the article migration, retain its original migration sources as described in the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) before upgrading. Do not erase migration history or delete existing data to make an upgrade start.
 
@@ -139,11 +139,11 @@ The three files named `runtime.ts`, `plugins.ts`, and `routes.ts` are compositio
 
 ### Everyday development
 
-| Script             | What it does                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| `pnpm dev`         | Start the API server and client with hot reload                                      |
-| `pnpm build`       | Build the client and server into `dist/`                                             |
-| `pnpm start`       | Run the built server; requires `pnpm build` first                                    |
+| Script             | What it does                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Start the API server and client with hot reload                                                                                 |
+| `pnpm build`       | Build the client and server into `dist/`                                                                                        |
+| `pnpm start`       | Run the built server; requires `pnpm build` first                                                                               |
 | `pnpm build --tar` | Build, then pack `dist/`, `config.example.yml` and the `Dockerfile` with its `.dockerignore` into `storage/exports/dist.tar.gz` |
 
 ### Database
@@ -453,3 +453,9 @@ Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in au
 ## Internal workspace packages
 
 The application can also be the root of a pnpm workspace, with internal packages under `packages/*` and the existing `client/`, `server/` and `database/` directories unchanged. New projects receive this workspace pattern automatically. Internal packages use `workspace:*` dependencies and may remain private. Run installation, development and deployment builds from the application root; `pnpm check` includes the internal packages' own checks. See [internal packages](.agents/rules/workspace.md) for configuration and development conventions.
+
+### Registration feedback
+
+Password registration signs in new accounts by default (`auth.emailAndPassword.autoSignIn: true` in `server/config/auth.ts` and `config.example.yml`). An existing email returns an explicit error, exposing whether that email is registered. For enumeration protection, explicitly set `autoSignIn: false` and configure email verification with a sender or `onExistingUserSignUp` to notify the email owner. Existing explicit overrides remain effective; no configuration migration is performed. The authentication plugin warns at startup about registration with auto sign-in disabled and neither verification nor an existing-user notification.
+
+The registration page treats `usePasswordRegistration().isSuccess` as request acceptance only. A refreshed session navigates signed-in users into the application. Visitors who remain signed out see neutral sign-in and recovery guidance, without an account-creation or email-delivery promise. Applications customizing this page must keep that distinction.

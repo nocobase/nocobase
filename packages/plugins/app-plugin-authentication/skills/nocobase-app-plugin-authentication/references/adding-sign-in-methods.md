@@ -89,7 +89,7 @@ const auth: AppConfigFactory<AuthConfig> = defineAppConfig(() => ({
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     },
   },
-  emailAndPassword: { enabled: true, autoSignIn: false },
+  emailAndPassword: { enabled: true, autoSignIn: true },
   session: { storeSessionInDatabase: true },
 }));
 

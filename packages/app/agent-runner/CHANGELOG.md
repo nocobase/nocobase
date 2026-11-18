@@ -1,5 +1,96 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- 761fb01: Collect main runtime logs before run logs on the same date when exporting diagnostics.
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-cli-client@0.1.0-beta.23
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-cli-client@0.1.0-beta.22
+
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [1952789]
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.21
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 7d9c0a4: Preserve Claude rate-limit snapshots across independent quota windows and let runtime owners configure usage ceilings that pause new work without interrupting active runs.
+- ef0a081: Load Claude user settings for model discovery and user, project and local settings for conversations, including native provider authentication and model mappings.
+
+## 0.1.0-beta.25
+
+### Minor Changes
+
+- ac6c1eb: A runner asks the application for the token of NocoBase's private npm registry (`https://pkg-v3.nocobase.com/`) only when an install of a run needs it: when the repository's committed `.npmrc` points a scope or the registry at it, or after an `@nocobase/*` package was not found on the default registry, which it then retries once with the private registry. The token goes into a run-private npm configuration for that one command and is redacted from what the run reports. The machine's own npm and pnpm settings stay in effect except those pointing at the private registry, so a project that needs no private package never reaches it. Protocol version 16 adds the `npmCredentials` feature and `RUNNER_ROUTES.npmCredential`; applications register where the token comes from with `npmCredentialProviders`. Update the application before the runners.
+
+### Patch Changes
+
+- Updated dependencies [a2dc459]
+- Updated dependencies [ac6c1eb]
+  - @nocobase/agent-protocol@0.1.0-beta.18
+  - @nocobase/app-cli-client@0.1.0-beta.20
+
+## 0.1.0-beta.24
+
+### Minor Changes
+
+- c635b6c: Preserve quota-limited work on its original Runner and resume its original tool session after quota resets. Support strict session restoration without automatic fallback to a new session, and let an explicit replacement run take over preserved work exactly once (`replacesRunId`).
+
+### Patch Changes
+
+- d124bd6: Recover runner services after every unexpected exit and delegate explicit stops and updates to the service manager, migrating installed restart policies automatically.
+- Updated dependencies [c635b6c]
+  - @nocobase/agent-protocol@0.1.0-beta.17
+  - @nocobase/app-cli-client@0.1.0-beta.19
+
+## 0.1.0-beta.23
+
+### Minor Changes
+
+- bfddb40: Add DeepSeek Harness as an ACP coding tool, with runner API-key detection, its CLI version, and full-access permissions.
+
+### Patch Changes
+
+- 4d08c21: Support the official Gitea gt CLI with run credentials, isolated configuration and instance guards.
+- Updated dependencies [49daa11]
+- Updated dependencies [bfddb40]
+  - @nocobase/app-cli-client@0.1.0-beta.18
+  - @nocobase/acp-bridge@1.0.0-beta.5
+
 ## 0.1.0-beta.22
 
 ### Patch Changes

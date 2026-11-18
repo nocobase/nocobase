@@ -1,9 +1,15 @@
 import { MAIL_LOCAL_DRAFT_FOLDER_ID } from '../../shared/mail.js';
+import { recipientIssues } from '../../shared/addresses.js';
 import type { NormalizedMailMessage } from '../contracts/provider.js';
 import { MailAttachmentsService } from '../services/attachments.js';
 import { uploadedImageMetadata } from '../../shared/inline-images.js';
 import { remoteMessageId } from '../services/draft-content.js';
-import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
+import {
+  mailLogCode,
+  mailLogError,
+  writeMailLog,
+  type MailLogger,
+} from '../logging.js';
 import { createHash, randomUUID } from 'node:crypto';
 
 import type {
@@ -55,6 +61,26 @@ export class SendMailOperation {
   public constructor(
     private readonly dependencies: SendMailOperationDependencies,
   ) {}
+
+  /** Read-only replay check for invalid legacy input; never starts a delivery. */
+  public async replayTerminalSubmission(
+    context: MailOperationContext,
+    input: MailComposeInput,
+    scheduledDelivery = false,
+  ): Promise<MailSubmission | undefined> {
+    const account = await this.dependencies.store.getAccount(input.accountId);
+    if (!account || account.userId !== context.actorId)
+      throw mailAccountNotFound();
+    if (account.status !== 'active') throw mailAccountInactive();
+    const existing =
+      await this.dependencies.store.getSubmissionByIdempotencyKey(
+        account.id,
+        input.idempotencyKey,
+      );
+    if (existing && !scheduledDelivery)
+      assertMatchingRequest(existing.requestFingerprint, fingerprint(input));
+    return existing && existing.status !== 'pending' ? existing : undefined;
+  }
 
   public async execute(
     context: MailOperationContext,
@@ -142,7 +168,7 @@ export class SendMailOperation {
           durationMs: Date.now() - startedAt,
           ...(result.error
             ? {
-                errorCode: result.error.code,
+                errorCode: mailLogCode(result.error.code),
                 category: result.error.category,
                 retryable: result.error.retryable,
                 err: mailLogError(result.error),
@@ -179,6 +205,18 @@ export class SendMailOperation {
       );
     }
     const now = Date.now();
+    // Reject new invalid requests before the recovery sweep can write anything.
+    // Existing terminal requests still obey the original replay/conflict contract.
+    const invalid = recipientIssues(input)[0];
+    if (invalid) {
+      const replay = await this.replayTerminalSubmission(
+        context,
+        input,
+        options.scheduledDelivery,
+      );
+      if (replay) return replay;
+      throw mailInvalidArgument(invalid.message, invalid.field);
+    }
     await this.dependencies.store.recoverExpiredSubmissions(
       new Date(now).toISOString(),
     );
@@ -224,8 +262,11 @@ export class SendMailOperation {
       existing?.hasComposeInput && !options.scheduledDelivery
         ? await this.dependencies.store.getScheduledSubmission(existing.id)
         : undefined;
-    if (persistedPending) input = persistedPending.input;
-    else if (!options.scheduledDelivery)
+    if (persistedPending) {
+      input = persistedPending.input;
+      const invalid = recipientIssues(input)[0];
+      if (invalid) throw mailInvalidArgument(invalid.message, invalid.field);
+    } else if (!options.scheduledDelivery)
       input = await this.snapshotDelivery(context, input);
     const providerMessage = await this.prepareProviderMessage(
       context,

@@ -20,25 +20,12 @@ import { useSearchParams } from 'react-router';
 
 import type { Session, SessionLink } from '../../shared/api.js';
 import { useLinkPanels, useSessionSurface } from '../config.js';
+import { usePhone } from '../use-phone.js';
 import { waitingFirst } from '../lib/tones.js';
 import { LinkList, Sheet } from './link-sheet.js';
 import { Button } from './ui/button.js';
 
 const NO_PANELS: ReturnType<typeof useLinkPanels> = {};
-
-function usePhone(): boolean {
-  const query = '(max-width: 767px)';
-  const [phone, setPhone] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(query).matches,
-  );
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    const change = () => setPhone(media.matches);
-    media.addEventListener('change', change);
-    return () => media.removeEventListener('change', change);
-  }, []);
-  return phone;
-}
 
 /** Wide enough for the panel beside the conversation; narrower, it lies over the conversation. */
 function useWide(): boolean {

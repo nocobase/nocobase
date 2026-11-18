@@ -87,6 +87,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
 
   state: AppState = 'creating';
   activeRequests = 0;
+  activeConnections = 0;
 
   private constructor(options: Omit<InProcessAppHandleOptions, 'createApp'>) {
     this.id = options.definition.id;
@@ -220,6 +221,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
       },
       activeRequests: this.activeRequests,
       createdAt: this.createdAt.toISOString(),
+      activeConnections: this.activeConnections,
       updatedAt: this.updatedAt.toISOString(),
       lastAccessedAt: this.lastAccessedAt?.toISOString() ?? null,
       lastError: this.lastError,
@@ -251,8 +253,6 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
     const requestId = `${this.id}-${++this.requestSequence}`;
     const startedAt = Date.now();
     this.activeRequests += 1;
-    this.lastAccessedAt = new Date();
-    this.touch();
     this.emit('app:requestStart', {
       requestId,
       method: metadata.method ?? request.method,
@@ -271,6 +271,8 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
         signal: this.abortSignal,
       });
 
+      if (response.status !== 401 && response.status !== 403)
+        this.recordAccess();
       this.emit('app:requestEnd', {
         requestId,
         method: metadata.method ?? request.method,
@@ -285,6 +287,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
       );
       return addBasePathToRedirectResponse(mountedResponse, this.basePath);
     } catch (error) {
+      this.recordAccess();
       this.lastError = error instanceof Error ? error.message : String(error);
       this.emit('app:requestError', {
         requestId,
@@ -331,8 +334,6 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
     const requestId = `${this.id}-ws-${++this.requestSequence}`;
     const startedAt = Date.now();
     this.activeRequests += 1;
-    this.lastAccessedAt = new Date();
-    this.touch();
     this.emit('app:requestStart', {
       requestId,
       method: metadata.method ?? request.method,
@@ -354,6 +355,11 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
         signal: this.abortSignal,
       });
 
+      if (
+        !(result instanceof Response) ||
+        (result.status !== 401 && result.status !== 403)
+      )
+        this.recordAccess();
       this.emit('app:requestEnd', {
         requestId,
         method: metadata.method ?? request.method,
@@ -365,8 +371,32 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
           transport: 'websocket',
         },
       });
-      return result;
+      if (!result || result instanceof Response) return result;
+      const connections = new WeakSet<object>();
+      return {
+        ...result,
+        onOpen: (event, ws) => {
+          if (this.state !== 'active') {
+            ws.close(1001, 'app runtime closed');
+            return;
+          }
+          if (!connections.has(ws)) {
+            connections.add(ws);
+            this.activeConnections += 1;
+          }
+          return result.onOpen?.(event, ws);
+        },
+        onClose: (event, ws) => {
+          if (connections.delete(ws)) {
+            this.activeConnections -= 1;
+            this.lastAccessedAt = new Date();
+            this.touch();
+          }
+          return result.onClose?.(event, ws);
+        },
+      };
     } catch (error) {
+      this.recordAccess();
       this.lastError = error instanceof Error ? error.message : String(error);
       this.emit('app:requestError', {
         requestId,
@@ -502,6 +532,11 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
 
   private transitionTo(state: AppState): void {
     this.state = state;
+    this.touch();
+  }
+
+  private recordAccess(): void {
+    this.lastAccessedAt = new Date();
     this.touch();
   }
 

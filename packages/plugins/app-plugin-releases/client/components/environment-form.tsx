@@ -569,7 +569,7 @@ export function EnvironmentForm({
             <FieldDescription>
               {t('ui.environments.appDefaultsDescription')}
             </FieldDescription>
-            <div className='grid gap-3 sm:grid-cols-3'>
+            <div className='grid items-end gap-3 sm:grid-cols-3'>
               {(
                 [
                   ['maxApps', 'rel-env-max-apps', 'ui.environments.maxApps'],

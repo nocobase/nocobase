@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export interface AppPackageIdentity {
@@ -7,19 +7,27 @@ export interface AppPackageIdentity {
   readonly version?: string;
 }
 
-/** Read the root manifest, or the built manifest when an embedded deployment has no root manifest. */
-export function readAppPackage(rootDir: string): AppPackageIdentity {
-  const packagePath = [
-    path.join(rootDir, 'package.json'),
-    path.join(rootDir, 'dist/package.json'),
-  ].find((candidate) => existsSync(candidate));
-  if (!packagePath) return {};
-  const value = JSON.parse(readFileSync(packagePath, 'utf8')) as unknown;
-  if (typeof value !== 'object' || value === null) return {};
-  const { name, displayName, version } = value as Record<string, unknown>;
-  return {
-    ...(typeof name === 'string' ? { name } : {}),
-    ...(typeof displayName === 'string' ? { displayName } : {}),
-    ...(typeof version === 'string' ? { version } : {}),
-  };
+/** Read the application manifest in a source tree, a standalone build, or an embedded release archive. */
+export async function readAppPackage(
+  rootDir: string,
+): Promise<AppPackageIdentity> {
+  // Embedded archives keep package.json under dist; a source manifest takes precedence over any old build.
+  for (const relativePath of ['package.json', 'dist/package.json']) {
+    let content: string;
+    try {
+      content = await readFile(path.join(rootDir, relativePath), 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+      throw error;
+    }
+    const value: unknown = JSON.parse(content);
+    if (typeof value !== 'object' || value === null) return {};
+    const { name, displayName, version } = value as Record<string, unknown>;
+    return {
+      ...(typeof name === 'string' ? { name } : {}),
+      ...(typeof displayName === 'string' ? { displayName } : {}),
+      ...(typeof version === 'string' ? { version } : {}),
+    };
+  }
+  return {};
 }

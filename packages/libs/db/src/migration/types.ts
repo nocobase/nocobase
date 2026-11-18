@@ -14,6 +14,18 @@ import type { Repository, RepositoryRecord } from '../repository/types.js';
 /** Controls whether an individual migration runs in a database transaction. */
 export type MigrationTransactionMode = true | false | 'auto';
 
+/** Policy for missing applied sources in packages that still participate. */
+export type MissingSourcePolicy = 'error' | 'warn';
+
+/** An applied migration whose source is unavailable; its history is retained. */
+export interface MissingMigrationSource {
+  readonly kind: 'missing-source';
+  readonly packageName: string;
+  readonly name: string;
+}
+
+export type MigrationWarning = ChecksumMismatch | MissingMigrationSource;
+
 /** Restricted connection capabilities exposed to migration definitions. */
 export interface MigrationConnection {
   readonly name: string;
@@ -108,6 +120,11 @@ export interface LoadMigrationsOptions {
 
 /** Configuration for a standalone Migrator, including its database dependency. */
 export interface CreateMigratorOptions extends LoadMigrationsOptions {
+  /** Select pending tasks while retaining every source for history validation. */
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
   readonly config?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
   readonly database: {
@@ -131,6 +148,11 @@ export interface CreateMigratorOptions extends LoadMigrationsOptions {
    * checksum recorded for it. Defaults to `warn`.
    */
   readonly onChecksumMismatch?: ChecksumMismatchPolicy;
+  /**
+   * Missing applied sources default to `warn`. A history newer than the
+   * package's newest source always fails. Rollback requires all target sources.
+   */
+  readonly onMissingSource?: MissingSourcePolicy;
 }
 
 /** Configuration accepted by DatabaseManager.createMigrator(). */
@@ -141,8 +163,8 @@ export interface MigrationRunResult {
   readonly batch: number;
   readonly executed: string[];
   readonly skipped: string[];
-  /** Checksum drift the `warn` policy allowed the run to continue past. */
-  readonly warnings: ChecksumMismatch[];
+  /** Checksum drift and missing sources tolerated by the run. */
+  readonly warnings: MigrationWarning[];
 }
 
 export type {
@@ -175,8 +197,8 @@ export interface MigrationRollbackResult {
    * each migration belongs to.
    */
   readonly records: MigrationHistoryRecord[];
-  /** Checksum drift the `warn` policy allowed the rollback to continue past. */
-  readonly warnings: ChecksumMismatch[];
+  /** Checksum drift and missing sources outside the target batch. */
+  readonly warnings: MigrationWarning[];
   readonly dryRun: boolean;
 }
 

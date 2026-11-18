@@ -13,7 +13,7 @@ const esES: NotificationResource = {
     description:
       'Seguimiento de la entrega de notificaciones y de cada intento del proveedor. Los cuerpos de los mensajes, los destinatarios y los tokens de arrendamiento están redactados.',
     refreshing: 'Refrescante…',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     deliveriesShown: 'Entregas mostradas',
     needAttention: 'Necesito atención',
     unavailable: 'Registros no disponibles',

@@ -11,7 +11,6 @@ import type { ProcurementDetail } from '../../shared/procurement.js';
 import { resetProcurement } from '../../server/providers/procurement-reset.js';
 
 const test = createAppTest({
-  scope: 'test',
   createServer: createStandaloneServer,
   connections: ['main', 'analytics'],
   config: {
@@ -22,6 +21,21 @@ const test = createAppTest({
       emailAndPassword: { disableSignUp: false },
     },
   },
+}).extend<{ resetData: void }>({
+  resetData: [
+    async ({ testApp }, use) => {
+      // Keep the installed application, but start each case with empty business data.
+      await resetProcurement(testApp.connection, false);
+      for (const table of ['procurementMaterials', 'procurementSuppliers']) {
+        await testApp.connection.query
+          .deleteFrom(table)
+          .allowAllRows()
+          .execute();
+      }
+      await use(undefined);
+    },
+    { auto: true },
+  ],
 });
 const write = (
   input: unknown,

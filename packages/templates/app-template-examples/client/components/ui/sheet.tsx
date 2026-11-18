@@ -48,7 +48,9 @@ function SheetContent({
   const { t } = useTranslation();
   return (
     <SheetPortal>
-      <SheetOverlay />
+      {/* Base UI leaves out the backdrop of a dialog opened inside another one; render it anyway, so the layer below
+          takes no taps or clicks while this one is open (mobile.md M7.2). */}
+      <SheetOverlay forceRender />
       <SheetPrimitive.Popup
         data-slot='sheet-content'
         data-side={side}

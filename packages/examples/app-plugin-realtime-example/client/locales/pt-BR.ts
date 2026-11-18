@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   business: {
+    longWait:
+      'Está demorando mais que o normal. Você pode continuar aguardando.',
     scenarios: 'Cenários em tempo real',
     tabs: {
       tasks: 'Tarefas',
@@ -88,6 +90,8 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Crie uma tarefa atribuída a você mesmo em Tarefas e depois volte aqui.',
     },
     exports: {
+      ready:
+        '{{count}} linhas prontas. Baixe o CSV aqui; ele permanece nesta lista.',
       missing:
         'Este arquivo de exportação não está mais disponível. Crie uma nova exportação para baixar suas tarefas atuais.',
       title: 'Exportações de tarefas',
@@ -234,6 +238,16 @@ const ptBR: LocaleResource<typeof enUS> = {
     capacity: 'A manifestação está ocupada. Tente novamente mais tarde.',
     subscription:
       'A assinatura falhou. Reconecte ou tente novamente após o acesso ser restaurado.',
+  },
+  taskProgress: {
+    queued: 'Aguardando início',
+    running: 'Em andamento',
+    completed: 'Concluído',
+    failed: 'Falhou',
+    canceled: 'Cancelado',
+    count: '{{processed}} de {{total}}',
+    processed: '{{processed}} processados',
+    background: 'Continua em execução se você sair desta página.',
   },
 };
 

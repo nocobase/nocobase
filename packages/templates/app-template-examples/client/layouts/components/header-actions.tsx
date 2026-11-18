@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 import { TooltipProvider } from '#components/ui/tooltip';
 
-import { ThemeSettings } from '../../theme/index.js';
 import { UserMenu } from './user-menu.js';
 import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';
 
@@ -11,7 +10,6 @@ export function HeaderActions(): ReactElement {
     <TooltipProvider>
       <div className='flex shrink-0 items-center gap-2'>
         <ChatHeaderButton />
-        <ThemeSettings />
         <UserMenu />
       </div>
     </TooltipProvider>

@@ -10,6 +10,7 @@ export * from './registry.js';
 export * from './router.js';
 export * from './store.js';
 export * from './tokens.js';
+export * from './templates.js';
 export * from './types.js';
 
 export * from '../shared/target.js';

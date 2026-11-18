@@ -1,5 +1,5 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
@@ -9,6 +9,7 @@ import { Breadcrumbs } from '#components/breadcrumbs';
 import { OnlineAgentProvider } from '#components/online-agent/provider';
 import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';
 import { RouteTreeProvider } from '../routing/route-context.js';
+import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -19,7 +20,6 @@ import {
   AppSidebarToggle,
 } from './components/app-sidebar.js';
 import { NavigationMenu } from './components/navigation-menu.js';
-import { AppBrand } from './components/app-brand.js';
 import { HeaderActions } from './components/header-actions.js';
 import { AppSidebarFooter } from './components/sidebar-footer.js';
 import {
@@ -44,7 +44,8 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
   useSyncServerLocale();
 
   const { t } = useTranslation();
-  const { items: menuItems, denied } = useRouteNavigation(routes);
+  const { items: menuItems, denied, loading } = useRouteNavigation(routes);
+  const access = useMemo(() => ({ denied, loading }), [denied, loading]);
   const selectedKey = selectedNavigationId(
     routes,
     useLocation().pathname,
@@ -56,7 +57,7 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
-    <RouteTreeProvider routes={routes}>
+    <RouteTreeProvider routes={routes} access={access}>
       <PageBreadcrumbProvider>
         <AppSidebarProvider>
           <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
@@ -70,9 +71,6 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
             <LayoutHeader className='sticky top-0 z-40 justify-between'>
               <div className='flex min-w-0 items-center gap-3'>
                 <AppSidebarToggle />
-                <div className='md:hidden'>
-                  <AppBrand />
-                </div>
                 <div className='h-5 w-px shrink-0 bg-border' />
                 {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
                 <Breadcrumbs denied={denied} />
@@ -86,7 +84,9 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
                 {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
                 <div className='h-full overflow-y-auto'>
-                  <Outlet />
+                  <RouteLeaveBoundary hidden={loading}>
+                    <Outlet />
+                  </RouteLeaveBoundary>
                 </div>
               </main>
               <OnlineAgentPanelHost />

@@ -1,10 +1,12 @@
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
 import {
   createAppTest,
   createTestApp,
+  createTestAppConfig,
   inspectCollection,
   testDatabaseDialect,
 } from '../src/server/index.js';
@@ -61,6 +63,47 @@ describe('createTestApp', () => {
       ).resolves.toMatchObject({ data: { length: 3 } });
     } finally {
       await Promise.all([left.close(), right.close()]);
+    }
+  });
+});
+
+describe('createTestAppConfig', () => {
+  const written = async (
+    options: Parameters<typeof createTestAppConfig>[0] = {},
+  ): Promise<Record<string, unknown>> => {
+    const config = await createTestAppConfig(options);
+    try {
+      return JSON.parse(await readFile(config.path, 'utf8')) as Record<
+        string,
+        unknown
+      >;
+    } finally {
+      await config.dispose();
+    }
+  };
+
+  it("turns off App Foundation's start-up scan unless the test asks for it", async () => {
+    expect((await written()).foundation).toEqual({ scanOnStart: false });
+    expect(
+      (await written({ config: { foundation: { scanOnStart: true } } }))
+        .foundation,
+    ).toEqual({ scanOnStart: true });
+    expect(
+      (await written({ config: { foundation: { other: 1 } } })).foundation,
+    ).toEqual({ scanOnStart: false, other: 1 });
+  });
+
+  it('starts an application without App Foundation on the same file', async () => {
+    const testApp = await createTestApp({
+      createServer: createStandaloneServer,
+    });
+    try {
+      expect(testApp.application.config.get('foundation')).toEqual({
+        scanOnStart: false,
+      });
+      expect((await testApp.request('/items')).status).toBe(200);
+    } finally {
+      await testApp.close();
     }
   });
 });

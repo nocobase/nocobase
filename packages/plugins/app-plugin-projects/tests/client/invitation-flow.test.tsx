@@ -142,7 +142,9 @@ it('returns from real password sign-in to the pending invitation and grants its 
       },
     );
     await user.click(
-      await screen.findByRole('button', { name: 'Go to sign in' }),
+      await screen.findByRole('button', {
+        name: 'Already have an account? Sign in',
+      }),
     );
     await user.click(
       await screen.findByRole('button', { name: 'Sign in as invitee' }),

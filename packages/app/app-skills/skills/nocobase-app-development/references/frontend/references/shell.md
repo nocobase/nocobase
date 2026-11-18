@@ -4,11 +4,12 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 ## 1. Behaviors to keep
 
-- There is no settings area and no Settings or Inbox entry in the header: every signed-in page renders inside `AppLayout`, and settings pages are ordinary pages in the sidebar ([section 5 of `page.md`](page.md#5-settings-pages)). Do not add a second layout or a `/settings` route split to the router.
+- There is no separate settings layout and no Settings or Inbox entry in the header: every signed-in page renders inside `AppLayout`. Administration pages are ordinary routes under the System settings group, which the navigation transform (`client/lib/navigation-transform.ts`) folds into one sidebar entry opening the settings home; it stays selected on every page below the group, and the breadcrumb's System settings level links back to the home ([System settings navigation](../../settings-navigation.md)). Do not add a second layout, a resident settings sidebar or a router split for settings. The shell shares its single page permission check with pages through `RouteTreeProvider`'s `access` (`useRouteAccess`); the settings home and module tabs read it rather than checking again.
 - The account menu's language control (`client/layouts/components/language-switcher.tsx`) is a submenu with radio items and must stay inside `DropdownMenuContent`, which provides its keyboard navigation and selected state.
 - Collapsible navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page expands its ancestor groups without collapsing the others.
 - The sidebar is shadcn's `Sidebar`, composed in `client/layouts/components/app-sidebar.tsx` (provider, desktop sidebar, phone sheet, header toggle) and `navigation-menu.tsx` (the route tree as `SidebarMenu*` entries: a top-level group with no page is a section under a heading, its entries always shown; clickable parents and nested groups are controlled `Collapsible` sub-menus; counts beside entries come from the layout through its `badges`, [`page.md`](page.md#a-count-beside-an-entry)). Keep `client/components/ui/sidebar.tsx` as the shadcn CLI writes it and change the sidebar from these two files: the widths are set through the provider's `style` in spacing units (`--sidebar-width`, `--sidebar-width-icon`) so they follow the density preset; the phone sheet is rendered in `app-sidebar.tsx` with a translated title instead of the primitive's own; and the provider's Ctrl/Cmd+B shortcut is stopped by a `document` keydown listener, so the key stays with editors.
 - The desktop sidebar can collapse to icons: leaf entries then show their label in a tooltip without delay and section headings hide and their entries keep their icons, collapsible groups open in a popover on hover or keyboard focus, keeping the filtered entries, parent-page links, nested groups and the highlight of the group holding the current page. The collapsed state is shared through `useSidebarPreference` under `nocobase:sidebar:collapsed` by every application on the same origin, while whether the phone sheet is open stays local to each layout.
+- Keep `RouteLeaveBoundary` in `AppLayout` outside every page Activity, including nested routes. Settings forms register with this shell boundary so navigation, confirmation dialogs and `beforeunload` protection remain active during permission checks. A final denial or session change removes the retained form guards. Activity restores Effects after a successful check, so mounted data hooks re-fetch; count those requests when assessing refresh cost.
 - The authorization provider clears the permission snapshot before rendering a new session; route navigation and page guards subscribe to the authorization revision, so account switches and permission changes take effect without a reload.
 - When signing out, the account menu checks the result from Better Auth and shows a localized error message on failure; do not treat navigating away as having signed out.
 
@@ -16,10 +17,10 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 The icon button area in the top-right corner of the page is in `client/layouts/components/header-actions.tsx` (the layout's header, not `PageHeader`'s `actions`). Choose the hover behavior by what the entry does:
 
-| What the entry does                                     | On hover                                                                                                           | Examples                 |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Help, Notifications      |
-| Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Appearance, account menu |
+| What the entry does                                     | On hover                                                                                                           | Examples            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Help, Notifications |
+| Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Account menu        |
 
 ### Navigation entries
 
@@ -68,7 +69,7 @@ export function HeaderActions(): ReactElement {
 }
 ```
 
-- Keep every header entry the same size and style (`ACTION_LINK_CLASS` above matches the Appearance and account triggers).
+- Keep every header entry the same size and style (`ACTION_LINK_CLASS` above matches the account trigger).
 - Keep the hint to a few words, such as "Help" or "Notification center"; do not write sentences like "Click here to go to…". It also shows on keyboard focus (Base UI's Tooltip does this by default; do not turn it off).
 - Translate both the tooltip and the `aria-label`; an unread count can be added to the `aria-label`.
 - Do not also write a native `title` attribute, or a second browser tooltip appears. An icon-only trigger must keep an accessible name.
@@ -79,7 +80,7 @@ export function HeaderActions(): ReactElement {
 - When the pointer moves from the trigger to the panel, or between a menu and the submenu it opens, the controls must stay reachable. Leave this interaction region, positioning, focus, and dismissal to the component.
 - Keep opening by click and touch, keyboard navigation, and closing with Esc.
 - Keep the component's default distinction: a panel opened by hover closes when the pointer leaves; a panel opened by click stays open until an outside click or Esc. Do not use custom mouseleave handlers, coordinate checks, timers, or extra open state to force a click-opened panel to close like a hover-opened one. Prefer the component's existing public options over reimplementing them yourself.
-- When selecting an item completes the action, use the component's built-in dismissal: the language radio items in the account menu have `closeOnClick`, so the menu closes immediately after a selection (`language-switcher.tsx` in the same directory); by default, radio items do not close the menu on selection. The header's Appearance popover (`client/theme/theme-settings.tsx`) stays open after a selection so you can keep adjusting, and closes the way `Popover` does by default.
+- When selecting an item completes the action, use the component's built-in dismissal: the language radio items in the account menu have `closeOnClick`, so the menu closes immediately after a selection (`language-switcher.tsx` in the same directory); by default, radio items do not close the menu on selection. The account menu's Theme submenu (`client/theme/theme-settings.tsx`) keeps `closeOnClick={false}` so you can keep adjusting; Escape closes the submenu before the account menu.
 
 ### Consistency
 

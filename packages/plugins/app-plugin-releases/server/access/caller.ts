@@ -14,6 +14,7 @@ import type { KeyScope } from '@nocobase/authorization/core';
 import {
   BUSINESS_KEYS,
   HUMAN_ONLY_ACTIONS,
+  AGENT_REFUSED_ACTIONS,
   PAGES,
   SETTINGS_KEYS,
   allPermissions,
@@ -32,7 +33,7 @@ import {
   type SettingsItem,
   type SettingsKey,
 } from '../../shared/access.js';
-import type { ActorKind } from '../../shared/releases.js';
+import type { ActorKind, EnvironmentRecord } from '../../shared/releases.js';
 import { forbidden } from '../errors.js';
 import type { ActorRef, ReleasesAccess } from '../tokens.js';
 
@@ -122,8 +123,8 @@ export class AccessGuard {
   public scope(caller: Caller, action: AppAction): Scope {
     if (caller.kind === 'system') return 'all';
     if (
-      (caller.kind === 'agent' || caller.kind === 'key') &&
-      HUMAN_ONLY_ACTIONS.includes(action)
+      (caller.kind === 'agent' && AGENT_REFUSED_ACTIONS.includes(action)) ||
+      (caller.kind === 'key' && HUMAN_ONLY_ACTIONS.includes(action))
     )
       return 'none';
     // An action the application left out reaches nothing.
@@ -146,6 +147,69 @@ export class AccessGuard {
     );
   }
 
+  /**
+   * The IDs among `apps` the caller may take `action` on, decided with at most one lookup of related Apps limited to
+   * them (`relatedAppIds` with `among`), however many there are; `canApp` asks once per App. An application without
+   * `relatedAppIds` is asked per App.
+   */
+  public async allowedApps(
+    caller: Caller,
+    action: AppAction,
+    apps: readonly AppOwnership[],
+  ): Promise<Set<string>> {
+    const picked = pickedApps(caller);
+    const candidates = picked
+      ? apps.filter((app) => picked.includes(app.id))
+      : apps;
+    const scope = this.scope(caller, action);
+    if (scope === 'none' || candidates.length === 0) return new Set();
+    if (scope === 'all') return new Set(candidates.map((app) => app.id));
+    const allowed = new Set(
+      candidates
+        .filter((app) => reaches(scope, app.createdBy))
+        .map((app) => app.id),
+    );
+    const rest = candidates.filter((app) => !allowed.has(app.id));
+    if (rest.length === 0 || scope.users.length === 0) return allowed;
+    const access = this.access();
+    if (access?.relatedAppIds) {
+      // An application that ignores `among` answers its whole list, which is matched the same way.
+      const related = new Set(
+        await access.relatedAppIds(
+          scope.users,
+          action,
+          rest.map((app) => app.id),
+        ),
+      );
+      for (const app of rest) if (related.has(app.id)) allowed.add(app.id);
+    } else if (access?.isRelated) {
+      for (const app of rest)
+        if (await access.isRelated(app.id, scope.users, action))
+          allowed.add(app.id);
+    }
+    return allowed;
+  }
+
+  /** Environment approvers take precedence over the fallback App permission. Keys never approve. */
+  public async isApprover(
+    caller: Caller,
+    app: AppOwnership,
+    environment: EnvironmentRecord,
+  ): Promise<boolean> {
+    if (!caller.userId || (caller.kind !== 'human' && caller.kind !== 'agent'))
+      return false;
+    const access = this.access();
+    const approvers = access?.approversOf
+      ? await access.approversOf(environment, { appId: app.id })
+      : environment.approvers;
+    if (approvers.length) return approvers.includes(caller.userId);
+    return await this.canApp(
+      caller,
+      environment.protected ? 'deploy-protected' : 'deploy',
+      app,
+    );
+  }
+
   public async requireApp(
     caller: Caller,
     action: AppAction,
@@ -153,8 +217,8 @@ export class AccessGuard {
   ): Promise<void> {
     if (await this.canApp(caller, action, app)) return;
     if (
-      (caller.kind === 'agent' || caller.kind === 'key') &&
-      HUMAN_ONLY_ACTIONS.includes(action)
+      (caller.kind === 'agent' && AGENT_REFUSED_ACTIONS.includes(action)) ||
+      (caller.kind === 'key' && HUMAN_ONLY_ACTIONS.includes(action))
     )
       throw forbidden(
         `${caller.kind === 'agent' ? 'An agent' : 'A key'} may not ${action} an application.`,
@@ -170,8 +234,11 @@ export class AccessGuard {
   public requireAnyApp(caller: Caller, ...actions: AppAction[]): void {
     if (actions.some((action) => this.scope(caller, action) !== 'none')) return;
     if (
-      (caller.kind === 'agent' || caller.kind === 'key') &&
-      actions.every((action) => HUMAN_ONLY_ACTIONS.includes(action))
+      actions.every(
+        (action) =>
+          (caller.kind === 'agent' && AGENT_REFUSED_ACTIONS.includes(action)) ||
+          (caller.kind === 'key' && HUMAN_ONLY_ACTIONS.includes(action)),
+      )
     )
       throw forbidden(
         `${caller.kind === 'agent' ? 'An agent' : 'A key'} may not ${actions[0]} an application.`,

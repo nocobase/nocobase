@@ -1,5 +1,11 @@
 # @nocobase/caching
 
+## 1.0.0-beta.4
+
+### Major Changes
+
+- 5934070: Replace global caching driver registration with application-local registerDriver, preserving lazy provider creation and first-use driver validation. Migrate registerCachingDriver calls to the application's Caching instance.
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

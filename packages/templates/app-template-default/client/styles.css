@@ -252,9 +252,26 @@ label:has(> .sr-only:focus-visible),
 :is([data-slot='dialog-description'], [data-slot='alert-dialog-description']) {
   line-height: 1.65;
 }
-:is([data-slot='dialog-footer'], [data-slot='alert-dialog-footer']) > button {
+/* Size semantic actions equally, including Button render={<Link />} and the
+   AlertDialog wrappers, which replace Button's slot. Footer sizing takes
+   precedence over primitive size utilities; long labels may grow and wrap. */
+:is([data-slot='dialog-footer'], [data-slot='alert-dialog-footer'])
+  > :is(
+    [data-slot='button'],
+    [data-slot='dialog-close'],
+    [data-slot='alert-dialog-action'],
+    [data-slot='alert-dialog-cancel']
+  ) {
+  height: auto;
   min-height: calc(var(--spacing) * 10);
+  min-width: 0;
+  align-self: stretch;
+  flex-shrink: 1;
+  padding-block: calc(var(--spacing) * 2);
   padding-inline: calc(var(--spacing) * 4);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 /* Route overlays compose the dialog primitives, so their close button sits where a dialog's does. */
 :is([data-slot='dialog-content'], [data-slot='route-overlay-content'])

@@ -11,7 +11,7 @@ const deDE: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Projekte',
-      issues: 'Vorgänge',
+      issues: 'Aufgaben',
       settings: 'Projekteinstellungen',
       members: 'Mitglieder und Rollen',
     },
@@ -52,103 +52,101 @@ const deDE: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Vorgänge',
-        description: 'Issues und deren Kommentare, im Projekt oder alleine.',
+        title: 'Aufgaben',
+        description:
+          'Aufgaben und ihre Kommentare, in einem Projekt oder eigenständig.',
         actions: {
           view: {
-            title: 'Probleme anzeigen',
-            description:
-              'Sehen Sie sich Probleme in Listen, Foren und deren Details an',
-            related: 'Probleme anzeigen (die sie sehen können)',
+            title: 'Aufgaben ansehen',
+            description: 'Aufgaben in Listen, Boards und ihren Details sehen',
+            related: 'Aufgaben ansehen (sichtbare)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
-            all: 'Probleme anzeigen (alle)',
+              'Aufgaben ohne Projekt und Aufgaben in Projekten, die ich sehen kann',
+            all: 'Aufgaben ansehen (alle)',
           },
           create: {
-            title: 'Erstellen Sie Probleme',
+            title: 'Aufgaben erstellen',
             description:
-              'Erstellen Sie Probleme, in einem Projekt oder alleine',
-            related: 'Probleme erstellen (in Projekten, die sie sehen können)',
+              'Aufgaben erstellen, in einem Projekt oder eigenständig',
+            related: 'Aufgaben erstellen (in sichtbaren Projekten)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt oder in Projekten, die ich sehen kann',
-            all: 'Probleme erstellen (alle)',
+              'Aufgaben ohne Projekt oder in Projekten, die ich sehen kann',
+            all: 'Aufgaben erstellen (alle)',
           },
           edit: {
-            title: 'Probleme bearbeiten',
+            title: 'Aufgaben bearbeiten',
             description:
-              'Titel, Beschreibung, Priorität, Daten, Labels, Ausführende und offene Status',
-            related: 'Probleme bearbeiten (die sie sehen können)',
+              'Titel, Beschreibung, Priorität, Daten, Etiketten, Bearbeiter und offene Status',
+            related: 'Aufgaben bearbeiten (sichtbare)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
-            all: 'Probleme bearbeiten (alle)',
+              'Aufgaben ohne Projekt und Aufgaben in Projekten, die ich sehen kann',
+            all: 'Aufgaben bearbeiten (alle)',
           },
           comment: {
-            title: 'Kommentar zu Problemen',
+            title: 'Aufgaben kommentieren',
             description:
               'Threads kommentieren, antworten und auflösen; eigene Kommentare bearbeiten und löschen',
-            related: 'Kommentieren Sie Probleme (die sie sehen können)',
+            related: 'Aufgaben kommentieren (sichtbare)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
-            all: 'Kommentar zu Problemen (alle)',
+              'Aufgaben ohne Projekt und Aufgaben in Projekten, die ich sehen kann',
+            all: 'Aufgaben kommentieren (alle)',
           },
           moderateComments: {
             title: 'Moderate Kommentare',
             description: 'Kommentare anderer Personen löschen',
             related:
-              'Moderieren Sie Kommentare (zu Themen, die ihnen gehören oder deren Projekt sie leiten)',
+              'Kommentare moderieren (bei eigenen Aufgaben oder in geleiteten Projekten)',
             relatedLabel:
-              'Zu Themen, die mir gehören, oder in Projekten, die ich leite',
+              'Bei meinen Aufgaben oder in Projekten, die ich leite',
             relatedHint:
-              'Kommentare zu Issues, die mir gehören, und zu Issues in Projekten, die ich leite',
+              'Kommentare zu meinen Aufgaben und zu Aufgaben in Projekten, die ich leite',
             all: 'Moderate Kommentare (alle)',
           },
           close: {
-            title: 'Probleme schließen',
-            description:
-              'Markieren Sie ein Problem als erledigt oder abgebrochen',
-            related:
-              'Probleme schließen (die sie besitzen oder deren Projekt sie leiten)',
+            title: 'Aufgaben schließen',
+            description: 'Eine Aufgabe als erledigt oder abgebrochen markieren',
+            related: 'Aufgaben schließen (eigene oder in geleiteten Projekten)',
             relatedLabel:
               'Diejenigen, die ich besitze oder in Projekten, die ich leite',
             relatedHint:
-              'Vorgänge, die mir gehören, und Vorgänge in Projekten, die ich leite',
-            all: 'Probleme schließen (alle)',
+              'Meine Aufgaben und Aufgaben in Projekten, die ich leite',
+            all: 'Aufgaben schließen (alle)',
           },
           changeOwner: {
             title: 'Besitzer wechseln',
             description:
-              'Übergeben Sie ein Problem an jemand anderen, der dafür verantwortlich ist',
+              'Eine Aufgabe an jemand anderen übergeben, der dafür verantwortlich ist',
             related:
               'Ändern Sie den Eigentümer (die Eigentümer oder deren Projekt sie leiten)',
             relatedLabel:
               'Diejenigen, die ich besitze oder in Projekten, die ich leite',
             relatedHint:
-              'Vorgänge, die mir gehören, und Vorgänge in Projekten, die ich leite',
+              'Meine Aufgaben und Aufgaben in Projekten, die ich leite',
             all: 'Besitzer wechseln (alle)',
           },
           delete: {
-            title: 'Probleme beim Löschen und Wiederherstellen',
-            description: 'Probleme löschen und gelöschte wiederherstellen',
-            all: 'Probleme beim Löschen und Wiederherstellen',
+            title: 'Aufgaben löschen und wiederherstellen',
+            description: 'Aufgaben löschen und gelöschte wiederherstellen',
+            all: 'Aufgaben löschen und wiederherstellen',
           },
         },
       },
       attachments: {
         title: 'Anhänge',
-        description: 'An Probleme und Kommentare angehängte Dateien.',
+        description: 'An Aufgaben und Kommentare angehängte Dateien.',
         actions: {
           upload: {
             title: 'Anhänge hochladen',
             description:
-              'Hängen Sie Dateien an Probleme an, die sie bearbeiten können, und an ihre Kommentare',
-            related: 'Anhänge hochladen (zu Problemen, die sie sehen können)',
-            relatedLabel: 'Zu Problemen in Projekten kann ich sehen',
+              'Dateien an Aufgaben, die sie bearbeiten dürfen, und an ihre Kommentare anhängen',
+            related: 'Anhänge hochladen (bei sichtbaren Aufgaben)',
+            relatedLabel: 'Bei Aufgaben in Projekten, die ich sehen kann',
             relatedHint:
-              'Dateien zu Problemen ohne Projekt und zu Problemen in Projekten, die ich sehen kann',
+              'Dateien bei Aufgaben ohne Projekt und bei Aufgaben in Projekten, die ich sehen kann',
             all: 'Anhänge hochladen (alle)',
           },
         },
@@ -156,12 +154,12 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Projekte',
-      pmIssues: 'Vorgänge',
+      pmIssues: 'Aufgaben',
     },
     recordAccess: {
-      visible: 'Projekte und Probleme, die sie sehen können',
+      visible: 'Projekte und Aufgaben, die sie sehen können',
       managed:
-        'Projekte, die sie leiten, und Issues, deren Eigentümer sie sind',
+        'Projekte, die sie leiten, und Aufgaben, für die sie verantwortlich sind',
     },
     settings: {
       pm: {
@@ -177,9 +175,9 @@ const deDE: LocaleResource<typeof enUS> = {
         objects: 'Projekte',
       },
       issues: {
-        title: 'Vorgänge',
+        title: 'Aufgaben',
         description:
-          'Siehe Probleme; erstellen, bearbeiten, kommentieren, schließen und neu zuordnen; Kommentare moderieren und Probleme löschen.',
+          'Aufgaben sehen; erstellen, bearbeiten, kommentieren, schließen und neu zuweisen; Kommentare moderieren und Aufgaben löschen.',
       },
       settings: {
         title: 'Projekteinstellungen',
@@ -205,9 +203,9 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   notifications: {
-    batchDone: 'Alle Unterausgaben von {{identifier}} sind abgeschlossen',
+    batchDone: 'Alle Unteraufgaben von {{identifier}} sind erledigt',
     batchDoneStage:
-      'Stufe {{stage}} der Unterausgaben von {{identifier}} ist abgeschlossen',
+      'Phase {{stage}} der Unteraufgaben von {{identifier}} ist erledigt',
     commented: '{{actor}} hat {{identifier}} kommentiert',
     dependencyReleased:
       '{{releasedBy}} ist fertig, sodass {{identifier}} starten kann',
@@ -222,7 +220,7 @@ const deDE: LocaleResource<typeof enUS> = {
     ownerNotified: '{{identifier}} ist jetzt {{status}}',
   },
   status: {
-    backlog: 'Rückstand',
+    backlog: 'Backlog',
     blocked: 'Blockiert',
     cancelled: 'Abgebrochen',
     done: 'Erledigt',

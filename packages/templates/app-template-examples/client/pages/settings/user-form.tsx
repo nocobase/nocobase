@@ -1,3 +1,4 @@
+import { PendingButton } from '#components/pending-button';
 import { FeedbackForm } from '#components/feedback-form';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useSubmission } from '@nocobase/app-client';
@@ -197,7 +198,6 @@ function UserEditor(): ReactElement {
   const location = useLocation();
   const parent = useOutletContext<{
     reload: (updated?: ManagedUser) => void;
-    listPath?: string;
   }>();
   const data = useSettingsData<{ data: ManagedUser }>(
     userId ? `users/${encodeURIComponent(userId)}` : 'users/options',
@@ -281,11 +281,8 @@ function UserEditor(): ReactElement {
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  const parentPath = useResolvedPath('..').pathname;
-  const closeTo = {
-    pathname: creating ? parentPath : (parent.listPath ?? parentPath),
-    search: location.search,
-  };
+  const listPath = useResolvedPath('..').pathname;
+  const closeTo = { pathname: listPath, search: location.search };
   const fieldError = (name: keyof typeof fields): string | undefined => {
     if (!submitted) return;
     if (serverErrors[name]) return serverErrors[name];
@@ -436,7 +433,9 @@ function UserEditor(): ReactElement {
         {t('settings.cancel')}
       </Button>
       {allowed && (
-        <Button
+        <PendingButton
+          busy={busy}
+          pendingLabel={t('settings.saving')}
           form={formId}
           type='submit'
           disabled={
@@ -455,14 +454,8 @@ function UserEditor(): ReactElement {
               (options.loading || Boolean(options.error) || !options.data))
           }
         >
-          {t(
-            busy
-              ? 'settings.saving'
-              : creating
-                ? 'settings.create'
-                : 'settings.save',
-          )}
-        </Button>
+          {t(creating ? 'settings.create' : 'settings.save')}
+        </PendingButton>
       )}
     </>
   );
@@ -475,6 +468,7 @@ function UserEditor(): ReactElement {
       ) : (
         !data.error && (
           <FeedbackForm
+            aria-busy={busy}
             submitting={busy}
             error={error}
             errorContent={<SettingsError error={error} inline />}

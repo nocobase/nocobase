@@ -15,6 +15,7 @@ import type { DatabaseManager } from '@nocobase/db';
 import {
   createRepositoryLifecycleStore,
   LifecycleRuntime,
+  StoredLifecycleParameters,
 } from '@nocobase/lifecycle';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
@@ -43,6 +44,7 @@ beforeEach(async () => {
   testDatabase = await createTestDatabase({ migrations, seeds });
   database = testDatabase.database;
   runtime = new LifecycleRuntime({
+    creationRequestsCollection: 'officeFlowsCreationRequests',
     store: createRepositoryLifecycleStore(database, {
       collections: {
         transitions: COLLECTIONS.transitions,
@@ -299,6 +301,73 @@ describe('data usage request', () => {
     expect((detail.record as Plain).status).toBe('draft');
   });
 
+  it('batches scheduled calendars while preserving each instance holiday snapshot', async () => {
+    let holiday = today(1);
+    for (
+      let offset = 1;
+      [0, 6].includes(new Date(holiday).getUTCDay());
+      offset += 1
+    )
+      holiday = today(offset + 1);
+    const parameters = new OfficeWorkflowParameterService(database);
+    await parameters.save(
+      'dataRequests',
+      {
+        holidays: [
+          { date: holiday, kind: 'holiday', name: 'Instance holiday' },
+        ],
+      },
+      0,
+    );
+    const first = await service.createDataRequest(
+      requestForm({
+        frequency: 'daily',
+        deliveryDate: '',
+        firstUseDate: today(),
+        lastDeliveryDate: today(14),
+      }),
+      'zhangwei',
+    );
+    await approveToAcceptance(String(first.id));
+    await parameters.save('dataRequests', { holidays: [] }, 1);
+    const second = await service.createDataRequest(
+      requestForm({
+        frequency: 'daily',
+        deliveryDate: '',
+        firstUseDate: today(),
+        lastDeliveryDate: today(14),
+      }),
+      'zhangwei',
+    );
+    await approveToAcceptance(String(second.id));
+    const batch = vi.spyOn(StoredLifecycleParameters.prototype, 'snapshots');
+    const single = vi.spyOn(StoredLifecycleParameters.prototype, 'snapshot');
+    await service.runSchedule(holiday);
+    expect(batch).toHaveBeenCalledTimes(1);
+    expect(batch.mock.calls[0]![2]).toEqual(
+      expect.arrayContaining([String(first.id), String(second.id)]),
+    );
+    expect(single).not.toHaveBeenCalled();
+    const firstDetail = await service.dataRequestDetail(
+      String(first.id),
+      'chenjing',
+    );
+    const secondDetail = await service.dataRequestDetail(
+      String(second.id),
+      'chenjing',
+    );
+    expect(
+      (firstDetail.extractions as Plain[]).some(
+        (row) => row.scheduledDate === holiday,
+      ),
+    ).toBe(false);
+    expect(
+      (secondDetail.extractions as Plain[]).some(
+        (row) => row.scheduledDate === holiday,
+      ),
+    ).toBe(true);
+  });
+
   it('creates the due tasks of a periodic request once, however often it sweeps', async () => {
     const created = await service.createDataRequest(
       requestForm({
@@ -349,6 +418,48 @@ describe('incoming document', () => {
     includeHeads: true,
     includeLeaders: true,
   };
+
+  it('rolls back a dispatch child, snapshot, receipt, claim and assignees together when snapshot persistence fails', async () => {
+    const rootId = await dispatching();
+    const rowId = await service.addRow(
+      'incoming',
+      rootId,
+      { departmentName: '财务部', ...allPeople },
+      'zhoujie',
+    );
+    const tracked = [
+      'officeFlowsClerkTasks',
+      'officeFlowsParameterSnapshots',
+      'officeFlowsCreationRequests',
+      'officeFlowsTaskAssignees',
+      'officeFlowsTransitions',
+    ];
+    const before = await Promise.all(
+      tracked.map((name) => database.repository(name).count()),
+    );
+    const failure = vi
+      .spyOn(StoredLifecycleParameters.prototype, 'saveSnapshot')
+      .mockRejectedValueOnce(new Error('snapshot write failed'));
+    await expect(store.dispatch(1, [Number(rowId)])).rejects.toThrow(
+      'snapshot write failed',
+    );
+    expect(
+      await Promise.all(
+        tracked.map((name) => database.repository(name).count()),
+      ),
+    ).toEqual(before);
+    const row = await store.find(COLLECTIONS.assignments, rowId);
+    expect(row?.dispatched).toBe(false);
+    expect(row?.childId).toBeNull();
+    failure.mockRestore();
+    await store.dispatch(1, [Number(rowId)]);
+    expect(await database.repository('officeFlowsClerkTasks').count()).toBe(
+      before[0]! + 1,
+    );
+    expect(
+      await database.repository('officeFlowsParameterSnapshots').count(),
+    ).toBe(before[1]! + 1);
+  });
 
   it('reminds a person in several departments once, also after re-approval', async () => {
     const id = await dispatching();
@@ -453,6 +564,19 @@ describe('incoming document', () => {
       { departmentName: '工会', ...allPeople },
       'gaoyan',
     );
+    await new OfficeWorkflowParameterService(database).save(
+      'teamTasks',
+      {
+        dispatchRules: {
+          departmentNames: [],
+          ownDepartmentOnly: false,
+          assigneeRole: 'heads',
+          ccHeads: false,
+          ccLeaders: false,
+        },
+      },
+      0,
+    );
     await service.fireTask('clerk', clerkId, 'dispatchTeams', {}, 'gaoyan');
     await service.addRow(
       'clerk',
@@ -482,24 +606,16 @@ describe('incoming document', () => {
     expect(team!.kind).toBe('team');
     const parameters = new OfficeWorkflowParameterService(database);
     const teamConfig = await parameters.read('teamTasks');
-    await expect(
-      service.addRow(
-        'team',
-        teamId,
-        { departmentName: '董事会办公室', ...allPeople },
-        'luoxin',
-      ),
-    ).rejects.toMatchObject({ reason: 'DEPARTMENT_OUT_OF_SCOPE' });
     await parameters.save(
       'teamTasks',
       {
         dispatchRules: {
           ...teamConfig.values.dispatchRules!,
-          ownDepartmentOnly: false,
-          assigneeRole: 'heads',
+          ownDepartmentOnly: true,
+          assigneeRole: 'clerks',
         },
       },
-      0,
+      1,
     );
     const roleRow = await service.addRow(
       'team',
@@ -531,13 +647,13 @@ describe('incoming document', () => {
       'luoxin',
     );
     await service.fireTask('team', teamId, 'dispatchExecutors', {}, 'luoxin');
-    const [executor] = (await service.myTasks('tangjun')).records;
+    const [executor] = (await service.myTasks('fanqing')).records;
     expect(executor!.kind).toBe('executor');
 
     const executorView = await service.taskDetail(
       'executor',
       String(executor!.id),
-      'tangjun',
+      'fanqing',
     );
     expect(
       (executorView.processing as { title: string }[]).map(
@@ -548,19 +664,19 @@ describe('incoming document', () => {
       'executor',
       String(executor!.id),
       { redHeadFeedback: false, feedback: '已按要求自查' },
-      'tangjun',
+      'fanqing',
     );
     await service.fireTask(
       'executor',
       String(executor!.id),
       'submitFeedback',
       {},
-      'tangjun',
+      'fanqing',
     );
     const done = await service.taskDetail(
       'executor',
       String(executor!.id),
-      'tangjun',
+      'fanqing',
     );
     expect((done.record as Plain).status).toBe('done');
     // The executor's feedback stays out of the root's traces.
@@ -569,7 +685,7 @@ describe('incoming document', () => {
     expect(rootTraces.some((trace) => trace.action === '派发执行人')).toBe(
       false,
     );
-    expect(people((done.record as Plain).assignees)).toEqual(['tangjun']);
+    expect(people((done.record as Plain).assignees)).toEqual(['fanqing']);
   });
 
   it('ends a clerk task on an objection and tells the office', async () => {

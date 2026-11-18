@@ -29,6 +29,7 @@ export class MailManagementService {
     private readonly dependencies: MailServiceDependencies<
       | 'deleteMessage'
       | 'getAccount'
+      | 'getMessage'
       | 'getMessageForAccount'
       | 'listAllAccounts'
       | 'listAllMessages'

@@ -3,6 +3,29 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: '通知範例',
+    category: '任務',
+    assigned: {
+      name: '任務已指派',
+      trigger: '建立任務時。',
+      recipients: '任務負責人，自己指派給自己時也會收到。',
+    },
+    updated: {
+      name: '任務已更新',
+      trigger: '任務被修改時，包括重新指派負責人。',
+      recipients:
+        '建立者、原負責人和新負責人，每人只收到一次。做出修改的人不會收到。',
+    },
+    businessRule: '每次執行對應的任務操作都會傳送，沒有單獨的開關可以關閉。',
+    languagePolicy: '一律以英文傳送，與收件人的語言無關。',
+    channel: '任務收件匣',
+    variables: {
+      title: '任務標題',
+      description: '任務描述',
+      status: '任務狀態',
+    },
+  },
   navigation: {
     tasks: '通知範例',
     taskManagement: '任務',
@@ -45,7 +68,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       actions: '操作',
     },
     view: '檢視詳情',
-    refresh: '重新整理',
+    retryRead: '重試',
     previous: '上一步',
     next: '下一步',
     page: '頁{{page}}',
@@ -63,7 +86,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     notificationHint:
       '任務儲存後，會通知當前編輯者以外的相關人員：建立者和當前受讓人。如果受託人發生變化，先前的受託人和新的受託人都會收到通知。',
     edit: '編輯任務',
-    refresh: '重新整理',
+    retryRead: '重試',
     save: '儲存更改',
     cancel: '取消',
     back: '返回任務',

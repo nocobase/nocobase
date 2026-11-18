@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AppThemeProvider } from '../../client/theme/theme-provider';
-import { ThemeSettings } from '../../client/theme/theme-settings';
+import { HeaderActions } from '../../client/layouts/components/header-actions';
 import { UserMenu } from '../../client/layouts/components/user-menu';
 
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
@@ -24,10 +24,7 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-theme');
 });
 
-const panels = [
-  ['Appearance', ThemeSettings, 'dialog'],
-  ['Open account menu', UserMenu, 'menu'],
-] as const;
+const panels = [['Open account menu', UserMenu, 'menu']] as const;
 
 it.each(panels)(
   'opens and closes %s on hover',
@@ -75,3 +72,34 @@ it.each(panels)(
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   },
 );
+
+it('offers appearance only inside the account menu with keyboard selection', async () => {
+  const user = userEvent.setup();
+  await renderAuthenticatedClient(
+    <AppThemeProvider>
+      <HeaderActions />
+    </AppThemeProvider>,
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Theme' }),
+  ).not.toBeInTheDocument();
+  await user.tab();
+  await user.keyboard('{Enter}');
+  const appearance = screen.getByRole('menuitem', { name: 'Theme' });
+  appearance.focus();
+  await user.keyboard('{ArrowRight}');
+  expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
+  await user.keyboard('{ArrowDown}{Enter}');
+  expect(document.documentElement).toHaveClass('dark');
+  expect(screen.getByRole('menuitemradio', { name: 'Dark' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await user.keyboard('{Escape}');
+  expect(appearance).toHaveFocus();
+  expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
+  await user.keyboard('{Escape}');
+  expect(
+    screen.getByRole('button', { name: 'Open account menu' }),
+  ).toHaveFocus();
+});

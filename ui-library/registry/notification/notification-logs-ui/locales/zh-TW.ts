@@ -11,7 +11,7 @@ const zhTW: NotificationResource = {
     description:
       '追蹤通知傳遞和每個提供者的嘗試。訊息正文、收件人和租賃令牌均經過編輯。',
     refreshing: '清爽…',
-    refresh: '重新整理',
+    retryRead: '重試',
     deliveriesShown: '顯示的交付量',
     needAttention: '需要注意',
     unavailable: '日誌不可用',

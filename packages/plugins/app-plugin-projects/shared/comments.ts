@@ -125,6 +125,12 @@ export interface UpdateCommentRequest {
 export interface CreateCommentResult {
   readonly comment: IssueComment;
   readonly triggered: readonly MentionRef[];
+  /** Principals whose work was held back; omitted by service calls that do not collect attempts. */
+  readonly skipped?: readonly {
+    readonly kind: string;
+    readonly id: string;
+    readonly reason: 'waitingOwner' | 'blocked' | 'dormant' | 'limited';
+  }[];
 }
 
 /** `POST /api/projects/comments/{commentId}/react` and `/unreact`: the comment's reactions after the change. */

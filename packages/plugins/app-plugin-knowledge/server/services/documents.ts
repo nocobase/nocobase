@@ -1,3 +1,4 @@
+import { authorizationReader } from './access.js';
 /**
  * Entries as people work on them: a space's tree with the spaces it inherits, one entry, its versions, creating an
  * article or a folder (files are uploaded, `files.ts`), editing under an optimistic lock (`expectedVersion`), moving (no
@@ -51,6 +52,8 @@ import {
 } from './search.js';
 import {
   allSpaceRefs,
+  accessRepo,
+  type AccessEntryRecord,
   ancestorsOf,
   docsOf,
   docsRepo,
@@ -91,7 +94,7 @@ import {
 export interface DocumentService {
   summaries(
     viewer: KnowledgeReader,
-    refs: readonly SpaceRef[],
+    refs?: readonly SpaceRef[],
   ): Promise<KnowledgeSpaceSummary[]>;
   searchAll(
     viewer: KnowledgeReader,
@@ -185,7 +188,7 @@ export async function readableDoc(
   if (!doc) throw docNotFound();
   const { ref } = await spaceOfDoc(context, doc);
   const rights = await access.requireDoc(doc, 'read');
-  // Agents never see archived documents.
+  // Restricted actors never see archived documents.
   if (doc.archivedAt && access.reader.actor) throw docNotFound();
   return { doc, space: ref, rights };
 }
@@ -265,28 +268,97 @@ export function createDocumentService(
 
   const service: DocumentService = {
     async summaries(viewer, refs) {
-      const access = resolverFor(viewer);
+      if (refs?.length === 0) return [];
+      const answers = context.access.forReader(viewer);
+      const directory = await answers.directory?.();
+      const metadata = new Map(
+        directory?.map((space) => [spaceKey(space), space]),
+      );
       const conn = context.read();
       const unique = [
-        ...new Map(refs.map((ref) => [spaceKey(ref), ref])).values(),
+        ...new Map(
+          (
+            refs ??
+            directory?.map(({ scope, scopeId }) => ({ scope, scopeId })) ??
+            []
+          ).map((ref) => [spaceKey(ref), ref]),
+        ).values(),
       ];
+      if (!unique.length) return [];
       const records = await spacesOf(conn, unique);
+      const ids = [...records.values()].map((record) => record.id);
+      const allDocs = await docsOf(conn, ids, { archived: true });
+      const entries: AccessEntryRecord[] = ids.length
+        ? await accessRepo(conn).findMany({
+            filter: (f) => f.or(ids.map((id) => f.string('spaceId').eq(id))),
+          })
+        : [];
+      const bySpace = <T extends { readonly spaceId: string }>(
+        rows: readonly T[],
+      ) => {
+        const grouped = new Map<string, T[]>();
+        for (const row of rows) {
+          const list = grouped.get(row.spaceId) ?? [];
+          list.push(row);
+          grouped.set(row.spaceId, list);
+        }
+        return grouped;
+      };
+      const docsBySpace = bySpace(allDocs);
+      const entriesBySpace = bySpace(entries);
+      const customSpaces = new Set(
+        allDocs
+          .filter((doc) => doc.accessMode === 'custom')
+          .map((doc) => doc.spaceId),
+      );
+      const aclRefs = unique.filter((ref) => {
+        const record = records.get(spaceKey(ref));
+        return (
+          record &&
+          (entriesBySpace.has(record.id) || customSpaces.has(record.id))
+        );
+      });
+      const types = new Set(entries.map((entry) => entry.subjectType));
+      const parties = new Map<string, ReadonlySet<string>[]>();
+      for (const principal of [
+        { kind: 'user', id: viewer.userId },
+        ...(authorizationReader(context.access, viewer).actor
+          ? [viewer.actor!]
+          : []),
+      ]) {
+        const keys = await context.subjects.keysOfMany(
+          principal,
+          aclRefs,
+          types,
+        );
+        for (const ref of aclRefs) {
+          const list = parties.get(spaceKey(ref)) ?? [];
+          list.push(keys.get(ref) ?? new Set());
+          parties.set(spaceKey(ref), list);
+        }
+      }
+      const access = createAccessCheck(context, viewer, {
+        answers,
+        spaces: records,
+        docs: docsBySpace,
+        entries: entriesBySpace,
+        parties,
+      });
       const result: KnowledgeSpaceSummary[] = [];
       for (const ref of unique) {
         const acl = await access.acl(ref);
         if (!acl.sees) continue;
         const record = records.get(spaceKey(ref));
         const docs = record
-          ? readableDocs(
-              await docsOf(conn, [record.id], { archived: true }),
-              acl.gates,
-            )
+          ? readableDocs(docsBySpace.get(record.id) ?? [], acl.gates)
           : [];
         result.push({
           space: {
             ...ref,
             id: record?.id ?? null,
-            title: await context.access.title(ref),
+            title: metadata.has(spaceKey(ref))
+              ? metadata.get(spaceKey(ref))!.title
+              : await context.access.title(ref),
             inherited: false,
             access: await access.access(ref),
           },
@@ -332,7 +404,8 @@ export function createDocumentService(
             ).filter(
               // Archived entries only for whoever may restore them.
               (doc) =>
-                !doc.archivedAt || accessOfLevel(acl.node(doc.id).level).edit,
+                !doc.archivedAt ||
+                (!viewer.actor && accessOfLevel(acl.node(doc.id).level).edit),
             )
           : [];
         for (const doc of docs)
@@ -509,7 +582,7 @@ export function createDocumentService(
             (await freeSlug(tx.conn, space.id, check.slugify(next.title))),
           sortOrder: await nextSortOrder(tx.conn, space.id, parent?.id ?? null),
           next,
-          author: { kind: 'user', id: viewer.userId },
+          author: { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }) },
           createdById: viewer.userId,
           now,
         });
@@ -592,7 +665,7 @@ export function createDocumentService(
                   }
                 : {}),
             },
-            { kind: 'user', id: viewer.userId, note },
+            { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }), note },
             nowText(),
           );
           return;
@@ -615,7 +688,7 @@ export function createDocumentService(
                 ? (current?.content ?? '')
                 : check.content(input.content),
           },
-          { kind: 'user', id: viewer.userId, note },
+          { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }), note },
           nowText(),
         );
       });
@@ -776,7 +849,8 @@ export function createDocumentService(
         chain.length > 0 ? await access.access(chain[0]) : { manage: false };
       const explain =
         options.explain === true &&
-        ((rights.manage && !viewer.actor) ||
+        ((rights.manage &&
+          !authorizationReader(context.access, viewer).actor) ||
           ((await context.settings().mayExplain?.(viewer)) ?? false));
       const conn = context.read();
       const records = await spacesOf(conn, chain);

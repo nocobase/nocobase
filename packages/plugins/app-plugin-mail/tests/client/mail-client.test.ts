@@ -581,3 +581,35 @@ describe('mail folder merging', () => {
     expect(folders.map((folder) => folder.name)).toContain('Projects');
   });
 });
+
+describe('MailClient IMAP source selection', () => {
+  it('keeps legacy deletion calls and forwards optional source folder paths', async () => {
+    const request = vi.fn().mockResolvedValue({ data: {} });
+    const client = new MailClient(appClient(request));
+    await client.deleteMessage('account/1', 'message/1');
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/messages/message%2F1',
+      method: 'DELETE',
+      query: { permanently: false },
+    });
+    await client.deleteMessage('account/1', 'message/1', false, {
+      sourceProviderFolderId: '收件箱/A & B',
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/messages/message%2F1',
+      method: 'DELETE',
+      query: { permanently: false, sourceProviderFolderId: '收件箱/A & B' },
+    });
+    await client.moveMessage({
+      accountId: 'account/1',
+      messageId: 'message/1',
+      providerFolderId: 'Trash',
+      sourceProviderFolderId: 'INBOX',
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/messages/message%2F1/move',
+      method: 'POST',
+      json: { providerFolderId: 'Trash', sourceProviderFolderId: 'INBOX' },
+    });
+  });
+});

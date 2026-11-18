@@ -1,5 +1,62 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 57ce0d0: Verify unscoped key endpoint access against Better Auth 1.7.21 and align the API key security guidance with regression tests: keys cannot manage keys, password changes need a sign-in session, and with the templates' `bearer()` plugin the token `/list-sessions` returns replays as a full sign-in session, so unscoped keys need a scope or an App `before` hook on that path.
+- Updated dependencies [8647bb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 71716c6: Allow API key names up to 100 characters by default and return validation errors as client errors when creating or rotating scoped keys.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 1.0.0-beta.22
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
+## 1.0.0-beta.21
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
 ## 1.0.0-beta.20
 
 ### Patch Changes

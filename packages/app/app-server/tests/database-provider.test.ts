@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { AppConfig } from '../src/config/index.js';
+import { Logging } from '@nocobase/logging';
+import { loggingToken } from '../src/logging/token.js';
 import {
   databaseManagerToken,
   type DatabaseDriverDefinition,
@@ -30,7 +32,9 @@ vi.mock('@nocobase/db', async (importOriginal) => {
 });
 
 import {
+  databaseTaskHooksToken,
   DatabaseProvider,
+  databaseTaskCoordinatorToken,
   type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
   runAppMigrations,
@@ -135,6 +139,125 @@ describe('DatabaseProvider', () => {
     expect(container.resolveIfCreated(databaseManagerToken)).toBe(database);
   });
 
+  it('logs every missing source and checksum warning during automatic migrations', async () => {
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    createDatabaseMigratorMock.mockReturnValue({
+      latest: vi.fn(async () => ({
+        batch: 1,
+        executed: [],
+        skipped: [],
+        warnings: [
+          {
+            kind: 'missing-source',
+            packageName: 'plugin-one',
+            name: '001_missing',
+          },
+          {
+            kind: 'missing-source',
+            packageName: 'plugin-two',
+            name: '002_missing',
+          },
+          {
+            packageName: 'app',
+            name: '003_changed',
+            recordedChecksum: 'before',
+            sourceChecksum: 'after',
+          },
+        ],
+      })),
+      history: vi.fn(async () => []),
+    });
+    const { provider, container } = await createProvider({
+      ...createConfig(createTempDirectory(), true),
+      seeds: { autoRun: false },
+    });
+    const logging = new Logging({
+      file: { enabled: false },
+      console: { enabled: false },
+    });
+    const warn = vi
+      .spyOn(logging.getLogger('database'), 'warn')
+      .mockImplementation(() => {});
+    container.instance(loggingToken, logging);
+    const registry = new ServiceProviderRegistry();
+    registry.add(provider);
+    registry.registerAll();
+    try {
+      await registry.bootAll();
+      expect(warn).toHaveBeenCalledTimes(3);
+      for (const [index, packageName] of [
+        'plugin-one',
+        'plugin-two',
+      ].entries()) {
+        expect(warn.mock.calls[index]).toEqual([
+          expect.objectContaining({
+            package: packageName,
+            name: index === 0 ? '001_missing' : '002_missing',
+          }),
+          expect.stringContaining('is missing from migration sources'),
+        ]);
+        expect(warn.mock.calls[index][1]).not.toContain('db repair');
+      }
+      expect(warn.mock.calls[2][0]).toMatchObject({
+        recordedChecksum: 'before',
+        sourceChecksum: 'after',
+      });
+    } finally {
+      await registry.shutdown();
+      await logging.close();
+    }
+  });
+
+  it('passes all named source contributions to the startup coordinator even when their tasks are skipped', async () => {
+    const root = createTempDirectory();
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    const inventory: AppDatabaseTaskContributions = {
+      ...contributions,
+      connections: {
+        audit: {
+          migrations: [
+            { packageName: '@acme/app-module-audit', directory: root },
+          ],
+          seeds: [],
+        },
+      },
+    };
+    const config = createConfig(root, true);
+    const { provider, container } = await createProvider(
+      {
+        ...config,
+        connections: {
+          ...config.connections,
+          audit: {
+            dialect: 'local-file',
+            filename: path.join(root, 'audit.db'),
+            migrations: { autoRun: false },
+            seeds: { autoRun: false },
+          },
+        },
+      },
+      inventory,
+    );
+    const coordinate = vi.fn(
+      async (
+        context: import('../src/database/index.js').AppDatabaseTaskCoordinatorContext,
+      ) => {
+        expect(context.options.contributions).toBe(inventory);
+        expect(
+          context.plan
+            .filter((task) => task.connection === 'audit')
+            .every((task) => task.skipReason),
+        ).toBe(true);
+        return { ok: true, status: 'completed' as const, results: [] };
+      },
+    );
+    container.singleton(databaseTaskCoordinatorToken, () => coordinate);
+    provider.register();
+    await provider.boot();
+    expect(coordinate).toHaveBeenCalledOnce();
+    await provider.shutdown();
+  });
+
   it('does not run automatic tasks when autoRun is disabled', async () => {
     const database = createMockDatabase();
     createDatabaseManagerMock.mockReturnValue(database);
@@ -174,6 +297,79 @@ describe('DatabaseProvider', () => {
 
     expect(seed).not.toHaveBeenCalled();
     expect(database.destroy).toHaveBeenCalledOnce();
+  });
+  it('registers hooks without creating a manager and prepares runtime-only storage exactly once', async () => {
+    const config = createConfig(createTempDirectory(), true);
+    const prepare = vi.fn(localFileDriver.prepareStorage);
+    config.drivers = {
+      'local-file': { ...localFileDriver, prepareStorage: prepare },
+    };
+    config.connections.other = {
+      dialect: 'local-file',
+      filename: path.join(createTempDirectory(), 'other', 'data.db'),
+      migrations: { autoRun: false },
+      seeds: { autoRun: false },
+    };
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    createDatabaseMigratorMock.mockReturnValue({
+      latest: async () => ({ batch: 1, executed: [], skipped: [] }),
+      history: async () => [],
+    });
+    createDatabaseSeederMock.mockReturnValue({
+      run: async () => ({ executed: [], skipped: [], skippedSamples: [] }),
+      history: async () => [],
+      record: async () => {},
+    });
+    const { provider, container } = await createProvider(config);
+    provider.register();
+    expect(container.has(databaseTaskHooksToken)).toBe(true);
+    expect(createDatabaseManagerMock).not.toHaveBeenCalled();
+    const beforeTasks = vi.fn(async () => {});
+    container
+      .resolve(databaseTaskHooksToken)
+      .register({ name: 'runtime', beforeTasks });
+    expect(beforeTasks).not.toHaveBeenCalled();
+    try {
+      await provider.boot();
+      expect(prepare).toHaveBeenCalledTimes(2);
+      expect(beforeTasks).toHaveBeenCalledOnce();
+    } finally {
+      await provider.shutdown();
+    }
+  });
+
+  it('shuts registered dependents down before the database after a hook fails during boot', async () => {
+    const events: string[] = [];
+    createDatabaseManagerMock.mockReturnValue(
+      createMockDatabase(() => events.push('database')),
+    );
+    const { provider, container } = await createProvider(
+      createConfig(createTempDirectory(), true),
+    );
+    const registry = new ServiceProviderRegistry();
+    registry.add(provider);
+    registry.add({
+      name: 'dependent',
+      register() {
+        container.resolve(databaseTaskHooksToken).register({
+          name: 'fail',
+          async beforeTasks() {
+            throw new Error('hook failed');
+          },
+        });
+      },
+      async boot() {},
+      async start() {},
+      async ready() {},
+      async shutdown() {
+        events.push('dependent');
+      },
+    });
+    registry.registerAll();
+    await expect(registry.bootAll()).rejects.toMatchObject({
+      preparation: { phase: 'beforeTasks', hook: 'fail' },
+    });
+    expect(events).toEqual(['dependent', 'database']);
   });
 });
 
@@ -231,7 +427,10 @@ describe('standalone database tasks', () => {
   });
 });
 
-async function createProvider(database: AppDatabaseConfig): Promise<{
+async function createProvider(
+  database: AppDatabaseConfig,
+  taskContributions = contributions,
+): Promise<{
   readonly provider: DatabaseProvider<DatabaseProviderApplication>;
   readonly container: ServiceContainer;
 }> {
@@ -242,7 +441,7 @@ async function createProvider(database: AppDatabaseConfig): Promise<{
   const app: DatabaseProviderApplication = {
     config: appConfig,
     container,
-    databaseTaskContributions: contributions,
+    databaseTaskContributions: taskContributions,
   };
   return {
     provider: new DatabaseProvider(app),

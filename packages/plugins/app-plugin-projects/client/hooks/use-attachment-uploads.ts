@@ -1,3 +1,7 @@
+import {
+  limitBytes,
+  useFileUploadLimit,
+} from '@nocobase/app-plugin-file/client';
 import { useTranslation } from '@nocobase/i18n/client';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
@@ -12,7 +16,6 @@ import {
 
 import {
   ATTACHMENTS_PER_REQUEST_MAX,
-  ATTACHMENT_SIZE_MAX,
   type Attachment,
 } from '../../shared/attachments.js';
 import { useNotify } from './use-notify.js';
@@ -25,8 +28,6 @@ export interface PendingUpload {
   readonly size: number;
   readonly attachment: Attachment | null;
 }
-
-export const ATTACHMENT_SIZE_MB: number = ATTACHMENT_SIZE_MAX / (1024 * 1024);
 
 export interface AttachmentUploads {
   readonly uploads: readonly PendingUpload[];
@@ -64,6 +65,7 @@ function named(file: File, index: number): File {
  */
 export function useAttachmentUploads(): AttachmentUploads {
   const { t } = useTranslation(ACCESS_NAMESPACE);
+  const limit = useFileUploadLimit();
   const api = usePmApi();
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly PendingUpload[]>([]);
@@ -90,12 +92,12 @@ export function useAttachmentUploads(): AttachmentUploads {
       const results = await Promise.all(
         files.slice(0, Math.max(room, 0)).map(async (original, index) => {
           const file = named(original, index);
-          if (file.size > ATTACHMENT_SIZE_MAX) {
+          if (file.size > limitBytes(limit)) {
             notify.error(
               null,
               t('attachments.tooLarge', {
                 name: file.name,
-                size: ATTACHMENT_SIZE_MB,
+                size: limit.maxFileSizeMb,
               }),
             );
             return;
@@ -141,7 +143,7 @@ export function useAttachmentUploads(): AttachmentUploads {
         result && activeRef.current.has(result.key) ? [result.attachment] : [],
       );
     },
-    [api, notify, t, uploads.length],
+    [api, limit, notify, t, uploads.length],
   );
 
   return {

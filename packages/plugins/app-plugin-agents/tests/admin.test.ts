@@ -635,6 +635,59 @@ describe('admin API', () => {
     ).toEqual([]);
   });
 
+  it("lists the agents of a subject's runs, removed ones included, within run visibility", async () => {
+    h = await createHarness();
+    const removed = await h.createAgent({ name: 'Alpha' });
+    const archived = await h.createAgent({ name: 'Beta' });
+    const elsewhere = await h.createAgent({ name: 'Gamma' });
+    await h.createAgent({ name: 'Idle' });
+    await h.enqueue(removed, '1', { actorUserId: 'bob' });
+    await h.enqueue(removed, '1', { actorUserId: 'bob' });
+    await h.enqueue(archived, '1', { actorUserId: 'carol' });
+    await h.enqueue(elsewhere, '2', { actorUserId: 'bob' });
+    const agents = h.services.tx.read().repository('agAgents');
+    const now = h.clock.now().toISOString();
+    await agents.updateMany({
+      filter: { id: removed },
+      values: { deletedAt: now },
+    });
+    await agents.updateMany({
+      filter: { id: archived },
+      values: { archivedAt: now },
+    });
+    const path = '/agents/runAgents?subjectKind=sample&subjectId=1';
+    const names = (body: { data: { name: string }[] }) =>
+      body.data.map((agent) => agent.name);
+
+    expect((await h.request('GET', path)).status).toBe(401);
+    expect(
+      (
+        await h.request('GET', '/agents/runAgents?subjectKind=sample', {
+          user: 'bob',
+        })
+      ).status,
+    ).toBe(400);
+    const reader = await h.request('GET', path, {
+      user: 'dave',
+      can: ['agents.agents/read'],
+    });
+    expect(reader.status).toBe(200);
+    expect(reader.body).toEqual({
+      data: [
+        { id: removed, name: 'Alpha', nameText: null },
+        { id: archived, name: 'Beta', nameText: null },
+      ],
+      meta: { total: 2 },
+    });
+    // Without agents read, only the agents of the caller's own runs.
+    const own = await h.request('GET', path, { user: 'bob' });
+    expect(own.status).toBe(200);
+    expect(names(own.body)).toEqual(['Alpha']);
+    const stranger = await h.request('GET', path, { user: 'stranger' });
+    expect(stranger.status).toBe(200);
+    expect(stranger.body.data).toEqual([]);
+  });
+
   it('shows people their own runs, and every run to readers', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

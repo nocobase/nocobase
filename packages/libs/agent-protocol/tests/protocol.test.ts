@@ -37,6 +37,7 @@ import {
   RepoReportSchema,
   RunGitSchema,
   RunnerFeatureSchema,
+  NpmCredentialRequestSchema,
 } from '../src/index.js';
 
 it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
@@ -117,8 +118,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 14 and still serves versions 3 to 13', () => {
-    expect(PROTOCOL_VERSION).toBe(14);
+  it('is version 17 and still serves versions 3 to 16', () => {
+    expect(PROTOCOL_VERSION).toBe(17);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -133,7 +134,10 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(12)).toBe(true);
     expect(isProtocolSupported(13)).toBe(true);
     expect(isProtocolSupported(14)).toBe(true);
-    expect(isProtocolSupported(15)).toBe(false);
+    expect(isProtocolSupported(15)).toBe(true);
+    expect(isProtocolSupported(16)).toBe(true);
+    expect(isProtocolSupported(17)).toBe(true);
+    expect(isProtocolSupported(18)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
   });
 
@@ -596,6 +600,21 @@ describe('agent protocol', () => {
       }).load.tools,
     ).toEqual({ claude: { slots: 2, free: 0 } });
   });
+});
+
+it('accepts every npm credential reason and keeps older runner protocols supported', () => {
+  for (const reason of ['declared', 'notFound', 'unauthorized'])
+    expect(NpmCredentialRequestSchema.parse({ attempt: 1, reason })).toEqual({
+      attempt: 1,
+      reason,
+    });
+  expect(
+    NpmCredentialRequestSchema.safeParse({ attempt: 1, reason: 'unknown' })
+      .success,
+  ).toBe(false);
+  expect(isProtocolSupported(16)).toBe(true);
+  expect(isProtocolSupported(17)).toBe(true);
+  expect(isProtocolSupported(PROTOCOL_VERSION + 1)).toBe(false);
 });
 
 it('declares optional block streaming and validates empty end events without changing legacy messages', () => {

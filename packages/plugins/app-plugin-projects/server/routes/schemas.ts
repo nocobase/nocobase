@@ -230,6 +230,15 @@ export const CreateInvitationsBody: z.ZodType<CreateInvitationsRequest> =
       .array(id)
       .optional()
       .describe('Projects the invited members may join.'),
+    locale: z
+      .string()
+      .trim()
+      .min(1)
+      .max(35)
+      .optional()
+      .describe(
+        "The language of the invitation email and accept page, one of the application's languages. Defaults to the caller's interface language, then the application's default language.",
+      ),
   });
 
 export const UpdateSettingsBody: z.ZodType<UpdateSettingsRequest> =
@@ -1076,6 +1085,18 @@ export const CreateCommentResultSchema: z.ZodType<CreateCommentResult> =
       description:
         'Whom the comment started work for; empty without a plugin that does.',
     }),
+    skipped: z
+      .array(
+        z.object({
+          kind: z.string(),
+          id: z.string(),
+          reason: z.enum(['waitingOwner', 'blocked', 'dormant', 'limited']),
+        }),
+      )
+      .meta({
+        description:
+          'Whose work was held back and why; the comment was still saved.',
+      }),
   });
 
 export const CommentReactionsSchema: z.ZodType<CommentReactions> = z.object({

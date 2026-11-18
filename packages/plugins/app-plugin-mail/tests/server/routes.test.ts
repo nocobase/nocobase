@@ -1,3 +1,4 @@
+import { classifyError as classifyProtocolError } from '../../server/adapters/imap-smtp/errors.js';
 import {
   authenticationToken,
   type Auth,
@@ -17,6 +18,7 @@ import { MailIdempotencyConflictError } from '../../server/operations/send-mail.
 import { mailApiRoutes } from '../../server/routes/api.js';
 import {
   MailError,
+  MailProviderRequestError,
   mailInvalidArgument,
 } from '../../server/services/errors.js';
 import { mailServiceToken } from '../../server/tokens.js';
@@ -24,6 +26,215 @@ import type { MailService, MailSyncRunView } from '../../server/types.js';
 import serverLocales from '../../server/locales/index.js';
 
 describe('[API][SEC] mail API routes and permission boundaries', () => {
+  it.each([
+    [
+      'imapAuthenticationFailed',
+      'authentication',
+      'IMAP authentication failed',
+      'IMAP 认证失败',
+    ],
+    [
+      'smtpAuthenticationFailed',
+      'authentication',
+      'SMTP authentication failed',
+      'SMTP 认证失败',
+    ],
+    [
+      'smtpHostNotFound',
+      'network',
+      'SMTP host could not be resolved',
+      '无法解析 SMTP 主机',
+    ],
+    [
+      'imapConnectionRefused',
+      'network',
+      'IMAP connection was refused',
+      'IMAP 连接被拒绝',
+    ],
+    [
+      'smtpConnectionTimeout',
+      'timeout',
+      'SMTP connection timed out',
+      'SMTP 连接超时',
+    ],
+    [
+      'imapCertificateInvalid',
+      'configuration',
+      'IMAP certificate validation failed',
+      'IMAP 证书验证失败',
+    ],
+    [
+      'smtpTlsFailed',
+      'configuration',
+      'SMTP TLS negotiation failed',
+      'SMTP TLS 协商失败',
+    ],
+  ] as const)(
+    'localizes %s without exposing SDK text',
+    async (reasonCode, category, english, chinese) => {
+      const failure = new MailProviderRequestError({
+        code: 'EAUTH',
+        category,
+        retryable: false,
+        reasonCode,
+        message: 'Private SDK diagnostic password token',
+      });
+      const connectAccount: MailService['connectAccount'] = async () => {
+        if (category === 'authentication')
+          throw new MailError({
+            status: 'INVALID_ARGUMENT',
+            reason: 'MAIL_ACCOUNT_CREDENTIALS_INVALID',
+            message: 'The mail Provider rejected the account credentials.',
+            field: 'password',
+            cause: failure,
+          });
+        throw failure;
+      };
+      const router = await createRouter(true, service({ connectAccount }));
+      for (const [locale, expected] of [
+        ['en-US', english],
+        ['zh-CN', chinese],
+      ]) {
+        const response = await router.request('/api/mail/accounts/connect', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'accept-language': locale,
+          },
+          body: JSON.stringify({
+            type: 'imap-smtp',
+            name: 'test',
+            address: 'test@example.com',
+            password: 'test-password',
+            initialSyncReceivedAfter: '2026-01-01T00:00:00.000Z',
+          }),
+        });
+        const body = await response.json();
+        expect(body).toMatchObject({
+          error: {
+            localizedMessage: {
+              locale,
+              message: expect.stringContaining(expected),
+            },
+          },
+        });
+        expect(JSON.stringify(body)).not.toContain('Private SDK diagnostic');
+      }
+    },
+  );
+
+  it.each([
+    {
+      code: 'NO',
+      serverResponseCode: 'NONEXISTENT',
+      message: 'No such message',
+    },
+    { code: 'EENVELOPE', responseCode: 550, message: 'Recipient refused' },
+    new DOMException('Cancelled', 'AbortError'),
+  ])(
+    'keeps operation failures on the request-failed UI channel: %j',
+    async (cause) => {
+      const error = classifyProtocolError(cause, 'IMAP_GET_ATTACHMENT', 'imap');
+      const router = await createRouter(
+        true,
+        service({
+          getAttachment: async () => {
+            throw new MailProviderRequestError(error);
+          },
+        }),
+      );
+      const response = await router.request(
+        '/api/mail/accounts/account-1/messages/message-1/attachments/attachment-1',
+        { headers: { 'accept-language': 'en-US' } },
+      );
+      const body = await response.json();
+      expect(body.error.localizedMessage.message).toBe(
+        'The mail request could not be completed.',
+      );
+      expect(body.error.metadata.reasonCode).toBeUndefined();
+      expect(body.error.localizedMessage.message).not.toMatch(/connection/i);
+    },
+  );
+
+  it('accepts a structured Unicode display name and rejects the second bulk recipient at its exact path', async () => {
+    const send = vi.fn<MailService['sendMessage']>(async (_context, input) => ({
+      id: 'submission',
+      accountId: input.accountId,
+      status: 'accepted',
+    }));
+    const bulk = vi.fn<MailService['sendBulk']>();
+    const router = await createRouter(
+      true,
+      service({ sendMessage: send, sendBulk: bulk }),
+    );
+    const common = {
+      accountId: 'account-1',
+      identityId: 'identity-1',
+      idempotencyKey: 'recipient-test',
+      text: 'Body',
+    };
+    const accepted = await router.request('/api/mail/messages/send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...common,
+        to: [{ name: '周晓', address: 'someone@example.com' }],
+      }),
+    });
+    expect(accepted.status).toBe(200);
+    expect(send).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        to: [{ name: '周晓', address: 'someone@example.com' }],
+      }),
+    );
+    const rejected = await router.request('/api/mail/messages/sendBulk', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...common,
+        recipients: [{ address: 'valid@example.com' }, { address: 'bad' }],
+      }),
+    });
+    expect(rejected.status).toBe(400);
+    expect(await rejected.json()).toMatchObject({
+      error: {
+        reason: 'INVALID_INPUT',
+        fieldViolations: [{ field: 'recipients.1.address' }],
+      },
+    });
+    expect(bulk).not.toHaveBeenCalled();
+  });
+  it.each(['to', 'cc', 'bcc'] as const)(
+    'returns a precise HTTP 400 before sending invalid %s',
+    async (field) => {
+      const mail = service();
+      const send = vi.spyOn(mail, 'sendMessage');
+      const router = await createRouter(true, mail);
+      const response = await router.request('/api/mail/messages/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          accountId: 'account-1',
+          identityId: 'identity-1',
+          idempotencyKey: 'address-check',
+          text: 'Body',
+          to: [{ address: 'reader@example.com' }],
+          [field]: [{ address: '周晓 <someone@example.com>' }],
+        }),
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_INPUT',
+          domain: 'app',
+          fieldViolations: [{ field: `${field}.0.address` }],
+        },
+      });
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
   it('rejects per-account automatic sync configuration as an unknown field', async () => {
     const mail = service();
     const updateAccount = vi.spyOn(mail, 'updateAccount');
@@ -2183,3 +2394,80 @@ function syncRun(accountId: string, _requestedBy: string): MailSyncRunView {
     updatedAt: '2026-09-03T00:00:00.000Z',
   };
 }
+
+describe('Mail optional IMAP source folder HTTP contract', () => {
+  it('passes the decoded deletion query and move body to the business service', async () => {
+    const mail = service();
+    const deletion = vi.spyOn(mail, 'deleteMessage');
+    const moving = vi.spyOn(mail, 'moveMessage');
+    const router = await createRouter(true, mail);
+    const removed = await router.request(
+      '/api/mail/accounts/account-1/messages/message-1?sourceProviderFolderId=' +
+        encodeURIComponent('收件箱/A & B'),
+      { method: 'DELETE' },
+    );
+    expect(removed.status).toBe(204);
+    expect(deletion).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sourceProviderFolderId: '收件箱/A & B' }),
+    );
+    const moved = await router.request(
+      '/api/mail/accounts/account-1/messages/message-1/move',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerFolderId: 'Trash',
+          sourceProviderFolderId: 'INBOX',
+        }),
+      },
+    );
+    expect(moved.status).toBe(200);
+    expect(moving).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sourceProviderFolderId: 'INBOX',
+        providerFolderId: 'Trash',
+      }),
+    );
+    const invalid = await router.request(
+      '/api/mail/accounts/account-1/messages/message-1/move',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerFolderId: 'Trash',
+          sourceProviderFolderId: '',
+          extra: true,
+        }),
+      },
+    );
+    expect(invalid.status).toBe(400);
+    expect(moving).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    ['MAIL_IMAP_MOVE_SOURCE_REQUIRED', 'Open the source folder'],
+    ['MAIL_IMAP_MOVE_UNSUPPORTED', 'cannot safely move'],
+    ['MAIL_IMAP_TRASH_NOT_FOUND', 'no Trash folder'],
+    ['MAIL_IMAP_MOVE_OUTCOME_UNKNOWN', 'Verify the mailbox'],
+  ])(
+    'localizes %s without a generic provider failure',
+    async (reason, text) => {
+      const mail = service();
+      vi.spyOn(mail, 'deleteMessage').mockRejectedValue(
+        new MailError({
+          status: 'FAILED_PRECONDITION',
+          reason,
+          message: 'Private internal detail',
+        }),
+      );
+      const router = await createRouter(true, mail);
+      const response = await router.request(
+        '/api/mail/accounts/account-1/messages/message-1',
+        { method: 'DELETE' },
+      );
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(await response.json())).toContain(text);
+    },
+  );
+});

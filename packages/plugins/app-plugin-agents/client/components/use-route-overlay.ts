@@ -1,15 +1,12 @@
-import { createContext, useContext, type Context } from 'react';
+import {
+  RouteOverlayContext,
+  type RouteOverlayContextValue,
+} from '@nocobase/app-client/route-containers';
+import { useContext } from 'react';
 
-export interface RouteOverlayContextValue {
-  /** Runs `beforeClose`, then navigates to the parent route unless it declined. Concurrent calls share one request. */
-  readonly close: () => Promise<void>;
-  /** True while a close request for the current location is pending. */
-  readonly isClosing: boolean;
-}
-
-/** Internal context shared by both route overlay components. */
-export const RouteOverlayContext: Context<RouteOverlayContextValue | null> =
-  createContext<RouteOverlayContextValue | null>(null);
+// The context lives in `@nocobase/app-client` so every copy of the route overlay components, including a plugin's,
+// shares it: a footer button inside a panel the application opened reaches that panel's close request.
+export { RouteOverlayContext, type RouteOverlayContextValue };
 
 /**
  * Closes the enclosing `RouteDialog` or `RouteDrawer`. Call it from a component rendered inside the overlay — its

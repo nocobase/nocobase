@@ -22,6 +22,20 @@ export class AppRegistryError extends Error {
   }
 }
 
+export class ArtifactReadTimeoutError extends Error {
+  readonly code = 'ARTIFACT_READ_TIMEOUT';
+  constructor(
+    readonly kind: 'idle' | 'total',
+    readonly timeoutMs: number,
+  ) {
+    super(
+      kind === 'idle'
+        ? `Reading the release package timed out: no data received for ${timeoutMs} ms. Deploy the release again.`
+        : `Reading the release package timed out: the attempt exceeded ${timeoutMs} ms. Deploy the release again.`,
+    );
+  }
+}
+
 /**
  * The message of the error itself, wrappers included.
  *
@@ -111,14 +125,24 @@ export class AppReloadFailedError extends AppRegistryError {
 }
 
 export class AppCapacityExceededError extends AppRegistryError {
-  constructor(maxActiveApps: number) {
+  /** The configured limit, `Number.MAX_SAFE_INTEGER` when none is set; kept for diagnostics and logs. */
+  readonly maxActiveApps: number;
+
+  constructor(
+    maxActiveApps: number,
+    reason: string = 'Active app capacity exceeded and no idle app can be evicted.',
+  ) {
+    // The message reaches users through deployment results; an unset limit is an internal sentinel, not a number to show.
     super(
-      `Active app capacity exceeded and no idle app can be evicted. maxActiveApps=${maxActiveApps}`,
+      maxActiveApps < Number.MAX_SAFE_INTEGER
+        ? `${reason} maxActiveApps=${maxActiveApps}`
+        : reason,
       {
         status: 503,
         code: 'APP_CAPACITY_EXCEEDED',
       },
     );
+    this.maxActiveApps = maxActiveApps;
   }
 }
 
@@ -145,4 +169,18 @@ function describeCause(cause: unknown, id: string): string {
 function withoutAppPrefix(message: string, id: string): string {
   const prefix = `App "${id}" `;
   return message.startsWith(prefix) ? message.slice(prefix.length) : message;
+}
+
+/** Finds a stable deployment error code through activation/rollback wrappers. */
+export function deploymentErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof Error)) return undefined;
+  if (error instanceof AppCapacityExceededError) return error.code;
+  if (error instanceof AggregateError) {
+    for (const cause of error.errors) {
+      const code = deploymentErrorCode(cause);
+      if (code === 'APP_CAPACITY_EXCEEDED') return code;
+    }
+  }
+  const nested = deploymentErrorCode(error.cause);
+  return nested ?? (error as Error & { code?: string }).code;
 }

@@ -68,6 +68,99 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it('suspends hidden tabs after ten minutes, blocks every reconnect path and resubscribes when visible', async () => {
+  const document = Object.assign(new EventTarget(), {
+    visibilityState: 'visible',
+  });
+  const window = Object.assign(new EventTarget(), {
+    location: { href: 'https://example.com/' },
+  });
+  vi.stubGlobal('document', document);
+  vi.stubGlobal('window', window);
+  const onReady = vi.fn();
+  const client = setup({ pingInterval: 0 });
+  const subscription = client.watch('test:one', { onReady });
+  sockets[0]!.open();
+  sockets[0]!.ack();
+  document.visibilityState = 'hidden';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(10 * 60_000 - 1);
+  expect(client.connected).toBe(true);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(client.connected).toBe(false);
+  expect(subscription.state).toBe('pending');
+  window.dispatchEvent(new Event('online'));
+  client.reconnect();
+  subscription.retry();
+  client.watch('test:two');
+  await vi.advanceTimersByTimeAsync(30 * 60_000);
+  expect(sockets).toHaveLength(1);
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(sockets).toHaveLength(2);
+  sockets[1]!.open();
+  for (const request of [...sockets[1]!.sent]) sockets[1]!.ack(request);
+  expect(client.ready).toBe(true);
+  expect(onReady).toHaveBeenCalledTimes(2);
+});
+
+it('cancels the hidden deadline on return, respects manual close and allows configuring or disabling it', async () => {
+  const document = Object.assign(new EventTarget(), {
+    visibilityState: 'hidden',
+  });
+  vi.stubGlobal('document', document);
+  const client = setup({ hiddenDisconnectMs: 100, pingInterval: 0 });
+  client.watch('test:one');
+  sockets[0]!.open();
+  sockets[0]!.ack();
+  await vi.advanceTimersByTimeAsync(99);
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(1);
+  expect(client.connected).toBe(true);
+  document.visibilityState = 'hidden';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(100);
+  expect(client.connected).toBe(false);
+  client.close();
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(sockets).toHaveLength(1);
+  document.visibilityState = 'hidden';
+  const disabled = setup({ hiddenDisconnectMs: 0, pingInterval: 0 });
+  disabled.watch('test:one');
+  sockets[1]!.open();
+  sockets[1]!.ack();
+  await vi.advanceTimersByTimeAsync(60 * 60_000);
+  expect(disabled.connected).toBe(true);
+});
+
+it('does not let replacing all watchers in an expired hidden tab open a fresh connection', async () => {
+  const document = Object.assign(new EventTarget(), {
+    visibilityState: 'hidden',
+  });
+  vi.stubGlobal('document', document);
+  const client = setup({ hiddenDisconnectMs: 100, pingInterval: 0 });
+  const first = client.watch('test:one');
+  sockets[0]!.open();
+  sockets[0]!.ack();
+  await vi.advanceTimersByTimeAsync(100);
+  first.close();
+  client.watch('test:two');
+  client.reconnect();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(sockets).toHaveLength(1);
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(sockets).toHaveLength(2);
+  sockets[1]!.open();
+  sockets[1]!.ack();
+  expect(client.ready).toBe(true);
+  client.close();
+  client.watch('test:three');
+  expect(sockets).toHaveLength(3);
+});
+
 it('shares one lazy subscription and waits for acknowledgement before dispatching', () => {
   const client = setup();
   expect(client.state).toBe('idle');

@@ -1,4 +1,4 @@
-import { realtimeClientToken } from '@nocobase/app-client';
+import { ApiClientError, realtimeClientToken } from '@nocobase/app-client';
 import { useState } from 'react';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -137,6 +137,53 @@ describe('new-session composer', () => {
     );
     expect(screen.getByRole('textbox')).not.toBeDisabled();
   });
+  it('shows the localized discovery failure reason next to Retry', async () => {
+    const detail =
+      'discovery.choices.4.options.1.description: Too big: expected string to have <=1000 characters';
+    const failure = new ApiClientError('Discovery failed', {
+      status: 400,
+      reason: 'AGENT_SESSIONS_DISCOVERY_FAILED',
+      method: 'POST',
+      url: '/api/agentSessions/computers/fresh/discoverChoices',
+      payload: {
+        error: {
+          localizedMessage: { locale: 'en-US', message: detail },
+        },
+      },
+    });
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <NewSession />
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path }) => {
+          if (path === 'agentSessions/computers')
+            return { data: [computer], meta: { total: 1 } };
+          if (path.endsWith('/discoverChoices'))
+            return Response.json(failure.payload, { status: failure.status });
+          return { data: [], meta: {} };
+        }),
+      },
+    );
+    expect(await screen.findByText(detail)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Retry settings' }),
+    ).toBeEnabled();
+  });
+
   it('tells to update the command line on a computer whose bridge was refused as too old', async () => {
     await renderWithApp(
       <QueryClientProvider

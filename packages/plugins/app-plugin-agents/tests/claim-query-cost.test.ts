@@ -138,16 +138,32 @@ describe('claim query cost', () => {
     },
   );
 
-  it.each(
-    [1, 10, 50].flatMap((count) =>
+  it.each([
+    ...[1, 10, 50].flatMap((count) =>
       [0, 3].flatMap((skillCount) =>
-        [false, true].map((affinity) => ({ count, skillCount, affinity })),
+        [false, true].map((affinity) => ({
+          count,
+          skillCount,
+          affinity,
+          stablePrefix: false,
+        })),
       ),
     ),
-  )(
-    'loads $count candidates with $skillCount skills (affinity: $affinity) with bounded reads',
-    async ({ count, skillCount, affinity }) => {
+    { count: 1, skillCount: 0, affinity: false, stablePrefix: true },
+  ])(
+    'loads $count candidates with $skillCount skills (affinity: $affinity, stable prefix: $stablePrefix) with bounded reads',
+    async ({ count, skillCount, affinity, stablePrefix }) => {
       h = await createHarness();
+      if (stablePrefix) {
+        const context = h.services.subjects.get('sample')!.context;
+        const assemble = context.assemble.bind(context);
+        vi.spyOn(context, 'assemble').mockImplementation(
+          async (conn, claim) => ({
+            ...(await assemble(conn, claim)),
+            briefLayout: 'stable-prefix',
+          }),
+        );
+      }
       h.scopes = [{ scope: 'team', scopeId: 'team' }];
       if (count > 1) {
         const excluded = await h.createAgent({
@@ -403,11 +419,14 @@ describe('claim query cost', () => {
     const runner = await h.services.runners.authenticate(registered.key, {
       touch: false,
     });
-    vi.spyOn(h.services.slots, 'held').mockResolvedValue({
-      jobs: 0,
-      runs: 1,
-      byTool: { claude: 1 },
-    });
+    // Free when the claim starts, full when its transaction checks again.
+    vi.spyOn(h.services.slots, 'held')
+      .mockResolvedValueOnce({ jobs: 0, runs: 0, byTool: {} })
+      .mockResolvedValue({
+        jobs: 0,
+        runs: 1,
+        byTool: { claude: 1 },
+      });
     const knex = await h.database.connection().client<QueryEvents>();
     const writes: string[] = [];
     const listener = ({ sql }: { sql: string }) => {

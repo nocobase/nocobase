@@ -1,3 +1,4 @@
+import { defineMailersConfig } from '@nocobase/app-server/mailers/config';
 // A minimal application laid out the way a generated one is: its configuration file is the deployment's, and its
 // database configuration names no connection of its own, so every database it opens is one a test provisioned.
 import {
@@ -44,6 +45,7 @@ const appRuntime: AppRuntimeDefinition = defineAppRuntime({
         };
       },
     }),
+    mailers: defineMailersConfig(),
     auth: defineAuthConfig({
       defaults: {
         secret: 'synthetic-auth-secret-at-least-32-characters',

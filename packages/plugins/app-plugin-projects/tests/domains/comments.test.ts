@@ -43,6 +43,140 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 }
 
 describe('writing comments', () => {
+  it('limits run edits and deletions to that authenticated run, without moderator fallback', async () => {
+    const issue = await anIssue(admin());
+    h.services.kinds.add({ key: 'agent' });
+    const run = (id: string): Viewer => ({
+      ...admin(),
+      runId: id,
+      actor: {
+        type: 'agent',
+        id: 'coder',
+        via: 'agent',
+        trace: { agentId: 'coder', runId: id },
+      },
+    });
+    const own = await h.services.comments.create(run('first'), issue.id, {
+      content: '/note Original',
+    });
+    await expect(
+      h.services.comments.update(run('first'), own.comment.id, {
+        content: '/note Edited',
+      }),
+    ).resolves.toMatchObject({ content: '/note Edited' });
+    const human = await h.services.comments.create(admin(), issue.id, {
+      content: '/note Human',
+    });
+    const system = await h.services.comments.post(
+      { type: 'system', id: null, via: 'agent', trace: { runId: 'first' } },
+      issue.id,
+      { content: 'System' },
+    );
+    const missing = await h.services.comments.post(
+      { type: 'agent', id: 'coder' },
+      issue.id,
+      { content: 'No provenance' },
+    );
+    const other = await h.services.comments.create(run('second'), issue.id, {
+      content: '/note Another run',
+      ...{
+        origin: { trace: { runId: 'first' } },
+        runId: 'first',
+        authorId: 'coder',
+      },
+    });
+    const otherAgent = await h.services.comments.create(
+      { ...run('first'), actor: { ...run('first').actor, id: 'different' } },
+      issue.id,
+      { content: '/note Another agent' },
+    );
+    for (const comment of [
+      human.comment,
+      system.comment,
+      missing.comment,
+      other.comment,
+      otherAgent.comment,
+    ]) {
+      await expect(
+        h.services.comments.update(run('first'), comment.id, {
+          content: 'Hijacked',
+        }),
+      ).rejects.toMatchObject({ kind: 'forbidden' });
+      await expect(
+        h.services.comments.remove(run('first'), comment.id),
+      ).rejects.toMatchObject({ kind: 'forbidden' });
+    }
+    const denied = {
+      ...run('first'),
+      permissions: {
+        ...run('first').permissions,
+        scopes: {
+          ...run('first').permissions.scopes,
+          'pm.issues/comment': 'none' as const,
+        },
+      },
+    };
+    const systemActor = {
+      ...run('first'),
+      actor: { type: 'system', id: null, via: 'agent' as const },
+    };
+    await expect(
+      h.services.comments.update(systemActor, system.comment.id, {
+        content: 'Hijacked',
+      }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.remove(systemActor, system.comment.id),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.update(denied, own.comment.id, { content: 'Denied' }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.remove(denied, own.comment.id),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await h.services.comments.remove(run('first'), own.comment.id);
+    await expect(
+      h.services.comments.remove(run('first'), own.comment.id),
+    ).rejects.toMatchObject({ kind: 'notFound' });
+    // A person retains existing moderation and authored-comment rules.
+    await h.services.comments.remove(admin(), other.comment.id);
+    await expect(
+      h.services.comments.update(admin(), human.comment.id, {
+        content: 'Human edited',
+      }),
+    ).resolves.toMatchObject({ content: 'Human edited' });
+  });
+
+  it('checks run provenance even when a conversation records the author as its person', async () => {
+    const issue = await anIssue();
+    const current: Viewer = {
+      ...alice(),
+      runId: 'conversation-run',
+      actor: {
+        type: 'user',
+        id: 'alice',
+        via: 'agent',
+        trace: { agentId: 'coder', runId: 'conversation-run' },
+      },
+    };
+    const human = await h.services.comments.create(alice(), issue.id, {
+      content: '/note Human',
+    });
+    const own = await h.services.comments.create(current, issue.id, {
+      content: '/note Agent',
+    });
+    await expect(
+      h.services.comments.update(current, own.comment.id, {
+        content: '/note Updated',
+      }),
+    ).resolves.toMatchObject({ content: '/note Updated' });
+    await expect(
+      h.services.comments.update(current, human.comment.id, {
+        content: 'Hijacked',
+      }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await h.services.comments.remove(current, own.comment.id);
+  });
   it('marks only confirmed plain discussions and keeps mentions and waiting comments complete', async () => {
     const issue = await anIssue();
     const classifications: (true | undefined)[] = [];

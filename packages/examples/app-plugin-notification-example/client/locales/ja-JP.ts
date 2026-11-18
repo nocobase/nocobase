@@ -3,6 +3,30 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: '通知の例',
+    category: 'タスク',
+    assigned: {
+      name: 'タスクが割り当てられました',
+      trigger: 'タスクが作成されたとき。',
+      recipients: '担当者。自分自身に割り当てた場合も受け取ります。',
+    },
+    updated: {
+      name: 'タスクが更新されました',
+      trigger: 'タスクが変更されたとき（担当者の変更を含む）。',
+      recipients:
+        '作成者、元の担当者、新しい担当者に 1 回ずつ送信されます。変更した本人には送信されません。',
+    },
+    businessRule:
+      '対応するタスク操作が行われるたびに送信されます。個別にオフにする設定はありません。',
+    languagePolicy: '受信者の言語に関係なく、常に英語で送信されます。',
+    channel: 'タスクの受信箱',
+    variables: {
+      title: 'タスクのタイトル',
+      description: 'タスクの説明',
+      status: 'タスクのステータス',
+    },
+  },
   navigation: {
     tasks: '通知例',
     taskManagement: 'タスク',
@@ -45,7 +69,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       actions: '操作',
     },
     view: '詳細を見る',
-    refresh: '更新',
+    retryRead: '再試行',
     previous: '前へ',
     next: '次へ',
     page: 'ページ {{page}}',
@@ -64,7 +88,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     notificationHint:
       'タスクが保存されると、現在の編集者以外の関係者、つまり作成者と現在の担当者に通知されます。担当者が変更されると、以前の担当者と新しい担当者の両方に通知されます。',
     edit: 'タスクの編集',
-    refresh: '更新',
+    retryRead: '再試行',
     save: '変更を保存する',
     cancel: 'キャンセル',
     back: 'タスクに戻る',

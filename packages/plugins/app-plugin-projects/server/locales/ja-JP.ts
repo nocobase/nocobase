@@ -11,7 +11,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'プロジェクト',
-      issues: '課題',
+      issues: 'タスク',
       settings: 'プロジェクト設定',
       members: 'メンバーと役割',
     },
@@ -51,95 +51,97 @@ const jaJP: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: '課題',
-        description: 'プロジェクト内または独自の問題点とそのコメント。',
+        title: 'タスク',
+        description: 'プロジェクト内または単独のタスクとそのコメント。',
         actions: {
           view: {
-            title: '問題を見る',
-            description: 'リスト、ボード、およびその詳細で問題を確認する',
-            related: '問題を表示 (自分が確認できる問題)',
+            title: 'タスクを表示',
+            description: '一覧、ボード、詳細でタスクを表示します',
+            related: 'タスクを表示（閲覧できるもの）',
             relatedLabel: '私が見ることができるプロジェクトでは',
             relatedHint:
-              'プロジェクトのない問題と、私から見えるプロジェクトの課題',
-            all: '問題を表示 (すべて)',
+              'プロジェクトのないタスクと、閲覧できるプロジェクトのタスク',
+            all: 'タスクを表示（すべて）',
           },
           create: {
-            title: '問題の作成',
-            description: 'プロジェクト内または独自に問題を作成する',
-            related: '課題を作成する (閲覧できるプロジェクト内)',
+            title: 'タスクを作成',
+            description: 'プロジェクト内または単独でタスクを作成します',
+            related: 'タスクを作成（閲覧できるプロジェクト内）',
             relatedLabel: '私が見ることができるプロジェクトでは',
             relatedHint:
-              'プロジェクトのない問題、またはプロジェクト内で確認できる問題',
-            all: '課題の作成(すべて)',
+              'プロジェクトのないタスク、または閲覧できるプロジェクトのタスク',
+            all: 'タスクを作成（すべて）',
           },
           edit: {
-            title: '編集問題',
+            title: 'タスクを編集',
             description:
-              'タイトル、説明、優先度、日付、ラベル、執行者、オープンステータス',
-            related: '問題を編集する (閲覧できる問題)',
+              'タイトル、説明、優先度、日付、ラベル、実行者、未完了のステータス',
+            related: 'タスクを編集（閲覧できるもの）',
             relatedLabel: '私が見ることができるプロジェクトでは',
             relatedHint:
-              'プロジェクトのない問題と、私から見えるプロジェクトの課題',
-            all: '問題の編集 (すべて)',
+              'プロジェクトのないタスクと、閲覧できるプロジェクトのタスク',
+            all: 'タスクを編集（すべて）',
           },
           comment: {
-            title: '問題についてコメントする',
+            title: 'タスクにコメント',
             description:
               'スレッドにコメント、返信、解決します。自分のコメントを編集および削除する',
-            related: '問題についてコメントする (自分が認識できる問題)',
+            related: 'タスクにコメント（閲覧できるもの）',
             relatedLabel: '私が見ることができるプロジェクトでは',
             relatedHint:
-              'プロジェクトのない問題と、私から見えるプロジェクトの課題',
-            all: '問題点へのコメント(すべて)',
+              'プロジェクトのないタスクと、閲覧できるプロジェクトのタスク',
+            all: 'タスクにコメント（すべて）',
           },
           moderateComments: {
             title: '適度なコメント',
             description: '他の人のコメントを削除する',
             related:
-              '適度なコメント (自分が所有する問題、または自分が主導するプロジェクトについて)',
-            relatedLabel:
-              '私が所有する問題、または私が主導するプロジェクトについて',
+              'コメントの管理（担当しているタスクまたは主導しているプロジェクト）',
+            relatedLabel: '担当しているタスクまたは主導しているプロジェクト',
             relatedHint:
-              '私が所有する問題、および私が主導するプロジェクトの問題についてのコメント',
+              '担当しているタスクと、主導しているプロジェクトのタスクへのコメント',
             all: '適度なコメント（すべて）',
           },
           close: {
-            title: '課題をクローズ',
-            description: '問題を完了またはキャンセルとしてマークします',
+            title: 'タスクを閉じる',
+            description: 'タスクを完了またはキャンセルにします',
             related:
-              '問題を解決する (自分が所有する問題、または自分が主導するプロジェクト)',
+              'タスクを閉じる（担当しているもの、または主導しているプロジェクト）',
             relatedLabel:
               '私が所有しているもの、または私が主導するプロジェクトのもの',
-            relatedHint: '私が所有する問題と私が主導するプロジェクトの問題',
-            all: '問題を解決する (すべて)',
+            relatedHint:
+              '担当しているタスクと、主導しているプロジェクトのタスク',
+            all: 'タスクを閉じる（すべて）',
           },
           changeOwner: {
             title: '所有者を変更する',
-            description: '責任を負うために問題を他の人に引き渡す',
+            description: 'タスクを別の人に引き継いで責任を持ってもらいます',
             related: '所有者を変更する (所有者または自分が率いるプロジェクト)',
             relatedLabel:
               '私が所有しているもの、または私が主導するプロジェクトのもの',
-            relatedHint: '私が所有する問題と私が主導するプロジェクトの問題',
+            relatedHint:
+              '担当しているタスクと、主導しているプロジェクトのタスク',
             all: '所有者変更(全て)',
           },
           delete: {
-            title: '問題の削除と復元',
-            description: '問題を削除し、削除した問題を復元する',
-            all: '問題の削除と復元',
+            title: 'タスクの削除と復元',
+            description: 'タスクを削除し、削除されたタスクを復元します',
+            all: 'タスクの削除と復元',
           },
         },
       },
       attachments: {
         title: 'アタッチメント',
-        description: '問題とコメントに添付されたファイル。',
+        description: 'タスクとコメントに添付されたファイル。',
         actions: {
           upload: {
             title: '添付ファイルのアップロード',
-            description: '編集可能な問題およびコメントにファイルを添付する',
-            related: '添付ファイルをアップロードする (確認できる問題について)',
-            relatedLabel: 'プロジェクトの問題点について',
+            description:
+              '編集できるタスクと自分のコメントにファイルを添付します',
+            related: '添付ファイルのアップロード（閲覧できるタスク）',
+            relatedLabel: '閲覧できるプロジェクトのタスク',
             relatedHint:
-              'プロジェクトのない問題に関するファイル、および確認できるプロジェクト内の課題に関するファイル',
+              'プロジェクトのないタスクと、閲覧できるプロジェクトのタスクにあるファイル',
             all: '添付ファイルのアップロード（すべて）',
           },
         },
@@ -147,11 +149,11 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'プロジェクト',
-      pmIssues: '課題',
+      pmIssues: 'タスク',
     },
     recordAccess: {
-      visible: '見えてくるプロジェクトと課題',
-      managed: '彼らが率いるプロジェクトと彼らが所有する問題',
+      visible: '閲覧できるプロジェクトとタスク',
+      managed: '主導しているプロジェクトと担当しているタスク',
     },
     settings: {
       pm: {
@@ -168,9 +170,9 @@ const jaJP: LocaleResource<typeof enUS> = {
         objects: 'プロジェクト',
       },
       issues: {
-        title: '課題',
+        title: 'タスク',
         description:
-          '問題を参照。それらを作成、編集、コメントし、閉じ、再割り当てします。コメントを管理し、問題を削除します。',
+          'タスクの表示、作成、編集、コメント、クローズ、再割り当て、コメントの管理、タスクの削除。',
       },
       settings: {
         title: 'プロジェクト設定',
@@ -196,8 +198,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   notifications: {
-    batchDone: '{{identifier}}のすべてのサブイシューが終了しました',
-    batchDoneStage: '{{identifier}}のサブ号のステージ{{stage}}が終了しました',
+    batchDone: '{{identifier}} のすべてのサブタスクが完了しました',
+    batchDoneStage:
+      '{{identifier}} のサブタスクのステージ {{stage}} が完了しました',
     commented: '{{actor}} が {{identifier}} にコメントしました',
     dependencyReleased:
       '{{releasedBy}} が終了したので、{{identifier}} を開始できます',

@@ -11,7 +11,7 @@ const idID: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Proyek',
-      issues: 'Isu',
+      issues: 'Tugas',
       settings: 'Pengaturan proyek',
       members: 'Anggota dan peran',
     },
@@ -50,101 +50,99 @@ const idID: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Isu',
+        title: 'Tugas',
         description:
-          'Masalah dan komentarnya, dalam suatu proyek atau sendiri-sendiri.',
+          'Tugas dan komentarnya, di dalam proyek atau berdiri sendiri.',
         actions: {
           view: {
-            title: 'Lihat masalah',
-            description: 'Lihat masalah dalam daftar, papan dan detailnya',
-            related: 'Lihat masalah (yang dapat mereka lihat)',
+            title: 'Lihat tugas',
+            description: 'Lihat tugas di daftar, papan, dan detailnya',
+            related: 'Lihat tugas (yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
-            all: 'Lihat masalah (semua)',
+              'Tugas tanpa proyek dan tugas di proyek yang dapat saya lihat',
+            all: 'Lihat tugas (semua)',
           },
           create: {
-            title: 'Ciptakan masalah',
-            description: 'Membuat isu, dalam sebuah proyek atau sendiri',
-            related: 'Membuat masalah (dalam proyek yang dapat mereka lihat)',
+            title: 'Buat tugas',
+            description: 'Buat tugas, di dalam proyek atau berdiri sendiri',
+            related: 'Buat tugas (di proyek yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, atau dalam proyek yang dapat saya lihat',
-            all: 'Buat masalah (semua)',
+              'Tugas tanpa proyek atau di proyek yang dapat saya lihat',
+            all: 'Buat tugas (semua)',
           },
           edit: {
-            title: 'Edit terbitan',
+            title: 'Edit tugas',
             description:
               'Judul, deskripsi, prioritas, tanggal, label, pelaksana dan status terbuka',
-            related: 'Edit masalah (yang dapat mereka lihat)',
+            related: 'Edit tugas (yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
-            all: 'Edit terbitan (semua)',
+              'Tugas tanpa proyek dan tugas di proyek yang dapat saya lihat',
+            all: 'Edit tugas (semua)',
           },
           comment: {
-            title: 'Mengomentari masalah',
+            title: 'Komentari tugas',
             description:
               'Mengomentari, membalas, dan menyelesaikan topik; mengedit dan menghapus komentar mereka sendiri',
-            related: 'Mengomentari masalah (yang dapat mereka lihat)',
+            related: 'Komentari tugas (yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
-            all: 'Mengomentari masalah (semua)',
+              'Tugas tanpa proyek dan tugas di proyek yang dapat saya lihat',
+            all: 'Komentari tugas (semua)',
           },
           moderateComments: {
             title: 'Komentar moderat',
             description: 'Hapus komentar orang lain',
             related:
-              'Komentar moderat (tentang isu yang mereka miliki atau proyek siapa yang mereka pimpin)',
+              'Moderasi komentar (pada tugas yang mereka pegang atau proyek yang mereka pimpin)',
             relatedLabel:
-              'Mengenai isu-isu yang saya miliki atau proyek-proyek yang saya pimpin',
+              'Pada tugas yang saya pegang atau proyek yang saya pimpin',
             relatedHint:
-              'Mengomentari isu-isu yang saya miliki, dan isu-isu dalam proyek yang saya pimpin',
+              'Komentar pada tugas yang saya pegang dan pada tugas di proyek yang saya pimpin',
             all: 'Komentar moderat (semua)',
           },
           close: {
-            title: 'Tutup masalah',
-            description: 'Menandai suatu masalah selesai atau dibatalkan',
+            title: 'Tutup tugas',
+            description: 'Tandai tugas selesai atau dibatalkan',
             related:
-              'Masalah-masalah yang sudah dekat (masalah yang mereka miliki atau proyek yang mereka pimpin)',
+              'Tutup tugas (yang mereka pegang atau di proyek yang mereka pimpin)',
             relatedLabel: 'Yang saya miliki atau proyek yang saya pimpin',
             relatedHint:
-              'Terbitan yang saya miliki, dan terbitan dalam proyek yang saya pimpin',
-            all: 'Tutup masalah (semua)',
+              'Tugas yang saya pegang dan tugas di proyek yang saya pimpin',
+            all: 'Tutup tugas (semua)',
           },
           changeOwner: {
             title: 'Ganti pemiliknya',
             description:
-              'Serahkan suatu permasalahan kepada orang lain untuk mempertanggungjawabkannya',
+              'Serahkan tugas kepada orang lain agar ia bertanggung jawab atasnya',
             related:
               'Ganti pemilik (yang mereka miliki atau proyek yang mereka pimpin)',
             relatedLabel: 'Yang saya miliki atau proyek yang saya pimpin',
             relatedHint:
-              'Terbitan yang saya miliki, dan terbitan dalam proyek yang saya pimpin',
+              'Tugas yang saya pegang dan tugas di proyek yang saya pimpin',
             all: 'Ganti pemilik (semua)',
           },
           delete: {
-            title: 'Hapus dan pulihkan masalah',
-            description: 'Hapus masalah dan pulihkan masalah yang terhapus',
-            all: 'Hapus dan pulihkan masalah',
+            title: 'Hapus dan pulihkan tugas',
+            description: 'Hapus tugas dan pulihkan yang terhapus',
+            all: 'Hapus dan pulihkan tugas',
           },
         },
       },
       attachments: {
         title: 'Lampiran',
-        description: 'File terlampir pada terbitan dan komentar.',
+        description: 'File yang dilampirkan pada tugas dan komentar.',
         actions: {
           upload: {
             title: 'Unggah lampiran',
             description:
-              'Lampirkan file ke terbitan yang dapat mereka edit dan ke komentar mereka',
-            related:
-              'Unggah lampiran (tentang masalah yang dapat mereka lihat)',
-            relatedLabel:
-              'Tentang permasalahan dalam proyek yang dapat saya lihat',
+              'Lampirkan file ke tugas yang dapat mereka edit dan ke komentar mereka',
+            related: 'Unggah lampiran (pada tugas yang dapat mereka lihat)',
+            relatedLabel: 'Pada tugas di proyek yang dapat saya lihat',
             relatedHint:
-              'File tentang masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
+              'File pada tugas tanpa proyek dan pada tugas di proyek yang dapat saya lihat',
             all: 'Unggah lampiran (semua)',
           },
         },
@@ -152,11 +150,11 @@ const idID: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Proyek',
-      pmIssues: 'Isu',
+      pmIssues: 'Tugas',
     },
     recordAccess: {
-      visible: 'Proyek dan masalah yang dapat mereka lihat',
-      managed: 'Proyek yang mereka pimpin dan isu yang mereka miliki',
+      visible: 'Proyek dan tugas yang dapat mereka lihat',
+      managed: 'Proyek yang mereka pimpin dan tugas yang mereka pegang',
     },
     settings: {
       pm: {
@@ -172,9 +170,9 @@ const idID: LocaleResource<typeof enUS> = {
         objects: 'Proyek',
       },
       issues: {
-        title: 'Isu',
+        title: 'Tugas',
         description:
-          'Lihat masalah; membuat, mengedit, mengomentari, menutup, dan menetapkan ulang; memoderasi komentar dan menghapus masalah.',
+          'Lihat tugas; buat, edit, komentari, tutup, dan tetapkan ulang; moderasi komentar dan hapus tugas.',
       },
       settings: {
         title: 'Pengaturan proyek',
@@ -200,8 +198,8 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   notifications: {
-    batchDone: 'Semua sub-edisi {{identifier}} telah selesai',
-    batchDoneStage: 'Tahap {{stage}} dari sub-edisi {{identifier}} selesai',
+    batchDone: 'Semua subtugas {{identifier}} telah selesai',
+    batchDoneStage: 'Tahap {{stage}} subtugas {{identifier}} telah selesai',
     commented: '{{actor}} mengomentari {{identifier}}',
     dependencyReleased:
       '{{releasedBy}} selesai, sehingga {{identifier}} dapat dimulai',
@@ -216,7 +214,7 @@ const idID: LocaleResource<typeof enUS> = {
     ownerNotified: '{{identifier}} sekarang menjadi {{status}}',
   },
   status: {
-    backlog: 'Tunggakan',
+    backlog: 'Backlog',
     blocked: 'Terhambat',
     cancelled: 'Dibatalkan',
     done: 'Selesai',

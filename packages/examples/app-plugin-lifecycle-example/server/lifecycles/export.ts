@@ -92,6 +92,9 @@ function newRound({ record }: { readonly record: DataExport }) {
 export const exportLifecycle: Lifecycle<ExportTypes> =
   defineLifecycle<ExportTypes>({
     name: 'exports',
+    key: 'exports',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.exports,
     initial: 'draft',
     create: { validate: exportProblems },
@@ -104,7 +107,10 @@ export const exportLifecycle: Lifecycle<ExportTypes> =
       'timedOut',
       { name: 'cancelled', final: true },
     ],
-    parameterConfiguration: { readMode: 'live', groups: [exportTimingGroup] },
+    dueAtField: 'lifecycleDueAt',
+    parameterConfiguration: {
+      groups: [exportTimingGroup],
+    },
     parameters: { pollSeconds: 15, maxMinutes: 3 },
     transitions: {
       submit: {

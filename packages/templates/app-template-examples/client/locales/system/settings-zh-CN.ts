@@ -1,4 +1,7 @@
 const settings = {
+  notificationManagementDescription: '查看已登记的通知模板和合成内容预览。',
+  notificationTemplates: '通知模板',
+  notificationManagement: '通知管理',
   listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',
@@ -101,6 +104,18 @@ const settings = {
 
   reload: '重新加载角色',
   title: '系统设置',
+  home: {
+    description: '账号、权限、业务配置和系统能力都在这里。',
+    empty: '暂时没有你可以管理的设置。',
+  },
+  categories: {
+    account: '账号与权限',
+    business: '业务配置',
+    ai: 'AI',
+    system: '系统',
+  },
+  permissionManagementDescription:
+    '设置每个角色能打开的页面、能做的操作和能看到的数据。',
   users: '用户管理',
   roles: '角色与权限',
   usersDescription: '管理用户账户、角色及登录会话。',

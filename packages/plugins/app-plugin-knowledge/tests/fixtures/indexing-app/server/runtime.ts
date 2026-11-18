@@ -22,6 +22,7 @@ import { defineKnowledgeConfig } from '../../../../config.js';
 export function createIndexingAppRuntime(
   indexingExtensions: readonly KnowledgeIndexingExtension[] = [],
   withAgents = true,
+  indexing = true,
 ): AppRuntimeDefinition {
   return defineAppRuntime({
     createAppConfig(context) {
@@ -45,7 +46,7 @@ export function createIndexingAppRuntime(
         defaults: {
           secret: 'knowledge-indexing-test-secret-32-characters',
           trustedOrigins: ['http://localhost'],
-          emailAndPassword: { enabled: true, autoSignIn: false },
+          emailAndPassword: { enabled: true, autoSignIn: true },
         },
       }),
       logging: defineAppConfig({
@@ -75,7 +76,9 @@ export function createIndexingAppRuntime(
       authentication,
       authorization,
       ...(withAgents ? [agents] : []),
-      createKnowledgePlugin({ indexingExtensions }),
+      createKnowledgePlugin(
+        indexing ? { indexingExtensions } : { indexing: false },
+      ),
     ]),
     serviceProviders: [],
     routes: [],

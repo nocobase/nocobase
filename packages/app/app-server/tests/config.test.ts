@@ -213,6 +213,9 @@ describe('app database storage', () => {
 
 describe('app migrator', () => {
   it('skips missing migration directories', async () => {
+    createDatabaseMigratorMock.mockReturnValue({
+      history: vi.fn().mockResolvedValue([]),
+    });
     const root = mkdtempSync(
       path.join(tmpdir(), 'nocobase-app-missing-migrations-'),
     );

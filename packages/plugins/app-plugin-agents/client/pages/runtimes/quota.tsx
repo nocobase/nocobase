@@ -1,3 +1,4 @@
+import { QuotaLimitSetting } from './quota-limit-setting.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { isNativeTool, type AgentTool } from '@nocobase/agent-protocol';
@@ -7,7 +8,18 @@ import type {
 } from '../../../shared/runners.js';
 import { compactDateTime, quotaWindowLabel } from '../../lib/format.js';
 import { QuotaLabel } from '../../components/quota-status.js';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog.js';
 import { Button } from '../../components/ui/button.js';
+import { blockedProviders, providerTool, quotaView } from './quota-view.js';
 
 export function QuotaCell({
   runner,
@@ -23,41 +35,10 @@ export function QuotaCell({
   readonly onClear: (mark: UnavailableModel) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
-  const marks = (runner.unavailableModels ?? []).filter(
-    (m) =>
-      m.reason === 'toolQuota' &&
-      m.tool === tool &&
-      m.model === target &&
-      (!m.resetsAt || Date.parse(m.resetsAt) > now),
-  );
-  const usage = (runner.quotaUsage ?? []).filter(
-    (u) =>
-      u.tool === tool &&
-      u.target === target &&
-      u.usedPercent !== undefined &&
-      (!u.resetsAt || Date.parse(u.resetsAt) > now) &&
-      !(u.window === 'account' && marks.length) &&
-      !(u.exhausted && !marks.length),
-  );
-  const providerTool = tool === 'opencode' || tool === 'pi';
-  const blocked = new Set(
-    (runner.unavailableModels ?? [])
-      .filter(
-        (m) =>
-          m.reason === 'toolQuota' &&
-          m.tool === tool &&
-          m.scope === 'provider' &&
-          (!m.resetsAt || Date.parse(m.resetsAt) > now),
-      )
-      .map((m) => m.model),
-  ).size;
-  const near =
-    !marks.length &&
-    usage.some(
-      (u) =>
-        (u.usedPercent ?? 0) >= 90 &&
-        (!u.resetsAt || Date.parse(u.resetsAt) > now),
-    );
+  const { marks, usage, near } = quotaView(runner, tool, target, now);
+  const blocked = providerTool(tool)
+    ? blockedProviders(runner, tool, now).length
+    : 0;
   return (
     <div className='min-w-0 space-y-1 text-xs whitespace-normal'>
       {marks.map((mark) => (
@@ -80,7 +61,7 @@ export function QuotaCell({
               })}
             </span>
           ) : null}
-          {!mark.resetsAt && runner.canClearQuota ? (
+          {runner.canClearQuota ? (
             <Button
               type='button'
               size='xs'
@@ -128,7 +109,7 @@ export function QuotaCell({
         <p className='text-muted-foreground'>{t('runtimes.quota.automatic')}</p>
       ) : null}
       {!usage.length && !marks.length ? (
-        providerTool && !target && blocked > 0 ? (
+        !target && blocked > 0 ? (
           <span className='text-muted-foreground'>
             {t('runtimes.quota.providers', {
               count: blocked,
@@ -139,44 +120,61 @@ export function QuotaCell({
             {t(
               !isNativeTool(tool)
                 ? 'runtimes.tool.notProvided'
-                : 'runtimes.quota.ok',
+                : 'runtimes.quota.noUsage',
             )}
           </span>
         )
+      ) : null}
+      {!target ? (
+        <QuotaLimitSetting runner={runner} tool={tool} now={now} />
       ) : null}
     </div>
   );
 }
 
-export function QuotaClearConfirmation({
+/** Asks before a quota mark is cleared; `name` is the tool or model the mark holds back, null while closed. */
+export function QuotaClearDialog({
   name,
   pending,
   onClear,
   onCancel,
 }: {
-  readonly name: string;
+  readonly name: string | null;
   readonly pending: boolean;
   readonly onClear: () => void;
   readonly onCancel: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <div className='flex flex-wrap items-center justify-between gap-2 text-xs'>
-      <span>{t('runtimes.quota.confirm', { target: name })}</span>
-      <div className='flex gap-2'>
-        <Button type='button' size='xs' disabled={pending} onClick={onClear}>
-          {t('runtimes.quota.clearMark')}
-        </Button>
-        <Button
-          type='button'
-          size='xs'
-          variant='outline'
-          disabled={pending}
-          onClick={onCancel}
-        >
-          {t('actions.cancel')}
-        </Button>
-      </div>
-    </div>
+    <AlertDialog
+      open={name !== null}
+      onOpenChange={(open) => {
+        if (!open && !pending) onCancel();
+      }}
+    >
+      {/* Opened from the runtime sheet, so its backdrop must be forced to cover the sheet. */}
+      <AlertDialogContent nested>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t('runtimes.quota.confirmTitle', { target: name ?? '' })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('runtimes.quota.confirm', { target: name ?? '' })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>
+            {t('actions.cancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            variant='destructive'
+            disabled={pending}
+            onClick={onClear}
+          >
+            {t('runtimes.quota.clearMark')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

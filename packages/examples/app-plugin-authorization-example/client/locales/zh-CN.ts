@@ -164,7 +164,7 @@ const zhCN: LocaleResource<typeof enUS> = {
     record: '记录',
     notes: '备注',
     save: '保存',
-    refresh: '刷新',
+    retryRead: '重试',
     loading: '加载中…',
     empty: '暂无可访问记录',
     readOnly: '只读',

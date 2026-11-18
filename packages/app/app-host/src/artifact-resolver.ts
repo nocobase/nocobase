@@ -1,3 +1,5 @@
+import { artifactWorker } from './artifact-worker-client.js';
+import { deploymentCheckpoint } from './deployment-control.js';
 /**
  * This file is part of the NocoBase (R) project.
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
@@ -8,8 +10,7 @@
  */
 
 import { deploymentLog } from './deployment-log.js';
-import { createHash, randomUUID } from 'node:crypto';
-import { createReadStream, createWriteStream } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import {
   mkdir,
   readFile,
@@ -19,10 +20,22 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { finished, pipeline } from 'node:stream/promises';
+import {
+  downloadArtifact,
+  resolveArtifactReadOptions,
+  type ArtifactReadOptions,
+} from './artifact-read.js';
+export type { ArtifactReadOptions } from './artifact-read.js';
+import {
+  resolveArtifactWorkerOptions,
+  type ArtifactWorkerConfig,
+} from './artifact-worker-options.js';
+export {
+  resolveArtifactWorkerOptions,
+  type ArtifactWorkerConfig,
+} from './artifact-worker-options.js';
 
 import type { NocoBaseDriveDisk } from '@nocobase/drive';
-import { x as extractTar } from 'tar';
 
 import type { Logger } from '@nocobase/logging';
 
@@ -55,6 +68,8 @@ export interface DriveArtifactResolverOptions {
   localArtifactDir?: string;
   logger?: Logger;
   expandedRevisionLimit?: number;
+  artifactRead?: ArtifactReadOptions;
+  artifactWorker?: ArtifactWorkerConfig;
 }
 
 interface InstalledArtifactMetadata {
@@ -94,6 +109,8 @@ export class DriveArtifactResolver implements ArtifactResolver {
   readonly localArtifactDir?: string;
   readonly logger?: Logger;
   readonly expandedRevisionLimit?: number;
+  readonly artifactRead: Required<ArtifactReadOptions>;
+  readonly artifactWorker: Required<ArtifactWorkerConfig>;
   private readonly activeRevisionByApp = new Map<string, string>();
   private readonly revisionPrunes = new Map<string, Promise<void>>();
 
@@ -110,6 +127,8 @@ export class DriveArtifactResolver implements ArtifactResolver {
       : undefined;
     this.logger = options.logger;
     this.expandedRevisionLimit = options.expandedRevisionLimit;
+    this.artifactRead = resolveArtifactReadOptions(options.artifactRead);
+    this.artifactWorker = resolveArtifactWorkerOptions(options.artifactWorker);
     if (
       this.expandedRevisionLimit !== undefined &&
       (!Number.isSafeInteger(this.expandedRevisionLimit) ||
@@ -171,15 +190,30 @@ export class DriveArtifactResolver implements ArtifactResolver {
       }
 
       deploymentLog('resolving', 'Reading release artifact');
-      const checksumStartedAt = Date.now();
+      const readStartedAt = Date.now();
       const localPath = this.localArtifactPath(reference.key);
-      const actualChecksum = localPath
-        ? await hashLocalArtifact(localPath)
-        : await downloadArtifact(this.disk, reference.key, archivePath);
-      const checksumDurationMs = Date.now() - checksumStartedAt;
+      if (!localPath)
+        await downloadArtifact(
+          this.disk,
+          reference.key,
+          archivePath,
+          this.artifactRead,
+          this.logger,
+        );
+      const readDurationMs = Date.now() - readStartedAt;
+      deploymentCheckpoint();
       deploymentLog('verifying', 'Verifying artifact checksum', {
-        durationMs: checksumDurationMs,
+        readDurationMs,
       });
+      const checksumStartedAt = Date.now();
+      const actualChecksum = await artifactWorker(
+        'hash',
+        localPath ?? archivePath,
+        undefined,
+        this.artifactWorker,
+      );
+      const checksumDurationMs = Date.now() - checksumStartedAt;
+      deploymentCheckpoint();
       if (actualChecksum !== checksum) {
         throw new Error(
           `Artifact checksum mismatch for app "${reference.appId}": expected "${reference.checksum}", received "${actualChecksum}"`,
@@ -189,14 +223,13 @@ export class DriveArtifactResolver implements ArtifactResolver {
       await mkdir(stagingDir, { recursive: true, mode: 0o700 });
       deploymentLog('extracting', 'Extracting release artifact');
       const extractStartedAt = Date.now();
-      await extractTar({
-        cwd: stagingDir,
-        file: localPath ?? archivePath,
-        gzip: true,
-        preservePaths: false,
-        strict: true,
-        filter: assertSafeArchiveEntry,
-      });
+      await artifactWorker(
+        'extract',
+        localPath ?? archivePath,
+        stagingDir,
+        this.artifactWorker,
+      );
+      deploymentCheckpoint();
       const extractDurationMs = Date.now() - extractStartedAt;
       deploymentLog('preparing', 'Validating application entry point', {
         extractDurationMs,
@@ -229,6 +262,7 @@ export class DriveArtifactResolver implements ArtifactResolver {
           artifactChecksum: checksum,
           revisionDir: targetDir,
           cacheHit: false,
+          readDurationMs,
           checksumDurationMs,
           extractDurationMs,
           discoveryDurationMs,
@@ -497,29 +531,6 @@ function artifactChecksumsEqual(
   );
 }
 
-async function downloadArtifact(
-  disk: NocoBaseDriveDisk,
-  key: string,
-  destination: string,
-): Promise<string> {
-  const hash = createHash('sha256');
-  const source = await disk.getStream(key);
-  source.on('data', (chunk: Buffer | string) => hash.update(chunk));
-  await pipeline(
-    source,
-    createWriteStream(destination, { flags: 'wx', mode: 0o600 }),
-  );
-  return hash.digest('hex');
-}
-
-async function hashLocalArtifact(source: string): Promise<string> {
-  const hash = createHash('sha256');
-  const sourceStream = createReadStream(source);
-  sourceStream.on('data', (chunk: Buffer | string) => hash.update(chunk));
-  await finished(sourceStream);
-  return hash.digest('hex');
-}
-
 function validateArtifactReference(reference: ArtifactReference): void {
   if (!reference || typeof reference !== 'object') {
     throw new Error('Artifact reference must be an object');
@@ -540,23 +551,6 @@ function validateArtifactReference(reference: ArtifactReference): void {
   if (!/^[a-fA-F0-9]{64}$/.test(reference.checksum)) {
     throw new Error('Artifact checksum must be a SHA-256 hex digest');
   }
-}
-
-function assertSafeArchiveEntry(entryPath: string): boolean {
-  const normalized = path.posix.normalize(entryPath.replaceAll('\\', '/'));
-  if (
-    path.posix.isAbsolute(normalized) ||
-    normalized === '..' ||
-    normalized.startsWith('../')
-  ) {
-    throw new Error(`Artifact archive contains an unsafe path "${entryPath}"`);
-  }
-  if (normalized === INSTALLED_ARTIFACT_FILE) {
-    throw new Error(
-      `Artifact archive contains reserved path "${INSTALLED_ARTIFACT_FILE}"`,
-    );
-  }
-  return true;
 }
 
 function assertArtifactIdentity(

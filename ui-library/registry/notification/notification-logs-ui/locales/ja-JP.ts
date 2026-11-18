@@ -12,7 +12,7 @@ const jaJP: NotificationResource = {
     description:
       '通知配信とすべてのプロバイダーの試行を追跡します。メッセージ本文、受信者、およびリース トークンは編集されます。',
     refreshing: '爽やか…',
-    refresh: '更新',
+    retryRead: '再試行',
     deliveriesShown: '配送状況を表示',
     needAttention: '注意が必要です',
     unavailable: 'ログが利用できません',

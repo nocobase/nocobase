@@ -5,11 +5,12 @@ import {
   type LocaleDefinition,
 } from '@nocobase/i18n/client';
 import {
+  AppLocalePreferenceContext,
   useApiClient,
   writeStoredLocale,
   type ApiClient,
 } from '@nocobase/app-client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import type { ServerLocaleResult } from '../locale-result.js';
 
@@ -54,23 +55,36 @@ export function useAppLocale(): UseAppLocaleResult {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<Error>();
 
+  const preference = useContext(AppLocalePreferenceContext);
+  const coordinator = getCoordinator(api);
+  const attempts = useRef(0);
+
   const changeLocale = useCallback(
     async (next: Locale): Promise<ServerLocaleResult> => {
       setSyncing(true);
       setSyncError(undefined);
+      ++coordinator.revision;
+      const attempt = ++attempts.current;
       try {
-        await setLocale(next);
-        const selected = runtime?.getLocale() ?? next;
-        writeStoredLocale(selected);
-        return await notifyServerLocale(api, selected);
+        if (preference) return await preference.set(next);
+        return await enqueue(coordinator, async () => {
+          await setLocale(next);
+          const selected = runtime?.getLocale() ?? next;
+          writeStoredLocale(selected);
+
+          return notifyServerLocale(api, selected);
+        });
       } catch (cause) {
-        setSyncError(cause instanceof Error ? cause : new Error(String(cause)));
+        if (attempt === attempts.current)
+          setSyncError(
+            cause instanceof Error ? cause : new Error(String(cause)),
+          );
         throw cause;
       } finally {
-        setSyncing(false);
+        if (attempt === attempts.current) setSyncing(false);
       }
     },
-    [api, runtime, setLocale],
+    [api, runtime, setLocale, preference, coordinator],
   );
 
   return {
@@ -90,15 +104,44 @@ export function useAppLocale(): UseAppLocaleResult {
  */
 export function useSyncServerLocale(): void {
   const api = useApiClient();
-  // Optional, so the shell can call this unconditionally: an application composed without i18n, which is what a
-  // focused test renders, has no language to report and simply does nothing.
   const runtime = useOptionalI18nRuntime();
+  const preference = useContext(AppLocalePreferenceContext);
+  const coordinator = getCoordinator(api);
+  const integrated = preference !== undefined;
 
   useEffect(() => {
-    if (!runtime) return;
-    const synchronization = notifyServerLocale(api, runtime.getLocale());
-    synchronization.catch(() => {
-      // Nothing to do: the interface is already correct, and the next startup tries again.
+    if (!runtime || integrated) return;
+    let cancelled = false;
+    const revision = coordinator.revision;
+    const synchronization = enqueue(coordinator, async () => {
+      if (cancelled || revision !== coordinator.revision) return;
+      await notifyServerLocale(api, runtime.getLocale());
     });
-  }, [api, runtime]);
+    synchronization.catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [api, runtime, coordinator, integrated]);
+}
+
+interface LocaleCoordinator {
+  revision: number;
+  queue: Promise<unknown>;
+}
+const coordinators = new WeakMap<ApiClient, LocaleCoordinator>();
+function getCoordinator(api: ApiClient): LocaleCoordinator {
+  let state = coordinators.get(api);
+  if (!state) {
+    state = { revision: 0, queue: Promise.resolve() };
+    coordinators.set(api, state);
+  }
+  return state;
+}
+function enqueue<T>(
+  state: LocaleCoordinator,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const result = state.queue.then(operation);
+  state.queue = result.catch(() => undefined);
+  return result;
 }

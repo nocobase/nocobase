@@ -1,4 +1,8 @@
 import {
+  limitBytes,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
+import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -11,7 +15,8 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 import type { Hono } from 'hono';
 
-import { ATTACHMENT_SIZE_MAX } from '../../../shared/attachments.js';
+import { collectRunAttempts, RECORDED_SKIPS } from '../../kernel/work.js';
+import type { CreateCommentResult } from '../../../shared/comments.js';
 import {
   delegatedWrite,
   viewerOf,
@@ -52,6 +57,7 @@ const notFound = apiErrorResponse(404);
  */
 export function createIssueCommentRoutes(deps: {
   readonly comments: CommentService;
+  readonly uploadLimit: DriveUploadLimit;
   readonly queries: CommentQueries;
   /** A connection to read with, for answering a comment a delegated write made. */
   readonly read: () => DatabaseConnection;
@@ -123,7 +129,7 @@ export function createIssueCommentRoutes(deps: {
             upload: 'projectsUploadAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(deps.uploadLimit),
             description: `A file to attach (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
           },
         },
@@ -133,7 +139,7 @@ export function createIssueCommentRoutes(deps: {
         ],
       }),
       description:
-        'Needs `comment` on the issue, and `upload` on `pm.attachments` to send `attachmentIds` (the caller’s uploads attached to nothing). Markdown, with mentions as `[@Name](mention://<kind>/<id>)`; a comment starting with `/note` starts no work.',
+        'Needs `comment` on the issue, and `upload` on `pm.attachments` to send `attachmentIds` (the caller’s uploads attached to nothing). Markdown, with mentions as `[@Name](mention://<kind>/<id>)`; a comment starting with `/note` starts no work. Answers `triggered` for work started and `skipped` for work held back, including reason `limited` when the comment run limit was reached; the comment is still saved.',
       responses: {
         201: dataResponse(CreateCommentResultSchema),
         ...apiErrorResponses,
@@ -164,18 +170,32 @@ export function createIssueCommentRoutes(deps: {
             : undefined;
         return context.json(
           {
-            data: { comment: comment ?? null, triggered: [] },
+            data: { comment: comment ?? null, triggered: [], skipped: [] },
             meta: delegated.meta,
           },
           201,
         );
       }
-      const { comment, triggered } = await deps.comments.create(
-        viewerOf(context),
-        issueId,
-        input,
+      const {
+        value: { comment, triggered },
+        attempts,
+      } = await collectRunAttempts(() =>
+        deps.comments.create(viewerOf(context), issueId, input),
       );
-      return context.json({ data: { comment, triggered } }, 201);
+      const skipped = attempts.flatMap((attempt) =>
+        RECORDED_SKIPS.has(attempt.skipped ?? '')
+          ? [
+              {
+                kind: attempt.kind,
+                id: attempt.principalId,
+                reason: attempt.skipped as NonNullable<
+                  CreateCommentResult['skipped']
+                >[number]['reason'],
+              },
+            ]
+          : [],
+      );
+      return context.json({ data: { comment, triggered, skipped } }, 201);
     },
   );
   return routes;
@@ -193,7 +213,9 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
       tags,
       summary: 'Edit a comment',
       operationId: 'projectsUpdateComment',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.issues/comment',
         command: 'comment update',
         flags: {
           commentId: { name: 'comment' },
@@ -201,7 +223,8 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
         },
         examples: ['comment update <comment> --content-file note.md'],
       }),
-      description: 'By its author.',
+      description:
+        'By its author. An issued run credential may edit only a plain comment recorded by that same run; missing provenance is refused.',
       responses: {
         200: dataResponse(IssueCommentSchema),
         ...apiErrorResponses,
@@ -225,7 +248,9 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
       tags,
       summary: 'Delete a comment',
       operationId: 'projectsDeleteComment',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.issues/comment',
         command: 'comment delete',
         flags: { commentId: { name: 'comment' } },
         confirm: 'Delete this comment and its files?',

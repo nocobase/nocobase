@@ -59,7 +59,8 @@ export class ReliableHistory {
         : history.status?.value === 'active'
           ? history.status.at
           : undefined;
-    if (current.status !== null) history.status = { value: current.status, at };
+    if (current.status !== null)
+      history.status = { value: current.status, at: current.checkedAt ?? at };
     // Negative conclusions require current evidence. An earlier active state is explicitly marked historical.
     else if (statusAt) {
       result.status = 'active';
@@ -88,7 +89,10 @@ export class ReliableHistory {
       if (current.key === 'dataModeling' && metric.key === 'businessRecords')
         return metric;
       if (metric.complete && metric.value !== null) {
-        history.metrics.set(metric.key, { value: metric, at });
+        history.metrics.set(metric.key, {
+          value: metric,
+          at: metric.checkedAt ?? at,
+        });
         return metric;
       }
       const previous = history.metrics.get(metric.key);
@@ -103,7 +107,7 @@ export class ReliableHistory {
         : current.parts;
     result.parts = parts.map((part) => {
       if (part.status !== null) {
-        history.parts.set(part.key, { value: part, at });
+        history.parts.set(part.key, { value: part, at: part.checkedAt ?? at });
         return part;
       }
       const previous = history.parts.get(part.key);
@@ -119,7 +123,9 @@ export class ReliableHistory {
         const fact = current.facts.find(
           (fact) => fact.code === 'fileCollections',
         );
-        history.fileCollections = fact ? { value: fact, at } : undefined;
+        history.fileCollections = fact
+          ? { value: fact, at: fact.checkedAt ?? at }
+          : undefined;
       } else if (history.fileCollections) {
         result.facts = [
           {

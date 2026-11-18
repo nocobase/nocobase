@@ -33,7 +33,11 @@ import {
 export interface LifecycleRoutesSpec {
   /** Where the plugin's routes start, such as `/lifecycleExample`. */
   readonly basePath: string;
-  /** The lifecycle, which is also the path segment of its records. */
+  /**
+   * The process: its key, which is also the path segment of its records.
+   * Each record route answers and acts through the definition the record is
+   * bound to, so a page needs no version.
+   */
   readonly lifecycle: string;
   /** The record in an operationId and a summary, such as `Ticket`. */
   readonly noun: string;
@@ -74,6 +78,31 @@ export function lifecycleRoutes(
   const path = `${spec.basePath}/${lifecycle}`;
   const lower = noun.charAt(0).toLowerCase() + noun.slice(1);
   const notFound = apiErrorResponse(404, `No such ${lower}.`);
+  const otherProcess = apiErrorResponse(
+    400,
+    `The record has not been started by any version of this process (\`DEFINITION_MISMATCH\`, status \`FAILED_PRECONDITION\`).`,
+  );
+  /** The definition the record is bound to, whichever version the page knows. */
+  const definitionOf = (recordId: string): Promise<string> =>
+    runtime.boundLifecycle(lifecycle, recordId);
+  const definitionQuery = {
+    recordId: z.string().min(1).optional().meta({
+      description:
+        'An instance whose immutable parameters and bound definition should be described.',
+    }),
+    definition: z.string().min(1).optional().meta({
+      description:
+        'The name of one version of the process; the latest version when absent.',
+    }),
+  };
+  const DescribeQuery: z.ZodType<{
+    readonly actAs?: string;
+    readonly definition?: string;
+    readonly recordId?: string;
+  }> =
+    spec.persona === false
+      ? z.object(definitionQuery)
+      : ActAsQuery.extend(definitionQuery);
 
   const parameterPermission: MiddlewareHandler<AuthEnv> = async (
     context,
@@ -92,21 +121,43 @@ export function lifecycleRoutes(
       summary: `Describe the ${lower} lifecycle`,
       operationId: `lifecycleExampleDescribe${noun}Lifecycle`,
       description:
-        'The states, transitions, effects and triggers, the administrator parameters, and a Mermaid diagram.',
+        'The states, transitions, effects and triggers, the administrator parameters, and a Mermaid diagram of the latest version, or of the version `definition` names. The latest is the largest version, not necessarily the one new records use.',
       responses: {
         200: dataResponse(DescriptionViewSchema),
         401: apiErrorResponse(401),
+        404: apiErrorResponse(404, 'No such version of this process.'),
         500: apiErrorResponse(500),
       },
     }),
-    apiValidator('query', query),
-    async (context) =>
-      context.json({
-        data: await lifecycleDescriptionViewAsync(runtime, lifecycle, {
-          record: null,
-          transactionHandle: undefined,
-        }),
-      }),
+    apiValidator('query', DescribeQuery),
+    async (context) => {
+      const { definition, recordId } = context.req.valid('query');
+      const group = runtime.group(lifecycle);
+      if (
+        definition !== undefined &&
+        !group.versions.some((version) => version.name === definition)
+      )
+        throw new ApiError({
+          status: 'NOT_FOUND',
+          reason: 'DEFINITION_NOT_FOUND',
+          domain: LIFECYCLE_EXAMPLE_DOMAIN,
+          message: `No version "${definition}" of this process.`,
+        });
+      const instance = recordId
+        ? await runtime.view(
+            await definitionOf(recordId),
+            recordId,
+            actorOf(context, context.req.valid('query').actAs),
+          )
+        : undefined;
+      return context.json({
+        data: await lifecycleDescriptionViewAsync(
+          runtime,
+          instance?.lifecycle ?? definition ?? group.latest,
+          { record: instance?.record ?? null, transactionHandle: undefined },
+        ),
+      });
+    },
   );
 
   router.get(
@@ -117,9 +168,10 @@ export function lifecycleRoutes(
       summary: `Get a ${lower}`,
       operationId: `lifecycleExampleGet${noun}`,
       description:
-        'The record, its state and version, which transitions the persona may fire and why not, and its history.',
+        'The record, the definition it belongs to, its state and version, which transitions the persona may fire and why not, and its history.',
       responses: {
         200: dataResponse(RecordViewSchema),
+        400: otherProcess,
         401: apiErrorResponse(401),
         404: notFound,
         500: apiErrorResponse(500),
@@ -132,7 +184,11 @@ export function lifecycleRoutes(
       const { actAs } = context.req.valid('query');
       return context.json({
         data: outwardView(
-          await runtime.view(lifecycle, recordId, actorOf(context, actAs)),
+          await runtime.view(
+            await definitionOf(recordId),
+            recordId,
+            actorOf(context, actAs),
+          ),
         ),
       });
     },
@@ -150,7 +206,7 @@ export function lifecycleRoutes(
         200: dataResponse(FireViewSchema),
         400: apiErrorResponse(
           400,
-          'The state does not allow it (`INVALID_STATE`), every guard that refused waits for the record to change (`GUARD_REJECTED`, status `FAILED_PRECONDITION`), the input is invalid (`INVALID_INPUT`), the transition is unknown (`UNKNOWN_TRANSITION`) or the request id was spent on another (`REQUEST_REUSED`, `INVALID_REQUEST_ID`).',
+          "The state does not allow it (`INVALID_STATE`), every guard that refused waits for the record to change (`GUARD_REJECTED`, status `FAILED_PRECONDITION`), the input is invalid (`INVALID_INPUT`), the transition is unknown to the record's definition (`UNKNOWN_TRANSITION`), the request id was spent on another (`REQUEST_REUSED`, `INVALID_REQUEST_ID`), or no version of this process started the record (`DEFINITION_MISMATCH`).",
         ),
         401: apiErrorResponse(401),
         403: apiErrorResponse(
@@ -173,9 +229,10 @@ export function lifecycleRoutes(
       const { actAs } = context.req.valid('query');
       const body = context.req.valid('json');
       const actor = actorOf(context, actAs);
+      const definition = await definitionOf(recordId);
       try {
         const result = await runtime.fire(
-          lifecycle,
+          definition,
           recordId,
           body.transition,
           {
@@ -190,7 +247,7 @@ export function lifecycleRoutes(
         );
         return context.json({
           data: {
-            ...outwardView(await runtime.view(lifecycle, recordId, actor)),
+            ...outwardView(await runtime.view(definition, recordId, actor)),
             replayed: result.replayed === true,
           },
         });
@@ -205,8 +262,15 @@ export function lifecycleRoutes(
   // application would check an operator permission here, before validating.
   const RunRouteParams = RecordParams.extend(RunParams.shape);
   /** The run the URL names, on the record it names; anything else is a 404. */
-  const runOf = async (recordId: string, runId: string): Promise<void> => {
-    const runs = await runtime.listEffectRuns({ lifecycle, recordId });
+  const runOf = async (
+    definition: string,
+    recordId: string,
+    runId: string,
+  ): Promise<void> => {
+    const runs = await runtime.listEffectRuns({
+      lifecycle: definition,
+      recordId,
+    });
     if (!runs.some((run) => run.id === runId))
       throw new ApiError({
         status: 'NOT_FOUND',
@@ -243,14 +307,15 @@ export function lifecycleRoutes(
       const { actAs } = context.req.valid('query');
       const { force, reason } = context.req.valid('json');
       const actor = actorOf(context, actAs);
-      await runtime.view(lifecycle, recordId, actor);
-      await runOf(recordId, runId);
+      const definition = await definitionOf(recordId);
+      await runtime.view(definition, recordId, actor);
+      await runOf(definition, recordId, runId);
       await runtime.retryRun(runId, {
         force,
         ...(reason === undefined ? {} : { reason }),
       });
       return context.json({
-        data: outwardView(await runtime.view(lifecycle, recordId, actor)),
+        data: outwardView(await runtime.view(definition, recordId, actor)),
       });
     },
   );
@@ -287,8 +352,9 @@ export function lifecycleRoutes(
       const { recordId, runId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
       const actor = actorOf(context, actAs);
-      await runtime.view(lifecycle, recordId, actor);
-      await runOf(recordId, runId);
+      const definition = await definitionOf(recordId);
+      await runtime.view(definition, recordId, actor);
+      await runOf(definition, recordId, runId);
       try {
         await runtime.continueRun(runId);
       } catch (error) {
@@ -296,7 +362,7 @@ export function lifecycleRoutes(
         throw toApiError(error, { continuation: true });
       }
       return context.json({
-        data: outwardView(await runtime.view(lifecycle, recordId, actor)),
+        data: outwardView(await runtime.view(definition, recordId, actor)),
       });
     },
   );
@@ -326,11 +392,12 @@ export function lifecycleRoutes(
       const { recordId, runId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
       const actor = actorOf(context, actAs);
-      await runtime.view(lifecycle, recordId, actor);
-      await runOf(recordId, runId);
+      const definition = await definitionOf(recordId);
+      await runtime.view(definition, recordId, actor);
+      await runOf(definition, recordId, runId);
       await runtime.cancelRun(runId);
       return context.json({
-        data: outwardView(await runtime.view(lifecycle, recordId, actor)),
+        data: outwardView(await runtime.view(definition, recordId, actor)),
       });
     },
   );

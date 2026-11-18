@@ -165,7 +165,7 @@ const esES: LocaleResource<typeof enUS> = {
     record: 'Registro',
     notes: 'Notas',
     save: 'Guardar',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     loading: 'Cargando…',
     empty: 'No hay registros accesibles',
     readOnly: 'Sólo lectura',

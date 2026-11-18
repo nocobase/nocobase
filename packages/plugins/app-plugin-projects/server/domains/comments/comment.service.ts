@@ -400,7 +400,10 @@ export function createCommentService(deps: CommentDeps): CommentService {
     async remove(viewer, commentId) {
       await deps.tx.run(async (tx) => {
         const { comment, issue } = await visibleComment(tx, viewer, commentId);
-        if (comment.deletedAt) return;
+        if (comment.deletedAt) {
+          if (viewer.runId) throw notFound('Comment');
+          return;
+        }
         if (!(await canDeleteComment(tx.conn, viewer, comment, issue)))
           throw forbidden(
             "Only its author, the issue's owner, the project lead or an administrator may delete a comment.",

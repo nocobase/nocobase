@@ -39,9 +39,17 @@ export interface AppPluginProviderConstructor<TConfig = object> {
   readonly __config?: TConfig;
 }
 
-export interface AppServerPluginDatabaseContribution {
+export interface AppServerDatabaseConnectionContribution {
   readonly migrations?: string;
   readonly seeds?: string;
+}
+
+/** Flat tasks retain the default-connection contract; named tasks use App connection names. */
+export interface AppServerPluginDatabaseContribution extends AppServerDatabaseConnectionContribution {
+  /** Empty entries use database/<connection>/{migrations,seeds} relative to baseDir. */
+  readonly connections?: Readonly<
+    Record<string, AppServerDatabaseConnectionContribution>
+  >;
 }
 
 /**
@@ -94,6 +102,15 @@ export interface ResolvedAppPlugin {
   readonly baseDir: string;
   readonly version: string;
   readonly rootDir: string;
+  readonly connections?: Readonly<
+    Record<
+      string,
+      {
+        readonly migrationsDirectory?: string;
+        readonly seedsDirectory?: string;
+      }
+    >
+  >;
   readonly migrationsDirectory?: string;
   readonly seedsDirectory?: string;
   /** @deprecated Always empty: Job modules are no longer discovered. */

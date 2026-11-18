@@ -335,6 +335,39 @@ describe('BridgeSession', () => {
     expect(methods).toEqual(['new', 'set', 'prompt']);
   });
 
+  it('normalizes discovery and reported state, and applies an intact valid selection beside an invalid value', async () => {
+    const env = { ...process.env, FAKE_VARIANT: 'long-choices' };
+    const { session: discovery } = start({}, FAKE, env);
+    const found = await discovery.discover();
+    expect(found.choices[0]?.options).toEqual([
+      { value: 'ask', name: 'Ask', description: 'w'.repeat(1000) },
+      { value: 'full', name: 'Full access' },
+    ]);
+    const { session, target, events } = start(
+      { settings: { mode: 'ask' } },
+      FAKE,
+      env,
+    );
+    prompt(session, target, 'p1', 'first');
+    expect(await until(events, ended('p1'))).toMatchObject({ error: null });
+    expect(session.state?.choices[0]?.currentValue).toBe('ask');
+    expect(session.state?.choices[0]?.options).toEqual(
+      found.choices[0]?.options,
+    );
+    session.handle({
+      type: 'choose',
+      sessionId: target.id,
+      choiceId: 'mode',
+      value: 'full',
+    });
+    await vi.waitFor(() =>
+      expect(session.state?.choices[0]?.currentValue).toBe('full'),
+    );
+    expect(session.state?.choices[0]?.options).toEqual(
+      found.choices[0]?.options,
+    );
+  });
+
   it('applies the model first and uses its updated dependent choices before prompting', async () => {
     const log = path.join(root, 'trace.jsonl');
     const { session, target, events } = start(

@@ -13,7 +13,7 @@ const esES: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Aplicaciones',
         description:
-          'Aplicaciones, sus lanzamientos, implementaciones y tiempo de ejecución.',
+          'Aplicaciones, sus lanzamientos, implementaciones y entorno de ejecución.',
         actions: {
           view: {
             title: 'Ver aplicaciones',

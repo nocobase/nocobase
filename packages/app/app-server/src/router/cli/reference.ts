@@ -29,6 +29,7 @@ export function cliUsageOf(command: CliCommand, bin?: string): string {
     !command.parameters.some((parameter) => parameter.in === 'body')
   )
     parts.push(`--${command.body.file} <file.json>`);
+  if (command.idempotency) parts.push('[--operation-key <key>]');
   return parts.join(' ');
 }
 
@@ -50,6 +51,11 @@ export function renderCliReference(
     `- \`${bin} <command> --help\` shows a command's arguments and flags; \`${bin} docs <command>\` adds its examples.`,
     `- \`--json\` prints one JSON document, \`{ schemaVersion, ok, command, status, result | error, warnings }\`; a command's answer is \`result.data\`, a failure's reason \`error.code\`.`,
     '- Exit codes: 0 ok, 1 general, 2 network, 3 authentication or permission, 4 not found, 5 invalid input, 6 conflict, 7 a plan is required.',
+    ...(manifest.commands.some((command) => command.idempotency)
+      ? [
+          '- Operation-key commands generate one timestamp.UUID key (50 characters) per invocation after validation and confirmation. Keep the key from stderr or JSON. After an uncertain response, query status before retrying with the same key, parameters and file within the server deduplication window. Framework mutation receipts accept keys for 24 hours from their timestamp; other services define their own window. Keys are not operation IDs or credentials; writes are never automatically retried. For interruption-safe automation, generate and save a key first and pass `--operation-key`.',
+        ]
+      : []),
     '- A command that asks first takes `--yes`; a long text flag also takes `--<flag>-file <path>`.',
     ...(description.notes ?? []).map((note) => `- ${note}`),
   ];

@@ -274,7 +274,7 @@ Register handlers in `boot()`: the application's queue provider sets the service
 
 ### Test background work
 
-Test the real Provider against a service created for the test, with its memory state under a temporary directory: `createJobExecutorService(undefined, { appName, storagePath })` for jobs, or `createQueueService({ default: 'memory', memory: { adapter: 'inMemory', persistence: { path } } }, …)` for queues. Start or set up, submit or publish, wait for the effect, and shut down. Cover retry, idempotency and, for queues, deduplication, then run a target App integration test. A Route that submits work still needs its own authentication and authorization tests.
+Test the real Provider against a service created for the test, with its memory state under a temporary directory: `createJobExecutorService(undefined, { appName, storagePath })` for jobs, or `createQueueService({ default: 'memory', backends: { memory: { adapter: 'inMemory', persistence: { path } } } }, …)` for queues. Start or set up, submit or publish, wait for the effect, and shut down. Cover retry, idempotency and, for queues, deduplication, then run a target App integration test. A Route that submits work still needs its own authentication and authorization tests.
 
 ## Verification and source references
 

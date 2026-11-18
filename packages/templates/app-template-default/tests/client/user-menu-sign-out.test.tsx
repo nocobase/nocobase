@@ -1,8 +1,18 @@
+import { AppThemeProvider } from '../../client/theme/index.js';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserMenu } from '../../client/layouts/components/user-menu.tsx';
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+
+// jsdom has no media queries; the real account menu includes the theme provider.
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addListener() {},
+    removeListener() {},
+  }));
+});
 
 async function openAccountMenu(): Promise<void> {
   act(() => screen.getByRole('button', { name: 'Open account menu' }).focus());
@@ -15,7 +25,11 @@ async function signOutFromMenu() {
 
 describe('account menu sign out', () => {
   it('ends the server session and refreshes the displayed identity', async () => {
-    const view = await renderAuthenticatedClient(<UserMenu />);
+    const view = await renderAuthenticatedClient(
+      <AppThemeProvider>
+        <UserMenu />
+      </AppThemeProvider>,
+    );
     await signOutFromMenu();
     await waitFor(() => expect(view.identity().session).toBeNull());
     expect(
@@ -26,13 +40,18 @@ describe('account menu sign out', () => {
     expect(screen.queryByText(view.session.user.email)).not.toBeInTheDocument();
   });
   it('reports a rejected origin without pretending the session ended', async () => {
-    const view = await renderAuthenticatedClient(<UserMenu />, {
-      beforeRequest(request) {
-        // Exercise the real origin guard and error resolver, not a fabricated authentication result.
-        if (request.url.endsWith('/sign-out'))
-          request.headers.set('origin', 'https://untrusted.example');
+    const view = await renderAuthenticatedClient(
+      <AppThemeProvider>
+        <UserMenu />
+      </AppThemeProvider>,
+      {
+        beforeRequest(request) {
+          // Exercise the real origin guard and error resolver, not a fabricated authentication result.
+          if (request.url.endsWith('/sign-out'))
+            request.headers.set('origin', 'https://untrusted.example');
+        },
       },
-    });
+    );
     await signOutFromMenu();
     await waitFor(() => expect(view.toasts()).toHaveLength(1));
     expect(view.toasts()[0]).toMatchObject({
@@ -50,13 +69,18 @@ describe('account menu sign out', () => {
   });
   it('reports a network failure and successfully retries sign-out', async () => {
     let offline = true;
-    const view = await renderAuthenticatedClient(<UserMenu />, {
-      beforeRequest(request) {
-        // Network loss cannot be produced by the in-process server.
-        if (offline && request.url.endsWith('/sign-out'))
-          throw new TypeError('Failed to fetch');
+    const view = await renderAuthenticatedClient(
+      <AppThemeProvider>
+        <UserMenu />
+      </AppThemeProvider>,
+      {
+        beforeRequest(request) {
+          // Network loss cannot be produced by the in-process server.
+          if (offline && request.url.endsWith('/sign-out'))
+            throw new TypeError('Failed to fetch');
+        },
       },
-    });
+    );
     await signOutFromMenu();
     await waitFor(() => expect(view.toasts()).toHaveLength(1));
     expect(view.toasts()[0]).toMatchObject({

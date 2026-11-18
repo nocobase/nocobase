@@ -11,7 +11,7 @@ const esES: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Proyectos',
-      issues: 'Incidencias',
+      issues: 'Tareas',
       settings: 'Configuración del proyecto',
       members: 'Miembros y funciones',
     },
@@ -50,97 +50,93 @@ const esES: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Incidencias',
-        description: 'Cuestiones y sus comentarios, en proyecto o solos.',
+        title: 'Tareas',
+        description: 'Tareas y sus comentarios, en un proyecto o por separado.',
         actions: {
           view: {
-            title: 'Ver problemas',
-            description: 'Ver incidencias en listas, tableros y sus detalles',
-            related: 'Ver problemas (los que pueden ver)',
+            title: 'Ver tareas',
+            description: 'Ver tareas en listas, tableros y sus detalles',
+            related: 'Ver tareas (las que puede ver)',
             relatedLabel: 'En proyectos puedo ver',
             relatedHint:
-              'Problemas sin proyecto y problemas en proyectos que puedo ver',
-            all: 'Ver problemas (todos)',
+              'Tareas sin proyecto y tareas de proyectos que puedo ver',
+            all: 'Ver tareas (todas)',
           },
           create: {
-            title: 'Crear problemas',
-            description: 'Crear incidencias, en un proyecto o por su cuenta',
-            related: 'Crear incidencias (en proyectos que puedan ver)',
+            title: 'Crear tareas',
+            description: 'Crear tareas, en un proyecto o por separado',
+            related: 'Crear tareas (en proyectos que puede ver)',
             relatedLabel: 'En proyectos puedo ver',
-            relatedHint: 'Problemas sin proyecto, o en proyectos que puedo ver',
-            all: 'Crear problemas (todos)',
+            relatedHint: 'Tareas sin proyecto o en proyectos que puedo ver',
+            all: 'Crear tareas (todas)',
           },
           edit: {
-            title: 'Editar problemas',
+            title: 'Editar tareas',
             description:
               'Título, descripción, prioridad, fechas, etiquetas, ejecutores y estados abiertos',
-            related: 'Editar problemas (los que pueden ver)',
+            related: 'Editar tareas (las que puede ver)',
             relatedLabel: 'En proyectos puedo ver',
             relatedHint:
-              'Problemas sin proyecto y problemas en proyectos que puedo ver',
-            all: 'Editar números (todos)',
+              'Tareas sin proyecto y tareas de proyectos que puedo ver',
+            all: 'Editar tareas (todas)',
           },
           comment: {
-            title: 'Comentar sobre temas',
+            title: 'Comentar tareas',
             description:
               'Comentar, responder y resolver hilos; editar y eliminar sus propios comentarios',
-            related: 'Comentar sobre problemas (los que pueden ver)',
+            related: 'Comentar tareas (las que puede ver)',
             relatedLabel: 'En proyectos puedo ver',
             relatedHint:
-              'Problemas sin proyecto y problemas en proyectos que puedo ver',
-            all: 'Comentar sobre temas (todos)',
+              'Tareas sin proyecto y tareas de proyectos que puedo ver',
+            all: 'Comentar tareas (todas)',
           },
           moderateComments: {
             title: 'Comentarios moderados',
             description: 'Eliminar los comentarios de otras personas.',
             related:
-              'Comentarios moderados (sobre temas de su propiedad o cuyo proyecto lidera)',
-            relatedLabel: 'En temas de mi propiedad o en proyectos que dirijo',
+              'Moderar comentarios (en sus tareas o en proyectos que lidera)',
+            relatedLabel: 'En mis tareas o en proyectos que lidero',
             relatedHint:
-              'Comentarios sobre temas de mi propiedad y sobre temas de proyectos que dirijo',
+              'Comentarios en mis tareas y en tareas de proyectos que lidero',
             all: 'Comentarios moderados (todos)',
           },
           close: {
-            title: 'Cerrar incidencias',
-            description: 'Marcar una emisión realizada o cancelada',
-            related:
-              'Temas cerrados (los que son de su propiedad o cuyo proyecto lidera)',
+            title: 'Cerrar tareas',
+            description: 'Marcar una tarea como terminada o cancelada',
+            related: 'Cerrar tareas (las suyas o de proyectos que lidera)',
             relatedLabel: 'Los que tengo o en proyectos que dirijo',
-            relatedHint:
-              'Problemas que poseo y problemas en proyectos que dirijo',
-            all: 'Cerrar números (todos)',
+            relatedHint: 'Mis tareas y tareas de proyectos que lidero',
+            all: 'Cerrar tareas (todas)',
           },
           changeOwner: {
             title: 'Cambiar el propietario',
             description:
-              'Entregar un asunto a otra persona para que sea responsable de ello',
+              'Pasar una tarea a otra persona para que sea su responsable',
             related:
               'Cambiar el propietario (los que posee o cuyo proyecto lidera)',
             relatedLabel: 'Los que tengo o en proyectos que dirijo',
-            relatedHint:
-              'Problemas que poseo y problemas en proyectos que dirijo',
+            relatedHint: 'Mis tareas y tareas de proyectos que lidero',
             all: 'Cambiar el propietario (todos)',
           },
           delete: {
-            title: 'Eliminar y restaurar problemas',
-            description: 'Eliminar problemas y restaurar los eliminados',
-            all: 'Eliminar y restaurar problemas',
+            title: 'Eliminar y restaurar tareas',
+            description: 'Eliminar tareas y restaurar las eliminadas',
+            all: 'Eliminar y restaurar tareas',
           },
         },
       },
       attachments: {
         title: 'Adjuntos',
-        description: 'Archivos adjuntos a cuestiones y comentarios.',
+        description: 'Archivos adjuntos a tareas y comentarios.',
         actions: {
           upload: {
             title: 'Subir archivos adjuntos',
             description:
-              'Adjunte archivos a los problemas que puedan editar y a sus comentarios',
-            related:
-              'Cargar archivos adjuntos (sobre problemas que puedan ver)',
-            relatedLabel: 'Sobre problemas en proyectos que puedo ver.',
+              'Adjuntar archivos a las tareas que puede editar y a sus comentarios',
+            related: 'Subir adjuntos (en tareas que puede ver)',
+            relatedLabel: 'En tareas de proyectos que puedo ver',
             relatedHint:
-              'Archivos de incidencias sin proyecto y de incidencias en proyectos que puedo ver',
+              'Archivos en tareas sin proyecto y en tareas de proyectos que puedo ver',
             all: 'Cargar archivos adjuntos (todos)',
           },
         },
@@ -148,11 +144,11 @@ const esES: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Proyectos',
-      pmIssues: 'Incidencias',
+      pmIssues: 'Tareas',
     },
     recordAccess: {
-      visible: 'Proyectos y problemas que pueden ver',
-      managed: 'Proyectos que lideran y emisiones de su propiedad',
+      visible: 'Proyectos y tareas que puede ver',
+      managed: 'Proyectos que lidera y tareas de las que es responsable',
     },
     settings: {
       pm: {
@@ -168,9 +164,9 @@ const esES: LocaleResource<typeof enUS> = {
         objects: 'Proyectos',
       },
       issues: {
-        title: 'Incidencias',
+        title: 'Tareas',
         description:
-          'Ver ediciones; crearlos, editarlos, comentarlos, cerrarlos y reasignarlos; moderar comentarios y eliminar problemas.',
+          'Ver tareas; crearlas, editarlas, comentarlas, cerrarlas y reasignarlas; moderar comentarios y eliminar tareas.',
       },
       settings: {
         title: 'Configuración del proyecto',
@@ -196,9 +192,9 @@ const esES: LocaleResource<typeof enUS> = {
     },
   },
   notifications: {
-    batchDone: 'Todos los sub-números de {{identifier}} están terminados.',
+    batchDone: 'Todas las subtareas de {{identifier}} están terminadas',
     batchDoneStage:
-      'Finalizada la etapa {{stage}} de las sub-emisiones de {{identifier}}',
+      'La etapa {{stage}} de las subtareas de {{identifier}} está terminada',
     commented: '{{actor}} comentó en {{identifier}}',
     dependencyReleased:
       '{{releasedBy}} está terminado, por lo que {{identifier}} puede comenzar',
@@ -213,7 +209,7 @@ const esES: LocaleResource<typeof enUS> = {
     ownerNotified: '{{identifier}} ahora es {{status}}',
   },
   status: {
-    backlog: 'Trabajo atrasado',
+    backlog: 'Pendiente',
     blocked: 'Bloqueado',
     cancelled: 'Cancelado',
     done: 'Hecho',

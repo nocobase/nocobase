@@ -4,13 +4,37 @@ const zhCN: UsersResource = {
   page: {
     loading: '加载中',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: '用户',
+      category: '账号',
+      name: '用户邀请',
+      trigger: '管理员邀请成员或重新发送邀请，并选择通过邮件发送时。',
+      recipients: '被邀请的人，发送到为其填写的邮箱地址。',
+      businessRule:
+        '每次创建或重新发送邀请并选择邮件时都会发送，没有单独的开关可以关闭。',
+      languagePolicy:
+        '邮件只用一种语言，在邀请时确定：默认是邀请人的界面语言，也可以另选。重发沿用同一语言。如果该语言没有邮件文案，邮件改用应用默认语言和英文。',
+      channel: '邀请邮件发件设置',
+      variables: {
+        app: '应用名称',
+        inviter: '发出邀请的人的名字',
+        items: '邀请授予的角色或权限',
+        date: '邀请的过期时间，按邮件语言显示，时区为 UTC',
+        url: '接受邀请的链接；预览中使用虚构链接',
+      },
+    },
+  },
   accept: {
     title: '接受邀请',
+    language: '语言',
     description: '{{inviter}} 邀请了你。',
     summary: '你还将加入：{{items}}',
     loading: '正在加载邀请…',
     email: '邮箱',
     name: '姓名',
+    username: '用户名（可选）',
+    usernameHint: '填写后可用此用户名登录。',
     password: '密码',
     nameRequired: '请填写姓名。',
     passwordTooShort: '密码至少需要 {{min}} 个字符。',
@@ -21,6 +45,7 @@ const zhCN: UsersResource = {
     signOut: '退出登录',
     signOutFailed: '退出登录失败。',
     existingAccount: '这个邮箱已有账号，请用它登录后继续。',
+    alreadyHaveAccount: '已有账号？去登录',
     goToLogin: '去登录',
     errors: {
       notFound: '邀请链接无效。',
@@ -28,6 +53,7 @@ const zhCN: UsersResource = {
       accepted: '这个邀请已被接受。',
       revoked: '这个邀请已被撤销。',
       password: '密码不符合要求。',
+      usernameConflict: '此用户名已被用作用户名或邮箱，请换一个。',
       accountConflict: '无法用这个邮箱创建账号。',
       failed: '出了点问题，请重试。',
     },

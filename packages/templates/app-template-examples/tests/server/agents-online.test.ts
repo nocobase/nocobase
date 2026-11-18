@@ -184,6 +184,15 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     expect(appUIMessageText(saved[1]!)).not.toContain('Local model reasoning');
     expect(saved.every((message) => !('original' in message))).toBe(true);
 
+    // The Examples directory provider supplies snapshot recipients; without one the list is empty.
+    const candidates = (
+      (await (await member.fetch(`${path}/shareCandidates`)).json()) as {
+        data: { id: string; name: string }[];
+      }
+    ).data;
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(candidates.map(({ name }) => name)).not.toContain('Chat member');
+
     // Ownership is a server boundary even for an administrator.
     for (const suffix of ['', '/messages', '/events', '/config']) {
       expect((await admin.fetch(`${path}${suffix}`)).status).toBe(404);

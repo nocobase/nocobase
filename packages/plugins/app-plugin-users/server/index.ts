@@ -13,3 +13,7 @@ export {
   type UserPreferencesService,
   type UserPreferenceValue,
 } from './preferences/service.js';
+export {
+  resolveUserLocale,
+  USER_LOCALE_PREFERENCE_KEY,
+} from './preferences/locale.js';

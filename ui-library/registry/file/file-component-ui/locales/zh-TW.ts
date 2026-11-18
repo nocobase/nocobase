@@ -23,6 +23,7 @@ const messages = {
   'files.retry': '重試',
   'files.done': '已完成',
   'files.uploading': '上傳中',
+  'files.longWait': '仍在上傳，可繼續等待或取消。',
   'files.failed': '失敗',
   'files.pending': '待處理',
   'files.previous': '上一個檔案',

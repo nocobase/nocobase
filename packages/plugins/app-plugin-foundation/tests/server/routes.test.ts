@@ -23,6 +23,58 @@ const OVERVIEW: FoundationOverview = {
 };
 
 describe('@nocobase/app-plugin-foundation API routes', () => {
+  it('reads registration names without scanning or leaking plugin internals', async () => {
+    const overview = vi.fn();
+    const app = application({ identity: 'unrestricted', overview });
+    const router = await apiRoutes.createRouter({
+      ...app,
+      registeredServerPlugins: [
+        {
+          packageName: '@nocobase/app-plugin-agents',
+          rootDir: '/private/app',
+          version: 'private',
+        },
+        { packageName: '@nocobase/app-plugin-agents' },
+      ],
+    } as AppPluginApplication);
+    const response = await router.request('/foundation/registrations');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: { serverPlugins: ['@nocobase/app-plugin-agents'] },
+    });
+    expect(overview).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, []])(
+    'distinguishes unavailable facts from no registrations (%s)',
+    async (serverPlugins) => {
+      const overview = vi.fn();
+      const router = await apiRoutes.createRouter({
+        ...application({ identity: 'unrestricted', overview }),
+        registeredServerPlugins: serverPlugins,
+      });
+      const response = await router.request('/foundation/registrations');
+      expect(await response.json()).toEqual({
+        data: { serverPlugins: serverPlugins ?? null },
+      });
+      expect(overview).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['anonymous', 'restricted'] as const)(
+    'protects registration facts for %s identities',
+    async (identity) => {
+      const overview = vi.fn();
+      const router = await apiRoutes.createRouter(
+        application({ identity, overview }),
+      );
+      expect((await router.request('/foundation/registrations')).status).toBe(
+        identity === 'anonymous' ? 401 : 403,
+      );
+      expect(overview).not.toHaveBeenCalled();
+    },
+  );
+
   it('contributes the protected Foundation routes', () => {
     expect(routes).toEqual([apiRoutes]);
   });
@@ -67,10 +119,7 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: OVERVIEW });
-    expect(overview).toHaveBeenCalledWith({
-      refresh: false,
-      countRecords: false,
-    });
+    expect(overview).toHaveBeenCalledWith();
   });
 
   it('checks authorization again after a successful response has warmed the service', async () => {
@@ -94,22 +143,31 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
     expect(overview).toHaveBeenCalledTimes(1);
   });
 
-  it('collects again when asked to refresh, and rejects a malformed flag', async () => {
+  it('reads only on GET and submits background work through POST', async () => {
     const overview = vi.fn().mockResolvedValue(OVERVIEW);
     const router = await apiRoutes.createRouter(
       application({ identity: 'unrestricted', overview }),
     );
-
-    expect((await router.request(`${OVERVIEW_PATH}?refresh=true`)).status).toBe(
-      200,
-    );
-    expect(overview).toHaveBeenLastCalledWith({
-      refresh: true,
-      countRecords: false,
-    });
+    for (const action of ['ensureScan', 'refresh', 'countRecords']) {
+      expect(
+        (await router.request(`/foundation/${action}`, { method: 'POST' }))
+          .status,
+      ).toBe(200);
+      expect(overview).toHaveBeenLastCalledWith(
+        action === 'refresh'
+          ? { refresh: true }
+          : action === 'countRecords'
+            ? { countRecords: true }
+            : {},
+      );
+    }
     expect(
-      (await router.request(`${OVERVIEW_PATH}?refresh=sometimes`)).status,
+      (await router.request('/foundation/overview?refresh=true')).status,
     ).toBe(400);
+    expect(
+      (await router.request('/foundation/overview?countRecords=true')).status,
+    ).toBe(400);
+    expect((await router.request('/foundation/scanStatus')).status).toBe(200);
   });
 
   it('declares its route in the API document without schema problems', async () => {
@@ -143,7 +201,8 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
         identity === 'anonymous' ? 401 : 403,
       );
       expect(
-        (await router.request(`${OVERVIEW_PATH}?countRecords=true`)).status,
+        (await router.request('/foundation/countRecords', { method: 'POST' }))
+          .status,
       ).toBe(identity === 'anonymous' ? 401 : 403);
       expect(overview).not.toHaveBeenCalled();
       expect(collections).not.toHaveBeenCalled();
@@ -171,12 +230,10 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
       (await router.request(`${OVERVIEW_PATH}?countRecords=unknown`)).status,
     ).toBe(400);
     expect(
-      (await router.request(`${OVERVIEW_PATH}?countRecords=true`)).status,
+      (await router.request('/foundation/countRecords', { method: 'POST' }))
+        .status,
     ).toBe(200);
-    expect(overview).toHaveBeenCalledWith({
-      refresh: false,
-      countRecords: true,
-    });
+    expect(overview).toHaveBeenCalledWith({ countRecords: true });
     collections.mockResolvedValue(undefined);
     expect((await router.request('/foundation/collections')).status).toBe(503);
   });
@@ -223,6 +280,9 @@ function application(options: {
   }));
   container.singleton(foundationServiceToken, () => ({
     overview: options.overview,
+    snapshot: options.overview,
+    scanStatus: options.overview,
+    ensureScan: options.overview,
     collections: options.collections,
   }));
   return {

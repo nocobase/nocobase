@@ -3,6 +3,57 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Mẫu thông báo',
+    coverage:
+      'Các thông báo hệ thống tự động gửi và nội dung của chúng. Thông báo do quy trình làm việc hoặc mã tùy chỉnh gửi có thể không được liệt kê. Trang này chỉ để xem.',
+    filters: 'Lọc mẫu',
+    search: 'Tìm kiếm mẫu',
+    category: 'Danh mục',
+    channel: 'Kênh',
+    all: 'Tất cả',
+    details: 'Chi tiết mẫu',
+    close: 'Đóng',
+    providedBy: 'Cung cấp bởi {{name}}',
+    trigger: 'Khi nào được gửi',
+    recipients: 'Ai nhận được',
+    businessRule: 'Điều kiện gửi',
+    languagePolicy: 'Ngôn ngữ',
+    combined:
+      'Một thông báo chứa tất cả ngôn ngữ ({{languages}}). Mọi người nhận đều nhận được cùng một nội dung.',
+    singleLocale: 'Chỉ gửi bằng {{language}}.',
+    status: 'Kênh gửi',
+    statusHelp:
+      'Cho biết mỗi kênh đã được thiết lập hay chưa. Không kiểm tra kết nối và không xác nhận rằng tin nhắn được gửi đến nơi.',
+    configured: 'Đã thiết lập',
+    unconfigured: 'Chưa thiết lập',
+    enabled: 'Bật',
+    disabled: 'Tắt',
+    variables: 'Biến',
+    variablesHelp:
+      'Các chỗ trống sẽ được thay bằng giá trị thực khi gửi thông báo.',
+    language: 'Ngôn ngữ',
+    synthetic:
+      'Dùng dữ liệu mẫu giả định. Xem trước không bao giờ gửi thông báo.',
+    definition: 'Mẫu có biến',
+    preview: 'Xem trước',
+    html: 'Phiên bản HTML (hiển thị dưới dạng mã)',
+    technical: 'Thông tin kỹ thuật',
+    templateId: 'ID mẫu',
+    package: 'Gói',
+    channelNames: 'Tên kênh',
+    channelTypes: {
+      inApp: 'Tin nhắn trong ứng dụng',
+      email: 'Email',
+    },
+    loading: 'Đang tải…',
+    failed: 'Không thể tải các mẫu.',
+    forbidden: 'Bạn không có quyền xem mẫu thông báo.',
+    notFound: 'Mẫu này không còn tồn tại.',
+    retry: 'Thử lại',
+    empty: 'Chưa có mẫu thông báo nào.',
+    noResults: 'Không có mẫu nào khớp với bộ lọc này.',
+  },
   logs: {
     deliveryOperations: 'Hoạt động giao hàng',
     recipeDescription:

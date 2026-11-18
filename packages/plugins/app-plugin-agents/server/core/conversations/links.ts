@@ -1,3 +1,4 @@
+import { conversationAccess } from './shares.js';
 /**
  * What conversations are tied to (`agConversationLinks`): records of kinds the application registers, such as issues.
  * The owner ties and unties them; the application ties what the agent of a run on the conversation created. Each turn
@@ -219,21 +220,28 @@ export function createConversationLinks(
 
     async list(userId, conversationId) {
       const conn = tx.read();
-      await owned(conn, userId, conversationId);
-      const rows = await rowsOf(conn, conversationId);
+      const { share } = await conversationAccess(conn, userId, conversationId);
+      const rows = (await rowsOf(conn, conversationId)).filter(
+        (row) =>
+          !share ||
+          new Date(row.createdAt).getTime() <=
+            new Date(share.snapshotAt).getTime(),
+      );
       const found = await views(conn, userId, rows);
-      return rows.map((row) => linkOf(row, found));
+      return rows
+        .filter((row) => !share || found.has(`${row.kind}:${row.targetId}`))
+        .map((row) => linkOf(row, found));
     },
 
     async add(userId, conversationId, target) {
+      const conn = tx.read();
+      await owned(conn, userId, conversationId);
       checkTarget(target);
       const kind = kinds.get(target.kind);
       if (!kind)
         throw invalid(`${target.kind} is not a kind conversations link to.`, {
           field: 'kind',
         });
-      const conn = tx.read();
-      await owned(conn, userId, conversationId);
       // Resolved before the transaction: the kind reads what the owner may see.
       const view = kind.resolve
         ? (await kind.resolve(conn, userId, [target.targetId])).get(

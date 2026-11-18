@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - v3-main
+      - v3
       - v3-develop
   schedule:
     - cron: '0 18 * * *'
@@ -54,7 +55,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js
@@ -121,7 +121,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.7.0
           run_install: false
 
       - name: Set up Node.js

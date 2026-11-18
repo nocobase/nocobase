@@ -5,8 +5,7 @@ import { EXPORTS_TOPIC, type TaskExport } from '../../../shared/business.js';
 import { useBusinessTask } from './use-business-task.js';
 import { Card, CardHeader, CardContent } from '../../components/ui/card.js';
 import { Button } from '../../components/ui/button.js';
-import { Badge } from '../../components/ui/badge.js';
-import { Progress } from '../../components/ui/progress.js';
+import { TaskProgress } from '../../components/task-progress.js';
 import {
   BusinessShell,
   BusinessEmpty,
@@ -61,11 +60,6 @@ export default function ExportsPage(): ReactElement {
       <BusinessFailure error={action.error} />
       {!query.data && !query.error ? <BusinessLoading /> : null}
       <BusinessUpdating active={Boolean(query.data && query.loading)} />
-      {active ? (
-        <p role='status' className='text-sm text-muted-foreground'>
-          {t('business.exports.active')}
-        </p>
-      ) : null}
       {query.data && !query.data.data.length ? (
         <BusinessEmpty name='exports'>{create}</BusinessEmpty>
       ) : null}
@@ -73,51 +67,36 @@ export default function ExportsPage(): ReactElement {
         {query.data?.data.map((job) => (
           <Card key={job.id}>
             <CardHeader>
-              <div className='flex items-start justify-between gap-3'>
-                <h2 className='text-base font-medium'>
-                  {t('business.exports.file')}
-                </h2>
-                <Badge
-                  variant={
-                    job.status === 'failed' ? 'destructive' : 'secondary'
-                  }
-                >
-                  {t(`business.jobs.${job.status}`)}
-                </Badge>
-              </div>
               <time className='text-sm text-muted-foreground'>
                 {new Date(job.createdAt).toLocaleString(i18n.language)}
               </time>
             </CardHeader>
-            <CardContent className='flex flex-col gap-3'>
-              <p className='text-sm'>
-                {t('business.exports.rows', {
-                  processed: job.processed,
-                  total: job.total,
-                })}
-              </p>
-              {['queued', 'running'].includes(job.status) ? (
-                <Progress
-                  aria-label={t('business.exports.progress')}
-                  value={
-                    job.total
-                      ? Math.floor((job.processed / job.total) * 100)
-                      : 0
-                  }
-                />
-              ) : null}
-              {job.status === 'failed' ? (
-                <p role='status' className='text-sm text-destructive'>
-                  {t(
-                    job.reason === 'limit'
-                      ? 'business.exports.limit'
-                      : 'business.exports.failed',
-                  )}
-                </p>
-              ) : null}
-              {job.status === 'completed' ? (
-                <DownloadExport job={job} refresh={query.reload} />
-              ) : null}
+            <CardContent>
+              {/* Counts come from the job record; a queued job has no total yet. */}
+              <TaskProgress
+                status={job.status}
+                label={t('business.exports.file')}
+                statusLabel={t(`business.jobs.${job.status}`)}
+                processed={job.processed}
+                total={job.status === 'queued' ? null : job.total}
+                continuesInBackground
+                message={
+                  job.status === 'failed'
+                    ? t(
+                        job.reason === 'limit'
+                          ? 'business.exports.limit'
+                          : 'business.exports.failed',
+                      )
+                    : job.status === 'completed'
+                      ? t('business.exports.ready', { count: job.total })
+                      : undefined
+                }
+                actions={
+                  job.status === 'completed' ? (
+                    <DownloadExport job={job} refresh={query.reload} />
+                  ) : undefined
+                }
+              />
             </CardContent>
           </Card>
         ))}

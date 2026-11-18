@@ -1,3 +1,4 @@
+import { DatabaseTaskHooks, databaseTaskHooksToken } from './task-hooks.js';
 import {
   ServiceProvider,
   type ServiceContainer,
@@ -50,6 +51,12 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
   public readonly name: string = '@nocobase/app-server/database';
 
   public override register(): void {
+    if (!this.app.container.has(databaseTaskHooksToken)) {
+      this.app.container.instance(
+        databaseTaskHooksToken,
+        new DatabaseTaskHooks(),
+      );
+    }
     // Registered even without a database, so a plugin can always register its samples; they then never run.
     if (!this.app.container.has(sampleDataToken)) {
       this.app.container.singleton(sampleDataToken, () =>
@@ -82,20 +89,26 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       paths: this.app.paths,
       contributions: this.app.databaseTaskContributions,
       autoRun: true,
+      deferMissingMigrationSources: true,
     });
-    // All SQLite connections must be usable by runtime services even without automatic tasks.
+    // Task targets are prepared by the executor; other connections must still
+    // be usable by runtime services when automatic tasks are disabled.
+    const targets = new Set(
+      plan.filter((task) => !task.skipReason).map((task) => task.connection),
+    );
     await prepareAppDatabaseStorage(
       config,
       this.app.paths,
-      Object.keys(config.connections),
+      Object.keys(config.connections).filter((name) => !targets.has(name)),
     );
     const database = container.resolve(databaseManagerToken);
     const result = await executeAppDatabasePlan(database, config, plan, {
+      contributions: this.app.databaseTaskContributions,
       runtimeConfig: this.app.config,
       container: this.app.container,
       paths: this.app.paths,
     });
-    this.reportChecksumWarnings(result);
+    this.reportTaskWarnings(result);
     this.prepareSampleData(config, plan, result, database);
     await this.refreshCollections(config, result, database);
   }
@@ -181,13 +194,25 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
    * Automatic startup tasks have no console to report to, so drift tolerated by
    * the `warn` policy is only visible if it reaches the application log.
    */
-  private reportChecksumWarnings(result: AppDatabaseTasksResult): void {
+  private reportTaskWarnings(result: AppDatabaseTasksResult): void {
     const { container } = this.app;
     if (!container.has(loggingToken)) return;
     let logger: Logger | undefined;
     for (const entry of result.results) {
       for (const warning of entry.warnings ?? []) {
         logger ??= container.resolve(loggingToken).getLogger('database');
+        if ('kind' in warning) {
+          logger.warn(
+            {
+              connection: entry.connection,
+              kind: entry.kind,
+              package: warning.packageName,
+              name: warning.name,
+            },
+            `Executed migration "${warning.name}" is missing from migration sources. Package: "${warning.packageName}". History is retained.`,
+          );
+          continue;
+        }
         logger.warn(
           {
             connection: entry.connection,

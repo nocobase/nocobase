@@ -35,6 +35,7 @@ afterEach(() => {
 });
 function failure() {
   return new ApiClientError('Missing model', {
+    requestId: 'request-fixture',
     status: 400,
     reason: 'PROJECT_MANAGER_NOT_STARTED',
     method: 'POST',
@@ -80,7 +81,11 @@ it('shows ordinary and setup notifications without a router and omits the config
   render(await content());
   fireEvent.click(screen.getByRole('button', { name: 'Report' }));
   expect(mocks.show).toHaveBeenLastCalledWith(
-    expect.objectContaining({ type: 'error', title: 'Missing model' }),
+    expect.objectContaining({
+      type: 'error',
+      title: 'Missing model',
+      requestId: 'request-fixture',
+    }),
   );
   expect(mocks.show.mock.lastCall?.[0].action).toBeUndefined();
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));

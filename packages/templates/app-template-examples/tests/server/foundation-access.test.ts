@@ -34,10 +34,22 @@ test('serves documented Foundation evidence only to an unrestricted administrato
   const overview = await root.fetch('/foundation/overview');
   expect(overview.status).toBe(200);
   const { data } = await overview.json();
-  expect(data.capabilities).toEqual(
-    expect.arrayContaining([expect.objectContaining({ key: 'files' })]),
+  // Test applications start without the scan; the Refresh below submits one.
+  expect(data).toEqual(
+    expect.objectContaining({
+      kernelVersion: expect.any(String),
+      status: 'idle',
+      needsScan: true,
+    }),
   );
-  expect(data.checkedAt).toEqual(expect.any(String));
+  expect(
+    (
+      await root.fetch('/foundation/refresh', {
+        method: 'POST',
+        headers: { origin: 'http://localhost' },
+      })
+    ).status,
+  ).toBe(200);
 
   const member = {
     email: 'foundationmember@example.invalid',
@@ -56,6 +68,17 @@ test('serves documented Foundation evidence only to an unrestricted administrato
   const session = await signIn(testApp, member);
   const denied = await session.fetch('/foundation/overview');
   expect(denied.status).toBe(403);
+  for (const path of ['refresh', 'ensureScan', 'countRecords']) {
+    expect(
+      (
+        await session.fetch(`/foundation/${path}`, {
+          method: 'POST',
+          headers: { origin: 'http://localhost' },
+        })
+      ).status,
+    ).toBe(403);
+  }
+  expect((await session.fetch('/foundation/scanStatus')).status).toBe(403);
   expect(await denied.json()).toEqual({
     error: expect.objectContaining({ reason: 'FOUNDATION_FORBIDDEN' }),
   });

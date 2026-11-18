@@ -1,3 +1,4 @@
+import { ACCESS_NAMESPACE } from '../../../shared/access.js';
 import { useAttachmentUploads } from '../../hooks/use-attachment-uploads.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -431,7 +432,7 @@ export function NewIssueFooter({
   /** Whether the form starts the issue right away: the button says so. */
   readonly startNow?: boolean;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
   const { close } = useRouteOverlay();
   return (
     <>

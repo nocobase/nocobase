@@ -1,3 +1,4 @@
+import { diagnosticFetch, type MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailAuthorizedAccount,
   MailProviderAuthorization,
@@ -16,6 +17,7 @@ import type {
 import { DEFAULT_SCOPES } from './constants.js';
 import {
   graphRequest,
+  responseError,
   fetchWithTimeout,
   parseRetryAfter,
   readJson,
@@ -53,6 +55,27 @@ export function createAuthorization(): MailProviderAuthorization<MicrosoftMailPr
       };
     },
     async complete(context, config, input) {
+      const fetcher: MailFetch = (url, init) =>
+        diagnosticFetch(fetchWithTimeout, url, init, {
+          logger: context.logger,
+          provider: 'microsoft',
+          stage: 'auth',
+          classifyResponse: async (response) =>
+            init?.body instanceof URLSearchParams
+              ? tokenEndpointError(
+                  'MICROSOFT',
+                  response,
+                  await readJson(response),
+                  'Mail OAuth request failed.',
+                )
+              : responseError(response),
+          secrets: [
+            config.clientSecret,
+            input.code,
+            input.codeVerifier,
+            input.state,
+          ],
+        });
       const token = await exchangeToken(
         config,
         {
@@ -68,6 +91,7 @@ export function createAuthorization(): MailProviderAuthorization<MicrosoftMailPr
           ).join(' '),
         },
         input.signal,
+        fetcher,
       );
       if (!token.ok) return token;
       if (!token.value.refresh_token) {
@@ -87,6 +111,7 @@ export function createAuthorization(): MailProviderAuthorization<MicrosoftMailPr
         accessToken,
         '/me?$select=id,displayName,mail,userPrincipalName,proxyAddresses',
         { signal: input.signal },
+        fetcher,
       );
       if (!profile.ok) return profile;
       const address = profile.value.mail ?? profile.value.userPrincipalName;
@@ -137,17 +162,15 @@ export async function exchangeToken(
   config: MicrosoftMailProviderConfig,
   body: Record<string, string>,
   signal?: AbortSignal,
+  fetcher: MailFetch = fetchWithTimeout,
 ): Promise<MailProviderResult<MicrosoftTokenResponse>> {
   try {
-    const response = await fetchWithTimeout(
-      `${authority(config)}/oauth2/v2.0/token`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(body),
-        signal,
-      },
-    );
+    const response = await fetcher(`${authority(config)}/oauth2/v2.0/token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(body),
+      signal,
+    });
     if (response.ok)
       return {
         ok: true,
@@ -201,7 +224,7 @@ export function required(value: string | undefined, label: string): string {
  * or has expired, means the account has to be reauthorized; a throttled request or a failure on the authorization
  * server's side does not, and is retried like any other Provider request.
  */
-function tokenEndpointError(
+export function tokenEndpointError(
   prefix: string,
   response: Response,
   value: { readonly error?: string; readonly error_description?: string },

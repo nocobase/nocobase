@@ -1,3 +1,4 @@
+import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
 /**
  * A real database for the service tests: a test database, with the authentication and authorization plugins'
  * migrations (the `user` collection and the permission-set tables) and then this plugin's migrations and seeds.
@@ -69,7 +70,14 @@ export interface Harness {
 
 export async function createHarness(
   options: Parameters<typeof createTestDatabase>[0] = {},
+  driveConfig: AppDriveConfig = {
+    default: 'local',
+    disks: {
+      local: { driver: 'fs', location: '/unused', visibility: 'private' },
+    },
+  },
 ): Promise<Harness> {
+  const drive = createDriveManager(driveConfig);
   const testDatabase = await createTestDatabase(options);
   const database = testDatabase.database;
   for (const [directory, packageName] of [
@@ -130,7 +138,7 @@ export async function createHarness(
   const invitations = createFakeInvitations(database);
   const stored = new Map<string, Uint8Array>();
   const storage = createAttachmentStorage({
-    disk: () => 'local',
+    disk: () => driveConfig.default,
     // The file plugin's upload, as far as the plugin uses it: the metadata row, and the bytes in memory.
     uploader: () => ({
       repository: (collection, options) => ({
@@ -179,6 +187,7 @@ export async function createHarness(
     }),
   });
   const services = createProjects({
+    limitForDisk: (disk) => drive.getUploadLimit(disk),
     storage,
     basePath: () => '/app',
     database,

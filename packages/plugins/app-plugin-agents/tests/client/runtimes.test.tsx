@@ -482,7 +482,7 @@ describe('runtimes page', () => {
     expect(sheet).not.toHaveTextContent('Invalid Date');
   });
 
-  it('confirms a quota clear inside the page and keeps it available to a runtime administrator', async () => {
+  it('asks in a dialog before clearing a tool quota mark, keeps the row intact and lets a runtime administrator cancel or confirm', async () => {
     const confirm = vi.spyOn(window, 'confirm');
     runners[0] = {
       ...runners[0]!,
@@ -508,19 +508,47 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
+    const row = within(sheet).getByTestId('runner-tool-claude');
+    const cells = row.querySelectorAll('td').length;
+    expect(cells).toBe(6);
     fireEvent.click(
-      within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
+      within(row).getByRole('button', { name: 'runtimes.quota.clear' }),
     );
-    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(0);
+    const dialog = await screen.findByRole('alertdialog');
+    // Opened from the runtime sheet, the dialog still brings its own backdrop over the sheet.
     expect(
-      within(sheet).getByText('runtimes.quota.confirm(target=tools.claude)'),
+      document.querySelectorAll('[data-slot=alert-dialog-overlay]'),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByText(
+        'runtimes.quota.confirmTitle(target=tools.claude)',
+      ),
     ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('runtimes.quota.confirm(target=tools.claude)'),
+    ).toBeInTheDocument();
+    // The row keeps every column while the dialog is open.
+    expect(row.querySelectorAll('td')).toHaveLength(cells);
+    expect(row).not.toHaveTextContent('runtimes.quota.confirm');
     fireEvent.click(
-      within(sheet).getByRole('button', { name: 'runtimes.quota.clearMark' }),
+      within(dialog).getByRole('button', { name: 'actions.cancel' }),
     );
     await waitFor(() =>
-      expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1),
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
     );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(0);
+    fireEvent.click(
+      within(row).getByRole('button', { name: 'runtimes.quota.clear' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'runtimes.quota.clearMark',
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1);
     expect(confirm).not.toHaveBeenCalled();
     expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
       tool: 'claude',
@@ -528,7 +556,96 @@ describe('runtimes page', () => {
       target: '',
       window: 'account',
     });
+    await waitFor(() =>
+      expect(
+        within(sheet).queryByRole('button', { name: 'runtimes.quota.clear' }),
+      ).not.toBeInTheDocument(),
+    );
     confirm.mockRestore();
+  });
+
+  it('clears a known-reset model quota mark through the same dialog', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: true,
+      unavailableModels: [
+        {
+          tool: 'claude',
+          model: 'claude-opus-5-5',
+          scope: 'model',
+          reason: 'toolQuota',
+          window: 'seven_day_opus',
+          resetsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          at: new Date().toISOString(),
+          reported: [],
+        },
+      ],
+    };
+    api.routes['POST agents/runners/r1/quota/clear'] = () => {
+      runners[0] = { ...runners[0]!, unavailableModels: [] };
+      return undefined;
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.quota.automatic'),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
+    );
+    const dialog = await screen.findByRole('alertdialog');
+    // Opened from the runtime sheet, the dialog still brings its own backdrop over the sheet.
+    expect(
+      document.querySelectorAll('[data-slot=alert-dialog-overlay]'),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByText(
+        /^runtimes\.quota\.confirmTitle\(target=.*opus/iu,
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'runtimes.quota.clearMark' }),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
+      tool: 'claude',
+      scope: 'model',
+      target: 'claude-opus-5-5',
+      window: 'seven_day_opus',
+    });
+  });
+
+  it('hides clearing a known-reset quota mark from readers', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: false,
+      unavailableModels: [
+        {
+          tool: 'claude',
+          model: '',
+          scope: 'tool',
+          reason: 'toolQuota',
+          window: '5h',
+          resetsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          at: new Date().toISOString(),
+          reported: [],
+        },
+      ],
+    };
+    renderPage(<RuntimesPage />);
+    const readerSheet = await openSheet();
+    expect(
+      within(readerSheet).getByText('runtimes.quota.automatic'),
+    ).toBeInTheDocument();
+    expect(
+      within(readerSheet).queryByRole('button', {
+        name: 'runtimes.quota.clear',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows near-limit usage without disabling a signed-in tool, and hides clearing from readers', async () => {
@@ -568,7 +685,12 @@ describe('runtimes page', () => {
     expect(within(row).queryByText(/r1\.local/u)).toBeNull();
     within(row).getByText(/^runtimes\.activity\.online\(active=1,slots=2,/u);
     within(row).getByText('runtimes.trust.ownerOnly');
-    within(row).getByText('0.1.0');
+    // The version column says only whether it is the latest; the version itself is on hover.
+    expect(within(row).getByText('runtimes.upgrade.latest')).toHaveAttribute(
+      'title',
+      'runtimes.upgrade.installed(version=0.1.0)',
+    );
+    expect(within(row).queryByText('0.1.0')).toBeNull();
     expect(within(row).queryByRole('switch')).toBeNull();
     const claude = within(row)
       .getByText('tools.claude')
@@ -608,6 +730,168 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
     // The mark does not open the runtime.
     expect(screen.queryByTestId('runner-sheet')).toBeNull();
+  });
+
+  it('shows no version state for a runner that reported no version', async () => {
+    runners[0] = { ...runners[0]!, version: '' };
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    within(row).getByText('—');
+    expect(within(row).queryByText('runtimes.upgrade.latest')).toBeNull();
+    expect(within(row).queryByText('runtimes.upgrade.badge')).toBeNull();
+  });
+
+  describe('quota in the list', () => {
+    const soon = () => new Date(Date.now() + 3_600_000).toISOString();
+    const usage = (
+      tool: 'claude' | 'codex' | 'opencode',
+      window: string,
+      usedPercent: number,
+      extra: { target?: string; resetsAt?: string | null } = {},
+    ) => ({
+      tool,
+      scope: extra.target ? ('provider' as const) : ('tool' as const),
+      target: extra.target ?? '',
+      window,
+      usedPercent,
+      resetsAt: extra.resetsAt === undefined ? soon() : extra.resetsAt,
+      observedAt: new Date().toISOString(),
+    });
+    const mark = (
+      tool: 'claude' | 'opencode',
+      model: string,
+      resetsAt: string | null,
+    ) => ({
+      tool,
+      model,
+      scope: model ? ('provider' as const) : ('tool' as const),
+      reason: 'toolQuota' as const,
+      window: '5h',
+      resetsAt,
+      at: new Date().toISOString(),
+      reported: [],
+    });
+    const tools = [
+      { kind: 'claude' as const, authenticated: true },
+      { kind: 'codex' as const, authenticated: true },
+      { kind: 'opencode' as const, authenticated: true },
+      { kind: 'gemini' as const, authenticated: true },
+    ];
+
+    it('shows the highest share used beside each enabled tool, as the sheet shows it, and nothing without quota data', async () => {
+      runners[0] = {
+        ...runners[0]!,
+        tools,
+        enabledTools: ['claude', 'codex', 'opencode'],
+        quotaUsage: [
+          usage('claude', 'five_hour', 63),
+          usage('claude', 'seven_day', 41),
+          // A window whose reset has passed no longer counts.
+          usage('claude', 'seven_day_opus', 99, {
+            resetsAt: new Date(Date.now() - 60_000).toISOString(),
+          }),
+          usage('codex', '5h', 93),
+          usage('opencode', 'credits', 20, { target: 'openrouter' }),
+          // A tool turned off shows no quota.
+          usage('gemini' as 'codex', '5h', 50),
+        ],
+      };
+      renderPage(<RuntimesPage />);
+      const row = await screen.findByTestId('runner-r1');
+      const claude = within(row).getByTestId('tool-quota-claude');
+      expect(claude).toHaveTextContent('runtimes.quota.percent(percent=63)');
+      expect(claude.firstElementChild).not.toHaveAttribute('data-level');
+      const codex = within(row).getByTestId('tool-quota-codex');
+      expect(codex).toHaveTextContent('runtimes.quota.percent(percent=93)');
+      expect(codex.firstElementChild).toHaveAttribute('data-level', 'warn');
+      expect(within(row).getByTestId('tool-quota-opencode')).toHaveTextContent(
+        'runtimes.quota.percent(percent=20)',
+      );
+      expect(within(row).queryByTestId('tool-quota-gemini')).toBeNull();
+      // The sheet shows the same windows with the same values.
+      const sheet = await openSheet();
+      const sheetClaude = within(sheet).getByTestId('runner-tool-claude');
+      within(sheetClaude).getByText(/usedPercent\(percent=63\)/u);
+      within(sheetClaude).getByText(/usedPercent\(percent=41\)/u);
+      expect(
+        within(sheetClaude).queryByText(/usedPercent\(percent=99\)/u),
+      ).toBeNull();
+    });
+
+    it('lists each window on hover', async () => {
+      runners[0] = {
+        ...runners[0]!,
+        quotaUsage: [
+          usage('claude', 'five_hour', 63, { resetsAt: null }),
+          usage('claude', 'seven_day', 41, { resetsAt: null }),
+        ],
+      };
+      renderPage(<RuntimesPage />);
+      const row = await screen.findByTestId('runner-r1');
+      const claude = within(row).getByTestId('tool-quota-claude');
+      await userEvent.hover(claude);
+      const tooltip = await screen.findByText(
+        '5h · runtimes.quota.usedPercent(percent=63)',
+      );
+      expect(tooltip.parentElement).toHaveTextContent(
+        '7d · runtimes.quota.usedPercent(percent=41)',
+      );
+    });
+
+    it('marks usage at the pause threshold', async () => {
+      runners[0] = {
+        ...runners[0]!,
+        quotaLimits: { claude: 60 },
+        quotaUsage: [usage('claude', 'five_hour', 63)],
+      };
+      renderPage(<RuntimesPage />);
+      const claude = within(await screen.findByTestId('runner-r1')).getByTestId(
+        'tool-quota-claude',
+      );
+      expect(claude.firstElementChild).toHaveAttribute('data-level', 'warn');
+    });
+
+    it('says when a tool is out of quota and when it resets, and sums up providers, leaving clearing to the sheet', async () => {
+      const resetsAt = soon();
+      runners[0] = {
+        ...runners[0]!,
+        tools,
+        enabledTools: ['claude', 'opencode'],
+        canClearQuota: true,
+        unavailableModels: [
+          mark('claude', '', resetsAt),
+          mark('opencode', 'openrouter', null),
+          mark('opencode', 'anthropic', resetsAt),
+          // Another kind of mark is not quota.
+          {
+            tool: 'claude',
+            model: 'claude-x',
+            at: new Date().toISOString(),
+            reported: [],
+          },
+        ],
+        quotaUsage: [usage('claude', 'five_hour', 100)],
+      };
+      renderPage(<RuntimesPage />);
+      const row = await screen.findByTestId('runner-r1');
+      const claude = within(row).getByTestId('tool-quota-claude');
+      expect(claude).toHaveTextContent(
+        /^runtimes\.quota\.reached · runtimes\.quota\.shortReset\(time=/u,
+      );
+      expect(within(row).getByTestId('tool-quota-opencode')).toHaveTextContent(
+        'runtimes.quota.providers(count=2)',
+      );
+      expect(
+        within(row).queryByRole('button', { name: 'runtimes.quota.clear' }),
+      ).toBeNull();
+      const sheet = await openSheet();
+      expect(
+        within(within(sheet).getByTestId('runner-tool-claude')).getByRole(
+          'button',
+          { name: 'runtimes.quota.clear' },
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   it('opens a runtime’s settings from its row: tools with versions and paths, local policy and recent runs', async () => {
@@ -765,24 +1049,24 @@ describe('runtimes page', () => {
     await userEvent.click(next);
     await within(table).findByRole('alert');
     expect(
-      within(table).getByText('first-0', { selector: 'td.max-w-44' }),
+      within(table).getByText('first-0', { selector: 'td:first-child' }),
     ).toBeInTheDocument();
     fail = false;
     await userEvent.click(next);
-    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('second-0', { selector: 'td:first-child' });
     expect(within(table).queryByText('first-0')).toBeNull();
     expect(within(table).getAllByRole('row')).toHaveLength(21);
     expect(
       within(table).getByText('runtimes.detail.runsPage(page=2,pageCount=3)'),
     ).toBeInTheDocument();
     await userEvent.click(previous);
-    await within(table).findByText('first-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('first-0', { selector: 'td:first-child' });
     const before = callsTo('GET', 'agents/runners/r1/runs').length;
     await userEvent.click(next);
-    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('second-0', { selector: 'td:first-child' });
     expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(before);
     await userEvent.click(next);
-    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
+    await within(table).findByText('last-run', { selector: 'td:first-child' });
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(next).toBeDisabled();
     expect(
@@ -929,46 +1213,55 @@ describe('runtimes page', () => {
     expect(within(sheet).queryByText(/runner update$/u)).toBeNull();
   });
 
-  it('shows the runs by coding tool against each tool’s limit', async () => {
+  it('shows each tool’s runs against its own limit beside the tool', async () => {
     runners = [
       runner('r1', {
         slots: 3,
         activeRuns: 3,
-        toolSlots: { claude: 2, codex: 1 },
+        toolSlots: { claude: 2, codex: 5 },
         reportedSlots: 3,
         toolLoad: {
           claude: { slots: 2, free: 0 },
-          codex: { slots: 1, free: 0 },
+          codex: { slots: 3, free: 2 },
         },
         activeByTool: { claude: 2, codex: 1 },
+        enabledTools: ['claude', 'codex'],
+        tools: [
+          { kind: 'claude', authenticated: true },
+          { kind: 'codex', authenticated: true },
+        ],
       }),
       runner('r3', { slots: 2, activeRuns: 1, activeByTool: { codex: 1 } }),
     ];
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
-    const usage = within(row).getByRole('list', {
-      name: 'runtimes.toolUsage.label',
+    const tools = within(row).getByRole('list', {
+      name: 'runtimes.columns.tools',
     });
-    expect(
-      within(usage)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual([
-      'runtimes.toolUsage.item(tool=tools.claude,used=2,limit=2)',
-      'runtimes.toolUsage.item(tool=tools.codex,used=1,limit=1)',
-    ]);
+    const claude = within(tools).getByTestId('tool-concurrency-claude');
+    expect(claude).toHaveTextContent(
+      'runtimes.toolUsage.short(tool=tools.claude,used=2,limit=2)',
+    );
+    expect(claude).toHaveAttribute('data-full');
+    expect(claude).toHaveAccessibleName(
+      'runtimes.toolUsage.hint(tool=tools.claude,used=2,limit=2)',
+    );
+    // A limit above the runtime's total reads as the total, which is what bounds it.
+    const codex = within(tools).getByTestId('tool-concurrency-codex');
+    expect(codex).toHaveTextContent(
+      'runtimes.toolUsage.short(tool=tools.codex,used=1,limit=3)',
+    );
+    expect(codex).not.toHaveAttribute('data-full');
+    // The status column keeps only the runtime's total.
+    expect(within(row).getAllByText(/toolUsage/u)).toHaveLength(2);
     const sheet = await openSheet();
-    expect(
-      within(sheet).queryByRole('list', {
-        name: 'runtimes.toolUsage.label',
-      }),
-    ).toBeNull();
+    expect(within(sheet).queryByTestId('tool-concurrency-claude')).toBeNull();
     within(sheet).getByText('tools.claude 2/2');
-    // Running tools without a configured limit do not add a usage line.
+    // Running tools without a configured limit show none.
     expect(
-      within(screen.getByTestId('runner-r3')).queryByRole('list', {
-        name: 'runtimes.toolUsage.label',
-      }),
+      within(screen.getByTestId('runner-r3')).queryByTestId(
+        /^tool-concurrency-/u,
+      ),
     ).toBeNull();
   });
 
@@ -988,9 +1281,7 @@ describe('runtimes page', () => {
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
     within(row).getByText(/^runtimes\.activity\.online\(active=1,slots=2,/u);
-    expect(
-      within(row).queryByRole('list', { name: 'runtimes.toolUsage.label' }),
-    ).toBeNull();
+    expect(within(row).queryByTestId(/^tool-concurrency-/u)).toBeNull();
     const sheet = await openSheet();
     expect(
       within(sheet).getByLabelText(

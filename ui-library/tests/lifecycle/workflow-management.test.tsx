@@ -7,6 +7,7 @@ import {
 import { WorkflowExecutionDetail } from '../../registry/lifecycle/workflow-management/execution-detail.js';
 import { WorkflowDefinitionList } from '../../registry/lifecycle/workflow-management/definition-list.js';
 import { WorkflowExecutionList } from '../../registry/lifecycle/workflow-management/execution-list.js';
+import { WorkflowVersionSelect } from '../../registry/lifecycle/workflow-management/version-select.js';
 import {
   executionLabels,
   transitions,
@@ -18,6 +19,51 @@ vi.mock('#components/lifecycle-diagram', () => ({
 }));
 
 describe('workflow management', () => {
+  it.each([
+    { appearance: 'tag' as const, target: 'Version 1', expected: 1 },
+    { appearance: 'tag' as const, target: 'All versions', expected: undefined },
+    { appearance: 'field' as const, target: 'Version 1', expected: 1 },
+    {
+      appearance: 'field' as const,
+      target: 'All versions',
+      expected: undefined,
+    },
+  ])(
+    'selects $target with the $appearance appearance',
+    async ({ appearance, target, expected }) => {
+      const { default: userEvent } =
+        await import('@testing-library/user-event');
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <WorkflowVersionSelect
+          versions={[
+            { version: 1, label: 'Version 1' },
+            { version: 2, label: 'Version 2 (latest)' },
+          ]}
+          value={2}
+          onChange={onChange}
+          label='Version'
+          allLabel='All versions'
+          appearance={appearance}
+        />,
+      );
+      const trigger = await screen.findByRole(
+        appearance === 'tag' ? 'button' : 'combobox',
+        { name: 'Version', expanded: false },
+      );
+      expect(trigger).toHaveTextContent('Version 2 (latest)');
+      await user.click(trigger);
+      await user.click(
+        await screen.findByRole(
+          appearance === 'tag' ? 'menuitemradio' : 'option',
+          { name: target },
+        ),
+      );
+      expect(onChange).toHaveBeenLastCalledWith(expected);
+    },
+  );
+
   it('delegates tab navigation and replaces list chrome in detail mode', () => {
     const onTabChange = vi.fn();
     const props = {
@@ -100,12 +146,22 @@ describe('workflow management', () => {
     const view = render(<WorkflowDefinitionList {...props} />);
     const input = screen.getByRole('textbox');
     expect(screen.queryByText('No definitions')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
     view.rerender(<WorkflowDefinitionList {...props} loaded loading={false} />);
     expect(screen.getByRole('textbox')).toBe(input);
     expect(input).toHaveValue('draft');
     expect(screen.getByText('No definitions')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    view.rerender(
+      <WorkflowDefinitionList
+        {...props}
+        loaded
+        loading={false}
+        listState='failed'
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(onRefresh).toHaveBeenCalledOnce();
   });
 
@@ -356,7 +412,7 @@ it('renders the whole supplied definition page without double pagination or loca
   expect(screen.getAllByRole('row')[1]).toHaveTextContent('Process 0');
 });
 
-it('does not show a no-results message while an execution page is loading', () => {
+it('does not show a no-results message while an execution page is loading', async () => {
   const props = {
     rows: [],
     loaded: false,
@@ -382,7 +438,11 @@ it('does not show a no-results message while an execution page is loading', () =
     onNext: () => {},
   };
   const view = render(<WorkflowExecutionList {...props} />);
-  expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+  expect(document.querySelector('[data-slot="loading"]')).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+  expect(await screen.findByRole('status')).toHaveTextContent('Loading');
   expect(screen.queryByText('No results.')).not.toBeInTheDocument();
   expect(screen.queryByText('No executions yet')).not.toBeInTheDocument();
   view.rerender(<WorkflowExecutionList {...props} loaded loading={false} />);

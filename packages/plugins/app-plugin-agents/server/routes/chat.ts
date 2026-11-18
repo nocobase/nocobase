@@ -1,8 +1,9 @@
 /**
  * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
- * signed-in person and their authorization context). A conversation is its owner's alone: the service answers 404 to
- * anyone else, whatever they may manage. Changing the team's default chat agent needs `agents.agents` manage.
+ * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
+ * bounded snapshots; everyone else receives 404. Changing the team's default chat agent needs `agents.agents` manage.
  */
+import { limitBytes, fileTooLarge } from '@nocobase/app-plugin-file/server';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -27,7 +28,6 @@ import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 
 import {
-  CHAT_ATTACHMENT_SIZE_MAX,
   CHAT_ATTACHMENTS_PER_MESSAGE_MAX,
   CONVERSATION_SOURCE_PATTERN,
   CONVERSATION_TITLE_MAX,
@@ -44,7 +44,6 @@ import {
   PageContextSchema,
 } from '../core/conversations/index.js';
 import { RUN_SELF_ACTION } from '../core/callers/index.js';
-import { fileTooLarge } from '../core/conversations/attachments.js';
 import { forbidden, invalid } from '../kernel/errors.js';
 import {
   decodePageToken,
@@ -77,7 +76,7 @@ import {
 
 const noConversation = apiErrorResponse(
   404,
-  "The conversation does not exist or is not the caller's (`CONVERSATION_NOT_FOUND`).",
+  'The conversation does not exist or the caller has no access (`CONVERSATION_NOT_FOUND`).',
 );
 const conversationConflict = (when: string) =>
   apiErrorResponse(400, `${when} (\`CONVERSATION_CONFLICT\`).`);
@@ -206,6 +205,15 @@ const NativeSendSchema = z.strictObject({
   selectedModel: SelectedModel.optional(),
 });
 const SendSchema = NativeSendSchema.extend({
+  runnerId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe(
+      'Select an eligible runtime when sending an idle Runner message. Binding and message are committed together; unpushed files remain on the previous runtime.',
+    ),
   effort: z
     .string()
     .min(1)
@@ -337,7 +345,7 @@ export function createChatRoutes(
         columns: ['id', 'title', 'agent.name', 'lastMessageAt', 'read'],
       }),
       description:
-        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone. The runToken scheme accepts only OnlineAgent execution credentials here; Run tokens and other scoped credentials are refused.",
+        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.",
       responses: {
         200: listResponse(ConversationSummarySchema, PageTokenMetaSchema),
         ...apiErrorResponses,
@@ -440,7 +448,7 @@ export function createChatRoutes(
       tags,
       security: personOrRunSecurity,
       description:
-        'Owner-only read. The runToken scheme accepts OnlineAgent execution credentials here, not Run tokens or other scoped credentials.',
+        'The owner reads the live conversation; a named recipient reads only snapshot metadata. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Get a conversation',
       operationId: 'agentsGetConversation',
       ...cliRoute({
@@ -456,13 +464,115 @@ export function createChatRoutes(
       },
     }),
     conversationParam,
-    async (context) =>
-      context.json({
+    async (context) => {
+      context.header('Cache-Control', 'private, no-store');
+      return context.json({
         data: await conversations.get(
           me(context),
           context.req.valid('param').conversationId,
         ),
+      });
+    },
+  );
+  const ShareSchema = z.object({
+    userId: z.string(),
+    name: z.string().nullable(),
+    cutoffSeq: z.number().int(),
+    snapshotAt: z.string(),
+    updatedAt: z.string(),
+  });
+  router.get(
+    '/conversations/:conversationId/shareCandidates',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List snapshot recipients available to the owner',
+      operationId: 'agentsConversationShareCandidates',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(z.object({ id: z.string(), name: z.string() })),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (c) =>
+      c.json({
+        data: await conversations.shares.candidates(me(c), conversationId(c)),
       }),
+  );
+  router.get(
+    '/conversations/:conversationId/shares',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List conversation snapshots as the owner',
+      operationId: 'agentsListConversationShares',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(ShareSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (c) => {
+      c.header('Cache-Control', 'private, no-store');
+      return c.json({
+        data: await conversations.shares.list(me(c), conversationId(c)),
+      });
+    },
+  );
+  const ShareParams = z.object({
+    conversationId: z.string().min(1).max(64),
+    userId: z.string().min(1).max(64),
+  });
+  router.put(
+    '/conversations/:conversationId/shares/:userId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Share the latest finished conversation snapshot',
+      operationId: 'agentsGrantConversationShare',
+      ...cliRoute(false),
+      description:
+        'Owner only. Repeating advances the cutoff to the latest finished turn. The recipient must belong to the application-provided scope.',
+      responses: {
+        200: dataResponse(ShareSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ShareParams),
+    async (c) => {
+      const { conversationId: id, userId } = c.req.valid('param');
+      return c.json({
+        data: await conversations.shares.grant(me(c), id, userId),
+      });
+    },
+  );
+  router.delete(
+    '/conversations/:conversationId/shares/:userId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Revoke a conversation snapshot',
+      operationId: 'agentsRevokeConversationShare',
+      ...cliRoute(false),
+      description:
+        'Owner only. The next recipient read, including attachment download, returns 404.',
+      responses: {
+        204: emptyResponse(),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ShareParams),
+    async (c) => {
+      const { conversationId: id, userId } = c.req.valid('param');
+      await conversations.shares.revoke(me(c), id, userId);
+      return c.body(null, 204);
+    },
   );
   router.patch(
     '/conversations/:conversationId',
@@ -471,7 +581,7 @@ export function createChatRoutes(
       tags,
       security: personOrRunSecurity,
       description:
-        'Owner-only update. The runToken scheme accepts OnlineAgent execution credentials, not Run tokens or other scoped credentials.',
+        'Owner-only update. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Rename or archive a conversation',
       operationId: 'agentsUpdateConversation',
       ...cliRoute({
@@ -557,21 +667,31 @@ export function createChatRoutes(
         pageToken === undefined
           ? undefined
           : decodePageToken(pageToken, MessagePosition).before;
-      const agent = await services.onlineAgent.realtime(trusted(context), {
-        sessionId: conversationId(context),
-      });
       const wanted = ids?.split(',');
       if (
         wanted &&
         (wanted.length > 100 || wanted.some((id) => !id || id.length > 100))
       )
         throw invalid('Select at most 100 valid message IDs.');
-      const page = await agent.messages({
+      const query = {
         ids: wanted,
         before,
         after: before === undefined ? after : undefined,
         limit: pageSize,
-      });
+      };
+      const snapshot = await conversations.snapshotMessages(
+        me(context),
+        conversationId(context),
+        query,
+      );
+      const page =
+        snapshot ??
+        (await (
+          await services.onlineAgent.realtime(trusted(context), {
+            sessionId: conversationId(context),
+          })
+        ).messages(query));
+      context.header('Cache-Control', 'private, no-store');
       return context.json({
         data: page.items,
         meta: {
@@ -612,7 +732,7 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: CHAT_ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(services.chatAttachments.uploadLimit),
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -660,6 +780,10 @@ export function createChatRoutes(
       );
       const parts: Exclude<UserModelMessage['content'], string> =
         request.message.parts;
+      if (request.runnerId && agent.backend !== 'runner')
+        throw invalid(
+          'Only Runner conversations can select a runtime when sending.',
+        );
       if (request.agentId && agent.backend !== 'runner')
         throw invalid(
           'Only Runner conversations can select an agent when sending.',
@@ -671,6 +795,7 @@ export function createChatRoutes(
         );
       await agent.send([{ role: 'user', content: parts }], {
         agentId: request.agentId,
+        runnerId: request.runnerId,
         effort: request.effort,
         attachmentIds: [[...(request.attachmentIds ?? [])]],
         clientId: request.message.id,
@@ -712,7 +837,7 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: CHAT_ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(services.chatAttachments.uploadLimit),
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -792,7 +917,7 @@ export function createChatRoutes(
         },
       }),
       description:
-        'Takes back a message queued while the agent worked, as long as its runner has not taken it: it stays in the history, marked withdrawn, and the agent never sees it. Once the runner has it: `400` `CONVERSATION_CONFLICT` with `metadata.reason` `messageTaken`.',
+        'Takes back a queued message or an initial queued turn, as long as its runner has not claimed it: it stays in the history, marked withdrawn, and the agent never sees it. Once the runner has it: `400` `CONVERSATION_CONFLICT` with `metadata.reason` `messageTaken`.',
       responses: {
         204: emptyResponse(),
         400: apiErrorResponse(
@@ -944,6 +1069,36 @@ export function createChatRoutes(
         ),
       }),
   );
+  router.get(
+    '/conversations/:conversationId/runners',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List eligible conversation runtimes',
+      operationId: 'agentsConversationRunners',
+      ...cliRoute(false),
+      description:
+        'Owner only. Online runtimes allowed to run this conversation’s current Agent and project.',
+      responses: {
+        200: dataResponse(
+          z.array(
+            z.object({
+              id: z.string(),
+              name: z.string().nullable(),
+              status: z.enum(['online', 'offline', 'revoked', 'missing']),
+            }),
+          ),
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) =>
+      context.json({
+        data: await conversations.runners(me(context), conversationId(context)),
+      }),
+  );
   const acts: Record<
     'markRead' | 'stop' | 'switchRunner',
     {
@@ -956,6 +1111,18 @@ export function createChatRoutes(
       readonly conflict?: string;
     }
   > = {
+    switchRunner: {
+      act: (userId, id) => conversations.switchRunner(userId, id),
+      operationId: 'agentsSwitchConversationRunner',
+      cli: {
+        command: 'conversation switch-runner',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      },
+      summary: 'Unbind a conversation from its runner',
+      description:
+        "Owner only. The next run goes to whichever eligible runner takes it first, which binds the conversation and starts a fresh session with the conversation's history; queued runs wait for it. The old working directory is left to the old runner's cleanup.",
+    },
     markRead: {
       act: (userId, id) => conversations.markRead(userId, id),
       operationId: 'agentsMarkConversationRead',
@@ -977,18 +1144,6 @@ export function createChatRoutes(
       summary: "Stop a conversation's agent",
       description:
         'Processes a cancellation request. The returned execution may remain running until actual termination and canonical history synchronization; request success does not mean the agent has stopped.',
-    },
-    switchRunner: {
-      act: (userId, id) => conversations.switchRunner(userId, id),
-      operationId: 'agentsSwitchConversationRunner',
-      cli: {
-        command: 'conversation switch-runner',
-        args: ['conversationId'],
-        flags: { conversationId: { name: 'conversation' } },
-      },
-      summary: 'Unbind a conversation from its runner',
-      description:
-        "Owner only. The next run goes to whichever eligible runner takes it first, which binds the conversation and starts a fresh session with the conversation's history; queued runs wait for it. The old working directory is left to the old runner's cleanup.",
     },
   };
   for (const [verb, item] of Object.entries(acts))
@@ -1094,6 +1249,7 @@ export function createChatRoutes(
     }),
     conversationParam,
     async (context) => {
+      context.header('Cache-Control', 'private, no-store');
       const items = await conversations.links.list(
         me(context),
         conversationId(context),
@@ -1359,9 +1515,13 @@ export function createChatRoutes(
       operationId: 'agentsUpdateChatPreferences',
       ...cliRoute({
         command: 'conversation preferences update',
-        flags: { defaultAgentId: { name: 'default-agent' } },
+        flags: {
+          defaultAgentId: { name: 'default-agent' },
+          runnerPreference: { name: 'runner-preference' },
+        },
       }),
-      description: "Sets the caller's own default chat agent.",
+      description:
+        "Sets the caller's own default chat agent and which kind of runner their runs go to first. The runner preference applies to runs queued after the change.",
       responses: {
         200: dataResponse(ChatDefaultAgentSchema),
         ...apiErrorResponses,
@@ -1425,19 +1585,22 @@ export function createChatRoutes(
 
   router.post(
     '/chatAttachments',
-    guard,
+    personOrRun,
     describeRoute({
       tags,
       summary: 'Upload a file to send in chat',
       operationId: 'agentsUploadChatAttachment',
-      ...cliRoute({ command: 'conversation attachment upload' }),
-      description: `One file as the \`file\` field of a multipart body, at most ${CHAT_ATTACHMENT_SIZE_MAX} bytes. It is the caller's alone until it is sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
+      // Hosts admit run credentials together with their upload action; keep the default personal upload policy.
+      ...cliRoute({
+        command: 'conversation attachment upload',
+      }),
+      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. With an application-admitted conversation run token, immediately sends the file in that run's reply and retains it with the conversation; no Markdown link is needed. Otherwise it is the caller's alone until sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(MessageAttachmentSchema, 'Stored.'),
         413: apiErrorResponse(
           413,
-          `The file is over ${CHAT_ATTACHMENT_SIZE_MAX} bytes (\`UPLOAD_TOO_LARGE\`).`,
+          `The file is over ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB (\`FILE_TOO_LARGE\`).`,
         ),
         503: apiErrorResponse(
           503,
@@ -1447,9 +1610,9 @@ export function createChatRoutes(
       },
     }),
     bodyLimit({
-      maxSize: CHAT_ATTACHMENT_SIZE_MAX + ENVELOPE,
+      maxSize: limitBytes(services.chatAttachments.uploadLimit) + ENVELOPE,
       onError: () => {
-        throw fileTooLarge();
+        throw fileTooLarge(services.chatAttachments.uploadLimit);
       },
     }),
     async (context) => {
@@ -1462,10 +1625,13 @@ export function createChatRoutes(
       const file = body.file;
       if (!(file instanceof File))
         throw invalid('Send one file as multipart form data, as `file`.');
-      return context.json(
-        { data: await services.chatAttachments.upload(me(context), file) },
-        201,
+      const attachment = await services.chatAttachments.upload(
+        me(context),
+        file,
       );
+      const run = context.get('caller').run;
+      if (run) await conversations.attachFromRun(run.id, attachment.id);
+      return context.json({ data: attachment }, 201);
     },
   );
   router.delete(

@@ -97,7 +97,7 @@ describe('shared table and card feedback', () => {
       />,
       options,
     );
-    expect(screen.getByRole('status').textContent).toBe(
+    expect((await screen.findByRole('status')).textContent).toBe(
       enUS.listFeedback.loading,
     );
     expect(screen.getByRole('columnheader', { name: 'ID' })).toBeVisible();
@@ -159,7 +159,7 @@ describe('shared table and card feedback', () => {
       expect(
         screen.getByRole('button', { name: 'Search tools' }),
       ).toBeVisible();
-      expect(screen.getByRole(role).closest('td')).not.toBeNull();
+      expect((await screen.findByRole(role)).closest('td')).not.toBeNull();
     }
 
     view.rerender(
@@ -178,9 +178,8 @@ describe('shared table and card feedback', () => {
   });
 
   it('renders each built-in state as one icon and one short line without inline actions', async () => {
-    const view = await renderWithApp(<ListFeedback state='loading' />, options);
+    const view = await renderWithApp(<ListFeedback state='empty' />, options);
     const states = [
-      ['loading', 'status'],
       ['empty', 'status'],
       ['no-results', 'status'],
       ['forbidden', 'alert'],
@@ -273,8 +272,9 @@ describe('shared table and card feedback', () => {
     expect(screen.getByRole('alert').textContent).toBe(
       enUS.listFeedback.failed,
     );
+    expect(screen.getByRole('button')).toBeDisabled();
     expect(
-      screen.getByRole('button', { name: enUS.listFeedback.retrying }),
+      await screen.findByRole('button', { name: enUS.listFeedback.retrying }),
     ).toBeDisabled();
   });
 

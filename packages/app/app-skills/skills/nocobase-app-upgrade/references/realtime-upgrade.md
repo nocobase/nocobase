@@ -43,11 +43,79 @@ Update test doubles to return publication promises and correlate subscription ac
 
 ## Redis implementation extraction
 
-When TARGET removes the built-in Redis broker, install a compatible `@nocobase/app-plugin-realtime-redis` and explicitly add its `/server` definition to the existing Server plugin composition. Keep realtime.adapter, namespace and redis configuration paths. Standalone consumers move createRedisRealtimeBroker and RedisRealtimeBrokerOptions imports to `@nocobase/app-plugin-realtime-redis/broker`; the core service and original realtimeServiceToken do not change. The public realtimeServiceOptions helper preserves its first two arguments and accepts an optional application-local registry; without one it supports only Memory. Custom factories register during register, before first service resolution.
+When TARGET removes the built-in Redis broker, install a compatible `@nocobase/app-plugin-realtime-redis` and explicitly add its `/server` definition to the existing Server plugin composition. Extraction alone retained the old configuration paths; when TARGET includes broker nesting, also apply the configuration migration below. Standalone consumers move createRedisRealtimeBroker and RedisRealtimeBrokerOptions imports to `@nocobase/app-plugin-realtime-redis/broker`; the core service and original realtimeServiceToken do not change. The public realtimeServiceOptions helper preserves its first two arguments and accepts an optional application-local registry; without one it supports only Memory. Custom factories register during register, before first service resolution.
 
 For a required commercial package, follow the installed App development Skill's `references/plugins.md` commercial package workflow: automatically check that package's metadata at pkg-v3 with existing credentials and command-local global/scoped registry overrides, then install/register a compatible authorized version without prompting. If access is unavailable, leave a brief conversation notice and continue independent upgrade preparation without waiting for the user. Distinguish authorization denial from credentials/network/version issues. Keep the dependent rollout pending and preserve the working backend and rollback checkpoint; do not remove the OSS implementation before its required replacement is available.
 
 Resolve real published peer lower bounds, not merely workspace manifest versions. Roll out additive OSS API, compatible commercial package and application registration before final OSS removal. An unregistered selected adapter fails rather than silently using Memory. Roll back packages, lockfile, registration and configuration together; do not mix Memory and Redis replicas. Server plugin registration and config-factory aggregation are separate; config check proves neither plugin enablement nor Redis connectivity.
+
+## Broker configuration nesting
+
+When TARGET selects brokers through `realtime.broker`, migrate every configuration source together. Old paths are errors, not compatibility aliases, including an old `adapter: inMemory` in code defaults. A new YAML broker merged with an old code default must fail rather than choose a hidden precedence.
+
+Before:
+
+```yaml
+realtime:
+  namespace: my-app
+  authorizationTimeoutMs: 5000
+  sessionCheckIntervalMs: 30000
+  limits:
+    maxConnections: 10000
+  adapter: redis
+  redis:
+    setupTimeoutMs: 5000
+    connection:
+      host: redis.internal
+      port: 6379
+      commandTimeout: 5000
+```
+
+After:
+
+```yaml
+realtime:
+  namespace: my-app
+  authorizationTimeoutMs: 5000
+  sessionCheckIntervalMs: 30000
+  limits:
+    maxConnections: 10000
+  broker:
+    adapter: redis
+    setupTimeoutMs: 5000
+    connection:
+      host: redis.internal
+      port: 6379
+      commandTimeout: 5000
+```
+
+Keep namespace at the service level; it still defaults to app.name, then `default`. No broker.namespace, default broker selector, named brokers or Topic routing is introduced. All service limits and timer defaults are unchanged. Redis channels remain `nocobase:realtime:${namespace}` with the existing event/control formats; neither `broker` nor another configuration path enters the physical identity. Redis Pub/Sub ignores logical DB isolation; preserve channel ACLs and network isolation.
+
+In `server/config/realtime.ts`, replace old `adapter` and `redis` defaults as well as YAML. Prefer an empty validated section for applications that should remain local until explicitly configured:
+
+```ts
+import { defineRealtimeConfig } from '@nocobase/app-server/realtime';
+
+export default defineRealtimeConfig();
+```
+
+Add the import, `realtime: ReturnType<typeof realtime>` type entry and `realtime` value entry to the existing `defaultAppConfigs` map in `server/config/index.ts`. Default and Examples already supply this section. To intentionally select local-only operation, use `{ broker: { adapter: 'inMemory' } }`; intentionally configured Redis defaults use `{ broker: { adapter: 'redis', connection: { host, port }, setupTimeoutMs } }`, never a separate redis property. Install and register `@nocobase/app-plugin-realtime-redis/server` separately before selecting Redis; OSS templates do not depend on or register it.
+
+An absent broker uses inMemory, but an explicit empty/null/array broker or a missing/empty/non-string adapter fails. The templates do not default broker.adapter, so incomplete user YAML cannot inherit it. Validation sees merged configuration, not each original source: if a custom App deliberately defaults a valid broker.adapter in code, YAML that omits that leaf can inherit it and is indistinguishable from a complete final broker. Remove that default when omission must fail. Connection stays optional, with existing SDK defaults and validation; this migration adds no connection whitelist, retry or lifecycle policy.
+
+Update declared environment mappings and configuration-writing scripts using this path table. Environment variables are not auto-discovered; keep their existing names if needed but change their declared destination. Section-factory mappings use the relative path (for example, `broker.adapter`); an application-level environmentProvider mapping uses the full path. Keep passwords Server-only and mark their mappings secret.
+
+| Old path                      | New path                       |
+| ----------------------------- | ------------------------------ |
+| realtime.adapter              | realtime.broker.adapter        |
+| realtime.redis.connection     | realtime.broker.connection     |
+| realtime.redis.setupTimeoutMs | realtime.broker.setupTimeoutMs |
+
+For example, after removing the old keys from YAML and code defaults, change script writes to `pnpm nocobase config set realtime.broker.adapter=redis realtime.broker.connection.host=redis.internal realtime.broker.setupTimeoutMs=5000`. A secret write uses `pnpm nocobase config set --from-env realtime.broker.connection.password=REALTIME_REDIS_PASSWORD`. Do not leave old keys beside new keys; run config check and then a real startup/connectivity test. No new environment names are supplied by the core helper or Redis plugin.
+
+Upgrade the OSS host, Redis plugin, application source defaults, YAML/environment mappings and lockfile as a coordinated cohort. The factory context shape stays `{ namespace, config, logger }`, with the entire service config under config and Redis options under config.broker; custom factories must update reads. The standalone SDK `createRedisRealtimeBroker({ namespace, connection, setupTimeoutMs, onError })` does not change. An old host may silently ignore a new broker selection; an old plugin under a new host may read missing config.redis and connect using SDK defaults. These package combinations are unsupported even if TypeScript compilation or peer ranges accept them. Resolve actual compatible published artifacts before deployment; do not represent an unmerged vendor source mirror as an installable dependency.
+
+Merge the OSS implementation first, then update Pro's committed vendor pointer and synchronized settings/lockfile and rerun its checks before release. Make the matching Pro package available before deploying Redis applications on the new host. A wire-format equivalence test does not alone prove a rolling mixed-binary deployment; validate exact deployed versions before making that claim. Rollback restores matching packages, lockfile, composition and the old configuration, not just a binary. Existing default-local applications need no database or Redis data migration. This change does not modify WebSockets, authorization/session checks, subscriptions, resync, message semantics or Agents response streams.
 
 ## Preserve recovery during rollout
 

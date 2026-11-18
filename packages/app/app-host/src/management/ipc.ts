@@ -24,6 +24,8 @@ import type {
   HostDeploymentSet,
   HostDescription,
   HostOperation,
+  HostCancelResult,
+  HostDeploymentProgress,
   HostScope,
   HostScopeCheck,
   HostStatus,
@@ -31,6 +33,9 @@ import type {
 } from './types.ts';
 
 type IpcMethod =
+  | 'prepareRotation'
+  | 'cancelDeployment'
+  | 'deploymentProgress'
   | 'publishAppConfig'
   | 'restoreDeploymentSet'
   | 'reloadAppConfig'
@@ -52,6 +57,38 @@ export interface IpcHostManagementClientOptions {
 }
 
 export class IpcHostManagementClient implements HostManagementService {
+  prepareRotation(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
+    resume?: boolean;
+  }): Promise<boolean> {
+    // A full configured request drain must not race the ordinary management RPC timeout.
+    return this.call(
+      'prepareRotation',
+      options,
+      undefined,
+      options.drainTimeoutMs === undefined
+        ? this.timeoutMs
+        : Math.min(2_147_483_647, this.timeoutMs + options.drainTimeoutMs),
+    );
+  }
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope; queuedOnly?: boolean },
+  ): Promise<HostCancelResult> {
+    return this.call('cancelDeployment', { operationId, appId, ...options });
+  }
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostDeploymentProgress | null> {
+    return this.call('deploymentProgress', { operationId, appId, ...options });
+  }
+
   publishAppConfig(
     appId: string,
     content: string,
@@ -147,10 +184,11 @@ export class IpcHostManagementClient implements HostManagementService {
     method: IpcMethod,
     payload?: unknown,
     listener?: DeploymentLogListener,
+    timeoutMs: number = this.timeoutMs,
   ): Promise<T> {
     return callIpc<T>(this.child, {
       session: this.session,
-      timeoutMs: this.timeoutMs,
+      timeoutMs,
       method,
       payload,
       onLog: listener,
@@ -213,6 +251,15 @@ export class IpcHostManagementServer {
           (request.payload as { content: string }).content,
         );
         break;
+      case 'prepareRotation':
+        if (!this.service.prepareRotation)
+          throw new Error('Host rotation handshake is unavailable');
+        result = await this.service.prepareRotation(
+          request.payload as Parameters<
+            NonNullable<HostManagementService['prepareRotation']>
+          >[0],
+        );
+        break;
       case 'getStatus':
         result = await this.service.getStatus(request.payload ?? undefined);
         break;
@@ -269,6 +316,19 @@ export class IpcHostManagementServer {
           (request.payload as { appId: string }).appId,
         );
         break;
+      case 'cancelDeployment':
+      case 'deploymentProgress': {
+        const { operationId, appId, ...options } = request.payload as {
+          operationId: string;
+          appId: string;
+          scope?: HostScope;
+          queuedOnly?: boolean;
+        };
+        result = await this.service[
+          request.method as 'cancelDeployment' | 'deploymentProgress'
+        ](operationId, appId, options);
+        break;
+      }
       case 'getOperation': {
         const { operationId, scope } = request.payload as {
           operationId: string;
