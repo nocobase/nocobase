@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-idp-oauth",
-  "version": "2.2.47",
+  "version": "2.2.48",
   "main": "dist/server/index.js",
   "displayName": "IdP: OAuth",
   "displayName.zh-CN": "IdP: OAuth",
