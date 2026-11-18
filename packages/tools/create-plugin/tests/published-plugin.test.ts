@@ -27,12 +27,14 @@ const uiRequire = createRequire(path.join(uiRoot, 'package.json'));
 const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
 const primitiveNames = [
   'button',
+  'checkbox',
   'input',
   'input-group',
   'textarea',
   'popover',
   'select',
   'switch',
+  'tabs',
 ];
 const registryComponentNames = ['permission-editor'];
 
@@ -555,7 +557,7 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       `import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PermissionEditor } from './node_modules/${plugin.packageName}/dist/client/components/permission-editor.js';
-const html = renderToStaticMarkup(createElement(PermissionEditor, { modules: [{ id: 'access', label: 'Packed permissions', menus: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true, scopes: [{ id: 'records', options: [{ value: 'all', label: 'All' }, { value: 'related', label: 'Related' }] }] }] }] }], value: { read: { scopes: { records: 'related' } } }, onChange() {} }));
+const html = renderToStaticMarkup(createElement(PermissionEditor, { defaultTab: 'objects', menus: [{ id: 'records-page', label: 'Records page', uses: { primary: ['records'] } }], objects: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true, scopes: [{ id: 'records', options: [{ value: 'all', label: 'All' }, { value: 'related', label: 'Related' }] }] }] }], value: { menus: ['records-page'], grants: { read: { scopes: { records: 'related' } } } }, onChange() {} }));
 if (!html.includes('Read records')) throw new Error('Packed component did not render');
 console.log('packed component rendered');
 `,
@@ -573,7 +575,7 @@ console.log('packed component rendered');
       `import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { PermissionEditor } from './node_modules/${plugin.packageName}/dist/client/components/permission-editor.js';
-createRoot(document.getElementById('root')).render(createElement(PermissionEditor, { modules: [{ id: 'access', label: 'Packed permissions', menus: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true }] }] }], value: { read: {} }, onChange() {} }));
+createRoot(document.getElementById('root')).render(createElement(PermissionEditor, { menus: [{ id: 'records-page', label: 'Records page', uses: { primary: ['records'] } }], objects: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true }] }], value: { menus: ['records-page'], grants: { read: {} } }, onChange() {} }));
 `,
     );
     for (const condition of ['development', 'production']) {

@@ -201,15 +201,22 @@ describe('permission editor tabs', () => {
     expect(screen.queryByText(/opens empty/)).toBeNull();
   });
 
-  it('toggles a settings menu through the action that opens it', async () => {
+  it('shows a menu opened by an action as read-only and points to its object', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<Host initial={{ menus: [], grants: {} }} onChange={onChange} />);
-    await user.click(screen.getByRole('checkbox', { name: 'Permissions' }));
-    expect(onChange).toHaveBeenLastCalledWith({
-      menus: [],
-      grants: { 'roles.view': {} },
-    });
+    const entry = screen.getByRole('checkbox', { name: 'Permissions' });
+    expect(entry).toHaveAttribute('aria-disabled', 'true');
+    await user.click(entry);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole('button', { name: 'Shown with “View roles”' }),
+    );
+    expect(
+      screen.getByRole('tab', { name: /Business objects/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: 'Roles' })).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
 
@@ -548,7 +555,9 @@ describe('business objects tab', () => {
     );
     await user.click(trigger('Approve contracts: Customers'));
     expect(
-      screen.getAllByRole('option').map((option) => option.textContent?.trim()),
+      (await screen.findAllByRole('option')).map((option) =>
+        option.textContent?.trim(),
+      ),
     ).toEqual([
       'Same as Customers view (Their department)',
       'Their own records',
