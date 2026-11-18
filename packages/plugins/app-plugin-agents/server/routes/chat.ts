@@ -22,6 +22,7 @@ import {
   appUIMessageMetadataSchema,
   appUIToolApprovalInputSchema,
 } from '../../shared/online-agent.js';
+import { REASONING_LEVELS } from '../../shared/models.js';
 import { cleanTitle } from '../core/conversations/titles.js';
 import { jsonSafe } from '../online/agent/messages/json.js';
 import { bodyLimit } from 'hono/body-limit';
@@ -83,18 +84,22 @@ const conversationConflict = (when: string) =>
 
 const MessagePosition = z.object({ before: z.number().int().min(1) });
 
+// The API document lists the eight levels. The schema itself accepts any value so that a wrong type is refused by the
+// same check as a wrong string: 400 `REASONING_LEVEL_INVALID`, not the generic `INVALID_INPUT`.
+const ThinkingInput = z
+  .custom<string>(() => true)
+  .meta({
+    type: 'string',
+    enum: [...REASONING_LEVELS],
+    description:
+      'A thinking level: default, off, minimal, low, medium, high, xhigh or max. Anything else is refused (`REASONING_LEVEL_INVALID`).',
+  })
+  .optional();
+
 const ConfigInput = z.strictObject({
   agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
-  // Any JSON value passes the schema so that a wrong type is refused by the same check as a wrong string: 400
-  // `REASONING_LEVEL_INVALID`, not the generic `INVALID_INPUT`.
-  thinking: z
-    .json()
-    .optional()
-    .transform((value) => value as string | undefined)
-    .describe(
-      'A thinking level: default, off, minimal, low, medium, high, xhigh or max. Anything else is refused (`REASONING_LEVEL_INVALID`).',
-    ),
+  thinking: ThinkingInput,
   webSearch: z.boolean().optional(),
   context: z
     .strictObject({

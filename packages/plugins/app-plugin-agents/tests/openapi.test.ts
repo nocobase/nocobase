@@ -210,6 +210,41 @@ describe('agents API document', () => {
     });
   });
 
+  it('documents the thinking level of a conversation configuration as the eight levels', () => {
+    const levels = [
+      'default',
+      'off',
+      'minimal',
+      'low',
+      'medium',
+      'high',
+      'xhigh',
+      'max',
+    ];
+    const thinkingOf = (found: OpenAPIV3_1.OperationObject): unknown => {
+      const body = found.requestBody as OpenAPIV3_1.RequestBodyObject;
+      const text = JSON.stringify(body.content['application/json'].schema);
+      const matches = [
+        ...text.matchAll(/"thinking":(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/g),
+      ].map((match) => JSON.parse(match[1]));
+      expect(matches).toHaveLength(1);
+      return matches[0];
+    };
+    for (const operationId of [
+      'agentsCreateConversation',
+      'agentsUpdateConversationConfig',
+    ]) {
+      const found = operations().find(
+        (item) => item.operationId === operationId,
+      );
+      expect(found).toBeDefined();
+      expect(thinkingOf(found!)).toMatchObject({
+        type: 'string',
+        enum: levels,
+      });
+    }
+  });
+
   it('has sound schemas', () => {
     expect(findApiDocumentSchemaProblems(document)).toEqual([]);
   });
