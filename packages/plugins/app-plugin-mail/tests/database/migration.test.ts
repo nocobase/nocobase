@@ -383,8 +383,11 @@ describe('mail database migration', () => {
     expect((await migrateUp(database)).executed).toEqual([]);
   });
 
-  it('refuses to drop account sync folders while account data would cascade away', async () => {
-    await migrateUp(database);
+  it('drops account sync folders on rollback while accounts exist', async () => {
+    const migrator = database.createMigrator(sources[0]);
+    const name = '202611180001_mail_account_sync_folders';
+    await migrator.upTo(MIGRATIONS[MIGRATIONS.indexOf(name) - 1]);
+    await migrator.upTo(name);
     const connection = database.connection();
     const accountId = randomUUID();
     const now = '2026-11-18T00:00:00.000Z';
@@ -416,15 +419,13 @@ describe('mail database migration', () => {
         kind: 'folder',
       })
       .execute();
-    await expect(migrateDown(database)).rejects.toThrow(
-      'mailFolders contains data',
-    );
-    expect(
-      await connection.query.selectFrom('mailFolders').selectAll().execute(),
-    ).toHaveLength(1);
+    expect((await migrator.rollback()).rolledBack).toEqual([name]);
     expect(
       (await inspectCollection(connection, 'mailAccounts'))?.fields,
-    ).toMatchObject({ syncFolderIds: { type: 'json' } });
+    ).not.toHaveProperty('syncFolderIds');
+    expect(
+      (await inspectCollection(connection, 'mailAuthorizationStates'))?.fields,
+    ).not.toHaveProperty('syncFolderIds');
   });
 });
 
