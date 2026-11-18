@@ -5,9 +5,9 @@ import {
   effectiveScopeValue,
   filterObjects,
   followedObject,
+  isMenuToggleable,
   menuCheckState,
   menuCount,
-  menuDependents,
   menuLeaves,
   menusUsing,
   menuWarnings,
@@ -484,10 +484,22 @@ describe('permission editor model', () => {
         actions: ['Create contacts'],
       },
     ]);
-    // With Customers' View off, the slot uses its own default and options.
-    const off = { 'contacts.view': {}, 'contacts.create': {} };
-    expect(effectiveScopeValue(contacts, off, create, slot, all)).toBe('own');
-    expect(followedObject(contacts, slot, all, off)).toBeUndefined();
+    // The followed View is a requirement: turning Customers' View off asks first and turns Create contacts off with
+    // it, so the customer slot never falls back to a wider scope of its own.
+    expect(
+      dependentsOf(all, grants, ['customers.view']).map((item) => item.id),
+    ).toEqual(['contacts.create']);
+    const off = setActionEnabled(all, grants, 'customers.view', false);
+    expect(off.grants).toEqual({
+      'contacts.view': { scopes: { records: 'all' } },
+    });
+    // Turning Create contacts on turns on Customers' View too.
+    const on = setActionEnabled(all, {}, 'contacts.create', true);
+    expect(Object.keys(on.grants).sort()).toEqual([
+      'contacts.create',
+      'contacts.view',
+      'customers.view',
+    ]);
   });
 
   it('keeps the scopes of a multi-scope action independent of View', () => {
@@ -747,48 +759,83 @@ describe('permission editor model', () => {
       expect(menuCount(menus, value)).toEqual({ checked: 2, total: 4 });
       expect(visibleMenuCount(menus, value)).toEqual({ visible: 1, total: 3 });
 
-      const group = setMenuChecked(objects, menus, value, 'main', true);
+      const group = { value: setMenuChecked(menus, value, 'main', true) };
       expect(group.value).toEqual({
         menus: ['contracts-page', 'payments-page'],
         grants: {},
       });
       expect(menuCheckState(menus[0]!, group.value)).toBe('checked');
       const cleared = setMenuChecked(
-        objects,
         menus,
         group.value,
         'contracts-page',
         false,
       );
       // Clearing a menu never touches what the role may do with the objects its page uses.
-      expect(cleared.value).toEqual({ menus: ['payments-page'], grants: {} });
+      expect(cleared).toEqual({ menus: ['payments-page'], grants: {} });
       const withGrants: PermissionValue = {
         menus: ['payments-page'],
         grants: { 'contracts.view': {} },
       };
       expect(
-        setMenuChecked(objects, menus, withGrants, 'payments-page', false).value
-          .grants,
+        setMenuChecked(menus, withGrants, 'payments-page', false).grants,
       ).toBe(withGrants.grants);
     });
 
-    it('turns the action a menu opens with on and off, asking first what goes with it', () => {
-      const value: PermissionValue = { menus: [], grants: {} };
-      const on = setMenuChecked(objects, menus, value, 'shipments-page', true);
-      expect(Object.keys(on.value.grants)).toEqual(['shipments.view']);
-      expect(menuCheckState(menus[1]!, on.value)).toBe('checked');
-      const withSign: PermissionValue = {
-        menus: [],
-        grants: { ...on.value.grants, 'shipments.sign': {} },
+    it('never changes object permissions from the menu tab, a group with a sensitive entry included', () => {
+      const tree: readonly PermissionMenuNode[] = [
+        {
+          id: 'settings',
+          label: 'Settings',
+          children: [
+            { id: 'audit-page', label: 'Audit log' },
+            // Shown while reading shipments is on; it has no menu permission of its own.
+            {
+              id: 'shipments-page',
+              label: 'Shipping settings',
+              opensWith: 'shipments.view',
+            },
+          ],
+        },
+        {
+          id: 'only-actions',
+          label: 'Only entries opened by actions',
+          children: [
+            {
+              id: 'shipments-only',
+              label: 'Shipping',
+              opensWith: 'shipments.view',
+            },
+          ],
+        },
+      ];
+      const grants: PermissionGrants = { 'contracts.view': {} };
+      const checked = setMenuChecked(
+        tree,
+        { menus: [], grants },
+        'settings',
+        true,
+      );
+      // Only the menu permission changes; the entry opened by an action stays off and no action turns on.
+      expect(checked).toEqual({ menus: ['audit-page'], grants });
+      expect(checked.grants).toBe(grants);
+      expect(menuCheckState(tree[0]!, checked)).toBe('checked');
+      const on: PermissionValue = {
+        menus: ['audit-page'],
+        grants: { 'shipments.view': {}, 'shipments.sign': {} },
       };
-      expect(
-        menuDependents(objects, menus, withSign, 'shipments-page').map(
-          (action) => action.id,
-        ),
-      ).toEqual(['shipments.sign']);
-      expect(
-        setMenuChecked(objects, menus, withSign, 'admin', false).value.grants,
-      ).toEqual({});
+      const cleared = setMenuChecked(tree, on, 'settings', false);
+      expect(cleared).toEqual({ menus: [], grants: on.grants });
+      expect(setMenuChecked(tree, on, 'shipments-page', false)).toEqual(on);
+      // Such an entry, and a group of only such entries, cannot be toggled; it follows its action.
+      expect(isMenuToggleable(tree[0]!.children![1]!)).toBe(false);
+      expect(isMenuToggleable(tree[1]!)).toBe(false);
+      expect(isMenuToggleable(tree[0]!)).toBe(true);
+      expect(menuCheckState(tree[1]!, on)).toBe('checked');
+      expect(menuCheckState(tree[1]!, cleared)).toBe('checked');
+      expect(menuCheckState(tree[1]!, { menus: [], grants: {} })).toBe(
+        'unchecked',
+      );
     });
 
     it('warns about checked menus whose page lists an object the role cannot view', () => {
