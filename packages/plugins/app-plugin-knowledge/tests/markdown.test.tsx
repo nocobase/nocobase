@@ -22,3 +22,69 @@ describe('KnowledgeMarkdown', () => {
     expect(blocks[1]?.closest('[data-mermaid]')).toBeNull();
   });
 });
+
+describe('KnowledgeMarkdown on MarkdownView', () => {
+  const content = [
+    '# Guide',
+    '',
+    '## Setup',
+    '',
+    'Read [the intro](#setup), [another doc](/main/knowledge/x) or [site](https://example.com).',
+    '',
+    '### Setup',
+    '',
+    '#### Four',
+    '',
+    '##### Five',
+    '',
+    '###### Six',
+    '',
+    '```md',
+    '# not a heading',
+    '```',
+  ].join('\n');
+
+  it('gives h1 to h6 the anchors markdownHeadings computes and hides the leading title', () => {
+    const { container } = render(
+      <KnowledgeMarkdown content={content} hiddenHeadingLine={1} />,
+    );
+    expect(
+      [...container.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((heading) => [
+        heading.tagName,
+        heading.id,
+        heading.getAttribute('data-line'),
+      ]),
+    ).toEqual([
+      ['H2', 'setup', '3'],
+      ['H3', 'setup-2', '7'],
+      ['H4', 'four', '9'],
+      ['H5', 'five', '11'],
+      ['H6', 'six', '13'],
+    ]);
+  });
+
+  it('keeps #anchor links on the page and opens other links in a new tab', () => {
+    const { container } = render(<KnowledgeMarkdown content={content} />);
+    expect(
+      [...container.querySelectorAll('a')].map((link) => [
+        link.getAttribute('href'),
+        link.getAttribute('target'),
+      ]),
+    ).toEqual([
+      ['#setup', null],
+      ['/main/knowledge/x', '_blank'],
+      ['https://example.com', '_blank'],
+    ]);
+  });
+
+  it('highlights every block in the line range', () => {
+    const { container } = render(
+      <KnowledgeMarkdown content={content} highlight={[3, 5]} />,
+    );
+    expect(
+      [...container.querySelectorAll('[data-highlighted]')].map(
+        (node) => node.tagName,
+      ),
+    ).toEqual(['H2', 'P']);
+  });
+});

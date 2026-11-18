@@ -209,14 +209,14 @@ A generic board: columns of cards dragged within and between columns, reporting 
 
 ### markdown-view
 
-Markdown rendered as compact prose for descriptions and comments, with mention chips and fenced code a consumer may draw itself. Use it to display what rich-text-editor writes.
+The shared Markdown renderer: GitHub-flavoured Markdown as compact prose with mention chips, sanitised URLs, #anchor links on the page and every other link in a new tab. Use it to display what rich-text-editor writes, and wrap it with components and remarkPlugins for documents, chat or reports.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/markdown-view`
 - Installs to: `client/components/markdown-view.tsx`, `client/components/remark-cjk-autolink.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/markdown-view-demo` (`pnpm exec shadcn view @nocobase/markdown-view-demo`)
-- After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.
+- After installing: Pass the Markdown as content. components replaces single elements by tag (render markdownViewComponents.<tag> to keep the base look; define them at module level), remarkPlugins adds syntax after remark-gfm and remarkCjkAutolink, renderCodeBlock draws a fenced block such as a mermaid diagram, renderLink replaces a link, transformUrl sets a stricter URL policy and mentionIcon picks a mention chip's icon. Raw HTML is never rendered.
 
 ### long-text
 

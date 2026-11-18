@@ -1,19 +1,20 @@
 /**
- * A knowledge document's Markdown: GitHub-flavoured, `mermaid` code blocks drawn as diagrams, with each heading carrying the anchor a citation or a link ends
- * with (`markdownHeadings`, the same the server's chunks use), and its table of contents.
+ * A knowledge document's Markdown on the shared `MarkdownView`, with what documents add to it: each heading carries
+ * the anchor a citation or a link ends with (`markdownHeadings`, the same the server's chunks use), a leading title the
+ * page already shows can be left out, a range of source lines can be highlighted, `mermaid` code blocks are drawn as
+ * diagrams, and the longer document spacing. Also the document's table of contents.
  */
 import { useTranslation } from '@nocobase/i18n/client';
-import { MermaidDiagram, mermaidSource } from '@nocobase/markdown-mermaid';
+import { MermaidDiagram } from '@nocobase/markdown-mermaid';
 import {
   createContext,
   useContext,
   useMemo,
-  createElement,
+  type ComponentProps,
   type ReactElement,
   type ReactNode,
 } from 'react';
-import Markdown, { type Components, type ExtraProps } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import type { Components, ExtraProps } from 'react-markdown';
 
 import { cn } from 'cn';
 
@@ -22,8 +23,13 @@ import {
   markdownHeadings,
   type MarkdownHeading,
 } from '../../shared/knowledge.js';
-
-type HeadingProps = React.ComponentProps<'h1'> & ExtraProps;
+import {
+  MarkdownView,
+  markdownViewComponents as base,
+  type MarkdownCodeBlock,
+  type MarkdownRemarkPlugins,
+  type MarkdownViewComponents,
+} from './markdown-view.js';
 
 type Lines = readonly [number, number] | null;
 
@@ -47,153 +53,127 @@ function marked(
     : { 'data-line': start };
 }
 
-function heading(level: 1 | 2 | 3 | 4 | 5 | 6, className: string) {
-  return function Heading({
-    node,
-    children,
-    ...props
-  }: HeadingProps): ReactNode {
-    const {
-      anchors,
-      hiddenLine,
-      highlight: lines,
-    } = useContext(MarkdownContext);
-    if (node?.position?.start.line === hiddenLine) return null;
-    const mark = marked(node, lines);
-    return createElement(
-      `h${level}`,
-      {
-        ...props,
-        ...mark,
-        id: anchors.get(node?.position?.start.line ?? -1),
-        className: cn('scroll-mt-20', className, mark.className),
-      },
-      children,
+const HighlightContext = createContext<Lines>(null);
+
+type BlockTag = keyof MarkdownViewComponents &
+  (
+    | 'h1'
+    | 'h2'
+    | 'h3'
+    | 'h4'
+    | 'h5'
+    | 'h6'
+    | 'p'
+    | 'ul'
+    | 'ol'
+    | 'blockquote'
+    | 'pre'
+    | 'table'
+  );
+
+/** The base element with the document's spacing, marking its first source line and the highlight. */
+function block<Tag extends BlockTag>(
+  tag: Tag,
+  className: string,
+): (props: ComponentProps<Tag> & ExtraProps) => ReactNode {
+  const Base = base[tag] as (
+    props: ComponentProps<'div'> & ExtraProps,
+  ) => ReactNode;
+  return function KnowledgeBlock(props) {
+    const mark = marked(props.node, useContext(HighlightContext));
+    return (
+      <Base
+        {...(props as ComponentProps<'div'> & ExtraProps)}
+        {...mark}
+        className={cn(className, props.className, mark.className)}
+      />
     );
   };
 }
 
-const MarkdownContext = createContext<{
-  anchors: ReadonlyMap<number, string>;
-  hiddenLine: number | null;
-  highlight: Lines;
-}>({ anchors: new Map(), hiddenLine: null, highlight: null });
-
 const components: Components = {
-  h1: heading(1, 'mt-6 mb-3 font-heading text-2xl font-semibold first:mt-0'),
-  h2: heading(
-    2,
-    'mt-6 mb-2 border-b pb-1 font-heading text-xl font-semibold first:mt-0',
+  h1: block('h1', 'mt-6 mb-3 scroll-mt-20 font-heading text-2xl font-semibold'),
+  h2: block(
+    'h2',
+    'mt-6 mb-2 scroll-mt-20 border-b pb-1 font-heading text-xl font-semibold',
   ),
-  h3: heading(3, 'mt-5 mb-2 text-lg font-semibold first:mt-0'),
-  h4: heading(4, 'mt-4 mb-2 font-semibold first:mt-0'),
-  h5: heading(5, 'mt-4 mb-2 font-semibold first:mt-0'),
-  h6: heading(6, 'mt-4 mb-2 font-semibold first:mt-0'),
-  p: function MarkdownP({ node, ...props }) {
-    const { highlight } = useContext(MarkdownContext);
-    const mark = marked(node, highlight);
-    return (
-      <p
-        {...props}
-        {...mark}
-        className={cn('leading-7 not-first:mt-3', mark.className)}
-      />
-    );
-  },
-  a: ({ node: _node, ...props }) => (
-    <a
-      className='font-medium text-primary underline underline-offset-4'
-      {...props}
-    />
+  h3: block('h3', 'mt-5 mb-2 scroll-mt-20 text-lg font-semibold'),
+  h4: block('h4', 'mt-4 mb-2 scroll-mt-20 text-sm font-semibold'),
+  h5: block(
+    'h5',
+    'mt-4 mb-2 scroll-mt-20 text-sm font-semibold text-foreground',
   ),
-  ul: function MarkdownUl({ node, ...props }) {
-    const { highlight } = useContext(MarkdownContext);
-    const mark = marked(node, highlight);
-    return (
-      <ul
-        {...props}
-        {...mark}
-        className={cn('my-3 ml-6 list-disc space-y-1', mark.className)}
-      />
-    );
-  },
-  ol: function MarkdownOl({ node, ...props }) {
-    const { highlight } = useContext(MarkdownContext);
-    const mark = marked(node, highlight);
-    return (
-      <ol
-        {...props}
-        {...mark}
-        className={cn('my-3 ml-6 list-decimal space-y-1', mark.className)}
-      />
-    );
-  },
-  blockquote: function MarkdownBlockquote({ node, ...props }) {
-    const { highlight } = useContext(MarkdownContext);
-    const mark = marked(node, highlight);
-    return (
-      <blockquote
-        {...props}
-        {...mark}
-        className={cn(
-          'my-3 border-l-2 pl-4 text-muted-foreground italic',
-          mark.className,
-        )}
-      />
-    );
-  },
-  code: ({ node: _node, className: name, ...props }) => (
-    <code
-      className={cn(
-        'rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]',
-        name,
-      )}
-      {...props}
-    />
+  h6: block(
+    'h6',
+    'mt-4 mb-2 scroll-mt-20 text-sm font-semibold text-foreground',
   ),
-  pre: function MarkdownPre({ node, ...props }) {
-    const { highlight } = useContext(MarkdownContext);
-    const mark = marked(node, highlight);
-    const block = (
-      <pre
-        {...props}
-        {...mark}
-        className={cn(
-          'my-3 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-sm [&>code]:bg-transparent [&>code]:p-0',
-          mark.className,
-        )}
-      />
-    );
-    const source = mermaidSource(node);
-    return source === undefined ? (
-      block
-    ) : (
-      <MermaidDiagram
-        source={source}
-        fallback={block}
-        className='my-3 overflow-x-auto [&_svg]:mx-auto'
-      />
-    );
-  },
-  table: function MarkdownTable({ node, ...props }) {
-    const { highlight } = useContext(MarkdownContext);
-    const mark = marked(node, highlight);
-    return (
-      <div
-        {...mark}
-        className={cn('my-3 w-full overflow-x-auto', mark.className)}
-      >
-        <table className='w-full text-sm' {...props} />
-      </div>
-    );
-  },
-  th: ({ node: _node, ...props }) => (
-    <th className='border px-2 py-1 text-left font-medium' {...props} />
-  ),
-  td: ({ node: _node, ...props }) => (
-    <td className='border px-2 py-1 align-top' {...props} />
+  p: block('p', 'leading-7 not-first:mt-3'),
+  ul: block('ul', 'my-3 ml-6'),
+  ol: block('ol', 'my-3 ml-6'),
+  blockquote: block('blockquote', 'my-3 pl-4 italic'),
+  pre: block('pre', 'my-3 text-sm'),
+  table: block('table', 'my-3'),
+  code: ({ className, ...props }: ComponentProps<'code'> & ExtraProps) => (
+    <base.code {...props} className={cn('text-[0.85em]', className)} />
   ),
 };
+
+function renderCodeBlock(
+  code: MarkdownCodeBlock,
+  fallback: ReactElement,
+): ReactNode {
+  return code.language === 'mermaid' ? (
+    <MermaidDiagram
+      source={code.source}
+      fallback={fallback}
+      className='my-3 overflow-x-auto [&_svg]:mx-auto'
+    />
+  ) : (
+    fallback
+  );
+}
+
+interface MdastNode {
+  type: string;
+  position?: { start: { line: number } };
+  children?: MdastNode[];
+  data?: { hProperties?: Record<string, unknown> };
+}
+
+/**
+ * Gives each heading its anchor by source line, as `markdownHeadings` found them, and leaves out the heading on
+ * `hiddenLine`.
+ */
+function remarkKnowledgeHeadings(options: {
+  readonly anchors: ReadonlyMap<number, string>;
+  readonly hiddenLine: number | null;
+}) {
+  return (tree: MdastNode): void => {
+    const visit = (node: MdastNode): void => {
+      if (!node.children) return;
+      node.children = node.children.filter(
+        (child) =>
+          !(
+            child.type === 'heading' &&
+            child.position?.start.line === options.hiddenLine
+          ),
+      );
+      for (const child of node.children) {
+        const line = child.position?.start.line;
+        const anchor =
+          child.type === 'heading' && line !== undefined
+            ? options.anchors.get(line)
+            : undefined;
+        if (anchor !== undefined) {
+          child.data ??= {};
+          child.data.hProperties = { ...child.data.hProperties, id: anchor };
+        }
+        visit(child);
+      }
+    };
+    visit(tree);
+  };
+}
 
 export function KnowledgeMarkdown({
   content,
@@ -208,29 +188,35 @@ export function KnowledgeMarkdown({
   /** Lines whose blocks are highlighted (1-based, inclusive), such as a section's. */
   readonly highlight?: Lines;
 }): ReactElement {
-  const anchors = useMemo(
-    () =>
-      new Map(
-        markdownHeadings(content).map((item) => [item.line, item.anchor]),
-      ),
-    [content],
+  const remarkPlugins = useMemo<MarkdownRemarkPlugins>(
+    () => [
+      [
+        remarkKnowledgeHeadings,
+        {
+          anchors: new Map(
+            markdownHeadings(content).map((item) => [item.line, item.anchor]),
+          ),
+          hiddenLine: hiddenHeadingLine,
+        },
+      ],
+    ],
+    [content, hiddenHeadingLine],
   );
   return (
-    <MarkdownContext
-      value={{ anchors, hiddenLine: hiddenHeadingLine, highlight }}
-    >
+    <HighlightContext value={highlight}>
       <div
-        className={cn(
-          'min-w-0 text-sm wrap-break-word text-foreground',
-          className,
-        )}
         data-testid='knowledge-markdown'
+        className={cn('min-w-0', className)}
       >
-        <Markdown remarkPlugins={[remarkGfm]} components={components}>
-          {content}
-        </Markdown>
+        <MarkdownView
+          content={content}
+          className='text-foreground'
+          components={components}
+          remarkPlugins={remarkPlugins}
+          renderCodeBlock={renderCodeBlock}
+        />
       </div>
-    </MarkdownContext>
+    </HighlightContext>
   );
 }
 
