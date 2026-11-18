@@ -88,11 +88,6 @@ import {
   type SubtaskService,
 } from './domains/subtasks/index.js';
 import {
-  createIntakeFileStore,
-  createIntakeService,
-  type IntakeService,
-} from './domains/intake/index.js';
-import {
   createAttachmentService,
   createAttachmentStorage,
   type AttachmentService,
@@ -144,7 +139,7 @@ export interface Projects {
   readonly subscriptions: SubscriptionService;
   /** Files on issues and comments (`shared/attachments.ts`). */
   readonly attachments: AttachmentService;
-  /** Where files' bytes go; the intake stores its files through it too. */
+  /** Where attachment bytes are stored. */
   readonly storage: AttachmentStorage;
   /** Where other plugins add notice rules (`projectsNoticeRulesToken`). */
   readonly noticeRules: NoticeRules;
@@ -152,8 +147,6 @@ export interface Projects {
   readonly kinds: KindRegistry;
   /** Contributed status events: their registry, and firing one for a batch of issues. */
   readonly statusEvents: StatusEventService;
-  /** Temporary intake uploads and text extraction. */
-  readonly intake: IntakeService;
   /** The issue side of the reports: counts over a date range, limited to what a viewer sees. */
   readonly reports: IssueReports;
 }
@@ -271,11 +264,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
       blockedIds: (conn, issues) => subtasks.extras.blockedIds(conn, issues),
     }),
   });
-  const intakeFiles = createIntakeFileStore({
-    conn: () => tx.read(),
-    storage,
-  });
-  const intake = createIntakeService({ files: intakeFiles });
   const members = createMemberService({
     tx,
     ids,
@@ -308,7 +296,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     storage,
     noticeRules: { add: (rule) => notices.add(rule) },
     subtasks,
-    intake,
     kinds,
     statusEvents: createStatusEventService({
       tx,

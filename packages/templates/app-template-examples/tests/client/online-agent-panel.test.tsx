@@ -1325,9 +1325,15 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
     revision = 1;
   const normal = host.request.getMockImplementation()!;
   host.request.mockImplementation(async (input) => {
-    if (input.path === 'fixture/plans')
+    if (input.path === 'fixture/artifacts')
       return {
-        data: [{ id: 'plan-1', title: `Plan revision ${revision}`, at: at(1) }],
+        data: [
+          {
+            id: 'artifact-1',
+            title: `Artifact revision ${revision}`,
+            at: at(1),
+          },
+        ],
       };
     if (input.path === 'fixture/references')
       return { data: [{ key: 'PM-1', title: 'Readable issue' }] }; // PM-3 is deliberately unreadable.
@@ -1374,17 +1380,17 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
     useTimelineItems: (id, version) => {
       const query = useQuery(
         {
-          queryKey: ['fixture-plans', id, version],
-          queryFn: () => api.request({ path: 'fixture/plans' }),
+          queryKey: ['fixture-artifacts', id, version],
+          queryFn: () => api.request({ path: 'fixture/artifacts' }),
         },
         agentsQueryClient(),
       );
       return (
         query.data?.data.map(
-          (plan: { id: string; title: string; at: string }) => ({
-            key: plan.id,
-            at: plan.at,
-            node: <article>{plan.title}</article>,
+          (artifact: { id: string; title: string; at: string }) => ({
+            key: artifact.id,
+            at: artifact.at,
+            node: <article>{artifact.title}</article>,
           }),
         ) ?? []
       );
@@ -1400,7 +1406,7 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
   await waitFor(() =>
     expect(screen.getByText('Second block: PM-3')).toBeVisible(),
   );
-  expect(await screen.findByText('Plan revision 1')).toBeVisible();
+  expect(await screen.findByText('Artifact revision 1')).toBeVisible();
   expect(await screen.findByText('Readable issue')).toBeVisible();
   const log = screen.getByRole('log');
   const assertOrder = () => {
@@ -1412,7 +1418,7 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
             node.getAttribute('data-message-id') ??
             node.getAttribute('data-chat-item'),
         ),
-    ).toEqual(['logical-run', 'plan-1', 'independent']);
+    ).toEqual(['logical-run', 'artifact-1', 'independent']);
     expect(
       log.querySelectorAll('[data-message-id="logical-run"]'),
     ).toHaveLength(1);
@@ -1481,7 +1487,7 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
         }),
       ),
   );
-  expect(await screen.findByText('Plan revision 2')).toBeVisible();
+  expect(await screen.findByText('Artifact revision 2')).toBeVisible();
   await waitFor(() =>
     expect(extra).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1494,17 +1500,17 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
   revision = 3;
   await act(async () => {
     await agentsQueryClient().invalidateQueries({
-      queryKey: ['fixture-plans'],
+      queryKey: ['fixture-artifacts'],
     });
   });
   await waitFor(() =>
-    expect(screen.getByText('Plan revision 3')).toBeVisible(),
+    expect(screen.getByText('Artifact revision 3')).toBeVisible(),
   );
   assertOrder();
 });
 
 it.each(['en-US', 'zh-CN'])(
-  'renders a historical consultation with plans in %s without a quantity prompt',
+  'renders a historical consultation with artifacts in %s without a quantity prompt',
   async (locale) => {
     const cardRuntime = await createTestI18nRuntime({
       application: {
@@ -1530,7 +1536,6 @@ it.each(['en-US', 'zh-CN'])(
             state: 'completed',
             error: null,
             usage: { inputTokens: 1840, outputTokens: 212 },
-            plans: 3,
           }}
         />
       </TestI18nProvider>,

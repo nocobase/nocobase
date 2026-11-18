@@ -38,10 +38,6 @@
       "types": "./shared/issues.ts",
       "import": "./shared/issues.ts"
     },
-    "./shared/intake": {
-      "types": "./shared/intake.ts",
-      "import": "./shared/intake.ts"
-    },
     "./shared/labels": {
       "types": "./shared/labels.ts",
       "import": "./shared/labels.ts"
@@ -137,10 +133,6 @@
         "types": "./dist/shared/issues.d.ts",
         "import": "./dist/shared/issues.js"
       },
-      "./shared/intake": {
-        "types": "./dist/shared/intake.d.ts",
-        "import": "./dist/shared/intake.js"
-      },
       "./shared/labels": {
         "types": "./dist/shared/labels.d.ts",
         "import": "./dist/shared/labels.js"
@@ -213,7 +205,6 @@
   },
   "dependencies": {
     "hono": "catalog:",
-    "officeparser": "^6.0.4",
     "zod": "catalog:"
   },
   "peerDependencies": {

@@ -41,13 +41,11 @@ const ABORTED_CODES: ReadonlySet<string> = new Set([
   'DEPENDENCY_CHANGED',
   'DEPENDENCY_GRAPH_CHANGED',
   'REVISION_CONFLICT',
-  'UNDO_STALE',
 ]);
 
 /** `notFound` names a resource in words; its reason names it in UPPER_SNAKE_CASE. */
 const NOT_FOUND_REASONS: Readonly<Record<string, string>> = {
   'Deleted issue': 'ISSUE_NOT_FOUND',
-  File: 'INTAKE_FILE_NOT_FOUND',
   Resource: 'PROJECT_RESOURCE_NOT_FOUND',
 };
 

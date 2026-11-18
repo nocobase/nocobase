@@ -137,14 +137,12 @@ New accounts register directly from the invitation link with a name and password
 | `PATCH /issues/{issueId}/dependencies/{dependencyId}`                              | Changes a link type (`{ type, expectedType }`) atomically   |
 | `DELETE /issues/{issueId}/dependencies/{dependencyId}`                             | Removes a link                                              |
 | `POST /issues/{issueId}/removeDependency`                                          | Removes the link to an issue (`{ dependsOnIssueId, type }`) |
-| `POST /intake/files`, `DELETE /intake/files/{fileId}`                              | The caller's intake uploads                                 |
-| `POST /intake/extractTexts`                                                        | Extracts text from the caller's uploads                     |
 
 Relationship conversion preserves the link ID and checks the type the caller read (`expectedType`). A stale change returns 409 `DEPENDENCY_CHANGED`; if the target relationship already exists, it returns 409 `DEPENDENCY_EXISTS` and keeps both links. A related link may be converted from either end: the current issue becomes the waiting issue when changed to `blockedBy`.
 
 Operations that add explicit or implicit waits (dependencies, conversions, issue creation, parent/stage changes and restores) share a dedicated database graph revision row. Its conditional increment protects cycle detection and writes until the outer transaction commits, across processes and projects. An outdated transaction snapshot returns 409 `DEPENDENCY_GRAPH_CHANGED`; reload and retry the whole operation. Every issue creation takes this protection before allocating its number, so transactions that create issues and add dependencies use the same lock order. Standalone creates without dependencies lock the row without advancing the graph revision, so independent parallel creates still succeed without retrying each other. The revision is separate from settings/counters so MySQL reads of those rows after writing them cannot disguise an old graph snapshot. Restoring an issue is rejected if its waits would now create a cycle. Every relationship write, including both removal endpoints, acquires this protection before reading its type and endpoints, keeping duplicate checks, activity and release notifications consistent with conversions. Issue status and project changes, status events and deletion take the same guard before writing an issue, so concurrent changes cannot each see an old blocker and miss the last release. Automatic parent/stage completion keeps the originating guard; ordinary edits that cannot change waits do not acquire it.
 
-Cursor lists (issues, activities, comment threads) take `pageSize` (20 by default, at most 100) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`. A scoped API key may not use `/intake` (403 `SCOPED_KEY_FORBIDDEN`).
+Cursor lists (issues, activities, comment threads) take `pageSize` (20 by default, at most 100) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`.
 
 Errors are the standard error body with domain `projects`; clients branch on `reason`, and `metadata` carries the details. A missing resource the URL names is 404 `<RESOURCE>_NOT_FOUND` (such as `ISSUE_NOT_FOUND`); a project or issue named in the query that does not exist is 400 with a field violation. `PATCH /issues/{issueId}` needs the `revision` the caller read; a stale one is 409 `ABORTED` `REVISION_CONFLICT`. It answers 200 `{ data: { issue } }`. A status that does not exist, or a new issue in any status but `backlog` and `in_progress`, is 400 `INVALID_STATUS`; a move the caller's kind may not make is 400 `TRANSITION_NOT_ALLOWED`. A dependency that would close a cycle is 400 `DEPENDENCY_CYCLE` (`metadata.via`), one too deep to check 400 `DEPENDENCY_TOO_DEEP`, a duplicate 409 `ALREADY_EXISTS` `DEPENDENCY_EXISTS`. Other refusals by state are 400 `FAILED_PRECONDITION` too.
 
@@ -204,15 +202,13 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 My tasks combines owned and executed issues, and the New issue dialog asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
 
-Applications that create tasks through conversation can render the retained create and subtask pages under `IssueCreationModeContext.Provider` (from `client/kit`) with `value='manual'`. This shows only the original guarded form, ignoring old AI tab parameters and preferences, without changing the default plugin pages.
-
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from
 `client/kit.ts`. The application routes an issue's page itself and presents it (for example, with the UI Library's
 `issue-detail`, `comment-thread` and `attachment-list`) over the headless parts in `client/issues.ts`: the issue
 (`useIssueDetail`), its property changes (`useIssueUpdate`; `useConfirmedUpdate` applies a change at once), every other
 change of the page (`useIssuePageActions`), the activity line (`useIssueTimeline`, `useIssueCommentActions`,
-`useMentionSearch`, `useAttachmentUploads`), "Break into sub-issues" (`useIntakeBreakdown`), and the permission and
+`useMentionSearch`, `useAttachmentUploads`), and the permission and
 wording helpers. It routes a project's page the same way, as a child of the plugin's `/projects` (`projectsRoute` from
 `client/pages`), over the headless parts in `client/projects.ts`: the project with the statuses
 (`useProjectDetail`, `useProjectStatuses`), its property changes (`useProjectUpdate`), members and

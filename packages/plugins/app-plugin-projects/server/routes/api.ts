@@ -7,7 +7,6 @@ import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
-  ApiError,
   defineApiRoutes,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
@@ -30,12 +29,11 @@ import {
   createMemberRoutes,
   ensureMemberMiddleware,
 } from '../domains/members/index.js';
-import { createIntakeRoutes } from '../domains/intake/index.js';
 import { createProjectRoutes } from '../domains/projects/index.js';
 import { createSettingsRoutes } from '../domains/settings/index.js';
 import { createSubscriptionRoutes } from '../domains/subscriptions/index.js';
 import { createSubtaskRoutes } from '../domains/subtasks/index.js';
-import { domainRouter, PROJECTS_DOMAIN } from '../kernel/http.js';
+import { domainRouter } from '../kernel/http.js';
 import {
   projectsAccessToken,
   projectsRequestActorToken,
@@ -54,24 +52,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // Scoped API keys are welcome: every endpoint decides through the request's Viewer, whose permissions the
     // application narrows to the key's scope and whose projects follow the key's selection (`viewerMiddleware`).
     projects.use('*', authentication.required({ scopedKeys: true }));
-    // The standalone intake file tools are for signed-in people.
-    for (const personal of ['/intake', '/intake/*'])
-      projects.use(personal, async (context, next) => {
-        const auth = context.get('auth');
-        if (
-          auth &&
-          !auth.credential &&
-          (await authentication.isScopedSession(auth, context.req.raw))
-        )
-          throw new ApiError({
-            status: 'PERMISSION_DENIED',
-            reason: 'SCOPED_KEY_FORBIDDEN',
-            domain: PROJECTS_DOMAIN,
-            message:
-              'Intake files are for people; a scoped key or an organization’s API key cannot use them.',
-          });
-        await next();
-      });
     projects.use('*', authorization.middleware());
     projects.use('*', ensureMemberMiddleware(services.members));
     projects.use(
@@ -92,7 +72,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     projects.route('/settings', createSettingsRoutes(services.settings));
     projects.route('/labels', createLabelRoutes(services.labels));
-    projects.route('/intake', createIntakeRoutes(services.intake));
     projects.route(
       '/attachments',
       createAttachmentRoutes(services.attachments),

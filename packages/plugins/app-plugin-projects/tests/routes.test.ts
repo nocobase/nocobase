@@ -429,19 +429,9 @@ describe('the /api/projects guard', () => {
 });
 
 describe('scoped keys and API key identities', () => {
-  it('serves a scoped key the business API, but refuses intake files', async () => {
+  it('serves a scoped key the business API', async () => {
     const headers = { 'x-test-scoped': 'yes' };
     expect((await call('', { role: 'member', headers })).status).toBe(200);
-    const extraction = await call('/intake/extractTexts', {
-      role: 'member',
-      headers,
-      method: 'POST',
-      body: JSON.stringify({ fileIds: [] }),
-    });
-    expect(extraction.status).toBe(403);
-    expect(await extraction.json()).toMatchObject({
-      error: { reason: 'SCOPED_KEY_FORBIDDEN', domain: 'projects' },
-    });
   });
 
   it('names the API key identities to any signed-in caller', async () => {

@@ -33,11 +33,6 @@ import {
 } from '../../shared/comments.js';
 import { COLORS, PRIORITIES, type UserRef } from '../../shared/common.js';
 import type {
-  IntakeFile,
-  IntakeTextsRequest,
-  IntakeTextsResult,
-} from '../../shared/intake.js';
-import type {
   CreateInvitationsRequest,
   Invitation,
   InvitationResult,
@@ -151,9 +146,6 @@ export const LabelParams: z.ZodType<{ labelId: string }> = z.object({
 });
 export const InvitationParams: z.ZodType<{ invitationId: string }> = z.object({
   invitationId: id.describe('The invitation identifier.'),
-});
-export const IntakeFileParams: z.ZodType<{ fileId: string }> = z.object({
-  fileId: id.describe('The file identifier.'),
 });
 export const AttachmentParams: z.ZodType<{ attachmentId: string }> = z.object({
   attachmentId: id.describe('The attachment identifier.'),
@@ -597,10 +589,6 @@ export const ReactionBody: z.ZodType<{ emoji: string }> = z.strictObject({
   emoji: z
     .enum(REACTION_EMOJIS)
     .describe('The emoji reaction to add or remove.'),
-});
-
-export const IntakeTextsBody: z.ZodType<IntakeTextsRequest> = z.strictObject({
-  fileIds: z.array(id),
 });
 
 export const IssueAttachmentsQuery: z.ZodType<{
@@ -1193,40 +1181,6 @@ export const ProjectDetailSchema: z.ZodType<ProjectDetail> = z
 
 export const ProjectMemberSchema: z.ZodType<UserRef | null> =
   UserRefSchema.nullable();
-
-// Intake
-
-export const IntakeFileSchema: z.ZodType<IntakeFile> = z.object({
-  id: z.string(),
-  filename: z.string(),
-  ext: z.string(),
-  mimeType: z.string(),
-  size: z.number().int(),
-  createdAt: dateTime,
-});
-
-const intakeFileRead = z.object({
-  fileId: z.string(),
-  filename: z.string(),
-  state: z.enum([
-    'read',
-    'truncated',
-    'empty',
-    'image',
-    'unsupported',
-    'legacy',
-    'failed',
-    'skipped',
-  ]),
-  chars: z.number().int(),
-});
-
-export const IntakeTextsResultSchema: z.ZodType<IntakeTextsResult> = z.object({
-  documents: z.array(
-    z.object({ fileId: z.string(), filename: z.string(), text: z.string() }),
-  ),
-  files: z.array(intakeFileRead),
-});
 
 /** A multipart body holding one `file`; validated by the handler, documented here. */
 export const singleFileBody: OpenAPIV3_1.RequestBodyObject = {

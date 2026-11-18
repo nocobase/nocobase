@@ -160,7 +160,6 @@ let records: AppUIMessage[] = [
             answer: 'The display contract is ready for review.',
             error: null,
             usage: null,
-            plans: 0,
           },
         },
       },
