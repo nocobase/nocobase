@@ -264,7 +264,7 @@ describe('two-column permission editor', () => {
     });
     expect(
       screen.getByText(
-        'Edit contracts now follows the view scope (Their own records) again, because it was wider.',
+        'Edit contracts now follows the view scope (Their own records) again.',
       ),
     ).toBeInTheDocument();
     expect(

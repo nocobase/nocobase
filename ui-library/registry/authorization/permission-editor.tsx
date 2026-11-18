@@ -176,7 +176,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   dismiss: 'Dismiss',
   notice: (notice) =>
     notice.kind === 'scope-reset'
-      ? `${list(notice.actions)} now ${notice.actions.length === 1 ? 'follows' : 'follow'} the view scope (${notice.view}) again, because ${notice.actions.length === 1 ? 'it was' : 'they were'} wider.`
+      ? `${list(notice.actions)} now ${notice.actions.length === 1 ? 'follows' : 'follow'} the view scope (${notice.view}) again.`
       : notice.kind === 'auto-enabled'
         ? `Also turned on ${list(notice.actions)}, which this needs.`
         : notice.kind === 'missing-requirement'
