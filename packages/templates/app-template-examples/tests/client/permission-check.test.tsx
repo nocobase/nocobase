@@ -132,11 +132,12 @@ it('previews a role with more members than one request resolves, and finds any o
   expect(
     resolves.map((call) => (call.json as { ids: string[] }).ids.length),
   ).toEqual([100, 1]);
+  // Typing a name in the picker lists the matching members at once.
+  await user.click(picker);
   await user.type(
-    screen.getByRole('searchbox', { name: words.searchUsers }),
+    await screen.findByRole('combobox', { name: words.searchUsers }),
     'User 101',
   );
-  await user.click(picker);
   expect(await screen.findByRole('option', { name: 'User 101' })).toBeVisible();
   await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(1));
   // Searching within a role filters the members already listed instead of listing and resolving them again.
@@ -167,8 +168,9 @@ it('searches every user for any role and says when only the first page shows', a
   expect(
     await screen.findByText(/Showing 100 of 150 users/),
   ).toBeInTheDocument();
+  await user.click(screen.getByRole('combobox', { name: words.user }));
   await user.type(
-    screen.getByRole('searchbox', { name: words.searchUsers }),
+    await screen.findByRole('combobox', { name: words.searchUsers }),
     'User 149',
   );
   await waitFor(() =>
@@ -182,8 +184,11 @@ it('searches every user for any role and says when only the first page shows', a
   await waitFor(() =>
     expect(screen.queryByText(/Showing \d+ of/)).not.toBeInTheDocument(),
   );
-  await user.click(screen.getByRole('combobox', { name: words.user }));
   expect(await screen.findByRole('option', { name: 'User 149' })).toBeVisible();
+  await user.click(screen.getByRole('option', { name: 'User 149' }));
+  expect(screen.getByRole('combobox', { name: words.user })).toHaveTextContent(
+    'User 149',
+  );
 });
 
 const users = () => ({ data: people(2), meta: { total: 2 } });

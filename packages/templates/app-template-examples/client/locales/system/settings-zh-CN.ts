@@ -23,6 +23,8 @@ const settings = {
 
   permissionManagement: '权限管理',
   defaultAccess: {
+    kindBusiness: '业务操作',
+    kindTable: '数据表',
     noResourcesShort: '暂无可配置的业务对象',
     scopeInvalid: '请重新选择有效的数据范围或完善筛选条件。',
 
@@ -255,7 +257,6 @@ const settings = {
   },
   copyOfRole: '{{name}}（副本）',
   selectRole: '选择角色',
-  previewRole: '以此角色预览',
   duplicateRole: '复制为新角色',
   discardChanges: '放弃修改',
   unrestrictedRole: '全部权限',
@@ -290,7 +291,8 @@ const settings = {
     scopeFor: '{{action}}的数据范围',
     scopeForSlot: '{{action}}：{{scope}}',
     followHint: '其他操作跟随查看的范围，可以更窄，不能更宽。',
-    riskHint: '「全部开启」和依赖不会自动开启这里的部分权限（如授予角色），请逐项手动开启。',
+    riskHint:
+      '「全部开启」和依赖不会自动开启这里的部分权限（如授予角色），请逐项手动开启。',
     managed: '由应用管理',
     visibleMenus: '能看到 {{visible}} / {{total}} 个菜单',
     unrestrictedTitle: '全部权限（不受限）',
@@ -332,6 +334,7 @@ const settings = {
     noUsers: '没有用户',
     noRoleUsers: '还没有用户拥有该角色',
     noMatchingUsers: '没有匹配的用户',
+    loadingUsers: '正在加载用户…',
     searchUsers: '查找用户',
     searchPlaceholder: '姓名或邮箱',
     moreUsers: '显示 {{total}} 个用户中的 {{shown}} 个，搜索可找到其他用户。',
@@ -339,7 +342,7 @@ const settings = {
     roles: '生效的角色',
     effect: {
       permit: '允许',
-      conditional: '部分数据',
+      conditional: '按数据范围',
       deny: '不允许',
     },
   },

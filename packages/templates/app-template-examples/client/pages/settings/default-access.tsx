@@ -30,6 +30,7 @@ import { useSettingsData } from './hooks.js';
 import {
   actionKey,
   resourceKey,
+  ruleResourceLabels,
   ruleResources,
   ruleScopes,
   type DefaultAccessRule,
@@ -71,12 +72,12 @@ export default function DefaultAccessPage(): ReactElement {
           defaultValue: value.defaultValue ?? value.key,
         });
   const resources = catalog.data ? ruleResources(catalog.data.data) : [];
+  const labels = ruleResourceLabels(resources, text, {
+    business: t('settings.defaultAccess.kindBusiness'),
+    table: t('settings.defaultAccess.kindTable'),
+  });
   const name = (rule: DefaultAccessRule): string =>
-    text(
-      resources.find(
-        (resource) => resourceKey(resource) === resourceKey(rule.resource),
-      )?.title ?? rule.resource.id,
-    );
+    labels.get(resourceKey(rule.resource)) ?? rule.resource.id;
   const summary = (rule: DefaultAccessRule): string => {
     const resource = resources.find(
       (resource) => resourceKey(resource) === resourceKey(rule.resource),

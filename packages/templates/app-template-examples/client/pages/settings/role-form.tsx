@@ -9,7 +9,6 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useAuthorizationClient,
-  useCan,
   type AuthorizationOptionsResponse,
   type LocalizedText,
   type PermissionSet,
@@ -23,7 +22,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router';
-import { CopyIcon, EyeIcon } from 'lucide-react';
+import { CopyIcon } from 'lucide-react';
 import {
   PermissionEditor,
   type PermissionGrants,
@@ -91,10 +90,6 @@ function RoleEditor(): ReactElement {
   );
   const canCreate = useRolePermission('create');
   const canUpdate = useRolePermission('update');
-  const canInspect = useCan({
-    resource: { type: 'settings', id: 'authorization.inspector' },
-    action: 'inspect',
-  }).can;
   const text = (value: LocalizedText): string =>
     typeof value === 'string'
       ? value
@@ -351,24 +346,6 @@ function RoleEditor(): ReactElement {
         </div>
         {!creating && (
           <div className='flex flex-wrap gap-2'>
-            {canInspect && (
-              <Button
-                variant='outline'
-                size='sm'
-                nativeButton={false}
-                render={
-                  <Link
-                    to={{
-                      pathname: '/permission-check',
-                      search: `?role=${encodeURIComponent(key)}`,
-                    }}
-                  />
-                }
-              >
-                <EyeIcon />
-                {t('settings.previewRole')}
-              </Button>
-            )}
             {canCreate && !unrestricted && (
               <Button
                 variant='outline'

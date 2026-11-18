@@ -27,6 +27,8 @@ const settings = {
 
   permissionManagement: 'Permission management',
   defaultAccess: {
+    kindBusiness: 'business operations',
+    kindTable: 'data table',
     noResourcesShort: 'No configurable objects available',
     scopeInvalid:
       'Choose a valid data scope or complete its filter conditions.',
@@ -276,7 +278,6 @@ const settings = {
   },
   copyOfRole: '{{name}} (copy)',
   selectRole: 'Select a role',
-  previewRole: 'Preview as this role',
   duplicateRole: 'Duplicate as new role',
   discardChanges: 'Discard changes',
   unrestrictedRole: 'All permissions',
@@ -357,6 +358,7 @@ const settings = {
     noUsers: 'No users',
     noRoleUsers: 'No user has this role yet',
     noMatchingUsers: 'No matching users',
+    loadingUsers: 'Loading users…',
     searchUsers: 'Find a user',
     searchPlaceholder: 'Name or email',
     moreUsers:
@@ -365,7 +367,7 @@ const settings = {
     roles: 'Effective roles',
     effect: {
       permit: 'Allowed',
-      conditional: 'Some records',
+      conditional: 'By data scope',
       deny: 'Not allowed',
     },
   },

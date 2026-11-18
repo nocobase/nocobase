@@ -20,7 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
-import { Input } from '#components/ui/input';
+import { Button } from '#components/ui/button';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '#components/ui/combobox';
 import { Label } from '#components/ui/label';
 import { useSettingsData } from './hooks.js';
 import { PermissionManagementPage } from './permission-management-page.js';
@@ -268,7 +277,7 @@ export default function PermissionCheckPage(): ReactElement {
   return (
     <PermissionManagementPage tab='permission-check'>
       <div className='flex flex-col gap-4'>
-        <div className='grid gap-3 sm:grid-cols-3 lg:max-w-4xl'>
+        <div className='grid gap-3 sm:grid-cols-2 lg:max-w-2xl'>
           {rolesDenied ? null : (
             <div className='flex flex-col gap-1.5'>
               <Label>{t('settings.permissionCheck.role')}</Label>
@@ -296,52 +305,77 @@ export default function PermissionCheckPage(): ReactElement {
             </div>
           )}
           <div className='flex flex-col gap-1.5'>
-            <Label>{t('settings.permissionCheck.user')}</Label>
-            <Select
-              items={userItems}
+            <Label htmlFor='permission-check-user'>
+              {t('settings.permissionCheck.user')}
+            </Label>
+            {/* One searchable picker: typing a name lists the matching users at once. */}
+            <Combobox
+              items={userItems.map((item) => item.value)}
+              itemToStringLabel={(value: string) =>
+                userItems.find((item) => item.value === value)?.label ?? value
+              }
+              filter={null}
               value={user ?? null}
-              onValueChange={(value) => {
-                const next = value ? String(value) : undefined;
+              inputValue={search}
+              onInputValueChange={(value, details) => {
+                // Choosing a user fills the input with their name; only typing searches.
+                if (details.reason === 'input-change') setSearch(value);
+              }}
+              onValueChange={(value: string | null) => {
+                const next = value ?? undefined;
                 setChosen(userItems.find((item) => item.value === next));
+                setSearch('');
                 update('user', next);
               }}
             >
-              <SelectTrigger
+              <ComboboxTrigger
+                id='permission-check-user'
                 aria-label={t('settings.permissionCheck.user')}
-                disabled={!userItems.length}
+                render={
+                  <Button
+                    variant='outline'
+                    className='w-full justify-between font-normal'
+                  />
+                }
               >
-                <SelectValue
-                  placeholder={t(
-                    users && !userItems.length
-                      ? query
+                <span className='min-w-0 truncate'>
+                  {userItems.find((item) => item.value === user)?.label ??
+                    t(
+                      users && !userItems.length && !query
+                        ? role
+                          ? 'settings.permissionCheck.noRoleUsers'
+                          : 'settings.permissionCheck.noUsers'
+                        : 'settings.permissionCheck.chooseUser',
+                    )}
+                </span>
+              </ComboboxTrigger>
+              <ComboboxContent>
+                <ComboboxInput
+                  aria-label={t('settings.permissionCheck.searchUsers')}
+                  placeholder={t('settings.permissionCheck.searchPlaceholder')}
+                  showTrigger={false}
+                />
+                <ComboboxEmpty>
+                  {t(
+                    !users
+                      ? 'settings.permissionCheck.loadingUsers'
+                      : query
                         ? 'settings.permissionCheck.noMatchingUsers'
                         : role
                           ? 'settings.permissionCheck.noRoleUsers'
-                          : 'settings.permissionCheck.noUsers'
-                      : 'settings.permissionCheck.chooseUser',
+                          : 'settings.permissionCheck.noUsers',
                   )}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {userItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className='flex flex-col gap-1.5'>
-            <Label htmlFor='permission-check-search'>
-              {t('settings.permissionCheck.searchUsers')}
-            </Label>
-            <Input
-              id='permission-check-search'
-              type='search'
-              value={search}
-              placeholder={t('settings.permissionCheck.searchPlaceholder')}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+                </ComboboxEmpty>
+                <ComboboxList>
+                  {(value: string) => (
+                    <ComboboxItem key={value} value={value}>
+                      {userItems.find((item) => item.value === value)?.label ??
+                        value}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
         </div>
         <p className='text-sm text-muted-foreground'>

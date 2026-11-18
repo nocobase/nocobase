@@ -69,12 +69,33 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
   business: [],
 };
 
-/** Share application-owned data captions across role and default-scope editors. */
+/** Titles of the collections registered with `authz.database.collections.add`, by collection name. */
+export function collectionTitles(
+  source: Pick<AuthorizationOptionsResponse, 'sections'>,
+): ReadonlyMap<string, LocalizedText> {
+  const titles = new Map<string, LocalizedText>();
+  for (const section of source.sections)
+    for (const sub of section.subsections)
+      for (const resource of sub.resources)
+        if (resource.type === 'database.collection' && !titles.has(resource.id))
+          titles.set(resource.id, resource.title);
+  return titles;
+}
+
+/**
+ * Share application-owned data captions across role and default-scope editors. A scope the server titles only with
+ * its key or collection name uses the collection's registered title, so no raw table name is shown.
+ */
 export function permissionScopeTitle(
   resource: { readonly type: string; readonly id: string },
-  scope: { readonly collection: string; readonly title: LocalizedText },
+  scope: {
+    readonly key?: string;
+    readonly collection: string;
+    readonly title: LocalizedText;
+  },
   selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
   action?: string,
+  registered?: ReadonlyMap<string, LocalizedText>,
 ): LocalizedText {
   const selected = selection.business.find((entry) =>
     resource.type === 'database.collection'
@@ -86,6 +107,10 @@ export function permissionScopeTitle(
       ? selected?.actionScopeTitles?.[action]?.[scope.collection]
       : undefined) ??
     selected?.scopeTitles?.[scope.collection] ??
+    (typeof scope.title === 'string' &&
+    (scope.title === scope.key || scope.title === scope.collection)
+      ? registered?.get(scope.collection)
+      : undefined) ??
     scope.title
   );
 }
@@ -222,6 +247,7 @@ export function permissionWorkspace(
       for (const resource of sub.resources)
         if (!catalog.has(resourceKey(resource)))
           catalog.set(resourceKey(resource), resource);
+  const registeredTitles = collectionTitles(source);
   const bindings = new Map<string, PermissionBinding>();
   const menuPages = new Map<string, readonly string[]>();
   const placed = new Set<string>();
@@ -339,6 +365,7 @@ export function permissionWorkspace(
                       scope,
                       selection,
                       action.name,
+                      registeredTitles,
                     ),
                   ),
                 }
