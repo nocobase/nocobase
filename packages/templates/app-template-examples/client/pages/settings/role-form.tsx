@@ -1,61 +1,65 @@
 import { FeedbackForm } from '#components/feedback-form';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { useSubmission } from '@nocobase/app-client';
-import {
-  useSettingsLeave,
-  useSettingsData,
-  useRolePermission,
-} from './hooks.js';
 import {
   ApiClientError,
   useClientApplication,
+  useSubmission,
   useToaster,
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useAuthorizationClient,
+  useCan,
   type AuthorizationOptionsResponse,
   type LocalizedText,
-  type PermissionGrant,
   type PermissionSet,
 } from '@nocobase/app-plugin-authorization/client';
-import {
-  permissionNavigationSections,
-  pagePermissionResources,
-} from './page-permissions.js';
-import { pagePermissionTitles } from './page-permission-titles.js';
-import {
-  permissionScopeVisible,
-  permissionWorkspaceCatalog,
-} from './permission-workspace.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
+  Link,
   useLocation,
   useNavigate,
   useOutletContext,
   useParams,
-  useResolvedPath,
+  useSearchParams,
 } from 'react-router';
-import { RouteChildPage } from '#components/route-child-page';
-import { BackButton } from '#components/back-button';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
-import { PermissionEditor } from '#components/permission-editor';
+import { CopyIcon, EyeIcon } from 'lucide-react';
+import {
+  PermissionEditor,
+  type PermissionGrants,
+} from '#components/permission-editor';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
-import { Badge } from '#components/ui/badge';
-import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
-import { configurePermissionScopes } from './permission-filters.js';
 import {
-  permissionSections,
+  useSettingsData,
+  useSettingsLeave,
+  useRolePermission,
+} from './hooks.js';
+import { pagePermissionTitles } from './page-permission-titles.js';
+import { permissionWorkspace } from './permission-workspace.js';
+import { withPermissionFilters } from './permission-filters.js';
+import {
+  draftFromGrants,
+  grantsFromDraft,
+  sameGrants,
   unconfiguredFilter,
-  setPermissions,
-  setScope,
+  filterKey,
+  type PermissionFilters,
 } from './permissions-model.js';
+import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+import { usePermissionEditorLabels } from './permission-editor-labels.js';
+
+export interface RolesOutletContext {
+  readonly reload: () => void;
+  /** The roles list path, for links between roles. */
+  readonly base: string;
+}
 
 function RoleEditor(): ReactElement {
   const { key } = useParams();
+  const [search] = useSearchParams();
+  const copyFrom = key ? undefined : (search.get('copy') ?? undefined);
   const creating = !key;
   const { t } = useTranslation();
   const app = useClientApplication();
@@ -63,10 +67,11 @@ function RoleEditor(): ReactElement {
   const toaster = useToaster();
   const navigate = useNavigate();
   const location = useLocation();
-  const parent = useOutletContext<{ reload: () => void }>();
+  const parent = useOutletContext<RolesOutletContext>();
+  const sourceKey = key ?? copyFrom;
   const request = useSettingsData<{ data: PermissionSet }>(
-    key
-      ? `authorization/permissionSets/${encodeURIComponent(key)}`
+    sourceKey
+      ? `authorization/permissionSets/${encodeURIComponent(sourceKey)}`
       : 'authorization/permissionSets/options',
   );
   const missingRef = useRef<unknown>(undefined);
@@ -85,23 +90,10 @@ function RoleEditor(): ReactElement {
   );
   const canCreate = useRolePermission('create');
   const canUpdate = useRolePermission('update');
-  const [nameDraft, setNameDraft] = useState<string>();
-  const [keyDraft, setKeyDraft] = useState<string>();
-  const [grantsDraft, setGrantsDraft] = useState<readonly PermissionGrant[]>();
-  const [dirty, setDirty] = useState(false);
-  const [editingScope, setEditingScope] = useState<string>();
-  const { session } = useAuthentication();
-  const submission = useSubmission({
-    scope: `${session?.user.id}:settings:role:${key}`,
-  });
-  const [requestBusy, setRequestBusy] = useState(false);
-  const busy = requestBusy || submission.submitting;
-  const leave = useSettingsLeave(dirty, busy);
-  const [error, setError] = useState<unknown>();
-
-  const [reloadConfirm, setReloadConfirm] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [keyConflict, setKeyConflict] = useState(false);
+  const canInspect = useCan({
+    resource: { type: 'settings', id: 'authorization.inspector' },
+    action: 'inspect',
+  }).can;
   const text = (value: LocalizedText): string =>
     typeof value === 'string'
       ? value
@@ -109,307 +101,373 @@ function RoleEditor(): ReactElement {
           ns: value.ns,
           defaultValue: value.defaultValue ?? value.key,
         });
-  const initial = !creating ? request.data?.data : undefined;
-  const name = nameDraft ?? (initial ? text(initial.title ?? initial.key) : '');
-  const roleKey = keyDraft ?? initial?.key ?? '';
-  const grants = grantsDraft ?? initial?.grants ?? [];
-  const catalog = useMemo(() => {
-    if (!options.data) return undefined;
-    const pages = pagePermissionResources(
-      app.runtime.routes,
-      pagePermissionTitles,
-      (path) => t('settings.unnamedPage', { path }),
-    );
-    return permissionWorkspaceCatalog(
-      options.data.data,
-      app.runtime.routes,
-      pages,
-    );
-  }, [options.data, app, t]);
+  const source = sourceKey ? request.data?.data : undefined;
+  const initial = creating ? undefined : source;
+  const originalGrants = useMemo(
+    () => (sourceKey ? (request.data?.data.grants ?? []) : []),
+    [sourceKey, request.data],
+  );
+  const [nameDraft, setNameDraft] = useState<string>();
+  const [keyDraft, setKeyDraft] = useState<string>();
+  const [draft, setDraft] = useState<PermissionGrants>();
+  const [filters, setFilters] = useState<PermissionFilters>();
+  const [editingFilter, setEditingFilter] = useState<string>();
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:settings:role:${key}`,
+  });
+  const [requestBusy, setRequestBusy] = useState(false);
+  const busy = requestBusy || submission.submitting;
+  const [error, setError] = useState<unknown>();
+  const [reloadConfirm, setReloadConfirm] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [keyConflict, setKeyConflict] = useState(false);
+  const labels = usePermissionEditorLabels();
+
+  const workspace = useMemo(
+    () =>
+      options.data
+        ? permissionWorkspace(
+            options.data.data,
+            app.runtime.routes,
+            pagePermissionTitles,
+            {
+              text: (value) =>
+                typeof value === 'string'
+                  ? value
+                  : t(value.key, {
+                      ns: value.ns,
+                      defaultValue: value.defaultValue ?? value.key,
+                    }),
+              t: (key, values) => t(key, values),
+            },
+          )
+        : undefined,
+    [options.data, app, t],
+  );
+  const loaded = useMemo(
+    () => (workspace ? draftFromGrants(originalGrants, workspace) : undefined),
+    [workspace, originalGrants],
+  );
+  const value = useMemo(() => draft ?? loaded?.draft ?? {}, [draft, loaded]);
+  const currentFilters = useMemo(
+    () => filters ?? loaded?.filters ?? {},
+    [filters, loaded],
+  );
+  const grants = useMemo(
+    () =>
+      workspace
+        ? grantsFromDraft(value, currentFilters, originalGrants, workspace)
+        : originalGrants,
+    [workspace, value, currentFilters, originalGrants],
+  );
+  const sourceName = source ? text(source.title ?? source.key) : '';
+  const defaultName = copyFrom
+    ? sourceName
+      ? t('settings.copyOfRole', { name: sourceName })
+      : ''
+    : sourceName;
+  const name = nameDraft ?? defaultName;
+  const roleKey =
+    keyDraft ?? (copyFrom ? `${copyFrom}-copy` : (initial?.key ?? ''));
+  const dirty =
+    nameDraft !== undefined ||
+    keyDraft !== undefined ||
+    (creating
+      ? Boolean(copyFrom) || Object.keys(value).length > 0
+      : Boolean(
+          workspace &&
+          loaded &&
+          (draft || filters) &&
+          !sameGrants(
+            grants,
+            grantsFromDraft(
+              loaded.draft,
+              loaded.filters,
+              originalGrants,
+              workspace,
+            ),
+          ),
+        ));
+  const leave = useSettingsLeave(dirty, busy);
+  const unrestricted = Boolean(source?.unrestricted) && !creating;
   const allowed = creating
     ? canCreate
     : canUpdate &&
-      (!request.data?.data.protection ||
-        request.data.data.protection.allow.includes('update'));
-  const closeTo = {
-    pathname: useResolvedPath('..').pathname,
-    search: location.search,
-  };
+      !unrestricted &&
+      (!initial?.protection || initial.protection.allow.includes('update'));
+  const readOnly = !allowed || busy;
   const originalRevisionRef = useRef<string | undefined>(undefined);
-  const save = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    return (async () => {
-      event.preventDefault();
-      if (options.error || !catalog || (!creating && request.error)) return;
-      setSubmitted(true);
-      if (!name.trim() || !roleKey.trim()) {
-        form.querySelector<HTMLInputElement>('input:invalid')?.focus();
-        return;
-      }
-      const incomplete = unconfiguredFilter(grants);
-      if (incomplete) {
-        setEditingScope(incomplete);
-        return;
-      }
-      setEditingScope(undefined);
-      setRequestBusy(true);
-      setError(undefined);
-      setKeyConflict(false);
-      try {
-        originalRevisionRef.current ??= request.data?.data.revision;
-        const input = {
-          key: roleKey,
-          title:
-            !creating && initial && nameDraft === undefined
-              ? initial.title
-              : name.trim(),
-          grants,
-          ...(!creating && request.data?.data.revision
-            ? { expectedRevision: originalRevisionRef.current }
-            : {}),
-        };
-        const saved = await submission.run(
-          { key, creating, input },
-          (idempotencyKey) =>
-            creating
-              ? authz.createPermissionSet(input, idempotencyKey)
-              : authz.updatePermissionSet(key, input, idempotencyKey),
-        );
-        if (!saved) return;
-        setDirty(false);
-        parent.reload();
-        toaster.show({ type: 'success', title: t('settings.saved', { name }) });
-        leave.allow();
-        void navigate(closeTo, { replace: true });
-      } catch (next) {
-        if (
-          creating &&
-          next instanceof Error &&
-          'status' in next &&
-          next.status === 409
-        ) {
-          setKeyConflict(true);
-          document.getElementById('role-key')?.focus();
-        } else setError(next);
-      } finally {
-        setRequestBusy(false);
-      }
-    })();
+
+  const reset = (): void => {
+    setNameDraft(undefined);
+    setKeyDraft(undefined);
+    setDraft(undefined);
+    setFilters(undefined);
+    setEditingFilter(undefined);
+    setSubmitted(false);
+    setError(undefined);
   };
-  const sections = catalog
-    ? configurePermissionScopes(
-        permissionNavigationSections(
-          permissionSections(catalog, grants, text, permissionScopeVisible),
-          app.runtime.routes,
-          pagePermissionTitles,
-          (path) => t('settings.unnamedPage', { path }),
-          text,
-        ),
-        catalog,
+
+  const save = async (form: HTMLFormElement): Promise<void> => {
+    if (options.error || !workspace || (!creating && request.error)) return;
+    setSubmitted(true);
+    if (!name.trim() || !roleKey.trim()) {
+      form.querySelector<HTMLInputElement>('input:invalid')?.focus();
+      return;
+    }
+    const incomplete = unconfiguredFilter(value, currentFilters, workspace);
+    if (incomplete) {
+      setEditingFilter(filterKey(incomplete.action, incomplete.scope));
+      return;
+    }
+    setEditingFilter(undefined);
+    setRequestBusy(true);
+    setError(undefined);
+    setKeyConflict(false);
+    try {
+      originalRevisionRef.current ??= initial?.revision;
+      const input = {
+        key: roleKey.trim(),
+        title:
+          !creating && initial && nameDraft === undefined
+            ? initial.title
+            : name.trim(),
         grants,
+        ...(!creating && initial?.revision
+          ? { expectedRevision: originalRevisionRef.current }
+          : {}),
+      };
+      const saved = await submission.run(
+        { key, creating, input },
+        (idempotencyKey) =>
+          creating
+            ? authz.createPermissionSet(input, idempotencyKey)
+            : authz.updatePermissionSet(key, input, idempotencyKey),
+      );
+      if (!saved) return;
+      parent.reload();
+      toaster.show({ type: 'success', title: t('settings.saved', { name }) });
+      leave.allow();
+      if (creating)
+        void navigate(
+          {
+            pathname: `${parent.base}/${encodeURIComponent(input.key)}/edit`,
+            search: '',
+          },
+          { replace: true },
+        );
+      else {
+        originalRevisionRef.current = undefined;
+        reset();
+        request.reload();
+      }
+    } catch (next) {
+      if (
+        creating &&
+        next instanceof Error &&
+        'status' in next &&
+        next.status === 409
+      ) {
+        setKeyConflict(true);
+        document.getElementById('role-key')?.focus();
+      } else setError(next);
+    } finally {
+      setRequestBusy(false);
+    }
+  };
+
+  const modules = workspace
+    ? withPermissionFilters(
+        workspace.modules,
+        workspace,
+        value,
+        currentFilters,
         (key, fallback) => t(key, { defaultValue: fallback ?? key }),
-        editingScope,
-        setEditingScope,
-        (id, value) => {
-          setGrantsDraft((current) => setScope(current ?? grants, id, value));
-          setDirty(true);
+        editingFilter,
+        setEditingFilter,
+        (key, filter) => {
+          setFilters({ ...currentFilters, [key]: filter });
+          setEditingFilter(undefined);
         },
-        !allowed || busy,
+        readOnly,
       )
     : [];
-  return (
-    <RouteChildPage>
-      <PageContainer>
-        <BackButton to={closeTo}>{t('settings.roles')}</BackButton>
-        <PageHeader
-          title={t(creating ? 'settings.newRole' : 'settings.editRole')}
-          description={t('settings.rolesDescription')}
-          actions={
-            dirty ? (
-              <Badge variant='secondary'>{t('settings.unsaved')}</Badge>
-            ) : undefined
-          }
-        />
-        <SettingsError error={request.error} retry={request.reload} />
-        <SettingsError error={options.error} retry={options.reload} />
-        {error instanceof Error &&
-          'status' in error &&
-          error.status === 409 && (
-            <Button variant='outline' onClick={() => setReloadConfirm(true)}>
-              {t('settings.reload')}
-            </Button>
+
+  const keyInvalid = keyConflict || (submitted && !roleKey.trim());
+  const nameInvalid = submitted && !name.trim();
+  const header = (
+    <div className='flex flex-col gap-3'>
+      <div className='flex flex-wrap items-end gap-3'>
+        <div className='flex min-w-48 flex-1 flex-col gap-1.5'>
+          <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
+          <Input
+            id='role-name'
+            name='title'
+            required
+            value={name}
+            disabled={readOnly}
+            aria-invalid={nameInvalid}
+            aria-errormessage={nameInvalid ? 'role-name-error' : undefined}
+            onChange={(event) => setNameDraft(event.target.value)}
+          />
+          {nameInvalid && (
+            <p id='role-name-error' className='text-xs text-destructive'>
+              {t('settings.required')}
+            </p>
           )}
-        {(request.loading && !creating) || options.loading ? (
-          <SettingsLoading />
-        ) : (
-          !request.error &&
-          !options.error && (
-            <FeedbackForm
-              submitting={busy}
-              error={error}
-              errorContent={<SettingsError error={error} inline />}
-              onSubmit={(event) => void save(event)}
-              noValidate
-              className='flex flex-col gap-6'
-            >
-              <div className='grid gap-4 sm:grid-cols-2'>
-                <div className='flex flex-col gap-2'>
-                  <Label htmlFor='role-key'>{t('settings.key')} *</Label>
-                  <Input
-                    id='role-key'
-                    name='key'
-                    required
-                    value={roleKey}
-                    disabled={!creating || !allowed || busy}
-                    aria-invalid={keyConflict || (submitted && !roleKey.trim())}
-                    aria-errormessage={
-                      keyConflict || (submitted && !roleKey.trim())
-                        ? 'role-key-error'
-                        : undefined
-                    }
-                    onChange={(event) => {
-                      setKeyConflict(false);
-                      setKeyDraft(event.target.value);
-                      setDirty(true);
+        </div>
+        <div className='flex min-w-40 flex-col gap-1.5 sm:max-w-56'>
+          <Label htmlFor='role-key'>{t('settings.key')} *</Label>
+          <Input
+            id='role-key'
+            name='key'
+            required
+            value={roleKey}
+            disabled={!creating || readOnly}
+            aria-invalid={keyInvalid}
+            aria-errormessage={keyInvalid ? 'role-key-error' : undefined}
+            onChange={(event) => {
+              setKeyConflict(false);
+              setKeyDraft(event.target.value);
+            }}
+          />
+          {keyInvalid && (
+            <p id='role-key-error' className='text-xs text-destructive'>
+              {t(keyConflict ? 'settings.keyConflict' : 'settings.required')}
+            </p>
+          )}
+        </div>
+        {!creating && (
+          <div className='flex flex-wrap gap-2'>
+            {canInspect && (
+              <Button
+                variant='outline'
+                size='sm'
+                nativeButton={false}
+                render={
+                  <Link
+                    to={{
+                      pathname: '/permission-check',
+                      search: `?role=${encodeURIComponent(key)}`,
                     }}
                   />
-                  {(keyConflict || (submitted && !roleKey.trim())) && (
-                    <p id='role-key-error' className='text-xs text-destructive'>
-                      {t(
-                        keyConflict
-                          ? 'settings.keyConflict'
-                          : 'settings.required',
-                      )}
-                    </p>
-                  )}
-                </div>
-                <div className='flex flex-col gap-2'>
-                  <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
-                  <Input
-                    id='role-name'
-                    name='title'
-                    required
-                    value={name}
-                    disabled={!allowed || busy}
-                    aria-invalid={submitted && !name.trim()}
-                    aria-errormessage={
-                      submitted && !name.trim() ? 'role-name-error' : undefined
-                    }
-                    onChange={(event) => {
-                      setNameDraft(event.target.value);
-                      setDirty(true);
+                }
+              >
+                <EyeIcon />
+                {t('settings.previewRole')}
+              </Button>
+            )}
+            {canCreate && !unrestricted && (
+              <Button
+                variant='outline'
+                size='sm'
+                nativeButton={false}
+                render={
+                  <Link
+                    to={{
+                      pathname: `${parent.base}/create`,
+                      search: `?copy=${encodeURIComponent(key)}`,
                     }}
                   />
-                  {submitted && !name.trim() && (
-                    <p
-                      id='role-name-error'
-                      className='text-xs text-destructive'
-                    >
-                      {t('settings.required')}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {request.data?.data.protection && (
-                <p className='text-sm text-muted-foreground'>
-                  {t('settings.protectedHint')}
-                </p>
-              )}
-              <p className='text-xs text-muted-foreground'>
-                {t('settings.permissionSaveHint')}
-              </p>
-              <PermissionEditor
-                sections={sections}
-                readOnly={!allowed || busy}
-                labels={{
-                  dataRanges: (count) => t('settings.dataRanges', { count }),
-                  scopeExplanation: t('settings.scopeExplanation'),
-                  scopeHintFor: (name) => t('settings.scopeHintFor', { name }),
-                  levelFor: (name) => t('settings.levelFor', { name }),
-                  search: t('settings.permissionSearch'),
-                  enabledOnly: t('settings.enabledOnly'),
-                  granted: t('settings.permissionGranted'),
-                  ungranted: t('settings.permissionUngranted'),
-                  selectAll: t('settings.permissionAll'),
-                  authorizationStatus: t('settings.permissionStatus'),
-                  clearSearch: t('settings.permissionClearSearch'),
-                  collapseAll: t('settings.permissionCollapseAll'),
-                  expandAll: t('settings.permissionExpandAll'),
-                  summary: (enabled, total) =>
-                    t('settings.permissionSummary', { enabled, total }),
-                  clear: t('settings.clear'),
-                  empty: t('settings.noPermissions'),
-                  emptyDescription: t('settings.permissionEmptyHint'),
-                  readOnly: t('settings.permissionReadOnlyHint'),
-                  managedPermission: t('settings.permissionManagedHint'),
-                  noResults: t('settings.noResults'),
-                  navigation: t('settings.permissionCategories'),
-                  expandGroup: (name) =>
-                    t('settings.expandPermissionGroup', { name }),
-                  collapseGroup: (name) =>
-                    t('settings.collapsePermissionGroup', { name }),
-                }}
-                onEnabledChange={(id, enabled) => {
-                  if (!catalog) return;
-                  setGrantsDraft((current) =>
-                    setPermissions(current ?? grants, catalog, [
-                      { id, enabled },
-                    ]),
-                  );
-                  setDirty(true);
-                }}
-                onLevelChange={(id, value) => {
-                  if (value === 'customFilter') {
-                    setEditingScope(id);
-                    return;
-                  }
-                  setGrantsDraft((current) =>
-                    setScope(current ?? grants, id, value),
-                  );
-                  setDirty(true);
-                }}
-              />
-              <div className='sticky bottom-0 flex justify-end gap-2 border-t bg-background py-4'>
-                <Button
-                  variant='outline'
-                  disabled={busy}
-                  onClick={() => void navigate(closeTo)}
-                >
-                  {t('settings.cancel')}
-                </Button>
-                {allowed && (
-                  <Button type='submit' disabled={busy || !dirty}>
-                    {t(busy ? 'settings.saving' : 'settings.save')}
-                  </Button>
-                )}
-              </div>
-            </FeedbackForm>
-          )
+                }
+              >
+                <CopyIcon />
+                {t('settings.duplicateRole')}
+              </Button>
+            )}
+          </div>
         )}
-        {leave.dialog}
-        <ConfirmAction
-          open={reloadConfirm}
-          title={t('settings.discardTitle')}
-          description={t('settings.discardHint')}
-          busy={false}
-          onCancel={() => setReloadConfirm(false)}
-          onConfirm={() => {
-            setNameDraft(undefined);
-            setKeyDraft(undefined);
-            setGrantsDraft(undefined);
-            setDirty(false);
-            setError(undefined);
-            setReloadConfirm(false);
-            request.reload();
+      </div>
+      {initial?.protection && !unrestricted && (
+        <p className='text-sm text-muted-foreground'>
+          {t('settings.protectedHint')}
+        </p>
+      )}
+    </div>
+  );
+  const footer = (
+    <>
+      {dirty && allowed && (
+        <Button
+          type='button'
+          variant='outline'
+          disabled={busy}
+          onClick={() => {
+            if (creating) void navigate({ pathname: parent.base, search: '' });
+            else reset();
           }}
-        />
-      </PageContainer>
-    </RouteChildPage>
+        >
+          {t('settings.discardChanges')}
+        </Button>
+      )}
+      {allowed && (
+        <Button type='submit' disabled={busy || !dirty}>
+          {t(busy ? 'settings.saving' : 'settings.save')}
+        </Button>
+      )}
+    </>
+  );
+
+  return (
+    <div className='flex min-w-0 flex-col gap-4'>
+      <SettingsError error={request.error} retry={request.reload} />
+      <SettingsError error={options.error} retry={options.reload} />
+      {error instanceof Error && 'status' in error && error.status === 409 && (
+        <Button variant='outline' onClick={() => setReloadConfirm(true)}>
+          {t('settings.reload')}
+        </Button>
+      )}
+      {(request.loading && sourceKey) || options.loading ? (
+        <SettingsLoading />
+      ) : (
+        !request.error &&
+        !options.error && (
+          <FeedbackForm
+            key={location.pathname}
+            submitting={busy}
+            error={error}
+            errorContent={<SettingsError error={error} inline />}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save(event.currentTarget);
+            }}
+            noValidate
+            className='flex flex-col gap-4'
+          >
+            <PermissionEditor
+              modules={modules}
+              value={value}
+              onChange={(next) => setDraft(next)}
+              unrestricted={unrestricted}
+              readOnly={readOnly}
+              dirty={dirty}
+              header={header}
+              footer={footer}
+              labels={labels}
+            />
+          </FeedbackForm>
+        )
+      )}
+      {leave.dialog}
+      <ConfirmAction
+        open={reloadConfirm}
+        title={t('settings.discardTitle')}
+        description={t('settings.discardHint')}
+        busy={false}
+        onCancel={() => setReloadConfirm(false)}
+        onConfirm={() => {
+          reset();
+          setReloadConfirm(false);
+          request.reload();
+        }}
+      />
+    </div>
   );
 }
 
 export default function RoleForm(): ReactElement {
   const { key } = useParams();
-  return <RoleEditor key={key ?? '$new'} />;
+  const [search] = useSearchParams();
+  return <RoleEditor key={key ?? `$new:${search.get('copy') ?? ''}`} />;
 }

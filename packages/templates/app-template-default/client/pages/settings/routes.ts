@@ -1,4 +1,10 @@
-import { Users, ShieldCheck, KeyRound, ListFilter } from 'lucide-react';
+import {
+  Users,
+  ShieldCheck,
+  KeyRound,
+  ListFilter,
+  ScanSearch,
+} from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -84,14 +90,13 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
               action: 'create',
             },
             breadcrumb: { title: 'settings.newRole' },
-            presentation: { kind: 'child-page' },
+            // Rendered in the roles page's right column, beside the role list.
             componentLoader: () => import('./role-form.js'),
           },
           {
             name: 'settingsRoleEdit',
             path: ':key/edit',
             breadcrumb: { title: 'settings.editRole' },
-            presentation: { kind: 'child-page' },
             componentLoader: () => import('./role-form.js'),
           },
         ],
@@ -137,6 +142,22 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
             componentLoader: () => import('./default-access-form.js'),
           },
         ],
+      },
+      // Answers what a user can open and do through all of their roles; Preview as this role opens it for one role.
+      {
+        name: 'settingsPermissionCheck',
+        path: '/permission-check',
+        auth: 'required',
+        authz: {
+          resource: { type: 'settings', id: 'authorization.inspector' },
+          action: 'inspect',
+        },
+        navigation: {
+          title: 'settings.permissionCheck.title',
+          icon: ScanSearch,
+        },
+        breadcrumb: { title: 'settings.permissionCheck.title' },
+        componentLoader: () => import('./permission-check.js'),
       },
     ],
   },

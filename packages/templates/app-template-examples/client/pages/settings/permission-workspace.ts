@@ -3,46 +3,122 @@ import type {
   AuthorizationOptionsResponse,
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
-import type { CatalogResource } from './permissions-model.js';
+import type {
+  PermissionAction,
+  PermissionMenu,
+  PermissionModule,
+  PermissionRisk,
+  PermissionScopeOption,
+  PermissionScopeSlot,
+} from '#components/permission-editor';
+import {
+  buildRouteNavigation,
+  buildSettingsCatalog,
+  type RouteNavigationItem,
+} from '../../routing/route-navigation.js';
+import { SETTINGS_GROUP, SETTINGS_HOME } from '#lib/navigation-transform';
+import {
+  configurationResources,
+  pagePermissionTitle,
+  type PagePermissionTitles,
+} from './page-permissions.js';
+import {
+  permissionRowId,
+  type CatalogResource,
+  type PermissionBinding,
+  type PermissionWorkspace,
+  NO_SCOPE,
+} from './permissions-model.js';
 
 export interface PermissionWorkspaceSelection {
+  /** Business resources this application implements, each placed on the menu whose page performs them. */
   readonly business: readonly {
     readonly type: string;
     readonly id: string;
     readonly actions: readonly string[];
+    /** Route name of the menu page. Defaults to the menu whose page resource id equals `id`. */
+    readonly menu?: string;
+    /** The action that reads the records and owns the data scope. Defaults to `view`, else `read`. */
+    readonly view?: string;
     readonly actionDescriptions?: Readonly<Record<string, LocalizedText>>;
+    /** Risky actions are tagged and never turned on automatically. */
+    readonly risks?: Readonly<Record<string, PermissionRisk>>;
+    /** Actions that must be on first, by action name of the same resource. Defaults to the view action. */
+    readonly requires?: Readonly<Record<string, readonly string[]>>;
+    /** Record access keys from the widest to the narrowest; the catalog order otherwise. */
+    readonly scopeOrder?: readonly string[];
     readonly scopeTitles?: Readonly<Record<string, LocalizedText>>;
     readonly actionScopeTitles?: Readonly<
       Record<string, Readonly<Record<string, LocalizedText>>>
     >;
     /** UI-only omission; registered and stored scope values remain unchanged. */
     readonly hiddenActionScopes?: Readonly<Record<string, readonly string[]>>;
-    readonly configurationActions?: readonly {
-      readonly name: string;
-      readonly routes: readonly string[];
-    }[];
-    readonly configurationTitle?: LocalizedText;
-  }[];
-  readonly settings: readonly {
-    readonly id: string;
-    readonly actions: readonly string[];
   }[];
   readonly filterFieldTitles?: Readonly<
     Record<string, Readonly<Record<string, LocalizedText>>>
   >;
 }
 
-/** Add only business operations and configuration controls this application exposes. */
+// Record access from the widest to the narrowest, as the example plugins define them.
+const SALES_SCOPES = [
+  'allRecords',
+  'customFilter',
+  'example.sales.region',
+  'example.sales.public',
+  'example.sales.own',
+  'recordsIOwn',
+  'example.sales.prepared',
+];
+const CRM_SCOPES = [
+  'allRecords',
+  'customFilter',
+  'recordsIOwn',
+  'example.crm.own',
+];
+
+/** Add only business operations this application exposes; system settings come from the real settings pages. */
 export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
-  business: [],
-  settings: [
+  business: [
+    // The authorization example's Sales pages: each composite resource has a page of the same id.
     {
-      id: 'authorization.permission-sets',
-      actions: ['read', 'create', 'update'],
+      type: 'composite',
+      id: 'example.sales.projects',
+      actions: ['view', 'edit'],
+      scopeOrder: SALES_SCOPES,
     },
     {
-      id: 'authorization.default-access',
-      actions: ['read', 'create', 'update', 'delete'],
+      type: 'composite',
+      id: 'example.sales.quotes',
+      actions: ['view', 'edit', 'submit'],
+      scopeOrder: SALES_SCOPES,
+    },
+    {
+      type: 'composite',
+      id: 'example.sales.orders',
+      actions: ['view', 'manageRelations', 'deliver'],
+      scopeOrder: SALES_SCOPES,
+    },
+    // Customers and contacts: three resources behind one page.
+    {
+      type: 'composite',
+      id: 'example.crm.customers',
+      actions: ['view', 'edit', 'assign'],
+      menu: 'customer-contacts',
+      scopeOrder: CRM_SCOPES,
+    },
+    {
+      type: 'composite',
+      id: 'example.crm.contacts',
+      actions: ['view', 'edit'],
+      menu: 'customer-contacts',
+      scopeOrder: CRM_SCOPES,
+    },
+    {
+      type: 'composite',
+      id: 'example.crm.salesReps',
+      actions: ['view'],
+      menu: 'customer-contacts',
+      scopeOrder: CRM_SCOPES,
     },
   ],
 };
@@ -93,238 +169,586 @@ export function permissionFilterFieldLabel(
     : field;
 }
 
-function hasConfigurationPage(
-  routes: readonly AppClientRegisteredRoute[],
-  resourceId: string,
-): boolean {
-  return routes.some(
-    (route) =>
-      (route.componentLoader &&
-        typeof route.authz === 'object' &&
-        route.authz.resource.type === 'settings' &&
-        route.authz.resource.id === resourceId) ||
-      hasConfigurationPage(route.children ?? [], resourceId),
-  );
+/** User management is not in the server catalog; its actions are fixed by the Users pages. */
+const USER_ACTIONS: readonly { name: string; title: string }[] = [
+  { name: 'read', title: 'settings.readUsers' },
+  { name: 'create', title: 'settings.createUsers' },
+  { name: 'update', title: 'settings.updateUsers' },
+  { name: 'disable', title: 'settings.disable' },
+  { name: 'enable', title: 'settings.enable' },
+  { name: 'revoke-sessions', title: 'settings.revokeSessions' },
+  { name: 'assign-role', title: 'settings.assignRole' },
+];
+
+/**
+ * Actions that let a holder change what others, or they themselves, may do. The server does not limit a holder to
+ * the permissions they already have, so these are tagged and explained rather than presented as safe.
+ */
+const ESCALATION: Readonly<
+  Record<string, Readonly<Record<string, PermissionRisk>>>
+> = {
+  'settings:authorization.permission-sets': {
+    create: 'high',
+    update: 'high',
+    delete: 'high',
+    assign: 'high',
+  },
+  'user:*': {
+    'assign-role': 'high',
+    'revoke-sessions': 'sensitive',
+    disable: 'sensitive',
+  },
+};
+
+const BASIC_ACTIONS = new Set([
+  'view',
+  'read',
+  'create',
+  'edit',
+  'update',
+  'delete',
+  'destroy',
+  'export',
+  'import',
+  'access',
+]);
+
+export interface PermissionWorkspaceText {
+  readonly text: (value: LocalizedText) => string;
+  readonly t: (key: string, options?: Record<string, unknown>) => string;
 }
 
-function hasUserManagement(
-  routes: readonly AppClientRegisteredRoute[],
-): boolean {
-  return routes.some(
-    (route) =>
-      (route.componentLoader &&
-        typeof route.authz === 'object' &&
-        route.authz.resource.type === 'user') ||
-      hasUserManagement(route.children ?? []),
-  );
+const resourceKey = (resource: { type: string; id: string }): string =>
+  `${resource.type}:${resource.id}`;
+
+function routeResources(
+  route: AppClientRegisteredRoute,
+  skipNavigation: boolean,
+): { type: string; id: string; action: string }[] {
+  const found = new Map<string, { type: string; id: string; action: string }>();
+  const visit = (item: AppClientRegisteredRoute, root: boolean): void => {
+    if (!root && skipNavigation && item.navigation && item.componentLoader)
+      return;
+    if (item.componentLoader && typeof item.authz === 'object') {
+      const key = resourceKey(item.authz.resource);
+      if (!found.has(key))
+        found.set(key, { ...item.authz.resource, action: item.authz.action });
+    }
+    for (const child of item.children ?? []) visit(child, false);
+  };
+  visit(route, true);
+  return [...found.values()];
 }
 
-/** A configuration action needs an actual application-owned page, not just an installed capability. */
-function hasApplicationPage(
-  routes: readonly AppClientRegisteredRoute[],
-  names: readonly string[],
-): boolean {
-  return routes.some(
-    (route) =>
-      (route.source === 'application' &&
-        route.componentLoader &&
-        names.includes(route.name)) ||
-      hasApplicationPage(route.children ?? [], names),
-  );
+function navigationTitle(
+  route: AppClientRegisteredRoute,
+  titles: PagePermissionTitles,
+): LocalizedText | undefined {
+  return route.navigation?.title
+    ? { key: route.navigation.title, ns: route.packageName }
+    : pagePermissionTitle(route, titles);
 }
 
 /**
- * Application-owned presentation, not a copy of the complete capability catalog.
- * Select actual business actions in permissionWorkspaceSelection as features are built.
- * Settings additionally require a real configuration page and registered action.
- * Installing a plugin never opts all its management capabilities into this form.
+ * The role editor's menus, from the application's complete menu (not the signed-in editor's filtered one) and the
+ * server catalog. A menu's actions are the business resources placed on it, else access to its pages; system settings
+ * pages become the Administration modules, with the real actions the server registers for their resources.
+ * Installing a plugin exposes nothing by itself: a settings resource appears only with a page that uses it.
  */
-export function permissionWorkspaceCatalog(
+export function permissionWorkspace(
   source: AuthorizationOptionsResponse,
   routes: readonly AppClientRegisteredRoute[],
-  pages: readonly CatalogResource[],
+  titles: PagePermissionTitles,
+  words: PermissionWorkspaceText,
   selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
-): AuthorizationOptionsResponse {
-  const configurationBusiness: CatalogResource[] = [];
-  const visibleSections: readonly string[] = ['pages', 'business'];
-  const settings = source.sections
-    .flatMap((section) => section.subsections.flatMap((sub) => sub.resources))
-    .flatMap((resource) => {
-      const selected = selection.settings.find(
-        (entry) => entry.id === resource.id,
-      );
-      if (
-        resource.type !== 'settings' ||
-        !selected ||
-        !hasConfigurationPage(routes, resource.id)
-      )
-        return [];
-      const actions = resource.actions.filter((action) =>
-        selected.actions.includes(action.name),
-      );
-      return actions.length ? [{ ...resource, actions }] : [];
-    });
-  return {
-    ...source,
-    sections: [
-      ...(hasUserManagement(routes)
-        ? [
-            {
-              name: 'users',
-              title: { key: 'settings.userPermissions' },
-              order: 0,
-              subsections: [
-                ...[
-                  {
-                    name: 'users.information',
-                    title: 'userInformation',
-                    actions: ['read', 'create', 'update'],
-                  },
-                  {
-                    name: 'users.security',
-                    title: 'accountSecurity',
-                    actions: ['disable', 'enable', 'revoke-sessions'],
-                  },
-                  {
-                    name: 'users.roles',
-                    title: 'roleAssignment',
-                    actions: ['assign-role'],
-                  },
-                ].map((group) => ({
-                  name: group.name,
-                  title: { key: `settings.${group.title}` },
-                  resources: [
-                    {
-                      type: 'user',
-                      id: '*',
-                      title: { key: `settings.${group.title}` },
-                      actions: [
-                        { name: 'read', title: { key: 'settings.readUsers' } },
-                        {
-                          name: 'create',
-                          title: { key: 'settings.createUsers' },
-                        },
-                        {
-                          name: 'update',
-                          title: { key: 'settings.updateUsers' },
-                        },
-                        { name: 'disable', title: { key: 'settings.disable' } },
-                        { name: 'enable', title: { key: 'settings.enable' } },
-                        {
-                          name: 'assign-role',
-                          title: { key: 'settings.assignRole' },
-                        },
-                        {
-                          name: 'revoke-sessions',
-                          title: { key: 'settings.revokeSessions' },
-                        },
-                      ].filter((action) => group.actions.includes(action.name)),
-                    },
-                  ],
-                })),
-              ],
-            },
-          ]
-        : []),
-      ...source.sections
-        .filter((section) => visibleSections.includes(section.name))
-        .map((section) => ({
-          ...section,
-          subsections: section.subsections.map((sub) => ({
-            ...sub,
-            resources:
-              sub.recordType?.type === 'page'
-                ? [...sub.resources, ...pages]
-                : sub.resources.flatMap((resource) => {
-                    const selected = selection.business.find(
-                      (entry) =>
-                        entry.type === resource.type &&
-                        entry.id === resource.id,
-                    );
-                    if (!selected) return [];
-                    const actions = resource.actions.filter((action) =>
-                      selected.actions.includes(action.name),
-                    );
-                    if (!actions.length) return [];
-                    const projected = {
-                      ...resource,
-                      actions: actions.map((action) => ({
-                        ...action,
-                        ...(selected.actionDescriptions?.[action.name]
-                          ? {
-                              description:
-                                selected.actionDescriptions[action.name],
-                            }
-                          : {}),
-                      })),
-                      ...(resource.dataScopes
-                        ? {
-                            dataScopes: Object.fromEntries(
-                              Object.entries(resource.dataScopes).map(
-                                ([action, scopes]) => [
-                                  action,
-                                  scopes.map((scope) => ({
-                                    ...scope,
-                                    title: permissionScopeTitle(
-                                      resource,
-                                      scope,
-                                      selection,
-                                      action,
-                                    ),
-                                  })),
-                                ],
-                              ),
-                            ),
-                          }
-                        : {}),
-                    };
-                    const isConfiguration = (name: string) =>
-                      selected.configurationActions?.some(
-                        (entry) => entry.name === name,
-                      );
-                    const configurationActions = projected.actions.filter(
-                      (action) => {
-                        const entry = selected.configurationActions?.find(
-                          (entry) => entry.name === action.name,
-                        );
-                        return (
-                          entry && hasApplicationPage(routes, entry.routes)
-                        );
-                      },
-                    );
-                    if (configurationActions.length)
-                      configurationBusiness.push({
-                        ...projected,
-                        title: selected.configurationTitle ?? projected.title,
-                        actions: configurationActions,
-                      });
-                    const businessActions = projected.actions.filter(
-                      (action) => !isConfiguration(action.name),
-                    );
-                    return businessActions.length
-                      ? [{ ...projected, actions: businessActions }]
-                      : [];
-                  }),
-          })),
-        })),
-      ...(settings.length || configurationBusiness.length
-        ? [
-            {
-              name: 'configuration',
-              title: { key: 'settings.configurationPermissions' },
-              order: 200,
-              subsections: [
-                {
-                  name: 'configuration',
-                  title: { key: 'settings.configurationPermissions' },
-                  resources: [...settings, ...configurationBusiness],
-                },
-              ],
-            },
-          ]
-        : []),
-    ].filter((section) =>
-      section.subsections.some((sub) => sub.resources.length > 0),
-    ),
+): PermissionWorkspace {
+  const { text, t } = words;
+  const catalog = new Map<string, CatalogResource>();
+  for (const section of source.sections)
+    for (const sub of section.subsections)
+      for (const resource of sub.resources)
+        if (!catalog.has(resourceKey(resource)))
+          catalog.set(resourceKey(resource), resource);
+  const bindings = new Map<string, PermissionBinding>();
+  const menuPages = new Map<string, readonly string[]>();
+  const placed = new Set<string>();
+  const seenPages = new Set<string>();
+  const configuration = configurationResources(routes);
+  const routeNames = (route: AppClientRegisteredRoute): Set<string> => {
+    const names = new Set<string>();
+    const visit = (item: AppClientRegisteredRoute): void => {
+      names.add(item.name);
+      item.children?.forEach(visit);
+    };
+    visit(route);
+    return names;
   };
+
+  const recordAccessTitle = (key: string): string =>
+    text(source.recordAccess.find((entry) => entry.key === key)?.title ?? key);
+
+  const scopeOptions = (
+    keys: readonly string[],
+    order: readonly string[] | undefined,
+    follower: boolean,
+  ): PermissionScopeOption[] => {
+    const rank = (key: string): number => {
+      if (order?.includes(key)) return order.indexOf(key);
+      // Without a declared order, All records is the widest and a custom filter is only known to be narrower.
+      if (key === 'allRecords') return -2;
+      if (key === 'customFilter') return -1;
+      return (order?.length ?? 0) + keys.indexOf(key);
+    };
+    return [
+      ...[...keys]
+        .filter((key) => !(follower && key === 'customFilter'))
+        .sort((a, b) => rank(a) - rank(b))
+        .map((key) => ({ value: key, label: recordAccessTitle(key) })),
+      { value: NO_SCOPE, label: t('settings.noRecordScope') },
+    ];
+  };
+
+  /** Actions of business resources placed on one menu; the first resource's view action is the menu's View. */
+  const businessActions = (
+    menuId: string,
+    entries: readonly (typeof selection.business)[number][],
+  ): PermissionAction[] => {
+    const resources = entries.flatMap((entry) => {
+      const resource = catalog.get(resourceKey(entry));
+      return resource ? [{ entry, resource }] : [];
+    });
+    const actions: PermissionAction[] = [];
+    resources.forEach(({ entry, resource }, index) => {
+      placed.add(resourceKey(resource));
+      const primary = index === 0;
+      const selected = resource.actions.filter((action) =>
+        entry.actions.includes(action.name),
+      );
+      const viewName =
+        entry.view ??
+        selected.find((action) => action.name === 'view')?.name ??
+        selected.find((action) => action.name === 'read')?.name;
+      const viewId = viewName ? permissionRowId(resource, viewName) : undefined;
+      const viewCollection = viewName
+        ? resource.dataScopes?.[viewName]?.[0]?.collection
+        : undefined;
+      // View first, keeping the catalog order of the rest.
+      const ordered = [
+        ...selected.filter((action) => action.name === viewName),
+        ...selected.filter((action) => action.name !== viewName),
+      ];
+      for (const action of ordered) {
+        const id = permissionRowId(resource, action.name);
+        const isView = action.name === viewName;
+        const scopes = (resource.dataScopes?.[action.name] ?? []).filter(
+          (scope) =>
+            permissionScopeVisible(resource, action.name, scope.key, selection),
+        );
+        const slots: PermissionScopeSlot[] = scopes.map((scope) => {
+          const follows =
+            primary && !isView && scope.collection === viewCollection;
+          const defaultValue = scope.defaultValue
+            ? scope.defaultValue
+            : NO_SCOPE;
+          return {
+            id: scope.key,
+            ...(scopes.length > 1
+              ? {
+                  label: text(
+                    permissionScopeTitle(
+                      resource,
+                      scope,
+                      selection,
+                      action.name,
+                    ),
+                  ),
+                }
+              : {}),
+            options: scopeOptions(
+              scope.recordAccess,
+              entry.scopeOrder,
+              follows,
+            ),
+            ...(follows ? { followsView: true } : { defaultValue }),
+          };
+        });
+        const requires = entry.requires?.[action.name]?.map((name) =>
+          permissionRowId(resource, name),
+        );
+        const title = text(action.title);
+        actions.push({
+          id,
+          label:
+            resources.length > 1
+              ? t('settings.permissionActionFor', {
+                  action: title,
+                  resource: text(resource.title),
+                })
+              : title,
+          ...((entry.actionDescriptions?.[action.name] ?? action.description)
+            ? {
+                description: text(
+                  (entry.actionDescriptions?.[action.name] ??
+                    action.description)!,
+                ),
+              }
+            : {}),
+          ...(isView && primary ? { view: true } : {}),
+          ...(!BASIC_ACTIONS.has(action.name) ? { business: true } : {}),
+          ...(slots.length ? { scopes: slots } : {}),
+          ...(requires
+            ? { requires }
+            : !primary && !isView && viewId
+              ? { requires: [viewId] }
+              : {}),
+          ...(entry.risks?.[action.name]
+            ? { risk: entry.risks[action.name] }
+            : {}),
+        });
+        bindings.set(id, {
+          menu: menuId,
+          resource: { type: resource.type, id: resource.id },
+          action: action.name,
+          view: isView,
+          viewId: primary ? viewId : undefined,
+          scopes: (resource.dataScopes?.[action.name] ?? []).map((scope) => ({
+            key: scope.key,
+            collection: scope.collection,
+            fields: scope.fields,
+            visible: permissionScopeVisible(
+              resource,
+              action.name,
+              scope.key,
+              selection,
+            ),
+            follows: primary && !isView && scope.collection === viewCollection,
+            defaultValue: scope.defaultValue ?? '',
+          })),
+        });
+      }
+    });
+    return actions;
+  };
+
+  const pageAction = (
+    menuId: string,
+    page: string,
+    label: string,
+    view: boolean,
+  ): PermissionAction => {
+    const id = permissionRowId({ type: 'page', id: page }, 'access');
+    seenPages.add(page);
+    bindings.set(id, {
+      menu: menuId,
+      resource: { type: 'page', id: page },
+      action: 'access',
+      view,
+      scopes: [],
+    });
+    return { id, label, ...(view ? { view: true } : {}) };
+  };
+
+  const pageTitles = new Map<string, LocalizedText>();
+  const collectTitles = (items: readonly AppClientRegisteredRoute[]): void => {
+    for (const route of items) {
+      if (
+        route.componentLoader &&
+        typeof route.authz === 'object' &&
+        route.authz.resource.type === 'page'
+      ) {
+        const title = pagePermissionTitle(route, titles);
+        if (title && !pageTitles.has(route.authz.resource.id))
+          pageTitles.set(route.authz.resource.id, title);
+      }
+      collectTitles(route.children ?? []);
+    }
+  };
+  collectTitles(routes);
+
+  const menuFor = (
+    route: AppClientRegisteredRoute,
+    group: string | undefined,
+  ): PermissionMenu | undefined => {
+    const id = `menu:${route.packageName}:${route.name}`;
+    const label = text(
+      navigationTitle(route, titles) ??
+        t('settings.unnamedPage', { path: route.path }),
+    );
+    if (route.authz === 'skip')
+      return {
+        id,
+        label,
+        ...(group ? { group } : {}),
+        public: true,
+        actions: [],
+      };
+    if (typeof route.authz !== 'object') return undefined;
+    const names = routeNames(route);
+    const resources = routeResources(route, true);
+    const pages = resources
+      .filter((resource) => resource.type === 'page')
+      .map((resource) => resource.id)
+      .filter((page) => !seenPages.has(page));
+    const entries = selection.business.filter(
+      (entry) =>
+        !placed.has(resourceKey(entry)) &&
+        (entry.menu ? names.has(entry.menu) : pages.includes(entry.id)),
+    );
+    const business = businessActions(id, entries);
+    if (business.length) {
+      pages.forEach((page) => seenPages.add(page));
+      menuPages.set(id, pages);
+      return { id, label, ...(group ? { group } : {}), actions: business };
+    }
+    const actions = pages.map((page, index) =>
+      pageAction(
+        id,
+        page,
+        index === 0
+          ? t('settings.openPage')
+          : t('settings.openNamedPage', {
+              name: text(pageTitles.get(page) ?? page),
+            }),
+        index === 0,
+      ),
+    );
+    return actions.length
+      ? { id, label, ...(group ? { group } : {}), actions }
+      : undefined;
+  };
+
+  // Business menus: top-level groups become modules; top-level pages share the main menu module.
+  const modules: PermissionModule[] = [];
+  let main: { id: string; label: string; menus: PermissionMenu[] } | undefined;
+  const flatten = (
+    items: readonly RouteNavigationItem[],
+    group: string | undefined,
+  ): PermissionMenu[] =>
+    items.flatMap((item) => {
+      const menus: PermissionMenu[] = [];
+      if (item.route.componentLoader) {
+        const menu = menuFor(item.route, group);
+        if (menu) menus.push(menu);
+      }
+      const childGroup = item.route.componentLoader
+        ? group
+        : text(navigationTitle(item.route, titles) ?? item.route.name);
+      return [...menus, ...flatten(item.children, childGroup)];
+    });
+  const businessNavigation = buildRouteNavigation(routes, new Set()).filter(
+    (item) =>
+      ![SETTINGS_GROUP, SETTINGS_HOME].includes(item.route.name) &&
+      !(
+        typeof item.route.authz === 'object' &&
+        configuration.has(
+          JSON.stringify([
+            item.route.authz.resource.type,
+            item.route.authz.resource.id,
+          ]),
+        )
+      ),
+  );
+  for (const item of businessNavigation) {
+    if (item.route.componentLoader) {
+      const menu = menuFor(item.route, undefined);
+      if (!menu) continue;
+      if (!main) {
+        main = {
+          id: 'module:main',
+          label: t('settings.permissionMainMenu'),
+          menus: [],
+        };
+        modules.push(main);
+      }
+      main.menus.push(menu);
+      main.menus.push(...flatten(item.children, undefined));
+      continue;
+    }
+    const menus = flatten(item.children, undefined);
+    if (menus.length)
+      modules.push({
+        id: `module:${item.route.packageName}:${item.route.name}`,
+        label: text(navigationTitle(item.route, titles) ?? item.route.name),
+        menus,
+      });
+  }
+
+  // Administration: one menu per settings module, grouped by the settings home's categories.
+  const administration: PermissionMenu[] = [];
+  for (const category of buildSettingsCatalog(routes, new Set())) {
+    const group = text(
+      navigationTitle(category.route, titles) ?? category.route.name,
+    );
+    for (const module of category.modules) {
+      const id = `admin:${module.route.packageName}:${module.route.name}`;
+      const names = routeNames(module.route);
+      const resources = routeResources(module.route, false);
+      const actions: PermissionAction[] = [];
+      const notices: string[] = [];
+      resources.forEach((resource, index) => {
+        if (resource.type === 'page') {
+          if (!seenPages.has(resource.id))
+            actions.push(
+              pageAction(
+                id,
+                resource.id,
+                index === 0
+                  ? t('settings.openPage')
+                  : t('settings.openNamedPage', {
+                      name: text(pageTitles.get(resource.id) ?? resource.id),
+                    }),
+                index === 0,
+              ),
+            );
+          return;
+        }
+        const key = resourceKey(resource);
+        const catalogResource = catalog.get(key);
+        const available: readonly {
+          name: string;
+          title: LocalizedText;
+          description?: LocalizedText;
+        }[] =
+          resource.type === 'user'
+            ? USER_ACTIONS.map((action) => ({
+                name: action.name,
+                title: { key: action.title },
+              }))
+            : (catalogResource?.actions ?? []);
+        if (!available.length || placed.has(key)) return;
+        placed.add(key);
+        const viewName = available.some(
+          (action) => action.name === resource.action,
+        )
+          ? resource.action
+          : available[0]?.name;
+        if (!viewName) return;
+        const viewId = permissionRowId(resource, viewName);
+        const several =
+          resources.filter((item) => item.type !== 'page').length > 1;
+        const title: LocalizedText = catalogResource?.title ?? {
+          key: 'settings.userPermissions',
+        };
+        const risks = ESCALATION[key] ?? {};
+        if (Object.keys(risks).length)
+          notices.push(
+            t(
+              `settings.escalation.${resource.type === 'user' ? 'users' : 'roles'}`,
+            ),
+          );
+        for (const action of [
+          ...available.filter((item) => item.name === viewName),
+          ...available.filter((item) => item.name !== viewName),
+        ]) {
+          const actionId = permissionRowId(resource, action.name);
+          const isView = action.name === viewName;
+          const first = actions.length === 0;
+          actions.push({
+            id: actionId,
+            label: several
+              ? t('settings.permissionActionFor', {
+                  action: text(action.title),
+                  resource: text(title),
+                })
+              : text(action.title),
+            ...(action.description
+              ? { description: text(action.description) }
+              : {}),
+            ...(isView && first ? { view: true } : {}),
+            ...(!isView ? { requires: [viewId] } : {}),
+            ...(risks[action.name] ? { risk: risks[action.name] } : {}),
+          });
+          bindings.set(actionId, {
+            menu: id,
+            resource: { type: resource.type, id: resource.id },
+            action: action.name,
+            view: isView && first,
+            scopes: [],
+          });
+        }
+      });
+      const entries = selection.business.filter(
+        (entry) =>
+          !placed.has(resourceKey(entry)) &&
+          entry.menu &&
+          names.has(entry.menu),
+      );
+      actions.push(...businessActions(id, entries));
+      if (!actions.length) continue;
+      administration.push({
+        id,
+        label: text(navigationTitle(module.route, titles) ?? module.route.name),
+        group,
+        actions,
+        ...(notices.length ? { notice: notices.join(' ') } : {}),
+      });
+    }
+  }
+
+  // Pages no menu reaches, such as overlays with a grant of their own.
+  const outside: PermissionMenu[] = [];
+  const visitOutside = (items: readonly AppClientRegisteredRoute[]): void => {
+    for (const route of items) {
+      if (
+        route.componentLoader &&
+        typeof route.authz === 'object' &&
+        route.authz.resource.type === 'page' &&
+        !seenPages.has(route.authz.resource.id) &&
+        !configuration.has(JSON.stringify(['page', route.authz.resource.id]))
+      ) {
+        const page = route.authz.resource.id;
+        const id = `page:${page}`;
+        outside.push({
+          id,
+          label: text(
+            pageTitles.get(page) ??
+              t('settings.unnamedPage', { path: route.path }),
+          ),
+          description: route.path,
+          actions: [pageAction(id, page, t('settings.openPage'), true)],
+        });
+      }
+      visitOutside(route.children ?? []);
+    }
+  };
+  visitOutside(routes);
+  if (outside.length)
+    modules.push({
+      id: 'module:outside-navigation',
+      label: t('settings.pagesOutsideNavigation'),
+      menus: outside,
+    });
+
+  // Selected business resources no menu claims stay configurable instead of disappearing.
+  const unplaced = selection.business.filter(
+    (entry) =>
+      !placed.has(resourceKey(entry)) && catalog.has(resourceKey(entry)),
+  );
+  if (unplaced.length)
+    modules.push({
+      id: 'module:business',
+      label: t('settings.businessOperations'),
+      menus: unplaced.flatMap((entry) => {
+        const id = `business:${resourceKey(entry)}`;
+        const actions = businessActions(id, [entry]);
+        return actions.length
+          ? [
+              {
+                id,
+                label: text(catalog.get(resourceKey(entry))!.title),
+                actions,
+              },
+            ]
+          : [];
+      }),
+    });
+
+  if (administration.length)
+    modules.push({
+      id: 'module:administration',
+      label: t('settings.title'),
+      administration: true,
+      menus: administration,
+    });
+  return { modules, bindings, menuPages };
 }

@@ -1,4 +1,3 @@
-import { useListLocation } from '#hooks/use-list-location';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
@@ -6,24 +5,51 @@ import type {
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
 import { resolveListState } from '@nocobase/app-client';
-import { type ReactElement } from 'react';
-import { Link, Outlet, useLocation } from 'react-router';
-import { PlusIcon } from 'lucide-react';
+import { useState, type ReactElement } from 'react';
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Outlet,
+  matchPath,
+  useLocation,
+  useNavigate,
+  useResolvedPath,
+} from 'react-router';
+import { PlusIcon, SearchIcon } from 'lucide-react';
+import { cn } from 'cn';
 import { PermissionManagementPage } from './permission-management-page.js';
-import { Input } from '#components/ui/input';
+import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
-import { useTableUrlState } from '#hooks/use-table-url-state';
-import { RoleList } from '#components/role-list';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '#components/ui/input-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#components/ui/select';
 import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
+import type { RolesOutletContext } from './role-form.js';
 
+/**
+ * Roles and permissions: the roles on the left, the selected role's permissions on the right. The role editor is the
+ * child route, so a role has its own URL and switching roles asks first when the editor has unsaved changes.
+ */
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
-  const { params, setParams, active } = useListLocation();
   const location = useLocation();
-  const search = params.get('q') ?? '';
+  const navigate = useNavigate();
+  const base = useResolvedPath('.').pathname.replace(/\/$/, '');
+  // Kept out of the URL: changing the URL would ask to discard the editor's unsaved changes.
+  const [search, setSearch] = useState('');
   const request = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
-    { active },
+    true,
   );
   const canCreate = useRolePermission('create');
   const text = (value: LocalizedText): string =>
@@ -33,126 +59,147 @@ export default function RolesPage(): ReactElement {
           ns: value.ns,
           defaultValue: value.defaultValue ?? value.key,
         });
-  const rows = (request.data?.data ?? [])
-    .filter((role) =>
-      text(role.title ?? role.key)
-        .toLocaleLowerCase()
-        .includes(search.toLocaleLowerCase()),
-    )
-    .sort((a, b) =>
+  const roles = [...(request.data?.data ?? [])].sort(
+    (a, b) =>
+      Number(Boolean(b.unrestricted)) - Number(Boolean(a.unrestricted)) ||
       text(a.title ?? a.key).localeCompare(
         text(b.title ?? b.key),
         i18n.language,
       ),
-    );
-  const tableState = useTableUrlState({
-    active,
-    revision: request.revision,
-    sortColumns: ['title', 'key'],
-    rowCount:
-      request.data && !request.loading && !request.error
-        ? rows.length
-        : undefined,
-  });
+  );
+  const query = search.trim().toLocaleLowerCase();
+  const rows = roles.filter(
+    (role) =>
+      !query ||
+      text(role.title ?? role.key)
+        .toLocaleLowerCase()
+        .includes(query) ||
+      role.key.toLocaleLowerCase().includes(query),
+  );
   const listState = resolveListState(
     {
       data: request.data,
-      error: tableState.error ?? request.error,
+      error: request.error,
       isPending: request.loading && !request.data,
     },
     rows.length,
-    Boolean(search.trim()),
+    Boolean(query),
   );
-  const canShowCreate =
-    canCreate &&
-    (listState === 'empty' ||
-      listState === 'ready' ||
-      listState === 'no-results' ||
-      listState === 'refresh-failed');
-  const clearSearch = () =>
-    setParams(
-      (old) => {
-        const next = new URLSearchParams(old);
-        next.delete('q');
-        next.delete('page');
-        return next;
-      },
-      { replace: true },
-    );
+  const selected =
+    matchPath(`${base}/:key/edit`, location.pathname)?.params.key ?? undefined;
+  const creatingRole = Boolean(matchPath(`${base}/create`, location.pathname));
+  const first = roles[0];
+  const context: RolesOutletContext = { reload: request.reload, base };
   const create = canCreate ? (
     <Button
       nativeButton={false}
-      render={<Link to={{ pathname: 'create', search: location.search }} />}
+      render={<Link to={{ pathname: `${base}/create` }} />}
     >
       <PlusIcon />
       {t('settings.newRole')}
     </Button>
   ) : null;
   return (
-    <>
-      <PermissionManagementPage
-        tab='roles'
-        actions={canShowCreate ? create : undefined}
-      >
-        <div className='flex items-center gap-3'>
-          <Input
-            className='sm:max-w-xs'
-            value={search}
-            placeholder={t('settings.roleSearch')}
-            aria-label={t('settings.roleSearch')}
-            onChange={(event) => {
-              setParams(
-                (old) => {
-                  const next = new URLSearchParams(old);
-                  next.delete('page');
-                  if (event.target.value) next.set('q', event.target.value);
-                  else next.delete('q');
-                  return next;
-                },
-                { replace: true },
-              );
+    <PermissionManagementPage tab='roles' actions={create ?? undefined}>
+      <div className='grid min-w-0 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]'>
+        {/* On a phone the roles are a select above the editor, so the permissions stay in view. */}
+        <div className='lg:hidden'>
+          <Select
+            items={roles.map((role) => ({
+              value: role.key,
+              label: text(role.title ?? role.key),
+            }))}
+            value={selected ?? null}
+            onValueChange={(value) => {
+              if (value)
+                void navigate({
+                  pathname: `${base}/${encodeURIComponent(String(value))}/edit`,
+                });
             }}
-          />
-          {search && listState !== 'no-results' && (
-            <Button variant='ghost' onClick={clearSearch}>
-              {t('settings.clear')}
-            </Button>
-          )}
+          >
+            <SelectTrigger aria-label={t('settings.roles')} className='w-full'>
+              <SelectValue placeholder={t('settings.selectRole')} />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map((role) => (
+                <SelectItem key={role.key} value={role.key}>
+                  {text(role.title ?? role.key)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <aside
+          aria-label={t('settings.roles')}
+          className='hidden min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:flex lg:self-start'
+        >
+          <InputGroup>
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              value={search}
+              placeholder={t('settings.roleSearch')}
+              aria-label={t('settings.roleSearch')}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </InputGroup>
           <ListFeedbackActions
             state={listState}
-            onClear={clearSearch}
+            onClear={() => setSearch('')}
             onRetry={request.reload}
-            busy={active && request.loading}
+            busy={request.loading}
           />
-        </div>
-        {active || listState !== 'loading' ? (
           <ListFeedback state={listState}>
-            <RoleList
-              tableState={tableState}
-              // After a refresh failure the toolbar's retry button owns the wait.
-              loading={active && request.loading && listState === 'ready'}
-              ariaLabel={t('settings.roles')}
-              roles={rows.map((role) => ({
-                key: role.key,
-                title: text(role.title ?? role.key),
-                to: {
-                  pathname: `${encodeURIComponent(role.key)}/edit`,
-                  search: location.search,
-                },
-                protected: Boolean(role.protection),
-              }))}
-              labels={{
-                name: t('settings.roleName'),
-                key: t('settings.key'),
-                type: t('settings.roleType'),
-                protected: t('settings.protected'),
-                custom: t('settings.custom'),
-              }}
-            />
+            <nav className='flex max-h-[60svh] flex-col gap-0.5 overflow-y-auto lg:max-h-[calc(100svh-14rem)]'>
+              {rows.map((role) => (
+                <NavLink
+                  key={role.key}
+                  to={{
+                    pathname: `${base}/${encodeURIComponent(role.key)}/edit`,
+                  }}
+                  aria-current={selected === role.key ? 'page' : undefined}
+                  className={cn(
+                    'flex min-w-0 items-center gap-2 rounded-md px-3 py-2 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
+                    selected === role.key && 'bg-accent font-medium',
+                  )}
+                >
+                  <span className='min-w-0 flex-1'>
+                    <span
+                      className='block truncate'
+                      title={text(role.title ?? role.key)}
+                    >
+                      {text(role.title ?? role.key)}
+                    </span>
+                    <span
+                      className='block truncate font-mono text-xs text-muted-foreground'
+                      title={role.key}
+                    >
+                      {role.key}
+                    </span>
+                  </span>
+                  {role.unrestricted ? (
+                    <Badge variant='secondary'>
+                      {t('settings.unrestrictedRole')}
+                    </Badge>
+                  ) : role.protection ? (
+                    <Badge variant='outline'>{t('settings.protected')}</Badge>
+                  ) : null}
+                </NavLink>
+              ))}
+            </nav>
           </ListFeedback>
-        ) : null}
-      </PermissionManagementPage>
-      <Outlet context={{ reload: request.reload }} />
-    </>
+        </aside>
+        <section className='min-w-0'>
+          {!selected && !creatingRole && first ? (
+            <Navigate
+              replace
+              to={{ pathname: `${base}/${encodeURIComponent(first.key)}/edit` }}
+            />
+          ) : null}
+          <Outlet context={context} />
+        </section>
+      </div>
+    </PermissionManagementPage>
   );
 }

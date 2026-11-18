@@ -274,6 +274,97 @@ const settings = {
       $notEmpty: 'Is not empty',
     },
   },
+  copyOfRole: '{{name}} (copy)',
+  selectRole: 'Select a role',
+  previewRole: 'Preview as this role',
+  duplicateRole: 'Duplicate as new role',
+  discardChanges: 'Discard changes',
+  unrestrictedRole: 'All permissions',
+  openPage: 'Open page',
+  openNamedPage: 'Open {{name}}',
+  permissionActionFor: '{{action}} · {{resource}}',
+  permissionMainMenu: 'Main menu',
+  businessOperations: 'Business operations',
+  escalation: {
+    roles:
+      'Anyone who can create or change roles can give any role, including their own, any permission. The server does not limit them to the permissions they hold, so grant this only to trusted administrators.',
+    users:
+      'Assigning roles gives users everything those roles allow, including administrator roles. Grant it only to trusted administrators.',
+  },
+  permissionEditor: {
+    menus: 'Menus',
+    search: 'Search menus or permissions',
+    clearSearch: 'Clear search',
+    noResults: 'No matching menus or permissions',
+    empty: 'No menus to configure',
+    administration: 'Administration',
+    public: 'Public',
+    publicNote: 'Every signed-in user can open it. No permission needed.',
+    visibleInMenu: 'Visible in menu',
+    hiddenFromMenu: 'Hidden from menu',
+    enabledCount: '{{enabled}} of {{total}} enabled',
+    enableAll: 'Enable all',
+    viewOnly: 'View only',
+    disableAll: 'Disable all',
+    next: 'Next: {{menu}}',
+    sameAsView: 'Same as view ({{scope}})',
+    scopeFor: 'Data scope of {{action}}',
+    scopeForSlot: '{{action}}: {{scope}}',
+    followHint:
+      'Other actions follow the view scope; they can be narrower, never wider.',
+    riskHint: 'High-risk permissions are never turned on automatically.',
+    riskHigh: 'High risk',
+    riskSensitive: 'Sensitive',
+    managed: 'Managed by the application',
+    visibleMenus: '{{visible}} of {{total}} menus visible',
+    unrestrictedTitle: 'All permissions (unrestricted)',
+    unrestrictedDescription:
+      'This role can open every menu and perform every action on all data. There is nothing to set.',
+    expand: 'Expand {{module}}',
+    collapse: 'Collapse {{module}}',
+    confirmDisable_one:
+      'Turning off {{actions}} also turns off {{dependents}}, which needs it.',
+    confirmDisable_other:
+      'Turning off {{actions}} also turns off {{dependents}}, which need it.',
+    confirm: 'Turn off',
+    dismiss: 'Dismiss',
+    noticeScopeReset_one:
+      '{{actions}} now follows the view scope ({{view}}) again, because it was wider.',
+    noticeScopeReset_other:
+      '{{actions}} now follow the view scope ({{view}}) again, because they were wider.',
+    noticeAutoEnabled: 'Also turned on {{actions}}, which this needs.',
+    noticeStaysOff: '{{action}} stays off.',
+    noticeTurnOnFirst_one:
+      'It needs {{actions}}, which is never turned on automatically. Turn it on first.',
+    noticeTurnOnFirst_other:
+      'It needs {{actions}}, which are never turned on automatically. Turn them on first.',
+    noticeManagedRequirement_one:
+      'It needs {{actions}}, which is managed by the application and cannot be turned on here.',
+    noticeManagedRequirement_other:
+      'It needs {{actions}}, which are managed by the application and cannot be turned on here.',
+    noticeManagedDependent_one:
+      'Nothing was turned off: {{actions}} is managed by the application and needs it.',
+    noticeManagedDependent_other:
+      'Nothing was turned off: {{actions}} are managed by the application and need it.',
+  },
+  permissionCheck: {
+    title: 'Permission check',
+    description:
+      'See what a user can open and do, decided by the server from all of their roles and the data rules.',
+    role: 'Role',
+    anyRole: 'Any role',
+    user: 'User',
+    chooseUser: 'Choose a user',
+    noUsers: 'No users',
+    noRoleUsers: 'No user has this role yet',
+    hint: 'A role is previewed through a user who holds it. The result includes the user’s other roles and the default, sharing and restriction rules.',
+    roles: 'Effective roles',
+    effect: {
+      permit: 'Allowed',
+      conditional: 'Some records',
+      deny: 'Not allowed',
+    },
+  },
   recordScope: 'Record scope',
   levelFor: 'Scope for {{name}}',
 };
