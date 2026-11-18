@@ -112,6 +112,31 @@ const source = {
       ],
     },
     {
+      name: 'database',
+      title: 'Data tables',
+      order: 150,
+      subsections: [
+        {
+          name: 'tables',
+          title: 'Tables',
+          resources: [
+            {
+              type: 'database.collection',
+              id: 'contracts',
+              title: 'Contract records',
+              actions: [{ name: 'read', title: 'Read' }],
+            },
+            {
+              type: 'database.collection',
+              id: 'departments',
+              title: 'Departments',
+              actions: [{ name: 'read', title: 'Read' }],
+            },
+          ],
+        },
+      ],
+    },
+    {
       name: 'administration',
       title: 'Administration',
       order: 200,
@@ -595,5 +620,17 @@ describe('role permission workspace', () => {
     const { grants } = applyQuickSet(ws.modules, {}, menu, 'all');
     expect(grants[inspect]).toBeUndefined();
     expect(Object.keys(grants).length).toBeGreaterThan(0);
+  });
+
+  it('labels the scopes of a multi-scope action with their registered collection titles', async () => {
+    const { workspace: ws } = await workspace();
+    const approve = menuOf(ws, 'Fixture contracts')!.actions.find(
+      (action) => action.id === contract('approve'),
+    );
+    // The server titles these scopes only with their keys; the registered tables have real names.
+    expect(approve?.scopes?.map((slot) => slot.label)).toEqual([
+      'Contract records',
+      'Departments',
+    ]);
   });
 });
