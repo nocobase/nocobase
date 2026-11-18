@@ -6,6 +6,7 @@ import {
   ArrowRightIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  InfoIcon,
   SearchIcon,
   ShieldCheckIcon,
   XIcon,
@@ -356,7 +357,7 @@ function ActionRow({
     <li
       data-slot='permission-action'
       data-enabled={enabled ? '' : undefined}
-      className='grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(12rem,16rem)] @min-[44rem]/permissions:px-4'
+      className='grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(14rem,19rem)] @min-[44rem]/permissions:px-4'
     >
       <Switch
         id={controlId}
@@ -420,7 +421,7 @@ function ActionRow({
                   {slot.label}
                 </span>
               )}
-              <div className='min-w-0 @min-[44rem]/permissions:w-52'>
+              <div className='min-w-0 @min-[44rem]/permissions:w-60'>
                 <ScopeControl
                   menu={menu}
                   action={action}
@@ -466,10 +467,12 @@ function MenuTree({
 }): ReactElement {
   const id = useId();
   const searching = Boolean(query.trim());
-  let administrationShown = false;
+  const firstAdministration = modules.findIndex(
+    (module) => module.administration,
+  );
   return (
     <div className='grid min-w-0 gap-0.5'>
-      {modules.map((module) => {
+      {modules.map((module, moduleIndex) => {
         const open = searching || !collapsed.has(module.id);
         const statuses = module.menus.map((menu) => menuStatus(menu, grants));
         const restricted = statuses.filter(
@@ -484,14 +487,12 @@ function MenuTree({
             : ''
           : labels.public;
         const heading =
-          module.administration && !administrationShown ? (
+          moduleIndex === firstAdministration ? (
             <div className='mx-2 mt-2 border-t pt-3 pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase'>
               {labels.administration}
             </div>
           ) : null;
-        if (module.administration) administrationShown = true;
         const groupId = `${id}-${module.id}`;
-        let lastGroup: string | undefined;
         return (
           <Fragment key={module.id}>
             {heading}
@@ -528,12 +529,12 @@ function MenuTree({
               {open && (
                 <ul id={groupId} className='grid min-w-0 gap-0.5 pb-1'>
                   {module.menus.map((menu, index) => {
-                    const status = statuses[index]!;
+                    const status = statuses[index];
                     const groupHeading =
-                      menu.group && menu.group !== lastGroup
+                      menu.group &&
+                      menu.group !== module.menus[index - 1]?.group
                         ? menu.group
                         : undefined;
-                    lastGroup = menu.group;
                     const active = menu.id === selected;
                     return (
                       <Fragment key={menu.id}>
@@ -571,6 +572,7 @@ function MenuTree({
                             <span className='min-w-0 flex-1 truncate'>
                               {menu.label}
                             </span>
+                            <span className='sr-only'>, </span>
                             <span className='shrink-0 text-xs font-normal text-muted-foreground tabular-nums'>
                               {status.state === 'public'
                                 ? labels.public
@@ -879,7 +881,7 @@ export function PermissionEditor({
             className='grid min-w-0 gap-1 rounded-lg border bg-muted/40 px-3 py-2 text-sm'
           >
             {notices.map((notice, index) => (
-              <div key={index} className='flex min-w-0 items-start gap-2'>
+              <div key={notice.kind} className='flex min-w-0 items-start gap-2'>
                 <span className='min-w-0 flex-1'>{words.notice(notice)}</span>
                 {index === 0 && (
                   <Button
@@ -913,14 +915,15 @@ export function PermissionEditor({
         {menu.notice && (
           <div
             data-slot='permission-menu-notice'
-            className='rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
+            className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
           >
-            {menu.notice}
+            <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
+            <div className='min-w-0'>{menu.notice}</div>
           </div>
         )}
         <div className='flex min-w-0 flex-wrap items-center gap-2'>
           <p className='min-w-0 flex-1 basis-60 text-xs text-muted-foreground'>
-            {hasRisk ? words.riskHint : hasFollowers ? words.followHint : null}
+            {hasFollowers ? words.followHint : hasRisk ? words.riskHint : null}
           </p>
           {next && (
             <Button

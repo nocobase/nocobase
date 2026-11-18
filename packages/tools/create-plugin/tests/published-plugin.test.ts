@@ -27,17 +27,14 @@ const uiRequire = createRequire(path.join(uiRoot, 'package.json'));
 const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
 const primitiveNames = [
   'button',
-  'checkbox',
-  'empty',
   'input',
   'input-group',
-  'tabs',
   'textarea',
   'popover',
   'select',
-  'tooltip',
+  'switch',
 ];
-const registryComponentNames = ['permission-editor', 'long-text'];
+const registryComponentNames = ['permission-editor'];
 
 interface Manifest {
   name: string;
@@ -292,7 +289,7 @@ it('installs a real registry item, builds and packs a generated plugin, and load
             '@base-ui/react',
             'cn',
             'lucide-react',
-            ...(['button', 'tabs', 'input-group'].includes(name)
+            ...(['button', 'input-group'].includes(name)
               ? ['class-variance-authority']
               : []),
           ],
@@ -558,7 +555,7 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       `import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PermissionEditor } from './node_modules/${plugin.packageName}/dist/client/components/permission-editor.js';
-const html = renderToStaticMarkup(createElement(PermissionEditor, { sections: [{ id: 'access', title: 'Packed permissions', groups: [{ id: 'records', rows: [{ id: 'read', label: 'Read records', enabled: true, levels: [{ value: 'related', label: 'Related' }, { value: 'all', label: 'All' }], level: 'related' }] }] }], onEnabledChange() {}, onLevelChange() {} }));
+const html = renderToStaticMarkup(createElement(PermissionEditor, { modules: [{ id: 'access', label: 'Packed permissions', menus: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true, scopes: [{ id: 'records', options: [{ value: 'all', label: 'All' }, { value: 'related', label: 'Related' }] }] }] }] }], value: { read: { scopes: { records: 'related' } } }, onChange() {} }));
 if (!html.includes('Read records')) throw new Error('Packed component did not render');
 console.log('packed component rendered');
 `,
@@ -576,7 +573,7 @@ console.log('packed component rendered');
       `import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { PermissionEditor } from './node_modules/${plugin.packageName}/dist/client/components/permission-editor.js';
-createRoot(document.getElementById('root')).render(createElement(PermissionEditor, { sections: [{ id: 'access', title: 'Packed permissions', groups: [{ id: 'records', rows: [{ id: 'read', label: 'Read records', enabled: true }] }] }], onEnabledChange() {}, onLevelChange() {} }));
+createRoot(document.getElementById('root')).render(createElement(PermissionEditor, { modules: [{ id: 'access', label: 'Packed permissions', menus: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true }] }] }], value: { read: {} }, onChange() {} }));
 `,
     );
     for (const condition of ['development', 'production']) {
@@ -617,7 +614,7 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
         [
           '--input-type=module',
           '-e',
-          'await import("#components/ui/checkbox")',
+          'await import("#components/ui/switch")',
         ],
         host,
       ),
@@ -648,23 +645,23 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     );
     const declaration = path.join(
       packageDirectory,
-      'dist/client/components/ui/checkbox.d.ts',
+      'dist/client/components/ui/switch.d.ts',
     );
     const declarationContent = await readFile(declaration, 'utf8');
     await rm(declaration);
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/checkbox.d.ts',
+      'Published plugin is missing dist/client/components/ui/switch.d.ts',
     );
     await writeFile(declaration, declarationContent);
     await rm(
-      path.join(packageDirectory, 'dist/client/components/ui/checkbox.js'),
+      path.join(packageDirectory, 'dist/client/components/ui/switch.js'),
     );
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/checkbox.js',
+      'Published plugin is missing dist/client/components/ui/switch.js',
     );
     await expect(
       run(process.execPath, ['--conditions=development', 'entry.js'], host),
-    ).rejects.toThrow('checkbox.js');
+    ).rejects.toThrow('switch.js');
     console.info(
       'Generated plugin publish acceptance rejects development source targets, missing declarations and missing JavaScript with explicit diagnostics.',
     );

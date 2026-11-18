@@ -450,9 +450,9 @@ export function PermissionEditorDemo(): ReactElement {
       Object.entries(ROLES).map(([key, role]) => [key, role.grants]),
     ),
   );
-  const [draft, setDraft] = useState<PermissionGrants>(saved[roleKey]!);
+  const [draft, setDraft] = useState<PermissionGrants>(saved[roleKey]);
   const [message, setMessage] = useState('');
-  const role = ROLES[roleKey]!;
+  const role = ROLES[roleKey];
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved[roleKey]);
   return (
     <div className='min-h-svh bg-background p-4 text-foreground sm:p-6'>
@@ -478,7 +478,7 @@ export function PermissionEditorDemo(): ReactElement {
                   )
                     return;
                   setRoleKey(next);
-                  setDraft(saved[next]!);
+                  setDraft(saved[next]);
                   setMessage('');
                 }}
               >
@@ -541,7 +541,7 @@ export function PermissionEditorDemo(): ReactElement {
                   type='button'
                   variant='outline'
                   disabled={!dirty}
-                  onClick={() => setDraft(saved[roleKey]!)}
+                  onClick={() => setDraft(saved[roleKey])}
                 >
                   Discard changes
                 </Button>
