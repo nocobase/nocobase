@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { AppConfig } from '../src/config/index.js';
+import { Logging } from '@nocobase/logging';
+import { loggingToken } from '../src/logging/token.js';
 import {
   databaseManagerToken,
   type DatabaseDriverDefinition,
@@ -135,6 +137,75 @@ describe('DatabaseProvider', () => {
     );
     expect(calls).toEqual(['migrate', 'seed', 'destroy']);
     expect(container.resolveIfCreated(databaseManagerToken)).toBe(database);
+  });
+
+  it('logs every missing source and checksum warning during automatic migrations', async () => {
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    createDatabaseMigratorMock.mockReturnValue({
+      latest: vi.fn(async () => ({
+        batch: 1,
+        executed: [],
+        skipped: [],
+        warnings: [
+          {
+            kind: 'missing-source',
+            packageName: 'plugin-one',
+            name: '001_missing',
+          },
+          {
+            kind: 'missing-source',
+            packageName: 'plugin-two',
+            name: '002_missing',
+          },
+          {
+            packageName: 'app',
+            name: '003_changed',
+            recordedChecksum: 'before',
+            sourceChecksum: 'after',
+          },
+        ],
+      })),
+      history: vi.fn(async () => []),
+    });
+    const { provider, container } = await createProvider({
+      ...createConfig(createTempDirectory(), true),
+      seeds: { autoRun: false },
+    });
+    const logging = new Logging({
+      file: { enabled: false },
+      console: { enabled: false },
+    });
+    const warn = vi
+      .spyOn(logging.getLogger('database'), 'warn')
+      .mockImplementation(() => {});
+    container.instance(loggingToken, logging);
+    const registry = new ServiceProviderRegistry();
+    registry.add(provider);
+    registry.registerAll();
+    try {
+      await registry.bootAll();
+      expect(warn).toHaveBeenCalledTimes(3);
+      for (const [index, packageName] of [
+        'plugin-one',
+        'plugin-two',
+      ].entries()) {
+        expect(warn.mock.calls[index]).toEqual([
+          expect.objectContaining({
+            package: packageName,
+            name: index === 0 ? '001_missing' : '002_missing',
+          }),
+          expect.stringContaining('is missing from migration sources'),
+        ]);
+        expect(warn.mock.calls[index][1]).not.toContain('db repair');
+      }
+      expect(warn.mock.calls[2][0]).toMatchObject({
+        recordedChecksum: 'before',
+        sourceChecksum: 'after',
+      });
+    } finally {
+      await registry.shutdown();
+      await logging.close();
+    }
   });
 
   it('passes all named source contributions to the startup coordinator even when their tasks are skipped', async () => {

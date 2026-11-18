@@ -39,7 +39,7 @@ A compact index of the `@nocobase` shadcn registry (the NocoBase UI Library, pre
 
 - `record-link` (component): A native router link for record names and identifiers in tables and lists: foreground text at rest, underline on hover and visible keyboard focus.
 - `kanban` (component): A generic board: columns of cards dragged within and between columns, reporting each move through a callback.
-- `markdown-view` (component): Markdown rendered as compact prose for descriptions and comments, with mention chips and fenced code a consumer may draw itself.
+- `markdown-view` (component): The shared Markdown renderer: GitHub-flavoured Markdown as compact prose with mention chips, sanitised URLs, #anchor links on the page and every other link in a new tab.
 - `long-text` (component): A long text shown in part, the last line fading out instead of an ellipsis.
 - `comment-thread` (component): A record's activity line: comment threads with reactions, reply, edit, delete and resolve, the consumer's own entries between them, and a composer with modes and files.
 - `attachment-list` (component): Files on a record or a message: image thumbnails and file chips with download, the files waiting to be sent, and a section that takes uploads.

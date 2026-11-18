@@ -1,5 +1,12 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.68
+
+### Patch Changes
+
+- c919343: Have the upgrade Skill target the `latest` dist-tag when the user only asks to upgrade and it holds a newer version, so applications created from a beta keep upgrading after the first stable release.
+- d3f0c92: Add the reusable workflow version selector and match its definition-header appearance to the category tag.
+
 ## 0.1.0-beta.67
 
 ### Patch Changes

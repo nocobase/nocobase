@@ -227,7 +227,14 @@ describe('isTemplateAlias', () => {
 });
 
 describe('downloadTemplate', () => {
-  it.each(['scoped override', 'configured scope', 'third-party', 'legacy'])(
+  it.each([
+    'scoped override',
+    'configured scope',
+    'third-party',
+    'legacy',
+    '401',
+    '403',
+  ])(
     'routes template requests using %s and reports download errors',
     { timeout: 60_000 },
     async (mode) => {
@@ -246,7 +253,12 @@ describe('downloadTemplate', () => {
       const requests: string[] = [];
       const registry = createServer((request, response) => {
         requests.push(request.url ?? '');
-        response.writeHead(404, { 'content-type': 'application/json' });
+        response.writeHead(mode === '401' ? 401 : mode === '403' ? 403 : 404, {
+          'content-type': 'application/json',
+          ...(mode === '401'
+            ? { 'www-authenticate': 'Bearer realm="nocobase-pro-registry"' }
+            : {}),
+        });
         response.end(JSON.stringify({ error: 'Not found' }));
       });
       await new Promise<void>((resolve, reject) => {
@@ -284,7 +296,11 @@ describe('downloadTemplate', () => {
                   ? 'http://127.0.0.1:1/'
                   : registryUrl,
           }),
-        ).rejects.toThrow(source);
+        ).rejects.toThrow(
+          mode === '403'
+            ? new RegExp(`${mode}.*GET ${registryUrl}`, 'u')
+            : source,
+        );
         expect(requests.map((url) => decodeURIComponent(url))).toContain(
           `/${source}`,
         );

@@ -258,10 +258,6 @@ describe('日志导出命令', () => {
           'export',
           '--days',
           '14',
-          '--issue',
-          'PM-1505',
-          '--issue',
-          'PM-1506',
           '--runner',
           'runner-fixture',
           '--app-log',
@@ -284,12 +280,12 @@ describe('日志导出命令', () => {
       expect(await readFile(out)).toEqual(payload);
       expect(requests).toHaveLength(1);
       expect(requests[0].body).toMatchObject({
-        issues: ['PM-1505', 'PM-1506'],
         runners: ['runner-fixture'],
         appLog: true,
         requestLog: false,
       });
       expect(requests[0].body).not.toHaveProperty('bundleId');
+      expect(requests[0].body).not.toHaveProperty('issues');
       const jsonOut = path.join(root, 'exported-json.tar.gz');
       const json = await cli(
         ['logs', 'export', '--out', jsonOut, '--json'],

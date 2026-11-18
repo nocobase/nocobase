@@ -462,8 +462,13 @@ export const NOCOBASE_NPM_REGISTRY = 'https://pkg-v3.nocobase.com/';
  *
  * - `declared`: a `.npmrc` committed in the repository points a scope or the whole registry at it;
  * - `notFound`: an install failed because `package`, an `@nocobase/*` package, is not on the registry it used.
+ * - `unauthorized`: the private registry returned HTTP 401 or 403 without the run's token.
  */
-export const NPM_CREDENTIAL_REASONS = ['declared', 'notFound'] as const;
+export const NPM_CREDENTIAL_REASONS = [
+  'declared',
+  'notFound',
+  'unauthorized',
+] as const;
 export type NpmCredentialReason = (typeof NPM_CREDENTIAL_REASONS)[number];
 
 /**

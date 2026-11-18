@@ -2,6 +2,20 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 新機能
+
+- **[Agent]**
+  - 収集状況とサーバー設定の日付範囲に対応し、機密情報を除去した実行環境ログをエクスポートしてローカルで時系列に統合できます。 ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - 履歴を保持したまま、待機中の Runner 会話の実行環境を選択できます。 ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 改善
+
+- **[インターフェース]** 分類タグと統一したメニューでワークフローのバージョンを表示し、UI Library のバージョン選択コンポーネントを再利用できます。 ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[アプリホスティング]** プレビュー配布物のチェックサム検証と展開のタイムアウトを設定できるようになりました。 ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** アップグレード Skill は既定で `latest` リリースにアップグレードするようになり、beta から作成したアプリケーションも正式版リリース後に引き続き更新できます。 ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
 ## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
 
 ### 🚀 改善

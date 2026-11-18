@@ -13,8 +13,8 @@ import { parse } from 'ini';
 // - `declaration` reads the `.npmrc` files a repository commits: one pointing a scope or the whole registry at the
 //   private registry declares that the project needs it, and the launcher asks for the token before installing.
 // - `notFoundPackage` reads an install's output for an `@nocobase/*` package that pnpm or npm did not find on another
-//   registry, the only failure after which the launcher asks for the token and retries once with the private registry.
-// - `privateRefused` reads it for the private registry refusing the token.
+//   registry, after which the launcher asks for the token and retries once with the private registry.
+// - `privateRefused` reads it for an unauthorized request to the private registry.
 
 /** `NOCOBASE_NPM_REGISTRY` of the protocol; a test keeps the two equal. */
 export const DEFAULT_PRIVATE_REGISTRY = 'https://pkg-v3.nocobase.com/';
@@ -221,15 +221,26 @@ export function notFoundPackage(
 
 /** Whether the private registry refused the request: pnpm's `ERR_PNPM_FETCH_401/403`, npm's `E401`/`E403`. */
 export function privateRefused(output: string, registry: string): boolean {
-  const host = new URL(normalizeRegistry(registry)).host;
-  return output
-    .split(/\r?\n/u)
-    .some(
-      (line) =>
-        /ERR_PNPM_FETCH_40[13]|\b40[13] (?:Unauthorized|Forbidden)|\bE40[13]\b/u.test(
-          line,
-        ) && line.includes(host),
+  return output.split(/[\r\n]+/u).some((line) => {
+    const match =
+      /(?:ERR_PNPM_FETCH_40[13]\]?|\b40[13] (?:Unauthorized|Forbidden)|\bE40[13]\b)\s*(?:-\s*)?GET\s+(https?:\/\/[^\s"'<>]+)/iu.exec(
+        line,
+      );
+    return match !== null && isPrivate(match[1], registry);
+  });
+}
+
+/** npm hides the request URL for Bearer challenges, but records it in its own debug log. */
+export function privateRefusedInNpmLog(
+  output: string,
+  registry: string,
+): boolean {
+  return output.split(/[\r\n]+/u).some((line) => {
+    const match = /^\d+ http fetch GET 40[13] (https?:\/\/[^\s"'<>]+)/iu.exec(
+      line,
     );
+    return match !== null && isPrivate(match[1], registry);
+  });
 }
 
 /** The words a pnpm or npm call reaches a registry with; any other call runs without the launcher. */
@@ -244,6 +255,7 @@ export const REGISTRY_COMMANDS: Readonly<
     'up',
     'upgrade',
     'dlx',
+    'create',
     'fetch',
     'install-test',
     'it',
@@ -257,6 +269,9 @@ export const REGISTRY_COMMANDS: Readonly<
     'up',
     'exec',
     'x',
+    'create',
+    'init',
+    'pack',
     'install-test',
     'it',
   ],

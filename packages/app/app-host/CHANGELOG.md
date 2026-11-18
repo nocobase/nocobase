@@ -1,5 +1,13 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 0e247f9: Allow configuring checksum and extraction worker deadlines through host.artifactWorker.timeoutMs, with a 120000 ms default and startup validation of the supported timer range.
+- Updated dependencies [761fb01]
+  - @nocobase/logging@0.1.0-beta.8
+
 ## 0.1.0-beta.25
 
 ### Patch Changes
