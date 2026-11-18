@@ -140,6 +140,11 @@ export function draftFromGrants(
         same(value, storedScopes(viewEntry)[view.scopes[0]?.key ?? ''])
       )
         continue;
+      // The View it follows is not granted: whatever was stored, it reaches no records, as saving will store.
+      if (view && !viewEntry) {
+        scopes[scope.key] = NO_SCOPE;
+        continue;
+      }
       const selection = scopeSelection(value);
       scopes[scope.key] = selection;
       if (selection === CUSTOM_FILTER)
@@ -203,6 +208,16 @@ export function grantsFromDraft(
         scopes[scope.key] = original ?? scope.defaultValue;
         continue;
       }
+      // The View it follows is off: it has no scope to follow, and any value of its own, stored or default, could be
+      // wider than what the role may read of that object, so it reaches no records until that View is on again.
+      if (
+        scope.follows &&
+        workspace.bindings.has(scope.follows) &&
+        !draft[scope.follows]
+      ) {
+        scopes[scope.key] = storedValue(NO_SCOPE, original, undefined);
+        continue;
+      }
       const selection = chosen[scope.key];
       if (selection === undefined && scope.follows) {
         const view = workspace.bindings.get(scope.follows);
@@ -214,12 +229,6 @@ export function grantsFromDraft(
           !resolving.has(scope.follows)
         ) {
           scopes[scope.key] = scopesOf(scope.follows)[viewScope];
-          continue;
-        }
-        // The View it follows is off: it has no scope to follow, and its own default could be wider than what the role
-        // may read of that object, so it reaches no records until that View is on again.
-        if (!draft[scope.follows]) {
-          scopes[scope.key] = storedValue(NO_SCOPE, original, undefined);
           continue;
         }
       }
