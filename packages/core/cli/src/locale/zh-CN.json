@@ -90,6 +90,10 @@
     }
   },
   "commands": {
+    "resourceList": {
+      "space": "指定本次列表查询使用的空间名称（多空间插件）。",
+      "invalidSpace": "--space 需要一个非空的空间名称，且不能包含逗号。"
+    },
     "envAdd": {
       "prompts": {
         "name": {

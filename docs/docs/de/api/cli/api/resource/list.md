@@ -21,6 +21,7 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | Ressourcenname, erforderlich |
 | `--data-source` | string | key der Datenquelle, Standard `main` |
 | `--source-id` | string | Quell-Datensatz-ID einer assoziierten Ressource |
+| `--space` | string | Name eines einzelnen Bereichs für die Abfrage mit dem Multi-Space-Plugin. |
 | `--filter` | string | Filterbedingung als JSON-Objekt |
 | `--fields` | string[] | Abzufragende Felder; mehrfach übergeben oder als JSON-Array |
 | `--appends` | string[] | Hinzuzufügende Beziehungsfelder; mehrfach übergeben oder als JSON-Array |
@@ -36,6 +37,7 @@ Zusätzlich werden die allgemeinen Verbindungsparameter von [`nb api resource`](
 
 ```bash
 nb api resource list --resource users
+nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```
