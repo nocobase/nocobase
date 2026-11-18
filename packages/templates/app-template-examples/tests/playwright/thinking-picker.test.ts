@@ -87,6 +87,46 @@ for (const width of [1440, 375, 412]) {
           page.locator(
             `[data-model-service="${serviceName}"][data-model="${model}"]`,
           );
+        // The service API and the Models page carry no thinking setting.
+        const refused = await page.request.patch(
+          app + '/api/agents/services/' + serviceName,
+          {
+            headers,
+            data: {
+              models: [{ value: 'levels', reasoning: { levels: ['high'] } }],
+            },
+          },
+        );
+        expect(refused.status()).toBe(400);
+        if (width === 1440) {
+          await page.goto(app + '/models');
+          await page
+            .getByRole('button', {
+              name: `Edit Thinking fixture ${width}`,
+              exact: true,
+            })
+            .click();
+          const editor = page.getByRole('dialog');
+          await expect(
+            editor.getByRole('listitem', { name: 'many' }),
+          ).toBeVisible();
+          // Each chat model row offers only what it is for; no thinking setting.
+          await expect(
+            editor.getByRole('list', { name: 'Models' }).getByText(/thinking/i),
+          ).toHaveCount(0);
+          await expect(editor.getByText(/thinking level/i)).toHaveCount(0);
+          if (process.env.E2E_SCREENSHOT_DIR) {
+            await mkdir(process.env.E2E_SCREENSHOT_DIR, { recursive: true });
+            await screenshot({
+              path: path.join(
+                process.env.E2E_SCREENSHOT_DIR,
+                'thinking-models-page.png',
+              ),
+            });
+          }
+          await page.keyboard.press('Escape');
+          await page.goto(app);
+        }
         await page.reload();
         await page.getByTestId('chat-header-button').click();
         const panel = page.getByTestId('chat-panel');
