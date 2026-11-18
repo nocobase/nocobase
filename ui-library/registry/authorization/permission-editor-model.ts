@@ -1,9 +1,11 @@
 /**
  * Rules of the permission editor, kept free of rendering so hosts and tests can apply them directly.
  *
- * An action is the only unit of authorization. A menu is visible when it is public or any of its actions is on. Data
- * scope is chosen once on the menu's View action; other actions follow it ("Same as view") unless they are set
- * narrower, never wider. Every function returns a new draft and never mutates its input.
+ * Menus and data permissions are separate. A menu only decides whether its entry shows in the sidebar. What a role may
+ * see and do is set once per business object, whichever menus use it: data scope is chosen on the object's View
+ * action, and other actions follow it ("Same as view") unless they are set narrower, never wider. Pages may declare
+ * the objects they use; that only produces reference tags and a warning when a checked menu would open empty, and never
+ * grants anything. Every function returns a new value and never mutates its input.
  */
 import type { ReactNode } from 'react';
 
@@ -16,15 +18,15 @@ export interface PermissionScopeOption {
 
 export interface PermissionScopeSlot {
   readonly id: string;
-  /** Shown before the select when an action has several scopes, such as "Amount up to". */
+  /** Shown before the select when an action has several scopes, such as the registered title of a related object. */
   readonly label?: string | undefined;
   /** Ordered from the widest to the narrowest. A follower slot may omit them and reuse the View options. */
   readonly options?: readonly PermissionScopeOption[] | undefined;
   /** The value an enabled action uses before anyone picks one. Defaults to the first option. */
   readonly defaultValue?: string | undefined;
   /**
-   * Follows the View scope of the same menu: unset means "Same as view", and only narrower options are offered. An
-   * action id follows the first scope of that action instead, such as the View of a second resource on the menu.
+   * Follows the View scope of the same object: unset means "Same as view", and only narrower options are offered. An
+   * action id of the same object follows the first scope of that action instead.
    */
   readonly followsView?: boolean | string | undefined;
   /**
@@ -42,38 +44,53 @@ export interface PermissionAction {
   readonly id: string;
   readonly label: string;
   readonly description?: string | undefined;
-  /** The menu's View action: listed first and owns the menu's data scope. */
+  /** The object's View action: listed first and owns the object's data scope. */
   readonly view?: boolean | undefined;
-  /** A business operation, listed after the basic ones below a thin divider. */
+  /** A business operation such as a state transition, listed after the basic ones below a thin divider. */
   readonly business?: boolean | undefined;
   readonly scopes?: readonly PermissionScopeSlot[] | undefined;
-  /** Actions that must be on for this one to work. Defaults to the menu's View action. */
+  /** Actions that must be on for this one to work, in any object. Defaults to the object's View action. */
   readonly requires?: readonly string[] | undefined;
-  /** Risky actions are never turned on by Enable all or as a dependency. */
+  /** Risky actions are never turned on by Enable all or as a requirement. They carry no tag. */
   readonly risk?: PermissionRisk | undefined;
   /** Managed by the application: shown but not editable. */
   readonly managed?: boolean | undefined;
 }
 
-export interface PermissionMenu {
+/** A business object, such as Customers: the one place its actions and data scope are set. */
+export interface PermissionObject {
   readonly id: string;
   readonly label: string;
   readonly description?: string | undefined;
-  /** A subheading inside the module, such as "Access control" under Settings. */
+  /** The heading it is listed under, such as the plugin or module that registers it. */
   readonly group?: string | undefined;
-  /** Every signed-in user can open it; there is nothing to set. The string explains why. */
-  readonly public?: boolean | string | undefined;
   readonly actions: readonly PermissionAction[];
   /** A notice under the action list, such as a warning about granting access to others. */
   readonly notice?: ReactNode;
 }
 
-export interface PermissionModule {
+/** Objects a page uses, by object id. Only for reference tags and the empty-page warning; it grants nothing. */
+export interface PermissionMenuUses {
+  /** The objects the page lists; without View on them the page opens empty. */
+  readonly primary?: readonly string[] | undefined;
+  /** Objects the page also shows, such as the customer of a contract. */
+  readonly related?: readonly string[] | undefined;
+}
+
+/** A sidebar entry. A node with children is a group whose checkbox checks or clears all of them. */
+export interface PermissionMenuNode {
   readonly id: string;
   readonly label: string;
-  /** Listed under the Administration heading at the bottom of the menu tree. */
-  readonly administration?: boolean | undefined;
-  readonly menus: readonly PermissionMenu[];
+  readonly description?: string | undefined;
+  /** Every signed-in user sees it; the checkbox is fixed. The string explains why. */
+  readonly public?: boolean | string | undefined;
+  readonly children?: readonly PermissionMenuNode[] | undefined;
+  readonly uses?: PermissionMenuUses | undefined;
+  /**
+   * The entry opens with this action rather than a menu permission of its own, such as a settings page guarded by
+   * reading its resource: checking the menu turns the action on, and the action being on checks the menu.
+   */
+  readonly opensWith?: string | undefined;
 }
 
 export interface PermissionGrant {
@@ -81,16 +98,25 @@ export interface PermissionGrant {
   readonly scopes?: Readonly<Record<string, string>> | undefined;
 }
 
-/** The draft: an action id is present exactly when the action is on. */
+/** Enabled actions: an action id is present exactly when the action is on. */
 export type PermissionGrants = Readonly<Record<string, PermissionGrant>>;
 
-export type PermissionMenuState = 'public' | 'full' | 'partial' | 'off';
+/** The draft: checked menus and enabled actions, edited and stored independently. */
+export interface PermissionValue {
+  /** Ids of checked menus, leaves only. Public menus and menus that open with an action are not listed. */
+  readonly menus: readonly string[];
+  readonly grants: PermissionGrants;
+}
 
-export interface PermissionMenuStatus {
-  readonly state: PermissionMenuState;
+export type PermissionObjectState = 'full' | 'partial' | 'off';
+
+export interface PermissionObjectStatus {
+  readonly state: PermissionObjectState;
   readonly enabled: number;
   readonly total: number;
 }
+
+export type PermissionCheckState = 'checked' | 'unchecked' | 'mixed';
 
 export type PermissionNotice =
   | {
@@ -126,69 +152,75 @@ export interface PermissionChange {
   readonly notices: readonly PermissionNotice[];
 }
 
-export function allMenus(
-  modules: readonly PermissionModule[],
-): readonly PermissionMenu[] {
-  return modules.flatMap((module) => module.menus);
+/** A checked menu whose page lists an object this role cannot view: it would open empty. */
+export interface PermissionMenuWarning {
+  readonly menu: PermissionMenuNode;
+  readonly object: PermissionObject;
+  /** The action that makes the page show data, normally the object's View. */
+  readonly action: PermissionAction;
 }
 
+// Business objects
+
 export function viewActionOf(
-  menu: PermissionMenu,
+  object: PermissionObject,
 ): PermissionAction | undefined {
-  return menu.actions.find((action) => action.view);
+  return object.actions.find((action) => action.view);
 }
 
 /** View first, then basic actions, then business actions, keeping the caller's order within each. */
-export function orderedActions(menu: PermissionMenu): {
+export function orderedActions(object: PermissionObject): {
   readonly basic: readonly PermissionAction[];
   readonly business: readonly PermissionAction[];
 } {
-  const view = menu.actions.filter((action) => action.view);
+  const view = object.actions.filter((action) => action.view);
   return {
     basic: [
       ...view,
-      ...menu.actions.filter((action) => !action.view && !action.business),
+      ...object.actions.filter((action) => !action.view && !action.business),
     ],
-    business: menu.actions.filter((action) => !action.view && action.business),
+    business: object.actions.filter(
+      (action) => !action.view && action.business,
+    ),
   };
 }
 
-function findAction(
-  modules: readonly PermissionModule[],
+export function findAction(
+  objects: readonly PermissionObject[],
   id: string,
 ):
-  | { readonly menu: PermissionMenu; readonly action: PermissionAction }
+  | { readonly object: PermissionObject; readonly action: PermissionAction }
   | undefined {
-  for (const menu of allMenus(modules)) {
-    const action = menu.actions.find((item) => item.id === id);
-    if (action) return { menu, action };
+  for (const object of objects) {
+    const action = object.actions.find((item) => item.id === id);
+    if (action) return { object, action };
   }
   return undefined;
 }
 
 export function requirementsOf(
-  menu: PermissionMenu,
+  object: PermissionObject,
   action: PermissionAction,
 ): readonly string[] {
   if (action.requires) return action.requires;
-  const view = viewActionOf(menu);
+  const view = viewActionOf(object);
   return view && view.id !== action.id ? [view.id] : [];
 }
 
-function viewSlotOf(menu: PermissionMenu): PermissionScopeSlot | undefined {
-  return viewActionOf(menu)?.scopes?.[0];
+function viewSlotOf(object: PermissionObject): PermissionScopeSlot | undefined {
+  return viewActionOf(object)?.scopes?.[0];
 }
 
-/** The action and slot a follower follows: the menu's View, or the action its `followsView` names. */
+/** The action and slot a follower follows: the object's View, or the action its `followsView` names. */
 function leaderOf(
-  menu: PermissionMenu,
+  object: PermissionObject,
   slot: PermissionScopeSlot | undefined,
 ): { action: PermissionAction; slot: PermissionScopeSlot } | undefined {
   if (slot && !slot.followsView) return undefined;
   const action =
     typeof slot?.followsView === 'string'
-      ? menu.actions.find((item) => item.id === slot.followsView)
-      : viewActionOf(menu);
+      ? object.actions.find((item) => item.id === slot.followsView)
+      : viewActionOf(object);
   const leader = action?.scopes?.[0];
   return action && leader && leader !== slot
     ? { action, slot: leader }
@@ -196,58 +228,58 @@ function leaderOf(
 }
 
 export function slotOptions(
-  menu: PermissionMenu,
+  object: PermissionObject,
   slot: PermissionScopeSlot,
 ): readonly PermissionScopeOption[] {
   if (slot.followsView && !slot.options?.length)
-    return leaderOf(menu, slot)?.slot.options ?? [];
+    return leaderOf(object, slot)?.slot.options ?? [];
   return slot.options ?? [];
 }
 
 /** The value a slot has, the default for one nobody picked yet. Undefined for a follower that follows View. */
 export function ownScopeValue(
-  menu: PermissionMenu,
+  object: PermissionObject,
   grants: PermissionGrants,
   action: PermissionAction,
   slot: PermissionScopeSlot,
 ): string | undefined {
   const value = grants[action.id]?.scopes?.[slot.id];
   if (value !== undefined) return value;
-  if (slot.followsView && leaderOf(menu, slot)) return undefined;
-  return slot.defaultValue ?? slotOptions(menu, slot)[0]?.value;
+  if (slot.followsView && leaderOf(object, slot)) return undefined;
+  return slot.defaultValue ?? slotOptions(object, slot)[0]?.value;
 }
 
 /**
- * The current value of the scope a follower slot follows; the menu's View scope without a slot. Undefined when there
- * is no scoped leader.
+ * The current value of the scope a follower slot follows; the object's View scope without a slot. Undefined when
+ * there is no scoped leader.
  */
 export function viewScopeValue(
-  menu: PermissionMenu,
+  object: PermissionObject,
   grants: PermissionGrants,
   slot?: PermissionScopeSlot,
 ): string | undefined {
-  const view = viewActionOf(menu);
+  const view = viewActionOf(object);
   const viewSlot = view?.scopes?.[0];
   const leader = slot
-    ? leaderOf(menu, slot)
+    ? leaderOf(object, slot)
     : view && viewSlot
       ? { action: view, slot: viewSlot }
       : undefined;
   return leader
-    ? ownScopeValue(menu, grants, leader.action, leader.slot)
+    ? ownScopeValue(object, grants, leader.action, leader.slot)
     : undefined;
 }
 
 /** The scope that actually applies to an action slot, resolving "Same as view". */
 export function effectiveScopeValue(
-  menu: PermissionMenu,
+  object: PermissionObject,
   grants: PermissionGrants,
   action: PermissionAction,
   slot: PermissionScopeSlot,
 ): string | undefined {
   return (
-    ownScopeValue(menu, grants, action, slot) ??
-    (slot.followsView ? viewScopeValue(menu, grants, slot) : undefined)
+    ownScopeValue(object, grants, action, slot) ??
+    (slot.followsView ? viewScopeValue(object, grants, slot) : undefined)
   );
 }
 
@@ -271,18 +303,25 @@ function isNarrower(
   return rank(value) > rank(than);
 }
 
-/** The label of the scope a follower follows; the menu's View scope without a slot. For "Same as view (X)". */
+/** The label of the scope a follower follows; the object's View scope without a slot. For "Same as view (X)". */
 export function viewScopeLabel(
-  menu: PermissionMenu,
+  object: PermissionObject,
   grants: PermissionGrants,
   slot?: PermissionScopeSlot,
 ): string | undefined {
-  const value = viewScopeValue(menu, grants, slot);
+  const value = viewScopeValue(object, grants, slot);
   if (value === undefined) return undefined;
-  const leader = slot ? leaderOf(menu, slot)?.slot : viewSlotOf(menu);
+  const leader = slot ? leaderOf(object, slot)?.slot : viewSlotOf(object);
   return (
     leader?.options?.find((option) => option.value === value)?.label ?? value
   );
+}
+
+/** The View scope's options, widest first, for the note that explains the scope rule. */
+export function viewScopeOptions(
+  object: PermissionObject,
+): readonly PermissionScopeOption[] {
+  return viewSlotOf(object)?.options ?? [];
 }
 
 /**
@@ -290,106 +329,67 @@ export function viewScopeLabel(
  * sides are judged by the leader's options; an option the leader does not list is never offered.
  */
 export function narrowerOptions(
-  menu: PermissionMenu,
+  object: PermissionObject,
   grants: PermissionGrants,
   slot: PermissionScopeSlot,
 ): readonly PermissionScopeOption[] {
-  const leader = leaderOf(menu, slot);
-  const current = viewScopeValue(menu, grants, slot);
+  const leader = leaderOf(object, slot);
+  const current = viewScopeValue(object, grants, slot);
   if (!leader || current === undefined) return [];
-  return slotOptions(menu, slot).filter((option) =>
+  return slotOptions(object, slot).filter((option) =>
     isNarrower(leader.slot, option.value, current),
   );
 }
 
-export function menuStatus(
-  menu: PermissionMenu,
+export function objectStatus(
+  object: PermissionObject,
   grants: PermissionGrants,
-): PermissionMenuStatus {
-  const total = menu.actions.length;
-  const enabled = menu.actions.filter((action) => grants[action.id]).length;
-  const state: PermissionMenuState = menu.public
-    ? 'public'
-    : enabled === 0
-      ? 'off'
-      : enabled === total
-        ? 'full'
-        : 'partial';
+): PermissionObjectStatus {
+  const total = object.actions.length;
+  const enabled = object.actions.filter((action) => grants[action.id]).length;
+  const state: PermissionObjectState =
+    enabled === 0 ? 'off' : enabled === total ? 'full' : 'partial';
   return { state, enabled, total };
 }
 
-export function isMenuVisible(
-  menu: PermissionMenu,
+/** Objects with at least one action on, of all objects. */
+export function objectCount(
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
-): boolean {
-  return (
-    Boolean(menu.public) || menu.actions.some((action) => grants[action.id])
-  );
-}
-
-/** Menus that need a permission, and how many of them this draft opens. Public menus are left out. */
-export function visibleMenuCount(
-  modules: readonly PermissionModule[],
-  grants: PermissionGrants,
-): { readonly visible: number; readonly total: number } {
-  const menus = allMenus(modules).filter((menu) => !menu.public);
+): { readonly enabled: number; readonly total: number } {
   return {
-    visible: menus.filter((menu) => isMenuVisible(menu, grants)).length,
-    total: menus.length,
+    enabled: objects.filter((object) =>
+      object.actions.some((action) => grants[action.id]),
+    ).length,
+    total: objects.length,
   };
 }
 
-/** The next menu with something to set, in tree order, for the "Next" button. */
-export function nextMenu(
-  modules: readonly PermissionModule[],
-  menuId: string,
-): PermissionMenu | undefined {
-  // Business menus lead only to business menus: the last one stops instead of jumping into Administration.
-  const owner = modules.find((module) =>
-    module.menus.some((menu) => menu.id === menuId),
-  );
-  const menus = modules
-    .filter((module) => !!module.administration === !!owner?.administration)
-    .flatMap((module) => module.menus);
-  const index = menus.findIndex((menu) => menu.id === menuId);
-  return menus
-    .slice(index + 1)
-    .find((menu) => !menu.public && menu.actions.length > 0);
-}
-
-/** Modules with only the menus whose module, group, menu or action names or descriptions match. */
-export function filterModules(
-  modules: readonly PermissionModule[],
+/** Objects whose group, name, description, or action names or descriptions match. */
+export function filterObjects(
+  objects: readonly PermissionObject[],
   query: string,
-): readonly PermissionModule[] {
+): readonly PermissionObject[] {
   const search = query.trim().toLocaleLowerCase();
-  if (!search) return modules;
+  if (!search) return objects;
   const matches = (value: string | undefined): boolean =>
     Boolean(value?.toLocaleLowerCase().includes(search));
-  return modules
-    .map((module) => ({
-      ...module,
-      menus: matches(module.label)
-        ? module.menus
-        : module.menus.filter(
-            (menu) =>
-              matches(menu.label) ||
-              matches(menu.group) ||
-              matches(menu.description) ||
-              menu.actions.some(
-                (action) =>
-                  matches(action.label) || matches(action.description),
-              ),
-          ),
-    }))
-    .filter((module) => module.menus.length > 0);
+  return objects.filter(
+    (object) =>
+      matches(object.label) ||
+      matches(object.group) ||
+      matches(object.description) ||
+      object.actions.some(
+        (action) => matches(action.label) || matches(action.description),
+      ),
+  );
 }
 
 function labelsOf(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   ids: Iterable<string>,
 ): string[] {
-  return [...ids].map((id) => findAction(modules, id)?.action.label ?? id);
+  return [...ids].map((id) => findAction(objects, id)?.action.label ?? id);
 }
 
 /**
@@ -397,7 +397,7 @@ function labelsOf(
  * so their presence blocks turning these off.
  */
 export function dependentsOf(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
   ids: readonly string[],
 ): readonly PermissionAction[] {
@@ -406,10 +406,10 @@ export function dependentsOf(
   let changed = true;
   while (changed) {
     changed = false;
-    for (const menu of allMenus(modules))
-      for (const action of menu.actions) {
+    for (const object of objects)
+      for (const action of object.actions) {
         if (off.has(action.id) || !grants[action.id]) continue;
-        if (requirementsOf(menu, action).some((id) => off.has(id))) {
+        if (requirementsOf(object, action).some((id) => off.has(id))) {
           off.add(action.id);
           result.push(action);
           changed = true;
@@ -424,7 +424,7 @@ export function dependentsOf(
  * the requirements that are off and can never be turned on automatically (risky, or managed by the application).
  */
 function requirementClosure(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
   id: string,
 ): {
@@ -441,7 +441,7 @@ function requirementClosure(
     const current = queue.shift()!;
     if (seen.has(current)) continue;
     seen.add(current);
-    const found = findAction(modules, current);
+    const found = findAction(objects, current);
     if (!found) {
       managed.push(current);
       continue;
@@ -459,14 +459,14 @@ function requirementClosure(
     }
     if (!on) enable.push(current);
     // An action already on may still miss its own requirements, so keep walking through it.
-    queue.push(...requirementsOf(found.menu, found.action));
+    queue.push(...requirementsOf(found.object, found.action));
   }
   return { enable, risky, managed };
 }
 
 /** Turn each action on with its requirements, or leave it off when one of them cannot be turned on automatically. */
 function enableWithRequirements(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
   ids: readonly string[],
 ): PermissionChange {
@@ -475,15 +475,15 @@ function enableWithRequirements(
   const auto: string[] = [];
   const notices: PermissionNotice[] = [];
   for (const id of ids) {
-    const found = findAction(modules, id);
+    const found = findAction(objects, id);
     if (!found || found.action.managed || next[id]) continue;
-    const { enable, risky, managed } = requirementClosure(modules, next, id);
+    const { enable, risky, managed } = requirementClosure(objects, next, id);
     if (risky.length || managed.length) {
       notices.push({
         kind: 'missing-requirement',
         action: found.action.label,
-        actions: labelsOf(modules, risky),
-        managed: labelsOf(modules, managed),
+        actions: labelsOf(objects, risky),
+        managed: labelsOf(objects, managed),
       });
       continue;
     }
@@ -495,16 +495,16 @@ function enableWithRequirements(
     next = added;
   }
   if (auto.length)
-    notices.unshift({ kind: 'auto-enabled', actions: labelsOf(modules, auto) });
+    notices.unshift({ kind: 'auto-enabled', actions: labelsOf(objects, auto) });
   return { grants: next, notices };
 }
 
 function managedBlock(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
   ids: readonly string[],
 ): PermissionChange | undefined {
-  const managed = dependentsOf(modules, grants, ids).filter(
+  const managed = dependentsOf(objects, grants, ids).filter(
     (action) => action.managed,
   );
   return managed.length
@@ -535,16 +535,16 @@ function withoutActions(
  * turning off: `dependentsOf` lists what goes with it.
  */
 export function setActionEnabled(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
   id: string,
   enabled: boolean,
 ): PermissionChange {
-  if (findAction(modules, id)?.action.managed) return { grants, notices: [] };
-  if (enabled) return enableWithRequirements(modules, grants, [id]);
-  const blocked = managedBlock(modules, grants, [id]);
+  if (findAction(objects, id)?.action.managed) return { grants, notices: [] };
+  if (enabled) return enableWithRequirements(objects, grants, [id]);
+  const blocked = managedBlock(objects, grants, [id]);
   if (blocked) return blocked;
-  const dependents = dependentsOf(modules, grants, [id]);
+  const dependents = dependentsOf(objects, grants, [id]);
   return {
     grants: withoutActions(grants, [id, ...dependents.map((item) => item.id)]),
     notices: [],
@@ -553,55 +553,55 @@ export function setActionEnabled(
 
 export type PermissionQuickSet = 'all' | 'view' | 'none';
 
-/** What a quick button would turn off, including actions in other menus that require them. */
+/** What a quick button would turn off, including actions of other objects that require them. */
 export function quickSetRemovals(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
-  menu: PermissionMenu,
+  object: PermissionObject,
   mode: PermissionQuickSet,
 ): {
   readonly own: readonly string[];
   readonly others: readonly PermissionAction[];
 } {
   if (mode === 'all') return { own: [], others: [] };
-  const keep = mode === 'view' ? viewActionOf(menu)?.id : undefined;
-  const own = menu.actions
+  const keep = mode === 'view' ? viewActionOf(object)?.id : undefined;
+  const own = object.actions
     .filter(
       (action) => action.id !== keep && !action.managed && grants[action.id],
     )
     .map((action) => action.id);
-  const inMenu = new Set(menu.actions.map((action) => action.id));
+  const inObject = new Set(object.actions.map((action) => action.id));
   return {
     own,
-    others: dependentsOf(modules, grants, own).filter(
-      (action) => !inMenu.has(action.id) && !action.managed,
+    others: dependentsOf(objects, grants, own).filter(
+      (action) => !inObject.has(action.id) && !action.managed,
     ),
   };
 }
 
-/** Enable all (risky ones excepted), View only, or Disable all for one menu. */
+/** Enable all (risky ones excepted), View only, or Disable all for one object. */
 export function applyQuickSet(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
-  menu: PermissionMenu,
+  object: PermissionObject,
   mode: PermissionQuickSet,
 ): PermissionChange {
   if (mode === 'all') {
-    const ids = menu.actions
+    const ids = object.actions
       .filter((action) => !action.risk && !action.managed)
       .map((action) => action.id);
-    return enableWithRequirements(modules, grants, ids);
+    return enableWithRequirements(objects, grants, ids);
   }
-  const { own, others } = quickSetRemovals(modules, grants, menu, mode);
-  const blocked = managedBlock(modules, grants, own);
+  const { own, others } = quickSetRemovals(objects, grants, object, mode);
+  const blocked = managedBlock(objects, grants, own);
   if (blocked) return blocked;
   const removed = withoutActions(grants, [
     ...own,
     ...others.map((action) => action.id),
   ]);
-  const view = viewActionOf(menu);
+  const view = viewActionOf(object);
   if (mode === 'view' && view && !view.managed && !removed[view.id])
-    return enableWithRequirements(modules, removed, [view.id]);
+    return enableWithRequirements(objects, removed, [view.id]);
   return { grants: removed, notices: [] };
 }
 
@@ -610,23 +610,23 @@ export function applyQuickSet(
  * than the new View scope back to "Same as view" and reports them.
  */
 export function setScopeValue(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   grants: PermissionGrants,
   actionId: string,
   slotId: string,
   value: string | undefined,
 ): PermissionChange {
-  const found = findAction(modules, actionId);
+  const found = findAction(objects, actionId);
   const grant = grants[actionId];
   if (!found || !grant || found.action.managed) return { grants, notices: [] };
-  const { menu, action } = found;
+  const { object, action } = found;
   const slot = action.scopes?.find((item) => item.id === slotId);
   // A follower is never wider than what it follows, and one equal to it simply follows it.
   const chosen =
     value !== undefined &&
     slot &&
-    leaderOf(menu, slot) &&
-    !narrowerOptions(menu, grants, slot).some(
+    leaderOf(object, slot) &&
+    !narrowerOptions(object, grants, slot).some(
       (option) => option.value === value,
     )
       ? undefined
@@ -640,21 +640,21 @@ export function setScopeValue(
   };
   const reset: string[] = [];
   let leaderLabel = '';
-  for (const other of menu.actions) {
+  for (const other of object.actions) {
     const otherGrant = next[other.id];
     if (other.id === actionId || !otherGrant?.scopes) continue;
     const otherScopes: Record<string, string> = { ...otherGrant.scopes };
     let changed = false;
     for (const follower of other.scopes ?? []) {
       const own = otherScopes[follower.id];
-      const leader = leaderOf(menu, follower);
+      const leader = leaderOf(object, follower);
       if (
         own === undefined ||
         leader?.action.id !== actionId ||
         leader.slot.id !== slotId
       )
         continue;
-      const current = viewScopeValue(menu, next, follower);
+      const current = viewScopeValue(object, next, follower);
       // A value the leader lists and that is not provably narrower, wider or now equal, goes back to following it, and
       // the notice names it so the change in the list is explained. An unlisted value is kept as stored.
       if (
@@ -665,7 +665,7 @@ export function setScopeValue(
         continue;
       delete otherScopes[follower.id];
       changed = true;
-      leaderLabel = viewScopeLabel(menu, next, follower) ?? current;
+      leaderLabel = viewScopeLabel(object, next, follower) ?? current;
     }
     if (changed) {
       next[other.id] = { ...otherGrant, scopes: otherScopes };
@@ -678,4 +678,184 @@ export function setScopeValue(
       ? [{ kind: 'scope-reset', view: leaderLabel, actions: reset }]
       : [],
   };
+}
+
+// Menus
+
+/** Every menu that is not a group, in tree order. */
+export function menuLeaves(
+  nodes: readonly PermissionMenuNode[],
+): readonly PermissionMenuNode[] {
+  return nodes.flatMap((node) =>
+    node.children?.length ? menuLeaves(node.children) : [node],
+  );
+}
+
+export function isMenuChecked(
+  node: PermissionMenuNode,
+  value: PermissionValue,
+): boolean {
+  if (node.public) return true;
+  if (node.opensWith) return Boolean(value.grants[node.opensWith]);
+  return value.menus.includes(node.id);
+}
+
+/** A leaf's checkbox, or a group's from the menus under it that need a permission. */
+export function menuCheckState(
+  node: PermissionMenuNode,
+  value: PermissionValue,
+): PermissionCheckState {
+  if (!node.children?.length)
+    return isMenuChecked(node, value) ? 'checked' : 'unchecked';
+  const leaves = menuLeaves(node.children).filter((leaf) => !leaf.public);
+  const checked = leaves.filter((leaf) => isMenuChecked(leaf, value)).length;
+  if (!leaves.length) return 'checked';
+  return checked === 0
+    ? 'unchecked'
+    : checked === leaves.length
+      ? 'checked'
+      : 'mixed';
+}
+
+/** Checked menus of all menus, public ones included, for the tab's count. */
+export function menuCount(
+  nodes: readonly PermissionMenuNode[],
+  value: PermissionValue,
+): { readonly checked: number; readonly total: number } {
+  const leaves = menuLeaves(nodes);
+  return {
+    checked: leaves.filter((leaf) => isMenuChecked(leaf, value)).length,
+    total: leaves.length,
+  };
+}
+
+function findMenu(
+  nodes: readonly PermissionMenuNode[],
+  id: string,
+): PermissionMenuNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const found = node.children ? findMenu(node.children, id) : undefined;
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/**
+ * The actions turned off with a menu that opens with one, and what needs them: the host asks before turning them
+ * off. Empty when nothing besides the menus would change.
+ */
+export function menuDependents(
+  objects: readonly PermissionObject[],
+  nodes: readonly PermissionMenuNode[],
+  value: PermissionValue,
+  id: string,
+): readonly PermissionAction[] {
+  const node = findMenu(nodes, id);
+  if (!node) return [];
+  const actions = menuLeaves([node])
+    .map((leaf) => leaf.opensWith)
+    .filter((action): action is string =>
+      Boolean(action && value.grants[action]),
+    );
+  return dependentsOf(objects, value.grants, actions).filter(
+    (action) => !actions.includes(action.id),
+  );
+}
+
+/**
+ * Check or clear a menu, or every menu of a group. Public menus never change. A menu that opens with an action turns
+ * it on with its requirements, or off with what needs it.
+ */
+export function setMenuChecked(
+  objects: readonly PermissionObject[],
+  nodes: readonly PermissionMenuNode[],
+  value: PermissionValue,
+  id: string,
+  checked: boolean,
+): {
+  readonly value: PermissionValue;
+  readonly notices: readonly PermissionNotice[];
+} {
+  const node = findMenu(nodes, id);
+  if (!node) return { value, notices: [] };
+  const leaves = menuLeaves([node]).filter((leaf) => !leaf.public);
+  const menus = new Set(value.menus);
+  let grants = value.grants;
+  const notices: PermissionNotice[] = [];
+  for (const leaf of leaves) {
+    if (leaf.opensWith) {
+      if (Boolean(grants[leaf.opensWith]) === checked) continue;
+      const change = setActionEnabled(objects, grants, leaf.opensWith, checked);
+      grants = change.grants;
+      notices.push(...change.notices);
+      continue;
+    }
+    if (checked) menus.add(leaf.id);
+    else menus.delete(leaf.id);
+  }
+  // Keep the caller's order and append newly checked menus in tree order.
+  const ordered = [
+    ...value.menus.filter((menu) => menus.has(menu)),
+    ...menuLeaves(nodes)
+      .map((leaf) => leaf.id)
+      .filter((menu) => menus.has(menu) && !value.menus.includes(menu)),
+  ];
+  return { value: { menus: ordered, grants }, notices };
+}
+
+/** Menus that need a permission, and how many of them this draft shows. */
+export function visibleMenuCount(
+  nodes: readonly PermissionMenuNode[],
+  value: PermissionValue,
+): { readonly visible: number; readonly total: number } {
+  const leaves = menuLeaves(nodes).filter((leaf) => !leaf.public);
+  return {
+    visible: leaves.filter((leaf) => isMenuChecked(leaf, value)).length,
+    total: leaves.length,
+  };
+}
+
+/** Menus whose page declares this object, in tree order: they all apply the object's one setting. */
+export function menusUsing(
+  nodes: readonly PermissionMenuNode[],
+  objectId: string,
+): readonly PermissionMenuNode[] {
+  return menuLeaves(nodes).filter(
+    (leaf) =>
+      leaf.uses?.primary?.includes(objectId) ||
+      leaf.uses?.related?.includes(objectId),
+  );
+}
+
+/** Whether a role can see records of an object: its View is on, or any action when it has no View. */
+export function canViewObject(
+  object: PermissionObject,
+  grants: PermissionGrants,
+): boolean {
+  const view = viewActionOf(object);
+  return view
+    ? Boolean(grants[view.id])
+    : object.actions.some((action) => grants[action.id]);
+}
+
+/** Checked menus whose page lists an object the role cannot view: they would open empty. Advice, never enforced. */
+export function menuWarnings(
+  nodes: readonly PermissionMenuNode[],
+  objects: readonly PermissionObject[],
+  value: PermissionValue,
+): readonly PermissionMenuWarning[] {
+  const warnings: PermissionMenuWarning[] = [];
+  for (const menu of menuLeaves(nodes)) {
+    if (menu.public || !isMenuChecked(menu, value)) continue;
+    for (const id of menu.uses?.primary ?? []) {
+      const object = objects.find((item) => item.id === id);
+      const action = object
+        ? (viewActionOf(object) ?? object.actions[0])
+        : undefined;
+      if (object && action && !canViewObject(object, value.grants))
+        warnings.push({ menu, object, action });
+    }
+  }
+  return warnings;
 }
