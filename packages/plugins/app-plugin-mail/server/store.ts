@@ -599,6 +599,13 @@ export class DatabaseMailStore implements MailStore {
     return this.sync.createSyncRun(input);
   }
 
+  public replaceSyncFolders(
+    syncFolderIds: readonly string[] | undefined,
+    run: MailCreateSyncRunInput,
+  ): Promise<MailSyncRun | undefined> {
+    return this.sync.replaceSyncFolders(syncFolderIds, run);
+  }
+
   public async findActiveSyncRun(
     accountId: string,
   ): Promise<MailSyncRun | undefined> {

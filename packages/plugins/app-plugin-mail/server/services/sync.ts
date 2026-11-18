@@ -25,7 +25,8 @@ export class MailSyncService {
       | 'getAccount'
       | 'getSyncCursor'
       | 'getSyncRun'
-      | 'listSyncRuns',
+      | 'listSyncRuns'
+      | 'replaceSyncFolders',
       'outbox' | 'messageChangeNotifier' | 'logger'
     >,
     syncBatchSize: number,
@@ -57,35 +58,32 @@ export class MailSyncService {
   }
 
   /**
-   * Cancel the account's active run and start an initial one under its saved folder selection, which imports newly
-   * selected folders and removes local data outside the selection.
+   * Save the account's folder selection and, in the same transaction, replace its active run with an initial one under
+   * it, which imports newly selected folders and removes local data outside the selection. Undefined when the account
+   * is not active.
    */
-  public async restartInitialSync(
+  public async replaceSyncFolders(
     context: MailOperationContext,
     account: MailAccount,
-  ): Promise<void> {
+    syncFolderIds: readonly string[] | undefined,
+  ): Promise<MailSyncRun | undefined> {
     const receivedAfter =
       validDateOrUndefined(account.initialSyncReceivedAfter) ??
       new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString();
-    // A sweep may queue a run between the cancellation and the request; it is replaced in turn.
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const active = await this.dependencies.store.findActiveSyncRun(
-        account.id,
-      );
-      if (active) await this.dependencies.store.cancelSyncRun(active.id);
-      const { created } = await this.scheduler.request(
-        account,
-        context.actorId,
-        { mode: 'initial', receivedAfter },
-      );
-      if (created) break;
-    }
+    const run = await this.scheduler.replaceSyncFolders(
+      account,
+      context.actorId,
+      syncFolderIds,
+      receivedAfter,
+    );
+    if (!run) return undefined;
     this.dependencies.outbox.kick();
     notifyMailMessageChange(
       this.dependencies.messageChangeNotifier,
       account.userId,
       this.dependencies.logger,
     );
+    return run;
   }
 
   public async getSyncRun(

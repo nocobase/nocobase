@@ -837,57 +837,60 @@ export async function countMessagesOutsideSyncFolders(
   return Number(row?.count ?? 0);
 }
 
+const PRUNE_BATCH_SIZE = 500;
+
 /**
- * Delete local data outside an account's folder selection: folder links and IMAP copies in unselected folders, then
- * every message left in no selected folder. With `providerMessageIds` only those messages, which the Provider reported
- * in no selected folder, lose their links. Local drafts, scheduled drafts and copies being moved are kept.
+ * Delete local data outside an account's folder selection when a run starts under it: folder links and IMAP copies in
+ * unselected folders, then every message left in no selected folder, in batches. Local drafts, scheduled drafts and
+ * copies being moved keep their messages, links and copies.
  */
 export async function pruneMessagesOutsideSyncFolders(
   query: QueryAdapter,
   accountId: string,
   syncFolderIds: readonly string[],
-  providerMessageIds?: readonly string[],
 ): Promise<void> {
-  if (providerMessageIds) {
-    for (const ids of chunks([...new Set(providerMessageIds)], 100)) {
-      const rows = await query
-        .selectFrom<MessageRow>('mailMessages')
-        .select('id')
-        .where('accountId', '=', accountId)
-        .where('providerMessageId', 'in', ids)
-        .where('providerMessageId', 'not like', 'local-draft:%')
-        .where('scheduledSubmissionId', 'is', null)
-        .execute<Pick<MessageRow, 'id'>>();
-      if (rows.length === 0) continue;
-      await query
-        .deleteFrom<MessageFolderRow>('mailMessageFolders')
-        .where(
-          'messageId',
-          'in',
-          rows.map((row) => row.id),
-        )
-        .where('providerFolderId', '!=', MAIL_LOCAL_DRAFT_FOLDER_ID)
-        .execute();
-      await deleteMessages(
-        query,
-        accountId,
-        (
-          await outsideSyncFolders(query, accountId, syncFolderIds)
-            .select('mailMessages.providerMessageId')
-            .where(
-              'mailMessages.id',
-              'in',
-              rows.map((row) => row.id),
+  const kept = [...new Set([...syncFolderIds, MAIL_LOCAL_DRAFT_FOLDER_ID])];
+  await query
+    .deleteFrom<MessageFolderRow>('mailMessageFolders')
+    .where('accountId', '=', accountId)
+    .where('providerFolderId', 'not in', kept)
+    .where((builder) =>
+      builder.not(
+        builder.exists(
+          builder
+            .selectFrom('mailMessages')
+            .select('mailMessages.id')
+            .whereRef('mailMessages.id', '=', 'mailMessageFolders.messageId')
+            .where((inner) =>
+              inner.or([
+                inner.eb(
+                  'mailMessages.providerMessageId',
+                  'like',
+                  'local-draft:%',
+                ),
+                inner.eb('mailMessages.scheduledSubmissionId', 'is not', null),
+              ]),
+            ),
+        ),
+      ),
+    )
+    .where((builder) =>
+      builder.not(
+        builder.exists(
+          builder
+            .selectFrom(IMAP_LOCATIONS)
+            .select(`${IMAP_LOCATIONS}.id`)
+            .whereRef(
+              `${IMAP_LOCATIONS}.messageId`,
+              '=',
+              'mailMessageFolders.messageId',
             )
-            .execute<Pick<MessageRow, 'providerMessageId'>>()
-        ).map((row) => row.providerMessageId),
-      );
-    }
-    return;
-  }
-  await removeStaleMessageFolders(query, accountId, [
-    ...new Set([...syncFolderIds, MAIL_LOCAL_DRAFT_FOLDER_ID]),
-  ]);
+            .where(`${IMAP_LOCATIONS}.status`, '=', 'pending')
+            .where(`${IMAP_LOCATIONS}.invalidationReason`, 'like', 'move-%'),
+        ),
+      ),
+    )
+    .execute();
   let locations = query
     .deleteFrom<ImapLocationRow>(IMAP_LOCATIONS)
     .where('accountId', '=', accountId)
@@ -897,18 +900,100 @@ export async function pruneMessagesOutsideSyncFolders(
         builder.eb('invalidationReason', 'is', null),
         builder.eb('invalidationReason', 'not like', 'move-%'),
       ]),
+    )
+    .where((builder) =>
+      builder.not(
+        builder.exists(
+          builder
+            .selectFrom('mailMessages')
+            .select('mailMessages.id')
+            .whereRef('mailMessages.id', '=', `${IMAP_LOCATIONS}.messageId`)
+            .where((inner) =>
+              inner.or([
+                inner.eb(
+                  'mailMessages.providerMessageId',
+                  'like',
+                  'local-draft:%',
+                ),
+                inner.eb('mailMessages.scheduledSubmissionId', 'is not', null),
+              ]),
+            ),
+        ),
+      ),
     );
   if (syncFolderIds.length > 0)
     locations = locations.where('providerFolderId', 'not in', [
       ...syncFolderIds,
     ]);
   await locations.execute();
-  const outside = await outsideSyncFolders(query, accountId, syncFolderIds)
-    .select('mailMessages.providerMessageId')
-    .execute<Pick<MessageRow, 'providerMessageId'>>();
-  await deleteMessages(
-    query,
-    accountId,
-    outside.map((row) => row.providerMessageId),
-  );
+  await deleteMessagesOutsideSyncFolders(query, accountId, syncFolderIds);
+}
+
+/**
+ * Delete messages left in no selected folder, with the same protections; only the given messages when
+ * `providerMessageIds` is set. Messages are read and deleted in batches.
+ */
+export async function deleteMessagesOutsideSyncFolders(
+  query: QueryAdapter,
+  accountId: string,
+  syncFolderIds: readonly string[],
+  providerMessageIds?: readonly string[],
+): Promise<void> {
+  if (providerMessageIds) {
+    for (const ids of chunks([...new Set(providerMessageIds)], 100)) {
+      const rows = await outsideSyncFolders(query, accountId, syncFolderIds)
+        .select('mailMessages.providerMessageId')
+        .where('mailMessages.providerMessageId', 'in', ids)
+        .execute<Pick<MessageRow, 'providerMessageId'>>();
+      await deleteMessages(
+        query,
+        accountId,
+        rows.map((row) => row.providerMessageId),
+      );
+    }
+    return;
+  }
+  // Deleted rows leave the result, so each batch reads from the start; kept rows are filtered out by the query.
+  for (;;) {
+    const rows = await outsideSyncFolders(query, accountId, syncFolderIds)
+      .select('mailMessages.providerMessageId')
+      .orderBy('mailMessages.id', 'asc')
+      .limit(PRUNE_BATCH_SIZE)
+      .execute<Pick<MessageRow, 'providerMessageId'>>();
+    if (rows.length === 0) return;
+    await deleteMessages(
+      query,
+      accountId,
+      rows.map((row) => row.providerMessageId),
+    );
+    if (rows.length < PRUNE_BATCH_SIZE) return;
+  }
+}
+
+/** Remove the Provider folder links of messages the Provider reported in no selected folder. */
+export async function unlinkProviderFolders(
+  query: QueryAdapter,
+  accountId: string,
+  providerMessageIds: readonly string[],
+): Promise<void> {
+  for (const ids of chunks([...new Set(providerMessageIds)], 100)) {
+    const rows = await query
+      .selectFrom<MessageRow>('mailMessages')
+      .select('id')
+      .where('accountId', '=', accountId)
+      .where('providerMessageId', 'in', ids)
+      .where('providerMessageId', 'not like', 'local-draft:%')
+      .where('scheduledSubmissionId', 'is', null)
+      .execute<Pick<MessageRow, 'id'>>();
+    if (rows.length === 0) continue;
+    await query
+      .deleteFrom<MessageFolderRow>('mailMessageFolders')
+      .where(
+        'messageId',
+        'in',
+        rows.map((row) => row.id),
+      )
+      .where('providerFolderId', '!=', MAIL_LOCAL_DRAFT_FOLDER_ID)
+      .execute();
+  }
 }

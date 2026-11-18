@@ -27,11 +27,10 @@ export class MailAccountsService {
       | 'markAccountRemoving'
       | 'updateAccountStatus'
       | 'listFolders'
-      | 'updateAccountSyncFolders'
       | 'countMessagesOutsideSyncFolders',
       'outbox' | 'messageChangeNotifier' | 'logger'
     >,
-    private readonly sync: Pick<MailSyncService, 'restartInitialSync'>,
+    private readonly sync: Pick<MailSyncService, 'replaceSyncFolders'>,
   ) {}
 
   public async listAccounts(
@@ -121,19 +120,13 @@ export class MailAccountsService {
     selection: readonly string[] | undefined,
   ): Promise<MailAccount> {
     if (sameSelection(account.syncFolderIds, selection)) return account;
-    if (
-      !(await this.dependencies.store.updateAccountSyncFolders(
-        account.id,
-        selection,
-      ))
-    )
+    if (!(await this.sync.replaceSyncFolders(context, account, selection)))
       throw mailAccountInactive();
     const { syncFolderIds: _previous, ...rest } = account;
     const updated: MailAccount = selection
       ? { ...rest, syncFolderIds: selection }
       : rest;
     this.dependencies.outbox.accountChanged?.(updated);
-    await this.sync.restartInitialSync(context, updated);
     return updated;
   }
 

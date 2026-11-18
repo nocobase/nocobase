@@ -493,7 +493,8 @@ export class SyncMailboxOperation {
       run,
       folders: folderPage.folders,
       completeProviderFolderIds: folderPage.completeProviderFolderIds,
-      ...(scope ? { pruneToFolderIds: scope } : {}),
+      // Only an initial run, which follows every change of selection, prunes the whole account.
+      ...(scope && run.mode === 'initial' ? { pruneToFolderIds: scope } : {}),
       messages: [],
       phase: run.mode === 'initial' ? 'history' : 'incremental',
       status: 'running',

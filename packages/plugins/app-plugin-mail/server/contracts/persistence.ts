@@ -383,6 +383,14 @@ export interface MailStore {
   ): Promise<void>;
   clearPushSyncPending(accountId: string, requestToken: string): Promise<void>;
   createSyncRun(input: MailCreateSyncRunInput): Promise<MailSyncRun>;
+  /**
+   * Save an active account's folder selection, cancel its active runs and queue the initial run in one transaction.
+   * Undefined when the account is not active.
+   */
+  replaceSyncFolders(
+    syncFolderIds: readonly string[] | undefined,
+    run: MailCreateSyncRunInput,
+  ): Promise<MailSyncRun | undefined>;
   findActiveSyncRun(accountId: string): Promise<MailSyncRun | undefined>;
   getSyncRun(syncRunId: string): Promise<MailSyncRun | undefined>;
   countSyncRuns(userId: string): Promise<number>;

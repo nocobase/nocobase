@@ -12,7 +12,7 @@ import {
 
 type SyncSchedulingStore = Pick<
   MailStore,
-  'findActiveSyncRun' | 'getSyncCursor' | 'createSyncRun'
+  'findActiveSyncRun' | 'getSyncCursor' | 'createSyncRun' | 'replaceSyncFolders'
 >;
 
 /** Shared scheduling policy for user requests, automatic sweeps, and push delivery. */
@@ -73,5 +73,25 @@ export class MailSyncScheduler {
       },
     });
     return { run, created: run.id === id };
+  }
+
+  /** Save a folder selection and replace the active run with an initial one under it, atomically. */
+  public async replaceSyncFolders(
+    account: MailAccount,
+    requestedBy: string,
+    syncFolderIds: readonly string[] | undefined,
+    receivedAfter: string,
+  ): Promise<MailSyncRun | undefined> {
+    return this.store.replaceSyncFolders(syncFolderIds, {
+      id: randomUUID(),
+      accountId: account.id,
+      requestedBy,
+      mode: 'initial',
+      policy: {
+        receivedAfter,
+        batchSize: this.batchSize,
+        ...(syncFolderIds ? { syncFolderIds } : {}),
+      },
+    });
   }
 }

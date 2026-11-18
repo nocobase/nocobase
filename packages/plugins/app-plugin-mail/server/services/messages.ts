@@ -43,12 +43,12 @@ export class MailMessagesService {
     accountId: string,
     options: { readonly includeUnsynced?: boolean } = {},
   ): Promise<readonly MailFolder[]> {
-    await requireOwnedAccount(this.dependencies.store, context, accountId);
-    const [account, folders] = await Promise.all([
-      this.dependencies.store.getAccount(accountId),
-      this.dependencies.store.listFolders(accountId),
-    ]);
-    if (!account) return [];
+    const account = await requireOwnedAccount(
+      this.dependencies.store,
+      context,
+      accountId,
+    );
+    const folders = await this.dependencies.store.listFolders(accountId);
     return options.includeUnsynced
       ? folders.map((folder) => ({
           ...folder,

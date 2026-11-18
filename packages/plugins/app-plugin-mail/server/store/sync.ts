@@ -25,10 +25,12 @@ import {
   applyImapLocationChanges,
   deleteImapOrphans,
   deleteMessages,
+  deleteMessagesOutsideSyncFolders,
   pruneMessagesOutsideSyncFolders,
   refreshImapMessages,
   removeMessagesFromFolders,
   removeStaleMessageFolders,
+  unlinkProviderFolders,
   upsertFolders,
   upsertImapMessages,
   upsertMessages,
@@ -121,18 +123,7 @@ export class MailSyncStore {
     input: MailCreateSyncRunInput,
   ): Promise<MailSyncRun> {
     const now = new Date().toISOString();
-    const run: MailSyncRun = {
-      ...input,
-      phase: 'preparing',
-      status: 'pending',
-      historyStartedAt: now,
-      revision: 0,
-      processedMessages: 0,
-      processedPages: 0,
-      retryAttempts: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const run = newSyncRun(input, now);
     try {
       await this.database.transaction(async (connection): Promise<void> => {
         const account = await connection.query
@@ -162,6 +153,61 @@ export class MailSyncStore {
       throw error;
     }
     return run;
+  }
+
+  /**
+   * Save an active account's folder selection, cancel its active runs and queue `run` in one transaction, so a failed
+   * request saves nothing and the last of two concurrent requests owns both the selection and the active run.
+   */
+  public async replaceSyncFolders(
+    syncFolderIds: readonly string[] | undefined,
+    input: MailCreateSyncRunInput,
+  ): Promise<MailSyncRun | undefined> {
+    const now = new Date().toISOString();
+    const run = newSyncRun(input, now);
+    return this.database.transaction(
+      async ({ query }): Promise<MailSyncRun | undefined> => {
+        // Updating the account first serializes with other selections, sweeps and account removal.
+        const account = await query
+          .updateTable<AccountRow>('mailAccounts')
+          .set({ syncFolderIds: jsonOrNull(syncFolderIds), updatedAt: now })
+          .where('id', '=', input.accountId)
+          .where('status', '=', 'active')
+          .execute();
+        if (account.updatedCount !== 1) return undefined;
+        const active = await query
+          .selectFrom<SyncRunRow>('mailSyncRuns')
+          .select(['id', 'revision'])
+          .where('accountId', '=', input.accountId)
+          .where('status', 'in', ['pending', 'running'])
+          .execute<Pick<SyncRunRow, 'id' | 'revision'>>();
+        for (const row of active) {
+          const cancelled = await query
+            .updateTable<SyncRunRow>('mailSyncRuns')
+            .set({
+              status: 'cancelled',
+              activeKey: null,
+              revision: Number(row.revision) + 1,
+              leaseToken: null,
+              leaseExpiresAt: null,
+              updatedAt: now,
+              completedAt: now,
+            })
+            .where('id', '=', row.id)
+            .where('revision', '=', row.revision)
+            .where('status', 'in', ['pending', 'running'])
+            .execute();
+          if (cancelled.updatedCount !== 1)
+            throw new Error('Mail sync run changed while it was replaced.');
+        }
+        await query
+          .insertInto<SyncRunRow>('mailSyncRuns')
+          .values(toSyncRunRow(run))
+          .execute();
+        await insertOutbox(query, run, 0, now);
+        return run;
+      },
+    );
   }
 
   public async findActiveSyncRun(
@@ -545,13 +591,28 @@ export class MailSyncStore {
         input.run.accountId,
         input.deletedProviderMessageIds ?? [],
       );
-      if (input.outOfScopeProviderMessageIds?.length)
-        await pruneMessagesOutsideSyncFolders(
+      const scope = input.run.policy.syncFolderIds;
+      if (scope) {
+        // Only messages this step reported can have left the selection; the rest of the account is untouched.
+        await unlinkProviderFolders(
           connection.query,
           input.run.accountId,
-          input.run.policy.syncFolderIds ?? [],
-          input.outOfScopeProviderMessageIds,
+          input.outOfScopeProviderMessageIds ?? [],
         );
+        const changed = [
+          ...(input.outOfScopeProviderMessageIds ?? []),
+          ...(input.removedFromFolders ?? []).map(
+            (removal) => removal.providerMessageId,
+          ),
+        ];
+        if (changed.length > 0)
+          await deleteMessagesOutsideSyncFolders(
+            connection.query,
+            input.run.accountId,
+            scope,
+            changed,
+          );
+      }
       const pushRequest =
         input.status === 'completed'
           ? await connection.query
@@ -1553,5 +1614,20 @@ function toStoredLocation(
     source: ((draft
       ? message.providerDraftMessageIdSource
       : message.imapIdSource) ?? undefined) as ImapIdSource | undefined,
+  };
+}
+
+function newSyncRun(input: MailCreateSyncRunInput, now: string): MailSyncRun {
+  return {
+    ...input,
+    phase: 'preparing',
+    status: 'pending',
+    historyStartedAt: now,
+    revision: 0,
+    processedMessages: 0,
+    processedPages: 0,
+    retryAttempts: 0,
+    createdAt: now,
+    updatedAt: now,
   };
 }
