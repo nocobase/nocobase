@@ -23,6 +23,8 @@ import { EventEmitter } from 'events';
 import os from 'os';
 import { Readable, Writable } from 'stream';
 
+let mockRestoreClientVersion: string | undefined = 'pg_restore (PostgreSQL) 16.1';
+
 let mockExecImplementation = (command, _options, callback) => {
   callback(null, 'done');
 };
@@ -144,8 +146,11 @@ describe('RestoreManager', () => {
       callback(null, 'done');
     };
 
-    mockSpawnImplementation = (command) => {
+    mockRestoreClientVersion = 'pg_restore (PostgreSQL) 16.1';
+    mockSpawnImplementation = (command, args) => {
+      const isVersionRequest = args?.includes('--version');
       if (
+        !isVersionRequest &&
         ['psql', 'pg_restore', 'ksql', 'sys_restore', 'mysql'].some((restoreCommand) =>
           String(command).includes(restoreCommand),
         )
@@ -159,7 +164,7 @@ describe('RestoreManager', () => {
           })
           .catch(() => {});
       }
-      const stdout = Readable.from(['mocked database backup']);
+      const stdout = Readable.from([isVersionRequest ? mockRestoreClientVersion ?? '' : 'mocked database backup']);
       const stderr = Readable.from([]);
       const stdin = new Writable({
         write(_chunk, _encoding, callback) {
@@ -171,8 +176,9 @@ describe('RestoreManager', () => {
       childProcess.stderr = stderr;
       childProcess.stdin = stdin;
       setImmediate(() => {
-        childProcess.emit('exit', 0);
-        childProcess.emit('close', 0);
+        const exitCode = isVersionRequest && mockRestoreClientVersion === undefined ? 1 : 0;
+        childProcess.emit('exit', exitCode);
+        childProcess.emit('close', exitCode);
       });
       return childProcess;
     };
@@ -211,7 +217,6 @@ describe('RestoreManager', () => {
     const version = await getDBVersion(app.db);
     return createMetadata({
       version,
-      backupClientVersion: version,
       ...database,
     });
   }
@@ -247,6 +252,103 @@ describe('RestoreManager', () => {
       },
     };
   }
+
+  describe.each(['restore', 'restoreCLI'] as const)('%s client version check', (entryPoint) => {
+    function createPostgresRestoreManager() {
+      return new RestoreManager(createCtx(), {
+        dialect: 'postgres',
+        username: 'test',
+        password: 'test',
+        database: 'test',
+        host: 'localhost',
+        port: 5432,
+        schema: 'source_schema',
+      });
+    }
+
+    function restore(manager: RestoreManager, filePath: string, tolerentMode: boolean) {
+      return entryPoint === 'restore'
+        ? manager.restore(filePath, 'client-version-task', undefined, tolerentMode)
+        : manager.restoreCLI(filePath, undefined, tolerentMode);
+    }
+
+    it.each([false, true])(
+      'rejects a newer dump before any restore side effects (tolerentMode=%s)',
+      async (tolerentMode) => {
+        const { backupFilePath } = createBackupFile('newer-client');
+        await createBackupArchive(backupFilePath, createMetadata({ version: undefined }));
+        mockRestoreClientVersion = 'pg_restore (PostgreSQL) 14.12 (Ubuntu 14.12-1)';
+        const emitSpy = vi.spyOn(app, 'emitAsync');
+        const upgradeSpy = vi.spyOn(app, 'upgrade');
+        const runCommandSpy = vi.spyOn(app, 'runCommand');
+        const spawnMock = vi.mocked(cp.spawn);
+        spawnMock.mockClear();
+        await app.db
+          .getRepository(SETTINGS)
+          .update({ values: { encryptionPassword: 'keep-original' }, filter: { id: 1 } });
+
+        await expect(restore(createPostgresRestoreManager(), backupFilePath, tolerentMode)).rejects.toThrow(
+          /pg_dump 16.*newer than pg_restore 14/,
+        );
+
+        expect(spawnMock).toHaveBeenCalledTimes(1);
+        expect(spawnMock.mock.calls[0].slice(0, 2)).toEqual(['pg_restore', ['--version']]);
+        expect(emitSpy).not.toHaveBeenCalledWith('beforeStop');
+        expect(emitSpy).not.toHaveBeenCalledWith('afterStop');
+        expect(upgradeSpy).not.toHaveBeenCalled();
+        expect(runCommandSpy).not.toHaveBeenCalled();
+        expect((await app.db.getRepository(SETTINGS).findOne()).encryptionPassword).toBe('keep-original');
+      },
+    );
+
+    it.each([
+      { backup: undefined, restore: 'pg_restore (PostgreSQL) 16.1' },
+      { backup: '', restore: 'pg_restore (PostgreSQL) 16.1' },
+      { backup: 'unknown 16', restore: 'pg_restore (PostgreSQL) 16.1' },
+      { backup: 16, restore: 'pg_restore (PostgreSQL) 16.1' },
+      { backup: 'pg_dump (PostgreSQL) 16.1', restore: undefined },
+      { backup: 'pg_dump (PostgreSQL) 16.1', restore: 'unknown 16' },
+    ])('rejects unverifiable versions: $backup / $restore', async ({ backup, restore: restoreVersion }) => {
+      const { backupFilePath } = createBackupFile('unknown-client');
+      await createBackupArchive(backupFilePath, createMetadata({ backupClientVersion: backup }));
+      mockRestoreClientVersion = restoreVersion;
+      const spawnMock = vi.mocked(cp.spawn);
+      spawnMock.mockClear();
+
+      await expect(restore(createPostgresRestoreManager(), backupFilePath, true)).rejects.toThrow(
+        /Cannot verify PostgreSQL backup compatibility/,
+      );
+
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+      expect(spawnMock.mock.calls[0].slice(0, 2)).toEqual(['pg_restore', ['--version']]);
+    });
+
+    it.each([
+      ['pg_dump (PostgreSQL) 14.12', 'pg_restore (PostgreSQL) 16.1'],
+      ['pg_dump (PostgreSQL) 16.10 (Debian 16.10-1)\n', 'pg_restore (PostgreSQL) 16.1\r\n'],
+      ['pg_dump (PostgreSQL) 9.6.24', 'pg_restore (PostgreSQL) 16.1'],
+    ])('allows compatible major versions: %s / %s', async (backupVersion, restoreVersion) => {
+      const { backupFilePath } = createBackupFile('compatible-client');
+      await createBackupArchive(backupFilePath, createMetadata({ backupClientVersion: backupVersion }));
+      mockRestoreClientVersion = restoreVersion;
+      vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+      const spawnMock = vi.mocked(cp.spawn);
+      spawnMock.mockClear();
+
+      await restore(createPostgresRestoreManager(), backupFilePath, true);
+
+      await vi.waitFor(() => {
+        expect(
+          spawnMock.mock.calls.some(
+            ([command, args]) => command === 'pg_restore' && Array.isArray(args) && args.includes('--clean'),
+          ),
+        ).toBe(true);
+      });
+      if (entryPoint === 'restore') {
+        await vi.waitFor(() => expect(app.runCommand).toHaveBeenCalledWith('upgrade'));
+      }
+    });
+  });
 
   it('restoreFromBackup', async () => {
     const { backupFileBaseName, backupFilePath } = createBackupFile('restore-from-backup');
@@ -519,6 +621,7 @@ describe('RestoreManager', () => {
   });
 
   it('infers PostgreSQL toolchain for legacy Kingbase backups created by pg_dump', async () => {
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
     const { backupFilePath } = createBackupFile('kingbase-pg-toolchain');
     await createBackupArchive(
       backupFilePath,
@@ -547,6 +650,7 @@ describe('RestoreManager', () => {
       expect(mockedSpawn.mock.calls.some(([command]) => String(command).includes('pg_restore'))).toBe(true);
     });
     expect(mockedSpawn.mock.calls.some(([, , options]) => options.env?.PGPASSWORD === 'test')).toBe(true);
+    await vi.waitFor(() => expect(runCommandSpy).toHaveBeenCalledWith('upgrade'));
   });
 
   it('does not ignore dialect mismatch with force schema restore', async () => {
