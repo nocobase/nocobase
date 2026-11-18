@@ -256,6 +256,45 @@ it('records the provider package’s warning about the level it was sent', async
   ]);
 });
 
+it.each([
+  {
+    level: 'none',
+    // What @ai-sdk/moonshotai reports for a model it does not know when thinking is turned off.
+    warning: {
+      type: 'unsupported' as const,
+      feature: 'reasoning "none"',
+      details:
+        'Use providerOptions.moonshotai.thinking to control thinking on custom models.',
+    },
+  },
+  {
+    level: 'provider-default',
+    warning: {
+      type: 'unsupported' as const,
+      feature: 'reasoning',
+      details: 'reasoning is not supported by this model.',
+    },
+  },
+] as const)(
+  'saves the provider package’s warning about thinking at $level in the answer',
+  async ({ level, warning }) => {
+    const f = await fixture([warning]);
+    const agent = await f.service.realtime(actor, {
+      selectedModel: withOff,
+      thinking: level,
+    });
+    await send(agent);
+    expect(f.sent).toEqual([level]);
+    expect(await notices(agent)).toEqual([
+      expect.objectContaining({
+        type: 'thinkingWarning',
+        params: { level },
+        title: expect.stringContaining(warning.details),
+      }),
+    ]);
+  },
+);
+
 it('uses a code scope’s level as the Agent default, and the conversation’s choice over it', async () => {
   const f = await fixture();
   f.configurator.registerOnlineAgentScope('careful', { thinking: 'high' });

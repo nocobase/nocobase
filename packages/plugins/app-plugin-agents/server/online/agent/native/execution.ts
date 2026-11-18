@@ -534,12 +534,9 @@ export class NativeOnlineAgent {
         if (projected) output?.write(projected);
       }
       await generated.responseMessages;
-      // The provider package's warnings about the level it was sent are said in the answer.
-      if (thinking !== 'provider-default') {
-        const warned = thinkingWarnings(await generated.warnings);
-        if (warned)
-          thinkingNotices.push(thinkingWarningNotice(thinking, warned));
-      }
+      // The provider package's warnings about thinking are said in the answer, whatever the level, the default included.
+      const warned = thinkingWarnings(await generated.warnings);
+      if (warned) thinkingNotices.push(thinkingWarningNotice(thinking, warned));
       if (sdkFailure) outcome = 'failed';
       else if (execution.abort.signal.aborted) outcome = 'cancelled';
       else if (

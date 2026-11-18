@@ -22,7 +22,8 @@ import {
   appUIMessageMetadataSchema,
   appUIToolApprovalInputSchema,
 } from '../../shared/online-agent.js';
-import { REASONING_LEVELS } from '../../shared/models.js';
+import { REASONING_LEVELS, type ReasoningLevel } from '../../shared/models.js';
+import { assertReasoningLevel } from '../online/agent/thinking.js';
 import { cleanTitle } from '../core/conversations/titles.js';
 import { jsonSafe } from '../online/agent/messages/json.js';
 import { bodyLimit } from 'hono/body-limit';
@@ -85,9 +86,9 @@ const conversationConflict = (when: string) =>
 const MessagePosition = z.object({ before: z.number().int().min(1) });
 
 // The API document lists the seven levels. The schema itself accepts any value so that a wrong type is refused by the
-// same check as a wrong string: 400 `REASONING_LEVEL_INVALID`, not the generic `INVALID_INPUT`.
+// same check as a wrong string: 400 `REASONING_LEVEL_INVALID`, not the generic `INVALID_INPUT` (`levelOf` below).
 const ThinkingInput = z
-  .custom<string>(() => true)
+  .custom<unknown>(() => true)
   .meta({
     type: 'string',
     enum: [...REASONING_LEVELS],
@@ -125,7 +126,25 @@ const SelectedModel = z.strictObject({
   modelService: z.string().min(1),
   model: z.string().min(1),
 });
-const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
+/** A `config` as HTTP sends it: its `thinking` is checked by `levelOf` before it is used. */
+type ConfigBody = Omit<
+  NonNullable<CreateConversationRequest['config']>,
+  'thinking'
+> & { thinking?: unknown };
+
+/** The `config` with its `thinking` refused (400 `REASONING_LEVEL_INVALID`) unless it is one of the seven levels. */
+function levelOf<T extends ConfigBody>(
+  config: T,
+): Omit<T, 'thinking'> & { thinking?: ReasoningLevel } {
+  const { thinking, ...rest } = config;
+  if (thinking === undefined) return rest;
+  assertReasoningLevel(thinking);
+  return { ...rest, thinking };
+}
+
+const CreateSchema: z.ZodType<
+  Omit<CreateConversationRequest, 'config'> & { readonly config?: ConfigBody }
+> = z.strictObject({
   projectId: z
     .string()
     .min(1)
@@ -428,7 +447,7 @@ export function createChatRoutes(
             const agent = await services.onlineAgent.realtime(
               trusted(context),
               {
-                ...request.config,
+                ...(request.config && levelOf(request.config)),
                 ...(request.agentId ? { agentId: request.agentId } : {}),
                 selectedModel: request.selectedModel,
                 projectId: request.projectId,
@@ -1432,7 +1451,7 @@ export function createChatRoutes(
       const config = await services.onlineAgent.configure(
         trusted(context),
         conversationId(context),
-        input.config,
+        levelOf(input.config),
         input.selectedModel,
         'http',
       );

@@ -210,6 +210,38 @@ it.each([
   },
 );
 
+it('reports Moonshot’s warning that a model it does not know cannot turn thinking off', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(completion), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    ),
+  );
+  const result = streamText({
+    model: languageModel(
+      { provider: 'moonshotai', baseUrl: null, apiKey: 'offline-key' },
+      'custom-kimi',
+    ),
+    prompt: 'Hi',
+    reasoning: 'none',
+    maxRetries: 0,
+  });
+  await result.consumeStream();
+  const warnings = await result.warnings;
+  const found = warnings.find(
+    (warning) =>
+      warning.type === 'unsupported' && warning.feature === 'reasoning "none"',
+  );
+  expect(found).toBeDefined();
+  expect(thinkingWarnings(warnings)).toContain(
+    (found as { details: string }).details,
+  );
+});
+
 it('fails the call as usual when the provider refuses the level, without trying another', async () => {
   const fetch = vi.fn(
     async () =>

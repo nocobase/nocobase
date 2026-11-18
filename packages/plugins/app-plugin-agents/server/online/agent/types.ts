@@ -50,11 +50,11 @@ export type OnlineAgentScope = {
   skill?: string[];
   model?: string[];
   /**
-   * The thinking level (`ReasoningLevel`): a code scope's is the Agent's default, and what the conversation chooses
-   * comes after it. Anything else is refused with `REASONING_LEVEL_INVALID`; a string, so an HTTP request's value
-   * reaches that check.
+   * The thinking level: a code scope's is the Agent's default, and what the conversation chooses comes after it. A
+   * value outside the type (from JavaScript or an HTTP request) is still refused at run time with
+   * `REASONING_LEVEL_INVALID`.
    */
-  thinking?: ReasoningLevel | (string & {});
+  thinking?: ReasoningLevel;
   webSearch?: boolean;
   permissions?: never;
 };

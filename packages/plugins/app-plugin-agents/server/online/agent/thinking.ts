@@ -66,7 +66,11 @@ export function thinkingWarningNotice(
   };
 }
 
-/** The SDK's warnings about the thinking level it was given, as one line; undefined when there are none. */
+/**
+ * The SDK's warnings about thinking, as one line; undefined when there are none. A warning counts when it is
+ * `unsupported` or `compatibility` and its feature names reasoning or thinking in any form the provider packages use
+ * (`reasoning`, `reasoning "none"`, `reasoningEffort`, `thinking.type "disabled"`, …).
+ */
 export function thinkingWarnings(
   warnings:
     | readonly {
@@ -80,8 +84,7 @@ export function thinkingWarnings(
   const found = (warnings ?? []).filter(
     (warning) =>
       (warning.type === 'unsupported' || warning.type === 'compatibility') &&
-      (warning.feature === 'reasoning' ||
-        warning.feature === 'reasoningEffort'),
+      /reasoning|thinking/i.test(warning.feature ?? ''),
   );
   if (!found.length) return undefined;
   return found

@@ -16,17 +16,20 @@ Offering a level does not mean the provider applies it. Depending on the provide
 
 ## What the server checks
 
-| When                                   | What                                              | Result                                           |
-| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
-| Create, configure, send with overrides | `thinking` is not one of the seven values         | 400 `REASONING_LEVEL_INVALID`                    |
-| Send                                   | the saved level is not one of the seven values    | 400 `REASONING_LEVEL_INVALID`, nothing is sent   |
-| Model service create or update         | a model names `reasoning`                         | 400                                              |
-| Execution                              | the provider package warns about the level it got | `thinking-warning` notice, saved with the answer |
-| Execution                              | the provider refuses the request                  | the call fails as usual                          |
+| When                                   | What                                             | Result                                           |
+| -------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| Create, configure, send with overrides | `thinking` is not one of the seven values        | 400 `REASONING_LEVEL_INVALID`                    |
+| Send                                   | the saved level is not one of the seven values   | 400 `REASONING_LEVEL_INVALID`, nothing is sent   |
+| Model service create or update         | a model names `reasoning`                        | 400                                              |
+| Gateway `stream()`                     | `model.reasoning` is not one of the seven values | `REASONING_LEVEL_INVALID`, nothing is sent       |
+| Execution                              | the provider package warns about thinking        | `thinking-warning` notice, saved with the answer |
+| Execution                              | the provider refuses the request                 | the call fails as usual                          |
 
 Values that are not the SDK's, such as `default`, `off` or `max`, are refused, never translated. A conversation saved with one by an earlier build of this feature does not run until a level is chosen again; the chat shows it with no level checked, so choosing any level saves a valid one. A model switch keeps the conversation's level. A code scope's `thinking` is the Agent's default, and the conversation's choice comes after it. Runner conversations refuse `thinking`; they keep using `effort`.
 
-The `thinking-warning` notice is an ordinary `data-notice` part of the answer, shown in the conversation's language. Answers saved by earlier builds may carry a `thinking-adjusted` notice; it still shows, and no execution writes one any more.
+The model gateway's `stream()` (`models.gateway` of `agentsToken`) takes the same seven values as `model.reasoning` and passes them to the SDK unchanged, `none` included; without one it uses `provider-default`, and any other value is refused before a request is made. It does not take a Runner `effort`.
+
+The `thinking-warning` notice is an ordinary `data-notice` part of the answer, shown in the conversation's language. An execution adds one for every `unsupported` or `compatibility` warning the SDK reports whose feature names reasoning or thinking (`reasoning`, `reasoning "none"`, `reasoningEffort`, `thinking.type "disabled"` and the like), at any level, `provider-default` included. Answers saved by earlier builds may carry a `thinking-adjusted` notice; it still shows, and no execution writes one any more.
 
 ## Cost
 
