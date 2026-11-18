@@ -88,6 +88,7 @@ export class MailAuthorizationService {
       input.provider,
       result.value,
       initialSyncReceivedAfter,
+      input.syncFolderIds ?? undefined,
     );
   }
 
@@ -136,6 +137,7 @@ export class MailAuthorizationService {
         verifierCredentialReference,
         scopes: input.scopes ?? [],
         initialSyncReceivedAfter,
+        ...(input.syncFolderIds ? { syncFolderIds: input.syncFolderIds } : {}),
         expiresAt,
       });
       return { ...result.value, state, expiresAt };
@@ -202,6 +204,7 @@ export class MailAuthorizationService {
           transaction.initialSyncReceivedAfter ??
             `${mailSyncDateMonthsAgo(1)}T00:00:00Z`,
         ),
+        transaction.syncFolderIds,
       );
     } catch (error) {
       const underlyingCode = errorRecord(error).code;
@@ -280,6 +283,7 @@ export class MailAuthorizationService {
     provider: import('../../shared/mail.js').MailProviderIdentity,
     authorized: import('../contracts/provider.js').MailAuthorizedAccount,
     initialSyncReceivedAfter: string,
+    syncFolderIds: readonly string[] | undefined,
   ): Promise<MailAccountView> {
     const { credentials } = this.authorizationDependencies();
     let account: MailAccount;
@@ -298,6 +302,8 @@ export class MailAuthorizationService {
       if (existing?.status === 'removing')
         throw new Error('Mail account is being removed.');
       isNewAccount = existing === undefined;
+      // Reconnecting keeps the saved folder selection.
+      const selection = existing ? existing.syncFolderIds : syncFolderIds;
       account = {
         id: existing?.id ?? randomUUID(),
         userId,
@@ -314,6 +320,7 @@ export class MailAuthorizationService {
         automaticSyncIntervalMinutes:
           existing?.automaticSyncIntervalMinutes ??
           this.defaultAutomaticSyncIntervalMinutes,
+        ...(selection ? { syncFolderIds: selection } : {}),
       };
       const previousIdentities = existing
         ? await this.dependencies.store.listIdentities(existing.id)

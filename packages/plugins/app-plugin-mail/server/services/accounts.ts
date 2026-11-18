@@ -1,14 +1,20 @@
 import { notifyMailMessageChange } from '../realtime.js';
 import {
+  type MailAccount,
   type MailAccountView,
   type MailOperationContext,
+  type MailSyncFolderPreview,
 } from '../../shared/mail.js';
+import { requireActiveAccount } from './access.js';
+import { type MailSyncService } from './sync.js';
 import { toMailAccountView } from '../views.js';
 import { type MailServiceDependencies } from './dependencies.js';
 import {
+  mailAccountInactive,
   mailAccountNotFound,
   mailAccountRemoving,
   mailFailedPrecondition,
+  mailInvalidArgument,
 } from './errors.js';
 
 export class MailAccountsService {
@@ -19,9 +25,13 @@ export class MailAccountsService {
       | 'getAccount'
       | 'listAccounts'
       | 'markAccountRemoving'
-      | 'updateAccountStatus',
+      | 'updateAccountStatus'
+      | 'listFolders'
+      | 'updateAccountSyncFolders'
+      | 'countMessagesOutsideSyncFolders',
       'outbox' | 'messageChangeNotifier' | 'logger'
     >,
+    private readonly sync: Pick<MailSyncService, 'restartInitialSync'>,
   ) {}
 
   public async listAccounts(
@@ -54,6 +64,15 @@ export class MailAccountsService {
         );
       }
     }
+    if (
+      input.syncFolderIds !== undefined &&
+      (input.status ?? updated.status) !== 'active'
+    )
+      throw mailAccountInactive();
+    const selection =
+      input.syncFolderIds === undefined
+        ? undefined
+        : { value: await this.validSyncFolders(account, input.syncFolderIds) };
     if (input.status !== undefined) {
       await this.dependencies.store.updateAccountStatus(
         account.id,
@@ -69,7 +88,77 @@ export class MailAccountsService {
         );
       }
     }
+    if (selection)
+      updated = await this.updateSyncFolders(context, updated, selection.value);
     return toMailAccountView(updated);
+  }
+
+  /** What saving a folder selection would delete locally; selecting every folder deletes nothing. */
+  public async previewSyncFolders(
+    context: MailOperationContext,
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<MailSyncFolderPreview> {
+    const account = await requireActiveAccount(
+      this.dependencies.store,
+      context,
+      accountId,
+    );
+    const selection = await this.validSyncFolders(account, syncFolderIds);
+    return {
+      removedMessageCount: selection
+        ? await this.dependencies.store.countMessagesOutsideSyncFolders(
+            account.id,
+            selection,
+          )
+        : 0,
+    };
+  }
+
+  private async updateSyncFolders(
+    context: MailOperationContext,
+    account: MailAccount,
+    selection: readonly string[] | undefined,
+  ): Promise<MailAccount> {
+    if (sameSelection(account.syncFolderIds, selection)) return account;
+    if (
+      !(await this.dependencies.store.updateAccountSyncFolders(
+        account.id,
+        selection,
+      ))
+    )
+      throw mailAccountInactive();
+    const { syncFolderIds: _previous, ...rest } = account;
+    const updated: MailAccount = selection
+      ? { ...rest, syncFolderIds: selection }
+      : rest;
+    this.dependencies.outbox.accountChanged?.(updated);
+    await this.sync.restartInitialSync(context, updated);
+    return updated;
+  }
+
+  private async validSyncFolders(
+    account: MailAccount,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<readonly string[] | undefined> {
+    if (syncFolderIds === null) return undefined;
+    const selection = [...new Set(syncFolderIds)];
+    if (selection.length === 0)
+      throw mailInvalidArgument(
+        'Select at least one folder to synchronize.',
+        'syncFolderIds',
+      );
+    const known = new Set(
+      (await this.dependencies.store.listFolders(account.id)).map(
+        (folder) => folder.providerFolderId,
+      ),
+    );
+    if (selection.some((id) => !known.has(id)))
+      throw mailInvalidArgument(
+        'Every selected folder must be a folder of this account.',
+        'syncFolderIds',
+      );
+    return selection;
   }
 
   public async removeAccount(
@@ -111,4 +200,15 @@ export class MailAccountsService {
     );
     return removing ? toMailAccountView(removing) : undefined;
   }
+}
+
+function sameSelection(
+  current: readonly string[] | undefined,
+  next: readonly string[] | undefined,
+): boolean {
+  if (current === undefined || next === undefined) return current === next;
+  const selected = new Set(current);
+  return (
+    current.length === next.length && next.every((id) => selected.has(id))
+  );
 }

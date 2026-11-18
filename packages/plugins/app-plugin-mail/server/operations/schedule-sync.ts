@@ -67,6 +67,9 @@ export class MailSyncScheduler {
       policy: {
         receivedAfter,
         batchSize: this.batchSize,
+        ...(account.syncFolderIds
+          ? { syncFolderIds: account.syncFolderIds }
+          : {}),
       },
     });
     return { run, created: run.id === id };

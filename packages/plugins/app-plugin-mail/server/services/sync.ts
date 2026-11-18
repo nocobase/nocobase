@@ -1,6 +1,7 @@
 import { notifyMailMessageChange } from '../realtime.js';
 import { MailSyncScheduler } from '../operations/schedule-sync.js';
 import {
+  type MailAccount,
   type MailOperationContext,
   type MailOffsetPage,
   type MailStartSyncInput,
@@ -53,6 +54,38 @@ export class MailSyncService {
       this.dependencies.logger,
     );
     return toSyncRunView(run);
+  }
+
+  /**
+   * Cancel the account's active run and start an initial one under its saved folder selection, which imports newly
+   * selected folders and removes local data outside the selection.
+   */
+  public async restartInitialSync(
+    context: MailOperationContext,
+    account: MailAccount,
+  ): Promise<void> {
+    const receivedAfter =
+      validDateOrUndefined(account.initialSyncReceivedAfter) ??
+      new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString();
+    // A sweep may queue a run between the cancellation and the request; it is replaced in turn.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const active = await this.dependencies.store.findActiveSyncRun(
+        account.id,
+      );
+      if (active) await this.dependencies.store.cancelSyncRun(active.id);
+      const { created } = await this.scheduler.request(
+        account,
+        context.actorId,
+        { mode: 'initial', receivedAfter },
+      );
+      if (created) break;
+    }
+    this.dependencies.outbox.kick();
+    notifyMailMessageChange(
+      this.dependencies.messageChangeNotifier,
+      account.userId,
+      this.dependencies.logger,
+    );
   }
 
   public async getSyncRun(

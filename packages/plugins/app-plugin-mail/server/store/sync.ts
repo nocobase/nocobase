@@ -25,6 +25,7 @@ import {
   applyImapLocationChanges,
   deleteImapOrphans,
   deleteMessages,
+  pruneMessagesOutsideSyncFolders,
   refreshImapMessages,
   removeMessagesFromFolders,
   removeStaleMessageFolders,
@@ -451,6 +452,12 @@ export class MailSyncStore {
           input.completeProviderFolderIds,
         );
       }
+      if (input.pruneToFolderIds)
+        await pruneMessagesOutsideSyncFolders(
+          connection.query,
+          input.run.accountId,
+          input.pruneToFolderIds,
+        );
       let messages = input.messages;
       if (input.historyPage && messages.length > 0) {
         const removed = await connection.query
@@ -538,6 +545,13 @@ export class MailSyncStore {
         input.run.accountId,
         input.deletedProviderMessageIds ?? [],
       );
+      if (input.outOfScopeProviderMessageIds?.length)
+        await pruneMessagesOutsideSyncFolders(
+          connection.query,
+          input.run.accountId,
+          input.run.policy.syncFolderIds ?? [],
+          input.outOfScopeProviderMessageIds,
+        );
       const pushRequest =
         input.status === 'completed'
           ? await connection.query
@@ -610,6 +624,9 @@ export class MailSyncStore {
               ? {
                   receivedAfter: input.receivedAfter,
                   batchSize: input.run.policy.batchSize,
+                  ...(input.run.policy.syncFolderIds
+                    ? { syncFolderIds: input.run.policy.syncFolderIds }
+                    : {}),
                 }
               : input.run.policy,
           ),

@@ -28,6 +28,7 @@ import type {
   MailSubmissionView,
   MailSyncRunView,
   MailUpdateAccountInput,
+  MailSyncFolderPreview,
   MailUpdateIdentityInput,
   MailUpdateLabelInput,
   MailOutboundAttachmentView,
@@ -82,6 +83,8 @@ export type {
   MailSyncRunStatus,
   KnownMailSyncRunStatus,
   MailSyncRunView,
+  MailSyncFolderPreview,
+  MailUpdateAccountInput,
   MailOutboundAttachmentView,
   MailTemplate,
   MailSaveTemplateInput,
@@ -137,6 +140,8 @@ export interface MailAuthorizationRequest {
   readonly name: string;
   readonly scopes?: readonly string[];
   readonly initialSyncReceivedAfter: string;
+  /** Send `[]` to choose the synchronized folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export type MailConnectAccountRequest = Omit<
@@ -200,6 +205,17 @@ export class MailClient {
         json,
       })
       .then((response) => response.data);
+  }
+
+  /** Count the local messages saving this folder selection with {@link updateAccount} would delete. */
+  public previewSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<MailSyncFolderPreview> {
+    return this.post<MailSyncFolderPreview>(
+      `mail/accounts/${encodeURIComponent(accountId)}/previewSyncFolders`,
+      { syncFolderIds },
+    );
   }
 
   /**
@@ -339,10 +355,20 @@ export class MailClient {
     });
   }
 
-  public listFolders(accountId: string): Promise<readonly MailFolder[]> {
+  /**
+   * The account's synchronized folders. `includeUnsynced` also lists the folders it does not synchronize, each with
+   * `synced`, for choosing the synchronized folders.
+   */
+  public listFolders(
+    accountId: string,
+    options: { readonly includeUnsynced?: boolean } = {},
+  ): Promise<readonly MailFolder[]> {
     return this.client
       .request<DataResponse<readonly MailFolder[]>>({
         path: `mail/accounts/${encodeURIComponent(accountId)}/folders`,
+        ...(options.includeUnsynced
+          ? { query: { includeUnsynced: 'true' } }
+          : {}),
       })
       .then((response) => response.data);
   }

@@ -13,6 +13,7 @@ import { requireOwnedAccount, requireOwnedMessage } from './access.js';
 import { type MailServiceDependencies } from './dependencies.js';
 import { assertProviderResult } from './errors.js';
 import { closeAdapter } from './provider-lifecycle.js';
+import { isSyncedFolder, syncedFolders } from './sync-folders.js';
 import { mailFailedPrecondition, mailNotFound } from './errors.js';
 
 export class MailMessagesService {
@@ -40,9 +41,20 @@ export class MailMessagesService {
   public async listFolders(
     context: MailOperationContext,
     accountId: string,
+    options: { readonly includeUnsynced?: boolean } = {},
   ): Promise<readonly MailFolder[]> {
     await requireOwnedAccount(this.dependencies.store, context, accountId);
-    return this.dependencies.store.listFolders(accountId);
+    const [account, folders] = await Promise.all([
+      this.dependencies.store.getAccount(accountId),
+      this.dependencies.store.listFolders(accountId),
+    ]);
+    if (!account) return [];
+    return options.includeUnsynced
+      ? folders.map((folder) => ({
+          ...folder,
+          synced: isSyncedFolder(account, folder.providerFolderId),
+        }))
+      : syncedFolders(account, folders);
   }
 
   public async updateMessageLabels(

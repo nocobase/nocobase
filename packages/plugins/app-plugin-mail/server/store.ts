@@ -265,6 +265,23 @@ export class DatabaseMailStore implements MailStore {
     return this.accounts.updateAccountStatus(accountId, status);
   }
 
+  public updateAccountSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[] | undefined,
+  ): Promise<boolean> {
+    return this.accounts.updateAccountSyncFolders(accountId, syncFolderIds);
+  }
+
+  public countMessagesOutsideSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[],
+  ): Promise<number> {
+    return this.accounts.countMessagesOutsideSyncFolders(
+      accountId,
+      syncFolderIds,
+    );
+  }
+
   public async saveAccount(account: MailAccount): Promise<MailAccount> {
     return this.accounts.saveAccount(account);
   }

@@ -9,6 +9,7 @@ import type {
   MailConnectAccountInput,
   MailDeleteMessageInput,
   MailFolder,
+  MailSyncFolderPreview,
   MailIdentity,
   MailLabel,
   MailListConversationMessagesInput,
@@ -78,6 +79,12 @@ export interface MailService {
     context: MailOperationContext,
     accountId: string,
   ): Promise<MailAccountView | undefined>;
+  /** Count the local messages a folder selection would delete before it is saved with `updateAccount`. */
+  previewSyncFolders(
+    context: MailOperationContext,
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<MailSyncFolderPreview>;
   listManagedAccounts(
     context: MailOperationContext,
   ): Promise<readonly MailManagedAccountView[]>;
@@ -116,9 +123,14 @@ export interface MailService {
     context: MailOperationContext,
     input: MailManagementMessageActionInput,
   ): Promise<MailManagementMessageActionResult>;
+  /**
+   * The account's synchronized folders. `includeUnsynced` adds the unselected folders, each with `synced`, for a folder
+   * selection.
+   */
   listFolders(
     context: MailOperationContext,
     accountId: string,
+    options?: { readonly includeUnsynced?: boolean },
   ): Promise<readonly MailFolder[]>;
   listLabels(context: MailOperationContext): Promise<readonly MailLabel[]>;
   listIdentities(

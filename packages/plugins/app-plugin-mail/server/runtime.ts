@@ -412,6 +412,8 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<boolean> {
     const account = await this.options.store.getAccount(accountId);
     if (!account || account.status !== 'active') return false;
+    // An account whose folders are not chosen yet imports nothing until its owner chooses them.
+    if (account.syncFolderIds?.length === 0) return false;
     const cursor = await this.options.store.getSyncCursor(account.id);
     const legacyInitialSyncDate =
       !cursor && !account.initialSyncReceivedAfter

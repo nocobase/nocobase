@@ -46,6 +46,7 @@ const MIGRATIONS = [
   '202609260001_add_mail_sync_retry_attempts',
   '202610090001_mail_create_message_participants',
   '202610250001_mail_imap_message_locations',
+  '202611180001_mail_account_sync_folders',
 ] as const;
 const sources = [
   {
@@ -90,7 +91,11 @@ describe('mail database migration', () => {
     expect(accounts?.fields).toMatchObject({
       initialSyncReceivedAfter: { type: 'datetimeTz' },
       automaticSyncIntervalMinutes: { type: 'integer', nullable: false },
+      syncFolderIds: { type: 'json' },
     });
+    expect(
+      (await inspectCollection(connection, 'mailAuthorizationStates'))?.fields,
+    ).toMatchObject({ syncFolderIds: { type: 'json' } });
     expect(accounts?.fields.defaultForUserId).toBeUndefined();
     expect(
       (await metadataStore.get('mailAccounts'))?.document.fields

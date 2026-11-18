@@ -106,6 +106,11 @@ export interface MailAccount {
   readonly initialSyncReceivedAfter?: string;
   /** Minimum time between automatic synchronization sweeps for this account. */
   readonly automaticSyncIntervalMinutes?: number;
+  /**
+   * Provider folder IDs this account synchronizes. Absent means every folder, including folders created later; an
+   * empty list means the folders have not been chosen yet and no messages are imported.
+   */
+  readonly syncFolderIds?: readonly string[];
   readonly syncCursor?: MailSyncCursor;
 }
 
@@ -216,6 +221,8 @@ export interface MailFolder {
   readonly unreadCount?: number;
   /** Gmail labels and Outlook folders share this model without sharing semantics. */
   readonly kind: 'folder' | 'label';
+  /** Whether the account synchronizes this folder; only reported when unsynchronized folders are requested. */
+  readonly synced?: boolean;
 }
 
 export interface MailAddress {
@@ -376,6 +383,8 @@ export interface MailInitialSyncPolicy {
   /** @deprecated Historical imports no longer have a total message limit. */
   readonly maxMessages?: number;
   readonly batchSize: number;
+  /** The account's folder selection when the run was created; absent means every folder. */
+  readonly syncFolderIds?: readonly string[];
 }
 
 export interface MailSyncRun {
@@ -437,6 +446,17 @@ export interface MailStartSyncInput {
 export interface MailUpdateAccountInput {
   readonly accountId: string;
   readonly status?: 'active' | 'suspended';
+  /**
+   * The folders to synchronize, at least one; `null` synchronizes every folder, including folders created later. A
+   * change restarts the initial synchronization and deletes local messages left in no selected folder.
+   */
+  readonly syncFolderIds?: readonly string[] | null;
+}
+
+/** What changing an account's synchronized folders would do to its local messages. */
+export interface MailSyncFolderPreview {
+  /** Local messages that would be deleted because they belong to no selected folder. */
+  readonly removedMessageCount: number;
 }
 
 export type MailCommandType =
@@ -490,6 +510,8 @@ export interface MailStartAuthorizationInput {
   readonly redirectUri: string;
   readonly scopes?: readonly string[];
   readonly initialSyncReceivedAfter: string;
+  /** Pass an empty list to choose the folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export interface MailConnectAccountInput {
@@ -499,6 +521,8 @@ export interface MailConnectAccountInput {
   readonly username?: string;
   readonly password: string;
   readonly initialSyncReceivedAfter: string;
+  /** Pass an empty list to choose the folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export interface MailCompleteAuthorizationInput {
