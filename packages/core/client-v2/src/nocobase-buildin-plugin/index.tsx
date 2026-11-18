@@ -8,6 +8,7 @@
  */
 
 import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
+import { isRejectedRoleError } from '@nocobase/sdk';
 import React, { createContext, type FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
@@ -277,6 +278,12 @@ const CurrentUserProvider: FC = ({ children }) => {
         const isAuthError = errorLike?.response?.status === 401 || errorLike?.status === 401;
         if (isAuthError) {
           setState({ loading: true, authStatus: 'unauthenticated', error: null });
+          // The API client is clearing a rejected role and reloading the page to start over with the
+          // user's default role. Redirecting to sign-in here would race that reload and could strand
+          // the still-authenticated user on the sign-in page, so let the reload take over.
+          if (isRejectedRoleError(error)) {
+            return;
+          }
           navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
             replace: true,
           });
