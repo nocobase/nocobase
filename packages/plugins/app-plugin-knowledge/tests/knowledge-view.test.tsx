@@ -1537,7 +1537,8 @@ describe('a file entry', () => {
     ).not.toBeInTheDocument();
     first.unmount();
 
-    serve([fileDoc(READ)]);
+    // Pending proposals do not add an entry for a reader either.
+    serve([{ ...fileDoc(READ), pendingProposals: 2 }]);
     await show('/?doc=f1');
     await header();
     expect(actions()).toEqual(['Download', 'History']);
