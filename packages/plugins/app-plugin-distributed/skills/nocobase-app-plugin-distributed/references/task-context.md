@@ -40,6 +40,11 @@ Keep the multi-instance target separate from environment observations and verifi
 
 During development, look for single-process assumptions in code, not a production topology on the developer's machine. Local Memory or SQLite use is not by itself a production defect; inspect the intended integration and required backend semantics. Local success cannot verify Redis-specific behavior or automatic Snowflake allocation that falls back to manual on SQLite. Unknown production addresses and replica counts can remain unknown while independent implementation proceeds.
 
+For example, an order export using the App's existing Jobs, database and Drive services has different completion boundaries:
+
+1. **Local development:** when the host-supported local backends meet local correctness requirements, implement and check generation, progress and authorized download without waiting for production infrastructure. Record cross-instance download as unverified.
+2. **Cross-instance acceptance:** if required shared Jobs or file storage is unavailable, leave that acceptance incomplete; local export tests cannot replace it.
+
 During deployment preparation, inspect files and overrides actually intended for the target environment. Distinguish examples, unused overlays and historical records from current intent. PM2 workers, Compose scaling, Kubernetes replicas/autoscaling and release scripts describe declared process roles and counts; correlate them with runtime evidence only when accessible and authorized. Include rolling-update overlap even when steady-state replicas equal one. High traffic, Redis, remote databases or independent Apps do not determine exact replica counts, shared data boundaries or a microservice architecture.
 
 Ask only when a missing operational fact affects the current decision. For example, whether an existing dedicated Worker consumes jobs can affect registrations and capacity planning; a production Redis address is needed to finalize deployment configuration, not to review a handler's idempotency. Do not invent missing values, probe production without authorization or start replicas merely because this Skill is installed. Missing infrastructure or commercial access keeps dependent work pending; it does not silently change the target to single-instance operation.
