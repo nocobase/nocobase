@@ -26,7 +26,7 @@ When a sales representative receives a quotation request, they can reply from th
 
 ### 1. Connect a mailbox
 
-Open the mailbox accounts page and click **Connect account**. Select a provider, enter the mailbox information, and choose a starting date for the initial synchronization. This example uses a dedicated sales mailbox. Its address and connection status appear in the account list.
+Open the mailbox accounts page and click **Connect account**. Select a provider, enter the mailbox information, and choose a starting date for the initial synchronization. After connecting, choose the folders to synchronize; every folder is selected by default. This example uses a dedicated sales mailbox. Its address and connection status appear in the account list.
 
 ### 2. Synchronize and read incoming messages
 
