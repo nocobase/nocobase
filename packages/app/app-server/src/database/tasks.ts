@@ -10,7 +10,7 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
-  missingExplicitSourceMessage,
+  assertMissingExplicitSourcesRecorded,
   planAppDatabaseTasks,
   type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
@@ -430,29 +430,29 @@ async function assertExplicitMigrationSources(
     if (task.skipReason || task.kind !== 'migrations' || !missing?.length) {
       continue;
     }
-    const hasHistory =
+    // History is per package: a plugin's own records say nothing about whether
+    // the application's explicit directory ever held migrations.
+    const recorded = new Set<string>();
+    if (
       !options.fresh &&
       (await appDatabaseStorageExists(
         config,
         options.paths,
         task.connection,
         options.drivers,
-      )) &&
-      (
-        await createAppMigrator({
-          runtimeConfig: options.runtimeConfig,
-          container: options.container,
-          database,
-          connection: task.connection,
-          config: task.config,
-          sources: task.config.sources,
-        }).history()
-      ).length > 0;
-    if (!hasHistory) {
-      throw new Error(
-        missingExplicitSourceMessage('migrations', task.connection, missing[0]),
-      );
+      ))
+    ) {
+      const history = await createAppMigrator({
+        runtimeConfig: options.runtimeConfig,
+        container: options.container,
+        database,
+        connection: task.connection,
+        config: task.config,
+        sources: task.config.sources,
+      }).history();
+      for (const record of history) recorded.add(record.packageName);
     }
+    assertMissingExplicitSourcesRecorded(task, recorded);
   }
 }
 

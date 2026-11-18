@@ -51,11 +51,15 @@ export interface AppDatabaseTask {
   config: AppDatabaseMigrationConfig;
   skipReason?: 'external' | 'auto-run-disabled';
   /**
-   * Explicit migration directories that do not exist. With no migration history
-   * this is a configuration mistake and fails before storage is touched; with
-   * history the migrator's missing-source policy decides.
+   * Explicit migration directories that do not exist, with the package each
+   * belongs to. A package with no migration history of its own makes this a
+   * configuration mistake that fails before storage is touched; with history
+   * the migrator's missing-source policy decides.
    */
-  missingExplicitSources?: readonly string[];
+  missingExplicitSources?: readonly {
+    readonly packageName: string;
+    readonly directory: string;
+  }[];
 }
 
 export function defaultConnectionName(
@@ -188,7 +192,8 @@ export function planAppDatabaseTasks(
         ...(contributions.connections?.[name]?.[kind] ?? []),
       ];
       const autoRun = options.autoRun ?? name === primary;
-      let missingExplicitSources: string[] | undefined;
+      let missingExplicitSources:
+        { packageName: string; directory: string }[] | undefined;
       if (!external && (!selection.autoRun || autoRun)) {
         for (const source of sources) {
           if (
@@ -207,7 +212,10 @@ export function planAppDatabaseTasks(
               kind === 'migrations' &&
               planOptions.deferMissingMigrationSources
             ) {
-              (missingExplicitSources ??= []).push(source.directory);
+              (missingExplicitSources ??= []).push({
+                packageName: source.packageName,
+                directory: source.directory,
+              });
               continue;
             }
             throw new Error(
@@ -243,4 +251,27 @@ export function missingExplicitSourceMessage(
   directory: string,
 ): string {
   return `Explicit database ${kind} source is missing for "${connection}": ${directory}`;
+}
+
+/**
+ * Fails when an explicit migration directory is missing and its package has no
+ * migration history, which marks it as a mistyped path rather than a directory
+ * that was removed. With history the migrator's missing-source policy decides.
+ */
+export function assertMissingExplicitSourcesRecorded(
+  task: Pick<AppDatabaseTask, 'connection' | 'missingExplicitSources'>,
+  recordedPackages: ReadonlySet<string>,
+): void {
+  const mistaken = (task.missingExplicitSources ?? []).filter(
+    (source) => !recordedPackages.has(source.packageName),
+  );
+  if (mistaken.length) {
+    throw new Error(
+      missingExplicitSourceMessage(
+        'migrations',
+        task.connection,
+        mistaken.map((source) => source.directory).join(', '),
+      ),
+    );
+  }
 }

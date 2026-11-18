@@ -232,3 +232,70 @@ it('rejects a fresh run even when history exists, since fresh discards it', asyn
     history: [{ name: '202611180001_create_rows' }],
   });
 });
+
+it('rejects a mistyped application path when only a plugin has history', async () => {
+  const { paths, directory } = fixture('directory');
+  const pluginDirectory = path.join(
+    path.dirname(directory),
+    'plugin-migrations',
+  );
+  mkdirSync(pluginDirectory, { recursive: true });
+  writeFileSync(
+    path.join(pluginDirectory, '202611180002_plugin_rows.ts'),
+    `import { defineMigration } from '@nocobase/db';
+export default defineMigration({
+  name: '202611180002_plugin_rows',
+  async up({ builder }) {
+    await builder.createCollection('plugin_rows', c => { c.increments('id'); });
+  },
+  async down({ builder }) { await builder.dropCollection('plugin_rows'); },
+});
+`,
+  );
+  const withPlugin = {
+    ...contributions,
+    migrations: [{ packageName: 'plugin-x', directory: pluginDirectory }],
+  };
+  const configure = (migrations?: { directory: string }) =>
+    ({
+      drivers,
+      default: 'main',
+      connections: {
+        main: {
+          dialect: 'sqlite',
+          filename: paths.storage('main/data.sqlite'),
+          ...(migrations ? { migrations } : {}),
+        },
+      },
+    }) as AppDatabaseConfig;
+  // The plugin migrates while the application has no explicit directory yet.
+  await runAppDatabaseTasks(configure(), {
+    paths,
+    contributions: withPlugin,
+    kind: 'migrations',
+  });
+
+  for (const options of [
+    {},
+    { dryRun: true },
+    { operation: 'rollback' as const },
+  ]) {
+    await expect(
+      runAppDatabaseTasks(configure({ directory }), {
+        paths,
+        contributions: withPlugin,
+        kind: 'migrations',
+        ...options,
+      }),
+    ).rejects.toThrow('Explicit database migrations source is missing');
+  }
+  const database = createAppDatabaseManager(configure(), paths)!;
+  try {
+    const history = await database
+      .createMigrator({ connection: 'main', sources: [] })
+      .history();
+    expect(history.map((record) => record.packageName)).toEqual(['plugin-x']);
+  } finally {
+    await database.destroy();
+  }
+});
