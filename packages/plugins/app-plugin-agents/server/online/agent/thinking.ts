@@ -68,8 +68,10 @@ export function thinkingWarningNotice(
 
 /**
  * The SDK's warnings about thinking, as one line; undefined when there are none. A warning counts when it is
- * `unsupported` or `compatibility` and its feature names reasoning or thinking in any form the provider packages use
- * (`reasoning`, `reasoning "none"`, `reasoningEffort`, `thinking.type "disabled"`, …).
+ * `unsupported` or `compatibility` and the feature it is about is reasoning or thinking in any form the provider
+ * packages use (`reasoning`, `reasoning "none"`, `reasoningEffort`, `thinking.type "disabled"`, …). Quoted parts of the
+ * feature are values, such as a model ID or a setting's value, not the feature itself, so they are left out:
+ * `dynamic tool loading for model "moonshot-v1-thinking"` is about tools.
  */
 export function thinkingWarnings(
   warnings:
@@ -84,10 +86,15 @@ export function thinkingWarnings(
   const found = (warnings ?? []).filter(
     (warning) =>
       (warning.type === 'unsupported' || warning.type === 'compatibility') &&
-      /reasoning|thinking/i.test(warning.feature ?? ''),
+      /reasoning|thinking/i.test(featureName(warning.feature)),
   );
   if (!found.length) return undefined;
   return found
     .map((warning) => warning.details ?? warning.feature ?? warning.type)
     .join(' ');
+}
+
+/** A warning's feature without its quoted values. */
+function featureName(feature: string | undefined): string {
+  return (feature ?? '').replace(/"[^"]*"|'[^']*'|`[^`]*`/g, '');
 }

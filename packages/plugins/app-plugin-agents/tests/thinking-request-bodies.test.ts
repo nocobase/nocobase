@@ -242,6 +242,51 @@ it('reports Moonshot’s warning that a model it does not know cannot turn think
   );
 });
 
+it('leaves out a warning about another feature even when the model ID names thinking', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(completion), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    ),
+  );
+  // streamText refuses system messages, so call the provider package's model directly with a dynamic-tool one.
+  const { warnings } = await languageModel(
+    { provider: 'moonshotai', baseUrl: null, apiKey: 'offline-key' },
+    'moonshot-v1-thinking',
+  ).doGenerate({
+    prompt: [
+      {
+        role: 'system',
+        content: '',
+        providerOptions: {
+          moonshotai: {
+            tools: [
+              {
+                type: 'function',
+                name: 'lookup',
+                inputSchema: { type: 'object', properties: {} },
+              },
+            ],
+          },
+        },
+      },
+      { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+    ],
+    reasoning: 'provider-default',
+  });
+  expect(warnings).toEqual([
+    expect.objectContaining({
+      type: 'unsupported',
+      feature: 'dynamic tool loading for model "moonshot-v1-thinking"',
+    }),
+  ]);
+  expect(thinkingWarnings(warnings)).toBeUndefined();
+});
+
 it('fails the call as usual when the provider refuses the level, without trying another', async () => {
   const fetch = vi.fn(
     async () =>
