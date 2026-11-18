@@ -40,12 +40,12 @@ afterEach(async () => {
   vi.clearAllMocks();
   await rm(root, { recursive: true, force: true });
 });
-async function template(): Promise<void> {
+async function template(name = '@test/template'): Promise<void> {
   const directory = await mkdtemp(path.join(root, 'template-'));
   await writeFile(
     path.join(directory, 'package.json'),
     JSON.stringify({
-      name: '@test/template',
+      name,
       version: '1.0.0',
       dependencies: {
         '@nocobase/db-postgres': '^1.0.0',
@@ -60,7 +60,7 @@ async function template(): Promise<void> {
   );
   vi.mocked(downloadTemplate).mockResolvedValue({
     directory,
-    name: '@test/template',
+    name,
     version: '1.0.0',
   });
 }
@@ -91,6 +91,17 @@ describe('JSON creation flow', () => {
       );
       expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).toContain(
         `@nocobase:registry=${selected}`,
+      );
+    },
+  );
+
+  it.each(['pro', 'enterprise'])(
+    'names SQLite explicitly for the %s edition',
+    async (edition) => {
+      await template('@nocobase/app-template-' + edition);
+      expect(await run(['crm', '--json', '--template', edition])).toBe(0);
+      expect(JSON.parse(stdout).result.nextCommands[0]).toBe(
+        'pnpm nocobase config init --dialect sqlite',
       );
     },
   );

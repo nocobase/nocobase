@@ -23,7 +23,7 @@ Business lists reuse the template's standard `DataTable` and companions from `#c
 Configure the application, then start the development server:
 
 ```bash
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```

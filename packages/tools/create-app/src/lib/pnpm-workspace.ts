@@ -38,6 +38,10 @@ export const ALLOWED_BUILDS: readonly AllowBuildsEntry[] = [
   // just-bash's archive commands are not enabled by the OnlineAgent Sandbox.
   { name: '@mongodb-js/zstd', allowed: false },
   { name: 'node-liblzma', allowed: false },
+  // Preinstalled application templates are scaffolding inputs. Only the host app runs its Skill sync.
+  { name: '@nocobase/app-template-multi-app', allowed: false },
+  { name: '@nocobase/app-template-multi-portal', allowed: false },
+  { name: '@nocobase/app-template-sub-app', allowed: false },
 ];
 
 /** YAML needs quotes around a scoped name, whose leading `@` would otherwise start a reserved indicator. */

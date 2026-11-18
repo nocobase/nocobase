@@ -70,7 +70,7 @@ Keep framework files aligned with Default: the `package.json` scripts that call 
 Configure the application, then start the development server:
 
 ```bash
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
