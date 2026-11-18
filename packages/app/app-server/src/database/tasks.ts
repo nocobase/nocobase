@@ -803,6 +803,7 @@ export async function runAppMigrations(
       batch: first.batch,
       executed: first.executed,
       skipped: first.skipped,
+      warnings: first.warnings,
     }
   );
 }

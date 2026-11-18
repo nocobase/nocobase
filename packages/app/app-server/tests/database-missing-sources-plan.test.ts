@@ -14,6 +14,7 @@ import { createAppPaths } from '../src/config/index.js';
 import {
   createAppDatabaseManager,
   runAppDatabaseTasks,
+  runAppMigrations,
   type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
 } from '../src/database/index.js';
@@ -299,3 +300,71 @@ export default defineMigration({
     await database.destroy();
   }
 });
+
+describe.each(['directory', 'sources'] as const)(
+  'runAppMigrations warnings with an explicit migration %s',
+  (form) => {
+    it('returns the missing-source warning once the directory has disappeared', async () => {
+      const { paths, directory, install } = fixture(form);
+      await install();
+      const result = await runAppMigrations(
+        configureExplicit(form, paths, directory),
+        { paths, contributions },
+      );
+      expect(result).toMatchObject({
+        status: 'completed',
+        executed: [],
+        warnings: [{ kind: 'missing-source', packageName: 'test-app', name }],
+      });
+    });
+
+    it('returns the checksum warning when an applied migration changed', async () => {
+      const { paths, directory, install } = fixture(form);
+      await install();
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(
+        path.join(directory, `${name}.ts`),
+        `import { defineMigration } from '@nocobase/db';
+export default defineMigration({
+  name: '${name}',
+  async up() {},
+  async down() {},
+});
+`,
+      );
+      const result = await runAppMigrations(
+        configureExplicit(form, paths, directory),
+        { paths, contributions },
+      );
+      expect(result?.executed).toEqual([]);
+      expect(result?.warnings).toEqual([
+        expect.objectContaining({ name, packageName: 'test-app' }),
+      ]);
+      expect(result?.warnings?.[0]).not.toHaveProperty(
+        'kind',
+        'missing-source',
+      );
+    });
+  },
+);
+
+function configureExplicit(
+  form: 'directory' | 'sources',
+  paths: ReturnType<typeof createAppPaths>,
+  directory: string,
+): AppDatabaseConfig {
+  return {
+    drivers,
+    default: 'main',
+    connections: {
+      main: {
+        dialect: 'sqlite',
+        filename: paths.storage('main/data.sqlite'),
+        migrations:
+          form === 'directory'
+            ? { directory }
+            : { sources: [{ directory, packageName: 'test-app' }] },
+      },
+    },
+  } as AppDatabaseConfig;
+}
