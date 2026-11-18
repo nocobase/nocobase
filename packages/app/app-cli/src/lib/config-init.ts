@@ -12,7 +12,7 @@ import {
   type ConnectionCheckResult,
   type OfficialDialect,
 } from '@nocobase/app-server/database';
-import { addDependencyCommand, appPackageManager } from './plugin-install.ts';
+import { detectPackageManager } from './package-manager.ts';
 import { execa } from 'execa';
 import { parseDocument } from 'yaml';
 
@@ -404,31 +404,63 @@ async function alreadyConfigured(
   };
 }
 
-/** A package-manager move updates the manifest and its lockfile together, preserving other connections' drivers. */
+/** Move the original specifier verbatim. An add command may rewrite an exact version into a caret range. */
 async function promotePreinstalledDriver(
   rootDir: string,
   dialect: OfficialDialect,
 ): Promise<void> {
   const name = driverPackage(dialect);
-  const manifest = await readJson(path.join(rootDir, 'package.json'));
-  if (isRecord(manifest.dependencies) && manifest.dependencies[name]) return;
-  const range =
-    isRecord(manifest.devDependencies) && manifest.devDependencies[name];
-  if (typeof range !== 'string') return;
-  const { packageManager, args } = addDependencyCommand(
-    await appPackageManager(rootDir),
-    `${name}@${range}`,
-  );
+  const file = path.join(rootDir, 'package.json');
+  if (!existsSync(file)) return;
+  const original = await readFile(file, 'utf8');
+  const manifest = JSON.parse(original) as {
+    packageManager?: string;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  if (manifest.dependencies?.[name]) return;
+  const development = manifest.devDependencies;
+  if (!development || !Object.hasOwn(development, name)) return;
+  const manager = await detectPackageManager(rootDir, manifest.packageManager);
+  // The driver is already installed. Refresh the application's lockfile without running installation hooks.
+  const args = {
+    pnpm: [
+      'install',
+      '--lockfile-only',
+      '--no-frozen-lockfile',
+      '--ignore-scripts',
+    ],
+    npm: ['install', '--package-lock-only', '--ignore-scripts'],
+    yarn: ['install'],
+  }[manager];
+  (manifest.dependencies ??= {})[name] = development[name];
+  delete development[name];
+  const updated = JSON.stringify(manifest, null, 2) + '\n';
+  await writeFile(file, updated);
   try {
-    await execa(packageManager, args, { cwd: rootDir });
+    await execa(manager, args, {
+      cwd: rootDir,
+      ...(manager === 'yarn'
+        ? {
+            env: {
+              YARN_ENABLE_IMMUTABLE_INSTALLS: 'false',
+              YARN_ENABLE_SCRIPTS: 'false',
+              YARN_IGNORE_SCRIPTS: 'true',
+            },
+          }
+        : {}),
+    });
   } catch {
+    // Keep a concurrent edit. When the manifest is still ours, leave the move retryable.
+    if ((await readFile(file, 'utf8')) === updated)
+      await writeFile(file, original);
     throw new ConfigInitError(
       'driver-promotion-failed',
-      `Could not promote ${name} to dependencies. After fixing the dependency, retry config init --dialect ${dialect}.`,
+      `Could not update dependencies for ${name}. Move its existing entry to dependencies in package.json, run ${manager} install, then retry config init --dialect ${dialect}.`,
       {
         suggestion: {
-          message: 'Run in the application sources:',
-          run: { command: packageManager, args: [...args] },
+          message: 'After moving the driver in the application sources:',
+          run: { command: manager, args: ['install'] },
         },
       },
     );

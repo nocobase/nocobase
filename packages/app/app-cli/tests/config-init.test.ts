@@ -126,8 +126,9 @@ describe('runConfigInit', () => {
         name: 'local-db-selection',
         version: '1.0.0',
         packageManager: 'npm@11.0.0',
+        workspaces: ['sqlite'],
         devDependencies: {
-          '@nocobase/db-sqlite': 'file:sqlite',
+          '@nocobase/db-sqlite': '1.0.0',
           '@nocobase/db-postgres': 'file:postgres',
         },
       }),
@@ -135,7 +136,7 @@ describe('runConfigInit', () => {
     const options = { rootDir, dialect: 'sqlite', environment: {} };
     await runConfigInit(options);
     const expected = {
-      dependencies: { '@nocobase/db-sqlite': 'file:sqlite' },
+      dependencies: { '@nocobase/db-sqlite': '1.0.0' },
       devDependencies: { '@nocobase/db-postgres': 'file:postgres' },
     };
     expect(JSON.parse(await readFile(manifest, 'utf8'))).toMatchObject(
@@ -175,14 +176,17 @@ describe('runConfigInit', () => {
       suggestion: {
         run: {
           command: 'npm',
-          args: [
-            'install',
-            '--save-prod',
-            '@nocobase/db-sqlite@file:missing.tgz',
-          ],
+          args: ['install'],
         },
       },
     });
+    const manifest = JSON.parse(
+      await readFile(path.join(rootDir, 'package.json'), 'utf8'),
+    );
+    expect(manifest.devDependencies['@nocobase/db-sqlite']).toBe(
+      'file:missing.tgz',
+    );
+    expect(manifest.dependencies).toBeUndefined();
     expect(existsSync(path.join(rootDir, 'config.yml'))).toBe(false);
   });
 
