@@ -8,7 +8,7 @@ import { ConversationHeader } from './conversation-header.js';
  * menu (archive).
  *
  * The page puts its own value over the panel's (`ChatPanelScope`), so the view, the composer and the application's
- * extensions (plan cards, reference cards) work here unchanged: selecting another conversation moves to its page, a new
+ * extensions work here unchanged: selecting another conversation moves to its page, a new
  * conversation goes to `newConversationPath` (the application's place to start one), and nothing pinned to the panel
  * or drafted for it lands here. Arriving closes the panel, so the same conversation is never shown twice with two
  * composers; "Open in side panel" opens it there and goes back to where the person was before the page.

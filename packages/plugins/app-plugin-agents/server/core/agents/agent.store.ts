@@ -36,7 +36,6 @@ export interface AgentRecord {
   readonly instructions: string | null;
   readonly runnerIds: readonly unknown[];
   readonly actions: readonly unknown[];
-  readonly confirmChanges: string;
   readonly access: string;
   readonly ownerUserId: string;
   readonly maxConcurrentRuns: number;
@@ -141,7 +140,6 @@ export function toAgent(record: AgentRecord): Agent {
     modelEntries: runnerModelEntries(record),
     instructions: record.instructions,
     actions: stringArray(record.actions),
-    confirmChanges: record.confirmChanges === 'always' ? 'always' : 'larger',
     maxConcurrentRuns: Number(record.maxConcurrentRuns),
     maxAttempts: Number(record.maxAttempts),
     toolPolicy,

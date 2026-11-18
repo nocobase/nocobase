@@ -9,13 +9,6 @@ export {
   StatusEventsContext,
   type StatusEventUI,
 } from './lib/status-events.js';
-/** How a queued request to AI says why it waits, such as with the agents plugin's `formatRunWait`. */
-export {
-  IntakeWaitFormatContext,
-  type IntakeWait,
-  type IntakeWaitFormat,
-} from './lib/intake-wait.js';
-
 import { ACCESS_NAMESPACE } from '../shared/access.js';
 import { DataTable as BaseDataTable } from './components/data-table.js';
 import { PmExpandableTextarea as BaseExpandableTextarea } from './components/pm-expandable-textarea.js';
@@ -32,7 +25,6 @@ import { PmApiKeyTag as BaseApiKeyTag } from './components/pm-api-key-tag.js';
 import { UnsavedChangesBoundary as BaseUnsavedChangesBoundary } from './components/unsaved-changes.js';
 import { InvitationsSection as BaseInvitations } from './pages/config/members/invitations-section.js';
 import { InviteDialog as BaseInviteDialog } from './pages/config/members/invite-dialog.js';
-import { PlanListItem as BasePlanListItem } from './kit/plans/plan-list-item.js';
 import { SectionHeading as BaseSectionHeading } from './pages/config/section-heading.js';
 import { SettingsPageHeader as BaseSettingsPageHeader } from './pages/config/settings-page-header.js';
 import { NewIssueButton as BaseNewIssueButton } from './pages/issues/new-issue-button.js';
@@ -68,67 +60,23 @@ export const InviteDialog: typeof BaseInviteDialog = bound(BaseInviteDialog);
 export const UnsavedChangesBoundary: typeof BaseUnsavedChangesBoundary = bound(
   BaseUnsavedChangesBoundary,
 );
-/** One plan in a list: title, status, source, proposer and time, linking to its page or selecting it. */
-export const PlanListItem: typeof BasePlanListItem = bound(BasePlanListItem);
-/** "New issue": opens the `new` dialog under `/issues`, with the AI and manual tabs. */
+/** "New issue": opens the `new` dialog under `/issues`, with the manual form. */
 export const NewIssueButton: typeof BaseNewIssueButton =
   bound(BaseNewIssueButton);
 /** The issues pages' keyboard shortcuts (`C` new issue, ⌘K search) and their help. */
 export const PmShortcuts: typeof BasePmShortcuts = bound(BasePmShortcuts);
 export { useNewIssueShortcut } from './components/use-new-issue-shortcut.js';
-export { IssueCreationModeContext } from './kit/issue-creation.js';
-export type { PlanListItemProps } from './kit/plans/plan-list-item.js';
-/**
- * Operation plans, headless: the UI Library's `plan-card` block draws the card, the confirmation, the undo preview
- * and the editor over these. Reading and acting (`usePlanQuery`, `usePlanMutations`, `usePlanUndoPreview`), the names
- * and choices a plan needs (`usePlanLookup`, `usePlanIssue`, `useCreateLabel`), and the words this plugin keeps for it
- * (`usePlanRowTitle`, `usePlanValueText`, `usePlanErrorText`, `usePlanWording`). The plan as pure data is
- * `client/plan-model`, re-exported here.
- */
-export * from './plan-model.js';
-export { PlanApi, planKeys, usePlanApi } from './kit/plans/api.js';
 export {
-  invalidRows,
-  usePlanMutations,
-  usePlanQuery,
-  usePlanUndoPreview,
-  type PlanAction,
-  type PlanMutations,
-} from './kit/plans/use-plan.js';
-export {
-  executorOf,
-  useCreateLabel,
-  usePlanIssue,
-  usePlanLookup,
-  usePlanValueText,
-  type PlanLookup,
-} from './kit/plans/lookup.js';
-export type { ExecutorOption } from './components/pm-executor-select.js';
-export {
-  PlanWordingContext,
-  planErrorReason,
-  rowTitle,
-  usePlanErrorText,
-  usePlanRowTitle,
-  usePlanWording,
-  type PlanErrorText,
-  type PlanWorder,
-  type PlanWording,
-} from './kit/plans/plan-text.js';
-export {
-  IntakeAgentSlotContext,
   PageContextSinkContext,
   createPageContextStore,
   usePageContextEntries,
   usePageContextSource,
-  type IntakeAgentSlotFill,
-  type IntakeAgentSlotProps,
   type PageContextEntry,
   type PageContextKind,
   type PageContextSink,
   type PageContextStore,
 } from './kit/page-context.js';
-export { IntakeAgentSlot, PageContextProvider } from './kit/page-slots.js';
+export { PageContextProvider } from './kit/page-slots.js';
 
 export { useViewer } from './hooks/use-viewer.js';
 export { canManageProject, canUseSetting } from './lib/permissions.js';
@@ -145,12 +93,6 @@ export { usePmApi } from './hooks/use-pm-api.js';
 export { useApiKeyActors } from './hooks/use-api-key-actors.js';
 
 export { PmDescriptionImage } from './components/pm-description-image.js';
-
-export {
-  IntakeDraftProvider,
-  useIntakeDraft,
-  emptyIntakeDraft,
-} from './kit/intake-draft.js';
 
 export {
   ExecutorPresentationContext,

@@ -10,11 +10,7 @@ import {
 } from '@nocobase/app-server/router';
 import type { Hono } from 'hono';
 
-import {
-  refuseDelegated,
-  viewerOf,
-  type ViewerEnv,
-} from '../../access/request.js';
+import { viewerOf, type ViewerEnv } from '../../access/request.js';
 import {
   boundedList,
   domainRouter,
@@ -171,7 +167,6 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
     apiValidator('param', ProjectParams),
     apiValidator('json', UpdateProjectBody),
     async (context) => {
-      refuseDelegated(context);
       return context.json({
         data: await projects.update(
           viewerOf(context),

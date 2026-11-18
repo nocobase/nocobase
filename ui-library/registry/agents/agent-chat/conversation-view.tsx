@@ -1,7 +1,7 @@
 import { SnapshotView } from './snapshot-view.js';
 /**
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
- * among them (plan cards), the agent at work, notices about who answers, and the composer. Without a conversation
+ * among them, the agent at work, notices about who answers, and the composer. Without a conversation
  * (`conversationId` null) it is a new one: an empty log whose first message creates it on the server, and the
  * composer's toolbar chooses its agent (`NewChatChoice`) among the agents of the panel's mode (`useChatMode`), starting
  * with the one last used.

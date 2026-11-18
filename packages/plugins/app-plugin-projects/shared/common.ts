@@ -3,7 +3,7 @@
  * beside this one.
  */
 
-/** A code and a message, as a plan row's failure records it (`PlanRowCheck.error`). */
+/** A machine-readable error code and its accompanying message. */
 export interface ApiErrorBody {
   readonly code: string;
   readonly message: string;

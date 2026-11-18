@@ -1,7 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 import accessEnUS from '../../shared/locales/access.en-US.js';
-import plansEnUS from './plans.en-US.js';
 
 const pages = {
   actions: {
@@ -285,15 +284,6 @@ const pages = {
     INVALID_STAGE: 'Enter a whole number from 0 to 1000, or leave it empty.',
     ISSUE_BLOCKED: 'The issue is still waiting for issues that block it.',
     SUBTASKS_OPEN: 'Finish or cancel its sub-issues first.',
-    PLAN_INVALID: 'Some changes of the plan do not pass.',
-    PLAN_NOT_OPEN: 'The plan is no longer waiting for a decision.',
-    PLAN_EXPIRED: 'The plan has expired.',
-    UNDO_EXPIRED: 'The plan can no longer be undone.',
-    NOTHING_TO_UNDO:
-      'Everything the plan did was changed since; there is nothing to undo.',
-    INVALID_INTAKE: 'Give some text or a file, within the limits.',
-    AI_UNAVAILABLE: 'AI is not available right now.',
-    INTAKE_JOB_CLOSED: 'That request to AI has already ended.',
     INVALID_FILE: 'A file is not one of your uploads.',
     FILE_TOO_LARGE: 'The file is too large.',
     FILES_UNAVAILABLE: 'This application stores no files.',
@@ -502,8 +492,6 @@ const pages = {
     settings: 'Settings',
   },
   newIssue: {
-    tabs: { ai: 'AI draft', manual: 'Manual' },
-    tabsLabel: 'Ways to create',
     title: 'New issue',
   },
   pagination: {
@@ -857,8 +845,6 @@ const pages = {
     loadFailed: 'Unable to load the settings',
   },
   subtasks: {
-    aiIntro:
-      'AI reads this issue and drafts its sub-issues. You review and edit the drafts; nothing is created until you confirm.',
     blockedByHint: 'It will not start until these are done or cancelled.',
     blockedByLabel: 'Waits for',
     blockedByPlaceholder: 'Choose sibling sub-issues',
@@ -874,7 +860,6 @@ const pages = {
     stageHint: 'Optional. Lower stages run first.',
     stageInvalid: 'Enter a whole number from 0 to 1000, or leave it empty.',
     stageLabel: 'Stage',
-    tabs: { ai: 'AI breakdown', manual: 'Manual' },
     title: 'Sub-issues',
     waiting_one: 'Waiting for {{count}}',
     waiting_other: 'Waiting for {{count}}',
@@ -933,12 +918,10 @@ const pages = {
 
 /** The pages' texts with the permission titles the server registers (`shared/locales`). */
 const enUS: Omit<typeof pages, 'roles'> &
-  typeof accessEnUS &
-  typeof plansEnUS & {
+  typeof accessEnUS & {
     readonly roles: typeof pages.roles & typeof accessEnUS.roles;
   } = {
   ...pages,
-  ...plansEnUS,
   access: accessEnUS.access,
   roles: { ...pages.roles, ...accessEnUS.roles },
 };
