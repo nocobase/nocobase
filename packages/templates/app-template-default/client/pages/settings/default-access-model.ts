@@ -90,7 +90,7 @@ export function ruleResourceLabels(
   const titles = resources.map((resource) => text(resource.title));
   return new Map(
     resources.map((resource, index) => {
-      const title = titles[index]!;
+      const title = titles[index];
       const shared = titles.filter((other) => other === title).length > 1;
       return [
         resourceKey(resource),
