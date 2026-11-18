@@ -187,6 +187,16 @@ const MODELS: readonly ModelService[] = [
         kind: 'chat',
         dimensions: null,
       },
+      {
+        // A long name, to show that the trigger keeps it whole.
+        value: 'reasoning-preview-2026-11-01',
+        label: L(
+          'Reasoning preview 2026-11-01 (long context)',
+          '推理预览 2026-11-01（长上下文）',
+        ),
+        kind: 'chat',
+        dimensions: null,
+      },
     ],
   },
 ];
@@ -1687,8 +1697,9 @@ export const useChatModels: typeof Chat.useChatModels = () =>
       ? [...MODELS]
       : [],
   );
-// The demo's thinking levels: the one saved per conversation and the one remembered per model, in memory.
+// The demo's model and thinking choices: those saved per conversation and the level remembered per model, in memory.
 const demoThinking = {
+  models: new Map<string, Models.ModelRef>(),
   saved: new Map<string, Models.ReasoningLevel>(),
   remembered: new Map<string, Models.ReasoningLevel>(),
   listeners: new Set<() => void>(),
@@ -1716,7 +1727,10 @@ export const useConversationModel: typeof Chat.useConversationModel = (id) => {
     configuration: query(
       id
         ? {
-            selectedModel: { modelService: 'demo', model: 'fast' },
+            selectedModel: demoThinking.models.get(id) ?? {
+              modelService: 'demo',
+              model: 'fast',
+            },
             scope: [],
             tool: [],
             toolVersions: {},
@@ -1732,8 +1746,14 @@ export const useConversationModel: typeof Chat.useConversationModel = (id) => {
           thinking?: Models.ReasoningLevel;
         }
     >((input, options?: { onSuccess?: () => void }) => {
+      const model =
+        'modelService' in input ? input : (input.selectedModel ?? undefined);
       const level = 'thinking' in input ? input.thinking : undefined;
-      if (id && level) changeThinking(() => demoThinking.saved.set(id, level));
+      if (id)
+        changeThinking(() => {
+          if (model) demoThinking.models.set(id, model);
+          if (level) demoThinking.saved.set(id, level);
+        });
       options?.onSuccess?.();
     }),
     changing: false,
