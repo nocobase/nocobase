@@ -294,7 +294,37 @@ export class RestoreManager {
       throw new Error(this.#t('ERROR_PARSING_BACKUP_FILE', error.message));
     }
     await this.#assertMetadata(metadata, tolerentMode, options);
+    await this.#assertRestoreClientVersion(metadata);
     return metadata;
+  }
+
+  async #assertRestoreClientVersion(metadata: Metadata): Promise<void> {
+    if (this.#dbAdapter.dbOpts.dialect !== 'postgres') {
+      return;
+    }
+
+    const backupClientVersion = metadata.database.backupClientVersion;
+    const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
+    const backupMajorVersion =
+      typeof backupClientVersion === 'string'
+        ? backupClientVersion.trim().match(/^pg_dump \(PostgreSQL\) (\d+)(?:\.\d+)*(?=\s|$)/)?.[1]
+        : undefined;
+    const restoreMajorVersion =
+      typeof restoreClientVersion === 'string'
+        ? restoreClientVersion.trim().match(/^pg_restore \(PostgreSQL\) (\d+)(?:\.\d+)*(?=\s|$)/)?.[1]
+        : undefined;
+
+    if (!backupMajorVersion || !restoreMajorVersion) {
+      throw new Error(this.#t('ERROR_PG_RESTORE_VERSION_UNKNOWN'));
+    }
+    if (Number(backupMajorVersion) > Number(restoreMajorVersion)) {
+      throw new Error(
+        this.#t('ERROR_PG_RESTORE_VERSION_MISMATCH', {
+          backupClientVersion: backupMajorVersion,
+          restoreClientVersion: restoreMajorVersion,
+        }),
+      );
+    }
   }
 
   async #assertMetadata(metadata: Metadata, tolerentMode: boolean, options?: RestoreOptions): Promise<boolean> {
