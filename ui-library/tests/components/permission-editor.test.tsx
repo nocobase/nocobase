@@ -272,6 +272,37 @@ describe('two-column permission editor', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps the notice when a select only repeats the value it shows', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Host
+        initial={{
+          'contracts.view': { scopes: { records: 'all' } },
+          'contracts.update': { scopes: { records: 'department' } },
+        }}
+        onChange={onChange}
+      />,
+    );
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their department' }),
+    );
+    const notice =
+      'Edit contracts now follows the view scope (Their department) again.';
+    expect(screen.getByText(notice)).toBeInTheDocument();
+    const calls = onChange.mock.calls.length;
+    // Choosing what Edit already shows changes nothing, so the notice stays.
+    await user.click(trigger('Data scope of Edit contracts'));
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Same as view (Their department)',
+      }),
+    );
+    expect(onChange).toHaveBeenCalledTimes(calls);
+    expect(screen.getByText(notice)).toBeInTheDocument();
+  });
+
   it('shows each scope of a multi-scope action and leaves risky actions off with Enable all', async () => {
     const user = userEvent.setup();
     render(<Host initial={{}} />);
