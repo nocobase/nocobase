@@ -243,7 +243,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           { ...deps, conn: tx.conn, viewer },
           input,
         );
-        // Take the graph before the counter even without waits: a later plan row may add relationships.
+        // Take the graph before the counter so a unit of work can edit relationships after creating an issue.
         await deps
           .relations()
           .lock(
@@ -345,7 +345,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           viewer.actor.via !== 'agent' &&
           viewer.actor.id === before.ownerUserId;
         // Status and project changes can release waits. Take the graph guard
-        // before this issue's first write, in the same order as relationship edits and plan execution.
+        // before this issue's first write, in the same order as relationship edits.
         if (
           patch.parentIssueId !== undefined ||
           patch.stage !== undefined ||

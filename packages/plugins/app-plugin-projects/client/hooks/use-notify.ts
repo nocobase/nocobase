@@ -103,7 +103,7 @@ export function errorText(
   return fallback;
 }
 
-/** The standard error body's `metadata`: machine-readable facts about the failure, such as a plan's row checks. */
+/** The standard error body's `metadata`: machine-readable facts about the failure. */
 export function errorMetadata(
   error: ApiClientError,
 ): Readonly<Record<string, unknown>> | undefined {

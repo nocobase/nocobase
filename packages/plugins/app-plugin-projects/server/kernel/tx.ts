@@ -6,10 +6,8 @@
  * they write commits or rolls back with the change that caused it (the inbox, for example, turns events into items
  * this way). Events a hook emits are handed to the hooks again, for a bounded number of rounds.
  *
- * A unit (`unit`) makes every service call inside it join one transaction without passing it along: several services' writes commit or roll back together. Inside a unit, `run` without
- * `outer` joins the unit (or the savepoint `savepoint` opened), and `read` answers its connection. A rehearsing unit
- * (`rehearse: true`) always rolls back, drops the events its writes emit, runs no commit hooks, and says so on its
- * `Tx` (`rehearsal`), so a trigger can answer what it would start without queuing anything.
+ * A unit (`unit`) makes every service call inside it join one transaction without passing it along. Inside a unit,
+ * `run` without `outer` and `read` use the unit's transaction or the current savepoint.
  *
  * Thin stand-in: the database layer's `transaction()` has no commit hooks of its own. Use them once it does.
  */
@@ -22,11 +20,6 @@ import type { DomainEvent, DomainEventBus } from './events.js';
 export interface Tx {
   readonly conn: DatabaseConnection;
   emit(event: DomainEvent): void;
-  /**
-   * The unit always rolls back: whatever runs in it reports what it would do and must start
-   * nothing outside the database. Its events are dropped.
-   */
-  readonly rehearsal?: boolean;
 }
 
 export type BeforeCommitHook = (
@@ -44,26 +37,13 @@ export interface TxRunner {
   read(): DatabaseConnection;
   /** Registers a hook; returns what removes it. */
   beforeCommit(hook: BeforeCommitHook): () => void;
-  /**
-   * Runs `fn` as one unit of work that every `run` inside it joins. With `rehearse`, the unit always rolls back and
-   * answers what `fn` returned; nothing it emits is published. Units do not nest.
-   */
-  unit<T>(
-    fn: (tx: Tx) => Promise<T>,
-    options?: { readonly rehearse?: boolean },
-  ): Promise<T>;
+  /** Runs `fn` as one unit of work that every `run` inside it joins. Units do not nest. */
+  unit<T>(fn: (tx: Tx) => Promise<T>): Promise<T>;
   /**
    * Runs `fn` in a savepoint of `tx`: when it throws, only its own writes roll back and its events are dropped. Inside
    * a unit, the services `fn` calls join the savepoint.
    */
   savepoint<T>(tx: Tx, fn: (tx: Tx) => Promise<T>): Promise<T>;
-}
-
-/** Thrown inside a rehearsing unit to roll it back. */
-class Rollback extends Error {
-  public constructor(public readonly value: unknown) {
-    super('Rehearsal rolled back.');
-  }
 }
 
 const MAX_HOOK_ROUNDS = 5;
@@ -111,20 +91,8 @@ export function createTxRunner(
         hooks.delete(hook);
       };
     },
-    async unit(fn, options = {}) {
+    async unit(fn) {
       if (ambient.getStore()) throw new Error('Units of work do not nest.');
-      if (options.rehearse) {
-        try {
-          await database.transaction(async (conn) => {
-            const tx: Tx = { conn, emit: () => undefined, rehearsal: true };
-            throw new Rollback(await ambient.run(tx, () => fn(tx)));
-          });
-        } catch (error) {
-          if (error instanceof Rollback) return error.value as never;
-          throw error;
-        }
-        throw new Error('A rehearsal did not roll back.');
-      }
       const pending: DomainEvent[] = [];
       const result = await database.transaction(async (conn) => {
         const tx: Tx = { conn, emit: (event) => pending.push(event) };
@@ -141,7 +109,6 @@ export function createTxRunner(
         const inner: Tx = {
           conn,
           emit: (event) => buffered.push(event),
-          ...(tx.rehearsal ? { rehearsal: true } : {}),
         };
         return ambient.run(inner, () => fn(inner));
       });

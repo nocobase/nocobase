@@ -1724,26 +1724,6 @@ describe('the API document', () => {
     );
   });
 
-  it('omits retired operations from the API document and rejects old write URLs', async () => {
-    const document = await generateApiDocument(apiRouter, {
-      info: { title: 'Test', version: '1.0.0' },
-    });
-    const paths = Object.keys(document.paths ?? {});
-    expect(paths.some((path) => path.startsWith('/api/projects/plans'))).toBe(
-      false,
-    );
-    expect(paths).not.toContain('/api/projects/intake/split');
-    expect(
-      paths.some((path) => path.startsWith('/api/projects/intake/ai')),
-    ).toBe(false);
-    for (const path of ['/plans', '/intake/split', '/intake/aiJobs']) {
-      expect(
-        (await call(path, { role: 'admin', method: 'POST', body: '{}' }))
-          .status,
-      ).toBe(404);
-    }
-  });
-
   it('describes what the handlers answer', async () => {
     const me = await call('/me', { role: 'admin' });
     expect(MeSchema.safeParse((await me.json()).data).success).toBe(true);

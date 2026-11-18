@@ -8,8 +8,7 @@
  * attempts that started into the `triggered` mentions a comment returns. A plugin that binds `projectsTriggersToken`
  * replaces it.
  *
- * `collectRunAttempts` runs a service call and collects every attempt its triggers reported, for a preview or a test,
- * without changing what the call returns.
+ * `collectRunAttempts` wraps a service call and returns the result alongside the attempts its triggers reported.
  *
  * A handler may announce something to run after the change commits (`work.announced`): it is delivered on the plugin's
  * event bus like any other event, and only the plugin that owns `kind` reads its `payload`.
@@ -20,10 +19,6 @@
  * `work_skipped { reason, trigger, blockers | status }` and `work_withdrawn { reason, runId, blockers }`.
  * Whether an issue is held is the plugin's to say (`SubtaskService.blockersOf`); the handler asks it and answers
  * `skipped: 'blocked'`.
- *
- * Collect only: a transaction rehearsal (`Tx.rehearsal`, `kernel/tx.ts`) runs the same triggers in a transaction that
- * always rolls back and drops every event. A handler then answers the attempts it would make (`started: true` for work
- * it would start, `skipped` with the reason otherwise) and queues, cancels or announces nothing; the caller can inspect those attempts.
  */
 import { AsyncLocalStorage } from 'node:async_hooks';
 
@@ -92,8 +87,7 @@ export interface WorkWithdrawal {
 }
 
 /**
- * A kind's answer to changes of the issues it executes or is named in. Each call joins the change's transaction; when
- * that transaction is a rehearsal (`tx.rehearsal`), it only answers what it would start.
+ * A kind's answer to changes of the issues it executes or is named in. Each call joins the change's transaction.
  */
 export interface IssueWorkHandler {
   /** Receives comments even when the executor was cleared, for issue-wide pause policies. */
@@ -224,7 +218,7 @@ export function kindTriggers(
   ): Promise<readonly RunAttempt[]> {
     const result = (await attempts) ?? [];
     recordRunAttempts(result);
-    if (tx.rehearsal || !deps.activity) return result;
+    if (!deps.activity) return result;
     let blockers: readonly Blocker[] | undefined;
     for (const attempt of result) {
       if (!RECORDED_SKIPS.has(attempt.skipped ?? '')) continue;
@@ -323,7 +317,7 @@ export function kindTriggers(
       for (const [, work] of concerned) {
         if (!work.onBlocked) continue;
         const withdrawn = await work.onBlocked(tx, input);
-        if (tx.rehearsal || !deps.activity) continue;
+        if (!deps.activity) continue;
         for (const item of withdrawn) {
           await deps.activity.record(tx.conn, {
             issueId: issue.id,

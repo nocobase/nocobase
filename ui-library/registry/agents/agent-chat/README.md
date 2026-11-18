@@ -66,7 +66,7 @@ Merge feature hunks into existing installed copies rather than overwriting appli
 
 - The agents plugin, `@nocobase/app-plugin-agents`, registered on the server and the client.
 - `ChatProvider` from the plugin's `client/chat` around the application's routes, inside the router. Every view reads the panel from it and renders nothing without it (`useChatPanel().available` is false). Give it `conversationPath` when the application has a full-page route for a conversation: the panel then offers "Open full screen" and `ChatConversationPage` moves between conversations there.
-- Optionally `ChatExtensionsContext` from the same entry, with what the application adds: items placed among a conversation's messages (`useTimelineItems`, such as the projects plugin's plan cards), something under a message (`renderMessageExtra`), and the wording or card of the news it delivers (`newsText`, `renderNews`).
+- Optionally `ChatExtensionsContext` from the same entry, with what the application adds: items placed among a conversation's messages (`useTimelineItems`), something under a message (`renderMessageExtra`), and the wording or card of the news it delivers (`newsText`, `renderNews`).
 
 ## Wiring
 
