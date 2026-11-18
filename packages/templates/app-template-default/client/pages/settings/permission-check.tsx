@@ -61,7 +61,7 @@ export default function PermissionCheckPage(): ReactElement {
   const app = useClientApplication();
   const authz = useAuthorizationClient();
   const [params, setParams] = useSearchParams();
-  const role = params.get('role') ?? undefined;
+  const requestedRole = params.get('role') ?? undefined;
   const user = params.get('user') ?? undefined;
   const text = (value: LocalizedText): string =>
     typeof value === 'string'
@@ -76,6 +76,12 @@ export default function PermissionCheckPage(): ReactElement {
   const roles = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
   );
+  // Inspecting does not require reading roles, but listing a role's members does: without that permission the check,
+  // including a preview link naming a role, covers any role only.
+  const rolesDenied = statusOf(roles.error) === 403;
+  const role = rolesDenied ? undefined : requestedRole;
+  // A role's members are only listed once the role list says they can be read.
+  const rolePending = Boolean(role) && roles.loading;
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   useEffect(() => {
@@ -90,9 +96,11 @@ export default function PermissionCheckPage(): ReactElement {
     readonly error?: unknown;
   }>();
   // A role's members are resolved in batches the resolve route accepts and searched here; any role searches the
-  // server's user directory, a page at a time.
-  const usersKey = JSON.stringify([role, role ? '' : query]);
+  // server's user directory, a page at a time. Searching within a role filters the members already listed.
+  const directoryQuery = role ? '' : query;
+  const usersKey = JSON.stringify([role, directoryQuery]);
   useEffect(() => {
+    if (rolePending) return;
     let active = true;
     const load = role
       ? authz.listAssignments(role).then(async (assignments) => {
@@ -112,7 +120,7 @@ export default function PermissionCheckPage(): ReactElement {
           return { items, total: items.length };
         })
       : authz.listSubjects('inspector', 'user', {
-          ...(query ? { search: query } : {}),
+          ...(directoryQuery ? { search: directoryQuery } : {}),
           page: 1,
           pageSize: BATCH,
         });
@@ -124,7 +132,7 @@ export default function PermissionCheckPage(): ReactElement {
     return () => {
       active = false;
     };
-  }, [authz, role, query, usersKey]);
+  }, [authz, role, rolePending, directoryQuery, usersKey]);
   const usersCurrent = usersResult?.key === usersKey ? usersResult : undefined;
   const users = usersCurrent?.items;
 
@@ -194,8 +202,6 @@ export default function PermissionCheckPage(): ReactElement {
     };
   }, [authz, user, workspace]);
 
-  // Inspecting does not require reading roles: without that permission the check covers any role only.
-  const rolesDenied = statusOf(roles.error) === 403;
   const roleItems = [
     { value: ALL_ROLES, label: t('settings.permissionCheck.anyRole') },
     ...[...(roles.data?.data ?? [])]

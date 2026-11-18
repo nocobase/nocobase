@@ -139,6 +139,13 @@ it('previews a role with more members than one request resolves, and finds any o
   await user.click(picker);
   expect(await screen.findByRole('option', { name: 'User 101' })).toBeVisible();
   await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(1));
+  // Searching within a role filters the members already listed instead of listing and resolving them again.
+  expect(
+    calls.mock.calls.filter(([call]) => call.path.endsWith('/assignments')),
+  ).toHaveLength(1);
+  expect(
+    calls.mock.calls.filter(([call]) => call.path.endsWith('/resolve')),
+  ).toHaveLength(2);
 });
 
 it('searches every user for any role and says when only the first page shows', async () => {
@@ -212,4 +219,31 @@ it('checks any role when roles cannot be read', async () => {
     ).not.toBeInTheDocument(),
   );
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('opens a preview link naming a role for any role when roles cannot be read', async () => {
+  const user = userEvent.setup();
+  const denied = api(({ path }) => {
+    if (
+      path === 'authorization/permissionSets' ||
+      path.startsWith('authorization/permissionSets/')
+    )
+      return new Response(null, { status: 403 });
+    if (path === 'authorization/inspector/subjects/user') return users();
+    return new Response(null, { status: 404 });
+  });
+  await mount('/settings/permission-check?role=sales', denied);
+  const picker = await screen.findByRole('combobox', { name: words.user });
+  await waitFor(() => expect(picker).not.toBeDisabled());
+  expect(
+    screen.queryByRole('combobox', { name: words.role }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(denied).not.toHaveBeenCalledWith(
+    expect.objectContaining({
+      path: 'authorization/permissionSets/sales/assignments',
+    }),
+  );
+  await user.click(picker);
+  expect(await screen.findByRole('option', { name: 'User 2' })).toBeVisible();
 });
