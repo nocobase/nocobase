@@ -26,7 +26,9 @@ export interface PermissionScopeSlot {
   readonly defaultValue?: string | undefined;
   /**
    * Follows the View scope of the same object: unset means "Same as view", and only narrower options are offered. An
-   * action id of the same object follows the first scope of that action instead.
+   * action id follows the first scope of that action instead. It may name another object's View, such as a Contacts
+   * action reading customers following Customers' View, so an object's data scope is set in one place; such a slot
+   * follows only while that action is on, and otherwise uses its own default.
    */
   readonly followsView?: boolean | string | undefined;
   /**
@@ -211,28 +213,58 @@ function viewSlotOf(object: PermissionObject): PermissionScopeSlot | undefined {
   return viewActionOf(object)?.scopes?.[0];
 }
 
-/** The action and slot a follower follows: the object's View, or the action its `followsView` names. */
+interface Leader {
+  readonly object: PermissionObject;
+  readonly action: PermissionAction;
+  readonly slot: PermissionScopeSlot;
+}
+
+/**
+ * The action and slot a follower follows: the object's View, or the action its `followsView` names, in this object or
+ * among `objects`. With `grants`, a leader in another object counts only while it is on.
+ */
 function leaderOf(
   object: PermissionObject,
   slot: PermissionScopeSlot | undefined,
-): { action: PermissionAction; slot: PermissionScopeSlot } | undefined {
+  objects: readonly PermissionObject[] = [],
+  grants?: PermissionGrants,
+): Leader | undefined {
   if (slot && !slot.followsView) return undefined;
-  const action =
-    typeof slot?.followsView === 'string'
-      ? object.actions.find((item) => item.id === slot.followsView)
-      : viewActionOf(object);
+  let owner = object;
+  let action: PermissionAction | undefined;
+  if (typeof slot?.followsView === 'string') {
+    const id = slot.followsView;
+    action = object.actions.find((item) => item.id === id);
+    if (!action) {
+      const found = findAction(objects, id);
+      if (!found || (grants && !grants[id])) return undefined;
+      ({ object: owner, action } = found);
+    }
+  } else action = viewActionOf(object);
   const leader = action?.scopes?.[0];
   return action && leader && leader !== slot
-    ? { action, slot: leader }
+    ? { object: owner, action, slot: leader }
     : undefined;
+}
+
+/** The other object whose View a follower slot follows, while that View is on; undefined for its own object's. */
+export function followedObject(
+  object: PermissionObject,
+  slot: PermissionScopeSlot,
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+): PermissionObject | undefined {
+  const leader = leaderOf(object, slot, objects, grants);
+  return leader && leader.object !== object ? leader.object : undefined;
 }
 
 export function slotOptions(
   object: PermissionObject,
   slot: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
 ): readonly PermissionScopeOption[] {
   if (slot.followsView && !slot.options?.length)
-    return leaderOf(object, slot)?.slot.options ?? [];
+    return leaderOf(object, slot, objects)?.slot.options ?? [];
   return slot.options ?? [];
 }
 
@@ -242,11 +274,13 @@ export function ownScopeValue(
   grants: PermissionGrants,
   action: PermissionAction,
   slot: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
 ): string | undefined {
   const value = grants[action.id]?.scopes?.[slot.id];
   if (value !== undefined) return value;
-  if (slot.followsView && leaderOf(object, slot)) return undefined;
-  return slot.defaultValue ?? slotOptions(object, slot)[0]?.value;
+  if (slot.followsView && leaderOf(object, slot, objects, grants))
+    return undefined;
+  return slot.defaultValue ?? slotOptions(object, slot, objects)[0]?.value;
 }
 
 /**
@@ -257,16 +291,17 @@ export function viewScopeValue(
   object: PermissionObject,
   grants: PermissionGrants,
   slot?: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
 ): string | undefined {
   const view = viewActionOf(object);
   const viewSlot = view?.scopes?.[0];
   const leader = slot
-    ? leaderOf(object, slot)
+    ? leaderOf(object, slot, objects, grants)
     : view && viewSlot
-      ? { action: view, slot: viewSlot }
+      ? { object, action: view, slot: viewSlot }
       : undefined;
   return leader
-    ? ownScopeValue(object, grants, leader.action, leader.slot)
+    ? ownScopeValue(leader.object, grants, leader.action, leader.slot, objects)
     : undefined;
 }
 
@@ -276,10 +311,13 @@ export function effectiveScopeValue(
   grants: PermissionGrants,
   action: PermissionAction,
   slot: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
 ): string | undefined {
   return (
-    ownScopeValue(object, grants, action, slot) ??
-    (slot.followsView ? viewScopeValue(object, grants, slot) : undefined)
+    ownScopeValue(object, grants, action, slot, objects) ??
+    (slot.followsView
+      ? viewScopeValue(object, grants, slot, objects)
+      : undefined)
   );
 }
 
@@ -308,10 +346,13 @@ export function viewScopeLabel(
   object: PermissionObject,
   grants: PermissionGrants,
   slot?: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
 ): string | undefined {
-  const value = viewScopeValue(object, grants, slot);
+  const value = viewScopeValue(object, grants, slot, objects);
   if (value === undefined) return undefined;
-  const leader = slot ? leaderOf(object, slot)?.slot : viewSlotOf(object);
+  const leader = slot
+    ? leaderOf(object, slot, objects, grants)?.slot
+    : viewSlotOf(object);
   return (
     leader?.options?.find((option) => option.value === value)?.label ?? value
   );
@@ -332,11 +373,12 @@ export function narrowerOptions(
   object: PermissionObject,
   grants: PermissionGrants,
   slot: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
 ): readonly PermissionScopeOption[] {
-  const leader = leaderOf(object, slot);
-  const current = viewScopeValue(object, grants, slot);
+  const leader = leaderOf(object, slot, objects, grants);
+  const current = viewScopeValue(object, grants, slot, objects);
   if (!leader || current === undefined) return [];
-  return slotOptions(object, slot).filter((option) =>
+  return slotOptions(object, slot, objects).filter((option) =>
     isNarrower(leader.slot, option.value, current),
   );
 }
@@ -625,8 +667,8 @@ export function setScopeValue(
   const chosen =
     value !== undefined &&
     slot &&
-    leaderOf(object, slot) &&
-    !narrowerOptions(object, grants, slot).some(
+    leaderOf(object, slot, objects, grants) &&
+    !narrowerOptions(object, grants, slot, objects).some(
       (option) => option.value === value,
     )
       ? undefined
@@ -640,38 +682,40 @@ export function setScopeValue(
   };
   const reset: string[] = [];
   let leaderLabel = '';
-  for (const other of object.actions) {
-    const otherGrant = next[other.id];
-    if (other.id === actionId || !otherGrant?.scopes) continue;
-    const otherScopes: Record<string, string> = { ...otherGrant.scopes };
-    let changed = false;
-    for (const follower of other.scopes ?? []) {
-      const own = otherScopes[follower.id];
-      const leader = leaderOf(object, follower);
-      if (
-        own === undefined ||
-        leader?.action.id !== actionId ||
-        leader.slot.id !== slotId
-      )
-        continue;
-      const current = viewScopeValue(object, next, follower);
-      // A value the leader lists and that is not provably narrower, wider or now equal, goes back to following it, and
-      // the notice names it so the change in the list is explained. An unlisted value is kept as stored.
-      if (
-        current === undefined ||
-        !listed(leader.slot, own) ||
-        isNarrower(leader.slot, own, current)
-      )
-        continue;
-      delete otherScopes[follower.id];
-      changed = true;
-      leaderLabel = viewScopeLabel(object, next, follower) ?? current;
+  // Followers may sit in other objects, such as a Contacts action reading customers that follows Customers' View.
+  for (const owner of objects)
+    for (const other of owner.actions) {
+      const otherGrant = next[other.id];
+      if (other.id === actionId || !otherGrant?.scopes) continue;
+      const otherScopes: Record<string, string> = { ...otherGrant.scopes };
+      let changed = false;
+      for (const follower of other.scopes ?? []) {
+        const own = otherScopes[follower.id];
+        const leader = leaderOf(owner, follower, objects, next);
+        if (
+          own === undefined ||
+          leader?.action.id !== actionId ||
+          leader.slot.id !== slotId
+        )
+          continue;
+        const current = viewScopeValue(owner, next, follower, objects);
+        // A value the leader lists and that is not provably narrower, wider or now equal, goes back to following it, and
+        // the notice names it so the change in the list is explained. An unlisted value is kept as stored.
+        if (
+          current === undefined ||
+          !listed(leader.slot, own) ||
+          isNarrower(leader.slot, own, current)
+        )
+          continue;
+        delete otherScopes[follower.id];
+        changed = true;
+        leaderLabel = viewScopeLabel(owner, next, follower, objects) ?? current;
+      }
+      if (changed) {
+        next[other.id] = { ...otherGrant, scopes: otherScopes };
+        reset.push(other.label);
+      }
     }
-    if (changed) {
-      next[other.id] = { ...otherGrant, scopes: otherScopes };
-      reset.push(other.label);
-    }
-  }
   return {
     grants: next,
     notices: reset.length

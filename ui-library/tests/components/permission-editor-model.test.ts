@@ -4,6 +4,7 @@ import {
   dependentsOf,
   effectiveScopeValue,
   filterObjects,
+  followedObject,
   menuCheckState,
   menuCount,
   menuDependents,
@@ -400,6 +401,93 @@ describe('permission editor model', () => {
         actions: ['Edit contacts'],
       },
     ]);
+  });
+
+  it('lets a slot reading another object follow that object’s View, set in one place', () => {
+    const customers = {
+      id: 'customers',
+      label: 'Customers',
+      actions: [
+        {
+          id: 'customers.view',
+          label: 'View customers',
+          view: true,
+          scopes: [{ id: 'records', options: RECORDS }],
+        },
+      ],
+    } satisfies PermissionObject;
+    const contacts = {
+      id: 'contacts',
+      label: 'Contacts',
+      actions: [
+        {
+          id: 'contacts.view',
+          label: 'View contacts',
+          view: true,
+          scopes: [{ id: 'records', options: RECORDS }],
+        },
+        {
+          id: 'contacts.create',
+          label: 'Create contacts',
+          scopes: [
+            {
+              id: 'customers',
+              label: 'Customers',
+              options: RECORDS,
+              defaultValue: 'own',
+              followsView: 'customers.view',
+            },
+          ],
+        },
+      ],
+    } satisfies PermissionObject;
+    const all: readonly PermissionObject[] = [customers, contacts];
+    const create = contacts.actions[1]!;
+    const slot = create.scopes[0]!;
+    const grants: PermissionGrants = {
+      'customers.view': { scopes: { records: 'department' } },
+      'contacts.view': { scopes: { records: 'all' } },
+      'contacts.create': {},
+    };
+    expect(effectiveScopeValue(contacts, grants, create, slot, all)).toBe(
+      'department',
+    );
+    expect(followedObject(contacts, slot, all, grants)).toBe(customers);
+    expect(
+      narrowerOptions(contacts, grants, slot, all).map(
+        (option) => option.value,
+      ),
+    ).toEqual(['own']);
+    // Wider than Customers' View is refused: the customer scope is never wider than the one set on Customers.
+    expect(
+      setScopeValue(all, grants, 'contacts.create', 'customers', 'all').grants[
+        'contacts.create'
+      ]?.scopes,
+    ).toEqual({});
+    // Narrowing Customers' View sends a wider follower in another object back to following it, and says so.
+    const change = setScopeValue(
+      all,
+      {
+        ...grants,
+        'customers.view': { scopes: { records: 'all' } },
+        'contacts.create': { scopes: { customers: 'department' } },
+      },
+      'customers.view',
+      'records',
+      'own',
+    );
+    expect(change.grants['contacts.create']?.scopes).toEqual({});
+    expect(change.notices).toEqual([
+      {
+        kind: 'scope-reset',
+        view: 'Their own records',
+        actions: ['Create contacts'],
+      },
+    ]);
+    // With Customers' View off, the slot uses its own default and options.
+    const off = { 'contacts.view': {}, 'contacts.create': {} };
+    expect(effectiveScopeValue(contacts, off, create, slot, all)).toBe('own');
+    expect(followedObject(contacts, slot, all, off)).toBeUndefined();
   });
 
   it('keeps the scopes of a multi-scope action independent of View', () => {
