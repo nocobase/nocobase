@@ -31,12 +31,12 @@ export interface SpaRoutesApplication {
 }
 
 export const spaRootRoutes: AppRootRouteContribution<SpaRoutesApplication> =
-  defineRootRoutes((app: SpaRoutesApplication): Hono => {
+  defineRootRoutes(async (app: SpaRoutesApplication): Promise<Hono> => {
     const router = new Hono();
     const identity = app.config.get<AppIdentityConfig>('app')!;
     const spa = app.config.get<SpaConfig>('spa')!;
     const apiUrl = joinBasePath(app.publicBasePath, '/api');
-    const appPackage = readAppPackage(app.paths.rootDir);
+    const appPackage = await readAppPackage(app.paths.rootDir);
     const drive = app.config.get<AppDriveConfig>('drive');
     const manager = drive
       ? app.container.resolve(driveManagerToken)

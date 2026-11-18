@@ -528,10 +528,10 @@ export class Application<
    * The document's title and version, from the application's `package.json` or else its name, and its server: the
    * public base path the API is served under.
    */
-  private describeApiDocument(): ApiDocsDescription {
+  private async describeApiDocument(): Promise<ApiDocsDescription> {
     let manifest: AppPackageIdentity = {};
     try {
-      manifest = readAppPackage(this.paths.rootDir);
+      manifest = await readAppPackage(this.paths.rootDir);
     } catch {
       // An application assembled without a manifest, such as one in a test, is named by its configuration.
     }
