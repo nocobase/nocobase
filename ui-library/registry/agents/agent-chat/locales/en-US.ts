@@ -19,6 +19,23 @@ export interface AgentChatLocale {
       readonly older: string;
       readonly empty: string;
     };
+    readonly thinking: {
+      readonly title: string;
+      readonly choose: string;
+      readonly useDefault: string;
+      readonly levels: {
+        readonly 'provider-default': string;
+        readonly none: string;
+        readonly minimal: string;
+        readonly low: string;
+        readonly medium: string;
+        readonly high: string;
+        readonly xhigh: string;
+      };
+      readonly adjusted: string;
+      readonly adjustedToDefault: string;
+      readonly warning: string;
+    };
     readonly webSearch: {
       readonly title: string;
       readonly queryCount: string;
@@ -396,6 +413,26 @@ const agentChatEnUS: AgentChatLocale = {
         'Could not share with: {{names}}. These users remain selected for retry.',
       older: 'Load older messages',
       empty: 'There are no finished turns in this snapshot.',
+    },
+    thinking: {
+      title: 'Thinking level',
+      choose: 'Thinking level: {{level}}',
+      useDefault: 'Use the provider default',
+      levels: {
+        'provider-default': 'Default',
+        none: 'Off',
+        minimal: 'Minimal',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        xhigh: 'Extra high',
+      },
+      adjusted:
+        'This model does not support the {{requested}} thinking level; {{used}} was used for this reply.',
+      adjustedToDefault:
+        'This model does not support the {{requested}} thinking level; the provider default was used for this reply.',
+      warning:
+        'The provider may not have applied the {{level}} thinking level to this reply.',
     },
     webSearch: {
       title: 'Web search',
