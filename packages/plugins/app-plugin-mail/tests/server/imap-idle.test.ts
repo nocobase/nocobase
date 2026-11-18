@@ -200,6 +200,25 @@ describe('INBOX IDLE lifecycle', () => {
     expect(clients).toHaveLength(3);
   });
 
+  it('listens only while INBOX is a synchronized folder', async () => {
+    vi.useFakeTimers();
+    const { listener, clients, schedule } = fixture();
+    listener.update({ ...account, syncFolderIds: [] });
+    listener.update({ ...account, syncFolderIds: ['Archive'] });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(clients).toHaveLength(0);
+    listener.update({ ...account, syncFolderIds: ['Archive', 'INBOX'] });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(clients).toHaveLength(1);
+    listener.update({ ...account, syncFolderIds: ['Archive'] });
+    expect(clients[0].close).toHaveBeenCalled();
+    schedule.mockClear();
+    clients[0].emit('exists', { path: 'INBOX', count: 2, prevCount: 1 });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(schedule).not.toHaveBeenCalled();
+    expect(clients).toHaveLength(1);
+  });
+
   it('backs off failed reconnects, catches up on recovery and cancels retries on shutdown', async () => {
     vi.useFakeTimers();
     const { listener, clients, createClient, schedule } = fixture();

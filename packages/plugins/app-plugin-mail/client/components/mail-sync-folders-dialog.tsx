@@ -108,15 +108,19 @@ function SyncFoldersForm({
 
   useEffect(() => {
     const controller = new AbortController();
-    load(controller.signal).catch((cause: unknown) => {
-      if (!controller.signal.aborted)
-        setError(
-          mailErrorMessage(
-            cause,
-            t('errors.requestFailed', { defaultValue: 'Mail request failed.' }),
-          ),
-        );
-    });
+    void Promise.resolve()
+      .then(() => load(controller.signal))
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted)
+          setError(
+            mailErrorMessage(
+              cause,
+              t('errors.requestFailed', {
+                defaultValue: 'Mail request failed.',
+              }),
+            ),
+          );
+      });
     return () => controller.abort();
   }, [load, t]);
 

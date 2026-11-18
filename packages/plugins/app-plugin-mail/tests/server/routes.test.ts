@@ -317,6 +317,88 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
     });
   });
 
+  it('accepts sync folder selections, previews them and connects accounts waiting for one', async () => {
+    const mail = service();
+    const updateAccount = vi.spyOn(mail, 'updateAccount');
+    const preview = vi
+      .spyOn(mail, 'previewSyncFolders')
+      .mockResolvedValue({ removedMessageCount: 3 });
+    const connect = vi.spyOn(mail, 'connectAccount');
+    const listFolders = vi.spyOn(mail, 'listFolders');
+    const router = await createRouter(true, mail);
+    const patch = (body: unknown) =>
+      router.request('/api/mail/accounts/account-1', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+    for (const syncFolderIds of [[], [''], 'INBOX'])
+      expect((await patch({ syncFolderIds })).status).toBe(400);
+    expect(updateAccount).not.toHaveBeenCalled();
+    expect((await patch({ syncFolderIds: ['INBOX', 'Archive'] })).status).toBe(
+      200,
+    );
+    expect((await patch({ syncFolderIds: null })).status).toBe(200);
+    expect(updateAccount.mock.calls.map(([, input]) => input)).toEqual([
+      { accountId: 'account-1', syncFolderIds: ['INBOX', 'Archive'] },
+      { accountId: 'account-1', syncFolderIds: null },
+    ]);
+
+    const previewed = await router.request(
+      '/api/mail/accounts/account-1/previewSyncFolders',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ syncFolderIds: ['INBOX'] }),
+      },
+    );
+    expect(previewed.status).toBe(200);
+    expect(await previewed.json()).toEqual({
+      data: { removedMessageCount: 3 },
+    });
+    expect(preview).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: 'user-1' }),
+      'account-1',
+      ['INBOX'],
+    );
+
+    const connectBody = (syncFolderIds: unknown) =>
+      JSON.stringify({
+        type: 'imap-smtp',
+        name: 'company-mail',
+        address: 'user@example.com',
+        password: 'secret',
+        initialSyncReceivedAfter: '2026-01-01T00:00:00Z',
+        syncFolderIds,
+      });
+    const rejected = await router.request('/api/mail/accounts/connect', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: connectBody(['INBOX']),
+    });
+    expect(rejected.status).toBe(400);
+    const connected = await router.request('/api/mail/accounts/connect', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: connectBody([]),
+    });
+    expect(connected.status).toBe(201);
+    expect(connect).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ syncFolderIds: [] }),
+    );
+
+    await router.request(
+      '/api/mail/accounts/account-1/folders?includeUnsynced=true',
+    );
+    expect(listFolders).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'account-1',
+      { includeUnsynced: true },
+    );
+  });
+
   it('answers bounded lists whole with meta.total', async () => {
     const label = {
       id: 'label-1',
@@ -1265,6 +1347,7 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
     expect(listFolders).toHaveBeenCalledWith(
       expect.objectContaining({ actorId: 'user-1' }),
       'account-1',
+      {},
     );
     expect(listMessages).toHaveBeenCalledWith(
       expect.objectContaining({ actorId: 'user-1' }),
@@ -2279,6 +2362,7 @@ function service(overrides: Partial<MailService> = {}): MailService {
     listManagedFolders: async () => [],
     listManagedMessages: async () => ({ items: [] }),
     manageMessages: async () => ({ items: [], succeeded: 0, failed: 0 }),
+    previewSyncFolders: async () => ({ removedMessageCount: 0 }),
     listFolders: async () => [],
     listLabels: async () => [],
     listIdentities: async () => [],

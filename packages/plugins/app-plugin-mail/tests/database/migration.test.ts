@@ -382,6 +382,50 @@ describe('mail database migration', () => {
       ).toBeDefined();
     expect((await migrateUp(database)).executed).toEqual([]);
   });
+
+  it('refuses to drop account sync folders while account data would cascade away', async () => {
+    await migrateUp(database);
+    const connection = database.connection();
+    const accountId = randomUUID();
+    const now = '2026-11-18T00:00:00.000Z';
+    await connection.query
+      .insertInto('mailAccounts')
+      .values({
+        id: accountId,
+        userId: accountId,
+        providerType: 'imap-smtp',
+        providerName: 'imap',
+        authorizationSubject: accountId,
+        address: `${accountId}@example.com`,
+        credentialReference: 'unused',
+        scopes: '[]',
+        status: 'active',
+        syncFolderIds: JSON.stringify(['INBOX']),
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+    await connection.query
+      .insertInto('mailFolders')
+      .values({
+        id: randomUUID(),
+        accountId,
+        providerFolderId: 'INBOX',
+        name: 'Inbox',
+        type: 'inbox',
+        kind: 'folder',
+      })
+      .execute();
+    await expect(migrateDown(database)).rejects.toThrow(
+      'mailFolders contains data',
+    );
+    expect(
+      await connection.query.selectFrom('mailFolders').selectAll().execute(),
+    ).toHaveLength(1);
+    expect(
+      (await inspectCollection(connection, 'mailAccounts'))?.fields,
+    ).toMatchObject({ syncFolderIds: { type: 'json' } });
+  });
 });
 
 async function migrateUp(database: DatabaseManager) {

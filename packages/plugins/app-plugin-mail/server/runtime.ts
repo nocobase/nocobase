@@ -318,7 +318,8 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<boolean> {
     const startedAt = Date.now();
     const account = await this.options.store.getAccount(accountId);
-    if (!account || account.status !== 'active') return false;
+    if (!account || account.status !== 'active' || waitsForFolders(account))
+      return false;
     const requestToken = randomUUID();
     await this.options.store.markPushSyncPending(accountId, requestToken);
     writeMailLog(
@@ -387,7 +388,11 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
           this.kick();
         } else {
           const current = await this.options.store.getAccount(account.id);
-          if (!current || current.status !== 'active') {
+          if (
+            !current ||
+            current.status !== 'active' ||
+            waitsForFolders(current)
+          ) {
             await this.options.store.clearPushSyncPending(
               account.id,
               requestToken,
@@ -412,8 +417,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<boolean> {
     const account = await this.options.store.getAccount(accountId);
     if (!account || account.status !== 'active') return false;
-    // An account whose folders are not chosen yet imports nothing until its owner chooses them.
-    if (account.syncFolderIds?.length === 0) return false;
+    if (waitsForFolders(account)) return false;
     const cursor = await this.options.store.getSyncCursor(account.id);
     const legacyInitialSyncDate =
       !cursor && !account.initialSyncReceivedAfter
@@ -528,4 +532,9 @@ export function isAutomaticSyncDue(
   const last = Date.parse(lastSyncedAt);
   if (!Number.isFinite(last)) return true;
   return now - last >= intervalMs;
+}
+
+/** An account whose folders are not chosen yet imports nothing until its owner chooses them. */
+function waitsForFolders(account: MailAccount): boolean {
+  return account.syncFolderIds?.length === 0;
 }
