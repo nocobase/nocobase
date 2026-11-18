@@ -312,9 +312,8 @@ const settings = {
     scopeForSlot: '{{action}}: {{scope}}',
     followHint:
       'Other actions follow the view scope; they can be narrower, never wider.',
-    riskHint: 'High-risk permissions are never turned on automatically.',
-    riskHigh: 'High risk',
-    riskSensitive: 'Sensitive',
+    riskHint:
+      'Enable all and requirements leave out some permissions here, such as granting roles; turn those on yourself.',
     managed: 'Managed by the application',
     visibleMenus: '{{visible}} of {{total}} menus visible',
     unrestrictedTitle: 'All permissions (unrestricted)',

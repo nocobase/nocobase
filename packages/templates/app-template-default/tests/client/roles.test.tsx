@@ -208,7 +208,7 @@ it('saves menu access with the actions, explains escalation and asks before swit
   expect(screen.getByText(words.escalation.roles)).toBeVisible();
   await user.click(screen.getByRole('switch', { name: /Change roles/ }));
   expect(screen.getByRole('switch', { name: /Read roles/ })).toBeChecked();
-  expect(screen.getByText(editor.riskHigh)).toBeVisible();
+  expect(screen.getByText(editor.riskHint)).toBeVisible();
   await user.click(
     screen.getByRole('button', { name: words.save, exact: true }),
   );

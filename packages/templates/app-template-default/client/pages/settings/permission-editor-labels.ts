@@ -33,7 +33,6 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
           : k('scopeFor', { action }),
       followHint: k('followHint'),
       riskHint: k('riskHint'),
-      risk: (risk) => k(risk === 'high' ? 'riskHigh' : 'riskSensitive'),
       managed: k('managed'),
       visibleMenus: (visible, total) => k('visibleMenus', { visible, total }),
       unsaved: t('settings.unsaved'),
