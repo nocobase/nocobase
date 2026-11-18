@@ -313,7 +313,7 @@ const zhCN: MailResource = {
     eyebrow: '通信',
     loading: '正在加载邮件配置…',
     authorizationSuccess:
-      '账户关联成功。新关联的邮箱正在后台自动同步，首次同步可能需要一些时间。可在同步日志中查看进度，无需重复发起同步。',
+      '账户已连接。请选择要同步的文件夹，选择后开始导入邮件。首次同步可能需要一些时间，可在同步日志中查看进度。',
     authorizationFailure: '邮件账户连接失败，请重试。',
     initialSync: {
       title: '首次同步起始日期',
@@ -322,10 +322,32 @@ const zhCN: MailResource = {
       receivedAfter: '仅导入此日期之后的邮件',
       pickDate: '请选择日期',
     },
+    syncFolders: {
+      title: '同步文件夹',
+      description:
+        '选择此账户要同步的文件夹。其他文件夹中的邮件不会导入，已有的本地副本会被删除。',
+      loading: '正在加载文件夹…',
+      waiting: '正在从邮件服务器获取文件夹列表…',
+      allFolders: '全部文件夹（包括以后新建的文件夹）',
+      selectedCount: '已选择 {{count}} / {{total}} 个文件夹',
+      sentHint: '未选择“已发送”，会话中可能看不到你自己的回复；发信不受影响。',
+      removeTitle: '删除本地邮件？',
+      removeDescription:
+        '有 {{count}} 封本地邮件不在任何选中的文件夹中，将从本应用中删除。邮件服务器上的邮件不受影响。',
+      back: '返回',
+      confirm: '删除并保存',
+      saving: '正在保存…',
+      later: '稍后',
+      cancel: '取消',
+      start: '开始同步',
+      save: '保存',
+      pending: '选择同步文件夹后开始同步',
+      action: '同步文件夹',
+    },
     providers: {
       title: '添加邮件账户',
       description:
-        '先选择邮件账户类型，再完成授权或填写邮箱凭据。新邮箱连接成功后，系统会自动开始首次同步。同步可能需要一些时间，具体取决于邮件数量和网络状况。你可以在“同步日志”中查看进度，无需重复点击同步。',
+        '先选择邮件账户类型，再完成授权或填写邮箱凭据。连接后选择要同步的文件夹，系统按首次同步起始日期导入邮件。同步可能需要一些时间，具体取决于邮件数量和网络状况。你可以在“同步日志”中查看进度。',
       accountType: '邮件账户类型',
       chooseAccountType: '请选择账户类型',
       emptyTitle: '未配置邮件服务商',

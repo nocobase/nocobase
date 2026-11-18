@@ -313,7 +313,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     eyebrow: '通訊',
     loading: '正在載入郵件設定...',
     authorizationSuccess:
-      '帳戶連線成功。新連線的郵箱會在背景自動同步。初始同步可能需要一些時間。在同步日誌中檢視進度；無需開始另一次同步。',
+      '帳戶已連接。請選擇要同步的資料夾，選擇後開始匯入郵件。首次同步可能需要一些時間，可在同步記錄中查看進度。',
     authorizationFailure: '無法連線郵件帳號。再試一次。',
     initialSync: {
       title: '初始同步日期',
@@ -322,10 +322,33 @@ const zhTW: LocaleResource<typeof enUS> = {
       receivedAfter: '匯入之後收到的訊息',
       pickDate: '選擇日期',
     },
+    syncFolders: {
+      title: '同步資料夾',
+      description:
+        '選擇此帳戶要同步的資料夾。其他資料夾中的郵件不會匯入，已有的本機副本會被刪除。',
+      loading: '正在載入資料夾…',
+      waiting: '正在從郵件伺服器取得資料夾清單…',
+      allFolders: '全部資料夾（包含日後新建的資料夾）',
+      selectedCount: '已選擇 {{count}} / {{total}} 個資料夾',
+      sentHint:
+        '未選擇「寄件備份」，對話中可能看不到你自己的回覆；寄信不受影響。',
+      removeTitle: '刪除本機郵件？',
+      removeDescription:
+        '有 {{count}} 封本機郵件不在任何選取的資料夾中，將從本應用程式中刪除。郵件伺服器上的郵件不受影響。',
+      back: '返回',
+      confirm: '刪除並儲存',
+      saving: '正在儲存…',
+      later: '稍後',
+      cancel: '取消',
+      start: '開始同步',
+      save: '儲存',
+      pending: '選擇同步資料夾後開始同步',
+      action: '同步資料夾',
+    },
     providers: {
       title: '新增郵件帳戶',
       description:
-        '選擇帳戶型別，然後對其進行授權或輸入其郵箱憑證。新連線的郵箱開始自動同步。初始同步可能需要一些時間，具體取決於訊息數量和網路狀況。檢查同步日誌中的進度；無需開始另一次同步。',
+        '先選擇郵件帳戶類型，再完成授權或填寫信箱憑證。連接後選擇要同步的資料夾，系統依首次同步起始日期匯入郵件。同步可能需要一些時間，取決於郵件數量與網路狀況。你可以在「同步記錄」中查看進度。',
       accountType: '郵件帳號型別',
       chooseAccountType: '選擇帳戶型別',
       emptyTitle: '未配置郵件提供商',

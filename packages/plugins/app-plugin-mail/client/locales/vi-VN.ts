@@ -328,7 +328,7 @@ const viVN: LocaleResource<typeof enUS> = {
     eyebrow: 'Truyền thông',
     loading: 'Đang tải cấu hình thư…',
     authorizationSuccess:
-      'Tài khoản được kết nối thành công. Hộp thư mới được kết nối sẽ tự động đồng bộ hóa trong nền. Đồng bộ hóa lần đầu có thể mất một chút thời gian. Xem tiến trình trong nhật ký Đồng bộ hóa; không cần phải bắt đầu đồng bộ hóa khác.',
+      'Đã kết nối tài khoản. Hãy chọn các thư mục đồng bộ để bắt đầu nhập thư. Lần đồng bộ đầu tiên có thể mất một lúc; xem tiến độ trong nhật ký đồng bộ.',
     authorizationFailure: 'Không thể kết nối tài khoản thư. Hãy thử lại.',
     initialSync: {
       title: 'Ngày đồng bộ hóa lần đầu',
@@ -337,10 +337,33 @@ const viVN: LocaleResource<typeof enUS> = {
       receivedAfter: 'Nhập tin nhắn nhận được sau',
       pickDate: 'Chọn một ngày',
     },
+    syncFolders: {
+      title: 'Thư mục đồng bộ',
+      description:
+        'Chọn các thư mục mà tài khoản này đồng bộ. Thư trong các thư mục khác sẽ không được nhập và bản sao cục bộ của chúng sẽ bị xóa.',
+      loading: 'Đang tải thư mục…',
+      waiting: 'Đang lấy danh sách thư mục từ máy chủ thư…',
+      allFolders: 'Tất cả thư mục, bao gồm cả thư mục tạo sau này',
+      selectedCount: 'Đã chọn {{count}}/{{total}} thư mục',
+      sentHint:
+        'Chưa chọn Đã gửi, nên các thư trả lời của chính bạn có thể không hiển thị trong hội thoại. Việc gửi thư vẫn hoạt động.',
+      removeTitle: 'Xóa thư cục bộ?',
+      removeDescription:
+        '{{count}} thư cục bộ không thuộc thư mục nào được chọn và sẽ bị xóa khỏi ứng dụng này. Thư trên máy chủ thư không bị ảnh hưởng.',
+      back: 'Quay lại',
+      confirm: 'Xóa và lưu',
+      saving: 'Đang lưu…',
+      later: 'Để sau',
+      cancel: 'Hủy',
+      start: 'Bắt đầu đồng bộ',
+      save: 'Lưu',
+      pending: 'Chọn thư mục để bắt đầu đồng bộ',
+      action: 'Thư mục',
+    },
     providers: {
       title: 'Thêm tài khoản thư',
       description:
-        'Chọn một loại tài khoản, sau đó ủy quyền cho nó hoặc nhập thông tin xác thực hộp thư của nó. Các hộp thư mới được kết nối sẽ tự động đồng bộ hóa. Quá trình đồng bộ hóa lần đầu có thể mất chút thời gian, tùy thuộc vào số lượng tin nhắn và điều kiện mạng. Kiểm tra tiến trình trong nhật ký Đồng bộ hóa; không cần phải bắt đầu đồng bộ hóa khác.',
+        'Chọn loại tài khoản, sau đó ủy quyền hoặc nhập thông tin đăng nhập hộp thư. Sau khi kết nối, chọn các thư mục đồng bộ; thư được nhập từ ngày đồng bộ ban đầu. Lần đồng bộ đầu tiên có thể mất một lúc, tùy số lượng thư và mạng. Xem tiến độ trong nhật ký đồng bộ.',
       accountType: 'Loại tài khoản thư',
       chooseAccountType: 'Chọn loại tài khoản',
       emptyTitle: 'Không có nhà cung cấp thư nào được cấu hình',

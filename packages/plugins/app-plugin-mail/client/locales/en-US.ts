@@ -327,7 +327,7 @@ const enUS = {
     eyebrow: 'Communication',
     loading: 'Loading mail configuration…',
     authorizationSuccess:
-      'Account connected successfully. Newly connected mailboxes sync automatically in the background. Initial synchronization may take some time. View progress in Sync logs; there is no need to start another sync.',
+      'Account connected. Choose the folders to sync to start importing messages. Initial synchronization may take some time; view progress in Sync logs.',
     authorizationFailure: 'The mail account could not be connected. Try again.',
     initialSync: {
       title: 'Initial sync date',
@@ -336,10 +336,33 @@ const enUS = {
       receivedAfter: 'Import messages received after',
       pickDate: 'Pick a date',
     },
+    syncFolders: {
+      title: 'Folders to sync',
+      description:
+        'Choose the folders this account synchronizes. Messages in other folders are not imported, and local copies of them are deleted.',
+      loading: 'Loading folders…',
+      waiting: 'Getting the folder list from the mail server…',
+      allFolders: 'All folders, including folders created later',
+      selectedCount: '{{count}} of {{total}} folders selected',
+      sentHint:
+        'Sent is not selected, so your own replies may be missing from conversations. Sending mail still works.',
+      removeTitle: 'Delete local messages?',
+      removeDescription:
+        '{{count}} local messages are in no selected folder and will be deleted from this app. Messages on the mail server are not affected.',
+      back: 'Back',
+      confirm: 'Delete and save',
+      saving: 'Saving…',
+      later: 'Later',
+      cancel: 'Cancel',
+      start: 'Start sync',
+      save: 'Save',
+      pending: 'Choose folders to start syncing',
+      action: 'Folders',
+    },
     providers: {
       title: 'Add mail account',
       description:
-        'Choose an account type, then authorize it or enter its mailbox credentials. Newly connected mailboxes start syncing automatically. Initial sync may take some time, depending on the number of messages and network conditions. Check progress in Sync logs; there is no need to start another sync.',
+        'Choose an account type, then authorize it or enter its mailbox credentials. After connecting, choose the folders to sync; messages are imported from the initial sync date. Initial sync may take some time, depending on the number of messages and network conditions. Check progress in Sync logs.',
       accountType: 'Mail account type',
       chooseAccountType: 'Select an account type',
       emptyTitle: 'No mail providers configured',

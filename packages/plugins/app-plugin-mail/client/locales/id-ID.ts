@@ -329,7 +329,7 @@ const idID: LocaleResource<typeof enUS> = {
     eyebrow: 'Komunikasi',
     loading: 'Memuat konfigurasi email…',
     authorizationSuccess:
-      'Akun berhasil terhubung. Kotak surat yang baru tersambung disinkronkan secara otomatis di latar belakang. Sinkronisasi awal mungkin memerlukan waktu. Lihat kemajuan dalam log Sinkronisasi; tidak perlu memulai sinkronisasi lagi.',
+      'Akun terhubung. Pilih folder yang disinkronkan untuk mulai mengimpor pesan. Sinkronisasi awal mungkin memerlukan waktu; lihat progresnya di log sinkronisasi.',
     authorizationFailure: 'Akun email tidak dapat dihubungkan. Coba lagi.',
     initialSync: {
       title: 'Tanggal sinkronisasi awal',
@@ -338,10 +338,33 @@ const idID: LocaleResource<typeof enUS> = {
       receivedAfter: 'Impor pesan yang diterima setelahnya',
       pickDate: 'Pilih tanggal',
     },
+    syncFolders: {
+      title: 'Folder yang disinkronkan',
+      description:
+        'Pilih folder yang disinkronkan akun ini. Pesan di folder lain tidak diimpor, dan salinan lokalnya dihapus.',
+      loading: 'Memuat folder…',
+      waiting: 'Mengambil daftar folder dari server email…',
+      allFolders: 'Semua folder, termasuk folder yang dibuat nanti',
+      selectedCount: '{{count}} dari {{total}} folder dipilih',
+      sentHint:
+        'Terkirim tidak dipilih, sehingga balasan Anda sendiri mungkin tidak muncul di percakapan. Pengiriman email tetap berfungsi.',
+      removeTitle: 'Hapus pesan lokal?',
+      removeDescription:
+        '{{count}} pesan lokal tidak berada di folder terpilih mana pun dan akan dihapus dari aplikasi ini. Pesan di server email tidak terpengaruh.',
+      back: 'Kembali',
+      confirm: 'Hapus dan simpan',
+      saving: 'Menyimpan…',
+      later: 'Nanti',
+      cancel: 'Batal',
+      start: 'Mulai sinkronisasi',
+      save: 'Simpan',
+      pending: 'Pilih folder untuk mulai menyinkronkan',
+      action: 'Folder',
+    },
     providers: {
       title: 'Tambahkan akun email',
       description:
-        'Pilih jenis akun, lalu otorisasi atau masukkan kredensial kotak suratnya. Kotak surat yang baru terhubung mulai disinkronkan secara otomatis. Sinkronisasi awal mungkin memerlukan waktu, tergantung pada jumlah pesan dan kondisi jaringan. Periksa kemajuan di log Sinkronisasi; tidak perlu memulai sinkronisasi lagi.',
+        'Pilih jenis akun, lalu otorisasi atau masukkan kredensial kotak surat. Setelah terhubung, pilih folder yang disinkronkan; pesan diimpor mulai dari tanggal sinkronisasi awal. Sinkronisasi awal mungkin memerlukan waktu, tergantung jumlah pesan dan kondisi jaringan. Lihat progres di log sinkronisasi.',
       accountType: 'Jenis akun email',
       chooseAccountType: 'Pilih jenis akun',
       emptyTitle: 'Tidak ada penyedia email yang dikonfigurasi',

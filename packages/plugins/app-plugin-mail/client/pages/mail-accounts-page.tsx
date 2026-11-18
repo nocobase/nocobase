@@ -42,6 +42,7 @@ import {
   type MailSyncRunView,
 } from '../mail-client.js';
 import { MailPagination } from '../components/mail-pagination.js';
+import { MailSyncFoldersDialog } from '../components/mail-sync-folders-dialog.js';
 import { useMailTablePage } from '../hooks/use-mail-table-page.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 import { useMailClient } from '../runtime.js';
@@ -80,6 +81,7 @@ export default function MailAccountsPage({
   const [showLabels, setShowLabels] = useState(false);
   const [showSignatures, setShowSignatures] = useState(false);
   const [accountToRemove, setAccountToRemove] = useState<MailAccountView>();
+  const [folderAccount, setFolderAccount] = useState<MailAccountView>();
   const [accountToDeactivate, setAccountToDeactivate] =
     useState<MailAccountView>();
   const [removingAccountId, setRemovingAccountId] = useState<string>();
@@ -120,6 +122,22 @@ export default function MailAccountsPage({
   useEffect(() => {
     void Promise.resolve().then(refresh);
   }, [refresh]);
+
+  // Returning from an OAuth Provider: continue with the folder selection of the account it connected.
+  const [offerFolderSelection, setOfferFolderSelection] = useState(
+    authorizationNotice === 'success',
+  );
+  useEffect(() => {
+    if (!offerFolderSelection || loading) return;
+    const waiting = accounts.find(
+      (account) =>
+        account.status === 'active' && account.syncFolderIds?.length === 0,
+    );
+    void Promise.resolve().then(() => {
+      setOfferFolderSelection(false);
+      if (waiting) setFolderAccount(waiting);
+    });
+  }, [accounts, loading, offerFolderSelection]);
 
   const syncRefresh = useRealtimeRefresh(
     MAIL_REALTIME_TOPIC,
@@ -219,6 +237,8 @@ export default function MailAccountsPage({
         type: provider.type,
         name: provider.name,
         initialSyncReceivedAfter: toSyncDate(policy.receivedAfter),
+        // The folders are chosen once the account is connected and its folder list is known.
+        syncFolderIds: [],
       })
       .then((authorization) => {
         window.location.assign(authorization.authorizationUrl);
@@ -248,12 +268,14 @@ export default function MailAccountsPage({
         type: provider.type,
         name: provider.name,
         initialSyncReceivedAfter: toSyncDate(policy.receivedAfter),
+        syncFolderIds: [],
         ...credentials,
       })
-      .then(() => {
+      .then((account) => {
         setAuthorizationNotice('success');
         setConnectingProviderName(undefined);
         setShowConnector(false);
+        setFolderAccount(account);
         refresh();
       })
       .catch((cause: unknown) => {
@@ -456,7 +478,7 @@ export default function MailAccountsPage({
           {authorizationNotice === 'success'
             ? t('settings.authorizationSuccess', {
                 defaultValue:
-                  'Account connected successfully. Newly connected mailboxes sync automatically in the background. Initial synchronization may take some time. View progress in Sync logs; there is no need to start another sync.',
+                  'Account connected. Choose the folders to sync to start importing messages. Initial synchronization may take some time; view progress in Sync logs.',
               })
             : t('settings.authorizationFailure', {
                 defaultValue:
@@ -542,6 +564,16 @@ export default function MailAccountsPage({
                     <Fragment key={account.id}>
                       <ConnectedAccountRow
                         account={account}
+                        chooseFoldersLabel={t('settings.syncFolders.pending', {
+                          defaultValue: 'Choose folders to start syncing',
+                        })}
+                        foldersLabel={t('settings.syncFolders.action', {
+                          defaultValue: 'Folders',
+                        })}
+                        onChooseFolders={(account) => {
+                          setError(undefined);
+                          setFolderAccount(account);
+                        }}
                         onSync={startSync}
                         onRemove={requestRemoveAccount}
                         onToggleStatus={(account) => {
@@ -636,7 +668,7 @@ export default function MailAccountsPage({
             <SheetDescription>
               {t('settings.providers.description', {
                 defaultValue:
-                  'Choose an account type, then authorize it or enter its mailbox credentials. Newly connected mailboxes start syncing automatically. Initial sync may take some time, depending on the number of messages and network conditions. Check progress in Sync logs; there is no need to start another sync.',
+                  'Choose an account type, then authorize it or enter its mailbox credentials. After connecting, choose the folders to sync; messages are imported from the initial sync date. Initial sync may take some time, depending on the number of messages and network conditions. Check progress in Sync logs.',
               })}
             </SheetDescription>
           </SheetHeader>
@@ -860,6 +892,19 @@ export default function MailAccountsPage({
         </SheetContent>
       </Sheet>
 
+      <MailSyncFoldersDialog
+        account={folderAccount}
+        onClose={() => setFolderAccount(undefined)}
+        onSaved={(account) => {
+          setFolderAccount(undefined);
+          setAuthorizationNotice(undefined);
+          setAccounts((current) =>
+            current.map((item) => (item.id === account.id ? account : item)),
+          );
+          refresh();
+        }}
+      />
+
       <Dialog
         open={accountToDeactivate !== undefined}
         onOpenChange={(open) => {
@@ -1006,6 +1051,9 @@ export default function MailAccountsPage({
 
 function ConnectedAccountRow({
   account,
+  chooseFoldersLabel,
+  foldersLabel,
+  onChooseFolders,
   onSync,
   onRemove,
   onToggleStatus,
@@ -1019,6 +1067,9 @@ function ConnectedAccountRow({
   toggleStatusLabel,
 }: {
   readonly account: MailAccountView;
+  readonly chooseFoldersLabel: string;
+  readonly foldersLabel: string;
+  readonly onChooseFolders: (account: MailAccountView) => void;
   readonly onSync: (account: MailAccountView) => void;
   readonly onRemove: (account: MailAccountView) => void;
   readonly onToggleStatus: (account: MailAccountView) => void;
@@ -1044,6 +1095,16 @@ function ConnectedAccountRow({
               <p className='truncate text-xs text-muted-foreground'>
                 {account.displayName}
               </p>
+            ) : null}
+            {account.syncFolderIds?.length === 0 &&
+            account.status === 'active' ? (
+              <button
+                className='mt-1 text-left text-xs font-medium text-amber-700 underline-offset-2 hover:underline dark:text-amber-400'
+                onClick={() => onChooseFolders(account)}
+                type='button'
+              >
+                {chooseFoldersLabel}
+              </button>
             ) : null}
           </div>
         </div>
@@ -1080,6 +1141,16 @@ function ConnectedAccountRow({
             variant='outline'
           >
             {syncLabel}
+          </Button>
+          <Button
+            disabled={removing || updating || account.status !== 'active'}
+            onClick={() => onChooseFolders(account)}
+            type='button'
+            variant={
+              account.syncFolderIds?.length === 0 ? 'default' : 'outline'
+            }
+          >
+            {foldersLabel}
           </Button>
           <Button
             disabled={syncing || removing || updating}

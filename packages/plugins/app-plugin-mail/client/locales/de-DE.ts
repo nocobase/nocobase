@@ -333,7 +333,7 @@ const deDE: LocaleResource<typeof enUS> = {
     eyebrow: 'Kommunikation',
     loading: 'E-Mail-Konfiguration wird geladen…',
     authorizationSuccess:
-      'Konto erfolgreich verbunden. Neu verbundene Postfächer werden automatisch im Hintergrund synchronisiert. Die anfängliche Synchronisierung kann einige Zeit dauern. Fortschritt in den Synchronisierungsprotokollen anzeigen; Es ist nicht erforderlich, eine weitere Synchronisierung zu starten.',
+      'Konto verbunden. Wählen Sie die zu synchronisierenden Ordner, um den Import zu starten. Die erste Synchronisierung kann einige Zeit dauern; den Fortschritt sehen Sie in den Synchronisierungsprotokollen.',
     authorizationFailure:
       'Das E-Mail-Konto konnte nicht verbunden werden. Versuchen Sie es erneut.',
     initialSync: {
@@ -343,10 +343,33 @@ const deDE: LocaleResource<typeof enUS> = {
       receivedAfter: 'Nachher empfangene Nachrichten importieren',
       pickDate: 'Wählen Sie ein Datum',
     },
+    syncFolders: {
+      title: 'Zu synchronisierende Ordner',
+      description:
+        'Wählen Sie die Ordner, die dieses Konto synchronisiert. Nachrichten in anderen Ordnern werden nicht importiert, und ihre lokalen Kopien werden gelöscht.',
+      loading: 'Ordner werden geladen…',
+      waiting: 'Ordnerliste wird vom Mailserver abgerufen…',
+      allFolders: 'Alle Ordner, einschließlich später erstellter Ordner',
+      selectedCount: '{{count}} von {{total}} Ordnern ausgewählt',
+      sentHint:
+        '„Gesendet“ ist nicht ausgewählt, daher fehlen Ihre eigenen Antworten möglicherweise in Unterhaltungen. Das Senden funktioniert weiterhin.',
+      removeTitle: 'Lokale Nachrichten löschen?',
+      removeDescription:
+        '{{count}} lokale Nachrichten liegen in keinem ausgewählten Ordner und werden aus dieser App gelöscht. Nachrichten auf dem Mailserver sind nicht betroffen.',
+      back: 'Zurück',
+      confirm: 'Löschen und speichern',
+      saving: 'Wird gespeichert…',
+      later: 'Später',
+      cancel: 'Abbrechen',
+      start: 'Synchronisierung starten',
+      save: 'Speichern',
+      pending: 'Ordner wählen, um die Synchronisierung zu starten',
+      action: 'Ordner',
+    },
     providers: {
       title: 'E-Mail-Konto hinzufügen',
       description:
-        'Wählen Sie einen Kontotyp aus, autorisieren Sie ihn dann oder geben Sie seine Postfach-Anmeldeinformationen ein. Neu verbundene Postfächer beginnen automatisch mit der Synchronisierung. Die erste Synchronisierung kann je nach Anzahl der Nachrichten und Netzwerkbedingungen einige Zeit dauern. Überprüfen Sie den Fortschritt in den Synchronisierungsprotokollen. Es ist nicht erforderlich, eine weitere Synchronisierung zu starten.',
+        'Wählen Sie einen Kontotyp und autorisieren Sie ihn oder geben Sie die Zugangsdaten des Postfachs ein. Wählen Sie nach dem Verbinden die zu synchronisierenden Ordner; Nachrichten werden ab dem Startdatum der ersten Synchronisierung importiert. Die erste Synchronisierung kann je nach Nachrichtenanzahl und Netzwerk einige Zeit dauern. Den Fortschritt sehen Sie in den Synchronisierungsprotokollen.',
       accountType: 'E-Mail-Kontotyp',
       chooseAccountType: 'Wählen Sie einen Kontotyp aus',
       emptyTitle: 'Keine E-Mail-Anbieter konfiguriert',

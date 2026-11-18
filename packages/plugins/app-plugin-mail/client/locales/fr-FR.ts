@@ -330,7 +330,7 @@ const frFR: LocaleResource<typeof enUS> = {
     eyebrow: 'Communications',
     loading: 'Chargement de la configuration de la messagerie…',
     authorizationSuccess:
-      "Compte connecté avec succès. Les boîtes aux lettres nouvellement connectées se synchronisent automatiquement en arrière-plan. La synchronisation initiale peut prendre un certain temps. Afficher la progression dans les journaux de synchronisation ; il n'est pas nécessaire de démarrer une autre synchronisation.",
+      'Compte connecté. Choisissez les dossiers à synchroniser pour commencer l’import des messages. La synchronisation initiale peut prendre du temps ; suivez sa progression dans les journaux de synchronisation.',
     authorizationFailure:
       "Le compte de messagerie n'a pas pu être connecté. Essayer à nouveau.",
     initialSync: {
@@ -340,10 +340,34 @@ const frFR: LocaleResource<typeof enUS> = {
       receivedAfter: 'Importer les messages reçus après',
       pickDate: 'Choisissez une date',
     },
+    syncFolders: {
+      title: 'Dossiers à synchroniser',
+      description:
+        'Choisissez les dossiers que ce compte synchronise. Les messages des autres dossiers ne sont pas importés et leurs copies locales sont supprimées.',
+      loading: 'Chargement des dossiers…',
+      waiting:
+        'Récupération de la liste des dossiers auprès du serveur de messagerie…',
+      allFolders: 'Tous les dossiers, y compris ceux créés plus tard',
+      selectedCount: '{{count}} dossiers sur {{total}} sélectionnés',
+      sentHint:
+        'Envoyés n’est pas sélectionné : vos propres réponses peuvent manquer dans les conversations. L’envoi de messages fonctionne toujours.',
+      removeTitle: 'Supprimer les messages locaux ?',
+      removeDescription:
+        '{{count}} messages locaux ne sont dans aucun dossier sélectionné et seront supprimés de cette application. Les messages du serveur de messagerie ne sont pas affectés.',
+      back: 'Retour',
+      confirm: 'Supprimer et enregistrer',
+      saving: 'Enregistrement…',
+      later: 'Plus tard',
+      cancel: 'Annuler',
+      start: 'Lancer la synchronisation',
+      save: 'Enregistrer',
+      pending: 'Choisissez les dossiers pour lancer la synchronisation',
+      action: 'Dossiers',
+    },
     providers: {
       title: 'Ajouter un compte de messagerie',
       description:
-        "Choisissez un type de compte, puis autorisez-le ou saisissez ses identifiants de boîte aux lettres. Les boîtes aux lettres nouvellement connectées commencent à se synchroniser automatiquement. La synchronisation initiale peut prendre un certain temps, en fonction du nombre de messages et des conditions du réseau. Vérifiez la progression dans les journaux de synchronisation ; il n'est pas nécessaire de démarrer une autre synchronisation.",
+        'Choisissez un type de compte, puis autorisez-le ou saisissez les identifiants de la boîte aux lettres. Après la connexion, choisissez les dossiers à synchroniser ; les messages sont importés à partir de la date de synchronisation initiale. La synchronisation initiale peut prendre du temps selon le nombre de messages et le réseau. Suivez la progression dans les journaux de synchronisation.',
       accountType: 'Type de compte de messagerie',
       chooseAccountType: 'Sélectionnez un type de compte',
       emptyTitle: 'Aucun fournisseur de messagerie configuré',
