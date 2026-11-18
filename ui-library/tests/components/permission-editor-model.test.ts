@@ -92,6 +92,73 @@ const modules: readonly PermissionModule[] = [
             requires: ['payments.secret'],
           },
           { id: 'payments.secret', label: 'Bank details', risk: 'high' },
+          {
+            id: 'payments.audit',
+            label: 'Audit trail',
+            managed: true,
+            requires: ['payments.view'],
+          },
+          {
+            id: 'payments.export',
+            label: 'Export payments',
+            requires: ['payments.ledger'],
+          },
+          { id: 'payments.ledger', label: 'Ledger sync', managed: true },
+        ],
+      },
+      {
+        id: 'shipments',
+        label: 'Shipments',
+        actions: [
+          {
+            id: 'shipments.view',
+            label: 'View shipments',
+            view: true,
+            scopes: [{ id: 'records', options: RECORDS }],
+          },
+          {
+            // Supports only two of View's levels.
+            id: 'shipments.sign',
+            label: 'Sign',
+            scopes: [
+              {
+                id: 'records',
+                followsView: true,
+                options: [
+                  { value: 'all', label: 'All shipments' },
+                  { value: 'own', label: 'Their own shipments' },
+                ],
+              },
+            ],
+          },
+          {
+            id: 'shipments.submit',
+            label: 'Submit',
+            business: true,
+            scopes: [
+              {
+                id: 'records',
+                label: 'Shipments allowed',
+                followsView: true,
+                options: [
+                  { value: 'all', label: 'All shipments' },
+                  {
+                    value: 'department',
+                    label: 'Their department’s shipments',
+                  },
+                  { value: 'own', label: 'Shipments they prepared' },
+                ],
+              },
+              {
+                id: 'projects',
+                label: 'Linked projects',
+                options: [
+                  { value: 'all', label: 'All projects' },
+                  { value: 'own', label: 'Projects they own' },
+                ],
+              },
+            ],
+          },
         ],
       },
     ],
@@ -102,6 +169,10 @@ const contracts = modules[1]!.menus[0]!;
 const view = contracts.actions[2]!;
 const update = contracts.actions[1]!;
 const updateSlot = update.scopes![0]!;
+const payments = modules[1]!.menus[1]!;
+const shipments = modules[1]!.menus[2]!;
+const signSlot = shipments.actions[1]!.scopes![0]!;
+const submitSlot = shipments.actions[2]!.scopes![0]!;
 
 describe('permission editor model', () => {
   it('lists View first, then basic actions, then business actions in caller order', () => {
@@ -204,12 +275,117 @@ describe('permission editor model', () => {
     expect(Object.keys(off.grants)).toEqual(['payments.view']);
   });
 
-  it('never turns on a risky action automatically', () => {
-    const on = setActionEnabled(modules, {}, 'payments.refund', true);
-    expect(on.grants['payments.secret']).toBeUndefined();
-    expect(on.notices).toEqual([
-      { kind: 'risky-requirement', actions: ['Bank details'] },
+  it('ranks a follower with fewer options by View’s order and never offers a wider one', () => {
+    const grants: PermissionGrants = {
+      'shipments.view': { scopes: { records: 'department' } },
+      'shipments.sign': {},
+    };
+    expect(
+      narrowerOptions(shipments, grants, signSlot).map(
+        (option) => option.value,
+      ),
+    ).toEqual(['own']);
+    const wider = setScopeValue(
+      modules,
+      grants,
+      'shipments.sign',
+      'records',
+      'all',
+    );
+    expect(wider.grants['shipments.sign']?.scopes).toEqual({});
+    // Narrowing View keeps a follower that is still narrower, even if its own option list is shorter.
+    const narrowed = setScopeValue(
+      modules,
+      {
+        'shipments.view': { scopes: { records: 'all' } },
+        'shipments.sign': { scopes: { records: 'own' } },
+      },
+      'shipments.view',
+      'records',
+      'department',
+    );
+    expect(narrowed.grants['shipments.sign']?.scopes).toEqual({
+      records: 'own',
+    });
+    expect(narrowed.notices).toEqual([]);
+  });
+
+  it('keeps a two-scope action within View for its records and independent for linked projects', () => {
+    const grants: PermissionGrants = {
+      'shipments.view': { scopes: { records: 'department' } },
+      'shipments.submit': {},
+    };
+    expect(
+      narrowerOptions(shipments, grants, submitSlot).map(
+        (option) => option.value,
+      ),
+    ).toEqual(['own']);
+    const wider = setScopeValue(
+      modules,
+      grants,
+      'shipments.submit',
+      'records',
+      'all',
+    );
+    expect(wider.grants['shipments.submit']?.scopes).toEqual({});
+    const projects = setScopeValue(
+      modules,
+      wider.grants,
+      'shipments.submit',
+      'projects',
+      'all',
+    );
+    expect(projects.grants['shipments.submit']?.scopes).toEqual({
+      projects: 'all',
+    });
+  });
+
+  it('leaves an action off when a requirement is risky or managed and still off', () => {
+    const refund = setActionEnabled(modules, {}, 'payments.refund', true);
+    expect(refund.grants).toEqual({});
+    expect(refund.notices).toEqual([
+      {
+        kind: 'missing-requirement',
+        action: 'Refund',
+        actions: ['Bank details'],
+      },
     ]);
+    const exported = setActionEnabled(modules, {}, 'payments.export', true);
+    expect(exported.grants).toEqual({});
+    expect(exported.notices).toEqual([
+      {
+        kind: 'missing-requirement',
+        action: 'Export payments',
+        actions: ['Ledger sync'],
+      },
+    ]);
+    // Once the requirement is on, the action can be granted.
+    expect(
+      setActionEnabled(
+        modules,
+        { 'payments.secret': {} },
+        'payments.refund',
+        true,
+      ).grants,
+    ).toEqual({ 'payments.secret': {}, 'payments.refund': {} });
+  });
+
+  it('refuses to turn off what an enabled managed action needs', () => {
+    const grants: PermissionGrants = {
+      'payments.view': {},
+      'payments.audit': {},
+    };
+    const off = setActionEnabled(modules, grants, 'payments.view', false);
+    expect(off.grants).toBe(grants);
+    expect(off.notices).toEqual([
+      { kind: 'managed-dependent', actions: ['Audit trail'] },
+    ]);
+    expect(applyQuickSet(modules, grants, payments, 'none').grants).toBe(
+      grants,
+    );
+  });
+
+  it('never turns on a risky action automatically', () => {
     const all = applyQuickSet(modules, {}, contracts, 'all');
     expect(all.grants['contracts.export']).toBeUndefined();
     expect(Object.keys(all.grants)).toHaveLength(4);
@@ -231,10 +407,11 @@ describe('permission editor model', () => {
       total: 5,
     });
     expect(menuStatus(modules[0]!.menus[0]!, grants).state).toBe('public');
-    expect(visibleMenuCount(modules, grants)).toEqual({ visible: 1, total: 2 });
-    expect(visibleMenuCount(modules, {})).toEqual({ visible: 0, total: 2 });
+    expect(visibleMenuCount(modules, grants)).toEqual({ visible: 1, total: 3 });
+    expect(visibleMenuCount(modules, {})).toEqual({ visible: 0, total: 3 });
     expect(nextMenu(modules, 'contracts')?.id).toBe('payments');
-    expect(nextMenu(modules, 'payments')).toBeUndefined();
+    expect(nextMenu(modules, 'payments')?.id).toBe('shipments');
+    expect(nextMenu(modules, 'shipments')).toBeUndefined();
   });
 
   it('filters the tree by menu or action name', () => {

@@ -155,13 +155,21 @@ const MODULES: readonly PermissionModule[] = [
               'Submit an eligible quote after checking its linked project',
             scopes: [
               {
-                id: 'quotes',
+                // Never wider than View quotes; listed in View's order with quote-specific names.
+                id: 'records',
                 label: 'Quotes allowed for submission',
+                followsView: true,
                 options: [
                   { value: 'all', label: 'All quotes' },
+                  {
+                    value: 'department-tree',
+                    label: 'Quotes of their department and below',
+                  },
+                  { value: 'department', label: 'Their department’s quotes' },
                   { value: 'own', label: 'Quotes they prepared' },
                 ],
               },
+              // Linked projects are a different kind of data, so this scope stays independent of View.
               { id: 'projects', label: 'Linked projects', options: PROJECTS },
             ],
           },
@@ -408,7 +416,7 @@ const ROLES: Readonly<
       'deals.update': { scopes: { records: 'own' } },
       'deals.move-stage': {},
       'quotes.view': { scopes: { records: 'department' } },
-      'quotes.submit': { scopes: { quotes: 'own', projects: 'team' } },
+      'quotes.submit': { scopes: { records: 'own', projects: 'team' } },
       'contracts.view': { scopes: { records: 'department-tree' } },
       'contracts.create': {},
       'contracts.update': { scopes: { records: 'department' } },

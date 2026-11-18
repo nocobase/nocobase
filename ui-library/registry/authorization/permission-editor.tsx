@@ -51,6 +51,7 @@ import {
   setScopeValue,
   slotOptions,
   viewActionOf,
+  viewScopeLabel,
   viewScopeValue,
   visibleMenuCount,
   type PermissionAction,
@@ -180,7 +181,9 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
       ? `${list(notice.actions)} now ${notice.actions.length === 1 ? 'follows' : 'follow'} the view scope (${notice.view}) again, because ${notice.actions.length === 1 ? 'it was' : 'they were'} wider.`
       : notice.kind === 'auto-enabled'
         ? `Also turned on ${list(notice.actions)}, which this needs.`
-        : `This needs ${list(notice.actions)}, which is risky and stays off until you turn it on.`,
+        : notice.kind === 'missing-requirement'
+          ? `${notice.action} stays off: it needs ${list(notice.actions)}, which ${notice.actions.length === 1 ? 'is' : 'are'} never turned on automatically. Turn ${notice.actions.length === 1 ? 'it' : 'them'} on first.`
+          : `Nothing was turned off: ${list(notice.actions)} ${notice.actions.length === 1 ? 'is' : 'are'} managed by the application and ${notice.actions.length === 1 ? 'needs' : 'need'} it.`,
 };
 
 const FOLLOW = '__same-as-view__';
@@ -286,8 +289,7 @@ function ScopeControl({
   const own = ownScopeValue(menu, grants, action, slot);
   const viewValue = viewScopeValue(menu, grants);
   if (slot.followsView && !action.view && viewValue !== undefined) {
-    const viewLabel =
-      options.find((option) => option.value === viewValue)?.label ?? viewValue;
+    const viewLabel = viewScopeLabel(menu, grants) ?? viewValue;
     const narrower = narrowerOptions(menu, grants, slot);
     if (!narrower.length)
       return (
@@ -633,6 +635,8 @@ export function PermissionEditor({
   );
   const [notices, setNotices] = useState<readonly PermissionNotice[]>([]);
   const [pending, setPending] = useState<PendingDisable | undefined>();
+  // A host that turns read-only while a confirmation is open cancels it.
+  if (readOnly && pending) setPending(undefined);
   const current =
     menus.find(({ menu }) => menu.id === selectedId) ??
     menus.find(({ menu }) => menu.id === firstConfigurable);
@@ -650,12 +654,14 @@ export function PermissionEditor({
     onChange(change.grants);
   };
   const toggle = (action: PermissionAction, enabled: boolean): void => {
+    if (readOnly) return;
     if (enabled) {
       commit(setActionEnabled(modules, value, action.id, true));
       return;
     }
     const dependents = dependentsOf(modules, value, [action.id]);
-    if (!dependents.length) {
+    // Managed dependents block the change; the model explains why.
+    if (!dependents.length || dependents.some((item) => item.managed)) {
       commit(setActionEnabled(modules, value, action.id, false));
       return;
     }
@@ -669,8 +675,12 @@ export function PermissionEditor({
     });
   };
   const quick = (menu: PermissionMenu, mode: PermissionQuickSet): void => {
-    const { others } = quickSetRemovals(modules, value, menu, mode);
-    if (!others.length) {
+    if (readOnly) return;
+    const { own, others } = quickSetRemovals(modules, value, menu, mode);
+    if (
+      !others.length ||
+      dependentsOf(modules, value, own).some((item) => item.managed)
+    ) {
       commit(applyQuickSet(modules, value, menu, mode));
       return;
     }
@@ -869,7 +879,9 @@ export function PermissionEditor({
               type='button'
               variant='destructive'
               size='sm'
-              onClick={() => commit(pending.apply(value))}
+              onClick={() => {
+                if (!readOnly) commit(pending.apply(value));
+              }}
             >
               {words.confirm}
             </Button>

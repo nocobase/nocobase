@@ -180,6 +180,32 @@ describe('two-column permission editor', () => {
     expect(screen.getByText('Hidden from menu')).toBeInTheDocument();
   });
 
+  it('cancels an open confirmation when the host turns read-only', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const value = { 'contracts.view': {}, 'contracts.update': {} };
+    const { rerender } = render(
+      <PermissionEditor modules={modules} value={value} onChange={onChange} />,
+    );
+    await user.click(screen.getByRole('switch', { name: 'View contracts' }));
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    rerender(
+      <PermissionEditor
+        modules={modules}
+        value={value}
+        onChange={onChange}
+        readOnly
+      />,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Turn off' })).toBeNull();
+    rerender(
+      <PermissionEditor modules={modules} value={value} onChange={onChange} />,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('narrows Edit and resets it when View becomes narrower', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

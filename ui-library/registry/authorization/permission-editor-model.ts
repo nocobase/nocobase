@@ -96,8 +96,17 @@ export type PermissionNotice =
       readonly actions: readonly string[];
     }
   | {
-      /** Required actions left off because they are risky; turn them on by hand. */
-      readonly kind: 'risky-requirement';
+      /**
+       * An action stayed off because it needs others that are never turned on automatically (risky or managed by
+       * the application). Turn those on first.
+       */
+      readonly kind: 'missing-requirement';
+      readonly action: string;
+      readonly actions: readonly string[];
+    }
+  | {
+      /** Nothing was turned off because actions managed by the application need these. */
+      readonly kind: 'managed-dependent';
       readonly actions: readonly string[];
     };
 
@@ -204,16 +213,41 @@ export function effectiveScopeValue(
   );
 }
 
-/** Options strictly narrower than the current View scope, offered to a follower besides "Same as view". */
+/** The position of a value in the View scope's order, widest first; -1 when View does not list it. */
+function viewRank(menu: PermissionMenu, value: string | undefined): number {
+  const options = viewSlotOf(menu)?.options ?? [];
+  return value === undefined
+    ? -1
+    : options.findIndex((option) => option.value === value);
+}
+
+/** The label of the current View scope, for "Same as view (X)". */
+export function viewScopeLabel(
+  menu: PermissionMenu,
+  grants: PermissionGrants,
+): string | undefined {
+  const value = viewScopeValue(menu, grants);
+  if (value === undefined) return undefined;
+  return (
+    viewSlotOf(menu)?.options?.find((option) => option.value === value)
+      ?.label ?? value
+  );
+}
+
+/**
+ * Options of a follower that are provably narrower than the current View scope, offered besides "Same as view".
+ * Both sides are ranked by View's own order; an option View does not list is never offered.
+ */
 export function narrowerOptions(
   menu: PermissionMenu,
   grants: PermissionGrants,
   slot: PermissionScopeSlot,
 ): readonly PermissionScopeOption[] {
-  const options = slotOptions(menu, slot);
-  const view = viewScopeValue(menu, grants);
-  const index = options.findIndex((option) => option.value === view);
-  return index === -1 ? options : options.slice(index + 1);
+  const current = viewRank(menu, viewScopeValue(menu, grants));
+  if (current === -1) return [];
+  return slotOptions(menu, slot).filter(
+    (option) => viewRank(menu, option.value) > current,
+  );
 }
 
 export function menuStatus(
@@ -300,7 +334,10 @@ function labelsOf(
   return [...ids].map((id) => findAction(modules, id)?.action.label ?? id);
 }
 
-/** Enabled actions that would be turned off with these ones because they require them, directly or not. */
+/**
+ * Enabled actions that require these ones, directly or not. Those managed by the application cannot be turned off,
+ * so their presence blocks turning these off.
+ */
 export function dependentsOf(
   modules: readonly PermissionModule[],
   grants: PermissionGrants,
@@ -313,8 +350,7 @@ export function dependentsOf(
     changed = false;
     for (const menu of allMenus(modules))
       for (const action of menu.actions) {
-        if (off.has(action.id) || !grants[action.id] || action.managed)
-          continue;
+        if (off.has(action.id) || !grants[action.id]) continue;
         if (requirementsOf(menu, action).some((id) => off.has(id))) {
           off.add(action.id);
           result.push(action);
@@ -325,42 +361,89 @@ export function dependentsOf(
   return result;
 }
 
+/** What turning one action on also turns on, or the requirements that cannot be turned on automatically. */
+function requirementClosure(
+  modules: readonly PermissionModule[],
+  grants: PermissionGrants,
+  id: string,
+): { readonly enable: readonly string[]; readonly missing: readonly string[] } {
+  const enable: string[] = [];
+  const missing: string[] = [];
+  const queue = [id];
+  const seen = new Set<string>();
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (seen.has(current)) continue;
+    seen.add(current);
+    const found = findAction(modules, current);
+    if (!found) {
+      missing.push(current);
+      continue;
+    }
+    if (current !== id && grants[current]) continue;
+    if (current !== id && (found.action.risk || found.action.managed)) {
+      missing.push(current);
+      continue;
+    }
+    enable.push(current);
+    queue.push(...requirementsOf(found.menu, found.action));
+  }
+  return { enable, missing };
+}
+
+/** Turn each action on with its requirements, or leave it off when one of them cannot be turned on automatically. */
 function enableWithRequirements(
   modules: readonly PermissionModule[],
   grants: PermissionGrants,
   ids: readonly string[],
-  explicit: ReadonlySet<string>,
 ): PermissionChange {
-  const next: Record<string, PermissionGrant> = { ...grants };
+  let next: PermissionGrants = grants;
+  const explicit = new Set(ids);
   const auto: string[] = [];
-  const risky: string[] = [];
-  const queue = [...ids];
-  const seen = new Set<string>();
-  while (queue.length) {
-    const id = queue.shift()!;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const found = findAction(modules, id);
-    if (!found || found.action.managed) continue;
-    if (!next[id]) {
-      if (!explicit.has(id) && found.action.risk) {
-        risky.push(id);
-        continue;
-      }
-      next[id] = {};
-      if (!explicit.has(id)) auto.push(id);
-    }
-    queue.push(...requirementsOf(found.menu, found.action));
-  }
   const notices: PermissionNotice[] = [];
+  for (const id of ids) {
+    const found = findAction(modules, id);
+    if (!found || found.action.managed || next[id]) continue;
+    const { enable, missing } = requirementClosure(modules, next, id);
+    if (missing.length) {
+      notices.push({
+        kind: 'missing-requirement',
+        action: found.action.label,
+        actions: labelsOf(modules, missing),
+      });
+      continue;
+    }
+    const added: Record<string, PermissionGrant> = { ...next };
+    for (const item of enable) {
+      added[item] = {};
+      if (!explicit.has(item) && !auto.includes(item)) auto.push(item);
+    }
+    next = added;
+  }
   if (auto.length)
-    notices.push({ kind: 'auto-enabled', actions: labelsOf(modules, auto) });
-  if (risky.length)
-    notices.push({
-      kind: 'risky-requirement',
-      actions: labelsOf(modules, risky),
-    });
+    notices.unshift({ kind: 'auto-enabled', actions: labelsOf(modules, auto) });
   return { grants: next, notices };
+}
+
+function managedBlock(
+  modules: readonly PermissionModule[],
+  grants: PermissionGrants,
+  ids: readonly string[],
+): PermissionChange | undefined {
+  const managed = dependentsOf(modules, grants, ids).filter(
+    (action) => action.managed,
+  );
+  return managed.length
+    ? {
+        grants,
+        notices: [
+          {
+            kind: 'managed-dependent',
+            actions: managed.map((action) => action.label),
+          },
+        ],
+      }
+    : undefined;
 }
 
 function withoutActions(
@@ -373,7 +456,8 @@ function withoutActions(
 }
 
 /**
- * Turn an action on, with what it requires except risky ones, or off with everything that requires it. Ask before
+ * Turn an action on with what it requires, or leave it off when a requirement is risky or managed and still off.
+ * Turn one off with everything that requires it, unless an action managed by the application needs it. Ask before
  * turning off: `dependentsOf` lists what goes with it.
  */
 export function setActionEnabled(
@@ -383,8 +467,9 @@ export function setActionEnabled(
   enabled: boolean,
 ): PermissionChange {
   if (findAction(modules, id)?.action.managed) return { grants, notices: [] };
-  if (enabled)
-    return enableWithRequirements(modules, grants, [id], new Set([id]));
+  if (enabled) return enableWithRequirements(modules, grants, [id]);
+  const blocked = managedBlock(modules, grants, [id]);
+  if (blocked) return blocked;
   const dependents = dependentsOf(modules, grants, [id]);
   return {
     grants: withoutActions(grants, [id, ...dependents.map((item) => item.id)]),
@@ -415,7 +500,7 @@ export function quickSetRemovals(
   return {
     own,
     others: dependentsOf(modules, grants, own).filter(
-      (action) => !inMenu.has(action.id),
+      (action) => !inMenu.has(action.id) && !action.managed,
     ),
   };
 }
@@ -431,21 +516,18 @@ export function applyQuickSet(
     const ids = menu.actions
       .filter((action) => !action.risk && !action.managed)
       .map((action) => action.id);
-    return enableWithRequirements(modules, grants, ids, new Set(ids));
+    return enableWithRequirements(modules, grants, ids);
   }
   const { own, others } = quickSetRemovals(modules, grants, menu, mode);
+  const blocked = managedBlock(modules, grants, own);
+  if (blocked) return blocked;
   const removed = withoutActions(grants, [
     ...own,
     ...others.map((action) => action.id),
   ]);
   const view = viewActionOf(menu);
   if (mode === 'view' && view && !view.managed && !removed[view.id])
-    return enableWithRequirements(
-      modules,
-      removed,
-      [view.id],
-      new Set([view.id]),
-    );
+    return enableWithRequirements(modules, removed, [view.id]);
   return { grants: removed, notices: [] };
 }
 
@@ -486,10 +568,7 @@ export function setScopeValue(
   const viewSlot = viewSlotOf(menu);
   if (!action.view || !viewSlot || viewSlot.id !== slotId)
     return { grants: next, notices: [] };
-  const options = viewSlot.options ?? [];
-  const viewIndex = options.findIndex(
-    (option) => option.value === viewScopeValue(menu, next),
-  );
+  const viewIndex = viewRank(menu, viewScopeValue(menu, next));
   const reset: string[] = [];
   for (const other of menu.actions) {
     const otherGrant = next[other.id];
@@ -499,10 +578,9 @@ export function setScopeValue(
     for (const slot of other.scopes ?? []) {
       const own = otherScopes[slot.id];
       if (!slot.followsView || own === undefined) continue;
-      const index = slotOptions(menu, slot).findIndex(
-        (option) => option.value === own,
-      );
-      if (index <= viewIndex) {
+      const index = viewRank(menu, own);
+      // Only a value provably no narrower than View goes back to following it.
+      if (index !== -1 && index <= viewIndex) {
         delete otherScopes[slot.id];
         changed = true;
       }
@@ -512,8 +590,7 @@ export function setScopeValue(
       reset.push(other.label);
     }
   }
-  const viewLabel =
-    options.find((option) => option.value === chosen)?.label ?? chosen ?? '';
+  const viewLabel = viewScopeLabel(menu, next) ?? '';
   return {
     grants: next,
     notices: reset.length
