@@ -9,6 +9,7 @@
 
 import actions from '@nocobase/actions';
 import { createMiddleware } from './attachments';
+import { projectStorageAssociations } from './project-storage-associations';
 import { registerGetFileAccess } from './get-file';
 import { validateStorageMiddleware } from './storage-validation';
 import * as storageActions from './storages';
@@ -17,6 +18,7 @@ import { registerTemporaryFileAccess } from '../temporary-access';
 export default function (plugin) {
   const { app } = plugin;
 
+  app.dataSourceManager.use(projectStorageAssociations);
   app.dataSourceManager.afterAddDataSource((dataSource) => {
     registerGetFileAccess(dataSource);
     registerTemporaryFileAccess(dataSource);
