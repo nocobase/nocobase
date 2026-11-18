@@ -397,8 +397,11 @@ for (const width of [1440, 375, 412]) {
               control.getByRole('menuitemradio', { name: label, exact: true }),
             ).toBeChecked();
           }
+          await page.keyboard.press('Escape');
+          await expect(menu).toHaveCount(0);
           const sendWith = async (label: string, value: string) => {
             await panel.getByTestId('chat-model-picker').click();
+            await expect(control).toBeVisible();
             const item = control.getByRole('menuitemradio', {
               name: label,
               exact: true,
@@ -414,6 +417,7 @@ for (const width of [1440, 375, 412]) {
                 .toBe(value);
             }
             await page.keyboard.press('Escape');
+            await expect(menu).toHaveCount(0);
             await panel.locator('textarea').fill(`Think: ${value}`);
             const index = fixture.streams.length;
             await panel.getByTestId('chat-send').click();
