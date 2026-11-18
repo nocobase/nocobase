@@ -104,7 +104,7 @@ test('prints one structured reference error to stderr and exits non-zero', async
       assert.deepEqual(response.error.suggestions, [
         {
           command: 'pnpm',
-          args: ['plugin:unregister', 'audit-log', '--app', 'app'],
+          args: ['plugin:remove', 'audit-log', '--app', 'app'],
         },
       ]);
       return true;
@@ -168,7 +168,7 @@ test('refuses removal while a workspace package references the plugin', async (t
       assert.match(error.message, /nocobase\.plugins/u);
       assert.match(
         error.message,
-        /pnpm nocobase plugin unregister audit-log --workspace-root . --app app/u,
+        /pnpm nocobase plugin remove audit-log --workspace-root . --app app/u,
       );
       return true;
     },
@@ -217,7 +217,7 @@ export default defineServerPlugins([auditLog]);
       assert.match(error.message, /server\/plugins\.ts/u);
       assert.match(
         error.message,
-        /pnpm nocobase plugin unregister audit-log --workspace-root . --app app/u,
+        /pnpm nocobase plugin remove audit-log --workspace-root . --app app/u,
       );
       return true;
     },
@@ -248,7 +248,7 @@ export default defineClientPlugins([auditLog()]);
       assert.match(error.message, /client\/plugins\.ts/u);
       assert.match(
         error.message,
-        /pnpm nocobase plugin unregister audit-log --workspace-root . --app app/u,
+        /pnpm nocobase plugin remove audit-log --workspace-root . --app app/u,
       );
       return true;
     },

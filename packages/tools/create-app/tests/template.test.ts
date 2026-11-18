@@ -65,6 +65,15 @@ describe('TEMPLATE_ALIASES', () => {
     );
   });
 
+  it.each(['pro', 'enterprise'])(
+    'resolves the %s edition at the requested channel',
+    (edition) => {
+      expect(resolveTemplateSource(edition, { tag: 'beta' })).toBe(
+        `@nocobase/app-template-${edition}@beta`,
+      );
+    },
+  );
+
   it('resolves multi-portal at the selected channel without rewriting explicit versions', () => {
     expect(resolveTemplateSource('multi-portal')).toBe(
       '@nocobase/app-template-multi-portal@latest',

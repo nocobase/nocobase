@@ -9,6 +9,8 @@ Use this Skill to execute a complete deployment workflow. Read the application's
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
 ## Stop and identify the deployment
 
 Before building or changing a server, record:

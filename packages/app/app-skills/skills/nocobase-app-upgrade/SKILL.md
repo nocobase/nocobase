@@ -40,6 +40,8 @@ Never: overwrite the application with a fresh template copy; bump `defaultTempla
 
 When the App already supplies the project plugin development Skill, check for a missed [global plugin Skill migration](references/plugin-development-skill.md) even if no template version change is needed. This cleanup does not advance `defaultTemplateVersion`.
 
+When merging an edition template, preserve local plugin registrations and preinstalled development dependencies. Review legacy production dependencies individually before demoting them: application code may use a plugin directly.
+
 ## 1. Secure a way back
 
 Git project: require a clean tree (ask the user to commit anything outstanding — do not stash or commit it for them), record `git rev-parse HEAD`, then `git checkout -b template-upgrade-<target>`. Editing the project directly is safe on a branch, and it is what lets `typecheck`/`test`/`build` actually run.

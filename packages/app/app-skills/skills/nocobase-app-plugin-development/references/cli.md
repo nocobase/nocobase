@@ -268,7 +268,7 @@ export default cliPlugins;
 
 Array order is contribution order. It controls command registration and, within each stage, build and dev hook execution. Removing the import and item removes that plugin's CLI contribution.
 
-All plugin packages are recorded in the App's `dependencies`, including Client-only and disabled packages, so deployment dependency resolution is consistent. Registration removes a duplicate declaration from `devDependencies`. It does not create `package.json#nocobase.plugins`; unregistration only cleans an old entry there when a legacy manifest already contains one.
+Registered plugins, including Client-only plugins, are production dependencies. Preinstalled plugins are development dependencies. Registration removes a duplicate declaration from `devDependencies`. It does not create `package.json#nocobase.plugins`; unregistration only cleans an old entry there when a legacy manifest already contains one.
 
 The App has no `cli/index.ts`. `pnpm nocobase` runs the `nocobase` bin of `@nocobase/app-cli`, which finds the App from the nearest `package.json`, imports `cli/plugins.ts` and `cli/commands/` when it needs the whole command tree, and runs a built-in command without importing either. In a built `dist/`, `node dist/cli/index.js` — an entry the App build writes — runs the same CLI without the development commands.
 
@@ -332,10 +332,11 @@ Use the App's CLI for normal lifecycle work:
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `pnpm nocobase plugin register <name>`       | Installs the plugin into `dependencies`, wires each exported `./client`, `./server`, and `./cli` root, and synchronizes shipped Skills unless `--no-skills` is set |
 | `pnpm nocobase plugin inspect <name> --json` | Reads static dependency, explicit composition, and Skill facts without changing files                                                                              |
-| `pnpm nocobase plugin unregister <name>`     | Removes explicit roots, cleans dependency and legacy metadata, removes synchronized Skills, and uninstalls unless `--no-install` is set                            |
+| `pnpm nocobase plugin unregister <name>`     | Removes explicit registrations and moves the package back to development dependencies, retaining its Skills                            |
+| `pnpm nocobase plugin remove <name>` | Removes registrations, the package and its synchronized Skills |
 | `pnpm nocobase plugin update [name]`         | Updates one or all explicitly registered plugin packages and then synchronizes Skills                                                                              |
 | `pnpm nocobase skills sync`                  | Synchronizes Skills from direct NocoBase dependencies and explicitly registered plugins without upgrading packages                                                 |
-| `pnpm nocobase package remove <package>`     | Removes a direct NocoBase package and its synchronized Skills; plugin packages reuse full unregistration                                                           |
+| `pnpm nocobase package remove <package>`     | Removes a direct NocoBase package and its synchronized Skills; plugin packages reuse plugin remove                                                           |
 
 Prefer `--dry-run --json` when an Agent needs a plan. Every dry run answers `success-noop`, because it changes nothing. If an uninstalled plugin is requested, register dry-run returns `result.state: "requires-installation"`, because it cannot inspect exports until the package exists; install it and rerun to compute the wiring plan. A plan that needs a manual edit says so in `result.plan`. Read the JSON `ok` and `status` fields, preserve nonzero failure exits, and treat `success-noop` and `partial-success` as distinct outcomes.
 

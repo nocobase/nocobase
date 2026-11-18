@@ -112,6 +112,7 @@ export function formatHelp(binary: string): string {
     'NOTES',
     '  Registry selection follows your npm/pnpm configuration.',
     '  Set NOCOBASE_REGISTRY or --nocobase-registry to override @nocobase packages only.',
+    '  pro and enterprise create Default-based apps with preinstalled commercial plugins; select a licensed registry.',
     '  multi-portal is commercial: log in to https://pkg-v3.nocobase.com/ first and select that registry.',
     '  multi-app is a commercial Main application template; licensed registry access is required.',
     '  It creates Main only. Add and configure independent child applications when needed.',

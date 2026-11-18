@@ -20,6 +20,8 @@ export interface TemplateAlias {
  */
 export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   default: { packageName: '@nocobase/app-template-default' },
+  pro: { packageName: '@nocobase/app-template-pro' },
+  enterprise: { packageName: '@nocobase/app-template-enterprise' },
   examples: { packageName: '@nocobase/app-template-examples' },
   'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
   'multi-app': { packageName: '@nocobase/app-template-multi-app' },
