@@ -86,7 +86,15 @@ const MessagePosition = z.object({ before: z.number().int().min(1) });
 const ConfigInput = z.strictObject({
   agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
-  thinking: z.string().optional(),
+  // Any JSON value passes the schema so that a wrong type is refused by the same check as a wrong string: 400
+  // `REASONING_LEVEL_INVALID`, not the generic `INVALID_INPUT`.
+  thinking: z
+    .json()
+    .optional()
+    .transform((value) => value as string | undefined)
+    .describe(
+      'A thinking level: default, off, minimal, low, medium, high, xhigh or max. Anything else is refused (`REASONING_LEVEL_INVALID`).',
+    ),
   webSearch: z.boolean().optional(),
   context: z
     .strictObject({

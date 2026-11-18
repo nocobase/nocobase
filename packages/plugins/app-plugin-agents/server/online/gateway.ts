@@ -318,8 +318,8 @@ const text = (value: unknown): string =>
 /**
  * A thinking level (`ReasoningLevel`) as the SDK's `reasoning` names it: `default` (and anything else) is
  * `provider-default`, `off` is `none`, and the levels that turn thinking on go as they are. The SDK's type has no
- * `max` yet; it is passed on regardless, a provider package that knows it uses it and one that does not ignores it
- * with an `unsupported` warning.
+ * `max` yet; it is passed on regardless. What happens next is up to the provider package and the provider: it may use
+ * the level, warn that it ignored or mapped it, ignore it silently, or have the provider refuse the request.
  */
 export function reasoningOf(
   level: string | null | undefined,

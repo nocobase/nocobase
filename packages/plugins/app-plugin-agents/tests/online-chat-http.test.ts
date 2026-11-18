@@ -609,6 +609,34 @@ it('accepts declared business variables but rejects browser policy overrides on 
   );
 });
 
+it('refuses a thinking level of any wrong type or value with REASONING_LEVEL_INVALID on create and configure', async () => {
+  const f = await fixture();
+  const created = await f.request('/conversations', 'POST', {});
+  expect(created.status).toBe(201);
+  const path = `/conversations/${(await created.json()).data.id}/config`;
+  for (const thinking of [
+    'bogus',
+    false,
+    1,
+    null,
+    ['high'],
+    { level: 'high' },
+  ]) {
+    for (const response of [
+      await f.request('/conversations', 'POST', { config: { thinking } }),
+      await f.request(path, 'PATCH', { config: { thinking } }),
+    ]) {
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(await response.json())).toContain(
+        'REASONING_LEVEL_INVALID',
+      );
+    }
+  }
+  expect(
+    (await f.request(path, 'PATCH', { config: { thinking: 'max' } })).status,
+  ).toBe(200);
+});
+
 it('filters visibility before pagination for HTTP and its derived CLI, preserving owned direct reads', async () => {
   const f = await fixture();
   const create = async (visible?: boolean) => {
