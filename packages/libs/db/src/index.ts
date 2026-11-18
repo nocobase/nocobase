@@ -157,6 +157,9 @@ export type {
   TaskLockReleaseResult,
   TaskLockState,
   MigrationRunResult,
+  MigrationWarning,
+  MissingMigrationSource,
+  MissingSourcePolicy,
   MigrationSource,
   MigrationTransactionMode,
 } from './migration/types.js';

@@ -313,6 +313,62 @@ describe('connection-bound application database tasks', () => {
     ).rejects.toThrow('A fresh run must include migrations.');
   });
 
+  it('resolves onMissingSource from connection and legacy configuration', async () => {
+    const { config, paths, contributions } = fixture();
+    const directory = paths.database('main/migrations');
+    migration(directory, '001_old', 'oldRows');
+    migration(directory, '002_retained', 'retainedRows');
+    const run = (
+      override: AppDatabaseConfig = config,
+    ): Promise<AppDatabaseTasksResult> =>
+      runAppDatabaseTasks(override, {
+        paths,
+        contributions,
+        kind: 'migrations',
+      });
+    await run();
+    rmSync(path.join(directory, '001_old.ts'));
+    migration(directory, '003_new', 'newRows');
+    const connectionStrict: AppDatabaseConfig = {
+      ...config,
+      connections: {
+        ...config.connections,
+        main: {
+          ...config.connections.main,
+          migrations: { onMissingSource: 'error' },
+        },
+      },
+    };
+    for (const strict of [
+      connectionStrict,
+      { ...config, migrations: { onMissingSource: 'error' as const } },
+    ]) {
+      await expect(run(strict)).rejects.toThrow(
+        'missing from migration sources',
+      );
+    }
+    const result = await run();
+    expect(result.results[0]).toMatchObject({
+      executed: ['003_new'],
+      warnings: [
+        { kind: 'missing-source', packageName: 'test-app', name: '001_old' },
+      ],
+    });
+    // The application's strict forward policy also leaves older rollback batches alone.
+    const rollback = await runAppDatabaseTasks(connectionStrict, {
+      paths,
+      contributions,
+      kind: 'migrations',
+      operation: 'rollback',
+    });
+    expect(rollback.results[0]).toMatchObject({
+      rolledBack: ['003_new'],
+      warnings: [
+        { kind: 'missing-source', packageName: 'test-app', name: '001_old' },
+      ],
+    });
+  });
+
   it('resolves onChecksumMismatch from connection and legacy configuration', async () => {
     const { config, paths, contributions } = fixture();
     const directory = paths.database('main/migrations');

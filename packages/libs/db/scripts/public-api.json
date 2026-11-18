@@ -74,6 +74,7 @@
         "validateCollectionMetadataDocument",
         "validateMigrations",
         "validateSeeds",
+        "withDatabaseTaskLock",
         "writableFields",
         "writePolicyProblems"
       ],
@@ -216,7 +217,10 @@
         "MigrationRunResult",
         "MigrationSource",
         "MigrationTransactionMode",
+        "MigrationWarning",
         "Migrator",
+        "MissingMigrationSource",
+        "MissingSourcePolicy",
         "MutationLiteral",
         "MutationScope",
         "MutationValidationError",

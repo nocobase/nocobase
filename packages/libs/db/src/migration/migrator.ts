@@ -3,7 +3,6 @@ import {
   describeChecksumMismatch,
   upgradeTaskChecksums,
   writeTaskChecksums,
-  type ChecksumMismatch,
 } from './checksum-history.js';
 import { assertManagedSchema } from '../database/schema-management.js';
 import type { Knex } from 'knex';
@@ -28,13 +27,14 @@ import { loadMigrations } from './loader.js';
 import type {
   CreateMigratorOptions,
   LoadedMigration,
-  MigrationDefinition,
   MigrationHistoryRecord,
   MigrationRepairOptions,
   MigrationRepairResult,
   MigrationRollbackOptions,
   MigrationRollbackResult,
   MigrationRunResult,
+  MigrationWarning,
+  MissingMigrationSource,
   MigrationConnection,
   TaskLockReleaseOptions,
   TaskLockReleaseResult,
@@ -255,19 +255,9 @@ class DefaultMigrator implements Migrator {
     const rollbackFrom = async (
       history: MigrationHistoryRecord[],
     ): Promise<MigrationRollbackResult> => {
-      const warnings = this.validateAppliedHistory(migrations, history);
-      if (!dryRun) {
-        await upgradeTaskChecksums(
-          migrationConnection,
-          this.options.tableName ?? DEFAULT_MIGRATION_TABLE,
-          migrations,
-          history,
-        );
-      }
-
       const batch = currentBatch(history);
       if (batch === 0) {
-        return { batch: 0, rolledBack: [], records: [], warnings, dryRun };
+        return { batch: 0, rolledBack: [], records: [], warnings: [], dryRun };
       }
 
       const migrationsByName = new Map(
@@ -276,16 +266,30 @@ class DefaultMigrator implements Migrator {
       const records = history
         .filter((record) => record.batch === batch)
         .sort((a, b) => b.id - a.id);
-      const rollbackItems = records.map((record) => {
+      const rollbackItems: LoadedMigration[] = [];
+      const problems: string[] = [];
+      for (const record of records) {
         const migration = migrationsByName.get(record.name);
         if (!migration) {
-          throw new Error(
-            `Executed migration "${record.name}" is missing from migration sources. Package: "${record.packageName}".`,
+          problems.push(describeMissingSource(record));
+        } else if (migration.migration.irreversible === true) {
+          problems.push(
+            `Migration "${record.name}" is irreversible and cannot be rolled back. Package: "${record.packageName}".`,
           );
+        } else if (!migration.migration.down) {
+          problems.push(
+            `Migration "${record.name}" does not define down(context). Package: "${record.packageName}".`,
+          );
+        } else {
+          rollbackItems.push(migration);
         }
-        validateRollbackMigration(migration.migration);
-        return migration;
-      });
+      }
+      if (problems.length) {
+        throw new Error(
+          `Cannot roll back migration batch ${batch}:\n${problems.join('\n')}\nRestore compatible versions of the affected plugins or packages, roll back before uninstalling them, or use a new forward migration to adjust the schema.`,
+        );
+      }
+      const warnings = this.validateAppliedHistory(migrations, history, batch);
       // Validation above already rejected an irreversible batch, so a dry run
       // reports what a run would undo and why it could not, without running
       // any `down`.
@@ -298,6 +302,13 @@ class DefaultMigrator implements Migrator {
           dryRun,
         };
       }
+
+      await upgradeTaskChecksums(
+        migrationConnection,
+        this.options.tableName ?? DEFAULT_MIGRATION_TABLE,
+        migrations,
+        records,
+      );
 
       const rolledBack: string[] = [];
 
@@ -379,32 +390,71 @@ class DefaultMigrator implements Migrator {
   }
 
   /**
-   * Fails on history the sources cannot explain at all, and applies the
-   * configured policy to executed migrations whose source has since changed.
+   * Forward runs validate participating packages. Rollback only enforces
+   * checksum policy on its target batch; older missing sources merely warn.
    */
   private validateAppliedHistory(
     migrations: LoadedMigration[],
     history: MigrationHistoryRecord[],
-  ): ChecksumMismatch[] {
+    rollbackBatch?: number,
+  ): MigrationWarning[] {
     const participatingPackages = participatingPackageNames(this.options);
     const migrationsByName = new Map(
       migrations.map((migration) => [migration.name, migration]),
     );
+    const newestByPackage = new Map<string, string>();
+    for (const migration of migrations) {
+      const newest = newestByPackage.get(migration.packageName);
+      const name = migration.migration.name;
+      if (
+        !newest ||
+        migrationVersion(name).localeCompare(migrationVersion(newest)) > 0
+      )
+        newestByPackage.set(migration.packageName, name);
+    }
+    const missing: MissingMigrationSource[] = [];
     for (const record of history) {
       if (
         !migrationsByName.has(record.name) &&
-        participatingPackages.has(record.packageName)
+        (rollbackBatch !== undefined ||
+          participatingPackages.has(record.packageName))
       ) {
-        throw new Error(
-          `Executed migration "${record.name}" is missing from migration sources. Package: "${record.packageName}".`,
-        );
+        if (rollbackBatch === undefined) {
+          const newest = newestByPackage.get(record.packageName);
+          if (
+            newest &&
+            migrationVersion(record.name).localeCompare(
+              migrationVersion(newest),
+            ) > 0
+          ) {
+            throw new Error(
+              `${describeMissingSource(record)} The database is newer than the code: this record is newer than the package's newest source migration "${newest}". Restore a compatible package version before migrating.`,
+            );
+          }
+          if (this.options.onMissingSource === 'error')
+            throw new Error(describeMissingSource(record));
+        }
+        missing.push({
+          kind: 'missing-source',
+          packageName: record.packageName,
+          name: record.name,
+        });
       }
     }
     const mismatches = collectChecksumMismatches(migrations, history);
-    if (this.options.onChecksumMismatch === 'error' && mismatches.length) {
-      throw new Error(describeChecksumMismatch(mismatches[0], 'migration'));
+    const targetNames = new Set(
+      history
+        .filter((record) => record.batch === rollbackBatch)
+        .map((record) => record.name),
+    );
+    const blockingMismatch = mismatches.find(
+      (mismatch) =>
+        rollbackBatch === undefined || targetNames.has(mismatch.name),
+    );
+    if (this.options.onChecksumMismatch === 'error' && blockingMismatch) {
+      throw new Error(describeChecksumMismatch(blockingMismatch, 'migration'));
     }
-    return mismatches;
+    return [...missing, ...mismatches];
   }
 
   private async runUpMigration(
@@ -526,17 +576,10 @@ function participatingPackageNames(
   return new Set([options.packageName ?? 'app']);
 }
 
-function validateRollbackMigration(migration: MigrationDefinition): void {
-  if (migration.irreversible === true) {
-    throw new Error(
-      `Migration "${migration.name}" is irreversible and cannot be rolled back.`,
-    );
-  }
-  if (!migration.down) {
-    throw new Error(
-      `Migration "${migration.name}" does not define down(context).`,
-    );
-  }
+function describeMissingSource(
+  record: Pick<MigrationHistoryRecord, 'name' | 'packageName'>,
+): string {
+  return `Executed migration "${record.name}" is missing from migration sources. Package: "${record.packageName}".`;
 }
 
 function nextBatch(history: MigrationHistoryRecord[]): number {
@@ -545,4 +588,9 @@ function nextBatch(history: MigrationHistoryRecord[]): number {
 
 function currentBatch(history: MigrationHistoryRecord[]): number {
   return history.reduce((batch, record) => Math.max(batch, record.batch), 0);
+}
+
+/** Only the filename timestamp orders versions; target hashes identify instances. */
+function migrationVersion(name: string): string {
+  return name.split('_', 1)[0] ?? name;
 }

@@ -210,6 +210,7 @@ export default defineSeed({ name: '001_defaults', async run() {} });`,
     lockRow,
     dropTable,
     tables,
+    withDatabase,
     bind,
     paths,
   };

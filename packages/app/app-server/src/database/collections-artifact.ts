@@ -32,7 +32,10 @@ import {
 } from './collections-directory.js';
 import { createAppDatabaseManager } from './manager.js';
 import { selectAppDatabaseConnections } from './connection-selection.js';
-import { planAppDatabaseTasks } from './plan.js';
+import {
+  assertMissingExplicitSourcesRecorded,
+  planAppDatabaseTasks,
+} from './plan.js';
 import type { AppDatabaseTasksResult } from './tasks.js';
 import type { AppDatabaseConfig } from './types.js';
 
@@ -203,6 +206,9 @@ async function readMigrationHead(
     paths: options.paths,
     drivers: options.drivers,
     connection: name,
+    // No migration runs here, so a directory that was removed after migrating
+    // is no obstacle; a mistyped one is still rejected below.
+    deferMissingMigrationSources: true,
   });
   const history = await database
     .createMigrator({
@@ -211,6 +217,18 @@ async function readMigrationHead(
       sources: [],
     })
     .history();
+  // The planner is given a placeholder application package name here, so the
+  // history cannot be matched by package: any history marks the directory as one
+  // that was removed, and a connection with none keeps the mistyped-path error.
+  if (!history.length) {
+    assertMissingExplicitSourcesRecorded(
+      {
+        connection: name,
+        missingExplicitSources: task?.missingExplicitSources,
+      },
+      new Set(),
+    );
+  }
   return history.at(-1)?.name ?? null;
 }
 
