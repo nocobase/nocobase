@@ -248,16 +248,17 @@ export const markdownViewComponents: MarkdownViewComponents = {
     ...props
   }) {
     return (
-      <div
-        {...props}
-        className={cn('my-2 w-full overflow-x-auto', className)}
-      >
+      <div {...props} className={cn('my-2 w-full overflow-x-auto', className)}>
         <table className='w-full text-sm'>{children}</table>
       </div>
     );
   },
-  th: styled('th', 'border px-2 py-1 text-left align-top font-medium'),
-  td: styled('td', 'border px-2 py-1 align-top'),
+  th: styled(
+    'th',
+    'border px-2 py-1 text-left align-top font-medium wrap-break-word',
+  ),
+  // Cells break long words only when they must, so short ones keep the column wide and the table scrolls instead.
+  td: styled('td', 'border px-2 py-1 align-top wrap-break-word'),
   hr: styled('hr', 'my-3'),
   h1: styled('h1', 'mt-4 mb-2 text-lg font-semibold first:mt-0'),
   h2: styled('h2', 'mt-4 mb-2 text-base font-semibold first:mt-0'),
