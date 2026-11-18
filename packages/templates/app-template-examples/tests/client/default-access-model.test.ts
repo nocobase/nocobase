@@ -196,18 +196,14 @@ it('titles data with registered collection titles and tells same-named business 
                   ],
                 },
               },
-              {
-                type: 'database.collection',
-                id: 'crmCustomers',
-                title: 'Customers',
-                actions: [{ name: 'read', title: 'Read' }],
-              },
             ],
           },
         ],
       },
     ],
-    collections: [{ name: 'crmCustomers', fields: ['name'] }],
+    collections: [
+      { name: 'crmCustomers', title: 'Customers', fields: ['name'] },
+    ],
   };
   const resources = ruleResources(registered);
   const text = (value: unknown) => String(value);

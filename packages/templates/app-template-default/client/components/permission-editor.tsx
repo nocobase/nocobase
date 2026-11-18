@@ -650,6 +650,14 @@ export function PermissionEditor({
     setPending(undefined);
   };
   const commit = (change: PermissionChange): void => {
+    // A change that alters nothing, such as a select echoing the value it was given, keeps the current notices.
+    if (
+      !change.notices.length &&
+      JSON.stringify(change.grants) === JSON.stringify(value)
+    ) {
+      setPending(undefined);
+      return;
+    }
     setShown({ value, expected: change.grants });
     setNotices(change.notices);
     setPending(undefined);

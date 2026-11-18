@@ -71,9 +71,12 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
 
 /** Titles of the collections registered with `authz.database.collections.add`, by collection name. */
 export function collectionTitles(
-  source: Pick<AuthorizationOptionsResponse, 'sections'>,
+  source: Pick<AuthorizationOptionsResponse, 'sections' | 'collections'>,
 ): ReadonlyMap<string, LocalizedText> {
   const titles = new Map<string, LocalizedText>();
+  for (const collection of source.collections ?? [])
+    if (collection.title !== undefined)
+      titles.set(collection.name, collection.title);
   for (const section of source.sections)
     for (const sub of section.subsections)
       for (const resource of sub.resources)

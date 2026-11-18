@@ -119,6 +119,10 @@ describe('the options and subject routes', () => {
     const router = await localizedRouter(authorization());
     const en = await options(router);
     expect(await options(router, 'zh-CN')).toEqual(en);
+    // A registered collection carries its title, so editors never show its table name.
+    expect(en.collections).toContainEqual(
+      expect.objectContaining({ name: 'orders', title: 'Orders' }),
+    );
     expect(en.subjectTypes[0]?.title).toMatchObject({
       key: 'options.subjectTypes.authenticated',
       ns: AUTHORIZATION_NAMESPACE,

@@ -111,31 +111,6 @@ const source = {
       ],
     },
     {
-      name: 'database',
-      title: 'Data tables',
-      order: 150,
-      subsections: [
-        {
-          name: 'tables',
-          title: 'Tables',
-          resources: [
-            {
-              type: 'database.collection',
-              id: 'contracts',
-              title: 'Contract records',
-              actions: [{ name: 'read', title: 'Read' }],
-            },
-            {
-              type: 'database.collection',
-              id: 'departments',
-              title: 'Departments',
-              actions: [{ name: 'read', title: 'Read' }],
-            },
-          ],
-        },
-      ],
-    },
-    {
       name: 'administration',
       title: 'Administration',
       order: 200,
@@ -171,7 +146,11 @@ const source = {
     { key: 'own', title: 'Their own' },
   ],
   subjectTypes: [],
-  collections: [],
+  // Registered with `authz.database.collections.add`; the server titles untitled scopes only with their keys.
+  collections: [
+    { name: 'contracts', title: 'Contract records', fields: ['ownerId'] },
+    { name: 'departments', title: 'Departments', fields: ['ownerId'] },
+  ],
 } as unknown as AuthorizationOptionsResponse;
 
 const business = defineAppRoutes([
