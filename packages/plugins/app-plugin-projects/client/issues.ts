@@ -5,7 +5,7 @@
  * query string, the executor options, one issue with every change its page makes and its activity line, and the
  * permission and wording helpers. The plugin keeps these stable; the pages built on them are the application's.
  *
- * The New issue dialog and a plan's page stay the plugin's: the application routes them as its `/issues` page's
+ * The New issue dialog stays the plugin's: the application routes them as its `/issues` page's
  * children (`client/pages.ts`, `issueChildRoutes`), and "New sub-issue" under its issue page (`issueDetailChildRoutes`).
  */
 import { useTranslation } from '@nocobase/i18n/client';
@@ -124,10 +124,6 @@ export {
   groupSubtasksByStage,
   type StageGroup,
 } from './pages/issues/detail/subtask-model.js';
-export {
-  useIntakeBreakdown,
-  type IntakeBreakdown,
-} from './pages/intake/use-intake-breakdown.js';
 export { canChangeIssueOwner, canCloseIssue } from './lib/permissions.js';
 export { isClosing } from './lib/status.js';
 export { STAGE_MAX } from '../shared/subtasks.js';

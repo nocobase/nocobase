@@ -1,8 +1,6 @@
 /**
  * Intake files: uploads of the person's (`pmAttachments`, attached to nothing), stored through `AttachmentStorage`.
- * Only the uploader may use or remove one. When the intake's plan is executed, its files become the created issues'
- * files (`intake.attach.ts`); until then nothing serves them but the intake itself, and the purge keeps the files an
- * open intake plan names.
+ * Only the uploader may use or remove them.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -10,15 +8,15 @@ import {
   INTAKE_FILES_MAX,
   INTAKE_FILE_SIZE_MAX,
   type IntakeFile,
-} from '../../../../shared/intake.js';
-import { oneOf } from '../../../kernel/db.js';
-import { invalid, notFound } from '../../../kernel/errors.js';
+} from '../../../shared/intake.js';
+import { oneOf } from '../../kernel/db.js';
+import { invalid, notFound } from '../../kernel/errors.js';
 import {
   ATTACHMENTS,
   isUuid,
   type AttachmentRecord,
-} from '../../attachments/attachment.store.js';
-import type { AttachmentStorage } from '../../attachments/attachment.storage.js';
+} from '../attachments/attachment.store.js';
+import type { AttachmentStorage } from '../attachments/attachment.storage.js';
 import type { IntakeSource } from './intake.text.js';
 
 /** The stored file, with where its bytes are. */

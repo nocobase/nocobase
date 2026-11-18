@@ -4,7 +4,6 @@
  * from the request's authorization context, and the error format. The authorization plugin is stood in by a context
  * whose decisions follow the `x-test-role` header.
  */
-import { setTimeout as delay } from 'node:timers/promises';
 
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
@@ -29,10 +28,8 @@ import {
 import {
   projectsAccessToken,
   projectsIssueSessionToken,
-  projectsDelegatedWritesToken,
   projectsRequestActorToken,
   projectsToken,
-  type DelegatedWriteRequest,
   type ProjectsAccess,
 } from '../server/tokens.js';
 import {
@@ -195,89 +192,69 @@ describe('the /api/projects guard', () => {
       ).toBe(400);
   });
 
-  it.each([false, true])(
-    'updates structured progress through PATCH (delegated=%s)',
-    async (delegated) => {
-      if (delegated) {
-        container.instance(projectsDelegatedWritesToken, {
-          covers: () => true,
-          write: async (viewer, request) => {
-            const plan = await h.services.plans.create(
-              viewer,
-              {
-                title: request.title,
-                source: { kind: 'test' },
-                rows: request.rows,
-              },
-              { execute: true },
-            );
-            return { plan, meta: {} };
-          },
-        });
-      }
-      const issue = await h.services.issues.create(h.viewer('alice'), {
-        title: 'Progress',
-        statusKey: 'in_progress',
+  it('updates structured progress through PATCH', async () => {
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Progress',
+      statusKey: 'in_progress',
+    });
+    const request = (body: unknown, role?: string) =>
+      call(`/issues/${issue.id}`, {
+        role,
+        method: 'PATCH',
+        body: JSON.stringify(body),
       });
-      const request = (body: unknown, role?: string) =>
-        call(`/issues/${issue.id}`, {
-          role,
-          method: 'PATCH',
-          body: JSON.stringify(body),
-        });
-      expect(
-        (await request({ statusKey: 'blocked', needsYou: 'Choose.' })).status,
-      ).toBe(401);
-      expect(
-        (await request({ statusKey: 'blocked', needsYou: 'Choose.' }, 'none'))
-          .status,
-      ).toBe(delegated ? 400 : 404);
-      const optional = await request(
-        { statusKey: 'blocked', next: 'Not saved' },
-        'member',
-      );
-      expect(optional.status).toBe(200);
-      expect(
-        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
-      ).toMatchObject({
+    expect(
+      (await request({ statusKey: 'blocked', needsYou: 'Choose.' })).status,
+    ).toBe(401);
+    expect(
+      (await request({ statusKey: 'blocked', needsYou: 'Choose.' }, 'none'))
+        .status,
+    ).toBe(404);
+    const optional = await request(
+      { statusKey: 'blocked', next: 'Not saved' },
+      'member',
+    );
+    expect(optional.status).toBe(200);
+    expect(
+      await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+    ).toMatchObject({
+      statusKey: 'blocked',
+      needsYou: null,
+      next: 'Not saved',
+    });
+    const changed = await request(
+      {
         statusKey: 'blocked',
-        needsYou: null,
-        next: 'Not saved',
-      });
-      const changed = await request(
-        {
+        needsYou: 'Choose the source. Provide its URL.',
+        next: 'Implement the choice.',
+      },
+      'member',
+    );
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({
+      data: {
+        issue: {
           statusKey: 'blocked',
           needsYou: 'Choose the source. Provide its URL.',
           next: 'Implement the choice.',
         },
-        'member',
-      );
-      expect(changed.status).toBe(200);
-      expect(await changed.json()).toMatchObject({
-        data: {
-          issue: {
-            statusKey: 'blocked',
-            needsYou: 'Choose the source. Provide its URL.',
-            next: 'Implement the choice.',
-          },
-        },
-      });
-      expect(
-        (
-          await request(
-            { statusKey: 'in_review', needsYou: 'Accept the result.' },
-            'member',
-          )
-        ).status,
-      ).toBe(200);
-      expect(
-        (await request({ statusKey: 'in_progress' }, 'member')).status,
-      ).toBe(200);
-      expect(
-        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
-      ).toMatchObject({ needsYou: null, next: 'Implement the choice.' });
-    },
-  );
+      },
+    });
+    expect(
+      (
+        await request(
+          { statusKey: 'in_review', needsYou: 'Accept the result.' },
+          'member',
+        )
+      ).status,
+    ).toBe(200);
+    expect((await request({ statusKey: 'in_progress' }, 'member')).status).toBe(
+      200,
+    );
+    expect(
+      await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+    ).toMatchObject({ needsYou: null, next: 'Implement the choice.' });
+  });
   it.each([true, false])(
     'returns safe shareable links to project leads when emailSent=%s',
     async (emailSent) => {
@@ -452,15 +429,19 @@ describe('the /api/projects guard', () => {
 });
 
 describe('scoped keys and API key identities', () => {
-  it('serves a scoped key the business API, but not intake or plans', async () => {
+  it('serves a scoped key the business API, but refuses intake files', async () => {
     const headers = { 'x-test-scoped': 'yes' };
     expect((await call('', { role: 'member', headers })).status).toBe(200);
-    const plans = await call('/plans', { role: 'member', headers });
-    expect(plans.status).toBe(403);
-    expect(await plans.json()).toMatchObject({
+    const extraction = await call('/intake/extractTexts', {
+      role: 'member',
+      headers,
+      method: 'POST',
+      body: JSON.stringify({ fileIds: [] }),
+    });
+    expect(extraction.status).toBe(403);
+    expect(await extraction.json()).toMatchObject({
       error: { reason: 'SCOPED_KEY_FORBIDDEN', domain: 'projects' },
     });
-    expect((await call('/plans', { role: 'member' })).status).toBe(200);
   });
 
   it('names the API key identities to any signed-in caller', async () => {
@@ -642,8 +623,7 @@ describe('issues over HTTP, by identifier and without a revision', () => {
 });
 
 describe('a caller acting for someone else', () => {
-  it('acts as the actor the application names, and hands its writes to the delegated writes', async () => {
-    const handed: DelegatedWriteRequest[] = [];
+  it('acts as the actor the application names', async () => {
     container.instance(projectsRequestActorToken, (context) =>
       Promise.resolve(
         context.req.header('x-test-agent')
@@ -651,22 +631,6 @@ describe('a caller acting for someone else', () => {
           : undefined,
       ),
     );
-    container.instance(projectsDelegatedWritesToken, {
-      covers: (viewer) => viewer.actor.via === 'agent',
-      write: async (viewer, request) => {
-        handed.push(request);
-        const plan = await h.services.plans.create(
-          viewer,
-          {
-            title: request.title,
-            source: { kind: 'test' },
-            rows: request.rows,
-          },
-          { execute: true },
-        );
-        return { plan, meta: { message: 'Done for the person.' } };
-      },
-    });
     const agent = { 'x-test-agent': 'yes' };
     const created = await call('/issues', {
       role: 'member',
@@ -677,7 +641,6 @@ describe('a caller acting for someone else', () => {
     expect(created.status).toBe(201);
     expect(await created.json()).toMatchObject({
       data: { identifier: 'PM-1', title: 'For you' },
-      meta: { message: 'Done for the person.' },
     });
     const commented = await call('/issues/PM-1/comments', {
       role: 'member',
@@ -688,18 +651,12 @@ describe('a caller acting for someone else', () => {
     expect(await commented.json()).toMatchObject({
       data: { comment: { content: 'Noted.' }, triggered: [] },
     });
-    expect(handed.map((request) => request.rows[0]?.op)).toEqual([
-      'issue.create',
-      'comment.create',
-    ]);
-    // Without the actor, the same write goes straight through.
     const direct = await call('/issues/PM-1/comments', {
       role: 'member',
       method: 'POST',
       body: JSON.stringify({ content: 'Myself.' }),
     });
     expect(direct.status).toBe(201);
-    expect(handed).toHaveLength(2);
   });
 });
 
@@ -780,115 +737,6 @@ describe('dependency graph concurrency over HTTP', () => {
     },
   );
 
-  it.each(['rehearsal', 'execution'] as const)(
-    'takes the graph before issue rows throughout plan %s',
-    async (phase) => {
-      const viewer = h.viewer('alice');
-      const a = await h.services.issues.create(viewer, { title: 'A' });
-      const parent = await h.services.issues.create(viewer, {
-        title: 'Parent',
-      });
-      const c = await h.services.issues.create(viewer, { title: 'C' });
-      const d = await h.services.issues.create(viewer, { title: 'D' });
-      const propose = () =>
-        call('/plans', {
-          role: 'member',
-          method: 'POST',
-          body: JSON.stringify({
-            title: 'Edit then link',
-            source: { kind: 'manual' },
-            rows: [
-              {
-                op: 'issue.update',
-                params: { issue: a.id, set: { title: 'Updated' } },
-              },
-              {
-                op: 'dependency',
-                params: {
-                  action: 'add',
-                  issue: c.id,
-                  dependsOn: d.id,
-                  type: 'blockedBy',
-                },
-              },
-            ],
-          }),
-        });
-      let plan: { id: string; revision: number } | undefined;
-      if (phase === 'execution') {
-        const response = await propose();
-        expect(response.status).toBe(201);
-        plan = (
-          (await response.json()) as { data: { id: string; revision: number } }
-        ).data;
-      }
-      const edited = Promise.withResolvers<void>();
-      const hierarchyStarted = Promise.withResolvers<void>();
-      const hierarchyLocked = Promise.withResolvers<void>();
-      const update = h.services.issues.update.bind(h.services.issues);
-      vi.spyOn(h.services.issues, 'update').mockImplementation(
-        async (...args) => {
-          if (args[2].parentIssueId === parent.id) hierarchyStarted.resolve();
-          const result = await update(...args);
-          if (args[2].title === 'Updated') {
-            edited.resolve();
-            await hierarchyStarted.promise;
-            // Only control scheduling after real writes. With early protection, the hierarchy request waits for this
-            // plan, so allow it to finish; without it, the request takes the graph and the next row deadlocks.
-            await Promise.race([hierarchyLocked.promise, delay(150)]);
-          }
-          return result;
-        },
-      );
-      const lock = h.services.subtasks.relations.lock.bind(
-        h.services.subtasks.relations,
-      );
-      vi.spyOn(h.services.subtasks.relations, 'lock').mockImplementation(
-        async (...args) => {
-          await lock(...args);
-          hierarchyLocked.resolve();
-        },
-      );
-      const pending = plan
-        ? call(`/plans/${plan.id}/execute`, {
-            role: 'member',
-            method: 'POST',
-            body: JSON.stringify({ revision: plan.revision }),
-          })
-        : propose();
-      await edited.promise;
-      const hierarchy = call(`/issues/${a.id}`, {
-        role: 'member',
-        method: 'PATCH',
-        body: JSON.stringify({
-          revision: a.revision,
-          parentIssueId: parent.id,
-        }),
-      });
-      const [planResponse, hierarchyResponse] = await Promise.all([
-        pending,
-        hierarchy,
-      ]);
-      expect(planResponse.status).toBe(phase === 'execution' ? 200 : 201);
-      expect((await planResponse.json()).data.status).toBe(
-        phase === 'execution' ? 'executed' : 'pending',
-      );
-      expect(hierarchyResponse.status).toBe(phase === 'execution' ? 409 : 200);
-      if (phase === 'execution') {
-        expect(['DEPENDENCY_GRAPH_CHANGED', 'REVISION_CONFLICT']).toContain(
-          (await hierarchyResponse.json()).error.reason,
-        );
-      }
-      expect(await h.services.issueQueries.detail(viewer, a.id)).toMatchObject({
-        title: phase === 'execution' ? 'Updated' : 'A',
-        parentIssueId: phase === 'execution' ? null : parent.id,
-      });
-      expect(
-        (await h.services.issueQueries.detail(viewer, c.id)).blockedBy,
-      ).toHaveLength(phase === 'execution' ? 1 : 0);
-    },
-  );
-
   const convert = (issueId: string, dependencyId: string) =>
     call(`/issues/${issueId}/dependencies/${dependencyId}`, {
       role: 'member',
@@ -927,13 +775,13 @@ describe('dependency graph concurrency over HTTP', () => {
     expect(await graph.findOne({ filter: { id: 'default' } })).toEqual(before);
   });
 
-  it('uses one lock order for plans that create then link and link then create', async () => {
+  it('uses one lock order for transactions that create and link issues', async () => {
     const viewer = h.viewer('alice');
     const a = await h.services.issues.create(viewer, { title: 'A' });
     const b = await h.services.issues.create(viewer, { title: 'B' });
     const c = await h.services.issues.create(viewer, { title: 'C' });
     const d = await h.services.issues.create(viewer, { title: 'D' });
-    // These are the same ambient units that execute plan rows. Both orders must acquire the graph before the counter.
+    // Both orders must acquire the graph before the counter.
     const operations = [
       () =>
         h.services.tx.unit(async () => {
@@ -1316,37 +1164,6 @@ describe('dependencies over HTTP', () => {
       ]);
     },
   );
-
-  it('refuses delegated conversion without changing the relationship', async () => {
-    const viewer = h.viewer('alice');
-    const a = await h.services.issues.create(viewer, { title: 'A' });
-    const b = await h.services.issues.create(viewer, { title: 'B' });
-    const link = await h.services.subtasks.addDependency(viewer, a.id, {
-      dependsOnIssueId: b.id,
-      type: 'relatedTo',
-    });
-    const write = vi.fn();
-    container.instance(projectsDelegatedWritesToken, {
-      covers: () => true,
-      write,
-    });
-    const response = await call(
-      `/issues/${a.identifier}/dependencies/${link.dependencyId}`,
-      {
-        role: 'member',
-        method: 'PATCH',
-        body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
-      },
-    );
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: { status: 'FAILED_PRECONDITION', reason: 'PLAN_REQUIRED' },
-    });
-    expect(write).not.toHaveBeenCalled();
-    const detail = await h.services.issueQueries.detail(viewer, a.id);
-    expect(detail.relatedTo).toEqual([link]);
-    expect(detail.blockedBy).toEqual([]);
-  });
 
   it('changes a relationship in place and reports a stale expected type as 409', async () => {
     const viewer = h.viewer('alice');
@@ -1900,12 +1717,31 @@ describe('the API document', () => {
         'projectsCreateIssue',
         'projectsUpdateIssue',
         'projectsListIssueStatuses',
-        'projectsExecutePlan',
         'projectsUploadAttachment',
         'projectsDownloadAttachment',
         'projectsListProjects',
       ]),
     );
+  });
+
+  it('omits retired operations from the API document and rejects old write URLs', async () => {
+    const document = await generateApiDocument(apiRouter, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    const paths = Object.keys(document.paths ?? {});
+    expect(paths.some((path) => path.startsWith('/api/projects/plans'))).toBe(
+      false,
+    );
+    expect(paths).not.toContain('/api/projects/intake/split');
+    expect(
+      paths.some((path) => path.startsWith('/api/projects/intake/ai')),
+    ).toBe(false);
+    for (const path of ['/plans', '/intake/split', '/intake/aiJobs']) {
+      expect(
+        (await call(path, { role: 'admin', method: 'POST', body: '{}' }))
+          .status,
+      ).toBe(404);
+    }
   });
 
   it('describes what the handlers answer', async () => {
@@ -1983,86 +1819,67 @@ describe('CLI session issue integration', () => {
     expect(refused.status).toBe(403);
   });
 
-  it.each([false, true])(
-    'defaults the project, links only successful creation and adds progress (delegated=%s)',
-    async (delegated) => {
-      const project = await h.services.projects.create(h.viewer('alice'), {
-        name: 'Session project',
+  it('defaults the project, links only successful creation and adds progress', async () => {
+    const project = await h.services.projects.create(h.viewer('alice'), {
+      name: 'Session project',
+    });
+    const link = vi.fn(async (_id: string) => {});
+    const context = vi.fn(
+      async (
+        viewer: import('../server/tokens.js').Viewer,
+        sessionId: string,
+      ) => {
+        if (sessionId !== 'own' || viewer.userId !== 'alice')
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            reason: 'SESSION_CONTEXT_REFUSED',
+            domain: 'agentSessions',
+            message: 'Session refused.',
+          });
+        return { projectId: project.id, link };
+      },
+    );
+    container.instance(projectsIssueSessionToken, {
+      creationContext: context,
+      progress: async () => ({
+        agent: 'Sol',
+        waitingFor: { reason: 'review' },
+        pullRequest: 'https://example.test/pull/1',
+      }),
+    });
+    const create = (sessionId: string, role = 'admin', extra = {}) =>
+      call('/issues', {
+        role,
+        method: 'POST',
+        headers: { 'x-nb-agent-session': sessionId },
+        body: JSON.stringify({ title: 'Session task', ...extra }),
       });
-      const link = vi.fn(async (_id: string) => {});
-      const context = vi.fn(
-        async (
-          viewer: import('../server/tokens.js').Viewer,
-          sessionId: string,
-        ) => {
-          if (sessionId !== 'own' || viewer.userId !== 'alice')
-            throw new ApiError({
-              status: 'PERMISSION_DENIED',
-              reason: 'SESSION_CONTEXT_REFUSED',
-              domain: 'agentSessions',
-              message: 'Session refused.',
-            });
-          return { projectId: project.id, link };
-        },
-      );
-      container.instance(projectsIssueSessionToken, {
-        creationContext: context,
-        progress: async () => ({
+    expect((await create('foreign')).status).toBe(403);
+    expect(link).not.toHaveBeenCalled();
+    const made = await create('own');
+    expect(made.status).toBe(201);
+    const body = await made.json();
+    expect(body.data).toMatchObject({
+      projectId: project.id,
+      statusKey: 'backlog',
+    });
+    expect(link).toHaveBeenCalledExactlyOnceWith(body.data.id);
+    const detail = await call(`/issues/${body.data.id}`, {
+      role: 'admin',
+      headers: { 'x-nocobase-client': 'cli' },
+    });
+    expect(await detail.json()).toMatchObject({
+      data: {
+        progress: {
           agent: 'Sol',
           waitingFor: { reason: 'review' },
           pullRequest: 'https://example.test/pull/1',
-        }),
-      });
-      if (delegated)
-        container.instance(projectsDelegatedWritesToken, {
-          covers: () => true,
-          write: async (viewer, request) => ({
-            plan: await h.services.plans.create(
-              viewer,
-              {
-                title: request.title,
-                source: { kind: 'test' },
-                rows: request.rows,
-              },
-              { execute: true },
-            ),
-            meta: {},
-          }),
-        });
-      const create = (sessionId: string, role = 'admin', extra = {}) =>
-        call('/issues', {
-          role,
-          method: 'POST',
-          headers: { 'x-nb-agent-session': sessionId },
-          body: JSON.stringify({ title: 'Session task', ...extra }),
-        });
-      expect((await create('foreign')).status).toBe(403);
-      expect(link).not.toHaveBeenCalled();
-      const made = await create('own');
-      expect(made.status).toBe(201);
-      const body = await made.json();
-      expect(body.data).toMatchObject({
-        projectId: project.id,
-        statusKey: 'backlog',
-      });
-      expect(link).toHaveBeenCalledExactlyOnceWith(body.data.id);
-      const detail = await call(`/issues/${body.data.id}`, {
-        role: 'admin',
-        headers: { 'x-nocobase-client': 'cli' },
-      });
-      expect(await detail.json()).toMatchObject({
-        data: {
-          progress: {
-            agent: 'Sol',
-            waitingFor: { reason: 'review' },
-            pullRequest: 'https://example.test/pull/1',
-          },
         },
-      });
-      link.mockClear();
-      const forbidden = await create('own', 'none');
-      expect(forbidden.status).not.toBe(201);
-      expect(link).not.toHaveBeenCalled();
-    },
-  );
+      },
+    });
+    link.mockClear();
+    const forbidden = await create('own', 'none');
+    expect(forbidden.status).not.toBe(201);
+    expect(link).not.toHaveBeenCalled();
+  });
 });

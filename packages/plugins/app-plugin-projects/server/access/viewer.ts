@@ -14,7 +14,7 @@ import {
   type SettingsItem,
 } from '../../shared/access.js';
 import type { Actor } from '../kernel/actor.js';
-import type { ActivityExecution } from '../../shared/plans.js';
+import type { ActivityExecution } from '../../shared/activity.js';
 import { forbidden } from '../kernel/errors.js';
 
 export interface Viewer {

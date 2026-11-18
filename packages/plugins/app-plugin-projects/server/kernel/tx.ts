@@ -6,8 +6,7 @@
  * they write commits or rolls back with the change that caused it (the inbox, for example, turns events into items
  * this way). Events a hook emits are handed to the hooks again, for a bounded number of rounds.
  *
- * A unit (`unit`) makes every service call inside it join one transaction without passing it along: the plan engine
- * runs several services' writes as one change that commits or rolls back together. Inside a unit, `run` without
+ * A unit (`unit`) makes every service call inside it join one transaction without passing it along: several services' writes commit or roll back together. Inside a unit, `run` without
  * `outer` joins the unit (or the savepoint `savepoint` opened), and `read` answers its connection. A rehearsing unit
  * (`rehearse: true`) always rolls back, drops the events its writes emit, runs no commit hooks, and says so on its
  * `Tx` (`rehearsal`), so a trigger can answer what it would start without queuing anything.
@@ -24,7 +23,7 @@ export interface Tx {
   readonly conn: DatabaseConnection;
   emit(event: DomainEvent): void;
   /**
-   * The unit always rolls back (a plan's rehearsal): whatever runs in it reports what it would do and must start
+   * The unit always rolls back: whatever runs in it reports what it would do and must start
    * nothing outside the database. Its events are dropped.
    */
   readonly rehearsal?: boolean;

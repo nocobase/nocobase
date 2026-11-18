@@ -88,22 +88,10 @@ import {
   type SubtaskService,
 } from './domains/subtasks/index.js';
 import {
-  createPlanEngine,
-  createPlanService,
-  type PlanHooks,
-  type PlanService,
-} from './domains/plans/index.js';
-import {
-  createIntakeAiService,
   createIntakeFileStore,
   createIntakeService,
-  intakeFilesHook,
-  intakeFilesToKeep,
-  type IntakeAiService,
-  type IntakeOrganizer,
   type IntakeService,
-} from './domains/plans/intake/index.js';
-import { noAbilities, noSettings } from '../shared/access.js';
+} from './domains/intake/index.js';
 import {
   createAttachmentService,
   createAttachmentStorage,
@@ -128,10 +116,6 @@ export interface ProjectsDeps {
    * of the registered kinds.
    */
   readonly triggers?: () => IssueTriggers | undefined;
-  /** What hears plans being decided (`projectsPlanHooksToken`), asked on each use. */
-  readonly planHooks?: () => PlanHooks | undefined;
-  /** Who organises intake with AI (`projectsIntakeOrganizerToken`), asked on each use; none when left out. */
-  readonly intakeOrganizer?: () => IntakeOrganizer | undefined;
   /** Where files' bytes go (the file plugin and Drive); without it nothing can be uploaded. */
   readonly storage?: AttachmentStorage;
   /** The application's public base path, for the files' content URLs; empty when left out. */
@@ -165,15 +149,11 @@ export interface Projects {
   /** Where other plugins add notice rules (`projectsNoticeRulesToken`). */
   readonly noticeRules: NoticeRules;
   readonly subtasks: SubtaskService;
-  /** Operation plans (`shared/plans.ts`). */
-  readonly plans: PlanService;
-  /** Requirement intake: files, their text and the rule split (`shared/intake.ts`). */
-  readonly intake: IntakeService;
-  /** Requirement intake with AI, through the bound organiser (`shared/intake-ai.ts`). */
-  readonly intakeAi: IntakeAiService;
   readonly kinds: KindRegistry;
   /** Contributed status events: their registry, and firing one for a batch of issues. */
   readonly statusEvents: StatusEventService;
+  /** Temporary intake uploads and text extraction. */
+  readonly intake: IntakeService;
   /** The issue side of the reports: counts over a date range, limited to what a viewer sees. */
   readonly reports: IssueReports;
 }
@@ -216,7 +196,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     kinds,
     storage,
     basePath: deps.basePath ?? (() => ''),
-    keep: intakeFilesToKeep,
   });
   const comments = createCommentService({
     tx,
@@ -274,32 +253,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     users,
     issues: () => projectIssues,
   });
-  const plans = createPlanService({
-    tx,
-    ids,
-    kinds,
-    users,
-    engine: createPlanEngine({
-      tx,
-      kinds,
-      services: { issues, comments, subtasks, projects, statuses },
-      onError: (error) => console.error('A plan row failed.', error),
-    }),
-    hooks: () => deps.planHooks?.(),
-    onExecuted: {
-      intake: intakeFilesHook({ links: attachments.links, activity }),
-    },
-    ...(deps.access.permissionsOfUser
-      ? {
-          permissionsOfUser: (userId: string) =>
-            (
-              deps.access.permissionsOfUser as NonNullable<
-                ProjectsAccess['permissionsOfUser']
-              >
-            )(userId),
-        }
-      : {}),
-  });
   const issueQueries = createIssueQueries({
     tx,
     users,
@@ -322,30 +275,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
     conn: () => tx.read(),
     storage,
   });
-  const intake = createIntakeService({
-    plans,
-    labels: () => labels.list(),
-    files: intakeFiles,
-  });
-  const intakeAi = createIntakeAiService({
-    tx,
-    ids,
-    kinds,
-    plans,
-    projects,
-    issueQueries,
-    labels: () => labels.list(),
-    files: intakeFiles,
-    viewerOf: async (userId) => ({
-      userId,
-      actor: { type: 'user', id: userId },
-      permissions: (await deps.access.permissionsOfUser?.(userId)) ?? {
-        scopes: noAbilities(),
-        settings: noSettings(),
-      },
-    }),
-    organizer: () => deps.intakeOrganizer?.(),
-  });
+  const intake = createIntakeService({ files: intakeFiles });
   const members = createMemberService({
     tx,
     ids,
@@ -378,9 +308,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
     storage,
     noticeRules: { add: (rule) => notices.add(rule) },
     subtasks,
-    plans,
     intake,
-    intakeAi,
     kinds,
     statusEvents: createStatusEventService({
       tx,

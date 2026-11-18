@@ -5,11 +5,10 @@
  *
  * An upload is the uploader's: a person's (`user` and their id) or, for an agent working on an issue, the agent's own
  * principal. Only the uploader may read an upload attached to nothing, attach it, or discard it. Attaching happens in
- * the caller's transaction: the comment service sends a comment's files with it (`attach`), the plan service gives an
- * intake's files to the issues it created. Attaching to an issue records `attachment_added`; a comment's files are
+ * the caller's transaction. Attaching to an issue records `attachment_added`; a comment's files are
  * counted on its `comment_added` instead. Removing an issue's file records `attachment_removed`.
  *
- * A comment's files are not removed with its row (a deletion may be part of a plan that rolls back): once the comment
+ * A comment's files are not removed with its row: once the comment
  * is deleted they are no longer listed or served, and the purge deletes them with the uploads attached to nothing for
  * `ORPHAN_HOURS`.
  */
@@ -103,7 +102,7 @@ export interface AttachmentService {
   purge(at?: Date): Promise<number>;
 }
 
-/** What the comment and plan services use, inside their transactions. */
+/** What the comment service use, inside their transactions. */
 export interface AttachmentLinks {
   /**
    * Attaches `ids` (checked: 1 to `ATTACHMENTS_PER_REQUEST_MAX` distinct ids of `uploader`'s uploads attached to
@@ -137,8 +136,6 @@ export interface AttachmentDeps {
   readonly storage: AttachmentStorage;
   /** The application's public base path (`/app`, or empty), for the content URLs. */
   readonly basePath: () => string;
-  /** File ids an open plan still needs (an intake's files), kept by the purge. */
-  readonly keep?: (conn: DatabaseConnection) => Promise<ReadonlySet<string>>;
   readonly now?: () => Date;
 }
 
@@ -491,12 +488,10 @@ export function createAttachmentService(deps: AttachmentDeps): {
     async purge(at = now()) {
       const conn = deps.tx.read();
       const cutoff = at.getTime() - ORPHAN_HOURS * 60 * 60 * 1000;
-      const keep = (await deps.keep?.(conn)) ?? new Set<string>();
       let purged = 0;
       // The age is compared here rather than in the query: dialects store the timestamp differently.
       for (const row of await unattached(conn, PURGE_BATCH)) {
         if (new Date(row.createdAt).getTime() >= cutoff) break;
-        if (keep.has(row.id)) continue;
         // Attached meanwhile: the row survived, so its bytes stay.
         if (!(await deleteIfUnattached(conn, row.id))) continue;
         await deps.storage.remove(row);

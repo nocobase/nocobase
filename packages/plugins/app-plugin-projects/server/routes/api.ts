@@ -30,8 +30,7 @@ import {
   createMemberRoutes,
   ensureMemberMiddleware,
 } from '../domains/members/index.js';
-import { createPlanRoutes } from '../domains/plans/index.js';
-import { createIntakeRoutes } from '../domains/plans/intake/index.js';
+import { createIntakeRoutes } from '../domains/intake/index.js';
 import { createProjectRoutes } from '../domains/projects/index.js';
 import { createSettingsRoutes } from '../domains/settings/index.js';
 import { createSubscriptionRoutes } from '../domains/subscriptions/index.js';
@@ -39,8 +38,6 @@ import { createSubtaskRoutes } from '../domains/subtasks/index.js';
 import { domainRouter, PROJECTS_DOMAIN } from '../kernel/http.js';
 import {
   projectsAccessToken,
-  projectsDelegatedWritesToken,
-  projectsPlanSourceToken,
   projectsRequestActorToken,
   projectsToken,
   projectsIssueSessionToken,
@@ -57,9 +54,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // Scoped API keys are welcome: every endpoint decides through the request's Viewer, whose permissions the
     // application narrows to the key's scope and whose projects follow the key's selection (`viewerMiddleware`).
     projects.use('*', authentication.required({ scopedKeys: true }));
-    // Intake and plans are a person's conversation with their agents: a person signs in for them. An issued credential
-    // (an agent's run token) passes: it reaches only the plan routes whose security lists it (`plan.routes.ts`).
-    for (const personal of ['/intake', '/intake/*', '/plans', '/plans/*'])
+    // The standalone intake file tools are for signed-in people.
+    for (const personal of ['/intake', '/intake/*'])
       projects.use(personal, async (context, next) => {
         const auth = context.get('auth');
         if (
@@ -72,7 +68,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             reason: 'SCOPED_KEY_FORBIDDEN',
             domain: PROJECTS_DOMAIN,
             message:
-              'Intake and plans are for people; a scoped key or an organization’s API key cannot use them.',
+              'Intake files are for people; a scoped key or an organization’s API key cannot use them.',
           });
         await next();
       });
@@ -85,10 +81,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           container.has(projectsRequestActorToken)
             ? container.resolve(projectsRequestActorToken)
             : undefined,
-        delegated: () =>
-          container.has(projectsDelegatedWritesToken)
-            ? container.resolve(projectsDelegatedWritesToken)
-            : undefined,
       }),
     );
     // Every fixed segment comes before `/:projectId`, which would otherwise take it for a project id.
@@ -100,19 +92,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     projects.route('/settings', createSettingsRoutes(services.settings));
     projects.route('/labels', createLabelRoutes(services.labels));
-    projects.route(
-      '/plans',
-      createPlanRoutes(services.plans, {
-        sourceOf: () =>
-          container.has(projectsPlanSourceToken)
-            ? container.resolve(projectsPlanSourceToken)
-            : undefined,
-      }),
-    );
-    projects.route(
-      '/intake',
-      createIntakeRoutes(services.intake, services.intakeAi),
-    );
+    projects.route('/intake', createIntakeRoutes(services.intake));
     projects.route(
       '/attachments',
       createAttachmentRoutes(services.attachments),
@@ -125,7 +105,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         uploadLimit: services.attachments.uploadLimit,
         comments: services.comments,
         queries: services.commentQueries,
-        read: () => services.tx.read(),
       }),
     );
     projects.route('/issues', createSubscriptionRoutes(services.subscriptions));

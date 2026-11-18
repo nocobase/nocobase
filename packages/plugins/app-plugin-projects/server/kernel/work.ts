@@ -21,10 +21,9 @@
  * Whether an issue is held is the plugin's to say (`SubtaskService.blockersOf`); the handler asks it and answers
  * `skipped: 'blocked'`.
  *
- * Collect only: a plan's rehearsal (`Tx.rehearsal`, `kernel/tx.ts`) runs the same triggers in a transaction that
+ * Collect only: a transaction rehearsal (`Tx.rehearsal`, `kernel/tx.ts`) runs the same triggers in a transaction that
  * always rolls back and drops every event. A handler then answers the attempts it would make (`started: true` for work
- * it would start, `skipped` with the reason otherwise) and queues, cancels or announces nothing; the rehearsal turns the
- * attempts into the plan row's `wakes`.
+ * it would start, `skipped` with the reason otherwise) and queues, cancels or announces nothing; the caller can inspect those attempts.
  */
 import { AsyncLocalStorage } from 'node:async_hooks';
 

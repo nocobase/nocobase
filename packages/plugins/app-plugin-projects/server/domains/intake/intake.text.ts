@@ -12,7 +12,7 @@ import {
   INTAKE_FILE_CHARS,
   INTAKE_TOTAL_CHARS,
   type IntakeReadState,
-} from '../../../../shared/intake.js';
+} from '../../../shared/intake.js';
 
 export const EXTRACT_TIMEOUT_MS = 15_000;
 
