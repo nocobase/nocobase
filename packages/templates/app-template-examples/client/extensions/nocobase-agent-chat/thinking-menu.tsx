@@ -16,7 +16,8 @@ import { cn } from 'cn';
 import { useChatTranslation } from './chat-i18n.js';
 
 export interface ThinkingMenuProps {
-  readonly value: ReasoningLevel;
+  /** The level shown as chosen; a saved value that is not a standard level checks none, so any choice saves. */
+  readonly value: ReasoningLevel | (string & {});
   readonly onChange: (level: ReasoningLevel) => void;
   readonly disabled?: boolean;
 }
@@ -46,7 +47,7 @@ export function ThinkingMenu({
   useLayoutEffect(() => {
     reveal(scrollRef.current?.querySelector('[aria-checked="true"]') ?? null);
   }, [value]);
-  const label = (level: ReasoningLevel) => thinkingLevelText(level, t);
+  const label = (level: string) => thinkingLevelText(level, t);
   const name = t('chat.thinking.choose', { level: label(value) });
   const itemClass =
     'min-h-7 min-w-7 shrink-0 justify-center px-2 py-1 text-xs whitespace-nowrap focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden';
@@ -92,19 +93,19 @@ export function ThinkingMenu({
         <BrainIcon className='size-3.5' aria-hidden='true' />
       </span>
       <DropdownMenuRadioItem
-        value='default'
+        value='provider-default'
         disabled={disabled}
         closeOnClick={false}
         title={t('chat.thinking.useDefault')}
         data-testid='chat-thinking-default'
         className={cn(
           itemClass,
-          value === 'default'
+          value === 'provider-default'
             ? 'bg-accent font-medium text-accent-foreground'
             : 'text-muted-foreground',
         )}
       >
-        {label('default')}
+        {label('provider-default')}
       </DropdownMenuRadioItem>
       <Separator orientation='vertical' className='h-4 shrink-0' />
       <div
@@ -113,7 +114,7 @@ export function ThinkingMenu({
         data-testid='chat-thinking-levels'
       >
         <div className='flex w-max min-w-full items-center gap-0.5 rounded-lg bg-muted p-0.5'>
-          {REASONING_LEVELS.filter((level) => level !== 'default').map(
+          {REASONING_LEVELS.filter((level) => level !== 'provider-default').map(
             (level) => (
               <DropdownMenuRadioItem
                 key={level}

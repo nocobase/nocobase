@@ -1,9 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { streamText } from 'ai';
-import { reasoningOf } from '../server/online/gateway.js';
 import { languageModel } from '../server/online/providers.js';
 import { thinkingWarnings } from '../server/online/agent/thinking.js';
-import type { ModelProviderName } from '../shared/models.js';
+import {
+  REASONING_ENABLED_LEVELS,
+  type ModelProviderName,
+  type ReasoningLevel,
+} from '../shared/models.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -11,7 +14,7 @@ afterEach(() => vi.unstubAllGlobals());
 async function bodyFor(
   provider: ModelProviderName,
   model: string,
-  level: string,
+  level: ReasoningLevel,
   baseUrl: string | null = null,
 ): Promise<Record<string, unknown>> {
   const bodies: Record<string, unknown>[] = [];
@@ -28,7 +31,7 @@ async function bodyFor(
   const result = streamText({
     model: languageModel({ provider, baseUrl, apiKey: 'offline-key' }, model),
     prompt: 'Hi',
-    reasoning: reasoningOf(level),
+    reasoning: level,
     maxRetries: 0,
     onError: () => undefined,
   });
@@ -41,7 +44,7 @@ const cases: {
   provider: ModelProviderName;
   model: string;
   off: Record<string, unknown>;
-  on: { level: string; body: Record<string, unknown> };
+  on: { level: ReasoningLevel; body: Record<string, unknown> };
   absent: readonly string[];
 }[] = [
   {
@@ -49,8 +52,8 @@ const cases: {
     model: 'gpt-5.6-terra',
     off: { reasoning: expect.objectContaining({ effort: 'none' }) },
     on: {
-      level: 'max',
-      body: { reasoning: expect.objectContaining({ effort: 'max' }) },
+      level: 'xhigh',
+      body: { reasoning: expect.objectContaining({ effort: 'xhigh' }) },
     },
     absent: ['reasoning'],
   },
@@ -81,7 +84,7 @@ const cases: {
     provider: 'alibaba',
     model: 'qwen3.8-flash',
     off: { enable_thinking: false },
-    on: { level: 'default', body: {} },
+    on: { level: 'provider-default', body: {} },
     absent: ['enable_thinking', 'thinking_budget'],
   },
   {
@@ -93,7 +96,7 @@ const cases: {
       }),
     },
     on: {
-      level: 'default',
+      level: 'provider-default',
       body: {},
     },
     absent: [],
@@ -118,10 +121,10 @@ it.each(cases)(
   'sends $provider $model the level it was given, turned into the provider’s parameter',
   async ({ provider, model, off, on, absent }) => {
     if (Object.keys(off).length)
-      expect(await bodyFor(provider, model, 'off')).toMatchObject(off);
-    if (on.level !== 'default')
+      expect(await bodyFor(provider, model, 'none')).toMatchObject(off);
+    if (on.level !== 'provider-default')
       expect(await bodyFor(provider, model, on.level)).toMatchObject(on.body);
-    const defaults = await bodyFor(provider, model, 'default');
+    const defaults = await bodyFor(provider, model, 'provider-default');
     for (const key of absent) expect(defaults).not.toHaveProperty(key);
     expect(
       (defaults.generationConfig as Record<string, unknown> | undefined)
@@ -131,7 +134,7 @@ it.each(cases)(
 );
 
 it('passes every level on for a model id no list names, over an OpenAI-compatible endpoint too', async () => {
-  for (const level of ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
+  for (const level of REASONING_ENABLED_LEVELS)
     expect(
       await bodyFor('openai', 'gpt-5.6-terra-2026-11-01', level),
     ).toMatchObject({ reasoning: expect.objectContaining({ effort: level }) });
@@ -168,9 +171,9 @@ it.each([
     type: 'compatibility',
   },
   {
-    model: 'qwen3.8-flash',
-    provider: 'alibaba',
-    level: 'max',
+    model: 'moonshot-v1-8k',
+    provider: 'moonshotai',
+    level: 'high',
     type: 'unsupported',
   },
 ] as const)(
@@ -192,15 +195,18 @@ it.each([
         model,
       ),
       prompt: 'Hi',
-      reasoning: reasoningOf(level),
+      reasoning: level,
       maxRetries: 0,
     });
     await result.consumeStream();
     const warnings = await result.warnings;
-    expect(warnings).toContainEqual(
-      expect.objectContaining({ type, feature: 'reasoning' }),
+    const found = warnings.find(
+      (warning) => warning.type === type && warning.feature === 'reasoning',
     );
-    expect(thinkingWarnings(warnings)).toContain(level);
+    expect(found).toBeDefined();
+    expect(thinkingWarnings(warnings)).toContain(
+      (found as { details: string }).details,
+    );
   },
 );
 
@@ -220,7 +226,7 @@ it('fails the call as usual when the provider refuses the level, without trying 
       'gpt-6-astra',
     ),
     prompt: 'Hi',
-    reasoning: reasoningOf('off'),
+    reasoning: 'none',
     maxRetries: 0,
     onError: ({ error }) => void errors.push(error),
   });

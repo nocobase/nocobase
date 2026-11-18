@@ -923,14 +923,13 @@ const zhTW: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: '預設',
-        off: '關閉',
+        'provider-default': '預設',
+        none: '關閉',
         minimal: '極低',
         low: '低',
         medium: '中',
         high: '高',
         xhigh: '超高',
-        max: '最高',
       },
       adjusted:
         '目前模型不支援「{{requested}}」思考等級，本次回覆使用了「{{used}}」。',

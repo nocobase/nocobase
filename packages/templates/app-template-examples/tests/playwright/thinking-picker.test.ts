@@ -153,7 +153,6 @@ for (const width of [1440, 375, 412]) {
           'Medium',
           'High',
           'Extra high',
-          'Max',
         ]);
         await control
           .getByRole('menuitemradio', { name: 'High', exact: true })
@@ -224,11 +223,17 @@ for (const width of [1440, 375, 412]) {
         const fixedBefore = await defaultOffset();
         await page.keyboard.press('End');
         await expect(
-          control.getByRole('menuitemradio', { name: 'Max', exact: true }),
+          control.getByRole('menuitemradio', {
+            name: 'Extra high',
+            exact: true,
+          }),
         ).toBeFocused();
         await page.keyboard.press('Enter');
         await expect(
-          control.getByRole('menuitemradio', { name: 'Max', exact: true }),
+          control.getByRole('menuitemradio', {
+            name: 'Extra high',
+            exact: true,
+          }),
         ).toBeChecked();
         const fixedAfter = await defaultOffset();
         expect(fixedAfter).toBeCloseTo(fixedBefore, 1);
@@ -307,7 +312,7 @@ for (const width of [1440, 375, 412]) {
         await modelRow('basic').click();
         await expect(menu).toBeVisible();
         await expect(picker).toContainText('Text Basic');
-        await expect(control.getByRole('menuitemradio')).toHaveCount(8);
+        await expect(control.getByRole('menuitemradio')).toHaveCount(7);
         await control
           .getByRole('menuitemradio', { name: 'Off', exact: true })
           .click();
@@ -360,6 +365,98 @@ for (const width of [1440, 375, 412]) {
         ).toBeChecked();
         await page.keyboard.press('Escape');
         await expect(menu).toHaveCount(0);
+        if (width === 1440) {
+          // The chosen value is the AI SDK's own: the same string in the request, the saved and restored
+          // configuration, and what the SDK sends the provider.
+          const choices = [
+            ['Default', 'provider-default'],
+            ['Off', 'none'],
+            ['Minimal', 'minimal'],
+            ['Low', 'low'],
+            ['Medium', 'medium'],
+            ['High', 'high'],
+            ['Extra high', 'xhigh'],
+          ] as const;
+          await panel.getByTestId('chat-model-picker').click();
+          for (const [label, value] of [...choices.slice(1), choices[0]]) {
+            if (label === 'Low') continue;
+            const saved = page.waitForResponse(
+              (response) =>
+                response.request().method() === 'PATCH' &&
+                response.url() === endpoint,
+            );
+            await control
+              .getByRole('menuitemradio', { name: label, exact: true })
+              .click();
+            const response = await saved;
+            expect(response.request().postDataJSON().config.thinking).toBe(
+              value,
+            );
+            expect((await response.json()).data.thinking).toBe(value);
+            await expect(
+              control.getByRole('menuitemradio', { name: label, exact: true }),
+            ).toBeChecked();
+          }
+          const sendWith = async (label: string, value: string) => {
+            await panel.getByTestId('chat-model-picker').click();
+            const item = control.getByRole('menuitemradio', {
+              name: label,
+              exact: true,
+            });
+            if (!(await item.isChecked())) {
+              await item.click();
+              await expect
+                .poll(
+                  async () =>
+                    (await (await page.request.get(endpoint)).json()).data
+                      .thinking,
+                )
+                .toBe(value);
+            }
+            await page.keyboard.press('Escape');
+            await panel.locator('textarea').fill(`Think: ${value}`);
+            const index = fixture.streams.length;
+            await panel.getByTestId('chat-send').click();
+            await expect.poll(() => fixture.streams.length).toBe(index + 1);
+            fixture.complete(index);
+            await expect(panel.getByTestId('chat-stop')).toHaveCount(0);
+            return fixture.requests.filter((body) => body.stream).at(-1) as
+              Record<string, unknown> | undefined;
+          };
+          expect(await sendWith('Off', 'none')).toMatchObject({
+            reasoning_effort: 'none',
+          });
+          expect(await sendWith('Extra high', 'xhigh')).toMatchObject({
+            reasoning_effort: 'xhigh',
+          });
+          expect(
+            await sendWith('Default', 'provider-default'),
+          ).not.toHaveProperty('reasoning_effort');
+          await page.goto(app + '/?chat=' + encodeURIComponent(conversationId));
+          await panel.getByTestId('chat-model-picker').click();
+          await expect(
+            control.getByRole('menuitemradio', {
+              name: 'Default',
+              exact: true,
+            }),
+          ).toBeChecked();
+          expect(
+            (await (await page.request.get(endpoint)).json()).data.thinking,
+          ).toBe('provider-default');
+          const remembered = await page.evaluate(() =>
+            Object.entries(window.localStorage)
+              .filter(([key]) =>
+                key.startsWith('nocobase:agents-chat:thinking'),
+              )
+              .map(([, value]) => JSON.parse(value) as Record<string, string>),
+          );
+          expect(
+            remembered.some((saved) =>
+              Object.values(saved).includes('provider-default'),
+            ),
+          ).toBe(true);
+          await page.keyboard.press('Escape');
+        }
         if (width === 412) {
           await panel
             .getByRole('button', { name: 'Close', exact: true })

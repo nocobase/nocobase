@@ -72,7 +72,10 @@ export type OnlineAgentConfig = {
   toolVersions: Record<string, string>;
   /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
   model?: string[];
-  /** The conversation's thinking level; one saved before levels were checked may be another string (`default`). */
+  /**
+   * The conversation's thinking level. A value saved before the levels were the SDK's own may be another string; the
+   * conversation refuses to run with it (`REASONING_LEVEL_INVALID`) until a standard level is chosen.
+   */
   thinking?: string;
   webSearch?: boolean;
 };

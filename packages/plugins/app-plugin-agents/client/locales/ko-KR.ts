@@ -942,14 +942,13 @@ const koKR: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: '기본값',
-        off: '끄기',
+        'provider-default': '기본값',
+        none: '끄기',
         minimal: '최소',
         low: '낮음',
         medium: '중간',
         high: '높음',
         xhigh: '매우 높음',
-        max: '최대',
       },
       adjusted:
         '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 "{{used}}"을(를) 사용했습니다.',

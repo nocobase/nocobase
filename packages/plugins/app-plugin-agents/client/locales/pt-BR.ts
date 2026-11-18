@@ -996,14 +996,13 @@ const ptBR: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'Padrão',
-        off: 'Desativado',
+        'provider-default': 'Padrão',
+        none: 'Desativado',
         minimal: 'Mínimo',
         low: 'Baixo',
         medium: 'Médio',
         high: 'Alto',
         xhigh: 'Muito alto',
-        max: 'Máximo',
       },
       adjusted:
         'Este modelo não aceita o nível de raciocínio "{{requested}}"; nesta resposta foi usado "{{used}}".',

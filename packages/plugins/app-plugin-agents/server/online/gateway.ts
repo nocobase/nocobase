@@ -315,27 +315,17 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : '';
 
-/**
- * A thinking level (`ReasoningLevel`) as the SDK's `reasoning` names it: `default` (and anything else) is
- * `provider-default`, `off` is `none`, and the levels that turn thinking on go as they are. The SDK's type has no
- * `max` yet; it is passed on regardless. What happens next is up to the provider package and the provider: it may use
- * the level, warn that it ignored or mapped it, ignore it silently, or have the provider refuse the request.
- */
+/** An entry's reasoning effort (`ONLINE_EFFORTS`) as the SDK names it; the provider's default otherwise. */
 export function reasoningOf(
-  level: string | null | undefined,
-): NonNullable<Parameters<typeof streamText>[0]['reasoning']> {
-  switch (level) {
-    case 'off':
-      return 'none';
+  effort: string | null | undefined,
+): 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'provider-default' {
+  switch (effort) {
     case 'minimal':
     case 'low':
     case 'medium':
     case 'high':
     case 'xhigh':
-      return level;
-    case 'max':
-      // Deliberately outside the SDK's current type; see above.
-      return level as unknown as 'xhigh';
+      return effort;
     default:
       return 'provider-default';
   }

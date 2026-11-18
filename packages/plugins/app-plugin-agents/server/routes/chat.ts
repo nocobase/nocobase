@@ -84,7 +84,7 @@ const conversationConflict = (when: string) =>
 
 const MessagePosition = z.object({ before: z.number().int().min(1) });
 
-// The API document lists the eight levels. The schema itself accepts any value so that a wrong type is refused by the
+// The API document lists the seven levels. The schema itself accepts any value so that a wrong type is refused by the
 // same check as a wrong string: 400 `REASONING_LEVEL_INVALID`, not the generic `INVALID_INPUT`.
 const ThinkingInput = z
   .custom<string>(() => true)
@@ -92,7 +92,7 @@ const ThinkingInput = z
     type: 'string',
     enum: [...REASONING_LEVELS],
     description:
-      'A thinking level: default, off, minimal, low, medium, high, xhigh or max. Anything else is refused (`REASONING_LEVEL_INVALID`).',
+      'A thinking level, as the AI SDK names it: provider-default, none, minimal, low, medium, high or xhigh. Anything else is refused (`REASONING_LEVEL_INVALID`).',
   })
   .optional();
 

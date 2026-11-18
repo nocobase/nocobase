@@ -964,14 +964,13 @@ const viVN: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'Mặc định',
-        off: 'Tắt',
+        'provider-default': 'Mặc định',
+        none: 'Tắt',
         minimal: 'Tối thiểu',
         low: 'Thấp',
         medium: 'Trung bình',
         high: 'Cao',
         xhigh: 'Rất cao',
-        max: 'Tối đa',
       },
       adjusted:
         'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng "{{used}}".',

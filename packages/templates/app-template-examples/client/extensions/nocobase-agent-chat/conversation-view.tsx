@@ -366,9 +366,9 @@ function ConversationBody({
       ?.webSearch,
   );
   // The conversation's saved level wins; what is remembered per model only applies when switching to one.
-  const thinkingValue: ReasoningLevel = nativeConversation
+  const thinkingValue = nativeConversation
     ? shownThinking(configuration.data?.thinking)
-    : (chosenThinking ?? 'default');
+    : (chosenThinking ?? 'provider-default');
   /**
    * A new conversation starts with the level remembered for its model; only without one does the Agent's own default
    * apply. A remembered value that is not a standard level reads as none.

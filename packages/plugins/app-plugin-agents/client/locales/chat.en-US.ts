@@ -7,14 +7,13 @@ const chatEnUS = {
   chat: {
     thinking: {
       levels: {
-        default: 'Default',
-        off: 'Off',
+        'provider-default': 'Default',
+        none: 'Off',
         minimal: 'Minimal',
         low: 'Low',
         medium: 'Medium',
         high: 'High',
         xhigh: 'Extra high',
-        max: 'Max',
       },
       adjusted:
         'This model does not support the {{requested}} thinking level; {{used}} was used for this reply.',

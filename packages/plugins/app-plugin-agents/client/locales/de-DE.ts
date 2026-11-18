@@ -995,14 +995,13 @@ const deDE: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'Standard',
-        off: 'Aus',
+        'provider-default': 'Standard',
+        none: 'Aus',
         minimal: 'Minimal',
         low: 'Niedrig',
         medium: 'Mittel',
         high: 'Hoch',
         xhigh: 'Sehr hoch',
-        max: 'Maximal',
       },
       adjusted:
         'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde „{{used}}“ verwendet.',

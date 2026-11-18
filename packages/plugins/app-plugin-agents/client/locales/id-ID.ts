@@ -966,14 +966,13 @@ const idID: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'Bawaan',
-        off: 'Mati',
+        'provider-default': 'Bawaan',
+        none: 'Mati',
         minimal: 'Minimal',
         low: 'Rendah',
         medium: 'Sedang',
         high: 'Tinggi',
         xhigh: 'Sangat tinggi',
-        max: 'Maksimum',
       },
       adjusted:
         'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan "{{used}}".',

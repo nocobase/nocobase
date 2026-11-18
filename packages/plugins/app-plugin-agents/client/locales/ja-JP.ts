@@ -965,14 +965,13 @@ const jaJP: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'デフォルト',
-        off: 'オフ',
+        'provider-default': 'デフォルト',
+        none: 'オフ',
         minimal: '最小',
         low: '低',
         medium: '中',
         high: '高',
         xhigh: '超高',
-        max: '最大',
       },
       adjusted:
         'このモデルは思考レベル「{{requested}}」に対応していないため、この返信では「{{used}}」を使用しました。',

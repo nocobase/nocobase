@@ -14,9 +14,15 @@ import {
 } from '../../shared/models.js';
 import { useChatPanel } from './provider.js';
 
-/** A conversation's saved level as a level the chat shows: `default` for none and for one that is not standard. */
-export function shownThinking(value: string | undefined): ReasoningLevel {
-  return isReasoningLevel(value) ? value : 'default';
+/**
+ * A conversation's saved level as the chat shows it: `provider-default` when none is saved. A saved value that is not
+ * a standard level is shown as it is, so no level reads as chosen and choosing any one saves it; such a value is
+ * refused when the conversation runs (`REASONING_LEVEL_INVALID`).
+ */
+export function shownThinking(
+  value: string | undefined,
+): ReasoningLevel | (string & {}) {
+  return value ?? 'provider-default';
 }
 
 /** Where the levels chosen per model are kept; the application's scope (its path and the person) follows it. */

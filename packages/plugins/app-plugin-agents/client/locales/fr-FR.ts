@@ -1000,14 +1000,13 @@ const frFR: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'Par défaut',
-        off: 'Désactivé',
+        'provider-default': 'Par défaut',
+        none: 'Désactivé',
         minimal: 'Minimal',
         low: 'Faible',
         medium: 'Moyen',
         high: 'Élevé',
         xhigh: 'Très élevé',
-        max: 'Maximal',
       },
       adjusted:
         'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé « {{used}} ».',

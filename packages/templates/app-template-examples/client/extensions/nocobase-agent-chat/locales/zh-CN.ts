@@ -27,14 +27,13 @@ const agentChatZhCN: AgentChatLocale = {
       choose: '思考等级：{{level}}',
       useDefault: '改用厂商默认设置',
       levels: {
-        default: '默认',
-        off: '关闭',
+        'provider-default': '默认',
+        none: '关闭',
         minimal: '极低',
         low: '低',
         medium: '中',
         high: '高',
         xhigh: '超高',
-        max: '最高',
       },
       adjusted:
         '当前模型不支持「{{requested}}」思考等级，本次回复使用了「{{used}}」。',

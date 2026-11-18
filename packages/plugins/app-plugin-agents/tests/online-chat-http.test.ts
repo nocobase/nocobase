@@ -609,13 +609,16 @@ it('accepts declared business variables but rejects browser policy overrides on 
   );
 });
 
-it('refuses a thinking level of any wrong type or value with REASONING_LEVEL_INVALID on create and configure', async () => {
+it('refuses a thinking level other than the seven SDK values, of any type, on create and configure, and saves each as it is', async () => {
   const f = await fixture();
   const created = await f.request('/conversations', 'POST', {});
   expect(created.status).toBe(201);
   const path = `/conversations/${(await created.json()).data.id}/config`;
   for (const thinking of [
     'bogus',
+    'default',
+    'off',
+    'max',
     false,
     1,
     null,
@@ -632,9 +635,21 @@ it('refuses a thinking level of any wrong type or value with REASONING_LEVEL_INV
       );
     }
   }
+  for (const thinking of ['provider-default', 'none', 'xhigh']) {
+    const saved = await f.request(path, 'PATCH', { config: { thinking } });
+    expect(saved.status).toBe(200);
+    expect((await saved.json()).data.thinking).toBe(thinking);
+    expect((await (await f.request(path)).json()).data.thinking).toBe(thinking);
+  }
+  const fresh = await f.request('/conversations', 'POST', {
+    config: { thinking: 'none' },
+  });
+  expect(fresh.status).toBe(201);
+  const freshId = (await fresh.json()).data.id as string;
   expect(
-    (await f.request(path, 'PATCH', { config: { thinking: 'max' } })).status,
-  ).toBe(200);
+    (await (await f.request(`/conversations/${freshId}/config`)).json()).data
+      .thinking,
+  ).toBe('none');
 });
 
 it('filters visibility before pagination for HTTP and its derived CLI, preserving owned direct reads', async () => {

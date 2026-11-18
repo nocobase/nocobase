@@ -210,16 +210,15 @@ describe('agents API document', () => {
     });
   });
 
-  it('documents the thinking level of a conversation configuration as the eight levels', () => {
+  it('documents the thinking level of a conversation configuration as the seven SDK levels', () => {
     const levels = [
-      'default',
-      'off',
+      'provider-default',
+      'none',
       'minimal',
       'low',
       'medium',
       'high',
       'xhigh',
-      'max',
     ];
     const thinkingOf = (found: OpenAPIV3_1.OperationObject): unknown => {
       const body = found.requestBody as OpenAPIV3_1.RequestBodyObject;

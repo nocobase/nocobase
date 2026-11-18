@@ -25,14 +25,13 @@ export interface AgentChatLocale {
       readonly choose: string;
       readonly useDefault: string;
       readonly levels: {
-        readonly default: string;
-        readonly off: string;
+        readonly 'provider-default': string;
+        readonly none: string;
         readonly minimal: string;
         readonly low: string;
         readonly medium: string;
         readonly high: string;
         readonly xhigh: string;
-        readonly max: string;
       };
       readonly adjusted: string;
       readonly adjustedToDefault: string;
@@ -375,14 +374,13 @@ const agentChatEnUS: AgentChatLocale = {
       choose: 'Thinking level: {{level}}',
       useDefault: 'Use the provider default',
       levels: {
-        default: 'Default',
-        off: 'Off',
+        'provider-default': 'Default',
+        none: 'Off',
         minimal: 'Minimal',
         low: 'Low',
         medium: 'Medium',
         high: 'High',
         xhigh: 'Extra high',
-        max: 'Max',
       },
       adjusted:
         'This model does not support the {{requested}} thinking level; {{used}} was used for this reply.',

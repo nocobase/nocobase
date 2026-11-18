@@ -9,7 +9,7 @@ import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
-import type { ModelCapabilities } from '../shared/models.js';
+import { REASONING_LEVELS, type ModelCapabilities } from '../shared/models.js';
 import type { RealtimeOnlineAgent } from '../server/online/agent/contracts.js';
 
 const withOff = { modelService: 'fixture', model: 'gpt-6-astra' };
@@ -128,26 +128,57 @@ async function notices(agent: RealtimeOnlineAgent) {
     .map((part) => (part.type === 'data-notice' ? part.data : null));
 }
 
-it('refuses a thinking level that is not a standard one, from a request or a scope', async () => {
+it('refuses a thinking level that is not one of the SDK’s seven, from a request or a scope', async () => {
   const f = await fixture();
-  await expect(
-    f.service.realtime(actor, { selectedModel: withOff, thinking: 'deep' }),
-  ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
+  for (const thinking of ['deep', 'default', 'off', 'max'])
+    await expect(
+      f.service.realtime(actor, { selectedModel: withOff, thinking }),
+    ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
   const agent = await f.service.realtime(actor, { selectedModel: withOff });
+  for (const thinking of ['default', 'off', 'max'])
+    await expect(
+      f.service.configure(actor, agent.sessionId, { thinking }),
+    ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
   await expect(
-    f.service.configure(actor, agent.sessionId, { thinking: 'none' }),
+    agent.send(messages, { overrides: { thinking: 'off' } }),
   ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
-  f.configurator.registerOnlineAgentScope('broken', { thinking: 'huge' });
+  f.configurator.registerOnlineAgentScope('broken', { thinking: 'max' });
   await expect(
     f.service.realtime(actor, { selectedModel: withOff, scope: ['broken'] }),
   ).rejects.toMatchObject({ details: { reason: 'REASONING_LEVEL_INVALID' } });
+  expect(f.sent).toEqual([]);
 });
 
-it('sends every level for any model, off as none, with no list of the levels a model takes', async () => {
+it('sends each of the seven levels to the SDK exactly as it was chosen, saved and read back', async () => {
   const f = await fixture();
   const agent = await f.service.realtime(actor, {
     selectedModel: unknownModel,
-    thinking: 'off',
+    thinking: 'provider-default',
+  });
+  expect((await f.service.configuration(actor, agent.sessionId)).thinking).toBe(
+    'provider-default',
+  );
+  await send(agent);
+  for (const level of REASONING_LEVELS.slice(1)) {
+    const saved = await f.service.configure(actor, agent.sessionId, {
+      thinking: level,
+    });
+    expect(saved.thinking).toBe(level);
+    expect(
+      (await f.service.configuration(actor, agent.sessionId)).thinking,
+    ).toBe(level);
+    await send(agent);
+  }
+  expect(f.sent).toEqual([...REASONING_LEVELS]);
+  expect(await notices(agent)).toEqual([]);
+  expect(f.capabilities).not.toHaveBeenCalled();
+});
+
+it('keeps the level across a model switch and sends an override as it is', async () => {
+  const f = await fixture();
+  const agent = await f.service.realtime(actor, {
+    selectedModel: unknownModel,
+    thinking: 'none',
   });
   await send(agent);
   await f.service.configure(
@@ -169,28 +200,38 @@ it('sends every level for any model, off as none, with no list of the levels a m
     selectedModel: unknownModel,
   });
   await agent.send(messages, {
-    overrides: { thinking: 'off' },
+    overrides: { thinking: 'none' },
     selectedModel: withOff,
   });
   await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
   expect(f.sent).toEqual(['none', 'minimal', 'none']);
-  expect(await notices(agent)).toEqual([]);
-  expect(f.capabilities).not.toHaveBeenCalled();
 });
 
-it('passes max and the levels that turn thinking on to the SDK as they are, and default as the provider default', async () => {
+it('sends the provider default when neither a scope nor the conversation names a level', async () => {
   const f = await fixture();
-  const agent = await f.service.realtime(actor, {
-    selectedModel: withOff,
-    thinking: 'max',
+  const agent = await f.service.realtime(actor, { selectedModel: withOff });
+  await send(agent);
+  expect(f.sent).toEqual(['provider-default']);
+});
+
+it('refuses to run a conversation whose saved level is not a standard one until one is chosen', async () => {
+  const f = await fixture();
+  const agent = await f.service.realtime(actor, { selectedModel: withOff });
+  const session = await f.sessions.load(actor.user.id, agent.sessionId);
+  // A value saved before the levels were the SDK's own.
+  await f.sessions.configure(
+    actor.user.id,
+    agent.sessionId,
+    { ...session.config, thinking: 'off' },
+    session.model,
+  );
+  await expect(agent.send(messages)).rejects.toMatchObject({
+    details: { reason: 'REASONING_LEVEL_INVALID' },
   });
+  expect(f.sent).toEqual([]);
+  await f.service.configure(actor, agent.sessionId, { thinking: 'none' });
   await send(agent);
-  await f.service.configure(actor, agent.sessionId, { thinking: 'xhigh' });
-  await send(agent);
-  await f.service.configure(actor, agent.sessionId, { thinking: 'default' });
-  await send(agent);
-  expect(f.sent).toEqual(['max', 'xhigh', 'provider-default']);
-  expect(await notices(agent)).toEqual([]);
+  expect(f.sent).toEqual(['none']);
 });
 
 it('records the provider package’s warning about the level it was sent', async () => {
@@ -198,19 +239,19 @@ it('records the provider package’s warning about the level it was sent', async
     {
       type: 'unsupported',
       feature: 'reasoning',
-      details: 'max is not a known reasoning level.',
+      details: 'xhigh is not supported by this model.',
     },
   ]);
   const agent = await f.service.realtime(actor, {
     selectedModel: withOff,
-    thinking: 'max',
+    thinking: 'xhigh',
   });
   await send(agent);
   expect(await notices(agent)).toEqual([
     expect.objectContaining({
       type: 'thinkingWarning',
-      params: { level: 'max' },
-      title: expect.stringContaining('max is not a known reasoning level.'),
+      params: { level: 'xhigh' },
+      title: expect.stringContaining('xhigh is not supported by this model.'),
     }),
   ]);
 });

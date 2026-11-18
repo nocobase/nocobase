@@ -1002,14 +1002,13 @@ const esES: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'Predeterminado',
-        off: 'Desactivado',
+        'provider-default': 'Predeterminado',
+        none: 'Desactivado',
         minimal: 'Mínimo',
         low: 'Bajo',
         medium: 'Medio',
         high: 'Alto',
         xhigh: 'Muy alto',
-        max: 'Máximo',
       },
       adjusted:
         'Este modelo no admite el nivel de razonamiento «{{requested}}»; en esta respuesta se usó «{{used}}».',

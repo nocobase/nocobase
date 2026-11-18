@@ -436,7 +436,12 @@ it('groups native models by service and submits the selected service/model pair'
 it.each([
   ['inherits the Agent default without a remembered level', null, undefined],
   ['restores a remembered level', 'high', 'high'],
-  ['restores a remembered max for a model with no known levels', 'max', 'max'],
+  ['restores a remembered none', 'none', 'none'],
+  [
+    'restores a remembered provider-default',
+    'provider-default',
+    'provider-default',
+  ],
 ] as const)(
   'starts a new conversation with its model’s thinking level: %s',
   async (_name, remembered, expected) => {
@@ -475,7 +480,11 @@ it.each([
     expect(
       screen.getByRole('menuitemradio', {
         name:
-          expected === 'high' ? 'High' : expected === 'max' ? 'Max' : 'Default',
+          expected === 'high'
+            ? 'High'
+            : expected === 'none'
+              ? 'Off'
+              : 'Default',
       }),
     ).toBeChecked();
     await user.keyboard('{Escape}');

@@ -219,7 +219,6 @@ it('edits thinking below the selected model without a second menu or Done button
     'Medium',
     'High',
     'Extra high',
-    'Max',
   ]);
   expect(screen.queryByRole('button', { name: /done/i })).toBeNull();
   await user.click(screen.getByRole('menuitemradio', { name: 'High' }));
@@ -240,7 +239,11 @@ it('edits thinking below the selected model without a second menu or Done button
   await waitFor(() =>
     expect(control()).toHaveAccessibleName('Thinking level: Default'),
   );
-  expect(readThinking('/', first)).toBe('default');
+  expect(configPatches()).toEqual([
+    { config: { thinking: 'high' } },
+    { config: { thinking: 'provider-default' } },
+  ]);
+  expect(readThinking('/', first)).toBe('provider-default');
   expect(summary()).toHaveTextContent('· Default');
   await user.keyboard('{Escape}');
   await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
@@ -257,9 +260,27 @@ it('shows the conversation’s saved level over the one remembered for the model
   expect(configPatches()).toEqual([]);
 });
 
+it('shows a saved value that is not one of the seven levels with none checked, so choosing Default saves provider-default', async () => {
+  config = { ...config, thinking: 'off' };
+  mount();
+  const user = userEvent.setup();
+  await openPicker(user);
+  for (const item of screen.getAllByRole('menuitemradio'))
+    expect(item).not.toBeChecked();
+  await user.click(screen.getByRole('menuitemradio', { name: 'Default' }));
+  await waitFor(() =>
+    expect(configPatches()).toEqual([
+      { config: { thinking: 'provider-default' } },
+    ]),
+  );
+  await waitFor(() =>
+    expect(control()).toHaveAccessibleName('Thinking level: Default'),
+  );
+});
+
 it('switches inline settings and model memory, keeping the menu open on every model', async () => {
   rememberThinking('/', second, 'low');
-  rememberThinking('/', third, 'max');
+  rememberThinking('/', third, 'xhigh');
   mount();
   const user = userEvent.setup();
   const picker = await openPicker(user);
@@ -277,7 +298,6 @@ it('switches inline settings and model memory, keeping the menu open on every mo
     'Medium',
     'High',
     'Extra high',
-    'Max',
   ]);
   expect(screen.getAllByTestId('chat-thinking-control')).toHaveLength(1);
   expect(control().closest('[data-model-option]')).toHaveAttribute(
@@ -292,25 +312,25 @@ it('switches inline settings and model memory, keeping the menu open on every mo
   await user.click(screen.getByRole('menuitem', { name: 'Third model Local' }));
   await waitFor(() => expect(picker).toHaveTextContent('Third model'));
   await waitFor(() =>
-    expect(control()).toHaveAccessibleName('Thinking level: Max'),
+    expect(control()).toHaveAccessibleName('Thinking level: Extra high'),
   );
   expect(screen.getByRole('menu')).toBeVisible();
-  expect(summary()).toHaveTextContent('· Max');
+  expect(summary()).toHaveTextContent('· Extra high');
   expect(configPatches()).toEqual([
     { config: { thinking: 'low' }, selectedModel: second },
-    { config: { thinking: 'max' }, selectedModel: third },
+    { config: { thinking: 'xhigh' }, selectedModel: third },
   ]);
 });
 
-it('restores a remembered off, and ignores a remembered value that is not a level', async () => {
-  rememberThinking('/', fourth, 'off');
+it('restores a remembered none, and ignores a remembered value that is not one of the seven levels', async () => {
+  rememberThinking('/', fourth, 'none');
   window.localStorage.setItem(
     `${CHAT_THINKING_STORAGE_KEY}:/`,
     JSON.stringify({
       ...JSON.parse(
         window.localStorage.getItem(`${CHAT_THINKING_STORAGE_KEY}:/`) ?? '{}',
       ),
-      'local:second': 'huge',
+      'local:second': 'off',
     }),
   );
   mount();
@@ -332,7 +352,7 @@ it('restores a remembered off, and ignores a remembered value that is not a leve
   );
   await waitFor(() => expect(configPatches()).toHaveLength(2));
   expect(configPatches()).toEqual([
-    { config: { thinking: 'off' }, selectedModel: fourth },
+    { config: { thinking: 'none' }, selectedModel: fourth },
     { config: {}, selectedModel: second },
   ]);
 });
@@ -359,8 +379,11 @@ it('supports horizontal keyboard navigation without changing a level until activ
   await openPicker(user);
   screen.getByRole('menuitemradio', { name: 'Default' }).focus();
   await user.keyboard('{End}');
-  expect(screen.getByRole('menuitemradio', { name: 'Max' })).toHaveFocus();
+  expect(
+    screen.getByRole('menuitemradio', { name: 'Extra high' }),
+  ).toHaveFocus();
   await user.keyboard('{ArrowLeft}');
+  await user.keyboard('{ArrowRight}');
   expect(
     screen.getByRole('menuitemradio', { name: 'Extra high' }),
   ).toHaveFocus();

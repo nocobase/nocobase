@@ -1004,14 +1004,13 @@ const ruRU: LocaleResource<typeof enUS> = {
   chat: {
     thinking: {
       levels: {
-        default: 'По умолчанию',
-        off: 'Выкл.',
+        'provider-default': 'По умолчанию',
+        none: 'Выкл.',
         minimal: 'Минимальный',
         low: 'Низкий',
         medium: 'Средний',
         high: 'Высокий',
         xhigh: 'Очень высокий',
-        max: 'Максимальный',
       },
       adjusted:
         'Эта модель не поддерживает уровень размышления «{{requested}}»; для этого ответа использован уровень «{{used}}».',

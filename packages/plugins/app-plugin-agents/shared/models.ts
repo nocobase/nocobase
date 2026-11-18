@@ -44,25 +44,26 @@ export type ModelProviderName =
 export type ModelKind = 'chat' | 'embedding' | 'rerank';
 
 /**
- * How hard a model thinks before it answers, as an online agent's `thinking` names it: `default` leaves it to the
- * provider, `off` turns thinking off, and the rest are the levels that turn it on, lowest first
- * (`REASONING_ENABLED_LEVELS`). Every online chat model offers all of them: the plugin keeps no list of the levels a
- * model takes. The provider's Vercel AI SDK package turns a level into the provider's own parameter, may ignore or
- * map one with a warning, and the provider may still refuse it.
+ * How hard a model thinks before it answers, as an online agent's `thinking` names it. The values are exactly the
+ * Vercel AI SDK's `reasoning` call option (`LanguageModelV4CallOptions['reasoning']`) and go to it unchanged:
+ * `provider-default` leaves it to the provider, `none` turns thinking off, and the rest are the levels that turn it
+ * on, lowest first (`REASONING_ENABLED_LEVELS`). Every online chat model offers all of them: the plugin keeps no list
+ * of the levels a model takes. The provider's SDK package turns a level into the provider's own parameter, may ignore
+ * or map one with a warning, and the provider may still refuse it.
  */
 export type ReasoningLevel =
-  'default' | 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  'provider-default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
 /** The levels that turn thinking on, lowest first. */
 export const REASONING_ENABLED_LEVELS: readonly Exclude<
   ReasoningLevel,
-  'default' | 'off'
->[] = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
+  'provider-default' | 'none'
+>[] = ['minimal', 'low', 'medium', 'high', 'xhigh'];
 
 /** Every level, in the order a menu lists them. */
 export const REASONING_LEVELS: readonly ReasoningLevel[] = [
-  'default',
-  'off',
+  'provider-default',
+  'none',
   ...REASONING_ENABLED_LEVELS,
 ];
 
