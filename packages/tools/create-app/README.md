@@ -142,18 +142,17 @@ pnpm dev
 
 `config init` writes `config.yml` from the template's `config.example.yml`, keeping its comments, and generates the first key of `secrets.keys`. It is part of the application rather than of this command, so it is also how an application is configured on a server. Run again on a configured application it leaves the file alone and reports it unchanged.
 
-Default uses SQLite at runtime and preinstalls the PostgreSQL, MySQL, SQL Server and Oracle drivers in `devDependencies`. To use PostgreSQL in a new Default application, move its existing `@nocobase/db-postgres` entry into `dependencies` in `package.json`, keeping the version range. Then refresh the install and configure the connection:
+Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle in `devDependencies`. During first configuration the application CLI moves the selected driver to `dependencies` and updates the lockfile. To select PostgreSQL:
 
 ```bash
 cd crm
-pnpm install
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD
 pnpm nocobase config check
 ```
 
-`config init` installs nothing. A dialect whose driver is absent is reported with the `pnpm add` that supplies it, pinned to the range the installed runtime accepts, and nothing is written — so the command can simply be run again once the driver is there. It writes placeholder connection settings for anything but SQLite and lists them as `requiredSettings`; on a terminal it asks for them instead, reading the password without echo, and tries the connection before writing. Other connections are left exactly as the template declared them, including the Examples template's additional SQLite databases.
+A dialect whose driver is absent is reported with the `pnpm add` that supplies it, pinned to the range the installed runtime accepts, and nothing is written — so the command can simply be run again once the driver is there. It writes placeholder connection settings for anything but SQLite and lists them as `requiredSettings`; on a terminal it asks for them instead, reading the password without echo, and tries the connection before writing. Other connections are left exactly as the template declared them, including the Examples template's additional SQLite databases.
 
 `config set` keeps the file's comments, refuses a section the application does not know, and with `--from-env` reads a value from an environment variable so a secret never reaches the shell history. `config check` loads the configuration the way a start would and connects to every database but SQLite; it reports a driver that is missing, a secret that is missing or still the placeholder, a section nothing reads, and a `${NAME}` that would be used as literal text.
 
@@ -174,7 +173,7 @@ JSON mode never prompts. It writes one final JSON document to stdout and progres
 | `DRIVER_VERIFICATION_FAILED` | `verify`        | The database driver's native addon did not load, even after a rebuild.                 |
 | `NODE_UNSUPPORTED`           |                 | Node.js is older than 24; nothing ran.                                                 |
 
-`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. For templates with SQLite in runtime dependencies it lists `pnpm nocobase config init --dialect sqlite`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
+`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. For templates declaring SQLite in either dependency section it lists `pnpm nocobase config init --dialect sqlite`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
 
 Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir=<directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
 

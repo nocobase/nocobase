@@ -32,7 +32,8 @@ export default class AppConfigVariables extends AppCommand {
     const { flags } = await this.parse(AppConfigVariables);
     // runConfigVariables destroys the scope of the runtime it loads.
     const result = await runConfigVariables({
-      loadRuntime: () => appContextOf(this).loadRuntime(),
+      loadRuntime: () =>
+        appContextOf(this).loadRuntime({ prepareDatabaseDrivers: false }),
       ...(flags.out === undefined ? {} : { out: flags.out }),
     });
     const { variables } = result.manifest;

@@ -33,3 +33,5 @@ packages/templates/app-template-default/workflows
 
 # Independent Default business baseline instances and private evidence.
 /.business-baseline/
+
+/packages/.reference-builds/

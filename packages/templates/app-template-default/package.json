@@ -27,6 +27,7 @@
     "@nocobase/db-mysql": "workspace:^",
     "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
+    "@nocobase/db-sqlite": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
@@ -121,6 +122,7 @@
     ".agents/rules",
     "CLAUDE.md",
     "playwright.config.ts",
+    "scripts/build.mjs",
     "scripts/check-packages.mjs"
   ],
   "publishConfig": {
@@ -134,7 +136,7 @@
   "scripts": {
     "postinstall": "nocobase skills sync",
     "dev": "nocobase dev",
-    "build": "nocobase build",
+    "build": "node scripts/build.mjs",
     "start": "nocobase start",
     "check": "pnpm check:packages && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
@@ -183,7 +185,6 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/db": "workspace:^",
-    "@nocobase/db-sqlite": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@nocobase/snowflake": "workspace:^",
     "@oclif/core": "catalog:",

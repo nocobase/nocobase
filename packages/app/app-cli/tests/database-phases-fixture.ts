@@ -54,6 +54,9 @@ export async function createDatabasePhasesFixture({
     path.join(root, 'package.json'),
     JSON.stringify({
       name: 'database-phases-fixture',
+      dependencies: {
+        [`@nocobase/db-${database.connections.main.dialect}`]: '*',
+      },
       version: '1.0.0',
       type: 'module',
       nocobase: { templateKind: 'app' },

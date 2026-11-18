@@ -84,10 +84,9 @@ pnpm nocobase config check
 pnpm dev
 ```
 
-`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago. For PostgreSQL in Default, move the preinstalled `@nocobase/db-postgres` entry from `devDependencies` to `dependencies`, keeping its range. Then install and configure the connection:
+`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago. To select PostgreSQL in Default, initialize its preinstalled driver and configure the connection:
 
 ```bash
-pnpm install
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD

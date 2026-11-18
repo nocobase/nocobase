@@ -225,7 +225,7 @@ async function run(
       'pnpm dev',
     ];
     state.message = template.hasSqliteDriver
-      ? `Configure SQLite with ${initCommand}. For another database, declare its driver in dependencies, retaining the version range if it is preinstalled in devDependencies, and run pnpm nocobase config init --dialect <dialect>.`
+      ? `Configure SQLite with ${initCommand}. Choose another preinstalled driver with pnpm nocobase config init --dialect <dialect>. Initialization moves the selected driver into dependencies for deployment.`
       : 'Configure the application with pnpm nocobase config init before starting it. Use --dialect to select an installed database driver.';
     progress(`Created ${name}. ${state.message}`);
   } finally {

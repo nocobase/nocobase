@@ -24,7 +24,7 @@ diff <(node -p "JSON.stringify(require('$WORK/$BASE/package.json'), null, 2)") \
 | `files`, `engines`, `packageManager`, `browserslist`, `prettier` | The template's.                                                                                                                      |
 | `pnpm`, `overrides`, `resolutions`                               | The user's, unless the template changed the same entry.                                                                              |
 
-When Default adds a preinstalled database driver, keep it in `dependencies` if the application already uses it at runtime. Add the template’s `devDependencies` entry only for an unused driver, and declare the package once.
+When Default adds a preinstalled database driver, keep it in `dependencies` if the application already uses it at runtime, including SQLite. Check every configured connection with `pnpm nocobase config check --no-connect` after merging the manifest. Add the template’s `devDependencies` entry only for an unused driver, and declare the package once.
 
 Dependency keys get reordered between releases, so most of the raw diff is noise — compare key by key. A dependency the template dropped may be one the user now imports directly; search application code, configuration, tests, and build scripts before deleting it, same as a removed export. For plugins, complete the [code and configuration review](#review-a-removed-plugins-usage). Obtain confirmation before removing any apparently unused `@nocobase/*` capability, and keep each retained package in the appropriate dependency section together with any required registrations.
 

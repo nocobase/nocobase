@@ -145,11 +145,12 @@ fi
 cd "$APP_DIR"
 
 echo "::group::Configure the application with pnpm nocobase config init"
-# Use the generated template’s range when promoting a preinstalled driver.
+# config init promotes preinstalled dialects. Install only a dialect absent from the template.
 if [ -n "$DIALECT" ] && [ "$DIALECT" != "sqlite" ]; then
   DRIVER="@nocobase/db-$DIALECT"
-  DRIVER_RANGE=$(node -p 'require("./package.json").devDependencies?.[process.argv[1]] ?? ""' "$DRIVER")
-  pnpm add --save-prod "$DRIVER${DRIVER_RANGE:+@$DRIVER_RANGE}"
+  if ! node -e 'const p=require("./package.json"), n=process.argv[1]; process.exit(p.dependencies?.[n] || p.devDependencies?.[n] ? 0 : 1)' "$DRIVER"; then
+    pnpm add --save-prod "$DRIVER"
+  fi
 fi
 pnpm nocobase config init --json --dialect "${DIALECT:-sqlite}" > "$WORKDIR/config-init.json"
 node -e 'const r=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(!r.ok) process.exit(1)' "$WORKDIR/config-init.json"

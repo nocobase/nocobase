@@ -5732,9 +5732,6 @@ importers:
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
-      '@nocobase/db-sqlite':
-        specifier: workspace:^
-        version: link:../../libs/db-sqlite
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
@@ -5817,6 +5814,9 @@ importers:
       '@nocobase/db-postgres':
         specifier: workspace:^
         version: link:../../libs/db-postgres
+      '@nocobase/db-sqlite':
+        specifier: workspace:^
+        version: link:../../libs/db-sqlite
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config

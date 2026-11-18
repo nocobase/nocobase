@@ -172,12 +172,16 @@ async function readTemplateManifest(
     name?: string;
     version?: string;
     dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
   };
 
   return {
     name: manifest.name ?? 'unknown',
     version: manifest.version ?? '0.0.0',
-    hasSqliteDriver: Boolean(manifest.dependencies?.['@nocobase/db-sqlite']),
+    hasSqliteDriver: Boolean(
+      manifest.dependencies?.['@nocobase/db-sqlite'] ??
+      manifest.devDependencies?.['@nocobase/db-sqlite'],
+    ),
   };
 }
 

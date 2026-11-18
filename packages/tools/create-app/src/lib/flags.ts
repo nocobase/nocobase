@@ -122,7 +122,7 @@ export function formatHelp(binary: string): string {
     '    pnpm nocobase config init --dialect sqlite',
     '',
     '  That writes config.yml with generated secrets for SQLite, whose driver the app already has.',
-    '  For another database, keep the selected driver in dependencies and name its dialect:',
+    '  To select another preinstalled driver for the application and its deployment:',
     '    pnpm nocobase config init --dialect postgres',
   ].join('\n');
 }

@@ -12,6 +12,8 @@ import {
   type ConnectionCheckResult,
   type OfficialDialect,
 } from '@nocobase/app-server/database';
+import { addDependencyCommand, appPackageManager } from './plugin-install.ts';
+import { execa } from 'execa';
 import { parseDocument } from 'yaml';
 
 import type { CommandSuggestion } from '../command/errors.ts';
@@ -35,6 +37,7 @@ export type ConfigInitErrorReason =
   | 'unknown-dialect'
   | 'no-drivers'
   | 'driver-missing'
+  | 'driver-promotion-failed'
   | 'already-configured'
   | 'dialect-required'
   | 'directory-missing'
@@ -218,14 +221,7 @@ export function driverPackage(dialect: OfficialDialect): string {
   return `@nocobase/db-${dialect}`;
 }
 
-/**
- * Validates everything, then writes once.
- *
- * The order matters more than it looks. A run that wrote the file and then reported a missing driver would leave the
- * user unable to retry: the second run refuses because the application is already configured, and the only way out is
- * to delete a file they were never told about. Every check therefore happens before anything is written, so a failed
- * run leaves the directory exactly as it found it and `config init` can simply be run again.
- */
+/** Complete validation, prompts and driver promotion before writing configuration so a failed init can be retried. */
 export async function runConfigInit(
   options: ConfigInitOptions,
 ): Promise<ConfigInitResult> {
@@ -311,6 +307,7 @@ export async function runConfigInit(
     }
   }
 
+  if (mode === 'source') await promotePreinstalledDriver(rootDir, dialect);
   await writeFile(configFile, buildConfigFile({ example: configured }), {
     encoding: 'utf8',
     flag: options.force === true ? 'w' : 'wx',
@@ -405,6 +402,37 @@ async function alreadyConfigured(
     requiredSettings: [],
     nextCommands: nextCommands(mode, path.resolve(options.rootDir)),
   };
+}
+
+/** A package-manager move updates the manifest and its lockfile together, preserving other connections' drivers. */
+async function promotePreinstalledDriver(
+  rootDir: string,
+  dialect: OfficialDialect,
+): Promise<void> {
+  const name = driverPackage(dialect);
+  const manifest = await readJson(path.join(rootDir, 'package.json'));
+  if (isRecord(manifest.dependencies) && manifest.dependencies[name]) return;
+  const range =
+    isRecord(manifest.devDependencies) && manifest.devDependencies[name];
+  if (typeof range !== 'string') return;
+  const { packageManager, args } = addDependencyCommand(
+    await appPackageManager(rootDir),
+    `${name}@${range}`,
+  );
+  try {
+    await execa(packageManager, args, { cwd: rootDir });
+  } catch {
+    throw new ConfigInitError(
+      'driver-promotion-failed',
+      `Could not promote ${name} to dependencies. After fixing the dependency, retry config init --dialect ${dialect}.`,
+      {
+        suggestion: {
+          message: 'Run in the application sources:',
+          run: { command: packageManager, args: [...args] },
+        },
+      },
+    );
+  }
 }
 
 function mainConnection(yaml: string): Record<string, unknown> {
@@ -614,7 +642,7 @@ export function installCommand(rootDir: string, packageName: string): string {
     : `pnpm add ${JSON.stringify(specifier)}`;
 }
 
-function installSpecifier(rootDir: string, packageName: string): string {
+export function installSpecifier(rootDir: string, packageName: string): string {
   const range = readPeerRange(rootDir, packageName);
   return range === undefined ? packageName : `${packageName}@${range}`;
 }
@@ -693,7 +721,7 @@ async function readConfigExample(
 }
 
 /** Walks up for an installed package, which is what Node's own resolution does and what pnpm's layouts require. */
-function findInstalledPackage(
+export function findInstalledPackage(
   fromDir: string,
   packageName: string,
 ): string | undefined {

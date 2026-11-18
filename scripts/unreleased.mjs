@@ -537,10 +537,12 @@ async function main() {
           const manifest = JSON.parse(
             fs.readFileSync(path.join(target, 'package.json'), 'utf8'),
           );
-          const range = manifest.devDependencies?.[driver];
-          configure.push(
-            `pnpm add --save-prod ${shellQuote(range ? `${driver}@${range}` : driver)}`,
-          );
+          if (
+            !manifest.dependencies?.[driver] &&
+            !manifest.devDependencies?.[driver]
+          ) {
+            configure.push(`pnpm add --save-prod ${shellQuote(driver)}`);
+          }
         }
         configure.push(
           `pnpm nocobase config init --dialect ${options.dialect}`,

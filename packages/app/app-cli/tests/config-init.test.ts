@@ -107,6 +107,85 @@ async function createApplication(options: {
 }
 
 describe('runConfigInit', () => {
+  it('promotes only the selected preinstallation, updates the lockfile and permits a repeat init', async () => {
+    const { rootDir } = await createApplication({
+      drivers: ['sqlite', 'postgres'],
+    });
+    for (const dialect of ['sqlite', 'postgres']) {
+      const directory = path.join(rootDir, dialect);
+      await mkdir(directory);
+      await writeFile(
+        path.join(directory, 'package.json'),
+        JSON.stringify({ name: `@nocobase/db-${dialect}`, version: '1.0.0' }),
+      );
+    }
+    const manifest = path.join(rootDir, 'package.json');
+    await writeFile(
+      manifest,
+      JSON.stringify({
+        name: 'local-db-selection',
+        version: '1.0.0',
+        packageManager: 'npm@11.0.0',
+        devDependencies: {
+          '@nocobase/db-sqlite': 'file:sqlite',
+          '@nocobase/db-postgres': 'file:postgres',
+        },
+      }),
+    );
+    const options = { rootDir, dialect: 'sqlite', environment: {} };
+    await runConfigInit(options);
+    const expected = {
+      dependencies: { '@nocobase/db-sqlite': 'file:sqlite' },
+      devDependencies: { '@nocobase/db-postgres': 'file:postgres' },
+    };
+    expect(JSON.parse(await readFile(manifest, 'utf8'))).toMatchObject(
+      expected,
+    );
+    const lock = await readFile(
+      path.join(rootDir, 'package-lock.json'),
+      'utf8',
+    );
+    expect(JSON.parse(lock).packages['']).toMatchObject(expected);
+    expect(
+      (
+        await runConfigInit({
+          ...options,
+          readConfiguredDialect: async () => 'sqlite',
+        })
+      ).status,
+    ).toBe('unchanged');
+    expect(
+      await readFile(path.join(rootDir, 'package-lock.json'), 'utf8'),
+    ).toBe(lock);
+  });
+
+  it('leaves configuration unwritten and gives a runnable fix when promotion fails', async () => {
+    const { rootDir } = await createApplication({ drivers: ['sqlite'] });
+    await writeFile(
+      path.join(rootDir, 'package.json'),
+      JSON.stringify({
+        packageManager: 'npm@11.0.0',
+        devDependencies: { '@nocobase/db-sqlite': 'file:missing.tgz' },
+      }),
+    );
+    await expect(
+      runConfigInit({ rootDir, dialect: 'sqlite', environment: {} }),
+    ).rejects.toMatchObject({
+      reason: 'driver-promotion-failed',
+      suggestion: {
+        run: {
+          command: 'npm',
+          args: [
+            'install',
+            '--save-prod',
+            '@nocobase/db-sqlite@file:missing.tgz',
+          ],
+        },
+      },
+    });
+    expect(existsSync(path.join(rootDir, 'config.yml'))).toBe(false);
+  });
+
   it('writes the configuration beside the application and fills the secrets key', async () => {
     const { rootDir } = await createApplication({ drivers: ['sqlite'] });
 

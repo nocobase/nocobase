@@ -30,7 +30,7 @@ const scripts = appPackage.scripts ?? {};
 const LIFECYCLE_SCRIPTS: Readonly<Record<string, string>> = {
   postinstall: 'nocobase skills sync',
   dev: 'nocobase dev',
-  build: 'nocobase build',
+  build: 'node scripts/build.mjs',
   start: 'nocobase start',
 };
 
