@@ -1,5 +1,5 @@
 /**
- * Writing knowledge: an entry's editor and the dialogs of new, renamed and moved entries.
+ * Writing knowledge: an entry's editor and the dialogs of new, renamed and moved entries, and of a file's properties.
  *
  * The editor takes the document's place: a bar pinned at the top says what is being done and holds the change note and
  * Cancel / Save; the title is edited where it reads; an article's Markdown is written beside its preview (in tabs on a
@@ -726,6 +726,102 @@ export function RenameDocDialog({
           >
             {rename.isPending ? <Spinner data-icon='inline-start' /> : null}
             {t('knowledge.doc.rename')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * A file entry's properties, from its menu: its summary (what agents and links read about it), saved as its next
+ * version, and its slug.
+ */
+export function DocPropertiesDialog({
+  open,
+  onOpenChange,
+  doc,
+}: {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly doc: KnowledgeDoc;
+}): ReactElement {
+  const { t } = useTranslation(ACCESS_NAMESPACE);
+  const api = useKnowledgeApi();
+  const notify = useNotify();
+  const queryClient = useQueryClient();
+  const [summary, setSummary] = useState(doc.summary);
+  const save = useMutation({
+    mutationFn: () =>
+      api.update(doc.id, { expectedVersion: doc.version, summary }),
+    onSuccess: (saved) => {
+      notify.success(
+        saved.version === doc.version
+          ? t('knowledge.editor.unchanged')
+          : t('knowledge.editor.saved', { version: saved.version }),
+      );
+      void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
+      onOpenChange(false);
+    },
+    onError: (error) => notify.error(error),
+  });
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='sm:max-w-lg'>
+        <DialogHeader>
+          <DialogTitle>{t('knowledge.doc.properties')}</DialogTitle>
+          <DialogDescription>
+            {t('knowledge.editor.propertiesHint')}
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          id='knowledge-properties'
+          className='space-y-4'
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (summary !== doc.summary) save.mutate();
+            else onOpenChange(false);
+          }}
+        >
+          <Field>
+            <FieldLabel htmlFor='knowledge-properties-summary'>
+              {t('knowledge.editor.summary')}
+            </FieldLabel>
+            <Textarea
+              id='knowledge-properties-summary'
+              value={summary}
+              rows={3}
+              autoFocus
+              maxLength={KNOWLEDGE_SUMMARY_MAX}
+              onChange={(event) => setSummary(event.target.value)}
+            />
+            <FieldDescription>
+              {t('knowledge.editor.summaryHint')}
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor='knowledge-properties-slug'>
+              {t('knowledge.editor.slug')}
+            </FieldLabel>
+            <Input
+              id='knowledge-properties-slug'
+              value={doc.slug}
+              readOnly
+              className='font-mono'
+            />
+          </Field>
+        </form>
+        <DialogFooter>
+          <Button variant='outline' onClick={() => onOpenChange(false)}>
+            {t('knowledge.editor.cancel')}
+          </Button>
+          <Button
+            type='submit'
+            form='knowledge-properties'
+            disabled={save.isPending}
+          >
+            {save.isPending ? <Spinner data-icon='inline-start' /> : null}
+            {t('knowledge.editor.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

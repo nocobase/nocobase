@@ -415,6 +415,8 @@ function SpaceGroup({
                   : `${label}, ${t('knowledge.directory.count', { count: entry.documents })}`
               }
               className='flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm font-medium hover:bg-muted'
+              // Its name also selects the space, so the view shows and acts on it.
+              onClick={entry.onSelectSpace}
             />
           }
         >
@@ -488,11 +490,6 @@ function SpaceGroup({
         <p className='px-2 text-xs text-muted-foreground'>{entry.hint}</p>
       ) : null}
       <CollapsibleContent className='pt-0.5'>
-        {entry.onSelectSpace ? (
-          <Button variant='ghost' size='sm' onClick={entry.onSelectSpace}>
-            {t('knowledge.directory.selectTarget', { title: label })}
-          </Button>
-        ) : null}
         {entry.archivedDocuments ? (
           <p className='px-2 text-xs text-muted-foreground'>
             {t('knowledge.directory.archivedCount', {

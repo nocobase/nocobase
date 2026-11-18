@@ -2,8 +2,6 @@ import { messageKey } from '../../lib/message-key.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { FileRecord } from '../../types.js';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import {
   resolveOfficeEmbedUrl,
@@ -11,7 +9,7 @@ import {
   type FilePreviewKind,
 } from '../../lib/file-preview.js';
 import { Button } from '../../../../components/ui/button.js';
-import { resolveSafeFileUrl } from '../../lib/file-url.js';
+import { KnowledgeMarkdown } from '../../../../components/markdown.js';
 import { FileThumbnail } from '../file-thumbnail.js';
 
 import { OfficeOpenXmlPreview } from './office-open-xml-preview.js';
@@ -25,13 +23,16 @@ export interface FilePreviewContentProps {
   readonly text?: string;
   readonly error?: string;
   readonly onDownload?: () => void;
+  /** Fill its container (a full-screen view): media and frames take its height, Markdown a centred reading column. */
+  readonly fill?: boolean;
 }
 
 export function FilePreviewContent(
   inputProps: FilePreviewContentProps,
 ): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-file');
-  const { file, kind, url, text, error, onDownload } = inputProps;
+  const { file, kind, url, text, error, onDownload, fill = false } = inputProps;
+  const height = fill ? 'h-full' : 'h-[70vh]';
 
   const format =
     kind === 'ooxml' ? resolveOfficeOpenXmlFormat(file) : undefined;
@@ -44,6 +45,7 @@ export function FilePreviewContent(
         url={url}
         error={error}
         onDownload={onDownload}
+        fill={fill}
       />
     );
   }
@@ -55,6 +57,7 @@ export function FilePreviewContent(
         url={url}
         error={error}
         onDownload={onDownload}
+        height={height}
       />
     );
   }
@@ -74,22 +77,40 @@ export function FilePreviewContent(
         <img
           src={url}
           alt={file.filename}
-          className='max-h-[70vh] max-w-full object-contain'
+          className={
+            fill
+              ? 'mx-auto max-h-full max-w-full object-contain'
+              : 'max-h-[70vh] max-w-full object-contain'
+          }
         />
       );
     case 'pdf':
       return (
-        <iframe title={file.filename} src={url} className='h-[70vh] w-full' />
+        <iframe
+          title={file.filename}
+          src={url}
+          className={`${height} w-full`}
+        />
       );
     case 'audio':
       return <audio controls src={url} className='w-full' />;
     case 'video':
-      return <video controls src={url} className='max-h-[70vh] max-w-full' />;
+      return (
+        <video
+          controls
+          src={url}
+          className={
+            fill ? 'mx-auto max-h-full max-w-full' : 'max-h-[70vh] max-w-full'
+          }
+        />
+      );
     case 'markdown':
-      return <MarkdownPreview text={text} />;
+      return <MarkdownPreview text={text} fill={fill} />;
     case 'text':
       return (
-        <pre className='max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-sm'>
+        <pre
+          className={`${fill ? 'min-h-full' : 'max-h-[70vh]'} overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-sm`}
+        >
           {text ??
             t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
         </pre>
@@ -99,9 +120,16 @@ export function FilePreviewContent(
   }
 }
 
-function MarkdownPreview(inputProps: { readonly text?: string }): ReactElement {
+/**
+ * Markdown as the knowledge base shows its articles (the shared `MarkdownView` with the documents' spacing); full
+ * screen, in a reading column of about 860px.
+ */
+function MarkdownPreview(inputProps: {
+  readonly text?: string;
+  readonly fill: boolean;
+}): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-file');
-  const { text } = inputProps;
+  const { text, fill } = inputProps;
 
   if (text === undefined)
     return (
@@ -110,21 +138,10 @@ function MarkdownPreview(inputProps: { readonly text?: string }): ReactElement {
       </div>
     );
   return (
-    <article className='prose max-h-[70vh] max-w-none overflow-auto rounded-md bg-muted/30 p-4'>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        urlTransform={(url) => resolveSafeFileUrl(url) ?? ''}
-        components={{
-          a: ({ children, ...props }) => (
-            <a {...props} target='_blank' rel='noreferrer'>
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {text}
-      </ReactMarkdown>
-    </article>
+    <KnowledgeMarkdown
+      content={text}
+      className={fill ? 'mx-auto max-w-[860px] text-base' : 'text-base'}
+    />
   );
 }
 
@@ -133,9 +150,10 @@ function OfficePreview(inputProps: {
   readonly url?: string;
   readonly error?: string;
   readonly onDownload?: () => void;
+  readonly height: string;
 }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-file');
-  const { file, url, error, onDownload } = inputProps;
+  const { file, url, error, onDownload, height } = inputProps;
 
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -186,7 +204,7 @@ function OfficePreview(inputProps: {
       ref={iframeRef}
       title={file.filename}
       src={embedUrl}
-      className='h-[70vh] w-full'
+      className={`${height} w-full`}
       onLoad={() => setLoaded(true)}
     />
   );

@@ -212,6 +212,9 @@ async function show(
     namespace: '@nocobase/app-plugin-knowledge',
     namespaces: {
       '@nocobase/app-plugin-knowledge': enUS,
+      '@nocobase/app-plugin-file': {
+        files: { loadingPreview: 'Loading preview...' },
+      },
       '@nocobase/i18n': {
         actions: { close: 'Close' },
         status: { loading: 'Loading' },
@@ -724,8 +727,11 @@ describe('the knowledge view', () => {
     });
     trigger.focus();
     await userEvent.keyboard('{Enter}');
+    // Opening the space by its name also selects it; no separate "Open" row.
     await within(group).findByText('Release flow');
-    fireEvent.click(within(group).getByRole('button', { name: /Open/ }));
+    expect(
+      within(group).queryByRole('button', { name: /^Open / }),
+    ).not.toBeInTheDocument();
     await press(
       await screen.findByRole('button', { name: 'New', exact: true }),
     );
@@ -1437,3 +1443,143 @@ it.each([true, false])(
     ).not.toBeInTheDocument();
   },
 );
+
+describe('a file entry', () => {
+  const PROPOSE: KnowledgeAccess = {
+    read: true,
+    propose: true,
+    edit: false,
+    manage: false,
+  };
+  const READ: KnowledgeAccess = { ...PROPOSE, propose: false };
+  const fileDoc = (access: KnowledgeAccess) =>
+    summary('f1', 'Readme', {
+      kind: 'file',
+      access,
+      file: {
+        id: 'file1',
+        filename: 'README.md',
+        ext: 'md',
+        mimeType: 'text/markdown',
+        size: 2048,
+        parseStatus: 'ready',
+        parseError: null,
+        contentUrl: '/api/knowledge/files/file1/content',
+        downloadUrl: '/api/knowledge/files/file1/download',
+      },
+    });
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response('# Readme\n\n| Now | Where |\n| --- | --- |\n| a | b |'),
+    );
+  });
+
+  const header = async () => {
+    const article = await screen.findByTestId('knowledge-doc');
+    await within(article).findAllByRole('heading', {
+      name: 'Readme',
+      level: 1,
+    });
+    return article;
+  };
+
+  it('offers Replace, Download, History and a menu with Rename and Properties, but no Edit, to an editor', async () => {
+    serve([fileDoc(MANAGE)]);
+    await show('/?doc=f1');
+    const article = await header();
+    expect(
+      within(article).queryByRole('button', { name: 'Edit', exact: true }),
+    ).not.toBeInTheDocument();
+    for (const name of ['Replace', 'Download', 'History'])
+      expect(
+        within(article).getByRole('button', { name, exact: true }),
+      ).toBeInTheDocument();
+    // The card only describes the file.
+    expect(
+      within(screen.getByTestId('knowledge-file')).queryByRole('button'),
+    ).not.toBeInTheDocument();
+    await press(within(article).getByRole('button', { name: 'More actions' }));
+    expect(
+      await screen.findByRole('menuitem', { name: 'Rename' }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: 'Properties and summary' }),
+    );
+    expect(
+      within(await screen.findByRole('dialog')).getByRole('textbox', {
+        name: 'Summary',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers Propose a replacement to someone who may only propose, and only Download and History to a reader', async () => {
+    serve([fileDoc(PROPOSE)]);
+    const first = await show('/?doc=f1');
+    let article = await header();
+    expect(
+      within(article).getByRole('button', { name: 'Propose a replacement' }),
+    ).toBeInTheDocument();
+    expect(
+      within(article).queryByRole('button', { name: 'Replace', exact: true }),
+    ).not.toBeInTheDocument();
+    first.unmount();
+
+    serve([fileDoc(READ)]);
+    await show('/?doc=f1');
+    article = await header();
+    expect(
+      within(article)
+        .getAllByRole('button')
+        .map((button) => button.textContent?.trim())
+        .filter(Boolean),
+    ).toEqual(expect.arrayContaining(['Download', 'History']));
+    for (const name of ['Replace', 'Propose a replacement', 'Edit'])
+      expect(
+        within(article).queryByRole('button', { name, exact: true }),
+      ).not.toBeInTheDocument();
+  });
+
+  it("previews Markdown with the documents' rendering and full screen only from the Preview tab", async () => {
+    serve([fileDoc(READ)]);
+    await show('/?doc=f1');
+    const article = await header();
+    expect(await within(article).findByRole('table')).toBeInTheDocument();
+    await press(within(article).getByRole('button', { name: 'Full screen' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('README.md')).toBeInTheDocument();
+    expect(within(dialog).getByText('Readme · Version 2')).toBeInTheDocument();
+    expect(await within(dialog).findByRole('table')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await press(within(article).getByRole('tab', { name: 'Extracted text' }));
+    await within(article).findByTestId('knowledge-extracted-text');
+    expect(
+      within(article).queryByRole('button', { name: 'Full screen' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens the extracted text, numbered, with the cited lines highlighted', async () => {
+    serve([fileDoc(READ)]);
+    await show('/?doc=f1&lines=3-3');
+    const text = await screen.findByTestId('knowledge-extracted-text');
+    expect(
+      within(text).getByText(/AI search and answers use exactly this text/),
+    ).toBeInTheDocument();
+    const rows = text.querySelectorAll('[data-line]');
+    expect(rows).toHaveLength(3);
+    expect(rows[2]?.textContent).toBe('3Tag it, then deploy.');
+    expect(
+      [...text.querySelectorAll('[data-highlighted]')].map((row) =>
+        row.getAttribute('data-line'),
+      ),
+    ).toEqual(['3']);
+    expect(
+      within(text).getByRole('button', { name: 'Copy' }),
+    ).toBeInTheDocument();
+  });
+});
