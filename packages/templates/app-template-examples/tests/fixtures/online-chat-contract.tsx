@@ -407,7 +407,10 @@ function Contract() {
             />,
             ...(index === 1
               ? [
-                  <li key='artifact-card' className='rounded-lg border p-3 text-sm'>
+                  <li
+                    key='artifact-card'
+                    className='rounded-lg border p-3 text-sm'
+                  >
                     Artifact card · {artifact}
                   </li>,
                 ]
