@@ -60,7 +60,7 @@ Befolge den Skill nocobase-create-app, um im aktuellen leeren Verzeichnis eine N
 Führe die folgenden Befehle im übergeordneten Verzeichnis deiner Projekte aus:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check

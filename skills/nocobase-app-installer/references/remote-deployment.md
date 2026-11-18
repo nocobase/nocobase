@@ -19,7 +19,7 @@ Determine the remote platform, architecture, libc and Node major before building
 Run locally, replacing the example connection and paths with the user's values:
 
 ```bash
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta deploy \
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer deploy \
   --ssh deploy@server --dir /app/my-app \
   --archive storage/exports/dist.tar.gz --origin https://app.example.com --json
 ```
@@ -33,7 +33,7 @@ The default listener is `127.0.0.1`, suitable for a reverse proxy on the server.
 Build the updated application locally, then run:
 
 ```bash
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta deploy \
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer deploy \
   --ssh deploy@server --dir /app/my-app --archive storage/exports/dist.tar.gz --json
 ```
 

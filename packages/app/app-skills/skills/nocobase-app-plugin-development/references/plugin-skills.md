@@ -19,7 +19,7 @@ Plugin Skills do not register Client, Server, or CLI contributions and do not en
 Select the capability explicitly when creating a plugin from the App root (use `pnpm plugin:create` in the NocoBase source repository):
 
 ```bash
-pnpm create @nocobase/plugin@beta audit-log --with skills
+pnpm create @nocobase/plugin audit-log --with skills
 ```
 
 The generated `SKILL.md` is a development draft. It does not prove that any claimed Route, Service, component, or workflow exists. Replace every placeholder with verified behavior before registering the plugin with an App.

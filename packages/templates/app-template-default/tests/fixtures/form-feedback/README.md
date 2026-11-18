@@ -4,7 +4,7 @@ This test-only workload checks newly generated Default and Examples applications
 
 ## Prepare two new applications
 
-Create one application from each selected target template with `pnpm create @nocobase/app@beta <name> --template <package>@<exact-version> --no-install --json`. Use actual released packages or immutable, explicitly versioned candidates in an isolated registry. Read each generated application's instructions, install dependencies and record exact template/runtime versions, lockfiles, source commits and package integrity. Keep the target's feedback component and auth/settings sources unchanged.
+Create one application from each selected target template with `pnpm create @nocobase/app <name> --template <package>@<exact-version> --no-install --json`. Use actual released packages or immutable, explicitly versioned candidates in an isolated registry. Read each generated application's instructions, install dependencies and record exact template/runtime versions, lockfiles, source commits and package integrity. Keep the target's feedback component and auth/settings sources unchanged.
 
 Copy `equipment-layout.tsx`, `equipment-detail.tsx`, `equipment.tsx` and `equipment-validation.tsx` into the application's `client/pages/`; copy `equipment-server.ts` as `server/routes/equipment-fixture.ts` and `equipment-migration.ts` as `database/main/migrations/209901010001_equipment_fixture.ts`. Keep an executed migration unchanged. Register `equipmentRoutes` in the server route contributions.
 

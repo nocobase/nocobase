@@ -16,16 +16,7 @@ An explicit override is recorded as `@nocobase:registry` in the generated `.npmr
 
 ## About dist-tags
 
-**Do not append `@beta` to the package name.** For now the `beta` tag points at the oldest published version rather than the newest:
-
-```
-latest: 0.1.0-beta.1   ← the most recent release
-beta:   0.1.0-beta.0   ← the first release, untouched since
-```
-
-This is changesets behavior: a package whose published versions are all prereleases is treated as publishing for the first time, so the tag goes to `latest` to keep the package installable with `npm install`, and not to `beta`. That holds on every release until a stable version ships, which is why `beta` stayed on the first one and `latest` is the newest.
-
-The problem resolves itself once a stable version is published, at which point `beta` starts tracking again.
+Run the package without a tag, as above: `latest`, npm's default dist-tag, points at the current stable release. `beta` is the channel for prereleases. While stable releases have just replaced the beta line, `beta` follows them too, so older `@beta` commands keep installing current versions; afterwards it stays on the last version it pointed at until a new prerelease line uses it.
 
 To check the current state:
 
@@ -33,7 +24,7 @@ To check the current state:
 npm view @nocobase/create-app dist-tags --registry=https://registry.npmjs.org
 ```
 
-For the same reason, `--template-tag` also defaults to `latest`.
+`--template-tag` likewise defaults to `latest`.
 
 ## Interactive use
 
@@ -69,7 +60,7 @@ pnpm create @nocobase/app examples --template=examples
 pnpm create @nocobase/app crm --template-tag=beta
 ```
 
-**Note that `beta` currently fetches the oldest version rather than the newest**, for the reason described above. Use it only when you specifically want that version.
+Use `beta` only when you specifically want a prerelease; see [About dist-tags](#about-dist-tags).
 
 Any other value is used as given, so a specific version or a local directory works as usual. `--template-tag` is ignored in that case: you have already said which version you want, and appending a channel would override the more specific request.
 
@@ -83,18 +74,18 @@ For the commercial multi-portal template, first log in to the private registry w
 ```bash
 pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
 npm whoami --registry=https://pkg-v3.nocobase.com/
-npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg-v3.nocobase.com/
-NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta crm --template=multi-portal --template-tag=beta
+npm view @nocobase/app-template-multi-portal version --registry=https://pkg-v3.nocobase.com/
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app crm --template=multi-portal
 ```
 
-The alias follows `--template-tag` like Default and Examples. Registry selection follows your configured `@nocobase` scope, or an explicit `NOCOBASE_REGISTRY` / `--nocobase-registry` override; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
+The alias follows `--template-tag` like Default and Examples. Registry selection follows your configured `@nocobase` scope, or an explicit `NOCOBASE_REGISTRY` / `--nocobase-registry` override; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
 
 ### Multi-app applications
 
 The `multi-app` alias resolves the commercial `@nocobase/app-template-multi-app` package in `nocobase/nocobase3-pro`. It creates Main only. Select the authorized registry explicitly and verify that the selected template version is available:
 
 ```bash
-NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta platform --template multi-app --template-tag beta
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app platform --template multi-app
 cd platform
 pnpm nocobase config init
 pnpm nocobase config check
@@ -107,8 +98,8 @@ After creation, use the installed `nocobase-app-plugin-multi-app` Skill for mult
 The `sub-app` alias resolves the commercial `@nocobase/app-template-sub-app` package in `nocobase/nocobase3-pro`: an independent child application that a multi-app Main deploys and admits through platform SSO. It preinstalls the `deploy` CLI extension as a development dependency. Use the same registry login as above and verify the package before creating the project:
 
 ```bash
-npm view @nocobase/app-template-sub-app@beta version --registry=https://pkg-v3.nocobase.com/
-NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta child-app --template sub-app --template-tag beta
+npm view @nocobase/app-template-sub-app version --registry=https://pkg-v3.nocobase.com/
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app child-app --template sub-app
 cd child-app
 pnpm nocobase config init
 pnpm nocobase deploy init

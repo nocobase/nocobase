@@ -60,7 +60,7 @@ Ikuti Skill nocobase-create-app untuk membuat dan menjalankan aplikasi NocoBase 
 Jalankan perintah berikut dari direktori induk tempat Anda menyimpan proyek:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
