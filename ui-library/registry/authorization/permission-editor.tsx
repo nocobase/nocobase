@@ -1,14 +1,14 @@
 /**
- * A controlled two-column permission editor: a menu tree on the left, the selected menu's actions on the right.
+ * A controlled permission editor with two tabs. Menus: a tree of checkboxes that only decides what a role sees in the
+ * sidebar, with the objects each page uses as reference tags. Business objects: a list of objects beside the selected
+ * object's actions, where each action and its data scope is set once for every menu that uses the object.
  * The host owns the catalog, loading, Save and persistence; this component only edits the draft it is given.
  */
 import {
-  ArrowRightIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
   InfoIcon,
   SearchIcon,
   ShieldCheckIcon,
+  TriangleAlertIcon,
   XIcon,
 } from 'lucide-react';
 import {
@@ -21,6 +21,7 @@ import {
 } from 'react';
 import { cn } from 'cn';
 import { Button } from '#components/ui/button';
+import { Checkbox } from '#components/ui/checkbox';
 import {
   InputGroup,
   InputGroupAddon,
@@ -32,79 +33,100 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
 import { Switch } from '#components/ui/switch';
+import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
+  canViewObject,
   dependentsOf,
   effectiveScopeValue,
-  filterModules,
-  menuStatus,
+  filterObjects,
+  menuCheckState,
+  menuCount,
+  menuDependents,
+  menusUsing,
+  menuWarnings,
   narrowerOptions,
-  nextMenu,
+  objectCount,
+  objectStatus,
   orderedActions,
   ownScopeValue,
   quickSetRemovals,
   setActionEnabled,
+  setMenuChecked,
   setScopeValue,
   slotOptions,
   viewActionOf,
   viewScopeLabel,
+  viewScopeOptions,
   viewScopeValue,
-  visibleMenuCount,
   type PermissionAction,
   type PermissionChange,
   type PermissionGrants,
-  type PermissionMenu,
-  type PermissionMenuState,
-  type PermissionModule,
+  type PermissionMenuNode,
+  type PermissionMenuWarning,
   type PermissionNotice,
+  type PermissionObject,
   type PermissionQuickSet,
   type PermissionScopeSlot,
+  type PermissionValue,
 } from './permission-editor-model.js';
 
 export type {
   PermissionAction,
   PermissionGrant,
   PermissionGrants,
-  PermissionMenu,
-  PermissionModule,
+  PermissionMenuNode,
+  PermissionMenuUses,
   PermissionNotice,
+  PermissionObject,
   PermissionRisk,
   PermissionScopeOption,
   PermissionScopeSlot,
+  PermissionValue,
 } from './permission-editor-model.js';
 
+export type PermissionEditorTab = 'menus' | 'objects';
+
 export interface PermissionEditorLabels {
-  readonly menus: string;
+  readonly menusTab: string;
+  readonly objectsTab: string;
+  readonly tabCount: (count: number, total: number) => string;
+  readonly menusIntro: string;
+  readonly menuColumn: string;
+  readonly usesColumn: string;
+  readonly public: string;
+  readonly noMenus: string;
+  readonly emptyPage: (menu: string, object: string) => string;
+  readonly openView: (action: string) => string;
+  readonly attention: (count: number) => string;
+  readonly objects: string;
   readonly search: string;
   readonly clearSearch: string;
   readonly noResults: string;
   readonly empty: string;
-  readonly administration: string;
-  readonly public: string;
-  readonly publicNote: string;
-  readonly visibleInMenu: string;
-  readonly hiddenFromMenu: string;
-  readonly enabledCount: (enabled: number, total: number) => string;
+  readonly objectEnabled: (enabled: number, total: number) => string;
+  readonly objectOff: string;
+  readonly noScope: string;
+  readonly usedBy: string;
+  readonly usedByNote: string;
   readonly enableAll: string;
   readonly viewOnly: string;
   readonly disableAll: string;
-  readonly next: (menu: string) => string;
   readonly sameAsView: (scope: string) => string;
   readonly scopeFor: (action: string, scope?: string) => string;
+  readonly scopeNote: (options: readonly string[]) => string;
   readonly followHint: string;
-  readonly riskHint: string;
   readonly managed: string;
-  readonly visibleMenus: (visible: number, total: number) => string;
+  readonly appliesEverywhere: string;
   readonly unsaved: string;
   readonly readOnly: string;
   readonly unrestrictedTitle: string;
   readonly unrestrictedDescription: string;
-  readonly expand: (module: string) => string;
-  readonly collapse: (module: string) => string;
   readonly confirmDisable: (
     actions: readonly string[],
     dependents: readonly string[],
@@ -116,20 +138,24 @@ export interface PermissionEditorLabels {
 }
 
 export interface PermissionEditorProps {
-  readonly modules: readonly PermissionModule[];
-  readonly value: PermissionGrants;
-  readonly onChange: (next: PermissionGrants) => void;
+  /** The sidebar's menus. Groups hold menus; a public menu shows as fixed. */
+  readonly menus: readonly PermissionMenuNode[];
+  /** Business objects with their actions, each set once whichever menus use it. */
+  readonly objects: readonly PermissionObject[];
+  readonly value: PermissionValue;
+  readonly onChange: (next: PermissionValue) => void;
   /** The role has every permission, such as Administrator: only an explanation is shown. */
   readonly unrestricted?: boolean | undefined;
   readonly readOnly?: boolean | undefined;
-  /** Shown above the editor: the role's name and host actions such as "Preview as this role". */
+  /** Shown above the tabs: the role's name and host actions such as "Duplicate as new role". */
   readonly header?: ReactNode;
   /** Host actions in the footer, normally Discard changes and Save. */
   readonly footer?: ReactNode;
   /** The draft differs from what is saved. */
   readonly dirty?: boolean | undefined;
-  /** The menu opened first; defaults to the first menu with something to set. */
-  readonly defaultMenuId?: string | undefined;
+  readonly defaultTab?: PermissionEditorTab | undefined;
+  /** The object opened first; defaults to the first one. */
+  readonly defaultObjectId?: string | undefined;
   readonly labels?: Partial<PermissionEditorLabels> | undefined;
   readonly className?: string | undefined;
 }
@@ -138,37 +164,47 @@ const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
 
 const DEFAULT_LABELS: PermissionEditorLabels = {
-  menus: 'Menus',
-  search: 'Search menus or permissions',
+  menusTab: 'Menus',
+  objectsTab: 'Business objects',
+  tabCount: (count, total) => `${count} / ${total}`,
+  menusIntro:
+    'Only decides which menus this role sees in the sidebar. What data it can see and what it can do is set once per object under Business objects.',
+  menuColumn: 'Menu',
+  usesColumn: 'Business objects the page uses (for reference)',
+  public: 'Visible to everyone',
+  noMenus: 'No menus',
+  emptyPage: (menu, object) =>
+    `“${menu}” is checked, but this role cannot view ${object} yet, so the page opens empty.`,
+  openView: (action) => `Turn on “${action}”`,
+  attention: (count) =>
+    `${count} ${count === 1 ? 'menu needs' : 'menus need'} attention`,
+  objects: 'Business objects',
+  search: 'Search objects or actions',
   clearSearch: 'Clear search',
-  noResults: 'No matching menus or permissions',
-  empty: 'No menus to configure',
-  administration: 'Administration',
-  public: 'Public',
-  publicNote: 'Every signed-in user can open it. No permission needed.',
-  visibleInMenu: 'Visible in menu',
-  hiddenFromMenu: 'Hidden from menu',
-  enabledCount: (enabled, total) => `${enabled} of ${total} enabled`,
+  noResults: 'No matching objects or actions',
+  empty: 'No business objects to configure',
+  objectEnabled: (enabled, total) => `${enabled} of ${total} on`,
+  objectOff: 'Off',
+  noScope: '—',
+  usedBy: 'Used by menus',
+  usedByNote: 'These settings apply in every menu.',
   enableAll: 'Enable all',
   viewOnly: 'View only',
   disableAll: 'Disable all',
-  next: (menu) => `Next: ${menu}`,
   sameAsView: (scope) => `Same as view (${scope})`,
   scopeFor: (action, scope) =>
     scope ? `${action}: ${scope}` : `Data scope of ${action}`,
+  scopeNote: (options) =>
+    `Data scope: ${options.join(' / ')}. Other actions cannot be wider than View.`,
   followHint:
     'Other actions follow the view scope; they can be narrower, never wider.',
-  riskHint:
-    'Enable all and requirements leave out some permissions here, such as granting roles; turn those on yourself.',
   managed: 'Managed by the application',
-  visibleMenus: (visible, total) => `${visible} of ${total} menus visible`,
+  appliesEverywhere: 'Changes apply to every menu that uses the object',
   unsaved: 'Unsaved changes',
   readOnly: 'These permissions are read-only.',
   unrestrictedTitle: 'All permissions (unrestricted)',
   unrestrictedDescription:
     'This role can open every menu and perform every action on all data. There is nothing to set.',
-  expand: (module) => `Expand ${module}`,
-  collapse: (module) => `Collapse ${module}`,
   confirmDisable: (actions, dependents) =>
     `Turning off ${list(actions)} also turns off ${list(dependents)}, which ${dependents.length === 1 ? 'needs' : 'need'} it.`,
   confirm: 'Turn off',
@@ -195,13 +231,6 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
 };
 
 const FOLLOW = '__same-as-view__';
-
-const DOT: Record<PermissionMenuState, string> = {
-  public: 'bg-emerald-400',
-  full: 'bg-primary',
-  partial: 'bg-primary/40',
-  off: 'bg-muted-foreground/25',
-};
 
 function ScopeSelect({
   label,
@@ -234,8 +263,6 @@ function ScopeSelect({
         className={cn(
           'w-full min-w-0',
           following === true && 'border-dashed text-muted-foreground',
-          following === false &&
-            'border-primary/40 bg-primary/5 text-primary dark:bg-primary/10',
         )}
       >
         <SelectValue />
@@ -254,7 +281,7 @@ function ScopeSelect({
 }
 
 function ScopeControl({
-  menu,
+  object,
   action,
   slot,
   grants,
@@ -262,7 +289,7 @@ function ScopeControl({
   labels,
   onScope,
 }: {
-  readonly menu: PermissionMenu;
+  readonly object: PermissionObject;
   readonly action: PermissionAction;
   readonly slot: PermissionScopeSlot;
   readonly grants: PermissionGrants;
@@ -271,12 +298,12 @@ function ScopeControl({
   readonly onScope: (slotId: string, value: string | undefined) => void;
 }): ReactElement | null {
   const accessibleName = labels.scopeFor(action.label, slot.label);
-  const options = slotOptions(menu, slot);
-  const own = ownScopeValue(menu, grants, action, slot);
-  const viewValue = viewScopeValue(menu, grants);
-  if (slot.followsView && !action.view && viewValue !== undefined) {
-    const viewLabel = viewScopeLabel(menu, grants) ?? viewValue;
-    const narrower = narrowerOptions(menu, grants, slot);
+  const options = slotOptions(object, slot);
+  const own = ownScopeValue(object, grants, action, slot);
+  const viewValue = viewScopeValue(object, grants, slot);
+  if (slot.followsView && viewValue !== undefined) {
+    const viewLabel = viewScopeLabel(object, grants, slot) ?? viewValue;
+    const narrower = narrowerOptions(object, grants, slot);
     if (!narrower.length)
       return (
         <span className='flex min-h-7 items-center text-xs text-muted-foreground'>
@@ -304,7 +331,7 @@ function ScopeControl({
     <ScopeSelect
       label={accessibleName}
       options={options}
-      value={effectiveScopeValue(menu, grants, action, slot) ?? ''}
+      value={effectiveScopeValue(object, grants, action, slot) ?? ''}
       disabled={disabled}
       onChange={(next) => onScope(slot.id, next)}
     />
@@ -312,7 +339,7 @@ function ScopeControl({
 }
 
 function ActionRow({
-  menu,
+  object,
   action,
   grants,
   readOnly,
@@ -321,7 +348,7 @@ function ActionRow({
   onToggle,
   onScope,
 }: {
-  readonly menu: PermissionMenu;
+  readonly object: PermissionObject;
   readonly action: PermissionAction;
   readonly grants: PermissionGrants;
   readonly readOnly: boolean;
@@ -345,7 +372,10 @@ function ActionRow({
     <li
       data-slot='permission-action'
       data-enabled={enabled ? '' : undefined}
-      className='grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(14rem,19rem)] @min-[44rem]/permissions:px-4'
+      className={cn(
+        'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(14rem,16rem)] @min-[44rem]/permissions:px-4',
+        action.view && 'bg-muted/30',
+      )}
     >
       <Switch
         id={controlId}
@@ -356,18 +386,16 @@ function ActionRow({
         onCheckedChange={(on: boolean) => onToggle(action, on)}
       />
       <div className='grid min-w-0 gap-0.5'>
-        <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
-          <label
-            id={`${controlId}-label`}
-            htmlFor={controlId}
-            className={cn(
-              'cursor-pointer text-sm leading-5 font-medium break-words',
-              !enabled && 'text-muted-foreground',
-            )}
-          >
-            {action.label}
-          </label>
-        </div>
+        <label
+          id={`${controlId}-label`}
+          htmlFor={controlId}
+          className={cn(
+            'cursor-pointer text-sm leading-5 font-medium break-words',
+            !enabled && 'text-muted-foreground',
+          )}
+        >
+          {action.label}
+        </label>
         {(description || action.managed) && (
           <p
             id={`${controlId}-description`}
@@ -382,7 +410,7 @@ function ActionRow({
       {inline && (
         <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
           <ScopeControl
-            menu={menu}
+            object={object}
             action={action}
             slot={inline}
             grants={grants}
@@ -410,7 +438,7 @@ function ActionRow({
               )}
               <div className='min-w-0 @min-[44rem]/permissions:w-60'>
                 <ScopeControl
-                  menu={menu}
+                  object={object}
                   action={action}
                   slot={slot}
                   grants={grants}
@@ -433,163 +461,231 @@ function ActionRow({
   );
 }
 
-function MenuTree({
-  modules,
+function ObjectTags({
+  ids,
+  objects,
   grants,
-  selected,
-  query,
-  collapsed,
-  labels,
-  onSelect,
-  onToggleModule,
 }: {
-  readonly modules: readonly PermissionModule[];
+  readonly ids: readonly string[];
+  readonly objects: readonly PermissionObject[];
   readonly grants: PermissionGrants;
-  readonly selected: string | undefined;
-  readonly query: string;
-  readonly collapsed: ReadonlySet<string>;
-  readonly labels: PermissionEditorLabels;
-  readonly onSelect: (menuId: string) => void;
-  readonly onToggleModule: (moduleId: string) => void;
-}): ReactElement {
-  const id = useId();
-  const searching = Boolean(query.trim());
-  const firstAdministration = modules.findIndex(
-    (module) => module.administration,
-  );
+}): ReactElement | null {
+  const used = ids.flatMap((id) => {
+    const object = objects.find((item) => item.id === id);
+    return object ? [object] : [];
+  });
+  if (!used.length) return null;
   return (
-    <div className='grid min-w-0 gap-0.5'>
-      {modules.map((module, moduleIndex) => {
-        const open = searching || !collapsed.has(module.id);
-        const statuses = module.menus.map((menu) => menuStatus(menu, grants));
-        const restricted = statuses.filter(
-          (status) => status.state !== 'public',
-        );
-        const visible = restricted.filter(
-          (status) => status.enabled > 0,
-        ).length;
-        const count = restricted.length
-          ? visible
-            ? `${visible}/${restricted.length}`
-            : ''
-          : labels.public;
-        const heading =
-          moduleIndex === firstAdministration ? (
-            <div className='mx-2 mt-2 border-t pt-3 pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase'>
-              {labels.administration}
-            </div>
-          ) : null;
-        const groupId = `${id}-${module.id}`;
+    <span className='flex min-w-0 flex-wrap gap-1'>
+      {used.map((object) => {
+        const viewable = canViewObject(object, grants);
         return (
-          <Fragment key={module.id}>
-            {heading}
-            <div className='min-w-0'>
-              <button
-                type='button'
-                className='flex w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm font-semibold hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-default'
-                aria-expanded={open}
-                aria-controls={open ? groupId : undefined}
-                aria-label={
-                  open
-                    ? labels.collapse(module.label)
-                    : labels.expand(module.label)
-                }
-                disabled={searching}
-                onClick={() => onToggleModule(module.id)}
-              >
-                {open ? (
-                  <ChevronDownIcon
-                    aria-hidden
-                    className='size-3.5 shrink-0 text-muted-foreground'
-                  />
-                ) : (
-                  <ChevronRightIcon
-                    aria-hidden
-                    className='size-3.5 shrink-0 text-muted-foreground'
-                  />
-                )}
-                <span className='min-w-0 flex-1 truncate'>{module.label}</span>
-                <span className='shrink-0 text-xs font-normal text-muted-foreground tabular-nums'>
-                  {count}
-                </span>
-              </button>
-              {open && (
-                <ul id={groupId} className='grid min-w-0 gap-0.5 pb-1'>
-                  {module.menus.map((menu, index) => {
-                    const status = statuses[index];
-                    const groupHeading =
-                      menu.group &&
-                      menu.group !== module.menus[index - 1]?.group
-                        ? menu.group
-                        : undefined;
-                    const active = menu.id === selected;
-                    return (
-                      <Fragment key={menu.id}>
-                        {groupHeading && (
-                          <li
-                            aria-hidden
-                            className='px-2 pt-1.5 pl-7 text-xs text-muted-foreground'
-                          >
-                            {groupHeading}
-                          </li>
-                        )}
-                        <li className='min-w-0'>
-                          <button
-                            type='button'
-                            data-slot='permission-menu'
-                            data-state={status.state}
-                            aria-current={active ? 'true' : undefined}
-                            className={cn(
-                              'flex w-full min-w-0 items-center gap-2 rounded-md py-1.5 pr-2 pl-7 text-left text-sm hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
-                              active &&
-                                'bg-muted font-semibold text-foreground',
-                              !active &&
-                                status.state === 'off' &&
-                                'text-muted-foreground',
-                            )}
-                            onClick={() => onSelect(menu.id)}
-                          >
-                            <span
-                              aria-hidden
-                              className={cn(
-                                'size-1.5 shrink-0 rounded-full',
-                                DOT[status.state],
-                              )}
-                            />
-                            <span className='min-w-0 flex-1 truncate'>
-                              {menu.label}
-                            </span>
-                            <span className='sr-only'>, </span>
-                            <span className='shrink-0 text-xs font-normal text-muted-foreground tabular-nums'>
-                              {status.state === 'public'
-                                ? labels.public
-                                : status.enabled
-                                  ? `${status.enabled}/${status.total}`
-                                  : ''}
-                            </span>
-                          </button>
-                        </li>
-                      </Fragment>
-                    );
-                  })}
-                </ul>
+          <span
+            key={object.id}
+            data-slot='permission-object-tag'
+            data-viewable={viewable ? '' : undefined}
+            className={cn(
+              'rounded px-1.5 text-xs leading-5',
+              viewable
+                ? 'bg-muted text-muted-foreground'
+                : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
+            )}
+          >
+            {object.label}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function MenuRows({
+  nodes,
+  depth,
+  value,
+  objects,
+  readOnly,
+  labels,
+  idPrefix,
+  onCheck,
+}: {
+  readonly nodes: readonly PermissionMenuNode[];
+  readonly depth: number;
+  readonly value: PermissionValue;
+  readonly objects: readonly PermissionObject[];
+  readonly readOnly: boolean;
+  readonly labels: PermissionEditorLabels;
+  readonly idPrefix: string;
+  readonly onCheck: (node: PermissionMenuNode, checked: boolean) => void;
+}): ReactElement {
+  return (
+    <>
+      {nodes.map((node) => {
+        const group = Boolean(node.children?.length);
+        const state = menuCheckState(node, value);
+        const controlId = `${idPrefix}-${node.id}`;
+        const uses = [
+          ...(node.uses?.primary ?? []),
+          ...(node.uses?.related ?? []).filter(
+            (id) => !node.uses?.primary?.includes(id),
+          ),
+        ];
+        return (
+          <Fragment key={node.id}>
+            <li
+              data-slot={group ? 'permission-menu-group' : 'permission-menu'}
+              className={cn(
+                'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t px-3 py-2 first:border-t-0 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(0,20rem)]',
+                group && 'bg-muted/40',
               )}
-            </div>
+            >
+              <Checkbox
+                id={controlId}
+                checked={state === 'checked'}
+                indeterminate={state === 'mixed'}
+                disabled={readOnly || Boolean(node.public)}
+                className='data-indeterminate:border-primary data-indeterminate:bg-primary/60'
+                onCheckedChange={(checked: boolean) =>
+                  onCheck(node, state === 'mixed' ? true : checked)
+                }
+              />
+              <label
+                htmlFor={controlId}
+                className={cn(
+                  'min-w-0 text-sm break-words',
+                  group ? 'font-semibold' : 'cursor-pointer',
+                )}
+                style={{ paddingInlineStart: `${depth * 1.25}rem` }}
+              >
+                {node.label}
+                {node.public && (
+                  <span className='text-xs text-muted-foreground'>
+                    {' · '}
+                    {typeof node.public === 'string'
+                      ? node.public
+                      : labels.public}
+                  </span>
+                )}
+              </label>
+              {!group && uses.length > 0 && (
+                <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
+                  <ObjectTags
+                    ids={uses}
+                    objects={objects}
+                    grants={value.grants}
+                  />
+                </div>
+              )}
+            </li>
+            {group && (
+              <MenuRows
+                nodes={node.children ?? []}
+                depth={depth + 1}
+                value={value}
+                objects={objects}
+                readOnly={readOnly}
+                labels={labels}
+                idPrefix={idPrefix}
+                onCheck={onCheck}
+              />
+            )}
           </Fragment>
         );
       })}
-    </div>
+    </>
+  );
+}
+
+function ObjectList({
+  objects,
+  grants,
+  selected,
+  labels,
+  onSelect,
+}: {
+  readonly objects: readonly PermissionObject[];
+  readonly grants: PermissionGrants;
+  readonly selected: string | undefined;
+  readonly labels: PermissionEditorLabels;
+  readonly onSelect: (id: string) => void;
+}): ReactElement {
+  return (
+    <ul className='grid min-w-0 gap-0.5'>
+      {objects.map((object, index) => {
+        const status = objectStatus(object, grants);
+        const heading =
+          object.group && object.group !== objects[index - 1]?.group
+            ? object.group
+            : undefined;
+        const view = viewActionOf(object);
+        const scope =
+          view && grants[view.id] ? viewScopeLabel(object, grants) : undefined;
+        const active = object.id === selected;
+        return (
+          <Fragment key={object.id}>
+            {heading && (
+              <li
+                aria-hidden
+                className='px-2 pt-2 pb-0.5 text-xs text-muted-foreground'
+              >
+                {heading}
+              </li>
+            )}
+            <li className='min-w-0'>
+              <button
+                type='button'
+                data-slot='permission-object'
+                data-state={status.state}
+                aria-current={active ? 'true' : undefined}
+                className={cn(
+                  'flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+                  active && 'bg-muted',
+                )}
+                onClick={() => onSelect(object.id)}
+              >
+                <span className='grid min-w-0 flex-1'>
+                  <span
+                    className={cn(
+                      'truncate text-sm',
+                      active && 'font-semibold',
+                    )}
+                  >
+                    {object.label}
+                  </span>
+                  <span className='truncate text-xs text-muted-foreground'>
+                    {status.enabled
+                      ? labels.objectEnabled(status.enabled, status.total)
+                      : labels.objectOff}
+                  </span>
+                </span>
+                <span className='sr-only'>, </span>
+                <span className='max-w-[45%] shrink-0 truncate text-xs text-muted-foreground'>
+                  {scope ??
+                    (status.enabled && !view?.scopes?.length
+                      ? ''
+                      : labels.noScope)}
+                </span>
+              </button>
+            </li>
+          </Fragment>
+        );
+      })}
+    </ul>
   );
 }
 
 interface PendingDisable {
   readonly message: string;
-  readonly apply: (grants: PermissionGrants) => PermissionChange;
+  readonly apply: (value: PermissionValue) => {
+    readonly value: PermissionValue;
+    readonly notices: readonly PermissionNotice[];
+  };
 }
 
 /** A controlled editor: the application owns its catalog, the draft's persistence and Save. */
 export function PermissionEditor({
-  modules,
+  menus,
+  objects,
   value,
   onChange,
   unrestricted = false,
@@ -597,7 +693,8 @@ export function PermissionEditor({
   header,
   footer,
   dirty = false,
-  defaultMenuId,
+  defaultTab = 'menus',
+  defaultObjectId,
   labels,
   className,
 }: PermissionEditorProps): ReactElement {
@@ -605,98 +702,177 @@ export function PermissionEditor({
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const [tab, setTab] = useState<PermissionEditorTab>(defaultTab);
   const [query, setQuery] = useState('');
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  const menus = modules.flatMap((module) =>
-    module.menus.map((menu) => ({ module, menu })),
-  );
-  const firstConfigurable =
-    menus.find(({ menu }) => !menu.public && menu.actions.length)?.menu.id ??
-    menus[0]?.menu.id;
   const [selectedId, setSelectedId] = useState(
-    defaultMenuId ?? firstConfigurable,
+    defaultObjectId ?? objects[0]?.id,
   );
   const [notices, setNotices] = useState<readonly PermissionNotice[]>([]);
   const [pending, setPending] = useState<PendingDisable | undefined>();
   // A host that turns read-only while a confirmation is open cancels it.
   if (readOnly && pending) setPending(undefined);
+  // Notices and a pending confirmation describe the draft they came from. When the host replaces the draft itself,
+  // such as discarding changes or loading another revision, they no longer apply.
+  const [shown, setShown] = useState<{
+    readonly value: PermissionValue;
+    readonly expected: PermissionValue | undefined;
+  }>({ value, expected: undefined });
+  if (shown.value !== value) {
+    setShown({ value, expected: undefined });
+    if (
+      !shown.expected ||
+      JSON.stringify(shown.expected) !== JSON.stringify(value)
+    ) {
+      setNotices([]);
+      setPending(undefined);
+    }
+  }
   const current =
-    menus.find(({ menu }) => menu.id === selectedId) ??
-    menus.find(({ menu }) => menu.id === firstConfigurable);
-  const filtered = filterModules(modules, query);
-  const counts = visibleMenuCount(modules, value);
+    objects.find((object) => object.id === selectedId) ?? objects[0];
+  const filtered = filterObjects(objects, query);
+  const warnings = menuWarnings(menus, objects, value);
+  const menuTotals = menuCount(menus, value);
+  const objectTotals = objectCount(objects, value.grants);
 
-  const select = (menuId: string): void => {
-    setSelectedId(menuId);
+  const select = (objectId: string): void => {
+    setSelectedId(objectId);
     setNotices([]);
     setPending(undefined);
   };
-  const commit = (change: PermissionChange): void => {
+  const commitValue = (
+    next: PermissionValue,
+    changeNotices: readonly PermissionNotice[],
+  ): void => {
     // A change that alters nothing, such as a select echoing the value it was given, keeps the current notices.
     if (
-      !change.notices.length &&
-      JSON.stringify(change.grants) === JSON.stringify(value)
+      !changeNotices.length &&
+      JSON.stringify(next) === JSON.stringify(value)
     ) {
       setPending(undefined);
       return;
     }
-    setNotices(change.notices);
+    setShown({ value, expected: next });
+    setNotices(changeNotices);
     setPending(undefined);
-    onChange(change.grants);
+    onChange(next);
+  };
+  const commit = (change: PermissionChange): void =>
+    commitValue({ menus: value.menus, grants: change.grants }, change.notices);
+  const ask = (message: string, apply: PendingDisable['apply']): void => {
+    setNotices([]);
+    setPending({ message, apply });
   };
   const toggle = (action: PermissionAction, enabled: boolean): void => {
     if (readOnly) return;
     if (enabled) {
-      commit(setActionEnabled(modules, value, action.id, true));
+      commit(setActionEnabled(objects, value.grants, action.id, true));
       return;
     }
-    const dependents = dependentsOf(modules, value, [action.id]);
+    const dependents = dependentsOf(objects, value.grants, [action.id]);
     // Managed dependents block the change; the model explains why.
     if (!dependents.length || dependents.some((item) => item.managed)) {
-      commit(setActionEnabled(modules, value, action.id, false));
+      commit(setActionEnabled(objects, value.grants, action.id, false));
       return;
     }
-    setNotices([]);
-    setPending({
-      message: words.confirmDisable(
+    ask(
+      words.confirmDisable(
         [action.label],
         dependents.map((item) => item.label),
       ),
-      apply: (grants) => setActionEnabled(modules, grants, action.id, false),
-    });
+      (draft) => {
+        const change = setActionEnabled(
+          objects,
+          draft.grants,
+          action.id,
+          false,
+        );
+        return {
+          value: { menus: draft.menus, grants: change.grants },
+          notices: change.notices,
+        };
+      },
+    );
   };
-  const quick = (menu: PermissionMenu, mode: PermissionQuickSet): void => {
+  const quick = (object: PermissionObject, mode: PermissionQuickSet): void => {
     if (readOnly) return;
-    const { own, others } = quickSetRemovals(modules, value, menu, mode);
+    const { own, others } = quickSetRemovals(
+      objects,
+      value.grants,
+      object,
+      mode,
+    );
     if (
       !others.length ||
-      dependentsOf(modules, value, own).some((item) => item.managed)
+      dependentsOf(objects, value.grants, own).some((item) => item.managed)
     ) {
-      commit(applyQuickSet(modules, value, menu, mode));
+      commit(applyQuickSet(objects, value.grants, object, mode));
       return;
     }
-    setNotices([]);
-    setPending({
-      message: words.confirmDisable(
-        [menu.label],
+    ask(
+      words.confirmDisable(
+        [object.label],
         others.map((item) => item.label),
       ),
-      apply: (grants) => applyQuickSet(modules, grants, menu, mode),
-    });
+      (draft) => {
+        const change = applyQuickSet(objects, draft.grants, object, mode);
+        return {
+          value: { menus: draft.menus, grants: change.grants },
+          notices: change.notices,
+        };
+      },
+    );
+  };
+  const check = (node: PermissionMenuNode, checked: boolean): void => {
+    if (readOnly || node.public) return;
+    const apply: PendingDisable['apply'] = (draft) =>
+      setMenuChecked(objects, menus, draft, node.id, checked);
+    const dependents = checked
+      ? []
+      : menuDependents(objects, menus, value, node.id);
+    if (dependents.length && !dependents.some((item) => item.managed)) {
+      ask(
+        words.confirmDisable(
+          [node.label],
+          dependents.map((item) => item.label),
+        ),
+        apply,
+      );
+      return;
+    }
+    const change = apply(value);
+    commitValue(change.value, change.notices);
+  };
+  const openView = (warning: PermissionMenuWarning): void => {
+    select(warning.object.id);
+    setTab('objects');
+    requestAnimationFrame(() => titleRef.current?.focus());
   };
 
+  const status =
+    tab === 'menus'
+      ? warnings.length
+        ? words.attention(warnings.length)
+        : undefined
+      : words.appliesEverywhere;
   const footerBar = (
     <div className='flex min-w-0 flex-wrap items-center gap-2 border-t px-4 py-3'>
-      <span role='status' className='mr-auto text-xs text-muted-foreground'>
-        {unrestricted ? null : dirty ? (
-          <span className='inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400'>
-            <span aria-hidden className='size-1.5 rounded-full bg-current' />
-            {words.unsaved}
-          </span>
-        ) : (
-          words.visibleMenus(counts.visible, counts.total)
+      <span
+        role='status'
+        className='mr-auto inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground'
+      >
+        {unrestricted ? null : (
+          <>
+            {status && <span>{status}</span>}
+            {dirty && (
+              <span className='inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400'>
+                <span
+                  aria-hidden
+                  className='size-1.5 rounded-full bg-current'
+                />
+                {words.unsaved}
+              </span>
+            )}
+          </>
         )}
       </span>
       {footer && (
@@ -733,57 +909,140 @@ export function PermissionEditor({
       </div>
     );
 
+  const messages = (
+    <>
+      {pending && (
+        <div
+          role='alert'
+          className='flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm'
+        >
+          <span className='min-w-0 flex-1 basis-60'>{pending.message}</span>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => setPending(undefined)}
+          >
+            {words.cancel}
+          </Button>
+          <Button
+            type='button'
+            variant='destructive'
+            size='sm'
+            onClick={() => {
+              if (readOnly) return;
+              const change = pending.apply(value);
+              commitValue(change.value, change.notices);
+            }}
+          >
+            {words.confirm}
+          </Button>
+        </div>
+      )}
+      {notices.length > 0 && (
+        <div
+          role='status'
+          className='grid min-w-0 gap-1 rounded-lg border bg-muted/40 px-3 py-2 text-sm'
+        >
+          {notices.map((notice, index) => (
+            <div key={notice.kind} className='flex min-w-0 items-start gap-2'>
+              <span className='min-w-0 flex-1'>{words.notice(notice)}</span>
+              {index === 0 && (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon-xs'
+                  aria-label={words.dismiss}
+                  onClick={() => setNotices([])}
+                >
+                  <XIcon aria-hidden />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  const menusPanel = (
+    <div className='grid min-w-0 gap-3 p-4'>
+      <p className='text-sm text-muted-foreground'>{words.menusIntro}</p>
+      {readOnly && (
+        <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
+      )}
+      {warnings.map((warning) => (
+        <div
+          key={`${warning.menu.id}:${warning.object.id}`}
+          data-slot='permission-menu-warning'
+          className='flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
+        >
+          <TriangleAlertIcon aria-hidden className='size-4 shrink-0' />
+          <span className='min-w-0 flex-1 basis-60'>
+            {words.emptyPage(warning.menu.label, warning.object.label)}
+          </span>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => openView(warning)}
+          >
+            {words.openView(warning.action.label)}
+          </Button>
+        </div>
+      ))}
+      {messages}
+      {menus.length ? (
+        <div className='min-w-0 overflow-hidden rounded-lg border'>
+          <div
+            aria-hidden
+            className='hidden grid-cols-[auto_minmax(0,1fr)_minmax(0,20rem)] gap-x-3 border-b px-3 py-2 text-xs text-muted-foreground @min-[44rem]/permissions:grid'
+          >
+            <span className='size-4' />
+            <span>{words.menuColumn}</span>
+            <span>{words.usesColumn}</span>
+          </div>
+          <ul data-slot='permission-menus' className='min-w-0'>
+            <MenuRows
+              nodes={menus}
+              depth={0}
+              value={value}
+              objects={objects}
+              readOnly={readOnly}
+              labels={words}
+              idPrefix={`${id}-menu`}
+              onCheck={check}
+            />
+          </ul>
+        </div>
+      ) : (
+        <p className='text-sm text-muted-foreground'>{words.noMenus}</p>
+      )}
+    </div>
+  );
+
   const detail = (() => {
     if (!current) return null;
-    const { module, menu } = current;
-    const status = menuStatus(menu, value);
+    const object = current;
     const titleId = `${id}-title`;
-    if (menu.public)
-      return (
-        <section
-          aria-labelledby={titleId}
-          className='grid min-w-0 content-start gap-3'
-        >
-          <p className='text-xs text-muted-foreground'>{module.label}</p>
-          <div className='flex flex-wrap items-center gap-2'>
-            <h2
-              ref={titleRef}
-              tabIndex={-1}
-              id={titleId}
-              className='text-lg font-semibold outline-none'
-            >
-              {menu.label}
-            </h2>
-            <span className='rounded-full bg-emerald-500/10 px-2 text-xs leading-5 text-emerald-700 dark:text-emerald-400'>
-              {words.public}
-            </span>
-          </div>
-          <p className='rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-300'>
-            {typeof menu.public === 'string'
-              ? `${menu.public} ${words.publicNote}`
-              : words.publicNote}
-          </p>
-        </section>
-      );
-    const { basic, business } = orderedActions(menu);
-    const hasFollowers =
-      menu.actions.some((action) =>
-        action.scopes?.some((slot) => slot.followsView),
-      ) && Boolean(viewActionOf(menu)?.scopes?.length);
-    const hasRisk = menu.actions.some((action) => action.risk);
-    const next = nextMenu(modules, menu.id);
+    const { basic, business } = orderedActions(object);
+    const scopeOptions = viewScopeOptions(object);
+    const hasFollowers = object.actions.some((action) =>
+      action.scopes?.some((slot) => slot.followsView),
+    );
+    const usedBy = menusUsing(menus, object.id);
     const row = (action: PermissionAction): ReactElement => (
       <ActionRow
         key={action.id}
-        menu={menu}
+        object={object}
         action={action}
-        grants={value}
+        grants={value.grants}
         readOnly={readOnly}
         labels={words}
         controlId={`${id}-${action.id}`}
         onToggle={toggle}
         onScope={(item, slotId, scope) =>
-          commit(setScopeValue(modules, value, item.id, slotId, scope))
+          commit(setScopeValue(objects, value.grants, item.id, slotId, scope))
         }
       />
     );
@@ -792,117 +1051,70 @@ export function PermissionEditor({
         aria-labelledby={titleId}
         className='grid min-w-0 content-start gap-3'
       >
-        <div className='grid min-w-0 gap-0.5'>
-          <p className='text-xs text-muted-foreground'>{module.label}</p>
-          <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2'>
-            <h2
-              ref={titleRef}
-              tabIndex={-1}
-              id={titleId}
-              className='text-lg font-semibold outline-none'
-            >
-              {menu.label}
-            </h2>
-            <span
-              className={cn(
-                'rounded-full px-2 text-xs leading-5',
-                status.enabled
-                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-muted text-muted-foreground',
+        <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2'>
+          <h2
+            ref={titleRef}
+            tabIndex={-1}
+            id={titleId}
+            className='text-lg font-semibold outline-none'
+          >
+            {object.label}
+          </h2>
+          {!readOnly && (
+            <div className='flex flex-wrap gap-1.5 @min-[44rem]/permissions:ml-auto'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => quick(object, 'all')}
+              >
+                {words.enableAll}
+              </Button>
+              {viewActionOf(object) && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => quick(object, 'view')}
+                >
+                  {words.viewOnly}
+                </Button>
               )}
-            >
-              {status.enabled ? words.visibleInMenu : words.hiddenFromMenu}
-            </span>
-            <span className='text-xs text-muted-foreground'>
-              {words.enabledCount(status.enabled, status.total)}
-            </span>
-            {!readOnly && (
-              <div className='flex flex-wrap gap-1.5 @min-[44rem]/permissions:ml-auto'>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => quick(menu, 'all')}
-                >
-                  {words.enableAll}
-                </Button>
-                {viewActionOf(menu) && (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    onClick={() => quick(menu, 'view')}
-                  >
-                    {words.viewOnly}
-                  </Button>
-                )}
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => quick(menu, 'none')}
-                >
-                  {words.disableAll}
-                </Button>
-              </div>
-            )}
-          </div>
-          {menu.description && (
-            <p className='text-sm text-muted-foreground'>{menu.description}</p>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => quick(object, 'none')}
+              >
+                {words.disableAll}
+              </Button>
+            </div>
           )}
         </div>
+        {object.description && (
+          <p className='text-sm text-muted-foreground'>{object.description}</p>
+        )}
+        {usedBy.length > 0 && (
+          <p
+            data-slot='permission-used-by'
+            className='flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground'
+          >
+            <span>{words.usedBy}</span>
+            {usedBy.map((menu) => (
+              <span
+                key={menu.id}
+                className='rounded bg-muted px-1.5 leading-5 text-foreground/80'
+              >
+                {menu.label}
+              </span>
+            ))}
+            <span>· {words.usedByNote}</span>
+          </p>
+        )}
         {readOnly && (
           <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
         )}
-        {pending && (
-          <div
-            role='alert'
-            className='flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm'
-          >
-            <span className='min-w-0 flex-1 basis-60'>{pending.message}</span>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => setPending(undefined)}
-            >
-              {words.cancel}
-            </Button>
-            <Button
-              type='button'
-              variant='destructive'
-              size='sm'
-              onClick={() => {
-                if (!readOnly) commit(pending.apply(value));
-              }}
-            >
-              {words.confirm}
-            </Button>
-          </div>
-        )}
-        {notices.length > 0 && (
-          <div
-            role='status'
-            className='grid min-w-0 gap-1 rounded-lg border bg-muted/40 px-3 py-2 text-sm'
-          >
-            {notices.map((notice, index) => (
-              <div key={notice.kind} className='flex min-w-0 items-start gap-2'>
-                <span className='min-w-0 flex-1'>{words.notice(notice)}</span>
-                {index === 0 && (
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='icon-xs'
-                    aria-label={words.dismiss}
-                    onClick={() => setNotices([])}
-                  >
-                    <XIcon aria-hidden />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        {messages}
         <ul
           data-slot='permission-actions'
           className='min-w-0 divide-y overflow-hidden rounded-lg border'
@@ -917,38 +1129,135 @@ export function PermissionEditor({
           )}
           {business.map(row)}
         </ul>
-        {menu.notice && (
+        {object.notice && (
           <div
-            data-slot='permission-menu-notice'
+            data-slot='permission-object-notice'
             className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
           >
             <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
-            <div className='min-w-0'>{menu.notice}</div>
+            <div className='min-w-0'>{object.notice}</div>
           </div>
         )}
-        <div className='flex min-w-0 flex-wrap items-center gap-2'>
-          <p className='min-w-0 flex-1 basis-60 text-xs text-muted-foreground'>
-            {hasFollowers ? words.followHint : hasRisk ? words.riskHint : null}
+        {hasFollowers && (
+          <p className='text-xs text-muted-foreground'>
+            {scopeOptions.length
+              ? words.scopeNote(scopeOptions.map((option) => option.label))
+              : words.followHint}
           </p>
-          {next && (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => {
-                select(next.id);
-                // Bring the new menu into view, which on a phone sits below the tree.
-                requestAnimationFrame(() => titleRef.current?.focus());
-              }}
-            >
-              {words.next(next.label)}
-              <ArrowRightIcon aria-hidden />
-            </Button>
-          )}
-        </div>
+        )}
       </section>
     );
   })();
+
+  const searchBox = (
+    <InputGroup>
+      <InputGroupAddon>
+        <SearchIcon aria-hidden />
+      </InputGroupAddon>
+      <InputGroupInput
+        ref={searchRef}
+        value={query}
+        aria-label={words.search}
+        placeholder={words.search}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      {query && (
+        <InputGroupAddon align='inline-end'>
+          <InputGroupButton
+            type='button'
+            size='icon-xs'
+            aria-label={words.clearSearch}
+            onClick={() => {
+              setQuery('');
+              searchRef.current?.focus();
+            }}
+          >
+            <XIcon aria-hidden />
+          </InputGroupButton>
+        </InputGroupAddon>
+      )}
+    </InputGroup>
+  );
+  const groups = [...new Set(filtered.map((object) => object.group ?? ''))];
+  const objectsPanel = (
+    <div className='grid min-w-0 @min-[44rem]/permissions:grid-cols-[15.5rem_minmax(0,1fr)]'>
+      <nav
+        aria-label={words.objects}
+        className='grid min-w-0 content-start gap-2 border-b p-2 @min-[44rem]/permissions:border-r @min-[44rem]/permissions:border-b-0'
+      >
+        {searchBox}
+        {/* On a phone the list collapses into a select of the same objects. */}
+        <div className='@min-[44rem]/permissions:hidden'>
+          {filtered.length > 0 && (
+            <Select
+              items={filtered.map((object) => ({
+                value: object.id,
+                label: object.label,
+              }))}
+              value={
+                filtered.some((object) => object.id === current?.id)
+                  ? current?.id
+                  : null
+              }
+              onValueChange={(next: string | null) => {
+                if (next) select(next);
+              }}
+            >
+              <SelectTrigger aria-label={words.objects} className='w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {groups.map((group) => (
+                  <SelectGroup key={group}>
+                    {group && <SelectLabel>{group}</SelectLabel>}
+                    {filtered
+                      .filter((object) => (object.group ?? '') === group)
+                      .map((object) => {
+                        const status = objectStatus(object, value.grants);
+                        return (
+                          <SelectItem key={object.id} value={object.id}>
+                            {object.label}
+                            <span className='ml-auto pl-3 text-xs text-muted-foreground'>
+                              {status.enabled
+                                ? words.objectEnabled(
+                                    status.enabled,
+                                    status.total,
+                                  )
+                                : words.objectOff}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        <div className='hidden max-h-[min(70dvh,48rem)] min-w-0 overflow-y-auto @min-[44rem]/permissions:block'>
+          {filtered.length > 0 && (
+            <ObjectList
+              objects={filtered}
+              grants={value.grants}
+              selected={current?.id}
+              labels={words}
+              onSelect={select}
+            />
+          )}
+        </div>
+        {!filtered.length && (
+          <p role='status' className='px-2 py-3 text-sm text-muted-foreground'>
+            {objects.length ? words.noResults : words.empty}
+          </p>
+        )}
+      </nav>
+      <div className='min-w-0 p-4 @min-[44rem]/permissions:px-6 @min-[44rem]/permissions:py-5'>
+        {detail ?? (
+          <p className='text-sm text-muted-foreground'>{words.empty}</p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -958,74 +1267,33 @@ export function PermissionEditor({
         className,
       )}
     >
-      {header && <div className='border-b px-4 py-3'>{header}</div>}
-      <div className='grid min-w-0 @min-[44rem]/permissions:grid-cols-[15.5rem_minmax(0,1fr)]'>
-        <nav
-          aria-label={words.menus}
-          className='min-w-0 border-b p-2 @min-[44rem]/permissions:border-r @min-[44rem]/permissions:border-b-0'
-        >
-          <InputGroup className='mb-2'>
-            <InputGroupAddon>
-              <SearchIcon aria-hidden />
-            </InputGroupAddon>
-            <InputGroupInput
-              ref={searchRef}
-              value={query}
-              aria-label={words.search}
-              placeholder={words.search}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            {query && (
-              <InputGroupAddon align='inline-end'>
-                <InputGroupButton
-                  type='button'
-                  size='icon-xs'
-                  aria-label={words.clearSearch}
-                  onClick={() => {
-                    setQuery('');
-                    searchRef.current?.focus();
-                  }}
-                >
-                  <XIcon aria-hidden />
-                </InputGroupButton>
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-          <div className='max-h-64 min-w-0 overflow-y-auto @min-[44rem]/permissions:max-h-[min(70dvh,48rem)]'>
-            {filtered.length ? (
-              <MenuTree
-                modules={filtered}
-                grants={value}
-                selected={current?.menu.id}
-                query={query}
-                collapsed={collapsed}
-                labels={words}
-                onSelect={select}
-                onToggleModule={(moduleId) =>
-                  setCollapsed((previous) => {
-                    const nextSet = new Set(previous);
-                    if (nextSet.has(moduleId)) nextSet.delete(moduleId);
-                    else nextSet.add(moduleId);
-                    return nextSet;
-                  })
-                }
-              />
-            ) : (
-              <p
-                role='status'
-                className='px-2 py-3 text-sm text-muted-foreground'
-              >
-                {modules.length ? words.noResults : words.empty}
-              </p>
-            )}
-          </div>
-        </nav>
-        <div className='min-w-0 p-4 @min-[44rem]/permissions:px-6 @min-[44rem]/permissions:py-5'>
-          {detail ?? (
-            <p className='text-sm text-muted-foreground'>{words.empty}</p>
-          )}
+      {header && <div className='px-4 pt-3 pb-1'>{header}</div>}
+      <Tabs
+        value={tab}
+        onValueChange={(next: PermissionEditorTab) => {
+          setTab(next);
+          setNotices([]);
+          setPending(undefined);
+        }}
+      >
+        <div className='border-b px-4'>
+          <TabsList variant='line' className='h-10 gap-3'>
+            <TabsTrigger value='menus' className='flex-none px-1'>
+              {`① ${words.menusTab}`}
+              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                {words.tabCount(menuTotals.checked, menuTotals.total)}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value='objects' className='flex-none px-1'>
+              {`② ${words.objectsTab}`}
+              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                {words.tabCount(objectTotals.enabled, objectTotals.total)}
+              </span>
+            </TabsTrigger>
+          </TabsList>
         </div>
-      </div>
+      </Tabs>
+      {tab === 'menus' ? menusPanel : objectsPanel}
       {footerBar}
     </div>
   );
