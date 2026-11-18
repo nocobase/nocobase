@@ -4,7 +4,9 @@ import type {
 } from '@nocobase/app-plugin-authorization/client';
 import type {
   PermissionGrants,
-  PermissionModule,
+  PermissionMenuNode,
+  PermissionObject,
+  PermissionValue,
 } from '#components/permission-editor';
 
 export type CatalogResource =
@@ -34,7 +36,6 @@ export interface PermissionScopeBinding {
 }
 
 export interface PermissionBinding {
-  readonly menu: string;
   readonly resource: { readonly type: string; readonly id: string };
   readonly action: string;
   readonly view: boolean;
@@ -44,10 +45,13 @@ export interface PermissionBinding {
 }
 
 export interface PermissionWorkspace {
-  readonly modules: readonly PermissionModule[];
+  /** What a role sees in the sidebar. */
+  readonly menus: readonly PermissionMenuNode[];
+  /** What a role may do, set once per object. */
+  readonly objects: readonly PermissionObject[];
   /** Every editable action by editor id. */
   readonly bindings: ReadonlyMap<string, PermissionBinding>;
-  /** Pages of menus whose actions are business operations: opened exactly when the menu is visible. */
+  /** The pages each menu's checkbox opens: stored as page access, independently of every object's actions. */
   readonly menuPages: ReadonlyMap<string, readonly string[]>;
 }
 
@@ -111,7 +115,7 @@ function same(a: unknown, b: unknown): boolean {
 export function draftFromGrants(
   grants: readonly PermissionGrant[],
   workspace: PermissionWorkspace,
-): { readonly draft: PermissionGrants; readonly filters: PermissionFilters } {
+): { readonly draft: PermissionValue; readonly filters: PermissionFilters } {
   const draft: Record<string, { scopes?: Record<string, string> }> = {};
   const filters: Record<string, unknown> = {};
   for (const [id, binding] of workspace.bindings) {
@@ -139,7 +143,15 @@ export function draftFromGrants(
     }
     draft[id] = Object.keys(scopes).length ? { scopes } : {};
   }
-  return { draft, filters };
+  // A menu is checked when any of its pages opens; the rest of its pages open with it when saved.
+  const menus = [...workspace.menuPages]
+    .filter(([, pages]) =>
+      pages.some((page) =>
+        storedAction(grants, { type: 'page', id: page }, 'access'),
+      ),
+    )
+    .map(([menu]) => menu);
+  return { draft: { menus, grants: draft }, filters };
 }
 
 function storedValue(
@@ -157,14 +169,16 @@ function storedValue(
 
 /**
  * Stored grants for a draft. Actions the editor does not show and the policies of unchanged choices are kept as
- * stored. Followers store a copy of View's value, and a menu's pages are opened exactly when any of its actions is.
+ * stored. Followers store a copy of View's value. A checked menu opens its pages and an unchecked one closes them,
+ * whatever the objects' actions are.
  */
 export function grantsFromDraft(
-  draft: PermissionGrants,
+  value: PermissionValue,
   filters: PermissionFilters,
   original: readonly PermissionGrant[],
   workspace: PermissionWorkspace,
 ): readonly PermissionGrant[] {
+  const draft = value.grants;
   const resolved = new Map<string, Readonly<Record<string, unknown>>>();
   const scopesOf = (id: string): Readonly<Record<string, unknown>> => {
     const cached = resolved.get(id);
@@ -250,9 +264,7 @@ export function grantsFromDraft(
     );
   }
   for (const [menu, pages] of workspace.menuPages) {
-    const visible = [...workspace.bindings].some(
-      ([id, binding]) => binding.menu === menu && draft[id],
-    );
+    const visible = value.menus.includes(menu);
     for (const page of pages) {
       const resource = { type: 'page', id: page };
       const existing = storedAction(original, resource, 'access');

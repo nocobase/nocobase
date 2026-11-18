@@ -8,13 +8,14 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
 import { expect, it, vi } from 'vitest';
 import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
 import PermissionCheckPage from '../../client/pages/settings/permission-check.js';
 import systemSettingsRoutes from '../../client/pages/settings/routes.js';
+import { SETTINGS_GROUP } from '../../client/lib/navigation-transform.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
@@ -38,7 +39,7 @@ const plugins = [
       // The System settings group of this application's routes.
       defineAppRoutes([
         {
-          name: 'systemManagement',
+          name: SETTINGS_GROUP,
           navigation: { title: 'settings.title' },
           children: [
             {
@@ -251,4 +252,53 @@ it('opens a preview link naming a role for any role when roles cannot be read', 
   );
   await user.click(picker);
   expect(await screen.findByRole('option', { name: 'User 2' })).toBeVisible();
+});
+
+it('shows which menus a user sees and what they may do per business object', async () => {
+  const decide = api(({ path, json }) => {
+    if (path === 'authorization/permissionSets') return { data: [] };
+    if (path === 'authorization/inspector/subjects/user') return users();
+    if (path === 'authorization/inspector/configuredAccess')
+      return { data: { unrestricted: false, sets: [] } };
+    if (path === 'authorization/inspector/batchDecide') {
+      const { checks } = json as {
+        checks: { resource: { type: string; id: string }; action: string }[];
+      };
+      return {
+        data: checks.map((check) => ({
+          ...check,
+          decision: {
+            effect:
+              check.resource.type === 'user' && check.action === 'read'
+                ? 'permit'
+                : check.resource.type === 'user' && check.action === 'update'
+                  ? 'conditional'
+                  : 'deny',
+          },
+        })),
+      };
+    }
+    return new Response(null, { status: 404 });
+  });
+  await mount('/settings/permission-check?user=u1', decide);
+  const objects = await screen.findByRole('heading', {
+    name: enUS.settings.permissionEditor.objectsTab,
+  });
+  expect(
+    screen.getByRole('heading', {
+      name: enUS.settings.permissionEditor.menusTab,
+    }),
+  ).toBeVisible();
+  const section = objects.parentElement!;
+  // Allowed for all records: no hint of a limited range.
+  expect(
+    within(section).getByText(enUS.settings.readUsers, { exact: true }),
+  ).toBeVisible();
+  expect(
+    within(section).getByText(
+      `${enUS.settings.updateUsers} · ${words.effect.conditional}`,
+    ),
+  ).toBeVisible();
+  // User management opens with reading users.
+  expect(screen.getByText(/^1 of \d+ menus visible$/)).toBeVisible();
 });

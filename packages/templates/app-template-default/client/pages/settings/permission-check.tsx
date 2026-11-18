@@ -35,9 +35,24 @@ import { useSettingsData } from './hooks.js';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { pagePermissionTitles } from './page-permission-titles.js';
 import { permissionWorkspace } from './permission-workspace.js';
+import type { PermissionMenuNode } from '#components/permission-editor';
 import { SettingsError, SettingsLoading } from './shared.js';
 
 const ALL_ROLES = '__all__';
+
+/** Every menu a role may be denied, with the groups above it. */
+function menuEntries(
+  nodes: readonly PermissionMenuNode[],
+  path: readonly string[] = [],
+): { readonly path: readonly string[]; readonly menu: PermissionMenuNode }[] {
+  return nodes.flatMap((node) =>
+    node.children?.length
+      ? menuEntries(node.children, [...path, node.label])
+      : node.public
+        ? []
+        : [{ path, menu: node }],
+  );
+}
 /** The most checks, subject ids or users one request of the authorization routes takes. */
 const BATCH = 100;
 
@@ -62,7 +77,7 @@ interface Decisions {
 
 /**
  * Permission check: what one user can open and do, decided by the server from all of their roles and the default,
- * sharing and restriction rules. Preview as this role opens it with the role chosen, listing the users who hold it;
+ * sharing and restriction rules. A link naming a role opens it with that role chosen, listing the users who hold it;
  * the server cannot act as a role without a user.
  */
 export default function PermissionCheckPage(): ReactElement {
@@ -253,26 +268,18 @@ export default function PermissionCheckPage(): ReactElement {
   const current = decided?.access && decided.effects ? decided : undefined;
   const effectOf = (key: string): AuthorizationEffect | undefined =>
     current?.effects?.get(key);
-  const menuVisible = (menuId: string, actionIds: readonly string[]) => {
-    const pages = workspace?.menuPages.get(menuId);
-    return pages
-      ? pages.some(
-          (page) =>
-            effectOf(JSON.stringify(['page', page, 'access'])) !== 'deny',
-        )
-      : actionIds.some((id) => effectOf(id) && effectOf(id) !== 'deny');
+  /** A menu opens when any of its pages does, or, for a page guarded by an action, with that action. */
+  const menuVisible = (menu: PermissionMenuNode): boolean => {
+    const pages = workspace?.menuPages.get(menu.id);
+    if (pages)
+      return pages.some(
+        (page) => effectOf(JSON.stringify(['page', page, 'access'])) !== 'deny',
+      );
+    const effect = menu.opensWith ? effectOf(menu.opensWith) : undefined;
+    return Boolean(effect && effect !== 'deny');
   };
-  const menus = workspace?.modules.flatMap((module) =>
-    module.menus
-      .filter((menu) => !menu.public)
-      .map((menu) => ({ module, menu })),
-  );
-  const visible = menus?.filter(({ menu }) =>
-    menuVisible(
-      menu.id,
-      menu.actions.map((action) => action.id),
-    ),
-  ).length;
+  const menus = workspace ? menuEntries(workspace.menus) : undefined;
+  const visible = menus?.filter(({ menu }) => menuVisible(menu)).length;
 
   return (
     <PermissionManagementPage tab='permission-check'>
@@ -414,24 +421,24 @@ export default function PermissionCheckPage(): ReactElement {
                 </Badge>
               ))}
               <span className='ml-auto text-muted-foreground'>
-                {t('settings.permissionEditor.visibleMenus', {
+                {t('settings.permissionCheck.visibleMenus', {
                   visible,
                   total: menus?.length ?? 0,
                 })}
               </span>
             </div>
-            <div className='divide-y rounded-lg border'>
-              {menus?.map(({ module, menu }) => {
-                const open = menuVisible(
-                  menu.id,
-                  menu.actions.map((action) => action.id),
-                );
-                return (
-                  <div
-                    key={menu.id}
-                    className='flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start'
-                  >
-                    <div className='flex min-w-0 items-center gap-2 sm:w-64 sm:shrink-0'>
+            <section className='flex flex-col gap-2'>
+              <h2 className='text-sm font-semibold'>
+                {t('settings.permissionEditor.menusTab')}
+              </h2>
+              <ul className='grid gap-x-6 rounded-lg border px-4 py-2 sm:grid-cols-2 lg:grid-cols-3'>
+                {menus?.map(({ path, menu }) => {
+                  const open = menuVisible(menu);
+                  return (
+                    <li
+                      key={menu.id}
+                      className='flex min-w-0 items-center gap-2 py-1.5'
+                    >
                       <span
                         aria-hidden
                         className={cn(
@@ -440,18 +447,52 @@ export default function PermissionCheckPage(): ReactElement {
                         )}
                       />
                       <span className='min-w-0'>
-                        <span className='block truncate text-sm font-medium'>
+                        <span
+                          className={cn(
+                            'block truncate text-sm',
+                            !open && 'text-muted-foreground line-through',
+                          )}
+                        >
                           {menu.label}
                         </span>
                         <span className='block truncate text-xs text-muted-foreground'>
-                          {[module.label, menu.group]
-                            .filter(Boolean)
-                            .join(' › ')}
+                          {path.join(' › ')}
                         </span>
                       </span>
+                      <span className='sr-only'>
+                        {t(
+                          open
+                            ? 'settings.permissionCheck.menuVisible'
+                            : 'settings.permissionCheck.menuHidden',
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+            <section className='flex flex-col gap-2'>
+              <h2 className='text-sm font-semibold'>
+                {t('settings.permissionEditor.objectsTab')}
+              </h2>
+              <div className='divide-y rounded-lg border'>
+                {workspace?.objects.map((object) => (
+                  <div
+                    key={object.id}
+                    className='flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start'
+                  >
+                    <div className='min-w-0 sm:w-64 sm:shrink-0'>
+                      <span className='block truncate text-sm font-medium'>
+                        {object.label}
+                      </span>
+                      {object.group && (
+                        <span className='block truncate text-xs text-muted-foreground'>
+                          {object.group}
+                        </span>
+                      )}
                     </div>
                     <div className='flex min-w-0 flex-wrap gap-1.5'>
-                      {menu.actions.map((action) => {
+                      {object.actions.map((action) => {
                         const effect = effectOf(action.id);
                         return (
                           <Badge
@@ -480,9 +521,9 @@ export default function PermissionCheckPage(): ReactElement {
                       })}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </div>

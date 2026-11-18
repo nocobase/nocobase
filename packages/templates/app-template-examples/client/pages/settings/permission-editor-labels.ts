@@ -11,36 +11,46 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
     const k = (key: string, values?: Record<string, unknown>): string =>
       t(`settings.permissionEditor.${key}`, values);
     return {
-      menus: k('menus'),
+      menusTab: k('menusTab'),
+      objectsTab: k('objectsTab'),
+      tabCount: (count, total) => k('tabCount', { count, total }),
+      menusIntro: k('menusIntro'),
+      menuColumn: k('menuColumn'),
+      usesColumn: k('usesColumn'),
+      public: k('public'),
+      noMenus: k('noMenus'),
+      emptyPage: (menu, object) => k('emptyPage', { menu, object }),
+      openView: (action) => k('openView', { action }),
+      attention: (count) => k('attention', { count }),
+      objects: k('objects'),
       search: k('search'),
       clearSearch: k('clearSearch'),
       noResults: k('noResults'),
       empty: k('empty'),
-      administration: k('administration'),
-      public: k('public'),
-      publicNote: k('publicNote'),
-      visibleInMenu: k('visibleInMenu'),
-      hiddenFromMenu: k('hiddenFromMenu'),
-      enabledCount: (enabled, total) => k('enabledCount', { enabled, total }),
+      objectEnabled: (enabled, total) => k('objectEnabled', { enabled, total }),
+      objectOff: k('objectOff'),
+      noScope: k('noScope'),
+      usedBy: k('usedBy'),
+      usedByNote: k('usedByNote'),
       enableAll: k('enableAll'),
       viewOnly: k('viewOnly'),
       disableAll: k('disableAll'),
-      next: (menu) => k('next', { menu }),
       sameAsView: (scope) => k('sameAsView', { scope }),
       scopeFor: (action, scope) =>
         scope
           ? k('scopeForSlot', { action, scope })
           : k('scopeFor', { action }),
+      scopeNote: (options) =>
+        k('scopeNote', {
+          options: options.join(k('scopeSeparator')),
+        }),
       followHint: k('followHint'),
-      riskHint: k('riskHint'),
       managed: k('managed'),
-      visibleMenus: (visible, total) => k('visibleMenus', { visible, total }),
+      appliesEverywhere: k('appliesEverywhere'),
       unsaved: t('settings.unsaved'),
       readOnly: t('settings.permissionReadOnlyHint'),
       unrestrictedTitle: k('unrestrictedTitle'),
       unrestrictedDescription: k('unrestrictedDescription'),
-      expand: (module) => k('expand', { module }),
-      collapse: (module) => k('collapse', { module }),
       confirmDisable: (actions, dependents) =>
         k('confirmDisable', {
           actions: list(actions),

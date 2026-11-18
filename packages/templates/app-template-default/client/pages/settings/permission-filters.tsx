@@ -1,6 +1,6 @@
 import type {
   PermissionGrants,
-  PermissionModule,
+  PermissionObject,
 } from '#components/permission-editor';
 import {
   PermissionFilter,
@@ -16,7 +16,7 @@ import { permissionFilterFieldLabel } from './permission-workspace.js';
 
 /** Attach the custom-filter editor to every enabled scope set to a custom filter. */
 export function withPermissionFilters(
-  modules: readonly PermissionModule[],
+  objects: readonly PermissionObject[],
   workspace: PermissionWorkspace,
   draft: PermissionGrants,
   filters: PermissionFilters,
@@ -25,47 +25,44 @@ export function withPermissionFilters(
   setEditing: (key: string | undefined) => void,
   onApply: (key: string, filter: unknown) => void,
   disabled: boolean,
-): readonly PermissionModule[] {
+): readonly PermissionObject[] {
   const labels = permissionFilterLabels(text);
-  return modules.map((module) => ({
-    ...module,
-    menus: module.menus.map((menu) => ({
-      ...menu,
-      actions: menu.actions.map((action) => {
-        const binding = workspace.bindings.get(action.id);
-        if (!action.scopes || !binding) return action;
-        return {
-          ...action,
-          scopes: action.scopes.map((slot) => {
-            if (draft[action.id]?.scopes?.[slot.id] !== CUSTOM_FILTER)
-              return slot;
-            const key = filterKey(action.id, slot.id);
-            const scope = binding.scopes.find((item) => item.key === slot.id);
-            return {
-              ...slot,
-              configuration: (
-                <PermissionFilter
-                  open={editing === key}
-                  onOpenChange={(open) => setEditing(open ? key : undefined)}
-                  value={filters[key]}
-                  fields={(scope?.fields ?? []).map((field) => ({
-                    value: field,
-                    label: permissionFilterFieldLabel(
-                      scope?.collection ?? '',
-                      field,
-                      text,
-                    ),
-                  }))}
-                  labels={labels}
-                  disabled={disabled}
-                  onApply={(filter) => onApply(key, filter)}
-                />
-              ),
-            };
-          }),
-        };
-      }),
-    })),
+  return objects.map((object) => ({
+    ...object,
+    actions: object.actions.map((action) => {
+      const binding = workspace.bindings.get(action.id);
+      if (!action.scopes || !binding) return action;
+      return {
+        ...action,
+        scopes: action.scopes.map((slot) => {
+          if (draft[action.id]?.scopes?.[slot.id] !== CUSTOM_FILTER)
+            return slot;
+          const key = filterKey(action.id, slot.id);
+          const scope = binding.scopes.find((item) => item.key === slot.id);
+          return {
+            ...slot,
+            configuration: (
+              <PermissionFilter
+                open={editing === key}
+                onOpenChange={(open) => setEditing(open ? key : undefined)}
+                value={filters[key]}
+                fields={(scope?.fields ?? []).map((field) => ({
+                  value: field,
+                  label: permissionFilterFieldLabel(
+                    scope?.collection ?? '',
+                    field,
+                    text,
+                  ),
+                }))}
+                labels={labels}
+                disabled={disabled}
+                onApply={(filter) => onApply(key, filter)}
+              />
+            ),
+          };
+        }),
+      };
+    }),
   }));
 }
 

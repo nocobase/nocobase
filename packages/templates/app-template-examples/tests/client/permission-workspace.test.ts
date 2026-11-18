@@ -28,8 +28,11 @@ import {
 } from '../../client/pages/settings/permissions-model.js';
 import {
   applyQuickSet,
+  menusUsing,
   narrowerOptions,
   setScopeValue,
+  type PermissionGrants,
+  type PermissionValue,
 } from '../../client/components/permission-editor-model.js';
 import enUS from '../../client/locales/en-US.js';
 
@@ -194,12 +197,24 @@ const selection: PermissionWorkspaceSelection = {
     {
       type: 'composite',
       id: 'contracts',
-      menu: 'fixtureContracts',
       actions: ['view', 'update', 'approve', 'refund'],
       risks: { refund: 'high' },
       scopeOrder: ['allRecords', 'department', 'own'],
     },
+    {
+      type: 'composite',
+      id: 'contract-contacts',
+      actions: ['view', 'update'],
+      scopeOrder: ['allRecords', 'department', 'own'],
+    },
   ],
+  pages: {
+    fixtureContracts: {
+      primary: ['contracts'],
+      related: ['contract-contacts'],
+    },
+    fixtureReports: { related: ['contracts'] },
+  },
 };
 
 async function workspace(chosen: PermissionWorkspaceSelection = selection) {
@@ -214,26 +229,36 @@ async function workspace(chosen: PermissionWorkspaceSelection = selection) {
   };
 }
 
+type Workspace = Awaited<ReturnType<typeof workspace>>['workspace'];
+
 const contract = (action: string) =>
   permissionRowId({ type: 'composite', id: 'contracts' }, action);
-const menuOf = (
-  ws: Awaited<ReturnType<typeof workspace>>['workspace'],
-  label: string,
-) =>
-  ws.modules
-    .flatMap((module) => module.menus)
-    .find((menu) => menu.label === label);
+const contact = (action: string) =>
+  permissionRowId({ type: 'composite', id: 'contract-contacts' }, action);
+const objectOf = (ws: Workspace, label: string) =>
+  ws.objects.find((object) => object.label === label);
+const leaves = (
+  nodes: Workspace['menus'],
+  path: readonly string[] = [],
+): { path: readonly string[]; menu: Workspace['menus'][number] }[] =>
+  nodes.flatMap((node) =>
+    node.children
+      ? leaves(node.children, [...path, node.label])
+      : [{ path, menu: node }],
+  );
+const menuOf = (ws: Workspace, label: string) =>
+  leaves(ws.menus).find(({ menu }) => menu.label === label)?.menu;
+const value = (
+  grants: PermissionGrants,
+  menus: readonly string[] = [],
+): PermissionValue => ({ menus, grants });
 
 describe('role permission workspace', () => {
-  it('puts business operations on their menu with View first and the other scopes following it', async () => {
+  it('sets each business object once, with View first and the other scopes following it', async () => {
     const { workspace: ws } = await workspace();
-    const sales = ws.modules.find((module) => module.label === 'Fixture sales');
-    expect(sales?.menus.map((menu) => menu.label)).toEqual([
-      'Fixture contracts',
-      'Fixture reports',
-      'Fixture help',
-    ]);
-    const contracts = menuOf(ws, 'Fixture contracts')!;
+    const contracts = objectOf(ws, 'Contracts')!;
+    // Objects are grouped by the catalog subsection that registers them.
+    expect(contracts.group).toBe('Contracts');
     expect(contracts.actions.map((action) => action.label)).toEqual([
       'View',
       'Edit',
@@ -261,41 +286,71 @@ describe('role permission workspace', () => {
       ],
     );
     expect(refund).toMatchObject({ risk: 'high', business: true });
-    expect(ws.menuPages.get(contracts.id)).toEqual(['fixture-contracts']);
-    // A menu without business operations is opened through its page; a public menu needs nothing.
-    expect(menuOf(ws, 'Fixture reports')?.actions).toEqual([
-      {
-        id: permissionRowId({ type: 'page', id: 'fixture-reports' }, 'access'),
-        label: 'Open page',
-        view: true,
-      },
-    ]);
-    expect(menuOf(ws, 'Fixture help')).toMatchObject({
-      public: true,
-      actions: [],
-    });
+    // A second object on the same page is an object of its own, never flattened into the first.
+    expect(
+      objectOf(ws, 'Contacts')?.actions.map((action) => action.label),
+    ).toEqual(['View', 'Edit']);
+    expect(contracts.actions.some((action) => action.label.includes('·'))).toBe(
+      false,
+    );
   });
 
-  it('lists system settings under Administration with their real actions and the escalation notice', async () => {
+  it('lists every menu with the objects its page uses, for reference only', async () => {
     const { workspace: ws } = await workspace();
-    const administration = ws.modules.at(-1)!;
-    expect(administration.administration).toBe(true);
-    const roles = administration.menus.find(
-      (menu) => menu.label === enUS.settings.permissionManagement,
+    const sales = ws.menus.find((node) => node.label === 'Fixture sales');
+    expect(sales?.children?.map((menu) => menu.label)).toEqual([
+      'Fixture contracts',
+      'Fixture reports',
+      'Fixture help',
+    ]);
+    const contracts = menuOf(ws, 'Fixture contracts')!;
+    // A page declares the objects it uses.
+    expect(contracts.uses).toEqual({
+      primary: ['composite:contracts'],
+      related: ['composite:contract-contacts'],
+    });
+    expect(menuOf(ws, 'Fixture reports')?.uses).toEqual({
+      related: ['composite:contracts'],
+    });
+    expect(ws.menuPages.get(contracts.id)).toEqual(['fixture-contracts']);
+    expect(menuOf(ws, 'Fixture help')).toMatchObject({ public: true });
+    // One object, used by two menus.
+    expect(
+      menusUsing(ws.menus, 'composite:contracts').map((menu) => menu.label),
+    ).toEqual(['Fixture contracts', 'Fixture reports']);
+  });
+
+  it('lists system settings with their real actions and the escalation notice', async () => {
+    const { workspace: ws } = await workspace();
+    const settings = ws.menus.at(-1)!;
+    expect(settings.label).toBe(enUS.settings.title);
+    const roles = leaves(settings.children ?? []).find(
+      ({ menu }) => menu.label === enUS.settings.permissionManagement,
+    )!.menu;
+    const sets = ws.objects.find(
+      (object) => object.id === 'settings:authorization.permission-sets',
     )!;
-    const update = roles.actions.find(
-      (action) =>
-        action.id ===
-        permissionRowId(
-          { type: 'settings', id: 'authorization.permission-sets' },
-          'update',
-        ),
+    // A settings page guarded by an action opens with it.
+    expect(roles.opensWith).toBe(
+      permissionRowId(
+        { type: 'settings', id: 'authorization.permission-sets' },
+        'read',
+      ),
     );
-    expect(update).toMatchObject({ risk: 'high' });
-    expect(roles.notice).toBe(enUS.settings.escalation.roles);
-    const users = administration.menus.find(
-      (menu) => menu.label === enUS.settings.users,
-    )!;
+    expect(roles.uses?.primary).toContain(sets.id);
+    expect(sets.group).toBe(enUS.settings.title);
+    expect(
+      sets.actions.find(
+        (action) =>
+          action.id ===
+          permissionRowId(
+            { type: 'settings', id: 'authorization.permission-sets' },
+            'update',
+          ),
+      ),
+    ).toMatchObject({ risk: 'high' });
+    expect(sets.notice).toBe(enUS.settings.escalation.roles);
+    const users = ws.objects.find((object) => object.id === 'user:*')!;
     expect(users.actions[0]).toMatchObject({
       label: enUS.settings.readUsers,
       view: true,
@@ -305,22 +360,15 @@ describe('role permission workspace', () => {
     ).toMatchObject({ risk: 'high' });
     // Settings pages are not business menus.
     expect(
-      ws.modules
-        .filter((module) => !module.administration)
-        .flatMap((module) => module.menus)
-        .some((menu) => menu.label === enUS.settings.users),
-    ).toBe(false);
-    // Features and extensions is one control, in Administration.
-    const guide = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
-    expect(
-      ws.modules.flatMap((module) =>
-        module.menus.flatMap((menu) =>
-          menu.actions
-            .filter((action) => action.id === guide)
-            .map(() => module.administration),
-        ),
+      leaves(ws.menus.slice(0, -1)).some(
+        ({ menu }) => menu.label === enUS.settings.users,
       ),
-    ).toEqual([true]);
+    ).toBe(false);
+    // Features and extensions is one page, under System settings.
+    const guide = leaves(ws.menus).filter(({ menu }) =>
+      ws.menuPages.get(menu.id)?.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
+    );
+    expect(guide.map(({ path }) => path[0])).toEqual([enUS.settings.title]);
   });
 
   it('stores what the editor shows and keeps what it does not', async () => {
@@ -362,10 +410,13 @@ describe('role permission workspace', () => {
     ];
     const { draft, filters } = draftFromGrants(original, ws);
     expect(draft).toEqual({
-      [contract('view')]: { scopes: { records: 'department' } },
-      [contract('update')]: {},
-      [contract('approve')]: {
-        scopes: { records: 'own', departments: '__preserved__' },
+      menus: [menuOf(ws, 'Fixture contracts')!.id],
+      grants: {
+        [contract('view')]: { scopes: { records: 'department' } },
+        [contract('update')]: {},
+        [contract('approve')]: {
+          scopes: { records: 'own', departments: '__preserved__' },
+        },
       },
     });
     expect(
@@ -374,7 +425,13 @@ describe('role permission workspace', () => {
 
     // Narrowing View narrows its followers with it.
     const narrowed = grantsFromDraft(
-      { ...draft, [contract('view')]: { scopes: { records: 'own' } } },
+      {
+        ...draft,
+        grants: {
+          ...draft.grants,
+          [contract('view')]: { scopes: { records: 'own' } },
+        },
+      },
       filters,
       original,
       ws,
@@ -396,20 +453,22 @@ describe('role permission workspace', () => {
     expect(narrowed).toContainEqual(unrelated);
   });
 
-  it('opens a menu exactly when any of its actions is on', async () => {
+  it('stores menu access apart from the objects’ actions', async () => {
     const { workspace: ws } = await workspace();
     const page = { type: 'page', id: 'fixture-contracts' };
-    const opened = grantsFromDraft({ [contract('update')]: {} }, {}, [], ws);
-    expect(opened).toContainEqual({
-      resource: page,
-      actions: [{ action: 'access' }],
-    });
+    const menu = menuOf(ws, 'Fixture contracts')!.id;
+    // An action alone opens no menu.
+    const actionOnly = grantsFromDraft(
+      value({ [contract('update')]: {} }),
+      {},
+      [],
+      ws,
+    );
+    expect(actionOnly.some((grant) => grant.resource.type === 'page')).toBe(
+      false,
+    );
     expect(
-      opened.find(
-        (grant) =>
-          grant.resource.id === 'contracts' &&
-          grant.resource.type === 'composite',
-      )?.actions,
+      actionOnly.find((grant) => grant.resource.id === 'contracts')?.actions,
     ).toEqual([
       // Edit follows View's default when View is off.
       {
@@ -417,30 +476,45 @@ describe('role permission workspace', () => {
         policy: { type: 'composite', scopes: { records: '' } },
       },
     ]);
-    const closed = grantsFromDraft(
-      {},
-      {},
-      [{ resource: page, actions: [{ action: 'access' }] }],
-      ws,
-    );
-    expect(closed).toEqual([]);
+    // A checked menu opens its page without any action.
+    expect(grantsFromDraft(value({}, [menu]), {}, [], ws)).toEqual([
+      { resource: page, actions: [{ action: 'access' }] },
+    ]);
+    // Unchecking it closes the page and leaves the object's actions as they are.
+    const stored: PermissionGrant[] = [
+      { resource: page, actions: [{ action: 'access' }] },
+      {
+        resource: { type: 'composite', id: 'contracts' },
+        actions: [
+          {
+            action: 'view',
+            policy: { type: 'composite', scopes: { records: 'own' } },
+          },
+        ],
+      },
+    ];
+    const { draft, filters } = draftFromGrants(stored, ws);
+    expect(draft.menus).toEqual([menu]);
+    expect(
+      grantsFromDraft({ ...draft, menus: [] }, filters, stored, ws),
+    ).toEqual([stored[1]]);
   });
 
   it('asks for custom filter conditions before saving and stores them with the scope', async () => {
     const { workspace: ws } = await workspace();
-    const draft = {
+    const grants = {
       [contract('view')]: { scopes: { records: CUSTOM_FILTER } },
     };
-    expect(unconfiguredFilter(draft, {}, ws)).toEqual({
+    expect(unconfiguredFilter(grants, {}, ws)).toEqual({
       action: contract('view'),
       scope: 'records',
     });
     const filter = { status: { $eq: 'signed' } };
     const filters = { [filterKey(contract('view'), 'records')]: filter };
-    expect(unconfiguredFilter(draft, filters, ws)).toBeUndefined();
-    const grants = grantsFromDraft(draft, filters, [], ws);
+    expect(unconfiguredFilter(grants, filters, ws)).toBeUndefined();
+    const stored = grantsFromDraft(value(grants), filters, [], ws);
     expect(
-      grants.find((grant) => grant.resource.type === 'composite')?.actions,
+      stored.find((grant) => grant.resource.type === 'composite')?.actions,
     ).toEqual([
       {
         action: 'view',
@@ -456,13 +530,16 @@ describe('role permission workspace', () => {
         },
       },
     ]);
-    expect(draftFromGrants(grants, ws)).toEqual({ draft, filters });
+    expect(draftFromGrants(stored, ws)).toEqual({
+      draft: value(grants),
+      filters,
+    });
   });
 
   it('offers Edit only scopes provably inside View', async () => {
     const values = async (chosen: PermissionWorkspaceSelection) => {
       const { workspace: ws } = await workspace(chosen);
-      const contracts = menuOf(ws, 'Fixture contracts')!;
+      const contracts = objectOf(ws, 'Contracts')!;
       const edit = contracts.actions[1]!;
       const grants = {
         [contract('view')]: { scopes: { records: 'department' } },
@@ -474,7 +551,7 @@ describe('role permission workspace', () => {
         ),
         // Picking an unrelated scope keeps Edit on Same as view.
         picked: setScopeValue(
-          ws.modules,
+          ws.objects,
           grants,
           contract('update'),
           'records',
@@ -498,48 +575,28 @@ describe('role permission workspace', () => {
     });
   });
 
-  it('lets a second resource on a menu follow its own View', async () => {
-    const { workspace: ws } = await workspace({
-      business: [
-        selection.business[0]!,
-        {
-          type: 'composite',
-          id: 'contract-contacts',
-          menu: 'fixtureContracts',
-          actions: ['view', 'update'],
-          scopeOrder: ['allRecords', 'department', 'own'],
-        },
-      ],
-    });
-    const contracts = menuOf(ws, 'Fixture contracts')!;
-    const contactsView = permissionRowId(
-      { type: 'composite', id: 'contract-contacts' },
-      'view',
-    );
-    const contactsEdit = permissionRowId(
-      { type: 'composite', id: 'contract-contacts' },
-      'update',
-    );
-    const edit = contracts.actions.find(
-      (action) => action.id === contactsEdit,
+  it('lets each object follow its own View', async () => {
+    const { workspace: ws } = await workspace();
+    const edit = objectOf(ws, 'Contacts')!.actions.find(
+      (action) => action.id === contact('update'),
     )!;
-    expect(edit.scopes?.[0]?.followsView).toBe(contactsView);
+    expect(edit.scopes?.[0]?.followsView).toBe(true);
     // Contacts View narrowed to Their own sends a wider contacts Edit back to it, whatever the contracts View is.
     const change = setScopeValue(
-      ws.modules,
+      ws.objects,
       {
         [contract('view')]: { scopes: { records: 'allRecords' } },
-        [contactsView]: { scopes: { records: 'allRecords' } },
-        [contactsEdit]: { scopes: { records: 'department' } },
+        [contact('view')]: { scopes: { records: 'allRecords' } },
+        [contact('update')]: { scopes: { records: 'department' } },
       },
-      contactsView,
+      contact('view'),
       'records',
       'own',
     );
-    expect(change.grants[contactsEdit]?.scopes).toEqual({});
+    expect(change.grants[contact('update')]?.scopes).toEqual({});
     expect(change.notices).toHaveLength(1);
     // Saved, the contacts Edit stores the contacts View's value.
-    const stored = grantsFromDraft(change.grants, {}, [], ws);
+    const stored = grantsFromDraft(value(change.grants), {}, [], ws);
     expect(
       stored
         .find((grant) => grant.resource.id === 'contract-contacts')
@@ -572,7 +629,10 @@ describe('role permission workspace', () => {
       sameGrants(grantsFromDraft(draft, filters, original, ws), original),
     ).toBe(true);
     const changed = grantsFromDraft(
-      { [contract('view')]: { scopes: { records: 'own' } } },
+      {
+        ...draft,
+        grants: { [contract('view')]: { scopes: { records: 'own' } } },
+      },
       filters,
       original,
       ws,
@@ -589,20 +649,21 @@ describe('role permission workspace', () => {
       { type: 'settings', id: 'authorization.inspector' },
       'inspect',
     );
-    const menu = ws.modules
-      .flatMap((module) => module.menus)
-      .find((item) => item.actions.some((action) => action.id === inspect))!;
-    expect(menu.actions.find((action) => action.id === inspect)).toMatchObject({
+    const object = ws.objects.find((item) =>
+      item.actions.some((action) => action.id === inspect),
+    )!;
+    expect(
+      object.actions.find((action) => action.id === inspect),
+    ).toMatchObject({
       risk: 'sensitive',
     });
-    const { grants } = applyQuickSet(ws.modules, {}, menu, 'all');
+    const { grants } = applyQuickSet(ws.objects, {}, object, 'all');
     expect(grants[inspect]).toBeUndefined();
-    expect(Object.keys(grants).length).toBeGreaterThan(0);
   });
 
   it('labels the scopes of a multi-scope action with their registered collection titles', async () => {
     const { workspace: ws } = await workspace();
-    const approve = menuOf(ws, 'Fixture contracts')!.actions.find(
+    const approve = objectOf(ws, 'Contracts')!.actions.find(
       (action) => action.id === contract('approve'),
     );
     // The server titles these scopes only with their keys; the registered tables have real names.
@@ -610,5 +671,63 @@ describe('role permission workspace', () => {
       'Contract records',
       'Departments',
     ]);
+  });
+});
+
+describe('example permission selection', () => {
+  it('shows customers, contacts and sales reps as three objects the Customers and contacts page uses', async () => {
+    const crm = (id: string, title: string) => ({
+      type: 'composite',
+      id,
+      title,
+      actions: [
+        { name: 'view', title: 'View' },
+        { name: 'edit', title: 'Edit' },
+      ],
+      dataScopes: {
+        view: [scope('records', id)],
+        edit: [scope('records', id)],
+      },
+    });
+    const catalog = {
+      ...source,
+      sections: [
+        {
+          name: 'crm',
+          title: 'CRM',
+          order: 0,
+          subsections: [
+            {
+              name: 'crm',
+              title: 'Customers',
+              resources: [
+                crm('example.crm.customers', 'Customers'),
+                crm('example.crm.contacts', 'Contacts'),
+                crm('example.crm.salesReps', 'Sales reps'),
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as AuthorizationOptionsResponse;
+    const { routes } = await resolveAppRuntime(
+      defineAppRuntime({ ...appRuntime, routes: () => [...applicationRoutes] }),
+    );
+    const ws = permissionWorkspace(catalog, routes, {}, words);
+    expect(
+      ws.objects
+        .filter((object) => object.group === 'Customers')
+        .map((object) => object.label),
+    ).toEqual(['Customers', 'Contacts', 'Sales reps']);
+    const page = leaves(ws.menus).find(({ menu }) =>
+      ws.menuPages.get(menu.id)?.includes('customer-contacts'),
+    )?.menu;
+    expect(page?.uses).toEqual({
+      primary: ['composite:example.crm.customers'],
+      related: [
+        'composite:example.crm.contacts',
+        'composite:example.crm.salesReps',
+      ],
+    });
   });
 });

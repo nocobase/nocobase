@@ -205,7 +205,7 @@ it('lists the roles beside the editor, opens the first one and keeps the system 
   );
 });
 
-it('saves menu access with the actions, explains escalation and asks before switching roles with unsaved changes', async () => {
+it('saves menu access apart from the actions, explains escalation and asks before switching roles with unsaved changes', async () => {
   const user = userEvent.setup();
   const roles = [
     { key: 'team', title: 'NocoBase team', grants: [], revision: 'one' },
@@ -213,23 +213,35 @@ it('saves menu access with the actions, explains escalation and asks before swit
   ] as PermissionSet[];
   const calls = api(roles);
   await mount('/settings/roles/team/edit', calls);
-  const open = await screen.findByRole('switch', { name: words.openPage });
-  await waitFor(() => expect(open).not.toBeDisabled());
-  expect(screen.getByText('0 of 4 menus visible')).toBeVisible();
-  await user.click(open);
-  expect(screen.getByText('1 of 4 menus visible')).toBeVisible();
+  const menusTab = await screen.findByRole('tab', {
+    name: new RegExp(`${editor.menusTab}\\s*0 / \\d+`),
+  });
+  expect(menusTab).toHaveAttribute('aria-selected', 'true');
+  const home = screen.getByRole('checkbox', { name: enUS.navigation.home });
+  await waitFor(() =>
+    expect(home).not.toHaveAttribute('aria-disabled', 'true'),
+  );
+  await user.click(home);
+  expect(
+    screen.getByRole('tab', {
+      name: new RegExp(`${editor.menusTab}\\s*1 / \\d+`),
+    }),
+  ).toBeVisible();
   expect(screen.getByText(words.unsaved)).toBeVisible();
 
-  // Administration: changing roles needs reading them and is explained as an escalation.
+  // Business objects: changing roles needs reading them and is explained as an escalation.
   await user.click(
-    screen.getByRole('button', {
-      name: new RegExp(`^${words.permissionManagement}`),
-    }),
+    screen.getByRole('tab', { name: new RegExp(editor.objectsTab) }),
+  );
+  await user.click(
+    within(screen.getByRole('navigation', { name: editor.objects })).getByRole(
+      'button',
+      { name: /^Permission sets/ },
+    ),
   );
   expect(screen.getByText(words.escalation.roles)).toBeVisible();
-  await user.click(screen.getByRole('switch', { name: /Change roles/ }));
-  expect(screen.getByRole('switch', { name: /Read roles/ })).toBeChecked();
-  expect(screen.getByText(editor.riskHint)).toBeVisible();
+  await user.click(screen.getByRole('switch', { name: 'Change roles' }));
+  expect(screen.getByRole('switch', { name: 'Read roles' })).toBeChecked();
   await user.click(
     screen.getByRole('button', { name: words.save, exact: true }),
   );
@@ -238,32 +250,39 @@ it('saves menu access with the actions, explains escalation and asks before swit
       expect.objectContaining({ method: 'PATCH' }),
     ),
   );
-  expect(roles[0]?.grants).toEqual(
-    expect.arrayContaining([
-      {
-        resource: { type: 'page', id: 'start' },
-        actions: [{ action: 'access' }],
-      },
-      {
-        resource: { type: 'settings', id: 'authorization.permission-sets' },
-        actions: [{ action: 'read' }, { action: 'update' }],
-      },
-    ]),
-  );
-  // After saving, the editor stays on the menu it was showing.
+  expect(roles[0]?.grants).toEqual([
+    {
+      resource: { type: 'settings', id: 'authorization.permission-sets' },
+      actions: [{ action: 'read' }, { action: 'update' }],
+    },
+    {
+      resource: { type: 'page', id: 'start' },
+      actions: [{ action: 'access' }],
+    },
+  ]);
+  // After saving, the editor stays on the object it was showing.
   await waitFor(() =>
     expect(screen.queryByText(words.unsaved)).not.toBeInTheDocument(),
   );
-  expect(screen.getByRole('switch', { name: /Change roles/ })).toBeChecked();
+  expect(screen.getByRole('switch', { name: 'Change roles' })).toBeChecked();
+  // The settings page guarded by reading roles now opens for the role.
+  await user.click(
+    screen.getByRole('tab', { name: new RegExp(editor.menusTab) }),
+  );
+  expect(
+    screen.getByRole('checkbox', { name: words.permissionManagement }),
+  ).toBeChecked();
 
   // Switching to another role with an unsaved change asks first.
-  await user.click(screen.getByRole('switch', { name: /Change roles/ }));
+  await user.click(
+    screen.getByRole('checkbox', { name: enUS.navigation.home }),
+  );
   await user.click(screen.getByRole('link', { name: /Support/ }));
   const dialog = await screen.findByRole('alertdialog');
   expect(within(dialog).getByText(words.discardTitle)).toBeVisible();
   await user.click(within(dialog).getByRole('button', { name: words.cancel }));
   expect(
-    screen.getByRole('switch', { name: /Change roles/ }),
+    screen.getByRole('checkbox', { name: enUS.navigation.home }),
   ).not.toBeChecked();
 });
 

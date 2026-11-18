@@ -1,6 +1,5 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
 import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
-import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { describe, expect, it } from 'vitest';
 
@@ -121,7 +120,7 @@ describe('Examples Foundation integration', () => {
   });
 });
 
-it('offers one Features and extensions access control under Administration', async () => {
+it('offers one Features and extensions menu under System settings', async () => {
   const { routes } = await resolveAppRuntime(appRuntime);
   const workspace = permissionWorkspace(
     { sections: [], recordAccess: [], subjectTypes: [], collections: [] },
@@ -132,15 +131,22 @@ it('offers one Features and extensions access control under Administration', asy
       t: (key) => key,
     },
   );
-  const id = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
-  const owners = workspace.modules.flatMap((module) =>
-    module.menus
-      .filter((menu) => menu.actions.some((action) => action.id === id))
-      .map((menu) => ({ module, menu })),
-  );
+  const owners: { path: string[]; label: string }[] = [];
+  const visit = (nodes: typeof workspace.menus, path: string[]): void => {
+    for (const node of nodes) {
+      if (node.children) visit(node.children, [...path, node.label]);
+      else if (
+        workspace.menuPages
+          .get(node.id)
+          ?.includes(CAPABILITY_GUIDE_ACCESS.resource.id)
+      )
+        owners.push({ path, label: node.label });
+    }
+  };
+  visit(workspace.menus, []);
   expect(owners).toHaveLength(1);
-  expect(owners[0]?.module.administration).toBe(true);
-  expect(owners[0]?.menu.label).toBe('nav.capabilityGuide');
+  expect(owners[0]?.path[0]).toBe('settings.title');
+  expect(owners[0]?.label).toBe('nav.capabilityGuide');
   expect(
     routes.find(({ name }) => name === 'capabilityGuideEntry')?.authz,
   ).toEqual(CAPABILITY_GUIDE_ACCESS);

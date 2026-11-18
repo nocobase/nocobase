@@ -289,8 +289,8 @@ describe('template system settings', () => {
         fetch: answerApi(calls),
       },
     );
-    const toggle = await screen.findByRole('switch', {
-      name: enUS.settings.openPage,
+    const toggle = await screen.findByRole('checkbox', {
+      name: enUS.navigation.home,
     });
     await waitFor(() =>
       expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
@@ -298,7 +298,9 @@ describe('template system settings', () => {
     await user.click(toggle);
     await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
     expect(await screen.findByText(enUS.settings.conflict)).toBeVisible();
-    expect(toggle).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: enUS.navigation.home }),
+    ).toBeChecked();
     expect(calls).toHaveBeenCalledWith(
       expect.objectContaining({
         method: 'PATCH',

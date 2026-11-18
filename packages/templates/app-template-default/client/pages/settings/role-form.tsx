@@ -25,7 +25,7 @@ import {
 import { CopyIcon } from 'lucide-react';
 import {
   PermissionEditor,
-  type PermissionGrants,
+  type PermissionValue,
 } from '#components/permission-editor';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
@@ -48,6 +48,8 @@ import {
 } from './permissions-model.js';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
 import { usePermissionEditorLabels } from './permission-editor-labels.js';
+
+const EMPTY_VALUE: PermissionValue = { menus: [], grants: {} };
 
 export interface RolesOutletContext {
   readonly reload: () => void;
@@ -105,7 +107,7 @@ function RoleEditor(): ReactElement {
   );
   const [nameDraft, setNameDraft] = useState<string>();
   const [keyDraft, setKeyDraft] = useState<string>();
-  const [draft, setDraft] = useState<PermissionGrants>();
+  const [draft, setDraft] = useState<PermissionValue>();
   const [filters, setFilters] = useState<PermissionFilters>();
   const [editingFilter, setEditingFilter] = useState<string>();
   const { session } = useAuthentication();
@@ -147,7 +149,10 @@ function RoleEditor(): ReactElement {
     () => (workspace ? draftFromGrants(originalGrants, workspace) : undefined),
     [workspace, originalGrants],
   );
-  const value = useMemo(() => draft ?? loaded?.draft ?? {}, [draft, loaded]);
+  const value = useMemo(
+    () => draft ?? loaded?.draft ?? EMPTY_VALUE,
+    [draft, loaded],
+  );
   const currentFilters = useMemo(
     () => filters ?? loaded?.filters ?? {},
     [filters, loaded],
@@ -172,7 +177,9 @@ function RoleEditor(): ReactElement {
     nameDraft !== undefined ||
     keyDraft !== undefined ||
     (creating
-      ? Boolean(copyFrom) || Object.keys(value).length > 0
+      ? Boolean(copyFrom) ||
+        value.menus.length > 0 ||
+        Object.keys(value.grants).length > 0
       : Boolean(
           workspace &&
           loaded &&
@@ -221,7 +228,11 @@ function RoleEditor(): ReactElement {
       form.querySelector<HTMLInputElement>('input:invalid')?.focus();
       return;
     }
-    const incomplete = unconfiguredFilter(value, currentFilters, workspace);
+    const incomplete = unconfiguredFilter(
+      value.grants,
+      currentFilters,
+      workspace,
+    );
     if (incomplete) {
       setEditingFilter(filterKey(incomplete.action, incomplete.scope));
       return;
@@ -283,11 +294,11 @@ function RoleEditor(): ReactElement {
     }
   };
 
-  const modules = workspace
+  const objects = workspace
     ? withPermissionFilters(
-        workspace.modules,
+        workspace.objects,
         workspace,
-        value,
+        value.grants,
         currentFilters,
         (key, fallback) => t(key, { defaultValue: fallback ?? key }),
         editingFilter,
@@ -425,7 +436,8 @@ function RoleEditor(): ReactElement {
             className='flex flex-col gap-4'
           >
             <PermissionEditor
-              modules={modules}
+              menus={workspace?.menus ?? []}
+              objects={objects}
               value={value}
               onChange={(next) => setDraft(next)}
               unrestricted={unrestricted}
