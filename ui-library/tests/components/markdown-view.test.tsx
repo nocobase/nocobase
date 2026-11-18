@@ -117,20 +117,25 @@ describe('MarkdownView links', () => {
           '[relative](docs/guide.md)',
           '[external](https://example.com)',
           '[mail](mailto:a@example.com)',
+          '[phone](tel:+8610123)',
+          '[text](sms:+8610123)',
         ].join(' ')}
       />,
     );
     const attrs = [...container.querySelectorAll('a')].map((link) => [
       link.textContent,
+      link.getAttribute('href'),
       link.getAttribute('target'),
       link.getAttribute('rel'),
     ]);
     expect(attrs).toEqual([
-      ['top', null, null],
-      ['same origin', '_blank', 'noopener noreferrer'],
-      ['relative', '_blank', 'noopener noreferrer'],
-      ['external', '_blank', 'noopener noreferrer'],
-      ['mail', null, null],
+      ['top', '#top', null, null],
+      ['same origin', '/main/issues/1', '_blank', 'noopener noreferrer'],
+      ['relative', 'docs/guide.md', '_blank', 'noopener noreferrer'],
+      ['external', 'https://example.com', '_blank', 'noopener noreferrer'],
+      ['mail', 'mailto:a@example.com', null, null],
+      ['phone', 'tel:+8610123', null, null],
+      ['text', 'sms:+8610123', null, null],
     ]);
   });
 
@@ -138,13 +143,16 @@ describe('MarkdownView links', () => {
     const { container } = render(
       <MarkdownView
         content={
-          '[run](javascript:alert(1)) <b>bold</b> ![x](javascript:alert(2))'
+          '[run](javascript:alert(1)) [data](data:text/html,x) [vb](VBScript:x) <b>bold</b> ![x](javascript:alert(2))'
         }
       />,
     );
-    const link = container.querySelector('a');
-    expect(link).not.toHaveAttribute('href');
-    expect(link).not.toHaveAttribute('target');
+    const links = [...container.querySelectorAll('a')];
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).not.toHaveAttribute('href');
+      expect(link).not.toHaveAttribute('target');
+    }
     expect(container.querySelector('b')).toBeNull();
     expect(container.querySelector('img')).toBeNull();
     expect(container).toHaveTextContent('<b>bold</b>');

@@ -29,7 +29,7 @@ describe('KnowledgeMarkdown on MarkdownView', () => {
     '',
     '## Setup',
     '',
-    'Read [the intro](#setup), [another doc](/main/knowledge/x) or [site](https://example.com).',
+    'Read [the intro](#setup), [another doc](/main/knowledge/x) or [site](https://example.com); call [us](tel:+8610123) or [text](sms:+8610123).',
     '',
     '### Setup',
     '',
@@ -74,6 +74,8 @@ describe('KnowledgeMarkdown on MarkdownView', () => {
       ['#setup', null],
       ['/main/knowledge/x', '_blank'],
       ['https://example.com', '_blank'],
+      ['tel:+8610123', null],
+      ['sms:+8610123', null],
     ]);
   });
 

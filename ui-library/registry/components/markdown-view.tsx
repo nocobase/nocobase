@@ -38,9 +38,17 @@ const MENTION_HREF = /^mention:\/\/([a-z][a-z0-9_]{1,31})\//u;
 /** Links the browser hands to another application rather than to a web page. */
 const SYSTEM_HREF = /^(?:mailto|tel|sms):/iu;
 
-/** react-markdown's URL sanitisation, keeping mention links for the chips. */
+/** Phone and text-message links, which react-markdown's sanitisation would drop. */
+const PHONE_HREF = /^(?:tel|sms):/iu;
+
+/**
+ * react-markdown's URL sanitisation, keeping mention links for the chips and phone and text-message links for the
+ * system to handle.
+ */
 export function markdownUrlTransform(url: string): string {
-  return MENTION_HREF.test(url) ? url : defaultUrlTransform(url);
+  return MENTION_HREF.test(url) || PHONE_HREF.test(url)
+    ? url
+    : defaultUrlTransform(url);
 }
 
 /**
