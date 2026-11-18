@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
+import { z } from 'zod';
 import type { ModelMessage } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { createHarness, type Harness } from './harness.js';
@@ -211,6 +212,70 @@ it('sends the provider default when neither a scope nor the conversation names a
   const agent = await f.service.realtime(actor, { selectedModel: withOff });
   await send(agent);
   expect(f.sent).toEqual(['provider-default']);
+});
+
+it('refuses to run a conversation whose saved level is not one of the seven, without calling the SDK, until a level is chosen', async () => {
+  const f = await fixture();
+  const agent = await f.service.realtime(actor, { selectedModel: withOff });
+  const session = await f.sessions.load(actor.user.id, agent.sessionId);
+  // A value an earlier preview build saved.
+  await f.sessions.configure(
+    actor.user.id,
+    agent.sessionId,
+    { ...session.config, thinking: 'off' as ReasoningLevel },
+    session.model,
+  );
+  await expect(agent.send(messages)).rejects.toThrow(
+    /Choose a thinking level again/,
+  );
+  expect(f.sent).toEqual([]);
+  // The conversation still opens, and choosing a level lets it run.
+  expect((await f.service.configuration(actor, agent.sessionId)).thinking).toBe(
+    'off',
+  );
+  await f.service.configure(actor, agent.sessionId, { thinking: 'none' });
+  await send(agent);
+  expect(f.sent).toEqual(['none']);
+});
+
+it('keeps the saved level when an update revisits the scope that set the Agent default', async () => {
+  const f = await fixture();
+  f.configurator.registerOnlineAgentScope('careful', {
+    thinking: 'high',
+    systemPromptTemplate: {
+      variableSchema: z.object({ count: z.number().optional() }),
+      template: () => 'Careful',
+    },
+  });
+  const agent = await f.service.realtime(actor, {
+    selectedModel: withOff,
+    scope: ['careful'],
+    thinking: 'provider-default',
+  });
+  const level = async () =>
+    (await f.service.configuration(actor, agent.sessionId)).thinking;
+  expect(await level()).toBe('provider-default');
+  // Only the business variables change, as the configuration update sends them.
+  await f.service.configure(
+    actor,
+    agent.sessionId,
+    { context: { variable: { count: 3 } } },
+    undefined,
+    'http',
+  );
+  expect(await level()).toBe('provider-default');
+  await f.service.configure(actor, agent.sessionId, { thinking: 'low' });
+  // Only the same scope is sent again.
+  await f.service.configure(
+    actor,
+    agent.sessionId,
+    { scope: ['careful'] },
+    undefined,
+    'http',
+  );
+  expect(await level()).toBe('low');
+  await send(agent);
+  expect(f.sent).toEqual(['low']);
 });
 
 it('records the provider package’s warning about the level it was sent', async () => {

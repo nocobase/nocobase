@@ -7,7 +7,7 @@ import {
   thinkingWarnings,
   type ThinkingNotice,
 } from '../thinking.js';
-import { effectiveTools } from '../configuration.js';
+import { assertRunnableThinking, effectiveTools } from '../configuration.js';
 import { FileInputError } from '../../files/errors.js';
 import {
   fileInputFailureTitles,
@@ -177,6 +177,8 @@ export class NativeOnlineAgent {
         !config.model.includes(`${selected.modelService}/${selected.model}`)
       )
         throw invalid('The selected model is outside this configuration.');
+      // The saved configuration becomes the one that runs here, so a level an earlier build saved is refused here, once.
+      assertRunnableThinking(config);
       // The level goes to the SDK as it is; the provider's default when neither a scope nor the conversation names one.
       thinking = config.thinking ?? 'provider-default';
       const changedModel =

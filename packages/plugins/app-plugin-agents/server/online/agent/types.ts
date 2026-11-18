@@ -68,7 +68,10 @@ export type OnlineAgentConfig = {
   toolVersions: Record<string, string>;
   /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
   model?: string[];
-  /** The conversation's thinking level; the provider's default when absent. */
+  /**
+   * The conversation's thinking level; the provider's default when absent. A configuration an earlier preview build
+   * saved may hold another string: `assertRunnableThinking` refuses it where the saved configuration runs.
+   */
   thinking?: ReasoningLevel;
   webSearch?: boolean;
 };

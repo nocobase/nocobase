@@ -4,7 +4,7 @@ import { registerSandboxTools } from '../sandbox/tools.js';
 import type { Tool } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
-import { isReasoningLevel } from '../../../shared/models.js';
+import { isReasoningLevel, REASONING_LEVELS } from '../../../shared/models.js';
 import { jsonSafe, strictJson } from './messages/json.js';
 import type {
   OnlineAgentJson,
@@ -36,6 +36,14 @@ function resultMethod(value: unknown, key: string | symbol): boolean {
     current = Object.getPrototypeOf(current) as object | null;
   }
   return false;
+}
+
+const THINKING_INVALID = `thinking must be one of ${REASONING_LEVELS.join(', ')}.`;
+
+/** A configuration about to run: one saved before the levels were these keeps another string, which never runs. */
+export function assertRunnableThinking(config: OnlineAgentConfig): void {
+  if (config.thinking !== undefined && !isReasoningLevel(config.thinking))
+    throw invalid(`${THINKING_INVALID} Choose a thinking level again.`);
 }
 
 function supported(value: object) {
@@ -204,6 +212,8 @@ export class OnlineAgentConfigurator {
     const layers: {
       value: OnlineAgentScope | OnlineAgentScopeProvider;
       selected: boolean;
+      /** A scope the configuration already had, visited again: its level does not replace the saved one. */
+      revisited?: boolean;
     }[] = previous
       ? []
       : this.globals.map((value) => ({ value, selected: false }));
@@ -213,11 +223,15 @@ export class OnlineAgentConfigurator {
       []) {
       const found = this.scopes.get(name);
       if (!found) throw invalid(`Scope ${name} is not registered.`);
-      layers.push(...found.map((value) => ({ value, selected: true })));
+      const revisited =
+        previous?.thinking !== undefined && previous.scope.includes(name);
+      layers.push(
+        ...found.map((value) => ({ value, selected: true, revisited })),
+      );
     }
     layers.push({ value: options, selected: false });
     const enteringPrompt = result.systemPrompt;
-    for (const { value: layer, selected } of layers) {
+    for (const { value: layer, selected, revisited } of layers) {
       const current: OnlineAgentContext = {
         ...context,
         variable: result.variable,
@@ -253,13 +267,14 @@ export class OnlineAgentConfigurator {
         result.model = [...scope.model];
         hasModel = true;
       }
-      if (scope.thinking !== undefined) {
-        // Scopes come from code, possibly JavaScript or a provider function: checked here, where each is resolved.
-        if (!isReasoningLevel(scope.thinking))
-          throw invalid(
-            'thinking must be one of provider-default, none, minimal, low, medium, high or xhigh.',
-          );
-        result.thinking = scope.thinking;
+      if (layer === options) {
+        // The caller's own choice, validated by its HTTP schema or typed in code, always applies.
+        if (options.thinking !== undefined) result.thinking = options.thinking;
+      } else if (scope.thinking !== undefined) {
+        // A registered scope comes from code, possibly JavaScript or a provider function: checked once, here.
+        if (!isReasoningLevel(scope.thinking)) throw invalid(THINKING_INVALID);
+        // A scope sets the Agent's default; revisiting it for a later update keeps the level already saved.
+        if (!revisited) result.thinking = scope.thinking;
       }
       if (scope.webSearch !== undefined) {
         if (typeof scope.webSearch !== 'boolean')
