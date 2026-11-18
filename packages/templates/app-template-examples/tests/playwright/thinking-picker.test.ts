@@ -18,7 +18,7 @@ test.use({
 for (const width of [1440, 375, 412]) {
   test.describe(`${width}px`, () => {
     test.use({ isMobile: width < 768, hasTouch: width < 768 });
-    test(`thinking picker keeps B1 inline and persists choices at ${width}px`, async ({
+    test(`thinking picker keeps its settings inline and persists choices at ${width}px`, async ({
       page,
     }) => {
       page.setDefaultTimeout(15_000);
