@@ -271,15 +271,13 @@ describe('template system settings', () => {
             packageName: settingsNamespace,
             routes: defineAppRoutes([
               {
-                name: 'roles',
-                path: '/role-config',
+                name: 'contracts',
+                path: '/contracts',
+                navigation: { title: 'navigation.home' },
                 componentLoader: async () => ({ default: () => null }),
                 authz: {
-                  resource: {
-                    type: 'settings',
-                    id: 'authorization.permission-sets',
-                  },
-                  action: 'read',
+                  resource: { type: 'page', id: 'contracts' },
+                  action: 'access',
                 },
               },
             ]),
@@ -291,7 +289,9 @@ describe('template system settings', () => {
         fetch: answerApi(calls),
       },
     );
-    const toggle = await screen.findByRole('checkbox', { name: 'Read roles' });
+    const toggle = await screen.findByRole('switch', {
+      name: enUS.settings.openPage,
+    });
     await waitFor(() =>
       expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
     );
@@ -306,11 +306,8 @@ describe('template system settings', () => {
           expectedRevision: 'version-1',
           grants: [
             {
-              resource: {
-                type: 'settings',
-                id: 'authorization.permission-sets',
-              },
-              actions: [{ action: 'read' }],
+              resource: { type: 'page', id: 'contracts' },
+              actions: [{ action: 'access' }],
             },
           ],
         }),

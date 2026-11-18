@@ -235,10 +235,11 @@ export function permissionWorkspace(
   ): PermissionScopeOption[] => {
     const rank = (key: string): number => {
       if (order?.includes(key)) return order.indexOf(key);
-      // Without a declared order, All records is the widest and a custom filter is only known to be narrower.
+      // Undeclared, All records is the widest; a custom filter is only known to be narrower than it, so it follows
+      // a declared order and otherwise comes right after All records.
       if (key === 'allRecords') return -2;
-      if (key === 'customFilter') return -1;
-      return (order?.length ?? 0) + keys.indexOf(key);
+      if (key === 'customFilter') return order ? order.length : -1;
+      return (order?.length ?? 0) + 1 + keys.indexOf(key);
     };
     return [
       ...[...keys]

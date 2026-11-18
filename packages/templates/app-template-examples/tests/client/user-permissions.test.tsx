@@ -10,14 +10,37 @@ import {
   defineAppRoutes,
   defineClientPlugin,
 } from '@nocobase/app-client/plugins';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import RoleForm from '../../client/pages/settings/role-form.js';
 import RolesPage from '../../client/pages/settings/roles.js';
+import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
+
+// The System settings group of this application's routes, without its business pages.
+const settingsShellRoutes = defineAppRoutes([
+  {
+    name: 'systemManagement',
+    navigation: { title: 'settings.title' },
+    children: [
+      {
+        name: 'settingsHome',
+        path: '/settings',
+        auth: 'required',
+        authz: 'skip',
+        componentLoader: async () => ({ default: () => null }),
+      },
+      {
+        name: 'settingsAccount',
+        navigation: { title: 'settings.categories.account', order: 10 },
+        children: [],
+      },
+    ],
+  },
+]);
 
 const namespace = '@nocobase/user-permissions-test';
 const namespaces = {
@@ -95,17 +118,7 @@ describe('user permission configuration', () => {
             plugins: [
               defineClientPlugin({
                 packageName: namespace,
-                routes: defineAppRoutes([
-                  {
-                    name: 'users',
-                    path: '/users',
-                    authz: {
-                      resource: { type: 'user', id: '*' },
-                      action: 'read',
-                    },
-                    componentLoader: async () => ({ default: () => null }),
-                  },
-                ]),
+                routes: [settingsShellRoutes, systemSettingsRoutes],
               })(),
             ],
             services: (app: ClientApplication) =>
@@ -116,29 +129,26 @@ describe('user permission configuration', () => {
             fetch: answerApi(calls),
           },
         );
+      const openUsers = async () =>
+        user.click(
+          await screen.findByRole('button', {
+            name: new RegExp(`^${words.users}`),
+          }),
+        );
       const first = await mount();
+      await openUsers();
       const labels = [
         words.createUsers,
         words.updateUsers,
         words.revokeSessions,
       ];
       for (const label of labels) {
-        const toggle = await screen.findByRole('checkbox', { name: label });
-        await waitFor(() =>
-          expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
-        );
+        const toggle = await screen.findByRole('switch', { name: label });
+        await waitFor(() => expect(toggle).not.toBeDisabled());
         expect(toggle).not.toBeChecked();
         await user.click(toggle);
       }
-      expect(
-        screen.getByRole('heading', { name: words.userInformation }),
-      ).toBeVisible();
-      expect(
-        screen.getByRole('heading', { name: words.accountSecurity }),
-      ).toBeVisible();
-      expect(
-        screen.getByRole('heading', { name: words.roleAssignment }),
-      ).toBeVisible();
+      // The Users pages implement exactly these operations; changing a user's roles is marked high risk.
       const permissionNames = [
         words.readUsers,
         words.createUsers,
@@ -148,27 +158,12 @@ describe('user permission configuration', () => {
         words.revokeSessions,
         words.assignRole,
       ];
-      const permissionCheckboxes = permissionNames.map((name) =>
-        screen.getByRole('checkbox', { name, exact: true }),
-      );
-      expect(screen.getAllByRole('checkbox')).toHaveLength(
-        permissionNames.length,
-      );
+      for (const name of permissionNames)
+        expect(screen.getByRole('switch', { name })).toBeVisible();
       expect(
-        screen.queryByRole('checkbox', { name: words.inviteUsers }),
+        screen.queryByRole('switch', { name: words.inviteUsers }),
       ).not.toBeInTheDocument();
-      const rowIds = permissionCheckboxes.map((node) => node.id);
-      expect(rowIds).not.toContain('');
-      expect(new Set(rowIds).size).toBe(permissionNames.length);
-      const status = within(
-        screen.getByRole('tablist', { name: words.permissionStatus }),
-      );
-      expect(status.getAllByRole('tab')).toHaveLength(3);
-      expect(
-        status.getByRole('tab', { name: words.permissionAll, exact: true }),
-      ).toHaveAttribute('aria-selected', 'true');
-      for (const name of [words.permissionGranted, words.permissionUngranted])
-        expect(status.getByRole('tab', { name, exact: true })).toBeVisible();
+      expect(screen.getByText(words.escalation.users)).toBeVisible();
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );
@@ -193,13 +188,12 @@ describe('user permission configuration', () => {
       );
       first.unmount();
       await mount();
+      await openUsers();
       for (const label of labels)
         expect(
-          await screen.findByRole('checkbox', { name: label }),
+          await screen.findByRole('switch', { name: label }),
         ).toBeChecked();
-      await user.click(
-        screen.getByRole('checkbox', { name: words.updateUsers }),
-      );
+      await user.click(screen.getByRole('switch', { name: words.updateUsers }));
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );

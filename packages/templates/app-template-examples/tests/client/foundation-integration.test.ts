@@ -1,8 +1,5 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
-import {
-  pagePermissionResources,
-  permissionNavigationSections,
-} from '../../client/pages/settings/page-permissions.js';
+import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
 import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { describe, expect, it } from 'vitest';
@@ -124,35 +121,26 @@ describe('Examples Foundation integration', () => {
   });
 });
 
-it('offers one Features and extensions access control under system configuration', async () => {
+it('offers one Features and extensions access control under Administration', async () => {
   const { routes } = await resolveAppRuntime(appRuntime);
-  const pages = pagePermissionResources(routes, {}, (path) => path);
-  const controls = pages.filter(
-    ({ id }) => id === CAPABILITY_GUIDE_ACCESS.resource.id,
-  );
-  expect(controls).toHaveLength(1);
-  expect(controls[0]).toMatchObject({
-    title: {
-      key: 'nav.capabilityGuide',
-      ns: '@nocobase/app-plugin-foundation',
-    },
-    actions: [{ name: 'access' }],
-  });
-  const row = {
-    id: permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access'),
-    label: 'Access',
-    enabled: false,
-  };
-  const sections = permissionNavigationSections(
-    [{ id: 'pages', title: 'Pages', groups: [{ id: 'guide', rows: [row] }] }],
+  const workspace = permissionWorkspace(
+    { sections: [], recordAccess: [], subjectTypes: [], collections: [] },
     routes,
     {},
-    (path) => path,
-    (value) => (typeof value === 'string' ? value : value.key),
+    {
+      text: (value) => (typeof value === 'string' ? value : value.key),
+      t: (key) => key,
+    },
   );
-  expect(sections).toHaveLength(1);
-  expect(sections[0]?.id).toBe('configuration');
-  expect(sections[0]?.groups.flatMap(({ rows }) => rows)).toEqual([row]);
+  const id = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
+  const owners = workspace.modules.flatMap((module) =>
+    module.menus
+      .filter((menu) => menu.actions.some((action) => action.id === id))
+      .map((menu) => ({ module, menu })),
+  );
+  expect(owners).toHaveLength(1);
+  expect(owners[0]?.module.administration).toBe(true);
+  expect(owners[0]?.menu.label).toBe('nav.capabilityGuide');
   expect(
     routes.find(({ name }) => name === 'capabilityGuideEntry')?.authz,
   ).toEqual(CAPABILITY_GUIDE_ACCESS);

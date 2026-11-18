@@ -326,6 +326,10 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      {
+        name: 'settingsPermissionCheck',
+        authorizedAs: 'settings:authorization.inspector',
+      },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },
       {
         name: 'workflowDefinitions',

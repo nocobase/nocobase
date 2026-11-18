@@ -215,11 +215,11 @@ export function grantsFromDraft(
       resource: { type: resource.type, id: resource.id },
       actions: [],
     };
+    // An existing action keeps its place, so saving an unchanged role stores the same list.
+    const index = grant.actions.findIndex((item) => item.action === action);
     const actions = grant.actions.filter((item) => item.action !== action);
-    next.set(key, {
-      ...grant,
-      actions: entry ? [...actions, entry] : actions,
-    });
+    if (entry) actions.splice(index === -1 ? actions.length : index, 0, entry);
+    next.set(key, { ...grant, actions });
   };
 
   for (const [id, binding] of workspace.bindings) {

@@ -87,7 +87,8 @@ export default function RolesPage(): ReactElement {
   );
   const selected =
     matchPath(`${base}/:key/edit`, location.pathname)?.params.key ?? undefined;
-  const creatingRole = Boolean(matchPath(`${base}/create`, location.pathname));
+  // Only the bare list opens the first role; any child route, such as New role, keeps its own content.
+  const atList = Boolean(matchPath(base || '/', location.pathname));
   const first = roles[0];
   const context: RolesOutletContext = { reload: request.reload, base };
   const create = canCreate ? (
@@ -191,7 +192,7 @@ export default function RolesPage(): ReactElement {
           </ListFeedback>
         </aside>
         <section className='min-w-0'>
-          {!selected && !creatingRole && first ? (
+          {atList && first ? (
             <Navigate
               replace
               to={{ pathname: `${base}/${encodeURIComponent(first.key)}/edit` }}

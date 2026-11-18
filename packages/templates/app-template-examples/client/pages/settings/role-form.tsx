@@ -258,8 +258,9 @@ function RoleEditor(): ReactElement {
       if (!saved) return;
       parent.reload();
       toaster.show({ type: 'success', title: t('settings.saved', { name }) });
-      leave.allow();
-      if (creating)
+      if (creating) {
+        // Only the navigation to the new role is allowed through; an edited role stays open and keeps its guard.
+        leave.allow();
         void navigate(
           {
             pathname: `${parent.base}/${encodeURIComponent(input.key)}/edit`,
@@ -267,7 +268,7 @@ function RoleEditor(): ReactElement {
           },
           { replace: true },
         );
-      else {
+      } else {
         originalRevisionRef.current = undefined;
         setSavedFrom(request.data);
         request.reload();
