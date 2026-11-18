@@ -136,6 +136,8 @@ const popoverStyle = css`
   }
 `;
 
+const siderToggleZIndex = 200;
+
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
   const { token } = antdTheme.useToken();
   const customToken = token as CustomToken;
@@ -162,7 +164,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
                 .ant-pro-sider-collapsed-button {
                   top: 64px;
                   left: ${props.collapsed ? 52 : (customToken.siderWidth || 200) - 12}px;
-                  z-index: 200;
+                  z-index: ${siderToggleZIndex};
                   transition: left 0.2s;
                 }
               `}
@@ -659,6 +661,11 @@ export const AdminLayoutComponent = observer((props: any) => {
       .ant-layout-header.ant-pro-layout-header,
       .ant-pro-top-nav-header {
         z-index: 101 !important;
+      }
+
+      /* The switcher popup is mounted inside the header, while the sider toggle is portaled outside it. */
+      .ant-layout-header.ant-pro-layout-header:has(.ant-pro-layout-apps-icon-active) {
+        z-index: ${siderToggleZIndex + 1} !important;
       }
 
       .ant-pro-layout-apps-popover {
