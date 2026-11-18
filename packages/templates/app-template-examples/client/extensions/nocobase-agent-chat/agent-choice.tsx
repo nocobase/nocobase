@@ -1,4 +1,8 @@
-import { useAgentText } from '@nocobase/app-plugin-agents/client/chat';
+import {
+  thinkingControlOf,
+  thinkingLevelText,
+  useAgentText,
+} from '@nocobase/app-plugin-agents/client/chat';
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
 import type {
   ModelRef,
@@ -6,15 +10,46 @@ import type {
 } from '@nocobase/app-plugin-agents/shared/models';
 import type { ReactElement } from 'react';
 
-import { AgentPicker } from '#components/agent-picker';
+import { AgentPicker, type AgentPickerModels } from '#components/agent-picker';
 
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';
+import { ThinkingMenu, type ThinkingMenuProps } from './thinking-menu.js';
+
+type ThinkingChoice = Omit<ThinkingMenuProps, 'capabilities'>;
+
+function modelSummary(
+  thinking: ThinkingChoice | undefined,
+  t: ReturnType<typeof useChatTranslation>['t'],
+): AgentPickerModels['summary'] {
+  return (capabilities) => {
+    const control = thinkingControlOf(capabilities);
+    if (!thinking || control.kind === 'none') return null;
+    const text =
+      control.kind === 'toggle' &&
+      thinking.value !== 'default' &&
+      thinking.value !== 'off'
+        ? t('chat.thinking.on')
+        : thinkingLevelText(thinking.value, t);
+    return { text, label: t('chat.thinking.choose', { level: text }) };
+  };
+}
+
+function modelSettings(
+  thinking?: ThinkingChoice,
+): AgentPickerModels['renderSettings'] {
+  if (!thinking) return undefined;
+  return (_model, capabilities) =>
+    thinkingControlOf(capabilities).kind === 'none' ? null : (
+      <ThinkingMenu {...thinking} capabilities={capabilities} />
+    );
+}
 
 export interface NewChatChoiceProps {
   readonly agents: readonly ChatAgent[];
   readonly agent: ChatAgent | null;
   readonly services: readonly ModelService[];
   readonly model: ModelRef | null;
+  readonly thinking?: ThinkingChoice;
   readonly onModelChange: (model: ModelRef) => void;
   readonly onAgentChange: (agentId: string) => void;
   readonly modelsDisabled?: boolean;
@@ -27,6 +62,7 @@ export function NewChatChoice({
   agent,
   services,
   model,
+  thinking,
   onModelChange,
   onAgentChange,
   modelsDisabled,
@@ -48,6 +84,8 @@ export function NewChatChoice({
               value: agent?.id === 'online' ? model : null,
               onSelect: onModelChange,
               disabled: modelsDisabled ?? false,
+              renderSettings: modelSettings(thinking),
+              summary: modelSummary(thinking, t),
             },
           }
         : {})}
@@ -60,6 +98,7 @@ export function NewChatChoice({
             : labels.modelPlaceholder,
       }}
       disabled={disabled ?? false}
+      showHint={native ? false : undefined}
       appearance='toolbar'
       className='h-7 shrink px-1.5 @md:px-2'
       data-testid='chat-agent-picker'
@@ -72,12 +111,14 @@ export function ConversationModelChoice({
   services,
   model,
   allowedModels,
+  thinking,
   onModelChange,
   disabled,
 }: {
   readonly services: readonly ModelService[];
   readonly model: ModelRef | null;
   readonly allowedModels?: readonly string[];
+  readonly thinking?: ThinkingChoice;
   readonly onModelChange: (model: ModelRef) => void;
   readonly disabled: boolean;
 }): ReactElement {
@@ -101,6 +142,8 @@ export function ConversationModelChoice({
         value: model,
         onSelect: onModelChange,
         disabled,
+        renderSettings: modelSettings(thinking),
+        summary: modelSummary(thinking, t),
       }}
       labels={{
         ...labels,
@@ -113,6 +156,7 @@ export function ConversationModelChoice({
         noResults: t('chat.agents.noMatchingModels'),
       }}
       disabled={disabled}
+      showHint={false}
       appearance='toolbar'
       className='h-7 shrink px-1.5 @md:px-2'
       data-testid='chat-model-picker'

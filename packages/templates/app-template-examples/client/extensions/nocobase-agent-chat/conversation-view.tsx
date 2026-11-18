@@ -63,7 +63,6 @@ import { cn } from 'cn';
 import { NewChatChoice, ConversationModelChoice } from './agent-choice.js';
 import { AgentNotice } from './agent-status.js';
 import { errorStatus, useChatTranslation } from './chat-i18n.js';
-import { ThinkingMenu } from './thinking-menu.js';
 import { useChatMode } from './chat-mode.js';
 import { LoadError } from './chat-ui.js';
 import { Composer } from './composer.js';
@@ -675,6 +674,36 @@ function ConversationBody({
   const carriesFiles = (event: DragEvent<HTMLElement>): boolean =>
     addFilesRef.current !== null && event.dataTransfer.types.includes('Files');
 
+  const thinkingChoice = {
+    value: thinkingValue,
+    disabled:
+      running ||
+      resend.isPending ||
+      stopping ||
+      modelChangeBlocked ||
+      catalog.isFetching ||
+      !catalog.isSuccess ||
+      chatController.submissions.blocked(
+        conversationId,
+        `registry:${source}:${conversationId ?? 'new'}`,
+      ),
+    onChange: (level: ReasoningLevel) => {
+      // The mixed picker also lists Runner agents, but only Online models own thinking.
+      if (!thinkingModel || (!nativeConversation && target?.id !== 'online'))
+        return;
+      if (!nativeConversation) {
+        setChosenThinking(level);
+        thinkingMemory.remember(thinkingModel, level);
+        return;
+      }
+      // Remember the level only after the conversation has saved it.
+      selectModel.mutate(
+        { thinking: level },
+        { onSuccess: () => thinkingMemory.remember(thinkingModel, level) },
+      );
+    },
+  };
+
   return (
     <section
       className={cn(
@@ -1031,6 +1060,7 @@ function ConversationBody({
                   <ConversationModelChoice
                     services={catalog.data ?? []}
                     model={configuration.data?.selectedModel ?? null}
+                    thinking={thinkingChoice}
                     allowedModels={configuration.data?.model}
                     disabled={
                       running ||
@@ -1071,6 +1101,7 @@ function ConversationBody({
                   agent={target}
                   services={catalog.data ?? []}
                   model={model}
+                  thinking={thinkingChoice}
                   modelsDisabled={
                     catalog.isFetching || !catalog.isSuccess || !hasChatModels
                   }
@@ -1081,7 +1112,6 @@ function ConversationBody({
                     selectConversation(null, 'online', {
                       preserveComposer: true,
                     });
-                    focusComposer();
                   }}
                   onAgentChange={(agentId) => {
                     setChosenSearch(false);
@@ -1093,40 +1123,6 @@ function ConversationBody({
                   }}
                 />
               )}
-              {(nativeConversation || (target?.id === 'online' && model)) &&
-              thinkingModel ? (
-                <ThinkingMenu
-                  capabilities={capabilitiesOf(thinkingModel)}
-                  value={thinkingValue}
-                  disabled={
-                    running ||
-                    resend.isPending ||
-                    stopping ||
-                    modelChangeBlocked ||
-                    catalog.isFetching ||
-                    !catalog.isSuccess ||
-                    chatController.submissions.blocked(
-                      conversationId,
-                      `registry:${source}:${conversationId ?? 'new'}`,
-                    )
-                  }
-                  onChange={(level) => {
-                    if (!nativeConversation) {
-                      setChosenThinking(level);
-                      thinkingMemory.remember(thinkingModel, level);
-                      return;
-                    }
-                    // Remembered for the model only once the conversation saved it.
-                    selectModel.mutate(
-                      { thinking: level },
-                      {
-                        onSuccess: () =>
-                          thinkingMemory.remember(thinkingModel, level),
-                      },
-                    );
-                  }}
-                />
-              ) : null}
             </div>
           }
           notice={

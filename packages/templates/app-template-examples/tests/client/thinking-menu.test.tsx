@@ -187,7 +187,15 @@ beforeEach(() => {
   });
 });
 afterEach(() => agentsQueryClient().clear());
-const menu = () => screen.findByTestId('chat-thinking-menu');
+async function openPicker(user = userEvent.setup()) {
+  const picker = await screen.findByTestId('chat-model-picker');
+  await waitFor(() => expect(picker).toBeEnabled());
+  await user.click(picker);
+  await screen.findByRole('menu');
+  return picker;
+}
+const control = () => screen.getByTestId('chat-thinking-control');
+const summary = () => screen.getByTestId('agent-picker-model-summary');
 const configPatches = () =>
   host.request.mock.calls
     .map(([input]) => input)
@@ -198,123 +206,147 @@ const configPatches = () =>
     )
     .map((input) => input.json);
 
-it('chooses a model’s thinking level beside the model, saves it to the conversation and remembers it for the model', async () => {
+it('edits thinking below the selected model without a second menu or Done button, and saves only successful choices', async () => {
   mount();
-  const trigger = await menu();
-  await waitFor(() => expect(trigger).toBeEnabled());
-  expect(trigger).toHaveAccessibleName('Thinking level: Default');
+  expect(screen.queryByTestId('chat-thinking-menu')).toBeNull();
   const user = userEvent.setup();
-  await user.click(trigger);
+  const picker = await openPicker(user);
+  expect(control()).toHaveAccessibleName('Thinking level: Default');
+  expect(summary()).toHaveTextContent('· Default');
+  expect(picker).toHaveAccessibleName(/Thinking level: Default/);
+  expect(control().closest('[data-model-option]')).toHaveAttribute(
+    'data-model-option',
+    'first',
+  );
   expect(
-    (await screen.findAllByRole('menuitemradio')).map(
-      (item) => item.textContent,
-    ),
+    screen.getAllByRole('menuitemradio').map((item) => item.textContent),
   ).toEqual(['Default', 'Off', 'Low', 'High']);
+  expect(screen.queryByRole('button', { name: /done/i })).toBeNull();
   await user.click(screen.getByRole('menuitemradio', { name: 'High' }));
   await waitFor(() =>
-    expect(trigger).toHaveAccessibleName('Thinking level: High'),
+    expect(control()).toHaveAccessibleName('Thinking level: High'),
   );
+  expect(screen.getByRole('menu')).toBeVisible();
   expect(configPatches()).toEqual([{ config: { thinking: 'high' } }]);
   expect(readThinking('/', first)).toBe('high');
-  // Default stays a choice, restoring the provider's own setting.
-  await user.click(await menu());
-  await user.click(
-    await screen.findByRole('menuitemradio', { name: 'Default' }),
+  expect(summary()).toHaveTextContent('· High');
+  expect(picker).toHaveAccessibleName(/Thinking level: High/);
+  await waitFor(() =>
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Default' }),
+    ).not.toHaveAttribute('aria-disabled', 'true'),
   );
-  await waitFor(async () =>
-    expect(await menu()).toHaveAccessibleName('Thinking level: Default'),
+  await user.click(screen.getByRole('menuitemradio', { name: 'Default' }));
+  await waitFor(() =>
+    expect(control()).toHaveAccessibleName('Thinking level: Default'),
   );
   expect(readThinking('/', first)).toBe('default');
+  expect(summary()).toHaveTextContent('· Default');
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+  expect(picker).toHaveFocus();
 });
 
 it('shows the conversation’s saved level over the one remembered for the model', async () => {
   rememberThinking('/', first, 'high');
   config = { ...config, thinking: 'low' };
   mount();
-  expect(await menu()).toHaveAccessibleName('Thinking level: Low');
+  await openPicker();
+  expect(control()).toHaveAccessibleName('Thinking level: Low');
+  expect(summary()).toHaveTextContent('· Low');
   expect(configPatches()).toEqual([]);
 });
 
-it('switches models with the level remembered for the new one, or default when it no longer takes it', async () => {
+it('switches inline settings and model memory, and immediately closes for a model without thinking levels', async () => {
   rememberThinking('/', second, 'low');
   rememberThinking('/', third, 'high');
   mount();
-  const picker = await screen.findByTestId('chat-model-picker');
-  await waitFor(() => expect(picker).toBeEnabled());
   const user = userEvent.setup();
-  await user.click(screen.getByText('First model'));
+  const picker = await openPicker(user);
   await user.click(
-    await screen.findByRole('menuitem', { name: 'Second model Local' }),
+    screen.getByRole('menuitem', { name: 'Second model Local' }),
   );
   await waitFor(() => expect(picker).toHaveTextContent('Second model'));
-  // One level and no off: still a menu, with default.
-  await user.click(await menu());
   expect(
-    (await screen.findAllByRole('menuitemradio')).map(
-      (item) => item.textContent,
-    ),
+    screen.getAllByRole('menuitemradio').map((item) => item.textContent),
   ).toEqual(['Default', 'Low']);
-  await user.keyboard('{Escape}');
-  await user.click(screen.getByText('Second model'));
-  await user.click(
-    await screen.findByRole('menuitem', { name: 'Third model Local' }),
+  expect(screen.getAllByTestId('chat-thinking-control')).toHaveLength(1);
+  expect(control().closest('[data-model-option]')).toHaveAttribute(
+    'data-model-option',
+    'second',
   );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('menuitem', { name: 'Third model Local' }),
+    ).not.toHaveAttribute('aria-disabled', 'true'),
+  );
+  await user.click(screen.getByRole('menuitem', { name: 'Third model Local' }));
   await waitFor(() => expect(picker).toHaveTextContent('Third model'));
+  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   expect(configPatches()).toEqual([
     { config: { thinking: 'low' }, selectedModel: second },
     { config: { thinking: 'default' }, selectedModel: third },
   ]);
-  // A model that takes only the provider's default shows no menu.
-  expect(screen.queryByTestId('chat-thinking-menu')).toBeNull();
+  await openPicker(user);
+  expect(screen.queryByTestId('chat-thinking-control')).toBeNull();
+  expect(screen.queryByTestId('agent-picker-model-summary')).toBeNull();
 });
 
-it('keeps the remembered level when saving it fails', async () => {
+it('keeps the saved and remembered level when saving fails', async () => {
   rememberThinking('/', first, 'low');
+  config = { ...config, thinking: 'low' };
   patch = async () => {
     throw Object.assign(new Error('Refused'), { status: 400 });
   };
   mount();
-  const trigger = await menu();
-  await waitFor(() => expect(trigger).toBeEnabled());
   const user = userEvent.setup();
-  await user.click(trigger);
-  await user.click(await screen.findByRole('menuitemradio', { name: 'High' }));
+  await openPicker(user);
+  await user.click(screen.getByRole('menuitemradio', { name: 'High' }));
   await waitFor(() => expect(configPatches()).toHaveLength(1));
   expect(readThinking('/', first)).toBe('low');
+  expect(control()).toHaveAccessibleName('Thinking level: Low');
+  expect(summary()).toHaveTextContent('· Low');
 });
 
-it('turns thinking on and off with a real switch for a model with off and one level, and goes back to the default', async () => {
+it('uses a real switch with a separate default and never closes while toggling', async () => {
   rememberThinking('/', fourth, 'high');
   config = { ...config, selectedModel: fourth };
   mount();
-  const toggle = await screen.findByRole('switch');
-  await waitFor(() => expect(toggle).toBeEnabled());
-  // The conversation has no level yet: the provider's default, neither on nor off.
-  expect(toggle).toHaveAccessibleName('Thinking level: Default');
-  expect(toggle).toHaveAttribute('aria-checked', 'false');
-  expect(screen.queryByTestId('chat-thinking-menu')).toBeNull();
-  expect(screen.queryByTestId('chat-thinking-default')).toBeNull();
   const user = userEvent.setup();
-  await user.click(toggle);
-  await waitFor(() =>
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'),
+  await openPicker(user);
+  expect(screen.getByRole('switch')).toHaveAccessibleName(
+    'Thinking level: Default',
   );
-  expect(screen.getByRole('switch')).toHaveAccessibleName('Thinking level: On');
+  expect(screen.getByRole('switch')).not.toBeChecked();
+  expect(screen.getByRole('menuitemradio', { name: 'Default' })).toBeChecked();
+  await user.click(screen.getByRole('switch'));
+  await waitFor(() =>
+    expect(screen.getByRole('switch')).toHaveAccessibleName(
+      'Thinking level: On',
+    ),
+  );
+  await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+  expect(summary()).toHaveTextContent('· On');
   await user.click(screen.getByRole('switch'));
   await waitFor(() =>
     expect(screen.getByRole('switch')).toHaveAccessibleName(
       'Thinking level: Off',
     ),
   );
-  expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  expect(screen.getByRole('switch')).not.toBeChecked();
+  expect(
+    screen.getByRole('menuitemradio', { name: 'Default' }),
+  ).not.toBeChecked();
   expect(readThinking('/', fourth)).toBe('off');
-  await user.click(
-    screen.getByRole('button', { name: 'Use the provider default' }),
-  );
+  expect(summary()).toHaveTextContent('· Off');
   await waitFor(() =>
-    expect(screen.getByRole('switch')).toHaveAccessibleName(
-      'Thinking level: Default',
-    ),
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Default' }),
+    ).not.toHaveAttribute('aria-disabled', 'true'),
+  );
+  await user.click(screen.getByRole('menuitemradio', { name: 'Default' }));
+  await waitFor(() =>
+    expect(control()).toHaveAccessibleName('Thinking level: Default'),
   );
   expect(configPatches()).toEqual([
     { config: { thinking: 'high' } },
@@ -322,17 +354,17 @@ it('turns thinking on and off with a real switch for a model with off and one le
     { config: { thinking: 'default' } },
   ]);
   expect(readThinking('/', fourth)).toBe('default');
+  expect(summary()).toHaveTextContent('· Default');
+  expect(screen.getByRole('menu')).toBeVisible();
 });
 
 it('restores the switch’s remembered state when switching to its model', async () => {
   rememberThinking('/', fourth, 'off');
   mount();
-  const picker = await screen.findByTestId('chat-model-picker');
-  await waitFor(() => expect(picker).toBeEnabled());
   const user = userEvent.setup();
-  await user.click(screen.getByText('First model'));
+  await openPicker(user);
   await user.click(
-    await screen.findByRole('menuitem', { name: 'Fourth model Local' }),
+    screen.getByRole('menuitem', { name: 'Fourth model Local' }),
   );
   await waitFor(() =>
     expect(screen.getByRole('switch')).toHaveAccessibleName(
@@ -342,6 +374,53 @@ it('restores the switch’s remembered state when switching to its model', async
   expect(configPatches()).toEqual([
     { config: { thinking: 'off' }, selectedModel: fourth },
   ]);
+});
+
+it('supports horizontal keyboard navigation without changing a level until activated', async () => {
+  mount();
+  const user = userEvent.setup();
+  await openPicker(user);
+  screen.getByRole('menuitemradio', { name: 'Default' }).focus();
+  await user.keyboard('{End}');
+  expect(screen.getByRole('menuitemradio', { name: 'High' })).toHaveFocus();
+  await user.keyboard('{ArrowLeft}');
+  expect(screen.getByRole('menuitemradio', { name: 'Low' })).toHaveFocus();
+  expect(configPatches()).toEqual([]);
+  await user.keyboard('{Enter}');
+  await waitFor(() =>
+    expect(control()).toHaveAccessibleName('Thinking level: Low'),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Default' }),
+    ).not.toHaveAttribute('aria-disabled', 'true'),
+  );
+  await user.keyboard('{Home}');
+  expect(screen.getByRole('menuitemradio', { name: 'Default' })).toHaveFocus();
+});
+
+it('keeps the menu mounted and blocks repeat changes while saving a level', async () => {
+  let resolve!: (value: OnlineChatConfigSnapshot) => void;
+  patch = () =>
+    new Promise((done) => {
+      resolve = done;
+    });
+  mount();
+  const user = userEvent.setup();
+  await openPicker(user);
+  await user.click(screen.getByRole('menuitemradio', { name: 'High' }));
+  await waitFor(() =>
+    expect(screen.getByRole('menuitemradio', { name: 'Low' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    ),
+  );
+  expect(screen.getByRole('menu')).toBeVisible();
+  expect(readThinking('/', first)).toBeNull();
+  resolve({ ...config, thinking: 'high' });
+  await waitFor(() =>
+    expect(control()).toHaveAccessibleName('Thinking level: High'),
+  );
 });
 
 it('picks a switch, a menu or nothing from a model’s levels', () => {

@@ -478,6 +478,13 @@ it.each([
     await user.click(
       await screen.findByRole('menuitem', { name: /Chat.*Local/ }),
     );
+    expect(screen.getByTestId('chat-thinking-control')).toBeVisible();
+    expect(
+      screen.getByRole('menuitemradio', {
+        name: expected === 'high' ? 'High' : 'Default',
+      }),
+    ).toBeChecked();
+    await user.keyboard('{Escape}');
     await user.type(
       screen.getByRole('textbox', { name: 'Message to the agent' }),
       'Think about it{Enter}',
@@ -502,7 +509,7 @@ it.each([
   },
 );
 
-it('uses the approved Chinese hint and service grouping in the online mode picker, with a switch to Runner agents', async () => {
+it('uses service grouping without a footer in the online mode picker, with a switch to Runner agents', async () => {
   host.catalog.mockResolvedValue(models);
   const normal = host.request.getMockImplementation()!;
   host.request.mockImplementation(async (input) =>
@@ -522,7 +529,9 @@ it('uses the approved Chinese hint and service grouping in the online mode picke
   // Each mode offers its own kind: the online agent's models, no Runner agents.
   expect(within(menu).queryByText('Agents')).not.toBeInTheDocument();
   expect(within(menu).queryByText('Coding agent')).not.toBeInTheDocument();
-  expect(within(menu).getByText('选择与在线大模型对话。')).toBeVisible();
+  expect(
+    within(menu).queryByText('选择与在线大模型对话。'),
+  ).not.toBeInTheDocument();
   const service = within(menu).getByRole('group', { name: 'Local' });
   expect(within(service).getByRole('menuitem')).toHaveAttribute(
     'data-model',
@@ -531,7 +540,22 @@ it('uses the approved Chinese hint and service grouping in the online mode picke
 });
 
 it('keeps the draft when switching between a model and a Runner and omits native selection for Runner creation', async () => {
-  host.catalog.mockResolvedValue(models);
+  host.catalog.mockResolvedValue({
+    data: [
+      {
+        ...models.data[0],
+        models: [
+          {
+            ...models.data[0].models[0],
+            capabilities: {
+              webSearch: false,
+              reasoning: { levels: ['off', 'low', 'high'] },
+            },
+          },
+        ],
+      },
+    ],
+  });
   const normal = host.request.getMockImplementation()!;
   host.request.mockImplementation(async (input) => {
     if (input.path === 'agents/chatAgents')
@@ -582,6 +606,10 @@ it('keeps the draft when switching between a model and a Runner and omits native
   await user.click(screen.getByTestId('chat-agent-picker'));
   menu = await screen.findByRole('menu');
   await user.click(within(menu).getByRole('menuitem', { name: /Chat.*Local/ }));
+  expect(screen.getByTestId('chat-thinking-control')).toBeVisible();
+  await user.click(screen.getByRole('menuitemradio', { name: 'High' }));
+  expect(screen.getByRole('menuitemradio', { name: 'High' })).toBeChecked();
+  await user.keyboard('{Escape}');
   expect(input).toHaveValue('Keep the draft');
   await user.click(screen.getByTestId('chat-mode-switch'));
   await waitFor(() =>
@@ -590,6 +618,14 @@ it('keeps the draft when switching between a model and a Runner and omits native
     ),
   );
   expect(input).toHaveValue('Keep the draft');
+  await user.click(screen.getByTestId('chat-agent-picker'));
+  expect(screen.queryByTestId('chat-thinking-control')).toBeNull();
+  expect(screen.queryByTestId('agent-picker-model-summary')).toBeNull();
+  expect(screen.queryByRole('menuitemradio')).toBeNull();
+  await user.click(
+    await screen.findByRole('menuitem', { name: /Coding agent/ }),
+  );
+  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   await user.click(screen.getByTestId('chat-send'));
   await waitFor(() =>
     expect(host.request).toHaveBeenCalledWith(
@@ -602,6 +638,7 @@ it('keeps the draft when switching between a model and a Runner and omits native
   )![0];
   expect(creation.json).toMatchObject({ agentId: 'runner' });
   expect(creation.json).not.toHaveProperty('selectedModel');
+  expect(creation.json.config?.thinking).toBeUndefined();
 });
 
 it('does not silently replace a selected model that disappears on catalog refresh', async () => {
