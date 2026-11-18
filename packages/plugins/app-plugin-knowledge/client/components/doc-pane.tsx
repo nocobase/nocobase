@@ -825,21 +825,23 @@ export function DocPane(props: DocPaneProps): ReactElement {
           ];
   // On a phone a file's header keeps Download and the menu; Replace and History open from the menu's top.
   const fileSheet = isFile && phone;
-  // Someone who only reads a file sees Download and History on a desktop; a phone keeps History in the menu.
-  const desktopReader = isFile && !fileSheet && !editable && !proposes;
-  const menu = desktopReader ? null : (
+  // Someone who only reads a file sees Download and History, with the index segments and permissions in the
+  // menu (a phone keeps History in it too), and no pending proposals on either.
+  const fileReader = isFile && !editable && !proposes;
+  const pendingProposals = fileReader ? 0 : current.pendingProposals;
+  const menu = (
     <EntryMenu
       sheet={fileSheet}
       title={current.title}
       entries={tidy([
         ...(fileSheet
           ? [
-              current.pendingProposals > 0
+              pendingProposals > 0
                 ? {
                     key: 'proposals',
                     icon: <InboxIcon />,
                     label: t('knowledge.doc.pending', {
-                      count: current.pendingProposals,
+                      count: pendingProposals,
                     }),
                     onClick: () => props.onProposals(current.id),
                   }
@@ -893,14 +895,14 @@ export function DocPane(props: DocPaneProps): ReactElement {
             className='flex flex-wrap items-center gap-2'
             data-testid='knowledge-doc-toolbar'
           >
-            {current.pendingProposals > 0 && !fileSheet && !desktopReader ? (
+            {pendingProposals > 0 && !fileSheet ? (
               <Button
                 variant='link'
                 className='px-1'
                 onClick={() => props.onProposals(current.id)}
               >
                 {t('knowledge.doc.pending', {
-                  count: current.pendingProposals,
+                  count: pendingProposals,
                 })}
               </Button>
             ) : null}

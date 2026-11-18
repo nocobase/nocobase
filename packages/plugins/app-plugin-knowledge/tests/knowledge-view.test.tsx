@@ -721,13 +721,10 @@ describe('the knowledge view', () => {
     };
     await show('/', true, directory);
     const group = await screen.findByTestId('knowledge-space-project');
-    const trigger = within(group).getByRole('button', {
-      name: /Acme/,
-      expanded: false,
-    });
+    const trigger = within(group).getByRole('button', { name: /Acme/ });
     trigger.focus();
     await userEvent.keyboard('{Enter}');
-    // Opening the space by its name also selects it; no separate "Open" row.
+    // Selecting the space by its name also opens it; no separate "Open" row.
     await within(group).findByText('Release flow');
     expect(
       within(group).queryByRole('button', { name: /^Open / }),
@@ -742,6 +739,44 @@ describe('the knowledge view', () => {
       within(await screen.findByRole('dialog')).getByText('Create in Acme'),
     ).toBeInTheDocument();
   });
+  it('folds a space only by its arrow, and selects it by its name without folding it', async () => {
+    const doc = summary('d1', 'Release flow');
+    serve([doc]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () =>
+        treeOf([doc]).spaces.map((entry) => ({
+          space: { ...entry.space, inherited: false },
+          documents: entry.docs.length,
+          archivedDocuments: 0,
+        })),
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    await show('/?doc=d1', true, directory);
+    const group = await screen.findByTestId('knowledge-space-project');
+    await within(group).findByText('Release flow');
+    await screen.findByRole('heading', { name: 'Release flow', level: 1 });
+    // The arrow folds and unfolds without leaving the open document.
+    fireEvent.click(within(group).getByRole('button', { name: 'Collapse' }));
+    await waitFor(() =>
+      expect(within(group).queryByText('Release flow')).not.toBeInTheDocument(),
+    );
+    expect(url.search).toBe('?doc=d1');
+    fireEvent.click(within(group).getByRole('button', { name: 'Expand' }));
+    await within(group).findByText('Release flow');
+    expect(url.search).toBe('?doc=d1');
+    // The name selects the space and keeps it open, however often it is pressed.
+    const name = within(group).getByRole('button', { name: /^Acme/ });
+    fireEvent.click(name);
+    await waitFor(() => expect(url.search).toBe(''));
+    fireEvent.click(name);
+    expect(within(group).getByText('Release flow')).toBeInTheDocument();
+    expect(
+      within(group).getByRole('button', { name: 'Collapse' }),
+    ).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('opens a document from the tree, its title shown once', async () => {
     serve([summary('d1', 'Release flow')]);
     await show();
@@ -1537,11 +1572,16 @@ describe('a file entry', () => {
     ).not.toBeInTheDocument();
     first.unmount();
 
-    // Pending proposals do not add an entry for a reader either.
+    // A reader's menu keeps the sections and permissions; pending proposals add no entry for them.
     serve([{ ...fileDoc(READ), pendingProposals: 2 }]);
     await show('/?doc=f1');
-    await header();
-    expect(actions()).toEqual(['Download', 'History']);
+    const read = await header();
+    expect(actions()).toEqual(['Download', 'History', 'More actions']);
+    await press(within(read).getByRole('button', { name: 'More actions' }));
+    await screen.findByRole('menuitem', { name: 'View sections' });
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent?.trim()),
+    ).toEqual(['View sections', 'Permissions']);
   });
 
   it('keeps an older version from being replaced or proposed against', async () => {
@@ -1613,17 +1653,18 @@ describe('a file entry', () => {
     ]);
     first.unmount();
 
-    serve([fileDoc(READ)]);
+    // A reader: History, the sections and permissions, and no pending proposals.
+    serve([{ ...fileDoc(READ), pendingProposals: 2 }]);
     await show('/?doc=f1');
     await header();
     expect(actions()).toEqual(['Download', 'More actions']);
     await press(screen.getByRole('button', { name: 'More actions' }));
     expect(
-      within(await screen.findByTestId('knowledge-doc-actions')).getByRole(
-        'button',
-        { name: 'History' },
-      ),
-    ).toBeInTheDocument();
+      within(await screen.findByTestId('knowledge-doc-actions'))
+        .getAllByRole('button')
+        .map((button) => button.textContent?.trim())
+        .filter(Boolean),
+    ).toEqual(['History', 'View sections', 'Permissions']);
   });
 
   it("previews Markdown with the documents' rendering and full screen only from the Preview tab", async () => {
@@ -1665,6 +1706,82 @@ describe('a file entry', () => {
     expect(
       within(text).getByRole('button', { name: 'Copy' }),
     ).toBeInTheDocument();
+  });
+
+  it('scrolls the cited line into view and copies the extracted text', async () => {
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this);
+    };
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    serve([fileDoc(READ)]);
+    await show('/?doc=f1&lines=3-3');
+    const text = await screen.findByTestId('knowledge-extracted-text');
+    await waitFor(() =>
+      expect(
+        scrolled.some((row) => row.getAttribute('data-line') === '3'),
+      ).toBe(true),
+    );
+    await press(within(text).getByRole('button', { name: 'Copy' }));
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith('# Readme\n\nTag it, then deploy.'),
+    );
+    expect(await screen.findByText('Copied.')).toBeInTheDocument();
+  });
+
+  it('closes the full-screen preview with Esc, also while a frame holds the focus', async () => {
+    const pdf = {
+      ...fileDoc(READ),
+      file: {
+        ...fileDoc(READ).file!,
+        filename: 'guide.pdf',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+      },
+    };
+    serve([pdf]);
+    await show('/?doc=f1');
+    const article = await header();
+    const open = async () => {
+      await press(
+        await within(article).findByRole('button', { name: 'Full screen' }),
+      );
+      return screen.findByTestId('knowledge-file-fullscreen');
+    };
+    const closed = () =>
+      waitFor(() =>
+        expect(
+          screen.queryByTestId('knowledge-file-fullscreen'),
+        ).not.toBeInTheDocument(),
+      );
+
+    let dialog = await open();
+    await userEvent.keyboard('{Escape}');
+    await closed();
+
+    // A frame whose document can be read listens for Esc itself.
+    dialog = await open();
+    let frame = dialog.querySelector('iframe')!;
+    frame.focus();
+    fireEvent.blur(window);
+    await waitFor(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    fireEvent.keyDown(frame.contentDocument!, { key: 'Escape' });
+    await closed();
+
+    // One that cannot be read hands the focus back, where Esc closes the dialog.
+    dialog = await open();
+    frame = dialog.querySelector('iframe')!;
+    Object.defineProperty(frame, 'contentDocument', { get: () => null });
+    frame.focus();
+    fireEvent.blur(window);
+    await waitFor(() => expect(document.activeElement).not.toBe(frame));
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    await userEvent.keyboard('{Escape}');
+    await closed();
   });
 
   it('keeps the preview chosen after a citation until other lines are cited', async () => {

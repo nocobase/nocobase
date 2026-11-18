@@ -121,8 +121,8 @@ export function FilePreviewContent(
 }
 
 /**
- * Markdown as the knowledge base shows its articles (the shared `MarkdownView` with the documents' spacing); full
- * screen, in a reading column of about 860px.
+ * Markdown as the knowledge base shows its articles (the shared `MarkdownView` with the documents' spacing), in a box
+ * of at most 70vh that scrolls; full screen, in a reading column of about 860px.
  */
 function MarkdownPreview(inputProps: {
   readonly text?: string;
@@ -137,11 +137,16 @@ function MarkdownPreview(inputProps: {
         {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
       </div>
     );
-  return (
+  // In a page (a file's card, a proposal under review) a long file scrolls in its own box, as before.
+  return fill ? (
     <KnowledgeMarkdown
       content={text}
-      className={fill ? 'mx-auto max-w-[860px] text-base' : 'text-base'}
+      className='mx-auto max-w-[860px] text-base'
     />
+  ) : (
+    <div className='max-h-[70vh] overflow-auto'>
+      <KnowledgeMarkdown content={text} className='text-base' />
+    </div>
   );
 }
 

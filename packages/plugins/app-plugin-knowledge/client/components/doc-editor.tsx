@@ -751,9 +751,15 @@ export function DocPropertiesDialog({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [summary, setSummary] = useState(doc.summary);
+  const [note, setNote] = useState('');
+  const [conflict, setConflict] = useState<number | null>(null);
   const save = useMutation({
     mutationFn: () =>
-      api.update(doc.id, { expectedVersion: doc.version, summary }),
+      api.update(doc.id, {
+        expectedVersion: doc.version,
+        summary,
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }),
     onSuccess: (saved) => {
       notify.success(
         saved.version === doc.version
@@ -763,7 +769,20 @@ export function DocPropertiesDialog({
       void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
       onOpenChange(false);
     },
-    onError: (error) => notify.error(error),
+    onError: (error) => {
+      // As in the editor: someone saved meanwhile, so say which version is current and offer to reload it.
+      if (
+        error instanceof ApiClientError &&
+        error.reason === 'KNOWLEDGE_VERSION_CONFLICT'
+      ) {
+        const current = (
+          error.payload as { details?: { currentVersion?: number } } | undefined
+        )?.details?.currentVersion;
+        setConflict(current ?? doc.version + 1);
+        return;
+      }
+      notify.error(error);
+    },
   });
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -774,6 +793,26 @@ export function DocPropertiesDialog({
             {t('knowledge.editor.propertiesHint')}
           </DialogDescription>
         </DialogHeader>
+        {conflict !== null ? (
+          <Alert variant='destructive'>
+            <AlertDescription className='flex flex-wrap items-center gap-2'>
+              {t('knowledge.editor.conflict', { version: conflict })}
+              <Button
+                type='button'
+                size='sm'
+                variant='outline'
+                onClick={() => {
+                  void queryClient.invalidateQueries({
+                    queryKey: knowledgeKeys.all,
+                  });
+                  onOpenChange(false);
+                }}
+              >
+                {t('knowledge.editor.reload')}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <form
           id='knowledge-properties'
           className='space-y-4'
@@ -798,6 +837,18 @@ export function DocPropertiesDialog({
             <FieldDescription>
               {t('knowledge.editor.summaryHint')}
             </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor='knowledge-properties-note'>
+              {t('knowledge.editor.note')}
+            </FieldLabel>
+            <Input
+              id='knowledge-properties-note'
+              value={note}
+              maxLength={KNOWLEDGE_NOTE_MAX}
+              placeholder={t('knowledge.editor.notePlaceholder')}
+              onChange={(event) => setNote(event.target.value)}
+            />
           </Field>
           <Field>
             <FieldLabel htmlFor='knowledge-properties-slug'>

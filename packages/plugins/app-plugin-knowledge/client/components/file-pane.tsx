@@ -20,7 +20,14 @@ import {
   RefreshCwIcon,
   XIcon,
 } from 'lucide-react';
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import {
   Alert,
@@ -282,6 +289,55 @@ export function ExtractedText({
 }
 
 /**
+ * Keeps Esc closing the dialog while a frame inside `area` (a PDF, an Office viewer) holds the focus: key presses
+ * there never reach this document. A frame whose document can be read (served from here, not a PDF) gets its own
+ * Esc listener and keeps its keyboard; any other one hands the focus back to `area` as soon as it takes it, so the
+ * frame still scrolls and takes clicks.
+ */
+function useEscapeFromFrames(
+  open: boolean,
+  area: { readonly current: HTMLElement | null },
+  onClose: () => void,
+): void {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!open) return undefined;
+    const listened = new Set<Document>();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close.current();
+    };
+    const onBlur = () => {
+      // The focus has moved into a frame by the time the window loses it.
+      window.setTimeout(() => {
+        const frame = document.activeElement;
+        if (!(frame instanceof HTMLIFrameElement)) return;
+        if (!area.current?.contains(frame)) return;
+        let inner: Document | null = null;
+        try {
+          inner = frame.contentDocument;
+        } catch {
+          inner = null;
+        }
+        if (inner && inner.contentType !== 'application/pdf') {
+          if (!listened.has(inner)) {
+            listened.add(inner);
+            inner.addEventListener('keydown', onKey);
+          }
+          return;
+        }
+        area.current.focus({ preventScroll: true });
+      }, 0);
+    };
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      for (const inner of listened) inner.removeEventListener('keydown', onKey);
+    };
+  }, [open, area]);
+}
+
+/**
  * The preview in a full-screen dialog: the file's name, its entry's title and the version shown (an older one says
  * so), Download and Close (Esc closes it too). Phones get the whole screen.
  */
@@ -305,6 +361,8 @@ export function FilePreviewDialog({
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const record = recordOf(file, at);
   const markdown = isMarkdown(file);
+  const area = useRef<HTMLDivElement>(null);
+  useEscapeFromFrames(open, area, () => onOpenChange(false));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -353,8 +411,10 @@ export function FilePreviewDialog({
           </DialogClose>
         </div>
         <div
+          ref={area}
+          tabIndex={-1}
           className={cn(
-            'min-h-0 flex-1',
+            'min-h-0 flex-1 outline-none',
             markdown
               ? 'overflow-y-auto px-4 py-6 sm:px-8'
               : 'overflow-auto p-3',
