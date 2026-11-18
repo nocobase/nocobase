@@ -72,7 +72,15 @@ const modules: readonly PermissionModule[] = [
       {
         id: 'orders',
         label: 'Orders',
-        actions: [{ id: 'orders.view', label: 'View orders', view: true }],
+        actions: [
+          { id: 'orders.view', label: 'View orders', view: true },
+          { id: 'orders.sync', label: 'Sync orders', managed: true },
+          {
+            id: 'orders.export',
+            label: 'Export orders',
+            requires: ['orders.sync'],
+          },
+        ],
       },
     ],
   },
@@ -204,6 +212,25 @@ describe('two-column permission editor', () => {
     );
     expect(screen.queryByRole('alert')).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('says a managed requirement cannot be turned on here instead of asking the user to', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Host initial={{}} onChange={onChange} />);
+    await user.click(screen.getByRole('button', { name: /^Orders/ }));
+    await user.click(screen.getByRole('switch', { name: 'Export orders' }));
+    expect(
+      screen.getByRole('switch', { name: 'Export orders' }),
+    ).not.toBeChecked();
+    expect(onChange).not.toHaveBeenCalledWith(
+      expect.objectContaining({ 'orders.export': expect.anything() }),
+    );
+    expect(
+      screen.getByText(
+        'Export orders stays off. It needs Sync orders, which is managed by the application and cannot be turned on here.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('narrows Edit and resets it when View becomes narrower', async () => {

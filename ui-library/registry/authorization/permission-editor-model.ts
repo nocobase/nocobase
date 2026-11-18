@@ -97,12 +97,14 @@ export type PermissionNotice =
     }
   | {
       /**
-       * An action stayed off because it needs others that are never turned on automatically (risky or managed by
-       * the application). Turn those on first.
+       * An action stayed off because it needs others that are never turned on automatically: `actions` are risky
+       * ones the user can turn on first, `managed` are managed by the application (or unknown) and cannot be turned
+       * on here.
        */
       readonly kind: 'missing-requirement';
       readonly action: string;
       readonly actions: readonly string[];
+      readonly managed: readonly string[];
     }
   | {
       /** Nothing was turned off because actions managed by the application need these. */
@@ -361,14 +363,22 @@ export function dependentsOf(
   return result;
 }
 
-/** What turning one action on also turns on, or the requirements that cannot be turned on automatically. */
+/**
+ * What turning one action on also turns on, following requirements transitively, even through ones already on; and
+ * the requirements that are off and can never be turned on automatically (risky, or managed by the application).
+ */
 function requirementClosure(
   modules: readonly PermissionModule[],
   grants: PermissionGrants,
   id: string,
-): { readonly enable: readonly string[]; readonly missing: readonly string[] } {
+): {
+  readonly enable: readonly string[];
+  readonly risky: readonly string[];
+  readonly managed: readonly string[];
+} {
   const enable: string[] = [];
-  const missing: string[] = [];
+  const risky: string[] = [];
+  const managed: string[] = [];
   const queue = [id];
   const seen = new Set<string>();
   while (queue.length) {
@@ -377,18 +387,25 @@ function requirementClosure(
     seen.add(current);
     const found = findAction(modules, current);
     if (!found) {
-      missing.push(current);
+      managed.push(current);
       continue;
     }
-    if (current !== id && grants[current]) continue;
-    if (current !== id && (found.action.risk || found.action.managed)) {
-      missing.push(current);
-      continue;
+    const on = current !== id && Boolean(grants[current]);
+    if (!on && current !== id) {
+      if (found.action.managed) {
+        managed.push(current);
+        continue;
+      }
+      if (found.action.risk) {
+        risky.push(current);
+        continue;
+      }
     }
-    enable.push(current);
+    if (!on) enable.push(current);
+    // An action already on may still miss its own requirements, so keep walking through it.
     queue.push(...requirementsOf(found.menu, found.action));
   }
-  return { enable, missing };
+  return { enable, risky, managed };
 }
 
 /** Turn each action on with its requirements, or leave it off when one of them cannot be turned on automatically. */
@@ -404,12 +421,13 @@ function enableWithRequirements(
   for (const id of ids) {
     const found = findAction(modules, id);
     if (!found || found.action.managed || next[id]) continue;
-    const { enable, missing } = requirementClosure(modules, next, id);
-    if (missing.length) {
+    const { enable, risky, managed } = requirementClosure(modules, next, id);
+    if (risky.length || managed.length) {
       notices.push({
         kind: 'missing-requirement',
         action: found.action.label,
-        actions: labelsOf(modules, missing),
+        actions: labelsOf(modules, risky),
+        managed: labelsOf(modules, managed),
       });
       continue;
     }

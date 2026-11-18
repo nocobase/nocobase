@@ -611,11 +611,7 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     await expect(
       run(
         process.execPath,
-        [
-          '--input-type=module',
-          '-e',
-          'await import("#components/ui/switch")',
-        ],
+        ['--input-type=module', '-e', 'await import("#components/ui/switch")'],
         host,
       ),
     ).rejects.toThrow('Host imports captured a plugin primitive');

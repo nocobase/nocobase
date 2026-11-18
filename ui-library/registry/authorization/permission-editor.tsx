@@ -182,7 +182,17 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
       : notice.kind === 'auto-enabled'
         ? `Also turned on ${list(notice.actions)}, which this needs.`
         : notice.kind === 'missing-requirement'
-          ? `${notice.action} stays off: it needs ${list(notice.actions)}, which ${notice.actions.length === 1 ? 'is' : 'are'} never turned on automatically. Turn ${notice.actions.length === 1 ? 'it' : 'them'} on first.`
+          ? [
+              `${notice.action} stays off.`,
+              notice.actions.length
+                ? `It needs ${list(notice.actions)}, which ${notice.actions.length === 1 ? 'is' : 'are'} never turned on automatically. Turn ${notice.actions.length === 1 ? 'it' : 'them'} on first.`
+                : '',
+              notice.managed.length
+                ? `It needs ${list(notice.managed)}, which ${notice.managed.length === 1 ? 'is' : 'are'} managed by the application and cannot be turned on here.`
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')
           : `Nothing was turned off: ${list(notice.actions)} ${notice.actions.length === 1 ? 'is' : 'are'} managed by the application and ${notice.actions.length === 1 ? 'needs' : 'need'} it.`,
 };
 

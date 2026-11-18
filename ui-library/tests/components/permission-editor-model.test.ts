@@ -348,6 +348,7 @@ describe('permission editor model', () => {
         kind: 'missing-requirement',
         action: 'Refund',
         actions: ['Bank details'],
+        managed: [],
       },
     ]);
     const exported = setActionEnabled(modules, {}, 'payments.export', true);
@@ -356,18 +357,50 @@ describe('permission editor model', () => {
       {
         kind: 'missing-requirement',
         action: 'Export payments',
-        actions: ['Ledger sync'],
+        actions: [],
+        managed: ['Ledger sync'],
       },
     ]);
-    // Once the requirement is on, the action can be granted.
+    // Once the risky requirement and its own View are on, the action can be granted.
     expect(
       setActionEnabled(
         modules,
-        { 'payments.secret': {} },
+        { 'payments.view': {}, 'payments.secret': {} },
         'payments.refund',
         true,
       ).grants,
-    ).toEqual({ 'payments.secret': {}, 'payments.refund': {} });
+    ).toEqual({
+      'payments.view': {},
+      'payments.secret': {},
+      'payments.refund': {},
+    });
+  });
+
+  it('follows requirements through ones already on, so nothing is granted without its whole chain', () => {
+    // Bank details is on but its own View payments is off, as a stored role may be.
+    const refund = setActionEnabled(
+      modules,
+      { 'payments.secret': {} },
+      'payments.refund',
+      true,
+    );
+    expect(refund.grants['payments.view']).toEqual({});
+    expect(Object.keys(refund.grants).sort()).toEqual([
+      'payments.refund',
+      'payments.secret',
+      'payments.view',
+    ]);
+    expect(refund.notices).toEqual([
+      { kind: 'auto-enabled', actions: ['View payments'] },
+    ]);
+    // A chain that reaches a managed action still off leaves the action off.
+    const exported = setActionEnabled(
+      modules,
+      { 'payments.view': {} },
+      'payments.export',
+      true,
+    );
+    expect(exported.grants).toEqual({ 'payments.view': {} });
   });
 
   it('refuses to turn off what an enabled managed action needs', () => {

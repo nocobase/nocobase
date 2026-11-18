@@ -235,7 +235,11 @@
       "title": "Permission Editor Demo",
       "description": "Usage example of @nocobase/permission-editor: a Sales Manager with Contracts, multi-scope Quotes and Administration settings, an IT Administrator and an unrestricted Administrator, with a role switch, unsaved-change prompt and explicit Save.",
       "categories": ["authorization"],
-      "registryDependencies": ["button", "select", "@nocobase/permission-editor"],
+      "registryDependencies": [
+        "button",
+        "select",
+        "@nocobase/permission-editor"
+      ],
       "files": [
         {
           "path": "authorization/permission-editor.tsx",
