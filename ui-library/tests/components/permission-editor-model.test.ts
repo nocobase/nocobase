@@ -218,23 +218,47 @@ describe('permission editor model', () => {
       'contracts.update': { scopes: { records: 'department' } },
       'contracts.archive': { scopes: { records: 'own' } },
     };
-    const change = setScopeValue(
+    const narrowed = setScopeValue(
       modules,
       grants,
       'contracts.view',
       'records',
       'department',
     );
-    expect(change.grants['contracts.update']?.scopes).toEqual({});
-    expect(change.grants['contracts.archive']?.scopes).toEqual({
+    expect(narrowed.grants['contracts.archive']?.scopes).toEqual({
       records: 'own',
     });
+    const change = setScopeValue(
+      modules,
+      grants,
+      'contracts.view',
+      'records',
+      'own',
+    );
+    expect(change.grants['contracts.update']?.scopes).toEqual({});
+    // Archive was already Their own records: it follows View without being named.
+    expect(change.grants['contracts.archive']?.scopes).toEqual({});
     expect(change.notices).toEqual([
-      { kind: 'scope-reset', view: 'Their department', actions: ['Edit'] },
+      { kind: 'scope-reset', view: 'Their own records', actions: ['Edit'] },
     ]);
     expect(
       effectiveScopeValue(contracts, change.grants, update, updateSlot),
-    ).toBe('department');
+    ).toBe('own');
+  });
+
+  it('lets a follower equal to the new View scope follow it without a notice', () => {
+    const change = setScopeValue(
+      modules,
+      {
+        'contracts.view': { scopes: { records: 'all' } },
+        'contracts.update': { scopes: { records: 'department' } },
+      },
+      'contracts.view',
+      'records',
+      'department',
+    );
+    expect(change.grants['contracts.update']?.scopes).toEqual({});
+    expect(change.notices).toEqual([]);
   });
 
   it('keeps the scopes of a multi-scope action independent of View', () => {

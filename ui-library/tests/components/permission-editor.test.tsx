@@ -271,6 +271,47 @@ describe('two-column permission editor', () => {
     ).toBeInTheDocument();
   });
 
+  it('drops its notices when the host replaces the draft, such as discarding changes', async () => {
+    const user = userEvent.setup();
+    const saved: PermissionGrants = {
+      'contracts.view': { scopes: { records: 'all' } },
+      'contracts.update': { scopes: { records: 'department' } },
+    };
+    function Discarding(): ReactElement {
+      const [value, setValue] = useState(saved);
+      return (
+        <PermissionEditor
+          modules={modules}
+          value={value}
+          onChange={setValue}
+          dirty={value !== saved}
+          footer={
+            <button type='button' onClick={() => setValue(saved)}>
+              Discard
+            </button>
+          }
+        />
+      );
+    }
+    render(<Discarding />);
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their own records' }),
+    );
+    const notice =
+      'Edit contracts now follows the view scope (Their own records) again, because it was wider.';
+    expect(screen.getByText(notice)).toBeInTheDocument();
+    // The menu count stays beside the unsaved marker.
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+    expect(screen.getByText(/^\d+ of \d+ menus visible$/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
+    expect(screen.queryByText(notice)).not.toBeInTheDocument();
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'Their department',
+    );
+  });
+
   it('shows each scope of a multi-scope action and leaves risky actions off with Enable all', async () => {
     const user = userEvent.setup();
     render(<Host initial={{}} />);
