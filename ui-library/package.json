@@ -144,6 +144,7 @@
     "#extensions/nocobase-device-approval/locales/en-US": "./registry/auth/device-approval/locales/en-US.ts",
     "#extensions/nocobase-device-approval/locales/zh-CN": "./registry/auth/device-approval/locales/zh-CN.ts",
     "#components/permission-editor": "./registry/authorization/permission-editor.tsx",
+    "#components/permission-editor-model": "./registry/authorization/permission-editor-model.ts",
     "#components/page-container": "./registry/components/page-container.tsx",
     "#components/page-header": "./registry/components/page-header.tsx",
     "#components/settings-dialog": "./registry/components/settings-dialog.tsx",

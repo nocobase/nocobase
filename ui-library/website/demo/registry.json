@@ -233,9 +233,9 @@
       "name": "permission-editor-demo",
       "type": "registry:example",
       "title": "Permission Editor Demo",
-      "description": "Usage example of @nocobase/permission-editor. Original category navigation with compact action cards, visible descriptions, independently named scopes and explicit draft Save.",
+      "description": "Usage example of @nocobase/permission-editor: a Sales Manager with Contracts, multi-scope Quotes and Administration settings, an IT Administrator and an unrestricted Administrator, with a role switch, unsaved-change prompt and explicit Save.",
       "categories": ["authorization"],
-      "registryDependencies": ["button", "@nocobase/permission-editor"],
+      "registryDependencies": ["button", "select", "@nocobase/permission-editor"],
       "files": [
         {
           "path": "authorization/permission-editor.tsx",
