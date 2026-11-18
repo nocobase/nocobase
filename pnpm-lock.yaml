@@ -5790,6 +5790,9 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print

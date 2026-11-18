@@ -18,6 +18,7 @@
     "@dicebear/core": "^9.4.3",
     "@hookform/resolvers": "^5.0.1",
     "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-notification-web-push": "workspace:*",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
