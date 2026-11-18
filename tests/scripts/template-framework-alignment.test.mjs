@@ -420,10 +420,7 @@ for (const template of templates) {
       undefined,
       `${template.kind}: the SQLite driver is a runtime dependency, not a development one`,
     );
-    // And no other. `config init` picks the dialect from the installed drivers when it is not told one, and with
-    // several it refuses rather than guess — which is right for an application that added a driver, and wrong for
-    // one that has just been created. A template shipping extra drivers makes the documented `pnpm nocobase config init`
-    // fail in every non-interactive run, and puts drivers nothing uses into every deployment.
+    // A production install includes only the default dialect until the application promotes another driver.
     const drivers = Object.keys(dependencies).filter(
       (name) =>
         /^@nocobase\/db-/u.test(name) && name !== '@nocobase/db-testkit',
@@ -433,6 +430,11 @@ for (const template of templates) {
       ['@nocobase/db-sqlite'],
       `${template.kind}: declare only the driver for the default dialect`,
     );
+    if (template.kind === 'default') {
+      for (const dialect of ['mssql', 'mysql', 'oracle', 'postgres']) {
+        assert.equal(devDependencies[`@nocobase/db-${dialect}`], 'workspace:^');
+      }
+    }
     assert.equal(dependencies.hono, 'catalog:');
     assert.equal(devDependencies.hono, undefined);
     for (const [name, file] of runtimeDependencies(template)) {

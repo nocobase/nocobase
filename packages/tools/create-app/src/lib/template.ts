@@ -89,6 +89,7 @@ export interface ResolvedTemplate {
   directory: string;
   name: string;
   version: string;
+  hasSqliteDriver: boolean;
 }
 
 export interface DownloadTemplateOptions {
@@ -155,7 +156,7 @@ async function findTarball(directory: string): Promise<string> {
 
 async function readTemplateManifest(
   directory: string,
-): Promise<{ name: string; version: string }> {
+): Promise<Omit<ResolvedTemplate, 'directory'>> {
   const manifestPath = path.join(directory, 'package.json');
   let raw: string;
 
@@ -170,11 +171,13 @@ async function readTemplateManifest(
   const manifest = JSON.parse(raw) as {
     name?: string;
     version?: string;
+    dependencies?: Record<string, string>;
   };
 
   return {
     name: manifest.name ?? 'unknown',
     version: manifest.version ?? '0.0.0',
+    hasSqliteDriver: Boolean(manifest.dependencies?.['@nocobase/db-sqlite']),
   };
 }
 

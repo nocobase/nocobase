@@ -216,10 +216,7 @@ async function run(
     // Creation stops at a project that can be configured, not at one that can run. Which database an application uses
     // is decided by the driver it depends on, and configuring it is `config init`'s job — so the next steps name it
     // rather than this command writing a configuration nobody asked for.
-    const editionTemplate =
-      template.name === '@nocobase/app-template-pro' ||
-      template.name === '@nocobase/app-template-enterprise';
-    const initCommand = editionTemplate
+    const initCommand = template.hasSqliteDriver
       ? 'pnpm nocobase config init --dialect sqlite'
       : 'pnpm nocobase config init';
     state.nextCommands = [
@@ -227,9 +224,9 @@ async function run(
       'pnpm nocobase config check',
       'pnpm dev',
     ];
-    state.message = editionTemplate
-      ? `Configure SQLite with ${initCommand}. To use another preinstalled driver, choose its dialect and move its package to production dependencies before deploying.`
-      : 'Configure the application with pnpm nocobase config init before starting it. That uses SQLite; for another database, install its driver and name the dialect, for example: pnpm add @nocobase/db-postgres, then pnpm nocobase config init --dialect postgres';
+    state.message = template.hasSqliteDriver
+      ? `Configure SQLite with ${initCommand}. For another database, declare its driver in dependencies, retaining the version range if it is preinstalled in devDependencies, and run pnpm nocobase config init --dialect <dialect>.`
+      : 'Configure the application with pnpm nocobase config init before starting it. Use --dialect to select an installed database driver.';
     progress(`Created ${name}. ${state.message}`);
   } finally {
     await removeDirectory(template.directory);

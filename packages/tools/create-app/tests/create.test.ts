@@ -40,7 +40,10 @@ afterEach(async () => {
   vi.clearAllMocks();
   await rm(root, { recursive: true, force: true });
 });
-async function template(name = '@test/template'): Promise<void> {
+async function template(
+  name = '@test/template',
+  hasSqliteDriver = true,
+): Promise<void> {
   const directory = await mkdtemp(path.join(root, 'template-'));
   await writeFile(
     path.join(directory, 'package.json'),
@@ -50,7 +53,7 @@ async function template(name = '@test/template'): Promise<void> {
       dependencies: {
         '@nocobase/db-postgres': '^1.0.0',
         '@nocobase/db-oracle': '^1.0.0',
-        '@nocobase/db-sqlite': '^1.0.0',
+        ...(hasSqliteDriver ? { '@nocobase/db-sqlite': '^1.0.0' } : {}),
       },
     }),
   );
@@ -60,6 +63,7 @@ async function template(name = '@test/template'): Promise<void> {
   );
   vi.mocked(downloadTemplate).mockResolvedValue({
     directory,
+    hasSqliteDriver,
     name,
     version: '1.0.0',
   });
@@ -95,7 +99,7 @@ describe('JSON creation flow', () => {
     },
   );
 
-  it.each(['pro', 'enterprise'])(
+  it.each(['default', 'pro', 'enterprise'])(
     'names SQLite explicitly for the %s edition',
     async (edition) => {
       await template('@nocobase/app-template-' + edition);
@@ -105,6 +109,16 @@ describe('JSON creation flow', () => {
       );
     },
   );
+
+  it('leaves the dialect choice to templates without a SQLite runtime dependency', async () => {
+    await template('@custom/template', false);
+    expect(await run(['crm', '--json', '--template', '@custom/template'])).toBe(
+      0,
+    );
+    expect(JSON.parse(stdout).result.nextCommands[0]).toBe(
+      'pnpm nocobase config init',
+    );
+  });
 
   it('installs by default and hands the configuration step to config init', async () => {
     await template();
@@ -119,7 +133,7 @@ describe('JSON creation flow', () => {
         dependenciesInstalled: true,
         configured: false,
         nextCommands: [
-          'pnpm nocobase config init',
+          'pnpm nocobase config init --dialect sqlite',
           'pnpm nocobase config check',
           'pnpm dev',
         ],
@@ -247,7 +261,7 @@ describe('JSON creation flow', () => {
         dependenciesInstalled: false,
         nextCommands: [
           'pnpm install',
-          'pnpm nocobase config init',
+          'pnpm nocobase config init --dialect sqlite',
           'pnpm nocobase config check',
           'pnpm dev',
         ],

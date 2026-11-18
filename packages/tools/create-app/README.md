@@ -96,7 +96,7 @@ The `multi-app` alias resolves the commercial `@nocobase/app-template-multi-app`
 ```bash
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta platform --template multi-app --template-tag beta
 cd platform
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 ```
 
@@ -110,7 +110,7 @@ The `sub-app` alias resolves the commercial `@nocobase/app-template-sub-app` pac
 npm view @nocobase/app-template-sub-app@beta version --registry=https://pkg-v3.nocobase.com/
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta child-app --template sub-app --template-tag beta
 cd child-app
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase deploy init
 ```
 
@@ -135,19 +135,18 @@ Creation stops at a project that can be configured, not at one that can run. The
 
 ```bash
 cd crm
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
 
 `config init` writes `config.yml` from the template's `config.example.yml`, keeping its comments, and generates the first key of `secrets.keys`. It is part of the application rather than of this command, so it is also how an application is configured on a server. Run again on a configured application it leaves the file alone and reports it unchanged.
 
-The templates depend on `@nocobase/db-sqlite`, which is the dialect their own `server/config/database.ts` defaults to, so a new application is ready to configure without installing anything. Another database means installing its driver first, because which dialects an application can run on is decided by what it depends on, and then filling in the connection:
+Default uses SQLite at runtime and preinstalls the PostgreSQL, MySQL, SQL Server and Oracle drivers in `devDependencies`. To use PostgreSQL in a new Default application, move its existing `@nocobase/db-postgres` entry into `dependencies` in `package.json`, keeping the version range. Then refresh the install and configure the connection:
 
 ```bash
 cd crm
-pnpm add @nocobase/db-postgres
-pnpm remove @nocobase/db-sqlite   # optional, if nothing else uses SQLite
+pnpm install
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD
@@ -175,7 +174,7 @@ JSON mode never prompts. It writes one final JSON document to stdout and progres
 | `DRIVER_VERIFICATION_FAILED` | `verify`        | The database driver's native addon did not load, even after a rebuild.                 |
 | `NODE_UNSUPPORTED`           |                 | Node.js is older than 24; nothing ran.                                                 |
 
-`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. It lists `pnpm nocobase config init`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
+`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. For templates with SQLite in runtime dependencies it lists `pnpm nocobase config init --dialect sqlite`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
 
 Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir=<directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
 

@@ -531,13 +531,20 @@ async function main() {
       if (!options.json) {
         // Creation stops at a configurable project. `--dialect` is not passed through — it decides which driver the
         // application depends on, which is a change to the application rather than to how it is scaffolded.
-        const configure =
-          options.dialect === 'sqlite'
-            ? ['pnpm nocobase config init']
-            : [
-                `pnpm add @nocobase/db-${options.dialect}`,
-                `pnpm nocobase config init --dialect ${options.dialect}`,
-              ];
+        const configure = [];
+        if (options.dialect !== 'sqlite') {
+          const driver = `@nocobase/db-${options.dialect}`;
+          const manifest = JSON.parse(
+            fs.readFileSync(path.join(target, 'package.json'), 'utf8'),
+          );
+          const range = manifest.devDependencies?.[driver];
+          configure.push(
+            `pnpm add --save-prod ${shellQuote(range ? `${driver}@${range}` : driver)}`,
+          );
+        }
+        configure.push(
+          `pnpm nocobase config init --dialect ${options.dialect}`,
+        );
         console.log(
           [
             `Application: ${target}`,

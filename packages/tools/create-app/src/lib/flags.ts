@@ -119,11 +119,10 @@ export function formatHelp(binary: string): string {
     '  sub-app is a commercial child template with deployment tooling and platform SSO; licensed registry access is required.',
     '',
     '  The generated app is not configured yet. Configure it inside the app directory with:',
-    '    pnpm nocobase config init',
+    '    pnpm nocobase config init --dialect sqlite',
     '',
     '  That writes config.yml with generated secrets for SQLite, whose driver the app already has.',
-    '  For another database, install its driver and name the dialect:',
-    '    pnpm add @nocobase/db-postgres',
+    '  For another database, keep the selected driver in dependencies and name its dialect:',
     '    pnpm nocobase config init --dialect postgres',
   ].join('\n');
 }

@@ -5805,6 +5805,18 @@ importers:
       '@nocobase/app-websocket':
         specifier: workspace:^
         version: link:../../app/app-websocket
+      '@nocobase/db-mssql':
+        specifier: workspace:^
+        version: link:../../libs/db-mssql
+      '@nocobase/db-mysql':
+        specifier: workspace:^
+        version: link:../../libs/db-mysql
+      '@nocobase/db-oracle':
+        specifier: workspace:^
+        version: link:../../libs/db-oracle
+      '@nocobase/db-postgres':
+        specifier: workspace:^
+        version: link:../../libs/db-postgres
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
