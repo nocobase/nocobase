@@ -341,6 +341,8 @@ const ptBR: LocaleResource<typeof enUS> = {
         'A busca e as respostas da IA usam exatamente este texto · {{count}} linha',
       textHint_other:
         'A busca e as respostas da IA usam exatamente este texto · {{count}} linhas',
+      textHint_many:
+        'A busca e as respostas da IA usam exatamente este texto · {{count}} linhas',
       copy: 'Copiar',
       copied: 'Copiado.',
       copyFailed:

@@ -344,6 +344,8 @@ const frFR: LocaleResource<typeof enUS> = {
         "La recherche et les réponses de l'IA utilisent exactement ce texte · {{count}} ligne",
       textHint_other:
         "La recherche et les réponses de l'IA utilisent exactement ce texte · {{count}} lignes",
+      textHint_many:
+        "La recherche et les réponses de l'IA utilisent exactement ce texte · {{count}} lignes",
       copy: 'Copier',
       copied: 'Copié.',
       copyFailed:

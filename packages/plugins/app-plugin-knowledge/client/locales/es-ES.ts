@@ -343,6 +343,8 @@ const esES: LocaleResource<typeof enUS> = {
         'La búsqueda y las respuestas de la IA usan exactamente este texto · {{count}} línea',
       textHint_other:
         'La búsqueda y las respuestas de la IA usan exactamente este texto · {{count}} líneas',
+      textHint_many:
+        'La búsqueda y las respuestas de la IA usan exactamente este texto · {{count}} líneas',
       copy: 'Copiar',
       copied: 'Copiado.',
       copyFailed:
