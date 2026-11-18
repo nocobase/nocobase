@@ -289,10 +289,10 @@ export function ExtractedText({
 }
 
 /**
- * Keeps Esc closing the dialog while a frame inside `areaRef` (a PDF, an Office viewer) holds the focus: key presses
- * there never reach this document. A frame whose document can be read (served from here, not a PDF) gets its own
- * Esc listener and keeps its keyboard; any other one hands the focus back to `areaRef` as soon as it takes it, so the
- * frame still scrolls and takes clicks.
+ * Lets Esc close the dialog while a frame inside `areaRef` holds the focus, when the frame's document can be read
+ * (served from here): key presses there never reach this document, so the frame gets its own Esc listener. The focus
+ * stays in the frame, which keeps its own keys (paging, arrows, typing). A frame served from elsewhere (an Office
+ * viewer) or the browser's PDF viewer never shows us its keys; Close is the way out there.
  */
 function useEscapeFromFrames(
   open: boolean,
@@ -311,18 +311,16 @@ function useEscapeFromFrames(
       const timer = window.setTimeout(() => {
         timers.delete(timer);
         const frame = document.activeElement;
-        const area = areaRef.current;
-        if (!(frame instanceof HTMLIFrameElement) || !area?.contains(frame))
+        if (
+          !(frame instanceof HTMLIFrameElement) ||
+          !areaRef.current?.contains(frame)
+        )
           return;
         const inner = readableDocument(frame);
-        if (inner && inner.contentType !== 'application/pdf') {
-          if (!listened.has(inner)) {
-            listened.add(inner);
-            inner.addEventListener('keydown', onKey);
-          }
-          return;
+        if (inner && !listened.has(inner)) {
+          listened.add(inner);
+          inner.addEventListener('keydown', onKey);
         }
-        area.focus({ preventScroll: true });
       }, 0);
       timers.add(timer);
     };

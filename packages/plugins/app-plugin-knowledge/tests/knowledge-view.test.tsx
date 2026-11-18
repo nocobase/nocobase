@@ -1735,7 +1735,7 @@ describe('a file entry', () => {
     expect(await screen.findByText('Copied.')).toBeInTheDocument();
   });
 
-  it('closes the full-screen preview with Esc, also while a frame holds the focus', async () => {
+  it('closes the full-screen preview with Esc or Close and leaves the focus in a frame', async () => {
     const pdf = {
       ...fileDoc(READ),
       file: {
@@ -1760,29 +1760,33 @@ describe('a file entry', () => {
           screen.queryByTestId('knowledge-file-fullscreen'),
         ).not.toBeInTheDocument(),
       );
+    const settle = () => act(() => new Promise((r) => setTimeout(r, 0)));
 
+    // Esc closes the dialog while the focus is in it.
     await open();
     await userEvent.keyboard('{Escape}');
     await closed();
 
-    // A frame whose document can be read listens for Esc itself.
+    // A frame that cannot be read (another origin, a PDF viewer) keeps the focus, so its keys stay its own.
     let dialog = await open();
     let frame = dialog.querySelector('iframe')!;
-    frame.focus();
-    fireEvent.blur(window);
-    await waitFor(() => new Promise((resolve) => setTimeout(resolve, 0)));
-    fireEvent.keyDown(frame.contentDocument!, { key: 'Escape' });
-    await closed();
-
-    // One that cannot be read hands the focus back, where Esc closes the dialog.
-    dialog = await open();
-    frame = dialog.querySelector('iframe')!;
     Object.defineProperty(frame, 'contentDocument', { get: () => null });
     frame.focus();
     fireEvent.blur(window);
-    await waitFor(() => expect(document.activeElement).not.toBe(frame));
-    expect(dialog).toContainElement(document.activeElement as HTMLElement);
-    await userEvent.keyboard('{Escape}');
+    await settle();
+    expect(document.activeElement).toBe(frame);
+    // Close is the way out from there.
+    await press(within(dialog).getByRole('button', { name: 'Close' }));
+    await closed();
+
+    // A frame whose document can be read keeps the focus too, and listens for Esc itself.
+    dialog = await open();
+    frame = dialog.querySelector('iframe')!;
+    frame.focus();
+    fireEvent.blur(window);
+    await settle();
+    expect(document.activeElement).toBe(frame);
+    fireEvent.keyDown(frame.contentDocument!, { key: 'Escape' });
     await closed();
   });
 
