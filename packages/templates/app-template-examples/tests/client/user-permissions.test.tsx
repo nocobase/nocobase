@@ -129,12 +129,19 @@ describe('user permission configuration', () => {
             fetch: answerApi(calls),
           },
         );
-      const openUsers = async () =>
-        user.click(
-          await screen.findByRole('button', {
-            name: new RegExp(`^${words.users}`),
+      // Actions are set per business object, on the second tab.
+      const openUsers = async () => {
+        await user.click(
+          await screen.findByRole('tab', {
+            name: new RegExp(words.permissionEditor.objectsTab),
           }),
         );
+        await user.click(
+          await screen.findByRole('button', {
+            name: new RegExp(`^${words.userPermissions}`),
+          }),
+        );
+      };
       const first = await mount();
       await openUsers();
       const labels = [
