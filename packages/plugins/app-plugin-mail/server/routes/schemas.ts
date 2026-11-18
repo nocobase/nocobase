@@ -1364,6 +1364,20 @@ export const MailBoundedListMeta: z.ZodType<{ total: number }> = z
   .object({ total: z.number().int() })
   .meta({ ref: 'MailBoundedListMeta' });
 
+/** `meta` of an account's folder list. */
+export const MailFolderListMeta: z.ZodType<{
+  total: number;
+  complete?: boolean;
+}> = z
+  .object({
+    total: z.number().int(),
+    complete: z.boolean().optional().meta({
+      description:
+        'With `includeUnsynced`: false while a synchronization run is still reading the folder list, so a folder selection waits for it.',
+    }),
+  })
+  .meta({ ref: 'MailFolderListMeta' });
+
 /** `meta` of a cursor-paged message feed. */
 export const MailCursorListMeta: z.ZodType<{
   nextPageToken?: string;

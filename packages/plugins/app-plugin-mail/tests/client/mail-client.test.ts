@@ -196,6 +196,18 @@ describe('MailClient', () => {
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/accounts/account%2F1/folders',
     });
+    request.mockResolvedValueOnce({
+      data: [{ providerFolderId: 'INBOX', synced: true }],
+      meta: { total: 1, complete: false },
+    });
+    await expect(client.listFolderChoices('account/1')).resolves.toEqual({
+      folders: [{ providerFolderId: 'INBOX', synced: true }],
+      complete: false,
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+      query: { includeUnsynced: 'true' },
+    });
   });
 
   it('requests page-numbered log pages and reads the total from meta', async () => {

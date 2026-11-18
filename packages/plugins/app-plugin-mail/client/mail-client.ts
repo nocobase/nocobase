@@ -373,6 +373,30 @@ export class MailClient {
       .then((response) => response.data);
   }
 
+  /**
+   * Every folder of the account for choosing its synchronized folders, each with `synced`. `complete` is false while a
+   * synchronization run is still reading the folder list; a selection waits for it.
+   */
+  public listFolderChoices(accountId: string): Promise<{
+    readonly folders: readonly MailFolder[];
+    readonly complete: boolean;
+  }> {
+    return this.client
+      .request<
+        ListResponse<
+          MailFolder,
+          { readonly total: number; readonly complete?: boolean }
+        >
+      >({
+        path: `mail/accounts/${encodeURIComponent(accountId)}/folders`,
+        query: { includeUnsynced: 'true' },
+      })
+      .then((response) => ({
+        folders: response.data,
+        complete: response.meta?.complete !== false,
+      }));
+  }
+
   public listLabels(): Promise<readonly MailLabel[]> {
     return this.client
       .request<DataResponse<readonly MailLabel[]>>({

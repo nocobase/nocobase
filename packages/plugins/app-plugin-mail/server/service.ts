@@ -212,6 +212,13 @@ export class DefaultMailService implements MailService {
     return this.messages.listFolders(context, accountId, options);
   }
 
+  public isFolderListComplete(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<boolean> {
+    return this.messages.isFolderListComplete(context, accountId);
+  }
+
   public listLabels(
     context: MailOperationContext,
   ): Promise<readonly MailLabel[]> {

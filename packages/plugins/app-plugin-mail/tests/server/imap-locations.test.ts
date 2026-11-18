@@ -5321,11 +5321,21 @@ describe('IMAP synchronized folders', () => {
       .where('messageId', '=', three.id)
       .execute();
 
+    const protectedBefore = (await messages()).filter((item) =>
+      ['M2', 'M3'].includes(item.providerMessageId),
+    );
+    expect(protectedBefore).toMatchObject([
+      { folders: ['Archive'], locations: [{ folder: 'Archive' }] },
+      { folders: ['Archive'], locations: [{ folder: 'Archive' }] },
+    ]);
+
     expect(
       await service().previewSyncFolders(owner, accountId, ['INBOX']),
     ).toEqual({ removedMessageCount: 0 });
-    await store.updateAccountSyncFolders(accountId, ['INBOX']);
-    await service().startSync(owner, { accountId, mode: 'initial' });
+    await service().updateAccount(owner, {
+      accountId,
+      syncFolderIds: ['INBOX'],
+    });
     // Only the preparing step matters: it prunes before importing.
     await step();
     expect((await messages()).map((item) => item.providerMessageId)).toEqual([
@@ -5333,5 +5343,11 @@ describe('IMAP synchronized folders', () => {
       'M2',
       'M3',
     ]);
+    // The scheduled draft and the message being moved keep their folder links and IMAP copies, not just their rows.
+    expect(
+      (await messages()).filter((item) =>
+        ['M2', 'M3'].includes(item.providerMessageId),
+      ),
+    ).toEqual(protectedBefore);
   });
 });

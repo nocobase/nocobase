@@ -372,6 +372,126 @@ describe.each(['gmail', 'microsoft'] as const)(
       ).toBeUndefined();
     });
 
+    it('saves nothing when queuing the initial run fails, so the same choice can be retried', async () => {
+      mailbox.put('inboxed', ['inbox']);
+      mailbox.put('archived', ['archive']);
+      await sync();
+      await choose(['inbox']);
+      expect(await local()).toEqual({ inboxed: ['inbox'] });
+      // An active run that a failed save must not cancel.
+      const active = await service().startSync(owner, { accountId });
+      // Reusing that run's id makes the insert of the new run fail inside the transaction.
+      const failing: MailStore = Object.assign(Object.create(store), {
+        replaceSyncFolders: (
+          ids: readonly string[] | undefined,
+          run: Parameters<MailStore['replaceSyncFolders']>[1],
+        ) => store.replaceSyncFolders(ids, { ...run, id: active.id }),
+      });
+      await expect(
+        new DefaultMailService({
+          store: failing,
+          adapters: { resolve: async () => mailbox.adapter() },
+          outbox: { kick: vi.fn() },
+          syncBatchSize: 100,
+        }).updateAccount(owner, {
+          accountId,
+          syncFolderIds: ['inbox', 'archive'],
+        }),
+      ).rejects.toThrow();
+      expect((await store.getAccount(accountId))?.syncFolderIds).toEqual([
+        'inbox',
+      ]);
+      expect(await store.findActiveSyncRun(accountId)).toMatchObject({
+        id: active.id,
+        status: 'pending',
+      });
+      await settle();
+
+      // The account still has its cursor; the retry runs an initial sync and imports the newly chosen folder.
+      await choose(['inbox', 'archive']);
+      expect(await local()).toEqual({
+        inboxed: ['inbox'],
+        archived: ['archive'],
+      });
+    });
+
+    it('lets the later of two interleaved saves own the selection and the active run', async () => {
+      mailbox.put('inboxed', ['inbox']);
+      mailbox.put('archived', ['archive']);
+      await sync();
+      // The earlier request has read the account but commits only after the later one finished.
+      let release!: () => void;
+      const released = new Promise<void>((resolve) => (release = resolve));
+      const delayed: MailStore = Object.assign(Object.create(store), {
+        replaceSyncFolders: async (
+          ...args: Parameters<MailStore['replaceSyncFolders']>
+        ) => {
+          await released;
+          return store.replaceSyncFolders(...args);
+        },
+      });
+      const earlier = new DefaultMailService({
+        store: delayed,
+        adapters: { resolve: async () => mailbox.adapter() },
+        outbox: { kick: vi.fn() },
+        syncBatchSize: 100,
+      }).updateAccount(owner, { accountId, syncFolderIds: ['archive'] });
+      await service().updateAccount(owner, {
+        accountId,
+        syncFolderIds: ['inbox'],
+      });
+      const later = await store.findActiveSyncRun(accountId);
+      release();
+      await earlier;
+
+      const account = await store.getAccount(accountId);
+      const active = await store.findActiveSyncRun(accountId);
+      // Whichever save commits last, the account and its only active run agree.
+      expect(account?.syncFolderIds).toEqual(['archive']);
+      expect(active?.policy.syncFolderIds).toEqual(['archive']);
+      expect(await store.getSyncRun(later!.id)).toMatchObject({
+        status: 'cancelled',
+      });
+      await settle();
+      expect(await local()).toEqual({ archived: ['archive'] });
+    });
+
+    it('leaves the rest of the account alone during an incremental run with no changes', async () => {
+      mailbox.put('inboxed', ['inbox']);
+      await sync();
+      await choose(['inbox']);
+      const ids = await localIds();
+      // A link only a whole-account prune would remove.
+      await database
+        .query()
+        .insertInto('mailMessageFolders')
+        .values({
+          accountId,
+          messageId: ids.inboxed,
+          providerFolderId: 'spam',
+        })
+        .execute();
+
+      await sync();
+      expect(await local()).toEqual({ inboxed: ['inbox', 'spam'] });
+
+      // The next initial run, which follows every change of selection, prunes it.
+      await choose(['inbox', 'archive']);
+      expect(await local()).toEqual({ inboxed: ['inbox'] });
+    });
+
+    it('deletes local mail of an unselected folder in batches', async () => {
+      mailbox.put('inboxed', ['inbox']);
+      for (let index = 0; index < 1001; index += 1)
+        mailbox.put(`archived-${index}`, ['archive']);
+      await sync();
+      expect(
+        await service().previewSyncFolders(owner, accountId, ['inbox']),
+      ).toEqual({ removedMessageCount: 1001 });
+      await choose(['inbox']);
+      expect(await local()).toEqual({ inboxed: ['inbox'] });
+    });
+
     it('rejects an empty or unknown selection without changing the account', async () => {
       await sync();
       await expect(

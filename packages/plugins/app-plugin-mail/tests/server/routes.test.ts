@@ -389,7 +389,8 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
       expect.objectContaining({ syncFolderIds: [] }),
     );
 
-    await router.request(
+    vi.spyOn(mail, 'isFolderListComplete').mockResolvedValueOnce(false);
+    const choices = await router.request(
       '/api/mail/accounts/account-1/folders?includeUnsynced=true',
     );
     expect(listFolders).toHaveBeenLastCalledWith(
@@ -397,6 +398,8 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
       'account-1',
       { includeUnsynced: true },
     );
+    // A selection waits while a run is still reading the folder list.
+    expect((await choices.json()).meta).toEqual({ total: 0, complete: false });
   });
 
   it('answers bounded lists whole with meta.total', async () => {
@@ -1347,7 +1350,6 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
     expect(listFolders).toHaveBeenCalledWith(
       expect.objectContaining({ actorId: 'user-1' }),
       'account-1',
-      {},
     );
     expect(listMessages).toHaveBeenCalledWith(
       expect.objectContaining({ actorId: 'user-1' }),
@@ -2364,6 +2366,7 @@ function service(overrides: Partial<MailService> = {}): MailService {
     manageMessages: async () => ({ items: [], succeeded: 0, failed: 0 }),
     previewSyncFolders: async () => ({ removedMessageCount: 0 }),
     listFolders: async () => [],
+    isFolderListComplete: async () => true,
     listLabels: async () => [],
     listIdentities: async () => [],
     updateIdentity: async () => {

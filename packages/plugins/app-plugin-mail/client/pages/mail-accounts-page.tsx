@@ -129,9 +129,12 @@ export default function MailAccountsPage({
   );
   useEffect(() => {
     if (!offerFolderSelection || loading) return;
+    const connectedId = readAuthorizedAccountId();
     const waiting = accounts.find(
       (account) =>
-        account.status === 'active' && account.syncFolderIds?.length === 0,
+        account.id === connectedId &&
+        account.status === 'active' &&
+        account.syncFolderIds?.length === 0,
     );
     void Promise.resolve().then(() => {
       setOfferFolderSelection(false);
@@ -1256,6 +1259,13 @@ function readAuthorizationNotice(): 'success' | 'failure' | undefined {
     'mailAuthorization',
   );
   return value === 'success' || value === 'failure' ? value : undefined;
+}
+
+/** The account an OAuth Provider connected, named by the return URL. */
+function readAuthorizedAccountId(): string | undefined {
+  return (
+    new URL(window.location.href).searchParams.get('mailAccountId') ?? undefined
+  );
 }
 
 function toSyncDate(value?: string): string {

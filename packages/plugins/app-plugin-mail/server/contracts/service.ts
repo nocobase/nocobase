@@ -132,6 +132,11 @@ export interface MailService {
     accountId: string,
     options?: { readonly includeUnsynced?: boolean },
   ): Promise<readonly MailFolder[]>;
+  /** False while a synchronization run of the account is still reading its folder list. */
+  isFolderListComplete(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<boolean>;
   listLabels(context: MailOperationContext): Promise<readonly MailLabel[]>;
   listIdentities(
     context: MailOperationContext,

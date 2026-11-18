@@ -90,6 +90,7 @@ import {
   MailAccountSchema,
   MailAuthorizationSchema,
   MailBoundedListMeta,
+  MailFolderListMeta,
   MailCursorListMeta,
   MailFolderSchema,
   MailIdentitySchema,
@@ -619,7 +620,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       mailRoute(
         'mailListFolders',
         "List an account's folders",
-        { '200': listResponse(MailFolderSchema, MailBoundedListMeta) },
+        { '200': listResponse(MailFolderSchema, MailFolderListMeta) },
         {
           errors: {
             400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`).',
@@ -629,18 +630,28 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       ),
       apiValidator('param', AccountParams),
       apiValidator('query', ListFoldersQuery),
-      async (context) =>
-        context.json(
-          boundedList(
-            await mail.listFolders(
-              operationContext(context),
-              context.req.valid('param').accountId,
-              context.req.valid('query').includeUnsynced
-                ? { includeUnsynced: true }
-                : {},
+      async (context) => {
+        const { accountId } = context.req.valid('param');
+        if (!context.req.valid('query').includeUnsynced)
+          return context.json(
+            boundedList(
+              await mail.listFolders(operationContext(context), accountId),
             ),
-          ),
-        ),
+          );
+        const folders = await mail.listFolders(
+          operationContext(context),
+          accountId,
+          { includeUnsynced: true },
+        );
+        const complete = await mail.isFolderListComplete(
+          operationContext(context),
+          accountId,
+        );
+        return context.json({
+          data: folders,
+          meta: { total: folders.length, complete },
+        });
+      },
     );
     routes.post(
       '/accounts/:accountId/sync',

@@ -49,6 +49,7 @@ const mail = vi.hoisted(() => ({
   getSyncRun: vi.fn(),
   listAccounts: vi.fn(),
   listFolders: vi.fn(),
+  listFolderChoices: vi.fn(),
   listLabels: vi.fn(),
   listIdentities: vi.fn(),
   listProviders: vi.fn(),
@@ -96,6 +97,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
     mail.listFolders.mockResolvedValue([]);
+    mail.listFolderChoices.mockResolvedValue({ folders: [], complete: true });
     mail.listLabels.mockResolvedValue([]);
     mail.listSignatures.mockResolvedValue([]);
     mail.listTemplates.mockResolvedValue([]);
@@ -689,7 +691,10 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       syncFolderIds: [],
     };
     mail.listAccounts.mockResolvedValue([pending]);
-    mail.listFolders.mockResolvedValue(folders());
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+    });
     mail.updateAccount.mockImplementation(async (input) => ({
       ...pending,
       syncFolderIds: input.syncFolderIds ?? undefined,
@@ -705,9 +710,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       name: 'Folders to sync',
     });
     await waitFor(() =>
-      expect(mail.listFolders).toHaveBeenCalledWith('account-1', {
-        includeUnsynced: true,
-      }),
+      expect(mail.listFolderChoices).toHaveBeenCalledWith('account-1'),
     );
     fireEvent.click(
       await within(dialog).findByRole('checkbox', {
@@ -731,8 +734,108 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(mail.previewSyncFolders).not.toHaveBeenCalled();
   });
 
+  it('waits for every page of the folder list before a connected account can start', async () => {
+    const pending = {
+      ...(await mail.listAccounts())[0],
+      provider: { type: 'microsoft', name: 'microsoft' },
+      syncFolderIds: [],
+    };
+    mail.listAccounts.mockResolvedValue([pending]);
+    // The first page and its child folders arrived; the run is still reading the next page.
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders().slice(0, 2),
+      complete: false,
+    });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...pending,
+      syncFolderIds: input.syncFolderIds ?? undefined,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Choose folders to start syncing',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Folders to sync',
+    });
+    expect(
+      await within(dialog).findByText(
+        'Getting the folder list from the mail server…',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Start sync' }),
+    ).toBeDisabled();
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
+
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+    });
+    act(() => {
+      for (const subscription of subscriptions)
+        subscription.onEvent?.({
+          type: 'event',
+          topic: 'mail',
+          payload: { kind: 'mail.changed' },
+          publishedAt: new Date().toISOString(),
+        });
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'All folders, including folders created later',
+      }),
+    );
+    expect(within(dialog).getByText('3 of 3 folders selected')).toBeVisible();
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start sync' }));
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent'],
+      }),
+    );
+  });
+
+  it('continues with the account an OAuth Provider connected, not another waiting one', async () => {
+    const base = (await mail.listAccounts())[0];
+    // Account A was connected earlier and left waiting; it sorts before B.
+    mail.listAccounts.mockResolvedValue([
+      { ...base, id: 'account-a', address: 'a@example.com', syncFolderIds: [] },
+      { ...base, id: 'account-b', address: 'b@example.com', syncFolderIds: [] },
+    ]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+    });
+    const previous = window.location.href;
+    window.history.replaceState(
+      null,
+      '',
+      '/?mailAuthorization=success&mailAccountId=account-b',
+    );
+    try {
+      await renderPage(<MailAccountsPage />);
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Folders to sync',
+      });
+      expect(within(dialog).getByText('b@example.com')).toBeVisible();
+      await waitFor(() =>
+        expect(mail.listFolderChoices).toHaveBeenCalledWith('account-b'),
+      );
+      expect(mail.listFolderChoices).not.toHaveBeenCalledWith('account-a');
+    } finally {
+      window.history.replaceState(null, '', previous);
+    }
+  });
+
   it('confirms how many local messages a narrower selection deletes', async () => {
-    mail.listFolders.mockResolvedValue(folders());
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+    });
     mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 12 });
     mail.updateAccount.mockImplementation(async (input) => ({
       ...(await mail.listAccounts())[0],

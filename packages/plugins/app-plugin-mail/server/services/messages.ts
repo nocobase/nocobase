@@ -22,6 +22,7 @@ export class MailMessagesService {
     private readonly dependencies: MailServiceDependencies<
       | 'countUnreadMessages'
       | 'deleteMessage'
+      | 'findActiveSyncRun'
       | 'getAccount'
       | 'getMessage'
       | 'listConversationMessages'
@@ -55,6 +56,15 @@ export class MailMessagesService {
           synced: isSyncedFolder(account, folder.providerFolderId),
         }))
       : syncedFolders(account, folders);
+  }
+
+  public async isFolderListComplete(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<boolean> {
+    await requireOwnedAccount(this.dependencies.store, context, accountId);
+    const active = await this.dependencies.store.findActiveSyncRun(accountId);
+    return active?.phase !== 'preparing';
   }
 
   public async updateMessageLabels(

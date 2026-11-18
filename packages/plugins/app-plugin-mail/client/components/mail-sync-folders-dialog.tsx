@@ -76,6 +76,7 @@ function SyncFoldersForm({
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const choosing = account.syncFolderIds?.length === 0;
   const [folders, setFolders] = useState<readonly MailFolder[]>();
+  const [complete, setComplete] = useState(false);
   const [allFolders, setAllFolders] = useState(
     account.syncFolderIds === undefined || choosing,
   );
@@ -88,11 +89,12 @@ function SyncFoldersForm({
 
   const load = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
-      const next = await mail.listFolders(account.id, {
-        includeUnsynced: true,
-      });
+      const { folders: next, complete: listed } = await mail.listFolderChoices(
+        account.id,
+      );
       if (signal?.aborted) return;
       setFolders(next);
+      setComplete(listed);
       // Every folder starts selected until the owner narrows the selection.
       if (account.syncFolderIds === undefined || choosing)
         setSelected(
@@ -124,9 +126,9 @@ function SyncFoldersForm({
     return () => controller.abort();
   }, [load, t]);
 
-  // A newly connected account lists its folders in the background; reload until they arrive.
+  // A newly connected account lists its folders in the background, page by page; reload until the list is complete.
   useRealtimeRefresh(MAIL_REALTIME_TOPIC, load, {
-    enabled: folders !== undefined && folders.length === 0,
+    enabled: folders !== undefined && !complete,
     refreshIntervalMs: 5_000,
   });
 
@@ -145,6 +147,7 @@ function SyncFoldersForm({
     );
   const ready =
     folders !== undefined &&
+    complete &&
     folders.length > 0 &&
     (allFolders || selection.length > 0);
 
@@ -243,7 +246,7 @@ function SyncFoldersForm({
       </DialogHeader>
       <p className='mt-4 text-sm font-medium'>{account.address}</p>
       <div className='mt-3 space-y-3'>
-        {folders === undefined || folders.length === 0 ? (
+        {folders === undefined || !complete || folders.length === 0 ? (
           <p
             className='rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground'
             role='status'
