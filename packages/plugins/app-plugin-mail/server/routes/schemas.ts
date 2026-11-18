@@ -405,15 +405,10 @@ function syncFolderSelection(): z.ZodNullable<z.ZodArray<z.ZodString>> {
 /** Connecting with an empty list leaves the folders to be chosen after the account is connected. */
 const connectSyncFolders: z.ZodOptional<
   z.ZodNullable<z.ZodArray<z.ZodString>>
-> = z
-  .array(z.string())
-  .max(0)
-  .nullable()
-  .optional()
-  .meta({
-    description:
-      'Send `[]` to choose the folders after connecting: the first synchronization then only lists the folders, and no messages are imported until `mailUpdateAccount` saves a selection. Omitted or `null` synchronizes every folder.',
-  });
+> = z.array(z.string()).max(0).nullable().optional().meta({
+  description:
+    'Send `[]` to choose the folders after connecting: the first synchronization then only lists the folders, and no messages are imported until `mailUpdateAccount` saves a selection. Omitted or `null` synchronizes every folder.',
+});
 
 export const UpdateAccountInput: z.ZodObject<
   {
@@ -1001,13 +996,10 @@ const accountFields = {
       'The earliest received time the first synchronization imported.',
   }),
   automaticSyncIntervalMinutes: z.number().optional(),
-  syncFolderIds: z
-    .array(z.string())
-    .optional()
-    .meta({
-      description:
-        'The `providerFolderId`s the account synchronizes. Absent for every folder; empty while the folders are still to be chosen after connecting.',
-    }),
+  syncFolderIds: z.array(z.string()).optional().meta({
+    description:
+      'The `providerFolderId`s the account synchronizes. Absent for every folder; empty while the folders are still to be chosen after connecting.',
+  }),
 };
 
 export const MailAccountSchema: z.ZodType<MailAccountView> = z

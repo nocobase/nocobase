@@ -614,11 +614,7 @@ export class SyncMailboxOperation {
         ),
       );
     }
-    const { messages, outOfScope } = scopeMessages(
-      run,
-      page.messages,
-      adapter,
-    );
+    const { messages, outOfScope } = scopeMessages(run, page.messages, adapter);
     const resumeHistory =
       run.mode === 'initial' &&
       !run.historyComplete &&

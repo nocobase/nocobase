@@ -812,11 +812,9 @@ function outsideSyncFolders(
                           'valid',
                           'pending',
                         ]),
-                        inner.eb(
-                          `${IMAP_LOCATIONS}.providerFolderId`,
-                          'in',
-                          [...syncFolderIds],
-                        ),
+                        inner.eb(`${IMAP_LOCATIONS}.providerFolderId`, 'in', [
+                          ...syncFolderIds,
+                        ]),
                       ]),
                     ]
                   : []),

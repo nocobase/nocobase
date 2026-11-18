@@ -208,7 +208,5 @@ function sameSelection(
 ): boolean {
   if (current === undefined || next === undefined) return current === next;
   const selected = new Set(current);
-  return (
-    current.length === next.length && next.every((id) => selected.has(id))
-  );
+  return current.length === next.length && next.every((id) => selected.has(id));
 }

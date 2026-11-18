@@ -1925,9 +1925,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       lastUidCheck = now;
       const client = await this.imap();
       if (client.capabilities.has('LIST-STATUS')) {
-        const changed = this.syncMailboxes(
-          await this.listMailboxes(),
-        ).some(
+        const changed = this.syncMailboxes(await this.listMailboxes()).some(
           (box) =>
             box.status?.uidNext !== undefined &&
             box.status.uidNext !== folders[box.path]?.uidNext,
