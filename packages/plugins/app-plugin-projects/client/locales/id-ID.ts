@@ -292,7 +292,6 @@ const idID: LocaleResource<typeof enUS> = {
       'Masukkan bilangan bulat dari 0 hingga 1000, atau biarkan kosong.',
     ISSUE_BLOCKED: 'Tugas masih menunggu tugas yang memblokirnya.',
     SUBTASKS_OPEN: 'Selesaikan atau batalkan subtugasnya terlebih dahulu.',
-    INVALID_INTAKE: 'Berikan beberapa teks atau file, dalam batasnya.',
     INVALID_FILE: 'File bukan salah satu unggahan Anda.',
     FILE_TOO_LARGE: 'Filenya terlalu besar.',
     FILES_UNAVAILABLE: 'Aplikasi ini tidak menyimpan file.',

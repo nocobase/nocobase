@@ -306,8 +306,6 @@ const deDE: LocaleResource<typeof enUS> = {
     ISSUE_BLOCKED: 'Die Aufgabe wartet noch auf Aufgaben, die sie blockieren.',
     SUBTASKS_OPEN:
       'Schließen Sie zuerst ihre Unteraufgaben ab oder brechen Sie sie ab.',
-    INVALID_INTAKE:
-      'Geben Sie innerhalb der Grenzen einen Text oder eine Datei an.',
     INVALID_FILE: 'Eine Datei gehört nicht zu Ihren Uploads.',
     FILE_TOO_LARGE: 'Die Datei ist zu groß.',
     FILES_UNAVAILABLE: 'Diese Anwendung speichert keine Dateien.',

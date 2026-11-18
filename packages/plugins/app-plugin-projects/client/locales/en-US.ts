@@ -284,7 +284,6 @@ const pages = {
     INVALID_STAGE: 'Enter a whole number from 0 to 1000, or leave it empty.',
     ISSUE_BLOCKED: 'The issue is still waiting for issues that block it.',
     SUBTASKS_OPEN: 'Finish or cancel its sub-issues first.',
-    INVALID_INTAKE: 'Choose files within the upload limits.',
     INVALID_FILE: 'A file is not one of your uploads.',
     FILE_TOO_LARGE: 'The file is too large.',
     FILES_UNAVAILABLE: 'This application stores no files.',

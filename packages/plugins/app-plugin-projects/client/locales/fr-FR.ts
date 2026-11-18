@@ -296,7 +296,6 @@ const frFR: LocaleResource<typeof enUS> = {
       'Entrez un nombre entier compris entre 0 et 1 000 ou laissez-le vide.',
     ISSUE_BLOCKED: 'La tâche attend encore les tâches qui la bloquent.',
     SUBTASKS_OPEN: 'Terminez ou annulez d’abord ses sous-tâches.',
-    INVALID_INTAKE: 'Donnez du texte ou un fichier, dans les limites.',
     INVALID_FILE: 'Un fichier ne fait pas partie de vos téléchargements.',
     FILE_TOO_LARGE: 'Le fichier est trop volumineux.',
     FILES_UNAVAILABLE: 'Cette application ne stocke aucun fichier.',

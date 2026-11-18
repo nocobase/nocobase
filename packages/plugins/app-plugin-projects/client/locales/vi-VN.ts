@@ -292,7 +292,6 @@ const viVN: LocaleResource<typeof enUS> = {
     INVALID_STAGE: 'Nhập số nguyên từ 0 đến 1000 hoặc để trống.',
     ISSUE_BLOCKED: 'Nhiệm vụ vẫn đang chờ các nhiệm vụ chặn nó.',
     SUBTASKS_OPEN: 'Hãy hoàn thành hoặc hủy các nhiệm vụ con trước.',
-    INVALID_INTAKE: 'Đưa ra một số văn bản hoặc một tập tin, trong giới hạn.',
     INVALID_FILE: 'Tệp không phải là một trong những tệp tải lên của bạn.',
     FILE_TOO_LARGE: 'Tệp quá lớn.',
     FILES_UNAVAILABLE: 'Ứng dụng này không lưu trữ tập tin nào.',

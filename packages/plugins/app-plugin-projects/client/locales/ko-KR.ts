@@ -285,7 +285,6 @@ const koKR: LocaleResource<typeof enUS> = {
     INVALID_STAGE: '0~1000 사이의 정수를 입력하거나 비워 두세요.',
     ISSUE_BLOCKED: '작업이 아직 차단 작업을 기다리고 있습니다.',
     SUBTASKS_OPEN: '먼저 하위 작업을 완료하거나 취소하세요.',
-    INVALID_INTAKE: '제한 범위 안에서 텍스트나 파일을 제공하세요.',
     INVALID_FILE: '내가 업로드한 파일이 아닙니다.',
     FILE_TOO_LARGE: '파일이 너무 큽니다.',
     FILES_UNAVAILABLE: '이 애플리케이션은 파일을 저장하지 않습니다.',

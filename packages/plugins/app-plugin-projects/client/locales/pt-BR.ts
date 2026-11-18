@@ -291,7 +291,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     INVALID_STAGE: 'Insira um número inteiro de 0 a 1000 ou deixe em branco.',
     ISSUE_BLOCKED: 'A tarefa ainda está aguardando as tarefas que a bloqueiam.',
     SUBTASKS_OPEN: 'Primeiro conclua ou cancele as subtarefas.',
-    INVALID_INTAKE: 'Forneça algum texto ou arquivo, dentro dos limites.',
     INVALID_FILE: 'Um arquivo não é um dos seus uploads.',
     FILE_TOO_LARGE: 'O arquivo é muito grande.',
     FILES_UNAVAILABLE: 'Este aplicativo não armazena arquivos.',

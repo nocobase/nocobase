@@ -274,7 +274,6 @@ const pages = {
     INVALID_STAGE: '请输入 0 到 1000 的整数，或留空。',
     ISSUE_BLOCKED: '任务还在等待阻塞它的任务。',
     SUBTASKS_OPEN: '请先完成或取消它的子任务。',
-    INVALID_INTAKE: '请填写文字或添加文件，并且不要超过上限。',
     INVALID_FILE: '有文件不是你上传的。',
     FILE_TOO_LARGE: '文件太大。',
     FILES_UNAVAILABLE: '这个应用没有配置文件存储。',

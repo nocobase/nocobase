@@ -275,7 +275,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     INVALID_STAGE: '輸入 0 到 1000 之間的整數，或留空。',
     ISSUE_BLOCKED: '此任務仍在等待阻擋它的任務。',
     SUBTASKS_OPEN: '請先完成或取消它的子任務。',
-    INVALID_INTAKE: '在限制範圍內提供一些文字或檔案。',
     INVALID_FILE: '檔案不是您上傳的檔案之一。',
     FILE_TOO_LARGE: '檔案太大。',
     FILES_UNAVAILABLE: '此應用程式不儲存檔案。',

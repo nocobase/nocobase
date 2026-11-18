@@ -296,8 +296,6 @@ const esES: LocaleResource<typeof enUS> = {
     INVALID_STAGE: 'Ingrese un número entero de 0 a 1000 o déjelo vacío.',
     ISSUE_BLOCKED: 'La tarea sigue esperando a las tareas que la bloquean.',
     SUBTASKS_OPEN: 'Primero termina o cancela sus subtareas.',
-    INVALID_INTAKE:
-      'Proporcione algún texto o un archivo, dentro de los límites.',
     INVALID_FILE: 'Un archivo no es una de tus cargas.',
     FILE_TOO_LARGE: 'El archivo es demasiado grande.',
     FILES_UNAVAILABLE: 'Esta aplicación no almacena archivos.',

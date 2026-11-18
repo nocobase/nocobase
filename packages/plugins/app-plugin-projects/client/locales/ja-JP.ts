@@ -297,7 +297,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     INVALID_STAGE: '0 ～ 1000 の整数を入力するか、空のままにします。',
     ISSUE_BLOCKED: 'このタスクはまだブロックしているタスクを待っています。',
     SUBTASKS_OPEN: '先にサブタスクを完了するかキャンセルしてください。',
-    INVALID_INTAKE: '制限内でテキストまたはファイルを与えてください。',
     INVALID_FILE: 'ファイルはアップロードされたものではありません。',
     FILE_TOO_LARGE: 'ファイルが大きすぎます。',
     FILES_UNAVAILABLE: 'このアプリケーションはファイルを保存しません。',
