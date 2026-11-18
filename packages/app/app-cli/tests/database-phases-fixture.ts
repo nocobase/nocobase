@@ -10,7 +10,10 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { provisionTestDatabases } from '@nocobase/db-testing';
+import {
+  provisionTestDatabases,
+  testDatabasePackage,
+} from '@nocobase/db-testing';
 import {
   createAppDatabaseManager,
   type AppDatabaseConfig,
@@ -55,7 +58,7 @@ export async function createDatabasePhasesFixture({
     JSON.stringify({
       name: 'database-phases-fixture',
       dependencies: {
-        [`@nocobase/db-${database.connections.main.dialect}`]: '*',
+        [testDatabasePackage(databases.dialect)]: '*',
       },
       version: '1.0.0',
       type: 'module',
