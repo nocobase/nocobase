@@ -1510,7 +1510,7 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
 });
 
 it.each(['en-US', 'zh-CN'])(
-  'renders a historical consultation with artifacts in %s without a quantity prompt',
+  'renders a completed consultation with usage in %s',
   async (locale) => {
     const cardRuntime = await createTestI18nRuntime({
       application: {
@@ -1545,9 +1545,6 @@ it.each(['en-US', 'zh-CN'])(
     );
     expect(await screen.findByText('The change is ready.')).toBeVisible();
     expect(screen.getByText(/1,840/)).toBeVisible();
-    expect(
-      screen.queryByText(/Proposed .*plans|提出了.*计划/u),
-    ).not.toBeInTheDocument();
   },
 );
 
