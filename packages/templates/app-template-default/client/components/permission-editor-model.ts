@@ -593,20 +593,21 @@ export function setScopeValue(
     if (other.id === actionId || !otherGrant?.scopes) continue;
     const otherScopes: Record<string, string> = { ...otherGrant.scopes };
     let changed = false;
+    let wider = false;
     for (const slot of other.scopes ?? []) {
       const own = otherScopes[slot.id];
       if (!slot.followsView || own === undefined) continue;
       const index = viewRank(menu, own);
-      // Only a value provably no narrower than View goes back to following it.
+      // Only a value provably no narrower than View goes back to following it. One equal to View follows it quietly:
+      // nothing the user chose is lost.
       if (index !== -1 && index <= viewIndex) {
         delete otherScopes[slot.id];
         changed = true;
+        if (index < viewIndex) wider = true;
       }
     }
-    if (changed) {
-      next[other.id] = { ...otherGrant, scopes: otherScopes };
-      reset.push(other.label);
-    }
+    if (changed) next[other.id] = { ...otherGrant, scopes: otherScopes };
+    if (wider) reset.push(other.label);
   }
   const viewLabel = viewScopeLabel(menu, next) ?? '';
   return {

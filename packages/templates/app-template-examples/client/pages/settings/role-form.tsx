@@ -73,6 +73,7 @@ function RoleEditor(): ReactElement {
     sourceKey
       ? `authorization/permissionSets/${encodeURIComponent(sourceKey)}`
       : 'authorization/permissionSets/options',
+    true,
   );
   const missingRef = useRef<unknown>(undefined);
   useEffect(() => {
@@ -117,7 +118,9 @@ function RoleEditor(): ReactElement {
     scope: `${session?.user.id}:settings:role:${key}`,
   });
   const [requestBusy, setRequestBusy] = useState(false);
-  const busy = requestBusy || submission.submitting;
+  // The role as it was before a save: the draft stays on screen, read-only, until the saved role has loaded.
+  const [savedFrom, setSavedFrom] = useState<unknown>();
+  const busy = requestBusy || submission.submitting || savedFrom !== undefined;
   const [error, setError] = useState<unknown>();
   const [reloadConfirm, setReloadConfirm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -208,6 +211,13 @@ function RoleEditor(): ReactElement {
     setSubmitted(false);
     setError(undefined);
   };
+  if (
+    savedFrom !== undefined &&
+    (request.data !== savedFrom || request.error)
+  ) {
+    setSavedFrom(undefined);
+    if (!request.error) reset();
+  }
 
   const save = async (form: HTMLFormElement): Promise<void> => {
     if (options.error || !workspace || (!creating && request.error)) return;
@@ -259,7 +269,7 @@ function RoleEditor(): ReactElement {
         );
       else {
         originalRevisionRef.current = undefined;
-        reset();
+        setSavedFrom(request.data);
         request.reload();
       }
     } catch (next) {
@@ -418,7 +428,8 @@ function RoleEditor(): ReactElement {
           {t('settings.reload')}
         </Button>
       )}
-      {(request.loading && sourceKey) || options.loading ? (
+      {(request.loading && sourceKey && !request.data) ||
+      (options.loading && !options.data) ? (
         <SettingsLoading />
       ) : (
         !request.error &&

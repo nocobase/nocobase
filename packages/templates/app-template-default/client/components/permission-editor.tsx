@@ -647,6 +647,22 @@ export function PermissionEditor({
   const [pending, setPending] = useState<PendingDisable | undefined>();
   // A host that turns read-only while a confirmation is open cancels it.
   if (readOnly && pending) setPending(undefined);
+  // Notices and a pending confirmation describe the draft they came from. When the host replaces the draft itself,
+  // such as discarding changes or loading another revision, they no longer apply.
+  const [shown, setShown] = useState<{
+    readonly value: PermissionGrants;
+    readonly expected: PermissionGrants | undefined;
+  }>({ value, expected: undefined });
+  if (shown.value !== value) {
+    setShown({ value, expected: undefined });
+    if (
+      !shown.expected ||
+      JSON.stringify(shown.expected) !== JSON.stringify(value)
+    ) {
+      setNotices([]);
+      setPending(undefined);
+    }
+  }
   const current =
     menus.find(({ menu }) => menu.id === selectedId) ??
     menus.find(({ menu }) => menu.id === firstConfigurable);
@@ -659,6 +675,7 @@ export function PermissionEditor({
     setPending(undefined);
   };
   const commit = (change: PermissionChange): void => {
+    setShown({ value, expected: change.grants });
     setNotices(change.notices);
     setPending(undefined);
     onChange(change.grants);
@@ -706,14 +723,24 @@ export function PermissionEditor({
 
   const footerBar = (
     <div className='flex min-w-0 flex-wrap items-center gap-2 border-t px-4 py-3'>
-      <span role='status' className='mr-auto text-xs text-muted-foreground'>
-        {unrestricted ? null : dirty ? (
-          <span className='inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400'>
-            <span aria-hidden className='size-1.5 rounded-full bg-current' />
-            {words.unsaved}
-          </span>
-        ) : (
-          words.visibleMenus(counts.visible, counts.total)
+      {/* The count stays in view while editing: it is what turning a menu's actions off changes. */}
+      <span
+        role='status'
+        className='mr-auto inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground'
+      >
+        {unrestricted ? null : (
+          <>
+            <span>{words.visibleMenus(counts.visible, counts.total)}</span>
+            {dirty && (
+              <span className='inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400'>
+                <span
+                  aria-hidden
+                  className='size-1.5 rounded-full bg-current'
+                />
+                {words.unsaved}
+              </span>
+            )}
+          </>
         )}
       </span>
       {footer && (
