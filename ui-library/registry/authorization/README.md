@@ -26,7 +26,7 @@ The item installs `permission-editor.tsx`, the rendering-free rules in `permissi
 ### Host slots
 
 - `header`: the role's name and host actions, such as Preview as this role and Duplicate as new role.
-- `footer`, `dirty`: Discard and Save buttons, and the Unsaved changes indicator. The host asks before switching roles or leaving with unsaved changes.
+- `footer`, `dirty`: Discard and Save buttons, and the Unsaved changes indicator beside the visible menu count. The host asks before switching roles or leaving with unsaved changes. Notices and a pending confirmation belong to the draft they came from: when the host replaces `value` itself, such as on Discard, they are cleared.
 - `menu.notice`: a note under the action list, such as who can grant access to others. State what the server actually enforces.
 - `unrestricted`: shows “All permissions (unrestricted)” for a role such as Administrator, with nothing to set. `readOnly` disables every control.
 - `slot.configuration`: extra controls for a selected scope, such as `PermissionFilter` for a custom filter.
@@ -42,7 +42,7 @@ These rules belong to the draft: the server still enforces every action and scop
 
 Render `RoleList` inside React Router. Supply `roles` with stable `key`, localized `title`, a `to` destination and a `protected` boolean; pass localized `labels.protected` and `labels.custom`, and an optional `ariaLabel` for the list. The component owns no loading, search, sort, authorization, persistence or empty state; the host role page keeps those responsibilities. It introduces no translation keys.
 
-Both templates preinstall the source and use it in `client/pages/settings/roles.tsx`. New applications receive it when created from the updated template. Existing applications receive both the new component and the role-page integration through a template source upgrade; Registry publication or dependency updates alone do not replace installed source. Preserve application-owned role fields, routes, grants and page behavior when reconciling an existing application.
+Both templates preinstall the source. Their Roles and permissions page lists roles in its own sidebar beside `permission-editor` rather than through `RoleList`, which stays available for role pages that show a separate list. New applications receive the source when created from the updated template. Existing applications receive the component and the role-page integration through a template source upgrade; Registry publication or dependency updates alone do not replace installed source. Preserve application-owned role fields, routes, grants and page behavior when reconciling an existing application.
 
 ## Default data scope administration
 
