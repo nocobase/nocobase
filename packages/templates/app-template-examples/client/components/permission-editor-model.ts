@@ -645,7 +645,6 @@ export function setScopeValue(
     if (other.id === actionId || !otherGrant?.scopes) continue;
     const otherScopes: Record<string, string> = { ...otherGrant.scopes };
     let changed = false;
-    let wider = false;
     for (const follower of other.scopes ?? []) {
       const own = otherScopes[follower.id];
       const leader = leaderOf(menu, follower);
@@ -656,8 +655,8 @@ export function setScopeValue(
       )
         continue;
       const current = viewScopeValue(menu, next, follower);
-      // A value the leader lists and that is not provably narrower goes back to following it. One equal to the
-      // leader follows it quietly: nothing the user chose is lost. An unlisted value is kept as stored.
+      // A value the leader lists and that is not provably narrower, wider or now equal, goes back to following it, and
+      // the notice names it so the change in the list is explained. An unlisted value is kept as stored.
       if (
         current === undefined ||
         !listed(leader.slot, own) ||
@@ -666,13 +665,12 @@ export function setScopeValue(
         continue;
       delete otherScopes[follower.id];
       changed = true;
-      if (own !== current) {
-        wider = true;
-        leaderLabel = viewScopeLabel(menu, next, follower) ?? current;
-      }
+      leaderLabel = viewScopeLabel(menu, next, follower) ?? current;
     }
-    if (changed) next[other.id] = { ...otherGrant, scopes: otherScopes };
-    if (wider) reset.push(other.label);
+    if (changed) {
+      next[other.id] = { ...otherGrant, scopes: otherScopes };
+      reset.push(other.label);
+    }
   }
   return {
     grants: next,

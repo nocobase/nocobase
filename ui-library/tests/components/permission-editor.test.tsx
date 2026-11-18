@@ -264,7 +264,7 @@ describe('two-column permission editor', () => {
     });
     expect(
       screen.getByText(
-        'Edit contracts now follows the view scope (Their own records) again, because it was wider.',
+        'Edit contracts now follows the view scope (Their own records) again.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -300,7 +300,7 @@ describe('two-column permission editor', () => {
       await screen.findByRole('option', { name: 'Their own records' }),
     );
     const notice =
-      'Edit contracts now follows the view scope (Their own records) again, because it was wider.';
+      'Edit contracts now follows the view scope (Their own records) again.';
     expect(screen.getByText(notice)).toBeInTheDocument();
     // The menu count stays beside the unsaved marker.
     expect(screen.getByText('Unsaved changes')).toBeInTheDocument();

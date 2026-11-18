@@ -236,17 +236,22 @@ describe('permission editor model', () => {
       'own',
     );
     expect(change.grants['contracts.update']?.scopes).toEqual({});
-    // Archive was already Their own records: it follows View without being named.
+    // Archive was already Their own records: it follows View too, and is named so the change in its select is
+    // explained.
     expect(change.grants['contracts.archive']?.scopes).toEqual({});
     expect(change.notices).toEqual([
-      { kind: 'scope-reset', view: 'Their own records', actions: ['Edit'] },
+      {
+        kind: 'scope-reset',
+        view: 'Their own records',
+        actions: ['Archive', 'Edit'],
+      },
     ]);
     expect(
       effectiveScopeValue(contracts, change.grants, update, updateSlot),
     ).toBe('own');
   });
 
-  it('lets a follower equal to the new View scope follow it without a notice', () => {
+  it('names a follower equal to the new View scope when it goes back to following it', () => {
     const change = setScopeValue(
       modules,
       {
@@ -258,7 +263,9 @@ describe('permission editor model', () => {
       'department',
     );
     expect(change.grants['contracts.update']?.scopes).toEqual({});
-    expect(change.notices).toEqual([]);
+    expect(change.notices).toEqual([
+      { kind: 'scope-reset', view: 'Their department', actions: ['Edit'] },
+    ]);
   });
 
   it('offers only declared subsets when View options filter different things', () => {

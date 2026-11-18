@@ -329,9 +329,9 @@ const settings = {
     confirm: 'Turn off',
     dismiss: 'Dismiss',
     noticeScopeReset_one:
-      '{{actions}} now follows the view scope ({{view}}) again, because it was wider.',
+      '{{actions}} now follows the view scope ({{view}}) again.',
     noticeScopeReset_other:
-      '{{actions}} now follow the view scope ({{view}}) again, because they were wider.',
+      '{{actions}} now follow the view scope ({{view}}) again.',
     noticeAutoEnabled: 'Also turned on {{actions}}, which this needs.',
     noticeStaysOff: '{{action}} stays off.',
     noticeTurnOnFirst_one:

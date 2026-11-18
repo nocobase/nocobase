@@ -305,9 +305,9 @@ const settings = {
     confirm: '关闭',
     dismiss: '知道了',
     noticeScopeReset_one:
-      '{{actions}}的范围比查看宽，已改回和查看一样（{{view}}）。',
+      '查看已收窄，{{actions}}已改回和查看一样（{{view}}）。',
     noticeScopeReset_other:
-      '{{actions}}的范围比查看宽，已改回和查看一样（{{view}}）。',
+      '查看已收窄，{{actions}}已改回和查看一样（{{view}}）。',
     noticeAutoEnabled: '已同时开启它依赖的{{actions}}。',
     noticeStaysOff: '{{action}}保持关闭。',
     noticeTurnOnFirst_one:
