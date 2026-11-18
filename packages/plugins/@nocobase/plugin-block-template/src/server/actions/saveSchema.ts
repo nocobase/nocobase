@@ -7,10 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context } from '@nocobase/actions';
+import type { ACLRole } from '@nocobase/acl';
+import type { Context, Next } from '@nocobase/actions';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
-export async function saveSchema(ctx: Context, next) {
+export async function saveSchema(ctx: Context, next: Next) {
+  const roles: ACLRole[] = ctx.app.acl.getRoles(ctx.state.currentRoles || [ctx.state.currentRole]);
+  if (!roles.some((role) => role.name === 'root' || role.effectiveSnippets().allowed.includes('ui.uiSchemas'))) {
+    ctx.throw(403);
+  }
+
   const { filterByTk, values, removeParentsIfNoChildren, breakRemoveOn, position } = ctx.action.params;
 
   const repository = ctx.db.getRepository<UiSchemaRepository>('uiSchemas');
