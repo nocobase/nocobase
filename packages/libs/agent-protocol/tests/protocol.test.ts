@@ -27,6 +27,7 @@ import {
   routePath,
   RUNNER_ROUTES,
   RunCliSchema,
+  RunInputSchema,
   RunMountSchema,
   RunPayloadSchema,
   SkillBundleSchema,
@@ -39,6 +40,24 @@ import {
   RunnerFeatureSchema,
   NpmCredentialRequestSchema,
 } from '../src/index.js';
+
+it('reads a retired input type as a generic input without losing its details', () => {
+  const input = {
+    id: 'input-1',
+    type: 'retired-trigger',
+    at: '2026-10-01T00:00:00.000Z',
+    actor: { kind: 'user', id: 'alice', name: 'Alice' },
+    text: 'Historical context',
+    payload: { revision: 1 },
+  };
+  expect(RunInputSchema.parse(input)).toEqual({ ...input, type: 'custom' });
+  expect(RunInputSchema.parse({ ...input, type: 'comment' }).type).toBe(
+    'comment',
+  );
+  expect(RunInputSchema.safeParse({ ...input, type: null }).success).toBe(
+    false,
+  );
+});
 
 it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
   expect(CancelAckRequestSchema.parse({})).toEqual({});
@@ -515,7 +534,6 @@ describe('agent protocol', () => {
     expect(exitCodeFor('ISSUE_NOT_FOUND', 'NOT_FOUND')).toBe(
       EXIT_CODES.notFound,
     );
-    expect(exitCodeFor('PLAN_REQUIRED')).toBe(EXIT_CODES.planRequired);
 
     const error = new ProtocolError('LEASE_LOST', 'Lost', { runId: 'r1' });
     expect(error).toMatchObject({

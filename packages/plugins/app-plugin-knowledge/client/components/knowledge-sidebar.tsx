@@ -394,6 +394,31 @@ function SpaceGroup({
       else next.add(id);
       return next;
     });
+  const name =
+    entry.documents === undefined
+      ? label
+      : `${label}, ${t('knowledge.directory.count', { count: entry.documents })}`;
+  const chevron = (
+    <ChevronRightIcon
+      aria-hidden='true'
+      className={cn(
+        'size-4 shrink-0 text-muted-foreground transition-transform',
+        open && 'rotate-90',
+      )}
+    />
+  );
+  const title = (
+    <>
+      <span className='min-w-0 flex-1 truncate' title={label}>
+        {label}
+      </span>
+      {entry.documents !== undefined ? (
+        <span className='shrink-0 text-xs text-muted-foreground'>
+          {t('knowledge.directory.count', { count: entry.documents })}
+        </span>
+      ) : null}
+    </>
+  );
   return (
     <Collapsible
       open={open}
@@ -405,35 +430,50 @@ function SpaceGroup({
       {...drop.handlers}
     >
       <div className='flex items-center gap-1'>
-        <CollapsibleTrigger
-          render={
+        {entry.onSelectSpace ? (
+          // The arrow alone folds the space; its name selects it, so the view shows and acts on it, and unfolds it.
+          <>
+            <CollapsibleTrigger
+              render={
+                <button
+                  type='button'
+                  aria-label={
+                    open
+                      ? t('knowledge.tree.collapse')
+                      : t('knowledge.tree.expand')
+                  }
+                  className='inline-flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-muted'
+                />
+              }
+            >
+              {chevron}
+            </CollapsibleTrigger>
             <button
               type='button'
-              aria-label={
-                entry.documents === undefined
-                  ? label
-                  : `${label}, ${t('knowledge.directory.count', { count: entry.documents })}`
-              }
+              aria-label={name}
               className='flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm font-medium hover:bg-muted'
-            />
-          }
-        >
-          <ChevronRightIcon
-            aria-hidden='true'
-            className={cn(
-              'size-4 shrink-0 text-muted-foreground transition-transform',
-              open && 'rotate-90',
-            )}
-          />
-          <span className='min-w-0 flex-1 truncate' title={label}>
-            {label}
-          </span>
-          {entry.documents !== undefined ? (
-            <span className='shrink-0 text-xs text-muted-foreground'>
-              {t('knowledge.directory.count', { count: entry.documents })}
-            </span>
-          ) : null}
-        </CollapsibleTrigger>
+              onClick={() => {
+                entry.onSelectSpace?.();
+                if (!open) setOpen(true);
+              }}
+            >
+              {title}
+            </button>
+          </>
+        ) : (
+          <CollapsibleTrigger
+            render={
+              <button
+                type='button'
+                aria-label={name}
+                className='flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm font-medium hover:bg-muted'
+              />
+            }
+          >
+            {chevron}
+            {title}
+          </CollapsibleTrigger>
+        )}
         {inherited ? (
           <Tooltip>
             <TooltipTrigger
@@ -488,11 +528,6 @@ function SpaceGroup({
         <p className='px-2 text-xs text-muted-foreground'>{entry.hint}</p>
       ) : null}
       <CollapsibleContent className='pt-0.5'>
-        {entry.onSelectSpace ? (
-          <Button variant='ghost' size='sm' onClick={entry.onSelectSpace}>
-            {t('knowledge.directory.selectTarget', { title: label })}
-          </Button>
-        ) : null}
         {entry.archivedDocuments ? (
           <p className='px-2 text-xs text-muted-foreground'>
             {t('knowledge.directory.archivedCount', {

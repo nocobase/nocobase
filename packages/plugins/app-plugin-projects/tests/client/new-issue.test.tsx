@@ -15,7 +15,6 @@ import {
   type ExecutorPresentationProps,
 } from '../../client/kit/executor-presentation.js';
 import { renderAt } from './render.js';
-import { IssueCreationModeContext } from '../../client/kit/issue-creation.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -74,19 +73,10 @@ const renderNewIssue = (search = '?tab=manual') =>
 const location = () => screen.getByTestId('location').textContent;
 
 describe('the new issue dialog', () => {
-  it('lets applications retain a manual form even when an AI tab was requested', async () => {
-    renderAt('/issues/new?tab=ai', [
-      {
-        path: '/issues/new',
-        element: (
-          <IssueCreationModeContext.Provider value='manual'>
-            <NewIssuePage />
-          </IssueCreationModeContext.Provider>
-        ),
-      },
-      { path: '*', element: <p>list</p> },
-    ]);
+  it('opens the manual form from an old AI draft link', async () => {
+    renderNewIssue('?tab=ai&draft=previous');
     const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByRole('tablist')).toBeNull();
     fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
       target: { value: 'Manual fallback' },
     });
@@ -223,32 +213,6 @@ describe('the new issue dialog', () => {
     expect(api.calls.some((call) => call.path === 'projects/executors')).toBe(
       false,
     );
-  });
-});
-
-describe('the AI draft tab', () => {
-  beforeEach(() => window.localStorage.clear());
-
-  it('is the default, and the tab chosen last is remembered', async () => {
-    const first = renderNewIssue('');
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByTestId('intake-split')).toBeTruthy();
-    expect(
-      within(dialog).getByLabelText('issueForm.titleLabel'),
-    ).not.toBeVisible();
-    fireEvent.click(
-      within(dialog).getByRole('tab', { name: 'newIssue.tabs.manual' }),
-    );
-    expect(
-      await within(dialog).findByLabelText('issueForm.titleLabel'),
-    ).toBeVisible();
-    first.unmount();
-    renderNewIssue('');
-    expect(
-      await within(await screen.findByRole('dialog')).findByLabelText(
-        'issueForm.titleLabel',
-      ),
-    ).toBeVisible();
   });
 });
 

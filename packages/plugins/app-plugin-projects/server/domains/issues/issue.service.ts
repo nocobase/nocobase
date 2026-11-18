@@ -8,15 +8,10 @@ import type {
   Issue,
   UpdateIssueRequest,
 } from '../../../shared/issues.js';
-import { scopeOf, type Viewer } from '../../access/viewer.js';
+import { type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
 import { SYSTEM_ACTOR, type Actor } from '../../kernel/actor.js';
-import {
-  DomainError,
-  forbidden,
-  invalid,
-  notFound,
-} from '../../kernel/errors.js';
+import { DomainError, invalid, notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import { mentions, newMentions } from '../../kernel/mentions.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
@@ -77,11 +72,6 @@ export interface IssueService {
     executor: Executor,
     cause: { readonly actor: Actor; readonly name: string },
   ): Promise<string[]>;
-  /**
-   * For undoing a plan: soft-deletes an issue the viewer created (or any, for one who may delete issues), as `remove`
-   * does, recorded as retracted. Not offered over HTTP; the plans domain checks that its plan created the issue.
-   */
-  retract(viewer: Viewer, idOrKey: string): Promise<void>;
   restore(viewer: Viewer, idOrKey: string): Promise<Issue>;
   /**
    * In the caller's transaction (a registered status event's, through `statusEvents.fire`): moves the issue where the
@@ -253,7 +243,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           { ...deps, conn: tx.conn, viewer },
           input,
         );
-        // Take the graph before the counter even without waits: a later plan row may add relationships.
+        // Take the graph before the counter so a unit of work can edit relationships after creating an issue.
         await deps
           .relations()
           .lock(
@@ -355,7 +345,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           viewer.actor.via !== 'agent' &&
           viewer.actor.id === before.ownerUserId;
         // Status and project changes can release waits. Take the graph guard
-        // before this issue's first write, in the same order as relationship edits and plan execution.
+        // before this issue's first write, in the same order as relationship edits.
         if (
           patch.parentIssueId !== undefined ||
           patch.stage !== undefined ||
@@ -514,7 +504,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
 
     async remove(viewer, idOrKey) {
       requireDeleter(viewer);
-      await softDelete(viewer, idOrKey, false);
+      await softDelete(viewer, idOrKey);
     },
 
     releaseExecutor: (executor, cause) =>
@@ -540,10 +530,6 @@ export function createIssueService(deps: IssueDeps): IssueService {
         }
         return released;
       }),
-
-    async retract(viewer, idOrKey) {
-      await softDelete(viewer, idOrKey, true);
-    },
 
     async restore(viewer, idOrKey) {
       requireDeleter(viewer);
@@ -574,34 +560,17 @@ export function createIssueService(deps: IssueDeps): IssueService {
   };
   return service;
 
-  /** `remove`, or with `retracted` the creator's own removal of what a plan created. */
-  async function softDelete(
-    viewer: Viewer,
-    idOrKey: string,
-    retracted: boolean,
-  ): Promise<void> {
+  async function softDelete(viewer: Viewer, idOrKey: string): Promise<void> {
     await deps.tx.run(async (tx) => {
       await deps.relations().lock(tx);
       const issue = await requireVisible(tx.conn, viewer, idOrKey);
-      if (
-        retracted &&
-        issue.createdById !== viewer.userId &&
-        scopeOf(viewer, 'pm.issues', 'delete') !== 'all'
-      )
-        throw forbidden('Only its creator may take an issue back.');
       const now = new Date().toISOString();
       await updateIssue(tx.conn, issue.id, {
         deletedAt: now,
         deletedById: viewer.userId,
         updatedAt: now,
       });
-      await record(
-        tx,
-        issue.id,
-        viewer.actor,
-        'issue_deleted',
-        retracted ? { retracted: true } : {},
-      );
+      await record(tx, issue.id, viewer.actor, 'issue_deleted');
       await deps
         .relations()
         .removed(tx, { ...issue, deletedAt: now }, viewer.actor);

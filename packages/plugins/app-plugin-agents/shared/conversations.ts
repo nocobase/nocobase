@@ -498,8 +498,6 @@ export interface ConsultationNotice {
     readonly inputTokens: number;
     readonly outputTokens: number;
   } | null;
-  /** Operation plans it proposed, which the person confirms here. */
-  readonly plans: number;
 }
 
 export type ConversationNoticeCode = ConversationNotice['code'];

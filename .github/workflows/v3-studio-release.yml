@@ -98,7 +98,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            .github/workflows
           persist-credentials: false
 
       - name: Set up Node.js
@@ -107,7 +109,7 @@ jobs:
           node-version: 24
 
       - name: Check image publication rules
-        run: node --test scripts/tests/studio-release-images.test.mjs
+        run: node --test scripts/tests/studio-release-images.test.mjs scripts/tests/studio-release-ce.test.mjs
 
       # Without the publish token a real release could only fail at the push, after all six builds. A dry run goes on and
       # skips the registry checks.
@@ -306,7 +308,10 @@ jobs:
               if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${EE_IMAGE_REPOSITORY}:${tag}\`"; fi
             done <<< "$EE_TAGS"
             while IFS= read -r tag; do
-              if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${CE_IMAGE_REPOSITORY}:${tag}\`"; fi
+              [ -n "$tag" ] || continue
+              for registry in "$REGISTRY" registry.cn-shanghai.aliyuncs.com docker.io; do
+                echo "- \`${registry}/${CE_IMAGE_REPOSITORY}:${tag}\`"
+              done
             done <<< "$CE_TAGS"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -523,9 +528,60 @@ jobs:
           DIGESTS: ${{ runner.temp }}/digests
         run: node scripts/studio-release-images.mjs publish
 
+  public-ce:
+    name: Publish Studio CE to ${{ matrix.registry }}
+    needs: [prepare, manifest]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        registry: [registry.cn-shanghai.aliyuncs.com, docker.io]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Sign in to the source registry for CE
+        uses: docker/login-action@v3
+        with:
+          registry: pkg-v3.nocobase.com
+          username: ci
+          password: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+
+      - name: Sign in to the Shanghai public registry
+        if: matrix.registry == 'registry.cn-shanghai.aliyuncs.com'
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-shanghai.aliyuncs.com
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+
+      - name: Sign in to Docker Hub
+        if: matrix.registry == 'docker.io'
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish Studio CE to the public registries
+        env:
+          IMAGE_PLAN: ${{ needs.prepare.outputs.image_plan }}
+          CE_DIGEST: ${{ needs.manifest.outputs.ce_digest }}
+          DESTINATION: ${{ matrix.registry }}
+        run: |
+          if ! command -v skopeo >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y skopeo
+          fi
+          node scripts/studio-release-ce.mjs
+
   release:
     name: Tag studio and bump its version
-    needs: [prepare, manifest]
+    needs: [prepare, manifest, public-ce]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -919,7 +975,10 @@ jobs:
             echo
             echo "Studio CE index \`${CE_DIGEST}\`, tagged:"
             while IFS= read -r tag; do
-              if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${CE_IMAGE_REPOSITORY}:${tag}\`"; fi
+              [ -n "$tag" ] || continue
+              for registry in "$REGISTRY" registry.cn-shanghai.aliyuncs.com docker.io; do
+                echo "- \`${registry}/${CE_IMAGE_REPOSITORY}:${tag}\`"
+              done
             done <<< "$CE_TAGS"
             echo
             echo "- Git tag \`v${VERSION}\`: ${TAGGED:-not pushed}"
@@ -930,6 +989,9 @@ jobs:
             echo
             echo "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`"
             echo "\`docker pull ${REGISTRY}/${EE_IMAGE_REPOSITORY}:${VERSION}\`"
+            echo "\`docker pull ${REGISTRY}/${CE_IMAGE_REPOSITORY}:${VERSION}\`"
+            echo "\`docker pull registry.cn-shanghai.aliyuncs.com/${CE_IMAGE_REPOSITORY}:${VERSION}\`"
+            echo "\`docker pull docker.io/${CE_IMAGE_REPOSITORY}:${VERSION}\`"
             echo
             echo '### Release notes'
             echo
@@ -1058,6 +1120,9 @@ jobs:
             "" \
             "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`" \
             "\`docker pull ${REGISTRY}/${EE_IMAGE_REPOSITORY}:${VERSION}\`" \
+            "\`docker pull ${REGISTRY}/${CE_IMAGE_REPOSITORY}:${VERSION}\`" \
+            "\`docker pull registry.cn-shanghai.aliyuncs.com/${CE_IMAGE_REPOSITORY}:${VERSION}\`" \
+            "\`docker pull docker.io/${CE_IMAGE_REPOSITORY}:${VERSION}\`" \
             "" \
             "已打 git tag \`v${VERSION}\`，\`${SOURCE_BRANCH}\` 的版本号已改为 \`${NEXT}\`。" \
             "$extra" \
@@ -1073,12 +1138,12 @@ jobs:
   # Covers failures in every job; a failed merge back is notified by the release job itself.
   notify-failure:
     name: Notify release failure
-    needs: [prepare, image, manifest, release]
+    needs: [prepare, image, manifest, public-ce, release]
     if: >-
       always() && !cancelled() && !inputs.dry_run
       && needs.release.outputs.merged != 'false'
       && (needs.prepare.result == 'failure' || needs.image.result == 'failure' || needs.manifest.result == 'failure'
-        || needs.release.result == 'failure')
+        || needs.public-ce.result == 'failure' || needs.release.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -1101,11 +1166,14 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           VERSION: ${{ needs.prepare.outputs.version }}
           CHANNEL: ${{ inputs.channel }}
+          PUBLIC_CE_RESULT: ${{ needs.public-ce.result }}
           MANIFEST_RESULT: ${{ needs.manifest.result }}
           TAGGED: ${{ needs.release.outputs.tagged }}
         run: |
           if [ "$TAGGED" = "true" ]; then
             state="镜像已推送，git tag \`v${VERSION}\` 已打，但版本号加一没有完成，需要手动把 studio 的版本号改成下一个版本。"
+          elif [ "$PUBLIC_CE_RESULT" = "failure" ]; then
+            state="CE 公开镜像同步失败。请在本次运行选择 Re-run failed jobs 补齐公开仓库，然后继续发版。"
           elif [ "$MANIFEST_RESULT" = "success" ]; then
             state="镜像已推送到私有源，但 git tag \`v${VERSION}\` 没有打上，版本号也没有加一，需要手动补上。"
           else

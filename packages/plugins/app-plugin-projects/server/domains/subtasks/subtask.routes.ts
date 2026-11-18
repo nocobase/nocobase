@@ -9,12 +9,7 @@ import {
 } from '@nocobase/app-server/router';
 import type { Hono } from 'hono';
 
-import {
-  delegatedWrite,
-  refuseDelegated,
-  viewerOf,
-  type ViewerEnv,
-} from '../../access/request.js';
+import { viewerOf, type ViewerEnv } from '../../access/request.js';
 import { domainRouter, personOrRunSecurity, tags } from '../../kernel/http.js';
 import {
   AddDependencyBody,
@@ -77,28 +72,6 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
     async (context) => {
       const { issueId } = context.req.valid('param');
       const input = context.req.valid('json');
-      const delegated = await delegatedWrite(context, {
-        title: `Link ${issueId} and ${input.dependsOnIssueId}`,
-        rows: [
-          {
-            op: 'dependency',
-            params: {
-              action: 'add',
-              issue: issueId,
-              dependsOn: input.dependsOnIssueId,
-              type: input.type ?? 'blockedBy',
-            },
-          },
-        ],
-      });
-      if (delegated)
-        return context.json(
-          {
-            data: delegated.plan.rows[0]?.result?.created ?? null,
-            meta: delegated.meta,
-          },
-          201,
-        );
       return context.json(
         {
           data: await subtasks.addDependency(viewerOf(context), issueId, input),
@@ -111,7 +84,6 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
     '/:issueId/dependencies/:dependencyId',
     async (context, next) => {
       requireEditor(viewerOf(context));
-      refuseDelegated(context);
       await next();
     },
     describeRoute({
@@ -126,7 +98,7 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The target is no longer visible, the change would create a dependency cycle, or a delegated caller needs a confirmed plan (PLAN_REQUIRED).',
+          'The target is no longer visible, the change would create a dependency cycle.',
         ),
         404: apiErrorResponse(404),
         409: apiErrorResponse(
@@ -196,10 +168,6 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
       }),
       description: `${access} Removes the link of \`type\` (\`blockedBy\` by default) to \`dependsOnIssueId\`.`,
       responses: {
-        200: {
-          description:
-            'For a caller acting for someone else, such as an agent in a conversation: the link was removed as an undoable plan of theirs, described in `meta`.',
-        },
         204: emptyResponse(),
         ...apiErrorResponses,
         404: apiErrorResponse(404),
@@ -214,24 +182,9 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
     async (context) => {
       const { dependsOnIssueId, type } = context.req.valid('json');
       const { issueId } = context.req.valid('param');
-      const delegated = await delegatedWrite(context, {
-        title: `Unlink ${issueId} and ${dependsOnIssueId}`,
-        rows: [
-          {
-            op: 'dependency',
-            params: {
-              action: 'remove',
-              issue: issueId,
-              dependsOn: dependsOnIssueId,
-              type: type ?? 'blockedBy',
-            },
-          },
-        ],
-      });
-      if (delegated) return context.json({ data: null, meta: delegated.meta });
       await subtasks.removeDependencyTo(
         viewerOf(context),
-        context.req.valid('param').issueId,
+        issueId,
         dependsOnIssueId,
         type,
       );

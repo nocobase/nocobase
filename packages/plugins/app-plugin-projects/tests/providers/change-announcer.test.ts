@@ -190,14 +190,11 @@ describe('change announcements', () => {
   it('announces each kind of data and splits large batches without losing task scope', () => {
     const { it: changes, published } = announcer();
     changes.add({ type: 'label.changed' });
-    changes.add({ type: 'plan.changed' });
-    changes.add({ type: 'intake.changed' });
     for (let i = 0; i <= ANNOUNCED_ISSUES_MAX; i += 1)
       changes.add({ type: 'issue.changed', issueId: `i${i}` });
     vi.advanceTimersByTime(ANNOUNCE_DELAY_MS);
     expect(published).toEqual([
       { kind: 'pm.changed', domain: 'labels' },
-      { kind: 'pm.changed', domain: 'plans' },
       {
         kind: 'pm.changed',
         domain: 'issues',

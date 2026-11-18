@@ -5266,9 +5266,6 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      officeparser:
-        specifier: ^6.0.4
-        version: 6.1.1(encoding@0.1.13)(supports-color@8.1.1)
       react:
         specifier: ^19.0.0
         version: 19.2.8

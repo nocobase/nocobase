@@ -32,7 +32,6 @@ const notice: ConsultationNotice = {
   answer: 'Original answer',
   error: null,
   usage: null,
-  plans: 0,
 };
 const message: AppUIMessage = {
   id: 'm1',

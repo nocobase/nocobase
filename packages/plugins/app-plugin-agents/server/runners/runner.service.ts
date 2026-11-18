@@ -874,7 +874,19 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       const now = clock.now().toISOString();
       const marks = [...(runner.unavailableModels ?? [])];
       const oldMarks = JSON.stringify(marks);
-      const usage = [...(runner.quotaUsage ?? [])];
+      const previousUsage = runner.quotaUsage ?? [];
+      const reportedWindows = new Set(quota.windows.map((w) => w.window));
+      const usage =
+        tool === 'codex' && quota.replacesUsage
+          ? previousUsage.filter(
+              (u) =>
+                u.tool !== tool ||
+                u.scope !== 'tool' ||
+                u.target !== '' ||
+                reportedWindows.has(u.window),
+            )
+          : [...previousUsage];
+      const removedUsage = usage.length !== previousUsage.length;
       const fresh: UnavailableModel[] = [];
       const cleared: UnavailableModel[] = [];
       for (const window of quota.windows) {
@@ -991,6 +1003,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           'Quota changed; report again.',
         );
       if (
+        removedUsage ||
         JSON.stringify(marks) !== oldMarks ||
         runner.quotaLimits?.[tool] !== undefined
       )

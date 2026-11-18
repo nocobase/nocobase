@@ -765,7 +765,6 @@ function initialStore(): Store {
                 ),
                 error: null,
                 usage: { inputTokens: 1840, outputTokens: 212 },
-                plans: 3,
               },
             },
           },

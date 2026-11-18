@@ -516,22 +516,6 @@
       ]
     },
     {
-      "name": "plan-card-demo",
-      "type": "registry:example",
-      "title": "Plan Card Demo",
-      "description": "Usage example of @nocobase/plan-card. Three plans read through the projects plugin's hooks: one waiting for the viewer, whose risky rows ask again before executing and whose rows open in the editor, one executed that can still be undone after a preview, and one whose execution failed.",
-      "categories": ["projects"],
-      "dependencies": ["react-router@^7.0.2"],
-      "registryDependencies": ["@nocobase/plan-card"],
-      "files": [
-        {
-          "path": "projects/plan-card.tsx",
-          "type": "registry:example",
-          "target": "client/extensions/nocobase-plan-card-demo/plan-card.tsx"
-        }
-      ]
-    },
-    {
       "name": "issue-detail-demo",
       "type": "registry:example",
       "title": "Issue Detail Demo",
@@ -578,7 +562,7 @@
       "name": "inbox-demo",
       "type": "registry:example",
       "title": "Inbox Demo",
-      "description": "Usage example of @nocobase/inbox. The /inbox page with an InboxSource over sample data that marks deployment requests as decisions, and a renderer that words them and approves or rejects them with DecisionActionsBar, and sample plans as a kind of their own whose detail uses the same InboxDetailHeader; the items themselves come from the in-app notification plugin.",
+      "description": "Usage example of @nocobase/inbox. The /inbox page with an InboxSource over sample data that marks deployment requests as decisions, and a renderer that approves or rejects them with DecisionActionsBar. The items come from the in-app notification plugin.",
       "categories": ["inbox"],
       "dependencies": [
         "@nocobase/app-plugin-notification-in-app@^1.0.0-beta.22",
@@ -597,11 +581,6 @@
           "path": "inbox/inbox-data.ts",
           "type": "registry:example",
           "target": "client/extensions/nocobase-inbox-demo/inbox-data.ts"
-        },
-        {
-          "path": "inbox/inbox-plans.tsx",
-          "type": "registry:example",
-          "target": "client/extensions/nocobase-inbox-demo/inbox-plans.tsx"
         }
       ]
     },

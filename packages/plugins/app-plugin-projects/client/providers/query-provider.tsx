@@ -80,8 +80,6 @@ function RealtimeRefresh(): null {
         };
         if (changes.some((change) => change.domain === 'labels'))
           invalidate(pmKeys.labels);
-        if (changes.some((change) => change.domain === 'plans'))
-          invalidate(['pm', 'plans']);
         const issues = changes.filter((change) => change.domain === 'issues');
         if (issues.length) {
           invalidate(pmKeys.issues);

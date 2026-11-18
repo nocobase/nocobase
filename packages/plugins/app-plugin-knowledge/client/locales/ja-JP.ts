@@ -218,7 +218,6 @@ const jaJP: LocaleResource<typeof enUS> = {
       count_other: '{{count}}ドキュメント',
       archivedCount_one: '{{count}} アーカイブされたドキュメント',
       archivedCount_other: '{{count}} アーカイブされたドキュメント',
-      selectTarget: '{{title}}を開く',
       target: '{{title}}で作成',
       chooseTarget:
         'で作成するプロジェクトまたはシステム ナレッジを選択してください',
@@ -327,6 +326,17 @@ const jaJP: LocaleResource<typeof enUS> = {
       uploaded_other:
         '{{count}} ファイルをアップロードしました。彼らのテキストは抽出されています。',
       download: 'ダウンロード',
+      fullscreen: '全画面',
+      close: '閉じる',
+      olderVersion: 'バージョン {{version}}（過去のバージョン）',
+      textHint_one:
+        'AI の検索と回答はこのテキストをそのまま使います · {{count}} 行',
+      textHint_other:
+        'AI の検索と回答はこのテキストをそのまま使います · {{count}} 行',
+      copy: 'コピー',
+      copied: 'コピーしました。',
+      copyFailed:
+        'ここでは自動でコピーできません。テキストを選択して手動でコピーしてください。',
       version: 'バージョン {{version}}',
       statusHint: {
         parsing: 'テキストは抽出中です。準備ができたら、ファイルを検索します。',
@@ -409,6 +419,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       contents: '内容',
       edit: '編集',
       rename: '名前を変更する',
+      properties: 'プロパティと概要',
       history: '歴史',
       verify: 'マークが確認されました',
       verifiedToast: '検証済みとマークされました。',

@@ -34,7 +34,10 @@ import {
   isForwardedTo,
   type ApiForwardedRoutes,
 } from '../router/openapi/document.js';
-import { readFile } from 'node:fs/promises';
+import {
+  readAppPackage,
+  type AppPackageIdentity,
+} from '../support/app-package.js';
 import { normalizeBasePath, resolveAppName } from '../support/index.js';
 import {
   ServiceContainer,
@@ -526,15 +529,9 @@ export class Application<
    * public base path the API is served under.
    */
   private async describeApiDocument(): Promise<ApiDocsDescription> {
-    let manifest: {
-      readonly name?: unknown;
-      readonly displayName?: unknown;
-      readonly version?: unknown;
-    } = {};
+    let manifest: AppPackageIdentity = {};
     try {
-      manifest = JSON.parse(
-        await readFile(this.paths.root('package.json'), 'utf8'),
-      ) as typeof manifest;
+      manifest = await readAppPackage(this.paths.rootDir);
     } catch {
       // An application assembled without a manifest, such as one in a test, is named by its configuration.
     }
