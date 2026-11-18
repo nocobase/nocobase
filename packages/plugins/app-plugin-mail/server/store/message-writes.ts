@@ -970,6 +970,41 @@ export async function deleteMessagesOutsideSyncFolders(
   }
 }
 
+/** Provider message ids of the account's messages linked to any of the given folders, read in batches. */
+export async function listMessagesInFolders(
+  query: QueryAdapter,
+  accountId: string,
+  providerFolderIds: readonly string[],
+): Promise<readonly string[]> {
+  const ids: string[] = [];
+  let after: string | undefined;
+  for (;;) {
+    let page = query
+      .selectFrom<MessageRow>('mailMessages')
+      .select(['mailMessages.id', 'mailMessages.providerMessageId'])
+      .where('mailMessages.accountId', '=', accountId)
+      .where((builder) =>
+        builder.exists(
+          builder
+            .selectFrom('mailMessageFolders')
+            .select('mailMessageFolders.messageId')
+            .whereRef('mailMessageFolders.messageId', '=', 'mailMessages.id')
+            .where('mailMessageFolders.providerFolderId', 'in', [
+              ...providerFolderIds,
+            ]),
+        ),
+      );
+    if (after !== undefined) page = page.where('mailMessages.id', '>', after);
+    const rows = await page
+      .orderBy('mailMessages.id', 'asc')
+      .limit(PRUNE_BATCH_SIZE)
+      .execute<Pick<MessageRow, 'id' | 'providerMessageId'>>();
+    ids.push(...rows.map((row) => row.providerMessageId));
+    if (rows.length < PRUNE_BATCH_SIZE) return ids;
+    after = rows[rows.length - 1].id;
+  }
+}
+
 /** Remove the Provider folder links of messages the Provider reported in no selected folder. */
 export async function unlinkProviderFolders(
   query: QueryAdapter,

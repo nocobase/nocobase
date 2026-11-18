@@ -348,6 +348,9 @@ const deDE: LocaleResource<typeof enUS> = {
       description:
         'Wählen Sie die Ordner, die dieses Konto synchronisiert. Nachrichten in anderen Ordnern werden nicht importiert, und ihre lokalen Kopien werden gelöscht.',
       loading: 'Ordner werden geladen…',
+      listingFailed:
+        'Die Ordnerliste konnte nicht vom Mailserver gelesen werden.',
+      retry: 'Erneut versuchen',
       waiting: 'Ordnerliste wird vom Mailserver abgerufen…',
       allFolders: 'Alle Ordner, einschließlich später erstellter Ordner',
       selectedCount: '{{count}} von {{total}} Ordnern ausgewählt',

@@ -345,6 +345,9 @@ const esES: LocaleResource<typeof enUS> = {
       description:
         'Elija las carpetas que sincroniza esta cuenta. Los mensajes de otras carpetas no se importan y sus copias locales se eliminan.',
       loading: 'Cargando carpetas…',
+      listingFailed:
+        'No se pudo leer la lista de carpetas del servidor de correo.',
+      retry: 'Reintentar',
       waiting: 'Obteniendo la lista de carpetas del servidor de correo…',
       allFolders: 'Todas las carpetas, incluidas las que se creen más adelante',
       selectedCount: '{{count}} de {{total}} carpetas seleccionadas',

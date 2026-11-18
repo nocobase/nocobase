@@ -29,6 +29,8 @@ class FakeMailbox {
   public deleted = new Set<string>();
   public readonly historyFolders: (readonly string[] | undefined)[] = [];
   public readonly deltaFolders: (readonly string[])[] = [];
+  /** Replaces the one-page folder list, e.g. with Microsoft 365 pages of child folders. */
+  public listFolders?: MailProviderAdapter['listFolders'];
   public constructor(public readonly kind: 'gmail' | 'microsoft') {}
 
   public put(id: string, folders: string[]): void {
@@ -51,18 +53,21 @@ class FakeMailbox {
         moveMessage: false,
         aliases: false,
       },
-      listFolders: async () => ({
-        ok: true,
-        value: {
-          folders: this.folders.map((id) => ({
-            providerFolderId: id,
-            name: id,
-            type: id === 'inbox' ? 'inbox' : id === 'spam' ? 'spam' : 'custom',
-            kind: labels ? 'label' : 'folder',
-          })),
-          completeProviderFolderIds: this.folders,
-        },
-      }),
+      listFolders:
+        this.listFolders ??
+        (async () => ({
+          ok: true,
+          value: {
+            folders: this.folders.map((id) => ({
+              providerFolderId: id,
+              name: id,
+              type:
+                id === 'inbox' ? 'inbox' : id === 'spam' ? 'spam' : 'custom',
+              kind: labels ? 'label' : 'folder',
+            })),
+            completeProviderFolderIds: this.folders,
+          },
+        })),
       getCurrentSyncCursor: async () => {
         // Changes before the baseline are part of history.
         this.changed.clear();
@@ -192,30 +197,33 @@ describe.each(['gmail', 'microsoft'] as const)(
         syncBatchSize: 100,
       });
     }
+    /** Run the next synchronization step; false when none is queued. */
+    async function step(): Promise<boolean> {
+      // History must not mistake earlier local writes for changes made during the run.
+      vi.setSystemTime(Date.now() + 1_000);
+      const tasks = await store.claimOutbox(
+        new Date().toISOString(),
+        'publisher',
+        new Date(Date.now() + 30_000).toISOString(),
+        1,
+      );
+      const task = tasks[0];
+      if (!task) return false;
+      if (task.type !== 'syncMailbox')
+        throw new Error('Expected synchronization');
+      await store.markOutboxPublished(
+        task.id,
+        task.leaseToken!,
+        new Date().toISOString(),
+      );
+      await new SyncMailboxOperation({
+        store,
+        adapters: { resolve: async () => mailbox.adapter() },
+      }).execute(task.payload);
+      return true;
+    }
     async function settle(): Promise<void> {
-      for (let index = 0; index < 50; index += 1) {
-        // History must not mistake earlier local writes for changes made during the run.
-        vi.setSystemTime(Date.now() + 1_000);
-        const tasks = await store.claimOutbox(
-          new Date().toISOString(),
-          'publisher',
-          new Date(Date.now() + 30_000).toISOString(),
-          1,
-        );
-        const task = tasks[0];
-        if (!task) break;
-        if (task.type !== 'syncMailbox')
-          throw new Error('Expected synchronization');
-        await store.markOutboxPublished(
-          task.id,
-          task.leaseToken!,
-          new Date().toISOString(),
-        );
-        await new SyncMailboxOperation({
-          store,
-          adapters: { resolve: async () => mailbox.adapter() },
-        }).execute(task.payload);
-      }
+      for (let index = 0; index < 50; index += 1) if (!(await step())) break;
       expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
     }
     async function sync(): Promise<void> {
@@ -490,6 +498,151 @@ describe.each(['gmail', 'microsoft'] as const)(
       ).toEqual({ removedMessageCount: 1001 });
       await choose(['inbox']);
       expect(await local()).toEqual({ inboxed: ['inbox'] });
+    });
+
+    it('deletes local mail of a selected folder deleted on the server, keeping mail still in another selected folder', async () => {
+      mailbox.put('archived', ['archive']);
+      mailbox.put('both', ['inbox', 'archive']);
+      mailbox.put('inboxed', ['inbox']);
+      await sync();
+      await choose(['inbox', 'archive']);
+      expect(await local()).toEqual({
+        archived: ['archive'],
+        both: ['archive', 'inbox'],
+        inboxed: ['inbox'],
+      });
+
+      // The folder disappears from the folder list; no change ever reports its messages again.
+      mailbox.folders.splice(mailbox.folders.indexOf('archive'), 1);
+      mailbox.messages.delete('archived');
+      mailbox.messages.set('both', ['inbox']);
+      await sync();
+      expect(await local()).toEqual({ both: ['inbox'], inboxed: ['inbox'] });
+      if (kind === 'microsoft')
+        expect(mailbox.deltaFolders.at(-1)).toEqual(['inbox']);
+      expect(
+        (await store.listFolders(accountId)).map((f) => f.providerFolderId),
+      ).not.toContain('archive');
+    });
+
+    describe('folder list for a selection', () => {
+      const folder = (id: string) => ({
+        providerFolderId: id,
+        name: id,
+        type: 'custom' as const,
+        kind: kind === 'gmail' ? ('label' as const) : ('folder' as const),
+      });
+      let secondPage: 'ok' | 'fail';
+      beforeEach(async () => {
+        secondPage = 'ok';
+        // The first page holds a parent folder; its child folder and the rest arrive on the next page.
+        mailbox.listFolders = async (input) =>
+          input.cursor === undefined
+            ? {
+                ok: true,
+                value: { folders: [folder('inbox')], nextCursor: 'page-2' },
+              }
+            : secondPage === 'fail'
+              ? {
+                  ok: false,
+                  error: {
+                    code: 'PROVIDER_UNAVAILABLE',
+                    message: 'The folder list could not be read.',
+                    category: 'provider',
+                    retryable: false,
+                  },
+                }
+              : {
+                  ok: true,
+                  value: {
+                    folders: [folder('inbox/child'), folder('archive')],
+                    completeProviderFolderIds: [
+                      'inbox',
+                      'inbox/child',
+                      'archive',
+                    ],
+                  },
+                };
+        await store.updateAccountSyncFolders(accountId, []);
+        await service().startSync(owner, { accountId });
+      });
+      const choices = () => service().listFolderChoices(owner, accountId);
+      const ids = async () =>
+        (await choices()).folders.map((f) => f.providerFolderId).sort();
+
+      it('is incomplete after the first page and complete with the last one', async () => {
+        await step();
+        expect(await choices()).toMatchObject({
+          complete: false,
+          failed: false,
+        });
+        expect(await ids()).toEqual(['inbox']);
+        await step();
+        expect(await choices()).toMatchObject({
+          complete: true,
+          failed: false,
+        });
+        expect(await ids()).toEqual(['archive', 'inbox', 'inbox/child']);
+      });
+
+      it('reads the runs before the folders in one transaction', async () => {
+        await step();
+        // Folders read before the runs could miss the last page committed in between yet be reported complete.
+        const reads: string[] = [];
+        const transaction = database.transaction.bind(database);
+        vi.spyOn(database, 'transaction').mockImplementationOnce(
+          (callback: Parameters<DatabaseManager['transaction']>[0]) =>
+            transaction((connection) =>
+              callback(
+                new Proxy(connection, {
+                  get: (target, key) =>
+                    key === 'query'
+                      ? new Proxy(target.query, {
+                          get: (query, name) =>
+                            name === 'selectFrom'
+                              ? (table: string) => {
+                                  reads.push(table);
+                                  return query.selectFrom(table);
+                                }
+                              : Reflect.get(query, name),
+                        })
+                      : Reflect.get(target, key),
+                }),
+              ),
+            ),
+        );
+        expect(await choices()).toMatchObject({ complete: false });
+        expect(reads.at(-1)).toBe('mailFolders');
+        expect(reads.slice(0, -1).every((t) => t === 'mailSyncRuns')).toBe(
+          true,
+        );
+        expect(reads.length).toBeGreaterThan(1);
+      });
+
+      it('reports a listing that failed after its first page, and completes it on retry', async () => {
+        secondPage = 'fail';
+        await settle();
+        expect(await choices()).toMatchObject({
+          complete: false,
+          failed: true,
+        });
+        expect(await ids()).toEqual(['inbox']);
+
+        secondPage = 'ok';
+        await service().startSync(owner, { accountId });
+        expect(await choices()).toMatchObject({
+          complete: false,
+          failed: false,
+        });
+        await settle();
+        expect(await choices()).toMatchObject({
+          complete: true,
+          failed: false,
+        });
+        expect(await ids()).toEqual(['archive', 'inbox', 'inbox/child']);
+        // The selection is still to be made, so nothing was imported.
+        expect(await local()).toEqual({});
+      });
     });
 
     it('rejects an empty or unknown selection without changing the account', async () => {

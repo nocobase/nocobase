@@ -6,6 +6,7 @@ import type {
   MailComposeInput,
   MailBulkComposeInput,
   MailFolder,
+  MailFolderChoices,
   MailLabel,
   MailLabelColor,
   MailIdentity,
@@ -47,6 +48,7 @@ export type {
   MailComposeInput,
   MailBulkComposeInput,
   MailFolder,
+  MailFolderChoices,
   MailFolderType,
   KnownMailFolderType,
   MailLabel,
@@ -374,18 +376,20 @@ export class MailClient {
   }
 
   /**
-   * Every folder of the account for choosing its synchronized folders, each with `synced`. `complete` is false while a
-   * synchronization run is still reading the folder list; a selection waits for it.
+   * Every folder of the account for choosing its synchronized folders, each with `synced`. `complete` is false until a
+   * synchronization run has read the whole folder list; a selection waits for it. `failed` means that listing stopped
+   * and has to be started again with {@link startSync}.
    */
-  public listFolderChoices(accountId: string): Promise<{
-    readonly folders: readonly MailFolder[];
-    readonly complete: boolean;
-  }> {
+  public listFolderChoices(accountId: string): Promise<MailFolderChoices> {
     return this.client
       .request<
         ListResponse<
           MailFolder,
-          { readonly total: number; readonly complete?: boolean }
+          {
+            readonly total: number;
+            readonly complete?: boolean;
+            readonly failed?: boolean;
+          }
         >
       >({
         path: `mail/accounts/${encodeURIComponent(accountId)}/folders`,
@@ -394,6 +398,7 @@ export class MailClient {
       .then((response) => ({
         folders: response.data,
         complete: response.meta?.complete !== false,
+        failed: response.meta?.failed === true,
       }));
   }
 

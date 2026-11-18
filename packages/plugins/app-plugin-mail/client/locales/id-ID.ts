@@ -343,6 +343,8 @@ const idID: LocaleResource<typeof enUS> = {
       description:
         'Pilih folder yang disinkronkan akun ini. Pesan di folder lain tidak diimpor, dan salinan lokalnya dihapus.',
       loading: 'Memuat folder…',
+      listingFailed: 'Daftar folder tidak dapat dibaca dari server email.',
+      retry: 'Coba lagi',
       waiting: 'Mengambil daftar folder dari server email…',
       allFolders: 'Semua folder, termasuk folder yang dibuat nanti',
       selectedCount: '{{count}} dari {{total}} folder dipilih',

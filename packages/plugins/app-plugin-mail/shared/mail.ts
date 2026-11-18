@@ -225,6 +225,15 @@ export interface MailFolder {
   readonly synced?: boolean;
 }
 
+/** Every folder of an account for choosing its synchronized folders, and whether that list is complete. */
+export interface MailFolderChoices {
+  readonly folders: readonly MailFolder[];
+  /** False until a synchronization run has read the whole folder list from the mail server. */
+  readonly complete: boolean;
+  /** No folder listing completed and none is running; start a synchronization to list the folders again. */
+  readonly failed: boolean;
+}
+
 export interface MailAddress {
   readonly address: string;
   readonly name?: string;

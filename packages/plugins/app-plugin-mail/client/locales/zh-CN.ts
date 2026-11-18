@@ -327,6 +327,8 @@ const zhCN: MailResource = {
       description:
         '选择此账户要同步的文件夹。其他文件夹中的邮件不会导入，已有的本地副本会被删除。',
       loading: '正在加载文件夹…',
+      listingFailed: '无法从邮件服务器读取文件夹列表。',
+      retry: '重试',
       waiting: '正在从邮件服务器获取文件夹列表…',
       allFolders: '全部文件夹（包括以后新建的文件夹）',
       selectedCount: '已选择 {{count}} / {{total}} 个文件夹',

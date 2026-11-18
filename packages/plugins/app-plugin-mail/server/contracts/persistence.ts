@@ -3,6 +3,7 @@ import type {
   MailAddress,
   MailComposeInput,
   MailFolder,
+  MailFolderChoices,
   MailIdentity,
   MailInitialSyncPolicy,
   MailLabel,
@@ -392,6 +393,8 @@ export interface MailStore {
     run: MailCreateSyncRunInput,
   ): Promise<MailSyncRun | undefined>;
   findActiveSyncRun(accountId: string): Promise<MailSyncRun | undefined>;
+  /** The account's folders and whether they form a complete listing, read together. */
+  getFolderCatalog(accountId: string): Promise<MailFolderChoices>;
   getSyncRun(syncRunId: string): Promise<MailSyncRun | undefined>;
   countSyncRuns(userId: string): Promise<number>;
   countSubmissions(

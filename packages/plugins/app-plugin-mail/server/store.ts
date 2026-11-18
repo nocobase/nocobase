@@ -15,6 +15,7 @@ import {
   type MailAccount,
   type MailComposeInput,
   type MailFolder,
+  type MailFolderChoices,
   type MailIdentity,
   type MailLabel,
   type MailLabelColor,
@@ -610,6 +611,10 @@ export class DatabaseMailStore implements MailStore {
     accountId: string,
   ): Promise<MailSyncRun | undefined> {
     return this.sync.findActiveSyncRun(accountId);
+  }
+
+  public async getFolderCatalog(accountId: string): Promise<MailFolderChoices> {
+    return this.sync.getFolderCatalog(accountId);
   }
 
   public async getSyncRun(syncRunId: string): Promise<MailSyncRun | undefined> {

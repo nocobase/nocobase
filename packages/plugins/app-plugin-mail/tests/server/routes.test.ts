@@ -324,7 +324,6 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
       .spyOn(mail, 'previewSyncFolders')
       .mockResolvedValue({ removedMessageCount: 3 });
     const connect = vi.spyOn(mail, 'connectAccount');
-    const listFolders = vi.spyOn(mail, 'listFolders');
     const router = await createRouter(true, mail);
     const patch = (body: unknown) =>
       router.request('/api/mail/accounts/account-1', {
@@ -389,17 +388,22 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
       expect.objectContaining({ syncFolderIds: [] }),
     );
 
-    vi.spyOn(mail, 'isFolderListComplete').mockResolvedValueOnce(false);
+    const listFolderChoices = vi
+      .spyOn(mail, 'listFolderChoices')
+      .mockResolvedValueOnce({ folders: [], complete: false, failed: true });
     const choices = await router.request(
       '/api/mail/accounts/account-1/folders?includeUnsynced=true',
     );
-    expect(listFolders).toHaveBeenLastCalledWith(
+    expect(listFolderChoices).toHaveBeenLastCalledWith(
       expect.anything(),
       'account-1',
-      { includeUnsynced: true },
     );
-    // A selection waits while a run is still reading the folder list.
-    expect((await choices.json()).meta).toEqual({ total: 0, complete: false });
+    // A selection waits for a complete list, and a stopped listing is reported so it can be started again.
+    expect((await choices.json()).meta).toEqual({
+      total: 0,
+      complete: false,
+      failed: true,
+    });
   });
 
   it('answers bounded lists whole with meta.total', async () => {
@@ -2366,7 +2370,11 @@ function service(overrides: Partial<MailService> = {}): MailService {
     manageMessages: async () => ({ items: [], succeeded: 0, failed: 0 }),
     previewSyncFolders: async () => ({ removedMessageCount: 0 }),
     listFolders: async () => [],
-    isFolderListComplete: async () => true,
+    listFolderChoices: async () => ({
+      folders: [],
+      complete: true,
+      failed: false,
+    }),
     listLabels: async () => [],
     listIdentities: async () => [],
     updateIdentity: async () => {

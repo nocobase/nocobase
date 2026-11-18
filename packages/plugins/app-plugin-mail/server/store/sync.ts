@@ -9,6 +9,7 @@ import { type DatabaseManager, type QueryAdapter } from '@nocobase/db';
 import { randomUUID, randomBytes } from 'node:crypto';
 import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
+  type MailFolderChoices,
   type MailOffsetPage,
   type MailProviderError,
   type MailSyncCursor,
@@ -20,12 +21,13 @@ import {
   type MailSyncBatch,
   type MailSyncStepCommit,
 } from '../contracts/persistence.js';
-import { fromSyncRunRow, toSyncRunRow } from './mappers.js';
+import { fromFolderRow, fromSyncRunRow, toSyncRunRow } from './mappers.js';
 import {
   applyImapLocationChanges,
   deleteImapOrphans,
   deleteMessages,
   deleteMessagesOutsideSyncFolders,
+  listMessagesInFolders,
   pruneMessagesOutsideSyncFolders,
   refreshImapMessages,
   removeMessagesFromFolders,
@@ -48,6 +50,7 @@ import type {
 } from '../adapters/imap-smtp/types.js';
 import {
   type AccountRow,
+  type FolderRow,
   type ImapLocationRow,
   type MessageRow,
   type OutboxRow,
@@ -222,6 +225,54 @@ export class MailSyncStore {
       .orderBy('createdAt', 'asc')
       .executeTakeFirst<SyncRunRow>();
     return row ? fromSyncRunRow(row) : undefined;
+  }
+
+  /**
+   * The account's folders together with whether they form a complete listing. A run that left `preparing` committed
+   * its last folder page in that step, so reading the runs before the folders, in one transaction, never reports a
+   * partial list as complete; later listings only add folders until their own last page. `failed` means no listing
+   * has completed and none is running, so the owner has to start one again.
+   */
+  public async getFolderCatalog(accountId: string): Promise<MailFolderChoices> {
+    return this.database.transaction(async ({ query }) => {
+      const listed = await query
+        .selectFrom<SyncRunRow>('mailSyncRuns')
+        .select(['id'])
+        .where('accountId', '=', accountId)
+        .where('phase', '!=', 'preparing')
+        .limit(1)
+        .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const listing = listed
+        ? undefined
+        : await query
+            .selectFrom<SyncRunRow>('mailSyncRuns')
+            .select(['id'])
+            .where('accountId', '=', accountId)
+            .where('status', 'in', ['pending', 'running'])
+            .limit(1)
+            .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const ran = listed
+        ? undefined
+        : await query
+            .selectFrom<SyncRunRow>('mailSyncRuns')
+            .select(['id'])
+            .where('accountId', '=', accountId)
+            .limit(1)
+            .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const rows = await query
+        .selectFrom<FolderRow>('mailFolders')
+        .selectAll()
+        .where('accountId', '=', accountId)
+        .orderBy('name', 'asc')
+        .execute<FolderRow>();
+      // An account without any run keeps the folders it already has.
+      const complete = listed !== undefined || ran === undefined;
+      return {
+        folders: rows.map(fromFolderRow),
+        complete,
+        failed: !complete && listing === undefined,
+      };
+    });
   }
 
   public async getSyncRun(syncRunId: string): Promise<MailSyncRun | undefined> {
@@ -475,7 +526,23 @@ export class MailSyncStore {
         input.run.accountId,
         input.folders ?? [],
       );
+      const scope = input.run.policy.syncFolderIds;
+      let leftDeletedFolders: readonly string[] = [];
       if (input.completeProviderFolderIds) {
+        // A selected folder deleted on the server is never synchronized again, so its messages are collected before
+        // their links go; an initial run prunes the whole account instead.
+        if (scope && !input.pruneToFolderIds) {
+          const complete = new Set(input.completeProviderFolderIds);
+          const deletedFolders = scope.filter(
+            (id) => complete.size === 0 || !complete.has(id),
+          );
+          if (deletedFolders.length > 0)
+            leftDeletedFolders = await listMessagesInFolders(
+              connection.query,
+              input.run.accountId,
+              deletedFolders,
+            );
+        }
         let staleFolders = connection.query
           .deleteFrom('mailFolders')
           .where('accountId', '=', input.run.accountId);
@@ -591,15 +658,15 @@ export class MailSyncStore {
         input.run.accountId,
         input.deletedProviderMessageIds ?? [],
       );
-      const scope = input.run.policy.syncFolderIds;
       if (scope) {
-        // Only messages this step reported can have left the selection; the rest of the account is untouched.
+        // Only messages this step reported, or that were in a deleted selected folder, can have left the selection.
         await unlinkProviderFolders(
           connection.query,
           input.run.accountId,
           input.outOfScopeProviderMessageIds ?? [],
         );
         const changed = [
+          ...leftDeletedFolders,
           ...(input.outOfScopeProviderMessageIds ?? []),
           ...(input.removedFromFolders ?? []).map(
             (removal) => removal.providerMessageId,

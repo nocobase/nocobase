@@ -346,6 +346,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       description:
         'Escolha as pastas que esta conta sincroniza. Mensagens de outras pastas não são importadas, e as cópias locais delas são excluídas.',
       loading: 'Carregando pastas…',
+      listingFailed:
+        'Não foi possível ler a lista de pastas do servidor de e-mail.',
+      retry: 'Tentar novamente',
       waiting: 'Obtendo a lista de pastas do servidor de e-mail…',
       allFolders: 'Todas as pastas, incluindo as criadas depois',
       selectedCount: '{{count}} de {{total}} pastas selecionadas',

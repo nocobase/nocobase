@@ -327,6 +327,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       description:
         '選擇此帳戶要同步的資料夾。其他資料夾中的郵件不會匯入，已有的本機副本會被刪除。',
       loading: '正在載入資料夾…',
+      listingFailed: '無法從郵件伺服器讀取資料夾清單。',
+      retry: '重試',
       waiting: '正在從郵件伺服器取得資料夾清單…',
       allFolders: '全部資料夾（包含日後新建的資料夾）',
       selectedCount: '已選擇 {{count}} / {{total}} 個資料夾',

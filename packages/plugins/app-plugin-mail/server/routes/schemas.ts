@@ -1368,12 +1368,17 @@ export const MailBoundedListMeta: z.ZodType<{ total: number }> = z
 export const MailFolderListMeta: z.ZodType<{
   total: number;
   complete?: boolean;
+  failed?: boolean;
 }> = z
   .object({
     total: z.number().int(),
     complete: z.boolean().optional().meta({
       description:
-        'With `includeUnsynced`: false while a synchronization run is still reading the folder list, so a folder selection waits for it.',
+        'With `includeUnsynced`: false until a synchronization run has read the whole folder list, so a folder selection waits for it.',
+    }),
+    failed: z.boolean().optional().meta({
+      description:
+        'With `includeUnsynced`: true when no folder listing completed and none is running; start a synchronization with `mailSyncAccount` to list the folders again.',
     }),
   })
   .meta({ ref: 'MailFolderListMeta' });

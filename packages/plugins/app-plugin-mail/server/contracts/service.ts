@@ -9,6 +9,7 @@ import type {
   MailConnectAccountInput,
   MailDeleteMessageInput,
   MailFolder,
+  MailFolderChoices,
   MailSyncFolderPreview,
   MailIdentity,
   MailLabel,
@@ -132,11 +133,11 @@ export interface MailService {
     accountId: string,
     options?: { readonly includeUnsynced?: boolean },
   ): Promise<readonly MailFolder[]>;
-  /** False while a synchronization run of the account is still reading its folder list. */
-  isFolderListComplete(
+  /** Every folder of the account, each with `synced`, and whether they form a complete listing. */
+  listFolderChoices(
     context: MailOperationContext,
     accountId: string,
-  ): Promise<boolean>;
+  ): Promise<MailFolderChoices>;
   listLabels(context: MailOperationContext): Promise<readonly MailLabel[]>;
   listIdentities(
     context: MailOperationContext,

@@ -341,6 +341,8 @@ const enUS = {
       description:
         'Choose the folders this account synchronizes. Messages in other folders are not imported, and local copies of them are deleted.',
       loading: 'Loading folders…',
+      listingFailed: 'The folder list could not be read from the mail server.',
+      retry: 'Try again',
       waiting: 'Getting the folder list from the mail server…',
       allFolders: 'All folders, including folders created later',
       selectedCount: '{{count}} of {{total}} folders selected',

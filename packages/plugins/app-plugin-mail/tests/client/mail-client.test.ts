@@ -203,6 +203,22 @@ describe('MailClient', () => {
     await expect(client.listFolderChoices('account/1')).resolves.toEqual({
       folders: [{ providerFolderId: 'INBOX', synced: true }],
       complete: false,
+      failed: false,
+    });
+    // An older server reports neither flag; its list is taken as complete.
+    request.mockResolvedValueOnce({ data: [], meta: { total: 0 } });
+    await expect(client.listFolderChoices('account/1')).resolves.toEqual({
+      folders: [],
+      complete: true,
+      failed: false,
+    });
+    request.mockResolvedValueOnce({
+      data: [],
+      meta: { total: 0, complete: false, failed: true },
+    });
+    await expect(client.listFolderChoices('account/1')).resolves.toMatchObject({
+      complete: false,
+      failed: true,
     });
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/accounts/account%2F1/folders',

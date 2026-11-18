@@ -77,6 +77,8 @@ function SyncFoldersForm({
   const choosing = account.syncFolderIds?.length === 0;
   const [folders, setFolders] = useState<readonly MailFolder[]>();
   const [complete, setComplete] = useState(false);
+  const [listingFailed, setListingFailed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [allFolders, setAllFolders] = useState(
     account.syncFolderIds === undefined || choosing,
   );
@@ -89,12 +91,15 @@ function SyncFoldersForm({
 
   const load = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
-      const { folders: next, complete: listed } = await mail.listFolderChoices(
-        account.id,
-      );
+      const {
+        folders: next,
+        complete: listed,
+        failed,
+      } = await mail.listFolderChoices(account.id);
       if (signal?.aborted) return;
       setFolders(next);
       setComplete(listed);
+      setListingFailed(failed);
       // Every folder starts selected until the owner narrows the selection.
       if (account.syncFolderIds === undefined || choosing)
         setSelected(
@@ -128,7 +133,7 @@ function SyncFoldersForm({
 
   // A newly connected account lists its folders in the background, page by page; reload until the list is complete.
   useRealtimeRefresh(MAIL_REALTIME_TOPIC, load, {
-    enabled: folders !== undefined && !complete,
+    enabled: folders !== undefined && !complete && !listingFailed,
     refreshIntervalMs: 5_000,
   });
 
@@ -180,6 +185,24 @@ function SyncFoldersForm({
         ),
       )
       .finally(() => setSaving(false));
+  };
+
+  // A listing that stopped part way is started again; the dialog then waits for it as before.
+  const retryListing = (): void => {
+    setRetrying(true);
+    setError(undefined);
+    void mail
+      .startSync({ accountId: account.id })
+      .then(() => load())
+      .catch((cause: unknown) =>
+        setError(
+          mailErrorMessage(
+            cause,
+            t('errors.requestFailed', { defaultValue: 'Mail request failed.' }),
+          ),
+        ),
+      )
+      .finally(() => setRetrying(false));
   };
 
   if (removedCount !== undefined)
@@ -255,9 +278,28 @@ function SyncFoldersForm({
               ? t('settings.syncFolders.loading', {
                   defaultValue: 'Loading folders…',
                 })
-              : t('settings.syncFolders.waiting', {
-                  defaultValue: 'Getting the folder list from the mail server…',
+              : listingFailed
+                ? t('settings.syncFolders.listingFailed', {
+                    defaultValue:
+                      'The folder list could not be read from the mail server.',
+                  })
+                : t('settings.syncFolders.waiting', {
+                    defaultValue:
+                      'Getting the folder list from the mail server…',
+                  })}
+            {folders !== undefined && listingFailed ? (
+              <Button
+                className='ml-3'
+                disabled={retrying}
+                onClick={retryListing}
+                type='button'
+                variant='outline'
+              >
+                {t('settings.syncFolders.retry', {
+                  defaultValue: 'Try again',
                 })}
+              </Button>
+            ) : null}
           </p>
         ) : (
           <>

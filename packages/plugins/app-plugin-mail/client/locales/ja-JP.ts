@@ -345,6 +345,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       description:
         'このアカウントで同期するフォルダーを選択します。他のフォルダーのメールは取り込まれず、既存のローカルコピーは削除されます。',
       loading: 'フォルダーを読み込んでいます…',
+      listingFailed: 'メールサーバーからフォルダー一覧を読み取れませんでした。',
+      retry: '再試行',
       waiting: 'メールサーバーからフォルダー一覧を取得しています…',
       allFolders: 'すべてのフォルダー（今後作成されるフォルダーを含む）',
       selectedCount: '{{total}} 個中 {{count}} 個のフォルダーを選択',

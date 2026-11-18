@@ -345,6 +345,9 @@ const frFR: LocaleResource<typeof enUS> = {
       description:
         'Choisissez les dossiers que ce compte synchronise. Les messages des autres dossiers ne sont pas importés et leurs copies locales sont supprimées.',
       loading: 'Chargement des dossiers…',
+      listingFailed:
+        'Impossible de lire la liste des dossiers depuis le serveur de messagerie.',
+      retry: 'Réessayer',
       waiting:
         'Récupération de la liste des dossiers auprès du serveur de messagerie…',
       allFolders: 'Tous les dossiers, y compris ceux créés plus tard',

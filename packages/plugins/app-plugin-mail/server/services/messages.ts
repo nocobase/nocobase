@@ -2,6 +2,7 @@ import { MailMessageMutations } from '../operations/message-mutations.js';
 import { notifyMailMessageChange } from '../realtime.js';
 import {
   type MailFolder,
+  type MailFolderChoices,
   type MailListConversationMessagesInput,
   type MailListMessagesInput,
   type MailMessage,
@@ -22,7 +23,7 @@ export class MailMessagesService {
     private readonly dependencies: MailServiceDependencies<
       | 'countUnreadMessages'
       | 'deleteMessage'
-      | 'findActiveSyncRun'
+      | 'getFolderCatalog'
       | 'getAccount'
       | 'getMessage'
       | 'listConversationMessages'
@@ -58,13 +59,27 @@ export class MailMessagesService {
       : syncedFolders(account, folders);
   }
 
-  public async isFolderListComplete(
+  /**
+   * Every folder of the account, each with `synced`, and whether they form a complete listing, read together so a
+   * folder selection never starts from a partial list.
+   */
+  public async listFolderChoices(
     context: MailOperationContext,
     accountId: string,
-  ): Promise<boolean> {
-    await requireOwnedAccount(this.dependencies.store, context, accountId);
-    const active = await this.dependencies.store.findActiveSyncRun(accountId);
-    return active?.phase !== 'preparing';
+  ): Promise<MailFolderChoices> {
+    const account = await requireOwnedAccount(
+      this.dependencies.store,
+      context,
+      accountId,
+    );
+    const catalog = await this.dependencies.store.getFolderCatalog(accountId);
+    return {
+      ...catalog,
+      folders: catalog.folders.map((folder) => ({
+        ...folder,
+        synced: isSyncedFolder(account, folder.providerFolderId),
+      })),
+    };
   }
 
   public async updateMessageLabels(

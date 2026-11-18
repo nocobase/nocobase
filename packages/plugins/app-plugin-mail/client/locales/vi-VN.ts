@@ -342,6 +342,8 @@ const viVN: LocaleResource<typeof enUS> = {
       description:
         'Chọn các thư mục mà tài khoản này đồng bộ. Thư trong các thư mục khác sẽ không được nhập và bản sao cục bộ của chúng sẽ bị xóa.',
       loading: 'Đang tải thư mục…',
+      listingFailed: 'Không thể đọc danh sách thư mục từ máy chủ thư.',
+      retry: 'Thử lại',
       waiting: 'Đang lấy danh sách thư mục từ máy chủ thư…',
       allFolders: 'Tất cả thư mục, bao gồm cả thư mục tạo sau này',
       selectedCount: 'Đã chọn {{count}}/{{total}} thư mục',

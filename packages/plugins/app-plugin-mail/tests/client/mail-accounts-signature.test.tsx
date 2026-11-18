@@ -734,6 +734,56 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(mail.previewSyncFolders).not.toHaveBeenCalled();
   });
 
+  it('offers to list the folders again when the listing stopped', async () => {
+    const pending = {
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: [],
+    };
+    mail.listAccounts.mockResolvedValue([pending]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders().slice(0, 1),
+      complete: false,
+      failed: true,
+    });
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Choose folders to start syncing',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Folders to sync',
+    });
+    expect(
+      await within(dialog).findByText(
+        'The folder list could not be read from the mail server.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Start sync' }),
+    ).toBeDisabled();
+
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+      failed: false,
+    });
+    mail.startSync.mockResolvedValue({ id: 'run-2', status: 'pending' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    await waitFor(() =>
+      expect(mail.startSync).toHaveBeenCalledWith({ accountId: 'account-1' }),
+    );
+    expect(
+      await within(dialog).findByRole('checkbox', {
+        name: 'All folders, including folders created later',
+      }),
+    ).toBeChecked();
+    expect(
+      within(dialog).getByRole('button', { name: 'Start sync' }),
+    ).toBeEnabled();
+  });
+
   it('waits for every page of the folder list before a connected account can start', async () => {
     const pending = {
       ...(await mail.listAccounts())[0],

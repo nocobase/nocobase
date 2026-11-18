@@ -22,6 +22,7 @@ import {
   type MailCompleteAuthorizationInput,
   type MailConnectAccountInput,
   type MailFolder,
+  type MailFolderChoices,
   type MailLabel,
   type MailListConversationMessagesInput,
   type MailListMessagesInput,
@@ -212,11 +213,11 @@ export class DefaultMailService implements MailService {
     return this.messages.listFolders(context, accountId, options);
   }
 
-  public isFolderListComplete(
+  public listFolderChoices(
     context: MailOperationContext,
     accountId: string,
-  ): Promise<boolean> {
-    return this.messages.isFolderListComplete(context, accountId);
+  ): Promise<MailFolderChoices> {
+    return this.messages.listFolderChoices(context, accountId);
   }
 
   public listLabels(
