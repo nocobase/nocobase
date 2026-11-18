@@ -10,6 +10,7 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
+  missingExplicitSourceMessage,
   planAppDatabaseTasks,
   type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
@@ -232,6 +233,13 @@ async function executeDatabasePlan(
   const targets = collectTaskTargets(config, plan, fresh, drivers);
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
+  await assertExplicitMigrationSources(database, config, plan, {
+    paths,
+    drivers,
+    fresh,
+    runtimeConfig: taskConfig,
+    container: taskContainer,
+  });
   const resetConnections: string[] = [];
   const hooks =
     !dryRun &&
@@ -396,6 +404,56 @@ async function executeDatabasePlan(
     }
   }
   return result;
+}
+
+/**
+ * A missing explicit migration directory is a typo when the connection has no
+ * migration history, and fails before storage is prepared. With history the
+ * migrator's missing-source policy decides, so the application stays
+ * upgradable and a rollback still reports the whole target batch. A fresh run
+ * discards history, so it always counts as having none.
+ */
+async function assertExplicitMigrationSources(
+  database: DatabaseManager,
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
+  options: {
+    paths?: AppPaths;
+    drivers?: Record<string, DatabaseDriverRegistration>;
+    fresh: boolean;
+    runtimeConfig: DatabaseTaskConfig;
+    container: ServiceResolver;
+  },
+): Promise<void> {
+  for (const task of plan) {
+    const missing = task.missingExplicitSources;
+    if (task.skipReason || task.kind !== 'migrations' || !missing?.length) {
+      continue;
+    }
+    const hasHistory =
+      !options.fresh &&
+      (await appDatabaseStorageExists(
+        config,
+        options.paths,
+        task.connection,
+        options.drivers,
+      )) &&
+      (
+        await createAppMigrator({
+          runtimeConfig: options.runtimeConfig,
+          container: options.container,
+          database,
+          connection: task.connection,
+          config: task.config,
+          sources: task.config.sources,
+        }).history()
+      ).length > 0;
+    if (!hasHistory) {
+      throw new Error(
+        missingExplicitSourceMessage('migrations', task.connection, missing[0]),
+      );
+    }
+  }
 }
 
 /** Only target data is collected here; execution stays in the phase functions. */
@@ -666,7 +724,11 @@ export async function runAppDatabaseTasks(
     ...config,
     drivers: { ...config.drivers, ...drivers },
   });
-  const plan = planAppDatabaseTasks(config, kinds, options);
+  const plan = planAppDatabaseTasks(config, kinds, {
+    ...options,
+    // A fresh run discards history, so a missing explicit directory fails now.
+    deferMissingMigrationSources: !options.fresh,
+  });
   if (!plan.length) return { ok: true, status: 'not-configured', results: [] };
   if (options.fresh) {
     collectTaskTargets(config, plan, true, drivers);

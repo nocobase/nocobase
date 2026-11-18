@@ -31,6 +31,13 @@ export interface AppDatabaseTaskPlanOptions extends AppDatabaseTaskSelection {
   readonly contributions: AppDatabaseTaskContributions;
   readonly paths?: AppPaths;
   readonly drivers?: Record<string, DatabaseDriverRegistration>;
+  /**
+   * Plan a missing explicit migration directory instead of throwing, recording it
+   * on the task for the executor. A directory that vanished from an application
+   * with migration history is the missing-source policy's to judge, and history
+   * cannot be read while planning. Seeds have no such policy and still throw.
+   */
+  readonly deferMissingMigrationSources?: boolean;
 }
 
 export interface AppDatabaseMigrationSource {
@@ -43,6 +50,12 @@ export interface AppDatabaseTask {
   kind: AppDatabaseTaskKind;
   config: AppDatabaseMigrationConfig;
   skipReason?: 'external' | 'auto-run-disabled';
+  /**
+   * Explicit migration directories that do not exist. With no migration history
+   * this is a configuration mistake and fails before storage is touched; with
+   * history the migrator's missing-source policy decides.
+   */
+  missingExplicitSources?: readonly string[];
 }
 
 export function defaultConnectionName(
@@ -175,6 +188,7 @@ export function planAppDatabaseTasks(
         ...(contributions.connections?.[name]?.[kind] ?? []),
       ];
       const autoRun = options.autoRun ?? name === primary;
+      let missingExplicitSources: string[] | undefined;
       if (!external && (!selection.autoRun || autoRun)) {
         for (const source of sources) {
           if (
@@ -188,11 +202,17 @@ export function planAppDatabaseTasks(
         }
         if (options.directory || options.sources) {
           for (const source of appSources) {
-            if (!existsSync(source.directory)) {
-              throw new Error(
-                `Explicit database ${kind} source is missing for "${name}": ${source.directory}`,
-              );
+            if (existsSync(source.directory)) continue;
+            if (
+              kind === 'migrations' &&
+              planOptions.deferMissingMigrationSources
+            ) {
+              (missingExplicitSources ??= []).push(source.directory);
+              continue;
             }
+            throw new Error(
+              missingExplicitSourceMessage(kind, name, source.directory),
+            );
           }
         }
       }
@@ -211,7 +231,16 @@ export function planAppDatabaseTasks(
           : selection.autoRun && !autoRun
             ? 'auto-run-disabled'
             : undefined,
+        ...(missingExplicitSources ? { missingExplicitSources } : {}),
       };
     });
   });
+}
+
+export function missingExplicitSourceMessage(
+  kind: AppDatabaseTaskKind,
+  connection: string,
+  directory: string,
+): string {
+  return `Explicit database ${kind} source is missing for "${connection}": ${directory}`;
 }

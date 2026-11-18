@@ -89,6 +89,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       paths: this.app.paths,
       contributions: this.app.databaseTaskContributions,
       autoRun: true,
+      deferMissingMigrationSources: true,
     });
     // Task targets are prepared by the executor; other connections must still
     // be usable by runtime services when automatic tasks are disabled.
