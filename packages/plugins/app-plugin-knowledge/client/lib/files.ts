@@ -37,3 +37,14 @@ export function canPreview(file: KnowledgeFileInfo): boolean {
 export function isMarkdown(file: KnowledgeFileInfo): boolean {
   return resolveFilePreviewKind(recordOf(file, '')) === 'markdown';
 }
+
+/**
+ * Identifies cited lines of a document by value, or null: the lines are parsed again on every render, so a new array
+ * does not mean a new citation.
+ */
+export function citedKey(
+  docId: string,
+  lines: readonly [number, number] | null,
+): string | null {
+  return lines ? `${docId}:${lines[0]}-${lines[1]}` : null;
+}

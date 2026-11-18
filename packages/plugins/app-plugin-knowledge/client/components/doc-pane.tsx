@@ -23,6 +23,7 @@ import {
   FolderInputIcon,
   FolderPlusIcon,
   HistoryIcon,
+  InboxIcon,
   ListTreeIcon,
   LockIcon,
   MoreHorizontalIcon,
@@ -103,7 +104,7 @@ import { ChunksSheet, DocIndexBadge } from './doc-index.js';
 import { DocEditor, DocPropertiesDialog } from './doc-editor.js';
 import { useEntryActions } from '../lib/entry-actions.js';
 import { useReplaceFile } from '../hooks/use-replace-file.js';
-import { downloadFile } from '../lib/files.js';
+import { citedKey, downloadFile } from '../lib/files.js';
 import { EntryIcon, FileBody } from './file-pane.js';
 import { KnowledgeMarkdown, TableOfContents } from './markdown.js';
 import { ProposeFileDialog } from './propose-file.js';
@@ -621,13 +622,15 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const bodyRef = useRef<HTMLDivElement>(null);
   const lines = props.lines ?? null;
   const loaded = Boolean(doc.data);
+  // The lines are parsed again on every render: compare them by value, as the file's tabs do.
+  const cited = citedKey(docId, lines);
   // The highlighted lines come into view once the document is shown.
   useEffect(() => {
-    if (!lines || !loaded) return;
+    if (!cited || !loaded) return;
     const first = bodyRef.current?.querySelector('[data-highlighted]');
     if (first && 'scrollIntoView' in first)
       first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [lines, loaded]);
+  }, [cited, loaded]);
   const verify = useMutation({
     mutationFn: () => api.act(docId, 'verify'),
     onSuccess: () => {
@@ -703,13 +706,13 @@ export function DocPane(props: DocPaneProps): ReactElement {
   ) : null;
   // A file is replaced where an article is edited, without the primary emphasis.
   const replacing =
-    isFile && live && editable
+    isFile && live && !older && editable
       ? {
           label: t('knowledge.files.replace'),
           pending: replace.pending,
           onClick: replace.pick,
         }
-      : isFile && live && proposes
+      : isFile && live && !older && proposes
         ? {
             label: t('knowledge.files.proposeReplace'),
             pending: false,
@@ -822,35 +825,47 @@ export function DocPane(props: DocPaneProps): ReactElement {
           ];
   // On a phone a file's header keeps Download and the menu; Replace and History open from the menu's top.
   const fileSheet = isFile && phone;
-  const menu = (
-    <EntryMenu
-      sheet={fileSheet}
-      title={current.title}
-      entries={tidy([
-        ...(fileSheet
-          ? [
-              replacing
-                ? {
-                    key: 'replace',
-                    icon: <ReplaceIcon />,
-                    label: replacing.label,
-                    disabled: replacing.pending,
-                    onClick: replacing.onClick,
-                  }
-                : null,
-              {
-                key: 'history',
-                icon: <HistoryIcon />,
-                label: t('knowledge.doc.history'),
-                onClick: toggleHistory,
-              },
-              'separator' as const,
-            ]
-          : []),
-        ...menuEntries,
-      ])}
-    />
-  );
+  // Someone who only reads a file sees Download and History on a desktop; a phone keeps History in the menu.
+  const menu =
+    isFile && !fileSheet && !editable && !proposes ? null : (
+      <EntryMenu
+        sheet={fileSheet}
+        title={current.title}
+        entries={tidy([
+          ...(fileSheet
+            ? [
+                current.pendingProposals > 0
+                  ? {
+                      key: 'proposals',
+                      icon: <InboxIcon />,
+                      label: t('knowledge.doc.pending', {
+                        count: current.pendingProposals,
+                      }),
+                      onClick: () => props.onProposals(current.id),
+                    }
+                  : null,
+                replacing
+                  ? {
+                      key: 'replace',
+                      icon: <ReplaceIcon />,
+                      label: replacing.label,
+                      disabled: replacing.pending,
+                      onClick: replacing.onClick,
+                    }
+                  : null,
+                {
+                  key: 'history',
+                  icon: <HistoryIcon />,
+                  label: t('knowledge.doc.history'),
+                  onClick: toggleHistory,
+                },
+                'separator' as const,
+              ]
+            : []),
+          ...menuEntries,
+        ])}
+      />
+    );
   const download = file ? (
     <Button
       variant='outline'
@@ -874,8 +889,11 @@ export function DocPane(props: DocPaneProps): ReactElement {
             onOpen={props.onOpen}
             onHome={props.onHome}
           />
-          <div className='flex flex-wrap items-center gap-2'>
-            {current.pendingProposals > 0 ? (
+          <div
+            className='flex flex-wrap items-center gap-2'
+            data-testid='knowledge-doc-toolbar'
+          >
+            {current.pendingProposals > 0 && !fileSheet ? (
               <Button
                 variant='link'
                 className='px-1'

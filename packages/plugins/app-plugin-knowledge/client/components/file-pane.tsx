@@ -55,6 +55,7 @@ import { useNotify } from '../hooks/use-notify.js';
 import { fileSize } from '../lib/format.js';
 import {
   canPreview,
+  citedKey,
   downloadFile,
   isMarkdown,
   recordOf,
@@ -408,11 +409,12 @@ export function FileBody({
     onError: (error) => notify.error(error),
   });
   const [tab, setTab] = useState<string>(highlight ? 'text' : 'preview');
-  // Lines asked for (a citation, a section) open the text again.
-  const [seen, setSeen] = useState(highlight);
-  if (seen !== highlight) {
-    setSeen(highlight);
-    if (highlight) setTab('text');
+  // Lines asked for (a citation, a section) open the text again; the same lines asked for again do not.
+  const cited = citedKey(doc.id, highlight);
+  const [seen, setSeen] = useState(cited);
+  if (seen !== cited) {
+    setSeen(cited);
+    if (cited) setTab('text');
   }
   const [fullscreen, setFullscreen] = useState(false);
   const previewable = canPreview(file);

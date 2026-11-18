@@ -1477,6 +1477,16 @@ describe('a file entry', () => {
     );
   });
 
+  // The accessible names of the entry's header actions, in order.
+  const actions = () =>
+    within(screen.getByTestId('knowledge-doc-toolbar'))
+      .getAllByRole('button')
+      .map(
+        (button) =>
+          button.getAttribute('aria-label') ?? button.textContent?.trim(),
+      )
+      .filter((name) => name && !name.startsWith('Updated'));
+
   const header = async () => {
     const article = await screen.findByTestId('knowledge-doc');
     await within(article).findAllByRole('heading', {
@@ -1518,7 +1528,7 @@ describe('a file entry', () => {
   it('offers Propose a replacement to someone who may only propose, and only Download and History to a reader', async () => {
     serve([fileDoc(PROPOSE)]);
     const first = await show('/?doc=f1');
-    let article = await header();
+    const article = await header();
     expect(
       within(article).getByRole('button', { name: 'Propose a replacement' }),
     ).toBeInTheDocument();
@@ -1529,17 +1539,90 @@ describe('a file entry', () => {
 
     serve([fileDoc(READ)]);
     await show('/?doc=f1');
-    article = await header();
+    await header();
+    expect(actions()).toEqual(['Download', 'History']);
+  });
+
+  it('keeps an older version from being replaced or proposed against', async () => {
+    const versionOne = (path: string) =>
+      path === 'knowledge/docs/f1/versions/1'
+        ? {
+            data: {
+              id: 'v1',
+              docId: 'f1',
+              version: 1,
+              title: 'Readme',
+              summary: '',
+              content: 'Old text.',
+              contentHash: 'h1',
+              file: fileDoc(MANAGE).file,
+              author,
+              source: null,
+              runId: null,
+              proposalId: null,
+              approvedBy: null,
+              note: null,
+              createdAt: '2026-10-01T00:00:00Z',
+            },
+          }
+        : undefined;
+    serve([fileDoc(MANAGE)]);
+    extra = ({ path }) => versionOne(path);
+    const first = await show('/?doc=f1&version=1');
+    await header();
+    await waitFor(() =>
+      expect(actions()).toEqual(['Download', 'History', 'More actions']),
+    );
+    first.unmount();
+
+    serve([fileDoc(PROPOSE)]);
+    extra = ({ path }) => versionOne(path);
+    await show('/?doc=f1&version=1');
+    await header();
+    await waitFor(() =>
+      expect(actions()).toEqual(['Download', 'History', 'More actions']),
+    );
+  });
+
+  it('keeps Download and the menu on a phone, with History, Replace and pending proposals in the menu', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: !query.includes('min-width'),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    serve([{ ...fileDoc(MANAGE), pendingProposals: 2 }]);
+    const first = await show('/?doc=f1');
+    await header();
+    expect(actions()).toEqual(['Download', 'More actions']);
+    await press(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByTestId('knowledge-doc-actions');
     expect(
-      within(article)
+      within(sheet)
         .getAllByRole('button')
         .map((button) => button.textContent?.trim())
-        .filter(Boolean),
-    ).toEqual(expect.arrayContaining(['Download', 'History']));
-    for (const name of ['Replace', 'Propose a replacement', 'Edit'])
-      expect(
-        within(article).queryByRole('button', { name, exact: true }),
-      ).not.toBeInTheDocument();
+        .filter(Boolean)
+        .slice(0, 5),
+    ).toEqual([
+      '2 pending',
+      'Replace',
+      'History',
+      'Rename',
+      'Properties and summary',
+    ]);
+    first.unmount();
+
+    serve([fileDoc(READ)]);
+    await show('/?doc=f1');
+    await header();
+    expect(actions()).toEqual(['Download', 'More actions']);
+    await press(screen.getByRole('button', { name: 'More actions' }));
+    expect(
+      within(await screen.findByTestId('knowledge-doc-actions')).getByRole(
+        'button',
+        { name: 'History' },
+      ),
+    ).toBeInTheDocument();
   });
 
   it("previews Markdown with the documents' rendering and full screen only from the Preview tab", async () => {
@@ -1581,5 +1664,26 @@ describe('a file entry', () => {
     expect(
       within(text).getByRole('button', { name: 'Copy' }),
     ).toBeInTheDocument();
+  });
+
+  it('keeps the preview chosen after a citation until other lines are cited', async () => {
+    serve([fileDoc(READ)]);
+    await show('/?doc=f1&lines=3-3');
+    const article = await header();
+    await screen.findByTestId('knowledge-extracted-text');
+    await press(within(article).getByRole('tab', { name: 'Preview' }));
+    expect(await within(article).findByRole('table')).toBeInTheDocument();
+    // The same citation parsed again, as every render of the view does.
+    await act(() => url.navigate('/?doc=f1&lines=3-3&q=deploy'));
+    await act(() => url.navigate('/?doc=f1&lines=3-3'));
+    expect(
+      within(article).getByRole('tab', { name: 'Preview' }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await act(() => url.navigate('/?doc=f1&lines=1-2'));
+    await waitFor(() =>
+      expect(
+        within(article).getByRole('tab', { name: 'Extracted text' }),
+      ).toHaveAttribute('aria-selected', 'true'),
+    );
   });
 });
