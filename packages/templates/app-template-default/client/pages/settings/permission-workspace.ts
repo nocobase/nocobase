@@ -83,7 +83,11 @@ export interface PermissionWorkspaceSelection {
   >;
 }
 
-/** Add only business operations this application exposes; system settings come from the real settings pages. */
+/**
+ * Configure this selection whenever the app adds a business feature. Give each action a localized description,
+ * map each page's primary and related objects, and name additional scope slots with registered collection titles.
+ * See .agents/skills/nocobase-app-development/references/authorization.md for the role editor example.
+ */
 export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
   business: [],
 };
@@ -260,11 +264,9 @@ function navigationTitle(
 }
 
 /**
- * The role editor's two parts. `menus` is the application's complete menu (not the signed-in editor's filtered one):
- * a menu's checkbox stores access to its pages, and a system settings page guarded by an action opens with that
- * action. `objects` are the business resources the application selects and the resources its settings pages use,
- * each with the real actions the server registers; an object is set once for every menu that uses it. Installing a
- * plugin exposes nothing by itself: a settings resource appears only with a page that uses it.
+ * Menus lists the complete application navigation and stores page access. Business objects lists the selected
+ * resources and their catalog actions once for every menu that uses them. System settings lists the settings pages
+ * and the resources and actions those pages actually use.
  */
 export function permissionWorkspace(
   source: AuthorizationOptionsResponse,
@@ -678,7 +680,7 @@ export function permissionWorkspace(
       : undefined;
   };
 
-  // Business menus: top-level groups keep their tree; top-level pages share the main menu group.
+  // Preserve the sidebar hierarchy for business pages.
   const menus: PermissionMenuNode[] = [];
   const branch = (
     items: readonly RouteNavigationItem[],
