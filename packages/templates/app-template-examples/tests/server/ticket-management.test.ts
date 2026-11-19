@@ -66,6 +66,7 @@ test('ticket management uses the signed-in administrator, persists its audit, an
         data: {
           state: string;
           suspended: boolean;
+          roundStartedVersion: number;
           version: number;
           management: ManagementDetails;
           record: {
@@ -90,7 +91,7 @@ test('ticket management uses the signed-in administrator, persists its audit, an
   );
   expect(reply.status).toBe(200);
   const original = await read();
-  expect(original.management.actions).toEqual(['suspend']);
+  expect(original.management.actions).toEqual(['suspend', 'reset']);
   const suspend = {
     command: 'suspend',
     reason: 'Review the report.',
@@ -183,13 +184,13 @@ test('ticket management uses the signed-in administrator, persists its audit, an
   expect(
     await command('restartAt', 'restart-1', { target: 'open' }),
   ).toMatchObject({ state: 'open', round: 2 });
-  await command('suspend', 'pause-3');
   expect(await command('reset', 'reset-1')).toMatchObject({
     state: 'new',
     round: 3,
     recordId: id,
   });
   const detail = await read();
+  expect(detail.roundStartedVersion).toBe(detail.version);
   expect(detail.record).toMatchObject({
     assigneeId: null,
     closedReason: null,
@@ -207,7 +208,6 @@ test('ticket management uses the signed-in administrator, persists its audit, an
     'resume',
     'suspend',
     'restartAt',
-    'suspend',
     'reset',
   ]);
 });

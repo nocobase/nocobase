@@ -430,6 +430,7 @@ const recordView = {
   }),
   available: z.array(Available),
   suspended: z.boolean().optional(),
+  roundStartedVersion: z.number().int().nonnegative().optional(),
   history: z.object({
     transitions: z.array(Entry),
     effectRuns: z.array(Run),

@@ -24,6 +24,7 @@ async function fixture(
   hook = vi.fn(async () => {}),
   perform = vi.fn(async () => ({ delivered: true }) as object),
   beforeEffect?: () => Promise<void>,
+  resetWhileActive = false,
 ) {
   const store = new MemoryLifecycleStore();
   const dispatch = vi.fn(async () => {});
@@ -54,6 +55,7 @@ async function fixture(
         field: 'management',
         suspend: true,
         reset: true,
+        resetWhileActive,
         restartAt: ['waiting'],
         canEnter: ({ previous, to }) =>
           to !== 'waiting' || previous.assignee === 'support',
@@ -407,5 +409,32 @@ describe('management of a bound lifecycle instance', () => {
       status: 'rejected',
       reason: { code: 'CONFLICT' },
     });
+  });
+  it('can opt in to resetting an active round without a separate suspension', async () => {
+    const active = await fixture(undefined, undefined, undefined, true);
+    const {
+      effectRuns: [queued],
+    } = await active.wait();
+    expect((await active.detail()).actions).toEqual(['suspend', 'reset']);
+    const result = await active.runtime.reset(
+      'desk',
+      active.id,
+      await active.options(),
+    );
+    expect(result).toMatchObject({ state: 'open', round: 2, suspended: false });
+    const view = await active.runtime.view('oldDesk', active.id, actor);
+    expect(view.roundStartedVersion).toBe(view.version);
+    expect(
+      view.history.transitions.map(({ transition }) => transition),
+    ).toEqual(['$create', 'wait']);
+    expect(await active.runtime.runEffect(queued.id)).toMatchObject({
+      status: 'cancelled',
+      attempts: 0,
+    });
+
+    const guarded = await fixture();
+    await expect(
+      guarded.runtime.reset('desk', guarded.id, await guarded.options()),
+    ).rejects.toMatchObject({ code: 'INVALID_STATE' });
   });
 });

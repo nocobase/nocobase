@@ -128,6 +128,6 @@ Payment windows, invoice polling, export polling/timeouts, subscription billing/
 
 ## Manage a ticket lifecycle
 
-Sign in as an application administrator and open a ticket in the Help desk. **Manage lifecycle** opens the actions available for that ticket. Suspend it to pause replies and automatic closure, then resume it to continue the same wait. A suspended ticket with an assignee can restart in **Open**. Resetting to **New** keeps the conversation and clears the assignee and closing reason. The detail shows management history and the status of in-flight work. The demo desk's administrators can manage all its tickets.
+Sign in as an application administrator and open a ticket in the Help desk. **Manage lifecycle** opens the actions available for that ticket. Suspend it to pause replies and automatic closure, then resume it to continue the same wait. A suspended ticket with an assignee can restart in **Open**. An administrator can reset to **New** from any state. Resetting keeps the conversation and clears the assignee and closing reason. The diagram shows progress in the current round. The detail shows management history and the status of in-flight work. The demo desk's administrators can manage all its tickets.
 
 The endpoint is `POST /api/lifecycleExample/tickets/{recordId}/management`. It checks the authenticated account's permissions regardless of the business persona selected in the example.

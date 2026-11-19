@@ -74,6 +74,8 @@ export interface ManagementPolicy<T extends LifecycleTypes> {
   readonly prepare?: (tx: LifecycleTransaction) => void | Promise<void>;
   readonly suspend?: boolean;
   readonly reset?: boolean;
+  /** Allow an enabled reset to start a new round from an active record. */
+  readonly resetWhileActive?: boolean;
   readonly restartAt?: readonly T['state'][];
   readonly canEnter?: (
     context: ManagementReentryContext<T>,

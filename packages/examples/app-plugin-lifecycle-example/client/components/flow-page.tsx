@@ -18,7 +18,7 @@ import {
   refreshLifecycleViews,
 } from '../lib/use-lifecycle-changes.js';
 import { ago, NAMESPACE } from '../lib/format.js';
-import { visitedStates } from '../lib/diagram.js';
+import { currentRoundTransitions, visitedStates } from '../lib/diagram.js';
 import {
   useExampleLifecycle,
   useTranslate,
@@ -387,6 +387,7 @@ function ProcessCard({
   readonly detail: RecordDetail;
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
+  const diagramHistory = currentRoundTransitions(detail);
   return (
     <Card>
       <CardHeader>
@@ -397,8 +398,8 @@ function ProcessCard({
         <ProcessDiagram
           description={detail.description}
           current={text(detail.record.status)}
-          visited={visitedStates(detail)}
-          history={detail.history.transitions}
+          visited={visitedStates(diagramHistory)}
+          history={diagramHistory}
           availableTransitions={detail.available
             .filter((item) => item.allowed)
             .map((item) => item.name)}

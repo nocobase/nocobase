@@ -448,6 +448,8 @@ export interface RecordView {
   readonly available: readonly AvailableTransition[];
   readonly history: RecordHistory;
   readonly suspended?: boolean;
+  /** Business version at the start of the current execution round. */
+  readonly roundStartedVersion?: number;
 }
 
 export interface RecordHistory {
@@ -2186,19 +2188,21 @@ export class LifecycleRuntime {
           ),
         );
       };
-      if (!result.suspended) {
-        if (policy.suspend && allowed.has('suspend')) actions.push('suspend');
-      } else {
+      if (result.suspended) {
         if (allowed.has('resume')) actions.push('resume');
-        if (
-          policy.reset &&
-          allowed.has('reset') &&
-          (await canEnter('reset', lifecycle.initial))
-        )
-          actions.push('reset');
-        if (allowed.has('restartAt'))
-          for (const target of policy.restartAt ?? [])
-            if (await canEnter('restartAt', target)) targets.push(target);
+      } else if (policy.suspend && allowed.has('suspend')) {
+        actions.push('suspend');
+      }
+      if (
+        policy.reset &&
+        (result.suspended || policy.resetWhileActive) &&
+        allowed.has('reset') &&
+        (await canEnter('reset', lifecycle.initial))
+      )
+        actions.push('reset');
+      if (result.suspended && allowed.has('restartAt')) {
+        for (const target of policy.restartAt ?? [])
+          if (await canEnter('restartAt', target)) targets.push(target);
         if (targets.length) actions.push('restartAt');
       }
       const runs = await store.listEffectRuns({
@@ -2419,7 +2423,8 @@ export class LifecycleRuntime {
         if (
           command === 'suspend'
             ? current.suspended || !policy.suspend
-            : !current.suspended
+            : !current.suspended &&
+              !(command === 'reset' && policy.resetWhileActive)
         )
           throw new LifecycleError(
             'INVALID_STATE',
@@ -2735,6 +2740,9 @@ export class LifecycleRuntime {
       {},
       values,
     );
+    const management = lifecycle.management
+      ? managementState(lifecycle.management.field, record)
+      : undefined;
     return {
       lifecycle: lifecycle.name,
       definitionVersion: lifecycle.version,
@@ -2747,11 +2755,10 @@ export class LifecycleRuntime {
         : {}),
       ...(snapshot ? { parameterSnapshot: structuredClone(snapshot) } : {}),
       history: await this.history(name, id),
-      ...(lifecycle.management
+      ...(management
         ? {
-            suspended:
-              managementState(lifecycle.management.field, record)
-                .suspendedAt !== null,
+            suspended: management.suspendedAt !== null,
+            roundStartedVersion: management.roundStartedVersion,
           }
         : {}),
     };

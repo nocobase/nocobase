@@ -114,6 +114,7 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
       field: 'lifecycleManagement',
       suspend: true,
       reset: true,
+      resetWhileActive: true,
       restartAt: ['open'],
       canEnter: ({ previous, to }) =>
         to !== 'open' || Boolean(previous.assigneeId),
