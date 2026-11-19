@@ -1,5 +1,6 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
 import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
+import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
 import { describe, expect, it } from 'vitest';
 import {
   createCapabilityCatalog,
@@ -133,7 +134,7 @@ describe('default Foundation integration', () => {
   });
 });
 
-it('offers one Features and extensions menu under System settings', async () => {
+it('offers one Features and extensions page on the System settings tab', async () => {
   const { routes } = await resolveAppRuntime(appRuntime);
   const workspace = permissionWorkspace(
     { sections: [], recordAccess: [], subjectTypes: [], collections: [] },
@@ -144,22 +145,19 @@ it('offers one Features and extensions menu under System settings', async () => 
       t: (key) => key,
     },
   );
-  const owners: { path: string[]; label: string }[] = [];
-  const visit = (nodes: typeof workspace.menus, path: string[]): void => {
-    for (const node of nodes) {
-      if (node.children) visit(node.children, [...path, node.label]);
-      else if (
-        workspace.menuPages
-          .get(node.id)
-          ?.includes(CAPABILITY_GUIDE_ACCESS.resource.id)
-      )
-        owners.push({ path, label: node.label });
-    }
-  };
-  visit(workspace.menus, []);
-  expect(owners).toHaveLength(1);
-  expect(owners[0]?.path[0]).toBe('settings.title');
-  expect(owners[0]?.label).toBe('nav.capabilityGuide');
+  const open = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
+  const owners = workspace.settings.filter((page) =>
+    page.objects.some((object) =>
+      object.actions.some((action) => action.id === open),
+    ),
+  );
+  expect(owners.map((page) => page.label)).toEqual(['nav.capabilityGuide']);
+  // It is not a business menu.
+  expect(
+    [...workspace.menuPages.values()].some((pages) =>
+      pages.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
+    ),
+  ).toBe(false);
   expect(
     routes.find(({ name }) => name === 'capabilityGuideEntry')?.authz,
   ).toEqual(CAPABILITY_GUIDE_ACCESS);

@@ -34,7 +34,6 @@ import {
   dependentsOf,
   narrowerOptions,
   setActionEnabled,
-  setMenuChecked,
   setScopeValue,
   type PermissionGrants,
   type PermissionValue,
