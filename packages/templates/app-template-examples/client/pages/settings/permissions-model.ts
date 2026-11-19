@@ -143,11 +143,7 @@ export function draftFromGrants(
         same(value, storedScopes(viewEntry)[view.scopes[0]?.key ?? ''])
       )
         continue;
-      // The View it follows is not granted: whatever was stored, it reaches no records, as saving will store.
-      if (view && !viewEntry) {
-        scopes[scope.key] = NO_SCOPE;
-        continue;
-      }
+      // The View it follows is not granted: the stored value is shown as it is, and saving keeps it unless changed.
       const selection = scopeSelection(value);
       scopes[scope.key] = selection;
       if (selection === CUSTOM_FILTER)
@@ -180,9 +176,9 @@ function storedValue(
 }
 
 /**
- * Stored grants for a draft. Actions the editor does not show and the policies of unchanged choices are kept as
- * stored. Followers store a copy of the value of the View they follow, which may be another object's, and no records
- * while that View is off. A checked menu opens its pages and an unchecked one closes them, whatever the objects'
+ * Stored grants for a draft. Actions the editor does not show and unchanged scopes are kept exactly as stored. Followers
+ * store a copy of the value of the View they follow, which may be another object's; while that View is off they keep
+ * their stored value, and a new one reaches no records. A checked menu opens its pages and an unchecked one closes them, whatever the objects'
  * actions are.
  */
 export function grantsFromDraft(
@@ -211,17 +207,32 @@ export function grantsFromDraft(
         scopes[scope.key] = original ?? scope.defaultValue;
         continue;
       }
-      // The View it follows is off: it has no scope to follow, and any value of its own, stored or default, could be
-      // wider than what the role may read of that object, so it reaches no records until that View is on again.
+      const selection = chosen[scope.key];
+      // Unchanged since it was read: the stored value is kept exactly, parameters, unknown values and a missing key
+      // included, so opening a role and saving it, or only renaming it, never rewrites a scope.
+      const unchanged =
+        entry !== undefined &&
+        selection !== undefined &&
+        selection === scopeSelection(original) &&
+        (selection !== CUSTOM_FILTER ||
+          same(filters[filterKey(id, scope.key)], filterOf(original)));
+      if (unchanged) {
+        if (!(scope.key in stored)) delete scopes[scope.key];
+        continue;
+      }
+      // The View it follows is off. A value stored by a seed or the API is kept above until an administrator turns
+      // that View on and picks another; a new action has none to keep and reaches no records until that View is on.
       if (
         scope.follows &&
         workspace.bindings.has(scope.follows) &&
         !draft[scope.follows]
       ) {
-        scopes[scope.key] = storedValue(NO_SCOPE, original, undefined);
+        scopes[scope.key] =
+          entry && selection === undefined && scope.key in stored
+            ? original
+            : storedValue(NO_SCOPE, original, undefined);
         continue;
       }
-      const selection = chosen[scope.key];
       if (selection === undefined && scope.follows) {
         const view = workspace.bindings.get(scope.follows);
         const viewScope = view?.scopes[0]?.key;

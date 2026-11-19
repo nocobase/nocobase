@@ -314,6 +314,7 @@ const settings = {
     disableAll: 'Disable all',
     sameAsView: 'Same as view ({{scope}})',
     sameAsObjectView: 'Same as {{object}} view ({{scope}})',
+    needsView: 'Needs {{object}} view',
     scopeFor: 'Data scope of {{action}}',
     scopeForSlot: '{{action}}: {{scope}}',
     managed: 'Managed by the application',

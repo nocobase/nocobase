@@ -45,6 +45,7 @@ import {
   canViewObject,
   dependentsOf,
   effectiveScopeValue,
+  blockedLeaderObject,
   followedObject,
   filterObjects,
   findAction,
@@ -121,6 +122,8 @@ export interface PermissionEditorLabels {
   readonly sameAsView: (scope: string) => string;
   /** A slot following another object's View, such as the customers a Contacts action reads. */
   readonly sameAsObjectView: (object: string, scope: string) => string;
+  /** Beside a scope that follows another View which is off: it keeps its value until that View is on. */
+  readonly needsView: (object: string) => string;
   readonly scopeFor: (action: string, scope?: string) => string;
   readonly managed: string;
   readonly unsaved: string;
@@ -194,6 +197,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   disableAll: 'Disable all',
   sameAsView: (scope) => `Same as view (${scope})`,
   sameAsObjectView: (object, scope) => `Same as ${object} view (${scope})`,
+  needsView: (object) => `Needs ${object} view`,
   scopeFor: (action, scope) =>
     scope ? `${action}: ${scope}` : `Data scope of ${action}`,
   managed: 'Managed by the application',
@@ -305,6 +309,33 @@ function ScopeControl({
   const options = slotOptions(object, slot, objects);
   const own = ownScopeValue(object, grants, action, slot, objects);
   const viewValue = viewScopeValue(object, grants, slot, objects);
+  // The View it follows is off: show the value it keeps, read-only, and what turning it back on needs.
+  const blocked = grants[action.id]
+    ? blockedLeaderObject(object, slot, objects, grants)
+    : undefined;
+  if (blocked) {
+    const value = own ?? '';
+    const shown = options.some((option) => option.value === value)
+      ? options
+      : [...options, { value, label: value }];
+    return (
+      <div className='grid min-w-0 gap-1'>
+        <ScopeSelect
+          label={accessibleName}
+          options={shown}
+          value={value}
+          disabled
+          onChange={() => undefined}
+        />
+        <p
+          data-slot='permission-scope-needs-view'
+          className='text-xs text-amber-700 dark:text-amber-400'
+        >
+          {labels.needsView(blocked.label)}
+        </p>
+      </div>
+    );
+  }
   if (slot.followsView && viewValue !== undefined) {
     const viewLabel =
       viewScopeLabel(object, grants, slot, objects) ?? viewValue;

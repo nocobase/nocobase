@@ -292,6 +292,7 @@ const settings = {
     disableAll: '全部关闭',
     sameAsView: '和查看一样（{{scope}}）',
     sameAsObjectView: '和{{object}}的查看一样（{{scope}}）',
+    needsView: '需要开启{{object}}的查看',
     scopeFor: '{{action}}的数据范围',
     scopeForSlot: '{{action}}：{{scope}}',
     managed: '由应用管理',

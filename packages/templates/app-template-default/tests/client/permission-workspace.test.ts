@@ -788,8 +788,8 @@ describe('role permission workspace', () => {
     expect(
       draftFromGrants(alone, ws).draft.grants[contract('sign')]?.scopes,
     ).toEqual({ signers: NO_SCOPE });
-    // The same holds for an explicit signer scope stored while the contacts View is off: it is read, saved and
-    // reloaded as no records, never kept as All records.
+    // An explicit signer scope stored while the contacts View is off, by a seed or the API, is read, saved and
+    // reloaded exactly as stored: opening the role never rewrites it.
     const existing: PermissionGrant[] = [
       {
         resource: { type: 'composite', id: 'contracts' },
@@ -810,7 +810,7 @@ describe('role permission workspace', () => {
     ];
     const read = draftFromGrants(existing, ws);
     expect(read.draft.grants[contract('sign')]?.scopes).toEqual({
-      signers: NO_SCOPE,
+      signers: 'allRecords',
     });
     const signersOf = (grants: readonly PermissionGrant[]) =>
       grants
@@ -818,24 +818,105 @@ describe('role permission workspace', () => {
         ?.actions.find((entry) => entry.action === 'sign')?.policy?.scopes
         ?.signers;
     const saved = grantsFromDraft(read.draft, read.filters, existing, ws);
-    expect(signersOf(saved)).toBe('');
+    expect(saved).toEqual(existing);
     expect(draftFromGrants(saved, ws).draft.grants[contract('sign')]).toEqual({
-      scopes: { signers: NO_SCOPE },
+      scopes: { signers: 'allRecords' },
     });
-    // A draft that still holds an explicit value is saved as no records too.
+    // A new action has nothing stored to keep: while that View is off it reaches no records.
+    const draft = value({
+      [contract('view')]: {},
+      [contract('sign')]: { scopes: { signers: 'allRecords' } },
+    });
+    expect(signersOf(grantsFromDraft(draft, {}, [], ws))).toBe('');
+  });
+
+  it('saves a stored role unchanged until one scope is changed, whatever the Views its scopes follow', async () => {
+    const { workspace: ws } = await workspace();
+    const signersOf = (grants: readonly PermissionGrant[]) =>
+      grants
+        .find((grant) => grant.resource.id === 'contracts')
+        ?.actions.find((entry) => entry.action === 'sign')?.policy?.scopes;
+    // Seeded through the API: signing keeps signers with parameters and a plugin key, the contacts View stays off,
+    // and a second stored sign entry has no signer key at all.
+    const signers = {
+      type: 'recordAccess',
+      key: 'department',
+      params: { depth: 2 },
+    };
+    const existing: PermissionGrant[] = [
+      {
+        resource: { type: 'composite', id: 'contracts' },
+        actions: [
+          {
+            action: 'view',
+            policy: { type: 'composite', scopes: { records: 'allRecords' } },
+          },
+          {
+            action: 'sign',
+            policy: {
+              type: 'composite',
+              scopes: {
+                records: 'allRecords',
+                signers,
+                pluginSlot: 'kept',
+              },
+            },
+          },
+        ],
+      },
+    ];
+    const read = draftFromGrants(existing, ws);
+    // Opened and saved without a change, as when only the role's name changes, nothing is rewritten.
+    expect(grantsFromDraft(read.draft, read.filters, existing, ws)).toEqual(
+      existing,
+    );
+    const missing: PermissionGrant[] = [
+      {
+        resource: { type: 'composite', id: 'contracts' },
+        actions: [
+          {
+            action: 'view',
+            policy: { type: 'composite', scopes: { records: 'allRecords' } },
+          },
+          {
+            action: 'sign',
+            policy: { type: 'composite', scopes: { records: 'allRecords' } },
+          },
+        ],
+      },
+    ];
+    const reread = draftFromGrants(missing, ws);
+    expect(grantsFromDraft(reread.draft, reread.filters, missing, ws)).toEqual(
+      missing,
+    );
+    // Turning the contacts View on and narrowing only the signer scope changes that scope alone.
+    const on = setActionEnabled(
+      ws.objects,
+      read.draft.grants,
+      contact('view'),
+      true,
+    );
+    const narrowed = setScopeValue(
+      ws.objects,
+      on.grants,
+      contract('sign'),
+      'signers',
+      NO_SCOPE,
+    );
+    const saved = grantsFromDraft(
+      value(narrowed.grants),
+      read.filters,
+      existing,
+      ws,
+    );
+    expect(signersOf(saved)).toEqual({
+      records: 'allRecords',
+      signers: '',
+      pluginSlot: 'kept',
+    });
     expect(
-      signersOf(
-        grantsFromDraft(
-          value({
-            [contract('view')]: {},
-            [contract('sign')]: { scopes: { signers: 'allRecords' } },
-          }),
-          {},
-          existing,
-          ws,
-        ),
-      ),
-    ).toBe('');
+      saved.find((grant) => grant.resource.id === 'contract-contacts'),
+    ).toBeDefined();
   });
 
   it('keeps stored scope keys the catalog does not declare', async () => {
