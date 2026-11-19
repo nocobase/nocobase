@@ -44,7 +44,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   authorizationExample(),
   templatePrintExample(),
   users(),
-  configInspector({ settingsOwner: applicationManifest.name }),
+  configInspector(),
   databaseExplorer(),
   apiKeys(),
   i18n(),

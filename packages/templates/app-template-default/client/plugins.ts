@@ -28,7 +28,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
-  configInspector({ settingsOwner: applicationManifest.name }),
+  configInspector(),
   databaseExplorer(),
   users(),
   apiKeys(),
