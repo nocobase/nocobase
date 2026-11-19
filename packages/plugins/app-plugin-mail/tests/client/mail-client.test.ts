@@ -198,19 +198,21 @@ describe('MailClient', () => {
     });
     request.mockResolvedValueOnce({
       data: [{ providerFolderId: 'INBOX', synced: true }],
-      meta: { total: 1, complete: false },
+      meta: { total: 1, complete: false, initialSyncCompleted: true },
     });
     await expect(client.listFolderChoices('account/1')).resolves.toEqual({
       folders: [{ providerFolderId: 'INBOX', synced: true }],
       complete: false,
       failed: false,
+      initialSyncCompleted: true,
     });
-    // An older server reports neither flag; its list is taken as complete.
+    // An older server reports no flag; its list is taken as complete and a sync as importing from the start date.
     request.mockResolvedValueOnce({ data: [], meta: { total: 0 } });
     await expect(client.listFolderChoices('account/1')).resolves.toEqual({
       folders: [],
       complete: true,
       failed: false,
+      initialSyncCompleted: false,
     });
     request.mockResolvedValueOnce({
       data: [],

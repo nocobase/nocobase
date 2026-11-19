@@ -232,6 +232,11 @@ export interface MailFolderChoices {
   readonly complete: boolean;
   /** No folder listing completed and none is running; start a synchronization to list the folders again. */
   readonly failed: boolean;
+  /**
+   * True once an initial synchronization saved its cursor, so a synchronization that keeps the folder selection runs
+   * incrementally; false means it imports from the initial sync date.
+   */
+  readonly initialSyncCompleted: boolean;
 }
 
 export interface MailAddress {

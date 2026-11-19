@@ -274,6 +274,10 @@ describe.each(['gmail', 'microsoft'] as const)(
       mailbox.put('spam-only', ['spam']);
       mailbox.put('archived', ['archive']);
       await store.updateAccountSyncFolders(accountId, []);
+      const initialSyncCompleted = async () =>
+        (await service().listFolderChoices(owner, accountId))
+          .initialSyncCompleted;
+      expect(await initialSyncCompleted()).toBe(false);
 
       await sync();
       expect(
@@ -289,6 +293,8 @@ describe.each(['gmail', 'microsoft'] as const)(
         both: ['inbox'],
         archived: ['archive'],
       });
+      // A sync that keeps this selection now runs incrementally, which the scope dialog tells the owner.
+      expect(await initialSyncCompleted()).toBe(true);
       if (kind === 'microsoft') {
         expect([...mailbox.historyFolders.at(-1)!].sort()).toEqual([
           'archive',
@@ -613,9 +619,11 @@ describe.each(['gmail', 'microsoft'] as const)(
         );
         expect(await choices()).toMatchObject({ complete: false });
         expect(reads.at(-1)).toBe('mailFolders');
-        expect(reads.slice(0, -1).every((t) => t === 'mailSyncRuns')).toBe(
-          true,
-        );
+        expect(
+          reads
+            .slice(0, -1)
+            .every((t) => t === 'mailSyncRuns' || t === 'mailSyncStates'),
+        ).toBe(true);
         expect(reads.length).toBeGreaterThan(1);
       });
 

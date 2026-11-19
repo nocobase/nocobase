@@ -1369,6 +1369,7 @@ export const MailFolderListMeta: z.ZodType<{
   total: number;
   complete?: boolean;
   failed?: boolean;
+  initialSyncCompleted?: boolean;
 }> = z
   .object({
     total: z.number().int(),
@@ -1379,6 +1380,10 @@ export const MailFolderListMeta: z.ZodType<{
     failed: z.boolean().optional().meta({
       description:
         'With `includeUnsynced`: true when no folder listing completed and none is running; start a synchronization with `mailSyncAccount` to list the folders again.',
+    }),
+    initialSyncCompleted: z.boolean().optional().meta({
+      description:
+        'With `includeUnsynced`: true once an initial synchronization completed, so `mailSyncAccount` without a folder change runs incrementally; false means it imports from the initial sync date.',
     }),
   })
   .meta({ ref: 'MailFolderListMeta' });

@@ -378,7 +378,8 @@ export class MailClient {
   /**
    * Every folder of the account for choosing its synchronized folders, each with `synced`. `complete` is false until a
    * synchronization run has read the whole folder list; a selection waits for it. `failed` means that listing stopped
-   * and has to be started again with {@link startSync}.
+   * and has to be started again with {@link startSync}. `initialSyncCompleted` tells whether a sync that keeps the
+   * selection runs incrementally.
    */
   public listFolderChoices(accountId: string): Promise<MailFolderChoices> {
     return this.client
@@ -389,6 +390,7 @@ export class MailClient {
             readonly total: number;
             readonly complete?: boolean;
             readonly failed?: boolean;
+            readonly initialSyncCompleted?: boolean;
           }
         >
       >({
@@ -399,6 +401,7 @@ export class MailClient {
         folders: response.data,
         complete: response.meta?.complete !== false,
         failed: response.meta?.failed === true,
+        initialSyncCompleted: response.meta?.initialSyncCompleted === true,
       }));
   }
 

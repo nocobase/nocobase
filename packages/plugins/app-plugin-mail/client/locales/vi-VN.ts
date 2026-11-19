@@ -338,29 +338,41 @@ const viVN: LocaleResource<typeof enUS> = {
       pickDate: 'Chọn một ngày',
     },
     syncFolders: {
-      title: 'Thư mục đồng bộ',
+      title: 'Xác nhận phạm vi đồng bộ',
+      descriptionFirst:
+        'Tài khoản đã được kết nối. Xác nhận phạm vi để bắt đầu đồng bộ lần đầu.',
       description:
-        'Chọn các thư mục mà tài khoản này đồng bộ. Thư trong các thư mục khác sẽ không được nhập và bản sao cục bộ của chúng sẽ bị xóa.',
+        'Xác nhận các thư mục cần đồng bộ. Các lần đồng bộ tự động sẽ dùng cùng phạm vi.',
+      scope: 'Phạm vi đồng bộ',
+      allFolders: 'Toàn bộ hộp thư',
+      allFoldersHint: 'Đồng bộ mọi thư mục, kể cả thư mục tạo sau này.',
+      someFolders: 'Thư mục được chọn',
+      someFoldersHint:
+        'Chỉ đồng bộ các thư mục được đánh dấu; thư mục mới cần thêm thủ công.',
       loading: 'Đang tải thư mục…',
       listingFailed: 'Không thể đọc danh sách thư mục từ máy chủ thư.',
       retry: 'Thử lại',
       waiting: 'Đang lấy danh sách thư mục từ máy chủ thư…',
-      allFolders: 'Tất cả thư mục, bao gồm cả thư mục tạo sau này',
       selectedCount: 'Đã chọn {{count}}/{{total}} thư mục',
+      selectAll: 'Chọn tất cả',
+      clearAll: 'Bỏ chọn tất cả',
+      emptySelection: 'Hãy chọn ít nhất một thư mục.',
       sentHint:
         'Chưa chọn Đã gửi, nên các thư trả lời của chính bạn có thể không hiển thị trong hội thoại. Việc gửi thư vẫn hoạt động.',
-      removeTitle: 'Xóa thư cục bộ?',
+      removeTitle: 'Xóa thư cục bộ ngoài phạm vi?',
       removeDescription:
-        '{{count}} thư cục bộ không thuộc thư mục nào được chọn và sẽ bị xóa khỏi ứng dụng này. Thư trên máy chủ thư không bị ảnh hưởng.',
+        'Thay đổi này xóa {{count}} thư cục bộ cùng dữ liệu cục bộ liên quan. Thư trên máy chủ thư không bị xóa, và thư vẫn thuộc thư mục được chọn sẽ được giữ lại.',
       back: 'Quay lại',
-      confirm: 'Xóa và lưu',
+      confirm: 'Xóa thư cục bộ và đồng bộ',
       saving: 'Đang lưu…',
-      later: 'Để sau',
       cancel: 'Hủy',
-      start: 'Bắt đầu đồng bộ',
-      save: 'Lưu',
+      submit: 'Xác nhận và đồng bộ',
+      outcomeInitial: 'Đồng bộ thư từ ngày {{date}}.',
+      outcomeIncremental:
+        'Đồng bộ thư mới và thư thay đổi kể từ lần đồng bộ trước.',
+      outcomeRescan:
+        'Đồng bộ lại theo phạm vi mới; thư đã có sẽ không bị thêm trùng.',
       pending: 'Chọn thư mục để bắt đầu đồng bộ',
-      action: 'Thư mục',
     },
     providers: {
       title: 'Thêm tài khoản thư',

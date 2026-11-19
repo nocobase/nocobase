@@ -390,7 +390,12 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
 
     const listFolderChoices = vi
       .spyOn(mail, 'listFolderChoices')
-      .mockResolvedValueOnce({ folders: [], complete: false, failed: true });
+      .mockResolvedValueOnce({
+        folders: [],
+        complete: false,
+        failed: true,
+        initialSyncCompleted: false,
+      });
     const choices = await router.request(
       '/api/mail/accounts/account-1/folders?includeUnsynced=true',
     );
@@ -403,6 +408,7 @@ describe('[API][SEC] mail API routes and permission boundaries', () => {
       total: 0,
       complete: false,
       failed: true,
+      initialSyncCompleted: false,
     });
   });
 
@@ -2374,6 +2380,7 @@ function service(overrides: Partial<MailService> = {}): MailService {
       folders: [],
       complete: true,
       failed: false,
+      initialSyncCompleted: false,
     }),
     listLabels: async () => [],
     listIdentities: async () => [],

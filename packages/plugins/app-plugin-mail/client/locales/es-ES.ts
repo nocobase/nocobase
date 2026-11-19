@@ -341,30 +341,43 @@ const esES: LocaleResource<typeof enUS> = {
       pickDate: 'Elige una fecha',
     },
     syncFolders: {
-      title: 'Carpetas que se sincronizan',
+      title: 'Confirmar el alcance de la sincronización',
+      descriptionFirst:
+        'La cuenta está conectada. Confirma el alcance para iniciar la primera sincronización.',
       description:
-        'Elija las carpetas que sincroniza esta cuenta. Los mensajes de otras carpetas no se importan y sus copias locales se eliminan.',
+        'Confirma las carpetas que se sincronizan. Las sincronizaciones automáticas usarán el mismo alcance.',
+      scope: 'Alcance de la sincronización',
+      allFolders: 'Todo el buzón',
+      allFoldersHint:
+        'Sincroniza todas las carpetas, incluidas las que se creen más adelante.',
+      someFolders: 'Carpetas seleccionadas',
+      someFoldersHint:
+        'Solo sincroniza las carpetas marcadas; las nuevas se añaden manualmente.',
       loading: 'Cargando carpetas…',
       listingFailed:
         'No se pudo leer la lista de carpetas del servidor de correo.',
       retry: 'Reintentar',
       waiting: 'Obteniendo la lista de carpetas del servidor de correo…',
-      allFolders: 'Todas las carpetas, incluidas las que se creen más adelante',
       selectedCount: '{{count}} de {{total}} carpetas seleccionadas',
+      selectAll: 'Seleccionar todo',
+      clearAll: 'Deseleccionar todo',
+      emptySelection: 'Selecciona al menos una carpeta.',
       sentHint:
         'Enviados no está seleccionado, por lo que es posible que sus propias respuestas no aparezcan en las conversaciones. El envío de correo sigue funcionando.',
-      removeTitle: '¿Eliminar mensajes locales?',
+      removeTitle: '¿Eliminar los mensajes locales fuera del alcance?',
       removeDescription:
-        '{{count}} mensajes locales no están en ninguna carpeta seleccionada y se eliminarán de esta aplicación. Los mensajes del servidor de correo no se ven afectados.',
+        'Este cambio elimina {{count}} mensajes locales y sus datos locales. Los mensajes del servidor de correo no se eliminan y se conservan los que siguen en una carpeta seleccionada.',
       back: 'Atrás',
-      confirm: 'Eliminar y guardar',
+      confirm: 'Eliminar mensajes locales y sincronizar',
       saving: 'Guardando…',
-      later: 'Más tarde',
       cancel: 'Cancelar',
-      start: 'Iniciar sincronización',
-      save: 'Guardar',
+      submit: 'Confirmar y sincronizar',
+      outcomeInitial: 'Sincroniza los mensajes desde el {{date}}.',
+      outcomeIncremental:
+        'Sincroniza los mensajes nuevos y modificados desde la última sincronización.',
+      outcomeRescan:
+        'Vuelve a sincronizar con el nuevo alcance; los mensajes existentes no se duplican.',
       pending: 'Elija las carpetas para empezar a sincronizar',
-      action: 'Carpetas',
     },
     providers: {
       title: 'Añadir cuenta de correo',

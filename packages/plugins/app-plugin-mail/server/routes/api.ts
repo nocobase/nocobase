@@ -638,13 +638,16 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
               await mail.listFolders(operationContext(context), accountId),
             ),
           );
-        const { folders, complete, failed } = await mail.listFolderChoices(
-          operationContext(context),
-          accountId,
-        );
+        const { folders, complete, failed, initialSyncCompleted } =
+          await mail.listFolderChoices(operationContext(context), accountId);
         return context.json({
           data: folders,
-          meta: { total: folders.length, complete, failed },
+          meta: {
+            total: folders.length,
+            complete,
+            failed,
+            initialSyncCompleted,
+          },
         });
       },
     );

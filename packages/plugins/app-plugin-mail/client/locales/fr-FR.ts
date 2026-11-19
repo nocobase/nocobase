@@ -341,31 +341,44 @@ const frFR: LocaleResource<typeof enUS> = {
       pickDate: 'Choisissez une date',
     },
     syncFolders: {
-      title: 'Dossiers à synchroniser',
+      title: 'Confirmer l’étendue de la synchronisation',
+      descriptionFirst:
+        'Le compte est connecté. Confirmez l’étendue pour lancer la première synchronisation.',
       description:
-        'Choisissez les dossiers que ce compte synchronise. Les messages des autres dossiers ne sont pas importés et leurs copies locales sont supprimées.',
+        'Confirmez les dossiers à synchroniser. Les synchronisations automatiques utiliseront la même étendue.',
+      scope: 'Étendue de la synchronisation',
+      allFolders: 'Toute la boîte aux lettres',
+      allFoldersHint:
+        'Synchronise tous les dossiers, y compris ceux créés plus tard.',
+      someFolders: 'Dossiers sélectionnés',
+      someFoldersHint:
+        'Synchronise uniquement les dossiers cochés ; ajoutez vous-même les nouveaux dossiers.',
       loading: 'Chargement des dossiers…',
       listingFailed:
         'Impossible de lire la liste des dossiers depuis le serveur de messagerie.',
       retry: 'Réessayer',
       waiting:
         'Récupération de la liste des dossiers auprès du serveur de messagerie…',
-      allFolders: 'Tous les dossiers, y compris ceux créés plus tard',
       selectedCount: '{{count}} dossiers sur {{total}} sélectionnés',
+      selectAll: 'Tout sélectionner',
+      clearAll: 'Tout désélectionner',
+      emptySelection: 'Sélectionnez au moins un dossier.',
       sentHint:
         'Envoyés n’est pas sélectionné : vos propres réponses peuvent manquer dans les conversations. L’envoi de messages fonctionne toujours.',
-      removeTitle: 'Supprimer les messages locaux ?',
+      removeTitle: 'Supprimer les messages locaux hors de l’étendue ?',
       removeDescription:
-        '{{count}} messages locaux ne sont dans aucun dossier sélectionné et seront supprimés de cette application. Les messages du serveur de messagerie ne sont pas affectés.',
+        'Cette modification supprime {{count}} messages locaux et leurs données locales. Les messages du serveur de messagerie ne sont pas supprimés, et ceux encore dans un dossier sélectionné sont conservés.',
       back: 'Retour',
-      confirm: 'Supprimer et enregistrer',
+      confirm: 'Supprimer les messages locaux et synchroniser',
       saving: 'Enregistrement…',
-      later: 'Plus tard',
       cancel: 'Annuler',
-      start: 'Lancer la synchronisation',
-      save: 'Enregistrer',
+      submit: 'Confirmer et synchroniser',
+      outcomeInitial: 'Synchronise les messages reçus depuis le {{date}}.',
+      outcomeIncremental:
+        'Synchronise les messages nouveaux et modifiés depuis la dernière synchronisation.',
+      outcomeRescan:
+        'Resynchronise avec la nouvelle étendue ; les messages existants ne sont pas ajoutés deux fois.',
       pending: 'Choisissez les dossiers pour lancer la synchronisation',
-      action: 'Dossiers',
     },
     providers: {
       title: 'Ajouter un compte de messagerie',

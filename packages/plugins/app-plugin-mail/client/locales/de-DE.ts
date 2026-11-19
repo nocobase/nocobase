@@ -344,30 +344,42 @@ const deDE: LocaleResource<typeof enUS> = {
       pickDate: 'Wählen Sie ein Datum',
     },
     syncFolders: {
-      title: 'Zu synchronisierende Ordner',
+      title: 'Synchronisierungsumfang bestätigen',
+      descriptionFirst:
+        'Das Konto ist verbunden. Bestätigen Sie den Umfang, um die erste Synchronisierung zu starten.',
       description:
-        'Wählen Sie die Ordner, die dieses Konto synchronisiert. Nachrichten in anderen Ordnern werden nicht importiert, und ihre lokalen Kopien werden gelöscht.',
+        'Bestätigen Sie die zu synchronisierenden Ordner. Automatische Synchronisierungen verwenden denselben Umfang.',
+      scope: 'Synchronisierungsumfang',
+      allFolders: 'Gesamtes Postfach',
+      allFoldersHint: 'Synchronisiert alle Ordner, auch später erstellte.',
+      someFolders: 'Ausgewählte Ordner',
+      someFoldersHint:
+        'Synchronisiert nur die markierten Ordner; neue Ordner fügen Sie selbst hinzu.',
       loading: 'Ordner werden geladen…',
       listingFailed:
         'Die Ordnerliste konnte nicht vom Mailserver gelesen werden.',
       retry: 'Erneut versuchen',
       waiting: 'Ordnerliste wird vom Mailserver abgerufen…',
-      allFolders: 'Alle Ordner, einschließlich später erstellter Ordner',
       selectedCount: '{{count}} von {{total}} Ordnern ausgewählt',
+      selectAll: 'Alle auswählen',
+      clearAll: 'Auswahl aufheben',
+      emptySelection: 'Wählen Sie mindestens einen Ordner aus.',
       sentHint:
         '„Gesendet“ ist nicht ausgewählt, daher fehlen Ihre eigenen Antworten möglicherweise in Unterhaltungen. Das Senden funktioniert weiterhin.',
-      removeTitle: 'Lokale Nachrichten löschen?',
+      removeTitle: 'Lokale Nachrichten außerhalb des Umfangs löschen?',
       removeDescription:
-        '{{count}} lokale Nachrichten liegen in keinem ausgewählten Ordner und werden aus dieser App gelöscht. Nachrichten auf dem Mailserver sind nicht betroffen.',
+        'Diese Änderung löscht {{count}} lokale Nachrichten und ihre lokalen Daten. Nachrichten auf dem Mailserver werden nicht gelöscht, und Nachrichten in einem ausgewählten Ordner bleiben erhalten.',
       back: 'Zurück',
-      confirm: 'Löschen und speichern',
+      confirm: 'Lokale Nachrichten löschen und synchronisieren',
       saving: 'Wird gespeichert…',
-      later: 'Später',
       cancel: 'Abbrechen',
-      start: 'Synchronisierung starten',
-      save: 'Speichern',
+      submit: 'Bestätigen und synchronisieren',
+      outcomeInitial: 'Synchronisiert Nachrichten ab {{date}}.',
+      outcomeIncremental:
+        'Synchronisiert neue und geänderte Nachrichten seit der letzten Synchronisierung.',
+      outcomeRescan:
+        'Synchronisiert erneut mit dem neuen Umfang; vorhandene Nachrichten werden nicht doppelt hinzugefügt.',
       pending: 'Ordner wählen, um die Synchronisierung zu starten',
-      action: 'Ordner',
     },
     providers: {
       title: 'E-Mail-Konto hinzufügen',

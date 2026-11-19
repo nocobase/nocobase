@@ -1,5 +1,6 @@
 import { useRealtimeRefresh } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { Mail } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
@@ -8,9 +9,11 @@ import {
   mailErrorMessage,
   type MailAccountView,
   type MailFolder,
+  type MailSyncRunView,
 } from '../mail-client.js';
 import { MAIL_PLUGIN_NS } from '../namespace.js';
 import { useMailClient } from '../runtime.js';
+import { cn } from '../lib/utils.js';
 import { Button } from './ui/button.js';
 import { Checkbox } from './ui/checkbox.js';
 import {
@@ -22,19 +25,35 @@ import {
   DialogTitle,
 } from './ui/dialog.js';
 
-export interface MailSyncFoldersDialogProps {
-  /** The account whose folders are chosen; the dialog is open while it is set. */
-  readonly account?: MailAccountView;
-  readonly onClose: () => void;
-  readonly onSaved: (account: MailAccountView) => void;
+export interface MailSyncFoldersSaved {
+  readonly account: MailAccountView;
+  /** The run a synchronization without a scope change started; a scope change schedules its own initial run. */
+  readonly run?: MailSyncRunView;
 }
 
+export interface MailSyncFoldersDialogProps {
+  /** The account whose sync scope is confirmed; the dialog is open while it is set. */
+  readonly account?: MailAccountView;
+  /** Shown beside the address. */
+  readonly providerLabel?: string;
+  /** Start date for an initial synchronization of an account that has none saved. */
+  readonly defaultReceivedAfter?: string;
+  readonly onClose: () => void;
+  readonly onSaved: (saved: MailSyncFoldersSaved) => void;
+}
+
+type Scope = 'all' | 'some';
+
 /**
- * Choose the folders an account synchronizes. A newly connected account waits for its folder list, then starts its
- * first import; a narrower selection first shows how many local messages it deletes.
+ * Confirm the folders an account synchronizes, then synchronize it. A newly connected account waits for its folder
+ * list, then starts its first import. An unchanged scope requests a normal synchronization; a changed scope is saved,
+ * which restarts the initial synchronization under it, and a narrower one first shows how many local messages it
+ * deletes.
  */
 export function MailSyncFoldersDialog({
   account,
+  providerLabel,
+  defaultReceivedAfter,
   onClose,
   onSaved,
 }: MailSyncFoldersDialogProps): ReactElement {
@@ -53,9 +72,11 @@ export function MailSyncFoldersDialog({
         {account ? (
           <SyncFoldersForm
             account={account}
+            defaultReceivedAfter={defaultReceivedAfter}
             key={account.id}
             onClose={onClose}
             onSaved={onSaved}
+            providerLabel={providerLabel}
           />
         ) : null}
       </DialogContent>
@@ -65,22 +86,29 @@ export function MailSyncFoldersDialog({
 
 function SyncFoldersForm({
   account,
+  providerLabel,
+  defaultReceivedAfter,
   onClose,
   onSaved,
 }: {
   readonly account: MailAccountView;
+  readonly providerLabel?: string;
+  readonly defaultReceivedAfter?: string;
   readonly onClose: () => void;
-  readonly onSaved: (account: MailAccountView) => void;
+  readonly onSaved: (saved: MailSyncFoldersSaved) => void;
 }): ReactElement {
   const mail = useMailClient();
   const { t } = useTranslation(MAIL_PLUGIN_NS);
+  // A newly connected account has not chosen its folders yet and imports nothing until it does.
   const choosing = account.syncFolderIds?.length === 0;
+  const savedAll = account.syncFolderIds === undefined;
   const [folders, setFolders] = useState<readonly MailFolder[]>();
   const [complete, setComplete] = useState(false);
   const [listingFailed, setListingFailed] = useState(false);
+  const [initialSyncCompleted, setInitialSyncCompleted] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  const [allFolders, setAllFolders] = useState(
-    account.syncFolderIds === undefined || choosing,
+  const [scope, setScope] = useState<Scope>(
+    savedAll || choosing ? 'all' : 'some',
   );
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(account.syncFolderIds ?? []),
@@ -88,29 +116,28 @@ function SyncFoldersForm({
   const [removedCount, setRemovedCount] = useState<number>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const receivedAfter =
+    account.initialSyncReceivedAfter ?? defaultReceivedAfter;
 
   const load = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
-      const {
-        folders: next,
-        complete: listed,
-        failed,
-      } = await mail.listFolderChoices(account.id);
+      const choices = await mail.listFolderChoices(account.id);
       if (signal?.aborted) return;
-      setFolders(next);
-      setComplete(listed);
-      setListingFailed(failed);
+      setFolders(choices.folders);
+      setComplete(choices.complete);
+      setListingFailed(choices.failed);
+      setInitialSyncCompleted(choices.initialSyncCompleted);
       // Every folder starts selected until the owner narrows the selection.
-      if (account.syncFolderIds === undefined || choosing)
+      if (savedAll || choosing)
         setSelected(
           (current) =>
             new Set([
               ...current,
-              ...next.map((folder) => folder.providerFolderId),
+              ...choices.folders.map((folder) => folder.providerFolderId),
             ]),
         );
     },
-    [account.id, account.syncFolderIds, choosing, mail],
+    [account.id, savedAll, choosing, mail],
   );
 
   useEffect(() => {
@@ -144,22 +171,48 @@ function SyncFoldersForm({
         .filter((id) => selected.has(id)),
     [folders, selected],
   );
+  const listed = folders !== undefined && complete && folders.length > 0;
+  const allSelected = listed && selection.length === folders.length;
+  const empty = scope === 'some' && selection.length === 0;
   const sentUnselected =
-    !allFolders &&
+    scope === 'some' &&
+    !empty &&
     (folders ?? []).some(
       (folder) =>
         folder.type === 'sent' && !selected.has(folder.providerFolderId),
     );
-  const ready =
-    folders !== undefined &&
-    complete &&
-    folders.length > 0 &&
-    (allFolders || selection.length > 0);
+  // "Entire mailbox" also covers folders created later, so it differs from every current folder being selected.
+  const changed =
+    choosing ||
+    (scope === 'all'
+      ? !savedAll
+      : savedAll || !sameFolders(account.syncFolderIds ?? [], selection));
+  const ready = listed && !empty && !saving;
 
-  const save = (confirmed: boolean): void => {
-    const syncFolderIds = allFolders ? null : selection;
+  const failure = (cause: unknown): void =>
+    setError(
+      mailErrorMessage(
+        cause,
+        t('errors.requestFailed', { defaultValue: 'Mail request failed.' }),
+      ),
+    );
+
+  const submit = (confirmed: boolean): void => {
     setSaving(true);
     setError(undefined);
+    if (!changed) {
+      // The saved scope stays; the scheduler picks an incremental or initial run as for any manual sync.
+      void mail
+        .startSync({
+          accountId: account.id,
+          ...(receivedAfter ? { receivedAfter } : {}),
+        })
+        .then((run) => onSaved({ account, run }))
+        .catch(failure)
+        .finally(() => setSaving(false));
+      return;
+    }
+    const syncFolderIds = scope === 'all' ? null : selection;
     const preview =
       confirmed || choosing || syncFolderIds === null
         ? Promise.resolve(0)
@@ -172,18 +225,15 @@ function SyncFoldersForm({
           setRemovedCount(count);
           return;
         }
-        onSaved(
-          await mail.updateAccount({ accountId: account.id, syncFolderIds }),
-        );
+        // Saving a new scope schedules the initial synchronization under it; no separate sync request follows.
+        onSaved({
+          account: await mail.updateAccount({
+            accountId: account.id,
+            syncFolderIds,
+          }),
+        });
       })
-      .catch((cause: unknown) =>
-        setError(
-          mailErrorMessage(
-            cause,
-            t('errors.requestFailed', { defaultValue: 'Mail request failed.' }),
-          ),
-        ),
-      )
+      .catch(failure)
       .finally(() => setSaving(false));
   };
 
@@ -194,16 +244,15 @@ function SyncFoldersForm({
     void mail
       .startSync({ accountId: account.id })
       .then(() => load())
-      .catch((cause: unknown) =>
-        setError(
-          mailErrorMessage(
-            cause,
-            t('errors.requestFailed', { defaultValue: 'Mail request failed.' }),
-          ),
-        ),
-      )
+      .catch(failure)
       .finally(() => setRetrying(false));
   };
+
+  const errorMessage = error ? (
+    <p role='alert' className='text-sm text-destructive'>
+      {error}
+    </p>
+  ) : null;
 
   if (removedCount !== undefined)
     return (
@@ -211,22 +260,18 @@ function SyncFoldersForm({
         <DialogHeader>
           <DialogTitle>
             {t('settings.syncFolders.removeTitle', {
-              defaultValue: 'Delete local messages?',
+              defaultValue: 'Delete local messages outside the scope?',
             })}
           </DialogTitle>
           <DialogDescription>
             {t('settings.syncFolders.removeDescription', {
               count: removedCount,
               defaultValue:
-                '{{count}} local messages are in no selected folder and will be deleted from this app. Messages on the mail server are not affected.',
+                'This change deletes {{count}} local messages and their local data. Messages on the mail server are not deleted, and messages still in a selected folder are kept.',
             })}
           </DialogDescription>
         </DialogHeader>
-        {error ? (
-          <p role='alert' className='mt-4 text-sm text-destructive'>
-            {error}
-          </p>
-        ) : null}
+        <div className='mt-4'>{errorMessage}</div>
         <DialogFooter>
           <Button
             disabled={saving}
@@ -238,38 +283,131 @@ function SyncFoldersForm({
           </Button>
           <Button
             disabled={saving}
-            onClick={() => save(true)}
+            onClick={() => submit(true)}
             type='button'
             variant='destructive'
           >
             {saving
               ? t('settings.syncFolders.saving', { defaultValue: 'Saving…' })
               : t('settings.syncFolders.confirm', {
-                  defaultValue: 'Delete and save',
+                  defaultValue: 'Delete local messages and sync',
                 })}
           </Button>
         </DialogFooter>
       </>
     );
 
+  const date = receivedAfter?.slice(0, 10);
+  const outcome = !changed
+    ? initialSyncCompleted
+      ? t('settings.syncFolders.outcomeIncremental', {
+          defaultValue: 'Syncs new and changed messages since the last sync.',
+        })
+      : date
+        ? t('settings.syncFolders.outcomeInitial', {
+            date,
+            defaultValue: 'Syncs messages received since {{date}}.',
+          })
+        : undefined
+    : choosing
+      ? date
+        ? t('settings.syncFolders.outcomeInitial', {
+            date,
+            defaultValue: 'Syncs messages received since {{date}}.',
+          })
+        : undefined
+      : t('settings.syncFolders.outcomeRescan', {
+          defaultValue:
+            'Syncs again with the new scope; existing messages are not added twice.',
+        });
+
+  const scopeOption = (
+    value: Scope,
+    label: string,
+    description: string,
+  ): ReactElement => (
+    <label
+      className={cn(
+        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors',
+        scope === value ? 'border-primary bg-primary/5' : 'hover:bg-muted/40',
+      )}
+    >
+      <input
+        checked={scope === value}
+        className='mt-0.5 size-4 accent-primary'
+        name={`mail-sync-scope-${account.id}`}
+        onChange={() => setScope(value)}
+        type='radio'
+        value={value}
+      />
+      <span className='min-w-0'>
+        <span className='block font-medium'>{label}</span>
+        <span className='mt-1 block text-xs text-muted-foreground'>
+          {description}
+        </span>
+      </span>
+    </label>
+  );
+
   return (
     <>
       <DialogHeader>
         <DialogTitle>
           {t('settings.syncFolders.title', {
-            defaultValue: 'Folders to sync',
+            defaultValue: 'Confirm sync scope',
           })}
         </DialogTitle>
         <DialogDescription>
-          {t('settings.syncFolders.description', {
-            defaultValue:
-              'Choose the folders this account synchronizes. Messages in other folders are not imported, and local copies of them are deleted.',
-          })}
+          {choosing
+            ? t('settings.syncFolders.descriptionFirst', {
+                defaultValue:
+                  'The account is connected. Confirm the scope to start the first sync.',
+              })
+            : t('settings.syncFolders.description', {
+                defaultValue:
+                  'Confirm the folders to sync. Automatic syncs will use the same scope.',
+              })}
         </DialogDescription>
       </DialogHeader>
-      <p className='mt-4 text-sm font-medium'>{account.address}</p>
-      <div className='mt-3 space-y-3'>
-        {folders === undefined || !complete || folders.length === 0 ? (
+      <div className='mt-4 flex min-w-0 items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm'>
+        <Mail
+          aria-hidden='true'
+          className='size-4 shrink-0 text-muted-foreground'
+        />
+        <span className='min-w-0 truncate font-medium'>{account.address}</span>
+        {providerLabel ? (
+          <span className='ml-auto shrink-0 text-xs text-muted-foreground'>
+            {providerLabel}
+          </span>
+        ) : null}
+      </div>
+      <div className='mt-4 space-y-3'>
+        <fieldset className='grid gap-2 sm:grid-cols-2'>
+          <legend className='sr-only'>
+            {t('settings.syncFolders.scope', { defaultValue: 'Sync scope' })}
+          </legend>
+          {scopeOption(
+            'all',
+            t('settings.syncFolders.allFolders', {
+              defaultValue: 'Entire mailbox',
+            }),
+            t('settings.syncFolders.allFoldersHint', {
+              defaultValue:
+                'Syncs every folder, including folders created later.',
+            }),
+          )}
+          {scopeOption(
+            'some',
+            t('settings.syncFolders.someFolders', {
+              defaultValue: 'Selected folders',
+            }),
+            t('settings.syncFolders.someFoldersHint', {
+              defaultValue:
+                'Syncs only the checked folders; add new folders yourself.',
+            }),
+          )}
+        </fieldset>
+        {!listed ? (
           <p
             className='rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground'
             role='status'
@@ -301,65 +439,80 @@ function SyncFoldersForm({
               </Button>
             ) : null}
           </p>
-        ) : (
-          <>
-            <label className='flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm font-medium'>
-              <Checkbox
-                checked={allFolders}
-                onCheckedChange={(checked) => setAllFolders(checked === true)}
-              />
-              {t('settings.syncFolders.allFolders', {
-                defaultValue: 'All folders, including folders created later',
-              })}
-            </label>
-            {allFolders ? null : (
-              <>
-                <div className='flex items-center justify-between text-xs text-muted-foreground'>
-                  <span>
-                    {t('settings.syncFolders.selectedCount', {
-                      count: selection.length,
-                      total: folders.length,
-                      defaultValue: '{{count}} of {{total}} folders selected',
+        ) : scope === 'some' ? (
+          <div className='rounded-lg border'>
+            <div className='flex items-center justify-between gap-3 border-b px-3 py-2 text-xs text-muted-foreground'>
+              <span aria-live='polite'>
+                {t('settings.syncFolders.selectedCount', {
+                  count: selection.length,
+                  total: folders.length,
+                  defaultValue: '{{count}} of {{total}} folders selected',
+                })}
+              </span>
+              <Button
+                className='h-7 px-2 text-xs'
+                onClick={() =>
+                  setSelected(
+                    allSelected
+                      ? new Set()
+                      : new Set(
+                          folders.map((folder) => folder.providerFolderId),
+                        ),
+                  )
+                }
+                type='button'
+                variant='ghost'
+              >
+                {allSelected
+                  ? t('settings.syncFolders.clearAll', {
+                      defaultValue: 'Deselect all',
+                    })
+                  : t('settings.syncFolders.selectAll', {
+                      defaultValue: 'Select all',
                     })}
-                  </span>
-                </div>
-                <ul className='max-h-72 space-y-1 overflow-y-auto rounded-lg border p-2'>
-                  {folders.map((folder) => (
-                    <li key={folder.providerFolderId}>
-                      <label className='flex items-center gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40'>
-                        <Checkbox
-                          checked={selected.has(folder.providerFolderId)}
-                          onCheckedChange={(checked) =>
-                            setSelected((current) => {
-                              const next = new Set(current);
-                              if (checked === true)
-                                next.add(folder.providerFolderId);
-                              else next.delete(folder.providerFolderId);
-                              return next;
-                            })
-                          }
-                        />
-                        <span className='min-w-0 truncate'>{folder.name}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-                {sentUnselected ? (
-                  <p className='text-xs text-muted-foreground'>
-                    {t('settings.syncFolders.sentHint', {
-                      defaultValue:
-                        'Sent is not selected, so your own replies may be missing from conversations. Sending mail still works.',
-                    })}
-                  </p>
-                ) : null}
-              </>
-            )}
-          </>
-        )}
-        {error ? (
+              </Button>
+            </div>
+            <ul className='max-h-64 space-y-1 overflow-y-auto p-2'>
+              {folders.map((folder) => (
+                <li key={folder.providerFolderId}>
+                  <label className='flex items-center gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40'>
+                    <Checkbox
+                      checked={selected.has(folder.providerFolderId)}
+                      onCheckedChange={(checked) =>
+                        setSelected((current) => {
+                          const next = new Set(current);
+                          if (checked === true)
+                            next.add(folder.providerFolderId);
+                          else next.delete(folder.providerFolderId);
+                          return next;
+                        })
+                      }
+                    />
+                    <span className='min-w-0 truncate'>{folder.name}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {listed && empty ? (
           <p role='alert' className='text-sm text-destructive'>
-            {error}
+            {t('settings.syncFolders.emptySelection', {
+              defaultValue: 'Select at least one folder.',
+            })}
           </p>
+        ) : null}
+        {listed && sentUnselected ? (
+          <p className='rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300'>
+            {t('settings.syncFolders.sentHint', {
+              defaultValue:
+                'Sent is not selected, so your own replies may be missing from conversations. Sending mail still works.',
+            })}
+          </p>
+        ) : null}
+        {errorMessage}
+        {outcome ? (
+          <p className='text-xs text-muted-foreground'>{outcome}</p>
         ) : null}
       </div>
       <DialogFooter>
@@ -369,22 +522,26 @@ function SyncFoldersForm({
           type='button'
           variant='outline'
         >
-          {choosing
-            ? t('settings.syncFolders.later', { defaultValue: 'Later' })
-            : t('settings.syncFolders.cancel', { defaultValue: 'Cancel' })}
+          {t('settings.syncFolders.cancel', { defaultValue: 'Cancel' })}
         </Button>
-        <Button
-          disabled={!ready || saving}
-          onClick={() => save(false)}
-          type='button'
-        >
+        <Button disabled={!ready} onClick={() => submit(false)} type='button'>
           {saving
             ? t('settings.syncFolders.saving', { defaultValue: 'Saving…' })
-            : choosing
-              ? t('settings.syncFolders.start', { defaultValue: 'Start sync' })
-              : t('settings.syncFolders.save', { defaultValue: 'Save' })}
+            : t('settings.syncFolders.submit', {
+                defaultValue: 'Confirm and sync',
+              })}
         </Button>
       </DialogFooter>
     </>
+  );
+}
+
+function sameFolders(
+  saved: readonly string[],
+  selection: readonly string[],
+): boolean {
+  const current = new Set(selection);
+  return (
+    new Set(saved).size === current.size && saved.every((id) => current.has(id))
   );
 }

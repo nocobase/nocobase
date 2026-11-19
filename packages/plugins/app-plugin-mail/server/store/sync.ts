@@ -259,6 +259,11 @@ export class MailSyncStore {
             .where('accountId', '=', accountId)
             .limit(1)
             .executeTakeFirst<Pick<SyncRunRow, 'id'>>();
+      const state = await query
+        .selectFrom<SyncStateRow>('mailSyncStates')
+        .select(['accountId'])
+        .where('accountId', '=', accountId)
+        .executeTakeFirst<Pick<SyncStateRow, 'accountId'>>();
       const rows = await query
         .selectFrom<FolderRow>('mailFolders')
         .selectAll()
@@ -271,6 +276,7 @@ export class MailSyncStore {
         folders: rows.map(fromFolderRow),
         complete,
         failed: !complete && listing === undefined,
+        initialSyncCompleted: state !== undefined,
       };
     });
   }

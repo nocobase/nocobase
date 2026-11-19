@@ -342,30 +342,43 @@ const ptBR: LocaleResource<typeof enUS> = {
       pickDate: 'Escolha uma data',
     },
     syncFolders: {
-      title: 'Pastas sincronizadas',
+      title: 'Confirmar o escopo da sincronização',
+      descriptionFirst:
+        'A conta está conectada. Confirme o escopo para iniciar a primeira sincronização.',
       description:
-        'Escolha as pastas que esta conta sincroniza. Mensagens de outras pastas não são importadas, e as cópias locais delas são excluídas.',
+        'Confirme as pastas a sincronizar. As sincronizações automáticas usarão o mesmo escopo.',
+      scope: 'Escopo da sincronização',
+      allFolders: 'Caixa de correio inteira',
+      allFoldersHint:
+        'Sincroniza todas as pastas, incluindo as criadas depois.',
+      someFolders: 'Pastas selecionadas',
+      someFoldersHint:
+        'Sincroniza apenas as pastas marcadas; adicione novas pastas manualmente.',
       loading: 'Carregando pastas…',
       listingFailed:
         'Não foi possível ler a lista de pastas do servidor de e-mail.',
       retry: 'Tentar novamente',
       waiting: 'Obtendo a lista de pastas do servidor de e-mail…',
-      allFolders: 'Todas as pastas, incluindo as criadas depois',
       selectedCount: '{{count}} de {{total}} pastas selecionadas',
+      selectAll: 'Selecionar tudo',
+      clearAll: 'Desmarcar tudo',
+      emptySelection: 'Selecione pelo menos uma pasta.',
       sentHint:
         'Enviados não está selecionado, então suas próprias respostas podem não aparecer nas conversas. O envio de e-mails continua funcionando.',
-      removeTitle: 'Excluir mensagens locais?',
+      removeTitle: 'Excluir as mensagens locais fora do escopo?',
       removeDescription:
-        '{{count}} mensagens locais não estão em nenhuma pasta selecionada e serão excluídas deste app. As mensagens no servidor de e-mail não são afetadas.',
+        'Esta alteração exclui {{count}} mensagens locais e seus dados locais. As mensagens no servidor de e-mail não são excluídas, e as que ainda estão em uma pasta selecionada são mantidas.',
       back: 'Voltar',
-      confirm: 'Excluir e salvar',
+      confirm: 'Excluir mensagens locais e sincronizar',
       saving: 'Salvando…',
-      later: 'Depois',
       cancel: 'Cancelar',
-      start: 'Iniciar sincronização',
-      save: 'Salvar',
+      submit: 'Confirmar e sincronizar',
+      outcomeInitial: 'Sincroniza as mensagens desde {{date}}.',
+      outcomeIncremental:
+        'Sincroniza as mensagens novas e alteradas desde a última sincronização.',
+      outcomeRescan:
+        'Sincroniza novamente com o novo escopo; as mensagens existentes não são duplicadas.',
       pending: 'Escolha as pastas para começar a sincronizar',
-      action: 'Pastas',
     },
     providers: {
       title: 'Adicionar conta de e-mail',

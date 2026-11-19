@@ -339,29 +339,42 @@ const idID: LocaleResource<typeof enUS> = {
       pickDate: 'Pilih tanggal',
     },
     syncFolders: {
-      title: 'Folder yang disinkronkan',
+      title: 'Konfirmasi cakupan sinkronisasi',
+      descriptionFirst:
+        'Akun terhubung. Konfirmasi cakupan untuk memulai sinkronisasi pertama.',
       description:
-        'Pilih folder yang disinkronkan akun ini. Pesan di folder lain tidak diimpor, dan salinan lokalnya dihapus.',
+        'Konfirmasi folder yang disinkronkan. Sinkronisasi otomatis akan memakai cakupan yang sama.',
+      scope: 'Cakupan sinkronisasi',
+      allFolders: 'Seluruh kotak surat',
+      allFoldersHint:
+        'Menyinkronkan semua folder, termasuk folder yang dibuat nanti.',
+      someFolders: 'Folder tertentu',
+      someFoldersHint:
+        'Hanya menyinkronkan folder yang dicentang; tambahkan folder baru secara manual.',
       loading: 'Memuat folder…',
       listingFailed: 'Daftar folder tidak dapat dibaca dari server email.',
       retry: 'Coba lagi',
       waiting: 'Mengambil daftar folder dari server email…',
-      allFolders: 'Semua folder, termasuk folder yang dibuat nanti',
       selectedCount: '{{count}} dari {{total}} folder dipilih',
+      selectAll: 'Pilih semua',
+      clearAll: 'Batalkan semua',
+      emptySelection: 'Pilih minimal satu folder.',
       sentHint:
         'Terkirim tidak dipilih, sehingga balasan Anda sendiri mungkin tidak muncul di percakapan. Pengiriman email tetap berfungsi.',
-      removeTitle: 'Hapus pesan lokal?',
+      removeTitle: 'Hapus pesan lokal di luar cakupan?',
       removeDescription:
-        '{{count}} pesan lokal tidak berada di folder terpilih mana pun dan akan dihapus dari aplikasi ini. Pesan di server email tidak terpengaruh.',
+        'Perubahan ini menghapus {{count}} pesan lokal beserta data lokalnya. Pesan di server email tidak dihapus, dan pesan yang masih ada di folder terpilih tetap disimpan.',
       back: 'Kembali',
-      confirm: 'Hapus dan simpan',
+      confirm: 'Hapus pesan lokal dan sinkronkan',
       saving: 'Menyimpan…',
-      later: 'Nanti',
       cancel: 'Batal',
-      start: 'Mulai sinkronisasi',
-      save: 'Simpan',
+      submit: 'Konfirmasi dan sinkronkan',
+      outcomeInitial: 'Menyinkronkan pesan sejak {{date}}.',
+      outcomeIncremental:
+        'Menyinkronkan pesan baru dan yang berubah sejak sinkronisasi terakhir.',
+      outcomeRescan:
+        'Menyinkronkan ulang dengan cakupan baru; pesan yang ada tidak ditambahkan dua kali.',
       pending: 'Pilih folder untuk mulai menyinkronkan',
-      action: 'Folder',
     },
     providers: {
       title: 'Tambahkan akun email',

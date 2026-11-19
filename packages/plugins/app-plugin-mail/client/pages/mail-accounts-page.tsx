@@ -294,29 +294,10 @@ export default function MailAccountsPage({
       });
   };
 
+  // Synchronizing always confirms the scope first; the dialog starts the run or saves a changed scope.
   const startSync = (account: MailAccountView): void => {
-    setSyncing(account.id);
     setError(undefined);
-    void mail
-      .startSync({
-        accountId: account.id,
-        receivedAfter:
-          account.initialSyncReceivedAfter ?? toSyncDate(policy.receivedAfter),
-      })
-      .then((run) =>
-        setSyncRuns((current) => ({ ...current, [account.id]: run })),
-      )
-      .catch((cause: unknown) => {
-        setError(
-          mailErrorMessage(
-            cause,
-            t('errors.syncFailed', {
-              defaultValue: 'Could not start mailbox synchronization.',
-            }),
-          ),
-        );
-        setSyncing(undefined);
-      });
+    setFolderAccount(account);
   };
 
   const updateAccount = (
@@ -569,9 +550,6 @@ export default function MailAccountsPage({
                         account={account}
                         chooseFoldersLabel={t('settings.syncFolders.pending', {
                           defaultValue: 'Choose folders to start syncing',
-                        })}
-                        foldersLabel={t('settings.syncFolders.action', {
-                          defaultValue: 'Folders',
                         })}
                         onChooseFolders={(account) => {
                           setError(undefined);
@@ -897,10 +875,24 @@ export default function MailAccountsPage({
 
       <MailSyncFoldersDialog
         account={folderAccount}
+        defaultReceivedAfter={toSyncDate(policy.receivedAfter)}
+        providerLabel={
+          folderAccount
+            ? (providerLabels.get(providerKey(folderAccount.provider)) ??
+              folderAccount.provider.name)
+            : undefined
+        }
         onClose={() => setFolderAccount(undefined)}
-        onSaved={(account) => {
+        onSaved={({ account, run }) => {
           setFolderAccount(undefined);
           setAuthorizationNotice(undefined);
+          if (run) {
+            // An unchanged scope started a run; follow its progress like any manual sync.
+            if (run.status === 'pending' || run.status === 'running')
+              setSyncing(account.id);
+            setSyncRuns((current) => ({ ...current, [account.id]: run }));
+            return;
+          }
           setAccounts((current) =>
             current.map((item) => (item.id === account.id ? account : item)),
           );
@@ -1055,7 +1047,6 @@ export default function MailAccountsPage({
 function ConnectedAccountRow({
   account,
   chooseFoldersLabel,
-  foldersLabel,
   onChooseFolders,
   onSync,
   onRemove,
@@ -1071,7 +1062,6 @@ function ConnectedAccountRow({
 }: {
   readonly account: MailAccountView;
   readonly chooseFoldersLabel: string;
-  readonly foldersLabel: string;
   readonly onChooseFolders: (account: MailAccountView) => void;
   readonly onSync: (account: MailAccountView) => void;
   readonly onRemove: (account: MailAccountView) => void;
@@ -1141,19 +1131,11 @@ function ConnectedAccountRow({
             disabled={syncing || account.status !== 'active'}
             onClick={() => onSync(account)}
             type='button'
-            variant='outline'
-          >
-            {syncLabel}
-          </Button>
-          <Button
-            disabled={removing || updating || account.status !== 'active'}
-            onClick={() => onChooseFolders(account)}
-            type='button'
             variant={
               account.syncFolderIds?.length === 0 ? 'default' : 'outline'
             }
           >
-            {foldersLabel}
+            {syncLabel}
           </Button>
           <Button
             disabled={syncing || removing || updating}
