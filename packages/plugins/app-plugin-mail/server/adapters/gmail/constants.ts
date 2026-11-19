@@ -10,6 +10,7 @@ export const MAX_PROVIDER_JSON_BYTES: number = 32 * 1024 * 1024;
 export const MESSAGE_FETCH_CONCURRENCY: number = 4;
 
 export const GMAIL_CAPABILITIES: MailProviderDefinition['capabilities'] = {
+  downloadOriginal: true,
   receive: true,
   send: true,
   incrementalSync: true,

@@ -4,6 +4,11 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound:
+      'A mensagem original não está mais disponível no provedor de e-mail.',
+    originalTooLarge:
+      'A mensagem original excede o limite de download de 40 MiB.',
+    operationUnsupported: 'Esta operação de e-mail não está disponível.',
     connectionAuthenticationFailed:
       'Falha na autenticação {{protocol}}. Verifique o login e a senha ou senha de aplicativo.',
     connectionHostNotFound:

@@ -1,6 +1,7 @@
 import type { MailProviderDefinition } from '../../contracts/provider.js';
 
 export const IMAP_SMTP_CAPABILITIES: MailProviderDefinition['capabilities'] = {
+  downloadOriginal: true,
   receive: true,
   send: true,
   incrementalSync: true,

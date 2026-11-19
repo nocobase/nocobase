@@ -142,6 +142,8 @@ const zhCN: MailResource = {
     permanentlyDelete: '永久删除',
     permanentlyDeleteConfirm: '确定永久删除这封邮件吗？此操作无法撤销。',
     download: '下载',
+    downloadOriginal: '下载原始邮件 (.eml)',
+    downloadOriginalFailed: '无法下载原始邮件。',
     downloadFailed: '无法下载附件。',
     markRead: '标记为已读',
     markUnread: '标记为未读',

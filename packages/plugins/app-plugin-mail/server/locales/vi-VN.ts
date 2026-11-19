@@ -4,6 +4,9 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound: 'Thư gốc không còn trên máy chủ của nhà cung cấp email.',
+    originalTooLarge: 'Thư gốc vượt quá giới hạn tải xuống 40 MiB.',
+    operationUnsupported: 'Thao tác email này không khả dụng.',
     connectionAuthenticationFailed:
       'Xác thực {{protocol}} thất bại. Kiểm tra tên đăng nhập và mật khẩu hoặc mật khẩu ứng dụng.',
     connectionHostNotFound:

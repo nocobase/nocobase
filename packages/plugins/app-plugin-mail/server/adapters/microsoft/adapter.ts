@@ -1,3 +1,4 @@
+import { originalMessageMissing } from '../original-message.js';
 import { diagnosticFetch } from '../../diagnostic-fetch.js';
 import { incompleteMessage } from '../incomplete-message.js';
 import type {
@@ -7,6 +8,7 @@ import type {
   NormalizedMailAttachment,
 } from '../../../shared/mail.js';
 import type {
+  MailOriginalMessageContent,
   MailProviderAdapter,
   MailProviderAccount,
   MailProviderChangePage,
@@ -587,6 +589,38 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
           };
     if (!attachments.ok) return attachments;
     return normalizeGraphMessage(result.value, attachments.value);
+  }
+
+  public async getOriginalMessage(
+    providerMessageId: string,
+    signal: AbortSignal,
+  ): Promise<MailProviderResult<MailOriginalMessageContent>> {
+    const result = await this.request(
+      `/me/messages/${encodeURIComponent(providerMessageId)}/$value`,
+      { signal },
+      async (response) => {
+        if (response.status !== 200 || !response.body) {
+          await response.body?.cancel();
+          throw new Error(
+            'Microsoft Graph did not return a complete MIME response.',
+          );
+        }
+        // Fetch decodes Content-Encoding. Its compressed length is not the MIME length.
+        const encoding = response.headers.get('content-encoding');
+        const length = response.headers.get('content-length');
+        const size =
+          (!encoding || encoding === 'identity') &&
+          length !== null &&
+          /^\d+$/u.test(length)
+            ? Number(length)
+            : undefined;
+        return { stream: response.body, size };
+      },
+      '*/*',
+    );
+    return !result.ok && result.error.code === 'MICROSOFT_HTTP_404'
+      ? originalMessageMissing()
+      : result;
   }
 
   public async getAttachment(
@@ -1390,6 +1424,8 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
   private async request<T>(
     pathOrUrl: string,
     init: RequestInit,
+    read?: (response: Response) => Promise<T>,
+    accept?: string,
   ): Promise<MailProviderResult<T>> {
     try {
       return await graphRequest<T>(
@@ -1398,6 +1434,8 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         pathOrUrl,
         init,
         this.fetch,
+        read,
+        accept,
       );
     } catch (error) {
       return {

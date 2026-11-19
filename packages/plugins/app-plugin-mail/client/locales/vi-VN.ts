@@ -154,6 +154,8 @@ const viVN: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'Xóa vĩnh viễn tin nhắn này? Không thể hoàn tác hành động này.',
     download: 'Tải xuống',
+    downloadOriginal: 'Tải xuống thư gốc (.eml)',
+    downloadOriginalFailed: 'Không thể tải xuống thư gốc.',
     downloadFailed: 'Không thể tải xuống tệp đính kèm.',
     markRead: 'Đánh dấu đã đọc',
     markUnread: 'Đánh dấu là chưa đọc',

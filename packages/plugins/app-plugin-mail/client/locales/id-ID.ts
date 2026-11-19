@@ -155,6 +155,8 @@ const idID: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'Hapus pesan ini secara permanen? Tindakan ini tidak dapat dibatalkan.',
     download: 'Unduh',
+    downloadOriginal: 'Unduh pesan asli (.eml)',
+    downloadOriginalFailed: 'Pesan asli tidak dapat diunduh.',
     downloadFailed: 'Tidak dapat mengunduh lampiran.',
     markRead: 'Tandai telah dibaca',
     markUnread: 'Tandai belum dibaca',

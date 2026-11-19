@@ -1,3 +1,4 @@
+import { originalMime } from '../fixtures/original-message.js';
 import { ImapSmtpAdapter } from '../../server/adapters/imap-smtp/adapter.js';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
@@ -650,6 +651,102 @@ async function sync(
   });
   return run.id;
 }
+
+describe('IMAP original message download', () => {
+  it('reads complete MIME from a verified read-only copy and never changes flags', async () => {
+    folder('INBOX');
+    const uid = deliver('INBOX', { raw: originalMime });
+    await sync();
+    const [message] = await messages();
+    server.selectionModes.length = 0;
+    server.sourceReads.length = 0;
+    const original = await service().getOriginalMessage(
+      owner,
+      accountId,
+      message.id,
+    );
+    expect(original.size).toBe(originalMime.length);
+    expect(server.locks).toBe(1);
+    expect(
+      Buffer.from(await new Response(original.stream).arrayBuffer()),
+    ).toEqual(originalMime);
+    expect(server.selectionModes).toEqual([true]);
+    expect(server.sourceReads).toEqual([`INBOX:${uid}`, `INBOX:${uid}`]);
+    expect(server.locks).toBe(0);
+    expect(server.folders.get('INBOX')!.messages.get(uid)!.flags.size).toBe(0);
+    expect(server.stores).toEqual([]);
+  });
+
+  it.each([
+    'wrong generation',
+    'missing UID',
+    'wrong identity',
+    'deleted UID',
+  ] as const)(
+    'does not download the bytes of a stale copy (%s)',
+    async (reason) => {
+      server.capabilities.add('OBJECTID');
+      folder('INBOX');
+      const uid = deliver('INBOX', { raw: originalMime, emailId: 'ORIGINAL' });
+      await sync();
+      const [message] = await messages();
+      const inbox = server.folders.get('INBOX')!;
+      const remote = inbox.messages.get(uid)!;
+      if (reason === 'wrong generation') inbox.uidValidity = 2n;
+      if (reason === 'missing UID') inbox.messages.delete(uid);
+      if (reason === 'wrong identity')
+        inbox.messages.set(uid, { ...remote, emailId: 'OTHER' });
+      if (reason === 'deleted UID') remote.flags.add('\\Deleted');
+      server.sourceReads.length = 0;
+      await expect(
+        service().getOriginalMessage(owner, accountId, message.id),
+      ).rejects.toMatchObject({ reason: 'MAIL_ORIGINAL_NOT_FOUND' });
+      expect(server.sourceReads).toEqual([]);
+      expect(server.locks).toBe(0);
+      expect(server.stores).toEqual([]);
+    },
+  );
+
+  it('holds the final window until EOF is verified and releases the lock on cancellation', async () => {
+    folder('INBOX');
+    const largeRaw = Buffer.concat([
+      originalMime,
+      Buffer.alloc(1024 * 1024, 0x61),
+    ]);
+    const uid = deliver('INBOX', { raw: largeRaw });
+    await sync();
+    const [message] = await messages();
+    const remote = server.folders.get('INBOX')!.messages.get(uid)!;
+    const original = await service().getOriginalMessage(
+      owner,
+      accountId,
+      message.id,
+    );
+    const reader = original.stream.getReader();
+    expect((await reader.read()).value?.byteLength).toBe(1024 * 1024);
+    remote.raw = Buffer.concat([
+      largeRaw,
+      Buffer.from('extra byte past announced size'),
+    ]);
+    await expect(reader.read()).rejects.toThrow(
+      'Original message download was interrupted',
+    );
+    expect(server.locks).toBe(0);
+
+    const abort = new AbortController();
+    const cancelled = await service().getOriginalMessage(
+      { ...owner, signal: abort.signal },
+      accountId,
+      message.id,
+    );
+    expect(server.locks).toBe(1);
+    abort.abort();
+    await expect(new Response(cancelled.stream).arrayBuffer()).rejects.toThrow(
+      'Original message download was interrupted',
+    );
+    expect(server.locks).toBe(0);
+  });
+});
 
 async function messages(): Promise<
   {

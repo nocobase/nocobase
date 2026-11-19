@@ -156,6 +156,8 @@ const esES: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       '¿Eliminar permanentemente este mensaje? Esta acción no se puede deshacer.',
     download: 'Descargar',
+    downloadOriginal: 'Descargar original (.eml)',
+    downloadOriginalFailed: 'No se pudo descargar el mensaje original.',
     downloadFailed: 'No se puede descargar el archivo adjunto.',
     markRead: 'Marcos leído',
     markUnread: 'Marcar como no leído',

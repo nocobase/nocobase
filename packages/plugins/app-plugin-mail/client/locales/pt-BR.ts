@@ -157,6 +157,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'Excluir esta mensagem permanentemente? Esta ação não pode ser desfeita.',
     download: 'Baixar',
+    downloadOriginal: 'Baixar original (.eml)',
+    downloadOriginalFailed: 'Não foi possível baixar a mensagem original.',
     downloadFailed: 'Não é possível baixar o anexo.',
     markRead: 'Marcos lidos',
     markUnread: 'Marcar como não lido',

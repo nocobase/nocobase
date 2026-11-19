@@ -523,6 +523,17 @@ export class MailClient {
       .then((response) => response.data);
   }
 
+  public downloadOriginalMessage(
+    accountId: string,
+    messageId: string,
+    signal?: AbortSignal,
+  ): Promise<ReadableStream<Uint8Array>> {
+    return this.client.stream({
+      path: `mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/original`,
+      signal,
+    });
+  }
+
   public downloadAttachment(
     accountId: string,
     messageId: string,

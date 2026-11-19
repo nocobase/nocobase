@@ -1,6 +1,7 @@
 import { MailMessageMutations } from '../operations/message-mutations.js';
 import { notifyMailMessageChange } from '../realtime.js';
 import {
+  type MailAttachmentContent,
   type MailFolder,
   type MailListConversationMessagesInput,
   type MailListMessagesInput,
@@ -13,6 +14,7 @@ import { requireOwnedAccount, requireOwnedMessage } from './access.js';
 import { type MailServiceDependencies } from './dependencies.js';
 import { assertProviderResult } from './errors.js';
 import { closeAdapter } from './provider-lifecycle.js';
+import { openOriginalMessage } from './original-message.js';
 import { mailFailedPrecondition, mailNotFound } from './errors.js';
 
 export class MailMessagesService {
@@ -138,6 +140,19 @@ export class MailMessagesService {
     } finally {
       await closeAdapter(adapter);
     }
+  }
+
+  public getOriginalMessage(
+    context: MailOperationContext,
+    accountId: string,
+    messageId: string,
+  ): Promise<MailAttachmentContent> {
+    return openOriginalMessage(
+      this.dependencies,
+      context,
+      accountId,
+      messageId,
+    );
   }
 
   public getMessage(

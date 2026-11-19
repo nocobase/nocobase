@@ -102,6 +102,11 @@ const expectedOperations: readonly (readonly [string, string, string])[] = [
     'mailGetMessage',
   ],
   [
+    'get',
+    '/api/mail/accounts/{accountId}/messages/{messageId}/original',
+    'mailDownloadOriginalMessage',
+  ],
+  [
     'patch',
     '/api/mail/accounts/{accountId}/messages/{messageId}',
     'mailUpdateMessage',
