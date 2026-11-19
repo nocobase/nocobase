@@ -237,7 +237,8 @@ describe('business objects tab', () => {
     const list = screen.getByRole('navigation', { name: 'Business objects' });
     expect(
       within(list).getByRole('button', {
-        name: /^Contracts\s*1 of 4 on\s*,\s*Their department$/,
+        // Only the name and how many actions are on; the View scope is set in the detail.
+        name: /^Contracts\s*1 of 4 on$/,
       }),
     ).toHaveAttribute('aria-current', 'true');
     expect(within(list).getByText('System')).toBeInTheDocument();
@@ -600,7 +601,7 @@ describe('small screens and reference tags', () => {
     expect(tag()).not.toHaveAttribute('data-viewable');
   });
 
-  it('shows each object’s count and view scope in the select used on phones', async () => {
+  it('shows each object’s count, without its view scope, in the select used on phones', async () => {
     const user = userEvent.setup();
     render(
       <Host
@@ -615,7 +616,7 @@ describe('small screens and reference tags', () => {
       screen.getByRole('combobox', { name: 'Business objects' }),
     );
     const option = await screen.findByRole('option', { name: /^Contracts/ });
-    expect(option).toHaveTextContent(/on · Their department/);
+    expect(option).toHaveTextContent(/^Contracts\s*1 of 4 on$/);
     // An object with nothing on still shows its count.
     expect(
       await screen.findByRole('option', { name: /^Payments/ }),
