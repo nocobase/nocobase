@@ -603,6 +603,90 @@ describe('role permission workspace', () => {
     ).toEqual([stored[1]]);
   });
 
+  it('keeps per-page grants of a menu nobody toggled and opens or closes all its pages only when it is toggled', () => {
+    const list = { type: 'page', id: 'orders-list' };
+    const detail = { type: 'page', id: 'orders-detail' };
+    const ws = {
+      menus: [],
+      objects: [],
+      settings: [],
+      bindings: new Map(),
+      menuPages: new Map([['orders', ['orders-list', 'orders-detail']]]),
+    } satisfies Parameters<typeof grantsFromDraft>[3];
+    // Only the list opens, so the menu reads as checked.
+    const stored: PermissionGrant[] = [
+      { resource: list, actions: [{ action: 'access' }] },
+    ];
+    const { draft, filters } = draftFromGrants(stored, ws);
+    expect(draft.menus).toEqual(['orders']);
+    // Saving it unchanged, or only renaming the role, grants the detail nothing.
+    expect(grantsFromDraft(draft, filters, stored, ws)).toEqual(stored);
+    // Unchecking closes every page; checking it again from nothing opens every page.
+    expect(
+      grantsFromDraft({ ...draft, menus: [] }, filters, stored, ws),
+    ).toEqual([]);
+    expect(grantsFromDraft(draft, filters, [], ws)).toEqual([
+      { resource: list, actions: [{ action: 'access' }] },
+      { resource: detail, actions: [{ action: 'access' }] },
+    ]);
+  });
+
+  it('keeps a granted action’s hidden scopes as stored and gives only a new action their initial value', () => {
+    const resource = { type: 'composite', id: 'orders' };
+    const id = permissionRowId(resource, 'create');
+    const ws = {
+      menus: [],
+      objects: [],
+      settings: [],
+      bindings: new Map([
+        [
+          id,
+          {
+            resource,
+            action: 'create',
+            view: false,
+            scopes: [
+              {
+                key: 'orders',
+                collection: 'orders',
+                fields: [],
+                visible: false,
+                defaultValue: 'allRecords',
+              },
+              {
+                key: 'stations',
+                collection: 'stations',
+                fields: [],
+                visible: true,
+                defaultValue: 'own',
+              },
+            ],
+          },
+        ],
+      ]),
+      menuPages: new Map(),
+    } satisfies Parameters<typeof grantsFromDraft>[3];
+    const roundTrip = (stored: PermissionGrant[]) => {
+      const { draft, filters } = draftFromGrants(stored, ws);
+      return grantsFromDraft(draft, filters, stored, ws);
+    };
+    const withScopes = (scopes: Record<string, unknown>): PermissionGrant[] => [
+      {
+        resource,
+        actions: [{ action: 'create', policy: { type: 'composite', scopes } }],
+      },
+    ];
+    // The hidden key is missing, or null: both stay so.
+    const missing = withScopes({ stations: 'own' });
+    expect(roundTrip(missing)).toEqual(missing);
+    const nulled = withScopes({ orders: null, stations: 'own' });
+    expect(roundTrip(nulled)).toEqual(nulled);
+    // Turned on now, the action gets the hidden scope's initial value.
+    expect(grantsFromDraft(value({ [id]: {} }), {}, [], ws)).toEqual(
+      withScopes({ orders: 'allRecords', stations: 'own' }),
+    );
+  });
+
   it('asks for custom filter conditions before saving and stores them with the scope', async () => {
     const { workspace: ws } = await workspace();
     const grants = {

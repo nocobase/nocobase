@@ -173,6 +173,9 @@ const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
 const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
 
+const TAB_TRIGGER =
+  'h-auto min-w-0 flex-col gap-0 px-1 py-1 text-center leading-tight whitespace-normal @min-[44rem]/permissions:h-[calc(100%-1px)] @min-[44rem]/permissions:flex-none @min-[44rem]/permissions:flex-row @min-[44rem]/permissions:gap-1.5 @min-[44rem]/permissions:py-0.5 @min-[44rem]/permissions:whitespace-nowrap';
+
 const DEFAULT_LABELS: PermissionEditorLabels = {
   menusTab: 'Menus',
   objectsTab: 'Business objects',
@@ -344,20 +347,34 @@ function ScopeControl({
     const same = other
       ? labels.sameAsObjectView(other.label, viewLabel)
       : labels.sameAsView(viewLabel);
-    if (!narrower.length)
+    // Opening a role shows what it stores: a value wider than View, or one View does not list, stays visible as itself
+    // until an administrator changes it or changes View.
+    const stored =
+      own !== undefined &&
+      own !== viewValue &&
+      !narrower.some((option) => option.value === own)
+        ? {
+            value: own,
+            label: options.find((option) => option.value === own)?.label ?? own,
+          }
+        : undefined;
+    if (!narrower.length && !stored)
       return (
         <span className='flex min-h-7 items-center text-xs text-muted-foreground'>
           {same}
         </span>
       );
-    // A stored scope equal to (or no narrower than) View reads as following it, never as a raw value.
-    const picked = narrower.some((option) => option.value === own)
-      ? own
-      : undefined;
+    const picked =
+      stored?.value ??
+      (narrower.some((option) => option.value === own) ? own : undefined);
     return (
       <ScopeSelect
         label={accessibleName}
-        options={[{ value: FOLLOW, label: same }, ...narrower]}
+        options={[
+          { value: FOLLOW, label: same },
+          ...narrower,
+          ...(stored ? [stored] : []),
+        ]}
         value={picked ?? FOLLOW}
         following={picked === undefined}
         disabled={disabled}
@@ -1421,21 +1438,25 @@ export function PermissionEditor({
         }}
       >
         <div className='border-b px-4'>
-          <TabsList variant='line' className='h-10 gap-3'>
-            <TabsTrigger value='menus' className='flex-none px-1'>
+          {/* Below 44rem the tabs share the width, each name above its count and wrapping, so all three stay readable. */}
+          <TabsList
+            variant='line'
+            className='grid w-full auto-cols-fr grid-flow-col gap-1 pt-2 pb-1 group-data-horizontal/tabs:h-auto @min-[44rem]/permissions:flex @min-[44rem]/permissions:w-fit @min-[44rem]/permissions:gap-3 @min-[44rem]/permissions:py-0 @min-[44rem]/permissions:group-data-horizontal/tabs:h-10'
+          >
+            <TabsTrigger value='menus' className={TAB_TRIGGER}>
               {`① ${words.menusTab}`}
               <span className='text-xs font-normal text-muted-foreground tabular-nums'>
                 {words.tabCount(menuTotals.checked, menuTotals.total)}
               </span>
             </TabsTrigger>
-            <TabsTrigger value='objects' className='flex-none px-1'>
+            <TabsTrigger value='objects' className={TAB_TRIGGER}>
               {`② ${words.objectsTab}`}
               <span className='text-xs font-normal text-muted-foreground tabular-nums'>
                 {words.tabCount(objectTotals.enabled, objectTotals.total)}
               </span>
             </TabsTrigger>
             {settings.length > 0 && (
-              <TabsTrigger value='settings' className='flex-none px-1'>
+              <TabsTrigger value='settings' className={TAB_TRIGGER}>
                 {`③ ${words.settingsTab}`}
                 <span className='text-xs font-normal text-muted-foreground tabular-nums'>
                   {words.tabCount(settingsTotals.enabled, settingsTotals.total)}

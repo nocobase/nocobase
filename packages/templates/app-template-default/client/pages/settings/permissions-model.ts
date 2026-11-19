@@ -151,7 +151,7 @@ export function draftFromGrants(
     }
     draft[id] = Object.keys(scopes).length ? { scopes } : {};
   }
-  // A menu is checked when any of its pages opens; the rest of its pages open with it when saved.
+  // A menu is checked when any of its pages opens; saving it unchanged keeps each page's grant as stored.
   const menus = [...workspace.menuPages]
     .filter(([, pages]) =>
       pages.some((page) =>
@@ -178,8 +178,8 @@ function storedValue(
 /**
  * Stored grants for a draft. Actions the editor does not show and unchanged scopes are kept exactly as stored. Followers
  * store a copy of the value of the View they follow, which may be another object's; while that View is off they keep
- * their stored value, and a new one reaches no records. A checked menu opens its pages and an unchecked one closes them, whatever the objects'
- * actions are.
+ * their stored value, and a new one reaches no records. A menu checked or unchecked in the editor opens or closes all its pages, whatever the
+ * objects' actions are; an unchanged menu keeps its pages' grants as stored. Hidden scopes of a granted action are kept.
  */
 export function grantsFromDraft(
   value: PermissionValue,
@@ -203,8 +203,10 @@ export function grantsFromDraft(
     const scopes: Record<string, unknown> = { ...stored };
     for (const scope of binding.scopes) {
       const original = stored[scope.key];
+      // A hidden scope of an action already granted is kept exactly, a missing key and null included; only an action
+      // turned on now gets the declared initial value.
       if (!scope.visible) {
-        scopes[scope.key] = original ?? scope.defaultValue;
+        if (!entry) scopes[scope.key] = scope.defaultValue;
         continue;
       }
       const selection = chosen[scope.key];
@@ -308,6 +310,12 @@ export function grantsFromDraft(
   }
   for (const [menu, pages] of workspace.menuPages) {
     const visible = value.menus.includes(menu);
+    // A menu whose checkbox the administrator did not change keeps each of its pages' grants as stored, even when only
+    // some of them open; checking or unchecking it opens or closes all of them.
+    const wasVisible = pages.some((page) =>
+      storedAction(original, { type: 'page', id: page }, 'access'),
+    );
+    if (visible === wasVisible) continue;
     for (const page of pages) {
       const resource = { type: 'page', id: page };
       const existing = storedAction(original, resource, 'access');
