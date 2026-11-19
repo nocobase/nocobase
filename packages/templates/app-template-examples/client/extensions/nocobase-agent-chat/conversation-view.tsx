@@ -14,6 +14,8 @@ import {
   useChatAgents,
   useChatModels,
   useConversationModel,
+  shownThinking,
+  useThinkingMemory,
   useChatPanel,
   useConversation,
   useConversationMessages,
@@ -25,7 +27,10 @@ import {
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
-import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
+import type {
+  ModelRef,
+  ReasoningLevel,
+} from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
 import {
   useCallback,
@@ -226,6 +231,11 @@ function ConversationBody({
   );
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
   const [chosenSearch, setChosenSearch] = useState(false);
+  // A new conversation's level; undefined leaves the Agent's default.
+  const [chosenThinking, setChosenThinking] = useState<
+    ReasoningLevel | undefined
+  >(undefined);
+  const thinkingMemory = useThinkingMemory();
   const modelChangeBlocked =
     changingModel ||
     (nativeConversation &&
@@ -347,6 +357,7 @@ function ConversationBody({
   const searchModel = nativeConversation
     ? configuration.data?.selectedModel
     : model;
+  const thinkingModel = searchModel ?? null;
   const searchSupported = Boolean(
     searchModel &&
     catalog.data
@@ -354,6 +365,16 @@ function ConversationBody({
       ?.models.find((item) => item.value === searchModel.model)?.capabilities
       ?.webSearch,
   );
+  // The conversation's saved level wins; what is remembered per model only applies when switching to one.
+  const thinkingValue = nativeConversation
+    ? shownThinking(configuration.data?.thinking)
+    : chosenThinking;
+  /**
+   * A new conversation starts with the level remembered for its model; only without one does the Agent's own default
+   * apply. A remembered value that is not a standard level reads as none.
+   */
+  const newThinking = (selected: ModelRef): ReasoningLevel | undefined =>
+    thinkingMemory.remembered(selected) ?? undefined;
   const searchEnabled = nativeConversation
     ? configuration.data?.webSearch === true
     : chosenSearch && searchSupported;
@@ -397,6 +418,7 @@ function ConversationBody({
     ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
     webSearch:
       target?.id === 'online' && searchSupported ? searchEnabled : undefined,
+    thinking: target?.id === 'online' && model ? chosenThinking : undefined,
   });
 
   // Viewed: tell the server the agent's latest replies were read.
@@ -638,6 +660,36 @@ function ConversationBody({
   const dragDepthRef = useRef(0);
   const carriesFiles = (event: DragEvent<HTMLElement>): boolean =>
     addFilesRef.current !== null && event.dataTransfer.types.includes('Files');
+
+  const thinkingChoice = {
+    value: thinkingValue,
+    disabled:
+      running ||
+      resend.isPending ||
+      stopping ||
+      modelChangeBlocked ||
+      catalog.isFetching ||
+      !catalog.isSuccess ||
+      chatController.submissions.blocked(
+        conversationId,
+        `registry:${source}:${conversationId ?? 'new'}`,
+      ),
+    onChange: (level: ReasoningLevel) => {
+      // The mixed picker also lists Runner agents, but only Online models own thinking.
+      if (!thinkingModel || (!nativeConversation && target?.id !== 'online'))
+        return;
+      if (!nativeConversation) {
+        setChosenThinking(level);
+        thinkingMemory.remember(thinkingModel, level);
+        return;
+      }
+      // Remember the level only after the conversation has saved it.
+      selectModel.mutate(
+        { thinking: level },
+        { onSuccess: () => thinkingMemory.remember(thinkingModel, level) },
+      );
+    },
+  };
 
   return (
     <section
@@ -995,6 +1047,7 @@ function ConversationBody({
                   <ConversationModelChoice
                     services={catalog.data ?? []}
                     model={configuration.data?.selectedModel ?? null}
+                    thinking={thinkingChoice}
                     allowedModels={configuration.data?.model}
                     disabled={
                       running ||
@@ -1015,7 +1068,14 @@ function ConversationBody({
                         current.model === selected.model
                       )
                         return;
-                      selectModel.mutate(selected);
+                      // The level remembered for the new model comes along in the same change.
+                      const thinking =
+                        thinkingMemory.remembered(selected) ?? undefined;
+                      selectModel.mutate(
+                        thinking === undefined
+                          ? selected
+                          : { selectedModel: selected, thinking },
+                      );
                     }}
                   />
                 ) : null
@@ -1026,19 +1086,21 @@ function ConversationBody({
                   agent={target}
                   services={catalog.data ?? []}
                   model={model}
+                  thinking={thinkingChoice}
                   modelsDisabled={
                     catalog.isFetching || !catalog.isSuccess || !hasChatModels
                   }
                   onModelChange={(selected) => {
                     setChosenSearch(false);
+                    setChosenThinking(newThinking(selected));
                     setChosenModel(selected);
                     selectConversation(null, 'online', {
                       preserveComposer: true,
                     });
-                    focusComposer();
                   }}
                   onAgentChange={(agentId) => {
                     setChosenSearch(false);
+                    setChosenThinking(undefined);
                     selectConversation(null, agentId, {
                       preserveComposer: true,
                     });

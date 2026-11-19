@@ -17,6 +17,7 @@ import type {
 } from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
+import type { ReasoningLevel } from './models.js';
 import type { PageUIContext } from './page-ui-context.js';
 export type { PageUIContext, PageUIItem } from './page-ui-context.js';
 
@@ -703,7 +704,8 @@ export interface CreateConversationRequest {
     agentId?: string;
     context?: { variable?: OnlineChatJson };
     scope?: string[];
-    thinking?: string;
+    /** One of `REASONING_LEVELS`; omitted keeps the Agent's default. */
+    thinking?: ReasoningLevel;
     webSearch?: boolean;
   };
   readonly selectedModel?: { modelService: string; model: string };

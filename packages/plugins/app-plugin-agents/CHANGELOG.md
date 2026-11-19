@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.17
+
+### Minor Changes
+
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [b6d6ca0]
+- Updated dependencies [b737800]
+- Updated dependencies [858fcc4]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [b83a645]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.24
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-cli@1.0.0-beta.37
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
 ## 2.0.0-beta.16
 
 ### Minor Changes

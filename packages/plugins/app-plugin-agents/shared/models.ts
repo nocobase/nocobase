@@ -43,6 +43,33 @@ export type ModelProviderName =
  */
 export type ModelKind = 'chat' | 'embedding' | 'rerank';
 
+/**
+ * How hard a model thinks before it answers, as an online agent's `thinking` names it, in the order a menu lists them.
+ * NocoBase owns this list; its values are the ones the Vercel AI SDK's `reasoning` call option uses, so each goes to it
+ * unchanged: `provider-default` leaves it to the provider, `none` turns thinking off, and the rest turn it on, lowest
+ * first. Every online chat model offers all of them: the plugin keeps no list of the levels a model takes. The
+ * provider's SDK package turns a level into the provider's own parameter, may ignore or map one with a warning, and
+ * the provider may still refuse it.
+ */
+export const REASONING_LEVELS = [
+  'provider-default',
+  'none',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+] as const;
+
+export type ReasoningLevel = (typeof REASONING_LEVELS)[number];
+
+export function isReasoningLevel(value: unknown): value is ReasoningLevel {
+  return (
+    typeof value === 'string' &&
+    (REASONING_LEVELS as readonly string[]).includes(value)
+  );
+}
+
 export interface ModelCapabilities {
   readonly webSearch: boolean;
   /** Code-owned native image formats; absence does not grant image input. */

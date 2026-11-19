@@ -964,6 +964,23 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Bawaan',
+        none: 'Mati',
+        minimal: 'Minimal',
+        low: 'Rendah',
+        medium: 'Sedang',
+        high: 'Tinggi',
+        xhigh: 'Sangat tinggi',
+      },
+      adjusted:
+        'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan "{{used}}".',
+      adjustedToDefault:
+        'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan bawaan penyedia.',
+      warning:
+        'Model mungkin tidak menerapkan tingkat berpikir "{{level}}" pada jawaban ini.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Eksekusi gagal. Tinjau percakapan yang tersimpan sebelum mencoba lagi.',

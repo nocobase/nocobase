@@ -1000,6 +1000,23 @@ const esES: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Predeterminado',
+        none: 'Desactivado',
+        minimal: 'Mínimo',
+        low: 'Bajo',
+        medium: 'Medio',
+        high: 'Alto',
+        xhigh: 'Muy alto',
+      },
+      adjusted:
+        'Este modelo no admite el nivel de razonamiento «{{requested}}»; en esta respuesta se usó «{{used}}».',
+      adjustedToDefault:
+        'Este modelo no admite el nivel de razonamiento «{{requested}}»; en esta respuesta se usó el valor predeterminado del proveedor.',
+      warning:
+        'Es posible que el modelo no haya aplicado el nivel de razonamiento «{{level}}» en esta respuesta.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'La ejecución falló. Revisa la conversación guardada antes de reintentar.',

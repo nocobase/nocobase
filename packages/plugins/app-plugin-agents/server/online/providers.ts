@@ -116,7 +116,7 @@ function settingsOf(
   };
 }
 
-/** An isolated native search call; ordinary languageModel and reasoningOf are unchanged. */
+/** An isolated native search call; ordinary languageModel is unchanged. */
 export function createSearchCall(
   connection: ModelConnection,
   model: string,

@@ -132,6 +132,47 @@ describe('AgentPicker models', () => {
     ).toBeVisible();
   });
 
+  it('shows a model’s settings below its row only while it is selected, keeps the menu open on picking it, and sums them up on the trigger', async () => {
+    const onSelect = vi.fn();
+    render(
+      <AgentPicker
+        agents={[]}
+        value={null}
+        onSelect={vi.fn()}
+        appearance='toolbar'
+        models={{
+          services: SERVICES,
+          value: modelValue,
+          onSelect,
+          renderSettings: (model) => (
+            <div data-testid='model-settings'>{model.model}</div>
+          ),
+          summary: () => ({ text: 'High', label: 'Thinking level: High' }),
+        }}
+      />,
+    );
+    const trigger = screen.getByRole('button', {
+      name: /Chat One \(Team gateway\).*; Thinking level: High$/,
+    });
+    expect(
+      within(trigger).getByTestId('agent-picker-model-summary'),
+    ).toHaveTextContent('· High');
+    await userEvent.click(trigger);
+    const menu = await screen.findByRole('menu');
+    const settings = within(menu).getAllByTestId('model-settings');
+    expect(settings).toHaveLength(1);
+    expect(settings[0]?.closest('[data-model-option]')).toHaveAttribute(
+      'data-model-option',
+      modelValue.model,
+    );
+    const other = within(menu)
+      .getAllByRole('menuitem')
+      .find((item) => item.getAttribute('data-model') !== modelValue.model);
+    await userEvent.click(other as HTMLElement);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('menu')).toBeVisible();
+  });
+
   it('groups chat models by actual service title without repeating the service in each row', async () => {
     render(
       <AgentPicker
@@ -145,7 +186,11 @@ describe('AgentPicker models', () => {
     const trigger = screen.getByRole('button', {
       name: 'Chatting with Chat One (Team gateway); choose a model or agent',
     });
-    expect(trigger).toHaveClass('max-w-44', '@md:max-w-64');
+    // A model's full name shows, wrapping rather than truncating.
+    expect(trigger).toHaveClass('max-w-full', '@md:max-w-full');
+    expect(
+      within(trigger).getByTestId('agent-picker-model-name'),
+    ).not.toHaveClass('truncate');
     expect(trigger.querySelector('svg.lucide-sparkles')).not.toBeNull();
     expect(within(trigger).queryByRole('img')).toBeNull();
     await userEvent.click(trigger);
