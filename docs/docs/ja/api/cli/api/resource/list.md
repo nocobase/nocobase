@@ -21,6 +21,7 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | リソース名（必須） |
 | `--data-source` | string | データソース key。デフォルトは `main` です |
 | `--source-id` | string | リレーションリソースのソースレコード ID |
+| `--space` | string | マルチスペースプラグインで照会するスペース名。指定できるのは 1 つだけです。 |
 | `--filter` | string | JSON オブジェクト形式のフィルタ条件 |
 | `--fields` | string[] | クエリフィールド。複数回指定するか、JSON 配列で渡せます |
 | `--appends` | string[] | 追加で取得するリレーションフィールド。複数回指定するか、JSON 配列で渡せます |
@@ -36,6 +37,7 @@ nb api resource list --resource <resource> [flags]
 
 ```bash
 nb api resource list --resource users
+nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```

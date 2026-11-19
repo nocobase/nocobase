@@ -21,6 +21,7 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | Tên tài nguyên, bắt buộc |
 | `--data-source` | string | Key của data source, mặc định `main` |
 | `--source-id` | string | ID bản ghi nguồn của tài nguyên quan hệ |
+| `--space` | string | Tên của một không gian cần truy vấn khi dùng plugin Multi-Space. |
 | `--filter` | string | Điều kiện lọc dạng JSON object |
 | `--fields` | string[] | Field cần truy vấn, có thể truyền nhiều lần hoặc truyền JSON array |
 | `--appends` | string[] | Các field quan hệ cần thêm, có thể truyền nhiều lần hoặc truyền JSON array |
@@ -36,6 +37,7 @@ Cũng hỗ trợ các tham số kết nối chung của [`nb api resource`](./in
 
 ```bash
 nb api resource list --resource users
+nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```

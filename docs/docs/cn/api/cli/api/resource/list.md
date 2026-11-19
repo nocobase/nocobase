@@ -21,6 +21,7 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | 资源名称，必填 |
 | `--data-source` | string | 数据源 key，默认 `main` |
 | `--source-id` | string | 关联资源的源记录 ID |
+| `--space` | string | 使用多空间插件时，指定本次查询的空间名称，每次只能指定一个空间。 |
 | `--filter` | string | JSON 对象形式的过滤条件 |
 | `--fields` | string[] | 查询字段，可重复传入或传 JSON 数组 |
 | `--appends` | string[] | 要追加的关联字段，可重复传入或传 JSON 数组 |
@@ -36,6 +37,7 @@ nb api resource list --resource <resource> [flags]
 
 ```bash
 nb api resource list --resource users
+nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```

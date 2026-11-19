@@ -21,6 +21,7 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | Nama resource, wajib diisi |
 | `--data-source` | string | Key data source, default `main` |
 | `--source-id` | string | ID record sumber dari resource asosiasi |
+| `--space` | string | Nama satu ruang yang ingin dikueri dengan plugin Multi-Space. |
 | `--filter` | string | Kondisi filter dalam bentuk objek JSON |
 | `--fields` | string[] | Field query, dapat dimasukkan berulang atau berupa array JSON |
 | `--appends` | string[] | Field asosiasi yang akan ditambahkan, dapat dimasukkan berulang atau berupa array JSON |
@@ -36,6 +37,7 @@ Juga mendukung parameter koneksi umum dari [`nb api resource`](./index.md).
 
 ```bash
 nb api resource list --resource users
+nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```
