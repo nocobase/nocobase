@@ -9,6 +9,8 @@ Use this Skill to execute a complete deployment workflow. Read the application's
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
 ## Stop and identify the deployment
 
 Before building or changing a server, record:
@@ -80,7 +82,7 @@ The reverse proxy must preserve the public `Host` and protocol headers, forward 
 Read [standalone deployment paths](references/standalone.md) for the commands and refusal cases of each path.
 
 - **Standalone with app-installer** (preferred on a server without a container platform): `@nocobase/app-installer` installs an archive into its own directory, writes `config.yml` and `app.env`, applies migrations, runs the application under pm2, and upgrades with a backup and automatic rollback. The server needs Node.js 24 and a global pm2. The global `nocobase-app-installer` Skill drives it. `install --base-path` chooses the mount path; each application gets its own directory, port and pm2 process.
-- **Standalone Node.js by hand**: inside `dist/`, run `pnpm nocobase config init`, set values with `pnpm nocobase config set` (`--from-env` for passwords), and run `pnpm nocobase config check` on the target machine before the first start. Keep `config.yml` and `storage/` beside `dist/`, set `APP_CONFIG_FILE`, and run `node ./dist/server/standalone.js` under a service manager. Replace only `dist` during an update, and never start a second process against the same data directory.
+- **Standalone Node.js by hand**: inside `dist/`, run `pnpm nocobase config init --dialect <dialect>`, set values with `pnpm nocobase config set` (`--from-env` for passwords), and run `pnpm nocobase config check` on the target machine before the first start. Keep `config.yml` and `storage/` beside `dist/`, set `APP_CONFIG_FILE`, and run `node ./dist/server/standalone.js` under a service manager. Replace only `dist` during an update, and never start a second process against the same data directory.
 - **Standalone Docker**: build with the application's own `Dockerfile` (`Dockerfile.dockerignore` must sit beside it), set `APP_BASE_PATH` at `docker run`, bind-mount `config.yml` read-only at `/app/config.yml` and storage at `/app/storage` writable by UID 1000, and run with `init: true`. The image has no pnpm: run `node dist/cli/index.js config check` before the first start. Recreate the container to read a replaced configuration file.
 
 ## Verify the deployed application

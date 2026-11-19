@@ -19,7 +19,7 @@ pnpm nocobase config check --json                        # verify, database conn
 
 `config init` writes `database.connections.main` and a generated first key of `secrets.keys` into `config.yml`, built from `config.example.yml` so its comments survive. Supported dialects are `sqlite`, `postgres`, `mysql`, `mssql`, `oracle`, `dameng`, `kingbase`, and `oceanbase`. For anything but SQLite its JSON `result` lists `requiredSettings` — the connection settings still at a placeholder — and `nextCommands`. On an application that is already configured it reports `status: "success-noop"` and exits 0, and it fails with `error.code` `ALREADY_CONFIGURED` only when `--dialect` asks for a different database than the one configured.
 
-`config init` installs nothing. Which dialects an application can run on is decided by the driver packages it depends on, so a dialect whose driver is absent fails with `error.code` `DRIVER_MISSING`, and `error.suggestions[0].run` holds the `pnpm add` pinned to the range the runtime accepts; nothing is written. Run that command, then run `config init` again. Templates depend on `@nocobase/db-sqlite`, so SQLite needs no install; another dialect needs its driver added, and `pnpm remove @nocobase/db-sqlite` if nothing else uses SQLite.
+Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle in `devDependencies`. First-time source initialization promotes the selected preinstalled driver with its existing range and updates the lockfile. For an absent driver, follow the compatible install command in `error.suggestions`, then retry initialization. Each additional official driver used by a connection must also be a direct production dependency. Run `pnpm nocobase config check --no-connect --json` to check the effective connections, including environment overrides. Driver findings list connection names, the package, its dependency state, the fix and the command to retry. `db apply` checks every connection before running migrations.
 
 `config set` sets `key=value` assignments in the file the application reads, keeping comments. It refuses a section the application does not know, with the nearest known name, and reports a key an environment variable overrides. Pass a password with `--from-env` and the name of a variable the user has set; never put a secret on the command line or in the conversation. Lists, such as notification channels, are edited in the file itself.
 
@@ -53,13 +53,7 @@ The YAML `database` alias takes precedence over `filename` during normalization.
 
 ## Switch the default connection to PostgreSQL
 
-Install the dialect package if it is not already a dependency:
-
-```bash
-pnpm add @nocobase/db-postgres
-```
-
-Installed driver packages belong in `dependencies` so they reach the deployed server. The dialect package includes its underlying driver dependency.
+In `package.json`, move a preinstalled `@nocobase/db-postgres` entry from `devDependencies` into `dependencies` with the same range, then run `pnpm install`. If the driver is absent, use the compatible version suggested by `config init --dialect postgres --json`. The dialect package includes its underlying driver dependency.
 
 Configure the target in `config.yml` as shown below. Changing `server/config/database.ts` is optional; when updating the source defaults for an application with only `main`, use:
 
@@ -204,6 +198,6 @@ With multiple connections, TypeScript may omit suggestions inside an empty `dial
 
 Application server builds retain declaration emission with `isolatedDeclarations: false`, allowing direct default exports of configuration factory calls. The helper returns the common `AppConfigFactory<AppDatabaseConfig>` contract; its result does not expose the inferred concrete driver types. Library packages retain isolated declaration checking. `AppDatabaseConfigFromDrivers` remains available for explicit annotations outside the helper.
 
-Application templates declare `@nocobase/db-sqlite`, the driver for the dialect their `server/config/database.ts` defaults to, and `create-app` adds no other. Any further driver an application's configuration needs — for its main connection or an additional one — has to be installed into its `dependencies` before building, because a deployment installs only what the application declares.
+Default's main connection uses SQLite as its code default. Its generated application preinstalls official open-source drivers for development. Each official dialect selected in the effective configuration needs a direct entry in the application's `dependencies` for deployment.
 
 KingbaseES, Dameng and OceanBase drivers are NocoBase Pro commercial packages requiring the appropriate commercial license and authenticated access to the private package registry. Follow [commercial package access](plugins.md#commercial-package-access): probe access, tell the user what is needed, and after they agree install a compatible driver in the application’s production dependencies and configure its dialect and connection settings. Until then keep the driver integration pending and the existing database configuration intact. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

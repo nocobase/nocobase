@@ -13,7 +13,7 @@ Read this reference when connecting a plugin to an App or changing its installed
 | Integration knowledge available | Plugin-owned Skills synchronized into the App                    |
 | Feature works                   | Behavior tests and target App runtime verification               |
 
-The current CLI writes the plugin into App `dependencies`, including moving a matching declaration out of `devDependencies`. It discovers registered plugins from the union of explicit Client, Server, and CLI composition roots. Do not recreate the old `nocobase.plugins` management map or treat an `enabled` field as runtime discovery; unregister still cleans legacy entries when present.
+When enabling a plugin the CLI writes the plugin into App `dependencies`, including moving a matching declaration out of `devDependencies`. It discovers registered plugins from the union of explicit Client, Server, and CLI composition roots. Do not recreate the old `nocobase.plugins` management map or treat an `enabled` field as runtime discovery; unregister still cleans legacy entries when present.
 
 An App can consume local plugins from its `packages/` workspace with `workspace:*` and published plugins with registry version ranges. Installation makes a package resolvable; registration connects its runtime entries.
 
@@ -60,7 +60,7 @@ Pass documented typed Client options in the App composition root when needed. Do
 pnpm nocobase plugin register @nocobase/app-plugin-audit-log --disabled --json
 ```
 
-`--disabled` installs the dependency without adding Client, Server, or CLI registrations. Skills still synchronize by default because they are integration knowledge, not runtime code; add `--no-skills` only when that is the intended result. The flag does not neutralize manual registrations already present in composition roots. Inspect those roots when disabling an existing integration and remove only the intended entries.
+`--disabled` installs a development dependency without adding Client, Server, or CLI registrations. Skills still synchronize by default because they are integration knowledge, not runtime code; add `--no-skills` only when that is the intended result. For an active plugin use `plugin unregister` to remove its entries and retain its Skills.
 
 ## Published plugins and upgrades
 
@@ -88,14 +88,14 @@ The plugin's top-level `skills/` is the maintained source. The App's `.agents/sk
 
 ## Unregister and remove
 
-Preview unregistering from a workspace App:
+Preview removing from a workspace App:
 
 ```bash
-pnpm nocobase plugin unregister audit-log --workspace-root . --app app-template-default --dry-run --json
-pnpm nocobase plugin unregister audit-log --workspace-root . --app app-template-default --json
+pnpm nocobase plugin remove audit-log --workspace-root . --app app-template-default --dry-run --json
+pnpm nocobase plugin remove audit-log --workspace-root . --app app-template-default --json
 ```
 
-An installed App uses the same commands from its root without `--app`. Unregister cleans the target App dependency, applicable imports/entries in all three composition roots, owned synchronized Skills, and legacy management metadata. `--no-install` defers the package-manager phase. Review the plan for unrelated manually maintained source.
+An installed App uses the same commands from its root without `--app`. Removal cleans the target App dependency, applicable imports/entries in all three composition roots, owned synchronized Skills, and legacy management metadata. `--no-install` defers the package-manager phase. Review the plan for unrelated manually maintained source.
 
 Unregistering a plugin from an App does not delete its local package directory, migrate away persistent data, or delete editable UI copied into the App. Those are separate operations with their own requested scope.
 

@@ -162,7 +162,7 @@ describe('app plugin register command', () => {
       appRoot,
       '--no-install',
     ]);
-    const unregistered = await runCommand(config, 'plugin:unregister', [
+    const unregistered = await runCommand(config, 'plugin:remove', [
       'audit-log',
       '--dir',
       appRoot,
@@ -175,7 +175,7 @@ describe('app plugin register command', () => {
     };
     expect(unregisterResponse).toMatchObject({
       ok: true,
-      command: 'plugin unregister',
+      command: 'plugin remove',
       status: 'success-noop',
     });
     expect(unregisterResponse.result.skillRemovals).toEqual([
@@ -248,14 +248,14 @@ describe('app plugin register command', () => {
       status: 'success-noop',
     });
 
-    await runCommand(config, 'plugin:unregister', args);
-    const unregistered = await runCommand(config, 'plugin:unregister', [
+    await runCommand(config, 'plugin:remove', args);
+    const unregistered = await runCommand(config, 'plugin:remove', [
       ...args,
       '--json',
     ]);
     expect(JSON.parse(unregistered.stdout)).toMatchObject({
       ok: true,
-      command: 'plugin unregister',
+      command: 'plugin remove',
       status: 'success-noop',
     });
   });
@@ -271,7 +271,7 @@ describe('app plugin register command', () => {
     await mkdir(skillDirectory, { recursive: true });
     await writeFile(path.join(skillDirectory, 'SKILL.md'), '# Orphaned\n');
 
-    const result = await runCommand(config, 'plugin:unregister', [
+    const result = await runCommand(config, 'plugin:remove', [
       'audit-log',
       '--dir',
       appRoot,
@@ -281,7 +281,7 @@ describe('app plugin register command', () => {
 
     expect(JSON.parse(result.stdout)).toMatchObject({
       ok: true,
-      command: 'plugin unregister',
+      command: 'plugin remove',
       status: 'success',
       result: {
         removedSkills: ['nocobase-app-plugin-audit-log'],
@@ -690,6 +690,27 @@ describe('app plugin register command', () => {
           cwd: appRoot,
         });
       }
+
+      await runCommand(config, 'plugin:unregister', [
+        'audit-log',
+        '--dir',
+        appRoot,
+      ]);
+      const retained = JSON.parse(
+        await readFile(path.join(appRoot, 'package.json'), 'utf8'),
+      );
+      expect(retained.devDependencies?.[packageName]).toBe(range);
+      expect(retained.dependencies?.[packageName]).toBeUndefined();
+      if (packageManager === 'pnpm')
+        await runPackageManager('pnpm', ['install', '--frozen-lockfile'], {
+          cwd: appRoot,
+        });
+      else
+        expect(
+          JSON.parse(
+            await readFile(path.join(appRoot, 'package-lock.json'), 'utf8'),
+          ).packages[''].devDependencies[packageName],
+        ).toBe(range);
     },
     30_000,
   );
@@ -708,15 +729,51 @@ describe('app plugin register command', () => {
     const manifest = JSON.parse(
       await readFile(path.join(appRoot, 'package.json'), 'utf8'),
     ) as {
-      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
       nocobase?: { plugins?: Record<string, { enabled: boolean }> };
     };
-    expect(manifest.dependencies).toEqual({
+    expect(manifest.devDependencies).toEqual({
       '@nocobase/app-plugin-audit-log': '^1.0.0',
     });
     expect(manifest.nocobase?.plugins).toBeUndefined();
     expect(existsSync(path.join(appRoot, 'client', 'plugins.ts'))).toBe(false);
     expect(existsSync(path.join(appRoot, 'server', 'plugins.ts'))).toBe(false);
+  });
+
+  it('keeps the plugin and its Skills after removing the runtime entries', async () => {
+    const appRoot = await createAppWithInstalledPlugin();
+    const pkg = '@nocobase/app-plugin-audit-log';
+    const args = [pkg, '--dir', appRoot, '--no-install'];
+    const manifest = async () =>
+      JSON.parse(await readFile(path.join(appRoot, 'package.json'), 'utf8'));
+    await runCommand(config, 'plugin:register', [...args, '--disabled']);
+    expect((await manifest()).devDependencies[pkg]).toBe('^1.0.0');
+    await runCommand(config, 'plugin:register', args);
+    expect((await manifest()).dependencies[pkg]).toBe('^1.0.0');
+    const consumer = path.join(appRoot, 'server', 'consumer.ts');
+    await writeFile(consumer, `export {default} from '${pkg}/server';`);
+    await expect(runCommand(config, 'plugin:unregister', args)).rejects.toThrow(
+      'server/consumer.ts',
+    );
+    expect((await manifest()).dependencies[pkg]).toBe('^1.0.0');
+    await rm(consumer);
+    await runCommand(config, 'plugin:unregister', args);
+    expect((await manifest()).devDependencies[pkg]).toBe('^1.0.0');
+    expect((await manifest()).dependencies[pkg]).toBeUndefined();
+    for (const side of ['server', 'client'])
+      expect(
+        await readFile(path.join(appRoot, side, 'plugins.ts'), 'utf8'),
+      ).not.toContain(pkg);
+    expect(
+      existsSync(
+        path.join(
+          appRoot,
+          '.agents/skills/nocobase-app-plugin-audit-log/SKILL.md',
+        ),
+      ),
+    ).toBe(true);
+    await runCommand(config, 'plugin:register', args);
+    expect((await manifest()).dependencies[pkg]).toBe('^1.0.0');
   });
 
   it('skips Skill synchronization when --no-skills is explicit', async () => {
@@ -757,7 +814,7 @@ describe('app plugin register command', () => {
       ),
     ).resolves.toEqual(before);
 
-    await runCommand(config, 'plugin:unregister', args);
+    await runCommand(config, 'plugin:remove', args);
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
       dependencies?: Record<string, string>;
       nocobase?: { plugins?: Record<string, unknown> };
@@ -799,12 +856,12 @@ describe('app plugin register command', () => {
       paths.map((file) => readFile(file, 'utf8')),
     );
 
-    const result = await runCommand(config, 'plugin:unregister', [
+    const result = await runCommand(config, 'plugin:remove', [
       ...args,
       '--dry-run',
     ]);
 
-    expect(result.stdout).toContain('Would unregister');
+    expect(result.stdout).toContain('Would remove');
     await expect(
       Promise.all(paths.map((file) => readFile(file, 'utf8'))),
     ).resolves.toEqual(before);
@@ -1100,7 +1157,7 @@ describe('app plugin register command', () => {
     process.env.PATH = `${binRoot}${path.delimiter}${previousPath ?? ''}`;
     let stdout: string;
     try {
-      ({ stdout } = await runCommand(config, 'plugin:unregister', [
+      ({ stdout } = await runCommand(config, 'plugin:remove', [
         'audit-log',
         '--dir',
         appRoot,
@@ -1112,10 +1169,10 @@ describe('app plugin register command', () => {
 
     expect(JSON.parse(stdout)).toMatchObject({
       ok: true,
-      command: 'plugin unregister',
+      command: 'plugin remove',
       status: 'partial-success',
       result: {
-        mode: 'unregister',
+        mode: 'remove',
         removedSkills: ['nocobase-app-plugin-audit-log'],
         issues: [
           {

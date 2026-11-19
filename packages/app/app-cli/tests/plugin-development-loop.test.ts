@@ -326,7 +326,7 @@ describe('Agent plugin development loop', () => {
         expect(await readFile(synchronizedSkill, 'utf8')).toBe(updatedSkill);
       }
 
-      await runCommand(config, 'plugin:unregister', [
+      await runCommand(config, 'plugin:remove', [
         'agent-loop',
         '--dir',
         appRoot,

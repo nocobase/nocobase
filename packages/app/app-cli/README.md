@@ -20,6 +20,8 @@ In a source application the bin registers the application's own `tsx` before it 
 
 ## Commands
 
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
 | Command                                                                    | In a deployment | Notes                                                                                                                    |
 | -------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `commands`                                                                 | yes             | Every command registered where it runs; `--json` for agents                                                              |
@@ -34,7 +36,7 @@ In a source application the bin registers the application's own `tsx` before it 
 | `dev`, `build`, `start`                                                    | no              | `build` passes `--target`, `--node-version` and `--tar` to the build                                                     |
 | `dist retarget`, `dist check`                                              | no              |                                                                                                                          |
 | `cli build`, `cli link`                                                    | no              | Pack or link the application's own CLI (`nocobase.cli`); `cli build --runner` packs `nocobase-runner`                    |
-| `plugin register`, `plugin unregister`, `plugin inspect`                   | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository                                                      |
+| `plugin register`, `plugin unregister`, `plugin remove`, `plugin inspect`  | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository                                                      |
 | `plugin update`                                                            | no              | Takes `--dir`; no `--workspace-root` or `--app`                                                                          |
 | `package remove`, `skills sync`                                            | no              |                                                                                                                          |
 | `app <name>`                                                               | yes             | The application's own commands, from `cli/commands/`                                                                     |
@@ -131,7 +133,7 @@ A command name nested with `:`, such as `export:csv`, sits in a nested topic, `a
 
 ## Plugin and Skill management
 
-`plugin register` puts every plugin in `dependencies`, including client-only plugins and ones installed with `--disabled`, so the plugin reaches a deployment's dependency set. Registering again moves an old `devDependencies` declaration into `dependencies`; without `--version` an ordinary application keeps the declared range. `--no-install` fixes the manifest without running the package manager, leaving the lockfile to the caller. The client and server composition roots are edited with the application's own TypeScript and Prettier, so the edit is formatted the way the application formats itself, and neither being absent fails the registration.
+`plugin register` places enabled plugins in `dependencies`. With `--disabled` it installs the plugin in `devDependencies` and synchronizes Skills. Registering again moves an old `devDependencies` declaration into `dependencies`; without `--version` an ordinary application keeps the declared range. `--no-install` fixes the manifest without running the package manager, leaving the lockfile to the caller. The client and server composition roots are edited with the application's own TypeScript and Prettier, so the edit is formatted the way the application formats itself, and neither being absent fails the registration.
 
 `plugin update` upgrades one plugin, given by full name or short name, or every registered plugin when no name is given, and then synchronizes its Skills.
 
@@ -139,7 +141,7 @@ A command name nested with `:`, such as `export:csv`, sits in a nested topic, `a
 
 `nocobase-app-plugin-development` is the one reserved `nocobase-app-plugin-*` name owned by `@nocobase/app-skills`; business plugins cannot claim it. Synchronization copies the full version-matched guide, skips `node_modules` installed inside Skill examples, and materializes project copies instead of keeping links to a global installation. It never edits global Agent installations. The App upgrade Skill handles retiring an older global copy after the project replacement is verified.
 
-`package remove` uninstalls a directly declared package with the application's package manager and removes the Skills it synchronized; for a plugin it runs the whole `plugin unregister` flow. `--dry-run` prints the plan without changing anything.
+`package remove` uninstalls a directly declared package with the application's package manager and removes the Skills it synchronized; for a plugin it runs the whole `plugin remove` flow. `--dry-run` prints the plan without changing anything.
 
 `--workspace-root` selects an application inside this monorepo and writes `workspace:^` ranges; without it, plugins resolve from the application's own `node_modules`. `plugin inspect` reads the static registration surface only; it is not a substitute for running, testing or building the application.
 

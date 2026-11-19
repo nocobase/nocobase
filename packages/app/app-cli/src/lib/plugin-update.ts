@@ -66,7 +66,12 @@ export async function planPluginUpdate({
   }
 
   const unregistered = packageNames.filter(
-    (packageName) => !registered.includes(packageName),
+    (packageName) =>
+      !registered.includes(packageName) &&
+      !(
+        isPluginPackageName(packageName) &&
+        Object.hasOwn(applicationPackage.devDependencies ?? {}, packageName)
+      ),
   );
   if (unregistered.length > 0) {
     throw new Error(

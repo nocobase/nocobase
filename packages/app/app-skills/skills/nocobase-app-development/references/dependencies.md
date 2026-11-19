@@ -2,6 +2,8 @@
 
 Read this before adding a package to `package.json`, when the shadcn CLI or a UI Library item has just added one, and when a build or a deployment fails on a missing module or a native binary.
 
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
 ## Which field a package goes in
 
 Which half of the application imports it decides where it goes.

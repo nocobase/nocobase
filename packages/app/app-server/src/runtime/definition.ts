@@ -87,6 +87,7 @@ export function defineAppRuntime(
 export async function resolveAppRuntime(
   definition: AppRuntimeDefinition,
   scope: AppScope,
+  options: { prepareDatabaseDrivers?: boolean } = {},
 ): Promise<ResolvedAppRuntime> {
   const resolved = withStandaloneStorageDir(resolveAppScopeRuntime(scope));
   const base = definition.resolvePaths
@@ -114,10 +115,19 @@ export async function resolveAppRuntime(
       await runtime.config.loadSectionEnvironment(context.environment);
     }
   }
-  const database = runtime.config.get<AppDatabaseConfig>('database');
+  if (options.prepareDatabaseDrivers !== false)
+    await prepareRuntimeDatabaseDrivers(appConfig);
+  return runtime;
+}
+
+/** Resolve the configured drivers after tools have inspected the merged configuration, before application creation. */
+export async function prepareRuntimeDatabaseDrivers(
+  config: AppConfig,
+): Promise<void> {
+  const database = config.get<AppDatabaseConfig>('database');
   if (database && database.default !== 'none') {
     const resolvedDatabase = await resolveDatabaseConfig(database);
-    runtime.config.mergeDefaults({
+    config.mergeDefaults({
       database: {
         drivers: resolvedDatabase.drivers,
         connections: Object.fromEntries(
@@ -135,7 +145,6 @@ export async function resolveAppRuntime(
       },
     });
   }
-  return runtime;
 }
 
 /**

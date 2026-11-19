@@ -1,5 +1,12 @@
 import { AppCommand, appContextOf } from '../../context.ts';
 import { type Command, Flags } from '@oclif/core';
+import { prepareRuntimeDatabaseDrivers } from '@nocobase/app-server/runtime';
+import { formatCommandLine } from '@nocobase/cli-envelope';
+import {
+  inspectDatabaseDrivers,
+  assertDatabaseDrivers,
+} from '../../lib/database-driver-dependencies.ts';
+import { appAt } from '../../runtime/location.ts';
 import type { Interfaces } from '@oclif/core';
 
 import {
@@ -12,7 +19,7 @@ import {
 export default class AppDbApply extends AppCommand {
   static override summary = 'Apply pending database migrations and seeds.';
   static override description =
-    'Runs both in one plan, the same order startup runs them: each connection is migrated, then seeded. Only pending tasks run, so repeating it is safe. Runs the default connection unless --connection or --all is specified. Plugins belong to the default connection. Stops on the first failure. --dry-run lists what would run without running it or taking the lock. To discard the current schema and start over, use "db reset".';
+    'Runs both in one plan, the same order startup runs them: each connection is migrated, then seeded. Checks production driver dependencies for every configured connection before opening the application. Only pending tasks run, so repeating it is safe. Runs the default connection unless --connection or --all is specified. Plugins belong to the default connection. Stops on the first failure. --dry-run lists what would run without running it or taking the lock. To discard the current schema and start over, use "db reset".';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %>',
@@ -52,6 +59,9 @@ export default class AppDbApply extends AppCommand {
 
   public async run(): Promise<DatabaseCommandResult> {
     const { flags } = await this.parse(AppDbApply);
+    const context = appContextOf(this);
+    const invocation = this.cliCommand(['db', 'apply', ...this.argv]);
+    const retry = formatCommandLine(invocation);
     const result = await runDatabaseApplyCommand(
       this,
       {
@@ -59,7 +69,21 @@ export default class AppDbApply extends AppCommand {
         dryRun: flags['dry-run'],
         collections: flags.collections && collectionsRefreshAllowed(),
       },
-      appContextOf(this),
+      {
+        ...context,
+        loadRuntime: () =>
+          context.loadRuntime({ prepareDatabaseDrivers: false }),
+        createApp: async (runtime) => {
+          const mode =
+            appAt(context.rootDir).kind === 'deployment'
+              ? 'deployment'
+              : 'source';
+          const report = inspectDatabaseDrivers(runtime, mode, retry);
+          assertDatabaseDrivers(report.findings);
+          await prepareRuntimeDatabaseDrivers(runtime.config);
+          return context.createApp(runtime);
+        },
+      },
     );
     if (databaseRunChangedNothing(result)) this.setStatus('success-noop');
     return result;
