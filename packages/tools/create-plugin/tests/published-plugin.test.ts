@@ -574,7 +574,7 @@ console.log('packed component rendered');
     );
     await writeFile(
       path.join(host, 'index.html'),
-      '<div id="root"></div><script type="module" src="/browser-entry.js"></script>\n',
+      '<div id="root"></div><div id="settings"></div><script type="module" src="/browser-entry.js"></script>\n',
     );
     await writeFile(
       path.join(host, 'browser-entry.js'),
@@ -582,6 +582,8 @@ console.log('packed component rendered');
 import { createRoot } from 'react-dom/client';
 import { PermissionEditor } from './node_modules/${plugin.packageName}/dist/client/components/permission-editor.js';
 createRoot(document.getElementById('root')).render(createElement(PermissionEditor, { menus: [{ id: 'records-page', label: 'Records page', uses: { primary: ['records'] } }], objects: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true }] }], value: { menus: ['records-page'], grants: { read: {} } }, onChange() {} }));
+// The bundle also takes the optional settings pages, on the third tab.
+createRoot(document.getElementById('settings')).render(createElement(PermissionEditor, { defaultTab: 'settings', menus: [], objects: [], settings: [{ id: 'records-settings', label: 'Records settings', group: 'System', objects: [{ id: 'settings', label: 'Settings', actions: [{ id: 'manage', label: 'Manage settings', view: true }] }] }], value: { menus: [], grants: { manage: {} } }, onChange() {} }));
 `,
     );
     for (const condition of ['development', 'production']) {
