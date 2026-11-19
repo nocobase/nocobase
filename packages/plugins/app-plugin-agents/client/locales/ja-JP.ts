@@ -963,6 +963,23 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'デフォルト',
+        none: 'オフ',
+        minimal: '最小',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+      },
+      adjusted:
+        'このモデルは思考レベル「{{requested}}」に対応していないため、この返信では「{{used}}」を使用しました。',
+      adjustedToDefault:
+        'このモデルは思考レベル「{{requested}}」に対応していないため、この返信ではプロバイダーの既定値を使用しました。',
+      warning:
+        'モデルがこの返信に思考レベル「{{level}}」を適用していない可能性があります。',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       '実行に失敗しました。再試行する前に保存された会話を確認してください。',

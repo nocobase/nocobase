@@ -48,7 +48,7 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 - Installs to: `client/components/agent-picker.tsx`
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Example: `@nocobase/agent-picker-demo` (`pnpm exec shadcn view @nocobase/agent-picker-demo`)
-- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, AgentTags and AgentTag. Every word comes from the labels prop, English by default.
+- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, AgentTags and AgentTag. Every word comes from the labels prop, English by default. With models, renderSettings(model) adds inline controls below the selected model's row (keeping the menu open on selection) and summary() shows a short text, such as the thinking level, beside the model's name.
 
 ### agent-chat
 

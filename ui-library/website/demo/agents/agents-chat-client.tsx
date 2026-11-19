@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components, @eslint-react/no-unnecessary-use-prefix -- a stand-in for a
    module of components and hooks, under the names of the real ones whether or not the stand-in calls a hook */
 import type * as Chat from '@nocobase/app-plugin-agents/client/chat';
+import type * as Models from '@nocobase/app-plugin-agents/shared/models';
 import { Chat as SDKChat, useChat as useSDKChat } from '@ai-sdk/react';
 import {
   createUIMessageStreamResponse,
@@ -183,6 +184,16 @@ const MODELS: readonly ModelService[] = [
       {
         value: 'deep',
         label: L('Deep model', '深度模型'),
+        kind: 'chat',
+        dimensions: null,
+      },
+      {
+        // A long name, to show that the trigger keeps it whole.
+        value: 'reasoning-preview-2026-11-01',
+        label: L(
+          'Reasoning preview 2026-11-01 (long context)',
+          '推理预览 2026-11-01（长上下文）',
+        ),
         kind: 'chat',
         dimensions: null,
       },
@@ -1685,21 +1696,86 @@ export const useChatModels: typeof Chat.useChatModels = () =>
       ? [...MODELS]
       : [],
   );
-export const useConversationModel: typeof Chat.useConversationModel = (id) => ({
-  configuration: query(
-    id
-      ? {
-          selectedModel: { modelService: 'demo', model: 'fast' },
-          scope: [],
-          tool: [],
-          toolVersions: {},
-          systemPrompt: '',
+// The demo's model and thinking choices: those saved per conversation and the level remembered per model, in memory.
+const demoThinking = {
+  models: new Map<string, Models.ModelRef>(),
+  saved: new Map<string, Models.ReasoningLevel>(),
+  remembered: new Map<string, Models.ReasoningLevel>(),
+  listeners: new Set<() => void>(),
+  version: 0,
+};
+function changeThinking(change: () => void): void {
+  change();
+  demoThinking.version += 1;
+  for (const listener of demoThinking.listeners) listener();
+}
+function useDemoThinking(): number {
+  return useSyncExternalStore(
+    (listener) => {
+      demoThinking.listeners.add(listener);
+      return () => demoThinking.listeners.delete(listener);
+    },
+    () => demoThinking.version,
+  );
+}
+
+export const useConversationModel: typeof Chat.useConversationModel = (id) => {
+  useDemoThinking();
+  const thinking = id ? demoThinking.saved.get(id) : undefined;
+  return {
+    configuration: query(
+      id
+        ? {
+            selectedModel: demoThinking.models.get(id) ?? {
+              modelService: 'demo',
+              model: 'fast',
+            },
+            scope: [],
+            tool: [],
+            toolVersions: {},
+            systemPrompt: '',
+            ...(thinking ? { thinking } : {}),
+          }
+        : undefined,
+    ),
+    select: mutation<
+      | Models.ModelRef
+      | {
+          selectedModel?: Models.ModelRef;
+          thinking?: Models.ReasoningLevel;
         }
-      : undefined,
-  ),
-  select: mutation(() => {}),
-  changing: false,
-});
+    >((input, options?: { onSuccess?: () => void }) => {
+      const model =
+        'modelService' in input ? input : (input.selectedModel ?? undefined);
+      const level = 'thinking' in input ? input.thinking : undefined;
+      if (id)
+        changeThinking(() => {
+          if (model) demoThinking.models.set(id, model);
+          if (level) demoThinking.saved.set(id, level);
+        });
+      options?.onSuccess?.();
+    }),
+    changing: false,
+  };
+};
+export const useThinkingMemory: typeof Chat.useThinkingMemory = () => {
+  useDemoThinking();
+  return {
+    remembered: (model) =>
+      demoThinking.remembered.get(`${model.modelService}:${model.model}`) ??
+      null,
+    remember: (model, level) =>
+      changeThinking(() =>
+        demoThinking.remembered.set(
+          `${model.modelService}:${model.model}`,
+          level,
+        ),
+      ),
+  };
+};
+export const shownThinking: typeof Chat.shownThinking = (value) =>
+  value ?? 'provider-default';
+export { thinkingLevelText } from '../../../../packages/plugins/app-plugin-agents/client/chat/message-model.js';
 export const useConversation: typeof Chat.useConversation = (
   conversationId,
 ) => {
@@ -1927,7 +2003,9 @@ export const useChatAttachments: typeof Chat.useChatAttachments = () =>
     [],
   );
 
-function mutation<V>(run: (variables: V) => void): never {
+function mutation<V>(
+  run: (variables: V, options?: { onSuccess?: () => void }) => void,
+): never {
   return { mutate: run, isPending: false } as never;
 }
 
