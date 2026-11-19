@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
 
 import { SettingsRedirect } from '../../client/routing/settings-redirect.js';
-import { SETTINGS_REDIRECTS } from '../../client/routing/settings-redirects.js';
+import { SETTINGS_REDIRECTS } from '../../client/lib/settings-redirects.js';
 
 function Destination() {
   const { pathname, search, hash } = useLocation();

@@ -597,7 +597,10 @@ interface RouteNode {
   children?: RouteNode[];
 }
 
-/** Settings categories share one namespace across packages, which a package name can never collide with. */
+/**
+ * Settings categories share one namespace across packages. The prefix keeps them apart from package-scoped groups,
+ * whose ids start with a package name; only an unscoped package named `settings` could collide.
+ */
 const SETTINGS_CATEGORY_PREFIX = 'settings:';
 
 function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {

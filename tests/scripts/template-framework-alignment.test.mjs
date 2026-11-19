@@ -134,7 +134,7 @@ function withExamplesChat(source, file) {
         'import { RouteTreeProvider }',
     );
     replaceOnce(
-      'export function AppLayout({ routes }: AppLayoutProps): ReactElement {',
+      'export function AppLayout({\n  routes: registered,\n}: AppLayoutProps): ReactElement {',
       `export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   return (
     <OnlineAgentProvider>
@@ -143,7 +143,9 @@ function withExamplesChat(source, file) {
   );
 }
 
-function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
+function AuthenticatedLayout({
+  routes: registered,
+}: AppLayoutProps): ReactElement {`,
     );
     // Retain the route outlet, watermark, scrolling and surrounding shell verbatim.
     const main = source.match(

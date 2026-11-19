@@ -17,7 +17,7 @@ import {
 import {
   SETTINGS_REDIRECTS,
   settingsRedirectTarget,
-} from '../../client/routing/settings-redirects.ts';
+} from '../../client/lib/settings-redirects.ts';
 
 describe('app client routes', () => {
   it('keeps procurement and customer relations as separate protected route trees', () => {

@@ -83,6 +83,16 @@ export function groupWorkflowNavigation(
   );
 }
 
+/**
+ * The application's navigation as the sidebar shows it, from the routes the viewer may open. The shared router calls
+ * this one function, so a template arranges its own menu here: Examples also gathers its workflow menu.
+ */
+export function organizeNavigation(
+  items: RouteNavigationItem[],
+): RouteNavigationItem[] {
+  return collapseSettingsNavigation(groupWorkflowNavigation(items));
+}
+
 /** The settings home page of a settings group route, when the application registers one. */
 export function settingsHomeRoute(
   route: AppClientRegisteredRoute,
