@@ -12,6 +12,7 @@ import { executeRawApiRequest } from './api-client.js';
 export type ResourceAction = 'list' | 'get' | 'create' | 'update' | 'destroy' | 'query';
 
 export interface ResourceRequestArgs {
+  space?: string;
   dataSource?: string;
   resource: string;
   sourceId?: string | number;
@@ -140,6 +141,11 @@ function buildHeaders(action: ResourceAction, args: ResourceRequestArgs) {
 
   if (args.dataSource && args.dataSource !== 'main') {
     headers['x-data-source'] = args.dataSource;
+  }
+
+  if (action === 'list' && args.space) {
+    headers['x-spaces'] = args.space;
+    headers['x-spaces-view'] = args.space;
   }
 
   if (action === 'query' && args.timezone) {
