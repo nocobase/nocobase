@@ -117,6 +117,31 @@ function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a ?? '') === JSON.stringify(b ?? '');
 }
 
+/** A value with object keys sorted at every level, so key order never makes two equal values differ. */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, canonical(Reflect.get(value, key))]),
+  );
+}
+
+/**
+ * Whether two custom filters hold the same conditions. The filter form reads a single stored condition and applies it
+ * as a group of one, and stored keys may come in any order; neither changes which records match.
+ */
+export function sameFilter(a: unknown, b: unknown): boolean {
+  const group = (value: unknown): unknown =>
+    value &&
+    typeof value === 'object' &&
+    Reflect.get(value, 'kind') === 'condition'
+      ? { kind: 'group', logic: 'and', items: [value] }
+      : value;
+  return same(canonical(group(a)), canonical(group(b)));
+}
+
 /** The editor draft of stored grants, with the custom filters it cannot carry in a select. */
 export function draftFromGrants(
   grants: readonly PermissionGrant[],
@@ -219,7 +244,7 @@ export function grantsFromDraft(
         selection !== undefined &&
         selection === scopeSelection(original) &&
         (selection !== CUSTOM_FILTER ||
-          same(filters[filterKey(id, scope.key)], filterOf(original)));
+          sameFilter(filters[filterKey(id, scope.key)], filterOf(original)));
       if (unchanged) {
         if (!(scope.key in stored)) delete scopes[scope.key];
         continue;
@@ -334,7 +359,8 @@ export function grantsFromDraft(
 /**
  * Apply custom filter conditions to a scope. New conditions on a scope others follow cannot be shown to be wider or
  * narrower than before, so followers not provably narrower go back to following it, as when View narrows, and the
- * notices name them. Applying the same conditions again changes nothing; saving keeps every untouched scope as stored.
+ * notices name them. Applying the same conditions again, even written as a group of one or with keys in another order,
+ * changes nothing; saving keeps every untouched scope as stored.
  */
 export function applyFilter(
   objects: readonly PermissionObject[],
@@ -349,8 +375,9 @@ export function applyFilter(
   readonly notices: readonly PermissionNotice[];
 } {
   const key = filterKey(actionId, slotId);
+  // The same conditions, however the form wrote them, keep the filter as it was, so nothing is rewritten on save.
+  if (sameFilter(filters[key], filter)) return { value, filters, notices: [] };
   const next = { ...filters, [key]: filter };
-  if (same(filters[key], filter)) return { value, filters: next, notices: [] };
   const change = capFollowers(objects, value.grants, actionId, slotId);
   return change.notices.length
     ? {
