@@ -235,7 +235,7 @@ describe('System settings navigation', () => {
     const menu = buildRouteNavigation(routes, new Set());
     expect(menu.map(({ route }) => route.name)).toEqual(['settingsHome']);
     expect(catalog(routes)).toEqual([
-      ['settingsSystem', [['foundation', '/foundation']]],
+      ['settingsSystem', [['foundation', '/settings/foundation']]],
     ]);
     // The signed-in shell receives the tree filtered to its pages; empty categories keep their titles there.
     const signedIn = filterRouteTree(
@@ -243,7 +243,7 @@ describe('System settings navigation', () => {
       (route) => route.auth === 'required',
     );
     expect(catalog(signedIn)).toEqual([
-      ['settingsSystem', [['foundation', '/foundation']]],
+      ['settingsSystem', [['foundation', '/settings/foundation']]],
     ]);
     const page = find(routes, 'foundation');
     expect(page.navigation?.description).toBe('nav.foundationDescription');

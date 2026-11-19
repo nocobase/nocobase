@@ -1,4 +1,3 @@
-import { groupFoundationNavigation } from '@nocobase/app-plugin-foundation/client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Workflow } from 'lucide-react';
 import type { RouteNavigationItem } from '../routing/route-navigation.js';
@@ -84,77 +83,6 @@ export function groupWorkflowNavigation(
   );
 }
 
-/**
- * Application-owned navigation structure, before the sidebar folds the settings group into one entry. `routes` is the
- * registered tree the permission-filtered `items` came from.
- */
-export function organizeNavigation(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  return groupFoundationNavigation(
-    withSettingsGroup(groupWorkflowNavigation(items), routes),
-    SETTINGS_GROUP,
-  );
-}
-
-/** Application-owned navigation customization, applied after permission filtering. */
-export function transformNavigation(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  const organized = organizeNavigation(items, routes);
-  const hasGuide = organized.some(
-    (item) =>
-      item.route.name === SETTINGS_GROUP &&
-      item.children.some(
-        (child) =>
-          child.route.packageName === '@nocobase/app-plugin-foundation' &&
-          child.route.name === 'capabilityGuide',
-      ),
-  );
-  return collapseSettingsNavigation(organized).map((item) =>
-    hasGuide && item.route.name === SETTINGS_HOME
-      ? {
-          ...item,
-          activeRouteKeys: [
-            ...(item.activeRouteKeys ?? []),
-            ...routes
-              .filter(
-                (route) =>
-                  route.packageName === '@nocobase/app-plugin-foundation' &&
-                  ['capabilityGuide', 'capabilityGuideEntry'].includes(
-                    route.name,
-                  ),
-              )
-              .map((route) => `${route.packageName}:${route.path}:${route.id}`),
-          ],
-        }
-      : item,
-  );
-}
-
-/**
- * Permission filtering drops a group with nothing visible in it, which the settings group is until a module joins it.
- * Keep it in place so a plugin's settings entry, such as App Foundation, still has a group to join.
- */
-function withSettingsGroup(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  const index = routes.findIndex((route) => settingsHomeRoute(route));
-  if (index < 0 || items.some((item) => item.route === routes[index]))
-    return items;
-  const position = items.filter(
-    (item) => routes.indexOf(item.route) < index,
-  ).length;
-  return [
-    ...items.slice(0, position),
-    { route: routes[index], children: [] },
-    ...items.slice(position),
-  ];
-}
-
 /** The settings home page of a settings group route, when the application registers one. */
 export function settingsHomeRoute(
   route: AppClientRegisteredRoute,
@@ -212,7 +140,7 @@ export interface SettingsCategory {
 }
 
 /**
- * The settings home's cards, from the permission-filtered navigation (`organizeNavigation` output): one category per
+ * The settings home's cards, from the permission-filtered navigation: one category per
  * child group of the settings group, in route order, and the modules the viewer may open in each. A module registered
  * directly under the settings group joins the fallback category. Empty categories are left out.
  */

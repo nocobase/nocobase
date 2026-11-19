@@ -1,6 +1,6 @@
 # System settings navigation upgrades
 
-Use this reference when BASE → TARGET introduces the System settings structure: one sidebar entry, a home page of cards by category, and tabs inside a module ([System settings navigation](../../nocobase-app-development/references/settings-navigation.md)). The structure is application-owned source. Updating `@nocobase/*` dependencies alone leaves the old navigation in place and working: `navigation.description` is optional and ignored by an older shell, and no route, URL or permission changes. Do not report the navigation as upgraded until the source below is merged and verified.
+Use this reference when BASE → TARGET introduces the System settings structure: one sidebar entry, a home page of cards by category, and tabs inside a module ([System settings navigation](../../nocobase-app-development/references/settings-navigation.md)). The structure is application-owned source. Updating `@nocobase/*` dependencies alone leaves the old navigation in place and working: `navigation.description` is optional and ignored by an older shell, and Foundation redirects its former overview URL to `/settings/foundation`. Do not report the navigation as upgraded until the source below is merged and verified.
 
 ## Merge the source
 
@@ -8,7 +8,7 @@ Three-way merge each file from the BASE template, the application and the TARGET
 
 | Source                                                                                                               | What TARGET adds                                                                                                                                                                                                                                                              |
 | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `client/lib/navigation-transform.ts`                                                                                 | `organizeNavigation`, `collapseSettingsNavigation`, `settingsCatalog`, `settingsHomeRoute` and the settings constants; `transformNavigation` now also takes the route tree                                                                                                    |
+| `client/lib/navigation-transform.ts`                                                                                 | `collapseSettingsNavigation`, `settingsCatalog` and `settingsHomeRoute`; Foundation pages use the registered settings tree                                                                                                                                                    |
 | `client/routing/route-navigation.ts`, `route-context.tsx`, `route-tree.tsx`, `app-router.tsx`                        | `buildSettingsCatalog`; relative path nesting shared by the router and route matching; `filterRouteTree`, moved out of `app-router.tsx`, now keeping groups declared empty such as categories waiting for modules; and the shared `access` (`useRouteTree`, `useRouteAccess`) |
 | `client/layouts/app-layout.tsx`, `client/components/breadcrumbs.tsx`                                                 | passing `access` to `RouteTreeProvider`; the System settings breadcrumb linking to the home                                                                                                                                                                                   |
 | `client/pages/settings/shell-routes.ts` (Default) or the settings group in `client/routes.ts` (Examples)             | the settings group with `settingsHome` and the four categories                                                                                                                                                                                                                |
@@ -27,6 +27,8 @@ Also merge `client/routing/route-leave-boundary.tsx`, its `AppLayout` wrapper an
 4. Turn sibling pages that are views of one capability into a module group with `breadcrumb`, and wrap each view in `SettingsModulePage`. Leave a page that already has its own tabs as it is.
 5. Move everyday business entries that had been placed in the settings group, such as a knowledge base people read, back to the business navigation without changing their URLs.
 6. Remove any application-specific sidebar collapse made redundant by the settings entry (the template's former `collapsePermissionNavigation`), and the template's old `systemSettingsRoutes` re-parenting in Examples-derived applications.
+
+When upgrading Foundation, register its settings routes with the host’s System category and remove the former Foundation-specific navigation grouping. The capability guide and its details retain their URLs and grants.
 
 If a URL has to change, keep the old path working with a redirect route and list it in the upgrade record.
 

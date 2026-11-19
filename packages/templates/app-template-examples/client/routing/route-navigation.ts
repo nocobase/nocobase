@@ -10,10 +10,10 @@ import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 import { EMPTY_ARRAY } from '#lib/constants';
 import { withSettingsShell } from './settings-shell.js';
 import {
-  organizeNavigation,
+  collapseSettingsNavigation,
+  groupWorkflowNavigation,
   settingsCatalog,
   settingsNavigation,
-  transformNavigation,
   type SettingsCategory,
 } from '#lib/navigation-transform';
 
@@ -36,7 +36,9 @@ export function buildRouteNavigation(
   denied: ReadonlySet<string>,
 ): RouteNavigationItem[] {
   const routes = withSettingsShell(registered);
-  return transformNavigation(visibleRouteNavigation(routes, denied), routes);
+  return collapseSettingsNavigation(
+    groupWorkflowNavigation(visibleRouteNavigation(routes, denied)),
+  );
 }
 
 /** The settings home's categories and modules the viewer may open (`settingsCatalog`). */
@@ -45,9 +47,7 @@ export function buildSettingsCatalog(
   denied: ReadonlySet<string>,
 ): SettingsCategory[] {
   const routes = withSettingsShell(registered);
-  return settingsCatalog(
-    organizeNavigation(visibleRouteNavigation(routes, denied), routes),
-  );
+  return settingsCatalog(visibleRouteNavigation(routes, denied));
 }
 
 /** The settings navigation (`settingsNavigation`) the viewer may open. */

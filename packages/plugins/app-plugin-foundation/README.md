@@ -12,7 +12,7 @@ import foundation from '@nocobase/app-plugin-foundation/server';
 
 // client/plugins.ts
 import foundation from '@nocobase/app-plugin-foundation/client';
-// foundation() adds the page at /foundation with a menu entry; foundation({ path, navigation: false }) moves it or
+// foundation() adds the page at /settings/foundation with a menu entry; foundation({ path, navigation: false }) moves it or
 // leaves it out of the menu, and foundation({ routes: false }) leaves the routing to the application, which renders
 // `FoundationPage` from `@nocobase/app-plugin-foundation/client/pages`.
 ```
@@ -112,9 +112,9 @@ Static module tracing recognizes `useService(apiClientToken)` as well as `useApi
 
 ## Sidebar grouping
 
-Use `foundation({ settingsGroup: true })` in a bare application to wrap the protected page in a localized System settings group. The default template enables this on initial creation. The group disappears when its page is denied; the navigation helper merges it into the application settings group when that group becomes available.
+Foundation registers its overview, capability guide and guide details through `defineSettingsRoutes()`. The templates pass `foundation({ settingsGroup: 'settingsSystem', ... })` to join the System category. A host can supply its own settings category name, omit the option to register pages directly under settings, or use `true` for a standalone category. The application's settings navigation uses its usual permission checks for these routes.
 
-The host can call `groupFoundationNavigation(items)` from `@nocobase/app-plugin-foundation/client` in its existing `client/lib/navigation-transform.ts` hook, after permission filtering. The helper places an already-visible Foundation entry last in the existing `settings` navigation group, avoiding a separate sidebar group gap. Pass the host’s group name as the second argument when different. It preserves route identity, `/foundation`, authorization and other navigation metadata, never creates a hidden entry and leaves Foundation standalone if no settings group exists. The App needs only the hook call; grouping logic stays in this plugin and does not change Core or the sidebar renderer.
+The overview lives at `/settings/foundation`. The plugin redirects its former overview URL and preserves query parameters and fragments. The capability guide keeps `/settings/capabilities` and its entry links.
 
 Related package names and versions appear once inside the selected capability detail, combining the capability adapter's packages with providers classified into that capability and deduplicating by package name. Discovery counts and diagnostic evidence remain internal and are not rendered on the value page. Unclassified registered extensions remain selectable in the capability band and display their own package and version without treating registration as proof of use.
 

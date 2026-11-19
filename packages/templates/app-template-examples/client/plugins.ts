@@ -63,6 +63,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   agents(),
   // The manifest is what the capability guide lists: every plugin this application declares.
   foundation({
+    settingsGroup: 'settingsSystem',
     manifest: applicationManifest,
     guideSettingsPath: '/settings',
     navigation: false,
