@@ -65,6 +65,12 @@ describe('the model catalog', () => {
     expect(modelLabel('claude', 'claude-opus-5-5')).toBe('Opus 5.5');
     expect(modelLabel('codex', 'gpt-6-astra')).toBe('GPT-6 Astra');
     expect(modelLabel('codex', 'gpt-unknown')).toBe('gpt-unknown');
+    // A custom id with a path keeps its last segment, and an unknown Gemini model its title case, as before.
+    expect(modelLabel('codex', 'my-org/custom-model')).toBe('custom-model');
+    expect(modelLabel('codex', 'gemini-9-pro')).toBe('Gemini 9 Pro');
+    expect(agentNameOf('codex', 'my-org/custom-model')).toBe(
+      'Codex · custom-model',
+    );
     expect(agentNameOf('codex', 'gpt-x', 'GPT X')).toBe('Codex · GPT X');
   });
 

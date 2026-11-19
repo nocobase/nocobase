@@ -116,8 +116,26 @@ describe('runner history pagination', () => {
     });
   });
 
-  it('shows what a failed run said only for runs whose subject the viewer can see', async () => {
+  it('shows what a failed run said only to who may read its subject, redacted as it is read', async () => {
     h = await createHarness();
+    // A task-like kind with a link for every run but readable only where `describe` says so.
+    h.services.subjects.register({
+      kind: 'doc',
+      path: '/docs/{id}',
+      context: h.services.subjects.get('sample')!.context,
+      reports: {
+        describe(_conn, _userId, ids) {
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                { label: `DOC-${id}`, visible: id !== 'secret', group: null },
+              ]),
+            ),
+          );
+        },
+      },
+    });
     const { runnerId } = await h.registerRunner();
     const repo = h.database.connection().repository('agRuns');
     const run = (
@@ -129,45 +147,65 @@ describe('runner history pagination', () => {
           id,
           agentId: 'agent',
           runnerId,
-          subjectKind: 'sample',
-          subjectId: '1',
+          subjectKind: 'doc',
+          subjectId: 'open',
           threadScope: 'main',
           actorUserId: 'owner',
+          status: 'failed',
+          failureReason: 'toolAuth',
           startedAt: new Date(`2026-10-27T10:00:0${id.length}Z`),
           createdAt: new Date(),
           updatedAt: new Date(),
           ...values,
         },
       });
-    const said = 'provider.auth: Reconnect OpenCode Console to continue.';
+    const said = 'Reconnect OpenCode Console to continue.';
+    // Stored before the labelled-secret pattern existed: its gateway key was never redacted.
     await run('a', {
-      status: 'failed',
-      failureReason: 'toolAuth',
-      failureDetail: said,
+      failureDetail: `${said} {"apiKey":"lan-9f8e7d6c5b4a"}`,
     });
-    // Someone else's conversation: its runner run is listed, its words are not.
+    // A task the viewer may not read: its runner run is listed and linked, its words are not.
     await run('bb', {
-      status: 'failed',
-      failureReason: 'toolAuth',
+      failureDetail: 'The secret task quoted here',
+      subjectId: 'secret',
+    });
+    // Someone else's conversation.
+    await run('ccc', {
       failureDetail: 'Their prompt quoted here',
       subjectKind: 'conversation',
       subjectId: 'theirs',
     });
-    await run('ccc', { status: 'completed', failureDetail: 'not a failure' });
+    // A kind that cannot say who may read it.
+    await run('dddd', {
+      failureDetail: 'A sample quoted here',
+      subjectKind: 'sample',
+      subjectId: '1',
+    });
+    await run('eeeee', {
+      status: 'completed',
+      failureReason: null,
+      failureDetail: 'not a failure',
+    });
     const response = await h.request(
       'GET',
       `/agents/runners/${runnerId}/runs`,
       { user: 'owner' },
     );
+    expect(response.status).toBe(200);
     const byId = new Map(
       response.body.data.map((item: { id: string }) => [item.id, item]),
     );
     expect(byId.get('a')).toMatchObject({
       failureReason: 'toolAuth',
-      failureDetail: said,
+      failureDetail: `${said} {"apiKey":"[REDACTED]"}`,
     });
-    expect(byId.get('bb')).not.toHaveProperty('failureDetail');
-    expect(byId.get('ccc')).not.toHaveProperty('failureDetail');
+    expect(byId.get('bb')).toMatchObject({ path: '/docs/secret' });
+    for (const id of ['bb', 'ccc', 'dddd', 'eeeee'])
+      expect(byId.get(id)).not.toHaveProperty('failureDetail');
+    // The run's own record is redacted as it is read too.
+    expect((await h.services.runs.get('a')).failureDetail).toBe(
+      `${said} {"apiKey":"[REDACTED]"}`,
+    );
   });
 
   it.each([20, 21, 45])(

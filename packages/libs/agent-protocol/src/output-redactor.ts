@@ -96,6 +96,9 @@ const token =
   /\b(?:fg(?:k|r|o|reg|dl)_[A-Za-z0-9_-]*|gh[pousr]_[A-Za-z0-9]*|github_pat_[A-Za-z0-9_]*|npm_[A-Za-z0-9]*|xox[abposr]-[A-Za-z0-9-]*|AIza[A-Za-z0-9_-]*|sk-[A-Za-z0-9_-]*|[rs]k_(?:live|test)_[A-Za-z0-9]*|(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]*|eyJ[A-Za-z0-9_.-]*)$/u;
 const label =
   /(?:\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)|(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd))["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu;
+/** A labelled secret's quoted value still open: it may hold spaces and punctuation until its closing quote. */
+const quotedLabel =
+  /(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*(["'])(?:\\.|(?!\1)[^\\\r\n])*$/iu;
 const password =
   /(?:\b(?:password|passwd)=|[?&](?:password|passwd|pwd|access_token|api_key|apikey|client_secret|secret|token)=)[^&\s"'#<>]*$/iu;
 const url = /(?:\b[a-z][a-z0-9+.-]*)?:\/\/[^\s/?#@'"<>]*$/iu;
@@ -183,7 +186,7 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       }
     let cut = text.length;
     for (const { value, offset } of contexts)
-      for (const pattern of [token, label, password, url]) {
+      for (const pattern of [token, label, quotedLabel, password, url]) {
         const match = pattern.exec(value);
         if (match) cut = Math.min(cut, Math.max(0, match.index + offset));
       }

@@ -126,6 +126,16 @@ describe('redactPatterns', () => {
     ],
     ['a YAML password', 'password: hunter2hunter2', `password: ${REDACTED}`],
     [
+      'a quoted gateway key with punctuation and spaces',
+      '{"apiKey":"lan-9f8e,7d6c 5b4a","model":"qwen"}',
+      `{"apiKey":"${REDACTED}","model":"qwen"}`,
+    ],
+    [
+      'an INI assignment with spaces',
+      'api_key = lan9f8e7d6c5b4a',
+      `api_key = ${REDACTED}`,
+    ],
+    [
       'a quoted client secret',
       "client_secret = 'Zq81mN0pL4kT'",
       `client_secret = '${REDACTED}'`,
@@ -161,6 +171,10 @@ describe('redactPatterns', () => {
       'max_tokens: 4096, tokens: 12345678, "tokens":{"input":123456789}',
     ],
     ['a short labelled value', 'token: expired'],
+    [
+      'a variable as the value',
+      'token = $GATEWAY_TOKEN and api_key = ${API_KEY}',
+    ],
     [
       'an OpenCode console message',
       'provider.auth: Reconnect OpenCode Console to continue.',

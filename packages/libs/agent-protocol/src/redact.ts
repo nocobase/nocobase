@@ -142,14 +142,22 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
     pattern: /\b((?:password|passwd)=)(?!\[REDACTED\])[^\s&"'#;,<>]+/giu,
     replacement: `$1${REDACTED}`,
   },
+  // A labelled secret of no recognisable shape, such as a private gateway's key in a tool's error or config:
+  // `"apiKey":"…"`, `api_key = …`, `MY_GATEWAY_TOKEN=…`. The label keeps; a value of 8 or more characters goes.
+  // `max_tokens` and `tokens` are other labels and stay.
   {
-    // A labelled secret of no recognisable shape, such as a private gateway's key in a tool's error or config:
-    // `"apiKey":"…"`, `api_key: …`, `MY_GATEWAY_TOKEN=…`. The label keeps; a value of 8 or more characters goes.
-    // `=` with spaces around an unquoted value is code (`apiKey = process.env.API_KEY`), and `max_tokens` or
-    // `tokens` are other labels, so both stay.
+    // A quoted value goes whole, up to its closing quote, punctuation and spaces included.
     name: 'labelled secret',
     pattern:
-      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?(?:\s*:\s*["']?|=["']?|\s*=\s*["']))(?!\[REDACTED\])[^\s"',;}&<>]{8,}/giu,
+      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*(["']))(?!\[REDACTED\])(?:\\.|(?!\2)[^\\\r\n]){8,}(?=\2)/giu,
+    replacement: `$1${REDACTED}`,
+  },
+  {
+    // An unquoted value, up to a space or a delimiter. A code reference (`apiKey = process.env.API_KEY`,
+    // `token = $TOKEN`) names where the secret is kept rather than the secret, and stays.
+    name: 'labelled secret (unquoted)',
+    pattern:
+      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*)(?!["'])(?!\[REDACTED\])(?!(?:[A-Za-z_$][\w$]*\.)+[A-Za-z_$][\w$]*(?![\w$-])|\$\{?[A-Za-z_])[^\s"',;}&<>]{8,}/giu,
     replacement: `$1${REDACTED}`,
   },
 ];

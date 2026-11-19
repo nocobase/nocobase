@@ -201,6 +201,9 @@ const tokenFamilies = [
       'MY_GATEWAY_TOKEN=abcd1234efgh',
       'password: hunter2hunter2',
       'max_tokens: 40960',
+      '{"apiKey":"lan-9f8e, 7d6c 5b4a"}',
+      'api_key = lan9f8e7d6c5b4a',
+      'const apiKey = process.env.API_KEY;',
     ],
   },
   {

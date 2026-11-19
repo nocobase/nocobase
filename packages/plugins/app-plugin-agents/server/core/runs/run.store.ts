@@ -4,6 +4,7 @@
  */
 import {
   normalizeRunInputType,
+  redactPatterns,
   type ActorKind,
   type AgentTool,
   type FailureReason,
@@ -304,7 +305,11 @@ export function toRun(record: RunRecord): Run {
     cancelRequestedAt: record.cancelRequestedAt,
     cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
-    failureDetail: record.failureDetail,
+    // Redacted again as it is read: a detail stored before a secret pattern existed is shown without that secret.
+    failureDetail:
+      record.failureDetail == null
+        ? record.failureDetail
+        : redactPatterns(record.failureDetail),
     failureParams:
       record.failureParams == null ? null : jsonObject(record.failureParams),
     summary: record.summary,

@@ -220,12 +220,17 @@ export function createRunnerView(deps: {
       path: pathOf(run, viewerUserId),
     };
   };
-  /** A failed run's detail, for a viewer who may see what it worked on: the text can quote the task or conversation. */
+  /**
+   * A failed run's detail, only for a viewer the subject itself says may read it (an owned conversation, a subject
+   * `reports.describe` calls visible): the text can quote the task or conversation. A link is not permission, and a
+   * kind that cannot say leaves the detail out.
+   */
   const failureDetailOf = (
     run: Run,
-    view: { readonly path: string | null },
+    labels: Map<string, string>,
   ): { failureDetail?: string | null } =>
-    run.status === 'failed' && view.path !== null
+    run.status === 'failed' &&
+    labels.has(`${run.subject.kind}:${run.subject.id}`)
       ? { failureDetail: run.failureDetail }
       : {};
   const recentCount = (runnerId: string): Promise<number> =>
@@ -344,7 +349,7 @@ export function createRunnerView(deps: {
           );
           return {
             ...view,
-            ...failureDetailOf(run, view),
+            ...failureDetailOf(run, labels),
             failureReason: run.failureReason,
             id: run.id,
             title: names.get(run.agentId) ?? run.agentId,

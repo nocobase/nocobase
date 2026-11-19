@@ -186,12 +186,22 @@ export function catalogEntry(
 /**
  * How names show a tool's model: for OpenCode and Pi its whole normalized id with the provider
  * (`my-lan-gateway/qwen3.8-flash`), so two providers' copies of one model stay apart; for the others the catalog's
- * label, else its id.
+ * label, else its id without any path before it.
  */
 export function modelLabel(tool: AgentTool, model: string): string {
   if (!isNativeTool(tool)) return model;
   if (providerQualified(tool)) return normalizeModel(tool, model);
-  return catalogEntry(tool, model)?.label ?? normalizeModel(tool, model);
+  const known = catalogEntry(tool, model);
+  if (known) return known.label;
+  const id = normalizeModel(tool, model);
+  const slash = id.lastIndexOf('/');
+  const label = slash >= 0 ? id.slice(slash + 1) : id;
+  if (label.startsWith('gemini-'))
+    return label
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  return label;
 }
 
 /**
