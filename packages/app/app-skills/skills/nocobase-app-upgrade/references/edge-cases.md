@@ -9,14 +9,14 @@ Things that are not ordinary source and do not follow the file-by-file process i
 Merge key by key; never copy the template's manifest over. What the template changed:
 
 ```bash
-diff <(node -p "JSON.stringify(require('$WORK/$BASE/package.json'), null, 2)") \
-     <(node -p "JSON.stringify(require('$WORK/$TARGET/package.json'), null, 2)")
+diff <(node -p "JSON.stringify(require('$WORK/base/package.json'), null, 2)") \
+     <(node -p "JSON.stringify(require('$WORK/target/package.json'), null, 2)")
 ```
 
 | Key                                                              | Rule                                                                                                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `name`, `displayName`, `version`                                 | The application's. Never the template's.                                                                                             |
-| `nocobase.templatePackage`, `nocobase.templateKind`              | Leave as they are.                                                                                                                   |
+| `nocobase.templatePackage`, `nocobase.templateKind`              | Keep both on normal upgrades. On an agreed edition change, update `templatePackage` at acceptance; keep `templateKind`.              |
 | `nocobase.defaultTemplateVersion`                                | The target — set last, after the merge.                                                                                              |
 | `description`, `publishConfig`, `repository`                     | Absent by design; do not reintroduce.                                                                                                |
 | `dependencies`, `devDependencies`                                | Add, update, and remove what the template did. Never replace the object: the database driver and the user's own additions live here. |
@@ -32,7 +32,7 @@ After an interrupted or manual removal, confirm that the final manifest no longe
 
 Ranges in a published template are already resolved (`pnpm pack` expands `workspace:` and `catalog:`). Take them as published.
 
-Keep the existing application and template identities: changing from one template lineage to another is a separate source and database migration, and changing the package name does not transfer migration history.
+Preserve the application identity and migration owners throughout. For an explicit Community → Professional/Enterprise or Professional → Enterprise transition, follow [switching editions](edition-transition.md). Other template-family changes require a separate migration plan.
 
 ### Preinstalled plugins and database drivers
 
@@ -73,9 +73,9 @@ When the target removes `client/route-overrides.ts` and `client/source-extension
 `config.example.yml` ships with every current official template and merges normally. A template may also ship `.env.example`. Changes to these examples are the signal that a corresponding live file may need a manual edit:
 
 ```bash
-diff "$WORK/$BASE/config.example.yml" "$WORK/$TARGET/config.example.yml"
-if [ -f "$WORK/$BASE/.env.example" ] || [ -f "$WORK/$TARGET/.env.example" ]; then
-  diff "$WORK/$BASE/.env.example" "$WORK/$TARGET/.env.example"
+diff "$WORK/base/config.example.yml" "$WORK/target/config.example.yml"
+if [ -f "$WORK/base/.env.example" ] || [ -f "$WORK/target/.env.example" ]; then
+  diff "$WORK/base/.env.example" "$WORK/target/.env.example"
 fi
 ```
 
