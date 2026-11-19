@@ -410,7 +410,7 @@ function FilterDraft({
  * A one-line reading of stored conditions, such as "Amount Less than 50", so a filter that cannot be opened still
  * says what it limits. Undefined without conditions; the advanced notice for conditions the form cannot read.
  */
-export function permissionFilterSummary(
+function permissionFilterSummary(
   value: unknown,
   fields: PermissionFilterProps['fields'],
   labels: PermissionFilterLabels,
