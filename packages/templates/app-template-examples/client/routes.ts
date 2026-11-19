@@ -24,13 +24,13 @@ import {
   PanelsTopLeft,
   Plug,
   Workflow,
-  Settings,
   BookOpen,
   DatabaseZap,
   UsersRound,
 } from 'lucide-react';
 import {
   defineAppRoutes,
+  defineSettingsRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
@@ -180,126 +180,11 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
-    // System settings: one sidebar entry opening a home of cards. Its child groups are the home's categories; an
-    // administration module joins one with `parent`. The group keeps its original name, so its pages keep their ids.
-    name: 'systemManagement',
-    navigation: { title: 'settings.title', icon: Settings, order: 100 },
-    breadcrumb: { title: 'settings.title' },
-    children: [
-      {
-        // Lists only modules the viewer may open, so it needs no grant of its own.
-        name: 'settingsHome',
-        path: '/settings',
-        auth: 'required',
-        authz: 'skip',
-        componentLoader: () => import('./pages/settings/settings-home.js'),
-      },
-      {
-        name: 'settingsAccount',
-        navigation: { title: 'settings.categories.account', order: 10 },
-        children: [],
-      },
-      {
-        name: 'settingsBusiness',
-        navigation: { title: 'settings.categories.business', order: 20 },
-        children: [],
-      },
-      {
-        name: 'settingsAi',
-        navigation: { title: 'settings.categories.ai', order: 30 },
-        children: [],
-      },
-      {
-        name: 'settingsSystem',
-        navigation: { title: 'settings.categories.system', order: 40 },
-        children: [],
-      },
-    ],
-  },
-  {
     ...knowledgeDefinition(),
     componentLoader: () => import('./pages/knowledge/index.js'),
     // Reading and asking the knowledge base is everyday work, so it stays in the business navigation.
     navigation: { title: 'knowledge.title', icon: BookOpen },
     breadcrumb: { title: 'knowledge.title' },
-  },
-  {
-    name: 'knowledgeIndexing',
-    path: '/knowledge/indexing',
-    parent: 'settingsAi',
-    auth: 'required',
-    authz: {
-      resource: { type: 'settings', id: 'kb.indexing' },
-      action: 'read',
-    },
-    navigation: {
-      title: 'knowledge.indexing',
-      description: 'knowledge.indexingDescription',
-      icon: DatabaseZap,
-    },
-    breadcrumb: { title: 'knowledge.indexing' },
-    componentLoader: () => import('./pages/knowledge/indexing.js'),
-  },
-  {
-    name: 'workflows',
-    parent: 'settingsBusiness',
-    path: '/workflows',
-    auth: 'required',
-    authz: {
-      resource: { type: 'settings', id: 'workflow-management' },
-      action: 'read',
-    },
-    navigation: {
-      title: 'workflows.title',
-      description: 'workflows.description',
-      icon: Workflow,
-    },
-    breadcrumb: { title: 'workflows.title' },
-    componentLoader: () => import('./pages/workflows/index.js'),
-    children: [
-      {
-        name: 'workflowDefinitions',
-        path: 'definitions',
-        breadcrumb: { title: 'workflows.definitions' },
-        componentLoader: () => import('./pages/workflows/definitions.js'),
-        children: [
-          {
-            name: 'workflowDefinition',
-            path: ':workflowId',
-            componentLoader: () => import('./pages/workflows/definition.js'),
-            children: [
-              {
-                name: 'workflowParameters',
-                path: 'parameters',
-                authz: {
-                  resource: { type: 'settings', id: 'workflow-management' },
-                  action: 'update',
-                },
-                presentation: {
-                  kind: 'dialog',
-                  title: 'workflows.workflowParameters',
-                },
-                componentLoader: () =>
-                  import('./pages/workflows/parameters.js'),
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'workflowExecutions',
-        path: 'executions',
-        breadcrumb: { title: 'workflows.executions' },
-        componentLoader: () => import('./pages/workflows/executions.js'),
-        children: [
-          {
-            name: 'workflowExecution',
-            path: ':workflowId/:recordId',
-            componentLoader: () => import('./pages/workflows/execution.js'),
-          },
-        ],
-      },
-    ],
   },
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
@@ -560,11 +445,122 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-// Users and Permission management join the Accounts and permissions category with their original URLs and ids;
-// Notifications joins the System category.
+// System settings, mounted under `/settings`: the home, the categories every package shares, and the application's own
+// administration modules. A module joins a category with `parent`; its path is relative to `/settings`.
+const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
+  {
+    // Lists only modules the viewer may open, so it needs no grant of its own.
+    name: 'settingsHome',
+    path: '/',
+    auth: 'required',
+    authz: 'skip',
+    componentLoader: () => import('./pages/settings/settings-home.js'),
+  },
+  {
+    name: 'settingsAccount',
+    navigation: { title: 'settings.categories.account', order: 10 },
+    children: [],
+  },
+  {
+    name: 'settingsBusiness',
+    navigation: { title: 'settings.categories.business', order: 20 },
+    children: [],
+  },
+  {
+    name: 'settingsAi',
+    navigation: { title: 'settings.categories.ai', order: 30 },
+    children: [],
+  },
+  {
+    name: 'settingsSystem',
+    navigation: { title: 'settings.categories.system', order: 40 },
+    children: [],
+  },
+  {
+    name: 'knowledgeIndexing',
+    parent: 'settingsAi',
+    path: '/knowledge/indexing',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'kb.indexing' },
+      action: 'read',
+    },
+    navigation: {
+      title: 'knowledge.indexing',
+      description: 'knowledge.indexingDescription',
+      icon: DatabaseZap,
+    },
+    breadcrumb: { title: 'knowledge.indexing' },
+    componentLoader: () => import('./pages/knowledge/indexing.js'),
+  },
+  {
+    name: 'workflows',
+    parent: 'settingsBusiness',
+    path: '/workflows',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'workflow-management' },
+      action: 'read',
+    },
+    navigation: {
+      title: 'workflows.title',
+      description: 'workflows.description',
+      icon: Workflow,
+    },
+    breadcrumb: { title: 'workflows.title' },
+    componentLoader: () => import('./pages/workflows/index.js'),
+    children: [
+      {
+        name: 'workflowDefinitions',
+        path: 'definitions',
+        breadcrumb: { title: 'workflows.definitions' },
+        componentLoader: () => import('./pages/workflows/definitions.js'),
+        children: [
+          {
+            name: 'workflowDefinition',
+            path: ':workflowId',
+            componentLoader: () => import('./pages/workflows/definition.js'),
+            children: [
+              {
+                name: 'workflowParameters',
+                path: 'parameters',
+                authz: {
+                  resource: { type: 'settings', id: 'workflow-management' },
+                  action: 'update',
+                },
+                presentation: {
+                  kind: 'dialog',
+                  title: 'workflows.workflowParameters',
+                },
+                componentLoader: () =>
+                  import('./pages/workflows/parameters.js'),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'workflowExecutions',
+        path: 'executions',
+        breadcrumb: { title: 'workflows.executions' },
+        componentLoader: () => import('./pages/workflows/executions.js'),
+        children: [
+          {
+            name: 'workflowExecution',
+            path: ':workflowId/:recordId',
+            componentLoader: () => import('./pages/workflows/execution.js'),
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+// Users and Permission management join the Accounts and permissions category; Notifications joins the System category.
+// Their former URLs outside `/settings` redirect through `routing/settings-redirects.ts`.
 const routes: readonly AppClientRouteContribution[] =
   includeNotificationTemplateRoutes(
-    [appRoutes, systemSettingsRoutes, databaseExplorerRoutes],
+    [appRoutes, settingsRoutes, systemSettingsRoutes, databaseExplorerRoutes],
     true,
   );
 

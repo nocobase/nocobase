@@ -8,9 +8,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 
 import { EMPTY_ARRAY } from '#lib/constants';
+import { withSettingsShell } from './settings-shell.js';
 import {
   organizeNavigation,
   settingsCatalog,
+  settingsNavigation,
   transformNavigation,
   type SettingsCategory,
 } from '#lib/navigation-transform';
@@ -25,21 +27,36 @@ export interface RouteNavigationItem {
   readonly children: readonly RouteNavigationItem[];
 }
 
+/**
+ * Navigation helpers take the registered routes as they are or already gathered (`withSettingsShell`): settings pages
+ * always appear under the application's Settings group.
+ */
 export function buildRouteNavigation(
-  routes: readonly AppClientRegisteredRoute[],
+  registered: readonly AppClientRegisteredRoute[],
   denied: ReadonlySet<string>,
 ): RouteNavigationItem[] {
+  const routes = withSettingsShell(registered);
   return transformNavigation(visibleRouteNavigation(routes, denied), routes);
 }
 
 /** The settings home's categories and modules the viewer may open (`settingsCatalog`). */
 export function buildSettingsCatalog(
-  routes: readonly AppClientRegisteredRoute[],
+  registered: readonly AppClientRegisteredRoute[],
   denied: ReadonlySet<string>,
 ): SettingsCategory[] {
+  const routes = withSettingsShell(registered);
   return settingsCatalog(
     organizeNavigation(visibleRouteNavigation(routes, denied), routes),
   );
+}
+
+/** The settings navigation (`settingsNavigation`) the viewer may open. */
+export function buildSettingsNavigation(
+  registered: readonly AppClientRegisteredRoute[],
+  denied: ReadonlySet<string>,
+): RouteNavigationItem[] {
+  const routes = withSettingsShell(registered);
+  return settingsNavigation(buildSettingsCatalog(routes, denied), routes);
 }
 
 function visibleRouteNavigation(
@@ -59,12 +76,17 @@ function visibleRouteNavigation(
 }
 
 export function selectedNavigationId(
-  routes: readonly AppClientRegisteredRoute[],
+  registered: readonly AppClientRegisteredRoute[],
   pathname: string,
   denied: ReadonlySet<string> = new Set(),
+  /** The menu the selection is for; defaults to the application's navigation. */
+  items: readonly RouteNavigationItem[] = buildRouteNavigation(
+    registered,
+    denied,
+  ),
 ): string | undefined {
+  const routes = withSettingsShell(registered);
   const matches = matchRouteTree(routes, pathname);
-  const items = buildRouteNavigation(routes, denied);
   const represented = (
     nodes: readonly RouteNavigationItem[],
   ): AppClientRegisteredRoute | undefined => {

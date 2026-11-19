@@ -15,6 +15,11 @@ const idID: LocaleResource<typeof enUS> = {
   plugin: 'Pengaya',
   scope: 'Cakupan',
   message: 'Pesan',
+  settingsTitle: 'Pengaturan contoh rute',
+  settingsDescription:
+    'Dideklarasikan oleh plugin contoh rute dengan defineSettingsRoutes().',
+  settingsBody:
+    'Halaman pengaturan ini berasal dari plugin. Halaman ini dideklarasikan dengan defineSettingsRoutes(), masuk ke kategori Sistem, dan dipasang di bawah /settings.',
 };
 
 export default idID;

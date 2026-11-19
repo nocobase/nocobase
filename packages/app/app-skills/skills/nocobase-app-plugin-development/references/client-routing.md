@@ -1,10 +1,36 @@
 # Client Routes, Navigation, and Overrides
 
-Use Client Routes for navigable browser pages. A plugin contributes its pages through its single `routes` field with `defineAppRoutes()`, the only Client route API, and keeps each page behind a lazy `componentLoader()`.
+Use Client Routes for navigable browser pages. A plugin contributes its pages through its single `routes` field — business pages with `defineAppRoutes()`, settings pages with `defineSettingsRoutes()` — and keeps each page behind a lazy `componentLoader()`.
 
-## Plugins contribute no settings pages
+## Settings pages
 
-There is no settings or dev surface: no `/settings` or `/dev` prefix, no settings layout, and no settings entry in the application header. A plugin does not contribute administration or settings pages. It exposes its administration through server APIs and, where an administrator grants it, settings items ([system settings](system-settings.md)); whether an application offers a page for it, and where, is the application's decision, made with ordinary App routes in its own `client/routes.ts`. Do not ship development-only tool pages as routes either.
+A plugin's administration page is declared with `defineSettingsRoutes()` and mounted under `/settings`, in the application's System settings ([System settings navigation](../../nocobase-app-development/references/settings-navigation.md)). The definition is the same as an App route's; its `path` is relative to `/settings`, a top-level page names an application category with `parent` (`settingsAccount`, `settingsBusiness`, `settingsAi` or `settingsSystem`), and without its own `authz` it admits only unrestricted administrators. The plugin references a category and never declares one: the application declares its categories, and a missing category is a registration error. Pass several contributions as an array:
+
+```ts
+import {
+  defineAppRoutes,
+  defineSettingsRoutes,
+} from '@nocobase/app-client/plugins';
+
+const routes = [
+  defineAppRoutes([/* business pages */]),
+  defineSettingsRoutes([
+    {
+      parent: 'settingsSystem',
+      name: 'storageSettings',
+      path: '/storage', // /settings/storage
+      authz: { resource: { type: 'settings', id: 'storage' }, action: 'read' },
+      navigation: {
+        title: 'settings.title',
+        description: 'settings.description',
+      },
+      componentLoader: () => import('./pages/storage-settings.js'),
+    },
+  ]),
+];
+```
+
+The page still sits on a server capability: the settings item and API that read and change the configuration ([system settings](system-settings.md)) check the same grant as the page's `authz`. There is no dev surface; do not ship development-only tool pages as routes. `@nocobase/app-plugin-routes-example` shows one settings page beside its App route.
 
 Paths are internal application paths. Do not include `/main` or another deployment base path.
 

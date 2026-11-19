@@ -47,6 +47,7 @@ import { Label } from '#components/ui/label';
 import { Badge } from '#components/ui/badge';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
 import { configurePermissionScopes } from './permission-filters.js';
+import { withSettingsShell } from '../../routing/settings-shell.js';
 import {
   permissionSections,
   unconfiguredFilter,
@@ -113,19 +114,17 @@ function RoleEditor(): ReactElement {
   const name = nameDraft ?? (initial ? text(initial.title ?? initial.key) : '');
   const roleKey = keyDraft ?? initial?.key ?? '';
   const grants = grantsDraft ?? initial?.grants ?? [];
+  // Settings pages sit under the application's Settings group, as the router and menus show them.
+  const routes = useMemo(() => withSettingsShell(app.runtime.routes), [app]);
   const catalog = useMemo(() => {
     if (!options.data) return undefined;
     const pages = pagePermissionResources(
-      app.runtime.routes,
+      routes,
       pagePermissionTitles,
       (path) => t('settings.unnamedPage', { path }),
     );
-    return permissionWorkspaceCatalog(
-      options.data.data,
-      app.runtime.routes,
-      pages,
-    );
-  }, [options.data, app, t]);
+    return permissionWorkspaceCatalog(options.data.data, routes, pages);
+  }, [options.data, routes, t]);
   const allowed = creating
     ? canCreate
     : canUpdate &&
@@ -201,7 +200,7 @@ function RoleEditor(): ReactElement {
     ? configurePermissionScopes(
         permissionNavigationSections(
           permissionSections(catalog, grants, text, permissionScopeVisible),
-          app.runtime.routes,
+          routes,
           pagePermissionTitles,
           (path) => t('settings.unnamedPage', { path }),
           text,

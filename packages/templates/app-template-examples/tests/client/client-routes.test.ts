@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
+import { settingsRoutes as routesExampleSettings } from '@nocobase/app-plugin-routes-example/client/routes';
 import applicationRoutes from '../../client/routes.ts';
 import {
   buildRouteNavigation,
@@ -13,6 +14,10 @@ import {
   routeKey,
   selectedNavigationId,
 } from '../../client/routing/route-navigation.ts';
+import {
+  SETTINGS_REDIRECTS,
+  settingsRedirectTarget,
+} from '../../client/routing/settings-redirects.ts';
 
 describe('app client routes', () => {
   it('keeps procurement and customer relations as separate protected route trees', () => {
@@ -204,22 +209,23 @@ describe('app client routes', () => {
       [
         'settingsAccount',
         [
-          ['settingsUsers', '/users'],
-          ['permissionManagement', '/roles'],
+          ['settingsUsers', '/settings/users'],
+          ['permissionManagement', '/settings/roles'],
         ],
       ],
-      ['settingsBusiness', [['workflows', '/workflows']]],
-      ['settingsAi', [['knowledgeIndexing', '/knowledge/indexing']]],
+      ['settingsBusiness', [['workflows', '/settings/workflows']]],
+      ['settingsAi', [['knowledgeIndexing', '/settings/knowledge/indexing']]],
       [
         'settingsSystem',
         [
           ['notificationManagement', '/settings/notifications/templates'],
+          ['exampleSettings', '/settings/routes-example'],
           ['databaseExplorer', '/settings/database-explorer'],
         ],
       ],
     ]);
     expect(catalog[2].modules[0].route).toMatchObject({
-      path: '/knowledge/indexing',
+      path: '/settings/knowledge/indexing',
       navigation: {
         title: 'knowledge.indexing',
         description: 'knowledge.indexingDescription',
@@ -231,15 +237,33 @@ describe('app client routes', () => {
     });
     for (const path of [
       '/settings',
-      '/users',
-      '/roles',
-      '/default-access',
-      '/workflows/definitions',
-      '/knowledge/indexing',
+      '/settings/users',
+      '/settings/roles',
+      '/settings/default-access',
+      '/settings/workflows/definitions',
+      '/settings/knowledge/indexing',
     ])
       expect(selectedNavigationId(routes, path)).toBe(
         routeKey(settings[0].route),
       );
+  });
+
+  it('redirects every former settings URL to its page under /settings', () => {
+    const paths = new Set(pagePaths(resolveRoutes().routes));
+    for (const [from, to] of SETTINGS_REDIRECTS) {
+      expect(
+        paths.has(to) || [...paths].some((path) => path.startsWith(`${to}/`)),
+      ).toBe(true);
+      expect(settingsRedirectTarget(from)).toBe(to);
+    }
+    expect(
+      settingsRedirectTarget('/workflows/definitions/lifecycle.expenses'),
+    ).toBe('/settings/workflows/definitions/lifecycle.expenses');
+    expect(settingsRedirectTarget('/users/7/edit')).toBe(
+      '/settings/users/7/edit',
+    );
+    expect(settingsRedirectTarget('/usersettings')).toBeUndefined();
+    expect(settingsRedirectTarget('/knowledge')).toBeUndefined();
   });
 
   it('pins the page authorization of every signed-in page', () => {
@@ -350,6 +374,8 @@ describe('app client routes', () => {
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
+      // A plugin's settings page without its own `authz` admits unrestricted administrators only.
+      { name: 'exampleSettings', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
   });
@@ -372,6 +398,11 @@ function resolveRoutes() {
           children: [],
         })),
       })),
+    },
+    // A plugin's own settings page, declared with `defineSettingsRoutes()`.
+    {
+      packageName: '@nocobase/app-plugin-routes-example',
+      routes: routesExampleSettings,
     },
   ]);
 }

@@ -197,3 +197,43 @@ function firstPage(
   }
   return undefined;
 }
+
+/**
+ * The navigation shown in place of the application's while a settings page is open: each category a headed section,
+ * each module one entry. A module of several views opens its first view the viewer may open and stays selected on all
+ * of them, the tabs inside the page switching between them; an entry also stays selected on the pages below its own
+ * path, such as a record opened from it.
+ */
+export function settingsNavigation(
+  catalog: readonly SettingsCategory[],
+  routes: readonly AppClientRegisteredRoute[],
+): RouteNavigationItem[] {
+  const pages = allPages(routes);
+  const key = (route: AppClientRegisteredRoute): string =>
+    `${route.packageName}:${route.path}:${route.id}`;
+  return catalog.map((category) => ({
+    route: category.route,
+    children: category.modules.map((module) => {
+      const own = [module.target, ...descendantPages(module.route)];
+      const below = pages.filter((page) =>
+        own.some((route) => page.path.startsWith(`${route.path}/`)),
+      );
+      return {
+        route: module.route.componentLoader
+          ? module.route
+          : { ...module.target, navigation: module.route.navigation },
+        children: [],
+        activeRouteKeys: [...new Set([...own, ...below].map(key))],
+      };
+    }),
+  }));
+}
+
+function allPages(
+  routes: readonly AppClientRegisteredRoute[],
+): AppClientRegisteredRoute[] {
+  return routes.flatMap((route) => [
+    ...(route.componentLoader ? [route] : []),
+    ...allPages(route.children ?? []),
+  ]);
+}

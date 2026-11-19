@@ -14,6 +14,7 @@ import {
   useNavigate,
   useOutletContext,
   useParams,
+  useResolvedPath,
 } from 'react-router';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -48,6 +49,8 @@ function DefaultAccessFormBody(): ReactElement {
   const toaster = useToaster();
   const navigate = useNavigate();
   const location = useLocation();
+  // The list is the parent route, wherever the application mounts it (`/settings/default-access` by default).
+  const listPath = useResolvedPath('..').pathname;
   const parent = useOutletContext<{
     reload: () => void;
     saved: (rule: DefaultAccessRule) => void;
@@ -89,7 +92,7 @@ function DefaultAccessFormBody(): ReactElement {
   const leave = useSettingsLeave(dirty, busy);
   const close = () => {
     void navigate(
-      { pathname: '/default-access', search: location.search },
+      { pathname: listPath, search: location.search },
       { replace: true },
     );
   };

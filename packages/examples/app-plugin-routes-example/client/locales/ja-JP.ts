@@ -15,6 +15,11 @@ const jaJP: LocaleResource<typeof enUS> = {
   plugin: 'プラグイン',
   scope: 'スコープ',
   message: 'メッセージ',
+  settingsTitle: 'ルート例の設定',
+  settingsDescription:
+    'ルート例プラグインが defineSettingsRoutes() で宣言しています。',
+  settingsBody:
+    'この設定ページはプラグインから提供されます。defineSettingsRoutes() で宣言され、「システム」カテゴリに加わり、/settings の下に配置されます。',
 };
 
 export default jaJP;

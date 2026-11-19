@@ -10,25 +10,18 @@ import applicationRoutes, {
   createApplicationRoutes,
 } from '../../client/routes.ts';
 import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
-import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import { defineSettingsRoutes } from '@nocobase/app-client/plugins';
 
 describe('app client routes', () => {
   it('joins the settings system category across contributions without moving the log URL', () => {
-    const shell = defineAppRoutes([
+    const shell = defineSettingsRoutes([
       {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
-        children: [
-          {
-            name: 'settingsSystem',
-            navigation: { title: 'System' },
-            children: [],
-          },
-        ],
+        name: 'settingsSystem',
+        navigation: { title: 'System' },
+        children: [],
       },
     ]);
-    const logs = defineAppRoutes([
+    const logs = defineSettingsRoutes([
       {
         name: 'notificationManagement',
         parent: 'settingsSystem',
@@ -61,7 +54,7 @@ describe('app client routes', () => {
       '/settings/notifications/templates',
       '/settings/notifications/templates/:templateId',
     ]);
-    expect(built.routes[0].children[0].children).toHaveLength(1);
+    expect(built.routes[0].children[0].children).toHaveLength(2);
     const created = includeNotificationTemplateRoutes([shell], true);
     expect(
       created
@@ -94,11 +87,10 @@ describe('app client routes', () => {
   });
 
   it('reuses the notification module and preserves its logs and existing grants', () => {
-    const existing = defineAppRoutes([
+    const existing = defineSettingsRoutes([
       {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
+        name: 'settingsSystem',
+        navigation: { title: 'System' },
         children: [
           {
             name: 'notificationManagement',
@@ -140,7 +132,7 @@ describe('app client routes', () => {
       // A template's own address keeps the list page's grant.
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
     ]);
-    expect(built.routes[0].children).toHaveLength(1);
+    expect(built.routes[0].children?.[0].children).toHaveLength(2);
   });
 
   it('keeps the landing page and the authentication pages', () => {
