@@ -814,6 +814,7 @@ export class RunWorker {
               credentials,
               this.runTemp.dir,
               this.abort.signal,
+              payload.workspace.readOnly === true,
             );
           }
         }
