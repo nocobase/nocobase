@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   applyQuickSet,
   blockedLeaderObject,
+  capFollowers,
+  configurationLocked,
   dependentsOf,
   effectiveScopeValue,
   filterObjects,
@@ -337,6 +339,84 @@ describe('permission editor model', () => {
         actions: ['Archive', 'Edit', 'Export'],
       },
     ]);
+  });
+
+  it('caps followers when the host changes what an unchanged View value means, such as its filter', () => {
+    // View and Edit both store a custom filter; Archive stores one View ranks narrower; Export follows View.
+    const custom = [
+      ...RECORDS,
+      { value: 'custom', label: 'Custom filter' },
+      { value: 'none', label: 'No records' },
+    ];
+    const filtered: readonly PermissionObject[] = [
+      {
+        ...contracts,
+        actions: contracts.actions.map((action) =>
+          action.id === 'contracts.view'
+            ? { ...action, scopes: [{ id: 'records', options: custom }] }
+            : action,
+        ),
+      },
+    ];
+    const stored: PermissionGrants = {
+      'contracts.view': { scopes: { records: 'custom' } },
+      'contracts.update': { scopes: { records: 'custom' } },
+      'contracts.archive': { scopes: { records: 'none' } },
+      'contracts.export': { scopes: {} },
+    };
+    const capped = capFollowers(filtered, stored, 'contracts.view', 'records');
+    expect(capped.grants['contracts.view']).toBe(stored['contracts.view']);
+    expect(capped.grants['contracts.update']?.scopes).toEqual({});
+    // A declared narrower value stays, and a follower already following View keeps following it.
+    expect(capped.grants['contracts.archive']).toBe(
+      stored['contracts.archive'],
+    );
+    expect(capped.grants['contracts.export']).toBe(stored['contracts.export']);
+    expect(capped.notices).toEqual([
+      { kind: 'scope-reset', view: 'Custom filter', actions: ['Edit'] },
+    ]);
+    // Nothing to cap, or an action that is off, changes nothing.
+    expect(
+      capFollowers(filtered, capped.grants, 'contracts.view', 'records'),
+    ).toEqual({ grants: capped.grants, notices: [] });
+    expect(
+      capFollowers(filtered, {}, 'contracts.view', 'records').notices,
+    ).toEqual([]);
+  });
+
+  it('locks the configuration of a slot that follows a View, on or off', () => {
+    expect(configurationLocked(contracts, updateSlot, objects)).toBe(true);
+    expect(configurationLocked(contracts, view.scopes![0]!, objects)).toBe(
+      false,
+    );
+    const approve = contracts.actions[4]!;
+    expect(configurationLocked(contracts, approve.scopes![1]!, objects)).toBe(
+      false,
+    );
+    // A slot reading another object's records follows that View even while it is off.
+    const crossObject = {
+      ...shipments,
+      actions: [
+        {
+          id: 'shipments.link',
+          label: 'Link contract',
+          scopes: [
+            {
+              id: 'contracts',
+              options: RECORDS,
+              followsView: 'contracts.view',
+            },
+          ],
+        },
+      ],
+    } satisfies PermissionObject;
+    expect(
+      configurationLocked(
+        crossObject,
+        crossObject.actions[0]!.scopes[0]!,
+        objects,
+      ),
+    ).toBe(true);
   });
 
   it('names a follower equal to the new View scope when it goes back to following it', () => {
