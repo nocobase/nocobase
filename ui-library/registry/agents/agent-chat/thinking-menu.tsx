@@ -110,7 +110,10 @@ export function ThinkingMenu({
       >
         {label('provider-default')}
       </DropdownMenuRadioItem>
-      <Separator orientation='vertical' className='h-4 shrink-0' />
+      <Separator
+        orientation='vertical'
+        className='h-4 shrink-0 data-vertical:self-center'
+      />
       <div
         ref={scrollRef}
         className='min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]'
