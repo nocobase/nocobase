@@ -1,13 +1,17 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
 import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
 import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
-import { resolveAppRuntime } from '@nocobase/app-client/runtime';
+import {
+  defineAppRuntime,
+  resolveAppRuntime,
+} from '@nocobase/app-client/runtime';
 import { describe, expect, it } from 'vitest';
 
 import appRuntime from '../../client/runtime.js';
 import {
   routeKey,
   buildSettingsCatalog,
+  buildRouteNavigation,
 } from '../../client/routing/route-navigation.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
@@ -16,6 +20,9 @@ import {
   guideContent,
   type DependencyManifest,
 } from '@nocobase/app-plugin-foundation/capability-guide';
+
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import applicationRoutes from '../../client/routes.js';
 
 describe('Examples Foundation integration', () => {
   it('ships the plugin as a deployment dependency', () => {
@@ -63,6 +70,52 @@ describe('Examples Foundation integration', () => {
       .map((entry) => [entry.id, entry.demo]);
     expect(demos.length).toBeGreaterThan(0);
     expect(demos.filter(([, demo]) => !paths.has(demo!))).toEqual([]);
+  });
+
+  it('keeps Features and extensions in System when business and account routes are registered', async () => {
+    const orders = defineAppRoutes([
+      {
+        name: 'fixtureOrders',
+        path: '/fixture-orders',
+        auth: 'required',
+        authz: {
+          resource: { type: 'page', id: 'fixture-orders' },
+          action: 'access',
+        },
+        navigation: { title: 'Orders' },
+        componentLoader: async () => ({ default: () => null }),
+      },
+    ]);
+    const { routes } = await resolveAppRuntime(
+      defineAppRuntime({
+        ...appRuntime,
+        routes: [...applicationRoutes, orders],
+      }),
+    );
+    const catalog = buildSettingsCatalog(routes, new Set());
+    const modules = (name: string) =>
+      catalog
+        .find(({ route }) => route.name === name)
+        ?.modules.map(({ route, target }) => [route.name, target.path]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'settingsUsers',
+      '/users',
+    ]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'permissionManagement',
+      '/roles',
+    ]);
+    expect(modules('settingsSystem')).toContainEqual([
+      'capabilityGuide',
+      '/settings/capabilities',
+    ]);
+    const menu = buildRouteNavigation(routes, new Set());
+    expect(menu.map(({ route }) => route.name)).toContain('fixtureOrders');
+    expect(
+      menu.filter(({ route }) => route.path.startsWith('/settings')),
+    ).toMatchObject([
+      { route: { name: 'settingsHome', path: '/settings' }, children: [] },
+    ]);
   });
 
   it('lists every plugin this application declares in the capability guide, with the standalone core modules', () => {

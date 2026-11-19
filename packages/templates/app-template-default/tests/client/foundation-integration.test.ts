@@ -9,17 +9,22 @@ import {
   type DependencyManifest,
 } from '@nocobase/app-plugin-foundation/capability-guide';
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { resolveAppRuntime } from '@nocobase/app-client/runtime';
-import { defineAppRuntime } from '@nocobase/app-client/runtime';
+import {
+  defineAppRuntime,
+  resolveAppRuntime,
+} from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
-import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
-import settingsRoutes from '../../client/pages/settings/routes.js';
 import {
   routeKey,
   buildRouteNavigation,
   buildSettingsCatalog,
 } from '../../client/routing/route-navigation.js';
+
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import databaseExplorerRoutes from '../../client/pages/settings/database-explorer/routes.js';
+import settingsRoutes from '../../client/pages/settings/routes.js';
+import shellRoutes from '../../client/pages/settings/shell-routes.js';
 
 describe('default Foundation integration', () => {
   it('registers the Foundation deployment evidence build hook', () => {
@@ -47,37 +52,54 @@ describe('default Foundation integration', () => {
     ).toBe(false);
   });
 
-  it('keeps Foundation beside business settings without changing its protected URL', async () => {
-    const runtime = await resolveAppRuntime(
+  it('keeps Features and extensions in System when business and account routes are registered', async () => {
+    const orders = defineAppRoutes([
+      {
+        name: 'fixtureOrders',
+        path: '/fixture-orders',
+        auth: 'required',
+        authz: {
+          resource: { type: 'page', id: 'fixture-orders' },
+          action: 'access',
+        },
+        navigation: { title: 'Orders' },
+        componentLoader: async () => ({ default: () => null }),
+      },
+    ]);
+    const { routes } = await resolveAppRuntime(
       defineAppRuntime({
         ...appRuntime,
-        routes: () => [...createApplicationRoutes(), settingsRoutes],
+        routes: () => [
+          shellRoutes,
+          settingsRoutes,
+          databaseExplorerRoutes,
+          orders,
+        ],
       }),
     );
-    const menu = buildRouteNavigation(runtime.routes, new Set());
-    expect(menu.some(({ route }) => route.name === 'foundationSettings')).toBe(
-      false,
-    );
+    const catalog = buildSettingsCatalog(routes, new Set());
+    const modules = (name: string) =>
+      catalog
+        .find(({ route }) => route.name === name)
+        ?.modules.map(({ route, target }) => [route.name, target.path]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'settingsUsers',
+      '/settings/users',
+    ]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'permissionManagement',
+      '/settings/roles',
+    ]);
+    expect(modules('settingsSystem')).toContainEqual([
+      'capabilityGuide',
+      '/settings/capabilities',
+    ]);
+    const menu = buildRouteNavigation(routes, new Set());
+    expect(menu.map(({ route }) => route.name)).toContain('fixtureOrders');
     expect(
-      buildSettingsCatalog(runtime.routes, new Set()).map((category) => [
-        category.route.name,
-        category.modules.map(({ route, target }) => [route.name, target.path]),
-      ]),
-    ).toEqual([
-      [
-        'settingsAccount',
-        [
-          ['settingsUsers', '/settings/users'],
-          ['permissionManagement', '/settings/roles'],
-        ],
-      ],
-      [
-        'settingsSystem',
-        [
-          ['databaseExplorer', '/settings/database-explorer'],
-          ['capabilityGuide', '/settings/capabilities'],
-        ],
-      ],
+      menu.filter(({ route }) => route.path.startsWith('/settings')),
+    ).toMatchObject([
+      { route: { name: 'settingsHome', path: '/settings' }, children: [] },
     ]);
   });
 

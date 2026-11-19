@@ -50,6 +50,27 @@ const catalog = (
     category.modules.map((module) => [module.route.name, module.target.path]),
   ]);
 
+const systemModules = (
+  routes: readonly AppClientRegisteredRoute[],
+  denied = new Set<string>(),
+) =>
+  buildSettingsCatalog(routes, denied)
+    .find(({ route }) => route.name === 'settingsSystem')
+    ?.modules.map(({ route, target }) => [route.name, target.path]) ?? [];
+
+function expectSettingsEntry(routes: readonly AppClientRegisteredRoute[]) {
+  const menu = buildRouteNavigation(routes, new Set());
+  expect(
+    menu.filter(
+      ({ route }) =>
+        route.path === '/settings' || route.path.startsWith('/settings/'),
+    ),
+  ).toMatchObject([{ route: { name: 'settingsHome' }, children: [] }]);
+  expect(
+    selectedNavigationId(routes, '/settings/notifications/templates'),
+  ).toBe(routeKey(find(routes, 'settingsHome')));
+}
+
 describe('System settings navigation', () => {
   it('keeps the existing URLs and authorization of the settings pages', () => {
     const routes = resolve();
@@ -217,18 +238,15 @@ describe('System settings navigation', () => {
         }),
       },
     ]).routes;
-    expect(catalog(routes)).toEqual([
-      [
-        'settingsSystem',
-        [
-          ['notificationManagement', '/settings/notifications/templates'],
-          ['databaseExplorer', '/settings/database-explorer'],
-        ],
-      ],
+    expect(systemModules(routes)).toContainEqual([
+      'notificationManagement',
+      '/settings/notifications/templates',
     ]);
-    expect(
-      buildRouteNavigation(routes, new Set()).map(({ route }) => route.name),
-    ).toEqual(['home', 'settingsHome']);
+    expect(systemModules(routes)).toContainEqual([
+      'databaseExplorer',
+      '/settings/database-explorer',
+    ]);
+    expectSettingsEntry(routes);
   });
 });
 
@@ -247,8 +265,9 @@ it('places database browsing in System and hides its card when access is denied'
     resource: { type: 'page', id: 'database-explorer' },
     action: 'access',
   });
-  expect(catalog(routes)).toEqual([
-    ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
-  ]);
-  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([]);
+  const explorer = ['databaseExplorer', '/settings/database-explorer'];
+  expect(systemModules(routes)).toContainEqual(explorer);
+  expect(systemModules(routes, new Set([routeKey(page)]))).not.toContainEqual(
+    explorer,
+  );
 });

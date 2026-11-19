@@ -182,9 +182,38 @@ For a custom initial administrator, configure `users.initialAdmin` before the fi
 
 Default to named users selected through User management → Assign roles. Do not infer that all signed-in users should inherit a new business role. In particular, never seed a business permission set onto `authenticated:*`, add business grants to the platform member role, or reapply assignments at startup to make a feature accessible. A role editor lists that role's grants; unchecked actions are not denials of grants inherited from other sources. Inspect effective assignments before interpreting a permission test.
 
-For an existing user, call the Users plugin's `PUT /api/users/:userId/roleScopes/app` (or `UsersClient.replaceRoleScope(userId, 'app', value)`) with body `{ "value": ["sales-engineer"] }`. Use the permission set's stable key and the user's actual ID. This operation requires `assign-role` and replaces the whole direct `app` scope: read the current assignment (from `GET /api/users/:userId`), keep other direct roles that should remain, and use `[]` only when deliberately clearing that scope. Inherited roles and other scopes are not replaced. For an atomic update of the profile and assignment, use `PATCH /api/users/:userId` with `roleScopes: { app: [...] }` and the profile fields; the caller needs both `update` and `assign-role`.
+### Assign an existing user through User management
 
-Keep demo accounts, their assignments and demo records together in opt-in sample data. Use `defineSeed({ name, sample: true, run })` for sample rows and the `sampleDataToken` provider hook when account creation needs the Users service. Enable them on a fresh installation with `APP_SAMPLE_DATA=true` (for example, `APP_SAMPLE_DATA=true pnpm dev` against a new development database). Do not put demo credentials or assignments in ordinary production seeds. Keep required permission sets and other real initialization in normal seeds. See [sample seeds](migrations.md#sample-data-and-demo-systems).
+Use User management for real employee accounts and for exercising the assignment flow in a running test application. Its direct Permission Set scope is `app`. `GET /api/users/:userId` reads the managed profile and scope values, and `PUT /api/users/:userId/roleScopes/app` replaces the direct scope with `{ "value": ["sales-engineer"] }`. Read the current roles first and retain the other direct roles that should remain. The read needs `user/read` and the write needs `user/assign-role` on the target account. For one atomic profile and role change, send `PATCH /api/users/:userId` with the profile fields and `roleScopes: { app: [...] }` using a caller who has both permissions.
+
+Use the installed Users client's public methods with the signed-in administrator's application API client. Supply the selected user's actual ID and the permission set key, such as `sales-engineer`.
+
+```ts
+import { createUuid, type ApiClient } from '@nocobase/app-client';
+import { UsersClient } from '@nocobase/app-plugin-users/client/user-client';
+
+async function assignSalesEngineer(api: ApiClient, userId: string) {
+  const users = new UsersClient(api);
+  const profile = await users.get(userId);
+  const current = profile.roleScopes.app;
+  const direct = typeof current === 'string' ? [current] : (current ?? []);
+  const roles = [...new Set([...direct, 'sales-engineer'])];
+
+  await users.replaceRoleScope(
+    userId,
+    'app',
+    roles,
+    `${Date.now()}.${createUuid()}`,
+  );
+  return (await users.get(userId)).roleScopes.app;
+}
+```
+
+The fourth argument is the `Idempotency-Key`. In a form, use the template's `useSubmission` to reuse it with the same input on retry. The result of the second GET and User management both show the saved roles. Sign in separately as the assigned user to verify the effective grants. Other scopes and inherited assignments are independent of the direct `app` scope.
+
+### Provision opt-in demo accounts
+
+Keep fictional users, their roles and representative records together in opt-in sample data. Use `defineSeed({ name, sample: true, run })` for sample rows. When creating accounts or assigning roles requires plugin services, register a `sampleDataToken` hook and use the Users service in the sample transaction. Enable it on a fresh development database with `APP_SAMPLE_DATA=true pnpm dev`. Normal seeds prepare real permission sets and their grants. Use User management for ongoing real assignments. See [sample seeds](migrations.md#sample-data-and-demo-systems) and the installed `nocobase-app-plugin-users` Skill.
 
 A global default is supported only when the user explicitly requests it and the application delivers an authorized administration control to inspect its recipient population, change the default role and revoke that assignment. User access details must distinguish direct roles from inherited roles and link to the source. If those controls are unavailable, explain the limitation and use explicit user assignments instead. Never invent a configuration flag, seed-only setting or undocumented SQL instruction as the administrator's normal adjustment interface.
 
