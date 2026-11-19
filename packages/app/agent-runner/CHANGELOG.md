@@ -1,5 +1,18 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+- Updated dependencies [848e4db]
+- Updated dependencies [b6d6ca0]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+  - @nocobase/app-cli-client@0.1.0-beta.24
+
 ## 0.1.0-beta.30
 
 ### Minor Changes
