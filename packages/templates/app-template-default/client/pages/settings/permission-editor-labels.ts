@@ -28,7 +28,6 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
       empty: k('empty'),
       objectEnabled: (enabled, total) => k('objectEnabled', { enabled, total }),
       objectOff: k('objectOff'),
-      noScope: k('noScope'),
       enableAll: k('enableAll'),
       viewOnly: k('viewOnly'),
       disableAll: k('disableAll'),

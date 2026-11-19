@@ -310,7 +310,6 @@ const settings = {
     empty: 'No business objects to configure',
     objectEnabled: '{{enabled}} of {{total}} on',
     objectOff: 'Off',
-    noScope: '—',
     enableAll: 'Enable all',
     viewOnly: 'View only',
     disableAll: 'Disable all',

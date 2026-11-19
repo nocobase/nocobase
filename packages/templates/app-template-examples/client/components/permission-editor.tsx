@@ -116,7 +116,6 @@ export interface PermissionEditorLabels {
   readonly empty: string;
   readonly objectEnabled: (enabled: number, total: number) => string;
   readonly objectOff: string;
-  readonly noScope: string;
   readonly enableAll: string;
   readonly viewOnly: string;
   readonly disableAll: string;
@@ -192,7 +191,6 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   empty: 'No business objects to configure',
   objectEnabled: (enabled, total) => `${enabled} of ${total} on`,
   objectOff: 'Off',
-  noScope: '—',
   enableAll: 'Enable all',
   viewOnly: 'View only',
   disableAll: 'Disable all',
@@ -653,9 +651,6 @@ function ObjectList({
           object.group && object.group !== objects[index - 1]?.group
             ? object.group
             : undefined;
-        const view = viewActionOf(object);
-        const scope =
-          view && grants[view.id] ? viewScopeLabel(object, grants) : undefined;
         const active = object.id === selected;
         return (
           <Fragment key={object.id}>
@@ -693,13 +688,6 @@ function ObjectList({
                       ? labels.objectEnabled(status.enabled, status.total)
                       : labels.objectOff}
                   </span>
-                </span>
-                <span className='sr-only'>, </span>
-                <span className='max-w-[45%] shrink-0 truncate text-xs text-muted-foreground'>
-                  {scope ??
-                    (status.enabled && !view?.scopes?.length
-                      ? ''
-                      : labels.noScope)}
                 </span>
               </button>
             </li>
@@ -1333,26 +1321,16 @@ export function PermissionEditor({
                       .filter((object) => (object.group ?? '') === group)
                       .map((object) => {
                         const status = objectStatus(object, value.grants);
-                        const view = viewActionOf(object);
-                        const scope =
-                          view && value.grants[view.id]
-                            ? viewScopeLabel(object, value.grants)
-                            : undefined;
                         return (
                           <SelectItem key={object.id} value={object.id}>
                             <span className='grid min-w-0'>
                               <span className='truncate'>{object.label}</span>
                               <span className='truncate text-xs text-muted-foreground'>
-                                {[
-                                  // The count reads the same with nothing on, so phones always show how many there are.
-                                  words.objectEnabled(
-                                    status.enabled,
-                                    status.total,
-                                  ),
-                                  scope,
-                                ]
-                                  .filter(Boolean)
-                                  .join(' · ')}
+                                {/* The count reads the same with nothing on, so phones always show how many there are. */}
+                                {words.objectEnabled(
+                                  status.enabled,
+                                  status.total,
+                                )}
                               </span>
                             </span>
                           </SelectItem>

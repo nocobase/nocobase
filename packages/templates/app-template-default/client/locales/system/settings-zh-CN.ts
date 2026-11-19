@@ -288,7 +288,6 @@ const settings = {
     empty: '没有可设置的业务对象',
     objectEnabled: '{{total}} 项中开 {{enabled}} 项',
     objectOff: '未开启',
-    noScope: '—',
     enableAll: '全部开启',
     viewOnly: '只开查看',
     disableAll: '全部关闭',
