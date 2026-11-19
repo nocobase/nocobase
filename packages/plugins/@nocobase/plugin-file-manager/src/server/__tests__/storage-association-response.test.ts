@@ -16,7 +16,22 @@ import PluginFileManagerServer from '../server';
 describe('storage association responses', () => {
   let app: MockServer;
   const options = { documentRoot: 'storage/uploads', thumbnailRule: '?preview' };
-  const publicFields = { name: 'reports', type: 'local', title: 'Report files' };
+  const settings = { requestOptions: { timeout: 5000 } };
+  const publicFields = {
+    name: 'reports',
+    type: 'local',
+    title: 'Report files',
+    rules: { size: 1024 },
+    path: 'reports',
+    baseUrl: '/storage/uploads',
+    renameMode: 'appendRandomID',
+    default: false,
+    paranoid: true,
+  };
+
+  function expectedStorage(id: string | number) {
+    return { ...publicFields, id, createdAt: expect.any(String), updatedAt: expect.any(String) };
+  }
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -56,7 +71,7 @@ describe('storage association responses', () => {
 
   async function createStorage() {
     return app.db.getRepository('storages').create({
-      values: { ...publicFields, options, baseUrl: '/storage/uploads' },
+      values: { ...publicFields, options, settings },
     });
   }
 
@@ -67,7 +82,7 @@ describe('storage association responses', () => {
     const resource = reader.resource('files');
     const management = await reader.resource('storages').list();
     expect(management.status).toBe(403);
-    const expected = { ...publicFields, id: storage.id };
+    const expected = expectedStorage(storage.id);
 
     const detail = await resource.get({ filterByTk: file.id, appends: ['storage'] });
     expect(detail.status).toBe(200);
@@ -102,7 +117,7 @@ describe('storage association responses', () => {
       .get({ filterByTk: report.id, appends: ['documents.meta', 'documents.storage'] });
     expect(result.status).toBe(200);
     expect(result.body.data.documents).toHaveLength(1);
-    expect(result.body.data.documents[0].storage).toEqual({ ...publicFields, id: storage.id });
+    expect(result.body.data.documents[0].storage).toEqual(expectedStorage(storage.id));
     expect(result.body.data.documents[0].meta).toEqual(meta);
   });
 
@@ -113,17 +128,17 @@ describe('storage association responses', () => {
     const management = agent.resource('storages');
     const list = await management.list({ filter: { id: storage.id } });
     expect(list.status).toBe(200);
-    expect(list.body.data[0].options).toEqual(options);
+    expect(list.body.data[0]).toMatchObject({ options, settings });
     const update = await management.update({ filterByTk: storage.id, values: { title: 'Renamed' } });
     expect(update.status).toBe(200);
     const detail = await management.get({ filterByTk: storage.id });
     expect(detail.status).toBe(200);
-    expect(detail.body.data).toMatchObject({ title: 'Renamed', options });
+    expect(detail.body.data).toMatchObject({ title: 'Renamed', options, settings });
 
     const plugin = app.pm.get(PluginFileManagerServer);
     plugin.storagesCache.clear();
     await plugin.loadStorages();
-    expect(plugin.storagesCache.get(storage.id)).toMatchObject({ title: 'Renamed', options });
+    expect(plugin.storagesCache.get(storage.id)).toMatchObject({ title: 'Renamed', options, settings });
     const file = await plugin.createFileRecord({
       collectionName: 'files',
       storageName: publicFields.name,

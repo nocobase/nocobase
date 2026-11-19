@@ -11,7 +11,21 @@ import type { Context, Next } from '@nocobase/actions';
 import { Collection, Model } from '@nocobase/database';
 import { isPlainObject, pick } from 'lodash';
 
-const publicStorageFields = ['id', 'title', 'name', 'type'];
+// Publish known metadata only. Engine options, request settings and plugin-defined fields are private by default.
+const publicStorageFields = [
+  'id',
+  'title',
+  'name',
+  'type',
+  'rules',
+  'path',
+  'baseUrl',
+  'renameMode',
+  'default',
+  'paranoid',
+  'createdAt',
+  'updatedAt',
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return isPlainObject(value);
