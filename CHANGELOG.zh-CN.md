@@ -2,6 +2,30 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 新特性
+
+- **[命令行]** 支持预装插件及其 Skills，按需启用并打包，也可分别取消注册或彻底卸载。 ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 优化
+
+- **[命令行]** `logs export` 不再提供 `--issue` 筛选，导出按所选日期包含所选执行机的全部日志。 ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[数据库]** 已执行迁移缺少源码时默认告警，并在回滚最新批次前一次列出所有缺失或不可逆的目标迁移。 ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[知识库]**
+  - 知识库文档中的链接改为在新标签页打开（页内标题锚点除外），宽表格改为横向滚动而不再挤压列宽。 ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - 知识库文件条目的替换、下载和历史集中到右上角，MD 预览与正文样式一致，提取的文字按行号显示原文并高亮引用行，预览支持全屏查看。 ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[项目]** 项目使用手动表单创建任务和子任务，并移除操作计划、需求整理工具及其命令。 ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[应用模板]** 从同一版本的 Default 或 Examples 模板创建的应用会安装相同版本的直接 NocoBase 依赖。 ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 修复
+
+- **[Agent 运行器]** 私有包源拒绝授权时使用本次运行的凭据重试，并支持应用创建和模板下载。 ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[数据库]** 空的日期时间值在所有数据库上都读为空，不再在 Oracle 兼容模式的 KingbaseES 上被读成非法值 "Z" 而报错。 ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[命令行]** 部署归档不再携带开发环境运行配置，打包失败时保留上一份归档。 ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[服务端]** 嵌入式部署的应用页面和 API 文档正确显示应用名称与版本。 ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agent]** Codex 上报当前额度后，运行环境会移除已停用的额度窗口 ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
 ## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
 
 ### 🎉 新特性

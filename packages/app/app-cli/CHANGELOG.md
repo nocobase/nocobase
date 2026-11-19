@@ -1,5 +1,27 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.37
+
+### Minor Changes
+
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+
+### Patch Changes
+
+- 858fcc4: Stop copying development runtime settings into dist/.env. Exclude application runtime configuration and storage from deployment archives, and preserve the previous archive if packing fails. Deployments must provide their listener settings through external configuration or environment variables.
+- b83a645: Default missing applied migration sources to warnings instead of errors, with an `onMissingSource: 'error'` option for strict validation. Downgrades within participating packages still fail. Preserve missing migration history and report warnings in database commands and startup logs. Rollback validates only its target batch and lists every missing or irreversible migration before executing any down operation, with recovery guidance.
+
+  Compare migration filename timestamps for downgrade detection independently of parameter target hashes. Validate applications with applied history even when all migration directories have disappeared, while continuing to skip empty applications.
+
+  An explicitly configured migration directory that no longer exists is now checked against the migration history when tasks run, rather than rejected while planning: an application with history follows the missing-source policy, while a mistyped path on an application that never migrated still fails before any storage is touched.
+
+- Updated dependencies [e830c36]
+- Updated dependencies [b737800]
+- Updated dependencies [a727ebe]
+- Updated dependencies [b83a645]
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/db@1.0.0-beta.29
+
 ## 1.0.0-beta.36
 
 ### Minor Changes

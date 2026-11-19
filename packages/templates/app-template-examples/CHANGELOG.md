@@ -1,5 +1,34 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.83
+
+### Patch Changes
+
+- 2f1338b: Pin direct NocoBase dependencies to the versions shipped with the application template. Existing applications can adopt these declarations during their normal template upgrade.
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [a0e0c5b]
+- Updated dependencies [b737800]
+- Updated dependencies [858fcc4]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [e90a91e]
+- Updated dependencies [b83a645]
+  - @nocobase/app-plugin-agents@2.0.0-beta.17
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.23
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-cli@1.0.0-beta.37
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.18
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.25
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
 ## 1.0.0-beta.82
 
 ### Patch Changes
