@@ -979,7 +979,7 @@ const idID: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         'Model ini tidak mendukung tingkat berpikir "{{requested}}"; jawaban ini menggunakan bawaan penyedia.',
       warning:
-        'Penyedia mungkin tidak menerapkan tingkat berpikir "{{level}}" pada jawaban ini.',
+        'Model mungkin tidak menerapkan tingkat berpikir "{{level}}" pada jawaban ini.',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:

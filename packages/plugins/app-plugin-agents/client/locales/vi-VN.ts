@@ -977,7 +977,7 @@ const viVN: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng mặc định của nhà cung cấp.',
       warning:
-        'Nhà cung cấp có thể chưa áp dụng mức suy nghĩ "{{level}}" cho câu trả lời này.',
+        'Mô hình có thể chưa áp dụng mức suy nghĩ "{{level}}" cho câu trả lời này.',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:

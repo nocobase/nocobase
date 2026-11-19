@@ -955,7 +955,7 @@ const koKR: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 제공업체 기본값을 사용했습니다.',
       warning:
-        '제공업체가 이번 답변에 사고 수준 "{{level}}"을(를) 적용하지 않았을 수 있습니다.',
+        '모델이 이번 답변에 사고 수준 "{{level}}"을(를) 적용하지 않았을 수 있습니다.',
     },
     executionFailed:
       '실행에 실패했습니다. 다시 시도하기 전에 저장된 대화를 확인하세요.',

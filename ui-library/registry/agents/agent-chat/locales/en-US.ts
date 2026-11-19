@@ -432,7 +432,7 @@ const agentChatEnUS: AgentChatLocale = {
       adjustedToDefault:
         'This model does not support the {{requested}} thinking level; the provider default was used for this reply.',
       warning:
-        'The provider may not have applied the {{level}} thinking level to this reply.',
+        'The model may not have applied the {{level}} thinking level to this reply.',
     },
     webSearch: {
       title: 'Web search',

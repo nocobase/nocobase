@@ -978,7 +978,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         'このモデルは思考レベル「{{requested}}」に対応していないため、この返信ではプロバイダーの既定値を使用しました。',
       warning:
-        'プロバイダーがこの返信に思考レベル「{{level}}」を適用していない可能性があります。',
+        'モデルがこの返信に思考レベル「{{level}}」を適用していない可能性があります。',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:

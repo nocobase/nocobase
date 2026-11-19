@@ -1008,7 +1008,7 @@ const deDE: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde die Standardeinstellung des Anbieters verwendet.',
       warning:
-        'Der Anbieter hat die Denkstufe „{{level}}“ für diese Antwort möglicherweise nicht angewendet.',
+        'Das Modell hat die Denkstufe „{{level}}“ für diese Antwort möglicherweise nicht angewendet.',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:

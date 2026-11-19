@@ -935,7 +935,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         '目前模型不支援「{{requested}}」思考等級，本次回覆使用了「{{used}}」。',
       adjustedToDefault:
         '目前模型不支援「{{requested}}」思考等級，本次回覆使用了供應商預設設定。',
-      warning: '供應商可能未在本次回覆中套用「{{level}}」思考等級。',
+      warning: '模型可能未在本次回覆中套用「{{level}}」思考等級。',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed: '執行失敗。重試前請先檢查已儲存的對話。',

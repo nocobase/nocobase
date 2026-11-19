@@ -1009,7 +1009,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         'Este modelo não aceita o nível de raciocínio "{{requested}}"; nesta resposta foi usado o padrão do provedor.',
       warning:
-        'O provedor pode não ter aplicado o nível de raciocínio "{{level}}" nesta resposta.',
+        'O modelo pode não ter aplicado o nível de raciocínio "{{level}}" nesta resposta.',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:

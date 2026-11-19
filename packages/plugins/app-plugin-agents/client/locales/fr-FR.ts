@@ -1013,7 +1013,7 @@ const frFR: LocaleResource<typeof enUS> = {
       adjustedToDefault:
         'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé la valeur par défaut du fournisseur.',
       warning:
-        'Le fournisseur n’a peut-être pas appliqué le niveau de réflexion « {{level}} » à cette réponse.',
+        'Le modèle n’a peut-être pas appliqué le niveau de réflexion « {{level}} » à cette réponse.',
     },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
