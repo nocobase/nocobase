@@ -41,7 +41,11 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
-import { agentModelOf } from '../../../shared/model-catalog.js';
+import {
+  agentModelOf,
+  modelProvider,
+  shownAgentNames,
+} from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -477,15 +481,33 @@ export function createConversationService(
     return record;
   }
 
-  function agentRef(id: string, agent: Agent | null): ConversationAgent {
+  function agentRef(
+    id: string,
+    agent: Agent | null,
+    shown: ReadonlyMap<string, string> = new Map(),
+  ): ConversationAgent {
+    const name = shown.get(id) ?? agent?.name ?? null;
     return {
       id,
-      name: agent?.name ?? null,
+      name,
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
       archived: agent ? agent.status !== 'enabled' : false,
-      ...(agent ? agentModelOf(agent) : {}),
+      ...(agent ? agentModelOf({ ...agent, name }) : {}),
     };
+  }
+
+  /**
+   * The names `agents` are shown by when two providers' agents of one model would read the same (`shownAgentNames`).
+   * Reads the agent list only when one of them is an OpenCode or Pi agent.
+   */
+  async function shownNamesFor(
+    agents: Iterable<Agent | null>,
+  ): Promise<Map<string, string>> {
+    for (const agent of agents)
+      if (agent?.tool && agent.model && modelProvider(agent.tool, agent.model))
+        return shownAgentNames(await deps.agents.list());
+    return new Map();
   }
 
   function runRef(runs: readonly Run[]): ConversationRun | null {
@@ -507,6 +529,7 @@ export function createConversationService(
         record.fallbackFromAgentId,
       ])
         if (id && !agents.has(id)) agents.set(id, await findAgent(conn, id));
+    const shown = await shownNamesFor(agents.values());
     const open = await openRunsOnEach(
       conn,
       CONVERSATION_SUBJECT,
@@ -556,11 +579,13 @@ export function createConversationService(
           : agentRef(
               record.agentId,
               record.agentId ? (agents.get(record.agentId) ?? null) : null,
+              shown,
             ),
         fallbackFrom: record.fallbackFromAgentId
           ? agentRef(
               record.fallbackFromAgentId,
               agents.get(record.fallbackFromAgentId) ?? null,
+              shown,
             )
           : null,
         read: Boolean(record.read),
@@ -737,6 +762,10 @@ export function createConversationService(
     const conn = tx.read();
     const { record, share } = await conversationAccess(conn, userId, id);
     if (!share) return detailOf(conn, record);
+    const agent =
+      !jsonObject(record.metadata).onlineAgent && record.agentId
+        ? await findAgent(conn, record.agentId)
+        : null;
     // Whitelist snapshot fields: no latest runner, project, execution, usage, wait or owner attention.
     return {
       id,
@@ -755,10 +784,7 @@ export function createConversationService(
             archived: false,
           }
         : {
-            ...agentRef(
-              record.agentId,
-              record.agentId ? await findAgent(conn, record.agentId) : null,
-            ),
+            ...agentRef(record.agentId, agent, await shownNamesFor([agent])),
             avatar: null,
             archived: false,
           },
@@ -3143,6 +3169,7 @@ export function createConversationService(
         deps.settings.preferences(userId, conn),
       ]);
       const variableStates = await deps.eligibility.prepare(conn, agents, {});
+      const shown = shownAgentNames(agents);
       const now = clock.now().getTime();
       const catalog = await Promise.all(
         agents
@@ -3164,14 +3191,17 @@ export function createConversationService(
               efforts: chatEffortsFor(agent.modelEntries[0], eligible),
               effort: agent.modelEntries[0]?.effort ?? null,
               id: agent.id,
-              name: agent.name,
+              name: shown.get(agent.id) ?? agent.name,
               description: agent.description,
               nameText: agent.nameText,
               descriptionText: agent.descriptionText,
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              ...agentModelOf(agent),
+              ...agentModelOf({
+                ...agent,
+                name: shown.get(agent.id) ?? agent.name,
+              }),
               availability: availabilityOf(
                 agent,
                 userId,

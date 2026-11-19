@@ -221,17 +221,17 @@ describe('the Agent page', () => {
     );
   });
 
-  it('shows an OpenCode agent’s whole model id below its name and in its dialog, and none for a Claude catalog model', async () => {
+  it('shows every agent’s whole model id below its name and in its dialog, a Claude catalog model included', async () => {
     renderPage(<AgentsPage />);
     const row = await screen.findByTestId('agent-kimi');
     expect(within(row).getByTestId('agent-model').textContent).toBe(
       'moonshotai/kimi-k2',
     );
     expect(
-      within(await screen.findByTestId('agent-sonnet')).queryByTestId(
+      within(await screen.findByTestId('agent-sonnet')).getByTestId(
         'agent-model',
-      ),
-    ).toBeNull();
+      ).textContent,
+    ).toBe('claude-sonnet-5');
     fireEvent.click(screen.getByTestId('agent-edit-kimi'));
     const dialog = await screen.findByTestId('agent-dialog');
     expect(within(dialog).getByTestId('agent-dialog-model').textContent).toBe(
@@ -251,11 +251,47 @@ describe('the Agent page', () => {
     );
   });
 
-  it('shows no model line when editing a Claude agent', async () => {
+  it('shows a Claude agent’s whole model id when editing it', async () => {
     renderPage(<AgentsPage />);
     fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
     const dialog = await screen.findByTestId('agent-dialog');
-    expect(within(dialog).queryByTestId('agent-dialog-model')).toBeNull();
+    expect(within(dialog).getByTestId('agent-dialog-model').textContent).toBe(
+      'claude-sonnet-5',
+    );
+  });
+
+  it('shows two providers’ default-named agents of one model each with their provider, keeping a renamed one', async () => {
+    const qwen = (id: string, name: string, model: string) => ({
+      ...agents[1]!,
+      id,
+      name,
+      model,
+      modelEntries: [{ tool: 'opencode' as const, model, effort: null }],
+    });
+    agents = [
+      ...agents,
+      qwen('lan', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
+      qwen(
+        'console',
+        'OpenCode · Qwen3.8 Flash (opencode)',
+        'opencode/qwen3.8-flash',
+      ),
+      qwen('renamed', 'Gateway fast', 'other-gateway/qwen3.8-flash'),
+    ];
+    renderPage(<AgentsPage />);
+    expect(await screen.findByTestId('agent-lan')).toHaveTextContent(
+      'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+    );
+    expect(screen.getByTestId('agent-console')).toHaveTextContent(
+      'OpenCode · Qwen3.8 Flash (opencode)',
+    );
+    expect(screen.getByTestId('agent-renamed')).toHaveTextContent(
+      'Gateway fast',
+    );
+    fireEvent.click(screen.getByTestId('agent-edit-lan'));
+    expect(await screen.findByTestId('agent-dialog')).toHaveTextContent(
+      'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+    );
   });
 
   it('reopens the saved description and revision before the list refresh completes', async () => {

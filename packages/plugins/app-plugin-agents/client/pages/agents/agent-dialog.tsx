@@ -114,7 +114,7 @@ function AgentForm({
   });
 
   const missing = enabled && goodAt.trim() === '';
-  // OpenCode and Pi agents, and agents of a model the catalog does not know, show the whole model id here.
+  // Every agent shows its whole model id here.
   const qualifiedModel = agentModelOf(agent).model ?? null;
   const { runners } = agent;
   const reportedBy = t('agents.enable.reportedBy', {

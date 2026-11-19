@@ -8,6 +8,7 @@ import {
   sameModel,
   agentModelOf,
   agentNameFor,
+  shownAgentNames,
 } from '../shared/model-catalog.js';
 
 describe('the model catalog', () => {
@@ -127,8 +128,9 @@ it('names a provider-qualified Gemini model without its provider', () => {
 
 it('keeps ACP aliases, provider paths and dated ids as distinct opaque identities', () => {
   expect(normalizeModel('gemini', 'opus-latest')).toBe('opus-latest');
+  // Only the label is made readable; the id is kept as reported.
   expect(modelLabel('gemini', 'vendor/Model (20261001)')).toBe(
-    'vendor/Model (20261001)',
+    'Model (20261001)',
   );
 });
 
@@ -160,20 +162,98 @@ describe('agentModelOf', () => {
     });
   });
 
-  it('shows the id of a model the catalog does not know, and nothing more for a catalog model', () => {
+  it('gives every tool its whole id, short name and hover text, catalog models and ACP tools included', () => {
     expect(
       agentModelOf({
         name: 'Codex · GPT-6.2 Astra',
         tool: 'codex',
         model: 'gpt-6.2-astra',
       }),
-    ).toEqual({ model: 'gpt-6.2-astra' });
-    for (const [tool, model] of [
-      ['claude', 'claude-opus-5-5'],
-      ['codex', 'gpt-6-astra'],
-    ] as const)
-      expect(
-        agentModelOf({ name: agentNameOf(tool, model), tool, model }),
-      ).toEqual({});
+    ).toEqual({
+      model: 'gpt-6.2-astra',
+      shortName: 'GPT-6.2 Astra',
+      modelTitle: 'Codex · gpt-6.2-astra',
+    });
+    expect(
+      agentModelOf({
+        name: agentNameOf('claude', 'claude-opus-5-5'),
+        tool: 'claude',
+        model: 'claude-opus-5-5',
+      }),
+    ).toEqual({
+      model: 'claude-opus-5-5',
+      shortName: 'Opus 5.5',
+      modelTitle: 'Claude · claude-opus-5-5',
+    });
+    const gemini = agentNameOf('gemini', 'gemini-3.1-pro-preview');
+    expect(gemini).toBe('Gemini CLI · Gemini 3.1 Pro Preview');
+    expect(
+      agentModelOf({
+        name: gemini,
+        tool: 'gemini',
+        model: 'gemini-3.1-pro-preview',
+      }),
+    ).toEqual({
+      model: 'gemini-3.1-pro-preview',
+      shortName: 'Gemini 3.1 Pro Preview',
+      modelTitle: 'Gemini CLI · gemini-3.1-pro-preview',
+    });
+  });
+});
+
+describe('shownAgentNames', () => {
+  const agent = (id: string, name: string, model: string) => ({
+    id,
+    name,
+    tool: 'opencode' as const,
+    model,
+  });
+
+  it('shows both providers of one default-named model with their provider', () => {
+    expect(
+      shownAgentNames([
+        agent('a', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
+        agent(
+          'b',
+          'OpenCode · Qwen3.8 Flash (opencode)',
+          'opencode/qwen3.8-flash',
+        ),
+        agent('c', 'OpenCode · Kimi K2', 'moonshotai/kimi-k2'),
+      ]),
+    ).toEqual(
+      // b's saved name already says its provider; c has no namesake.
+      new Map([['a', 'OpenCode · Qwen3.8 Flash (my-lan-gateway)']]),
+    );
+    expect(
+      shownAgentNames([
+        agent('a', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
+        agent('b', 'OpenCode · Qwen3.8 Flash', 'opencode/qwen3.8-flash'),
+      ]),
+    ).toEqual(
+      new Map([
+        ['a', 'OpenCode · Qwen3.8 Flash (my-lan-gateway)'],
+        ['b', 'OpenCode · Qwen3.8 Flash (opencode)'],
+      ]),
+    );
+  });
+
+  it('keeps a renamed agent and a model without a namesake as they are', () => {
+    expect(
+      shownAgentNames([
+        agent('a', 'Gateway fast', 'my-lan-gateway/qwen3.8-flash'),
+        agent('b', 'OpenCode · Qwen3.8 Flash', 'opencode/qwen3.8-flash'),
+        {
+          id: 'c',
+          name: 'Claude · Opus 5.5',
+          tool: 'claude',
+          model: 'claude-opus-5-5',
+        },
+      ]),
+    ).toEqual(new Map([['b', 'OpenCode · Qwen3.8 Flash (opencode)']]));
+    expect(
+      shownAgentNames([
+        agent('a', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
+      ]),
+    ).toEqual(new Map());
   });
 });

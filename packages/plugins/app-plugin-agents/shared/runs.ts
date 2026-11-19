@@ -417,15 +417,18 @@ const CONTROL_TEXT =
 export function failureDetailText(
   detail: string | null | undefined,
 ): string | null {
+  // Lines split at CR, LF or CRLF before control characters go, so a lone CR still ends a line.
   const text =
     (detail ?? '')
-      .replace(CONTROL_TEXT, '')
-      .split(/\r?\n/u)
-      .map((line) => line.replace(/\s+/gu, ' ').trim())
+      .split(/\r\n|\r|\n/u)
+      .map((line) =>
+        line.replace(CONTROL_TEXT, '').replace(/\s+/gu, ' ').trim(),
+      )
       .find((line) => line !== '') ?? '';
   if (text === '') return null;
+  // The ellipsis counts: what is shown is at most `FAILURE_DETAIL_TEXT_MAX` characters.
   return text.length > FAILURE_DETAIL_TEXT_MAX
-    ? `${text.slice(0, FAILURE_DETAIL_TEXT_MAX).trimEnd()}…`
+    ? `${text.slice(0, FAILURE_DETAIL_TEXT_MAX - 1).trimEnd()}…`
     : text;
 }
 

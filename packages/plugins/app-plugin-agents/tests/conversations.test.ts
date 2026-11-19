@@ -37,7 +37,7 @@ describe('historical Runner conversation domain', () => {
         body,
       }),
   });
-  it('gives an OpenCode agent its whole provider model, its name without the tool and the hover text, and a Claude one nothing', async () => {
+  it('gives an agent its whole model, its name without the tool and the hover text, telling two providers apart', async () => {
     h = await createHarness();
     const opencode = await h.createAgent({
       source: 'runner',
@@ -48,6 +48,7 @@ describe('historical Runner conversation domain', () => {
     });
     const claude = await h.createAgent({
       source: 'runner',
+      name: 'Claude · Opus 5.5',
       modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
     });
     const named = (await domain().get(ALICE, await newConversation(opencode)))
@@ -59,7 +60,36 @@ describe('historical Runner conversation domain', () => {
     });
     expect(
       (await domain().get(ALICE, await newConversation(claude))).agent,
-    ).not.toHaveProperty('model');
+    ).toMatchObject({
+      name: 'Claude · Opus 5.5',
+      model: 'claude-opus-5-5',
+      shortName: 'Opus 5.5',
+      modelTitle: 'Claude · claude-opus-5-5',
+    });
+    // Another provider's agent of the same model, still named by default: both are shown with their provider.
+    const console = await h.createAgent({
+      source: 'runner',
+      name: 'OpenCode · Qwen3.8 Flash',
+      modelEntries: [{ tool: 'opencode', model: 'opencode/qwen3.8-flash' }],
+    });
+    const lan = await h.createAgent({
+      source: 'runner',
+      name: 'OpenCode · Qwen3.8 Flash',
+      modelEntries: [{ tool: 'opencode', model: 'other-lan/qwen3.8-flash' }],
+    });
+    expect(
+      (await domain().get(ALICE, await newConversation(console))).agent,
+    ).toMatchObject({
+      name: 'OpenCode · Qwen3.8 Flash (opencode)',
+      shortName: 'Qwen3.8 Flash (opencode)',
+    });
+    expect(
+      (await domain().get(ALICE, await newConversation(lan))).agent.name,
+    ).toBe('OpenCode · Qwen3.8 Flash (other-lan)');
+    // The saved names are not changed.
+    expect((await h.services.agents.get(console)).name).toBe(
+      'OpenCode · Qwen3.8 Flash',
+    );
   });
 
   it('resolves historical consultation subjects without rewriting the original message and keeps ownership checks', async () => {

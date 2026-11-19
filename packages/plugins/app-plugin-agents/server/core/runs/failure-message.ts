@@ -10,15 +10,23 @@ import { REDACTED } from '@nocobase/agent-protocol';
 const RULES: readonly (readonly [RegExp, string])[] = [
   [/\bsk-[A-Za-z0-9_-]{8,}/gu, REDACTED],
   [/\b(bearer\s+)(?!\[REDACTED\])[^\s"',;)\]]+/giu, `$1${REDACTED}`],
+  // A quoted value goes whole, spaces and punctuation included, up to its closing quote or the end of the line.
   [
-    /\b((?:api[_-]?key|key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*["']?)(?!\[REDACTED\])[^\s"',;})\]]+/giu,
+    /\b((?:api[_-]?key|key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*(["']))(?:\\.|(?!\2)[^\\\r\n])+/giu,
+    `$1${REDACTED}`,
+  ],
+  [
+    /\b((?:api[_-]?key|key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*)(?!["'])(?!\[REDACTED\])[^\s"',;})\]]+/giu,
     `$1${REDACTED}`,
   ],
 ];
 
-/** At least 20 characters of a key alphabet, outside paths, model ids and hostnames (no `/`, `-` or `.`). */
+/**
+ * At least 20 characters of a key alphabet, outside paths, model ids and hostnames (no `/`, `-` or `.` inside it); a
+ * full stop or other punctuation that ends the sentence after it does not hide it.
+ */
 const CANDIDATE =
-  /(?<![A-Za-z0-9+_=./-])[A-Za-z0-9+_=]{20,}(?![A-Za-z0-9+_=./-])/gu;
+  /(?<![A-Za-z0-9+_=./-])[A-Za-z0-9+_=]{20,}(?![A-Za-z0-9+_=/-]|\.[A-Za-z0-9])/gu;
 
 /** Shannon entropy per character, in bits. */
 function entropy(text: string): number {
