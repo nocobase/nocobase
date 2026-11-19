@@ -226,6 +226,46 @@ describe('permission editor tabs', () => {
   });
 });
 
+const crossObjectItems: readonly PermissionObject[] = [
+  {
+    id: 'contracts',
+    label: 'Contracts',
+    actions: [
+      {
+        id: 'contracts.view',
+        label: 'View contracts',
+        view: true,
+        scopes: [{ id: 'records', options: RECORDS }],
+      },
+      {
+        id: 'contracts.approve',
+        label: 'Approve contracts',
+        scopes: [
+          { id: 'records', label: 'Contracts', followsView: true },
+          {
+            id: 'customers',
+            label: 'Customers',
+            options: RECORDS,
+            followsView: 'customers.view',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'customers',
+    label: 'Customers',
+    actions: [
+      {
+        id: 'customers.view',
+        label: 'View customers',
+        view: true,
+        scopes: [{ id: 'records', options: RECORDS }],
+      },
+    ],
+  },
+];
+
 describe('business objects tab', () => {
   it('reads a stored scope equal to View as following View', () => {
     render(
@@ -543,45 +583,7 @@ describe('business objects tab', () => {
 
   it('shows a slot reading another object as following that object’s View', async () => {
     const user = userEvent.setup();
-    const items: readonly PermissionObject[] = [
-      {
-        id: 'contracts',
-        label: 'Contracts',
-        actions: [
-          {
-            id: 'contracts.view',
-            label: 'View contracts',
-            view: true,
-            scopes: [{ id: 'records', options: RECORDS }],
-          },
-          {
-            id: 'contracts.approve',
-            label: 'Approve contracts',
-            scopes: [
-              { id: 'records', label: 'Contracts', followsView: true },
-              {
-                id: 'customers',
-                label: 'Customers',
-                options: RECORDS,
-                followsView: 'customers.view',
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'customers',
-        label: 'Customers',
-        actions: [
-          {
-            id: 'customers.view',
-            label: 'View customers',
-            view: true,
-            scopes: [{ id: 'records', options: RECORDS }],
-          },
-        ],
-      },
-    ];
+    const items = crossObjectItems;
     render(
       <Host
         tab='objects'
@@ -608,6 +610,30 @@ describe('business objects tab', () => {
       'Same as Customers view (Their department)',
       'Their own records',
     ]);
+  });
+
+  it('shows the stored scope, read-only, while the View it follows is off', () => {
+    const onChange = vi.fn();
+    render(
+      <Host
+        tab='objects'
+        items={crossObjectItems}
+        onChange={onChange}
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            // Stored by a seed: approving reads customers while Customers' View is off.
+            'contracts.approve': { scopes: { customers: 'own' } },
+          },
+        }}
+      />,
+    );
+    const customers = trigger('Approve contracts: Customers');
+    expect(customers).toHaveTextContent('Their own records');
+    expect(customers).toBeDisabled();
+    expect(screen.getByText('Needs Customers view')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('filters objects by action name', async () => {

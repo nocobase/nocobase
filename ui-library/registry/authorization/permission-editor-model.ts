@@ -285,6 +285,20 @@ export function followedObject(
   return leader && leader.object !== object ? leader.object : undefined;
 }
 
+/**
+ * The object whose View a follower slot follows while that View is off: the slot then has no scope to follow, keeps the
+ * value it has, stored or default, and cannot be changed until that View is on. Undefined for other slots.
+ */
+export function blockedLeaderObject(
+  object: PermissionObject,
+  slot: PermissionScopeSlot,
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+): PermissionObject | undefined {
+  const leader = leaderOf(object, slot, objects);
+  return leader && !grants[leader.action.id] ? leader.object : undefined;
+}
+
 export function slotOptions(
   object: PermissionObject,
   slot: PermissionScopeSlot,
@@ -565,7 +579,23 @@ function enableWithRequirements(
   }
   if (auto.length)
     notices.unshift({ kind: 'auto-enabled', actions: labelsOf(objects, auto) });
-  return { grants: next, notices };
+  // A View turned on caps the followers that kept their stored value while it was off: any not narrower than its scope
+  // now follows it, and the notice names them.
+  const enabled = new Set(
+    Object.keys(next).filter((key) => !grants[key] && next[key]),
+  );
+  const capped = enabled.size
+    ? resetWiderFollowers(
+        objects,
+        next,
+        (leader) => enabled.has(leader.action.id),
+        undefined,
+        true,
+      )
+    : undefined;
+  return capped
+    ? { grants: capped.grants, notices: [...notices, ...capped.notices] }
+    : { grants: next, notices };
 }
 
 function managedBlock(
@@ -690,6 +720,9 @@ export function setScopeValue(
   if (!found || !grant || found.action.managed) return { grants, notices: [] };
   const { object, action } = found;
   const slot = action.scopes?.find((item) => item.id === slotId);
+  // A follower whose View is off keeps its value until that View is on; it cannot become wider meanwhile.
+  if (slot && blockedLeaderObject(object, slot, objects, grants))
+    return { grants, notices: [] };
   // A follower is never wider than what it follows, and one equal to it simply follows it.
   const chosen =
     value !== undefined &&
@@ -707,24 +740,40 @@ export function setScopeValue(
     ...grants,
     [actionId]: { ...grant, scopes },
   };
+  return resetWiderFollowers(
+    objects,
+    next,
+    (leader) => leader.action.id === actionId && leader.slot.id === slotId,
+    actionId,
+  );
+}
+
+/**
+ * Send followers of the matching leaders that are not provably narrower than them back to "Same as view", and name them
+ * in a notice. A value the leader does not list is kept as stored.
+ */
+function resetWiderFollowers(
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+  matches: (leader: Leader) => boolean,
+  skip?: string,
+  quietWhenEqual = false,
+): PermissionChange {
+  const next: Record<string, PermissionGrant> = { ...grants };
   const reset: string[] = [];
   let leaderLabel = '';
   // Followers may sit in other objects, such as a Contacts action reading customers that follows Customers' View.
   for (const owner of objects)
     for (const other of owner.actions) {
       const otherGrant = next[other.id];
-      if (other.id === actionId || !otherGrant?.scopes) continue;
+      if (other.id === skip || !otherGrant?.scopes) continue;
       const otherScopes: Record<string, string> = { ...otherGrant.scopes };
       let changed = false;
+      let named = false;
       for (const follower of other.scopes ?? []) {
         const own = otherScopes[follower.id];
         const leader = leaderOf(owner, follower, objects, next);
-        if (
-          own === undefined ||
-          leader?.action.id !== actionId ||
-          leader.slot.id !== slotId
-        )
-          continue;
+        if (own === undefined || !leader || !matches(leader)) continue;
         const current = viewScopeValue(owner, next, follower, objects);
         // A value the leader lists and that is not provably narrower, wider or now equal, goes back to following it, and
         // the notice names it so the change in the list is explained. An unlisted value is kept as stored.
@@ -736,11 +785,14 @@ export function setScopeValue(
           continue;
         delete otherScopes[follower.id];
         changed = true;
+        // One equal to the scope it now follows keeps its records: it follows without a notice when asked.
+        if (quietWhenEqual && own === current) continue;
+        named = true;
         leaderLabel = viewScopeLabel(owner, next, follower, objects) ?? current;
       }
       if (changed) {
         next[other.id] = { ...otherGrant, scopes: otherScopes };
-        reset.push(other.label);
+        if (named) reset.push(other.label);
       }
     }
   return {
