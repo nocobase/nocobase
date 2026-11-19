@@ -6,6 +6,7 @@ import {
   PermissionEditor,
   type PermissionMenuNode,
   type PermissionObject,
+  type PermissionSettingsPage,
   type PermissionValue,
 } from '../../registry/authorization/permission-editor.js';
 
@@ -580,6 +581,140 @@ describe('business objects tab', () => {
       screen.getByText('Anyone who can edit roles can grant any permission.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('High risk')).toBeNull();
+  });
+});
+
+describe('small screens and reference tags', () => {
+  it('warns about an object only beside a checked menu', async () => {
+    const user = userEvent.setup();
+    render(<Host initial={{ menus: [], grants: {} }} />);
+    const row = (name: string) =>
+      screen
+        .getByRole('checkbox', { name })
+        .closest('[data-slot="permission-menu"]') as HTMLElement;
+    const tag = () =>
+      row('Payments').querySelector('[data-slot="permission-object-tag"]');
+    // Unchecked, the tag is plain even though the role cannot view payments.
+    expect(tag()).toHaveAttribute('data-viewable');
+    await user.click(screen.getByRole('checkbox', { name: 'Payments' }));
+    expect(tag()).not.toHaveAttribute('data-viewable');
+  });
+
+  it('shows each object’s count and view scope in the select used on phones', async () => {
+    const user = userEvent.setup();
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: { 'contracts.view': { scopes: { records: 'department' } } },
+        }}
+      />,
+    );
+    await user.click(
+      screen.getByRole('combobox', { name: 'Business objects' }),
+    );
+    const option = await screen.findByRole('option', { name: /^Contracts/ });
+    expect(option).toHaveTextContent(/on · Their department/);
+  });
+});
+
+describe('system settings tab', () => {
+  const settings: readonly PermissionSettingsPage[] = [
+    {
+      id: 'user-management',
+      label: 'User management',
+      group: 'Account and permissions',
+      objects: [
+        {
+          id: 'users',
+          label: 'Users',
+          actions: [
+            { id: 'users.view', label: 'View users', view: true },
+            { id: 'users.create', label: 'Invite users' },
+            {
+              id: 'users.assign',
+              label: 'Assign roles',
+              risk: 'high',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'database',
+      label: 'Database explorer',
+      group: 'System',
+      objects: [
+        {
+          id: 'page:database',
+          label: 'Database explorer',
+          actions: [{ id: 'database.open', label: 'Open page', view: true }],
+        },
+      ],
+    },
+  ];
+
+  function SettingsHost({
+    onChange,
+  }: {
+    readonly onChange: (next: PermissionValue) => void;
+  }): ReactElement {
+    const [value, setValue] = useState<PermissionValue>({
+      menus: [],
+      grants: {},
+    });
+    return (
+      <PermissionEditor
+        menus={menus}
+        objects={objects}
+        settings={settings}
+        value={value}
+        defaultTab='settings'
+        onChange={(next) => {
+          setValue(next);
+          onChange(next);
+        }}
+      />
+    );
+  }
+
+  it('sets settings pages in their own tab, without scopes or menus', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<SettingsHost onChange={onChange} />);
+    expect(
+      screen.getByRole('tab', { name: /System settings\s*0 \/ 2/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('heading', { name: 'User management' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Account and permissions')).toBeInTheDocument();
+    expect(screen.queryAllByRole('combobox')).toEqual([]);
+    // Enable all for one page turns on its actions except risky ones; no menu is checked.
+    await user.click(
+      screen.getByRole('button', { name: 'Enable all · User management' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: { 'users.view': {}, 'users.create': {} },
+    });
+    expect(
+      screen.getByRole('tab', { name: /System settings\s*1 \/ 2/ }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'Open page' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Disable all · User management' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: { 'database.open': {} },
+    });
+  });
+
+  it('hides the tab when there are no settings pages', () => {
+    render(<Host initial={{ menus: [], grants: {} }} />);
+    expect(screen.queryByRole('tab', { name: /System settings/ })).toBeNull();
   });
 });
 
