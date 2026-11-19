@@ -70,7 +70,7 @@ Keep framework files aligned with Default: the `package.json` scripts that call 
 Configure the application, then start the development server:
 
 ```bash
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
@@ -359,18 +359,20 @@ example, `POST /main/api/crmOrders/findMany` with:
 
 Plugins add features to your application. Let these commands edit `package.json`, `client/plugins.ts`, and `server/plugins.ts` for you rather than editing those files by hand.
 
-| Command                                  | What it does                                                |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `pnpm nocobase plugin register <name>`   | Install a plugin and wire it into the client and server     |
-| `pnpm nocobase plugin unregister <name>` | Remove a plugin and its wiring                              |
-| `pnpm nocobase plugin update [name]`     | Upgrade one or all registered plugins and re-sync skills    |
-| `pnpm nocobase plugin inspect <name>`    | Report a plugin's registration state; read-only             |
-| `pnpm nocobase package remove <name>`    | Remove a direct NocoBase package and its synchronized Skill |
-| `pnpm nocobase skills sync`              | Sync direct NocoBase package Skills into `.agents/skills/`  |
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
+| Command                                | What it does                                                |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `pnpm nocobase plugin register <name>` | Install a plugin and wire it into the client and server     |
+| `pnpm nocobase plugin remove <name>`   | Remove a plugin and its wiring                              |
+| `pnpm nocobase plugin update [name]`   | Upgrade one or all registered plugins and re-sync skills    |
+| `pnpm nocobase plugin inspect <name>`  | Report a plugin's registration state; read-only             |
+| `pnpm nocobase package remove <name>`  | Remove a direct NocoBase package and its synchronized Skill |
+| `pnpm nocobase skills sync`            | Sync direct NocoBase package Skills into `.agents/skills/`  |
 
 `pnpm install` automatically runs `pnpm nocobase skills sync` through the application's `postinstall` hook. Run `pnpm nocobase skills sync` manually when install scripts were disabled or Skills need refreshing.
 
-Use a full package name, as with `plugin register` and `plugin unregister`; short names such as `authentication` also work. The optional name is a positional argument, not `--plugin`.
+Use a full package name, as with `plugin register` and `plugin remove`; short names such as `authentication` also work. The optional name is a positional argument, not `--plugin`.
 
 ```bash
 pnpm nocobase plugin update @nocobase/app-plugin-authentication  # Update one registered plugin
@@ -379,7 +381,7 @@ pnpm nocobase plugin update                                     # Update all reg
 pnpm nocobase plugin update @nocobase/app-plugin-authentication --dry-run  # Preview only
 ```
 
-Without a name, the command collects registered plugins from `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. It uses the application's package manager; with pnpm, `update` follows the declared version ranges without `--latest`. An unregistered name is rejected, and an application with no registered plugins is left unchanged. After a successful package update, all registered plugins' agent skills are re-synchronized, even when only one package was selected.
+With no arguments, the command updates every plugin registered in `client/plugins.ts`, `server/plugins.ts` or `cli/plugins.ts`. To update a preinstalled plugin in `devDependencies`, pass its name explicitly. The command uses the application's package manager. With pnpm, it follows the declared version ranges. After a successful update, the application synchronizes its agent Skills.
 
 Ordering in `client/plugins.ts` and `server/plugins.ts` is contribution order, and a plugin is enabled by appearing in the array. Reorder entries or pass a plugin its options by hand; leave adding and removing entries to the commands.
 
@@ -393,7 +395,7 @@ pnpm nocobase package remove @nocobase/example --dry-run
 pnpm nocobase package remove @nocobase/example --json
 ```
 
-For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
+For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin remove` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. Use `pnpm nocobase plugin unregister <name>` to keep the package and its Skills available for development.
 
 After an interrupted or manual removal, make sure the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing a package already absent from the manifest to `package remove` can clean its recorded historical Skill ownership without uninstalling any other package.
 

@@ -182,7 +182,9 @@ export function createStandaloneRuntimeScope(
 
 export async function resolveStandaloneAppRuntime(
   definition: AppRuntimeDefinition,
-  options: CreateStandaloneRuntimeScopeOptions,
+  options: CreateStandaloneRuntimeScopeOptions & {
+    prepareDatabaseDrivers?: boolean;
+  },
 ): Promise<ResolvedAppRuntime & { readonly scope: StandaloneAppScope }> {
   const scope = createStandaloneRuntimeScope({
     ...options,
@@ -190,7 +192,7 @@ export async function resolveStandaloneAppRuntime(
       options.deploymentRootDir ?? definition.deploymentRootDir,
   });
   try {
-    const runtime = await resolveAppRuntime(definition, scope);
+    const runtime = await resolveAppRuntime(definition, scope, options);
     return Object.assign(runtime, { scope });
   } catch (error) {
     return disposeAfterStartupFailure(() => scope.destroy(), error);

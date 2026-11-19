@@ -1,3 +1,8 @@
+import {
+  inspectDatabaseDrivers,
+  type DriverDependencyFinding,
+} from './database-driver-dependencies.ts';
+import { prepareRuntimeDatabaseDrivers } from '@nocobase/app-server/runtime';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -25,6 +30,7 @@ export type ConfigCheckLevel = 'error' | 'warning';
 
 export type ConfigCheckCode =
   | 'load-failed'
+  | 'driver-dependency'
   | 'driver-missing'
   | 'secret-missing'
   | 'secret-placeholder'
@@ -35,15 +41,17 @@ export type ConfigCheckCode =
   | 'invalid'
   | 'connection-failed';
 
-export interface ConfigCheckFinding {
-  readonly level: ConfigCheckLevel;
-  readonly code: ConfigCheckCode;
-  /** The configuration key the finding is about, when there is one. */
-  readonly key?: string;
-  readonly message: string;
-  /** A command that resolves it, runnable as written. */
-  readonly fix?: string;
-}
+export type ConfigCheckFinding =
+  | DriverDependencyFinding
+  | {
+      readonly level: ConfigCheckLevel;
+      readonly code: Exclude<ConfigCheckCode, 'driver-dependency'>;
+      /** The configuration key the finding is about, when there is one. */
+      readonly key?: string;
+      readonly message: string;
+      /** A command that resolves it, runnable as written. */
+      readonly fix?: string;
+    };
 
 /**
  * When to open database connections.
@@ -61,6 +69,7 @@ export interface ConfigCheckOptions {
   readonly loadRuntime: () => Promise<AppCommandRuntime>;
   readonly connect?: ConfigCheckConnectMode;
   readonly connectTimeoutMs?: number;
+  readonly retry?: string;
   readonly environment?: NodeJS.ProcessEnv;
 }
 
@@ -135,11 +144,33 @@ export async function runConfigCheck(
     findings.push(...unknownKeyFindings(layers.overrides, known));
     findings.push(...referenceFindings(layers.overrides));
 
+    let driverFindings: DriverDependencyFinding[];
+    try {
+      driverFindings = inspectDatabaseDrivers(
+        runtime,
+        mode,
+        options.retry ?? 'pnpm nocobase config check',
+      ).findings;
+      findings.push(...driverFindings);
+      if (driverFindings.length === 0)
+        await prepareRuntimeDatabaseDrivers(runtime.config);
+    } catch (error) {
+      findings.push(...loadFailureFindings(error, rootDir, mode));
+      return {
+        ok: false,
+        mode,
+        configFile: existsSync(configFile) ? configFile : undefined,
+        findings,
+        connections: [],
+        public: runtime.config.publicValues(),
+      };
+    }
     const database = runtime.config.get<AppDatabaseConfig>('database');
     const connectMode = options.connect ?? 'auto';
     const connections =
       database === undefined ||
       database.default === 'none' ||
+      driverFindings.length > 0 ||
       connectMode === 'never'
         ? []
         : await checkConnections(database, runtime.paths, {

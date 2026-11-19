@@ -67,7 +67,7 @@ Open the agent in an empty directory and ask for an application, for example:
 The Skill then:
 
 1. Runs `npm_config_registry=… pnpm create @nocobase/app@beta <name> --template-tag=beta --json` from the parent directory, so the files land in the directory you opened.
-2. Follows the `nextCommands` that creation returns: `pnpm nocobase config init`, then `pnpm nocobase config set` for any `requiredSettings` of a database other than SQLite, then `pnpm nocobase config check`, and finally `pnpm dev` in the background.
+2. Follows the `nextCommands` that creation returns: `pnpm nocobase config init --dialect sqlite` for SQLite, then `pnpm nocobase config set` for any `requiredSettings` of a database other than SQLite, then `pnpm nocobase config check`, and finally `pnpm dev` in the background.
 3. Reports the URL and the first sign-in account, and recommends starting a new session in the application directory, where the application's own Skills are loaded reliably. If you keep working in the same session, it reads the application's `AGENTS.md` and Skills directly instead.
 
 It never asks for a database password in the conversation. For a database other than SQLite it asks you to put the password in an environment variable, then reads it with `pnpm nocobase config set --from-env`.
@@ -79,15 +79,14 @@ The Skill runs nothing you cannot run yourself:
 ```bash
 PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
 cd my-app
-pnpm nocobase config init
+pnpm nocobase config init --dialect sqlite
 pnpm nocobase config check
 pnpm dev
 ```
 
-`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago. For another database, install its driver, name it, and fill in the connection before `pnpm nocobase config check`:
+`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago. To select PostgreSQL in Default, initialize its preinstalled driver and configure the connection:
 
 ```bash
-pnpm add @nocobase/db-postgres@beta
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD
