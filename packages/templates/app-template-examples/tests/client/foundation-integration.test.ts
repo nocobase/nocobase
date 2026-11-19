@@ -110,7 +110,10 @@ describe('Examples Foundation integration', () => {
       '/settings/capabilities',
     ]);
     const menu = buildRouteNavigation(routes, new Set());
-    expect(menu.map(({ route }) => route.name)).toContain('fixtureOrders');
+    const menuNames = menu.map(({ route }) => route.name);
+    expect(menuNames).toContain('fixtureOrders');
+    expect(menuNames).not.toContain('foundationSettings');
+    expect(menuNames).not.toContain('capabilityGuide');
     expect(
       menu.filter(({ route }) => route.path.startsWith('/settings')),
     ).toMatchObject([
