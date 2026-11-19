@@ -673,7 +673,6 @@ export function permissionWorkspace(
 
   // Business menus: top-level groups keep their tree; top-level pages share the main menu group.
   const menus: PermissionMenuNode[] = [];
-  const main: PermissionMenuNode[] = [];
   const branch = (
     items: readonly RouteNavigationItem[],
   ): PermissionMenuNode[] =>
@@ -711,19 +710,8 @@ export function permissionWorkspace(
         )
       ),
   );
-  for (const item of businessNavigation) {
-    if (item.route.componentLoader) {
-      main.push(...branch([item]));
-      continue;
-    }
-    menus.push(...branch([item]));
-  }
-  if (main.length)
-    menus.unshift({
-      id: 'group:main',
-      label: t('settings.permissionMainMenu'),
-      children: main,
-    });
+  // Top-level pages and groups are listed as the sidebar shows them, without a group around the top-level pages.
+  for (const item of businessNavigation) menus.push(...branch([item]));
 
   // System settings: one page per settings module, grouped by the settings home's categories, in their own tab. A
   // settings page has no menu checkbox: it shows in the sidebar while the action that opens it is on.

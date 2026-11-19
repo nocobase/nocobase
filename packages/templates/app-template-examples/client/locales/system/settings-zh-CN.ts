@@ -261,7 +261,6 @@ const settings = {
   duplicateRole: '复制为新角色',
   discardChanges: '放弃修改',
   unrestrictedRole: '全部权限',
-  permissionMainMenu: '主菜单',
   openPage: '打开页面',
   escalation: {
     roles:
@@ -273,13 +272,7 @@ const settings = {
     menusTab: '菜单',
     objectsTab: '业务对象',
     settingsTab: '系统设置',
-    settingsIntro:
-      '开启设置页的查看（或进入该页所需的操作）后，侧边栏会显示对应菜单，不需要另外勾选菜单。系统设置没有数据范围。',
     tabCount: '{{count}} / {{total}}',
-    menusIntro:
-      '这里只决定这个角色在侧边栏能看到哪些菜单。能看哪些数据、能做什么，在「业务对象」里按对象统一设置。',
-    menuColumn: '菜单',
-    usesColumn: '页面用到的业务对象（仅供参考）',
     public: '所有人可见',
     noMenus: '没有菜单',
     emptyPage:
@@ -296,8 +289,6 @@ const settings = {
     objectEnabled: '{{total}} 项中开 {{enabled}} 项',
     objectOff: '未开启',
     noScope: '—',
-    usedBy: '用到它的菜单',
-    usedByNote: '在任何菜单里都按这里的设置生效',
     enableAll: '全部开启',
     viewOnly: '只开查看',
     disableAll: '全部关闭',
@@ -305,9 +296,7 @@ const settings = {
     sameAsObjectView: '和{{object}}的查看一样（{{scope}}）',
     scopeFor: '{{action}}的数据范围',
     scopeForSlot: '{{action}}：{{scope}}',
-    followHint: '其他操作跟随查看的范围，可以更窄，不能更宽。',
     managed: '由应用管理',
-    appliesEverywhere: '改动对所有用到该对象的菜单生效',
     unrestrictedTitle: '全部权限（不受限）',
     unrestrictedDescription:
       '该角色可以打开所有菜单，对所有数据执行所有操作，无需设置。',

@@ -51,7 +51,6 @@ import {
   isMenuToggleable,
   menuCheckState,
   menuCount,
-  menusUsing,
   menuWarnings,
   narrowerOptions,
   objectCount,
@@ -102,11 +101,7 @@ export interface PermissionEditorLabels {
   readonly menusTab: string;
   readonly objectsTab: string;
   readonly settingsTab: string;
-  readonly settingsIntro: string;
   readonly tabCount: (count: number, total: number) => string;
-  readonly menusIntro: string;
-  readonly menuColumn: string;
-  readonly usesColumn: string;
   readonly public: string;
   readonly noMenus: string;
   readonly emptyPage: (menu: string, object: string) => string;
@@ -122,8 +117,6 @@ export interface PermissionEditorLabels {
   readonly objectEnabled: (enabled: number, total: number) => string;
   readonly objectOff: string;
   readonly noScope: string;
-  readonly usedBy: string;
-  readonly usedByNote: string;
   readonly enableAll: string;
   readonly viewOnly: string;
   readonly disableAll: string;
@@ -131,9 +124,7 @@ export interface PermissionEditorLabels {
   /** A slot following another object's View, such as the customers a Contacts action reads. */
   readonly sameAsObjectView: (object: string, scope: string) => string;
   readonly scopeFor: (action: string, scope?: string) => string;
-  readonly followHint: string;
   readonly managed: string;
-  readonly appliesEverywhere: string;
   readonly unsaved: string;
   readonly readOnly: string;
   readonly unrestrictedTitle: string;
@@ -185,13 +176,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   menusTab: 'Menus',
   objectsTab: 'Business objects',
   settingsTab: 'System settings',
-  settingsIntro:
-    'Each settings page shows in the sidebar once the action that opens it, usually View, is on. Settings have no data scope.',
   tabCount: (count, total) => `${count} / ${total}`,
-  menusIntro:
-    'Only decides which menus this role sees in the sidebar. What data it can see and what it can do is set once per object under Business objects.',
-  menuColumn: 'Menu',
-  usesColumn: 'Business objects the page uses (for reference)',
   public: 'Visible to everyone',
   noMenus: 'No menus',
   emptyPage: (menu, object) =>
@@ -208,8 +193,6 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   objectEnabled: (enabled, total) => `${enabled} of ${total} on`,
   objectOff: 'Off',
   noScope: '—',
-  usedBy: 'Used by menus',
-  usedByNote: 'These settings apply in every menu.',
   enableAll: 'Enable all',
   viewOnly: 'View only',
   disableAll: 'Disable all',
@@ -217,10 +200,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   sameAsObjectView: (object, scope) => `Same as ${object} view (${scope})`,
   scopeFor: (action, scope) =>
     scope ? `${action}: ${scope}` : `Data scope of ${action}`,
-  followHint:
-    'Other actions follow the view scope; they can be narrower, never wider.',
   managed: 'Managed by the application',
-  appliesEverywhere: 'Changes apply to every menu that uses the object',
   unsaved: 'Unsaved changes',
   readOnly: 'These permissions are read-only.',
   unrestrictedTitle: 'All permissions (unrestricted)',
@@ -911,9 +891,7 @@ export function PermissionEditor({
       ? warnings.length
         ? words.attention(warnings.length)
         : undefined
-      : tab === 'objects'
-        ? words.appliesEverywhere
-        : undefined;
+      : undefined;
   const footerBar = (
     <div className='flex min-w-0 flex-wrap items-center gap-2 border-t px-4 py-3'>
       <span
@@ -1027,7 +1005,6 @@ export function PermissionEditor({
 
   const menusPanel = (
     <div className='grid min-w-0 gap-3 p-4'>
-      <p className='text-sm text-muted-foreground'>{words.menusIntro}</p>
       {readOnly && (
         <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
       )}
@@ -1054,14 +1031,6 @@ export function PermissionEditor({
       {messages}
       {menus.length ? (
         <div className='min-w-0 overflow-hidden rounded-lg border'>
-          <div
-            aria-hidden
-            className='hidden grid-cols-[auto_minmax(0,1fr)_minmax(0,20rem)] gap-x-3 border-b px-3 py-2 text-xs text-muted-foreground @min-[44rem]/permissions:grid'
-          >
-            <span className='size-4' />
-            <span>{words.menuColumn}</span>
-            <span>{words.usesColumn}</span>
-          </div>
           <ul data-slot='permission-menus' className='min-w-0'>
             <MenuRows
               nodes={menus}
@@ -1087,10 +1056,6 @@ export function PermissionEditor({
     const object = current;
     const titleId = `${id}-title`;
     const { basic, business } = orderedActions(object);
-    const hasFollowers = object.actions.some((action) =>
-      action.scopes?.some((slot) => slot.followsView),
-    );
-    const usedBy = menusUsing(menus, object.id);
     const row = (action: PermissionAction): ReactElement => (
       <ActionRow
         key={action.id}
@@ -1157,23 +1122,6 @@ export function PermissionEditor({
         {object.description && (
           <p className='text-sm text-muted-foreground'>{object.description}</p>
         )}
-        {usedBy.length > 0 && (
-          <p
-            data-slot='permission-used-by'
-            className='flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground'
-          >
-            <span>{words.usedBy}</span>
-            {usedBy.map((menu) => (
-              <span
-                key={menu.id}
-                className='rounded bg-muted px-1.5 leading-5 text-foreground/80'
-              >
-                {menu.label}
-              </span>
-            ))}
-            <span>· {words.usedByNote}</span>
-          </p>
-        )}
         {readOnly && (
           <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
         )}
@@ -1201,9 +1149,6 @@ export function PermissionEditor({
             <div className='min-w-0'>{object.notice}</div>
           </div>
         )}
-        {hasFollowers && (
-          <p className='text-xs text-muted-foreground'>{words.followHint}</p>
-        )}
       </section>
     );
   })();
@@ -1211,7 +1156,6 @@ export function PermissionEditor({
   const settingsGroups = [...new Set(settings.map((page) => page.group ?? ''))];
   const settingsPanel = (
     <div className='grid min-w-0 gap-3 p-4'>
-      <p className='text-sm text-muted-foreground'>{words.settingsIntro}</p>
       {readOnly && (
         <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
       )}

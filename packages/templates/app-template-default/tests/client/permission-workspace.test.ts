@@ -302,6 +302,11 @@ describe('role permission workspace', () => {
 
   it('lists every menu with the objects its page uses, for reference only', async () => {
     const { workspace: ws } = await workspace();
+    // Top-level pages sit at the top of the tree, with no Main menu group around them.
+    expect(ws.menus.some((node) => node.id === 'group:main')).toBe(false);
+    expect(
+      ws.menus.find((node) => node.label === enUS.navigation.home),
+    ).toMatchObject({ public: true });
     const sales = ws.menus.find((node) => node.label === 'Fixture sales');
     expect(sales?.children?.map((menu) => menu.label)).toEqual([
       'Fixture contracts',

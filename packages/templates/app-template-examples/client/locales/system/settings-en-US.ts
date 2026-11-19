@@ -283,7 +283,6 @@ const settings = {
   duplicateRole: 'Duplicate as new role',
   discardChanges: 'Discard changes',
   unrestrictedRole: 'All permissions',
-  permissionMainMenu: 'Main menu',
   openPage: 'Open page',
   escalation: {
     roles:
@@ -295,13 +294,7 @@ const settings = {
     menusTab: 'Menus',
     objectsTab: 'Business objects',
     settingsTab: 'System settings',
-    settingsIntro:
-      'Each settings page shows in the sidebar once the action that opens it, usually View, is on. Settings have no data scope.',
     tabCount: '{{count}} / {{total}}',
-    menusIntro:
-      'Only decides which menus this role sees in the sidebar. What data it can see and what it can do is set once per object under Business objects.',
-    menuColumn: 'Menu',
-    usesColumn: 'Business objects the page uses (for reference)',
     public: 'Visible to everyone',
     noMenus: 'No menus',
     emptyPage:
@@ -318,8 +311,6 @@ const settings = {
     objectEnabled: '{{enabled}} of {{total}} on',
     objectOff: 'Off',
     noScope: '—',
-    usedBy: 'Used by menus',
-    usedByNote: 'These settings apply in every menu.',
     enableAll: 'Enable all',
     viewOnly: 'View only',
     disableAll: 'Disable all',
@@ -327,10 +318,7 @@ const settings = {
     sameAsObjectView: 'Same as {{object}} view ({{scope}})',
     scopeFor: 'Data scope of {{action}}',
     scopeForSlot: '{{action}}: {{scope}}',
-    followHint:
-      'Other actions follow the view scope; they can be narrower, never wider.',
     managed: 'Managed by the application',
-    appliesEverywhere: 'Changes apply to every menu that uses the object',
     unrestrictedTitle: 'All permissions (unrestricted)',
     unrestrictedDescription:
       'This role can open every menu and perform every action on all data. There is nothing to set.',
