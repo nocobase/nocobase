@@ -16,14 +16,15 @@ import {
 it.each([401, 403, 200])(
   'checks access before inspection (%i)',
   async (status) => {
-    const inspectSettings = vi.fn(() => [
-      {
-        path: 'server.port',
-        value: '13000',
-        source: 'file',
-        fileValue: '13000',
-      },
-    ]);
+    const inspect = vi.fn(() => ({
+      sources: { 'server.port': 'file' as const },
+      fileValues: { server: { port: 13000 } },
+      files: [
+        { path: '/missing/config.yml', text: 'server:\n  port: 13000\n' },
+      ],
+      loadedAt: new Date(0).toISOString(),
+      reloads: 0,
+    }));
     const identity: MiddlewareHandler = async (c, next) =>
       status === 401 ? c.json({}, 401) : next();
     const permission: MiddlewareHandler<AuthorizationEnv> = async (c, next) => {
@@ -33,7 +34,8 @@ it.each([401, 403, 200])(
       await next();
     };
     const app = {
-      config: { inspectSettings },
+      config: { inspect, raw: () => ({ server: { port: 13000 } }) },
+      paths: { deploymentRootDir: '/missing' },
       container: {
         resolve: (token: unknown) =>
           token === authenticationToken
@@ -55,7 +57,8 @@ it.each([401, 403, 200])(
     }
     const res = await router.request('/configInspector');
     expect(res.status).toBe(status);
-    expect(inspectSettings).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
-    if (status === 200) expect((await res.json()).data.yaml).toContain('port:');
+    expect(inspect).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+    if (status === 200)
+      expect((await res.json()).data.file.text).toContain('port: 13000');
   },
 );

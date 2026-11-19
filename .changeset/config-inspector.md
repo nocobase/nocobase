@@ -5,4 +5,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Inspect reviewed settings, their configuration sources and a redacted file view in System settings.
+Inspect every running setting by module with its source, the declared environment variables and config.yml with credentials masked, compared with config.example.yml, in System settings.

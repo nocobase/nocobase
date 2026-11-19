@@ -15,21 +15,10 @@ import {
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
-import { z } from 'zod';
-import { stringify } from 'yaml';
+import { inspectConfiguration } from '../snapshot.js';
+import { snapshotSchema } from './schemas.js';
 import { access } from '../../shared/access.js';
 
-const schema = z.object({
-  settings: z.array(
-    z.object({
-      path: z.string(),
-      value: z.string(),
-      source: z.string(),
-      variable: z.string().optional(),
-    }),
-  ),
-  yaml: z.string(),
-});
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes((app) => {
     const router = new Hono<AuthorizationEnv>();
@@ -53,32 +42,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         operationId: 'configInspectorReadSettings',
         summary: 'Inspect application configuration',
         description:
-          'Requires page:config-inspector/access. Returns reviewed configuration fields only.',
-        responses: { 200: dataResponse(schema), ...apiErrorResponses },
+          'Requires page:config-inspector/access. Returns the running settings with their sources, the configuration file and config.example.yml, with every credential redacted.',
+        responses: { 200: dataResponse(snapshotSchema), ...apiErrorResponses },
       }),
-      (ctx) => {
-        const rows = app.config.inspectSettings?.() ?? [];
-        const file: Record<string, unknown> = {};
-        for (const { path, fileValue } of rows) {
-          if (fileValue === undefined) continue;
-          const keys = path.split('.');
-          let node = file;
-          for (const key of keys.slice(0, -1))
-            node = (node[key] ??= {}) as Record<string, unknown>;
-          node[keys[keys.length - 1]] = fileValue;
-        }
+      async (ctx) => {
+        const data = await inspectConfiguration(app);
         ctx.header('Cache-Control', 'no-store');
-        return ctx.json({
-          data: {
-            settings: rows.map(({ path, value, source, variable }) => ({
-              path,
-              value,
-              source,
-              variable,
-            })),
-            yaml: stringify(file),
-          },
-        });
+        return ctx.json({ data });
       },
     );
     return new Hono().route('/', router);

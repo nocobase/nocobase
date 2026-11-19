@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-config-inspector",
   "displayName": "Config Inspector App Plugin",
-  "description": "Inspect reviewed application settings and their sources without exposing configuration secrets.",
+  "description": "Inspect the running application settings, their sources and a redacted configuration file.",
   "version": "0.1.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -57,13 +57,16 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@nocobase/app-server": "workspace:^",
+    "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
     "@nocobase/i18n": "workspace:^",
-    "react": "catalog:",
-    "lucide-react": "catalog:"
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

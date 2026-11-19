@@ -1,29 +1,43 @@
 import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, useState, type ReactElement } from 'react';
+import { RotateCw } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
-interface Snapshot {
-  settings: {
-    path: string;
-    value: string;
-    variable?: string;
-    source: string;
-  }[];
-  yaml: string;
-}
+import { buildModules } from '../shared/modules.js';
+import type { ConfigInspectorSnapshot } from '../shared/snapshot.js';
+import { Alert, AlertAction, AlertDescription } from './components/ui/alert.js';
+import { Button } from './components/ui/button.js';
+import { Skeleton } from './components/ui/skeleton.js';
+import { FileView } from './views/file-view.js';
+import { ModulesView } from './views/modules-view.js';
+import { Segment, useInspectorT } from './views/shared.js';
+import { VariablesView } from './views/variables-view.js';
+
+type View = 'modules' | 'variables' | 'file';
+
 export default function ConfigInspector(): ReactElement {
   const api = useApiClient();
-  const { t } = useTranslation('@nocobase/app-plugin-config-inspector');
-  const [snapshot, setSnapshot] = useState<Snapshot>();
+  const t = useInspectorT();
+  const { i18n } = useTranslation('@nocobase/app-plugin-config-inspector');
+  const [snapshot, setSnapshot] = useState<ConfigInspectorSnapshot>();
   const [failed, setFailed] = useState(false);
-  const [file, setFile] = useState(false);
-  const [search, setSearch] = useState('');
-  useEffect(() => {
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<View>('modules');
+  const load = useCallback(() => {
     let active = true;
-    setSnapshot(undefined);
+    setLoading(true);
     setFailed(false);
     void api
-      .request<{ data: Snapshot }>({ path: 'configInspector', query: {} })
+      .request<{ data: ConfigInspectorSnapshot }>({
+        path: 'configInspector',
+        query: {},
+      })
       .then(
         ({ data }) => {
           if (active) setSnapshot(data);
@@ -31,105 +45,151 @@ export default function ConfigInspector(): ReactElement {
         () => {
           if (active) setFailed(true);
         },
-      );
+      )
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     return () => {
       active = false;
     };
   }, [api]);
-  const rows = snapshot?.settings.filter((row) =>
-    (row.path + ' ' + (row.variable ?? ''))
-      .toLowerCase()
-      .includes(search.trim().toLowerCase()),
+  useEffect(() => load(), [load]);
+  const modules = useMemo(
+    () => (snapshot ? buildModules(snapshot) : []),
+    [snapshot],
   );
-  const groups = new Map<string, NonNullable<typeof rows>>();
-  for (const row of rows ?? []) {
-    const module = row.path.split('.')[0];
-    const group = groups.get(module);
-    if (group) group.push(row);
-    else groups.set(module, [row]);
-  }
+
+  const counts = useMemo(() => {
+    const result = { file: 0, environment: 0, default: 0, customized: 0 };
+    for (const setting of snapshot?.settings ?? []) {
+      if (setting.customized) result.customized += 1;
+      if (setting.source === 'file') result.file += 1;
+      else if (setting.source === 'environment') result.environment += 1;
+      else if (setting.source === 'default') result.default += 1;
+    }
+    return result;
+  }, [snapshot]);
+
   return (
-    <section className='mx-auto w-full max-w-5xl space-y-5 p-6'>
-      <h1 className='text-2xl font-semibold'>{t('configInspector.title')}</h1>
-      <div className='flex gap-2'>
-        {[false, true].map((view) => (
-          <button
-            type='button'
-            key={String(view)}
-            aria-pressed={file === view}
-            onClick={() => setFile(view)}
-            className='rounded-md border px-3 py-2 aria-pressed:bg-muted'
-          >
-            {t(view ? 'configInspector.fileTab' : 'configInspector.effective')}
-          </button>
-        ))}
+    <section className='mx-auto grid w-full max-w-6xl min-w-0 gap-4 p-4 sm:p-6'>
+      <div className='flex flex-wrap items-start justify-between gap-3'>
+        <div className='grid max-w-3xl gap-1'>
+          <h1 className='text-xl font-semibold'>{t('title')}</h1>
+          <p className='text-sm text-muted-foreground'>{t('lead')}</p>
+        </div>
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          disabled={loading}
+          onClick={() => load()}
+        >
+          <RotateCw className={loading ? 'animate-spin' : undefined} />
+          {t('refresh')}
+        </Button>
       </div>
       {failed ? (
-        <p role='alert'>{t('configInspector.error')}</p>
+        <Alert variant='destructive'>
+          <AlertDescription>{t('error')}</AlertDescription>
+          <AlertAction>
+            <Button
+              type='button'
+              size='sm'
+              variant='outline'
+              onClick={() => load()}
+            >
+              {t('retry')}
+            </Button>
+          </AlertAction>
+        </Alert>
       ) : !snapshot ? (
-        <p role='status'>{t('configInspector.loading')}</p>
-      ) : file ? (
-        <pre className='overflow-auto rounded-md border p-4'>
-          {snapshot.yaml}
-        </pre>
+        <div role='status' aria-busy className='grid gap-4'>
+          <Skeleton className='h-16 w-full' />
+          <Skeleton className='h-96 w-full' />
+        </div>
       ) : (
         <>
-          <input
-            type='search'
-            className='w-full rounded-md border px-3 py-2'
-            value={search}
-            aria-label={t('configInspector.search')}
-            placeholder={t('configInspector.search')}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {rows?.length ? (
-            <div className='space-y-4'>
-              {Array.from(groups, ([module, settings]) => (
-                <section key={module}>
-                  <h2 className='font-medium'>{module}</h2>
-                  <dl className='divide-y'>
-                    {settings.map((row) => (
-                      <div
-                        key={row.path}
-                        className='flex flex-wrap justify-between gap-3 py-3'
-                      >
-                        <dt>
-                          <code>{row.path}</code>
-                          {row.variable && (
-                            <small className='block text-muted-foreground'>
-                              {row.variable}
-                            </small>
-                          )}
-                          {[
-                            'users.initialAdmin.password',
-                            'app.sampleData',
-                          ].includes(row.path) && (
-                            <small className='block text-muted-foreground'>
-                              {t('configInspector.initialOnly')}
-                            </small>
-                          )}
-                        </dt>
-                        <dd>
-                          {row.value === '[configured]'
-                            ? t('configInspector.configured')
-                            : row.value === '[hidden]'
-                              ? t('configInspector.hidden')
-                              : row.value}{' '}
-                          <small className='text-muted-foreground'>
-                            {t('configInspector.' + row.source)}
-                          </small>
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              ))}
+          <dl className='grid grid-cols-2 overflow-hidden rounded-lg border bg-background lg:grid-cols-4'>
+            <Fact label={t('facts.file')}>
+              <span
+                className='font-mono text-xs'
+                title={snapshot.file.path ?? undefined}
+              >
+                {snapshot.file.exists ? snapshot.file.path : t('facts.noFile')}
+              </span>
+            </Fact>
+            <Fact label={t('facts.loadedAt')}>
+              {snapshot.loadedAt
+                ? new Date(snapshot.loadedAt).toLocaleString(i18n.language)
+                : '—'}
+              {snapshot.reloads ? (
+                <span className='ml-1 text-xs font-normal text-muted-foreground'>
+                  · {t('facts.reloads', { count: snapshot.reloads })}
+                </span>
+              ) : null}
+            </Fact>
+            <Fact label={t('facts.customized')}>
+              <span className='inline-flex items-center gap-1.5'>
+                <span
+                  aria-hidden
+                  className='size-1.5 rounded-full bg-primary'
+                />
+                {t('facts.customizedCount', { count: counts.customized })}
+              </span>
+            </Fact>
+            <Fact label={t('facts.sources')}>
+              <span className='text-xs font-normal text-muted-foreground'>
+                {t('source.file')}{' '}
+                <b className='text-sm text-foreground'>{counts.file}</b> ·{' '}
+                {t('source.environment')}{' '}
+                <b className='text-sm text-foreground'>{counts.environment}</b>{' '}
+                · {t('source.default')}{' '}
+                <b className='text-sm text-foreground'>{counts.default}</b>
+              </span>
+            </Fact>
+          </dl>
+          <section className='grid min-w-0 gap-4 rounded-xl border bg-background p-4 sm:p-5'>
+            <div className='flex flex-wrap items-center justify-between gap-3'>
+              <p className='text-sm text-muted-foreground'>
+                {t(`leads.${view}`)}
+              </p>
+              <Segment
+                label={t('views.label')}
+                value={view}
+                className='w-full sm:w-auto'
+                options={[
+                  ['modules', t('views.modules')],
+                  ['variables', t('views.variables')],
+                  ['file', t('views.file')],
+                ]}
+                onChange={setView}
+              />
             </div>
-          ) : (
-            <p>{t('configInspector.empty')}</p>
-          )}
+            {view === 'modules' ? (
+              <ModulesView modules={modules} customized={counts.customized} />
+            ) : view === 'variables' ? (
+              <VariablesView variables={snapshot.variables} />
+            ) : (
+              <FileView snapshot={snapshot} />
+            )}
+          </section>
         </>
       )}
     </section>
+  );
+}
+
+function Fact({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactElement | (ReactElement | string | null)[] | string;
+}): ReactElement {
+  return (
+    <div className='min-w-0 border-t border-l px-4 py-3 [&:nth-child(-n+2)]:border-t-0 [&:nth-child(odd)]:border-l-0 lg:border-t-0 lg:[&:nth-child(odd)]:border-l lg:first:border-l-0'>
+      <dt className='text-xs text-muted-foreground'>{label}</dt>
+      <dd className='mt-0.5 truncate text-sm font-semibold'>{children}</dd>
+    </div>
   );
 }

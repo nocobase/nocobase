@@ -12,6 +12,7 @@
   "include": [
     "package.ts",
     "server/**/*.ts",
+    "shared/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx"
   ]

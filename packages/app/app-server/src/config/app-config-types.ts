@@ -5,7 +5,9 @@ import type {
   ConfigParser,
   ConfigProvider,
 } from '@nocobase/config';
+import type { EnvironmentMapping } from '@nocobase/config/providers/env';
 import type { FileProviderOptions } from '@nocobase/config/providers/file';
+import type { AppConfigInspection } from './inspection.js';
 import type { ConfigIssue } from './validation.js';
 
 export interface AppConfigSource {
@@ -30,7 +32,10 @@ export interface AppConfigReloadResult {
 }
 
 export interface AppConfigAccessor {
-  inspectSettings?(): import('./inspection.js').InspectedSetting[];
+  /** Where each running value came from and the files' text, unredacted; an accessor composed by hand may omit it. */
+  inspect?(): AppConfigInspection;
+  /** Every declared environment variable with its absolute path; an accessor without declared sections may omit it. */
+  environmentVariableMappings?(): Readonly<Record<string, EnvironmentMapping>>;
   setLogger?(logger: Pick<Logger, 'debug'>): void;
   mergeDefaults(values: ConfigMap): void;
   get<TValue = unknown>(key: string): TValue | undefined;

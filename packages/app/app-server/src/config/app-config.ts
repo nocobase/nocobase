@@ -31,20 +31,9 @@ import {
   type ConfigIssue,
 } from './validation.js';
 
-import { ConfigInspection, type InspectedSetting } from './inspection.js';
+import { ConfigInspection, type AppConfigInspection } from './inspection.js';
 
 export class AppConfig {
-  private inspection = new ConfigInspection();
-  private readonly fileSources = new WeakSet<AppConfigSource['provider']>();
-  private sectionEnvironment?: AppConfigSource['provider'];
-
-  inspectSettings(): InspectedSetting[] {
-    return this.inspection.rows(
-      this.requireCurrent(),
-      this.sectionEnvironmentVariables(),
-    );
-  }
-
   private readonly sources: AppConfigSource[] = [];
   private readonly listeners = new Map<
     string,
@@ -57,6 +46,14 @@ export class AppConfig {
   private reloadPromise: Promise<AppConfigReloadResult> | undefined;
   private logger?: Pick<Logger, 'debug'>;
   private loadDurationMs?: number;
+  private inspection = new ConfigInspection();
+  private loadedAt = new Date();
+  private reloads = 0;
+  private readonly filePaths = new WeakMap<
+    AppConfigSource['provider'],
+    string
+  >();
+  private sectionEnvironment?: AppConfigSource['provider'];
 
   /** Attach diagnostics after the logging configuration has been resolved. */
   public setLogger(logger: Pick<Logger, 'debug'>): void {
@@ -99,7 +96,7 @@ export class AppConfig {
       );
     }
     const provider = fileProvider(resolvedPath, options);
-    this.fileSources.add(provider);
+    this.filePaths.set(provider, resolvedPath);
     return this.load(provider, parser);
   }
 
@@ -230,6 +227,15 @@ export class AppConfig {
     return this.requireCurrent().raw();
   }
 
+  /**
+   * Where each value of the running configuration came from, what the files said and their text, unredacted. A path
+   * absent from `sources` comes from the code defaults. Callers that show it to anyone must redact it first.
+   */
+  public inspect(): AppConfigInspection {
+    this.requireCurrent();
+    return this.inspection.snapshot(this.loadedAt, this.reloads);
+  }
+
   /** The defaults and the values the application's own sources supply, kept apart. See {@link AppConfigLayers}. */
   public layers(): AppConfigLayers {
     this.requireCurrent();
@@ -273,6 +279,7 @@ export class AppConfig {
   private async performReload(): Promise<AppConfigReloadResult> {
     const previous = this.requireCurrent();
     const previousInspection = this.inspection;
+    const previousLoadedAt = this.loadedAt;
     const previousOverrides = this.overrides;
     const next = await this.loadConfig();
     // A reload that breaks a declared rule is refused and the running configuration stays as it was.
@@ -283,9 +290,11 @@ export class AppConfig {
     );
     if (issues.some((issue) => issue.level === 'error')) {
       this.inspection = previousInspection;
+      this.loadedAt = previousLoadedAt;
       this.overrides = previousOverrides;
       throw new AppConfigInvalidError(issues);
     }
+    this.reloads += 1;
     const namespaces = new Set([...previous.mapKeys(''), ...next.mapKeys('')]);
     const changedNamespaces = [...namespaces]
       .filter(
@@ -318,26 +327,30 @@ export class AppConfig {
     const inspection = new ConfigInspection();
     for (const source of this.sources) {
       if (source.options?.merge) {
+        const before = structuredClone(overrides.raw());
         await overrides.load(source.provider, source.parser, source.options);
-        inspection.record(overrides, 'unknown');
+        inspection.recordChanges(before, overrides.raw());
         continue;
       }
       const layer = new Config();
       await layer.load(source.provider, source.parser, source.options);
       overrides.merge(layer);
+      const filePath = this.filePaths.get(source.provider);
       inspection.record(
         layer,
-        this.fileSources.has(source.provider)
+        filePath !== undefined
           ? 'file'
           : source.provider === this.sectionEnvironment
             ? 'environment'
             : 'unknown',
       );
+      if (filePath !== undefined) await inspection.recordFile(filePath, layer);
     }
     const next = this.defaults.copy();
     next.merge(overrides);
     normalizeNotificationChannelAliases(next);
     this.inspection = inspection;
+    this.loadedAt = new Date();
     this.overrides = overrides;
     return next;
   }
