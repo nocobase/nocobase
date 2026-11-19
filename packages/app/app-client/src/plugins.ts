@@ -32,6 +32,16 @@ export type AppClientRouteAuthz =
 
 export type AppClientContributionSource = 'application' | 'plugin';
 
+/**
+ * Where a route lives. `app` holds the application's own pages, declared with `defineAppRoutes()`. `settings` holds
+ * configuration pages, declared with `defineSettingsRoutes()` and mounted under `SETTINGS_ROUTE_PATH`; an application
+ * shows them in a navigation of their own. Both share one route tree, authorization, breadcrumbs and component loading.
+ */
+export type AppClientRouteSurface = 'app' | 'settings';
+
+/** The path every settings page is mounted under. */
+export const SETTINGS_ROUTE_PATH = '/settings';
+
 export type AppClientReactProviderLayer = 'root' | 'application' | 'extension';
 
 export interface AppClientRouteComponentModule {
@@ -68,7 +78,11 @@ export interface AppClientRoutePresentation {
 }
 
 export interface AppClientRoutePageDefinition {
-  /** Group name in this package, or packageName:name for another package; contribution roots only. */
+  /**
+   * Group name in this package, or packageName:name for another package; contribution roots only. In
+   * `defineSettingsRoutes()` a bare name names a settings category instead: a group declared at the root of any
+   * settings contribution, whichever package declared it.
+   */
   readonly parent?: string;
   readonly name: string;
   readonly path: string;
@@ -83,7 +97,7 @@ export interface AppClientRoutePageDefinition {
 }
 
 export interface AppClientRouteGroupDefinition {
-  /** Group name in this package, or packageName:name for another package; contribution roots only. */
+  /** As on a page: a group in this package, packageName:name, or in `defineSettingsRoutes()` a settings category. */
   readonly parent?: string;
   readonly name: string;
   readonly path?: string;
@@ -111,6 +125,8 @@ export interface AppClientRegisteredRoute {
   readonly id: string;
   readonly packageName: string;
   readonly source: AppClientContributionSource;
+  /** `settings` on every route declared with `defineSettingsRoutes()`; omitted on application routes. */
+  readonly surface?: AppClientRouteSurface;
 }
 
 /**
@@ -164,7 +180,13 @@ export interface AppClientAppRoutesContribution {
   readonly routes: readonly AppClientRouteDefinition[];
 }
 
-export type AppClientRouteContribution = AppClientAppRoutesContribution;
+export interface AppClientSettingsRoutesContribution {
+  readonly parent: 'settings';
+  readonly routes: readonly AppClientRouteDefinition[];
+}
+
+export type AppClientRouteContribution =
+  AppClientAppRoutesContribution | AppClientSettingsRoutesContribution;
 
 export interface AppClientRouteComponentOverrideDefinition {
   readonly routeId: string;
@@ -377,6 +399,33 @@ export function defineAppRoutes(
   });
 }
 
+/**
+ * Declares settings pages: the same definitions as `defineAppRoutes()`, mounted under `/settings` and marked with the
+ * `settings` surface, mainly so a plugin can contribute its configuration pages without knowing how the application
+ * arranges them.
+ *
+ * A group declared at the root of a settings contribution is a category, shared by every package: a page or group
+ * names it with a bare `parent`, such as `parent: 'system'`, and the application declares the categories it offers.
+ * A category's path, when it has one, is part of its pages' paths; the usual categories declare none, so moving a page
+ * between categories keeps its URL. `packageName:name` still names a group of one package, such as a module whose
+ * pages are tabs. Routes of one surface cannot nest under a group of the other.
+ */
+export function defineSettingsRoutes(
+  routes: readonly AppClientRouteDefinition[],
+): AppClientSettingsRoutesContribution {
+  return Object.freeze({
+    parent: 'settings',
+    routes: freezeNavigationRoutes(routes),
+  });
+}
+
+/** Whether a registered route belongs to the settings surface. */
+export function isSettingsRoute(
+  route: Pick<AppClientRegisteredRoute, 'surface'>,
+): boolean {
+  return route.surface === 'settings';
+}
+
 function freezeNavigationRoutes(
   routes: readonly AppClientRouteDefinition[],
 ): readonly AppClientRouteDefinition[] {
@@ -479,15 +528,17 @@ export function resolveAppClientContributions(
 
     const routeContributions = normalizeRouteContributions(contribution.routes);
     for (const routeContribution of routeContributions) {
-      if (routeContribution.parent !== 'app') {
+      const surface = routeContribution.parent as unknown;
+      if (surface !== 'app' && surface !== 'settings') {
         throw new Error(
-          `Plugin "${packageName}" contributed routes to unsupported parent "${String(routeContribution.parent)}"; declare them with defineAppRoutes().`,
+          `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes() or defineSettingsRoutes().`,
         );
       }
       inputs.push({
         definitions: routeContribution.routes,
         packageName,
         source,
+        surface,
       });
     }
 
@@ -508,11 +559,22 @@ export function resolveAppClientContributions(
     }
   }
 
-  const routes = resolveRouteTree(assembleRoutes(inputs), {
-    parentPath: '',
-    ids: routeIds,
-    claimed: claimedPaths,
-  });
+  const roots = assembleRoutes(inputs);
+  const routes = Object.freeze([
+    ...resolveRouteTree(
+      roots.filter((node) => node.surface === 'app'),
+      { parentPath: '', surface: 'app', ids: routeIds, claimed: claimedPaths },
+    ),
+    ...resolveRouteTree(
+      roots.filter((node) => node.surface === 'settings'),
+      {
+        parentPath: SETTINGS_ROUTE_PATH,
+        surface: 'settings',
+        ids: routeIds,
+        claimed: claimedPaths,
+      },
+    ),
+  ]);
 
   return Object.freeze({
     routes,
@@ -524,14 +586,19 @@ interface RouteInput {
   definitions: readonly AppClientRouteDefinition[];
   packageName: string;
   source: AppClientContributionSource;
+  surface: AppClientRouteSurface;
 }
 
 interface RouteNode {
   definition: AppClientRouteDefinition;
   packageName: string;
   source: AppClientContributionSource;
+  surface: AppClientRouteSurface;
   children?: RouteNode[];
 }
+
+/** Settings categories share one namespace across packages, which a package name can never collide with. */
+const SETTINGS_CATEGORY_PREFIX = 'settings:';
 
 function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   const roots: RouteNode[] = [];
@@ -553,17 +620,26 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
         definition,
         packageName: input.packageName,
         source: input.source,
+        surface: input.surface,
         ...(definition.children
           ? { children: definition.children.map((child) => copy(child, true)) }
           : {}),
       };
       all.push(node);
       if (!definition.componentLoader) {
-        const id = groupId(definition.name, input.packageName);
+        const category =
+          input.surface === 'settings' &&
+          !nested &&
+          definition.parent === undefined;
+        const id = category
+          ? `${SETTINGS_CATEGORY_PREFIX}${normalizeContributionName(definition.name, input.packageName, 'route')}`
+          : groupId(definition.name, input.packageName);
         const previous = groups.get(id);
         if (previous)
           throw new Error(
-            `Client route group "${id}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`,
+            category
+              ? `Settings category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
+              : `Client route group "${id}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`,
           );
         groups.set(id, node);
       }
@@ -578,7 +654,9 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
           node,
           parent: parent.includes(':')
             ? parent
-            : groupId(parent, input.packageName),
+            : input.surface === 'settings'
+              ? `${SETTINGS_CATEGORY_PREFIX}${parent}`
+              : groupId(parent, input.packageName),
         });
       }
     }
@@ -587,7 +665,13 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
     const target = groups.get(parent);
     if (!target)
       throw new Error(
-        `app route "${node.definition.name}" from "${node.packageName}" references missing group "${parent}" (the target must be a group, not a page).`,
+        parent.startsWith(SETTINGS_CATEGORY_PREFIX)
+          ? `settings route "${node.definition.name}" from "${node.packageName}" references missing settings category "${parent.slice(SETTINGS_CATEGORY_PREFIX.length)}"; the application declares its categories with defineSettingsRoutes().`
+          : `${node.surface} route "${node.definition.name}" from "${node.packageName}" references missing group "${parent}" (the target must be a group, not a page).`,
+      );
+    if (target.surface !== node.surface)
+      throw new Error(
+        `${node.surface} route "${node.definition.name}" from "${node.packageName}" cannot join ${target.surface} group "${parent}"; declare it with ${target.surface === 'settings' ? 'defineSettingsRoutes()' : 'defineAppRoutes()'}.`,
       );
     if (!target.children)
       throw new Error(`app group "${parent}" must declare children.`);
@@ -821,6 +905,7 @@ function normalizeNavigation(
 
 interface RouteResolveContext {
   parentPath: string;
+  surface: AppClientRouteSurface;
   parentAuth?: AppClientRouteAuth;
   /** Effective authz of the nearest ancestor page; groups pass it through. */
   ancestorAuthz?: AppClientRouteAuthz;
@@ -940,6 +1025,7 @@ function resolveRouteTree(
       auth,
       packageName,
       source,
+      ...(context.surface === 'settings' ? { surface: context.surface } : {}),
       ...(breadcrumb ? { breadcrumb } : {}),
       ...(navigation ? { navigation } : {}),
       ...(presentation ? { presentation } : {}),

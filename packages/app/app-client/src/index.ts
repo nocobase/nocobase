@@ -111,10 +111,15 @@ export {
   defineClientReactProviders,
   defineClientRouteComponentOverrides,
   defineClientSourceExtension,
+  defineSettingsRoutes,
+  isSettingsRoute,
   resolveAppClientContributions,
+  SETTINGS_ROUTE_PATH,
 } from './plugins.js';
 export type {
   AppClientAppRoutesContribution,
+  AppClientSettingsRoutesContribution,
+  AppClientRouteSurface,
   AppClientContribution,
   AppClientContributions,
   AppClientContributionSource,
