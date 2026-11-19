@@ -1,6 +1,6 @@
 # @nocobase/app-plugin-config-inspector
 
-## 0.0.1
+## 0.1.0-beta.0
 
 ### Patch Changes
 
