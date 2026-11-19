@@ -152,6 +152,9 @@ describe('permission editor tabs', () => {
     expect(
       screen.getByRole('tab', { name: /Menus\s*1 \/ 5/ }),
     ).toBeInTheDocument();
+    // On narrow containers each tab wraps its name above its count instead of running off the edge.
+    for (const tab of screen.getAllByRole('tab'))
+      expect(tab).toHaveClass('min-w-0', 'whitespace-normal');
     // No intro or column headings above the menu tree.
     expect(screen.queryByText(/Business objects the page uses/)).toBeNull();
     // Public menus are checked for everyone and cannot be changed.
@@ -287,6 +290,34 @@ describe('business objects tab', () => {
       'data-following',
     );
   });
+
+  it.each([
+    ['wider than View', 'department', 'all', 'All records'],
+    ['unknown to View', 'department', 'plugin.active', 'plugin.active'],
+    ['wider with no narrower option', 'own', 'all', 'All records'],
+  ])(
+    'shows a stored scope %s as stored when a role opens',
+    (_case, view, stored, shown) => {
+      const onChange = vi.fn();
+      render(
+        <Host
+          tab='objects'
+          onChange={onChange}
+          initial={{
+            menus: [],
+            grants: {
+              'contracts.view': { scopes: { records: view } },
+              'contracts.update': { scopes: { records: stored } },
+            },
+          }}
+        />,
+      );
+      const select = trigger('Data scope of Edit contracts');
+      expect(select).toHaveTextContent(shown);
+      expect(select).not.toHaveAttribute('data-following');
+      expect(onChange).not.toHaveBeenCalled();
+    },
+  );
 
   it('shows no group title when every object is in the same group', () => {
     render(

@@ -251,6 +251,46 @@ describe('permission editor model', () => {
     ).toBe('own');
   });
 
+  it('sends a follower View does not list back to Same as view when View narrows or turns on', () => {
+    // Stored by a seed or another application: a scope View does not list, so nothing shows it is within View.
+    const stored: PermissionGrants = {
+      'contracts.view': { scopes: { records: 'all' } },
+      'contracts.update': { scopes: { records: 'plugin.active' } },
+    };
+    const narrowed = setScopeValue(
+      objects,
+      stored,
+      'contracts.view',
+      'records',
+      'own',
+    );
+    expect(narrowed.grants['contracts.update']?.scopes).toEqual({});
+    expect(narrowed.notices).toEqual([
+      { kind: 'scope-reset', view: 'Their own records', actions: ['Edit'] },
+    ]);
+    const on = setActionEnabled(
+      objects,
+      { 'contracts.update': { scopes: { records: 'plugin.active' } } },
+      'contracts.view',
+      true,
+    );
+    expect(on.grants['contracts.update']?.scopes).toEqual({});
+    expect(on.notices).toContainEqual({
+      kind: 'scope-reset',
+      view: 'All records',
+      actions: ['Edit'],
+    });
+    // Changing something else keeps it as stored.
+    const other = setScopeValue(
+      objects,
+      stored,
+      'contracts.approve',
+      'amount',
+      'any',
+    );
+    expect(other.grants['contracts.update']).toBe(stored['contracts.update']);
+  });
+
   it('names a follower equal to the new View scope when it goes back to following it', () => {
     const change = setScopeValue(
       objects,
