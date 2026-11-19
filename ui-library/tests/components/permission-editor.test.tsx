@@ -720,6 +720,90 @@ describe('business objects tab', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('locks the configuration of a follower slot, inline or stacked, while its summary stays visible', async () => {
+    const user = userEvent.setup();
+    const configure = vi.fn();
+    const button = (name: string) => (
+      <button type='button' onClick={() => configure(name)}>
+        {name}
+      </button>
+    );
+    // View's own filter can be configured; Edit's stored filter follows View, and Customers' follows a View that is off.
+    const items: readonly PermissionObject[] = crossObjectItems.map((object) =>
+      object.id === 'contracts'
+        ? {
+            ...object,
+            actions: [
+              {
+                ...object.actions[0]!,
+                scopes: [
+                  {
+                    id: 'records',
+                    options: RECORDS,
+                    configuration: button('Configure view filter'),
+                  },
+                ],
+              },
+              {
+                id: 'contracts.update',
+                label: 'Edit contracts',
+                scopes: [
+                  {
+                    id: 'records',
+                    followsView: true,
+                    configuration: button('Configure edit filter'),
+                  },
+                ],
+              },
+              {
+                ...object.actions[1]!,
+                scopes: object.actions[1]!.scopes!.map((slot) =>
+                  slot.id === 'customers'
+                    ? {
+                        ...slot,
+                        configuration: button('Configure customers filter'),
+                      }
+                    : slot,
+                ),
+              },
+            ],
+          }
+        : object,
+    );
+    render(
+      <Host
+        tab='objects'
+        items={items}
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'all' } },
+            'contracts.update': { scopes: { records: 'own' } },
+            'contracts.approve': { scopes: { customers: 'own' } },
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText('Needs Customers view')).toBeInTheDocument();
+    for (const name of [
+      'Configure edit filter',
+      'Configure customers filter',
+    ]) {
+      const locked = screen.getByRole('button', { name });
+      expect(locked).toBeDisabled();
+      await user.click(locked);
+      locked.focus();
+      expect(locked).not.toHaveFocus();
+      await user.keyboard('{Enter} ');
+    }
+    expect(configure).not.toHaveBeenCalled();
+    const open = screen.getByRole('button', { name: 'Configure view filter' });
+    expect(open).toBeEnabled();
+    open.focus();
+    await user.keyboard('{Enter}');
+    expect(configure).toHaveBeenCalledWith('Configure view filter');
+  });
+
   it('filters objects by action name', async () => {
     const user = userEvent.setup();
     render(<Host tab='objects' initial={{ menus: [], grants: {} }} />);
