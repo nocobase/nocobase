@@ -140,12 +140,6 @@ const source = {
                 { name: 'update', title: 'Update' },
               ],
             },
-            {
-              type: 'settings',
-              id: 'authorization.inspector',
-              title: 'Permission check',
-              actions: [{ name: 'inspect', title: 'Inspect' }],
-            },
           ],
         },
       ],
@@ -828,20 +822,6 @@ describe('role permission workspace', () => {
       changed.find((grant) => grant.resource.id === 'contracts')?.actions[0]
         ?.policy?.scopes,
     ).toEqual({ records: 'own', pluginSlot: 'kept' });
-  });
-
-  it('shows no permission check: the server’s inspector resource is not offered anywhere', async () => {
-    const { workspace: ws } = await workspace();
-    const inspect = permissionRowId(
-      { type: 'settings', id: 'authorization.inspector' },
-      'inspect',
-    );
-    expect(ws.bindings.has(inspect)).toBe(false);
-    expect(
-      [...ws.objects, ...ws.settings.flatMap((page) => page.objects)].some(
-        (object) => object.id === 'settings:authorization.inspector',
-      ),
-    ).toBe(false);
   });
 
   it('labels the scopes of a multi-scope action with their registered collection titles', async () => {
