@@ -11,6 +11,16 @@ export const SETTINGS_HOME = 'settingsHome';
 /** The category a module registered directly under the settings group is shown in. */
 export const SETTINGS_FALLBACK_CATEGORY = 'settingsSystem';
 
+/**
+ * The application's navigation as the sidebar shows it, from the routes the viewer may open. The shared router calls
+ * this one function, so a template arranges its own menu here: Default only collapses the settings group.
+ */
+export function organizeNavigation(
+  items: RouteNavigationItem[],
+): RouteNavigationItem[] {
+  return collapseSettingsNavigation(items);
+}
+
 /** The settings home page of a settings group route, when the application registers one. */
 export function settingsHomeRoute(
   route: AppClientRegisteredRoute,

@@ -10,7 +10,7 @@ import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 import { EMPTY_ARRAY } from '#lib/constants';
 import { withSettingsShell } from './settings-shell.js';
 import {
-  collapseSettingsNavigation,
+  organizeNavigation,
   settingsCatalog,
   settingsNavigation,
   type SettingsCategory,
@@ -35,7 +35,7 @@ export function buildRouteNavigation(
   denied: ReadonlySet<string>,
 ): RouteNavigationItem[] {
   const routes = withSettingsShell(registered);
-  return collapseSettingsNavigation(visibleRouteNavigation(routes, denied));
+  return organizeNavigation(visibleRouteNavigation(routes, denied));
 }
 
 /** The settings home's categories and modules the viewer may open (`settingsCatalog`). */

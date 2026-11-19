@@ -1,5 +1,6 @@
 /**
- * Examples-only: settings pages that lived outside `/settings` before `defineSettingsRoutes()` mounted them there.
+ * Settings pages that lived outside `/settings` before `defineSettingsRoutes()` mounted them there; the shared router
+ * redirects each one. Examples moved these pages; Default kept its URLs and lists none.
  * Each former prefix keeps working for bookmarks and links, with the rest of the path, the query and the hash. Route
  * definitions reject wildcards, so the redirects are plain router entries; the destination's own guards still apply.
  */

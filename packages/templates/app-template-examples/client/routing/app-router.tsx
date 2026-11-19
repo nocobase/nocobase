@@ -13,7 +13,7 @@ import { renderRouteTree } from './route-tree.js';
 import { StandalonePageLayout } from './standalone-page-layout.js';
 import { SessionPreparation } from './session-preparation.js';
 import { SettingsRedirect } from './settings-redirect.js';
-import { SETTINGS_REDIRECTS } from './settings-redirects.js';
+import { SETTINGS_REDIRECTS } from '#lib/settings-redirects';
 
 export interface AppRouterProps {
   readonly clientRoutes: readonly AppClientRegisteredRoute[];
@@ -62,7 +62,7 @@ export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
         {renderRouteTree(routeGroups.optional)}
       </Route>
 
-      {/* Examples-only: settings pages moved under `/settings` keep their former URLs. */}
+      {/* Settings pages moved under `/settings` keep their former URLs (`#lib/settings-redirects`). */}
       {SETTINGS_REDIRECTS.map(([from]) => (
         // `/users/*` also matches `/users` itself.
         <Route key={from} path={`${from}/*`} element={<SettingsRedirect />} />

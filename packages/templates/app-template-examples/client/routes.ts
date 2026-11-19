@@ -557,7 +557,7 @@ const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
 ]);
 
 // Users and Permission management join the Accounts and permissions category; Notifications joins the System category.
-// Their former URLs outside `/settings` redirect through `routing/settings-redirects.ts`.
+// Their former URLs outside `/settings` redirect through `lib/settings-redirects.ts`.
 const routes: readonly AppClientRouteContribution[] =
   includeNotificationTemplateRoutes(
     [appRoutes, settingsRoutes, systemSettingsRoutes, databaseExplorerRoutes],

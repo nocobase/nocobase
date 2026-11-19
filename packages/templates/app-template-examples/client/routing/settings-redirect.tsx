@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router';
 
-import { settingsRedirectTarget } from './settings-redirects.js';
+import { settingsRedirectTarget } from '#lib/settings-redirects';
 
 /** Sends a former settings URL to its page under `/settings`, keeping the rest of the path, the query and the hash. */
 export function SettingsRedirect(): ReactElement {
