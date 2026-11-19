@@ -1,3 +1,5 @@
+import { gunzipSync } from 'node:zlib';
+import type { DiagnosticsRequest } from '../src/protocol/index.ts';
 // An in-memory application server that speaks the runner protocol, for driving the runner in tests. It keeps every
 // request body, lets a test queue runs, cancel them, add inputs, take a lease away, and make the events route fail.
 import { serve, type ServerType } from '@hono/node-server';
@@ -199,6 +201,8 @@ export class FakeServer {
   /** How many times each mount was fetched. */
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
+  diagnostics: DiagnosticsRequest | undefined;
+  readonly diagnosticsUploads: unknown[][] = [];
   upgrade: UpgradeNotice | undefined;
   /** The protocol heartbeat answers say the server speaks while set; left out otherwise, as an older server does. */
   protocolVersion: number | undefined;
@@ -560,6 +564,18 @@ export class FakeServer {
       return next();
     });
 
+    app.post(RUNNER_ROUTES.diagnostics, async (c) => {
+      const bytes = Buffer.from(await c.req.arrayBuffer());
+      this.diagnosticsUploads.push(
+        gunzipSync(bytes)
+          .toString('utf8')
+          .trim()
+          .split('\n')
+          .map((line) => JSON.parse(line)),
+      );
+      this.diagnostics = undefined;
+      return ok(c, { ok: true });
+    });
     app.post(RUNNER_ROUTES.heartbeat, async (c) => {
       const runner = c.get('runner' as never) as FakeRunner;
       runner.heartbeats.push((await c.req.json()) as HeartbeatRequest);
@@ -596,6 +612,7 @@ export class FakeServer {
         serverTime: new Date().toISOString(),
         enabledTools: this.enabledTools,
         detectTools: this.detectTools,
+        ...(this.diagnostics ? { diagnostics: this.diagnostics } : {}),
         ...(this.protocolVersion === undefined
           ? {}
           : { protocolVersion: this.protocolVersion }),

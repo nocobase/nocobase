@@ -1,6 +1,6 @@
 # Projects
 
-A project's and an issue's pages, presented: the `project-detail` and `issue-detail` blocks, the `plan-card` block over the projects plugin's operation plans (each with its own README), and the `issue-table` and `issue-card` components. The blocks list them in `registryDependencies` and import them as `#components/issue-table` and `#components/issue-card`, where they are installed.
+A project's and an issue's pages, presented: the `project-detail` and `issue-detail` blocks, and the `issue-table` and `issue-card` components. The blocks list them in `registryDependencies` and import them as `#components/issue-table` and `#components/issue-card`, where they are installed.
 
 | Item          | Installs                                                                             | Exports                                                                                                              |
 | ------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |

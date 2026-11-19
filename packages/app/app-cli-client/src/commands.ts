@@ -1,3 +1,4 @@
+import { logsCommands } from './logs.ts';
 // The static command map oclif reads (`commands.strategy: 'explicit'`). `runAppCli` fills it before oclif loads it:
 // `login`, `logout`, `whoami`, `profile …`, `docs`, `completion`, `acp start`, `acp service …`, `update` for a CLI that updates itself, and whatever static commands the application CLI
 // adds. Business commands are not here: they come from the server's command manifest (src/dynamic/) through the
@@ -20,6 +21,7 @@ export const COMMANDS: Record<string, Command.Class> = {};
 /** The topics of the static commands, for help. */
 export const STATIC_TOPICS: Readonly<Record<string, { description: string }>> =
   {
+    logs: { description: 'Export logs and merge local log timelines.' },
     profile: {
       description: 'The servers you are signed in to, one profile each.',
     },
@@ -45,6 +47,7 @@ export function defineCommands(
       docs: docsCommand(config),
       ...profileCommands(config),
       ...completionCommands(config),
+      ...logsCommands(),
       ...(hasStudioSkill(config) ? skillsCommands(config) : {}),
       ...acpCommands(config),
       ...(config.selfUpdate === undefined

@@ -28,6 +28,8 @@ export interface FileRepositoryOptions {
   /** Enclose file rows in the caller's transaction; remove uploaded objects on rollback. */
   readonly transaction?: DatabaseConnection;
   readonly disk: string;
+  /** Static server-owned object directory; defaults to `objects`, `''` selects the disk root. */
+  readonly storagePrefix?: string;
   readonly accessPath: string;
   /**
    * The exposure's Policy, already resolved for this request's principal. The
@@ -121,6 +123,31 @@ export function normalizeAccessPath(value: string): string {
   return value;
 }
 
+export function normalizeStoragePrefix(value: string = 'objects'): string {
+  // Reject controls before trimming so line breaks and tabs never disappear silently.
+  if (
+    typeof value !== 'string' ||
+    // eslint-disable-next-line no-control-regex -- Reject controls in trusted storage configuration too.
+    /[\u0000-\u001f\u007f-\u009f]/.test(value)
+  )
+    throw new Error(
+      'storagePrefix must be a string without control characters.',
+    );
+  const segments = value.trim().split('/').filter(Boolean);
+  if (
+    segments.some(
+      (segment) =>
+        !/^[a-zA-Z0-9._-]+$/.test(segment) ||
+        segment === '.' ||
+        segment === '..',
+    )
+  )
+    throw new Error(
+      'storagePrefix directory segments must contain only ASCII letters, digits, dots, underscores or hyphens; dot path segments are forbidden.',
+    );
+  return segments.join('/');
+}
+
 export class ServerFileRepositoryManager {
   constructor(
     private readonly database: DatabaseManager,
@@ -134,6 +161,7 @@ export class ServerFileRepositoryManager {
     if (!collection || !options.disk)
       throw new Error('collection and disk are required.');
     const accessPath = normalizeAccessPath(options.accessPath);
+    const storagePrefix = normalizeStoragePrefix(options.storagePrefix);
     const connection =
       options.transaction ?? this.database.connection(options.connection);
     const repository = options.transaction
@@ -207,7 +235,8 @@ export class ServerFileRepositoryManager {
           ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase()
           : '';
       const ext = /^[a-z0-9]{1,32}$/.test(suffix) ? suffix : '';
-      const key = `objects/${id}${ext ? `.${ext}` : ''}`;
+      const basename = `${id}${ext ? `.${ext}` : ''}`;
+      const key = storagePrefix ? `${storagePrefix}/${basename}` : basename;
       const mimeType = validMime(file.type);
       owned.push(key); // A failed put may have left a partial object.
       await disk.putStream(

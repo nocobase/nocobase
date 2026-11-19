@@ -28,7 +28,7 @@ export function createDefaultCommandContext(
     rootDir,
     loadRuntime:
       options.loadRuntime ??
-      (async () => {
+      (async (runtimeOptions) => {
         const url = await resolveServerModule(rootDir, 'runtime');
         const module = (await import(url)) as {
           default?: AppRuntimeDefinition;
@@ -43,6 +43,7 @@ export function createDefaultCommandContext(
         const { resolveStandaloneAppRuntime } =
           await import('@nocobase/app-server/node');
         const runtime = await resolveStandaloneAppRuntime(module.default, {
+          ...runtimeOptions,
           rootDir,
           ...(options.configPath === undefined
             ? {}

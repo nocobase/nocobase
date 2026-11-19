@@ -113,7 +113,9 @@ describe('renderCommandHelp', () => {
 describe('apiExitCode', () => {
   it('lets the reason decide, then the HTTP status', () => {
     expect(apiExitCode(403, 'FORBIDDEN', 'PERMISSION_DENIED')).toBe(3);
-    expect(apiExitCode(400, 'PLAN_REQUIRED', 'FAILED_PRECONDITION')).toBe(7);
+    expect(
+      apiExitCode(400, 'COMMAND_STATE_CHANGED', 'FAILED_PRECONDITION'),
+    ).toBe(6);
     expect(apiExitCode(404, 'HTTP_404')).toBe(4);
     expect(apiExitCode(500, 'HTTP_500')).toBe(2);
     expect(apiExitCode(0, 'NETWORK')).toBe(2);

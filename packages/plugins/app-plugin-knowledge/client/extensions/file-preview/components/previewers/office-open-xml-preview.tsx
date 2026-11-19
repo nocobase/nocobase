@@ -18,6 +18,8 @@ export interface OfficeOpenXmlPreviewProps {
   readonly url?: string;
   readonly error?: string;
   readonly onDownload?: () => void;
+  /** Fill the height of its container (a full-screen view) instead of 70% of the window's. */
+  readonly fill?: boolean;
 }
 
 export function OfficeOpenXmlPreview({
@@ -26,6 +28,7 @@ export function OfficeOpenXmlPreview({
   url,
   error,
   onDownload,
+  fill = false,
 }: OfficeOpenXmlPreviewProps): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-file');
   const hostRef = useRef<HTMLDivElement>(null);
@@ -96,7 +99,9 @@ export function OfficeOpenXmlPreview({
   }
 
   return (
-    <div className='relative h-[70vh] min-h-0 w-full overflow-hidden bg-muted/30'>
+    <div
+      className={`relative ${fill ? 'h-full' : 'h-[70vh]'} min-h-0 w-full overflow-hidden bg-muted/30`}
+    >
       {!loaded ? (
         <div
           role='status'

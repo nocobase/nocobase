@@ -1,3 +1,4 @@
+import { MailConnectionError } from '../../connection-diagnostics.js';
 import { ImapFlow } from 'imapflow';
 import nodemailer, { type Transporter } from 'nodemailer';
 
@@ -44,8 +45,18 @@ export async function verifyConnections(
   const imap = createImapClient(config.imap, credential);
   const smtp = createSmtpTransport(config.smtp, credential);
   try {
-    await imap.connect();
-    await smtp.verify();
+    let startedAt = Date.now();
+    try {
+      await imap.connect();
+    } catch (cause) {
+      throw new MailConnectionError('imap', cause, Date.now() - startedAt);
+    }
+    startedAt = Date.now();
+    try {
+      await smtp.verify();
+    } catch (cause) {
+      throw new MailConnectionError('smtp', cause, Date.now() - startedAt);
+    }
   } finally {
     try {
       await imap.logout();

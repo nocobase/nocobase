@@ -39,7 +39,6 @@ function isolate(tx: Tx) {
       run({
         conn,
         emit: (event) => events.push(event),
-        ...(tx.rehearsal ? { rehearsal: true } : {}),
       }),
     );
     for (const event of events) tx.emit(event);

@@ -962,6 +962,23 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Mặc định',
+        none: 'Tắt',
+        minimal: 'Tối thiểu',
+        low: 'Thấp',
+        medium: 'Trung bình',
+        high: 'Cao',
+        xhigh: 'Rất cao',
+      },
+      adjusted:
+        'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng "{{used}}".',
+      adjustedToDefault:
+        'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng mặc định của nhà cung cấp.',
+      warning:
+        'Mô hình có thể chưa áp dụng mức suy nghĩ "{{level}}" cho câu trả lời này.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Thực thi thất bại. Hãy xem lại cuộc trò chuyện đã lưu trước khi thử lại.',

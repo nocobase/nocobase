@@ -16,6 +16,38 @@ import { createHarness } from './harness.js';
 
 afterEach(() => vi.restoreAllMocks());
 
+it.each([0, -1, 1.5, 2_147_483_648])(
+  'rejects an invalid worker deadline before starting any Host: %s',
+  (timeoutMs) => {
+    const initialize = vi.spyOn(AppHostSupervisor, 'initialize');
+    const create = vi.spyOn(AppHostSupervisor, 'create');
+    const container = new ServiceContainer();
+    const provider = new ReleasesProvider({
+      container,
+      config: accessor(
+        {
+          artifact: { driver: 'fs', location: 'artifacts' },
+          dataDir: 'storage/releases',
+          host: {
+            enabled: true,
+            configPath: 'unused.yml',
+            appVolumesDir: 'volumes',
+            appRevisionsDir: 'revisions',
+            artifactWorker: { timeoutMs },
+          },
+        },
+        { default: 'memory', disks: {} },
+      ),
+    });
+    provider.register();
+    expect(() => container.resolve(releasesToken)).toThrow(
+      'host.artifactWorker.timeoutMs',
+    );
+    expect(initialize).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  },
+);
+
 it('rejects a disk factory before initializing a Host or invoking the factory', () => {
   const factory = vi.fn(() => {
     throw new Error('Must not run.');
@@ -80,6 +112,7 @@ it.each(['fs', 's3'] as const)(
       appVolumesDir: path.join(harness.rootDir, backend, 'volumes'),
       appRevisionsDir: path.join(harness.rootDir, backend, 'revisions'),
       artifactRead: { idleTimeoutMs: 1250, timeoutMs: 90_000 },
+      artifactWorker: { timeoutMs: 600_000 },
     });
     const disk: AppDriveDiskConfig =
       kind === 'fs'
@@ -130,6 +163,7 @@ it.each(['fs', 's3'] as const)(
             host: {
               artifact: AppDriveDiskConfig;
               artifactRead?: { idleTimeoutMs: number; timeoutMs: number };
+              artifactWorker?: { timeoutMs: number };
             };
           };
           expect(written.host.artifact).toEqual(
@@ -144,6 +178,9 @@ it.each(['fs', 's3'] as const)(
               idleTimeoutMs: 1250,
               timeoutMs: 90_000,
             });
+          expect(written.host.artifactWorker).toEqual(
+            backend === 'in-process' ? { timeoutMs: 600_000 } : undefined,
+          );
         } finally {
           await session.close();
         }

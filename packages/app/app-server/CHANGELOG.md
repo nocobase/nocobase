@@ -1,5 +1,36 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.8
+
+### Minor Changes
+
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+
+### Patch Changes
+
+- e830c36: Read embedded applications' names and versions from dist/package.json for browser configuration and OpenAPI documents when the root manifest is absent.
+- b83a645: Default missing applied migration sources to warnings instead of errors, with an `onMissingSource: 'error'` option for strict validation. Downgrades within participating packages still fail. Preserve missing migration history and report warnings in database commands and startup logs. Rollback validates only its target batch and lists every missing or irreversible migration before executing any down operation, with recovery guidance.
+
+  Compare migration filename timestamps for downgrade detection independently of parameter target hashes. Validate applications with applied history even when all migration directories have disappeared, while continuing to skip empty applications.
+
+  An explicitly configured migration directory that no longer exists is now checked against the migration history when tasks run, rather than rejected while planning: an application with history follows the missing-source policy, while a mistyped path on an application that never migrated still fails before any storage is touched.
+
+- Updated dependencies [b737800]
+- Updated dependencies [b83a645]
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/db-mssql@0.1.0-beta.6
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 5.0.0-beta.7
+
+### Patch Changes
+
+- 38854ec: Keep internal HTTP and WebSocket forwarding connected directly to the configured upstream when an environment proxy is enabled.
+- 8339722: Pass the incoming request to standalone proxy target resolution so applications can route HTTP and WebSocket traffic to the appropriate upstream.
+
 ## 5.0.0-beta.6
 
 ### Minor Changes

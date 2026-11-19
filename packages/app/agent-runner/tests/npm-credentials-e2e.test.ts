@@ -1,7 +1,13 @@
 // The private npm registry's token end to end: the real daemon and worker, the echo adapter running the agent's
 // `pnpm install` through the run's wrapper, a machine whose `~/.npmrc` names a mirror, and a private registry that,
 // like NocoBase's, answers 404 without the token.
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+} from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -70,68 +76,103 @@ describe('the private npm registry token on demand', () => {
     expect(runner?.register.features).toContain('npmCredentials');
   });
 
-  it('installs a private package after asking once, redacts the token and removes the run’s npm files', async () => {
-    server.npmToken = TOKEN;
-    const manifest = JSON.stringify({
-      name: 'fx-app',
-      version: '0.0.0',
-      dependencies: { '@nocobase/fx-private': '1.0.0', 'left-pad-fx': '1.0.0' },
-    });
-    const run = server.enqueue({
-      prompt: {
-        system: 'System rules.',
-        session: 'fresh',
-        turn: [
-          `write package.json ${manifest}`,
-          'bash pnpm install 2>&1',
-          'bash ls node_modules/@nocobase',
-          'bash echo "$NOCOBASE_RUNNER_NPM_DIR"',
-          `bash echo leaked ${TOKEN}`,
-          'say done',
-        ].join('\n'),
-      },
-    });
-    daemons.push(startDaemon(env));
-    await waitFor(
-      () => run.status === 'completed' || run.status === 'failed',
-      60_000,
-      'the run to end',
-    );
-    expect(run.fail).toBeUndefined();
-    expect(server.npmCredentialRequests).toEqual([
-      {
-        runId: run.payload.run.id,
-        attempt: 1,
-        reason: 'notFound',
-        package: '@nocobase/fx-private',
-      },
-    ]);
-    // The mirror served the ordinary package; the private registry was asked with the token only.
-    expect(mirror.seen.map((seen) => seen.url)).toContain('/left-pad-fx');
-    expect(
-      privateRegistry.seen.every((seen) => seen.auth === `Bearer ${TOKEN}`),
-    ).toBe(true);
-    const events = server.events(run.payload.run.id);
-    const outputs = events
-      .filter((event) => event.type === 'toolResult')
-      .map((event) => String(event.output ?? ''));
-    expect(outputs.join('\n')).toContain(
-      'retrying once with the NocoBase private registry',
-    );
-    expect(outputs.some((output) => output.includes('fx-private'))).toBe(true);
-    expect(JSON.stringify(events)).not.toContain(TOKEN);
-    expect(outputs.join('\n')).toContain('leaked [REDACTED]');
-    const npmDir = outputs
-      .map((output) => output.trim())
-      .find((output) => output.endsWith(`${path.sep}npm`));
-    expect(npmDir).toBeDefined();
-    // The worker removes it as it finishes, after reporting.
-    await waitFor(
-      () => !existsSync(npmDir ?? ''),
-      10_000,
-      'the run’s npm directory to go',
-    );
-  });
+  it.each([404, 401, 403])(
+    'installs after HTTP %i, asks once, redacts the token and removes the run’s npm files',
+    async (status) => {
+      if (status !== 404) {
+        await privateRegistry.stop();
+        privateRegistry = new Registry(
+          scratch,
+          ['@nocobase/fx-private'],
+          TOKEN,
+          status,
+        );
+        await privateRegistry.start();
+        env.NOCOBASE_RUNNER_NPM_REGISTRY = privateRegistry.url;
+      }
+      server.npmToken = TOKEN;
+      const manifest = JSON.stringify({
+        name: 'fx-app',
+        version: '0.0.0',
+        dependencies: {
+          '@nocobase/fx-private': '1.0.0',
+          'left-pad-fx': '1.0.0',
+        },
+      });
+      const run = server.enqueue({
+        prompt: {
+          system: 'System rules.',
+          session: 'fresh',
+          turn: [
+            `write package.json ${manifest}`,
+            `bash pnpm install ${status === 404 ? '' : `--@nocobase:registry=${privateRegistry.url}`} 2>&1`,
+            "bash node -e 'console.log(JSON.stringify({argv:process.argv,env:process.env}))'",
+            'bash pnpm install 2>&1',
+            'bash ls node_modules/@nocobase',
+            'bash echo "$NOCOBASE_RUNNER_NPM_DIR"',
+            `bash echo leaked ${TOKEN}`,
+            'say done',
+          ].join('\n'),
+        },
+      });
+      daemons.push(startDaemon(env));
+      await waitFor(
+        () => run.status === 'completed' || run.status === 'failed',
+        60_000,
+        'the run to end',
+      );
+      expect(run.fail).toBeUndefined();
+      expect(server.npmCredentialRequests).toEqual([
+        {
+          runId: run.payload.run.id,
+          attempt: 1,
+          reason: status === 404 ? 'notFound' : 'unauthorized',
+          ...(status === 404 ? { package: '@nocobase/fx-private' } : {}),
+        },
+      ]);
+      // The mirror served the ordinary package; the private registry was asked with the token only.
+      expect(mirror.seen.map((seen) => seen.url)).toContain('/left-pad-fx');
+      expect(
+        privateRegistry.seen.every(
+          (seen) =>
+            seen.auth === `Bearer ${TOKEN}` ||
+            (status !== 404 && seen.auth === undefined),
+        ),
+      ).toBe(true);
+      const events = server.events(run.payload.run.id);
+      const outputs = events
+        .filter((event) => event.type === 'toolResult')
+        .map((event) => String(event.output ?? ''));
+      expect(outputs.join('\n')).toContain(
+        'retrying once with the NocoBase private registry',
+      );
+      expect(outputs.some((output) => output.includes('fx-private'))).toBe(
+        true,
+      );
+      expect(JSON.stringify(events)).not.toContain(TOKEN);
+      expect(outputs.join('\n')).toContain('leaked [REDACTED]');
+      const logDir = path.join(home, 'logs');
+      for (const file of readdirSync(logDir, {
+        recursive: true,
+        withFileTypes: true,
+      })) {
+        if (file.isFile())
+          expect(
+            readFileSync(path.join(file.parentPath, file.name), 'utf8'),
+          ).not.toContain(TOKEN);
+      }
+      const npmDir = outputs
+        .map((output) => output.trim())
+        .find((output) => output.endsWith(`${path.sep}npm`));
+      expect(npmDir).toBeDefined();
+      // The worker removes it as it finishes, after reporting.
+      await waitFor(
+        () => !existsSync(npmDir ?? ''),
+        10_000,
+        'the run’s npm directory to go',
+      );
+    },
+  );
 
   it('asks for nothing when the project needs no private package', async () => {
     server.npmToken = TOKEN;

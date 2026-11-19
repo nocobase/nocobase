@@ -4,6 +4,22 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   errors: {
+    connectionAuthenticationFailed:
+      '{{protocol}} 驗證失敗，請檢查登入名稱和密碼或應用程式專用密碼。',
+    connectionHostNotFound:
+      '無法解析 {{protocol}} 主機，請檢查伺服器主機名稱。',
+    connectionConnectionRefused:
+      '{{protocol}} 連線遭拒，請檢查主機、連接埠和伺服器狀態。',
+    connectionConnectionTimeout:
+      '{{protocol}} 連線逾時，請檢查伺服器和網路設定。',
+    connectionCertificateInvalid:
+      '{{protocol}} 憑證驗證失敗，請檢查憑證和主機名稱。',
+    connectionTlsFailed:
+      '{{protocol}} TLS 協商失敗，請檢查 SSL/STARTTLS 設定和連接埠。',
+    connectionConnectionFailed:
+      '{{protocol}} 連線失敗，請檢查伺服器和網路設定。',
+    connectionConnectionLost: '{{protocol}} 連線已中斷，請重試。',
+
     imapMoveLocationChanged:
       '所選資料夾或副本已變更，請同步信箱後重新開啟來源資料夾。',
     imapMoveNotWritable: '所選資料夾不允許此操作，請檢查信箱權限。',

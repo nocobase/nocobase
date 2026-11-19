@@ -51,7 +51,6 @@ import {
   AGENT_SOURCES,
   AGENT_STATUSES,
   AGENT_UNUSABLE_REASONS,
-  CONFIRM_CHANGES,
   MODEL_AVAILABILITY_STATUSES,
   type Agent,
   type AgentActionOption,
@@ -686,7 +685,6 @@ const agentObject = z.object({
   }),
   instructions: z.string().nullable(),
   actions: z.array(z.string()),
-  confirmChanges: z.enum(CONFIRM_CHANGES),
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
@@ -1834,7 +1832,6 @@ const notice = z.discriminatedUnion('code', [
     usage: z
       .object({ inputTokens: z.number(), outputTokens: z.number() })
       .nullable(),
-    plans: z.number().int(),
   }),
 ]);
 

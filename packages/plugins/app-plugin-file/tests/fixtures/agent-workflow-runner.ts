@@ -72,6 +72,14 @@ try {
     file: new File(['invoice bytes'], 'invoice.txt', { type: 'text/plain' }),
   });
   const row = uploaded.record;
+  const stored = await db
+    .repository('invoice_files')
+    .findOne({ filter: { id: row.id } });
+  assert.equal(stored?.key, `invoices/${row.id}.txt`);
+  assert.equal(
+    await drive.use('local').get(String(stored?.key)),
+    'invoice bytes',
+  );
   assert.equal(
     row.contentUrl,
     '/tenant-acme/uploads/invoices/' + row.id + '.txt',

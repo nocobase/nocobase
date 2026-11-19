@@ -240,7 +240,7 @@ describe('install script', () => {
     expect(result.stderr).toBe('');
     expect(result.code).toBe(0);
     expect(result.stdout).toContain(
-      `+ curl -fSL --progress-bar -H x-nocobase-registration-token: ${token}`,
+      `+ download ${base}/api/agents/dist/products/`,
     );
     expect(result.stdout).toContain(`Downloading acme 0.7.0 for ${target}`);
     expect(result.stdout).not.toContain(
@@ -690,9 +690,7 @@ describe('install script, the CLI alone', () => {
         },
       },
     );
-    expect(stdout).toContain(
-      `+ curl -fSL --progress-bar -H x-nocobase-download-token:`,
-    );
+    expect(stdout).toContain(`+ download ${base}/api/agents/dist/products/`);
     expect(stdout).toContain(`Next: acme login --server ${base}`);
     expect(existsSync(prefix)).toBe(false);
   });

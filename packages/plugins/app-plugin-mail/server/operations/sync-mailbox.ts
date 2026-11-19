@@ -1,4 +1,9 @@
-import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
+import {
+  mailLogCode,
+  mailLogError,
+  writeMailLog,
+  type MailLogger,
+} from '../logging.js';
 import { randomUUID } from 'node:crypto';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 
@@ -228,7 +233,7 @@ export class SyncMailboxOperation {
           {
             event: 'mail.sync.retry_scheduled',
             ...this.logFields(released),
-            errorCode: normalized.code,
+            errorCode: mailLogCode(normalized.code),
             category: normalized.category,
             retryable: true,
             retryAfterMs: retryDelayMs,
@@ -271,7 +276,7 @@ export class SyncMailboxOperation {
         {
           event: 'mail.sync.failed',
           ...this.logFields(failed),
-          errorCode: error.code,
+          errorCode: mailLogCode(error.code),
           category: error.category,
           retryable: error.retryable,
           err: mailLogError(cause),

@@ -617,6 +617,22 @@ export function createConversationService(
     );
   }
 
+  async function selectableRunners(
+    conn: DatabaseConnection,
+    record: ConversationRecord,
+    prepared: unknown,
+  ) {
+    if (record.mode !== 'runner' || jsonObject(record.metadata).onlineAgent)
+      throw invalid('Only Runner conversations can switch runtimes.');
+    const agent = await pickAgent(conn, record.userId, record.agentId);
+    const directories = await projectWorkspace(conn, refOf(record), prepared);
+    return deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: record.userId,
+      scopes: directories.scopes,
+      workspaceKey: Boolean(record.projectId),
+    });
+  }
+
   async function effortOptions(
     conn: DatabaseConnection,
     agent: Agent,
@@ -1737,6 +1753,11 @@ export function createConversationService(
       );
     if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
       throw invalid('Agent selection requires a Runner realtime message.');
+    if (
+      request.runnerId !== undefined &&
+      (!realtime || !request.runnerId.trim())
+    )
+      throw invalid('Runtime selection requires a Runner realtime message.');
     const content = request.content;
     const attachmentIds = readAttachmentIds(request.attachmentIds);
     if (
@@ -1752,7 +1773,11 @@ export function createConversationService(
       throw invalid('This application takes no files in chat.', {
         field: 'attachmentIds',
       });
-    await owned(tx.read(), userId, id);
+    const before = await owned(tx.read(), userId, id);
+    const preparedRunnerWorkspace =
+      request.runnerId && before.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
     // Resolved before the transaction: resolvers read through the services of the plugins that own the kinds.
     const context = request.context
       ? await deps.contextKinds.resolve(tx.read(), userId, request.context)
@@ -1792,6 +1817,16 @@ export function createConversationService(
           );
         const targetId = request.agentId ?? record.agentId;
         const switching = targetId !== record.agentId;
+        if (
+          request.runnerId !== undefined &&
+          (switching ||
+            realtime.queue ||
+            record.archivedAt ||
+            record.mode !== 'runner')
+        )
+          throw conflict(
+            'Select a runtime in an idle, unarchived Runner conversation without changing agents.',
+          );
         if ((realtime.config.agentId ?? 'online') !== targetId)
           throw conflict('Start a new conversation to choose another agent.');
         if (
@@ -1871,6 +1906,33 @@ export function createConversationService(
             true,
           );
           binding = runnerBinding(record.metadata)!;
+        }
+        if (request.runnerId !== undefined) {
+          const candidates = await selectableRunners(
+            unit.conn,
+            record,
+            preparedRunnerWorkspace,
+          );
+          if (!candidates.some((runner) => runner.id === request.runnerId))
+            throw invalid(
+              'The selected runtime is no longer available for this conversation.',
+              {
+                reason: 'runnerUnavailable',
+              },
+            );
+          if (request.runnerId !== record.runnerId) {
+            // A fresh thread avoids resuming stale tool state when returning to a previous machine.
+            const values = {
+              runnerId: request.runnerId,
+              thread: Number(record.thread) + 1,
+              updatedAt: now(),
+            };
+            await conversationsRepo(unit.conn).updateMany({
+              filter: { id },
+              values,
+            });
+            record = { ...record, ...values };
+          }
         }
         if (!isDeepStrictEqual(binding.config, realtime.config))
           await conversationsRepo(unit.conn).updateMany({
@@ -2681,6 +2743,16 @@ export function createConversationService(
         );
       });
       return detail(userId, id);
+    },
+
+    async runners(userId, id) {
+      const record = await owned(tx.read(), userId, id);
+      const prepared = record.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
+      return (await selectableRunners(tx.read(), record, prepared)).map(
+        (runner) => runnerOf(runner.id, runner),
+      );
     },
 
     async switchRunner(userId, id) {

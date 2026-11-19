@@ -1,3 +1,5 @@
+import { uploadDiagnostics } from './diagnostics.ts';
+import { pruneRunnerLogs } from '../lib/journal.ts';
 // The runner daemon: one per machine (a pid file guards it), serving every application it is registered with.
 //
 // On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Once a
@@ -73,6 +75,7 @@ import {
   type WorkspacesResponse,
   routePath,
   NPM_UPGRADE_FEATURE,
+  DIAGNOSTICS_FEATURE,
   type RunnerFeature,
   type ToolInfo,
   type ToolLoad,
@@ -120,6 +123,8 @@ import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
+import { supportsGitSsh } from './git-ssh.ts';
+
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
   return runnerHost().version;
@@ -148,6 +153,7 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'npmCredentials',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
+  DIAGNOSTICS_FEATURE,
 ];
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
@@ -172,6 +178,7 @@ export function runnerFeatures(
   adapters: Map<AgentTool, AgentAdapter>,
 ): RunnerFeature[] {
   const features = new Set<RunnerFeature>(BASE_FEATURES);
+  if (supportsGitSsh()) features.add('gitSsh');
   for (const adapter of adapters.values())
     for (const feature of adapter.features()) features.add(feature);
   return [...features];
@@ -217,6 +224,7 @@ interface AppLink {
   selectionConfirmed?: boolean;
   heartbeatTimer?: NodeJS.Timeout;
   heartbeatInFlight?: Promise<void>;
+  diagnosticsUpload?: Promise<void>;
   capacity?: RunnerCapacity;
   capacitySource?: 'online' | 'legacyLocal';
   heartbeatHealthy?: boolean;
@@ -650,6 +658,11 @@ export class RunnerDaemon {
       try {
         while (this.claimsInFlight > 0) await delay(20, this.stopping.signal);
         const settings = await readSettings(paths);
+        await pruneRunnerLogs(paths, settings).catch((error: unknown) =>
+          log(
+            `gc: log cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
         const reporters = new Map<
           string,
           (request: WorkspacesRequest) => Promise<WorkspacesResponse>
@@ -915,6 +928,27 @@ export class RunnerDaemon {
       capacityChanged =
         JSON.stringify(link.capacity) !== JSON.stringify(capacity) ||
         link.capacitySource !== source;
+      if (response.diagnostics && !link.diagnosticsUpload) {
+        link.diagnosticsUpload = uploadDiagnostics(
+          link.client,
+          this.options.paths,
+          response.diagnostics,
+          {
+            version: runnerVersion(),
+            tools: tools.map((tool) => ({
+              tool: tool.kind,
+              version: tool.version,
+            })),
+          },
+          this.stopping.signal,
+        )
+          .catch((error: unknown) =>
+            log(`Diagnostics upload failed: ${String(error)}`),
+          )
+          .finally(() => {
+            link.diagnosticsUpload = undefined;
+          });
+      }
       if (!link.heartbeatHealthy) this.wake();
       link.heartbeatHealthy = true;
       link.capacityReportedAt = new Date().toISOString();

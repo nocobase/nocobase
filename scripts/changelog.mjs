@@ -7,14 +7,14 @@
 // English section back out of the tagged commit for the GitHub Release.
 // Everything that decides what the section says is an exported pure function, so tests need neither git nor gh.
 //
-// Which pull requests a release contains:
-//   - beta (`nocobase-v3-beta/<batch>`, or legacy `release-beta/<batch>`): changes since the previous beta. Release
-//     commits never reach v3-develop (their pull request is squashed), so the range starts at the merge base of the previous
-//     beta tag and the release source rather than at the tag itself.
-//   - stable (`release/<batch>`): those merged into the release source since the previous stable release in the same
-//     way, which covers direct patches, plus every pull request the betas listed in CHANGELOG.md that no stable section
-//     lists yet. A promotion reaches v3-main as one squashed commit, so the betas' sections, carried along with it, are
-//     what records which pull requests it brings.
+// Which pull requests a release contains, the commits from the previous release to the release source:
+//   - beta (`nocobase-v3-beta/<batch>`, or legacy `release-beta/<batch>`): changes since the previous beta.
+//   - stable (`nocobase-v3/<batch>`, or `release/<batch>`, the name nocobase/nocobase3-pro's stable releases keep):
+//     changes since the previous stable release, or, for the first stable release, since the last beta, so it lists
+//     what is new since then instead of the whole beta history again.
+// Both channels are released from the same branch. The range starts at the merge base of the previous release's tag
+// and the release source rather than at the tag itself, because releases merged back with a squash left their tagged
+// commit outside the branch; for those merged back with a merge commit, the merge base is the tag.
 //
 // Usage:
 //   node scripts/changelog.mjs --tag <aggregate tag> --repo nocobase/nocobase [--root <dir>] [--head <ref>]
@@ -76,20 +76,23 @@ export const CHANGELOG_FILES = {
 export const CHANGELOG_HEADERS = {
   en: `# Changelog
 
-All notable changes to NocoBase 3 are documented in this file, one section per release: \`nocobase-v3-beta/<date>.<n>\` for a beta and \`release/<date>.<n>\` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+All notable changes to NocoBase 3 are documented in this file, one section per release: \`nocobase-v3-beta/<date>.<n>\` for a beta and \`nocobase-v3/<date>.<n>\` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 `,
   zh: `# 更新日志
 
-本文件记录 NocoBase 3 的所有重要变更，每次发布一节：\`nocobase-v3-beta/<日期>.<序号>\` 是预览版，\`release/<日期>.<序号>\` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+本文件记录 NocoBase 3 的所有重要变更，每次发布一节：\`nocobase-v3-beta/<日期>.<序号>\` 是预览版，\`nocobase-v3/<日期>.<序号>\` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 `,
   ja: `# 変更履歴
 
-このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。\`nocobase-v3-beta/<日付>.<連番>\` はベータ版、\`release/<日付>.<連番>\` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
+このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。\`nocobase-v3-beta/<日付>.<連番>\` はベータ版、\`nocobase-v3/<日付>.<連番>\` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 `,
 };
 
 const AGGREGATE =
-  /^(nocobase-v3-beta|release(?:-beta)?)\/(\d{4}-\d{2}-\d{2})\.(\d+)$/u;
+  /^(nocobase-v3(?:-beta)?|release(?:-beta)?)\/(\d{4}-\d{2}-\d{2})\.(\d+)$/u;
+
+/** The stable prefixes; every other aggregate prefix is a beta. */
+const STABLE_PREFIXES = new Set(['nocobase-v3', 'release']);
 
 /**
  * Parses an aggregate release tag.
@@ -101,7 +104,7 @@ export function parseTag(tag) {
   if (!match) return null;
   return {
     prefix: match[1],
-    channel: match[1] === 'release' ? 'stable' : 'beta',
+    channel: STABLE_PREFIXES.has(match[1]) ? 'stable' : 'beta',
     date: match[2],
     sequence: Number(match[3]),
   };
@@ -109,7 +112,8 @@ export function parseTag(tag) {
 
 /**
  * The previous release of `tag` in its channel: the latest tag among `tags` in the same channel whose batch comes
- * before `tag`'s. `tag` itself need not be among them.
+ * before `tag`'s. A stable release without an earlier stable one, the first after the betas, follows the latest earlier
+ * beta instead, so its section starts where the betas' sections end. `tag` itself need not be among them.
  * @param {string[]} tags
  * @param {string} tag
  * @returns {string | null}
@@ -119,18 +123,23 @@ export function selectPreviousTag(tags, tag) {
   if (!current) return null;
   const before = (a, b) =>
     a.date === b.date ? a.sequence < b.sequence : a.date < b.date;
-  let best = null;
-  let bestParsed = null;
-  for (const candidate of tags) {
-    const parsed = parseTag(candidate);
-    if (!parsed || parsed.channel !== current.channel) continue;
-    if (!before(parsed, current)) continue;
-    if (!bestParsed || before(bestParsed, parsed)) {
-      best = candidate;
-      bestParsed = parsed;
+  const latest = (channel) => {
+    let best = null;
+    let bestParsed = null;
+    for (const candidate of tags) {
+      const parsed = parseTag(candidate);
+      if (!parsed || parsed.channel !== channel) continue;
+      if (!before(parsed, current)) continue;
+      if (!bestParsed || before(bestParsed, parsed)) {
+        best = candidate;
+        bestParsed = parsed;
+      }
     }
-  }
-  return best;
+    return best;
+  };
+  const previous = latest(current.channel);
+  if (previous || current.channel === 'beta') return previous;
+  return latest('beta');
 }
 
 /**
@@ -201,29 +210,6 @@ export function parseChangelogSections(content) {
     }
   }
   return sections;
-}
-
-/**
- * The pull requests the beta sections of a changelog list that no stable section lists yet, in file order.
- * @param {string | null} content
- * @returns {number[]}
- */
-export function pendingBetaPullRequests(content) {
-  if (!content) return [];
-  const sections = parseChangelogSections(content);
-  const released = new Set(
-    sections
-      .filter((section) => parseTag(section.tag)?.channel === 'stable')
-      .flatMap((section) => section.pullRequests),
-  );
-  const pending = new Set();
-  for (const section of sections) {
-    if (parseTag(section.tag)?.channel !== 'beta') continue;
-    for (const number of section.pullRequests) {
-      if (!released.has(number)) pending.add(number);
-    }
-  }
-  return [...pending];
 }
 
 /**
@@ -452,18 +438,18 @@ function options(argv) {
   }
   if (!parseTag(values.tag))
     throw new UsageError(
-      '--tag must be nocobase-v3-beta/<date>.<n>, release-beta/<date>.<n> or release/<date>.<n>.',
+      '--tag must be nocobase-v3/<date>.<n>, nocobase-v3-beta/<date>.<n>, release-beta/<date>.<n> or release/<date>.<n>.',
     );
   if (!/^[\w.-]+\/[\w.-]+$/u.test(values.repo))
     throw new UsageError('--repo must be owner/name.');
   return values;
 }
 
-function summary({ tag, from, collected, carried }) {
+function summary({ tag, from, collected }) {
   const lines = [
     `### Changelog for \`${tag}\``,
     '',
-    `${collected.entries.length} entries${from ? ` since \`${from}\`` : ''}${carried ? `, ${carried} pull requests carried from the betas` : ''}.`,
+    `${collected.entries.length} entries since \`${from}\`.`,
   ];
   if (collected.missing.length) {
     lines.push(
@@ -481,7 +467,6 @@ async function main(argv) {
   const values = options(argv);
   const { tag, repo } = values;
   const root = path.resolve(values.root);
-  const channel = parseTag(tag).channel;
   const head = git(
     ['rev-parse', '--verify', `${values.head}^{commit}`],
     root,
@@ -490,7 +475,14 @@ async function main(argv) {
   let from = values.from ?? null;
   if (!from) {
     const tags = git(
-      ['tag', '--list', 'release/*', 'release-beta/*', 'nocobase-v3-beta/*'],
+      [
+        'tag',
+        '--list',
+        'nocobase-v3/*',
+        'nocobase-v3-beta/*',
+        'release/*',
+        'release-beta/*',
+      ],
       root,
     )
       .split('\n')
@@ -498,21 +490,17 @@ async function main(argv) {
     const previous = selectPreviousTag(tags, tag);
     if (previous) {
       from = git(['merge-base', `refs/tags/${previous}`, head], root).trim();
-      console.log(`Previous ${channel} release: ${previous} (from ${from}).`);
-    } else if (channel === 'beta') {
-      throw new Error(`No beta release before ${tag}; pass --from.`);
-    } else {
       console.log(
-        'No earlier stable release: only the pull requests the betas listed are included.',
+        `Previous ${parseTag(previous).channel} release: ${previous} (from ${from}).`,
       );
+    } else {
+      throw new Error(`No release before ${tag}; pass --from.`);
     }
   }
 
-  const subjects = from
-    ? git(['log', `${from}..${head}`, '--format=%s'], root)
-        .split('\n')
-        .filter(Boolean)
-    : [];
+  const subjects = git(['log', `${from}..${head}`, '--format=%s'], root)
+    .split('\n')
+    .filter(Boolean);
   const numbers = extractPullRequestNumbers(subjects);
   console.log(`${subjects.length} commits, ${numbers.length} pull requests.`);
 
@@ -522,19 +510,6 @@ async function main(argv) {
       path.join(root, name),
     ]),
   );
-  let carried = 0;
-  if (channel === 'stable') {
-    const content = existsSync(files.en)
-      ? readFileSync(files.en, 'utf8')
-      : null;
-    for (const number of pendingBetaPullRequests(content)) {
-      if (numbers.includes(number)) continue;
-      numbers.push(number);
-      carried += 1;
-    }
-    console.log(`${carried} pull requests carried from the beta sections.`);
-  }
-
   const pullRequests = await viewPullRequests(numbers, repo);
   const scopeMap = values.scopes
     ? mergeScopes(JSON.parse(readFileSync(values.scopes, 'utf8')))
@@ -584,7 +559,7 @@ async function main(argv) {
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(
       process.env.GITHUB_STEP_SUMMARY,
-      summary({ tag, from, collected, carried }),
+      summary({ tag, from, collected }),
     );
   }
   const skipped = pullRequests.filter(isReleasePullRequest).length;

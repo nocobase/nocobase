@@ -268,3 +268,26 @@ paths = [
 regexes = [
   '''^(?:nb_live_9f2c41d8a7e04b13)$''',
 ]
+
+[[allowlists]]
+description = "Non-key marker body used to verify journal private-key redaction"
+targetRules = ["private-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/libs/logging/tests/diagnostics\.test\.ts$''',
+]
+regexes = [
+  '''fixture-sensitive-value''',
+]
+
+[[allowlists]]
+description = "Historical private-key marker used only to initialize a raw-log redactor"
+targetRules = ["private-key"]
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''(?:^|/)packages/app/agent-runner/src/core/diagnostics\.ts$''',
+]
+regexes = [
+  '''if \(initialPrivate\) redact\('-----BEGIN PRIVATE KEY-----'\);''',
+]

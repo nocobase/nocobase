@@ -1,5 +1,64 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.17
+
+### Minor Changes
+
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [b6d6ca0]
+- Updated dependencies [b737800]
+- Updated dependencies [858fcc4]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [b83a645]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.24
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-cli@1.0.0-beta.37
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 2.0.0-beta.16
+
+### Minor Changes
+
+- 4967900: Let conversation owners select an eligible runtime with their next message while idle. Message admission atomically commits the runtime and fresh tool session, preserving saved history and leaving the binding unchanged when admission fails.
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-cli-client@0.1.0-beta.23
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-cli@1.0.0-beta.36
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 2.0.0-beta.15
+
+### Patch Changes
+
+- a2474ed: Refer to the NocoBase 3 source branch as `v3`, its new name, in Skills references, the Agents documentation and the Distributed Skill.
+- f8174b2: Wait for in-flight conversation lists before reconciling detail snapshots, avoiding duplicate reads when detail arrives first.
+- Updated dependencies [8647bb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
 ## 2.0.0-beta.14
 
 ### Minor Changes

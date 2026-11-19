@@ -115,4 +115,4 @@ Prettier uses `@nocobase/dev-config/prettier` plus `prettier-plugin-astro` (`doc
 
 ## Deployment
 
-`.github/workflows/v3-docs.yml` checks the structure, lints, typechecks, tests and builds on every pull request touching `docs/`; on `v3-develop` pushes and on a `workflow_dispatch` with `publish` it uploads `dist/` to a timestamped OSS directory, copies `dist/404.html` to the bucket root and runs `scripts/deploy-cdn.mjs` to point the CDN at it. The CDN rules are the contract the output layout keeps: change one only together with the other.
+`.github/workflows/v3-docs.yml` checks the structure, lints, typechecks, tests and builds on every pull request touching `docs/`; on `v3` pushes and on a `workflow_dispatch` with `publish` it uploads `dist/` to a timestamped OSS directory, copies `dist/404.html` to the bucket root and runs `scripts/deploy-cdn.mjs` to point the CDN at it. The CDN rules are the contract the output layout keeps: change one only together with the other.

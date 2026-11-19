@@ -125,6 +125,11 @@ export interface ChatPanelValue extends ChatPanelState {
   readonly lastAgentId?: string | null;
   /** Remembers the agent a new conversation went to, so the next one starts with it. */
   readonly rememberAgent?: (agentId: string) => void;
+  /**
+   * The scope this panel remembers per-person choices under in `localStorage`: the application's path and
+   * `memoryScope` (`useThinkingMemory` keeps the thinking level chosen for each model there).
+   */
+  readonly memoryKey?: string;
 }
 
 export interface ChatSourcesValue {
@@ -527,8 +532,10 @@ export function ChatProvider({
         setState((current) => ({ ...current, agentMode })),
       lastAgentId: lastAgent.id,
       rememberAgent,
+      memoryKey,
     }),
     [
+      memoryKey,
       lastAgent.id,
       rememberAgent,
       openPage,

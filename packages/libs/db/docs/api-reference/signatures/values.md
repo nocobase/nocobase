@@ -6,26 +6,27 @@ Inspect structured repository errors, discover supported field operations, norma
 
 Signatures below are extracted from declaration output. Generic parameters, overloads, optional properties and JSDoc describe the declared contract. Type-only exports cannot be imported as runtime constructors. Supporting contracts are reachable from signatures but are not package-entry exports; do not deep-import them. Private members are omitted; protected hooks are shown only for exported runtime classes.
 
-| Declaration                                                 | Access               |
-| ----------------------------------------------------------- | -------------------- |
-| [JsonResultForm](#jsonresultform)                           | `@nocobase/db` type  |
-| [JsonValue](#jsonvalue)                                     | `@nocobase/db` type  |
-| [RepositoryError](#repositoryerror)                         | `@nocobase/db` value |
-| [RepositoryErrorCode](#repositoryerrorcode)                 | `@nocobase/db` type  |
-| [RepositoryErrorOptions](#repositoryerroroptions)           | `@nocobase/db` type  |
-| [RepositoryErrorStatus](#repositoryerrorstatus)             | `@nocobase/db` type  |
-| [TemporalSqlClient](#temporalsqlclient)                     | Supporting contract  |
-| [TemporalType](#temporaltype)                               | Supporting contract  |
-| [WritePolicyProblem](#writepolicyproblem)                   | `@nocobase/db` type  |
-| [filterOperatorsForFieldType](#filteroperatorsforfieldtype) | `@nocobase/db` value |
-| [isManagedField](#ismanagedfield)                           | `@nocobase/db` value |
-| [isSortableFieldType](#issortablefieldtype)                 | `@nocobase/db` value |
-| [isTemporalType](#istemporaltype)                           | `@nocobase/db` value |
-| [normalizeTemporalValue](#normalizetemporalvalue)           | `@nocobase/db` value |
-| [repositoryErrorStatuses](#repositoryerrorstatuses)         | `@nocobase/db` value |
-| [supportsFilterShorthand](#supportsfiltershorthand)         | `@nocobase/db` value |
-| [writableFields](#writablefields)                           | `@nocobase/db` value |
-| [writePolicyProblems](#writepolicyproblems)                 | `@nocobase/db` value |
+| Declaration                                                     | Access               |
+| --------------------------------------------------------------- | -------------------- |
+| [JsonResultForm](#jsonresultform)                               | `@nocobase/db` type  |
+| [JsonValue](#jsonvalue)                                         | `@nocobase/db` type  |
+| [RepositoryError](#repositoryerror)                             | `@nocobase/db` value |
+| [RepositoryErrorCode](#repositoryerrorcode)                     | `@nocobase/db` type  |
+| [RepositoryErrorOptions](#repositoryerroroptions)               | `@nocobase/db` type  |
+| [RepositoryErrorStatus](#repositoryerrorstatus)                 | `@nocobase/db` type  |
+| [TemporalSqlClient](#temporalsqlclient)                         | Supporting contract  |
+| [TemporalType](#temporaltype)                                   | Supporting contract  |
+| [WritePolicyProblem](#writepolicyproblem)                       | `@nocobase/db` type  |
+| [filterOperatorsForFieldType](#filteroperatorsforfieldtype)     | `@nocobase/db` value |
+| [getRepositoryMutationIdentity](#getrepositorymutationidentity) | `@nocobase/db` value |
+| [isManagedField](#ismanagedfield)                               | `@nocobase/db` value |
+| [isSortableFieldType](#issortablefieldtype)                     | `@nocobase/db` value |
+| [isTemporalType](#istemporaltype)                               | `@nocobase/db` value |
+| [normalizeTemporalValue](#normalizetemporalvalue)               | `@nocobase/db` value |
+| [repositoryErrorStatuses](#repositoryerrorstatuses)             | `@nocobase/db` value |
+| [supportsFilterShorthand](#supportsfiltershorthand)             | `@nocobase/db` value |
+| [writableFields](#writablefields)                               | `@nocobase/db` value |
+| [writePolicyProblems](#writepolicyproblems)                     | `@nocobase/db` value |
 
 ## JsonResultForm
 
@@ -246,6 +247,23 @@ export declare function filterOperatorsForFieldType(
 ```
 
 Related declarations: [FilterOperator](./inputs.md#filteroperator).
+
+## getRepositoryMutationIdentity
+
+[Source](../../../src/repository/mutation-identity.ts)
+
+Import: `import { getRepositoryMutationIdentity } from '@nocobase/db'`.
+
+Trusted server adapters can locate a mutation's root row without requesting or disclosing hidden fields.
+
+```ts
+/** Trusted server adapters can locate a mutation's root row without requesting or disclosing hidden fields. */
+export declare function getRepositoryMutationIdentity(
+  result: object,
+): Readonly<RepositoryRecord> | undefined;
+```
+
+Related declarations: [RepositoryRecord](./inputs.md#repositoryrecord).
 
 ## isManagedField
 

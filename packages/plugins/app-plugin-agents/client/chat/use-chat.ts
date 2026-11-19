@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 /**
  * The chat's data: the agents the viewer may chat with, a conversation and its messages kept current (the per-user
  * realtime topic says what changed, then the page fetches `messages?after=<lastSeq>`; while a run is open it also
@@ -49,7 +50,11 @@ import {
   type MessageAttachment,
   type PageContext,
 } from '../../shared/conversations.js';
-import type { ModelRef, ModelService } from '../../shared/models.js';
+import type {
+  ModelRef,
+  ModelService,
+  ReasoningLevel,
+} from '../../shared/models.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
 import { useQuotaExpiry } from '../hooks/use-quota-expiry.js';
 import { RUNNERS_TOPIC } from '../../shared/realtime.js';
@@ -446,6 +451,7 @@ export function useSendMessage({
   source,
   selectedModel,
   webSearch,
+  thinking,
   editorRevision = 0,
   dispatch,
   onCreated,
@@ -456,6 +462,8 @@ export function useSendMessage({
   /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
   readonly selectedModel?: ModelRef;
   readonly webSearch?: boolean;
+  /** The thinking level a new, explicitly native conversation starts with; absent leaves the Agent's default. */
+  readonly thinking?: ReasoningLevel;
   /** A fresh blank editor must not share pending/unknown creation admission with its predecessor. */
   readonly editorRevision?: number;
   readonly dispatch: Dispatch<MessagesAction>;
@@ -530,7 +538,14 @@ export function useSendMessage({
           ...(!conversationId && agentId === 'online' && selectedModel
             ? {
                 selectedModel,
-                ...(webSearch === undefined ? {} : { config: { webSearch } }),
+                ...(webSearch === undefined && thinking === undefined
+                  ? {}
+                  : {
+                      config: {
+                        ...(webSearch === undefined ? {} : { webSearch }),
+                        ...(thinking === undefined ? {} : { thinking }),
+                      },
+                    }),
               }
             : {}),
         },
@@ -561,6 +576,7 @@ export function useSendMessage({
       source,
       selectedModel,
       webSearch,
+      thinking,
       editorKey,
       dispatch,
       onCreated,
@@ -622,6 +638,7 @@ export function useConversationActions(): ConversationActions {
     if (!lifetime?.active()) return;
     void toaster.show({
       type: 'error',
+      ...errorToastOptions(error),
       title: errorText(t, error, t('common.requestFailed')),
     });
   };

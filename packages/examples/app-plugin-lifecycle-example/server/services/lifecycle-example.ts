@@ -18,8 +18,13 @@ import { orderLifecycle } from '../lifecycles/order.js';
 import { purchaseLifecycle } from '../lifecycles/purchase.js';
 import { subscriptionLifecycle } from '../lifecycles/subscription.js';
 import { expenseLifecycle } from '../lifecycles/expense.js';
+import { expenseV2Lifecycle } from '../lifecycles/expense-v2.js';
 import { ticketLifecycle } from '../lifecycles/ticket.js';
-import type { ExampleLifecycleName, Plain } from '../tokens.js';
+import {
+  NEW_EXPENSE_DEFINITION,
+  type ExampleLifecycleName,
+  type Plain,
+} from '../tokens.js';
 
 /**
  * A refusal the service makes before any lifecycle is involved. `reason` is
@@ -100,6 +105,7 @@ export class LifecycleExampleService {
     return [
       ticketLifecycle,
       expenseLifecycle,
+      expenseV2Lifecycle,
       orderLifecycle,
       invoiceLifecycle,
       exportLifecycle,
@@ -132,21 +138,27 @@ export class LifecycleExampleService {
     actor: string,
     view: 'mine' | 'approvals',
     page: Paging,
+    status?: string,
   ): Promise<PlainPage> {
     const repository = this.database.repository(expenseLifecycle.collection);
+    // Reports of both versions share the table, so a state either version
+    // declares may be asked for.
     const filter = {
-      filter:
-        view === 'mine'
-          ? { applicantId: actor }
-          : // Only what is waiting for a decision; a report sent back is with its applicant.
-            (filter: FilterBuilder) =>
-              filter.and([
+      filter: (filter: FilterBuilder) =>
+        filter.and([
+          ...(view === 'mine'
+            ? [filter.string('applicantId').eq(actor)]
+            : // Only what is waiting for a decision; a report sent back is with its applicant.
+              [
                 filter.string('approverId').eq(actor),
                 filter.or([
                   filter.string('status').eq('awaitingManager'),
                   filter.string('status').eq('awaitingFinance'),
+                  filter.string('status').eq('awaitingAudit'),
                 ]),
               ]),
+          ...(status === undefined ? [] : [filter.string('status').eq(status)]),
+        ]),
     };
     const rows = await repository.findMany({
       ...filter,
@@ -158,7 +170,11 @@ export class LifecycleExampleService {
   }
 
   /** The lifecycle's `create` decides who may file one and what it must hold. */
-  public createTicket(values: NewTicket, actor: string): Promise<Plain> {
+  public createTicket(
+    values: NewTicket,
+    actor: string,
+    requestId?: string,
+  ): Promise<Plain> {
     return this.create(
       'tickets',
       {
@@ -167,12 +183,21 @@ export class LifecycleExampleService {
         assigneeId: null,
       },
       actor,
+      requestId,
     );
   }
 
-  public createExpense(values: ExpenseDraft, actor: string): Promise<Plain> {
+  /**
+   * Drafts a report with the definition new reports use; `definition`
+   * names an older version only where a caller has to keep drafting it.
+   */
+  public createExpense(
+    values: ExpenseDraft,
+    actor: string,
+    definition: 'expenses' | 'expenses-v2' = NEW_EXPENSE_DEFINITION,
+  ): Promise<Plain> {
     return this.create(
-      'expenses',
+      definition,
       {
         ...this.expenseChanges(values),
         parameterContract: 1,
@@ -288,11 +313,16 @@ export class LifecycleExampleService {
     name: ExampleLifecycleName,
     values: Plain,
     actor: string,
+    requestId?: string,
   ): Promise<Plain> {
     const { record } = await this.runtime.create(
       name,
       { ...values, createdAt: this.clock().toISOString() },
-      { actor: { id: actor } },
+      {
+        actor: { id: actor },
+        requestId,
+        requestInput: values as import('@nocobase/lifecycle').JsonObject,
+      },
     );
     return { ...record };
   }

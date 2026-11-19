@@ -1,5 +1,21 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.40
+
+### Minor Changes
+
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+
+### Patch Changes
+
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+
+## 0.1.0-beta.39
+
+### Patch Changes
+
+- 8339722: Recognize the commercial sub-app template alias for independent children with deployment tooling and platform SSO.
+
 ## 0.1.0-beta.38
 
 ### Patch Changes

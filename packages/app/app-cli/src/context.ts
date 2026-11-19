@@ -58,7 +58,9 @@ export interface AppCommandContext {
     runtime: AppCommandRuntime,
   ) => Application | Promise<Application>;
   readonly rootDir: string;
-  readonly loadRuntime: () => Promise<AppCommandRuntime>;
+  readonly loadRuntime: (options?: {
+    prepareDatabaseDrivers?: boolean;
+  }) => Promise<AppCommandRuntime>;
 }
 
 /** The environment the application resolved: `process.env` with `.env` files applied. */

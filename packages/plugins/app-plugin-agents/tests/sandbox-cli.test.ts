@@ -189,9 +189,9 @@ describe('Sandbox CLI public parser/request compatibility (adapter contracts, no
           error: {
             code: 403,
             status: 'PERMISSION_DENIED',
-            reason: 'PLAN_REQUIRED',
+            reason: 'RECORD_LOCKED',
             domain: 'fixture',
-            message: 'Create a plan first.',
+            message: 'The record is locked.',
           },
         },
         { status: 403 },
@@ -205,7 +205,7 @@ describe('Sandbox CLI public parser/request compatibility (adapter contracts, no
       'acme record update abc --content hello --json',
     );
     expect(result.exitCode).not.toBe(0);
-    expect(result.stdout).toContain('PLAN_REQUIRED');
+    expect(result.stdout).toContain('RECORD_LOCKED');
     expect(result.stdout).not.toContain('approval-requested');
     expect(send).toHaveBeenCalledTimes(1);
   });

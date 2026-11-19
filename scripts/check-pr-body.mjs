@@ -15,11 +15,11 @@ import { moduleOf, parsePullRequest } from './pr-body.mjs';
 
 /** What to do about a failing description, printed after its errors. */
 export const GUIDANCE =
-  'This pull request description does not follow the v3 PR template (.github/pull_request_template.md on v3-develop): check exactly one type, and unless it is Others write one English, one Chinese and one Japanese changelog sentence. Editing the title or description runs this check again.';
+  'This pull request description does not follow the v3 PR template (.github/pull_request_template.md on v3): check exactly one type, and unless it is Others write one English, one Chinese and one Japanese changelog sentence. Editing the title or description runs this check again.';
 
 /** The guidance for another repository's pull request, `--no-module`, which follows that repository's own template. */
 export const OTHER_REPOSITORY_GUIDANCE = GUIDANCE.replace(
-  'the v3 PR template (.github/pull_request_template.md on v3-develop)',
+  'the v3 PR template (.github/pull_request_template.md on v3)',
   "the PR template (this repository's .github/pull_request_template.md)",
 );
 

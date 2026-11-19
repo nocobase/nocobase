@@ -1,5 +1,63 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.23
+
+### Minor Changes
+
+- a0e0c5b: Gather a file entry's actions in its header (Replace or Propose a replacement, Download, History and a menu with Rename and Properties and summary, in a bottom sheet on phones), render Markdown files with the documents' Markdown view, show extracted text numbered line by line with the cited lines highlighted, add a full-screen preview, and select a space by its name in the sidebar.
+
+### Patch Changes
+
+- e90a91e: Render knowledge documents with the shared UI Library `markdown-view`: citation anchors, highlights, the hidden leading title and Mermaid diagrams are kept, `#anchor` links stay on the page and every other link opens in a new tab. The UI Library catalog describes the new `components` and `remarkPlugins` extension points of `markdown-view`.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [b737800]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [b83a645]
+  - @nocobase/app-plugin-agents@2.0.0-beta.17
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+- Updated dependencies [4967900]
+- Updated dependencies [761fb01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [85d7e34]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 0.1.0-beta.20
 
 ### Patch Changes

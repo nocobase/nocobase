@@ -9,6 +9,7 @@
 
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { createServer } from 'node:http';
 import {
   cp,
   mkdir,
@@ -285,6 +286,70 @@ describe('AppHostSupervisor', () => {
     }
   });
 
+  it('starts concurrent managed Hosts on OS-assigned ports', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'app-host-concurrent-'));
+    const supervisors: SourceAppHostSupervisor[] = [];
+    try {
+      for (let i = 0; i < 3; i++) {
+        const fixture = await createManagedFixture(path.join(root, String(i)));
+        supervisors.push(
+          SourceAppHostSupervisor.create({
+            mode: 'managed',
+            driver: 'auto',
+            host: '0.0.0.0',
+            configPath: fixture.configPath,
+            appRevisionsDir: fixture.appRevisionsDir,
+            appVolumesDir: fixture.appVolumesDir,
+            startTimeoutMs: 20_000,
+          }),
+        );
+      }
+      const urls = await Promise.all(
+        supervisors.map((host) => host.ensureStarted()),
+      );
+      expect(new Set(urls.map((url) => url.port)).size).toBe(3);
+      for (const url of urls) {
+        expect(url.hostname).toBe('127.0.0.1');
+        expect(Number(url.port)).toBeGreaterThan(0);
+        expect((await fetch(new URL('/__live', url))).status).toBe(200);
+      }
+    } finally {
+      await Promise.all(supervisors.map((host) => host.shutdown()));
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an occupied fixed port even if another server answers health checks', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'app-host-conflict-'));
+    const unrelated = createServer((_request, response) => response.end('ok'));
+    await new Promise<void>((resolve) =>
+      unrelated.listen(0, '0.0.0.0', resolve),
+    );
+    const port = (unrelated.address() as net.AddressInfo).port;
+    const fixture = await createManagedFixture(root);
+    const supervisor = SourceAppHostSupervisor.create({
+      mode: 'managed',
+      driver: 'auto',
+      host: '0.0.0.0',
+      port,
+      configPath: fixture.configPath,
+      appRevisionsDir: fixture.appRevisionsDir,
+      appVolumesDir: fixture.appVolumesDir,
+      startTimeoutMs: 10_000,
+    });
+    try {
+      await expect(supervisor.ensureStarted()).rejects.toMatchObject({
+        code: 'EADDRINUSE',
+      });
+      expect(supervisor.getInfo().status).not.toBe('ready');
+      expect((await fetch(`http://127.0.0.1:${port}/__live`)).status).toBe(200);
+    } finally {
+      await supervisor.shutdown();
+      await new Promise<void>((resolve) => unrelated.close(() => resolve()));
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it('runs scoped deployments once and keeps their outcome across restarts', async () => {
     const volumesDir = await mkdtemp(path.join(os.tmpdir(), 'app-host-data-'));
     const fixture = await createManagedFixture(volumesDir);
@@ -297,7 +362,10 @@ describe('AppHostSupervisor', () => {
       startTimeoutMs: 10_000,
     });
     try {
+      expect(supervisor.getReadyManagementClient()).toBeNull();
+      expect(supervisor.getInfo().port).toBeUndefined();
       const management = await supervisor.getManagementClient();
+      expect(supervisor.getReadyManagementClient()).toBe(management);
       const described = await management.describeHost();
       // The child runs untrusted App code: it offers no backend that holds platform credentials.
       expect(described.backends.map((backend) => backend.name)).toEqual([
@@ -329,8 +397,30 @@ describe('AppHostSupervisor', () => {
       // A repeat of the same operation is not run again.
       await management.applyDeployment({ ...spec, scope, activation: 'eager' });
 
-      await supervisor.restart('test restart');
+      expect(supervisor.getInfo().port).toBe(
+        Number(new URL(supervisor.getInfo().targetUrl!).port),
+      );
+      const previousPort = Number(
+        new URL(supervisor.getInfo().targetUrl!).port,
+      );
+      await supervisor.stop('release old port');
+      expect(supervisor.getInfo().port).toBeUndefined();
+      expect(supervisor.getReadyManagementClient()).toBeNull();
+      const occupied = net.createServer();
+      await new Promise<void>((resolve) =>
+        occupied.listen(previousPort, '0.0.0.0', resolve),
+      );
+      try {
+        await supervisor.ensureStarted();
+        expect(Number(new URL(supervisor.getInfo().targetUrl!).port)).not.toBe(
+          previousPort,
+        );
+      } finally {
+        await new Promise<void>((resolve) => occupied.close(() => resolve()));
+      }
       const restarted = await supervisor.getManagementClient();
+      expect(supervisor.getReadyManagementClient()).toBe(restarted);
+      expect(restarted).not.toBe(management);
       expect((await restarted.describeHost()).hostId).not.toBe(
         described.hostId,
       );

@@ -30,6 +30,8 @@ export type RecordDetail = RecordView & LifecycleDescriptionView;
 export interface RecordList {
   readonly records: readonly Plain[];
   readonly parameters: Readonly<Record<string, unknown>>;
+  /** Every state of every version of the process, for a status filter. */
+  readonly states: readonly { readonly name: string }[];
 }
 
 const base = LIFECYCLE_ROUTES;
@@ -44,6 +46,7 @@ export function exampleApi(client: ApiClient): {
     actAs: string,
     view?: string,
     signal?: AbortSignal,
+    status?: string,
   ): Promise<RecordList>;
   create(name: LifecycleName, actAs: string, values: Plain): Promise<Plain>;
   update(
@@ -55,11 +58,12 @@ export function exampleApi(client: ApiClient): {
   runTriggers(): Promise<number>;
 } {
   return {
-    list: async (name, actAs, view, signal) => {
+    list: async (name, actAs, view, signal, status) => {
       const { data, meta } = await client.request<{
         readonly data: readonly Plain[];
         readonly meta: {
           readonly parameters: Readonly<Record<string, unknown>>;
+          readonly states?: readonly { readonly name: string }[];
         };
       }>({
         path: `${base}/${name}`,
@@ -68,9 +72,14 @@ export function exampleApi(client: ApiClient): {
           actAs,
           pageSize: String(PAGE_SIZE),
           ...(view ? { view } : {}),
+          ...(status ? { status } : {}),
         },
       });
-      return { records: data, parameters: meta.parameters };
+      return {
+        records: data,
+        parameters: meta.parameters,
+        states: meta.states ?? [],
+      };
     },
     create: async (name, actAs, values) =>
       (

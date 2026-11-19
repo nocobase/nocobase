@@ -84,7 +84,7 @@ describe.skipIf(testDatabaseDialect() !== 'mysql')(
             snapshotBlockers = (
               await h.services.issueQueries.detail(viewer, c.id)
             ).blockedBy;
-            // A plan can create an unrelated issue before adding dependencies. Its counter update must not refresh
+            // A unit can create an unrelated issue before adding dependencies. Its counter update must not refresh
             // the graph revision while the graph itself still comes from the old snapshot.
             if (createFirst)
               await h.services.issues.create(viewer, {

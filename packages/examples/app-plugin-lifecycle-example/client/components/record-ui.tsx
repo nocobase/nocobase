@@ -1,5 +1,5 @@
 import { useParameterBindingEditor } from './parameter-binding-editor.js';
-import { ParameterHistory } from './parameter-history.js';
+import { ParameterHistory, SnapshotOrigins } from './parameter-history.js';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useApiClient } from '@nocobase/app-client';
 import type { UseLifecycleResult } from '@nocobase/lifecycle/react';
@@ -298,6 +298,15 @@ export function LifecyclePanel({
             </div>
           </div>
 
+          {!actor && detail.parameterSnapshot && (
+            <details>
+              <summary>{t('parameters.firstSnapshot')}</summary>
+              <SnapshotOrigins snapshot={detail.parameterSnapshot} />
+              <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
+                {JSON.stringify(detail.parameterSnapshot, null, 2)}
+              </pre>
+            </details>
+          )}
           {actor && detail.description.parameterConfiguration && (
             <>
               {parameterEditor.editor}

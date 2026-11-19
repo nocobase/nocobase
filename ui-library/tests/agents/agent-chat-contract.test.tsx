@@ -84,9 +84,9 @@ const notice: AppUIMessage = {
       type: 'data-notice',
       id: 'notice',
       data: {
-        type: 'planDecided',
+        type: 'taskLinked',
         title: 'English fallback',
-        params: { title: 'Plan' },
+        params: { title: 'Task' },
       },
     },
   ],
@@ -117,16 +117,16 @@ it('uses the formal public extension for notice cards, translated text, null fal
       {
         type: 'data-business',
         id: 'custom',
-        data: { kind: 'plan', id: 'plan-1', payload: { title: 'Plan' } },
+        data: { kind: 'task', id: 'task-1', payload: { title: 'Task' } },
       },
       { type: 'text', text: 'After' },
     ],
   };
   const extension = {
     renderNews: vi.fn(() => null),
-    newsText: vi.fn(() => 'Translated plan'),
+    newsText: vi.fn(() => 'Translated notice'),
     renderDataPart: vi.fn((part: AppUIMessage['parts'][number]) =>
-      part.type === 'data-business' ? <article>Plan card</article> : null,
+      part.type === 'data-business' ? <article>Task card</article> : null,
     ),
   };
   const tree = render(
@@ -137,8 +137,8 @@ it('uses the formal public extension for notice cards, translated text, null fal
     </ChatExtensionsContext.Provider>,
     { wrapper },
   );
-  expect(screen.getByText('Translated plan')).toBeVisible();
-  expect(screen.getByText('Plan card')).toBeVisible();
+  expect(screen.getByText('Translated notice')).toBeVisible();
+  expect(screen.getByText('Task card')).toBeVisible();
   expect(extension.renderNews).toHaveBeenCalledWith(
     (
       notice.parts[0] as Extract<
@@ -306,7 +306,6 @@ it('updates a genuine consultation part in the same logical message without losi
     answer: null,
     error: null,
     usage: null,
-    plans: 0,
   };
   const message: AppUIMessage = {
     id: 'consultation-message',

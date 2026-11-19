@@ -9,6 +9,8 @@ Use this Skill to execute a complete deployment workflow. Read the application's
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
+Preinstalled plugins belong in devDependencies and provide Skills. Run `pnpm nocobase plugin register <name>` to enable one. Run `plugin unregister <name>` to retain it for development or `plugin remove <name>` to uninstall it together with its synchronized Skills.
+
 ## Stop and identify the deployment
 
 Before building or changing a server, record:
@@ -105,7 +107,7 @@ The reverse proxy must preserve the public `Host` and protocol headers, forward 
 
 ### Standalone Node.js
 
-Extract the archive as the service user or transfer ownership to that user. Write the configuration by running `pnpm nocobase config init` inside `dist/`, which generates `config.yml` beside it from the `config.example.yml` the archive carries, with fresh secrets; it installs nothing, so a dialect whose driver the build does not include has to be added in the application sources and built again. Set its values with `pnpm nocobase config set`, and `--from-env` for passwords. Then run `pnpm nocobase config check` inside `dist/` on the target machine before the first start: it loads the configuration the way the service will, connects to every database but SQLite, and exits non-zero with the cause when something would stop the start. Keep `config.yml` and `storage/` beside `dist/`, configure `APP_CONFIG_FILE`, and run `node ./dist/server/standalone.js` through the service manager. Replace `dist` during an update while retaining configuration and storage. Do not start a second process against the same data directory.
+Extract the archive as the service user or transfer ownership to that user. The build checks the effective database configuration offline. Include each required official driver in the source application’s `dependencies`. A build with deployment-time dialect selection lists the production drivers available on the target. An application configured with `database.default: none` can build without a driver. For a preinstalled driver, move its existing entry there from `devDependencies`, preserving its version range, and run `pnpm install`. Write the configuration by running `pnpm nocobase config init --dialect <dialect>` inside `dist/`, which generates `config.yml` beside it from the `config.example.yml` the archive carries, with fresh secrets; it installs nothing, so a dialect whose driver the build does not include has to be added in the application sources and built again. Set its values with `pnpm nocobase config set`, and `--from-env` for passwords. Then run `pnpm nocobase config check` inside `dist/` on the target machine before the first start: it loads the configuration the way the service will, connects to every database but SQLite, and exits non-zero with the cause when something would stop the start. Keep `config.yml` and `storage/` beside `dist/`, configure `APP_CONFIG_FILE`, and run `node ./dist/server/standalone.js` through the service manager. Replace `dist` during an update while retaining configuration and storage. Do not start a second process against the same data directory.
 
 ### Standalone with app-installer
 

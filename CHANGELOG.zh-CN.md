@@ -1,6 +1,73 @@
 # 更新日志
 
-本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 新特性
+
+- **[命令行]** 支持预装插件及其 Skills，按需启用并打包，也可分别取消注册或彻底卸载。 ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 优化
+
+- **[命令行]** `logs export` 不再提供 `--issue` 筛选，导出按所选日期包含所选执行机的全部日志。 ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[数据库]** 已执行迁移缺少源码时默认告警，并在回滚最新批次前一次列出所有缺失或不可逆的目标迁移。 ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[知识库]**
+  - 知识库文档中的链接改为在新标签页打开（页内标题锚点除外），宽表格改为横向滚动而不再挤压列宽。 ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - 知识库文件条目的替换、下载和历史集中到右上角，MD 预览与正文样式一致，提取的文字按行号显示原文并高亮引用行，预览支持全屏查看。 ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[项目]** 项目使用手动表单创建任务和子任务，并移除操作计划、需求整理工具及其命令。 ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[应用模板]** 从同一版本的 Default 或 Examples 模板创建的应用会安装相同版本的直接 NocoBase 依赖。 ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 修复
+
+- **[Agent 运行器]** 私有包源拒绝授权时使用本次运行的凭据重试，并支持应用创建和模板下载。 ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[数据库]** 空的日期时间值在所有数据库上都读为空，不再在 Oracle 兼容模式的 KingbaseES 上被读成非法值 "Z" 而报错。 ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[命令行]** 部署归档不再携带开发环境运行配置，打包失败时保留上一份归档。 ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[服务端]** 嵌入式部署的应用页面和 API 文档正确显示应用名称与版本。 ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agent]** Codex 上报当前额度后，运行环境会移除已停用的额度窗口 ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 新特性
+
+- **[Agent]**
+  - 导出脱敏运行环境日志并合并本地时间线，支持实时收集进度及服务端配置的日期范围。 ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - 支持为空闲的 Runner 对话选择执行机，发送下一条消息时生效并保留历史。 ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 优化
+
+- **[界面]** 使用与分类标签样式一致的菜单查看工作流版本，并可复用 UI Library 中的版本选择组件。 ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[应用托管]** 支持配置预览发布包的校验与解压超时时间。 ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** 升级 Skill 默认升级到 `latest` 版本，用 beta 创建的应用在正式版发布后也能继续升级。 ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 优化
+
+- **[应用托管]** 托管 Host 可自动分配内部端口并在重启后恢复当前连接，固定端口冲突时会明确报错。 ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 修复
+
+- **[Agent]** 在慢速连接下打开会话时，避免重复加载会话列表。 ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[认证]** 访客登录后返回原访问页面，并保留查询条件和锚点。 ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
+## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
+
+### 🎉 新特性
+
+- **[插件生命周期]** Lifecycle 流程支持独立版本，创建记录时固定参数，并可一次补齐旧单实时参数、显示升级来源。 ([#11507](https://github.com/nocobase/nocobase/pull/11507))
+- **[命令行]** 支持创建子应用和扩展部署命令，并按请求路由到独立的 App Host。 ([#11557](https://github.com/nocobase/nocobase/pull/11557))
+- **[文件]** 支持为共用同一存储桶的文件仓库配置不同的上传存储目录。 ([#11565](https://github.com/nocobase/nocobase/pull/11565))
+
+### 🚀 优化
+
+- **[权限]** 应用可按发起人的权限授权 Agent 配置应用、发布到受保护环境及编辑知识库。 ([#11554](https://github.com/nocobase/nocobase/pull/11554))
+
+### 🐛 修复
+
+- **[API 密钥]** 默认支持创建和轮换名称最长为 100 个字符的 API 密钥，名称校验失败时返回客户端错误。 ([#11558](https://github.com/nocobase/nocobase/pull/11558))
+- **[服务端]** 修复服务器启用环境代理时子应用页面和 WebSocket 连接无法访问的问题。 ([#11564](https://github.com/nocobase/nocobase/pull/11564))
+- **[邮件]** 按协议和具体原因提示邮箱连接失败，并记录不含凭据的诊断日志。 ([#11566](https://github.com/nocobase/nocobase/pull/11566))
 
 ## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
 

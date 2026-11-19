@@ -16,8 +16,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#components/ui/alert-dialog';
-import { useRef, useState } from 'react';
-import { createUuid, useApiClient } from '@nocobase/app-client';
+import { useEffect, useRef, useState } from 'react';
+import {
+  createUuid,
+  useApiClient,
+  useNavigationGuard,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useBeforeUnload, useLocation, useParams } from 'react-router';
 import {
@@ -32,14 +36,15 @@ import { useWorkflowData, useWorkflowLabels } from './hooks.js';
 import { DataState } from './shared.js';
 import { OfficeParameterEditor } from './office-parameters.js';
 
-type Parameters =
+type Parameters = { definition?: string } & (
   | {
       kind: 'lifecycle';
       revision: number;
       values: JsonObject;
       groups: ParameterGroupView[];
     }
-  | ({ kind: 'office' } & OfficeWorkflowParameters);
+  | ({ kind: 'office' } & OfficeWorkflowParameters)
+);
 function SaveParameters({
   busy,
   save,
@@ -88,13 +93,25 @@ function InlineParameters({ children, footer }: RouteDialogProps) {
 }
 
 export default function WorkflowParametersPage() {
-  return <WorkflowParametersForm />;
+  const { workflowId } = useParams();
+  const location = useLocation();
+  return (
+    <WorkflowParametersForm
+      key={`${workflowId}@${new URLSearchParams(location.search).get('version')}`}
+    />
+  );
 }
 
 export function WorkflowParametersForm({
   inline = false,
+  selectedVersion,
+  selectedDefinition,
+  previousVersion,
 }: {
   inline?: boolean;
+  selectedVersion?: number;
+  selectedDefinition?: string;
+  previousVersion?: number;
 }) {
   const { workflowId = '' } = useParams();
   const update = useCan({
@@ -103,6 +120,8 @@ export function WorkflowParametersForm({
   });
   const location = useLocation();
   const search = new URLSearchParams(location.search);
+  const version = String(selectedVersion ?? search.get('version') ?? '1');
+  const query = { version };
   const bindingKind = search.get('parameterKind');
   const bindingName = search.get('parameterName');
   const scoped =
@@ -113,7 +132,17 @@ export function WorkflowParametersForm({
   const { t } = useTranslation();
   const labels = useWorkflowLabels();
   const path = `workflows/definitions/${encodeURIComponent(workflowId)}/parameters`;
-  const request = useWorkflowData<{ data: Parameters }>(path);
+  const request = useWorkflowData<{ data: Parameters }>(
+    path,
+    new URLSearchParams(query).toString(),
+  );
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const [savedParameters, setSavedParameters] = useState<Parameters>();
   const configuration = savedParameters ?? request.data?.data;
   const sourceGroups =
@@ -150,6 +179,7 @@ export function WorkflowParametersForm({
       {
         save: () => Promise<boolean>;
         values?: () => JsonObject | undefined;
+        replace?: (values: JsonObject) => void;
       } | null
     >
   >({});
@@ -166,25 +196,49 @@ export function WorkflowParametersForm({
   );
   const busy = saving || Object.values(pendingGroups).some(Boolean);
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
+  const dirtyRef = useRef(false);
+  const dirtyGroupsRef = useRef<Record<string, boolean>>({});
+  const updateDirty = (key: string, value: boolean) => {
+    dirtyGroupsRef.current[key] = value;
+    dirtyRef.current = Object.values(dirtyGroupsRef.current).some(Boolean);
+    setDirty((previous) =>
+      previous[key] === value ? previous : { ...previous, [key]: value },
+    );
+  };
+  const clearDirty = () => {
+    dirtyGroupsRef.current = {};
+    dirtyRef.current = false;
+    setDirty({});
+  };
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const decisionRef = useRef<((value: boolean) => void) | null>(null);
+  const leaveApprovedRef = useRef(false);
   const isDirty = Object.values(dirty).some(Boolean);
   useBeforeUnload((event) => {
-    if (busy || isDirty) {
+    if (busy || dirtyRef.current) {
       event.preventDefault();
       event.returnValue = '';
     }
   });
   const decide = (value: boolean) => {
+    leaveApprovedRef.current = value;
     decisionRef.current?.(value);
     decisionRef.current = null;
     setConfirmOpen(false);
   };
   const workflow = workflowId.slice(workflowId.indexOf('.') + 1);
+  const definition =
+    selectedDefinition ??
+    configuration?.definition ??
+    (version === '1' ? workflow : undefined);
   const api: ParameterApi = {
     ...parameterApi(client, 'zhao', workflow),
     read: async (key) => {
-      const result = await client.request<{ data: Parameters }>({ path });
+      const result = await client.request<{ data: Parameters }>({
+        path,
+        query,
+      });
       if (result.data.kind !== 'lifecycle')
         throw new Error('Unexpected workflow parameters.');
       return result.data.groups.find((group) => group.key === key)!;
@@ -193,6 +247,79 @@ export function WorkflowParametersForm({
       throw new Error('Use the workflow save action.');
     },
   };
+  const save = async (): Promise<boolean> => {
+    if (savingRef.current || !definition) return false;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      setSaveError('');
+      setSuccess(false);
+      if (configuration?.kind === 'lifecycle') {
+        const values: JsonObject = {};
+        for (const group of groups) {
+          if (!group.canUpdate) continue;
+          const draft = editorsRef.current[group.key]?.values?.();
+          if (!draft) return false;
+          if (dirty[group.key])
+            for (const field of Object.keys(group.fields))
+              values[field] = draft[field];
+        }
+        if (Object.keys(values).length) {
+          const result = await client.request<{ data: Parameters }>({
+            path,
+            query,
+            method: 'PUT',
+            json: {
+              kind: 'lifecycle',
+              definition,
+              values,
+              expectedRevision: revision,
+              requestId: createUuid(),
+            },
+          });
+          if (!mountedRef.current) return false;
+          if (inline) {
+            setSavedParameters(result.data);
+            setRevisionOverride(undefined);
+            clearDirty();
+          }
+        }
+      } else {
+        if (!(await editorsRef.current.office?.save())) return false;
+      }
+      setSuccess(true);
+      savedRef.current = !inline;
+      return true;
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : t('workflows.parametersFailed'),
+      );
+      setConflict(
+        Boolean(
+          error &&
+          typeof error === 'object' &&
+          'reason' in error &&
+          error.reason === 'CONFIGURATION_CONFLICT',
+        ),
+      );
+      return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+  const confirmLeave = (): boolean | Promise<boolean> => {
+    if (savedRef.current || leaveApprovedRef.current) return true;
+    if (savingRef.current || busy) return false;
+    if (!dirtyRef.current) return true;
+    setConfirmOpen(true);
+    return new Promise<boolean>((resolve) => {
+      decisionRef.current = resolve;
+    });
+  };
+  useNavigationGuard(confirmLeave);
   const SaveAction = inline ? InlineSaveParameters : SaveParameters;
   const Container = inline ? InlineParameters : RouteDialog;
   return (
@@ -217,82 +344,12 @@ export function WorkflowParametersForm({
         pathname: `/workflows/definitions/${encodeURIComponent(workflowId)}`,
         search: search.toString(),
       }}
-      beforeClose={() => {
-        if (savedRef.current) return true;
-        if (savingRef.current || busy) return false;
-        if (!isDirty) return true;
-        setConfirmOpen(true);
-        return new Promise<boolean>((resolve) => {
-          decisionRef.current = resolve;
-        });
-      }}
+      beforeClose={confirmLeave}
       footer={
         update.can &&
         (groups.some((group) => group.canUpdate) ||
           (configuration?.kind === 'office' && !scoped)) ? (
-          <SaveAction
-            busy={busy || request.loading}
-            save={async () => {
-              if (savingRef.current) return false;
-              savingRef.current = true;
-              setSaving(true);
-              try {
-                setSaveError('');
-                setSuccess(false);
-                if (configuration?.kind === 'lifecycle') {
-                  const values: JsonObject = {};
-                  for (const group of groups) {
-                    if (!group.canUpdate) continue;
-                    const draft = editorsRef.current[group.key]?.values?.();
-                    if (!draft) return false;
-                    if (dirty[group.key])
-                      for (const field of Object.keys(group.fields))
-                        values[field] = draft[field];
-                  }
-                  if (Object.keys(values).length) {
-                    const result = await client.request<{ data: Parameters }>({
-                      path,
-                      method: 'PUT',
-                      json: {
-                        kind: 'lifecycle',
-                        values,
-                        expectedRevision: revision,
-                        requestId: createUuid(),
-                      },
-                    });
-                    if (inline) {
-                      setSavedParameters(result.data);
-                      setRevisionOverride(undefined);
-                      setDirty({});
-                    }
-                  }
-                } else {
-                  if (!(await editorsRef.current.office?.save())) return false;
-                }
-                setSuccess(true);
-                savedRef.current = !inline;
-                return true;
-              } catch (error) {
-                setSaveError(
-                  error instanceof Error
-                    ? error.message
-                    : t('workflows.parametersFailed'),
-                );
-                setConflict(
-                  Boolean(
-                    error &&
-                    typeof error === 'object' &&
-                    'reason' in error &&
-                    error.reason === 'CONFIGURATION_CONFLICT',
-                  ),
-                );
-                return false;
-              } finally {
-                savingRef.current = false;
-                setSaving(false);
-              }
-            }}
-          />
+          <SaveAction busy={busy || request.loading} save={save} />
         ) : undefined
       }
       className='sm:max-w-2xl'
@@ -316,6 +373,16 @@ export function WorkflowParametersForm({
             <AlertDialogCancel onClick={() => decide(false)}>
               {t('workflows.keepParameterEditing')}
             </AlertDialogCancel>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                void save().then((saved) => {
+                  if (saved) decide(true);
+                });
+              }}
+            >
+              {t('workflows.saveParameters')}
+            </Button>
             <AlertDialogAction
               variant='destructive'
               onClick={() => decide(true)}
@@ -328,6 +395,55 @@ export function WorkflowParametersForm({
       {inline && configuration?.kind === 'lifecycle' && success && !isDirty && (
         <p role='status'>{t('workflows.parametersSaved')}</p>
       )}
+      {previousVersion !== undefined &&
+        configuration?.kind === 'lifecycle' &&
+        update.can && (
+          <Button
+            variant='outline'
+            disabled={busy}
+            onClick={() => {
+              void (async () => {
+                setSaving(true);
+                try {
+                  const result = await client.request<{ data: Parameters }>({
+                    path,
+                    query: { version: String(previousVersion) },
+                  });
+                  if (!mountedRef.current || result.data.kind !== 'lifecycle')
+                    return;
+                  const sourceValues = Object.assign(
+                    {},
+                    ...result.data.groups.map((group) => group.values),
+                  ) as JsonObject;
+                  for (const group of groups) {
+                    const current = editorsRef.current[group.key]?.values?.();
+                    if (!current) continue;
+                    const copied = { ...current };
+                    for (const field of Object.keys(group.fields))
+                      if (Object.hasOwn(sourceValues, field))
+                        copied[field] = sourceValues[field];
+                    editorsRef.current[group.key]?.replace?.(copied);
+                  }
+                  setSuccess(false);
+                } catch (error) {
+                  if (mountedRef.current)
+                    setSaveError(
+                      error instanceof Error
+                        ? error.message
+                        : t('workflows.parametersFailed'),
+                    );
+                } finally {
+                  if (mountedRef.current) setSaving(false);
+                }
+              })();
+            }}
+          >
+            {t('workflows.copyVersionParameters', { version: previousVersion })}
+          </Button>
+        )}
+      <p className='text-sm text-muted-foreground'>
+        {t('workflows.configuringVersion', { version })}
+      </p>
       <fieldset disabled={saving || !update.can} className='min-w-0'>
         <DataState {...request} retry={request.reload} />
         {request.data && (
@@ -346,11 +462,14 @@ export function WorkflowParametersForm({
             variant='outline'
             onClick={() => {
               void client
-                .request<{ data: Parameters }>({ path })
+                .request<{ data: Parameters }>({ path, query })
                 .then(({ data }) => {
-                  setSavedParameters(data);
+                  if (!mountedRef.current) return;
+                  if (data.kind === 'office') {
+                    setSavedParameters(data);
+                    clearDirty();
+                  }
                   setRevisionOverride(data.revision);
-                  setDirty({});
                   setConflict(false);
                   setSaveError('');
                 })
@@ -393,13 +512,7 @@ export function WorkflowParametersForm({
                       [group.key]: pending,
                     }))
                   }
-                  onDirtyChange={(value) =>
-                    setDirty((previous) =>
-                      previous[group.key] === value
-                        ? previous
-                        : { ...previous, [group.key]: value },
-                    )
-                  }
+                  onDirtyChange={(value) => updateDirty(group.key, value)}
                 />
               </div>
             ))}
@@ -423,15 +536,12 @@ export function WorkflowParametersForm({
             onSaved={(saved) =>
               setSavedParameters({ ...saved, kind: 'office' })
             }
-            path={path}
+            path={`${path}?${new URLSearchParams(query)}`}
+            definition={definition ?? workflow}
             onBusyChange={(pending) =>
               setPendingGroups((previous) => ({ ...previous, office: pending }))
             }
-            onDirtyChange={(value) =>
-              setDirty((previous) =>
-                previous.office === value ? previous : { office: value },
-              )
-            }
+            onDirtyChange={(value) => updateDirty('office', value)}
           />
         )}
       </fieldset>

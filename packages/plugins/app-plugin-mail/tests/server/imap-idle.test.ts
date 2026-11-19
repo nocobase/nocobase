@@ -46,7 +46,7 @@ function fixture() {
   const credentials = {
     get: vi.fn(async () => ({ username: 'u', password: 'p' })),
   };
-  const logger = { info: vi.fn() };
+  const logger = { info: vi.fn(), warn: vi.fn() };
   const schedule = vi.fn(async () => undefined);
   const createClient = vi.fn(() => {
     const client = new FakeImap();
@@ -70,6 +70,50 @@ afterEach(async () => {
 });
 
 describe('INBOX IDLE lifecycle', () => {
+  it.each(['connect', 'idle'] as const)(
+    'logs failed IDLE %s with endpoint details and redacts the vault credential',
+    async (step) => {
+      vi.useFakeTimers();
+      const { listener, clients, credentials, logger, createClient } =
+        fixture();
+      credentials.get.mockResolvedValue({
+        username: 'idle-user',
+        password: 'idle-password',
+      });
+      createClient.mockImplementationOnce(() => {
+        const client = new FakeImap();
+        const error = Object.assign(
+          new Error('idle-password idle-user credential owner@example.com'),
+          { code: step === 'connect' ? 'GREETING_TIMEOUT' : 'ECONNRESET' },
+        );
+        client[step].mockRejectedValueOnce(error);
+        clients.push(client);
+        return client as unknown as ImapFlow;
+      });
+      listener.update(account);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'mail.imap.idle.connect_failed',
+          accountId: 'account',
+          protocol: 'imap',
+          stage: step === 'connect' ? 'greeting' : 'sync',
+          host: 'imap.example.com',
+          category: step === 'connect' ? 'timeout' : 'network',
+          durationMs: expect.any(Number),
+        }),
+        expect.any(String),
+      );
+      for (const secret of [
+        'idle-password',
+        'idle-user',
+        'credential',
+        'owner@example.com',
+      ])
+        expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(secret);
+    },
+  );
+
   it('schedules catch-up on connect and pushes on increasing INBOX EXISTS without polling', async () => {
     vi.useFakeTimers();
     const { listener, clients, schedule } = fixture();

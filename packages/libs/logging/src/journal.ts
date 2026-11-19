@@ -39,21 +39,59 @@ export interface JournalPage {
 }
 const MAX_READ = 256 * 1024;
 const MAX_LINE = 32 * 1024;
-const SECRET =
-  /password|secret|token|authorization|cookie|api.?key|credentials/i;
+const SECRET_KEY =
+  /password|secret|authorization|cookie|credentials|api.?key|access.?key|private.?key|token(?![a-z])/i;
+
+/** Scan full keys without consuming nonsensitive fields that may precede credentials. */
+function sanitizeKeyValues(text: string): string {
+  const keys = /(?<![\w.-])([\w.-]+)(?:\\?["'])?[ \t]*[=:][ \t]*/g;
+  // Only the first space in a run can begin the next pair, keeping long whitespace scans linear.
+  const values =
+    /"(?:\\.|[^"\\])*(?:"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\r\n,;&}]+?(?=(?<![ \t])[ \t]+[\w.-]+(?:\\?["'])?[ \t]*[=:]|[\r\n,;&}]|$)/y;
+  let result = '';
+  let copied = 0;
+  for (let match; (match = keys.exec(text));) {
+    if (!SECRET_KEY.test(match[1])) continue;
+    values.lastIndex = keys.lastIndex;
+    const value = values.exec(text);
+    if (!value) continue;
+    result += text.slice(copied, keys.lastIndex) + '[REDACTED]';
+    copied = values.lastIndex;
+    keys.lastIndex = copied;
+  }
+  return result + text.slice(copied);
+}
 
 /** Sanitize at the persistence boundary, including nested errors and free text. */
 export function sanitizeLog(value: unknown, depth: number = 0): unknown {
   if (depth > 8) return '[TRUNCATED]';
-  if (typeof value === 'string')
-    return value
-      .slice(0, MAX_LINE)
-      .replace(/(Bearer\s+)\S+/gi, '$1[REDACTED]')
-      .replace(/(\w+:\/\/)[^\s/@]+:[^\s/@]+@/g, '$1[REDACTED]@')
+  if (typeof value === 'string') {
+    // Bound every parser and matcher before scanning untrusted process output.
+    const text = value.slice(0, MAX_LINE);
+    const urlCredentials =
+      value.length > MAX_LINE
+        ? /\b([a-z][a-z0-9+.-]{0,31}:\/\/)[^\s/:@]+:[^\s/@]+(?:@|$)/gi
+        : /\b([a-z][a-z0-9+.-]{0,31}:\/\/)[^\s/:@]+:[^\s/@]+@/gi;
+    // Parse structured text before free-text matching, including escaped JSON strings.
+    if (/^\s*[[{]/.test(text)) {
+      try {
+        return JSON.stringify(sanitizeLog(JSON.parse(text), depth + 1));
+      } catch {
+        // Legacy output need not be JSON.
+      }
+    }
+    return sanitizeKeyValues(text)
       .replace(
-        /((?:password|secret|token|apiKey|authorization)\s*[=:]\s*)[^\s,;&]+/gi,
-        '$1[REDACTED]',
+        /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/g,
+        '[REDACTED]',
+      )
+      .replace(/((?:Bearer|Basic)\s+)[^\s"'\\,;]+/gi, '$1[REDACTED]')
+      .replace(urlCredentials, '$1[REDACTED]@')
+      .replace(
+        /\b(?:sk-[a-zA-Z0-9_-]+|gh[pousr]_[a-zA-Z0-9_]+|github_pat_[a-zA-Z0-9_]+|glpat-[a-zA-Z0-9_-]+|xox[baprs]-[a-zA-Z0-9-]+|npm_[a-zA-Z0-9_]+|fg(?:[kro]|reg|dl)_[a-zA-Z0-9_-]+)/g,
+        '[REDACTED]',
       );
+  }
   if (value instanceof Error)
     return sanitizeLog(
       {
@@ -73,7 +111,7 @@ export function sanitizeLog(value: unknown, depth: number = 0): unknown {
         .slice(0, 100)
         .map(([key, item]) => [
           key,
-          SECRET.test(key) ? '[REDACTED]' : sanitizeLog(item, depth + 1),
+          SECRET_KEY.test(key) ? '[REDACTED]' : sanitizeLog(item, depth + 1),
         ]),
     );
   return value;
@@ -110,7 +148,7 @@ function compactError(value: unknown, depth: number = 0): unknown {
 }
 
 /** Keep correlation and failure details when optional payloads exceed the line budget. */
-function serializeEntry(entry: JournalEntry): string {
+export function serializeJournalEntry(entry: JournalEntry): string {
   const sanitized = sanitizeLog(entry) as JournalEntry;
   const line = JSON.stringify(sanitized) + '\n';
   if (Buffer.byteLength(line) <= MAX_LINE) return line;
@@ -142,12 +180,18 @@ function serializeEntry(entry: JournalEntry): string {
   return JSON.stringify(compact) + '\n';
 }
 
-/** One complete append per entry. No file descriptor survives a write or rotation. */
+/** One serialization and append. A destination callback can rotate using the prepared line without serializing again. */
 export function appendJournal(
-  file: string,
+  destination: string | ((line: string) => { file: string; maxSizeMB: number }),
   entry: JournalEntry,
   maxSizeMB: number = 50,
 ): void {
+  let line: string | undefined;
+  const target =
+    typeof destination === 'string'
+      ? { file: destination, maxSizeMB }
+      : destination((line = serializeJournalEntry(entry)));
+  const { file } = target;
   mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   const fd = openSync(
     file,
@@ -161,9 +205,9 @@ export function appendJournal(
     const stats = fstatSync(fd);
     if (!stats.isFile())
       throw new Error('Log destination must be a regular file');
-    const limit = maxSizeMB * 1024 * 1024;
+    const limit = target.maxSizeMB * 1024 * 1024;
     if (stats.size >= limit) return;
-    let line = serializeEntry(entry);
+    line ??= serializeJournalEntry(entry);
     if (stats.size + Buffer.byteLength(line) >= limit) {
       const marker = JSON.stringify({
         time: entry.time,
@@ -191,16 +235,27 @@ export async function pruneJournals(
   directory: string,
   policy: JournalPolicy,
   protectedFile?: string,
+  options: { recursive?: boolean; retentionOnly?: boolean } = {},
 ): Promise<void> {
   validateJournalPolicy(policy);
-  const files = await listFiles(directory);
-  let total = files.reduce((sum, file) => sum + file.size, 0);
+  const files = await listFiles(directory, options.recursive);
+  let total = options.retentionOnly
+    ? 0
+    : files.reduce((sum, file) => sum + file.size, 0);
   const expiry = Date.now() - (policy.retentionDays ?? 7) * 86400000;
-  for (const file of files.sort((a, b) => a.modified - b.modified)) {
-    if (file.name === protectedFile) continue;
+  for (const file of options.retentionOnly
+    ? files
+    : files.sort((a, b) => a.modified - b.modified)) {
+    if (
+      protectedFile &&
+      path.resolve(directory, protectedFile) ===
+        path.resolve(directory, file.name)
+    )
+      continue;
     if (
       file.modified < expiry ||
-      total > (policy.maxSizeMB ?? 500) * 1024 * 1024
+      (!options.retentionOnly &&
+        total > (policy.maxSizeMB ?? 500) * 1024 * 1024)
     ) {
       await unlink(path.join(directory, file.name)).catch(
         (error: NodeJS.ErrnoException) => {
@@ -218,14 +273,31 @@ interface LogFile {
   inode: number;
   modified: number;
 }
-async function listFiles(directory: string): Promise<LogFile[]> {
+async function listFiles(
+  directory: string,
+  recursive = false,
+): Promise<LogFile[]> {
   try {
     if ((await lstat(directory)).isSymbolicLink())
       throw new Error('Symbolic log directories are not allowed');
     const entries = await readdir(directory, { withFileTypes: true });
     const files: LogFile[] = [];
     for (const entry of entries) {
-      if (!entry.isFile() || !/^[a-zA-Z0-9_.-]+\.log$/.test(entry.name))
+      if (
+        recursive &&
+        entry.isDirectory() &&
+        /^(?:runs|\d{4}-\d{2}-\d{2})$/.test(entry.name)
+      ) {
+        for (const file of await listFiles(
+          path.join(directory, entry.name),
+          true,
+        ))
+          files.push({ ...file, name: path.join(entry.name, file.name) });
+      }
+      if (
+        !entry.isFile() ||
+        !/^[a-zA-Z0-9_.-]+\.(?:log(?:\.\d+)?|stderr)$/.test(entry.name)
+      )
         continue;
       const stats = await lstat(path.join(directory, entry.name));
       if (stats.isFile())

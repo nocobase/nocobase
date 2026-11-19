@@ -35,15 +35,6 @@ export default defineConfig({
           './website/demo/inbox/notification-in-app-inbox.ts',
         ),
       },
-      // The plan-card block reads and acts on plans through the projects plugin's hooks, which need a server; the demo
-      // keeps sample plans in memory in their place.
-      {
-        find: /^@nocobase\/app-plugin-projects\/client\/kit$/,
-        replacement: path.resolve(
-          __dirname,
-          './website/demo/projects/projects-plan-kit.ts',
-        ),
-      },
       {
         find: /^@nocobase\/app-client$/,
         replacement: path.resolve(

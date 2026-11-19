@@ -88,6 +88,7 @@ export class OfficeFlowsProvider extends ServiceProvider<AppPluginApplication> {
       .resolve(loggingToken)
       .getLogger('office-flows-example');
     const runtime = new LifecycleRuntime({
+      creationRequestsCollection: 'officeFlowsCreationRequests',
       store: createRepositoryLifecycleStore(database, {
         collections: {
           transitions: COLLECTIONS.transitions,

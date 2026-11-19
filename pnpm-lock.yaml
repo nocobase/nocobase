@@ -258,9 +258,6 @@ catalogs:
     pino-pretty:
       specifier: ^13.0.0
       version: 13.2.0
-    pino-roll:
-      specifier: ^4.0.0
-      version: 4.0.0
     postcss:
       specifier: ^8.5.3
       version: 8.5.26
@@ -548,6 +545,9 @@ importers:
       '@nocobase/cli-envelope':
         specifier: workspace:^
         version: link:../../libs/cli-envelope
+      '@nocobase/logging':
+        specifier: workspace:^
+        version: link:../../libs/logging
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
@@ -679,9 +679,15 @@ importers:
       '@nocobase/cli-envelope':
         specifier: workspace:^
         version: link:../../libs/cli-envelope
+      '@nocobase/logging':
+        specifier: workspace:^
+        version: link:../../libs/logging
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
+      tar:
+        specifier: 'catalog:'
+        version: 7.5.22
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -3013,9 +3019,6 @@ importers:
       pino-pretty:
         specifier: 'catalog:'
         version: 13.2.0
-      pino-roll:
-        specifier: 'catalog:'
-        version: 4.0.0
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*
@@ -3453,6 +3456,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/logging':
+        specifier: workspace:^
+        version: link:../../libs/logging
       '@nocobase/markdown-mermaid':
         specifier: workspace:^
         version: link:../../libs/markdown-mermaid
@@ -5260,9 +5266,6 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      officeparser:
-        specifier: ^6.0.4
-        version: 6.1.1(encoding@0.1.13)(supports-color@8.1.1)
       react:
         specifier: ^19.0.0
         version: 19.2.8
@@ -5655,109 +5658,106 @@ importers:
   packages/templates/app-template-default:
     dependencies:
       '@nocobase/app-cli':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-cli
       '@nocobase/app-plugin-agents':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-agents
       '@nocobase/app-plugin-api-keys':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-api-keys
       '@nocobase/app-plugin-authentication':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authentication
       '@nocobase/app-plugin-authorization':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authorization
       '@nocobase/app-plugin-authz-default-access':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-default-access
       '@nocobase/app-plugin-authz-restriction-rules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-restriction-rules
       '@nocobase/app-plugin-authz-sharing-rules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-sharing-rules
       '@nocobase/app-plugin-concurrency':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-concurrency
       '@nocobase/app-plugin-database-explorer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-database-explorer
       '@nocobase/app-plugin-file':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-file
       '@nocobase/app-plugin-foundation':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-foundation
       '@nocobase/app-plugin-i18n':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-i18n
       '@nocobase/app-plugin-knowledge':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-mail':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-mail
       '@nocobase/app-plugin-notification':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification
       '@nocobase/app-plugin-notification-in-app':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-in-app
       '@nocobase/app-plugin-notification-providers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-providers
       '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-scheduler
       '@nocobase/app-plugin-users':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-users
       '@nocobase/app-server':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-server
       '@nocobase/authorization':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/authorization
       '@nocobase/caching':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/caching
       '@nocobase/concurrency':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/concurrency
       '@nocobase/config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/config
       '@nocobase/db':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/db
-      '@nocobase/db-sqlite':
-        specifier: workspace:^
-        version: link:../../libs/db-sqlite
       '@nocobase/i18n':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/i18n
       '@nocobase/jobs':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/jobs
       '@nocobase/lifecycle':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/lifecycle
       '@nocobase/queue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/queue
       '@nocobase/realtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/realtime
       '@nocobase/repository-input':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/repository-input
       '@nocobase/service-provider':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/service-provider
       '@nocobase/snowflake':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/snowflake
       '@oclif/core':
         specifier: 'catalog:'
@@ -5788,8 +5788,11 @@ importers:
         specifier: 2.3.0
         version: 2.3.0
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
@@ -5800,19 +5803,34 @@ importers:
         specifier: workspace:*
         version: link:../../tools/app-testing
       '@nocobase/app-websocket':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-websocket
+      '@nocobase/db-mssql':
+        specifier: workspace:*
+        version: link:../../libs/db-mssql
+      '@nocobase/db-mysql':
+        specifier: workspace:*
+        version: link:../../libs/db-mysql
+      '@nocobase/db-oracle':
+        specifier: workspace:*
+        version: link:../../libs/db-oracle
+      '@nocobase/db-postgres':
+        specifier: workspace:*
+        version: link:../../libs/db-postgres
+      '@nocobase/db-sqlite':
+        specifier: workspace:*
+        version: link:../../libs/db-sqlite
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
       '@nocobase/drive':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/drive
       '@nocobase/logging':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/logging
       '@nocobase/session':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/session
       '@playwright/test':
         specifier: 'catalog:'
@@ -5989,157 +6007,157 @@ importers:
   packages/templates/app-template-examples:
     dependencies:
       '@nocobase/app-cli':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-cli
       '@nocobase/app-plugin-agents':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-agents
       '@nocobase/app-plugin-api-keys':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-api-keys
       '@nocobase/app-plugin-authentication':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authentication
       '@nocobase/app-plugin-authorization':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authorization
       '@nocobase/app-plugin-authorization-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-authorization-example
       '@nocobase/app-plugin-authz-default-access':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-default-access
       '@nocobase/app-plugin-authz-restriction-rules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-restriction-rules
       '@nocobase/app-plugin-authz-sharing-rules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-authz-sharing-rules
       '@nocobase/app-plugin-cli-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-cli-example
       '@nocobase/app-plugin-concurrency':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-concurrency
       '@nocobase/app-plugin-database-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-database-example
       '@nocobase/app-plugin-database-explorer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-database-explorer
       '@nocobase/app-plugin-file':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-file
       '@nocobase/app-plugin-file-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-file-example
       '@nocobase/app-plugin-foundation':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-foundation
       '@nocobase/app-plugin-i18n':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-i18n
       '@nocobase/app-plugin-jobs-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-jobs-example
       '@nocobase/app-plugin-knowledge':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-lifecycle-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-lifecycle-example
       '@nocobase/app-plugin-mail':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-mail
       '@nocobase/app-plugin-mail-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-mail-example
       '@nocobase/app-plugin-notification':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification
       '@nocobase/app-plugin-notification-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-notification-example
       '@nocobase/app-plugin-notification-in-app':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-in-app
       '@nocobase/app-plugin-notification-providers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-providers
       '@nocobase/app-plugin-office-flows-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-office-flows-example
       '@nocobase/app-plugin-queue-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-queue-example
       '@nocobase/app-plugin-realtime-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-realtime-example
       '@nocobase/app-plugin-repository-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-repository-example
       '@nocobase/app-plugin-routes-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-routes-example
       '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-scheduler
       '@nocobase/app-plugin-service-provider-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-service-provider-example
       '@nocobase/app-plugin-skills-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-skills-example
       '@nocobase/app-plugin-template-print-example':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../examples/app-plugin-template-print-example
       '@nocobase/app-plugin-users':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../plugins/app-plugin-users
       '@nocobase/app-server':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-server
       '@nocobase/authorization':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/authorization
       '@nocobase/caching':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/caching
       '@nocobase/concurrency':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/concurrency
       '@nocobase/config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/config
       '@nocobase/db':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/db
       '@nocobase/db-sqlite':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/db-sqlite
       '@nocobase/i18n':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/i18n
       '@nocobase/jobs':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/jobs
       '@nocobase/lifecycle':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/lifecycle
       '@nocobase/queue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/queue
       '@nocobase/realtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/realtime
       '@nocobase/repository-input':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/repository-input
       '@nocobase/service-provider':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/service-provider
       '@nocobase/snowflake':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/snowflake
       '@oclif/core':
         specifier: 'catalog:'
@@ -6170,13 +6188,13 @@ importers:
         specifier: 2.3.0
         version: 2.3.0
       '@nocobase/agent-runner':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/agent-runner
       '@nocobase/app-cli-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-cli-client
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
@@ -6188,22 +6206,22 @@ importers:
         specifier: workspace:*
         version: link:../../tools/app-testing
       '@nocobase/app-websocket':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-websocket
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
       '@nocobase/drive':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/drive
       '@nocobase/logging':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/logging
       '@nocobase/markdown-mermaid':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/markdown-mermaid
       '@nocobase/session':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/session
       '@playwright/test':
         specifier: 'catalog:'
@@ -13800,9 +13818,6 @@ packages:
   pino-pretty@13.2.0:
     resolution: {integrity: sha512-jjghD1ML+Di/WxjJDz6j6Y4FT7hIXOlb8h27AyJ+ohtAXJXH4PS/xkv7si+RCCIW59HMgZsMKTDgzdr0RhuRrg==}
     hasBin: true
-
-  pino-roll@4.0.0:
-    resolution: {integrity: sha512-axI1aQaIxXdw1F4OFFli1EDxIrdYNGLowkw/ZoZogX8oCSLHUghzwVVXUS8U+xD/Savwa5IXpiXmsSGKFX/7Sg==}
 
   pino-std-serializers@7.1.0:
     resolution: {integrity: sha512-BndPH67/JxGExRgiX1dX0w1FvZck5Wa4aal9198SrRhZjH3GxKQUKIBnYJTdj2HDN3UQAS06HlfcSbQj2OHmaw==}
@@ -23570,11 +23585,6 @@ snapshots:
       secure-json-parse: 4.1.0
       sonic-boom: 5.0.2
       strip-json-comments: 5.0.3
-
-  pino-roll@4.0.0:
-    dependencies:
-      date-fns: 4.4.0
-      sonic-boom: 4.2.1
 
   pino-std-serializers@7.1.0: {}
 

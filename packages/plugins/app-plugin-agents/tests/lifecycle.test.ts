@@ -49,6 +49,121 @@ describe('run lifecycle', () => {
       body,
     });
 
+  it.each([
+    ['checkoutFailed', 'authFailed'],
+    ['checkoutFailed', 'hostKeyMismatch'],
+    ['prepareNetwork', 'unreachable'],
+    ['checkoutFailed', 'arbitrary metadata'],
+  ])(
+    'keeps the validated SSH cause of %s (%s) in the run result',
+    async (reason, gitSshFailure) => {
+      h = await createHarness();
+      const agentId = await h.createAgent({ maxAttempts: 1 });
+      const runId = await h.enqueue(agentId);
+      const runner = await h.registerRunner();
+      const [payload] = await claim(h, runner);
+      expect(
+        (
+          await post(runner, runId, 'events', {
+            events: [
+              {
+                seq: payload.run.firstSeq,
+                at: '2026-10-01T00:00:01.000Z',
+                type: 'error',
+                meta: { phase: 'dirs', gitSshFailure },
+              },
+            ],
+          })
+        ).status,
+      ).toBe(200);
+      expect((await post(runner, runId, 'fail', { reason })).body.data).toEqual(
+        {
+          status: 'failed',
+        },
+      );
+      expect(await h.services.runs.get(runId)).toMatchObject({
+        status: 'failed',
+        failureReason: reason,
+        failureParams:
+          gitSshFailure === 'arbitrary metadata' ? null : { gitSshFailure },
+      });
+    },
+  );
+
+  it('clears an SSH preparation error when it retries the run', async () => {
+    h = await createHarness();
+    const runId = await h.enqueue(await h.createAgent({ maxAttempts: 2 }));
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    expect(
+      (
+        await post(runner, runId, 'events', {
+          events: [
+            {
+              seq: first.run.firstSeq,
+              at: '2026-10-01T00:00:01.000Z',
+              type: 'error',
+              meta: { phase: 'dirs', gitSshFailure: 'unreachable' },
+            },
+          ],
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await post(runner, runId, 'fail', { reason: 'prepareNetwork' })).body
+        .data,
+    ).toMatchObject({
+      status: 'queued',
+    });
+    h.clock.advance(60_000);
+    const [second] = await claim(h, runner);
+    expect(second.run.attempt).toBe(2);
+    expect(
+      (await post(runner, runId, 'fail', { reason: 'checkoutFailed' })).body
+        .data,
+    ).toEqual({
+      status: 'failed',
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      failureReason: 'checkoutFailed',
+      failureParams: null,
+    });
+  });
+
+  it.each([
+    ['sshPushRejected', { gitSshFailure: 'pushRejected' }],
+    ['rejected', null],
+  ])(
+    'records push failure %s without changing the run status',
+    async (reason, failureParams) => {
+      h = await createHarness();
+      const { runner, runId, inputIds } = await claimed();
+      expect((await post(runner, runId, 'start', start)).status).toBe(200);
+      expect(
+        (
+          await post(runner, runId, 'complete', {
+            summary: 'done',
+            handledInputIds: inputIds,
+            repos: [
+              {
+                url: 'git@example.test:org/repo.git',
+                branch: 'agent/SMP-1',
+                pushed: false,
+                failure: { reason, message: 'Push rejected.' },
+              },
+            ],
+          })
+        ).body.data,
+      ).toEqual({ status: 'completed' });
+      expect(await h.services.runs.detail(runId)).toMatchObject({
+        status: 'completed',
+        failureReason: null,
+        failureParams,
+        repos: [{ pushed: false, failure: { reason } }],
+      });
+    },
+  );
+
   it.each(['complete', 'fail', 'cancelAck'])(
     'remembers a replacement session after %s and resumes it on the next claim',
     async (action) => {

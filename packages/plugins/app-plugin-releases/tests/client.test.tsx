@@ -6,6 +6,7 @@ import {
   act,
   fireEvent,
   render,
+  renderHook,
   screen,
   waitFor,
   within,
@@ -25,7 +26,10 @@ const mocks = vi.hoisted(() => ({
   permissions: undefined as unknown,
   toasts: [] as { type: string; title: string }[],
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  errorToastOptions: (
+    await importOriginal<typeof import('@nocobase/app-client')>()
+  ).errorToastOptions,
   ApiClientError: class extends Error {
     public constructor(
       message: string,
@@ -80,6 +84,7 @@ import { ApiClientError } from '@nocobase/app-client';
 import { ActorName } from '../client/components/actor-name.js';
 import { PeoplePicker } from '../client/components/people-picker.js';
 import { errorText, messageText } from '../client/lib/errors.js';
+import { useNotify } from '../client/hooks/use-notify.js';
 import {
   ReleasesPeoplePickerContext,
   type PeoplePickerProps,
@@ -142,6 +147,28 @@ function Asker({
 }
 
 describe('client', () => {
+  it('错误提示保留真实 API 请求 ID，本地错误不带请求 ID', async () => {
+    mocks.toasts.length = 0;
+    const { ApiClientError } = await vi.importActual<
+      typeof import('@nocobase/app-client')
+    >('@nocobase/app-client');
+    const { result } = renderHook(() => useNotify());
+    result.current.error(
+      new ApiClientError('Request failed', {
+        status: 500,
+        method: 'POST',
+        url: '/api/releases/apps',
+        requestId: 'request-fixture',
+      }),
+    );
+    expect(mocks.toasts.at(-1)).toMatchObject({
+      type: 'error',
+      requestId: 'request-fixture',
+    });
+    result.current.error(new Error('Local failure'));
+    expect(mocks.toasts.at(-1)).toMatchObject({ type: 'error' });
+    expect(mocks.toasts.at(-1)).not.toHaveProperty('requestId');
+  });
   it('routes the declared pages at configurable paths', () => {
     const { routes } = createReleasesRoutes({
       appsPath: 'deploy/apps',

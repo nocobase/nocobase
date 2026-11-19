@@ -43,7 +43,6 @@ async function seedDisabledAgent(
       instructions: null,
       runnerIds: [],
       actions: [],
-      confirmChanges: 'larger',
       access: 'everyone',
       ownerUserId: 'system',
       maxConcurrentRuns: 100,

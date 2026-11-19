@@ -1,5 +1,40 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 0e247f9: Allow configuring checksum and extraction worker deadlines through host.artifactWorker.timeoutMs, with a 120000 ms default and startup validation of the supported timer range.
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+- Updated dependencies [0e247f9]
+- Updated dependencies [761fb01]
+  - @nocobase/app-host@0.1.0-beta.26
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
+## 0.1.0-beta.25
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

@@ -15,7 +15,6 @@ export const ANNOUNCED_ISSUES_MAX = 100;
 /** The kind of data an event changed, as the browser refreshes it. */
 export function domainOf(type: string): PmChangeDomain {
   if (type.startsWith('label.')) return 'labels';
-  if (type.startsWith('plan.') || type.startsWith('intake.')) return 'plans';
   return 'issues';
 }
 

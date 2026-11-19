@@ -31,10 +31,7 @@ export const personOrRunSecurity: Record<string, string[]>[] = [
 ];
 
 /** Refusals of a valid request because of how the application is set up. */
-const PRECONDITION_CODES: ReadonlySet<string> = new Set([
-  'FILES_UNAVAILABLE',
-  'PLAN_UNAVAILABLE',
-]);
+const PRECONDITION_CODES: ReadonlySet<string> = new Set(['FILES_UNAVAILABLE']);
 const ALREADY_EXISTS_CODES: ReadonlySet<string> = new Set([
   'DEPENDENCY_EXISTS',
   'LABEL_EXISTS',
@@ -44,14 +41,11 @@ const ABORTED_CODES: ReadonlySet<string> = new Set([
   'DEPENDENCY_CHANGED',
   'DEPENDENCY_GRAPH_CHANGED',
   'REVISION_CONFLICT',
-  'UNDO_STALE',
 ]);
 
 /** `notFound` names a resource in words; its reason names it in UPPER_SNAKE_CASE. */
 const NOT_FOUND_REASONS: Readonly<Record<string, string>> = {
   'Deleted issue': 'ISSUE_NOT_FOUND',
-  File: 'INTAKE_FILE_NOT_FOUND',
-  Job: 'INTAKE_JOB_NOT_FOUND',
   Resource: 'PROJECT_RESOURCE_NOT_FOUND',
 };
 
@@ -77,7 +71,7 @@ function statusOf(error: DomainError): ApiErrorStatus {
       return 'NOT_FOUND';
     case 'conflict':
       if (ALREADY_EXISTS_CODES.has(error.code)) return 'ALREADY_EXISTS';
-      // Any other conflict is a state that forbids the request, such as a plan that is no longer open.
+      // Any other conflict is a state that forbids the request, such as a lifecycle transition that is no longer available.
       return ABORTED_CODES.has(error.code) ? 'ABORTED' : 'FAILED_PRECONDITION';
   }
 }

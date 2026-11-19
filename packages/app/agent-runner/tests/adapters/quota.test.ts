@@ -169,3 +169,23 @@ it('scopes model windows and rejection to the relevant Claude window, ignoring m
       ?.windows[0].usedPercent,
   ).toBeUndefined();
 });
+
+it('identifies only complete Codex account usage as a replacement', () => {
+  const account = {
+    limitId: 'codex',
+    primary: { usedPercent: 0, windowDurationMins: 10080 },
+    secondary: null,
+  };
+  expect(codexQuota(account)).toMatchObject({
+    replacesUsage: true,
+    windows: [{ window: '10080m', usedPercent: 0 }],
+  });
+  expect(codexQuota(account, true)?.replacesUsage).toBeUndefined();
+  expect(
+    codexQuota({ ...account, secondary: {} })?.replacesUsage,
+  ).toBeUndefined();
+  expect(
+    codexQuota({ ...account, limitId: 'codex_other' })?.replacesUsage,
+  ).toBeUndefined();
+  expect(codexQuota(undefined)).toBeUndefined();
+});

@@ -20,9 +20,12 @@ export interface TemplateAlias {
  */
 export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   default: { packageName: '@nocobase/app-template-default' },
+  pro: { packageName: '@nocobase/app-template-pro' },
+  enterprise: { packageName: '@nocobase/app-template-enterprise' },
   examples: { packageName: '@nocobase/app-template-examples' },
   'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
   'multi-app': { packageName: '@nocobase/app-template-multi-app' },
+  'sub-app': { packageName: '@nocobase/app-template-sub-app' },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -86,6 +89,7 @@ export interface ResolvedTemplate {
   directory: string;
   name: string;
   version: string;
+  hasSqliteDriver: boolean;
 }
 
 export interface DownloadTemplateOptions {
@@ -129,7 +133,8 @@ function packerFor(source: string): {
     command: 'npm',
     args: (destination) => [
       'pack',
-      '--silent',
+      // Keep HTTP failures visible to the runner's credential launcher; stdout is captured by runCommand.
+      '--loglevel=error',
       source,
       '--pack-destination',
       path.dirname(destination),
@@ -152,7 +157,7 @@ async function findTarball(directory: string): Promise<string> {
 
 async function readTemplateManifest(
   directory: string,
-): Promise<{ name: string; version: string }> {
+): Promise<Omit<ResolvedTemplate, 'directory'>> {
   const manifestPath = path.join(directory, 'package.json');
   let raw: string;
 
@@ -167,11 +172,17 @@ async function readTemplateManifest(
   const manifest = JSON.parse(raw) as {
     name?: string;
     version?: string;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
   };
 
   return {
     name: manifest.name ?? 'unknown',
     version: manifest.version ?? '0.0.0',
+    hasSqliteDriver: Boolean(
+      manifest.dependencies?.['@nocobase/db-sqlite'] ??
+      manifest.devDependencies?.['@nocobase/db-sqlite'],
+    ),
   };
 }
 

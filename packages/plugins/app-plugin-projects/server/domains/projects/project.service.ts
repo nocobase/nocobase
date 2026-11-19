@@ -19,7 +19,7 @@ import {
 } from '../../../shared/projects.js';
 import { requireAction, scopeOf, type Viewer } from '../../access/viewer.js';
 import type { Actor } from '../../kernel/actor.js';
-import { conflict, forbidden, invalid, notFound } from '../../kernel/errors.js';
+import { forbidden, invalid, notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import type { UserDirectory } from '../../kernel/users.js';
@@ -30,7 +30,6 @@ import {
   validDate,
 } from '../../kernel/validate.js';
 import {
-  canManage,
   managed,
   requireVisible,
   visibleProjectsFilter,
@@ -79,12 +78,6 @@ export interface ProjectService extends ProjectMembers, ProjectResources {
     patch: UpdateProjectRequest,
   ): Promise<ProjectDetail>;
   remove(viewer: Viewer, id: string): Promise<void>;
-  /**
-   * For undoing a plan: deletes a project the viewer leads (or any, for one who may delete projects) that has no live
-   * issue left (400 `PROJECT_NOT_EMPTY` otherwise); its deleted issues are detached. Not offered over HTTP; the plans
-   * domain checks that its plan created the project.
-   */
-  retract(viewer: Viewer, id: string): Promise<void>;
 }
 
 export interface ProjectDeps {
@@ -297,27 +290,6 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
         await requireVisible(tx.conn, viewer, id);
         if (scopeOf(viewer, 'pm.projects', 'delete') !== 'all')
           throw forbidden('Only an administrator may delete a project.');
-        await deps.issues().detach(tx, id, viewer.actor);
-        await deleteProject(tx.conn, id);
-      });
-    },
-
-    async retract(viewer, id) {
-      await deps.tx.run(async (tx) => {
-        const relation = await requireVisible(tx.conn, viewer, id);
-        if (
-          !canManage(viewer, relation) &&
-          scopeOf(viewer, 'pm.projects', 'delete') !== 'all'
-        )
-          throw forbidden(
-            'Only the project lead or an administrator may take a project back.',
-          );
-        const counts = await deps.issues().counts(tx.conn, [id]);
-        if ((counts.get(id)?.total ?? 0) > 0)
-          throw conflict(
-            'PROJECT_NOT_EMPTY',
-            'The project has issues; it cannot be taken back.',
-          );
         await deps.issues().detach(tx, id, viewer.actor);
         await deleteProject(tx.conn, id);
       });

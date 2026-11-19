@@ -65,6 +65,15 @@ describe('TEMPLATE_ALIASES', () => {
     );
   });
 
+  it.each(['pro', 'enterprise'])(
+    'resolves the %s edition at the requested channel',
+    (edition) => {
+      expect(resolveTemplateSource(edition, { tag: 'beta' })).toBe(
+        `@nocobase/app-template-${edition}@beta`,
+      );
+    },
+  );
+
   it('resolves multi-portal at the selected channel without rewriting explicit versions', () => {
     expect(resolveTemplateSource('multi-portal')).toBe(
       '@nocobase/app-template-multi-portal@latest',
@@ -92,6 +101,12 @@ describe('TEMPLATE_ALIASES', () => {
         tag: 'beta',
       }),
     ).toBe('@nocobase/app-template-multi-app@0.0.1');
+  });
+  it('resolves the child template at the requested channel', () => {
+    expect(isTemplateAlias('sub-app')).toBe(true);
+    expect(resolveTemplateSource('sub-app', { tag: 'beta' })).toBe(
+      '@nocobase/app-template-sub-app@beta',
+    );
   });
   it('maps the default name to the app template', () => {
     expect(TEMPLATE_ALIASES.default).toEqual({
@@ -221,7 +236,14 @@ describe('isTemplateAlias', () => {
 });
 
 describe('downloadTemplate', () => {
-  it.each(['scoped override', 'configured scope', 'third-party', 'legacy'])(
+  it.each([
+    'scoped override',
+    'configured scope',
+    'third-party',
+    'legacy',
+    '401',
+    '403',
+  ])(
     'routes template requests using %s and reports download errors',
     { timeout: 60_000 },
     async (mode) => {
@@ -240,7 +262,12 @@ describe('downloadTemplate', () => {
       const requests: string[] = [];
       const registry = createServer((request, response) => {
         requests.push(request.url ?? '');
-        response.writeHead(404, { 'content-type': 'application/json' });
+        response.writeHead(mode === '401' ? 401 : mode === '403' ? 403 : 404, {
+          'content-type': 'application/json',
+          ...(mode === '401'
+            ? { 'www-authenticate': 'Bearer realm="nocobase-pro-registry"' }
+            : {}),
+        });
         response.end(JSON.stringify({ error: 'Not found' }));
       });
       await new Promise<void>((resolve, reject) => {
@@ -278,7 +305,11 @@ describe('downloadTemplate', () => {
                   ? 'http://127.0.0.1:1/'
                   : registryUrl,
           }),
-        ).rejects.toThrow(source);
+        ).rejects.toThrow(
+          mode === '403'
+            ? new RegExp(`${mode}.*GET ${registryUrl}`, 'u')
+            : source,
+        );
         expect(requests.map((url) => decodeURIComponent(url))).toContain(
           `/${source}`,
         );

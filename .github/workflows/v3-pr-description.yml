@@ -13,6 +13,7 @@ on:
   pull_request:
     branches:
       - v3-main
+      - v3
       - v3-develop
       - '*/v3-*'
     types:

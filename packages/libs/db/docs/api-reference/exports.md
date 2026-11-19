@@ -6,7 +6,7 @@ This index covers every name exported by the two package entries. A value can be
 
 ## @nocobase/db
 
-418 exports: 69 values and 349 types.
+424 exports: 72 values and 352 types.
 
 | Export                                                                                                        | Kind  | Topic                                                        |
 | ------------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------------ |
@@ -162,7 +162,10 @@ This index covers every name exported by the two package entries. A value can be
 | [MigrationRunResult](./signatures/migration.md#migrationrunresult)                                            | type  | [Migrations and task locks](./migration-and-seed.md)         |
 | [MigrationSource](./signatures/migration.md#migrationsource)                                                  | type  | [Migrations and task locks](./migration-and-seed.md)         |
 | [MigrationTransactionMode](./signatures/migration.md#migrationtransactionmode)                                | type  | [Migrations and task locks](./migration-and-seed.md)         |
+| [MigrationWarning](./signatures/migration.md#migrationwarning)                                                | type  | [Migrations and task locks](./migration-and-seed.md)         |
 | [Migrator](./signatures/migration.md#migrator)                                                                | type  | [Migrations and task locks](./migration-and-seed.md)         |
+| [MissingMigrationSource](./signatures/migration.md#missingmigrationsource)                                    | type  | [Migrations and task locks](./migration-and-seed.md)         |
+| [MissingSourcePolicy](./signatures/migration.md#missingsourcepolicy)                                          | type  | [Migrations and task locks](./migration-and-seed.md)         |
 | [ModuleCollectionMetadataStore](./signatures/metadata.md#modulecollectionmetadatastore)                       | value | [Collection metadata](./collection-and-schema.md)            |
 | [MutationLiteral](./signatures/inputs.md#mutationliteral)                                                     | type  | [Repository inputs and result types](./repository.md)        |
 | [MutationScope](./signatures/repository.md#mutationscope)                                                     | type  | [Repository operations](./repository.md)                     |
@@ -397,10 +400,12 @@ This index covers every name exported by the two package entries. A value can be
 | [extractLegacyCollectionMetadata](./signatures/metadata.md#extractlegacycollectionmetadata)                   | value | [Collection metadata](./collection-and-schema.md)            |
 | [filterOperatorsForFieldType](./signatures/values.md#filteroperatorsforfieldtype)                             | value | [Value normalization and errors](./errors-and-values.md)     |
 | [findCollectionArtifactNameConflicts](./signatures/artifacts.md#findcollectionartifactnameconflicts)          | value | [Collection artifacts](./collection-and-schema.md)           |
+| [getRepositoryMutationIdentity](./signatures/values.md#getrepositorymutationidentity)                         | value | [Value normalization and errors](./errors-and-values.md)     |
 | [isManagedField](./signatures/values.md#ismanagedfield)                                                       | value | [Value normalization and errors](./errors-and-values.md)     |
 | [isSortableFieldType](./signatures/values.md#issortablefieldtype)                                             | value | [Value normalization and errors](./errors-and-values.md)     |
 | [isTaskLockBusyError](./signatures/migration.md#istasklockbusyerror)                                          | value | [Migrations and task locks](./migration-and-seed.md)         |
 | [isTemporalType](./signatures/values.md#istemporaltype)                                                       | value | [Value normalization and errors](./errors-and-values.md)     |
+| [isUniqueConstraintViolation](./signatures/connection.md#isuniqueconstraintviolation)                         | value | [Connection](./connection.md)                                |
 | [loadMigrations](./signatures/migration.md#loadmigrations)                                                    | value | [Migrations and task locks](./migration-and-seed.md)         |
 | [loadSeeds](./signatures/seed.md#loadseeds)                                                                   | value | [Seeds and sample data](./migration-and-seed.md)             |
 | [narrowRepositoryPolicy](./signatures/policies.md#narrowrepositorypolicy)                                     | value | [Repository policies](./permissions.md)                      |
@@ -426,6 +431,7 @@ This index covers every name exported by the two package entries. A value can be
 | [validateCollectionMetadataDocument](./signatures/metadata.md#validatecollectionmetadatadocument)             | value | [Collection metadata](./collection-and-schema.md)            |
 | [validateMigrations](./signatures/migration.md#validatemigrations)                                            | value | [Migrations and task locks](./migration-and-seed.md)         |
 | [validateSeeds](./signatures/seed.md#validateseeds)                                                           | value | [Seeds and sample data](./migration-and-seed.md)             |
+| [withDatabaseTaskLock](./signatures/migration.md#withdatabasetasklock)                                        | value | [Migrations and task locks](./migration-and-seed.md)         |
 | [writableFields](./signatures/values.md#writablefields)                                                       | value | [Value normalization and errors](./errors-and-values.md)     |
 | [writePolicyProblems](./signatures/values.md#writepolicyproblems)                                             | value | [Value normalization and errors](./errors-and-values.md)     |
 

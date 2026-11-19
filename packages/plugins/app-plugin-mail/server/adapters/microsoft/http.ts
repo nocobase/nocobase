@@ -1,3 +1,4 @@
+import type { MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailProviderError,
   MailProviderResult,
@@ -49,11 +50,12 @@ export async function graphRequest<T>(
   token: string,
   pathOrUrl: string,
   init: RequestInit,
+  fetcher: MailFetch = fetchWithTimeout,
 ): Promise<MailProviderResult<T>> {
   try {
     const resolvedUrl = resolveGraphUrl(config, pathOrUrl);
     if (!resolvedUrl.ok) return resolvedUrl;
-    const response = await fetchWithTimeout(resolvedUrl.value, {
+    const response = await fetcher(resolvedUrl.value, {
       ...init,
       headers: {
         ...init.headers,

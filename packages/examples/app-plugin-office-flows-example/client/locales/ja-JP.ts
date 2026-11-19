@@ -87,6 +87,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       'プロセスが読み取るデモンストレーション データ: 部門の行に連れてこられる人々、管理グループ、および 2026 年の休日カレンダー。',
   },
   common: {
+    parameterSnapshot: 'インスタンスの固定パラメーター',
+    upgradeSource: 'アップグレード時に設定リビジョン {{revision}} から追加',
     created: '作成しました',
     actAs: 'として行動する',
     save: '保存',

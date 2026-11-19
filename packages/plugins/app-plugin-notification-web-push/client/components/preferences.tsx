@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 import { useApiClient, useToaster } from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useAppLocale } from '@nocobase/app-plugin-i18n/client';
@@ -107,8 +108,12 @@ export function PushPreferences(): React.ReactElement | null {
       await work();
       await devices.refetch();
       toaster.show({ type: 'success', title: t(message) });
-    } catch {
-      toaster.show({ type: 'error', title: t('push.failed') });
+    } catch (error) {
+      toaster.show({
+        ...errorToastOptions(error),
+        type: 'error',
+        title: t('push.failed'),
+      });
     } finally {
       setBusy(false);
     }
@@ -146,8 +151,12 @@ export function PushPreferences(): React.ReactElement | null {
       rememberDevice(base, userId, result.data.id);
       await devices.refetch();
       toaster.show({ type: 'success', title: t('push.saved') });
-    } catch {
-      toaster.show({ type: 'error', title: t('push.failed') });
+    } catch (error) {
+      toaster.show({
+        ...errorToastOptions(error),
+        type: 'error',
+        title: t('push.failed'),
+      });
     } finally {
       setBusy(false);
     }

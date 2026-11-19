@@ -1,6 +1,73 @@
 # 変更履歴
 
-このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`release/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
+このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
+
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 新機能
+
+- **[CLI]** プラグインとその Skills を事前にインストールし、必要に応じてデプロイ対象に追加したり、登録解除やアンインストールを選択したりできます。 ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 改善
+
+- **[CLI]** `logs export` から `--issue` フィルターを削除しました。選択した日付の、選択したランナーのログをすべてエクスポートします。 ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[データベース]** 適用済みマイグレーションのソース欠落を既定で警告し、最新バッチのロールバック前に欠落または不可逆な対象をすべて表示します。 ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[ナレッジベース]**
+  - ナレッジ文書内のリンクは新しいタブで開くようになりました（同じページ内の見出しへのリンクを除く）。幅の広い表は列を詰めずに横スクロールします。 ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - ナレッジベースのファイル項目で、置換・ダウンロード・履歴をヘッダーにまとめ、Markdown を記事と同じ見た目でプレビューし、抽出テキストを行番号付きで表示して引用行を強調し、プレビューを全画面で開けるようにしました。 ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[プロジェクト]** プロジェクトのタスクとサブタスクの作成は手動フォームに統一され、操作プラン、要件整理ツール、それらのコマンドが廃止されます。 ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[アプリテンプレート]** 同じバージョンの Default または Examples テンプレートから作成したアプリは、直接依存する NocoBase パッケージに同じバージョンを使用します。 ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 不具合修正
+
+- **[Agent ランナー]** 非公開パッケージレジストリの認証エラー時に実行中の認証情報で再試行し、アプリ作成とテンプレートのダウンロードに対応します。 ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[データベース]** 空の日付・時刻の値はすべてのデータベースで空として読み込まれ、Oracle 互換モードの KingbaseES で不正な値 "Z" として失敗しなくなります。 ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[CLI]** 開発環境の実行時設定をデプロイ用アーカイブに含めず、パッケージ化に失敗した場合は以前のアーカイブを保持します。 ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[サーバー]** 埋め込みアプリの画面と API ドキュメントに正しいアプリ名とバージョンを表示します。 ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agent]** Codex が最新の使用状況を報告すると、実行環境に表示される使用枠から廃止された枠が消えます ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
+## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
+
+### 🎉 新機能
+
+- **[Agent]**
+  - 収集状況とサーバー設定の日付範囲に対応し、機密情報を除去した実行環境ログをエクスポートしてローカルで時系列に統合できます。 ([#11563](https://github.com/nocobase/nocobase/pull/11563))
+  - 履歴を保持したまま、待機中の Runner 会話の実行環境を選択できます。 ([#11577](https://github.com/nocobase/nocobase/pull/11577))
+
+### 🚀 改善
+
+- **[インターフェース]** 分類タグと統一したメニューでワークフローのバージョンを表示し、UI Library のバージョン選択コンポーネントを再利用できます。 ([#11569](https://github.com/nocobase/nocobase/pull/11569))
+- **[アプリホスティング]** プレビュー配布物のチェックサム検証と展開のタイムアウトを設定できるようになりました。 ([#11578](https://github.com/nocobase/nocobase/pull/11578))
+- **[Skills]** アップグレード Skill は既定で `latest` リリースにアップグレードするようになり、beta から作成したアプリケーションも正式版リリース後に引き続き更新できます。 ([#11589](https://github.com/nocobase/nocobase/pull/11589))
+
+## [nocobase-v3-beta/2026-11-17.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.1)
+
+### 🚀 改善
+
+- **[アプリホスティング]** 管理対象の Host は内部ポートを自動割り当てし、再起動後に接続を復元でき、固定ポートの競合は明確なエラーになります。 ([#11576](https://github.com/nocobase/nocobase/pull/11576))
+
+### 🐛 不具合修正
+
+- **[Agent]** 低速な接続で会話を開く際に、会話一覧が重複して読み込まれる問題を修正しました。 ([#11571](https://github.com/nocobase/nocobase/pull/11571))
+- **[認証]** ログイン後に元のページへ戻り、クエリとフラグメントを保持します。 ([#11573](https://github.com/nocobase/nocobase/pull/11573))
+
+## [nocobase-v3-beta/2026-11-16.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-16.1)
+
+### 🎉 新機能
+
+- **[プラグインライフサイクル]** Lifecycle は独立したバージョンをサポートし、下書きを含むレコード作成時に全パラメーターを固定して、設定と状態ごとの期限を保護します。 ([#11507](https://github.com/nocobase/nocobase/pull/11507))
+- **[CLI]** 子アプリの作成とデプロイコマンド拡張をサポートし、リクエストごとに独立した App Host へルーティングします。 ([#11557](https://github.com/nocobase/nocobase/pull/11557))
+- **[ファイル]** 同じストレージバケットを共有するファイルリポジトリごとに、アップロード先ディレクトリを設定できるようになりました。 ([#11565](https://github.com/nocobase/nocobase/pull/11565))
+
+### 🚀 改善
+
+- **[権限]** アプリの設定、保護された環境へのデプロイ、ナレッジ編集を開始ユーザーの権限でエージェントに許可できます。 ([#11554](https://github.com/nocobase/nocobase/pull/11554))
+
+### 🐛 不具合修正
+
+- **[API キー]** 既定で最大 100 文字の名前の API キーを作成・ローテーションでき、名前の検証失敗はクライアントエラーとして返します。 ([#11558](https://github.com/nocobase/nocobase/pull/11558))
+- **[サーバー]** サーバーで環境プロキシを使用している場合でも、子アプリケーションのページと WebSocket 接続にアクセスできるようにしました。 ([#11564](https://github.com/nocobase/nocobase/pull/11564))
+- **[メール]** メール接続の失敗をプロトコルと原因別に表示し、認証情報を含まない診断ログを記録します。 ([#11566](https://github.com/nocobase/nocobase/pull/11566))
 
 ## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
 

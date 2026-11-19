@@ -33,9 +33,11 @@ import path from 'node:path';
 
 import {
   GitCredentialSchema,
+  NPM_CREDENTIAL_REASONS,
   RUNNER_ROUTES,
   routePath,
   type RepoCredential,
+  type NpmCredentialReason,
 } from '../protocol/index.ts';
 import { ApiError, type ApiClient } from '../lib/http.ts';
 import { LOST_CODES } from '../core/lease.ts';
@@ -346,7 +348,11 @@ export async function serveGitCredentials(
     if (request.action === 'npmToken') {
       if (npm === undefined)
         return { ok: false, message: 'This run gives no npm token.' };
-      const reason = request.reason === 'declared' ? 'declared' : 'notFound';
+      if (
+        !NPM_CREDENTIAL_REASONS.includes(request.reason as NpmCredentialReason)
+      )
+        return { ok: false, message: 'Unknown npm credential reason.' };
+      const reason = request.reason as NpmCredentialReason;
       try {
         const token = await npm.get(
           reason,

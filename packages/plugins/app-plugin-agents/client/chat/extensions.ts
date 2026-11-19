@@ -30,7 +30,7 @@ export interface ChatExtensions {
   ) => ReactNode;
   /**
    * A hook (called on every render of an open conversation, so it must be the same function for the panel's life):
-   * the conversation's other items, such as plan cards. `revision` changes whenever the conversation's messages or
+   * the conversation's other items. `revision` changes whenever the conversation's messages or
    * run change, so the hook can refetch.
    */
   readonly useTimelineItems?: (

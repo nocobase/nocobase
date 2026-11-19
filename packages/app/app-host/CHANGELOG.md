@@ -1,5 +1,19 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 0e247f9: Allow configuring checksum and extraction worker deadlines through host.artifactWorker.timeoutMs, with a 120000 ms default and startup validation of the supported timer range.
+- Updated dependencies [761fb01]
+  - @nocobase/logging@0.1.0-beta.8
+
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 375c285: Use OS-assigned ports for managed Hosts and discover their actual listeners through session-bound IPC readiness. Preserve strict explicit ports, reject bind failures without trusting unrelated HTTP listeners, and expose the current ready management client without starting a Host.
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

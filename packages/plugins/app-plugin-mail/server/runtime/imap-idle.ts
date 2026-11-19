@@ -1,3 +1,5 @@
+import { logMailFailure } from '../connection-diagnostics.js';
+import { classifyError } from '../adapters/imap-smtp/errors.js';
 import type { ImapFlow } from 'imapflow';
 import { randomUUID } from 'node:crypto';
 import type { MailAccount } from '../../shared/mail.js';
@@ -99,50 +101,83 @@ export class MailImapIdle {
     client.on('close', () => {
       if (watch.client === client) this.retry(watch);
     });
-    await client.connect();
-    if (!this.current(watch)) {
-      client.close();
-      return;
-    }
-    if (!client.capabilities.has('IDLE')) {
-      // Do not use ImapFlow's NOOP polling fallback on a server without IDLE.
-      watch.client = undefined;
-      client.close();
+    const startedAt = Date.now();
+    let stage: 'connect' | 'sync' = 'connect';
+    let reported = false;
+    const report = (error: unknown): void => {
+      if (reported || !this.current(watch)) return;
+      reported = true;
+      logMailFailure(error, classifyError(error, 'IMAP_IDLE'), {
+        logger: this.options.logger,
+        event: 'mail.imap.idle.connect_failed',
+        provider: 'imap-smtp',
+        accountId: watch.account.id,
+        address: watch.account.address,
+        protocol: 'imap',
+        endpoint: watch.config.imap,
+        stage,
+        startedAt,
+        secrets: [
+          credential.username,
+          credential.password,
+          watch.account.credentialReference,
+        ],
+      });
+    };
+    client.on('error', report);
+    try {
+      await client.connect();
+      stage = 'sync';
+      if (!this.current(watch)) {
+        client.close();
+        return;
+      }
+      if (!client.capabilities.has('IDLE')) {
+        // Do not use ImapFlow's NOOP polling fallback on a server without IDLE.
+        watch.client = undefined;
+        client.close();
+        writeMailLog(
+          this.options.logger,
+          'warn',
+          { event: 'mail.imap.idle.unsupported', accountId: watch.account.id },
+          'The IMAP server does not support IDLE. Automatic synchronization remains available.',
+        );
+        return;
+      }
+      await client.mailboxOpen('INBOX', { readOnly: true });
+      if (!this.current(watch)) {
+        client.close();
+        return;
+      }
+      watch.selectedAt = Date.now();
+      client.on('exists', (event) => {
+        if (
+          this.current(watch) &&
+          watch.client === client &&
+          event.path === 'INBOX' &&
+          event.count > event.prevCount
+        )
+          this.notify(watch, 'exists');
+      });
+      // Also catch messages delivered while disconnected, before SELECT's baseline.
+      this.notify(watch, 'connect');
       writeMailLog(
         this.options.logger,
-        'warn',
-        { event: 'mail.imap.idle.unsupported', accountId: watch.account.id },
-        'The IMAP server does not support IDLE. Automatic synchronization remains available.',
+        'info',
+        { event: 'mail.imap.idle.connected', accountId: watch.account.id },
+        'Mail INBOX IDLE listener connected.',
       );
-      return;
+      const ended = (): void => {
+        if (watch.client === client) this.retry(watch);
+      };
+      void client.idle().then(ended, (error: unknown) => {
+        report(error);
+        ended();
+      });
+    } catch (error) {
+      report(error);
+      throw error;
     }
-    await client.mailboxOpen('INBOX', { readOnly: true });
-    if (!this.current(watch)) {
-      client.close();
-      return;
-    }
-    watch.selectedAt = Date.now();
-    client.on('exists', (event) => {
-      if (
-        this.current(watch) &&
-        watch.client === client &&
-        event.path === 'INBOX' &&
-        event.count > event.prevCount
-      )
-        this.notify(watch, 'exists');
-    });
-    // Also catch messages delivered while disconnected, before SELECT's baseline.
-    this.notify(watch, 'connect');
-    writeMailLog(
-      this.options.logger,
-      'info',
-      { event: 'mail.imap.idle.connected', accountId: watch.account.id },
-      'Mail INBOX IDLE listener connected.',
-    );
-    const ended = (): void => {
-      if (watch.client === client) this.retry(watch);
-    };
-    void client.idle().then(ended, ended);
   }
 
   private notify(watch: Watch, source: 'exists' | 'connect'): void {

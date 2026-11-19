@@ -12,6 +12,7 @@ import {
 import type { ApiKey } from '@better-auth/api-key';
 
 import { isDeviceApprovalPath, isKeyManagementPath } from './key-sessions.js';
+import { MAX_KEY_NAME } from './constants.js';
 type ServerEndpoint<
   Options extends Parameters<typeof createAuthEndpoint.serverOnly>[0],
   Result,
@@ -72,7 +73,7 @@ export function ownKeyPolicySlotOf(
  * page still issues keys, and every request carrying one answers 401.
  *
  * Every option is overridable, `enableSessionForAPIKeys` included, so passing
- * all three back reproduces Better Auth's own behaviour exactly.
+ * all four back reproduces Better Auth's own behaviour exactly.
  */
 function createApiKeysPlugin(
   options: ApiKeyConfigurationOptions | ApiKeyConfigurationOptions[] = {},
@@ -82,6 +83,7 @@ function createApiKeysPlugin(
       enableSessionForAPIKeys: true,
       rateLimit: { enabled: false },
       requireName: true,
+      maximumNameLength: MAX_KEY_NAME,
       ...configuration,
     }),
   );

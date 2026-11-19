@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AGENT_LAYER_PREFIX } from '../server/core/brief/index.js';
+import { inputsRepo } from '../server/core/runs/run.store.js';
 import type { AgentsNotice } from '../server/tokens.js';
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 
@@ -686,6 +687,24 @@ describe('admin API', () => {
     const stranger = await h.request('GET', path, { user: 'stranger' });
     expect(stranger.status).toBe(200);
     expect(stranger.body.data).toEqual([]);
+  });
+
+  it('shows historical inputs with retired types as generic inputs', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runId = await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+    await inputsRepo(h.database.connection()).updateMany({
+      filter: { runId },
+      values: { type: 'retired-trigger', text: 'Historical context' },
+    });
+
+    const detail = await h.request('GET', `/agents/runs/${runId}`, {
+      user: 'bob',
+    });
+    expect(detail.status).toBe(200);
+    expect(detail.body.data.inputs).toMatchObject([
+      { type: 'custom', text: 'Historical context' },
+    ]);
   });
 
   it('shows people their own runs, and every run to readers', async () => {

@@ -94,7 +94,11 @@ import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
 // Version 15 adds strictSession and sessionUnavailable. Deploy the application before upgrading runners.
 // Version 16 adds the private npm registry's token on demand (the `npmCredentials` feature,
 // `RUNNER_ROUTES.npmCredential`). Nothing of version 15 changed; update the application first.
-export const PROTOCOL_VERSION = 16;
+// Version 17 adds the npm credential reason `unauthorized` for private-registry 401/403 retries.
+// Deploy the application before upgrading runners; version 16 runners remain supported.
+// Version 18 adds pinned SSH repository credentials and the gitSsh feature.
+// Deploy the application first. Older runners remain eligible for runs that do not require gitSsh.
+export const PROTOCOL_VERSION = 18;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -133,6 +137,7 @@ export function isProtocolSupported(version: number): boolean {
  *   `RUNNER_ROUTES.npmCredential`) only when an install needs it.
  */
 export const RUNNER_FEATURES = [
+  'diagnostics',
   'strictSession',
   'outputBlocks',
   'workspaceKey',
@@ -149,6 +154,7 @@ export const RUNNER_FEATURES = [
   'npm',
   'gitCredentials',
   'gitTools',
+  'gitSsh',
   'npmCredentials',
 ] as const;
 

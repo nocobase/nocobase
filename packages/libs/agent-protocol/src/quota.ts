@@ -17,8 +17,11 @@ export const QuotaWindowSchema: z.ZodType<QuotaWindow> = z.object({
   exhausted: z.boolean(),
 });
 export interface QuotaReport {
+  /** A full Codex account snapshot supersedes previous tool usage samples. Failure reports are incremental. */
+  readonly replacesUsage?: true;
   readonly windows: readonly QuotaWindow[];
 }
 export const QuotaReportSchema: z.ZodType<QuotaReport> = z.object({
+  replacesUsage: z.literal(true).optional(),
   windows: z.array(QuotaWindowSchema).min(1).max(20),
 });

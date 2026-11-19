@@ -4,20 +4,19 @@
  * `access/viewer.ts`.
  */
 import { SYSTEM_KIND } from '../../shared/kinds.js';
-import type { ActivityExecution } from '../../shared/plans.js';
+import type { ActivityExecution } from '../../shared/activity.js';
 
 /** A kind's key (`shared/kinds.ts`). */
 export type ActorType = string;
 
 /**
  * How a user reached the API when it was not the browser by hand: `cli` for the CLI's user mode, `api_key` for any
- * other API-key client, `agent` when an agent acted for the person (a conversation's direct write) or proposed the plan
- * they executed (`trace`). Recorded for traceability and shown on the timeline; never grants a business action.
+ * other API-key client, `agent` when an agent acted for the person (a conversation's direct write) (`trace`). Recorded for traceability and shown on the timeline; never grants a business action.
  */
 export type ActorVia = 'cli' | 'api_key' | 'agent';
 
 /**
- * What a change made through an agent or a plan records beside the person (`ActivityVia` in `shared/plans.ts`). The
+ * What a change made through an agent or a plan records beside the person (`ActivityVia` in `shared/activity.ts`). The
  * ids are opaque to this plugin. It looks the agent's display name up through the kinds registry (kind `agent`), and
  * compares stored comment provenance to the authenticated run id to establish ownership. A plan nobody's agent
  * proposed carries only `planId`.

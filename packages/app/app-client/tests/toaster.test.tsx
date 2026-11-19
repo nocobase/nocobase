@@ -1,3 +1,5 @@
+import { ApiClientError } from '@nocobase/api-client';
+import { errorToastOptions } from '../src/toaster.js';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { renderHook } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
@@ -128,4 +130,15 @@ describe('toaster', () => {
       'Unable to save',
     );
   });
+});
+
+it('共享错误提示元数据保留 API 请求 ID，普通错误不制造关联 ID', () => {
+  const failure = new ApiClientError('failed', {
+    status: 500,
+    method: 'POST',
+    url: '/api/fixture',
+    requestId: 'request-fixture',
+  });
+  expect(errorToastOptions(failure)).toEqual({ requestId: 'request-fixture' });
+  expect(errorToastOptions(new Error('local copy failed'))).toEqual({});
 });

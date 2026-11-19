@@ -1,3 +1,4 @@
+import type { MailLogger } from '../logging.js';
 import type { NormalizedMailAttachment } from '../../shared/mail.js';
 import type {
   MailAccount,
@@ -357,6 +358,7 @@ export interface MailProviderAdapter {
 }
 
 export interface MailProviderContext {
+  readonly logger?: MailLogger;
   readonly publicBasePath: string;
   readonly credentials: MailCredentialVault;
 }

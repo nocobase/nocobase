@@ -732,7 +732,6 @@ it.each(['en-US', 'zh-CN'])(
             state: 'completed',
             error: null,
             usage: { inputTokens: 1840, outputTokens: 212 },
-            plans: 3,
           }}
         />
       </TestI18nProvider>,

@@ -1,7 +1,13 @@
 import type { NativeExecutionRequest } from './types.js';
 import { WebSearchBudget } from '../../search/budget.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
-import { effectiveTools } from '../configuration.js';
+import {
+  THINKING_NOTICE_IDS,
+  thinkingWarningNotice,
+  thinkingWarnings,
+  type ThinkingNotice,
+} from '../thinking.js';
+import { assertRunnableThinking, effectiveTools } from '../configuration.js';
 import { FileInputError } from '../../files/errors.js';
 import {
   fileInputFailureTitles,
@@ -41,10 +47,9 @@ import {
   type AppUIMessageMetadata,
 } from '../../../../shared/online-agent.js';
 import { MESSAGE_CONTENT_MAX } from '../../../../shared/conversations.js';
-import type { ModelRef } from '../../../../shared/models.js';
+import type { ModelRef, ReasoningLevel } from '../../../../shared/models.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
-import { reasoningOf } from '../../gateway.js';
 import type { OnlineAgentConfigurator } from '../configuration.js';
 import type { OnlineAgentSessionManager } from '../contracts.js';
 import type { OnlineAgentCall } from '../persistence/types.js';
@@ -137,6 +142,8 @@ export class NativeOnlineAgent {
       ReturnType<OnlineAgentSessionManager['load']>
     >['config'];
     let sdkFailure = false;
+    const thinkingNotices: ThinkingNotice[] = [];
+    let thinking: ReasoningLevel | undefined;
     let waitingApprovals = false;
     let background = false;
     let result: OnlineAgentJson | undefined;
@@ -170,6 +177,10 @@ export class NativeOnlineAgent {
         !config.model.includes(`${selected.modelService}/${selected.model}`)
       )
         throw invalid('The selected model is outside this configuration.');
+      // The saved configuration becomes the one that runs here, so a level an earlier build saved is refused here, once.
+      assertRunnableThinking(config);
+      // The level goes to the SDK as it is; the provider's default when neither a scope nor the conversation names one.
+      thinking = config.thinking ?? 'provider-default';
       const changedModel =
         selected.modelService !== session.model.modelService ||
         selected.model !== session.model.model;
@@ -457,7 +468,7 @@ export class NativeOnlineAgent {
         toolsContext: Object.fromEntries(
           Object.keys(tools).map((name) => [name, toolContext]),
         ),
-        reasoning: reasoningOf(config.thinking),
+        reasoning: thinking,
         abortSignal: execution.abort.signal,
         maxRetries: 0,
         stopWhen: stepCountIs(20),
@@ -521,6 +532,9 @@ export class NativeOnlineAgent {
         if (projected) output?.write(projected);
       }
       await generated.responseMessages;
+      // The provider package's warnings about thinking are said in the answer, whatever the level, the default included.
+      const warned = thinkingWarnings(await generated.warnings);
+      if (warned) thinkingNotices.push(thinkingWarningNotice(thinking, warned));
       if (sdkFailure) outcome = 'failed';
       else if (execution.abort.signal.aborted) outcome = 'cancelled';
       else if (
@@ -635,8 +649,13 @@ export class NativeOnlineAgent {
                 ...privateMessage.parts.filter(
                   (part) =>
                     part.type !== 'data-notice' ||
-                    part.id !== 'execution-status',
+                    (part.id !== 'execution-status' &&
+                      !(
+                        thinkingNotices.length &&
+                        THINKING_NOTICE_IDS.has(part.id ?? '')
+                      )),
                 ),
+                ...thinkingNotices,
                 notice,
               ],
             },
@@ -680,6 +699,7 @@ export class NativeOnlineAgent {
       );
       if (background) await this.deps.sessions.finish(context.user.id, id);
       if (output) await this.deps.uiStreams.release(id, output);
+      for (const part of thinkingNotices) output?.write(part);
       output?.write(notice);
       output?.write({
         type: 'message-metadata',

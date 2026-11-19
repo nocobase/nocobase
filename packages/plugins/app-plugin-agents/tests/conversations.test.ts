@@ -54,7 +54,6 @@ describe('historical Runner conversation domain', () => {
           state: 'completed',
           error: null,
           usage: null,
-          plans: 0,
         },
         input: {
           type: 'signal',
@@ -101,7 +100,6 @@ describe('historical Runner conversation domain', () => {
           state: 'completed',
           error: null,
           usage: null,
-          plans: 0,
         },
         input: {
           type: 'signal',
@@ -127,7 +125,6 @@ describe('historical Runner conversation domain', () => {
           state: 'refused',
           error: 'Missing subject',
           usage: null,
-          plans: 0,
         },
         input: {
           type: 'signal',

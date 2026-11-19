@@ -41,11 +41,7 @@ export class NpmTokenSource {
   get(reason: NpmCredentialReason, pkg?: string): Promise<string | null> {
     if (this.closed)
       return Promise.reject(new Error('The run is no longer this runner’s.'));
-    this.answer ??= this.fetch(reason, pkg).catch((error: unknown) => {
-      // A failure is not kept: the next install asks again.
-      this.answer = undefined;
-      throw error;
-    });
+    this.answer ??= this.fetch(reason, pkg);
     return this.answer;
   }
 

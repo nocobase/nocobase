@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream';
+import { ApiError } from '@nocobase/app-server/router';
 import { takeToolDetection } from '../../runners/tool-detection.js';
 /**
  * The runner endpoints (`RUNNER_ROUTES` of `@nocobase/agent-protocol`), mounted at `/api/agents/runners` beside the
@@ -294,6 +296,9 @@ export function createRunnerRoutes(
         protocolVersion: PROTOCOL_VERSION,
         enabledTools: runner.enabledTools ?? [],
         detectTools: takeToolDetection(runner.id),
+        ...(runner.features.includes('diagnostics')
+          ? { diagnostics: services.diagnostics.take(runner.id) }
+          : {}),
         capacity: { slots: runner.slots, toolSlots: runner.toolSlots ?? {} },
         ...upgradeFields(upgrade),
         cancelRequested,
@@ -302,6 +307,62 @@ export function createRunnerRoutes(
         workspaces: services.workspaces.reporting,
       };
       return context.json({ data: response });
+    },
+  );
+
+  router.post(
+    '/diagnostics/:requestId',
+    authenticated,
+    served,
+    describeRoute({
+      tags,
+      summary: 'Upload requested runner diagnostics',
+      operationId: 'agentsRunnerDiagnostics',
+      ...cliRoute(false),
+      security: runnerKeySecurity,
+      parameters: [
+        protocolHeader,
+        {
+          name: 'requestId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/gzip': { schema: { type: 'string', format: 'binary' } },
+        },
+      },
+      responses: {
+        200: dataResponse(z.object({ ok: z.literal(true) })),
+        400: apiErrorResponse(400),
+        413: apiErrorResponse(413),
+        429: apiErrorResponse(429),
+        ...runnerKeyErrors,
+      },
+    }),
+    async (context) => {
+      if (
+        context.req.header('content-type') !== 'application/gzip' ||
+        !context.req.raw.body
+      )
+        throw new ApiError({
+          domain: 'agents',
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_ARGUMENT',
+          message: 'Expected gzip diagnostics records',
+        });
+      await services.diagnostics.accept(
+        context.get('runner').id,
+        context.req.param('requestId'),
+        Readable.fromWeb(
+          context.req.raw
+            .body as import('node:stream/web').ReadableStream<Uint8Array>,
+        ),
+      );
+      return context.json({ data: { ok: true } });
     },
   );
 
