@@ -77,6 +77,7 @@ describe('default Foundation integration', () => {
       [
         'settingsSystem',
         [
+          ['configInspector', '/settings/config-inspector'],
           ['databaseExplorer', '/settings/database-explorer'],
           ['capabilityGuide', '/settings/capabilities'],
         ],

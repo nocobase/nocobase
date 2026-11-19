@@ -12,6 +12,7 @@ import authorization from '@nocobase/app-plugin-authorization/client';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
 import users from '@nocobase/app-plugin-users/client';
+import configInspector from '@nocobase/app-plugin-config-inspector/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
@@ -43,6 +44,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   authorizationExample(),
   templatePrintExample(),
   users(),
+  configInspector({ settingsOwner: applicationManifest.name }),
   databaseExplorer(),
   apiKeys(),
   i18n(),

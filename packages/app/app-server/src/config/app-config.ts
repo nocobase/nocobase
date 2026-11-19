@@ -31,7 +31,20 @@ import {
   type ConfigIssue,
 } from './validation.js';
 
+import { ConfigInspection, type InspectedSetting } from './inspection.js';
+
 export class AppConfig {
+  private inspection = new ConfigInspection();
+  private readonly fileSources = new WeakSet<AppConfigSource['provider']>();
+  private sectionEnvironment?: AppConfigSource['provider'];
+
+  inspectSettings(): InspectedSetting[] {
+    return this.inspection.rows(
+      this.requireCurrent(),
+      this.sectionEnvironmentVariables(),
+    );
+  }
+
   private readonly sources: AppConfigSource[] = [];
   private readonly listeners = new Map<
     string,
@@ -85,7 +98,9 @@ export class AppConfig {
         `Unsupported application config file extension "${extension || '(none)'}". Expected .toml, .yml, .yaml, or .json.`,
       );
     }
-    return this.load(fileProvider(resolvedPath, options), parser);
+    const provider = fileProvider(resolvedPath, options);
+    this.fileSources.add(provider);
+    return this.load(provider, parser);
   }
 
   public async loadAll(): Promise<void> {
@@ -153,12 +168,11 @@ export class AppConfig {
       }
     }
     if (Object.keys(mappings).length === 0) return;
-    this.sources.push({
-      provider: environmentProvider(environment, {
-        name: 'section-environment',
-        mappings,
-      }),
+    this.sectionEnvironment = environmentProvider(environment, {
+      name: 'section-environment',
+      mappings,
     });
+    this.sources.push({ provider: this.sectionEnvironment });
     this.current = await this.loadConfig();
   }
 
@@ -258,6 +272,7 @@ export class AppConfig {
 
   private async performReload(): Promise<AppConfigReloadResult> {
     const previous = this.requireCurrent();
+    const previousInspection = this.inspection;
     const previousOverrides = this.overrides;
     const next = await this.loadConfig();
     // A reload that breaks a declared rule is refused and the running configuration stays as it was.
@@ -267,6 +282,7 @@ export class AppConfig {
       this.sections,
     );
     if (issues.some((issue) => issue.level === 'error')) {
+      this.inspection = previousInspection;
       this.overrides = previousOverrides;
       throw new AppConfigInvalidError(issues);
     }
@@ -299,12 +315,29 @@ export class AppConfig {
 
   private async loadConfig(): Promise<Config> {
     const overrides = new Config();
+    const inspection = new ConfigInspection();
     for (const source of this.sources) {
-      await overrides.load(source.provider, source.parser, source.options);
+      if (source.options?.merge) {
+        await overrides.load(source.provider, source.parser, source.options);
+        inspection.record(overrides, 'unknown');
+        continue;
+      }
+      const layer = new Config();
+      await layer.load(source.provider, source.parser, source.options);
+      overrides.merge(layer);
+      inspection.record(
+        layer,
+        this.fileSources.has(source.provider)
+          ? 'file'
+          : source.provider === this.sectionEnvironment
+            ? 'environment'
+            : 'unknown',
+      );
     }
     const next = this.defaults.copy();
     next.merge(overrides);
     normalizeNotificationChannelAliases(next);
+    this.inspection = inspection;
     this.overrides = overrides;
     return next;
   }

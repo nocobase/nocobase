@@ -30,6 +30,7 @@ export interface AppConfigReloadResult {
 }
 
 export interface AppConfigAccessor {
+  inspectSettings?(): import('./inspection.js').InspectedSetting[];
   setLogger?(logger: Pick<Logger, 'debug'>): void;
   mergeDefaults(values: ConfigMap): void;
   get<TValue = unknown>(key: string): TValue | undefined;

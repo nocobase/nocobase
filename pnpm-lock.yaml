@@ -4083,6 +4083,61 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/plugins/app-plugin-config-inspector:
+    dependencies:
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../../app/app-client
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../app-plugin-authorization
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/plugins/app-plugin-database-explorer:
     dependencies:
       '@nocobase/app-client':
@@ -5684,6 +5739,9 @@ importers:
       '@nocobase/app-plugin-concurrency':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-concurrency
+      '@nocobase/app-plugin-config-inspector':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-config-inspector
       '@nocobase/app-plugin-database-explorer':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-database-explorer
@@ -6039,6 +6097,9 @@ importers:
       '@nocobase/app-plugin-concurrency':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-concurrency
+      '@nocobase/app-plugin-config-inspector':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-config-inspector
       '@nocobase/app-plugin-database-example':
         specifier: workspace:*
         version: link:../../examples/app-plugin-database-example

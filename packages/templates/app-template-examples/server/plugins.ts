@@ -9,6 +9,7 @@ import authorization from '@nocobase/app-plugin-authorization/server';
 import users from '@nocobase/app-plugin-users/server';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/server';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/server';
+import configInspector from '@nocobase/app-plugin-config-inspector/server';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
 import databaseExample from '@nocobase/app-plugin-database-example/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
@@ -47,6 +48,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   authorizationExample,
   templatePrintExample,
   users,
+  configInspector,
   databaseExplorer,
   apiKeys,
   databaseExample,

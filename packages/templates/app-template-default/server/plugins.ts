@@ -6,6 +6,7 @@ import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/serve
 import apiKeys from '@nocobase/app-plugin-api-keys/server';
 import authentication from '@nocobase/app-plugin-authentication/server';
 import authorization from '@nocobase/app-plugin-authorization/server';
+import configInspector from '@nocobase/app-plugin-config-inspector/server';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
 import users from '@nocobase/app-plugin-users/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
@@ -27,6 +28,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   defaultAccess,
   sharingRules,
   restrictionRules,
+  configInspector,
   databaseExplorer,
   users,
   apiKeys,
