@@ -56,11 +56,14 @@ export async function inspectConfiguration(
     const source = sourceOf(at);
     const fileValue = valueAtPath(inspection?.fileValues, at);
     const variable = variableOf.get(at);
+    const shown = display(at, value);
     return {
       path: at,
-      value: display(at, value),
+      value: shown,
       source,
-      secret: typeof value !== 'boolean' && redactor.isSensitive(at),
+      secret:
+        shown === REDACTED ||
+        (typeof value !== 'boolean' && redactor.isSensitive(at)),
       customized:
         source !== 'default' &&
         !isDeepStrictEqual(valueAtPath(example, at), value),

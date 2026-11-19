@@ -80,3 +80,89 @@ describe('Redactor', () => {
     );
   });
 });
+
+describe('Redactor edge cases', () => {
+  const redactor = new Redactor();
+
+  it('keeps an alias to a masked value valid', () => {
+    const masked = redactor.yaml(
+      'db:\n  password: &p hunter2\nother:\n  copy: *p\n',
+    );
+    expect(masked).toContain('password: &p ••••••');
+    expect(masked).toContain('copy: *p');
+    expect(masked).not.toContain('hunter2');
+  });
+
+  it('masks what a commented-out credential block holds', () => {
+    const masked = redactor.yaml(
+      [
+        '# key: |',
+        '#   -----BEGIN PRIVATE KEY-----',
+        '#   hunter2',
+        '# secrets:',
+        '#   keys:',
+        '#     - key: hunter2',
+        '# app:',
+        '#   publicOrigin: https://apps.example.com',
+        'a: 1',
+        '',
+      ].join('\n'),
+    );
+    expect(masked).not.toContain('hunter2');
+    expect(masked).not.toContain('BEGIN PRIVATE KEY');
+    expect(masked).toContain('#   publicOrigin: https://apps.example.com');
+    expect(masked).toContain('a: 1');
+  });
+
+  it('shows a file of comments only without a null line', () => {
+    expect(redactor.yaml('# nothing set yet\n')).toBe('# nothing set yet\n');
+  });
+
+  it.each([
+    ['custom.accessTokenEnc', 'hunter2', true],
+    ['custom.smtpPwdValue', 'hunter2', true],
+    ['custom.args', '--password=hunter2', true],
+    ['caching.keyPrefix', 'nb:', false],
+    ['custom.note', 'visible', false],
+  ])('judges the text at %s', (path, text, hidden) => {
+    expect(redactor.value(path, text) === '[redacted]').toBe(hidden);
+    expect(
+      redactor
+        .yaml(`${path.split('.')[1]}: ${JSON.stringify(text)}\n`)
+        .includes(text),
+    ).toBe(!hidden);
+  });
+});
+
+it('keeps commented-out limits readable while masking credentials', () => {
+  const masked = new Redactor().yaml(
+    [
+      '# realtime:',
+      '#   authorizationTimeoutMs: 5000',
+      '#   limits:',
+      '#     maxConcurrentAuthorizations: 256',
+      '# knowledge:',
+      '#   url: postgresql://kb_user:hunter2@127.0.0.1:5432/knowledge',
+      'users:',
+      '  initialAdmin:',
+      '    password: admin123',
+      '',
+    ].join('\n'),
+  );
+  expect(masked).toContain('authorizationTimeoutMs: 5000');
+  expect(masked).toContain('maxConcurrentAuthorizations: 256');
+  expect(masked).toContain('#   url: ••••••');
+  expect(masked).toContain('password: ••••••');
+  expect(masked).not.toMatch(/hunter2|admin123/u);
+});
+
+it('keeps counts named after a group readable', () => {
+  const redactor = new Redactor();
+  expect(
+    redactor.value('realtime.limits.maxConcurrentAuthorizations', 256),
+  ).toBe(256);
+  expect(redactor.value('custom.authorization', 'Bearer x')).toBe('[redacted]');
+  expect(
+    redactor.yaml('limits:\n  maxPendingAuthorizations: 2048\n'),
+  ).toContain('2048');
+});

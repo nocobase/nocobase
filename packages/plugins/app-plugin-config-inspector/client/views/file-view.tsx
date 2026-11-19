@@ -16,19 +16,26 @@ export function FileView({
   snapshot: ConfigInspectorSnapshot;
 }): ReactElement {
   const t = useInspectorT();
-  const canCompare = snapshot.example !== null && snapshot.file.exists;
-  const [mode, setMode] = useState<'compare' | 'full'>(
-    canCompare ? 'compare' : 'full',
+  const diff = useMemo(
+    () =>
+      snapshot.example !== null && snapshot.file.exists
+        ? diffLines(snapshot.example, snapshot.file.text)
+        : undefined,
+    [snapshot],
   );
+  const canCompare = diff !== undefined;
+  const tooLarge =
+    diff === undefined && snapshot.example !== null && snapshot.file.exists;
+  const [mode, setMode] = useState<'compare' | 'full'>('compare');
   const lines = useMemo<DiffRow[]>(
     () =>
-      mode === 'compare' && canCompare
-        ? foldUnchanged(diffLines(snapshot.example ?? '', snapshot.file.text))
+      mode === 'compare' && diff
+        ? foldUnchanged(diff)
         : snapshot.file.text
             .replace(/\n$/u, '')
             .split('\n')
             .map((text, index) => ({ kind: 'same', text, line: index + 1 })),
-    [mode, canCompare, snapshot],
+    [mode, diff, snapshot],
   );
   const overridden = snapshot.settings.some(
     (setting) => setting.fileValue !== undefined,
@@ -64,9 +71,9 @@ export function FileView({
               </AlertDescription>
             </Alert>
           ) : null}
-          {snapshot.example === null ? (
+          {snapshot.example === null || tooLarge ? (
             <p className='text-xs text-muted-foreground'>
-              {t('file.noExample')}
+              {t(tooLarge ? 'file.tooLarge' : 'file.noExample')}
             </p>
           ) : null}
           <pre className='max-h-[36rem] overflow-auto rounded-lg border bg-muted/30 py-3 font-mono text-xs leading-relaxed'>

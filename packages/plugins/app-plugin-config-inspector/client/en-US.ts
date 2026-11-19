@@ -68,6 +68,8 @@ const resource = {
         'Environment variables override the same settings in the file; "By module" shows the values in effect.',
       missing:
         'The application read no configuration file; every setting comes from the environment and code defaults.',
+      tooLarge:
+        'The file is too long to compare with the example line by line; it is shown in full.',
       noExample: 'The application ships no config.example.yml to compare with.',
     },
     groups: {

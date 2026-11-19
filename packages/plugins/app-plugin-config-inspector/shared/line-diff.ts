@@ -5,10 +5,20 @@ export interface DiffLine {
   readonly line?: number;
 }
 
-/** A line diff of two texts by their longest common subsequence, removals before additions. */
-export function diffLines(before: string, after: string): DiffLine[] {
+/** Beyond this many line pairs the table would take too much memory in a browser. */
+export const MAX_DIFF_CELLS = 4_000_000;
+
+/**
+ * A line diff of two texts by their longest common subsequence, removals before additions; `undefined` when the
+ * texts are too long to compare, see {@link MAX_DIFF_CELLS}.
+ */
+export function diffLines(
+  before: string,
+  after: string,
+): DiffLine[] | undefined {
   const a = before.replace(/\n$/u, '').split('\n');
   const b = after.replace(/\n$/u, '').split('\n');
+  if ((a.length + 1) * (b.length + 1) > MAX_DIFF_CELLS) return undefined;
   const lengths = Array.from({ length: a.length + 1 }, () =>
     new Array<number>(b.length + 1).fill(0),
   );

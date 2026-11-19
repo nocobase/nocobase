@@ -66,6 +66,7 @@ const resource = {
       full: '完整文件',
       envNote: '环境变量会覆盖文件中的同名设置，生效值以“按模块”为准。',
       missing: '应用没有读取到配置文件，所有设置来自环境变量和代码默认值。',
+      tooLarge: '文件太长，无法与示例逐行对比，只显示完整文件。',
       noExample: '应用没有附带 config.example.yml，无法对比。',
     },
     groups: {

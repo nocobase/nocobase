@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
 } from 'react';
@@ -29,8 +30,11 @@ export default function ConfigInspector(): ReactElement {
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('modules');
+  // Only the latest request may update the page, so a slow earlier answer cannot replace a newer one.
+  const latest = useRef(0);
   const load = useCallback(() => {
-    let active = true;
+    const request = (latest.current += 1);
+    const isActive = (): boolean => latest.current === request;
     setLoading(true);
     setFailed(false);
     void api
@@ -40,17 +44,17 @@ export default function ConfigInspector(): ReactElement {
       })
       .then(
         ({ data }) => {
-          if (active) setSnapshot(data);
+          if (isActive()) setSnapshot(data);
         },
         () => {
-          if (active) setFailed(true);
+          if (isActive()) setFailed(true);
         },
       )
       .finally(() => {
-        if (active) setLoading(false);
+        if (isActive()) setLoading(false);
       });
     return () => {
-      active = false;
+      if (isActive()) latest.current += 1;
     };
   }, [api]);
   useEffect(() => load(), [load]);

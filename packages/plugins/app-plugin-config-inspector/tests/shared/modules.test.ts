@@ -76,7 +76,7 @@ it('folds long runs of unchanged lines', () => {
     '\n',
   );
   const after = before.replace('line 10', 'changed');
-  const rows = foldUnchanged(diffLines(before, after));
+  const rows = foldUnchanged(diffLines(before, after)!);
   expect(rows.filter((row) => row.kind === 'skipped')).toEqual([
     { kind: 'skipped', count: 7 },
     { kind: 'skipped', count: 6 },
@@ -84,4 +84,11 @@ it('folds long runs of unchanged lines', () => {
   expect(
     rows.filter((row) => row.kind !== 'same' && row.kind !== 'skipped'),
   ).toHaveLength(2);
+});
+
+it('does not compare texts too long to diff in a browser', () => {
+  const long = Array.from({ length: 2100 }, (_, index) => `line ${index}`).join(
+    '\n',
+  );
+  expect(diffLines(long, long)).toBeUndefined();
 });
