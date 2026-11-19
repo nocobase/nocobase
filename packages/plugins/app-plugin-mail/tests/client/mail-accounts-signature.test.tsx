@@ -157,7 +157,8 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       });
       await act(async () => vi.advanceTimersByTimeAsync(30_000));
       expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
-      expect(sync).toBeDisabled();
+      // The run still counts as active, so account actions other than the scope dialog wait for it.
+      expect(screen.getByRole('button', { name: 'Deactivate' })).toBeDisabled();
       expect(screen.getByText('Temporary status outage')).toBeVisible();
 
       mail.getSyncRun.mockResolvedValue({ ...run, status: 'completed' });
@@ -175,7 +176,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
       await act(async () => vi.advanceTimersByTimeAsync(1_000));
-      expect(screen.getByRole('button', { name: 'Sync' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Deactivate' })).toBeEnabled();
       expect(screen.queryByText('Temporary status outage')).toBeNull();
       expect(mail.startSync).toHaveBeenCalledTimes(1);
     } finally {
@@ -816,7 +817,156 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
-    expect(screen.getByRole('button', { name: 'Sync' })).toBeDisabled();
+    // The scope stays reachable while the run is active.
+    expect(screen.getByRole('button', { name: 'Sync' })).toBeEnabled();
+  });
+
+  it('follows the active run for an unchanged scope and replaces it once for a changed one', async () => {
+    const run = {
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'running',
+      phase: 'history',
+      processedMessages: 10,
+      processedPages: 1,
+    };
+    // The scheduler answers with the run already in progress.
+    mail.startSync.mockResolvedValue(run);
+    mail.getSyncRun.mockResolvedValue(run);
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    await confirmSync(await screen.findByRole('button', { name: 'Sync' }));
+    const sync = screen.getByRole('button', { name: 'Sync' });
+    expect(sync).toBeEnabled();
+    await confirmSync(sync);
+    expect(mail.startSync).toHaveBeenCalledTimes(2);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent'],
+      }),
+    );
+    // Saving the scope replaces the active run on the server; no further sync request follows.
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+    expect(mail.startSync).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a saved scope whose folder was deleted on the server when the owner changes nothing', async () => {
+    mail.listAccounts.mockResolvedValue([
+      {
+        ...(await mail.listAccounts())[0],
+        syncFolderIds: ['INBOX', 'Archive'],
+      },
+    ]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders().filter(
+        (folder) => folder.providerFolderId !== 'Archive',
+      ),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: true,
+    });
+    mail.startSync.mockResolvedValue({
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'pending',
+      phase: 'incremental',
+      processedMessages: 0,
+      processedPages: 0,
+    });
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      await within(dialog).findByText(
+        'Syncs new and changed messages since the last sync.',
+      ),
+    ).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(mail.startSync).toHaveBeenCalledTimes(1));
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.previewSyncFolders).not.toHaveBeenCalled();
+  });
+
+  it('previews again when the choice changes while a deletion count is on its way', async () => {
+    let answer!: (value: { removedMessageCount: number }) => void;
+    mail.previewSyncFolders
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ removedMessageCount: number }>(
+            (resolve) => (answer = resolve),
+          ),
+      )
+      .mockResolvedValueOnce({ removedMessageCount: 20 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.previewSyncFolders).toHaveBeenCalledWith('account-1', [
+        'INBOX',
+        'Sent',
+      ]),
+    );
+    // Sent is unchecked before the count for Archive alone arrives.
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sent' }));
+    act(() => answer({ removedMessageCount: 12 }));
+
+    expect(
+      await within(dialog).findByText(/^This change deletes 20 local messages/),
+    ).toBeVisible();
+    expect(mail.previewSyncFolders).toHaveBeenLastCalledWith('account-1', [
+      'INBOX',
+    ]);
+    expect(within(dialog).queryByText(/deletes 12 local/)).toBeNull();
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'Delete local messages and sync',
+      }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX'],
+      }),
+    );
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
   });
 
   it('imports from the saved date when the first sync of an unchanged scope has not completed', async () => {

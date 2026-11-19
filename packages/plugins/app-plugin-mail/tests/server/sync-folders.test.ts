@@ -429,6 +429,43 @@ describe.each(['gmail', 'microsoft'] as const)(
       });
     });
 
+    it('reuses the active run for an unchanged scope and replaces it once for a changed one', async () => {
+      mailbox.put('inboxed', ['inbox']);
+      mailbox.put('archived', ['archive']);
+      await sync();
+      await choose(['inbox', 'archive']);
+      const active = await service().startSync(owner, { accountId });
+      // Confirming the same scope again follows the run in progress.
+      expect(await service().startSync(owner, { accountId })).toMatchObject({
+        id: active.id,
+      });
+      await service().updateAccount(owner, {
+        accountId,
+        syncFolderIds: ['inbox', 'archive'],
+      });
+      expect(await store.findActiveSyncRun(accountId)).toMatchObject({
+        id: active.id,
+      });
+
+      await service().updateAccount(owner, {
+        accountId,
+        syncFolderIds: ['inbox'],
+      });
+      expect(await store.getSyncRun(active.id)).toMatchObject({
+        status: 'cancelled',
+      });
+      const runs = (await store.listSyncRuns('owner', 0, 100)).filter(
+        (run) => run.status === 'pending' || run.status === 'running',
+      );
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        mode: 'initial',
+        policy: { syncFolderIds: ['inbox'] },
+      });
+      await settle();
+      expect(await local()).toEqual({ inboxed: ['inbox'] });
+    });
+
     it('lets the later of two interleaved saves own the selection and the active run', async () => {
       mailbox.put('inboxed', ['inbox']);
       mailbox.put('archived', ['archive']);

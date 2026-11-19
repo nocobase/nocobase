@@ -1,7 +1,7 @@
 import { useRealtimeRefresh } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Mail } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import { MAIL_REALTIME_TOPIC } from '../../shared/realtime.js';
@@ -113,7 +113,11 @@ function SyncFoldersForm({
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(account.syncFolderIds ?? []),
   );
-  const [removedCount, setRemovedCount] = useState<number>();
+  // The deletion count shown for confirmation, bound to the scope it was previewed for.
+  const [removal, setRemoval] = useState<{
+    readonly count: number;
+    readonly syncFolderIds: readonly string[];
+  }>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
   const receivedAfter =
@@ -181,12 +185,13 @@ function SyncFoldersForm({
       (folder) =>
         folder.type === 'sent' && !selected.has(folder.providerFolderId),
     );
-  // "Entire mailbox" also covers folders created later, so it differs from every current folder being selected.
+  // "Entire mailbox" also covers folders created later, so it differs from every current folder being selected. The
+  // scope changes only when the owner changes the choice: a saved folder that left the folder list is no change.
   const changed =
     choosing ||
     (scope === 'all'
       ? !savedAll
-      : savedAll || !sameFolders(account.syncFolderIds ?? [], selection));
+      : savedAll || !sameFolders(account.syncFolderIds ?? [], [...selected]));
   const ready = listed && !empty && !saving;
 
   const failure = (cause: unknown): void =>
@@ -197,7 +202,25 @@ function SyncFoldersForm({
       ),
     );
 
-  const submit = (confirmed: boolean): void => {
+  // The scope a submission would save right now; a preview answered for another scope is asked again.
+  const target = scope === 'all' ? null : selection;
+  const latestRef = useRef({ target, submit: (): void => {} });
+
+  const save = (syncFolderIds: readonly string[] | null): Promise<void> =>
+    // Saving a new scope schedules the initial synchronization under it; no separate sync request follows.
+    mail
+      .updateAccount({ accountId: account.id, syncFolderIds })
+      .then((saved) => onSaved({ account: saved }));
+
+  const confirmRemoval = (syncFolderIds: readonly string[]): void => {
+    setSaving(true);
+    setError(undefined);
+    void save(syncFolderIds)
+      .catch(failure)
+      .finally(() => setSaving(false));
+  };
+
+  const submit = (): void => {
     setSaving(true);
     setError(undefined);
     if (!changed) {
@@ -212,30 +235,38 @@ function SyncFoldersForm({
         .finally(() => setSaving(false));
       return;
     }
-    const syncFolderIds = scope === 'all' ? null : selection;
-    const preview =
-      confirmed || choosing || syncFolderIds === null
-        ? Promise.resolve(0)
-        : mail
-            .previewSyncFolders(account.id, syncFolderIds)
-            .then((result) => result.removedMessageCount);
-    void preview
-      .then(async (count) => {
-        if (count > 0) {
-          setRemovedCount(count);
+    const syncFolderIds = target;
+    if (choosing || syncFolderIds === null) {
+      void save(syncFolderIds)
+        .catch(failure)
+        .finally(() => setSaving(false));
+      return;
+    }
+    let stale = false;
+    void mail
+      .previewSyncFolders(account.id, syncFolderIds)
+      .then(async ({ removedMessageCount }) => {
+        const now = latestRef.current.target;
+        if (now === null || !sameFolders(syncFolderIds, now)) {
+          stale = true;
           return;
         }
-        // Saving a new scope schedules the initial synchronization under it; no separate sync request follows.
-        onSaved({
-          account: await mail.updateAccount({
-            accountId: account.id,
-            syncFolderIds,
-          }),
-        });
+        if (removedMessageCount > 0) {
+          setRemoval({ count: removedMessageCount, syncFolderIds });
+          return;
+        }
+        await save(syncFolderIds);
       })
       .catch(failure)
-      .finally(() => setSaving(false));
+      .finally(() => {
+        setSaving(false);
+        // The choice changed while the preview was on its way; preview the current choice instead.
+        if (stale) latestRef.current.submit();
+      });
   };
+  useEffect(() => {
+    latestRef.current = { target, submit };
+  });
 
   // A listing that stopped part way is started again; the dialog then waits for it as before.
   const retryListing = (): void => {
@@ -254,7 +285,7 @@ function SyncFoldersForm({
     </p>
   ) : null;
 
-  if (removedCount !== undefined)
+  if (removal !== undefined)
     return (
       <>
         <DialogHeader>
@@ -265,7 +296,7 @@ function SyncFoldersForm({
           </DialogTitle>
           <DialogDescription>
             {t('settings.syncFolders.removeDescription', {
-              count: removedCount,
+              count: removal.count,
               defaultValue:
                 'This change deletes {{count}} local messages and their local data. Messages on the mail server are not deleted, and messages still in a selected folder are kept.',
             })}
@@ -275,7 +306,7 @@ function SyncFoldersForm({
         <DialogFooter>
           <Button
             disabled={saving}
-            onClick={() => setRemovedCount(undefined)}
+            onClick={() => setRemoval(undefined)}
             type='button'
             variant='outline'
           >
@@ -283,7 +314,7 @@ function SyncFoldersForm({
           </Button>
           <Button
             disabled={saving}
-            onClick={() => submit(true)}
+            onClick={() => confirmRemoval(removal.syncFolderIds)}
             type='button'
             variant='destructive'
           >
@@ -524,7 +555,7 @@ function SyncFoldersForm({
         >
           {t('settings.syncFolders.cancel', { defaultValue: 'Cancel' })}
         </Button>
-        <Button disabled={!ready} onClick={() => submit(false)} type='button'>
+        <Button disabled={!ready} onClick={submit} type='button'>
           {saving
             ? t('settings.syncFolders.saving', { defaultValue: 'Saving…' })
             : t('settings.syncFolders.submit', {

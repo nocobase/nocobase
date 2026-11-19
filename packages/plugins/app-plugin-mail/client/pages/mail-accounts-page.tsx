@@ -1128,7 +1128,9 @@ function ConnectedAccountRow({
       <td className='px-4 py-4'>
         <div className='flex flex-wrap justify-end gap-2'>
           <Button
-            disabled={syncing || account.status !== 'active'}
+            // The scope dialog stays available during a run: an unchanged scope follows the active run, a changed one
+            // replaces it.
+            disabled={account.status !== 'active'}
             onClick={() => onSync(account)}
             type='button'
             variant={
