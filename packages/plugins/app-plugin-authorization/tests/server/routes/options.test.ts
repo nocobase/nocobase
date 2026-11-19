@@ -129,6 +129,23 @@ describe('the options and subject routes', () => {
     });
   });
 
+  it('offers no permission inspector to grant', async () => {
+    const authz = authorization();
+    const catalog = await options(await localizedRouter(authz));
+    const listed = catalog.sections.flatMap((section) =>
+      section.subsections.flatMap((sub) =>
+        sub.resources.map((resource) => `${resource.type}:${resource.id}`),
+      ),
+    );
+    expect(listed).toContain('settings:authorization.permission-sets');
+    expect(listed).not.toContain('settings:authorization.inspector');
+    // The inspector routes still check `settings:authorization.inspector` `inspect`, which only unrestricted roles
+    // hold; it is no settings item a role can be given.
+    expect(() =>
+      authz.settings.grant('authorization.inspector', ['inspect']),
+    ).toThrow('Unknown settings item: authorization.inspector');
+  });
+
   it('sends a registered string or translation key unchanged, in every language', async () => {
     const authz = authorization();
     authz.ui.sections.add({

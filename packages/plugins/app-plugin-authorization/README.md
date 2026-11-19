@@ -481,7 +481,7 @@ Every reason except `INVALID_INPUT` has the domain `authorization`. A rule key m
 
 `AuthorizationOptions` is `{ sections: [{ name, title, order, subsections: [{ name, title, recordType?, resources: [{ type, id, title, description?, group?, actions: [{ name, title }], dataScopes? }] }] }], resourceGroups?, subjectTypes, recordAccess, collections }`. A subsection with `recordType` (`{ type: 'page', actions }`) lists no resources: the client supplies them. `dataScopes` maps a business action to its data scopes; subsections without resources are omitted, and rule options list only composites with data scopes, with every title as sent by the server, either a string or `{ key, ns }`.
 
-Settings action names are semantic. Permission sets declare `read`, `create`, `update`, `delete` and `assign`; the inspector declares `inspect`; each rule plugin declares `read`, `create`, `update` and `delete`.
+Settings action names are semantic. Permission sets declare `read`, `create`, `update`, `delete` and `assign`; each rule plugin declares `read`, `create`, `update` and `delete`. The inspector is not a settings item: its routes check `settings:authorization.inspector` `inspect`, which only unrestricted roles hold, and role editors never offer it.
 
 ## Subjects and transactions
 
