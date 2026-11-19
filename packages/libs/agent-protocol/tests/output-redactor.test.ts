@@ -1,5 +1,9 @@
 import { expect, it } from 'vitest';
-import { createRedactor, REDACTED } from '../src/redact.js';
+import {
+  createRedactor,
+  createStreamRedactor,
+  REDACTED,
+} from '../src/redact.js';
 import {
   createOutputRedactor,
   MAX_OUTPUT_HELD,
@@ -324,4 +328,79 @@ it('does not close a private key at a different key type', () => {
   let live = '';
   for (const char of text) live += stream.write(char);
   expect(live + stream.end()).toBe(redactor.text(text));
+});
+
+/**
+ * One fictional gateway key with an escaped quote, an escaped backslash, a comma and spaces, under each label and
+ * quote style; whole-text redaction, the live preview and the log stream share one quote and escape rule.
+ */
+const cutOff = [
+  String.raw`{"provider":"my-lan-gateway","apiKey": "lan-fict\"ional, gateway key\\ 9f8e"} done`,
+  String.raw`{'provider':'my-lan-gateway','apiKey': 'lan-fict\'ional, "gateway" key\\ 9f8e'} done`,
+  String.raw`{"x-api-key": "lan-fict\"ional, gateway key\\ 9f8e"} done`,
+];
+/** What the text cut after `cut` characters must redact to: the value, whole or in part, becomes one `REDACTED`. */
+function cutOffExpected(text: string, cut: number): string {
+  const open = /(?:apiKey|x-api-key)["']?\s*:\s*(["'])/u.exec(text)!;
+  const start = open.index + open[0].length;
+  let end = start;
+  while (text[end] !== open[1]) end += text[end] === '\\' ? 2 : 1;
+  if (cut <= start) return text.slice(0, cut);
+  return text.slice(0, start) + REDACTED + text.slice(end, Math.max(end, cut));
+}
+it.each(cutOff)(
+  'never exposes a quoted value cut off at any position, escapes, commas and spaces included: %s',
+  (text) => {
+    for (let cut = 0; cut <= text.length; cut++) {
+      const prefix = text.slice(0, cut);
+      const expected = cutOffExpected(text, cut);
+      expect(createRedactor().text(prefix), `whole ${cut}`).toBe(expected);
+      for (const size of [1, 3, cut || 1])
+        for (const interrupted of [false, true]) {
+          const stream = createOutputRedactor(() => createRedactor());
+          let live = '';
+          for (let at = 0; at < cut; at += size) {
+            const piece = stream.write(
+              prefix.slice(at, Math.min(cut, at + size)),
+            );
+            // What is published while the value is still open never reaches into it.
+            expect(
+              expected.startsWith(live + piece),
+              `live ${cut}/${size}`,
+            ).toBe(true);
+            live += piece;
+          }
+          expect(
+            live + stream.end(interrupted),
+            `end ${cut}/${size}/${interrupted}`,
+          ).toBe(expected);
+        }
+      const log = createStreamRedactor(createRedactor());
+      let logged = '';
+      for (let at = 0; at < cut; at += 3) {
+        logged += log.write(prefix.slice(at, Math.min(cut, at + 3)), {
+          partial: true,
+        });
+        expect(expected.startsWith(logged), `log live ${cut}`).toBe(true);
+      }
+      expect(logged + log.end(), `log ${cut}`).toBe(expected);
+    }
+  },
+);
+
+it.each([
+  ['a double-quoted value holding a single quote', `{"apiKey":"ab'c`],
+  ['a single-quoted value holding a double quote', `{'token': 'ab"c`],
+  ['a value ending in a backslash', String.raw`{"apiKey":"a\\`],
+  ['an escaped quote', String.raw`{"password":"a\"b`],
+])('masks %s cut off before it closes, however short', (_name, text) => {
+  for (const size of [1, 2, text.length]) {
+    const stream = createOutputRedactor(() => createRedactor());
+    let live = '';
+    for (let at = 0; at < text.length; at += size)
+      live += stream.write(text.slice(at, at + size));
+    const out = live + stream.end(true);
+    expect(out).toMatch(/\[REDACTED\]$/u);
+    expect(out).not.toMatch(/ab|a\\/u);
+  }
 });
