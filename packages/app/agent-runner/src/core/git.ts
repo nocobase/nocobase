@@ -1,11 +1,29 @@
 // Low-level Git for runner-owned directories. Task checkouts must use task-git.ts instead.
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import type { GitSshFailure } from '../protocol/index.ts';
+import { classifySshFailure, SSH_FAILURE_MESSAGES } from './ssh-command.ts';
 
 const run = promisify(execFile);
 
 export class CheckoutError extends Error {
   override name = 'CheckoutError';
+}
+
+export class GitSshError extends CheckoutError {
+  readonly failure: GitSshFailure;
+
+  constructor(failure: GitSshFailure) {
+    super(SSH_FAILURE_MESSAGES[failure]);
+    this.failure = failure;
+  }
+}
+
+export function gitSshFailureOf(error: unknown): GitSshFailure | undefined {
+  if (error instanceof GitSshError) return error.failure;
+  return error instanceof Error && error.cause !== undefined
+    ? gitSshFailureOf(error.cause)
+    : undefined;
 }
 
 /** An HTTPS token git fetches with, and the username its code host expects with it (`oauth2`, `x-access-token`). */
@@ -61,6 +79,10 @@ export async function git(
   } catch (error) {
     if (options.signal?.aborted === true) await options.onAbort?.();
     const stderr = (error as { stderr?: string }).stderr;
+    if (env.GIT_SSH_COMMAND !== undefined) {
+      const failure = classifySshFailure(stderr ?? '', args.includes('push'));
+      if (failure !== undefined) throw new GitSshError(failure);
+    }
     throw new CheckoutError(
       `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
     );

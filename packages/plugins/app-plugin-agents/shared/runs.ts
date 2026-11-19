@@ -242,10 +242,9 @@ export interface RunRepo {
   readonly pushed: boolean;
   readonly headSha: string | null;
   /**
-   * Why the runner could not push it at the end of the run (`RepoReport.failure`: `authFailed`,
-   * `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected` or `error`), with a redacted message; null
-   * when it pushed or did not try. Optional so existing application schemas and older reports remain compatible;
-   * this server always includes it.
+   * Why the repository was not pushed (`RepoReport.failure`), with a redacted message. Null when it pushed or did
+   * not try. Optional so existing application schemas and older reports remain compatible; this server always
+   * includes it.
    */
   readonly failure?: {
     readonly reason: string;

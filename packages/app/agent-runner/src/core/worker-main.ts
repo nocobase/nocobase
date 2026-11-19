@@ -124,7 +124,7 @@ async function main(): Promise<number> {
       ...(job.toolVersion === undefined
         ? {}
         : { toolVersion: job.toolVersion }),
-      stopWriters: async () => {
+      stopWriters: async (keepPid) => {
         quiescing = true;
         try {
           await observation;
@@ -134,6 +134,7 @@ async function main(): Promise<number> {
             groups: seenGroups,
             graceMs: 2_000,
             strict,
+            ...(keepPid === undefined ? {} : { keepPid }),
           });
           const tag = process.env[PROCESS_TAG_ENV];
           const tagged = tag === undefined ? 0 : await killTagged([tag]);
@@ -147,7 +148,7 @@ async function main(): Promise<number> {
             );
           if (
             descendantsOf(process.pid, await listProcesses(strict)).some(
-              (entry) => isAlive(entry.pid),
+              (entry) => entry.pid !== keepPid && isAlive(entry.pid),
             ) ||
             (tag !== undefined &&
               (await taggedProcesses([tag], strict)).length > 0)
