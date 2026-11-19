@@ -373,6 +373,7 @@ function ActionRow({
   controlId,
   onToggle,
   onScope,
+  scoped = true,
 }: {
   readonly object: PermissionObject;
   readonly objects: readonly PermissionObject[];
@@ -387,9 +388,11 @@ function ActionRow({
     slotId: string,
     value: string | undefined,
   ) => void;
+  /** Settings have no data scope: their rows show only the switch, whatever scopes an action carries. */
+  readonly scoped?: boolean;
 }): ReactElement {
   const enabled = Boolean(grants[action.id]);
-  const slots = action.scopes ?? [];
+  const slots = scoped ? (action.scopes ?? []) : [];
   // One unnamed scope sits beside the title; named or several scopes get their own row.
   const inline = slots.length === 1 && !slots[0]?.label ? slots[0] : undefined;
   const stacked = inline ? [] : slots;
@@ -1295,6 +1298,7 @@ export function PermissionEditor({
                             controlId={`${id}-${action.id}`}
                             onToggle={toggle}
                             onScope={() => undefined}
+                            scoped={false}
                           />
                         ))}
                       </ul>
@@ -1396,12 +1400,11 @@ export function PermissionEditor({
                               <span className='truncate'>{object.label}</span>
                               <span className='truncate text-xs text-muted-foreground'>
                                 {[
-                                  status.enabled
-                                    ? words.objectEnabled(
-                                        status.enabled,
-                                        status.total,
-                                      )
-                                    : words.objectOff,
+                                  // The count reads the same with nothing on, so phones always show how many there are.
+                                  words.objectEnabled(
+                                    status.enabled,
+                                    status.total,
+                                  ),
                                   scope,
                                 ]
                                   .filter(Boolean)
