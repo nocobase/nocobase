@@ -2,6 +2,24 @@ import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
 
+const RECONNECT = 'Reconnect OpenCode Console to continue.';
+const GATEWAY_VALUES = [
+  [
+    'with long hyphenated segments',
+    'Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3',
+    '[REDACTED]',
+  ],
+  [
+    'with short hyphenated segments',
+    'Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3',
+    '[REDACTED]',
+  ],
+  ['with word-like segments', 'fTakerm-Opaseha-Targao-7rya', '[REDACTED]'],
+  ['with only lower-case letters', 'cfvizbxmjqpkhdgslaorwynut', '[REDACTED]'],
+  ['with 20 characters', 'Zq81mN0pL4kTx7Rw2Vb9', '[REDACTED]'],
+  ['with 19 characters', 'Zq81mN0pL4kTx7Rw2Vb', 'Zq81mN0pL4kTx7Rw2Vb'],
+] as const;
+
 describe('runner history pagination', () => {
   let h: Harness;
   afterEach(async () => {
@@ -159,22 +177,19 @@ describe('runner history pagination', () => {
           ...values,
         },
       });
-    const said = 'Reconnect OpenCode Console to continue.';
     // Stored before the labelled-secret pattern existed: its gateway key was never redacted.
     await run('a', {
-      failureDetail: `${said} {"apiKey":"lan-9f8e7d6c5b4a"}`,
+      failureDetail: `${RECONNECT} {"apiKey":"lan-9f8e7d6c5b4a"}`,
       tool: 'opencode',
       model: 'opencode/qwen3.8-flash',
     });
-    // An older record with later diagnostic lines and a hyphenated gateway credential: only one redacted line leaves.
-    await run('ffffff', {
-      failureDetail: `${said} Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3\nstderr: internal path /srv/gateway\n${'x'.repeat(50)}`,
-    });
-    await run('ggggggg', { failureDetail: `${said} ${'y'.repeat(400)}` });
-    // An older record with a credential in short pieces, none of them random-looking on its own.
-    await run('hhhhhhhh', {
-      failureDetail: `${said} Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3`,
-    });
+    // Old records can contain raw values and later diagnostic lines.
+    for (const [index, [, value]] of GATEWAY_VALUES.entries()) {
+      await run(`legacy-${index}`, {
+        failureDetail: `${RECONNECT} Gateway refused ${value}. Try again.\nstderr: internal path /srv/gateway`,
+      });
+    }
+    await run('ggggggg', { failureDetail: `${RECONNECT} ${'y'.repeat(400)}` });
     // A task the viewer may not read: its runner run is listed and linked, its words are not.
     await run('bb', {
       failureDetail: 'The secret task quoted here',
@@ -208,19 +223,18 @@ describe('runner history pagination', () => {
     );
     expect(byId.get('a')).toMatchObject({
       failureReason: 'toolAuth',
-      failureDetail: `${said} {"apiKey":"[REDACTED]"}`,
+      failureDetail: `${RECONNECT} {"apiKey":"[REDACTED]"}`,
       // The run's whole model id; its agent no longer exists, so it has no name to shorten.
       model: 'opencode/qwen3.8-flash',
       modelTitle: 'OpenCode · opencode/qwen3.8-flash',
     });
     expect(byId.get('a')).not.toHaveProperty('shortName');
     expect(byId.get('eeeee')).not.toHaveProperty('model');
-    expect(byId.get('ffffff')).toMatchObject({
-      failureDetail: `${said} [REDACTED]`,
-    });
-    expect(byId.get('hhhhhhhh')).toMatchObject({
-      failureDetail: `${said} [REDACTED]`,
-    });
+    for (const [index, [, , expected]] of GATEWAY_VALUES.entries()) {
+      expect(byId.get(`legacy-${index}`)).toMatchObject({
+        failureDetail: `${RECONNECT} Gateway refused ${expected}. Try again.`,
+      });
+    }
     const long = (byId.get('ggggggg') as { failureDetail: string })
       .failureDetail;
     expect(long).toHaveLength(300);
@@ -230,13 +244,13 @@ describe('runner history pagination', () => {
       expect(byId.get(id)).not.toHaveProperty('failureDetail');
     // The run's own record is redacted as it is read too.
     expect((await h.services.runs.get('a')).failureDetail).toBe(
-      `${said} {"apiKey":"[REDACTED]"}`,
+      `${RECONNECT} {"apiKey":"[REDACTED]"}`,
     );
   });
 
-  it.each(['Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3', 'Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3'])(
-    'stores what a runner reports a run failed on without a gateway credential it quotes (%s)',
-    async (credential) => {
+  it.each(GATEWAY_VALUES)(
+    'stores the runner failure message after checking a gateway value %s',
+    async (_name, value, expected) => {
       h = await createHarness();
       const agentId = await h.createAgent();
       const runner = await h.registerRunner();
@@ -251,7 +265,7 @@ describe('runner history pagination', () => {
           runnerKey: runner.key,
           body: {
             reason: 'toolAuth',
-            detail: `Reconnect OpenCode Console to continue. ${credential}`,
+            detail: `${RECONNECT} Gateway refused ${value}. Try again.`,
           },
         },
       );
@@ -261,7 +275,7 @@ describe('runner history pagination', () => {
         .repository('agRuns')
         .findOne({ filter: { id: runId } });
       expect(stored?.failureDetail).toBe(
-        'Reconnect OpenCode Console to continue. [REDACTED]',
+        `${RECONNECT} Gateway refused ${expected}. Try again.`,
       );
     },
   );

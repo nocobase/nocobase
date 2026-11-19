@@ -64,6 +64,41 @@ describe('a failed run’s message', () => {
       'unknown credential [REDACTED]. Sign in again.',
     ],
     [
+      'a high-entropy value in short, word-like segments',
+      `${SAID} Gateway refused fTakerm-Opaseha-Targao-7rya. Try again.`,
+      `${SAID} Gateway refused [REDACTED]. Try again.`,
+    ],
+    [
+      'a high-entropy value made only of lower-case letters',
+      `${SAID} Gateway refused cfvizbxmjqpkhdgslaorwynut. Try again.`,
+      `${SAID} Gateway refused [REDACTED]. Try again.`,
+    ],
+    [
+      'a high-entropy value of exactly 20 characters',
+      'Gateway refused Zq81mN0pL4kTx7Rw2Vb9.',
+      'Gateway refused [REDACTED].',
+    ],
+    [
+      'a value with exactly 3.5 bits of entropy per character',
+      'Gateway refused aaaabbbbccccddddeeffgghhiijjkkll.',
+      'Gateway refused [REDACTED].',
+    ],
+    [
+      'a standalone high-entropy model name',
+      `GPT-OSS-120B-Instruct is not available: ${SAID}`,
+      `[REDACTED] is not available: ${SAID}`,
+    ],
+    [
+      'a high-entropy commit hash',
+      'HEAD is 3f2a9c1d8e7b6a5f4e3d2c1b0a9f8e7d6c5b4a39',
+      'HEAD is [REDACTED]',
+    ],
+    [
+      'a high-entropy lower-case UUID',
+      'run 0f8fad5b-d9cb-469f-a165-70867728950e failed',
+      'run [REDACTED] failed',
+    ],
+    [
       'a whole quoted value with spaces',
       'apiKey: "sample gateway value" was refused',
       'apiKey: "[REDACTED]" was refused',
@@ -89,27 +124,16 @@ describe('a failed run’s message', () => {
       'Model not found: my-lan-gateway/qwen3.8-flash in /home/runner/work',
     ],
     ['token counts', 'prompt has 128000 tokens, max_tokens: 4096'],
-    ['a commit hash', 'HEAD is 3f2a9c1d8e7b6a5f4e3d2c1b0a9f8e7d6c5b4a39'],
-    ['a dated model id', 'claude-sonnet-4-5-20250929 is overloaded'],
-    ['a hyphenated model name', 'GPT-OSS-120B-Instruct is not available here'],
-    ...[
-      'Llama-4-Maverick-17B-128E-Instruct',
-      'DeepSeek-R1-Distill-Qwen-32B',
-      'Qwen2-VL-72B-Instruct-AWQ',
-      'Mixtral-8x22B-Instruct-v0',
-      'Meta-Llama-3-70B-Instruct-Turbo',
-      'Phi-3-mini-4k-instruct',
-      'ERR-RateLimit-Exceeded-429',
-    ].map((model) => [
-      `the model name ${model}`,
-      `${model} is not available: ${SAID}`,
-    ]),
+    ['a short model name', `qwen3.8-flash is not available: ${SAID}`],
     [
       'a hyphenated provider path',
       'Model my-lan-gateway/DeepSeek-V4-Flash-Free2 not found',
     ],
-    ['a lower-case UUID', 'run 0f8fad5b-d9cb-469f-a165-70867728950e failed'],
-    ['a long word', 'internationalization-configuration failed'],
+    [
+      'a high-entropy value of 19 characters',
+      'Gateway refused Zq81mN0pL4kTx7Rw2Vb.',
+    ],
+    ['a low-entropy long word', 'internationalization-configuration failed'],
     [
       'a hostname at the end of a sentence',
       'Cannot reach gateway.internal.example.',

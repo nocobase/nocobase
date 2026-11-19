@@ -28,11 +28,6 @@ const RULES: readonly (readonly [RegExp, string])[] = [
 const CANDIDATE =
   /(?<![A-Za-z0-9+_=./-])[A-Za-z0-9+_=-]{20,}(?![A-Za-z0-9+_=/-]|\.[A-Za-z0-9])/gu;
 
-/** Upper case, lower case and digits mixed. */
-function mixed(text: string): boolean {
-  return /[0-9]/u.test(text) && /[a-z]/u.test(text) && /[A-Z]/u.test(text);
-}
-
 /** Shannon entropy per character, in bits. */
 function entropy(text: string): number {
   const counts = new Map<string, number>();
@@ -45,45 +40,13 @@ function entropy(text: string): number {
   return bits;
 }
 
-/**
- * How broken up a hyphenated string is, judged on the whole string: the runs of a word (`Instruct`, `Seek`), capitals
- * (`OSS`) or digits (`120`) its pieces split into, per character. Model names and hyphenated words read as a few long
- * runs (`GPT-OSS-120B-Instruct` 0.28, `DeepSeek-V4-Flash-Free2` 0.35); a random credential changes case and digits
- * almost every character however short its pieces are (`Zq81mN0-pL4kTx7-Rw2Vb9Y` over 0.6).
- */
-function brokenUp(text: string): number {
-  let runs = 0;
-  let length = 0;
-  for (const piece of text.split('-')) {
-    length += piece.length;
-    runs +=
-      piece.match(/[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+|[^A-Za-z0-9]/gu)?.length ??
-      0;
-  }
-  return length ? runs / length : 0;
-}
-
-/**
- * Whether a string looks like a random credential: upper case, lower case and digits mixed (not a hex hash or a
- * lower-case UUID), varied, judged on the whole string. One with hyphens must also be broken up as random text is
- * (`brokenUp`), so model names (`GPT-OSS-120B-Instruct`, `claude-sonnet-4-5-20250929`) stay, whatever the length of
- * its pieces.
- */
-function looksRandom(text: string): boolean {
-  return (
-    mixed(text) &&
-    !text.includes(REDACTED) &&
-    entropy(text) >= 3.5 &&
-    (!text.includes('-') || brokenUp(text) >= 0.4)
-  );
-}
-
 /** `message` with the credentials it may quote replaced by `[REDACTED]`. */
 export function redactFailureMessage(message: string): string {
   let out = message;
   for (const [pattern, replacement] of RULES)
     out = out.replace(pattern, replacement);
+  // A standalone identifier can look like a credential. Apply the threshold to the whole match.
   return out.replace(CANDIDATE, (candidate) =>
-    looksRandom(candidate) ? REDACTED : candidate,
+    entropy(candidate) >= 3.5 ? REDACTED : candidate,
   );
 }
