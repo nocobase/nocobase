@@ -18,6 +18,7 @@ Signatures below are extracted from declaration output. Generic parameters, over
 | [DirectoryCollectionMetadataStoreConfig](#directorycollectionmetadatastoreconfig) | `@nocobase/db` type  |
 | [SchemaManagementMode](#schemamanagementmode)                                     | `@nocobase/db` type  |
 | [SchemaManagementNotAllowedError](#schemamanagementnotallowederror)               | `@nocobase/db` value |
+| [isUniqueConstraintViolation](#isuniqueconstraintviolation)                       | `@nocobase/db` value |
 
 ## AnyConnectionConfig
 
@@ -311,4 +312,17 @@ export declare class SchemaManagementNotAllowedError extends Error {
   readonly code: 'SCHEMA_MANAGEMENT_NOT_ALLOWED';
   constructor(connection: string, operation: string);
 }
+```
+
+## isUniqueConstraintViolation
+
+[Source](../../../src/database/unique-constraint.ts)
+
+Import: `import { isUniqueConstraintViolation } from '@nocobase/db'`.
+
+Recognize driver unique-key errors, including wrapped causes, without matching messages.
+
+```ts
+/** Recognize driver unique-key errors, including wrapped causes, without matching messages. */
+export declare function isUniqueConstraintViolation(error: unknown): boolean;
 ```

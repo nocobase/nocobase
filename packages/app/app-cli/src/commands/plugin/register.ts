@@ -16,6 +16,7 @@ import type { ManualServerPluginEdit } from '../../lib/server-plugins.ts';
 import {
   applyPluginRegistration,
   planPluginRegistration,
+  planPluginUnregistration,
   pluginPackageName,
   type PluginRegistrationPlan,
 } from '../../lib/plugin-registration.ts';
@@ -28,12 +29,15 @@ import {
   type PluginCommandIssue,
   type PluginPlanJson,
 } from '../../lib/plugin-json.ts';
+import { checkRetainedPluginReferences } from '../../lib/plugin-references.ts';
 import { runAttached, runCommand } from '../../lib/run-command.ts';
 import { resolveAppRoot } from '../../lib/workspace-app.ts';
 import {
   applySkillsSync,
   formatSkillsSyncSummary,
   planSkillsSync,
+  readAppPackage,
+  resolveRegisteredPluginNames,
   type SkillsSyncPlan,
 } from '../../lib/skills-sync.ts';
 
@@ -74,7 +78,7 @@ export interface PluginRegisterPlanResult {
   readonly plan: PluginPlanJson<PluginRegistrationPlan>;
   /** The Skills copied, or planned in a dry run; absent when copying them failed. */
   readonly skills?: SkillsSyncPlan | PluginRegisterSkillsSkipped;
-  /** Commands a dry run would still run; always empty, because the plugin is already installed. */
+  /** Package manager commands the registration would execute. */
   readonly commands?: readonly PluginCommandInvocation[];
   readonly issues?: readonly PluginCommandIssue[];
 }
@@ -88,7 +92,7 @@ export default class PluginRegister extends AppCommand {
   static override summary =
     'Install a plugin and wire it into this application.';
   static override description =
-    'Adds the plugin package to dependencies, wires its exported client and server entries into the explicit application composition roots, and copies the skills it ships into .agents/skills.';
+    'Installs a plugin, registers its exported client, server and CLI contributions, and synchronizes its Skills. Use --disabled to preinstall it as a development dependency with its Skills.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %> audit-log',
@@ -136,7 +140,7 @@ export default class PluginRegister extends AppCommand {
     disabled: Flags.boolean({
       default: false,
       description:
-        'Install the plugin without adding client or server entries.',
+        'Preinstall as a development dependency, synchronize Skills and leave all runtime entries unregistered.',
     }),
     'no-install': Flags.boolean({
       default: false,
@@ -183,16 +187,38 @@ export default class PluginRegister extends AppCommand {
     const dryRun = flags['dry-run'];
     const packageName = pluginPackageName(name);
 
+    if (
+      flags.disabled &&
+      (await resolveRegisteredPluginNames(appRoot)).includes(packageName)
+    ) {
+      throw pluginError(
+        `${packageName} is registered. Run plugin unregister to keep it preinstalled.`,
+      );
+    }
+    if (
+      flags.disabled &&
+      Object.hasOwn(
+        (await readAppPackage(appRoot)).dependencies ?? {},
+        packageName,
+      )
+    ) {
+      await checkRetainedPluginReferences(
+        appRoot,
+        await planPluginUnregistration({ appRoot, packageName }),
+      );
+    }
     const installed = await this.install({
+      development: flags.disabled,
       appRoot,
       dryRun,
       packageName,
       skipInstall: flags['no-install'],
       version:
         flags.version ??
+        (await declaredDependencyRange(appRoot, packageName)) ??
         (flags['workspace-root'] === undefined ? undefined : 'workspace:^'),
     });
-    if (typeof installed !== 'string') {
+    if (!('directory' in installed)) {
       // Only a dry run stops here, and a dry run changes nothing.
       this.setStatus('success-noop');
       return installed;
@@ -203,10 +229,10 @@ export default class PluginRegister extends AppCommand {
       dependencyRange: await this.dependencyRange(appRoot, packageName),
       enabled: !flags.disabled,
       packageName,
-      pluginDirectory: installed,
+      pluginDirectory: installed.directory,
     });
 
-    if (!plan.changed) {
+    if (!plan.changed && !flags.disabled) {
       this.setStatus('success-noop');
       this.log(`${packageName} is already registered.`);
       return {
@@ -229,7 +255,7 @@ export default class PluginRegister extends AppCommand {
       : await planSkillsSync({
           appPackageName: packageName,
           appRoot,
-          plugins: [{ packageName, pluginDirectory: installed }],
+          plugins: [{ packageName, pluginDirectory: installed.directory }],
         });
     const skipped: PluginRegisterSkillsSkipped = {
       skipped: true,
@@ -245,7 +271,7 @@ export default class PluginRegister extends AppCommand {
         packageName,
         plan: pluginPlanForJson(plan),
         skills: skillsPlan ?? skipped,
-        commands: [],
+        commands: installed.commands,
       };
     }
 
@@ -304,14 +330,19 @@ export default class PluginRegister extends AppCommand {
     dryRun,
     packageName,
     skipInstall,
+    development,
     version,
   }: {
     appRoot: string;
     dryRun: boolean;
     packageName: string;
     skipInstall: boolean;
+    development: boolean;
     version?: string;
-  }): Promise<string | PluginRegisterInstallRequiredResult> {
+  }): Promise<
+    | { directory: string; commands: PluginCommandInvocation[] }
+    | PluginRegisterInstallRequiredResult
+  > {
     const existing = await installedPluginDirectory(appRoot, packageName);
     if (skipInstall) {
       if (existing === undefined) {
@@ -319,7 +350,7 @@ export default class PluginRegister extends AppCommand {
           `${packageName} is not installed in ${appRoot} and --no-install was given.`,
         );
       }
-      return existing;
+      return { directory: existing, commands: [] };
     }
 
     const range =
@@ -329,6 +360,7 @@ export default class PluginRegister extends AppCommand {
     const { args, packageManager } = addDependencyCommand(
       await appPackageManager(appRoot),
       specifier,
+      development,
     );
 
     if (dryRun) {
@@ -349,7 +381,10 @@ export default class PluginRegister extends AppCommand {
           ],
         };
       }
-      return existing;
+      return {
+        directory: existing,
+        commands: [{ command: packageManager, args, cwd: appRoot }],
+      };
     }
 
     this.log(`${packageManager} ${args.join(' ')}`);
@@ -375,7 +410,7 @@ export default class PluginRegister extends AppCommand {
         `${packageManager} reported success but ${packageName} is not in node_modules.`,
       );
     }
-    return directory;
+    return { directory, commands: [] };
   }
 
   private describe(

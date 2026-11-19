@@ -295,7 +295,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
     if (state.stopping) throw conflict('OnlineAgent is stopping.');
     const text = userText(messages, input);
     credentials(this.context);
-    if (input?.overrides || input?.agentId)
+    if (input?.overrides || input?.agentId || input?.runnerId)
       throw invalid('Queued messages keep the configuration of the work.');
     // A first message still being admitted is the work this one joins.
     while (state.admitting.has(this.sessionId))
@@ -394,6 +394,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
         this.sessionId,
         {
           agentId: input?.agentId,
+          runnerId: input?.runnerId,
           effort: input?.effort,
           content: text,
           attachmentIds: input?.attachmentIds?.[0],
@@ -1111,7 +1112,12 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
               type: 'file',
               url: part.url,
               mediaType: part.mediaType,
-              ...(part.filename ? { filename: part.filename } : {}),
+              // The SDK retains provider metadata on streamed file parts, but drops filename.
+              ...(part.filename
+                ? {
+                    providerMetadata: { nocobase: { filename: part.filename } },
+                  }
+                : {}),
             });
           if (part.type !== 'text' && part.type !== 'reasoning')
             execution.published.add(source.partId);

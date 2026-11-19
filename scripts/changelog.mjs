@@ -1,27 +1,33 @@
-// Writes a v3 release's section of the root CHANGELOG.md and CHANGELOG.zh-CN.md from the descriptions of the pull
-// requests it contains: the type checked in each PR template, the module named by the title's scope
-// (`changelog-scopes.json`) and the English and Chinese changelog sentences, rendered like nocobase v2's and Studio's
-// release notes. The release workflows run it while preparing the release commit, so the section is committed with the
-// versions; v3-github-release.yml later reads the English section back out of the tagged commit for the GitHub Release.
+// Writes a v3 release's section of the root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md from the
+// descriptions of the pull requests it contains: the type checked in each PR template, the module named by the title's
+// scope (`changelog-scopes.json`) and the English, Chinese and Japanese changelog sentences, rendered like nocobase
+// v2's and Studio's release notes. A pull request merged before the template asked for Japanese, or one whose Japanese
+// sentence is missing, is listed in CHANGELOG.ja-JP.md with its English sentence. The release workflows run it while
+// preparing the release commit, so the section is committed with the versions; v3-github-release.yml later reads the
+// English section back out of the tagged commit for the GitHub Release.
 // Everything that decides what the section says is an exported pure function, so tests need neither git nor gh.
 //
-// Which pull requests a release contains:
-//   - beta (`nocobase-v3-beta/<batch>`, or legacy `release-beta/<batch>`): changes since the previous beta. Release
-//     commits never reach v3-develop (their pull request is squashed), so the range starts at the merge base of the previous
-//     beta tag and the release source rather than at the tag itself.
-//   - stable (`release/<batch>`): those merged into the release source since the previous stable release in the same
-//     way, which covers direct patches, plus every pull request the betas listed in CHANGELOG.md that no stable section
-//     lists yet. A promotion reaches v3-main as one squashed commit, so the betas' sections, carried along with it, are
-//     what records which pull requests it brings.
+// Which pull requests a release contains, the commits from the previous release to the release source:
+//   - beta (`nocobase-v3-beta/<batch>`, or legacy `release-beta/<batch>`): changes since the previous beta.
+//   - stable (`nocobase-v3/<batch>`, or `release/<batch>`, the name nocobase/nocobase3-pro's stable releases keep):
+//     changes since the previous stable release, or, for the first stable release, since the last beta, so it lists
+//     what is new since then instead of the whole beta history again.
+// Both channels are released from the same branch. The range starts at the merge base of the previous release's tag
+// and the release source rather than at the tag itself, because releases merged back with a squash left their tagged
+// commit outside the branch; for those merged back with a merge commit, the merge base is the tag.
 //
 // Usage:
 //   node scripts/changelog.mjs --tag <aggregate tag> --repo nocobase/nocobase [--root <dir>] [--head <ref>]
-//     [--from <ref>] [--out-dir <dir>]
+//     [--from <ref>] [--scopes <file>] [--out-dir <dir>]
 //
 // `--root` (default `.`) is the checkout whose changelogs are written; `--head` (default HEAD) ends the range and
-// `--from` overrides where it starts. The tag need not exist yet. With `--out-dir` it also writes
-// `release-notes.en.md`, `release-notes.zh-CN.md` and `missing.json` there. Exits 0 once the changelogs are written,
-// even when pull requests are missing from them; non-zero only on bad usage or a git/gh failure.
+// `--from` overrides where it starts. `--scopes` names a JSON file of more modules,
+// `{ "<scope>": { "en", "zh", "ja" } }`, merged over `changelog-scopes.json`: nocobase/nocobase3-pro's release workflows
+// pass its own `scripts/changelog-scopes.json`, so Pro's modules have names while the scopes it shares with NocoBase 3
+// keep theirs. The tag need not exist yet. With `--out-dir` it also writes
+// `release-notes.en.md`, `release-notes.zh-CN.md`, `release-notes.ja-JP.md` and `missing.json` there. Exits 0 once the
+// changelogs are written, even when pull requests are missing from them; non-zero only on bad usage or a git/gh
+// failure.
 import { execFile, execFileSync } from 'node:child_process';
 import {
   appendFileSync,
@@ -36,32 +42,57 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { parseArgs } from 'node:util';
 
-import { moduleOf, parsePullRequest } from './pr-body.mjs';
+import scopes from './changelog-scopes.json' with { type: 'json' };
+import {
+  LANGUAGES,
+  moduleOf,
+  parsePullRequest,
+  PLACEHOLDER,
+} from './pr-body.mjs';
 
 /** Section titles of the PR types that reach the changelog, in order. `Others` never does. */
 export const TYPE_TITLES = {
-  'New feature': { en: '🎉 New Features', zh: '🎉 新特性' },
-  Improvement: { en: '🚀 Improvements', zh: '🚀 优化' },
-  'Bug fix': { en: '🐛 Bug Fixes', zh: '🐛 修复' },
+  'New feature': { en: '🎉 New Features', zh: '🎉 新特性', ja: '🎉 新機能' },
+  Improvement: { en: '🚀 Improvements', zh: '🚀 优化', ja: '🚀 改善' },
+  'Bug fix': { en: '🐛 Bug Fixes', zh: '🐛 修复', ja: '🐛 不具合修正' },
 };
 
-const EMPTY = { en: 'No user-facing changes.', zh: '没有面向用户的变更。' };
+/** What a release's section says when it has no user-facing changes. */
+export const EMPTY = {
+  en: 'No user-facing changes.',
+  zh: '没有面向用户的变更。',
+  ja: 'ユーザー向けの変更はありません。',
+};
 
-export const CHANGELOG_FILES = { en: 'CHANGELOG.md', zh: 'CHANGELOG.zh-CN.md' };
+/** The locale of each language, which names its changelog and release notes files. */
+const LOCALES = { en: 'en', zh: 'zh-CN', ja: 'ja-JP' };
+
+export const CHANGELOG_FILES = {
+  en: 'CHANGELOG.md',
+  zh: 'CHANGELOG.zh-CN.md',
+  ja: 'CHANGELOG.ja-JP.md',
+};
 
 export const CHANGELOG_HEADERS = {
   en: `# Changelog
 
-All notable changes to NocoBase 3 are documented in this file, one section per release: \`nocobase-v3-beta/<date>.<n>\` for a beta and \`release/<date>.<n>\` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+All notable changes to NocoBase 3 are documented in this file, one section per release: \`nocobase-v3-beta/<date>.<n>\` for a beta and \`nocobase-v3/<date>.<n>\` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 `,
   zh: `# 更新日志
 
-本文件记录 NocoBase 3 的所有重要变更，每次发布一节：\`nocobase-v3-beta/<日期>.<序号>\` 是预览版，\`release/<日期>.<序号>\` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+本文件记录 NocoBase 3 的所有重要变更，每次发布一节：\`nocobase-v3-beta/<日期>.<序号>\` 是预览版，\`nocobase-v3/<日期>.<序号>\` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+`,
+  ja: `# 変更履歴
+
+このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。\`nocobase-v3-beta/<日付>.<連番>\` はベータ版、\`nocobase-v3/<日付>.<連番>\` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 `,
 };
 
 const AGGREGATE =
-  /^(nocobase-v3-beta|release(?:-beta)?)\/(\d{4}-\d{2}-\d{2})\.(\d+)$/u;
+  /^(nocobase-v3(?:-beta)?|release(?:-beta)?)\/(\d{4}-\d{2}-\d{2})\.(\d+)$/u;
+
+/** The stable prefixes; every other aggregate prefix is a beta. */
+const STABLE_PREFIXES = new Set(['nocobase-v3', 'release']);
 
 /**
  * Parses an aggregate release tag.
@@ -73,7 +104,7 @@ export function parseTag(tag) {
   if (!match) return null;
   return {
     prefix: match[1],
-    channel: match[1] === 'release' ? 'stable' : 'beta',
+    channel: STABLE_PREFIXES.has(match[1]) ? 'stable' : 'beta',
     date: match[2],
     sequence: Number(match[3]),
   };
@@ -81,7 +112,8 @@ export function parseTag(tag) {
 
 /**
  * The previous release of `tag` in its channel: the latest tag among `tags` in the same channel whose batch comes
- * before `tag`'s. `tag` itself need not be among them.
+ * before `tag`'s. A stable release without an earlier stable one, the first after the betas, follows the latest earlier
+ * beta instead, so its section starts where the betas' sections end. `tag` itself need not be among them.
  * @param {string[]} tags
  * @param {string} tag
  * @returns {string | null}
@@ -91,18 +123,23 @@ export function selectPreviousTag(tags, tag) {
   if (!current) return null;
   const before = (a, b) =>
     a.date === b.date ? a.sequence < b.sequence : a.date < b.date;
-  let best = null;
-  let bestParsed = null;
-  for (const candidate of tags) {
-    const parsed = parseTag(candidate);
-    if (!parsed || parsed.channel !== current.channel) continue;
-    if (!before(parsed, current)) continue;
-    if (!bestParsed || before(bestParsed, parsed)) {
-      best = candidate;
-      bestParsed = parsed;
+  const latest = (channel) => {
+    let best = null;
+    let bestParsed = null;
+    for (const candidate of tags) {
+      const parsed = parseTag(candidate);
+      if (!parsed || parsed.channel !== channel) continue;
+      if (!before(parsed, current)) continue;
+      if (!bestParsed || before(bestParsed, parsed)) {
+        best = candidate;
+        bestParsed = parsed;
+      }
     }
-  }
-  return best;
+    return best;
+  };
+  const previous = latest(current.channel);
+  if (previous || current.channel === 'beta') return previous;
+  return latest('beta');
 }
 
 /**
@@ -176,41 +213,19 @@ export function parseChangelogSections(content) {
 }
 
 /**
- * The pull requests the beta sections of a changelog list that no stable section lists yet, in file order.
- * @param {string | null} content
- * @returns {number[]}
- */
-export function pendingBetaPullRequests(content) {
-  if (!content) return [];
-  const sections = parseChangelogSections(content);
-  const released = new Set(
-    sections
-      .filter((section) => parseTag(section.tag)?.channel === 'stable')
-      .flatMap((section) => section.pullRequests),
-  );
-  const pending = new Set();
-  for (const section of sections) {
-    if (parseTag(section.tag)?.channel !== 'beta') continue;
-    for (const number of section.pullRequests) {
-      if (!released.has(number)) pending.add(number);
-    }
-  }
-  return [...pending];
-}
-
-/**
- * @typedef {{ number: number, title: string, body?: string | null, url: string, author?: { login?: string } | null,
- *   headRefName?: string }} PullRequest
- * @typedef {{ number: number, url: string, author: string, type: string, module: { en: string, zh: string },
- *   changelog: { en: string, zh: string } }} Entry
+ * @typedef {{ number: number, title: string, body?: string | null, url: string, headRefName?: string }} PullRequest
+ * @typedef {'en' | 'zh' | 'ja'} Language
+ * @typedef {{ number: number, url: string, type: string, module: Record<Language, string>,
+ *   changelog: Record<Language, string> }} Entry
  * @typedef {{ number: number, title: string, url: string, reason: string }} Missing
  */
 
 /**
  * Sorts pull requests into changelog entries and the ones whose description could not be used. Release PRs and
- * `Others` PRs are skipped.
+ * `Others` PRs are skipped. The Japanese sentence is not required here: without one, the entry uses its English
+ * sentence, so pull requests merged before the template asked for Japanese still reach the changelog.
  * @param {PullRequest[]} pullRequests
- * @param {Record<string, { en: string, zh: string }>} [scopeMap]
+ * @param {Record<string, Record<Language, string>>} [scopeMap]
  * @returns {{ entries: Entry[], missing: Missing[] }}
  */
 export function collectEntries(pullRequests, scopeMap) {
@@ -223,7 +238,7 @@ export function collectEntries(pullRequests, scopeMap) {
     const { number, title, url } = pullRequest;
     const parsed = parsePullRequest(
       { title, body: pullRequest.body ?? '' },
-      scopeMap ? { scopes: scopeMap } : {},
+      { ...(scopeMap ? { scopes: scopeMap } : {}), languages: ['en', 'zh'] },
     );
     if (!parsed.type || parsed.errors.length) {
       missing.push({
@@ -238,20 +253,45 @@ export function collectEntries(pullRequests, scopeMap) {
     entries.push({
       number,
       url,
-      author: pullRequest.author?.login ?? 'ghost',
       type: parsed.type,
       module: moduleOf(parsed.scope, scopeMap),
-      changelog: parsed.changelog,
+      changelog: {
+        ...parsed.changelog,
+        ja:
+          parsed.changelog.ja && !PLACEHOLDER.test(parsed.changelog.ja)
+            ? parsed.changelog.ja
+            : parsed.changelog.en,
+      },
     });
   }
   return { entries, missing };
 }
 
 /**
+ * `changelog-scopes.json` with the modules of a `--scopes` file merged over it.
+ * @param {unknown} extra the parsed file
+ * @returns {Record<string, Record<Language, string>>}
+ * @throws {Error} when the file is not an object of scopes naming their module in every language
+ */
+export function mergeScopes(extra) {
+  if (!extra || typeof extra !== 'object' || Array.isArray(extra))
+    throw new Error('The scopes file must hold a JSON object.');
+  for (const [scope, names] of Object.entries(extra)) {
+    if (!/^[a-z0-9-]+$/u.test(scope))
+      throw new Error(`The scope "${scope}" is not lowercase kebab-case.`);
+    for (const { key } of LANGUAGES) {
+      if (typeof names?.[key] !== 'string' || !names[key])
+        throw new Error(`The scope "${scope}" has no ${key} module name.`);
+    }
+  }
+  return { ...scopes, ...extra };
+}
+
+/**
  * Renders a release's changelog in one language, without its heading: a section per type, a bullet per module (its
  * entries nested when there are several), as nocobase v2's changelog does.
  * @param {{ entries: Entry[] }} collected
- * @param {'en' | 'zh'} language
+ * @param {Language} language
  * @returns {string}
  */
 export function renderNotes({ entries }, language) {
@@ -266,7 +306,7 @@ export function renderNotes({ entries }, language) {
       modules
         .get(name)
         .push(
-          `${entry.changelog[language]} ([#${entry.number}](${entry.url})) by @${entry.author}`,
+          `${entry.changelog[language]} ([#${entry.number}](${entry.url}))`,
         );
     }
     if (!modules.size) continue;
@@ -284,7 +324,7 @@ export function renderNotes({ entries }, language) {
  * Prepends a release section to a changelog's content, creating the file's header when there is no content yet. New
  * sections go before the first `## ` heading, so whatever header the file already has stays on top.
  * @param {string | null} content the current file, or `null` when it does not exist
- * @param {{ tag: string, repo: string, notes: string, language: 'en' | 'zh' }} release
+ * @param {{ tag: string, repo: string, notes: string, language: Language }} release
  * @returns {string | null} the new content, or `null` when the tag is already present
  */
 export function prependChangelog(content, { tag, repo, notes, language }) {
@@ -344,7 +384,7 @@ async function viewPullRequest(number, repo) {
     '--repo',
     repo,
     '--json',
-    'number,title,body,author,url,headRefName',
+    'number,title,body,url,headRefName',
   ];
   for (let attempt = 1; ; attempt += 1) {
     try {
@@ -389,6 +429,7 @@ function options(argv) {
       root: { type: 'string', default: '.' },
       head: { type: 'string', default: 'HEAD' },
       from: { type: 'string' },
+      scopes: { type: 'string' },
       'out-dir': { type: 'string' },
     },
   });
@@ -397,18 +438,18 @@ function options(argv) {
   }
   if (!parseTag(values.tag))
     throw new UsageError(
-      '--tag must be nocobase-v3-beta/<date>.<n>, release-beta/<date>.<n> or release/<date>.<n>.',
+      '--tag must be nocobase-v3/<date>.<n>, nocobase-v3-beta/<date>.<n>, release-beta/<date>.<n> or release/<date>.<n>.',
     );
   if (!/^[\w.-]+\/[\w.-]+$/u.test(values.repo))
     throw new UsageError('--repo must be owner/name.');
   return values;
 }
 
-function summary({ tag, from, collected, carried }) {
+function summary({ tag, from, collected }) {
   const lines = [
     `### Changelog for \`${tag}\``,
     '',
-    `${collected.entries.length} entries${from ? ` since \`${from}\`` : ''}${carried ? `, ${carried} pull requests carried from the betas` : ''}.`,
+    `${collected.entries.length} entries since \`${from}\`.`,
   ];
   if (collected.missing.length) {
     lines.push(
@@ -426,7 +467,6 @@ async function main(argv) {
   const values = options(argv);
   const { tag, repo } = values;
   const root = path.resolve(values.root);
-  const channel = parseTag(tag).channel;
   const head = git(
     ['rev-parse', '--verify', `${values.head}^{commit}`],
     root,
@@ -435,7 +475,14 @@ async function main(argv) {
   let from = values.from ?? null;
   if (!from) {
     const tags = git(
-      ['tag', '--list', 'release/*', 'release-beta/*', 'nocobase-v3-beta/*'],
+      [
+        'tag',
+        '--list',
+        'nocobase-v3/*',
+        'nocobase-v3-beta/*',
+        'release/*',
+        'release-beta/*',
+      ],
       root,
     )
       .split('\n')
@@ -443,21 +490,17 @@ async function main(argv) {
     const previous = selectPreviousTag(tags, tag);
     if (previous) {
       from = git(['merge-base', `refs/tags/${previous}`, head], root).trim();
-      console.log(`Previous ${channel} release: ${previous} (from ${from}).`);
-    } else if (channel === 'beta') {
-      throw new Error(`No beta release before ${tag}; pass --from.`);
-    } else {
       console.log(
-        'No earlier stable release: only the pull requests the betas listed are included.',
+        `Previous ${parseTag(previous).channel} release: ${previous} (from ${from}).`,
       );
+    } else {
+      throw new Error(`No release before ${tag}; pass --from.`);
     }
   }
 
-  const subjects = from
-    ? git(['log', `${from}..${head}`, '--format=%s'], root)
-        .split('\n')
-        .filter(Boolean)
-    : [];
+  const subjects = git(['log', `${from}..${head}`, '--format=%s'], root)
+    .split('\n')
+    .filter(Boolean);
   const numbers = extractPullRequestNumbers(subjects);
   console.log(`${subjects.length} commits, ${numbers.length} pull requests.`);
 
@@ -467,27 +510,17 @@ async function main(argv) {
       path.join(root, name),
     ]),
   );
-  let carried = 0;
-  if (channel === 'stable') {
-    const content = existsSync(files.en)
-      ? readFileSync(files.en, 'utf8')
-      : null;
-    for (const number of pendingBetaPullRequests(content)) {
-      if (numbers.includes(number)) continue;
-      numbers.push(number);
-      carried += 1;
-    }
-    console.log(`${carried} pull requests carried from the beta sections.`);
-  }
-
   const pullRequests = await viewPullRequests(numbers, repo);
-  const collected = collectEntries(pullRequests);
-  const notes = {
-    en: renderNotes(collected, 'en'),
-    zh: renderNotes(collected, 'zh'),
-  };
+  const scopeMap = values.scopes
+    ? mergeScopes(JSON.parse(readFileSync(values.scopes, 'utf8')))
+    : undefined;
+  const collected = collectEntries(pullRequests, scopeMap);
+  const languages = /** @type {Language[]} */ (Object.keys(CHANGELOG_FILES));
+  const notes = Object.fromEntries(
+    languages.map((language) => [language, renderNotes(collected, language)]),
+  );
 
-  for (const language of /** @type {const} */ (['en', 'zh'])) {
+  for (const language of languages) {
     const file = files[language];
     const content = existsSync(file) ? readFileSync(file, 'utf8') : null;
     const next = prependChangelog(content, {
@@ -503,8 +536,12 @@ async function main(argv) {
   if (values['out-dir']) {
     const outDir = path.resolve(values['out-dir']);
     mkdirSync(outDir, { recursive: true });
-    writeFileSync(path.join(outDir, 'release-notes.en.md'), notes.en);
-    writeFileSync(path.join(outDir, 'release-notes.zh-CN.md'), notes.zh);
+    for (const language of languages) {
+      writeFileSync(
+        path.join(outDir, `release-notes.${LOCALES[language]}.md`),
+        notes[language],
+      );
+    }
     writeFileSync(
       path.join(outDir, 'missing.json'),
       `${JSON.stringify(collected.missing, null, 2)}\n`,
@@ -522,7 +559,7 @@ async function main(argv) {
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(
       process.env.GITHUB_STEP_SUMMARY,
-      summary({ tag, from, collected, carried }),
+      summary({ tag, from, collected }),
     );
   }
   const skipped = pullRequests.filter(isReleasePullRequest).length;
@@ -541,7 +578,7 @@ if (
       String(error.code).startsWith('ERR_PARSE_ARGS')
     ) {
       console.error(
-        `${error.message}\nUsage: node scripts/changelog.mjs --tag <aggregate tag> --repo <owner/name> [--root <dir>] [--head <ref>] [--from <ref>] [--out-dir <dir>]`,
+        `${error.message}\nUsage: node scripts/changelog.mjs --tag <aggregate tag> --repo <owner/name> [--root <dir>] [--head <ref>] [--from <ref>] [--scopes <file>] [--out-dir <dir>]`,
       );
       process.exitCode = 2;
     } else {

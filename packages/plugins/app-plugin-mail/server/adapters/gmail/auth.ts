@@ -1,3 +1,4 @@
+import { diagnosticFetch, type MailFetch } from '../../diagnostic-fetch.js';
 import type {
   MailAuthorizedAccount,
   MailProviderAuthorization,
@@ -17,6 +18,7 @@ import type {
 import { DEFAULT_SCOPES } from './constants.js';
 import {
   gmailRequest,
+  responseError,
   fetchWithTimeout,
   parseRetryAfter,
   readJson,
@@ -60,6 +62,27 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
       };
     },
     async complete(context, config, input) {
+      const fetcher: MailFetch = (url, init) =>
+        diagnosticFetch(fetchWithTimeout, url, init, {
+          logger: context.logger,
+          provider: 'gmail',
+          stage: 'auth',
+          classifyResponse: async (response) =>
+            init?.body instanceof URLSearchParams
+              ? tokenEndpointError(
+                  'GMAIL',
+                  response,
+                  await readJson(response),
+                  'Mail OAuth request failed.',
+                )
+              : responseError('GMAIL', response),
+          secrets: [
+            config.clientSecret,
+            input.code,
+            input.codeVerifier,
+            input.state,
+          ],
+        });
       const token = await exchangeToken(
         config,
         {
@@ -71,6 +94,7 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           grant_type: 'authorization_code',
         },
         input.signal,
+        fetcher,
       );
       if (!token.ok) return token;
       if (!token.value.refresh_token) {
@@ -106,6 +130,7 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           required(token.value.access_token, 'Gmail access token'),
           '/users/me/profile',
           { signal: input.signal },
+          fetcher,
         );
         if (!profile.ok) {
           await context.credentials.delete(credentialReference);
@@ -131,6 +156,7 @@ export function createAuthorization(): MailProviderAuthorization<GmailMailProvid
           required(token.value.access_token, 'Gmail access token'),
           '/users/me/settings/sendAs',
           { signal: input.signal },
+          fetcher,
         );
         const identities = aliases.ok
           ? (aliases.value.sendAs ?? []).flatMap((alias) =>
@@ -181,9 +207,10 @@ export async function exchangeToken(
   config: GmailMailProviderConfig,
   body: Record<string, string>,
   signal?: AbortSignal,
+  fetcher: MailFetch = fetchWithTimeout,
 ): Promise<MailProviderResult<GmailTokenResponse>> {
   try {
-    const response = await fetchWithTimeout(
+    const response = await fetcher(
       config.tokenEndpoint ?? 'https://oauth2.googleapis.com/token',
       {
         method: 'POST',
@@ -238,7 +265,7 @@ export function required(value: string | undefined, label: string): string {
  * or has expired, means the account has to be reauthorized; a throttled request or a failure on the authorization
  * server's side does not, and is retried like any other Provider request.
  */
-function tokenEndpointError(
+export function tokenEndpointError(
   prefix: string,
   response: Response,
   value: { readonly error?: string; readonly error_description?: string },

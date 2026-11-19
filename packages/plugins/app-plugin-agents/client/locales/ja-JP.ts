@@ -591,6 +591,14 @@ const jaJP: LocaleResource<typeof enUS> = {
     pathHint:
       'runner は自身の PATH でコーディングツールを探します。which codex / which claude が動作するターミナルで nocobase-runner service install を再実行してサービスを再起動（または nocobase-runner start を再実行）し、正しい PATH を取得させてください。',
     quota: {
+      ceilingReached: '使用量のしきい値に到達',
+      ceilingLabel: '受付停止の使用率',
+      ceilingInput: '{{tool}} の新規作業を停止する使用率',
+      ceilingSave: '適用',
+      ceilingInvalid: '1～100 の整数を入力するか、空欄にしてください。',
+      ceilingPaused:
+        'いずれかの枠が上限に達しました。対象の新規作業はリセットまたは上限変更まで待機します。',
+
       workspaceStatus: {
         active: '仕事は続く',
         ended: '終了しました · クリーンアップは許可されました',
@@ -621,6 +629,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       workspaceSize: 'ワークスペースのサイズ: {{value}}',
       providers_one: '{{count}} プロバイダーがクォータに達しました',
       providers_other: '{{count}} プロバイダーがクォータに達しています',
+      models_one: '{{count}} モデルがクォータに達しています',
+      models_other: '{{count}} モデルがクォータに達しています',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'タスク / 会話',
         agent: 'エージェント',
@@ -663,7 +674,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         'クォータが回復したことを確認してからクリアしてください。{{target}} はすぐに仕事を受け取ります。クォータがまだ尽きている場合は、次の実行で再びマークされます。',
       observed: '最後に報告されたのは {{time}}',
       usedPercent: '{{percent}}% 使用',
-      ok: 'わかりました',
+      noUsage: '利用枠のデータはまだありません',
       hint: 'マークは既知のリセット時刻、またはツールがクォータの残りを再び報告したときに自動的に解除されます。手動でクリアするのはクォータの回復を確認してからにしてください。マークをクリアできるのは、実行環境の所有者と管理者だけです。',
     },
     workspaces: {
@@ -739,8 +750,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       offlineNever: 'オフライン',
     },
     toolUsage: {
-      label: 'コーディングツールで実行',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '同時 {{used}}/{{limit}}',
+      hint: '{{tool}} は同時に最大 {{limit}} 件まで実行、現在 {{used}} 件',
     },
     toolSlots: {
       label: 'コーディングツールごとの制限',
@@ -879,6 +890,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       show: 'バージョン {{version}}: 新しい実行環境が利用可能です',
       available: 'アップデートが利用可能',
       badge: 'アップグレード可能',
+      latest: '最新',
+      installed: 'バージョン {{version}}',
       title: '{{name}} の新しい実行環境',
       description:
         '{{version}} がインストールされており、このアプリケーションは {{latest}} を提供します。',

@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 /** Outcomes as toasts through the application's toaster, with failures worded by `lib/errors.ts`. */
 import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -26,6 +27,7 @@ export function useNotify(): Notify {
       error: (error) =>
         void toaster.show({
           type: 'error',
+          ...errorToastOptions(error),
           title: errorText(t, error, t('ui.errors.requestFailed')),
         }),
     }),

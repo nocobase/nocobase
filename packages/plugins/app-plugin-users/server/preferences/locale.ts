@@ -1,8 +1,8 @@
 import { BASE_LOCALE, type I18nRuntime, type Locale } from '@nocobase/i18n';
+import { USER_LOCALE_PREFERENCE_KEY } from '../../shared/preference-keys.js';
 import type { UserPreferencesService } from './service.js';
 
-/** Shared key for the person's explicit, durable language choice. */
-export const USER_LOCALE_PREFERENCE_KEY = 'i18n.locale';
+export { USER_LOCALE_PREFERENCE_KEY };
 
 /** Recipient language for jobs: never consults request headers or session state. */
 export async function resolveUserLocale(

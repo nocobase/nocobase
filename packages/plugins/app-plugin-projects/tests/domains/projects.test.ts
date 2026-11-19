@@ -11,6 +11,85 @@ beforeEach(async () => {
 afterEach(() => h.close());
 
 describe('projects', () => {
+  it('projects authorized references in one query with the same visibility and key scope as the list', async () => {
+    const open = await h.services.projects.create(h.viewer('lead'), {
+      name: 'Open',
+    });
+    const secret = await h.services.projects.create(h.viewer('lead'), {
+      name: 'Secret',
+      visibility: 'members',
+    });
+    await h.services.projects.addMember(h.viewer('lead'), secret.id, {
+      userId: 'bob',
+    });
+    const base = h.viewer('alice');
+    const viewers = [
+      base,
+      h.viewer('lead'),
+      h.viewer('bob'),
+      h.viewer('admin', 'admin'),
+      { ...base, projectIds: [] },
+      { ...h.viewer('bob'), projectIds: [open.id] },
+      {
+        ...base,
+        permissions: {
+          ...base.permissions,
+          scopes: {
+            ...base.permissions.scopes,
+            'pm.projects/view': { users: ['lead'] },
+          },
+        },
+      },
+      {
+        ...base,
+        permissions: {
+          ...base.permissions,
+          scopes: {
+            ...base.permissions.scopes,
+            'pm.projects/view': { users: [] },
+          },
+        },
+      },
+      {
+        ...base,
+        permissions: {
+          ...base.permissions,
+          scopes: {
+            ...base.permissions.scopes,
+            'pm.projects/view': 'none' as const,
+          },
+        },
+      },
+    ];
+    const client = await h.database.connection().client();
+    for (const viewer of viewers) {
+      const statements: string[] = [];
+      const capture = (query: { sql: string }) => statements.push(query.sql);
+      client.on('query', capture);
+      let refs;
+      try {
+        refs = await h.services.projects.references(viewer);
+      } finally {
+        client.off('query', capture);
+      }
+      expect(statements).toHaveLength(1);
+      const listed = await h.services.projects.list(viewer);
+      expect(
+        refs.map(({ id, name, leadUserId }) => ({ id, name, leadUserId })),
+      ).toEqual(
+        listed.map(({ id, name, leadUserId }) => ({ id, name, leadUserId })),
+      );
+      expect(
+        refs.every(
+          (project) =>
+            project.member ===
+            (viewer.userId === 'lead' ||
+              (viewer.userId === 'bob' && project.id === secret.id)),
+        ),
+      ).toBe(true);
+    }
+  });
+
   it('makes the creator lead and member unless another lead is named', async () => {
     const own = await h.services.projects.create(h.viewer('alice'), {
       name: 'Own',
@@ -46,6 +125,39 @@ describe('projects', () => {
     });
     release();
     expect(created).toEqual([{ projectId: led.id, creatorUserId: 'alice' }]);
+  });
+
+  it('announces a change of who may see a project', async () => {
+    const changed: string[] = [];
+    const release = h.services.events.on('project.changed', (event) => {
+      changed.push(event.projectId);
+    });
+    const project = await h.services.projects.create(h.viewer('lead'), {
+      name: 'Watched',
+    });
+    await h.services.projects.update(h.viewer('lead'), project.id, {
+      name: 'Renamed',
+    });
+    expect(changed).toEqual([]);
+    await h.services.projects.update(h.viewer('lead'), project.id, {
+      visibility: 'members',
+    });
+    await h.services.projects.addMember(h.viewer('lead'), project.id, {
+      userId: 'alice',
+    });
+    await h.services.projects.addMember(h.viewer('lead'), project.id, {
+      userId: 'alice',
+    });
+    await h.services.projects.update(h.viewer('lead'), project.id, {
+      leadUserId: 'alice',
+    });
+    await h.services.projects.removeMember(
+      h.viewer('alice'),
+      project.id,
+      'lead',
+    );
+    release();
+    expect(changed).toEqual([project.id, project.id, project.id, project.id]);
   });
 
   it('hides a private project from those who did not join it', async () => {

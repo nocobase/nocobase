@@ -52,6 +52,11 @@ export function flagRows(
   localFiles: boolean = true,
 ): HelpRow[] {
   const lines: HelpRow[] = [];
+  if (command.idempotency)
+    lines.push([
+      '--operation-key <key>',
+      'Reuse an operation key; otherwise generate one timestamp.UUID key (50 characters) after validation and confirmation. Framework mutation receipts accept it for 24 hours from its timestamp. Other services define their own retry window. Query status before retrying with the same parameters and file. A new invocation without the original key starts a new operation.',
+    ]);
   for (const parameter of command.parameters) {
     if (parameter.position !== undefined) continue;
     if (!localFiles && (parameter.in === 'file' || parameter.binary)) continue;

@@ -72,12 +72,6 @@ function suggestionsFor(reason: string, bin: string): CommandSuggestion[] {
       return [
         { message: `Sign in again with \`${bin} login --server <url>\`.` },
       ];
-    case 'PLAN_REQUIRED':
-      return [
-        {
-          message: `Propose an operation plan instead: \`${bin} plan create --file plan.json\`.`,
-        },
-      ];
     default:
       return [];
   }

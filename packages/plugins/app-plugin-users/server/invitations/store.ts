@@ -17,6 +17,8 @@ export interface InvitationRecord {
   readonly sendError: string | null;
   readonly acceptedUserId: string | null;
   readonly acceptedAt: string | null;
+  /** The email's language; null on invitations created before it was kept. */
+  readonly locale: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

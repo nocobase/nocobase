@@ -947,12 +947,19 @@ export class ManagedReconciler {
         }
       } catch (error) {
         deploymentFailure(error);
+        // A capacity refusal says nothing about the release: keep its expanded revision so the retry after a
+        // recycle, or after the Host restarts, reuses it by checksum instead of extracting it again. Revision
+        // pruning on the next accepted deployment still bounds what is left behind.
+        const keepArtifact =
+          deploymentErrorCode(error) === 'APP_CAPACITY_EXCEEDED';
         deploymentLog(
           'cleaning',
-          'Removing rejected artifact and configuration',
+          keepArtifact
+            ? 'Keeping expanded artifact for a capacity retry; removing rejected configuration'
+            : 'Removing rejected artifact and configuration',
           { err: error },
         );
-        await artifact.rollback();
+        if (!keepArtifact) await artifact.rollback();
         if (
           spec.config?.content !== undefined &&
           candidateConfigPath &&

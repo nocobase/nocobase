@@ -138,8 +138,10 @@ describe('capability guide page', () => {
       screen.getByRole('tab', { name: new RegExp(`^${en.sources.kernel}`) }),
     );
     await waitFor(() => expect(rows()).toHaveLength(3));
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      '/settings/capabilities?source=kernel',
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/settings/capabilities?source=kernel',
+      ),
     );
 
     fireEvent.change(screen.getByRole('searchbox'), {

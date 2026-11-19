@@ -60,12 +60,13 @@ const zhTW: LocaleResource<typeof enUS> = {
             all: '部署（全部）',
           },
           deployProtected: {
-            title: '批准受保護的部署',
-            description: '批准部署到沒有指定批准者的受保護環境；僅限人',
-            related: '批准受保護的部署（與其相關的部署）',
+            title: '部署至受保護環境',
+            description:
+              '未解析出環境審批人時，本人可審批申請，本人或其執行可直接部署',
+            related: '部署至受保護環境（與自己相關的）',
             relatedLabel: '我建立的',
             relatedHint: '我建立的應用程式，以及任何與我相關的應用程式',
-            all: '批准受保護的部署（全部）',
+            all: '部署至受保護環境（全部）',
           },
           operate: {
             title: '啟動與停止',
@@ -139,6 +140,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     apps: {
       title: '應用程式',
+      lastFailure: '上次失敗：{{detail}}',
       create: '建立應用程式',
       id: '應用程式 ID',
       name: '名稱',
@@ -708,6 +710,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '沒有顯示第一個管理員。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '讀取發佈套件時連續 {{seconds}} 秒未收到資料，部署未完成，請重試。',
+        artifactReadTotalTimeout:
+          '讀取發佈套件超過 {{seconds}} 秒，部署未完成，請重試。',
+        artifactReadTimeout: '讀取發佈套件逾時，部署未完成，請重試。',
         hostExited: '應用程式的程式在準備就緒之前停止。',
         hostDisabled: '應用程式主機已關閉。',
         hostShutDown: '應用程式主機已關閉。',
@@ -722,6 +729,14 @@ const zhTW: LocaleResource<typeof enUS> = {
         notReady: '還沒準備好；稍後再試。',
         checkTimeout: '測試未在 20 秒內完成。',
         hostNoSettings: '本機運作時不採用任何連線設定。',
+        recycleWait: '預覽服務正在回收記憶體，完成後繼續部署。',
+        recycleRetry: '預覽服務仍在回收記憶體，部署未完成。請稍後重試。',
+        capacityExceeded:
+          '預覽服務記憶體不足或執行中的應用程式已達上限，部署未完成。請稍後重試。',
+        replacementMemory:
+          '預覽服務記憶體不足，無法啟動新版本，目前版本繼續執行。請稍後重試。',
+        startQueueFull: '同時啟動的應用程式過多，請稍後重試。',
+        activeLimit: '執行中的應用程式已達上限，請稍後重試。',
       },
       prefixed: {
         startFailed: '啟動失敗：{{detail}}',

@@ -100,6 +100,7 @@ export function createFiles(container: ServiceContainer): ServerFileRepository {
     container.resolve(driveManagerToken),
   ).repository('attachments', {
     disk: 'local',
+    storagePrefix: 'contracts',
     accessPath: '/uploads/attachments',
     policy,
   });
@@ -110,7 +111,7 @@ export const columns: readonly FileColumn[] = FILE_COLUMNS;
 export const routes: ReturnType<typeof defineFileRepositoryApiRoutes> =
   defineFileRepositoryApiRoutes({
     repositories: [
-      { name: 'attachments', disk: 'local', policy, actions: { uploadOne: {} } },
+      { name: 'attachments', disk: 'local', storagePrefix: 'contracts', policy, actions: { uploadOne: {} } },
     ],
   });
 `,

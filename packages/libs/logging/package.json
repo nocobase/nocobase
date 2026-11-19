@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/logging",
-  "version": "0.1.0-beta.7",
+  "version": "0.1.0-beta.8",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -40,8 +40,7 @@
   },
   "dependencies": {
     "pino": "catalog:",
-    "pino-pretty": "catalog:",
-    "pino-roll": "catalog:"
+    "pino-pretty": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

@@ -16,6 +16,46 @@ import { appendJournal, readJournal, pruneJournals } from '../src/journal.js';
 import { normalizeFileOptions } from '../src/output.js';
 import { createLogging } from '../src/logging.js';
 const roots: string[] = [];
+it('按时间清理不展开受保护路径列表，也不对每份文件 resolve', async () => {
+  const root = await directory();
+  await Promise.all(
+    Array.from({ length: 20 }, (_, index) =>
+      writeFile(path.join(root, 'run-' + index + '.log'), 'fresh'),
+    ),
+  );
+  const resolve = vi.spyOn(path, 'resolve');
+  try {
+    await pruneJournals(root, { retentionDays: 7 }, undefined, {
+      retentionOnly: true,
+    });
+    expect(
+      resolve.mock.calls.filter(([directory]) => directory === root),
+    ).toHaveLength(0);
+    expect(await readdir(root)).toHaveLength(20);
+  } finally {
+    resolve.mockRestore();
+  }
+});
+it('按时间清理所有过期侧车，空文件不获通用豁免，单文件保护保持有效', async () => {
+  const root = await directory();
+  const names = [
+    'expired.stderr',
+    'expired-full.stderr',
+    'fresh.stderr',
+    'protected.stderr',
+  ];
+  for (const name of names)
+    await writeFile(
+      path.join(root, name),
+      name === 'expired-full.stderr' ? 'crash' : '',
+    );
+  for (const name of names.filter((name) => name !== 'fresh.stderr'))
+    await utimes(path.join(root, name), new Date(0), new Date(0));
+  await pruneJournals(root, { retentionDays: 7 }, 'protected.stderr', {
+    retentionOnly: true,
+  });
+  expect(await readdir(root)).toEqual(['fresh.stderr', 'protected.stderr']);
+});
 async function directory(): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'journal-'));
   roots.push(root);

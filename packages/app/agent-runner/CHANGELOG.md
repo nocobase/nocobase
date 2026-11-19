@@ -1,5 +1,56 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- 761fb01: Collect main runtime logs before run logs on the same date when exporting diagnostics.
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-cli-client@0.1.0-beta.23
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-cli-client@0.1.0-beta.22
+
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [1952789]
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.21
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 7d9c0a4: Preserve Claude rate-limit snapshots across independent quota windows and let runtime owners configure usage ceilings that pause new work without interrupting active runs.
+- ef0a081: Load Claude user settings for model discovery and user, project and local settings for conversations, including native provider authentication and model mappings.
+
 ## 0.1.0-beta.25
 
 ### Minor Changes

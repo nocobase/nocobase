@@ -3,6 +3,10 @@ import { MailError } from './services/errors.js';
 import { MailAccountRemovals } from './runtime/account-removals.js';
 import { MailBackgroundTasks } from './runtime/background-tasks.js';
 import { MailOutboxRelay } from './runtime/outbox-relay.js';
+import { MailImapIdle } from './runtime/imap-idle.js';
+import { mailPushTiming, type MailPushTiming } from './runtime/push-timing.js';
+import type { ImapSmtpMailProviderConfig } from './adapters/imap-smtp/config.js';
+import type { MailAccount } from '../shared/mail.js';
 import { MailPushSubscriptions } from './runtime/push-subscriptions.js';
 import { MailSyncScheduler } from './operations/schedule-sync.js';
 import { randomUUID } from 'node:crypto';
@@ -49,6 +53,9 @@ export interface MailRuntimeOptions {
   readonly syncBatchSize?: number;
   readonly outboundAttachments?: MailOutboundAttachmentStorage;
   readonly credentials?: MailCredentialVault;
+  readonly resolveImapConfig?: (
+    account: MailAccount,
+  ) => ImapSmtpMailProviderConfig;
   readonly pushWebhookUrl?: string;
   readonly pushWebhookSecret?: string;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
@@ -58,6 +65,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private readonly operation: SyncMailboxOperation;
   private readonly scheduler: MailSyncScheduler;
   private readonly subscriptions: MailPushSubscriptions;
+  private readonly imapIdle?: MailImapIdle;
   private readonly relay: MailOutboxRelay;
   private readonly removals: MailAccountRemovals;
   private removalPromise?: Promise<void>;
@@ -72,6 +80,14 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private closed = false;
 
   public constructor(private readonly options: MailRuntimeOptions) {
+    if (options.credentials && options.resolveImapConfig) {
+      this.imapIdle = new MailImapIdle({
+        credentials: options.credentials,
+        resolveConfig: options.resolveImapConfig,
+        schedulePushSync: (accountId) => this.schedulePushSync(accountId),
+        logger: options.logger,
+      });
+    }
     this.removals = new MailAccountRemovals(options);
     this.scheduler = new MailSyncScheduler(
       options.store,
@@ -206,6 +222,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private async sweepAccounts(): Promise<number> {
     let created = 0;
     const accounts = await this.options.store.listAllAccounts();
+    this.imapIdle?.reconcile(accounts);
     for (const account of accounts) {
       if (account.status !== 'active') continue;
       try {
@@ -282,20 +299,59 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     }
   }
 
-  public schedulePushSync(accountId: string): Promise<boolean> {
-    return this.tasks.run(() => this.activatePushSync(accountId), false);
+  public accountChanged(account: MailAccount): void {
+    if (this.closed) return;
+    this.imapIdle?.update(account);
   }
 
-  private async activatePushSync(accountId: string): Promise<boolean> {
+  public schedulePushSync(accountId: string): Promise<boolean> {
+    const timing = mailPushTiming.getStore();
+    return this.tasks.run(
+      () => this.activatePushSync(accountId, timing),
+      false,
+    );
+  }
+
+  private async activatePushSync(
+    accountId: string,
+    timing?: MailPushTiming,
+  ): Promise<boolean> {
+    const startedAt = Date.now();
     const account = await this.options.store.getAccount(accountId);
     if (!account || account.status !== 'active') return false;
     const requestToken = randomUUID();
     await this.options.store.markPushSyncPending(accountId, requestToken);
-    const created = await this.createSyncRun(accountId);
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: 'mail.sync.push_persisted',
+        accountId,
+        requestToken,
+        ...timing,
+        persistedAt: new Date().toISOString(),
+      },
+      'Mail push request persisted.',
+    );
+    const created = await this.createSyncRun(accountId, requestToken, timing);
     if (created) {
       await this.options.store.clearPushSyncPending(accountId, requestToken);
       this.kick();
     }
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: 'mail.sync.push_scheduled',
+        accountId,
+        requestToken,
+        ...timing,
+        created,
+        scheduledAt: new Date().toISOString(),
+        schedulingMs: Math.max(0, Date.now() - startedAt),
+      },
+      'Mail push scheduling finished.',
+    );
     return created;
   }
 
@@ -323,7 +379,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   ): Promise<void> {
     for (const account of accounts) {
       try {
-        if (await this.createSyncRun(account.id)) {
+        if (await this.createSyncRun(account.id, requestToken)) {
           await this.options.store.clearPushSyncPending(
             account.id,
             requestToken,
@@ -349,7 +405,11 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     }
   }
 
-  private async createSyncRun(accountId: string): Promise<boolean> {
+  private async createSyncRun(
+    accountId: string,
+    requestToken?: string,
+    timing?: MailPushTiming,
+  ): Promise<boolean> {
     const account = await this.options.store.getAccount(accountId);
     if (!account || account.status !== 'active') return false;
     const cursor = await this.options.store.getSyncCursor(account.id);
@@ -357,13 +417,30 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
       !cursor && !account.initialSyncReceivedAfter
         ? new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString()
         : undefined;
-    return (
-      await this.scheduler.request(
-        account,
-        account.userId,
-        legacyInitialSyncDate ? { receivedAfter: legacyInitialSyncDate } : {},
-      )
-    ).created;
+    const result = await this.scheduler.request(
+      account,
+      account.userId,
+      legacyInitialSyncDate ? { receivedAfter: legacyInitialSyncDate } : {},
+    );
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: result.created
+          ? 'mail.sync.run_created'
+          : 'mail.sync.run_reused',
+        accountId,
+        requestToken,
+        ...timing,
+        syncRunId: result.run.id,
+        created: result.created,
+        runCreatedAt: result.run.createdAt,
+        observedAt: new Date().toISOString(),
+        revision: result.run.revision,
+      },
+      'Mail synchronization run requested.',
+    );
+    return result.created;
   }
 
   public kick(): void {
@@ -426,6 +503,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     if (this.automaticSyncTimer) clearInterval(this.automaticSyncTimer);
     this.relayTimer = undefined;
     this.automaticSyncTimer = undefined;
+    await this.imapIdle?.close();
     await this.tasks.close();
     await this.publishPromise;
     await this.automaticSyncPromise;

@@ -1,5 +1,82 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+- Updated dependencies [4967900]
+- Updated dependencies [761fb01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [85d7e34]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 788df3e: Batch knowledge directory metadata and node permissions across spaces, preserving visibility and archived-document counts. Provide a lightweight authorized project metadata query without issue or member totals.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [7884308]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- ad2e33e: Add `createKnowledgePlugin({ indexing: false })` and the client option `indexing: false` for applications without a vector index: no index backends, indexing routes, `kb.indexing` settings item or indexing entry are registered, and search keeps the built-in text match. The `kb.indexing` settings item now has translated titles and its own Knowledge group under administration.
+
+### Patch Changes
+
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/document-extractor@0.1.0-beta.1
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 0.1.0-beta.18
 
 ### Minor Changes

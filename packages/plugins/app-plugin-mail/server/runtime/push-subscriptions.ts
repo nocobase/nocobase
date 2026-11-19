@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mailLogError, writeMailLog } from '../logging.js';
+import { mailLogCode, mailLogError, writeMailLog } from '../logging.js';
 import type { MailStore } from '../contracts/persistence.js';
 import type { MailLogger } from '../logging.js';
 import type { MailProviderAdapterResolver } from '../contracts/provider.js';
@@ -121,7 +121,7 @@ export class MailPushSubscriptions {
             {
               accountId: account.id,
               err: mailLogError(removed.error),
-              errorCode: removed.error.code,
+              errorCode: mailLogCode(removed.error.code),
             },
             'The stale Mail push subscription could not be removed before replacement.',
           );
@@ -151,7 +151,7 @@ export class MailPushSubscriptions {
           {
             accountId: account.id,
             err: mailLogError(result.error),
-            errorCode: result.error.code,
+            errorCode: mailLogCode(result.error.code),
           },
           'Mail push subscription could not be renewed.',
         );

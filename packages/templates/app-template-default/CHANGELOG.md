@@ -1,5 +1,107 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.97
+
+### Patch Changes
+
+- d3f0c92: Add the reusable workflow version selector and match its definition-header appearance to the category tag.
+- Updated dependencies [761fb01]
+- Updated dependencies [4967900]
+- Updated dependencies [761fb01]
+  - @nocobase/app-plugin-users@2.0.0-beta.21
+  - @nocobase/app-plugin-agents@2.0.0-beta.16
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.22
+
+## 1.0.0-beta.96
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- 5fb0869: Run the generated application's test files in parallel, which makes `pnpm test` several times faster. Stop a form from announcing the end of its save after it has been removed from the page.
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+- Updated dependencies [b33e134]
+- Updated dependencies [8db22e3]
+- Updated dependencies [fb306c9]
+- Updated dependencies [a1af7f0]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [44cb25f]
+- Updated dependencies [e103671]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.23
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.6
+  - @nocobase/app-plugin-agents@2.0.0-beta.13
+  - @nocobase/app-plugin-mail@1.0.0-beta.25
+  - @nocobase/app-cli@1.0.0-beta.35
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.20
+
+## 1.0.0-beta.95
+
+### Minor Changes
+
+- a4191df: Put every table row's actions in one "⋮" menu. Both templates ship `RowActions` (`#components/row-actions`), which draws the same icon-only trigger on every row and page, keeps destructive actions last after a separator, renders nothing when the viewer has no action, and keeps menu clicks from reaching the row. The prepared Users and default access lists, the list and edit example and the customer contacts example use it; account actions such as Disable and Revoke sessions are no longer buttons on the row, and actions columns show no header text. The development Skill makes the menu the default for a single action, for every record state and for administration lists, shows an action outside it only when the user or a confirmed design asks for it, keeps the actions column unpinned, and the component checker reports actions columns that render buttons or links, show header text or pin the column. Existing applications receive `RowActions` and the updated pages through a template upgrade; synchronizing the Skill does not change pages that are already built.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [788df3e]
+- Updated dependencies [44bf26a]
+- Updated dependencies [c74760f]
+- Updated dependencies [74f1bf8]
+- Updated dependencies [1952789]
+- Updated dependencies [1724828]
+- Updated dependencies [7884308]
+- Updated dependencies [a6b6b7c]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.22
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.21
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.19
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.20
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.20
+  - @nocobase/app-plugin-foundation@0.1.0-beta.20
+  - @nocobase/app-plugin-i18n@1.0.0-beta.23
+  - @nocobase/app-plugin-mail@1.0.0-beta.24
+  - @nocobase/app-plugin-notification@2.0.0-beta.9
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.5
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.25
+  - @nocobase/app-cli@1.0.0-beta.34
+
+## 1.0.0-beta.94
+
+### Minor Changes
+
+- 57912f1: Make phone layouts part of every application page from the first delivery: the application development Skill adds a phone experience guide (first screen, list cards, compact filters, one-row tabs, forms, overlays, touch and phone verification), replaces the old "the toolbar wraps and the table scrolls" acceptance rule, and updates its workflow, templates, examples and screenshot tool to match. The templates' `DataTable` gains `renderCard` to show rows as cards below 768px and a `DataTableSortMenu` for sorting without column headers; on phones it keeps the selection column's "Select all on this page" above the cards. `PageHeader` keeps a single action on the title's row and wraps several actions onto one row under a title that keeps at least 12rem, and `PageContainer` uses tighter spacing on phones, and `DataTableSortMenu` gains a `compact` icon form, so a list's search, filter and sort share one row above the first card. The Examples list examples and their published Skill copies now show phone cards, and the customer list demonstrates a phone filter sheet with the applied count. Overlay forms guard unsaved changes with a navigation guard, so Cancel, the close button, Escape and browser back all ask before discarding, and the list example shows how to render one set of filters inline and in the phone sheet without duplicate IDs. A confirmation, dialog or sheet opened inside another overlay now renders its own backdrop, so taps no longer reach the form below it. A record page's parent arrow now returns to the same list view, search, sort and page after its detail or edit URL is reloaded: the templates add `useAncestorSearch`, which takes only the list's declared keys (such as `TABLE_URL_KEYS`) from the current URL when no list visit is recorded, and `useListTabs().source` falls back the same way. `DataTableSortMenu` now requires `getColumnLabel`, so the phone sort menu never shows raw column ids, and `DataTable` accepts `sortableColumns` (passed on by spreading `useTableUrlState`), so headers and the sort menu offer only the sorts the URL accepts. `DataTable` and `ListFeedbackActions` accept `filtered`, so "Clear filters" stays beside a list's controls while filtered results show, not only when nothing matched, and the phone "Select all on this page" checkbox is named once instead of twice. `DataTable` now lays out a list's controls itself: pass the search box as `search`, each filter as a `DataTableFilter` in `filters` with `filterCount`, and `getColumnLabel`, and they share one row, with the filters inline from 768px up and, on phones, behind an icon "Filters" button that shows the applied count and opens a bottom sheet, next to an icon "Sort" menu. Phone cards show the row's actions column, through `renderCard`'s new `card.actions` or in the card's corner when a card does not place it, so a card always offers the row's menu (`actionsColumnId={null}` opts out). `RouteDialog` and `RouteDrawer` accept `dirty`: while a form is dirty, or once the user has typed in the overlay's form, closing, Cancel, Escape, browser back and links ask "Discard changes?" first (a saved draft does not switch the question off) and a reload gets the browser's warning, while the save's own navigation leaves without asking. On desktop each `DataTableFilter` sits in a compact slot of its own, so filters share the search row instead of taking a full row each; the new `DataTableSearch` is a search box with the magnifier inside that applies as typing pauses and on Enter, without a separate search button. `PageHeader` accepts an `eyebrow` shown from 640px up and clamps its description to two lines on phones, and `DataTable` accepts a `summary`, such as a result count, that ends the toolbar row on desktop and sits above the pagination on phones. `RouteDialog` and `RouteDrawer` now ask before discarding typed input on their own: once the user has typed in a `FeedbackForm` inside one, every way out asks first, whether or not the page passes `dirty` and whether or not it keeps a draft; `dirty` only adds changes no typing reports, an untouched form or a read-only drawer closes at once, and the save leaves without asking. `FeedbackForm` accepts `values` and `savedValues` (React Hook Form's `getValues` and the stored record), so an enclosing route overlay asks before discarding whenever they differ, including a restored draft and a Select, date, relation or upload field that fires no input event, and not once the values are changed back. The overlays also protect a plain `<form>` inside them, comparing its fields and Select-like widgets with how they were before the user first touched them, and the application development Skill's component checker now rejects a plain create or edit form, a `FeedbackForm` without `values` and `savedValues`, and a `dirty` derived from a draft or storage, with no exception marker allowed. A navigation guard now receives how the navigation started (`push`, `replace`, or `pop` for browser back and forward), so a route overlay lets only a plain form's own save through and keeps asking on browser back and before a reload after a save that failed or was rejected. `RouteChildPage` now asks the same question as the route overlays before its back button, breadcrumbs, links and browser back while a form inside has unsaved input, and warns before a reload; the shared logic lives in the new `discard-guard` component. The component checker now also rejects a `FeedbackForm` without `values` and `savedValues` in a route overlay or `RouteChildPage` whose state is kept in `useState`, and an `OwnDiscardQuestion` in a file whose own navigation guard does not read an unsaved state, such as one that only blocks while a save runs, since a kept draft never replaces the discard question; the Examples batch-change dialog now compares its new value with the blank one. The checker credits a form only with the discard question of its own component, a component rendering it or a hook it calls, and judges a guard by its code, never by its comments or strings, reading a guard passed as `controller.guard` through the object its own component holds. After a save fails with a server error or a lost response, the Examples forms no longer lock the person in while the outcome is unknown: Cancel stays enabled, every way out asks before discarding the input, and discarding leaves, while the operation key stays for the same retry; the Skill states that only a save in flight blocks leaving.
+
+### Patch Changes
+
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [efa464a]
+- Updated dependencies [ad2e33e]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-plugin-users@2.0.0-beta.19
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.19
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.8
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.4
+
 ## 1.0.0-beta.93
 
 ### Minor Changes

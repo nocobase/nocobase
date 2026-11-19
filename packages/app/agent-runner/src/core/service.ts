@@ -240,7 +240,7 @@ export async function installService(
     for (const [command = '', ...args] of plan.uninstall)
       await run(command, args).catch(() => undefined);
   await mkdir(path.dirname(plan.file), { recursive: true });
-  await mkdir(path.dirname(paths.daemonLog), { recursive: true, mode: 0o700 });
+  await mkdir(paths.logsDir, { recursive: true, mode: 0o700 });
   // Only its owner reads it: the variables written into it may hold a proxy's password or a key.
   await writeFile(plan.file, plan.content, { mode: 0o600 });
   await chmod(plan.file, 0o600);

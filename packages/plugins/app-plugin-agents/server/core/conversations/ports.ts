@@ -20,6 +20,7 @@ import type {
   ChatAgent,
   ConversationAttentionCounts,
   ConversationUsage,
+  ConversationRunner,
   ConversationLink,
   ConversationLinkView,
   ConversationNotice,
@@ -292,6 +293,8 @@ export interface ConversationService {
    * starting a fresh session with the conversation's history. The old directory is left to the runner's cleanup.
    */
   switchRunner(userId: string, id: string): Promise<ConversationDetail>;
+  /** Online runtimes eligible for the owner's current Runner agent and project. */
+  runners(userId: string, id: string): Promise<ConversationRunner[]>;
   /** Changes the agent of an idle Runner conversation, preserving history and links; its next message starts a fresh session. */
   switchAgent(
     userId: string,
@@ -385,6 +388,8 @@ export interface ConversationService {
   };
   /** Turns the run's new text events into assistant messages; nothing for runs on other subjects. */
   syncRun(runId: string): Promise<Run>;
+  /** Sends an uploaded file as part of the conversation run's current reply; other subjects do nothing. */
+  attachFromRun(runId: string, fileId: string): Promise<void>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
   chatAgents(userId: string): Promise<ChatAgent[]>;

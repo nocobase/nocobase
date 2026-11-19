@@ -8,6 +8,7 @@ const ui = {
   },
   apps: {
     title: 'Apps',
+    lastFailure: 'Last failure: {{detail}}',
     create: 'Create app',
     id: 'App ID',
     name: 'Name',
@@ -604,6 +605,12 @@ const ui = {
       INITIAL_ADMIN_UNAVAILABLE: 'There is no first administrator to show.',
     },
     messages: {
+      artifactReadIdleTimeout:
+        'No data was received from the release package for {{seconds}} seconds. The deployment did not finish; try again.',
+      artifactReadTotalTimeout:
+        'Reading the release package exceeded {{seconds}} seconds. The deployment did not finish; try again.',
+      artifactReadTimeout:
+        'Reading the release package timed out. The deployment did not finish; try again.',
       hostExited: 'The app’s process stopped before it was ready.',
       hostDisabled: 'The app host is turned off.',
       hostShutDown: 'The app host has shut down.',
@@ -618,6 +625,18 @@ const ui = {
       notReady: 'It is not ready yet; try again in a moment.',
       checkTimeout: 'The test did not finish within 20 seconds.',
       hostNoSettings: 'The local runtime takes no connection settings.',
+      recycleWait:
+        'The app host is recycling memory; the deployment continues when it finishes.',
+      recycleRetry:
+        'The app host is still recycling memory, so the deployment did not finish. Try again later.',
+      capacityExceeded:
+        'The app host does not have enough memory or a free slot, so the deployment did not finish. Try again later.',
+      replacementMemory:
+        'The app host does not have enough memory to start the new version; the current one keeps running. Try again later.',
+      startQueueFull:
+        'Too many apps are starting on the app host. Try again later.',
+      activeLimit:
+        'The number of running apps has reached its limit. Try again later.',
     },
     prefixed: {
       startFailed: 'Start failed: {{detail}}',

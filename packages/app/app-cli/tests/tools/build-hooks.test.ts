@@ -149,16 +149,33 @@ describe('build pipeline hook stages', () => {
       failOn?: string;
       failStatus?: number;
       env?: NodeJS.ProcessEnv;
+      envFiles?: Record<string, string>;
     } = {},
   ) {
     const root = mkdtempSync(path.join(os.tmpdir(), 'nocobase-build-hooks-'));
     temporaryDirectories.push(root);
+    for (const [name, contents] of Object.entries(options.envFiles ?? {})) {
+      writeFileSync(path.join(root, name), contents);
+    }
     const shimDir = path.join(root, 'shims');
     const log = path.join(root, 'commands.log');
     mkdirSync(shimDir, { recursive: true });
     writeFileSync(
       path.join(root, 'package.json'),
-      JSON.stringify({ name: 'fixture-app' }),
+      JSON.stringify({
+        name: 'fixture-app',
+        dependencies: { 'fixture-dependency': 'workspace:*' },
+      }),
+    );
+    writeFileSync(
+      path.join(root, 'pnpm-workspace.yaml'),
+      "packages: ['packages/*']\n",
+    );
+    const dependencyDir = path.join(root, 'packages', 'fixture-dependency');
+    mkdirSync(dependencyDir, { recursive: true });
+    writeFileSync(
+      path.join(dependencyDir, 'package.json'),
+      JSON.stringify({ name: 'fixture-dependency' }),
     );
     mkdirSync(path.join(root, 'dist'), { recursive: true });
     const sentinel = path.join(root, 'dist', 'stale.txt');
@@ -170,6 +187,7 @@ describe('build pipeline hook stages', () => {
       // inside it, so a shim that never creates it fails that step on a missing working directory.
       'mkdir -p "$NOCOBASE_TOOL_ROOT/dist"',
       'printf "pnpm %s\\n" "$*" >> "$HOOK_LOG"',
+      'if [ "$*" = "exec vite build" ]; then printf "%s" "$BUILD_INPUT" > "$NOCOBASE_TOOL_ROOT/vite-input.txt"; fi',
       'if [ -n "$FAIL_ON" ] && [ "$*" = "$FAIL_ON" ]; then exit "${FAIL_STATUS:-1}"; fi',
       'exit 0',
       '',
@@ -222,7 +240,7 @@ describe('build pipeline hook stages', () => {
       JSON.parse(
         readFileSync(path.join(root, 'dist', 'package.json'), 'utf8'),
       ) as { nocobase?: Record<string, unknown> };
-    return { result, commands, sentinel, readDistPackage };
+    return { root, result, commands, sentinel, readDistPackage };
   }
 
   it.skipIf(process.platform === 'win32')(
@@ -234,7 +252,7 @@ describe('build pipeline hook stages', () => {
       expect(result.status).toBe(0);
       expect(commands).toEqual([
         'pnpm demo before',
-        'pnpm --filter fixture-app^... build',
+        'pnpm -r --workspace-concurrency=2 --filter fixture-dependency --if-present build',
         'pnpm exec tsc',
         'pnpm exec tsc -p tsconfig.node.json',
         'pnpm exec vite build',
@@ -292,6 +310,27 @@ describe('build pipeline hook stages', () => {
       );
       expect(commands.at(-1)).toBe('pnpm demo after-build');
       expect(commands).not.toContain('node pack-dist.mjs');
+    },
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'keeps build inputs available to Vite without writing runtime configuration into dist',
+    () => {
+      const envFiles = {
+        '.env':
+          'APP_SERVER_HOST=192.0.2.1\nAPP_SERVER_PORT=15150\nNODE_ENV=development\nBUILD_INPUT=base\n',
+        '.env.local':
+          'APP_SERVER_START_LOG=false\nBUILD_INPUT=local\nDB_PASSWORD=fixture-secret\n',
+      };
+      const { root, result } = runBuild([], { envFiles });
+      expect(result.status).toBe(0);
+      expect(existsSync(path.join(root, 'dist', '.env'))).toBe(false);
+      expect(readFileSync(path.join(root, 'vite-input.txt'), 'utf8')).toBe(
+        'local',
+      );
+      for (const [name, contents] of Object.entries(envFiles)) {
+        expect(readFileSync(path.join(root, name), 'utf8')).toBe(contents);
+      }
     },
   );
 

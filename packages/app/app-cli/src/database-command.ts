@@ -3,6 +3,7 @@ import {
   databaseManagerToken,
   isTaskLockBusyError,
   type ChecksumMismatch,
+  type MigrationWarning,
   type DatabaseManager,
   type MigrationHistoryRecord,
   type TaskLockBusyError,
@@ -212,10 +213,8 @@ export async function runDatabaseApplyCommand(
       command.log(`Skipped: ${entry.skipped.join(', ') || 'none'}`);
     if (entry.fresh) command.log('Fresh: true');
     for (const warning of entry.warnings ?? [])
-      command.log(
-        `WARNING: checksum changed since it was executed: ${describe(warning)}`,
-      );
-    if (entry.warnings?.length) {
+      command.log(describeWarning(warning));
+    if (entry.warnings?.some((warning) => !('kind' in warning))) {
       // Which command depends on what the edit did, and repair is only ever
       // right for the first case: it records that the source and the schema
       // agree. Used on a change the database never received, it makes an
@@ -806,6 +805,12 @@ function repairedRecords(result: AppDatabaseTasksResult): {
   );
 }
 
+function describeWarning(warning: MigrationWarning): string {
+  if ('kind' in warning)
+    return `WARNING: executed migration is missing from migration sources: ${warning.name} (${warning.packageName}). History is retained.`;
+  return `WARNING: checksum changed since it was executed: ${describe(warning)}`;
+}
+
 function describe(record: ChecksumMismatch): string {
   return `${record.name} (${record.packageName}): ${record.recordedChecksum.slice(0, 12)} -> ${record.sourceChecksum.slice(0, 12)}`;
 }
@@ -848,9 +853,7 @@ function reportDatabaseEntries(
     if (entry.skipped)
       command.log(`Skipped: ${entry.skipped.join(', ') || 'none'}`);
     for (const warning of entry.warnings ?? [])
-      command.log(
-        `WARNING: checksum changed since it was executed: ${describe(warning)}`,
-      );
+      command.log(describeWarning(warning));
   }
 }
 

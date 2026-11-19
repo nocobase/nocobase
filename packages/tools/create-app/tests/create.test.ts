@@ -23,6 +23,7 @@ let stdout: string;
 beforeEach(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), 'create-flow-'));
   stdout = '';
+  vi.stubEnv('NOCOBASE_REGISTRY', undefined);
   vi.spyOn(process, 'cwd').mockReturnValue(root);
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
     stdout += String(chunk);
@@ -39,17 +40,20 @@ afterEach(async () => {
   vi.clearAllMocks();
   await rm(root, { recursive: true, force: true });
 });
-async function template(): Promise<void> {
+async function template(
+  name = '@test/template',
+  hasSqliteDriver = true,
+): Promise<void> {
   const directory = await mkdtemp(path.join(root, 'template-'));
   await writeFile(
     path.join(directory, 'package.json'),
     JSON.stringify({
-      name: '@test/template',
+      name,
       version: '1.0.0',
       dependencies: {
         '@nocobase/db-postgres': '^1.0.0',
         '@nocobase/db-oracle': '^1.0.0',
-        '@nocobase/db-sqlite': '^1.0.0',
+        ...(hasSqliteDriver ? { '@nocobase/db-sqlite': '^1.0.0' } : {}),
       },
     }),
   );
@@ -59,13 +63,63 @@ async function template(): Promise<void> {
   );
   vi.mocked(downloadTemplate).mockResolvedValue({
     directory,
-    name: '@test/template',
+    hasSqliteDriver,
+    name,
     version: '1.0.0',
   });
 }
 const run = (argv: string[]) =>
   createApp({ argv, version: 'test', binary: 'create-app' });
 describe('JSON creation flow', () => {
+  it.each([false, true])(
+    'warns for legacy registry and gives the new flag precedence: %s',
+    async (useNew) => {
+      await template();
+      vi.stubEnv('NOCOBASE_REGISTRY', 'https://environment.example/');
+      const argv = ['crm', '--json', '--registry=https://legacy.example/'];
+      if (useNew) argv.push('--nocobase-registry=https://new.example/');
+      expect(await run(argv)).toBe(0);
+      const selected = useNew
+        ? 'https://new.example/'
+        : 'https://legacy.example/';
+      expect(downloadTemplate).toHaveBeenCalledWith({
+        source: '@nocobase/app-template-default@latest',
+        nocobaseRegistry: selected,
+        ...(useNew ? {} : { legacyRegistry: selected }),
+      });
+      expect(JSON.parse(stdout).warnings).toEqual([
+        expect.stringContaining('--registry is deprecated'),
+      ]);
+      expect(process.stderr.write).toHaveBeenCalledWith(
+        expect.stringContaining('--nocobase-registry'),
+      );
+      expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).toContain(
+        `@nocobase:registry=${selected}`,
+      );
+    },
+  );
+
+  it.each(['default', 'pro', 'enterprise'])(
+    'names SQLite explicitly for the %s edition',
+    async (edition) => {
+      await template('@nocobase/app-template-' + edition);
+      expect(await run(['crm', '--json', '--template', edition])).toBe(0);
+      expect(JSON.parse(stdout).result.nextCommands[0]).toBe(
+        'pnpm nocobase config init --dialect sqlite',
+      );
+    },
+  );
+
+  it('leaves the dialect choice to templates without a SQLite runtime dependency', async () => {
+    await template('@custom/template', false);
+    expect(await run(['crm', '--json', '--template', '@custom/template'])).toBe(
+      0,
+    );
+    expect(JSON.parse(stdout).result.nextCommands[0]).toBe(
+      'pnpm nocobase config init',
+    );
+  });
+
   it('installs by default and hands the configuration step to config init', async () => {
     await template();
     expect(await run(['crm', '--json'])).toBe(0);
@@ -79,7 +133,7 @@ describe('JSON creation flow', () => {
         dependenciesInstalled: true,
         configured: false,
         nextCommands: [
-          'pnpm nocobase config init',
+          'pnpm nocobase config init --dialect sqlite',
           'pnpm nocobase config check',
           'pnpm dev',
         ],
@@ -92,7 +146,11 @@ describe('JSON creation flow', () => {
     await expect(readFile(path.join(root, 'crm/config.yml'))).rejects.toThrow();
     expect(stdout).not.toContain('secret');
     await expect(readFile(path.join(root, 'crm/.env'))).rejects.toThrow();
-    // Public npm needs no scoped override in the generated project.
+    expect(downloadTemplate).toHaveBeenCalledWith({
+      source: '@nocobase/app-template-default@latest',
+      nocobaseRegistry: undefined,
+    });
+    // No explicit registry means no scoped override in the generated project.
     expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).not.toContain(
       '@nocobase:registry=',
     );
@@ -108,11 +166,13 @@ describe('JSON creation flow', () => {
         '--template=multi-portal',
         '--template-tag=beta',
       ];
-      if (selection === 'flag') argv.push(`--registry=${registry}`);
-      else vi.stubEnv('NOCOBASE_REGISTRY', registry);
+      if (selection === 'flag') {
+        vi.stubEnv('NOCOBASE_REGISTRY', 'https://ignored.example/');
+        argv.push(`--nocobase-registry=${registry}`);
+      } else vi.stubEnv('NOCOBASE_REGISTRY', registry);
       expect(await run(argv)).toBe(0);
       expect(downloadTemplate).toHaveBeenCalledWith({
-        registry,
+        nocobaseRegistry: registry,
         source: '@nocobase/app-template-multi-portal@beta',
       });
       expect(
@@ -136,7 +196,7 @@ describe('JSON creation flow', () => {
         'crm',
         '--json',
         '--template=multi-portal',
-        '--registry=https://pkg-v3.nocobase.com/',
+        '--nocobase-registry=https://pkg-v3.nocobase.com/',
       ]),
     ).toBe(1);
     expect(JSON.parse(stdout)).toMatchObject({
@@ -201,7 +261,7 @@ describe('JSON creation flow', () => {
         dependenciesInstalled: false,
         nextCommands: [
           'pnpm install',
-          'pnpm nocobase config init',
+          'pnpm nocobase config init --dialect sqlite',
           'pnpm nocobase config check',
           'pnpm dev',
         ],

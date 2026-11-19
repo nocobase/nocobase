@@ -156,7 +156,7 @@ export function PreviewList({
                 {preview.identifier}
               </Link>
               <span className='min-w-0 flex-1 truncate'>{preview.title}</span>
-              <IssueStatusBadge status={preview.status} size='sm' />
+              <IssueStatusBadge status={preview.status} />
               {preview.runtime ? (
                 <span className='text-xs text-muted-foreground'>
                   {preview.runtime}

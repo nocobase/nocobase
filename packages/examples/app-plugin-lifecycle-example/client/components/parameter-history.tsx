@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import type { ParameterSnapshot } from '@nocobase/lifecycle';
 import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { parameterApi } from '../lib/parameter-api.js';
@@ -38,11 +39,8 @@ export function ParameterHistory({
           <p className='text-muted-foreground'>
             {t('parameters.historyBoundary')}
           </p>
-          <h4>{t('parameters.effectivePreview')}</h4>
-          <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
-            {JSON.stringify(data.current, null, 2)}
-          </pre>
           <h4>{t('parameters.firstSnapshot')}</h4>
+          {data.snapshot && <SnapshotOrigins snapshot={data.snapshot} />}
           <pre className='overflow-auto rounded-lg bg-muted p-2 text-xs'>
             {data.snapshot
               ? JSON.stringify(data.snapshot, null, 2)
@@ -70,5 +68,25 @@ export function ParameterHistory({
         </>
       )}
     </section>
+  );
+}
+
+export function SnapshotOrigins({
+  snapshot,
+}: {
+  readonly snapshot: ParameterSnapshot;
+}): ReactElement {
+  const { t } = useTranslation(NAMESPACE);
+  return (
+    <ul className='space-y-1 text-sm text-muted-foreground'>
+      {Object.entries(snapshot.sources)
+        .filter(([, source]) => source.origin === 'upgrade')
+        .map(([field, source]) => (
+          <li key={field}>
+            {field}:{' '}
+            {t('parameters.upgradeSource', { revision: source.revision })}
+          </li>
+        ))}
+    </ul>
   );
 }

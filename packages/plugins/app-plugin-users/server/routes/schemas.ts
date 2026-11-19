@@ -149,6 +149,8 @@ export const InvitationParams: z.ZodObject<
   invitationId: z.string().min(1).describe('The invitation identifier.'),
 });
 
+const InvitationLocaleInput = z.string().trim().min(1).max(35);
+
 export const InviteUsersInput: z.ZodObject<
   {
     emails: z.ZodArray<z.ZodString>;
@@ -158,6 +160,7 @@ export const InviteUsersInput: z.ZodObject<
         z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>
       >
     >;
+    locale: z.ZodOptional<z.ZodString>;
   },
   z.core.$strict
 > = z.strictObject({
@@ -166,6 +169,9 @@ export const InviteUsersInput: z.ZodObject<
     .record(z.string().min(1), UserRoleValueInput)
     .optional()
     .describe('Role assignments grouped by scope.'),
+  locale: InvitationLocaleInput.optional().describe(
+    "The language of the invitation email and accept page, one of the application's languages. Defaults to the caller's interface language, then the application's default language.",
+  ),
 });
 
 /** The token travels in the body so request logs never record it. */
@@ -180,6 +186,7 @@ export const AcceptInvitationInput: z.ZodObject<
     name: z.ZodString;
     username: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
+    locale: z.ZodOptional<z.ZodString>;
   },
   z.core.$strict
 > = z.strictObject({
@@ -192,6 +199,9 @@ export const AcceptInvitationInput: z.ZodObject<
     ),
   // Existing accounts authenticate through their session; account creation still validates password strength.
   password: z.string().describe('The password to set.'),
+  locale: InvitationLocaleInput.optional().describe(
+    "The language the page was showing, kept as a new account's language. Unsupported or missing values use the invitation's language. Ignored for existing accounts.",
+  ),
 });
 
 export const PreferenceParams: z.ZodObject<
@@ -231,6 +241,11 @@ export const PreferenceInput: z.ZodObject<
 
 /** An RFC 3339 timestamp, documented by its format alone rather than by the long pattern `z.iso.datetime()` emits. */
 const dateTime = (): z.ZodString => z.string().meta({ format: 'date-time' });
+const invitationLocale = (): z.ZodNullable<z.ZodString> =>
+  z.string().nullable().meta({
+    description:
+      'The language of the email and accept page; `null` for invitations created before it was kept.',
+  });
 
 const roleValue = z.union([z.string(), z.array(z.string())]).meta({
   description:
@@ -331,6 +346,7 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
     sentAt: dateTime().nullable().meta({
       description: 'The last successful send; `null` when sending failed.',
     }),
+    locale: invitationLocale(),
     createdAt: dateTime(),
   })
   .meta({ ref: 'UsersInvitation' });
@@ -375,6 +391,7 @@ export const PublicUserInvitationSchema: z.ZodType<PublicUserInvitation> =
     inviterName: z.string(),
     summary: z.array(z.string()),
     expiresAt: dateTime(),
+    locale: invitationLocale(),
   });
 
 export const AcceptedInvitationSchema: z.ZodType<{

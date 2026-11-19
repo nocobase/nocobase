@@ -2,7 +2,7 @@ import type { Attachment } from './attachments.js';
 import type { CommentThread } from './comments.js';
 import type { Color, Page, Priority, UserRef } from './common.js';
 import type { Label } from './labels.js';
-import type { ActivityVia } from './plans.js';
+import type { ActivityVia } from './activity.js';
 import type { IssueSubscriber } from './subscriptions.js';
 import type { Blocker, IssueDependency, SubtaskSummary } from './subtasks.js';
 
@@ -260,3 +260,6 @@ export const ISSUE_PROGRESS_MAX = 2_000;
 export const ISSUE_ACCEPTANCE_MAX = 20_000;
 export const ISSUE_PAGE_LIMIT = { default: 50, max: 100 } as const;
 export const ACTIVITY_PAGE_LIMIT = { default: 50, max: 200 } as const;
+
+/** The maximum number of parent edges traversed by grouped hierarchy reads. */
+export const ISSUE_HIERARCHY_DEPTH_MAX = 64;

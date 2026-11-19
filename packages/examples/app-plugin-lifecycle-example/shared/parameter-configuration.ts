@@ -20,7 +20,6 @@ export interface ParameterGroupView {
   readonly uses: readonly {
     readonly lifecycle: string;
     readonly field: string;
-    readonly readMode: string;
     readonly bindings: readonly ParameterBinding[];
   }[];
 }
@@ -41,6 +40,5 @@ export interface ReviewerReferencePage {
 export interface ParameterHistoryView {
   readonly snapshot: ParameterSnapshot | null;
   readonly usages: readonly ParameterUsage[];
-  readonly current: Readonly<object>;
   readonly recorded: boolean;
 }

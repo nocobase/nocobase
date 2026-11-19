@@ -1,5 +1,14 @@
 # @nocobase/app-host-docker
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- dd0a34f: Keep fresh production installations on patched argparse 1 and ansi-regex 5 releases. Upgrading argparse within its compatible major removes the vulnerable Lodash 3 dependency without forcing Lodash across major versions.
+- Updated dependencies [6102557]
+  - @nocobase/app-host@0.1.0-beta.23
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 0.1.0-beta.4
 
 ### Patch Changes

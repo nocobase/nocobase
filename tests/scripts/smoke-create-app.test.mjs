@@ -470,6 +470,26 @@ for (const project of ['node', 'client']) {
   });
 }
 
+test('skips pnpm test with project none and still runs every deployment check', async (t) => {
+  const result = await runSmoke(t, 'success', '/main', [
+    '--test-project',
+    'none',
+  ]);
+  assert.equal(result.code, 0, result.output);
+  assert.equal(result.testArgs, undefined);
+  assert.deepEqual(
+    result.commands,
+    fullRun.filter((command) => command !== 'test'),
+  );
+  assert.match(result.output, /Skipping the application tests/u);
+  assert.match(
+    result.output,
+    /passed dev, build, start, archive deployment, and retarget/u,
+  );
+  assert.equal(result.deployed, true, result.output);
+  assert.equal(result.retargetTarget, otherTarget);
+});
+
 test('rejects an unknown or wildcard project before creating an application', async (t) => {
   for (const project of ['unknown', 'node*', '']) {
     const result = await runSmoke(t, 'success', '/main', [
@@ -479,7 +499,10 @@ test('rejects an unknown or wildcard project before creating an application', as
     assert.equal(result.code, 2, result.output);
     assert.equal(result.created, false);
     assert.deepEqual(result.commands, []);
-    assert.match(result.output, /--test-project must be all, node, or client/u);
+    assert.match(
+      result.output,
+      /--test-project must be all, node, client, or none/u,
+    );
   }
 });
 
@@ -500,6 +523,7 @@ test('the action validates and forwards the complete test project before registr
     ['all', 0],
     ['node', 0],
     ['client', 0],
+    ['none', 0],
     ['node*', 2],
     ['', 2],
   ]) {
@@ -538,7 +562,7 @@ test('the action validates and forwards the complete test project before registr
     '#!/usr/bin/env node\nconsole.log(JSON.stringify(process.argv.slice(2)));\n',
     { mode: 0o755 },
   );
-  for (const project of ['all', 'node', 'client']) {
+  for (const project of ['all', 'node', 'client', 'none']) {
     const result = spawnSync('bash', ['-c', generate.run], {
       cwd: fixture,
       env: {

@@ -577,6 +577,14 @@ const koKR: LocaleResource<typeof enUS> = {
   },
   runtimes: {
     quota: {
+      ceilingReached: '할당량 임계값 도달',
+      ceilingLabel: '접수 중지 임계값',
+      ceilingInput: '{{tool}} 사용률이 지정한 비율에 도달하면 새 작업 중지',
+      ceilingSave: '적용',
+      ceilingInvalid: '1~100 사이의 정수 백분율을 입력하거나 비워 두세요.',
+      ceilingPaused:
+        '할당량 구간이 임계값에 도달했습니다. 해당 새 작업은 초기화되거나 임계값이 변경될 때까지 대기합니다.',
+
       workspaceStatus: {
         active: '작업 계속 중',
         ended: '종료 · 정리 가능',
@@ -607,6 +615,9 @@ const koKR: LocaleResource<typeof enUS> = {
       workspaceSize: '작업 공간 크기: {{value}}',
       providers_one: '할당량이 소진된 제공자 {{count}}개',
       providers_other: '할당량이 소진된 제공자 {{count}}개',
+      models_one: '할당량이 소진된 모델 {{count}}개',
+      models_other: '할당량이 소진된 모델 {{count}}개',
+      percent: '{{percent}}%',
       runColumns: {
         issue: '작업 / 대화',
         agent: 'Agent',
@@ -649,7 +660,7 @@ const koKR: LocaleResource<typeof enUS> = {
         '할당량이 복구된 것을 확인한 뒤에만 해제하세요. {{target}}은(는) 즉시 다시 작업을 받으며, 할당량이 아직 소진되어 있으면 다음 실행에서 다시 표시됩니다.',
       observed: '마지막 보고 {{time}}',
       usedPercent: '{{percent}}% 사용',
-      ok: '정상',
+      noUsage: '아직 할당량 데이터가 없습니다',
       hint: '표시는 알려진 초기화 시각이나 도구가 다시 남은 할당량을 보고하면 자동으로 해제됩니다. 할당량이 복구된 것을 확인한 뒤에만 직접 해제하세요. 실행 환경 소유자와 관리자만 표시를 해제할 수 있습니다.',
     },
     workspaces: {
@@ -717,8 +728,8 @@ const koKR: LocaleResource<typeof enUS> = {
       offlineNever: '오프라인',
     },
     toolUsage: {
-      label: '코딩 도구별 실행',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '동시 {{used}}/{{limit}}',
+      hint: '{{tool}} 동시 실행 최대 {{limit}}개, 현재 {{used}}개',
     },
     toolSlots: {
       label: '코딩 도구별 한도',
@@ -858,6 +869,8 @@ const koKR: LocaleResource<typeof enUS> = {
       show: '버전 {{version}}: 새 runner를 사용할 수 있습니다',
       available: '업데이트 가능',
       badge: '업그레이드 가능',
+      latest: '최신',
+      installed: '버전 {{version}}',
       title: '{{name}}용 새 runner',
       description:
         '{{version}}이(가) 설치되어 있으며 이 애플리케이션은 {{latest}}을(를) 제공합니다.',

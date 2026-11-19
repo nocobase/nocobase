@@ -1,10 +1,11 @@
 import {
+  Agent as HttpAgent,
   request as httpRequest,
   type ClientRequest,
   type IncomingMessage,
   type RequestOptions,
 } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import { Agent as HttpsAgent, request as httpsRequest } from 'node:https';
 import { Duplex, Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
@@ -17,12 +18,20 @@ import { removeHopByHopHeaders } from '../proxy/http-proxy.js';
 
 export interface NodeServerProxyOptions {
   readonly match: (pathname: string) => boolean;
-  /** Resolve the current upstream origin without starting it. Null means unavailable. */
-  readonly target: () => URL | null | Promise<URL | null>;
+  /**
+   * Resolve the upstream origin for this request without starting it. Null means unavailable. HTTP requests and
+   * WebSocket upgrades both pass through here. Route on the method, URL and headers only: the body is forwarded to the
+   * upstream afterwards and must not be read.
+   */
+  readonly target: (request: Request) => URL | null | Promise<URL | null>;
 }
 
 /** A standalone listener's proxy; application routes never pass through this layer. */
 export class NodeServerProxy {
+  // Internal forwarding must not inherit the global agent's environment proxy:
+  // its destination differs from the public Host header we intentionally preserve.
+  private readonly httpAgent = new HttpAgent({ keepAlive: true });
+  private readonly httpsAgent = new HttpsAgent({ keepAlive: true });
   private readonly requests = new Set<ClientRequest>();
   private readonly webSockets = new Set<Duplex>();
   private closed = false;
@@ -216,12 +225,17 @@ export class NodeServerProxy {
     this.closeWebSockets();
     for (const request of this.requests) request.destroy();
     this.requests.clear();
+    this.httpAgent.destroy();
+    this.httpsAgent.destroy();
   }
 
   private request(target: URL, options: RequestOptions): ClientRequest {
     const outgoing = (
       target.protocol === 'https:' ? httpsRequest : httpRequest
-    )(target, options);
+    )(target, {
+      ...options,
+      agent: target.protocol === 'https:' ? this.httpsAgent : this.httpAgent,
+    });
     this.requests.add(outgoing);
     outgoing.once('close', () => this.requests.delete(outgoing));
     return outgoing;
@@ -229,7 +243,7 @@ export class NodeServerProxy {
 
   private async resolveTarget(request: Request): Promise<URL | null> {
     if (this.closed) return null;
-    const origin = await this.options.target();
+    const origin = await this.options.target(request);
     if (!origin) return null;
     if (!['http:', 'https:'].includes(origin.protocol))
       throw new Error('Proxy targets must use HTTP or HTTPS.');

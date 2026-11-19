@@ -18,6 +18,12 @@ import {
   type CliWithheldCommand,
 } from './types.js';
 
+import {
+  deriveCliIdempotency,
+  validateCliIdempotencyCommand,
+  rejectBodyIdempotency,
+} from './idempotency.js';
+
 type Schema = OpenAPIV3_1.SchemaObject;
 type SchemaOrRef = OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject;
 type Operation = OpenAPIV3_1.OperationObject & {
@@ -369,15 +375,18 @@ function deriveOne(
 
   const flagHints = options.flags ?? {};
   const inputs: Omit<CliParameter, 'name' | 'position'>[] = [];
-  const parameters = (operation.parameters ?? [])
+  const allParameters = (operation.parameters ?? [])
     .map((parameter) =>
       resolve<OpenAPIV3_1.ParameterObject>(document, parameter),
     )
     .filter(
       (parameter): parameter is OpenAPIV3_1.ParameterObject =>
-        parameter !== undefined &&
-        (parameter.in === 'path' || parameter.in === 'query'),
+        parameter !== undefined,
     );
+  const idempotency = deriveCliIdempotency(document, method, allParameters);
+  const parameters = allParameters.filter(
+    (parameter) => parameter.in === 'path' || parameter.in === 'query',
+  );
   for (const parameter of parameters) {
     const shape = shapeOf(document, parameter.schema);
     const schema = resolve<Schema>(document, parameter.schema);
@@ -403,6 +412,7 @@ function deriveOne(
     document,
     operation.requestBody,
   );
+  rejectBodyIdempotency(document, requestBody);
   const binding = options.readBinding;
   const readOperation = binding ? operations.get(binding.operation) : undefined;
   if (
@@ -578,6 +588,7 @@ function deriveOne(
     method: method.toUpperCase() as CliCommand['method'],
     path: `${basePathOf(document)}${path}`,
     parameters: result,
+    ...(idempotency ? { idempotency } : {}),
     ...(readBinding ? { readBinding } : {}),
     ...(body ? { body } : {}),
     output: {
@@ -591,6 +602,7 @@ function deriveOne(
       : identitiesOf(document, operation, schemes),
     ...(options.action ? { action: options.action } : {}),
   };
+  validateCliIdempotencyCommand(command);
   return {
     command,
     explicit: Boolean(explicit?.length),
@@ -625,7 +637,33 @@ export function deriveAllCliCommands(
         document,
         path,
         method,
-        operation,
+        {
+          ...operation,
+          parameters: [
+            ...(item?.parameters ?? []).filter((parameter) => {
+              const inherited = resolve<OpenAPIV3_1.ParameterObject>(
+                document,
+                parameter,
+              );
+              if (inherited?.in !== 'header') return false;
+              return !(operation.parameters ?? []).some((value) => {
+                const own = resolve<OpenAPIV3_1.ParameterObject>(
+                  document,
+                  value,
+                );
+                return (
+                  (own?.in === 'header'
+                    ? own.name.toLowerCase()
+                    : own?.name) ===
+                    (inherited?.in === 'header'
+                      ? inherited.name.toLowerCase()
+                      : inherited?.name) && own?.in === inherited?.in
+                );
+              });
+            }),
+            ...(operation.parameters ?? []),
+          ],
+        },
         schemes,
         operations,
         collections,

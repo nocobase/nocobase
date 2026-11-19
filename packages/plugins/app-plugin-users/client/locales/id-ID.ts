@@ -18,19 +18,20 @@ const idID: LocaleResource<typeof enUS> = {
       businessRule:
         'Dikirim setiap kali undangan dibuat atau dikirim ulang dengan opsi email dipilih. Tidak ada tombol terpisah untuk mematikannya.',
       languagePolicy:
-        'Isi email memuat semua bahasa secara berurutan. Subjeknya dalam bahasa Inggris.',
+        'Ditulis dalam satu bahasa yang dipilih saat mengundang: bahasa antarmuka pengundang, kecuali dipilih bahasa lain. Pengiriman ulang tetap memakai bahasa itu. Jika bahasa tersebut belum memiliki teks email, email memakai bahasa default aplikasi dan bahasa Inggris.',
       channel: 'Pengirim email undangan',
       variables: {
         app: 'Nama aplikasi',
         inviter: 'Nama orang yang mengirim undangan',
         items: 'Peran atau akses yang diberikan undangan',
-        date: 'Kapan undangan kedaluwarsa',
+        date: 'Kapan undangan kedaluwarsa, dalam bahasa email dan dalam UTC',
         url: 'Tautan untuk menerima undangan; pratinjau menggunakan tautan fiktif',
       },
     },
   },
   accept: {
     title: 'Terima undangannya',
+    language: 'Bahasa',
     description: '{{inviter}} mengundang Anda.',
     summary: 'Anda juga akan bergabung: {{items}}',
     loading: 'Memuat undangan…',

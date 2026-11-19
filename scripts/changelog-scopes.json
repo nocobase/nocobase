@@ -1,95 +1,235 @@
 {
-  "agents": { "en": "Agents", "zh": "Agent" },
-  "agent": { "en": "Agents", "zh": "Agent" },
-  "agent-sessions": { "en": "Agent sessions", "zh": "Agent 会话" },
-  "agent-runner": { "en": "Agent runner", "zh": "Agent 运行器" },
-  "acp-bridge": { "en": "Agent runner", "zh": "Agent 运行器" },
-  "agent-protocol": { "en": "Agent runner", "zh": "Agent 运行器" },
-  "knowledge": { "en": "Knowledge base", "zh": "知识库" },
-  "document-extractor": { "en": "Knowledge base", "zh": "知识库" },
-  "projects": { "en": "Projects", "zh": "项目" },
-  "releases": { "en": "Release management", "zh": "发布管理" },
-  "demo-mode": { "en": "Demo mode", "zh": "演示模式" },
-  "foundation": { "en": "App foundation", "zh": "应用基础" },
-  "i18n": { "en": "Languages", "zh": "多语言" },
-  "users": { "en": "Users", "zh": "用户" },
-  "authentication": { "en": "Authentication", "zh": "认证" },
-  "auth": { "en": "Authentication", "zh": "认证" },
-  "session": { "en": "Authentication", "zh": "认证" },
-  "api-keys": { "en": "API keys", "zh": "API 密钥" },
-  "authorization": { "en": "Permissions", "zh": "权限" },
-  "authz": { "en": "Permissions", "zh": "权限" },
-  "acl": { "en": "Permissions", "zh": "权限" },
-  "authz-default-access": { "en": "Permissions", "zh": "权限" },
-  "authz-restriction-rules": { "en": "Permissions", "zh": "权限" },
-  "authz-sharing-rules": { "en": "Permissions", "zh": "权限" },
-  "database-explorer": { "en": "Database explorer", "zh": "数据库浏览器" },
-  "file": { "en": "Files", "zh": "文件" },
-  "files": { "en": "Files", "zh": "文件" },
-  "drive": { "en": "Files", "zh": "文件" },
-  "mail": { "en": "Mail", "zh": "邮件" },
-  "mailer": { "en": "Mail", "zh": "邮件" },
-  "notification": { "en": "Notifications", "zh": "通知" },
-  "notifications": { "en": "Notifications", "zh": "通知" },
-  "notification-in-app": { "en": "Notifications", "zh": "通知" },
-  "notification-providers": { "en": "Notifications", "zh": "通知" },
-  "notification-web-push": { "en": "Notifications", "zh": "通知" },
-  "scheduler": { "en": "Scheduler", "zh": "定时任务" },
-  "template-print": { "en": "Template print", "zh": "模板打印" },
-  "jobs": { "en": "Background jobs", "zh": "后台任务" },
-  "queue": { "en": "Background jobs", "zh": "后台任务" },
-  "realtime": { "en": "Realtime updates", "zh": "实时更新" },
-  "app-websocket": { "en": "Realtime updates", "zh": "实时更新" },
-  "db": { "en": "Database", "zh": "数据库" },
-  "database": { "en": "Database", "zh": "数据库" },
-  "db-mssql": { "en": "Database", "zh": "数据库" },
-  "db-mysql": { "en": "Database", "zh": "数据库" },
-  "db-oracle": { "en": "Database", "zh": "数据库" },
-  "db-postgres": { "en": "Database", "zh": "数据库" },
-  "db-sqlite": { "en": "Database", "zh": "数据库" },
-  "db-testing": { "en": "Database", "zh": "数据库" },
-  "db-testkit": { "en": "Database", "zh": "数据库" },
-  "repository-input": { "en": "Database", "zh": "数据库" },
-  "migrations": { "en": "Database", "zh": "数据库" },
-  "caching": { "en": "Caching", "zh": "缓存" },
-  "concurrency": { "en": "Concurrency", "zh": "并发控制" },
-  "app-plugin-concurrency": { "en": "Concurrency", "zh": "并发控制" },
-  "logging": { "en": "Logging", "zh": "日志" },
-  "lifecycle": { "en": "Plugin lifecycle", "zh": "插件生命周期" },
-  "service-provider": { "en": "Plugin lifecycle", "zh": "插件生命周期" },
-  "secrets": { "en": "Secrets", "zh": "密钥管理" },
-  "config": { "en": "Configuration", "zh": "配置" },
-  "api": { "en": "HTTP API", "zh": "HTTP API" },
-  "openapi": { "en": "HTTP API", "zh": "HTTP API" },
-  "api-client": { "en": "HTTP API", "zh": "HTTP API" },
-  "app-server": { "en": "Server", "zh": "服务端" },
-  "server": { "en": "Server", "zh": "服务端" },
-  "app-client": { "en": "Client", "zh": "客户端" },
-  "client": { "en": "Client", "zh": "客户端" },
-  "ui": { "en": "Interface", "zh": "界面" },
-  "ui-library": { "en": "Interface", "zh": "界面" },
-  "theme": { "en": "Interface", "zh": "界面" },
-  "markdown-mermaid": { "en": "Interface", "zh": "界面" },
-  "app-cli": { "en": "CLI", "zh": "命令行" },
-  "app-cli-client": { "en": "CLI", "zh": "命令行" },
-  "cli": { "en": "CLI", "zh": "命令行" },
-  "cli-envelope": { "en": "CLI", "zh": "命令行" },
-  "app-host": { "en": "App host", "zh": "应用托管" },
-  "app-host-docker": { "en": "App host", "zh": "应用托管" },
-  "app-installer": { "en": "Deployment", "zh": "部署" },
-  "deployment": { "en": "Deployment", "zh": "部署" },
-  "docker": { "en": "Deployment", "zh": "部署" },
-  "app-skills": { "en": "Skills", "zh": "Skills" },
-  "skills": { "en": "Skills", "zh": "Skills" },
-  "create-app": { "en": "Create app", "zh": "创建应用" },
-  "templates": { "en": "App templates", "zh": "应用模板" },
-  "app-template": { "en": "App templates", "zh": "应用模板" },
-  "app-template-default": { "en": "App templates", "zh": "应用模板" },
-  "app-template-examples": { "en": "App templates", "zh": "应用模板" },
-  "examples": { "en": "App templates", "zh": "应用模板" },
-  "create-plugin": { "en": "Plugin development", "zh": "插件开发" },
-  "plugins": { "en": "Plugin development", "zh": "插件开发" },
-  "app-testing": { "en": "Testing tools", "zh": "测试工具" },
-  "testing": { "en": "Testing tools", "zh": "测试工具" },
-  "dev-config": { "en": "Development tooling", "zh": "开发工具" }
+  "agents": { "en": "Agents", "zh": "Agent", "ja": "Agent" },
+  "agent": { "en": "Agents", "zh": "Agent", "ja": "Agent" },
+  "agent-sessions": {
+    "en": "Agent sessions",
+    "zh": "Agent 会话",
+    "ja": "Agent セッション"
+  },
+  "agent-runner": {
+    "en": "Agent runner",
+    "zh": "Agent 运行器",
+    "ja": "Agent ランナー"
+  },
+  "acp-bridge": {
+    "en": "Agent runner",
+    "zh": "Agent 运行器",
+    "ja": "Agent ランナー"
+  },
+  "agent-protocol": {
+    "en": "Agent runner",
+    "zh": "Agent 运行器",
+    "ja": "Agent ランナー"
+  },
+  "knowledge": {
+    "en": "Knowledge base",
+    "zh": "知识库",
+    "ja": "ナレッジベース"
+  },
+  "document-extractor": {
+    "en": "Knowledge base",
+    "zh": "知识库",
+    "ja": "ナレッジベース"
+  },
+  "projects": { "en": "Projects", "zh": "项目", "ja": "プロジェクト" },
+  "releases": {
+    "en": "Release management",
+    "zh": "发布管理",
+    "ja": "リリース管理"
+  },
+  "demo-mode": { "en": "Demo mode", "zh": "演示模式", "ja": "デモモード" },
+  "foundation": {
+    "en": "App foundation",
+    "zh": "应用基础",
+    "ja": "アプリ基盤"
+  },
+  "i18n": { "en": "Languages", "zh": "多语言", "ja": "多言語" },
+  "users": { "en": "Users", "zh": "用户", "ja": "ユーザー" },
+  "authentication": { "en": "Authentication", "zh": "认证", "ja": "認証" },
+  "auth": { "en": "Authentication", "zh": "认证", "ja": "認証" },
+  "session": { "en": "Authentication", "zh": "认证", "ja": "認証" },
+  "api-keys": { "en": "API keys", "zh": "API 密钥", "ja": "API キー" },
+  "authorization": { "en": "Permissions", "zh": "权限", "ja": "権限" },
+  "authz": { "en": "Permissions", "zh": "权限", "ja": "権限" },
+  "acl": { "en": "Permissions", "zh": "权限", "ja": "権限" },
+  "authz-default-access": { "en": "Permissions", "zh": "权限", "ja": "権限" },
+  "authz-restriction-rules": {
+    "en": "Permissions",
+    "zh": "权限",
+    "ja": "権限"
+  },
+  "authz-sharing-rules": { "en": "Permissions", "zh": "权限", "ja": "権限" },
+  "database-explorer": {
+    "en": "Database explorer",
+    "zh": "数据库浏览器",
+    "ja": "データベースエクスプローラー"
+  },
+  "file": { "en": "Files", "zh": "文件", "ja": "ファイル" },
+  "files": { "en": "Files", "zh": "文件", "ja": "ファイル" },
+  "drive": { "en": "Files", "zh": "文件", "ja": "ファイル" },
+  "mail": { "en": "Mail", "zh": "邮件", "ja": "メール" },
+  "mailer": { "en": "Mail", "zh": "邮件", "ja": "メール" },
+  "notification": { "en": "Notifications", "zh": "通知", "ja": "通知" },
+  "notifications": { "en": "Notifications", "zh": "通知", "ja": "通知" },
+  "notification-in-app": { "en": "Notifications", "zh": "通知", "ja": "通知" },
+  "notification-providers": {
+    "en": "Notifications",
+    "zh": "通知",
+    "ja": "通知"
+  },
+  "notification-web-push": {
+    "en": "Notifications",
+    "zh": "通知",
+    "ja": "通知"
+  },
+  "scheduler": {
+    "en": "Scheduler",
+    "zh": "定时任务",
+    "ja": "スケジュールタスク"
+  },
+  "template-print": {
+    "en": "Template print",
+    "zh": "模板打印",
+    "ja": "テンプレート印刷"
+  },
+  "jobs": {
+    "en": "Background jobs",
+    "zh": "后台任务",
+    "ja": "バックグラウンドジョブ"
+  },
+  "queue": {
+    "en": "Background jobs",
+    "zh": "后台任务",
+    "ja": "バックグラウンドジョブ"
+  },
+  "realtime": {
+    "en": "Realtime updates",
+    "zh": "实时更新",
+    "ja": "リアルタイム更新"
+  },
+  "app-websocket": {
+    "en": "Realtime updates",
+    "zh": "实时更新",
+    "ja": "リアルタイム更新"
+  },
+  "db": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "database": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-mssql": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-mysql": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-oracle": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-postgres": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-sqlite": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-testing": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "db-testkit": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "repository-input": {
+    "en": "Database",
+    "zh": "数据库",
+    "ja": "データベース"
+  },
+  "migrations": { "en": "Database", "zh": "数据库", "ja": "データベース" },
+  "caching": { "en": "Caching", "zh": "缓存", "ja": "キャッシュ" },
+  "concurrency": {
+    "en": "Concurrency",
+    "zh": "并发控制",
+    "ja": "同時実行制御"
+  },
+  "app-plugin-concurrency": {
+    "en": "Concurrency",
+    "zh": "并发控制",
+    "ja": "同時実行制御"
+  },
+  "logging": { "en": "Logging", "zh": "日志", "ja": "ログ" },
+  "lifecycle": {
+    "en": "Plugin lifecycle",
+    "zh": "插件生命周期",
+    "ja": "プラグインライフサイクル"
+  },
+  "service-provider": {
+    "en": "Plugin lifecycle",
+    "zh": "插件生命周期",
+    "ja": "プラグインライフサイクル"
+  },
+  "secrets": { "en": "Secrets", "zh": "密钥管理", "ja": "シークレット管理" },
+  "config": { "en": "Configuration", "zh": "配置", "ja": "設定" },
+  "api": { "en": "HTTP API", "zh": "HTTP API", "ja": "HTTP API" },
+  "openapi": { "en": "HTTP API", "zh": "HTTP API", "ja": "HTTP API" },
+  "api-client": { "en": "HTTP API", "zh": "HTTP API", "ja": "HTTP API" },
+  "app-server": { "en": "Server", "zh": "服务端", "ja": "サーバー" },
+  "server": { "en": "Server", "zh": "服务端", "ja": "サーバー" },
+  "app-client": { "en": "Client", "zh": "客户端", "ja": "クライアント" },
+  "client": { "en": "Client", "zh": "客户端", "ja": "クライアント" },
+  "ui": { "en": "Interface", "zh": "界面", "ja": "インターフェース" },
+  "ui-library": { "en": "Interface", "zh": "界面", "ja": "インターフェース" },
+  "theme": { "en": "Interface", "zh": "界面", "ja": "インターフェース" },
+  "markdown-mermaid": {
+    "en": "Interface",
+    "zh": "界面",
+    "ja": "インターフェース"
+  },
+  "app-cli": { "en": "CLI", "zh": "命令行", "ja": "CLI" },
+  "app-cli-client": { "en": "CLI", "zh": "命令行", "ja": "CLI" },
+  "cli": { "en": "CLI", "zh": "命令行", "ja": "CLI" },
+  "cli-envelope": { "en": "CLI", "zh": "命令行", "ja": "CLI" },
+  "app-host": {
+    "en": "App host",
+    "zh": "应用托管",
+    "ja": "アプリホスティング"
+  },
+  "app-host-docker": {
+    "en": "App host",
+    "zh": "应用托管",
+    "ja": "アプリホスティング"
+  },
+  "app-installer": { "en": "Deployment", "zh": "部署", "ja": "デプロイ" },
+  "deployment": { "en": "Deployment", "zh": "部署", "ja": "デプロイ" },
+  "docker": { "en": "Deployment", "zh": "部署", "ja": "デプロイ" },
+  "app-skills": { "en": "Skills", "zh": "Skills", "ja": "Skills" },
+  "skills": { "en": "Skills", "zh": "Skills", "ja": "Skills" },
+  "create-app": { "en": "Create app", "zh": "创建应用", "ja": "アプリ作成" },
+  "templates": {
+    "en": "App templates",
+    "zh": "应用模板",
+    "ja": "アプリテンプレート"
+  },
+  "app-template": {
+    "en": "App templates",
+    "zh": "应用模板",
+    "ja": "アプリテンプレート"
+  },
+  "app-template-default": {
+    "en": "App templates",
+    "zh": "应用模板",
+    "ja": "アプリテンプレート"
+  },
+  "app-template-examples": {
+    "en": "App templates",
+    "zh": "应用模板",
+    "ja": "アプリテンプレート"
+  },
+  "examples": {
+    "en": "App templates",
+    "zh": "应用模板",
+    "ja": "アプリテンプレート"
+  },
+  "create-plugin": {
+    "en": "Plugin development",
+    "zh": "插件开发",
+    "ja": "プラグイン開発"
+  },
+  "plugins": {
+    "en": "Plugin development",
+    "zh": "插件开发",
+    "ja": "プラグイン開発"
+  },
+  "app-testing": {
+    "en": "Testing tools",
+    "zh": "测试工具",
+    "ja": "テストツール"
+  },
+  "testing": { "en": "Testing tools", "zh": "测试工具", "ja": "テストツール" },
+  "dev-config": {
+    "en": "Development tooling",
+    "zh": "开发工具",
+    "ja": "開発ツール"
+  }
 }

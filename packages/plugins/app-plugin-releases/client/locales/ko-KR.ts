@@ -61,13 +61,13 @@ const koKR: LocaleResource<typeof enUS> = {
             all: '배포(전체)',
           },
           deployProtected: {
-            title: '보호된 배포 승인',
+            title: '보호된 환경에 배포',
             description:
-              '승인자가 지정되지 않은 보호된 환경으로의 배포를 승인합니다. 사람만 가능합니다',
-            related: '보호된 배포 승인(관련된 앱)',
+              '환경 승인자를 확인할 수 없으면 본인이 요청을 승인하거나 본인 또는 해당 실행이 직접 배포할 수 있습니다',
+            related: '보호된 환경에 배포 (관련 항목)',
             relatedLabel: '내가 만든 앱',
             relatedHint: '내가 만든 앱과 애플리케이션이 나와 연결한 앱',
-            all: '보호된 배포 승인(전체)',
+            all: '보호된 환경에 배포 (전체)',
           },
           operate: {
             title: '시작 및 중지',
@@ -142,6 +142,7 @@ const koKR: LocaleResource<typeof enUS> = {
       environments: '배포 환경',
     },
     apps: {
+      lastFailure: '마지막 실패: {{detail}}',
       title: '앱',
       create: '앱 만들기',
       id: '앱 ID',
@@ -740,6 +741,12 @@ const koKR: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '표시할 첫 번째 관리자가 없습니다.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '릴리스 패키지에서 {{seconds}}초 동안 데이터를 받지 못했습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
+        artifactReadTotalTimeout:
+          '릴리스 패키지 읽기가 {{seconds}}초를 초과했습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
+        artifactReadTimeout:
+          '릴리스 패키지 읽기 시간이 초과되었습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
         hostExited: '앱 프로세스가 준비되기 전에 중지되었습니다.',
         hostDisabled: '앱 호스트가 꺼져 있습니다.',
         hostShutDown: '앱 호스트가 종료되었습니다.',
@@ -755,6 +762,17 @@ const koKR: LocaleResource<typeof enUS> = {
         notReady: '아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.',
         checkTimeout: '테스트가 20초 안에 끝나지 않았습니다.',
         hostNoSettings: '로컬 실행 환경에는 연결 설정이 없습니다.',
+        recycleWait:
+          '앱 호스트가 메모리를 회수하는 중입니다. 완료되면 배포를 계속합니다.',
+        recycleRetry:
+          '앱 호스트가 아직 메모리를 회수하는 중이라 배포가 완료되지 않았습니다. 나중에 다시 시도하세요.',
+        capacityExceeded:
+          '앱 호스트의 메모리나 빈 슬롯이 부족하여 배포가 완료되지 않았습니다. 나중에 다시 시도하세요.',
+        replacementMemory:
+          '앱 호스트의 메모리가 부족하여 새 버전을 시작할 수 없습니다. 현재 버전은 계속 실행됩니다. 나중에 다시 시도하세요.',
+        startQueueFull: '시작 중인 앱이 너무 많습니다. 나중에 다시 시도하세요.',
+        activeLimit:
+          '실행 중인 앱 수가 한도에 도달했습니다. 나중에 다시 시도하세요.',
       },
       prefixed: {
         startFailed: '시작 실패: {{detail}}',

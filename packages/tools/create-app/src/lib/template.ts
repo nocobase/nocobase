@@ -1,10 +1,7 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
-
-/** The public npm registry that carries NocoBase packages and templates. */
-export const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
 
 export interface TemplateAlias {
   /** Published package the name resolves to. Carries no tag; the channel is applied separately. */
@@ -23,8 +20,12 @@ export interface TemplateAlias {
  */
 export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   default: { packageName: '@nocobase/app-template-default' },
+  pro: { packageName: '@nocobase/app-template-pro' },
+  enterprise: { packageName: '@nocobase/app-template-enterprise' },
   examples: { packageName: '@nocobase/app-template-examples' },
   'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
+  'multi-app': { packageName: '@nocobase/app-template-multi-app' },
+  'sub-app': { packageName: '@nocobase/app-template-sub-app' },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -88,12 +89,15 @@ export interface ResolvedTemplate {
   directory: string;
   name: string;
   version: string;
+  hasSqliteDriver: boolean;
 }
 
 export interface DownloadTemplateOptions {
   /** A published package (`pkg`, `pkg@1.2.3`) or a path to a local package directory. */
   source: string;
-  registry?: string;
+  nocobaseRegistry?: string;
+  /** Deprecated generic override, retained only for callers using --registry. */
+  legacyRegistry?: string;
 }
 
 /**
@@ -127,7 +131,14 @@ function packerFor(source: string): {
 
   return {
     command: 'npm',
-    args: () => ['pack', '--silent', source],
+    args: (destination) => [
+      'pack',
+      // Keep HTTP failures visible to the runner's credential launcher; stdout is captured by runCommand.
+      '--loglevel=error',
+      source,
+      '--pack-destination',
+      path.dirname(destination),
+    ],
   };
 }
 
@@ -146,7 +157,7 @@ async function findTarball(directory: string): Promise<string> {
 
 async function readTemplateManifest(
   directory: string,
-): Promise<{ name: string; version: string }> {
+): Promise<Omit<ResolvedTemplate, 'directory'>> {
   const manifestPath = path.join(directory, 'package.json');
   let raw: string;
 
@@ -161,11 +172,17 @@ async function readTemplateManifest(
   const manifest = JSON.parse(raw) as {
     name?: string;
     version?: string;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
   };
 
   return {
     name: manifest.name ?? 'unknown',
     version: manifest.version ?? '0.0.0',
+    hasSqliteDriver: Boolean(
+      manifest.dependencies?.['@nocobase/db-sqlite'] ??
+      manifest.devDependencies?.['@nocobase/db-sqlite'],
+    ),
   };
 }
 
@@ -190,16 +207,26 @@ export async function downloadTemplate(
 
   try {
     const tarballPath = path.join(packDirectory, 'template.tgz');
-    const args = packer.args(tarballPath);
-
-    if (options.registry && !isLocalTemplateSource(source)) {
-      args.push(`--registry=${options.registry}`);
+    const local = isLocalTemplateSource(source);
+    const localArchive = local && /\.(?:tgz|tar\.gz)$/u.test(source);
+    if (localArchive) {
+      await copyFile(path.resolve(source), tarballPath);
+    } else {
+      const args = packer.args(tarballPath);
+      if (options.legacyRegistry && !local)
+        args.push(`--registry=${options.legacyRegistry}`);
+      if (
+        options.nocobaseRegistry &&
+        !local &&
+        source.startsWith('@nocobase/')
+      ) {
+        args.push(`--@nocobase:registry=${options.nocobaseRegistry}`);
+      }
+      await runCommand(packer.command, args, {
+        cwd: local ? path.resolve(source) : process.cwd(),
+        timeoutMs: PACK_TIMEOUT_MS,
+      });
     }
-
-    await runCommand(packer.command, args, {
-      cwd: isLocalTemplateSource(source) ? path.resolve(source) : packDirectory,
-      timeoutMs: PACK_TIMEOUT_MS,
-    });
 
     const tarball = isLocalTemplateSource(source)
       ? tarballPath

@@ -9,14 +9,14 @@ Things that are not ordinary source and do not follow the file-by-file process i
 Merge key by key; never copy the template's manifest over. What the template changed:
 
 ```bash
-diff <(node -p "JSON.stringify(require('$WORK/$BASE/package.json'), null, 2)") \
-     <(node -p "JSON.stringify(require('$WORK/$TARGET/package.json'), null, 2)")
+diff <(node -p "JSON.stringify(require('$WORK/base/package.json'), null, 2)") \
+     <(node -p "JSON.stringify(require('$WORK/target/package.json'), null, 2)")
 ```
 
 | Key                                                              | Rule                                                                                                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `name`, `displayName`, `version`                                 | The application's. Never the template's.                                                                                             |
-| `nocobase.templatePackage`, `nocobase.templateKind`              | Leave as they are.                                                                                                                   |
+| `nocobase.templatePackage`, `nocobase.templateKind`              | Keep both on normal upgrades. On an agreed edition change, update `templatePackage` at acceptance; keep `templateKind`.              |
 | `nocobase.defaultTemplateVersion`                                | The target — set last, after the merge.                                                                                              |
 | `description`, `publishConfig`, `repository`                     | Absent by design; do not reintroduce.                                                                                                |
 | `dependencies`, `devDependencies`                                | Add, update, and remove what the template did. Never replace the object: the database driver and the user's own additions live here. |
@@ -26,13 +26,21 @@ diff <(node -p "JSON.stringify(require('$WORK/$BASE/package.json'), null, 2)") \
 
 Dependency keys get reordered between releases, so most of the raw diff is noise — compare key by key. A dependency the template dropped may be one the user now imports directly; search application code, configuration, tests, and build scripts before deleting it, same as a removed export. For plugins, complete the [code and configuration review](#review-a-removed-plugins-usage). Obtain confirmation before removing any apparently unused `@nocobase/*` capability, and keep each retained package in the appropriate dependency section together with any required registrations.
 
-After its references have been migrated and the user has confirmed the removal, run `pnpm nocobase package remove @nocobase/example` instead of deleting only the manifest key. Use `--dry-run` to preview or `--json` for structured output. The command invokes the application's package manager so `package.json` and the lockfile stay consistent, then removes only synchronized Skills recorded as owned by that package. For an `@nocobase/app-plugin-*` target it delegates to the plugin unregister workflow and removes Client, Server, and CLI registrations together; `pnpm nocobase plugin unregister <name>` remains available as the plugin-specific entry point. The removal command does not edit business code or configuration, which is why the usage review and any migration happen first.
+After its references have been migrated and the user has confirmed the removal, run `pnpm nocobase package remove @nocobase/example` instead of deleting only the manifest key. Use `--dry-run` to preview or `--json` for structured output. The command invokes the application's package manager so `package.json` and the lockfile stay consistent, then removes only synchronized Skills recorded as owned by that package. For an `@nocobase/app-plugin-*` target it delegates to the plugin removal workflow and removes Client, Server, and CLI registrations together; `pnpm nocobase plugin remove <name>` remains available as the plugin-specific entry point. The removal command does not edit business code or configuration, which is why the usage review and any migration happen first.
 
 After an interrupted or manual removal, confirm that the final manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. `package remove` can also clean recorded historical Skill ownership for a named package already absent from the manifest, and it does not uninstall or clean Skills belonging to another package.
 
 Ranges in a published template are already resolved (`pnpm pack` expands `workspace:` and `catalog:`). Take them as published.
 
-Keep the existing application and template identities: changing from one template lineage to another is a separate source and database migration, and changing the package name does not transfer migration history.
+Preserve the application identity and migration owners throughout. For an explicit Community → Professional/Enterprise or Professional → Enterprise transition, follow [switching editions](edition-transition.md). Other template-family changes require a separate migration plan.
+
+### Preinstalled plugins and database drivers
+
+Compare the published TARGET manifest with the application's manifest and its Client, Server and CLI registrations. Keep locally enabled plugins and packages imported by runtime code in `dependencies`. Add a new optional plugin to `devDependencies` at TARGET's published range and leave its registration entries absent. Preserve intentional local removals and custom registrations. After installing the target CLI and synchronizing Skills, use `pnpm nocobase plugin inspect <name>` to check the resulting state and any Skills the plugin ships. When the upgrade calls for disabling a plugin, `plugin unregister` retains it and its Skills for development. For an intended uninstall, use `plugin remove`; update older scripts that used `unregister` for that purpose.
+
+Keep a direct production dependency for each official database dialect used by an effective connection, including secondary connections and deployment environment overrides. For example, when TARGET moves SQLite to `devDependencies`, an application still using SQLite keeps it in `dependencies`. If the application uses PostgreSQL alone, keep PostgreSQL in production and SQLite in development when preinstalled. Declare each driver once, reconcile its range with TARGET and preserve deliberate project pins. Keep the existing database configuration and secrets. Fresh-project `config init` is unnecessary for an already configured application.
+
+For a configured project, run `pnpm nocobase config check --no-connect` with the relevant environment. Use the reported connection, package and repair command to resolve a missing production dependency. After building, check `dist/package.json` for the intended production drivers and confirm that plugins kept solely for preinstallation have stayed out of the production dependency tree.
 
 ### Dependency resolution conflicts
 
@@ -65,9 +73,9 @@ When the target removes `client/route-overrides.ts` and `client/source-extension
 `config.example.yml` ships with every current official template and merges normally. A template may also ship `.env.example`. Changes to these examples are the signal that a corresponding live file may need a manual edit:
 
 ```bash
-diff "$WORK/$BASE/config.example.yml" "$WORK/$TARGET/config.example.yml"
-if [ -f "$WORK/$BASE/.env.example" ] || [ -f "$WORK/$TARGET/.env.example" ]; then
-  diff "$WORK/$BASE/.env.example" "$WORK/$TARGET/.env.example"
+diff "$WORK/base/config.example.yml" "$WORK/target/config.example.yml"
+if [ -f "$WORK/base/.env.example" ] || [ -f "$WORK/target/.env.example" ]; then
+  diff "$WORK/base/.env.example" "$WORK/target/.env.example"
 fi
 ```
 

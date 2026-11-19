@@ -2,7 +2,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import type { MailersConfig } from '@nocobase/app-server/mailers';
 import type { UsersConfig } from '../tokens.js';
 import locales from '../locales/index.js';
-import { renderInvitationEmail } from './mail.js';
+import { formatInvitationDate, renderInvitationEmail } from './mail.js';
 import { describeInvitationEmailChannel } from './channel.js';
 
 /** Administrator-facing text, translated in the browser from this plugin's client locales. */
@@ -59,10 +59,9 @@ export async function registerInvitationTemplate(
         'Sent every time an invitation is created or resent with email selected. There is no separate switch to turn it off.',
       ),
       locales: Object.keys(locales),
-      localeMode: 'combined',
       languagePolicy: text(
         'languagePolicy',
-        'The email body lists every language one after another. The subject is in English.',
+        "Written in one language, chosen when inviting: the inviter's interface language unless another is picked. Resending keeps it. If that language has no email text, the email shows the application's default language and English.",
       ),
       variables: [
         { name: 'app', description: text('variables.app', 'Application name') },
@@ -82,7 +81,10 @@ export async function registerInvitationTemplate(
         },
         {
           name: 'date',
-          description: text('variables.date', 'When the invitation expires'),
+          description: text(
+            'variables.date',
+            "When the invitation expires, in the email's language and in UTC",
+          ),
         },
         {
           name: 'url',
@@ -109,15 +111,22 @@ export async function registerInvitationTemplate(
           },
         },
       ],
-      render: async (_locale, example) => {
+      render: async (locale, example) => {
         const raw = example === 'definition';
         const mail = await renderInvitationEmail({
           to: 'sample@example.invalid',
           appTitle: raw ? '{{app}}' : 'Sample workspace',
           inviterName: raw ? '{{inviter}}' : 'Sample administrator',
           summary: [raw ? '{{items}}' : 'Sample member role'],
-          expiresAt: raw ? '{{date}}' : '2030-01-02T12:00:00.000Z',
+          expiresAt: raw
+            ? () => '{{date}}'
+            : (language) =>
+                formatInvitationDate(
+                  new Date('2030-01-02T12:00:00.000Z'),
+                  language,
+                ),
           url: raw ? '{{url}}' : 'https://example.invalid/invitation/synthetic',
+          locale,
         });
         return { title: mail.subject, body: mail.text, html: mail.html };
       },

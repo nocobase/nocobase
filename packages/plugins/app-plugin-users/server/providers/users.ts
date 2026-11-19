@@ -9,6 +9,7 @@ import {
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { AppIdentityConfig } from '@nocobase/app-server/config';
+import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 
 import { createNotificationMailer } from '../invitations/notification-mailer.js';
@@ -96,6 +97,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
         },
         users: resolver.resolve(userAdministrationServiceToken),
         roleScopes: resolver.resolve(userRoleScopeRegistryToken),
+        preferences: resolver.resolve(userPreferencesServiceToken),
+        ...(resolver.has(i18nToken)
+          ? { i18n: resolver.resolve(i18nToken) }
+          : {}),
         ...(permissionSets === undefined ? {} : { permissionSets }),
         onRoleScopesChanged: (userId) =>
           permissionSets?.notifyAssignmentsChanged({

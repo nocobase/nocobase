@@ -8,14 +8,11 @@ import {
 import type { Context } from 'hono';
 
 import type { Permissions } from '../shared/access.js';
-import type { Plan, PlanRowInput } from '../shared/plans.js';
 import type { Viewer } from './access/viewer.js';
 import type { Actor } from './kernel/actor.js';
 import type { Projects } from './composition.js';
 import type { IssueTriggers } from './domains/issues/index.js';
 import type { NoticeRules } from './domains/notices/index.js';
-import type { PlanHooks, PlanSourceOf } from './domains/plans/ports.js';
-import type { IntakeOrganizer } from './domains/plans/intake/index.js';
 import type { KindRegistry } from './kernel/kinds.js';
 import type { StatusEventTypes } from './domains/statuses/index.js';
 
@@ -89,19 +86,6 @@ export type {
   CommentWriter,
 } from './domains/comments/index.js';
 export type {
-  CreatePlanOptions,
-  PlanHooks,
-  PlanService,
-} from './domains/plans/ports.js';
-export type {
-  IntakeAiService,
-  IntakeDeliverer,
-  IntakeOrganizer,
-  OrganizerAvailability,
-  OrganizerJobRef,
-  OrganizerProgress,
-} from './domains/plans/intake/index.js';
-export type {
   NoticeRule,
   NoticeRuleContext,
   NoticeRules,
@@ -136,22 +120,6 @@ export const projectsTriggersToken: ServiceToken<IssueTriggers> =
 export const projectsStatusEventsToken: ServiceToken<StatusEventTypes> =
   createServiceToken<StatusEventTypes>(
     '@nocobase/app-plugin-projects/status-events',
-  );
-
-/**
- * What hears a plan being decided (`PlanHooks`, `shared/plans.ts`): the agents plugin binds it to wake the conversation
- * that proposed the plan. Resolved on each use; unbound, decisions are only recorded.
- */
-export const projectsPlanHooksToken: ServiceToken<PlanHooks> =
-  createServiceToken<PlanHooks>('@nocobase/app-plugin-projects/plan-hooks');
-
-/**
- * Who organises requirement intake with AI (`IntakeOrganizer`, `shared/intake-ai.ts`): the application binds it (the assembling application:
- * an agent run on a runner). Resolved on each use; unbound, the AI draft tab offers the rule split only.
- */
-export const projectsIntakeOrganizerToken: ServiceToken<IntakeOrganizer> =
-  createServiceToken<IntakeOrganizer>(
-    '@nocobase/app-plugin-projects/intake-organizer',
   );
 
 /** Where other plugins add notice rules; they join the plugin's own in each transaction (`domains/notices`). */
@@ -247,49 +215,6 @@ export const projectsRequestActorToken: ServiceToken<RequestActor> =
   createServiceToken<RequestActor>(
     '@nocobase/app-plugin-projects/request-actor',
   );
-
-/** A write the API was asked for, as the rows of an operation plan. */
-export interface DelegatedWriteRequest {
-  /** What the change is, in a few words: the plan's title. */
-  readonly title: string;
-  readonly rows: readonly PlanRowInput[];
-}
-
-/** A delegated write that was made: the plan that made it, and what the route adds to its answer's `meta`. */
-export interface DelegatedWrite {
-  readonly plan: Plan;
-  readonly meta: Readonly<Record<string, unknown>>;
-}
-
-/**
- * Writes of a viewer acting for someone else, such as an agent in a person's conversation: the issue, comment and
- * dependency routes hand such a write to `write`, which makes it as an undoable plan of the person's within whatever
- * limits the application sets, or refuses it with a `DomainError`. The routes answer what the plan made, with `meta`
- * beside it. Resolved on each request; unbound, every write goes straight through the services.
- */
-export interface DelegatedWrites {
-  covers(viewer: Viewer): boolean;
-  write(
-    viewer: Viewer,
-    request: DelegatedWriteRequest,
-  ): Promise<DelegatedWrite>;
-}
-
-export const projectsDelegatedWritesToken: ServiceToken<DelegatedWrites> =
-  createServiceToken<DelegatedWrites>(
-    '@nocobase/app-plugin-projects/delegated-writes',
-  );
-
-export type { PlanSourceOf } from './domains/plans/ports.js';
-
-/**
- * Where the plans a request proposes come from when the application decides it rather than the caller, such as an
- * agent in a person's conversation (`PlanSourceOf`). Resolved on each request; unbound, every caller names its own.
- */
-export const projectsPlanSourceToken: ServiceToken<PlanSourceOf> =
-  createServiceToken<PlanSourceOf>('@nocobase/app-plugin-projects/plan-source');
-
-export { PLANS_USE_ACTION } from './domains/plans/index.js';
 
 /** Application integration for CLI issue creation in a person's session and issue progress. */
 export interface IssueSessionIntegration {

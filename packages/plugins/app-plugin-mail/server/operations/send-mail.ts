@@ -4,7 +4,12 @@ import type { NormalizedMailMessage } from '../contracts/provider.js';
 import { MailAttachmentsService } from '../services/attachments.js';
 import { uploadedImageMetadata } from '../../shared/inline-images.js';
 import { remoteMessageId } from '../services/draft-content.js';
-import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
+import {
+  mailLogCode,
+  mailLogError,
+  writeMailLog,
+  type MailLogger,
+} from '../logging.js';
 import { createHash, randomUUID } from 'node:crypto';
 
 import type {
@@ -163,7 +168,7 @@ export class SendMailOperation {
           durationMs: Date.now() - startedAt,
           ...(result.error
             ? {
-                errorCode: result.error.code,
+                errorCode: mailLogCode(result.error.code),
                 category: result.error.category,
                 retryable: result.error.retryable,
                 err: mailLogError(result.error),

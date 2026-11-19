@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { describeMigration } from '@nocobase/app-testing/server';
+import { expect } from 'vitest';
 
 describeMigration('202611040001_create_procurement', {
   sources: [
@@ -44,5 +45,48 @@ describeMigration('202611040001_create_procurement', {
       'procurementSuppliers',
     ])
       await expectCollection(name).not.toExist();
+  },
+});
+
+// A request written before the binding column belongs to the only
+// definition the table has had.
+describeMigration('202611130004_procurement_definition_binding', {
+  sources: [
+    {
+      packageName: 'procurement-test',
+      directory: path.resolve(
+        import.meta.dirname,
+        '../../database/main/migrations',
+      ),
+    },
+  ],
+  async before({ connection }) {
+    await connection.repository('procurementRequests').createOne({
+      values: {
+        id: 'request-before-binding',
+        title: 'Notebooks',
+        applicantId: 'lin',
+        status: 'draft',
+        statusChangedAt: '2026-11-01T00:00:00.000Z',
+        lifecycleVersion: 1,
+        totalMinor: 1250,
+        createdAt: '2026-11-01T00:00:00.000Z',
+      },
+    });
+  },
+  async up({ connection, expectCollection }) {
+    await expectCollection('procurementRequests').toHaveField(
+      'lifecycleDefinition',
+      { type: 'string', nullable: true },
+    );
+    const rows = await connection
+      .repository('procurementRequests')
+      .findMany({});
+    expect(rows.map((row) => row.lifecycleDefinition)).toEqual(['procurement']);
+  },
+  async down({ expectCollection }) {
+    await expectCollection('procurementRequests').not.toHaveField(
+      'lifecycleDefinition',
+    );
   },
 });

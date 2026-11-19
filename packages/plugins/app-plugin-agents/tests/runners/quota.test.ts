@@ -498,7 +498,7 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
   expect(costAfterC.transactions).toBe(0);
   expect(costAfterC.locks).toBe(0);
 });
-it('throttles small usage changes, saves boundary transitions and broadcasts only mark changes', async () => {
+it('saves small usage changes and broadcasts uncapped usage only on mark changes', async () => {
   h = await createHarness();
   const runner = await h.registerRunner();
   const broadcasts: unknown[] = [];
@@ -525,8 +525,12 @@ it('throttles small usage changes, saves boundary transitions and broadcasts onl
     .quotaRevision;
   for (const percent of [63, 64, 65, 66]) await report(percent);
   expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
-    revision,
+    revision + 4,
   );
+  expect(
+    (await h.services.runners.get(runner.runnerId)).quotaUsage?.[0]
+      ?.usedPercent,
+  ).toBe(66);
   expect(broadcasts).toHaveLength(0);
   await report(67);
   expect(
@@ -829,4 +833,251 @@ it('projects affected discovered agents to the owner without requiring Agent rea
   expect(await h.services.agents.get(blocked)).toMatchObject({
     source: 'runner',
   });
+});
+
+it('pauses claims at a configured ceiling, keeps active work and resumes when raised, disabled or reset', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent();
+  const runner = await h.registerRunner({ ownerUserId: 'alice', slots: 2 });
+  const active = await h.enqueue(agent, 'active');
+  expect((await claim(h, runner))[0].run.id).toBe(active);
+  const report = (usedPercent: number) =>
+    h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+        windows: [
+          {
+            window: 'five_hour',
+            scope: 'tool',
+            target: '',
+            usedPercent,
+            exhausted: false,
+            resetsAt: '2026-10-01T01:00:00.000Z',
+          },
+        ],
+      }),
+    );
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 80 },
+  });
+  await report(79);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toEqual([]);
+  await report(80);
+  const queued = await h.enqueue(agent, 'queued');
+  expect(await claim(h, runner)).toEqual([]);
+  expect((await h.services.runs.get(active)).status).toBe('dispatched');
+  const saved = await h.services.runners.get(runner.runnerId);
+  expect(
+    runsEntry(saved, { tool: 'claude', model: null }, h.clock.now().getTime()),
+  ).toBe(false);
+  expect(
+    quotaForAgent(
+      [saved],
+      await h.services.agents.get(agent),
+      undefined,
+      h.clock.now().getTime(),
+    ),
+  ).toHaveLength(1);
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 90 },
+  });
+  expect(
+    runsEntry(
+      await h.services.runners.get(runner.runnerId),
+      { tool: 'claude', model: null },
+      h.clock.now().getTime(),
+    ),
+  ).toBe(true);
+  await h.services.runners.update(runner.runnerId, { quotaLimits: null });
+  expect(
+    runsEntry(
+      await h.services.runners.get(runner.runnerId),
+      { tool: 'claude', model: null },
+      h.clock.now().getTime(),
+    ),
+  ).toBe(true);
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 80 },
+  });
+  h.clock.advance(3_600_000);
+  expect(
+    runsEntry(
+      await h.services.runners.get(runner.runnerId),
+      { tool: 'claude', model: null },
+      h.clock.now().getTime(),
+    ),
+  ).toBe(true);
+  expect((await h.services.runs.get(queued)).status).toBe('queued');
+});
+it('validates quota ceilings and protects settings from other users and anonymous callers', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({ ownerUserId: 'alice' });
+  const url = `/agents/runners/${runner.runnerId}`;
+  for (const value of [0, 101, 80.5, '80']) {
+    expect(
+      (
+        await h.request('PATCH', url, {
+          user: 'alice',
+          body: { quotaLimits: { claude: value } },
+        })
+      ).status,
+    ).toBe(400);
+  }
+  expect(
+    (
+      await h.request('PATCH', url, {
+        user: 'bob',
+        body: { quotaLimits: { claude: 80 } },
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (await h.request('PATCH', url, { body: { quotaLimits: { claude: 80 } } }))
+      .status,
+  ).toBe(401);
+  expect(
+    (
+      await h.request('PATCH', url, {
+        user: 'alice',
+        body: { quotaLimits: { claude: 80 } },
+      })
+    ).status,
+  ).toBe(200);
+});
+it('lists current tool quota with each visible runtime, as its own read shows it, and drops what has reset', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({
+    ownerUserId: 'alice',
+    tools: [{ kind: 'claude', authenticated: true }],
+  });
+  await h.services.tx.run((unit) =>
+    h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+      windows: [
+        {
+          scope: 'tool',
+          target: '',
+          window: 'five_hour',
+          resetsAt: '2026-10-01T01:00:00.000Z',
+          usedPercent: 100,
+          exhausted: true,
+        },
+        {
+          scope: 'tool',
+          target: '',
+          window: 'seven_day',
+          resetsAt: '2026-10-08T00:00:00.000Z',
+          usedPercent: 40,
+          exhausted: false,
+        },
+      ],
+    }),
+  );
+  await h.services.tx.run((unit) =>
+    h.services.runners.markModelUnavailable(
+      unit,
+      runner.runnerId,
+      'claude',
+      'claude-retired',
+    ),
+  );
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 80 },
+  });
+  const listed = async (user: string, can: string[] = []) =>
+    (await h.request('GET', '/agents/runners', { user, can })).body.data as {
+      id: string;
+      unavailableModels: { reason?: string; window?: string }[];
+      quotaUsage: { window: string; usedPercent?: number }[];
+      quotaLimits: Record<string, number> | null;
+    }[];
+  const reader = ['agents.runners/read'];
+  const [own] = await listed('alice');
+  expect(own?.unavailableModels).toEqual([
+    expect.objectContaining({ reason: 'toolQuota', window: 'five_hour' }),
+  ]);
+  expect(own?.quotaUsage.map((u) => [u.window, u.usedPercent])).toEqual([
+    ['five_hour', 100],
+    ['seven_day', 40],
+  ]);
+  expect(own?.quotaLimits).toEqual({ claude: 80 });
+  // A reader of runners sees the same quota as the runtime's own read; someone who may not see the runtime gets none.
+  const detail = (
+    await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+      user: 'bob',
+      can: reader,
+    })
+  ).body.data;
+  const [read] = await listed('bob', reader);
+  expect(read?.quotaUsage).toEqual(detail.quotaUsage);
+  expect(read?.unavailableModels).toEqual(
+    detail.unavailableModels.filter(
+      (mark: { reason?: string }) => mark.reason === 'toolQuota',
+    ),
+  );
+  expect(await listed('carol')).toEqual([]);
+  // Once a window resets, its mark and usage no longer count.
+  h.clock.advance(3_600_000);
+  const [later] = await listed('alice');
+  expect(later?.unavailableModels).toEqual([]);
+  expect(later?.quotaUsage.map((u) => u.window)).toEqual(['seven_day']);
+});
+
+it('retires missing Codex windows after a complete snapshot, including earlier samples in the same batch', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({
+    tools: [{ kind: 'codex', authenticated: true }],
+  });
+  const agent = await h.createAgent({
+    modelEntries: [{ tool: 'codex', model: null }],
+  });
+  const runId = await h.enqueue(agent);
+  expect((await claim(h, runner))[0].run.id).toBe(runId);
+  const monthly = {
+    scope: 'tool' as const,
+    target: '',
+    window: '43200m',
+    usedPercent: 52,
+    exhausted: false,
+    resetsAt: null,
+  };
+  const weekly = { ...monthly, window: '10080m', usedPercent: 0 };
+  for (const tool of ['codex', 'claude'] as const) {
+    await h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, tool, null, {
+        windows: [monthly],
+      }),
+    );
+  }
+  const events = [
+    { windows: [monthly, weekly] },
+    { replacesUsage: true, windows: [weekly] },
+  ].map((quota, i) => ({
+    seq: i + 1,
+    at: h.clock.now().toISOString(),
+    type: 'status',
+    content: 'quota',
+    meta: { quota },
+  }));
+  const post = () =>
+    h.request('POST', `/agents/runners/runs/${runId}/events`, {
+      runnerKey: runner.key,
+      body: { events },
+    });
+  expect((await post()).status).toBe(200);
+  const after = await h.services.runners.get(runner.runnerId);
+  expect(
+    after.quotaUsage?.map(({ tool, window, usedPercent }) => [
+      tool,
+      window,
+      usedPercent,
+    ]),
+  ).toEqual([
+    ['claude', '43200m', 52],
+    ['codex', '10080m', 0],
+  ]);
+  expect((await post()).status).toBe(200);
+  expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
+    after.quotaRevision,
+  );
 });

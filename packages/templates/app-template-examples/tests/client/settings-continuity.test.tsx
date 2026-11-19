@@ -505,7 +505,13 @@ it('refreshes a filtered list after disabling a user, corrects an empty last pag
     },
   );
   await user.click(
-    await screen.findByRole('button', { name: 'Disable', exact: true }),
+    await screen.findByRole('button', {
+      name: 'Actions for Alice',
+      expanded: false,
+    }),
+  );
+  await user.click(
+    await screen.findByRole('menuitem', { name: 'Disable', exact: true }),
   );
   await user.click(
     within(screen.getByRole('alertdialog')).getByRole('button', {

@@ -7,6 +7,7 @@ import { ApiKeyScopeError } from '../scopes.js';
 export const API_KEYS_ERROR_DOMAIN = 'apiKeys';
 
 const FIELD_OF: Readonly<Record<string, string>> = {
+  INVALID_NAME: 'name',
   EXPIRY_REQUIRED: 'expiresInDays',
   INVALID_EXPIRY: 'expiresInDays',
 };

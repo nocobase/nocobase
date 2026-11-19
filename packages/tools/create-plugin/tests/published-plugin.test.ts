@@ -117,7 +117,23 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
   const lockfile = parse(
     await readFile(path.join(repository, 'pnpm-lock.yaml'), 'utf8'),
   ) as {
-    packages: Record<string, { resolution: { integrity: string } }>;
+    packages: Record<
+      string,
+      {
+        resolution: { integrity?: string };
+        os?: string[];
+        cpu?: string[];
+        libc?: string[];
+      }
+    >;
+    snapshots: Record<
+      string,
+      {
+        optional?: boolean;
+        dependencies?: Record<string, string>;
+        optionalDependencies?: Record<string, string>;
+      }
+    >;
   };
   // Frozen installs restore package contents, not the registry metadata pnpm add needs.
   // Seed a private pnpm 11 metadata cache from actual installed, locked versions,
@@ -131,6 +147,29 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
       versions: Record<string, unknown>;
     }
   >();
+  function addManifest(manifest: {
+    name: string;
+    version: string;
+    [key: string]: unknown;
+  }): void {
+    const { name, version } = manifest;
+    const resolution = lockfile.packages[`${name}@${version}`]?.resolution;
+    // A reused local store can retain packages from other branches.
+    if (!resolution?.integrity) return;
+    const metadata = metadataByName.get(name) ?? {
+      name,
+      'dist-tags': { latest: version },
+      versions: {},
+    };
+    metadata.versions[version] = {
+      ...manifest,
+      dist: {
+        integrity: resolution.integrity,
+        tarball: `https://registry.npmjs.org/${name}/-/${path.basename(name)}-${version}.tgz`,
+      },
+    };
+    metadataByName.set(name, metadata);
+  }
   async function addInstalled(directory: string): Promise<void> {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       // Only real package directories belong to this store entry; dependency links
@@ -147,24 +186,7 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
         name: string;
         version: string;
       };
-      const { name, version } = manifest;
-      const resolution = lockfile.packages[`${name}@${version}`]?.resolution;
-      // A reused local store can retain packages from other branches. They must
-      // not participate in this lockfile's offline dependency resolution.
-      if (!resolution?.integrity) continue;
-      const metadata = metadataByName.get(name) ?? {
-        name,
-        'dist-tags': { latest: version },
-        versions: {},
-      };
-      metadata.versions[version] = {
-        ...manifest,
-        dist: {
-          integrity: resolution.integrity,
-          tarball: `https://registry.npmjs.org/${name}/-/${path.basename(name)}-${version}.tgz`,
-        },
-      };
-      metadataByName.set(name, metadata);
+      addManifest(manifest);
     }
   }
   const store = path.join(repository, 'node_modules/.pnpm');
@@ -177,14 +199,48 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
       continue;
     await addInstalled(path.join(store, entry.name, 'node_modules'));
   }
+  // pnpm 11.11 resolves locked optional packages even when this platform skips
+  // installing them (for example fsevents on Linux). Their locked platform and
+  // dependency metadata must be available without downloading their binaries.
+  for (const [id, locked] of Object.entries(lockfile.packages)) {
+    const snapshot = lockfile.snapshots[id];
+    if (!snapshot?.optional || !(locked.os || locked.cpu || locked.libc))
+      continue;
+    const separator = id.lastIndexOf('@');
+    const name = id.slice(0, separator);
+    const version = id.slice(separator + 1);
+    if (metadataByName.get(name)?.versions[version]) continue;
+    const dependencies = (entries: Record<string, string> = {}) =>
+      Object.fromEntries(
+        Object.entries(entries).map(([dependency, reference]) => {
+          const version = reference.split('(')[0]!;
+          return [
+            dependency,
+            /^\d/u.test(version) ? version : `npm:${version}`,
+          ];
+        }),
+      );
+    addManifest({
+      ...locked,
+      name,
+      version,
+      dependencies: dependencies(snapshot.dependencies),
+      optionalDependencies: dependencies(snapshot.optionalDependencies),
+    });
+  }
   for (const [name, metadata] of metadataByName) {
-    const file = path.join(
-      cache,
-      'v11/metadata/registry.npmjs.org',
-      `${name}.jsonl`,
-    );
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, `{}\n${JSON.stringify(metadata)}`);
+    // pnpm may request full metadata while resolving locked optional packages.
+    for (const kind of ['metadata', 'metadata-full']) {
+      const file = path.join(
+        cache,
+        'v11',
+        kind,
+        'registry.npmjs.org',
+        `${name}.jsonl`,
+      );
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, `{}\n${JSON.stringify(metadata)}`);
+    }
   }
 }
 

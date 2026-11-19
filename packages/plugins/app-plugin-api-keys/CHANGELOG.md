@@ -1,5 +1,43 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 57ce0d0: Verify unscoped key endpoint access against Better Auth 1.7.21 and align the API key security guidance with regression tests: keys cannot manage keys, password changes need a sign-in session, and with the templates' `bearer()` plugin the token `/list-sessions` returns replays as a full sign-in session, so unscoped keys need a scope or an App `before` hook on that path.
+- Updated dependencies [8647bb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 71716c6: Allow API key names up to 100 characters by default and return validation errors as client errors when creating or rotating scoped keys.
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 1.0.0-beta.22
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
 ## 1.0.0-beta.21
 
 ### Patch Changes

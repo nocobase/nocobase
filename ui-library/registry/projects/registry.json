@@ -4,13 +4,18 @@
       "name": "issue-table",
       "type": "registry:component",
       "title": "Issue Table",
-      "description": "The issues list: identifier, title with labels, status, priority, owner, executor and last update, with sorting and selection through callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.",
+      "description": "The issues list: identifier, title with labels, status drawn as its shape, priority, owner (a person or an agent's avatar), project and last update, with sorting, selection, extra columns, group rows and a compact phone layout through props and callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.",
       "categories": ["projects"],
       "meta": {
         "group": "Projects",
         "iframeHeight": 520
       },
-      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^2.0.0-beta.4",
+        "@nocobase/app-plugin-projects@^0.1.0-beta.8",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
       "registryDependencies": [
         "avatar",
         "badge",
@@ -18,12 +23,22 @@
         "checkbox",
         "table"
       ],
-      "docs": "Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow. Every word comes from the labels prop, English by default.",
+      "docs": "Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow; give a status its key to draw it as its shape (status-icon). Every word comes from the labels prop, English by default.",
       "files": [
         {
           "path": "issue-table.tsx",
           "type": "registry:component",
           "target": "client/components/issue-table.tsx"
+        },
+        {
+          "path": "status-icon.tsx",
+          "type": "registry:component",
+          "target": "client/components/status-icon.tsx"
+        },
+        {
+          "path": "status-shapes.ts",
+          "type": "registry:component",
+          "target": "client/components/status-shapes.ts"
         }
       ]
     },
@@ -162,96 +177,6 @@
           "path": "project-detail/labels.ts",
           "type": "registry:lib",
           "target": "client/extensions/nocobase-project-detail/labels.ts"
-        }
-      ]
-    },
-    {
-      "name": "plan-card",
-      "type": "registry:block",
-      "title": "Plan Card",
-      "description": "An operation plan of @nocobase/app-plugin-projects as a card: the issues it is about, its changes row by row with whom each wakes and what it risks, execute with a second confirmation for risky rows, void, check again, undo within the window after a preview, and an in-place editor of an open plan's rows over property-fields; a frame prop lays its parts out under a header of the caller's, such as an inbox detail pane's. Use it wherever an agent's or a status rule's plan is reviewed and decided, such as a chat timeline, an inbox or a plan page. Wired: reads and acts through the plugin's headless hooks in /client/kit and its pure plan rules in /client/plan-model.",
-      "categories": ["projects"],
-      "meta": {
-        "group": "Projects",
-        "iframeHeight": 900
-      },
-      "dependencies": [
-        "@nocobase/app-client@^2.0.0-beta.0",
-        "@nocobase/app-plugin-projects@^0.1.0-beta.0",
-        "@nocobase/i18n@^1.0.0-beta.4",
-        "cn@^0.4.0",
-        "lucide-react@^0.487.0",
-        "react-router@^7.0.2"
-      ],
-      "registryDependencies": [
-        "alert",
-        "alert-dialog",
-        "button",
-        "collapsible",
-        "input",
-        "skeleton",
-        "spinner",
-        "table",
-        "textarea",
-        "@nocobase/property-fields",
-        "@nocobase/markdown-view"
-      ],
-      "docs": "Requires @nocobase/app-plugin-projects registered on the server and client, a router, and a QueryClientProvider with the application client's cache (which the plugin's plan announcements refresh) above the card. Render <PlanCard planId={id} /> from plan-card.tsx; it links the issues the plan is about under its title, firstIssueId (the issue it was opened from) first, and issueHref decides where each goes. Links go to the plugin's routes (/issues/plans/:id, /issues/:id, /projects/:id) unless the caller gives its own. Optionally provide PlanWordingContext from @nocobase/app-plugin-projects/client/kit to word plans another plugin proposed, and spread locales/ into client/locales/.",
-      "files": [
-        {
-          "path": "plan-card/plan-card.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-card.tsx"
-        },
-        {
-          "path": "plan-card/plan-row.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-row.tsx"
-        },
-        {
-          "path": "plan-card/plan-editor.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-editor.tsx"
-        },
-        {
-          "path": "plan-card/plan-confirm.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-confirm.tsx"
-        },
-        {
-          "path": "plan-card/plan-undo.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-undo.tsx"
-        },
-        {
-          "path": "plan-card/plan-issue-links.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-issue-links.tsx"
-        },
-        {
-          "path": "plan-card/plan-issues.ts",
-          "type": "registry:lib",
-          "target": "client/extensions/nocobase-plan-card/plan-issues.ts"
-        },
-        {
-          "path": "plan-card/plan-tag.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-plan-card/plan-tag.tsx"
-        },
-        {
-          "path": "plan-card/plan-text.ts",
-          "type": "registry:lib",
-          "target": "client/extensions/nocobase-plan-card/plan-text.ts"
-        },
-        {
-          "path": "plan-card/locales/en-US.ts",
-          "type": "registry:lib",
-          "target": "client/extensions/nocobase-plan-card/locales/en-US.ts"
-        },
-        {
-          "path": "plan-card/locales/zh-CN.ts",
-          "type": "registry:lib",
-          "target": "client/extensions/nocobase-plan-card/locales/zh-CN.ts"
         }
       ]
     }

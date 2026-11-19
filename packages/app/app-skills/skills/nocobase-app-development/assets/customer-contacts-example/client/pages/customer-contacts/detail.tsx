@@ -13,7 +13,6 @@ import {
   useParams,
 } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
 import { RouteChildPage } from '#components/route-child-page';
 import { BackButton } from '#components/back-button';
 import { PageContainer } from '#components/page-container';
@@ -22,15 +21,9 @@ import { LongText } from '#components/long-text';
 import { DataTable } from '#components/data-table';
 import { RefreshIndicator } from '#components/loading';
 import { RecordLink } from '#components/record-link';
+import { RowActions } from '#components/row-actions';
 import { StatusBadge } from '#components/status-badge';
 import { Button } from '#components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '#components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -111,39 +104,28 @@ export default function CustomerDetailPage() {
       parent.reload();
     },
   };
-  // A contact's actions: the table row's menu, and the card's on a phone where it is a full-size tap target (M8.1).
-  const contactMenu = (contact: Contact, size: 'icon-sm' | 'icon') => (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant='ghost'
-            size={size}
-            aria-label={t('customerContacts.actionsFor', {
-              name: contact.name,
-            })}
-          />
-        }
-      >
-        <MoreHorizontal />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-auto min-w-40'>
-        <DropdownMenuItem
-          render={
+  // A contact's actions: the table row's "⋮" menu, which DataTable also hands to the contact's phone card.
+  const contactMenu = (contact: Contact) => (
+    <RowActions
+      label={t('customerContacts.actionsFor', { name: contact.name })}
+      actions={[
+        {
+          key: 'edit',
+          label: t('customerContacts.edit'),
+          render: (
             <Link
               to={{
                 pathname: `contacts/${contact.id}/edit`,
                 search: location.search,
               }}
             />
-          }
-        >
-          {t('customerContacts.edit')}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant='destructive'
-          onClick={() => {
+          ),
+        },
+        {
+          key: 'delete',
+          label: t('customerContacts.delete'),
+          destructive: true,
+          onClick: () => {
             void (async () => {
               if (!lock.acquire()) return;
               try {
@@ -157,12 +139,10 @@ export default function CustomerDetailPage() {
                 lock.release();
               }
             })();
-          }}
-        >
-          {t('customerContacts.delete')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          },
+        },
+      ]}
+    />
   );
   const columns: ColumnDef<Contact>[] = [
     {
@@ -193,9 +173,11 @@ export default function CustomerDetailPage() {
       ? [
           {
             id: 'actions',
-            header: t('customerContacts.actions'),
+            header: () => (
+              <span className='sr-only'>{t('customerContacts.actions')}</span>
+            ),
             cell: ({ row }: { row: { original: Contact } }) =>
-              contactMenu(row.original, 'icon-sm'),
+              contactMenu(row.original),
           },
         ]
       : []),

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification-providers",
   "displayName": "Notification Providers App Plugin",
   "description": "Provides built-in notification Channels and Providers.",
-  "version": "1.0.0-beta.19",
+  "version": "1.0.0-beta.20",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -94,8 +94,7 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "nodemailer": "^9.0.5",
-    "resend": "^6.22.1",
-    "@types/nodemailer": "^8.0.1"
+    "nodemailer": "^10.1.4",
+    "resend": "^6.22.1"
   }
 }

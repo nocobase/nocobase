@@ -68,15 +68,14 @@ const jaJP: LocaleResource<typeof enUS> = {
             all: 'デプロイ(すべて)',
           },
           deployProtected: {
-            title: '保護された展開を承認する',
+            title: '保護された環境へのデプロイ',
             description:
-              '承認者を指定しない保護された環境への展開を承認します。人のみ',
-            related:
-              '保護されたデプロイメント (それらに関連するもの) を承認する',
+              '環境の承認者が解決されない場合、本人が申請を承認し、本人またはその実行が直接デプロイできます',
+            related: '保護された環境へのデプロイ（関連するもの）',
             relatedLabel: '私が作ったもの',
             relatedHint:
               '私が作成したアプリ、および私に関連するアプリケーション',
-            all: '保護された展開を承認する (すべて)',
+            all: '保護された環境へのデプロイ（すべて）',
           },
           operate: {
             title: 'スタートとストップ',
@@ -154,6 +153,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       environments: '環境の展開',
     },
     apps: {
+      lastFailure: '前回の失敗：{{detail}}',
       title: 'アプリ',
       create: 'アプリの作成',
       id: 'アプリID',
@@ -762,6 +762,12 @@ const jaJP: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '表示する最初の管理者がありません。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'リリースパッケージから {{seconds}} 秒間データを受信できませんでした。デプロイは完了していません。再試行してください。',
+        artifactReadTotalTimeout:
+          'リリースパッケージの読み取りが {{seconds}} 秒を超えました。デプロイは完了していません。再試行してください。',
+        artifactReadTimeout:
+          'リリースパッケージの読み取りがタイムアウトしました。デプロイは完了していません。再試行してください。',
         hostExited: 'アプリのプロセスが準備が整う前に停止しました。',
         hostDisabled: 'アプリホストがオフになっています。',
         hostShutDown: 'アプリホストがシャットダウンしました。',
@@ -778,6 +784,18 @@ const jaJP: LocaleResource<typeof enUS> = {
           'まだ準備ができていません。しばらくしてからもう一度試してください。',
         checkTimeout: 'テストは 20 秒以内に終了しませんでした。',
         hostNoSettings: 'ローカル 実行環境は接続設定を必要としません。',
+        recycleWait:
+          'アプリホストがメモリを回収しています。完了後にデプロイを続行します。',
+        recycleRetry:
+          'アプリホストはまだメモリを回収中のため、デプロイは完了しませんでした。しばらくしてから再試行してください。',
+        capacityExceeded:
+          'アプリホストのメモリまたは空き枠が不足しているため、デプロイは完了しませんでした。しばらくしてから再試行してください。',
+        replacementMemory:
+          'アプリホストのメモリが不足しているため新しいバージョンを起動できません。現在のバージョンは稼働を続けます。しばらくしてから再試行してください。',
+        startQueueFull:
+          '起動中のアプリが多すぎます。しばらくしてから再試行してください。',
+        activeLimit:
+          '実行中のアプリ数が上限に達しています。しばらくしてから再試行してください。',
       },
       prefixed: {
         startFailed: '起動に失敗しました: {{detail}}',

@@ -18,10 +18,15 @@ it('applies explicit model false over provider true instead of using truthy fall
 });
 
 const platforms: readonly {
-  provider: 'openai' | 'anthropic' | 'google' | 'alibaba';
+  provider: 'openai' | 'anthropic' | 'google' | 'alibaba' | 'deepseek';
   endpoint: string;
   models: readonly string[];
 }[] = [
+  {
+    provider: 'deepseek',
+    endpoint: 'https://api.deepseek.com',
+    models: ['deepseek-chat', 'future-deepseek-chat'],
+  },
   {
     provider: 'alibaba',
     endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -88,11 +93,6 @@ it.each(platforms)(
 );
 
 it('keeps platforms without a search adapter unsupported regardless of model brand', () => {
-  expect(resolveModelCapabilities({ provider: 'deepseek' }, 'gpt-5.4')).toEqual(
-    {
-      webSearch: false,
-    },
-  );
   expect(
     resolveModelCapabilities(
       { provider: 'openai-compatible', baseUrl: 'https://api.openai.com/v1' },
@@ -131,4 +131,32 @@ it('accepts documented Alibaba regional endpoints but not lookalikes, proxies or
       ).webSearch,
     ).toBe(false);
   }
+});
+
+it('admits only the documented DeepSeek endpoint aliases', () => {
+  for (const baseUrl of [
+    'https://api.deepseek.com',
+    'https://api.deepseek.com/',
+    'https://api.deepseek.com/v1',
+    'https://api.deepseek.com/v1/',
+  ])
+    expect(
+      resolveModelCapabilities(
+        { provider: 'deepseek', baseUrl },
+        'deepseek-chat',
+      ),
+    ).toEqual({ webSearch: true });
+  for (const suffix of [
+    '/v1/proxy',
+    '/v2',
+    '/v1?key=secret',
+    '/v1#fragment',
+    ':8443/v1',
+  ])
+    expect(
+      resolveModelCapabilities(
+        { provider: 'deepseek', baseUrl: `https://api.deepseek.com${suffix}` },
+        'deepseek-chat',
+      ),
+    ).toEqual({ webSearch: false });
 });

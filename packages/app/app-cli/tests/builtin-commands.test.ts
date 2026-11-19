@@ -34,6 +34,7 @@ const EXPECTED_IDS = [
   'package:remove',
   'plugin:inspect',
   'plugin:register',
+  'plugin:remove',
   'plugin:unregister',
   'plugin:update',
   'secrets:rotate',
@@ -47,6 +48,7 @@ const PACKAGE_COMMAND_IDS = [
   'package:remove',
   'plugin:inspect',
   'plugin:register',
+  'plugin:remove',
   'plugin:unregister',
   'plugin:update',
   'skills:sync',
@@ -130,6 +132,7 @@ describe('documented argument contract', () => {
     'package:remove',
     'plugin:inspect',
     'plugin:register',
+    'plugin:remove',
     'plugin:unregister',
     'skills:sync',
   ])('%s can target a workspace application', (id) => {
@@ -143,6 +146,7 @@ describe('documented argument contract', () => {
       'package:remove',
       'plugin:inspect',
       'plugin:register',
+      'plugin:remove',
       'plugin:unregister',
     ]) {
       const command = config.findCommand(id, { must: true });

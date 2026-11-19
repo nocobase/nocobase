@@ -10,6 +10,7 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
+  assertMissingExplicitSourcesRecorded,
   planAppDatabaseTasks,
   type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
@@ -18,6 +19,7 @@ import {
 import {
   resolveDatabaseDriver,
   type ChecksumMismatch,
+  type MigrationWarning,
   type DatabaseDriverRegistration,
   type DatabaseManager,
   type MigrationHistoryRecord,
@@ -75,7 +77,7 @@ export interface AppDatabaseTaskResult {
   released?: boolean;
   lockReason?: 'not-held' | 'active';
   /** Checksum drift tolerated by the `warn` policy during a run. */
-  warnings?: ChecksumMismatch[];
+  warnings?: MigrationWarning[];
   /** Records a repair rewrote, or that a dry run would rewrite. */
   repaired?: ChecksumMismatch[];
   /** Migrations or seeds a run would execute, as a dry run reports them. */
@@ -231,6 +233,13 @@ async function executeDatabasePlan(
   const targets = collectTaskTargets(config, plan, fresh, drivers);
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
+  await assertExplicitMigrationSources(database, config, plan, {
+    paths,
+    drivers,
+    fresh,
+    runtimeConfig: taskConfig,
+    container: taskContainer,
+  });
   const resetConnections: string[] = [];
   const hooks =
     !dryRun &&
@@ -395,6 +404,56 @@ async function executeDatabasePlan(
     }
   }
   return result;
+}
+
+/**
+ * A missing explicit migration directory is a typo when the connection has no
+ * migration history, and fails before storage is prepared. With history the
+ * migrator's missing-source policy decides, so the application stays
+ * upgradable and a rollback still reports the whole target batch. A fresh run
+ * discards history, so it always counts as having none.
+ */
+async function assertExplicitMigrationSources(
+  database: DatabaseManager,
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
+  options: {
+    paths?: AppPaths;
+    drivers?: Record<string, DatabaseDriverRegistration>;
+    fresh: boolean;
+    runtimeConfig: DatabaseTaskConfig;
+    container: ServiceResolver;
+  },
+): Promise<void> {
+  for (const task of plan) {
+    const missing = task.missingExplicitSources;
+    if (task.skipReason || task.kind !== 'migrations' || !missing?.length) {
+      continue;
+    }
+    // History is per package: a plugin's own records say nothing about whether
+    // the application's explicit directory ever held migrations.
+    const recorded = new Set<string>();
+    if (
+      !options.fresh &&
+      (await appDatabaseStorageExists(
+        config,
+        options.paths,
+        task.connection,
+        options.drivers,
+      ))
+    ) {
+      const history = await createAppMigrator({
+        runtimeConfig: options.runtimeConfig,
+        container: options.container,
+        database,
+        connection: task.connection,
+        config: task.config,
+        sources: task.config.sources,
+      }).history();
+      for (const record of history) recorded.add(record.packageName);
+    }
+    assertMissingExplicitSourcesRecorded(task, recorded);
+  }
 }
 
 /** Only target data is collected here; execution stays in the phase functions. */
@@ -665,7 +724,11 @@ export async function runAppDatabaseTasks(
     ...config,
     drivers: { ...config.drivers, ...drivers },
   });
-  const plan = planAppDatabaseTasks(config, kinds, options);
+  const plan = planAppDatabaseTasks(config, kinds, {
+    ...options,
+    // A fresh run discards history, so a missing explicit directory fails now.
+    deferMissingMigrationSources: !options.fresh,
+  });
   if (!plan.length) return { ok: true, status: 'not-configured', results: [] };
   if (options.fresh) {
     collectTaskTargets(config, plan, true, drivers);
@@ -740,6 +803,7 @@ export async function runAppMigrations(
       batch: first.batch,
       executed: first.executed,
       skipped: first.skipped,
+      warnings: first.warnings,
     }
   );
 }

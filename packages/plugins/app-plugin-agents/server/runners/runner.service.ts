@@ -728,6 +728,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const values: Record<string, unknown> = {
           updatedAt: clock.now().toISOString(),
         };
+        if (patch.quotaLimits !== undefined) {
+          values.quotaLimits = asJson(patch.quotaLimits);
+          values.quotaRevision = current.quotaRevision + 1;
+        }
         if (patch.name !== undefined) values.name = patch.name;
         if (patch.trust !== undefined) values.trust = patch.trust;
         if (patch.slots !== undefined) values.slots = patch.slots;
@@ -745,7 +749,18 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         }
         if (patch.acceptJobs !== undefined)
           values.acceptJobs = patch.acceptJobs;
-        await runnersRepo(conn).updateMany({ filter: { id }, values });
+        const saved = await runnersRepo(conn).updateMany({
+          filter:
+            patch.quotaLimits === undefined
+              ? { id }
+              : { id, quotaRevision: current.quotaRevision },
+          values,
+        });
+        if (patch.quotaLimits !== undefined && saved.updatedCount !== 1)
+          throw new ProtocolError(
+            'REVISION_CONFLICT',
+            'Quota changed; refresh and try again.',
+          );
         emit({ type: 'runner.changed', runnerId: id });
         return require(conn, id);
       }),
@@ -859,7 +874,19 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       const now = clock.now().toISOString();
       const marks = [...(runner.unavailableModels ?? [])];
       const oldMarks = JSON.stringify(marks);
-      const usage = [...(runner.quotaUsage ?? [])];
+      const previousUsage = runner.quotaUsage ?? [];
+      const reportedWindows = new Set(quota.windows.map((w) => w.window));
+      const usage =
+        tool === 'codex' && quota.replacesUsage
+          ? previousUsage.filter(
+              (u) =>
+                u.tool !== tool ||
+                u.scope !== 'tool' ||
+                u.target !== '' ||
+                reportedWindows.has(u.window),
+            )
+          : [...previousUsage];
+      const removedUsage = usage.length !== previousUsage.length;
       const fresh: UnavailableModel[] = [];
       const cleared: UnavailableModel[] = [];
       for (const window of quota.windows) {
@@ -918,8 +945,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           previous.exhausted !== sample.exhausted ||
           (previous.usedPercent === undefined) !==
             (sample.usedPercent === undefined) ||
-          Math.abs((previous.usedPercent ?? 0) - (sample.usedPercent ?? 0)) >=
-            5 ||
+          previous.usedPercent !== sample.usedPercent ||
           (previous.usedPercent ?? 0) >= 90 !== (sample.usedPercent ?? 0) >= 90
         ) {
           if (index < 0) usage.push(sample);
@@ -976,7 +1002,11 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           'REVISION_CONFLICT',
           'Quota changed; report again.',
         );
-      if (JSON.stringify(marks) !== oldMarks)
+      if (
+        removedUsage ||
+        JSON.stringify(marks) !== oldMarks ||
+        runner.quotaLimits?.[tool] !== undefined
+      )
         unit.emit({ type: 'runner.changed', runnerId });
       for (const mark of cleared)
         unit.emit({
@@ -1013,6 +1043,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
                         {
                           ...runner,
                           unavailableModels: [],
+                          quotaLimits: null,
                           workspaceUsage: null,
                         },
                         agent,

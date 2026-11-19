@@ -396,6 +396,29 @@ describe('@nocobase/app-plugin-users API routes', () => {
     expect(service.invite).not.toHaveBeenCalled();
   });
 
+  it("passes the chosen language and the inviter's interface language", async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service, { requestLocale: 'zh-CN' }),
+    );
+    const send = (body: object) =>
+      router.request('/users/invitations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ emails: ['new@example.com'], ...body }),
+      });
+
+    expect((await send({ locale: 'ja-JP' })).status).toBe(201);
+    expect((await send({})).status).toBe(201);
+    expect(
+      vi.mocked(service.invite).mock.calls.map(([input]) => input),
+    ).toEqual([
+      expect.objectContaining({ locale: 'ja-JP', inviterLocale: 'zh-CN' }),
+      expect.not.objectContaining({ locale: expect.anything() }),
+    ]);
+    expect((await send({ locale: '' })).status).toBe(400);
+  });
+
   it('lists invitations with a total and answers an unknown token as invalid input', async () => {
     const service = userService();
     vi.mocked(service.lookupInvitation).mockRejectedValue(
@@ -1062,6 +1085,8 @@ function createApplication(
     readonly authenticatedUserId?: string;
     readonly scopedSession?: boolean;
     readonly logger?: { info: ReturnType<typeof vi.fn> };
+    /** What the i18n middleware would have resolved for the request. */
+    readonly requestLocale?: string;
   } = {},
 ): AppPluginApplication {
   const container = new ServiceContainer();
@@ -1080,6 +1105,8 @@ function createApplication(
       if (mode === 'anonymous') {
         return context.json({ code: 'UNAUTHORIZED' }, 401);
       }
+      if (options.requestLocale)
+        context.set('locale' as never, options.requestLocale as never);
       await next();
     },
   } as Auth);

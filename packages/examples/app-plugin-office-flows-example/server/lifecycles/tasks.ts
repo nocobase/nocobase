@@ -1,3 +1,4 @@
+import { officeParameterContract } from '../services/parameter-snapshots.js';
 import {
   defineEffect,
   defineLifecycle,
@@ -32,16 +33,19 @@ export type ExecutorState = 'processing' | 'done';
 export interface ClerkTypes {
   record: Task & { readonly status: ClerkState };
   state: ClerkState;
+  parameters: import('@nocobase/lifecycle').JsonObject;
   services: OfficeServices;
 }
 export interface TeamTypes {
   record: Task & { readonly status: TeamState };
   state: TeamState;
+  parameters: import('@nocobase/lifecycle').JsonObject;
   services: OfficeServices;
 }
 export interface ExecutorTypes {
   record: Task & { readonly status: ExecutorState };
   state: ExecutorState;
+  parameters: import('@nocobase/lifecycle').JsonObject;
   services: OfficeServices;
 }
 
@@ -218,6 +222,10 @@ export const SIGN_DECISIONS: Readonly<Record<string, string>> = {
 export const clerkTaskLifecycle: Lifecycle<ClerkTypes> =
   defineLifecycle<ClerkTypes>({
     name: 'clerkTasks',
+    ...officeParameterContract('clerkTasks'),
+    key: 'clerkTasks',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.clerkTasks,
     initial: 'signing',
     states: [
@@ -292,6 +300,10 @@ export const clerkTaskLifecycle: Lifecycle<ClerkTypes> =
 export const teamTaskLifecycle: Lifecycle<TeamTypes> =
   defineLifecycle<TeamTypes>({
     name: 'teamTasks',
+    ...officeParameterContract('teamTasks'),
+    key: 'teamTasks',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.teamTasks,
     initial: 'processing',
     states: ['processing', { name: 'done', final: true }],
@@ -319,6 +331,9 @@ export const teamTaskLifecycle: Lifecycle<TeamTypes> =
 export const executorTaskLifecycle: Lifecycle<ExecutorTypes> =
   defineLifecycle<ExecutorTypes>({
     name: 'executorTasks',
+    key: 'executorTasks',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.executorTasks,
     initial: 'processing',
     states: ['processing', { name: 'done', final: true }],

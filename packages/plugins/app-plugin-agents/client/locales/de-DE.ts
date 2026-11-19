@@ -615,6 +615,15 @@ const deDE: LocaleResource<typeof enUS> = {
     pathHint:
       'Der Runner findet Coding-Tools über seinen eigenen PATH. Führen Sie in einem Terminal, in dem which codex / which claude funktioniert, nocobase-runner service install erneut aus und starten Sie den Dienst neu (oder führen Sie nocobase-runner start erneut aus), damit er den richtigen PATH erhält.',
     quota: {
+      ceilingReached: 'Quotenschwelle erreicht',
+      ceilingLabel: 'Pausieren bei',
+      ceilingInput: 'Neue {{tool}}-Aufträge ab Prozent Verbrauch pausieren',
+      ceilingSave: 'Anwenden',
+      ceilingInvalid:
+        'Eine ganze Prozentzahl von 1 bis 100 eingeben oder leer lassen.',
+      ceilingPaused:
+        'Ein Quotenfenster hat das Limit erreicht; betroffene neue Arbeit wartet auf die Rücksetzung oder eine Limitänderung.',
+
       workspaceStatus: {
         active: 'Die Arbeiten gehen weiter',
         ended: 'Beendet · Bereinigung erlaubt',
@@ -645,6 +654,9 @@ const deDE: LocaleResource<typeof enUS> = {
       workspaceSize: 'Arbeitsbereichsgröße: {{value}}',
       providers_one: '{{count}}-Anbieter mit Kontingent',
       providers_other: '{{count}}-Anbieter mit Kontingent',
+      models_one: '{{count}} Modell mit Kontingent',
+      models_other: '{{count}} Modelle mit Kontingent',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Aufgabe / Unterhaltung',
         agent: 'Agent',
@@ -687,7 +699,7 @@ const deDE: LocaleResource<typeof enUS> = {
         'Löschen Sie sie erst, wenn das Kontingent wiederhergestellt ist. {{target}} bekommt sofort wieder Arbeit; ist das Kontingent noch erschöpft, markiert der nächste Lauf es erneut.',
       observed: 'Zuletzt gemeldet {{time}}',
       usedPercent: '{{percent}}% verwendet',
-      ok: 'OK',
+      noUsage: 'Noch keine Kontingentdaten',
       hint: 'Eine Markierung verschwindet zur bekannten Reset-Zeit oder sobald das Tool wieder verfügbares Kontingent meldet. Löschen Sie sie manuell erst, wenn das Kontingent wiederhergestellt ist. Nur der Laufzeitumgebungbesitzer und Administratoren können Markierungen löschen.',
     },
     workspaces: {
@@ -766,8 +778,8 @@ const deDE: LocaleResource<typeof enUS> = {
       offlineNever: 'Offline',
     },
     toolUsage: {
-      label: 'Wird vom Codierungstool ausgeführt',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Läufe {{used}}/{{limit}}',
+      hint: 'Höchstens {{limit}} {{tool}}-Läufe gleichzeitig; {{used}} laufen gerade',
     },
     toolSlots: {
       label: 'Beschränkungen pro Codierungstool',
@@ -908,6 +920,8 @@ const deDE: LocaleResource<typeof enUS> = {
       show: 'Version {{version}}: Ein neuerer Runner ist verfügbar',
       available: 'Update verfügbar',
       badge: 'Aktualisierbar',
+      latest: 'Aktuell',
+      installed: 'Version {{version}}',
       title: 'Ein neuerer Runner für {{name}}',
       description:
         '{{version}} installiert, diese Anwendung bedient {{latest}}.',

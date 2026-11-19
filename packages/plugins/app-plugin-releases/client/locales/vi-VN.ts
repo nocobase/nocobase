@@ -70,15 +70,14 @@ const viVN: LocaleResource<typeof enUS> = {
             all: 'Triển khai (tất cả)',
           },
           deployProtected: {
-            title: 'Phê duyệt triển khai được bảo vệ',
+            title: 'Triển khai vào môi trường được bảo vệ',
             description:
-              'Phê duyệt việc triển khai vào các môi trường được bảo vệ mà không có người phê duyệt; chỉ có người',
-            related:
-              'Phê duyệt các triển khai được bảo vệ (những triển khai liên quan đến chúng)',
+              'Khi không xác định được người duyệt môi trường, duyệt yêu cầu trực tiếp hoặc triển khai bằng chính người đó hay lượt chạy của họ',
+            related: 'Triển khai vào môi trường được bảo vệ (liên quan)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:
               'Ứng dụng tôi đã tạo và mọi ứng dụng liên quan đến tôi',
-            all: 'Phê duyệt triển khai được bảo vệ (tất cả)',
+            all: 'Triển khai vào môi trường được bảo vệ (tất cả)',
           },
           operate: {
             title: 'Bắt đầu và dừng',
@@ -155,6 +154,7 @@ const viVN: LocaleResource<typeof enUS> = {
       environments: 'Triển khai môi trường',
     },
     apps: {
+      lastFailure: 'Lỗi gần nhất: {{detail}}',
       title: 'Ứng dụng',
       create: 'Tạo ứng dụng',
       id: 'ID ứng dụng',
@@ -776,6 +776,12 @@ const viVN: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: 'Không có quản trị viên đầu tiên hiển thị.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Không nhận được dữ liệu từ gói phát hành trong {{seconds}} giây. Việc triển khai chưa hoàn tất; hãy thử lại.',
+        artifactReadTotalTimeout:
+          'Việc đọc gói phát hành đã vượt quá {{seconds}} giây. Việc triển khai chưa hoàn tất; hãy thử lại.',
+        artifactReadTimeout:
+          'Đã hết thời gian đọc gói phát hành. Việc triển khai chưa hoàn tất; hãy thử lại.',
         hostExited: 'Quá trình của ứng dụng đã dừng trước khi sẵn sàng.',
         hostDisabled: 'Máy chủ ứng dụng bị tắt.',
         hostShutDown: 'Máy chủ ứng dụng đã tắt.',
@@ -792,6 +798,17 @@ const viVN: LocaleResource<typeof enUS> = {
         notReady: 'Nó vẫn chưa sẵn sàng; hãy thử lại sau giây lát.',
         checkTimeout: 'Bài kiểm tra không kết thúc trong vòng 20 giây.',
         hostNoSettings: 'Thời gian chạy cục bộ không có cài đặt kết nối.',
+        recycleWait:
+          'Máy chủ ứng dụng đang thu hồi bộ nhớ; việc triển khai sẽ tiếp tục khi hoàn tất.',
+        recycleRetry:
+          'Máy chủ ứng dụng vẫn đang thu hồi bộ nhớ nên việc triển khai chưa hoàn tất. Hãy thử lại sau.',
+        capacityExceeded:
+          'Máy chủ ứng dụng không đủ bộ nhớ hoặc chỗ trống nên việc triển khai chưa hoàn tất. Hãy thử lại sau.',
+        replacementMemory:
+          'Máy chủ ứng dụng không đủ bộ nhớ để khởi động phiên bản mới; phiên bản hiện tại vẫn chạy. Hãy thử lại sau.',
+        startQueueFull:
+          'Có quá nhiều ứng dụng đang khởi động trên máy chủ. Hãy thử lại sau.',
+        activeLimit: 'Số ứng dụng đang chạy đã đạt giới hạn. Hãy thử lại sau.',
       },
       prefixed: {
         startFailed: 'Khởi động không thành công: {{detail}}',

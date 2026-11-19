@@ -220,7 +220,7 @@ async function fetchSpaIndex(
   const router = new Hono();
   router.route(
     '/',
-    spaRootRoutes.createRouter({
+    await spaRootRoutes.createRouter({
       config,
       container,
       mode: 'standalone',

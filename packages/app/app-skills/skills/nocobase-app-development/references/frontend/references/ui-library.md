@@ -209,14 +209,14 @@ A generic board: columns of cards dragged within and between columns, reporting 
 
 ### markdown-view
 
-Markdown rendered as compact prose for descriptions and comments, with mention chips and fenced code a consumer may draw itself. Use it to display what rich-text-editor writes.
+The shared Markdown renderer: GitHub-flavoured Markdown as compact prose with mention chips, sanitised URLs, #anchor links on the page and every other link in a new tab. Use it to display what rich-text-editor writes, and wrap it with components and remarkPlugins for documents, chat or reports.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/markdown-view`
 - Installs to: `client/components/markdown-view.tsx`, `client/components/remark-cjk-autolink.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/markdown-view-demo` (`pnpm exec shadcn view @nocobase/markdown-view-demo`)
-- After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.
+- After installing: Pass the Markdown as content. components replaces single elements by tag (render markdownViewComponents.<tag> to keep the base look; define them at module level), remarkPlugins adds syntax after remark-gfm and remarkCjkAutolink, renderCodeBlock draws a fenced block such as a mermaid diagram, renderLink replaces a link, transformUrl sets a stricter URL policy and mentionIcon picks a mention chip's icon. Raw HTML is never rendered.
 
 ### long-text
 
@@ -478,14 +478,14 @@ Contextual prerequisite checks for a feature, with missing, ready and unavailabl
 
 ### issue-table
 
-The issues list: identifier, title with labels, status, priority, owner, executor and last update, with sorting and selection through callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.
+The issues list: identifier, title with labels, status drawn as its shape, priority, owner (a person or an agent's avatar), project and last update, with sorting, selection, extra columns, group rows and a compact phone layout through props and callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/issue-table`
-- Installs to: `client/components/issue-table.tsx`
-- Plugin dependencies: none
+- Installs to: `client/components/issue-table.tsx`, `client/components/status-icon.tsx`, `client/components/status-shapes.ts`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-projects`
 - Example: `@nocobase/issue-table-demo` (`pnpm exec shadcn view @nocobase/issue-table-demo`)
-- After installing: Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow. Every word comes from the labels prop, English by default.
+- After installing: Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow; give a status its key to draw it as its shape (status-icon). Every word comes from the labels prop, English by default.
 
 ### issue-card
 
@@ -522,18 +522,6 @@ A project's page as presentational parts: the header with progress, the overview
 - Also installs: `@nocobase/issue-table`, `@nocobase/property-fields`, `@nocobase/rich-text-editor`, `@nocobase/markdown-view`
 - Example: `@nocobase/project-detail-demo` (`pnpm exec shadcn view @nocobase/project-detail-demo`)
 - After installing: Compose the page from the parts with your own tabs and sections between them; lay the properties out with property-fields. Every part takes data through props and performs changes through callbacks (promises it waits for); feed them from @nocobase/app-plugin-projects/client/projects. Links go through the link renderer. Build ProjectDetailLabels from your locale resources.
-
-### plan-card
-
-An operation plan of @nocobase/app-plugin-projects as a card: the issues it is about, its changes row by row with whom each wakes and what it risks, execute with a second confirmation for risky rows, void, check again, undo within the window after a preview, and an in-place editor of an open plan's rows over property-fields; a frame prop lays its parts out under a header of the caller's, such as an inbox detail pane's. Use it wherever an agent's or a status rule's plan is reviewed and decided, such as a chat timeline, an inbox or a plan page. Wired: reads and acts through the plugin's headless hooks in /client/kit and its pure plan rules in /client/plan-model.
-
-- Kind: block
-- Install: `yes n | pnpm exec shadcn add @nocobase/plan-card`
-- Installs to: `client/extensions/nocobase-plan-card/`
-- Plugin dependencies: `@nocobase/app-plugin-projects`
-- Also installs: `@nocobase/property-fields`, `@nocobase/markdown-view`
-- Example: `@nocobase/plan-card-demo` (`pnpm exec shadcn view @nocobase/plan-card-demo`)
-- After installing: Requires @nocobase/app-plugin-projects registered on the server and client, a router, and a QueryClientProvider with the application client's cache (which the plugin's plan announcements refresh) above the card. Render <PlanCard planId={id} /> from plan-card.tsx; it links the issues the plan is about under its title, firstIssueId (the issue it was opened from) first, and issueHref decides where each goes. Links go to the plugin's routes (/issues/plans/:id, /issues/:id, /projects/:id) unless the caller gives its own. Optionally provide PlanWordingContext from @nocobase/app-plugin-projects/client/kit to word plans another plugin proposed, and spread locales/ into client/locales/.
 
 ## Route overlays
 
@@ -598,4 +586,4 @@ Workflow administration as presentational parts: one management page with Defini
 - Plugin dependencies: none
 - Also installs: `@nocobase/page-container`, `@nocobase/page-header`, `@nocobase/data-table`
 - Example: `@nocobase/workflow-management-demo` (`pnpm exec shadcn view @nocobase/workflow-management-demo`)
-- After installing: Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed. Lifecycle diagrams are preinstalled in current app templates. Omit parameters to give a node-configured diagram full width, and open the same editor from LifecycleDiagram.configuration; supplying parameters retains the existing two-column layout.
+- After installing: Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed. Lifecycle diagrams are preinstalled in current app templates. Omit parameters to give a node-configured diagram full width, and open the same editor from LifecycleDiagram.configuration; supplying parameters retains the existing two-column layout. WorkflowVersionSelect displays translated version options as a category-style tag by default, or a field with appearance="field"; the host owns the selected version and reloads its definition and parameters.

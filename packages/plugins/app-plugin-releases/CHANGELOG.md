@@ -1,5 +1,77 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 0e247f9: Allow configuring checksum and extraction worker deadlines through host.artifactWorker.timeoutMs, with a 120000 ms default and startup validation of the supported timer range.
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+- Updated dependencies [0e247f9]
+- Updated dependencies [761fb01]
+  - @nocobase/app-host@0.1.0-beta.26
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/app-client@4.0.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+
+## 0.1.0-beta.25
+
+### Minor Changes
+
+- 2d79f24: Allow applications to authorize run agents (actor kind `agent`) as their initiating user while retaining version attribution. Online agents retain the default permission intersection and propose ceiling; archived documents remain hidden to all actors. Native run HTTP requests now carry their actor even for hosts using the default policy, so they also receive that default ceiling.
+
+  Allow agents to configure Apps and deploy directly to protected environments when their initiating user is an environment approver. Resolved environment approvers take precedence over the fallback `deploy-protected` permission. This release behavior applies to every host without an opt-in; keys retain their existing restrictions. The `ReleasesAccess.approversOf` resolver now receives an App-ID context for both direct deployments and request decisions instead of a full deployment request.
+
+  Clarify the Projects comment deletion API description; hosts may impose their own stricter run deletion boundary.
+
+### Patch Changes
+
+- Updated dependencies [38854ec]
+- Updated dependencies [8339722]
+  - @nocobase/app-server@5.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- 2a63164: Paginate app lists in the database, scan label and runtime filters in bounded batches, and index both environment and global ordering. Treat search text literally.
+- Updated dependencies [3112daa]
+- Updated dependencies [f60b678]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-host@0.1.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 6102557: Keep the expanded release when the App Host refuses a deployment for memory or capacity, so the retry after a recycle or a Host restart reuses it instead of extracting it again, and stop appending an unset active app limit to capacity errors. Show one state per app in the Releases app list and app overview, with a pending deployment taking precedence and the runtime's last failure as its detail, and word capacity refusals and the recycle wait in every supported language.
+- Updated dependencies [b33e134]
+- Updated dependencies [6102557]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-host@0.1.0-beta.23
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.5
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
 ## 0.1.0-beta.21
 
 ### Patch Changes

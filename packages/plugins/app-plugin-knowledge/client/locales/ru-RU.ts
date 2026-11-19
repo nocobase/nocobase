@@ -221,7 +221,6 @@ const ruRU: LocaleResource<typeof enUS> = {
       archivedCount_other: '{{count}} документа в архиве',
       archivedCount_few: '{{count}} документа в архиве',
       archivedCount_many: '{{count}} документов в архиве',
-      selectTarget: 'Открыть {{title}}',
       target: 'Создать в {{title}}',
       chooseTarget: 'Выберите проект или системные знания, где создать',
       expandAll: 'Развернуть все',
@@ -331,6 +330,21 @@ const ruRU: LocaleResource<typeof enUS> = {
       uploaded_few: 'Загружено {{count}} файла; из них извлекается текст.',
       uploaded_many: 'Загружено {{count}} файлов; из них извлекается текст.',
       download: 'Скачать',
+      fullscreen: 'Во весь экран',
+      close: 'Закрыть',
+      olderVersion: 'Версия {{version}} (предыдущая версия)',
+      textHint_one:
+        'Поиск и ответы ИИ используют именно этот текст · {{count}} строка',
+      textHint_other:
+        'Поиск и ответы ИИ используют именно этот текст · {{count}} строки',
+      textHint_few:
+        'Поиск и ответы ИИ используют именно этот текст · {{count}} строки',
+      textHint_many:
+        'Поиск и ответы ИИ используют именно этот текст · {{count}} строк',
+      copy: 'Копировать',
+      copied: 'Скопировано.',
+      copyFailed:
+        'Автоматическое копирование здесь недоступно; выделите текст и скопируйте его вручную.',
       version: 'Версия {{version}}',
       statusHint: {
         parsing: 'Текст извлекается; поиск найдёт файл, когда он будет готов.',
@@ -414,6 +428,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       contents: 'Содержание',
       edit: 'Изменить',
       rename: 'Переименовать',
+      properties: 'Свойства и описание',
       history: 'История',
       verify: 'Отметить как проверенное',
       verifiedToast: 'Отмечено как проверенное.',

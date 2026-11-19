@@ -4,6 +4,23 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   errors: {
+    connectionAuthenticationFailed:
+      'Échec de l’authentification {{protocol}}. Vérifiez l’identifiant et le mot de passe ou mot de passe d’application.',
+    connectionHostNotFound:
+      'Impossible de résoudre le serveur {{protocol}}. Vérifiez son nom d’hôte.',
+    connectionConnectionRefused:
+      'Connexion {{protocol}} refusée. Vérifiez l’hôte, le port et la disponibilité du serveur.',
+    connectionConnectionTimeout:
+      'Délai de connexion {{protocol}} dépassé. Vérifiez le serveur et le réseau.',
+    connectionCertificateInvalid:
+      'Échec de validation du certificat {{protocol}}. Vérifiez le certificat et le nom d’hôte.',
+    connectionTlsFailed:
+      'Échec de négociation TLS {{protocol}}. Vérifiez SSL/STARTTLS et le port.',
+    connectionConnectionFailed:
+      'Échec de connexion {{protocol}}. Vérifiez le serveur et le réseau.',
+    connectionConnectionLost:
+      'La connexion {{protocol}} a été perdue. Réessayez.',
+
     imapMoveLocationChanged:
       'Le dossier ou la copie sélectionné a changé. Synchronisez la boîte aux lettres et rouvrez le dossier source.',
     imapMoveNotWritable:

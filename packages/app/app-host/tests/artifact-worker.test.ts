@@ -74,9 +74,14 @@ it('returns corruption and child failures to the caller', async () => {
   ).rejects.toThrow(/ENOENT/);
 });
 
-it.each(['hash', 'extract'] as const)(
-  'times out a stalled %s worker before advancing the archive queue',
-  async (mode) => {
+it.each([
+  ['hash', undefined],
+  ['extract', undefined],
+  ['hash', 600_000],
+  ['extract', 600_000],
+] as const)(
+  'times out a stalled %s worker at %s ms before advancing the archive queue',
+  async (mode, timeoutMs) => {
     const fixture = await archive('file.txt');
     const actual =
       await vi.importActual<typeof import('node:child_process')>(
@@ -94,23 +99,37 @@ it.each(['hash', 'extract'] as const)(
       return child;
     });
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const work = artifactWorker(mode, fixture.file, fixture.destination);
+    const work = artifactWorker(mode, fixture.file, fixture.destination, {
+      timeoutMs,
+    });
     const rejected = work.catch((error: unknown) => error);
     await ready.promise;
     const next = artifactWorker('hash', fixture.file);
-    await vi.advanceTimersByTimeAsync(120_000);
+    await vi.advanceTimersByTimeAsync((timeoutMs ?? 120_000) - 1);
+    expect(child.killed).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
     expect(child.signalCode).toBeNull();
     expect(vi.mocked(fork)).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1_000);
     vi.useRealTimers();
     expect(await rejected).toMatchObject({
-      message: `Artifact worker ${mode} timed out after 120000 ms`,
+      message: `Artifact worker ${mode} timed out after ${timeoutMs ?? 120_000} ms`,
     });
     expect(child.signalCode).toBe('SIGKILL');
     expect(() => process.kill(child.pid!, 0)).toThrow();
     expect(await next).toBe(
       createHash('sha256').update(fixture.bytes).digest('hex'),
     );
+  },
+);
+
+it.each([0, -1, 1.5, NaN, Infinity, 2_147_483_648])(
+  'rejects an invalid worker timeout without spawning: %s',
+  async (timeoutMs) => {
+    await expect(
+      artifactWorker('hash', 'unused', undefined, { timeoutMs }),
+    ).rejects.toThrow('host.artifactWorker.timeoutMs');
+    expect(fork).not.toHaveBeenCalled();
   },
 );
 

@@ -768,7 +768,7 @@ describeIntegrationDatabases('migration runner', (context) => {
     expect(await migrator.repair()).toEqual({ repaired: [], dryRun: false });
   });
 
-  it('fails regardless of policy when executed migrations have no source', async () => {
+  it('warns by default when no executed migration source remains', async () => {
     const directory = await createTempDirectory();
     const tableName = context.table('missingHistory');
     const lockTableName = context.table('missingLock');
@@ -795,9 +795,16 @@ describeIntegrationDatabases('migration runner', (context) => {
     await createMigrator(options).latest();
     await rm(join(directory, '202608180002_vanishes.ts'));
 
-    await expect(createMigrator(options).latest()).rejects.toThrow(
-      'Executed migration "202608180002_vanishes" is missing from migration sources.',
-    );
+    await expect(createMigrator(options).latest()).resolves.toMatchObject({
+      executed: [],
+      warnings: [
+        {
+          kind: 'missing-source',
+          packageName: 'app',
+          name: '202608180002_vanishes',
+        },
+      ],
+    });
   });
 });
 

@@ -46,12 +46,15 @@ export const RUN_INPUT_TYPES = [
   'comment',
   'statusChange',
   'retry',
-  'planDecided',
   'signal',
   'custom',
 ] as const;
 
 export type RunInputType = (typeof RUN_INPUT_TYPES)[number];
+
+export function normalizeRunInputType(type: string): RunInputType {
+  return RUN_INPUT_TYPES.find((known) => known === type) ?? 'custom';
+}
 
 export const ACTOR_KINDS = ['user', 'agent', 'system'] as const;
 
@@ -85,7 +88,10 @@ export interface RunInput {
 
 export const RunInputSchema: z.ZodType<RunInput> = z.object({
   id: z.string().min(1),
-  type: z.enum(RUN_INPUT_TYPES),
+  type: z
+    .string()
+    .overwrite(normalizeRunInputType)
+    .pipe(z.enum(RUN_INPUT_TYPES)),
   at: z.string(),
   actor: ActorRefSchema,
   text: z.string(),
@@ -462,8 +468,13 @@ export const NOCOBASE_NPM_REGISTRY = 'https://pkg-v3.nocobase.com/';
  *
  * - `declared`: a `.npmrc` committed in the repository points a scope or the whole registry at it;
  * - `notFound`: an install failed because `package`, an `@nocobase/*` package, is not on the registry it used.
+ * - `unauthorized`: the private registry returned HTTP 401 or 403 without the run's token.
  */
-export const NPM_CREDENTIAL_REASONS = ['declared', 'notFound'] as const;
+export const NPM_CREDENTIAL_REASONS = [
+  'declared',
+  'notFound',
+  'unauthorized',
+] as const;
 export type NpmCredentialReason = (typeof NPM_CREDENTIAL_REASONS)[number];
 
 /**

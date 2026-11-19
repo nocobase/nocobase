@@ -17,19 +17,20 @@ const frFR: LocaleResource<typeof enUS> = {
       businessRule:
         "Envoyé à chaque création ou renvoi d'une invitation avec l'option e-mail sélectionnée. Aucun interrupteur séparé ne permet de le désactiver.",
       languagePolicy:
-        "Le corps de l'e-mail présente toutes les langues l'une après l'autre. L'objet est en anglais.",
+        "Rédigé dans une seule langue, choisie lors de l'invitation : la langue d'interface de la personne qui invite, sauf si une autre est choisie. Le renvoi la conserve. Si cette langue n'a pas de texte d'e-mail, l'e-mail utilise la langue par défaut de l'application et l'anglais.",
       channel: "Expéditeur de l'e-mail d'invitation",
       variables: {
         app: "Nom de l'application",
         inviter: "Nom de la personne qui a envoyé l'invitation",
         items: "Rôles ou accès accordés par l'invitation",
-        date: "Date d'expiration de l'invitation",
+        date: "Date d'expiration de l'invitation, dans la langue de l'e-mail et en UTC",
         url: "Lien pour accepter l'invitation ; l'aperçu utilise un lien fictif",
       },
     },
   },
   accept: {
     title: "Accepter l'invitation",
+    language: 'Langue',
     description: '{{inviter}} vous a invité.',
     summary: 'Vous rejoindrez également : {{items}}',
     loading: "Chargement de l'invitation…",

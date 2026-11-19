@@ -50,6 +50,20 @@ const mount = (
 const detailRoutes = resolveAppClientContributions([
   { packageName: namespace, source: 'application', routes: applicationRoutes },
 ]).routes;
+// A row's Edit sits in its "⋮" actions menu (T1.5).
+async function openRowEdit(
+  user: Pick<typeof userEvent, 'click'>,
+  index = 0,
+): Promise<void> {
+  // A trigger is ready once it reports its menu closed (.agents/rules/testing.md).
+  const triggers = await screen.findAllByRole('button', {
+    name: /^Actions for /,
+    expanded: false,
+  });
+  await user.click(triggers[index]!);
+  await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
+}
+
 const mountDetail = (fetch: typeof globalThis.fetch) =>
   renderSettingsClient(
     <Routes>
@@ -96,9 +110,7 @@ it.each(['fast', 'slow'])(
     );
     await screen.findByText('Alpha');
     const slot = screen.getByTestId('refresh-slot');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Edit', exact: true }),
-    );
+    await openRowEdit(userEvent);
     await screen.findByRole('textbox', { name: 'Name' });
     vi.useFakeTimers();
     await act(() => vi.advanceTimersByTimeAsync(1000));
@@ -154,9 +166,7 @@ it('revalidates a corrected name, keeps a rejected draft, and refreshes the list
       return { data: current };
     }),
   );
-  await user.click(
-    await screen.findByRole('button', { name: 'Edit', exact: true }),
-  );
+  await openRowEdit(user);
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await user.clear(name);
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
@@ -289,9 +299,7 @@ it('keeps the original payload/key after an unknown result, asks before closing 
       keys.push(request.headers.get('Idempotency-Key'));
     return transport(request);
   }) as typeof fetch);
-  await userEvent.click(
-    await screen.findByRole('button', { name: 'Edit', exact: true }),
-  );
+  await openRowEdit(userEvent);
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.clear(name);
   await userEvent.type(name, 'Confirmed Alpha');
@@ -396,11 +404,16 @@ it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
       screen.getByRole('button', { name: 'Go to next page' }),
     );
     expect(screen.getByText('Page 2 of 2')).toBeVisible();
-    const opener = screen.getAllByRole('button', {
-      name: 'Edit',
-      exact: true,
-    })[0];
+    const opener = (
+      await screen.findAllByRole('button', {
+        name: /^Actions for /,
+        expanded: false,
+      })
+    )[0]!;
     await userEvent.click(opener);
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Edit' }),
+    );
     const name = await screen.findByRole('textbox', { name: 'Name' });
     if (action === 'save') {
       await userEvent.clear(name);
@@ -840,7 +853,7 @@ it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
       },
     );
     await screen.findByText('Alpha');
-    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await openRowEdit(userEvent);
     const name = await screen.findByRole('textbox', { name: 'Name' });
     await userEvent.clear(name);
     await userEvent.type(name, 'Renamed Alpha');
@@ -1037,7 +1050,7 @@ it('shows each project as a card with its detail link and edit action on a phone
       'href',
       expect.stringContaining('/skill-projects/abc/details'),
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await openRowEdit(userEvent);
     expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue(
       'Alpha',
     );
@@ -1073,7 +1086,7 @@ it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do
     },
   );
   await screen.findByText('Alpha');
-  await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+  await openRowEdit(userEvent);
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.type(name, ' draft');
   act(() => back());

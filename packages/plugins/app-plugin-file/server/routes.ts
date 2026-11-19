@@ -26,6 +26,7 @@ import { bodyLimit } from 'hono/body-limit';
 import {
   FileRepositoryError,
   normalizeAccessPath,
+  normalizeStoragePrefix,
   normalizeFileRecord,
   validMime,
   type ServerFileRepository,
@@ -48,6 +49,8 @@ export interface FileRepositoryApiExposure<P = unknown> {
   readonly collection?: string;
   readonly connection?: string;
   readonly disk: string;
+  /** Static server-owned object directory; defaults to `objects`, `''` selects the disk root. */
+  readonly storagePrefix?: string;
   readonly accessPath?: string;
   readonly accessMode?: 'stream' | 'redirect';
   /**
@@ -99,6 +102,7 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
 ): readonly AppRouteContribution<FileRepositoryRoutesApplication>[] {
   const paths: string[] = [];
   const entries = options.repositories.map((entry) => {
+    const storagePrefix = normalizeStoragePrefix(entry.storagePrefix);
     const accessPath = normalizeAccessPath(
       entry.accessPath ?? `/uploads/${entry.name}`,
     );
@@ -133,7 +137,14 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
       )
         throw new Error('maxSize must be a positive safe integer.');
     }
-    return { ...entry, accessPath, actions, uploadOne, uploadMany };
+    return {
+      ...entry,
+      storagePrefix,
+      accessPath,
+      actions,
+      uploadOne,
+      uploadMany,
+    };
   });
   const crud = defineRepositoryApiRoutes<P>({
     principal: options.principal,
@@ -159,6 +170,7 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
       .repository(entry.collection ?? entry.name, {
         connection: entry.connection,
         disk: entry.disk,
+        storagePrefix: entry.storagePrefix,
         accessPath: entry.accessPath,
         policy,
       });

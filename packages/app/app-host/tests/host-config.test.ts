@@ -26,6 +26,92 @@ afterEach(async () => {
 });
 
 describe('loadAppHostConfig', () => {
+  it.each([undefined, 600_000, 1, 2_147_483_647])(
+    'loads the artifact worker deadline: %s',
+    async (timeoutMs) => {
+      const rootDir = await createTempDirectory();
+      await writeFile(
+        path.join(rootDir, 'config.json'),
+        JSON.stringify({
+          host: { artifactWorker: { timeoutMs } },
+        }),
+      );
+      expect(
+        (await loadAppHostConfig({ rootDir, environment: {} })).artifactWorker,
+      ).toEqual({ timeoutMs: timeoutMs ?? 120_000 });
+    },
+  );
+
+  it.each([0, -1, 1.5, '600000', 2_147_483_648, null])(
+    'rejects an invalid artifact worker deadline at configuration load: %s',
+    async (timeoutMs) => {
+      const rootDir = await createTempDirectory();
+      await writeFile(
+        path.join(rootDir, 'config.json'),
+        JSON.stringify({
+          host: { artifactWorker: { timeoutMs } },
+        }),
+      );
+      await expect(
+        loadAppHostConfig({ rootDir, environment: {} }),
+      ).rejects.toThrow(
+        'host.artifactWorker.timeoutMs: expected an integer from 1 to 2147483647',
+      );
+    },
+  );
+
+  it('accepts an OS-assigned listener in managed mode', async () => {
+    const rootDir = await createTempDirectory();
+    const config = await loadAppHostConfig({
+      rootDir,
+      environment: { APP_HOST_MODE: 'managed', APP_HOST_PORT: '0' },
+    });
+    expect(config.server.port).toBe(0);
+  });
+
+  it.each(['-1', '65536', '1.5'])(
+    'rejects an invalid listener port %s',
+    async (port) => {
+      const rootDir = await createTempDirectory();
+      await expect(
+        loadAppHostConfig({
+          rootDir,
+          environment: { APP_HOST_MODE: 'managed', APP_HOST_PORT: port },
+        }),
+      ).rejects.toThrow();
+    },
+  );
+
+  it('defaults artifact read deadlines and preserves individual overrides', async () => {
+    const rootDir = await createTempDirectory();
+    expect(
+      (await loadAppHostConfig({ rootDir, environment: {} })).artifactRead,
+    ).toEqual({ idleTimeoutMs: 60_000, timeoutMs: 600_000 });
+    await writeFile(
+      path.join(rootDir, 'config.json'),
+      JSON.stringify({
+        host: { artifactRead: { idleTimeoutMs: 123, timeoutMs: 456 } },
+      }),
+    );
+    expect(
+      (await loadAppHostConfig({ rootDir, environment: {} })).artifactRead,
+    ).toEqual({ idleTimeoutMs: 123, timeoutMs: 456 });
+  });
+
+  it.each([0, -1, 0.5, '60000', 2_147_483_648, null])(
+    'rejects an invalid artifact read deadline: %s',
+    async (value) => {
+      const rootDir = await createTempDirectory();
+      await writeFile(
+        path.join(rootDir, 'config.json'),
+        JSON.stringify({ host: { artifactRead: { timeoutMs: value } } }),
+      );
+      await expect(
+        loadAppHostConfig({ rootDir, environment: {} }),
+      ).rejects.toThrow('artifactRead.timeoutMs');
+    },
+  );
+
   it('accepts native OSS artifact configuration and preserves role and network settings', async () => {
     const rootDir = await createTempDirectory();
     const artifact = {

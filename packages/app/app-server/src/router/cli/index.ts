@@ -12,6 +12,7 @@ export { createCliRouter } from './routes.js';
 export { CliService, cliToken, type CliCallerResolver } from './service.js';
 export {
   CLI_EXTENSION,
+  type CliIdempotency,
   CLI_IDENTITIES,
   CLI_MANIFEST_VERSION,
   cliRoute,

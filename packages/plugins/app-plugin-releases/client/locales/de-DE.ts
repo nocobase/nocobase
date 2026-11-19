@@ -69,15 +69,14 @@ const deDE: LocaleResource<typeof enUS> = {
             all: 'Bereitstellen (alle)',
           },
           deployProtected: {
-            title: 'Geschützte Bereitstellungen genehmigen',
+            title: 'In geschützten Umgebungen bereitstellen',
             description:
-              'Genehmigen Sie Bereitstellungen in geschützten Umgebungen, in denen keine Genehmiger benannt sind. Nur Menschen',
-            related:
-              'Geschützte Bereitstellungen genehmigen (die damit verbundenen)',
+              'Wenn keine Umgebungsgenehmiger ermittelt werden, Anfragen persönlich genehmigen oder selbst bzw. über einen Lauf direkt bereitstellen',
+            related: 'In geschützten Umgebungen bereitstellen (zugehörige)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:
               'Apps, die ich erstellt habe, und alle Apps, die sich auf mich beziehen',
-            all: 'Geschützte Bereitstellungen genehmigen (alle)',
+            all: 'In geschützten Umgebungen bereitstellen (alle)',
           },
           operate: {
             title: 'Starten und stoppen',
@@ -155,6 +154,7 @@ const deDE: LocaleResource<typeof enUS> = {
       environments: 'Umgebungen bereitstellen',
     },
     apps: {
+      lastFailure: 'Letzter Fehler: {{detail}}',
       title: 'Apps',
       create: 'App erstellen',
       id: 'App-ID',
@@ -785,6 +785,12 @@ const deDE: LocaleResource<typeof enUS> = {
           'Es gibt keinen ersten Administrator, der angezeigt werden kann.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Seit {{seconds}} Sekunden wurden keine Daten des Release-Pakets empfangen. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTotalTimeout:
+          'Das Lesen des Release-Pakets hat {{seconds}} Sekunden überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTimeout:
+          'Das Zeitlimit zum Lesen des Release-Pakets wurde überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
         hostExited: 'Der Prozess der App wurde gestoppt, bevor sie bereit war.',
         hostDisabled: 'Der App-Host ist ausgeschaltet.',
         hostShutDown: 'Der App-Host wurde heruntergefahren.',
@@ -807,6 +813,18 @@ const deDE: LocaleResource<typeof enUS> = {
           'Der Test wurde nicht innerhalb von 20 Sekunden abgeschlossen.',
         hostNoSettings:
           'Die lokale Laufzeitumgebung nimmt keine Verbindungseinstellungen entgegen.',
+        recycleWait:
+          'Der App-Host gibt Speicher frei; die Bereitstellung wird danach fortgesetzt.',
+        recycleRetry:
+          'Der App-Host gibt noch Speicher frei, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        capacityExceeded:
+          'Dem App-Host fehlt Speicher oder ein freier Platz, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        replacementMemory:
+          'Dem App-Host fehlt Speicher, um die neue Version zu starten; die aktuelle läuft weiter. Versuchen Sie es später erneut.',
+        startQueueFull:
+          'Auf dem App-Host starten zu viele Apps. Versuchen Sie es später erneut.',
+        activeLimit:
+          'Die Anzahl laufender Apps hat ihr Limit erreicht. Versuchen Sie es später erneut.',
       },
       prefixed: {
         startFailed: 'Start fehlgeschlagen: {{detail}}',

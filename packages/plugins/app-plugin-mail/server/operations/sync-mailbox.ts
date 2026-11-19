@@ -1,4 +1,9 @@
-import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
+import {
+  mailLogCode,
+  mailLogError,
+  writeMailLog,
+  type MailLogger,
+} from '../logging.js';
 import { randomUUID } from 'node:crypto';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 
@@ -96,7 +101,12 @@ export class SyncMailboxOperation {
     writeMailLog(
       this.dependencies.logger,
       'info',
-      { event: 'mail.sync.started', ...this.logFields(run) },
+      {
+        event: 'mail.sync.started',
+        ...this.logFields(run),
+        claimedAt: new Date().toISOString(),
+        claimDurationMs: Math.max(0, Date.now() - now),
+      },
       'Mail synchronization step started.',
     );
     const signal = AbortSignal.timeout(SYNC_STEP_TIMEOUT_MS);
@@ -223,7 +233,7 @@ export class SyncMailboxOperation {
           {
             event: 'mail.sync.retry_scheduled',
             ...this.logFields(released),
-            errorCode: normalized.code,
+            errorCode: mailLogCode(normalized.code),
             category: normalized.category,
             retryable: true,
             retryAfterMs: retryDelayMs,
@@ -236,6 +246,18 @@ export class SyncMailboxOperation {
       await this.failSyncRun(run, normalized, error);
     } finally {
       stopLeaseHeartbeat();
+      if (adapter instanceof ImapSmtpAdapter)
+        writeMailLog(
+          this.dependencies.logger,
+          'info',
+          {
+            event: 'mail.sync.imap_commands',
+            ...this.logFields(run),
+            stepDurationMs: Math.max(0, Date.now() - now),
+            ...adapter.syncDiagnostics(),
+          },
+          'IMAP synchronization step command counts.',
+        );
       await closeQuietly(adapter);
     }
   }
@@ -254,7 +276,7 @@ export class SyncMailboxOperation {
         {
           event: 'mail.sync.failed',
           ...this.logFields(failed),
-          errorCode: error.code,
+          errorCode: mailLogCode(error.code),
           category: error.category,
           retryable: error.retryable,
           err: mailLogError(cause),
@@ -284,6 +306,7 @@ export class SyncMailboxOperation {
     input: MailSyncStepCommit,
     adapter?: MailProviderAdapter,
   ): Promise<MailSyncRun> {
+    const startedAt = Date.now();
     // The built-in IMAP adapter commits its copies' location evidence with the step.
     const result =
       adapter instanceof ImapSmtpAdapter && adapter.persistsLocations
@@ -299,6 +322,11 @@ export class SyncMailboxOperation {
             ? 'mail.sync.completed'
             : 'mail.sync.progress',
         ...this.logFields(result),
+        committedAt: new Date().toISOString(),
+        commitDurationMs: Math.max(0, Date.now() - startedAt),
+        previousPhase: input.run.phase,
+        previousRevision: input.run.revision,
+        importedMessages: input.messages.length,
       },
       'Mail synchronization progress saved.',
     );

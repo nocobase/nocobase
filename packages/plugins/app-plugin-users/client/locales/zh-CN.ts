@@ -13,19 +13,21 @@ const zhCN: UsersResource = {
       recipients: '被邀请的人，发送到为其填写的邮箱地址。',
       businessRule:
         '每次创建或重新发送邀请并选择邮件时都会发送，没有单独的开关可以关闭。',
-      languagePolicy: '邮件正文依次包含所有语言，邮件主题为英文。',
+      languagePolicy:
+        '邮件只用一种语言，在邀请时确定：默认是邀请人的界面语言，也可以另选。重发沿用同一语言。如果该语言没有邮件文案，邮件改用应用默认语言和英文。',
       channel: '邀请邮件发件设置',
       variables: {
         app: '应用名称',
         inviter: '发出邀请的人的名字',
         items: '邀请授予的角色或权限',
-        date: '邀请的过期时间',
+        date: '邀请的过期时间，按邮件语言显示，时区为 UTC',
         url: '接受邀请的链接；预览中使用虚构链接',
       },
     },
   },
   accept: {
     title: '接受邀请',
+    language: '语言',
     description: '{{inviter}} 邀请了你。',
     summary: '你还将加入：{{items}}',
     loading: '正在加载邀请…',

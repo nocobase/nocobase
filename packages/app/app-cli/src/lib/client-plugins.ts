@@ -115,7 +115,7 @@ export async function writeClientPlugins(
  * Loads the TypeScript the application depends on. Editing app source with the app's own compiler avoids a second
  * TypeScript in the dependency tree purely so the CLI can parse a file the app already builds.
  */
-async function loadTypeScript(
+export async function loadTypeScript(
   appRoot: string,
   fileLabel: string,
 ): Promise<typeof ts> {

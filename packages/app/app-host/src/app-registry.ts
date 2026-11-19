@@ -1312,6 +1312,8 @@ export class AppRuntimeRegistry {
       this.logger?.warn(
         {
           appId: definition.id,
+          reason: waiting,
+          maxActiveApps: this.activeAppLimit(),
           memory: this.memoryUsage(),
           rotationPending: this.rotationPending,
           occupants: [...occupied().keys()].map((id) => ({

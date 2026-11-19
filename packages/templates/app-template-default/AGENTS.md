@@ -95,6 +95,8 @@ Put a package your **server** code (`server/`, `database/`, `cli/`) imports in `
 
 ### Plugins
 
+A preinstalled plugin provides Skills before it is registered. Check its Client, Server and CLI registrations before relying on runtime features. See the [plugin lifecycle](.agents/skills/nocobase-app-development/references/plugins.md).
+
 **Read a plugin's Skill before building what it already does.** Building a permission system, a notification sender, or a job scheduler by hand when a registered plugin already provides one is the most expensive mistake available here. Register and update plugins with `pnpm nocobase plugin register` and `pnpm nocobase plugin update`; customize a plugin's page through its options or an explicitly registered route component override, never by redeclaring its route. `.agents/skills/` is generated output; never edit a file there. See [plugins](.agents/skills/nocobase-app-development/references/plugins.md).
 
 ### Running the application

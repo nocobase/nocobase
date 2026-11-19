@@ -570,6 +570,13 @@ const zhTW: LocaleResource<typeof enUS> = {
     pathHint:
       'runner 會依自己的 PATH 尋找程式設計工具。請在可執行 which codex / which claude 的終端機中重新執行 nocobase-runner service install 並重新啟動服務（或重新執行 nocobase-runner start），讓它取得正確的 PATH。',
     quota: {
+      ceilingReached: '已達額度門檻',
+      ceilingLabel: '暫停接單門檻',
+      ceilingInput: '{{tool}} 已用額度達到多少百分比時暫停接單',
+      ceilingSave: '套用',
+      ceilingInvalid: '請輸入 1 至 100 的整數百分比，或留空。',
+      ceilingPaused: '某額度視窗已達門檻，受影響的新工作等待重設或調整上限。',
+
       workspaceStatus: {
         active: '工作仍在繼續',
         ended: '已結束 · 允許清理',
@@ -599,6 +606,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       workspaceSize: '工作空間尺寸：{{value}}',
       providers_one: '{{count}} 配額供應商',
       providers_other: '{{count}} 配額供應商',
+      models_one: '{{count}} 個模型額度用完',
+      models_other: '{{count}} 個模型額度用完',
+      percent: '{{percent}}%',
       runColumns: {
         issue: '任務 / 對話',
         agent: '代理',
@@ -641,7 +651,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         '確認額度已恢復後再清除。清除後 {{target}} 立即可以繼續領取工作；如果額度其實仍未恢復，下次執行會重新標記。',
       observed: '最後報告 {{time}}',
       usedPercent: '{{percent}}% 使用',
-      ok: '好的',
+      noUsage: '暫無額度資料',
       hint: '已知重置時間到點或工具回報額度未用完時自動解除；手動清除前請確認額度已恢復。只有執行環境擁有者和管理員才能清除標記。',
     },
     workspaces: {
@@ -707,8 +717,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       offlineNever: '目前離線',
     },
     toolUsage: {
-      label: '透過編碼工具執行',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '並行 {{used}}/{{limit}}',
+      hint: '{{tool}} 最多同時執行 {{limit}} 個，目前 {{used}} 個',
     },
     toolSlots: {
       label: '每個編碼工具的限制',
@@ -843,6 +853,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       show: '版本 {{version}}：有更新的執行程式可用',
       available: '有更新',
       badge: '可升級',
+      latest: '最新',
+      installed: '版本 {{version}}',
       title: '{{name}} 的較新執行環境',
       description: '安裝了{{version}}，該應用程式服務於{{latest}}。',
       hint: '一旦沒有Agent執行，它就會自行更新。要立即更新它，請在其主機上執行它。',

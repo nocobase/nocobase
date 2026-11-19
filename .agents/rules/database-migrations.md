@@ -36,7 +36,7 @@ The loader flattens the application's sources and every registered plugin's into
 
 ### Migrations change incrementally
 
-Every package under `packages/` is published to npm, and `v3-develop` publishes a prerelease of every changed package, so a migration merged there reaches installed applications with the next release, and a beta release counts. Some plugins used to correct a merged migration in place while nothing outside this repository ran it; that is no longer allowed, and the existing migrations of those plugins are not an example to follow.
+Every package under `packages/` is published to npm, and `v3` publishes a prerelease of every changed package, so a migration merged there reaches installed applications with the next release, and a beta release counts. Some plugins used to correct a merged migration in place while nothing outside this repository ran it; that is no longer allowed, and the existing migrations of those plugins are not an example to follow.
 
 Before editing an existing migration, check its Git history and the status of the branch that introduced it. An existing migration may be corrected directly only while its introducing feature branch has not yet been merged. Once that branch has been merged into its target branch, never modify the migration again, not its operations, not its `down`, and not its name or filename; implement every correction or subsequent schema change in a new migration. Do not use hard-coded previous checksum hashes to make an edited migration appear compatible.
 
