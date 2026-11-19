@@ -9,9 +9,9 @@ import { REDACTED } from '@nocobase/agent-protocol';
 
 const RULES: readonly (readonly [RegExp, string])[] = [
   [/\bsk-[A-Za-z0-9_-]{8,}/gu, REDACTED],
-  [/\b(bearer\s+)(?!\[REDACTED\])[^\s"',;]+/giu, `$1${REDACTED}`],
+  [/\b(bearer\s+)(?!\[REDACTED\])[^\s"',;)\]]+/giu, `$1${REDACTED}`],
   [
-    /\b((?:api[_-]?key|key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*["']?)(?!\[REDACTED\])[^\s"',;}]+/giu,
+    /\b((?:api[_-]?key|key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*["']?)(?!\[REDACTED\])[^\s"',;})\]]+/giu,
     `$1${REDACTED}`,
   ],
 ];

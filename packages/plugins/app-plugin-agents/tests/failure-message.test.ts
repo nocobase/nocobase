@@ -24,6 +24,11 @@ describe('a failed run’s message', () => {
     ],
     ['a token= value', 'token=abc123 expired', 'token=[REDACTED] expired'],
     [
+      'a key in parentheses',
+      `${'Reconnect OpenCode Console to continue.'} (gateway apiKey: lan-9f8e7d6c5b4a)`,
+      `${'Reconnect OpenCode Console to continue.'} (gateway apiKey: [REDACTED])`,
+    ],
+    [
       'an apiKey: value in JSON',
       `${SAID} {"apiKey":"lan-9f8e7d6c5b4a"}`,
       `${SAID} {"apiKey":"[REDACTED]"}`,
