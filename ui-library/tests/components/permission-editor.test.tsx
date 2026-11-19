@@ -616,6 +616,10 @@ describe('small screens and reference tags', () => {
     );
     const option = await screen.findByRole('option', { name: /^Contracts/ });
     expect(option).toHaveTextContent(/on · Their department/);
+    // An object with nothing on still shows its count.
+    expect(
+      await screen.findByRole('option', { name: /^Payments/ }),
+    ).toHaveTextContent(/0 of \d+ on/);
   });
 });
 
@@ -630,7 +634,13 @@ describe('system settings tab', () => {
           id: 'users',
           label: 'Users',
           actions: [
-            { id: 'users.view', label: 'View users', view: true },
+            {
+              id: 'users.view',
+              label: 'View users',
+              view: true,
+              // A scope on a settings action is never shown: settings have no data scope.
+              scopes: [{ id: 'records', options: RECORDS }],
+            },
             { id: 'users.create', label: 'Invite users' },
             {
               id: 'users.assign',
@@ -691,6 +701,7 @@ describe('system settings tab', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Account and permissions')).toBeInTheDocument();
     expect(screen.queryAllByRole('combobox')).toEqual([]);
+    expect(screen.queryByText('All records')).toBeNull();
     // Enable all for one page turns on its actions except risky ones; no menu is checked.
     await user.click(
       screen.getByRole('button', { name: 'Enable all · User management' }),

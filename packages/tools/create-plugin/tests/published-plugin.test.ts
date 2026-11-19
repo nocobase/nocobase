@@ -557,8 +557,14 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       `import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PermissionEditor } from './node_modules/${plugin.packageName}/dist/client/components/permission-editor.js';
-const html = renderToStaticMarkup(createElement(PermissionEditor, { defaultTab: 'objects', menus: [{ id: 'records-page', label: 'Records page', uses: { primary: ['records'] } }], objects: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true, scopes: [{ id: 'records', options: [{ value: 'all', label: 'All' }, { value: 'related', label: 'Related' }] }] }] }], value: { menus: ['records-page'], grants: { read: { scopes: { records: 'related' } } } }, onChange() {} }));
+const props = { menus: [{ id: 'records-page', label: 'Records page', uses: { primary: ['records'] } }], objects: [{ id: 'records', label: 'Records', actions: [{ id: 'read', label: 'Read records', view: true, scopes: [{ id: 'records', options: [{ value: 'all', label: 'All' }, { value: 'related', label: 'Related' }] }] }] }], value: { menus: ['records-page'], grants: { read: { scopes: { records: 'related' } }, manage: {} } }, onChange() {} };
+const html = renderToStaticMarkup(createElement(PermissionEditor, { ...props, defaultTab: 'objects' }));
 if (!html.includes('Read records')) throw new Error('Packed component did not render');
+// With settings pages the third tab renders them; without, it is not offered.
+const settings = [{ id: 'records-settings', label: 'Records settings', group: 'System', objects: [{ id: 'settings', label: 'Settings', actions: [{ id: 'manage', label: 'Manage settings', view: true }] }] }];
+const settingsHtml = renderToStaticMarkup(createElement(PermissionEditor, { ...props, settings, defaultTab: 'settings' }));
+if (!settingsHtml.includes('Records settings') || !settingsHtml.includes('Manage settings') || !settingsHtml.includes('System settings')) throw new Error('Packed component did not render its settings pages');
+if (html.includes('System settings')) throw new Error('Packed component offered settings without settings pages');
 console.log('packed component rendered');
 `,
     );
