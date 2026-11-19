@@ -190,10 +190,12 @@ export function permissionScopeTitle(
       ? entry.scopeTitles?.[scope.collection] !== undefined
       : entry.type === resource.type && entry.id === resource.id,
   );
+  const actionTitles = action
+    ? selected?.actionScopeTitles?.[action]
+    : undefined;
   return (
-    (action
-      ? selected?.actionScopeTitles?.[action]?.[scope.collection]
-      : undefined) ??
+    (scope.key === undefined ? undefined : actionTitles?.[scope.key]) ??
+    actionTitles?.[scope.collection] ??
     selected?.scopeTitles?.[scope.collection] ??
     (typeof scope.title === 'string' &&
     (scope.title === scope.key || scope.title === scope.collection)

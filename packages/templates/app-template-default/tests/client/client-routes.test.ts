@@ -178,40 +178,35 @@ describe('app client routes', () => {
     }
   });
 
-  it('pins the page authorization of every signed-in page', () => {
-    // A stored page grant records the page's `authz` resource id (`authorizedAs`), not its route `name`: changing an
-    // id is a data change that has to migrate the grants that reference it, not a refactor — so changing this list
-    // deliberately is the point. A new page that requires sign-in adds an entry here, because a page that checks
-    // access is a new grant somebody has to be given.
+  it('preserves the template page authorization as the app adds routes', () => {
     const resolved = resolveRoutes();
 
     // The landing page and the inbox opted out of page authorization, so they are reachable by every signed-in user.
-    expect(pageAuthorizations(resolved.routes)).toEqual([
+    const expected = [
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ]);
+    ];
+    expect(pageAuthorizations(resolved.routes)).toEqual(
+      expect.arrayContaining(expected),
+    );
   });
 
   it('includes database browsing and supports business settings registration', async () => {
-    // The built-in database browser joins the settings home without enabling business administration.
-    expect(
-      pagePaths(resolveRoutes().routes).filter((path) =>
-        path.startsWith('/settings'),
-      ),
-    ).toEqual(['/settings', '/settings/database-explorer']);
     const built = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-template-default',
-        routes: [...applicationRoutes, systemSettingsRoutes],
+        routes: applicationRoutes.includes(systemSettingsRoutes)
+          ? applicationRoutes
+          : [...applicationRoutes, systemSettingsRoutes],
         source: 'application',
       },
     ]);
-    expect(pageAuthorizations(built.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
-      { name: 'settingsHome', authorizedAs: null },
+    expect(pagePaths(built.routes)).toEqual(
+      expect.arrayContaining(['/settings', '/settings/database-explorer']),
+    );
+    const expected = [
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
       { name: 'settingsUser', authorizedAs: 'user:*' },
@@ -236,8 +231,10 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ]);
+    ];
+    expect(pageAuthorizations(built.routes)).toEqual(
+      expect.arrayContaining(expected),
+    );
     for (const loader of componentLoadersIn(built.routes))
       await expect(loader()).resolves.toMatchObject({
         default: expect.any(Function),

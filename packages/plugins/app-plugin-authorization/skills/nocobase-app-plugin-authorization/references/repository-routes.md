@@ -18,7 +18,7 @@ Use the shortcut when one generated Repository operation completes the business 
 
 Both paths use the same code-defined composites and administrator-editable grants/scopes initialized through seeds when needed. Choosing generated CRUD does not introduce another permission model or require separate collection CRUD grants. Choose per action: one resource can expose simple actions through Repository routes and complex actions through custom endpoints.
 
-For custom endpoints, install authentication and `authz.middleware()`, call `c.var.authz.authorize({ resource, action })` once, reject denial or missing table policies, and bind every returned `conditions.database` policy with `repository.withPolicy()`. Read the actual related records through those policies, validate business rules and keep coordinated writes transactional with expected-state predicates. Follow the complete [business module workflow](business-module.md). Do not select one policy from a multi-scope decision or split an atomic business action into independent CRUD requests merely to fit the shortcut.
+For custom endpoints, install authentication and `authz.middleware()`, call `c.var.authz.authorize({ resource, action })` once, reject denial or missing table policies, and bind every returned `conditions.database` policy with `repository.withPolicy()`. The policy map is keyed by the registered collection/table name: for `sales.quotes` use `conditions.database.salesQuotes` for `repository('salesQuotes')`, not `sales.quotes` or the slot key `quotes`. Read actual related records through their own bound policies. Validate business rules and keep coordinated writes transactional with expected-state predicates. Use `ApiError` with `status: 'ABORTED'` and a stable reason such as `QUOTE_NOT_DRAFT` for a business state conflict (HTTP 409). Follow the complete [business module workflow](business-module.md). Do not select just one policy from a multi-scope decision or split an atomic operation into independent CRUD requests merely to fit the shortcut.
 
 ## Complete example
 
@@ -30,7 +30,7 @@ import { defineDatabasePermission } from '@nocobase/app-plugin-authorization/ser
 
 const projectData = defineDatabasePermission((p) =>
   p
-    .collection('projects')
+    .collection('salesProjects')
     .read(['id', 'title', 'region', 'ownerId', 'confidential', 'notes']),
 );
 
@@ -39,14 +39,18 @@ export const projectResource = defineCompositeResource(
   (resource) =>
     resource
       .title('Projects')
-      .action('view', (action) => action.grant('projects', projectData))
+      .action('view', (action) =>
+        action.title('View').grant('projects', projectData),
+      )
       .action('edit', (action) =>
-        action.grant('projects', projectData.update(['title', 'notes'])),
+        action
+          .title('Edit')
+          .grant('projects', projectData.update(['title', 'notes'])),
       ),
 );
 ```
 
-The project resource declares `view` with project read fields and `edit` with read plus update of `title` and `notes`, both under one `projects` scope. The following route module imports that application-owned declaration. The route factory owns authentication and the body limit; register its exported contribution in the App's server routes.
+The composite `sales.projects` declares `view` and `edit` under the scope slot `projects`. Both actions target the table `salesProjects` and so return policies under `conditions.database.salesProjects`. The example uses `salesProjects` as the Repository exposure name too, but that name is independent of the table and identifies the generated API path. The route factory owns authentication and the body limit; register its exported contribution in the App's server routes.
 
 ```ts
 import {
@@ -70,7 +74,7 @@ const repositoryRoutes = defineRepositoryApiRoutes({
   repositories: [
     {
       name: 'salesProjects',
-      collection: 'projects',
+      collection: 'salesProjects',
       policy: {
         read: {
           scope: true,

@@ -150,9 +150,23 @@ Keep the template and component's layout and copy. Leave the artificial Main men
 
 Use stable, feature-qualified IDs, such as `sales.quotes`. The page permission ID is `route.authz.resource.id` and the business object ID is the name passed to `defineCompositeResource`. For a page dedicated to one object, give its page permission and composite the same ID. The template will infer the primary object if that object is selected. `pages` is keyed by `route.name` (for example, `'sales-quotes'`). Its `primary` and `related` arrays contain the selected business IDs without the `composite:` prefix. Use `primary` for the data needed to open a useful page and `related` for auxiliary data such as a picker. A declaration overrides inference for that route, so include `primary` when adding related objects to a page that would otherwise infer it. Omit `primary` for a related-only mapping or use `{}` to suppress the inferred object altogether. These associations leave stored grants unchanged.
 
+Use localized operation titles in the role editor: generic names such as View, Create, Edit and Delete for standard actions, and short verb phrases such as Receive or Verify dispatch for business actions. Do not repeat the object name in the operation label; describe the object and effects in `actionDescriptions`.
+
+### Permission workspace fields
+
+A composite ID (for example, `sales.quotes`), collection/table name (`salesQuotes`), named data scope slot (`quotes`) and record access key (`sales.myQuotes`) are separate identifiers. The slot key comes from `action.grant(slotKey, permission)`; the record access key names a selectable filter, not a slot.
+
+| Field                | Keys or values                                                                   | When to use                                                                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scopeTitles`        | Collection/table name → localized title, for example `salesQuotes`               | Reuse the registered collection title if the catalog supplies only a raw collection name or slot key.                                                                 |
+| `hiddenActionScopes` | Action ID → data scope slot keys, for example `{ create: ['quotes'] }`           | Hide the selector for the record being created, not for existing related records. Keep the registered scope and its stored value; hiding is not permission to create. |
+| `actionScopeTitles`  | Action ID → data scope slot key → localized title, for example `submit.projects` | Override a specific slot caption for one action. Existing table-name overrides still work as a fallback.                                                              |
+| `scopeOrder`         | Registered record access keys, widest first                                      | Order choices; order alone does not indicate containment.                                                                                                             |
+| `scopeSubsets`       | Outer record access key → narrower record access keys                            | Declare only proven containment, including any transitive pairs the editor should offer. Leave independent choices unrelated.                                         |
+
 ### Example: quotes with a project picker
 
-This example assumes the app registers `sales.quotes` with `view`, `edit` and `submit`, and `sales.projects` with `view`. Quote Submit declares separate scopes on the `quotes` and `projects` collections. Register each collection with a localized title and register each action with its localized business name. For example, register `projects` with title `{ key: 'sales.projects.title', ns: appPackageName }`, and give the Submit action `{ key: 'sales.quotes.actions.submit.title', ns: appPackageName }`. For catalog titles returned by the server, `appPackageName` is the application namespace from its `package.json`. A plugin uses its own package namespace for its own titles.
+This example assumes the app registers `sales.quotes` with `view`, `edit` and `submit`, and `sales.projects` with `view`. Submit declares scope slots `quotes` and `projects` on the `salesQuotes` and `salesProjects` collections, respectively. Register each collection with a localized title and each action with its localized operation name. For example, register `salesProjects` with title `{ key: 'sales.projects.title', ns: appPackageName }`, and give Submit `{ key: 'sales.quotes.actions.submit.title', ns: appPackageName }`. For catalog titles returned by the server, `appPackageName` is the application namespace from its `package.json`. A plugin uses its own package namespace for its own titles.
 
 In `client/routes.ts`, add these entries to the existing route list. Projects needs no explicit page mapping because its page ID matches its composite ID.
 
@@ -192,8 +206,8 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
       scopeOrder: ['allRecords', 'sales.teamQuotes', 'sales.myQuotes'],
       scopeSubsets: { 'sales.teamQuotes': ['sales.myQuotes'] },
       scopeTitles: {
-        quotes: { key: 'sales.quotes.title' },
-        projects: { key: 'sales.projects.title' },
+        salesQuotes: { key: 'sales.quotes.title' },
+        salesProjects: { key: 'sales.projects.title' },
       },
     },
     {
@@ -214,7 +228,7 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
 };
 ```
 
-Give every selected action a one-sentence description in the app's locale files and reference it from `actionDescriptions`. Use the same feature/object/action keys for names and descriptions. Use `scopeOrder` for the display order of registered record access keys, widest first. Separately, declare every proven containment pair in `scopeSubsets`, outer key to inner keys, including any transitive pairs the editor should offer. In this example the server registers both custom quote scopes and Team quotes includes all My quotes for the same user. Leave independent scopes unrelated. Order and containment declarations configure presentation and do not implement server filtering.
+Give every selected action a one-sentence description in the app's locale files and reference it from `actionDescriptions`. Use the same feature/object/action keys for names and descriptions. In this example the server registers both custom quote scopes, and Team quotes includes all My quotes for the same user. Order and containment declarations configure presentation; the server must implement the filters.
 
 Use the registered collection's localized title for every named scope. When the default scope caption is just the scope key or collection name, the template can take that title from the catalog. If supplying `scopeTitles` explicitly, key it by the scope's collection name and reuse that collection's title key, as shown above. Do not set `risks` in new application business selections. The template supplies the security reminders for system settings.
 
@@ -227,7 +241,7 @@ sales: {
     title: 'Quotes',
     actions: {
       view: { title: 'View', description: 'Read quotes within the selected scope.' },
-      edit: { title: 'Edit draft', description: 'Change the amount and notes on draft quotes.' },
+      edit: { title: 'Edit', description: 'Change the amount and notes on draft quotes.' },
       submit: { title: 'Submit', description: 'Submit a draft quote for its project.' },
     },
   },
@@ -245,7 +259,7 @@ sales: {
     title: '报价单',
     actions: {
       view: { title: '查看', description: '查看所选范围内的报价单。' },
-      edit: { title: '编辑草稿', description: '修改草稿报价单的金额和备注。' },
+      edit: { title: '编辑', description: '修改草稿报价单的金额和备注。' },
       submit: { title: '提交', description: '提交项目的草稿报价单。' },
     },
   },

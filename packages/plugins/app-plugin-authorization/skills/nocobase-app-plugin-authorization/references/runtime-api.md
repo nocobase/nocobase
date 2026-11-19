@@ -53,7 +53,7 @@ export default defineServerPlugins([authentication, authorization]);
 
 ## Declare a business operation
 
-A business operation is a composite resource. Use stable names (`sales.quotes`, `submit`) and a separate data scope key for every independently controlled collection; a data scope targets the one collection its grants name. Builders are immutable; return the builder from each callback. They perform no registration or persistence.
+A business operation is a composite resource. Use stable names (`sales.quotes`, `submit`) and a separate data scope key for every independently controlled scope; a data scope targets the one collection its grants name. The slot `quotes` targets the table `salesQuotes`, so authorize `sales.quotes` but bind `conditions.database.salesQuotes`. Builders are immutable; return the builder from each callback. They perform no registration or persistence.
 
 ```ts
 import { defineCompositeResource } from '@nocobase/authorization/core';
@@ -73,12 +73,15 @@ interface Project {
 }
 const quoteData = defineDatabasePermission((p) =>
   p
-    .collection<Quote>('quotes')
+    .collection<Quote>('salesQuotes')
     .title('Quotes')
     .read(['id', 'projectId', 'preparedById', 'amount', 'status', 'notes']),
 );
 const projectData = defineDatabasePermission((p) =>
-  p.collection<Project>('projects').title('Projects').read(['id', 'title']),
+  p
+    .collection<Project>('salesProjects')
+    .title('Projects')
+    .read(['id', 'title']),
 );
 export const quotes = defineCompositeResource('sales.quotes', (r) =>
   r
@@ -96,8 +99,8 @@ export const quotes = defineCompositeResource('sales.quotes', (r) =>
 );
 
 // In the owning provider's boot method:
-authz.database.collections.add({ name: 'quotes', title: 'Quotes' });
-authz.database.collections.add({ name: 'projects', title: 'Projects' });
+authz.database.collections.add({ name: 'salesQuotes', title: 'Quotes' });
+authz.database.collections.add({ name: 'salesProjects', title: 'Projects' });
 const reference = authz.compositeResources.define(quotes);
 authz.ui.sections.add({ name: 'sales', title: 'Sales', parent: 'business' });
 authz.ui.place(reference, { section: 'sales' });
@@ -122,25 +125,25 @@ router.get('/quotes', async (c) => {
     resource: { type: 'composite', id: 'sales.quotes' },
     action: 'view',
   });
-  const policy = decision.conditions?.database?.quotes;
+  const policy = decision.conditions?.database?.salesQuotes;
   // The application answers it as 403 PERMISSION_DENIED in the standard error body.
   if (decision.effect === 'deny' || !policy)
     throw new AuthorizationDeniedError(decision);
   const records = await database
-    .repository('quotes')
+    .repository('salesQuotes')
     .withPolicy(policy)
     .findMany();
   return c.json({ data: records });
 });
 ```
 
-A composite decision's `conditions` are `{ type: 'composite', checks, database }`: one `RepositoryPolicy` per composed collection, built from that action's grants only, and `checks` with the underlying decisions. A denied collection check yields `false` for that collection rather than denying the whole feature, and a Repository refuses to run under it; a granted check whose data scope selects nothing, such as a user in no department, yields a scope that matches no rows, so reads return an empty result without a special case. For `submit`, use both `conditions.database.quotes` and `.projects` inside the same transaction, check the quote's actual parent project through the project policy and include the expected state in the update predicate. Do not replace these policies with `authz.database.policyFor` without an operation: another action's grants could then widen access. `require` rejects conditional decisions; `can` does not enforce rows.
+A composite decision's `conditions` are `{ type: 'composite', checks, database }`: one `RepositoryPolicy` per composed collection, built from that action's grants only, and `checks` with the underlying decisions. A denied collection check yields `false` for that collection rather than denying the whole feature, and a Repository refuses to run under it; a granted check whose data scope selects nothing, such as a user in no department, yields a scope that matches no rows, so reads return an empty result without a special case. For `submit`, use both `conditions.database.salesQuotes` and `.salesProjects` inside the same transaction, check the quote's actual parent project through the project policy and include the expected state in the update predicate. Do not replace these policies with `authz.database.policyFor` without an operation: another action's grants could then widen access. `require` rejects conditional decisions; `can` does not enforce rows.
 
 For a collection-oriented endpoint, fold the four CRUD decisions into one policy:
 
 ```ts
-const policy = await authz.database.policyFor('quotes', c.get('authz'));
-const repository = database.repository('quotes').withPolicy(policy);
+const policy = await authz.database.policyFor('salesQuotes', c.get('authz'));
+const repository = database.repository('salesQuotes').withPolicy(policy);
 await repository.updateOne({ filter: { id }, values: input });
 ```
 

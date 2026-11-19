@@ -879,6 +879,24 @@ describe('role permission workspace', () => {
       'Departments',
     ]);
   });
+
+  it('overrides the label of a scope slot by its key, not its table name', async () => {
+    const { workspace: ws } = await workspace({
+      ...selection,
+      business: selection.business.map((entry) => ({
+        ...entry,
+        scopeTitles: { contracts: 'Contracts by table' },
+        actionScopeTitles: {
+          approve: { contracts: 'Legacy table label', records: 'By slot' },
+        },
+      })),
+    });
+    expect(
+      objectOf(ws, 'Contracts')!
+        .actions.find((action) => action.id === contract('approve'))
+        ?.scopes?.map((slot) => slot.label),
+    ).toEqual(['By slot', 'Departments']);
+  });
 });
 
 describe('example permission selection', () => {

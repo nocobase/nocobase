@@ -24,6 +24,10 @@ Declare reusable collection permissions and business operations, defined as comp
 
 Every `server/routes/` endpoint installs authentication and authorization. A business operation checks `{ resource: { type: 'composite', id }, action }` with the request context's `authorize` once and binds each returned `conditions.database` policy through `repository.withPolicy`. Do not replace it with collection-level authorization or an in-memory filter. Use `authz.database.policyFor` for collection CRUD and `authz.database.authorizeRepository` for simple business Repository routes, mapping each method to its composite action. The authorization Skill documents these choices and their contracts.
 
+`conditions.database` is keyed by the registered collection/table name, not the composite ID, route name or named scope slot. For a `sales.quotes` operation touching `salesQuotes` and `salesProjects`, read `decision.conditions?.database?.salesQuotes` and `decision.conditions?.database?.salesProjects`. Reject a denied decision or a missing required policy. Bind each policy to the repository of the same name, such as `connection.repository('salesQuotes').withPolicy(quotePolicy)`.
+
+Keep permission failures separate from business conflicts. An authorized operation rejected by the current record state (for example, submitting a quote that is no longer a draft) returns `ApiError` with `status: 'ABORTED'` (HTTP 409) and a stable reason such as `QUOTE_NOT_DRAFT`. Use `ALREADY_EXISTS` (409) for an existing resource that conflicts with a create, not as a generic conflict code. Clients branch on `error.reason`.
+
 Declare `authz` on the first page of every path in `client/routes.ts`: `{ resource: { type: 'page', id }, action: 'access' }` for a business page, the page's `settings` item for a configuration page, `'unrestricted'` for a root-only page, or `'skip'` explicitly; nothing is inferred from the route name. Nested pages inherit it; an omitted value on a first page defaults to `'unrestricted'` for protected pages and `'skip'` otherwise, with a development warning. Use `useCan({ resource, action })` for button visibility and server-computed eligibility for record-sensitive actions. Keep pending/failed checks closed and refresh after permission changes. Client visibility does not enforce the API. The authorization Skill’s `references/client-development.md` includes the component, relation controls and settings lifecycle; all required APIs are bundled in that Skill rather than external package documentation.
 
 ## Configure the three-tab role editor
@@ -38,9 +42,23 @@ Keep the template and component's layout and copy. Leave the artificial Main men
 
 Use stable, feature-qualified IDs, such as `sales.quotes`. The page permission ID is `route.authz.resource.id` and the business object ID is the name passed to `defineCompositeResource`. For a page dedicated to one object, give its page permission and composite the same ID. The template will infer the primary object if that object is selected. `pages` is keyed by `route.name` (for example, `'sales-quotes'`). Its `primary` and `related` arrays contain the selected business IDs without the `composite:` prefix. Use `primary` for the data needed to open a useful page and `related` for auxiliary data such as a picker. A declaration overrides inference for that route, so include `primary` when adding related objects to a page that would otherwise infer it. Omit `primary` for a related-only mapping or use `{}` to suppress the inferred object altogether. These associations leave stored grants unchanged.
 
+Use localized operation titles in the role editor: generic names such as View, Create, Edit and Delete for standard actions, and short verb phrases such as Receive or Verify dispatch for business actions. Do not repeat the object name in the operation label; describe the object and effects in `actionDescriptions`.
+
+### Permission workspace fields
+
+A composite ID (for example, `sales.quotes`), collection/table name (`salesQuotes`), named data scope slot (`quotes`) and record access key (`sales.myQuotes`) are separate identifiers. The slot key comes from `action.grant(slotKey, permission)`; the record access key names a selectable filter, not a slot.
+
+| Field                | Keys or values                                                                   | When to use                                                                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scopeTitles`        | Collection/table name → localized title, for example `salesQuotes`               | Reuse the registered collection title if the catalog supplies only a raw collection name or slot key.                                                                 |
+| `hiddenActionScopes` | Action ID → data scope slot keys, for example `{ create: ['quotes'] }`           | Hide the selector for the record being created, not for existing related records. Keep the registered scope and its stored value; hiding is not permission to create. |
+| `actionScopeTitles`  | Action ID → data scope slot key → localized title, for example `submit.projects` | Override a specific slot caption for one action. Existing table-name overrides still work as a fallback.                                                              |
+| `scopeOrder`         | Registered record access keys, widest first                                      | Order choices; order alone does not indicate containment.                                                                                                             |
+| `scopeSubsets`       | Outer record access key → narrower record access keys                            | Declare only proven containment, including any transitive pairs the editor should offer. Leave independent choices unrelated.                                         |
+
 ### Example: quotes with a project picker
 
-This example assumes the app registers `sales.quotes` with `view`, `edit` and `submit`, and `sales.projects` with `view`. Quote Submit declares separate scopes on the `quotes` and `projects` collections. Register each collection with a localized title and register each action with its localized business name. For example, register `projects` with title `{ key: 'sales.projects.title', ns: appPackageName }`, and give the Submit action `{ key: 'sales.quotes.actions.submit.title', ns: appPackageName }`. For catalog titles returned by the server, `appPackageName` is the application namespace from its `package.json`. A plugin uses its own package namespace for its own titles.
+This example assumes the app registers `sales.quotes` with `view`, `edit` and `submit`, and `sales.projects` with `view`. Submit declares scope slots `quotes` and `projects` on the `salesQuotes` and `salesProjects` collections, respectively. Register each collection with a localized title and each action with its localized operation name. For example, register `salesProjects` with title `{ key: 'sales.projects.title', ns: appPackageName }`, and give Submit `{ key: 'sales.quotes.actions.submit.title', ns: appPackageName }`. For catalog titles returned by the server, `appPackageName` is the application namespace from its `package.json`. A plugin uses its own package namespace for its own titles.
 
 In `client/routes.ts`, add these entries to the existing route list. Projects needs no explicit page mapping because its page ID matches its composite ID.
 
@@ -80,8 +98,8 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
       scopeOrder: ['allRecords', 'sales.teamQuotes', 'sales.myQuotes'],
       scopeSubsets: { 'sales.teamQuotes': ['sales.myQuotes'] },
       scopeTitles: {
-        quotes: { key: 'sales.quotes.title' },
-        projects: { key: 'sales.projects.title' },
+        salesQuotes: { key: 'sales.quotes.title' },
+        salesProjects: { key: 'sales.projects.title' },
       },
     },
     {
@@ -102,7 +120,7 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
 };
 ```
 
-Give every selected action a one-sentence description in the app's locale files and reference it from `actionDescriptions`. Use the same feature/object/action keys for names and descriptions. Use `scopeOrder` for the display order of registered record access keys, widest first. Separately, declare every proven containment pair in `scopeSubsets`, outer key to inner keys, including any transitive pairs the editor should offer. In this example the server registers both custom quote scopes and Team quotes includes all My quotes for the same user. Leave independent scopes unrelated. Order and containment declarations configure presentation and do not implement server filtering.
+Give every selected action a one-sentence description in the app's locale files and reference it from `actionDescriptions`. Use the same feature/object/action keys for names and descriptions. In this example the server registers both custom quote scopes, and Team quotes includes all My quotes for the same user. Order and containment declarations configure presentation; the server must implement the filters.
 
 Use the registered collection's localized title for every named scope. When the default scope caption is just the scope key or collection name, the template can take that title from the catalog. If supplying `scopeTitles` explicitly, key it by the scope's collection name and reuse that collection's title key, as shown above. Do not set `risks` in new application business selections. The template supplies the security reminders for system settings.
 
@@ -115,7 +133,7 @@ sales: {
     title: 'Quotes',
     actions: {
       view: { title: 'View', description: 'Read quotes within the selected scope.' },
-      edit: { title: 'Edit draft', description: 'Change the amount and notes on draft quotes.' },
+      edit: { title: 'Edit', description: 'Change the amount and notes on draft quotes.' },
       submit: { title: 'Submit', description: 'Submit a draft quote for its project.' },
     },
   },
@@ -133,7 +151,7 @@ sales: {
     title: '报价单',
     actions: {
       view: { title: '查看', description: '查看所选范围内的报价单。' },
-      edit: { title: '编辑草稿', description: '修改草稿报价单的金额和备注。' },
+      edit: { title: '编辑', description: '修改草稿报价单的金额和备注。' },
       submit: { title: '提交', description: '提交项目的草稿报价单。' },
     },
   },
@@ -163,6 +181,10 @@ For a custom initial administrator, configure `users.initialAdmin` before the fi
 ## Visible and manageable assignments
 
 Default to named users selected through User management → Assign roles. Do not infer that all signed-in users should inherit a new business role. In particular, never seed a business permission set onto `authenticated:*`, add business grants to the platform member role, or reapply assignments at startup to make a feature accessible. A role editor lists that role's grants; unchecked actions are not denials of grants inherited from other sources. Inspect effective assignments before interpreting a permission test.
+
+For an existing user, call the Users plugin's `PUT /api/users/:userId/roleScopes/app` (or `UsersClient.replaceRoleScope(userId, 'app', value)`) with body `{ "value": ["sales-engineer"] }`. Use the permission set's stable key and the user's actual ID. This operation requires `assign-role` and replaces the whole direct `app` scope: read the current assignment (from `GET /api/users/:userId`), keep other direct roles that should remain, and use `[]` only when deliberately clearing that scope. Inherited roles and other scopes are not replaced. For an atomic update of the profile and assignment, use `PATCH /api/users/:userId` with `roleScopes: { app: [...] }` and the profile fields; the caller needs both `update` and `assign-role`.
+
+Keep demo accounts, their assignments and demo records together in opt-in sample data. Use `defineSeed({ name, sample: true, run })` for sample rows and the `sampleDataToken` provider hook when account creation needs the Users service. Enable them on a fresh installation with `APP_SAMPLE_DATA=true` (for example, `APP_SAMPLE_DATA=true pnpm dev` against a new development database). Do not put demo credentials or assignments in ordinary production seeds. Keep required permission sets and other real initialization in normal seeds. See [sample seeds](migrations.md#sample-data-and-demo-systems).
 
 A global default is supported only when the user explicitly requests it and the application delivers an authorized administration control to inspect its recipient population, change the default role and revoke that assignment. User access details must distinguish direct roles from inherited roles and link to the source. If those controls are unavailable, explain the limitation and use explicit user assignments instead. Never invent a configuration flag, seed-only setting or undocumented SQL instruction as the administrator's normal adjustment interface.
 
