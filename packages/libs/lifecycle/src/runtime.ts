@@ -2200,7 +2200,10 @@ export class LifecycleRuntime {
         (await canEnter('reset', lifecycle.initial))
       )
         actions.push('reset');
-      if (result.suspended && allowed.has('restartAt')) {
+      if (
+        (result.suspended || policy.restartWhileActive) &&
+        allowed.has('restartAt')
+      ) {
         for (const target of policy.restartAt ?? [])
           if (await canEnter('restartAt', target)) targets.push(target);
         if (targets.length) actions.push('restartAt');
@@ -2424,7 +2427,8 @@ export class LifecycleRuntime {
           command === 'suspend'
             ? current.suspended || !policy.suspend
             : !current.suspended &&
-              !(command === 'reset' && policy.resetWhileActive)
+              !(command === 'reset' && policy.resetWhileActive) &&
+              !(command === 'restartAt' && policy.restartWhileActive)
         )
           throw new LifecycleError(
             'INVALID_STATE',

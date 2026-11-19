@@ -539,7 +539,9 @@ function TicketView({
       <Banner tone='success'>
         {record.closedReason === 'timeout'
           ? t('tickets.banner.timeout')
-          : t('tickets.banner.resolved')}{' '}
+          : record.closedReason === 'administrative'
+            ? t('states.closed')
+            : t('tickets.banner.resolved')}{' '}
         {until > now
           ? t('tickets.banner.reopenUntil', {
               date: dateTime(new Date(until).toISOString(), i18n.language),

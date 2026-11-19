@@ -115,11 +115,12 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
       suspend: true,
       reset: true,
       resetWhileActive: true,
-      restartAt: ['open'],
+      restartAt: ['new', 'open', 'awaitingCustomer', 'closed'],
+      restartWhileActive: true,
       canEnter: ({ previous, to }) =>
-        to !== 'open' || Boolean(previous.assigneeId),
+        to === 'new' || to === 'closed' || Boolean(previous.assigneeId),
       set: ({ to }): Readonly<Record<string, unknown>> => ({
-        closedReason: null,
+        closedReason: to === 'closed' ? 'administrative' : null,
         ...(to === 'new' ? { assigneeId: null } : {}),
       }),
     },

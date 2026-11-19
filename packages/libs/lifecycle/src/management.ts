@@ -77,6 +77,8 @@ export interface ManagementPolicy<T extends LifecycleTypes> {
   /** Allow an enabled reset to start a new round from an active record. */
   readonly resetWhileActive?: boolean;
   readonly restartAt?: readonly T['state'][];
+  /** Allow a new round at a configured target from an active record. */
+  readonly restartWhileActive?: boolean;
   readonly canEnter?: (
     context: ManagementReentryContext<T>,
   ) => boolean | Promise<boolean>;

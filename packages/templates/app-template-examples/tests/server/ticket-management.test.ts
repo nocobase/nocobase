@@ -72,6 +72,7 @@ test('ticket management uses the signed-in administrator, persists its audit, an
           record: {
             assigneeId: string | null;
             closedReason: string | null;
+            lifecycleDueAt: string | null;
             description: string;
           };
           history: {
@@ -91,7 +92,11 @@ test('ticket management uses the signed-in administrator, persists its audit, an
   );
   expect(reply.status).toBe(200);
   const original = await read();
-  expect(original.management.actions).toEqual(['suspend', 'reset']);
+  expect(original.management.actions).toEqual([
+    'suspend',
+    'reset',
+    'restartAt',
+  ]);
   const suspend = {
     command: 'suspend',
     reason: 'Review the report.',
@@ -146,7 +151,12 @@ test('ticket management uses the signed-in administrator, persists its audit, an
   const paused = await read();
   expect(paused.version).toBe(original.version);
   expect(paused.management.actions).toEqual(['resume', 'reset', 'restartAt']);
-  expect(paused.management.targets).toEqual(['open']);
+  expect(paused.management.targets).toEqual([
+    'new',
+    'open',
+    'awaitingCustomer',
+    'closed',
+  ]);
   expect(paused.management.history[0]).toMatchObject({
     actorId: admin.user.id,
     event: { reason: suspend.reason },
@@ -180,13 +190,29 @@ test('ticket management uses the signed-in administrator, persists its audit, an
     expect(response.status).toBe(200);
     return ((await response.json()) as { data: ManagementResult }).data;
   }
-  await command('suspend', 'pause-2');
   expect(
     await command('restartAt', 'restart-1', { target: 'open' }),
   ).toMatchObject({ state: 'open', round: 2 });
+  expect(
+    await command('restartAt', 'restart-closed', { target: 'closed' }),
+  ).toMatchObject({ state: 'closed', round: 3 });
+  expect((await read()).record).toMatchObject({
+    closedReason: 'administrative',
+    lifecycleDueAt: null,
+  });
+  expect(
+    await command('restartAt', 'restart-wait', { target: 'awaitingCustomer' }),
+  ).toMatchObject({ state: 'awaitingCustomer', round: 4 });
+  expect((await read()).record).toMatchObject({
+    closedReason: null,
+    lifecycleDueAt: expect.any(String),
+  });
+  expect(
+    await command('restartAt', 'restart-new', { target: 'new' }),
+  ).toMatchObject({ state: 'new', round: 5 });
   expect(await command('reset', 'reset-1')).toMatchObject({
     state: 'new',
-    round: 3,
+    round: 6,
     recordId: id,
   });
   const detail = await read();
@@ -194,8 +220,18 @@ test('ticket management uses the signed-in administrator, persists its audit, an
   expect(detail.record).toMatchObject({
     assigneeId: null,
     closedReason: null,
+    lifecycleDueAt: null,
     description: 'Keep the opening message.',
   });
+  expect(detail.management.targets).toEqual(['new', 'closed']);
+  const refused = await manage({
+    command: 'restartAt',
+    target: 'open',
+    requestId: 'unassigned',
+    reason: 'Cannot route without an assignee.',
+    expectedVersion: detail.management.version,
+  });
+  expect(refused.status).toBe(400);
   expect(detail.history.transitions.map((entry) => entry.transition)).toEqual([
     '$create',
     'reply',
@@ -206,7 +242,9 @@ test('ticket management uses the signed-in administrator, persists its audit, an
   expect(detail.management.history.map(({ event }) => event.command)).toEqual([
     'suspend',
     'resume',
-    'suspend',
+    'restartAt',
+    'restartAt',
+    'restartAt',
     'restartAt',
     'reset',
   ]);
