@@ -1,5 +1,17 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.97
+
+### Patch Changes
+
+- d3f0c92: Add the reusable workflow version selector and match its definition-header appearance to the category tag.
+- Updated dependencies [761fb01]
+- Updated dependencies [4967900]
+- Updated dependencies [761fb01]
+  - @nocobase/app-plugin-users@2.0.0-beta.21
+  - @nocobase/app-plugin-agents@2.0.0-beta.16
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.22
+
 ## 1.0.0-beta.96
 
 ### Patch Changes

@@ -318,7 +318,6 @@ const INPUT_TITLES: Readonly<Record<RunInput['type'], string>> = {
   comment: 'Comment',
   statusChange: 'Status change',
   retry: 'Retry',
-  planDecided: 'Plan decided',
   signal: 'Signal',
   custom: 'Input',
 };

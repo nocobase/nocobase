@@ -1,7 +1,7 @@
 /**
  * What the page shows, for an assistant, and the places an assistant's buttons go. This plugin knows nothing of
- * agents: its pages register what they show (`usePageContextSource`) and place a slot (`IntakeAgentSlot`); all of
- * it is inert until the application mounts a `PageContextProvider` and fills the slot's context — the assembling application does, with the agents plugin's chat panel.
+ * agents: its pages register what they show (`usePageContextSource`) and all of
+ * it is inert until the application mounts a `PageContextProvider`.
  *
  * A page registers one entry per thing it shows (the issue, the project, a list's filters, the selected inbox item)
  * and the provider keeps them in registration order while the page is mounted. Entries carry ids and a label for the
@@ -15,7 +15,6 @@ import {
   useEffect,
   useId,
   useSyncExternalStore,
-  type ComponentType,
   type Context,
 } from 'react';
 
@@ -27,7 +26,7 @@ export const PAGE_CONTEXT_MAX_TEXT = 2000;
 
 /** Kinds the plugin's pages register; others may add their own. */
 export type PageContextKind =
-  'issue' | 'project' | 'issues' | 'inbox' | 'plan' | (string & {});
+  'issue' | 'project' | 'issues' | 'inbox' | (string & {});
 
 export interface PageContextEntry {
   readonly kind: PageContextKind;
@@ -143,29 +142,3 @@ export function usePageContextEntries(): readonly PageContextEntry[] {
     store ? store.entries : () => NO_ENTRIES,
   );
 }
-
-// ---------------------------------------------------------------------------------------------------------------
-// Slots
-// ---------------------------------------------------------------------------------------------------------------
-
-/** What the AI draft tab hands to "Let an agent organize". */
-export interface IntakeAgentSlotProps {
-  /** The text as typed. */
-  readonly text: string;
-  /** The uploaded files (`POST /api/projects/intake/files`), the caller's own. */
-  readonly fileIds: readonly string[];
-  readonly projectId: string | null;
-  /** True while the page cannot hand anything over (nothing typed, an upload running). */
-  readonly disabled: boolean;
-  /** Shows the plan the agent proposed in place of the draft. */
-  readonly onPlan: (planId: string) => void;
-  readonly className?: string;
-}
-
-/** What fills the AI draft tab's slot; nothing fills it by default. */
-export interface IntakeAgentSlotFill {
-  readonly Organize: ComponentType<IntakeAgentSlotProps>;
-}
-
-export const IntakeAgentSlotContext: Context<IntakeAgentSlotFill | null> =
-  createContext<IntakeAgentSlotFill | null>(null);

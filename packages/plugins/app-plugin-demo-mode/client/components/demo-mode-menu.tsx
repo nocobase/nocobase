@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronDown } from 'lucide-react';
@@ -41,9 +42,13 @@ function EnabledDemoModeMenu(): ReactElement {
         username,
         `${location.pathname}${location.search}${location.hash}`,
       );
-    } catch {
+    } catch (error) {
       setPending(null);
-      toaster.show({ type: 'error', title: t('accounts.failed') });
+      toaster.show({
+        ...errorToastOptions(error),
+        type: 'error',
+        title: t('accounts.failed'),
+      });
     }
   };
 

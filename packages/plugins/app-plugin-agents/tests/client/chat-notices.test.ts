@@ -25,7 +25,6 @@ it.each(['en-US', 'zh-CN'] as const)(
       answer: '',
       error: null,
       usage: null,
-      plans: 0,
       identitySnapshot: true,
     };
     expect(

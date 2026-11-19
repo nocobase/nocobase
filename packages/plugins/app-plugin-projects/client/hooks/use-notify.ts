@@ -1,3 +1,4 @@
+import { errorToastOptions } from '@nocobase/app-client';
 import type { ToastOptions } from '@nocobase/app-client';
 import {
   UNSAFE_DataRouterContext,
@@ -53,6 +54,7 @@ export function useNotify(): Notify {
       error: (error, fallback) =>
         void toaster.show({
           type: 'error',
+          ...errorToastOptions(error),
           title: errorText(t, error, fallback ?? t('common.requestFailed')),
           ...(navigate ? suggestionAction(error, t, navigate) : {}),
         }),
@@ -101,7 +103,7 @@ export function errorText(
   return fallback;
 }
 
-/** The standard error body's `metadata`: machine-readable facts about the failure, such as a plan's row checks. */
+/** The standard error body's `metadata`: machine-readable facts about the failure. */
 export function errorMetadata(
   error: ApiClientError,
 ): Readonly<Record<string, unknown>> | undefined {

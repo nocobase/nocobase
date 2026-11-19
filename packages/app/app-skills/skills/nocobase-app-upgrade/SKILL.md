@@ -60,9 +60,9 @@ If `nocobase.templatePackage` is missing, use the confirmed package name for `TE
 
 ## 3. Select the release channel and fetch both releases
 
-Resolve the user's requested channel before choosing TARGET. An explicit version takes precedence. For a beta upgrade, use the template's `beta` dist-tag; for an explicit `latest` upgrade, use its `latest` dist-tag. If the user only asks to upgrade, retain the baseline's channel: use `beta` for a beta baseline and `latest` for a stable baseline; clarify other prerelease channels instead of guessing. State the selected channel and resolved version in the upgrade plan.
+Resolve TARGET before fetching. An explicit version takes precedence, and an explicitly requested dist-tag, such as `beta`, uses that tag. If the user only asks to upgrade, prefer `latest` whatever release BASE came from: when `latest` resolves to a version newer than BASE by semantic version ordering, that version is TARGET. When it does not, and another dist-tag points to a version newer than BASE, name the tag and its version and ask before using it, since it is a prerelease line the user did not ask for; when no tag does, the application is already current. State the selected tag and resolved version in the upgrade plan.
 
-The tags are independent pointers, not a version ordering: `beta` tracks beta releases, while `latest` is npm's default tag and can still point to an older beta before a stable release exists. Do not assume `latest` is newer or stable, or choose the highest version across all channels. If the user asks for a stable release but `latest` resolves to a prerelease, explain that the tag does not provide a stable target and clarify before proceeding. A missing requested tag is not permission to fall back to another channel.
+`latest` comes first because of how NocoBase 3 publishes: every beta release has also moved `latest`, so before the first stable release `latest` and `beta` point to the same version. From the first stable release on, `latest` carries stable releases and `beta` follows them only for a transition period, after which it stays on the last version it pointed at. An application created from a beta therefore keeps upgrading by following `latest`, while retaining `beta` would leave it stuck once the transition ends. Before a stable release exists `latest` still resolves to a beta; that is expected, not an error. If the user explicitly asks for a stable release and `latest` resolves to a prerelease, explain that no stable release exists yet and clarify before proceeding. Do not otherwise pick the highest version across all tags, and do not treat a missing requested tag as permission to fall back to another.
 
 Run these commands from the application root so npm uses the project and user registry settings for each package scope. For a commercial template, verify read access to both releases through the configured `@nocobase:registry` (normally `https://pkg-v3.nocobase.com/`). If access fails, restore the scoped registry or login and retry the same edition and version.
 
@@ -71,8 +71,8 @@ TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
 npm view "$TEMPLATE" dist-tags --json
 
-# Set CHANNEL to beta or latest according to the selection above.
-CHANNEL=beta
+# Keep latest unless the selection above chose another tag.
+CHANNEL=latest
 TARGET=$(npm view "$TEMPLATE@$CHANNEL" version)
 # For an explicitly requested version, assign that exact version to TARGET instead.
 ```

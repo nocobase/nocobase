@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/api-client';
 import {
   createServiceToken,
   type ServiceResolver,
@@ -24,6 +25,8 @@ export interface ToastAction {
  * application's toaster, not by the code that shows it.
  */
 export interface ToastOptions {
+  /** Correlates a failed API request with server request logs. The host may display and copy it. */
+  readonly requestId?: string;
   /**
    * Identifies the toast. Showing a toast with the id of one still open replaces that toast's content and restarts
    * its timer instead of adding a second one; the replaced content's `onClose` does not run.
@@ -41,6 +44,13 @@ export interface ToastOptions {
   readonly action?: ToastAction;
   /** Runs when the toast starts closing: when it times out, when the user dismisses it, and when `close` is called. */
   readonly onClose?: () => void;
+}
+
+/** Preserve correlation whenever a plugin reports an API failure through the host toaster. */
+export function errorToastOptions(
+  error: unknown,
+): Pick<ToastOptions, 'requestId'> {
+  return error instanceof ApiClientError ? { requestId: error.requestId } : {};
 }
 
 /**

@@ -94,30 +94,3 @@ export const demoNotices: InboxNotice[] = [
     outcome: 'approved',
   }),
 ];
-
-/** Sample plans, a kind whose records live in another API than the in-app items. */
-export interface DemoPlan {
-  readonly id: string;
-  readonly title: string;
-  readonly proposer: string;
-  readonly rows: readonly string[];
-}
-
-export const demoPlans: readonly DemoPlan[] = [
-  {
-    id: 'p1',
-    title: 'Split the CSV export into three issues',
-    proposer: 'Coding agent',
-    rows: [
-      'Create "Export issues as CSV"',
-      'Create "Stream large exports"',
-      'Move PM-34 to In review',
-    ],
-  },
-  {
-    id: 'p2',
-    title: 'Hand PM-41 to the review agent',
-    proposer: 'Status rule',
-    rows: ['Make Review agent the executor of PM-41'],
-  },
-];

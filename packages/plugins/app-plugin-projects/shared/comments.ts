@@ -6,7 +6,7 @@
 import type { Attachment } from './attachments.js';
 import type { Page } from './common.js';
 import type { NameText } from './kinds.js';
-import type { ActivityVia } from './plans.js';
+import type { ActivityVia } from './activity.js';
 
 export const REACTION_EMOJIS = [
   '👍',
@@ -74,7 +74,7 @@ export interface IssueComment {
   readonly note: boolean;
   readonly parentId: string | null;
   readonly rootId: string;
-  /** How a person wrote it when not by hand in the browser (`agent`: an agent wrote it for them, or their plan did). */
+  /** How a person wrote it when not by hand in the browser (`agent`: an agent wrote it for them, including historical executed plans). */
   readonly via: 'cli' | 'api_key' | 'agent' | null;
   /** The originating run and attempt, when recorded by the application. Kept separate from the transport `via`. */
   readonly source?: ActivityVia | null;

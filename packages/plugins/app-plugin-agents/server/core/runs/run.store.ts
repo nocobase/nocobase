@@ -2,14 +2,14 @@
  * The run collections: `agRuns` and what hangs off a run (inputs, events, usage, repos, tokens, sessions). Only the
  * runs domain reads or writes them.
  */
-import type {
-  ActorKind,
-  AgentTool,
-  FailureReason,
-  RunInput,
-  RunInputType,
-  RunnerFeature,
-  RunStatus,
+import {
+  normalizeRunInputType,
+  type ActorKind,
+  type AgentTool,
+  type FailureReason,
+  type RunInput,
+  type RunnerFeature,
+  type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
@@ -316,7 +316,7 @@ export function toRun(record: RunRecord): Run {
 export function toInput(record: InputRecord): RunInput {
   return {
     id: record.id,
-    type: record.type as RunInputType,
+    type: normalizeRunInputType(record.type),
     at: record.createdAt,
     actor: {
       kind: record.actorKind as ActorKind,
@@ -333,7 +333,7 @@ export function toInput(record: InputRecord): RunInput {
 export function toInputView(record: InputRecord): RunInputView {
   return {
     id: record.id,
-    type: record.type as RunInputType,
+    type: normalizeRunInputType(record.type),
     actor: {
       kind: record.actorKind as ActorKind,
       id: record.actorId,

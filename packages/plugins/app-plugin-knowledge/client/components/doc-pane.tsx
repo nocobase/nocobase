@@ -2,7 +2,10 @@
  * One entry in a space's view. A header carries the path to it (each step opens that entry, the first the space's
  * home), when it was last updated (who and which version on hover), the proposals waiting on it, and its actions: Edit
  * (Propose changes for someone who may only propose), History, and a menu to move, verify, add under, upload under,
- * open its permissions (the viewer's own access, and its entries for someone who manages it) and, last, archive it. Below, the title, a line of who changed it
+ * open its permissions (the viewer's own access, and its entries for someone who manages it) and, last, archive it.
+ * A file has no Edit: its header offers Replace (Propose a replacement), Download and History, and its menu renames it
+ * and edits its properties and summary; on a phone only Download and the menu stay, which opens from the bottom with
+ * Replace and History at its top. Below, the title, a line of who changed it
  * and its standing (version, inherited or read-only, restricted to the people listed, archived, verified by whom and
  * when), and its summary; then an article's Markdown in a reading column with a table of
  * contents beside it on a wide pane, a file with its preview and extracted text, or a folder's entries. A leading
@@ -15,15 +18,19 @@ import {
   ArchiveIcon,
   ArchiveRestoreIcon,
   BadgeCheckIcon,
+  DownloadIcon,
   FilePlusIcon,
   FolderInputIcon,
   FolderPlusIcon,
   HistoryIcon,
+  InboxIcon,
   ListTreeIcon,
   LockIcon,
   MoreHorizontalIcon,
   PencilIcon,
+  ReplaceIcon,
   ShieldIcon,
+  SlidersHorizontalIcon,
   UploadIcon,
 } from 'lucide-react';
 import {
@@ -60,7 +67,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select.js';
+import { Separator } from './ui/separator.js';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from './ui/sheet.js';
 import { Skeleton } from './ui/skeleton.js';
+import { Spinner } from './ui/spinner.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 import { cn } from 'cn';
 
@@ -71,6 +87,7 @@ import type {
   KnowledgeVersion,
 } from '../../shared/knowledge.js';
 import type { DocMode } from '../hooks/use-view-state.js';
+import { useMediaQuery } from '../hooks/use-media.js';
 import { useNotify } from '../hooks/use-notify.js';
 import { relativeTime } from '../lib/format.js';
 import { leadingTitleLine, tocOf } from '../lib/toc.js';
@@ -84,8 +101,10 @@ import {
 } from '../api.js';
 import { DiffView } from './diff-view.js';
 import { ChunksSheet, DocIndexBadge } from './doc-index.js';
-import { DocEditor } from './doc-editor.js';
+import { DocEditor, DocPropertiesDialog } from './doc-editor.js';
 import { useEntryActions } from '../lib/entry-actions.js';
+import { useReplaceFile } from '../hooks/use-replace-file.js';
+import { citedKey, downloadFile } from '../lib/files.js';
 import { EntryIcon, FileBody } from './file-pane.js';
 import { KnowledgeMarkdown, TableOfContents } from './markdown.js';
 import { ProposeFileDialog } from './propose-file.js';
@@ -445,6 +464,146 @@ function DocPath({
   );
 }
 
+/** One action of an entry's menu, or a line between groups of them. */
+type MenuEntry =
+  | {
+      readonly key: string;
+      readonly icon: ReactNode;
+      readonly label: string;
+      readonly onClick: () => void;
+      readonly disabled?: boolean;
+      readonly destructive?: boolean;
+    }
+  | 'separator';
+
+/** A line between groups, named after the action before it. */
+interface MenuSeparator {
+  readonly key: string;
+  readonly separator: true;
+}
+
+/** The entries without a line at either end or two in a row. */
+function tidy(
+  entries: readonly (MenuEntry | null)[],
+): (Exclude<MenuEntry, 'separator'> | MenuSeparator)[] {
+  const out: (Exclude<MenuEntry, 'separator'> | MenuSeparator)[] = [];
+  for (const entry of entries) {
+    if (entry === null) continue;
+    const last = out.at(-1);
+    if (entry === 'separator') {
+      if (last && !('separator' in last))
+        out.push({ key: `after-${last.key}`, separator: true });
+      continue;
+    }
+    out.push(entry);
+  }
+  const last = out.at(-1);
+  if (last && 'separator' in last) out.pop();
+  return out;
+}
+
+/** An entry's "…" menu: a dropdown, or on a phone a sheet from the bottom. */
+function EntryMenu({
+  entries,
+  sheet,
+  title,
+}: {
+  readonly entries: readonly ReturnType<typeof tidy>[number][];
+  readonly sheet: boolean;
+  readonly title: string;
+}): ReactElement | null {
+  const { t } = useTranslation(ACCESS_NAMESPACE);
+  const [open, setOpen] = useState(false);
+  if (entries.length === 0) return null;
+  const trigger = (
+    <Button
+      variant='outline'
+      size='icon'
+      aria-label={t('knowledge.doc.more')}
+      title={t('knowledge.doc.more')}
+    />
+  );
+  if (sheet)
+    return (
+      <>
+        <Button
+          variant='outline'
+          size='icon'
+          aria-label={t('knowledge.doc.more')}
+          title={t('knowledge.doc.more')}
+          onClick={() => setOpen(true)}
+        >
+          <MoreHorizontalIcon />
+        </Button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent
+            side='bottom'
+            className='max-h-[85dvh] gap-0 rounded-t-xl pb-[env(safe-area-inset-bottom)]'
+            data-testid='knowledge-doc-actions'
+          >
+            <SheetHeader className='pr-12'>
+              <SheetTitle className='truncate'>{title}</SheetTitle>
+              <SheetDescription className='sr-only'>
+                {t('knowledge.doc.more')}
+              </SheetDescription>
+            </SheetHeader>
+            <div className='flex flex-col overflow-y-auto px-2 pb-3'>
+              {entries.map((entry) =>
+                'separator' in entry ? (
+                  <Separator key={entry.key} className='my-1' />
+                ) : (
+                  <Button
+                    key={entry.key}
+                    variant='ghost'
+                    size='lg'
+                    disabled={entry.disabled}
+                    className={cn(
+                      'h-11 justify-start',
+                      entry.destructive && 'text-destructive',
+                    )}
+                    onClick={() => {
+                      setOpen(false);
+                      entry.onClick();
+                    }}
+                  >
+                    {entry.icon}
+                    {entry.label}
+                  </Button>
+                ),
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={trigger}>
+        <MoreHorizontalIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-52'>
+        {entries.map((entry) =>
+          'separator' in entry ? (
+            <DropdownMenuSeparator key={entry.key} />
+          ) : (
+            <DropdownMenuItem
+              key={entry.key}
+              disabled={entry.disabled}
+              {...(entry.destructive
+                ? { variant: 'destructive' as const }
+                : {})}
+              onClick={entry.onClick}
+            >
+              {entry.icon}
+              {entry.label}
+            </DropdownMenuItem>
+          ),
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function DocPane(props: DocPaneProps): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const { docId, inherited, mode, version } = props;
@@ -457,16 +616,21 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const actions = useEntryActions();
   const [proposingFile, setProposingFile] = useState(false);
   const [chunksOpen, setChunksOpen] = useState(false);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
+  const phone = !useMediaQuery('(min-width: 768px)');
+  const replace = useReplaceFile(doc.data);
   const bodyRef = useRef<HTMLDivElement>(null);
   const lines = props.lines ?? null;
   const loaded = Boolean(doc.data);
+  // The lines are parsed again on every render: compare them by value, as the file's tabs do.
+  const cited = citedKey(docId, lines);
   // The highlighted lines come into view once the document is shown.
   useEffect(() => {
-    if (!lines || !loaded) return;
+    if (!cited || !loaded) return;
     const first = bodyRef.current?.querySelector('[data-highlighted]');
     if (first && 'scrollIntoView' in first)
       first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [lines, loaded]);
+  }, [cited, loaded]);
   const verify = useMutation({
     mutationFn: () => api.act(docId, 'verify'),
     onSuccess: () => {
@@ -515,7 +679,9 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const toc = article ? tocOf(content, hidden) : [];
   const summary: KnowledgeDocSummary = current;
 
-  if (mode === 'edit' && live && (editable || (proposes && article)))
+  const isFile = current.kind === 'file';
+
+  if (mode === 'edit' && live && !isFile && (editable || (proposes && article)))
     return (
       <article className='min-w-0' data-testid='knowledge-doc'>
         <DocEditor
@@ -527,118 +693,192 @@ export function DocPane(props: DocPaneProps): ReactElement {
       </article>
     );
 
-  const edit =
-    editable && live ? (
-      <Button onClick={() => props.onMode('edit')}>
-        <PencilIcon data-icon='inline-start' />
-        {folder ? t('knowledge.doc.rename') : t('knowledge.doc.edit')}
-      </Button>
-    ) : proposes && live && !folder ? (
-      <Button
-        onClick={() =>
-          article ? props.onMode('edit') : setProposingFile(true)
+  const edit = isFile ? null : editable && live ? (
+    <Button onClick={() => props.onMode('edit')}>
+      <PencilIcon data-icon='inline-start' />
+      {folder ? t('knowledge.doc.rename') : t('knowledge.doc.edit')}
+    </Button>
+  ) : proposes && live && !folder ? (
+    <Button onClick={() => props.onMode('edit')}>
+      <PencilIcon data-icon='inline-start' />
+      {t('knowledge.doc.proposeChanges')}
+    </Button>
+  ) : null;
+  // A file is replaced where an article is edited, without the primary emphasis.
+  const replacing =
+    isFile && live && !older && editable
+      ? {
+          label: t('knowledge.files.replace'),
+          pending: replace.pending,
+          onClick: replace.pick,
         }
-      >
-        <PencilIcon data-icon='inline-start' />
-        {t('knowledge.doc.proposeChanges')}
-      </Button>
-    ) : null;
+      : isFile && live && !older && proposes
+        ? {
+            label: t('knowledge.files.proposeReplace'),
+            pending: false,
+            onClick: () => setProposingFile(true),
+          }
+        : null;
+  const toggleHistory = () =>
+    props.onMode(mode === 'history' ? 'read' : 'history');
   const holds = current.kind !== 'file';
   // Whoever manages it changes its permissions; not from a space it is inherited into. Anyone sees their own access.
   const manager = current.access.manage && !inherited ? actions : null;
-  const permissionsItem = actions ? (
-    <DropdownMenuItem onClick={() => actions.permissions(summary)}>
-      <ShieldIcon />
-      {t('knowledge.doc.permissions')}
-    </DropdownMenuItem>
-  ) : null;
-  const chunksItem = folder ? null : (
-    <DropdownMenuItem onClick={() => setChunksOpen(true)}>
-      <ListTreeIcon />
-      {t('knowledge.chunks.open')}
-    </DropdownMenuItem>
+  const permissionsItem: MenuEntry | null = actions
+    ? {
+        key: 'permissions',
+        icon: <ShieldIcon />,
+        label: t('knowledge.doc.permissions'),
+        onClick: () => actions.permissions(summary),
+      }
+    : null;
+  const chunksItem: MenuEntry | null = folder
+    ? null
+    : {
+        key: 'chunks',
+        icon: <ListTreeIcon />,
+        label: t('knowledge.chunks.open'),
+        onClick: () => setChunksOpen(true),
+      };
+  const menuEntries: (MenuEntry | null)[] = !actions
+    ? []
+    : !editable
+      ? [chunksItem, permissionsItem]
+      : live
+        ? [
+            ...(isFile
+              ? [
+                  {
+                    key: 'rename',
+                    icon: <PencilIcon />,
+                    label: t('knowledge.doc.rename'),
+                    onClick: () => actions.rename(summary),
+                  },
+                  {
+                    key: 'properties',
+                    icon: <SlidersHorizontalIcon />,
+                    label: t('knowledge.doc.properties'),
+                    onClick: () => setPropertiesOpen(true),
+                  },
+                ]
+              : []),
+            {
+              key: 'move',
+              icon: <FolderInputIcon />,
+              label: t('knowledge.doc.move'),
+              onClick: () => actions.move(summary),
+            },
+            folder
+              ? null
+              : {
+                  key: 'verify',
+                  icon: <BadgeCheckIcon />,
+                  label: t('knowledge.doc.verify'),
+                  disabled: verify.isPending,
+                  onClick: () => verify.mutate(),
+                },
+            ...(holds
+              ? [
+                  'separator' as const,
+                  {
+                    key: 'childArticle',
+                    icon: <FilePlusIcon />,
+                    label: t('knowledge.new.childArticle'),
+                    onClick: () => actions.newEntry('article', current.id),
+                  },
+                  {
+                    key: 'childFolder',
+                    icon: <FolderPlusIcon />,
+                    label: t('knowledge.new.childFolder'),
+                    onClick: () => actions.newEntry('folder', current.id),
+                  },
+                  {
+                    key: 'upload',
+                    icon: <UploadIcon />,
+                    label: t('knowledge.files.uploadHere'),
+                    onClick: () => actions.upload(current.id),
+                  },
+                ]
+              : []),
+            'separator',
+            chunksItem,
+            permissionsItem,
+            'separator',
+            {
+              key: 'archive',
+              icon: <ArchiveIcon />,
+              label: t('knowledge.doc.archive'),
+              destructive: true,
+              onClick: () => actions.archive(summary),
+            },
+          ]
+        : [
+            {
+              key: 'restore',
+              icon: <ArchiveRestoreIcon />,
+              label: t('knowledge.doc.restore'),
+              onClick: () => actions.restore(summary),
+            },
+            'separator',
+            chunksItem,
+            permissionsItem,
+          ];
+  // On a phone a file's header keeps Download and the menu; Replace and History open from the menu's top.
+  const fileSheet = isFile && phone;
+  // Someone who only reads a file sees Download and History, with the index segments and permissions in the
+  // menu (a phone keeps History in it too), and no pending proposals on either.
+  const fileReader = isFile && !editable && !proposes;
+  const pendingProposals = fileReader ? 0 : current.pendingProposals;
+  const menu = (
+    <EntryMenu
+      sheet={fileSheet}
+      title={current.title}
+      entries={tidy([
+        ...(fileSheet
+          ? [
+              pendingProposals > 0
+                ? {
+                    key: 'proposals',
+                    icon: <InboxIcon />,
+                    label: t('knowledge.doc.pending', {
+                      count: pendingProposals,
+                    }),
+                    onClick: () => props.onProposals(current.id),
+                  }
+                : null,
+              replacing
+                ? {
+                    key: 'replace',
+                    icon: <ReplaceIcon />,
+                    label: replacing.label,
+                    disabled: replacing.pending,
+                    onClick: replacing.onClick,
+                  }
+                : null,
+              {
+                key: 'history',
+                icon: <HistoryIcon />,
+                label: t('knowledge.doc.history'),
+                onClick: toggleHistory,
+              },
+              'separator' as const,
+            ]
+          : []),
+        ...menuEntries,
+      ])}
+    />
   );
-  const menu = actions ? (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant='outline'
-            size='icon'
-            aria-label={t('knowledge.doc.more')}
-            title={t('knowledge.doc.more')}
-          />
-        }
-      >
-        <MoreHorizontalIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-52'>
-        {!editable ? (
-          <>
-            {chunksItem}
-            {permissionsItem}
-          </>
-        ) : live ? (
-          <>
-            <DropdownMenuItem onClick={() => actions.move(summary)}>
-              <FolderInputIcon />
-              {t('knowledge.doc.move')}
-            </DropdownMenuItem>
-            {folder ? null : (
-              <DropdownMenuItem
-                disabled={verify.isPending}
-                onClick={() => verify.mutate()}
-              >
-                <BadgeCheckIcon />
-                {t('knowledge.doc.verify')}
-              </DropdownMenuItem>
-            )}
-            {holds ? (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => actions.newEntry('article', current.id)}
-                >
-                  <FilePlusIcon />
-                  {t('knowledge.new.childArticle')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => actions.newEntry('folder', current.id)}
-                >
-                  <FolderPlusIcon />
-                  {t('knowledge.new.childFolder')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => actions.upload(current.id)}>
-                  <UploadIcon />
-                  {t('knowledge.files.uploadHere')}
-                </DropdownMenuItem>
-              </>
-            ) : null}
-            <DropdownMenuSeparator />
-            {chunksItem}
-            {permissionsItem}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant='destructive'
-              onClick={() => actions.archive(summary)}
-            >
-              <ArchiveIcon />
-              {t('knowledge.doc.archive')}
-            </DropdownMenuItem>
-          </>
-        ) : (
-          <>
-            <DropdownMenuItem onClick={() => actions.restore(summary)}>
-              <ArchiveRestoreIcon />
-              {t('knowledge.doc.restore')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {chunksItem}
-            {permissionsItem}
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+  const download = file ? (
+    <Button
+      variant='outline'
+      size={phone ? 'icon' : 'default'}
+      aria-label={t('knowledge.files.download')}
+      title={t('knowledge.files.download')}
+      onClick={() => downloadFile(file)}
+    >
+      <DownloadIcon data-icon={phone ? undefined : 'inline-start'} />
+      {phone ? null : t('knowledge.files.download')}
+    </Button>
   ) : null;
 
   return (
@@ -651,15 +891,18 @@ export function DocPane(props: DocPaneProps): ReactElement {
             onOpen={props.onOpen}
             onHome={props.onHome}
           />
-          <div className='flex flex-wrap items-center gap-2'>
-            {current.pendingProposals > 0 ? (
+          <div
+            className='flex flex-wrap items-center gap-2'
+            data-testid='knowledge-doc-toolbar'
+          >
+            {pendingProposals > 0 && !fileSheet ? (
               <Button
                 variant='link'
                 className='px-1'
                 onClick={() => props.onProposals(current.id)}
               >
                 {t('knowledge.doc.pending', {
-                  count: current.pendingProposals,
+                  count: pendingProposals,
                 })}
               </Button>
             ) : null}
@@ -686,19 +929,33 @@ export function DocPane(props: DocPaneProps): ReactElement {
               </TooltipContent>
             </Tooltip>
             {edit}
-            {folder ? null : (
+            {replacing && !fileSheet ? (
+              <Button
+                variant='outline'
+                disabled={replacing.pending}
+                onClick={replacing.onClick}
+              >
+                {replacing.pending ? (
+                  <Spinner data-icon='inline-start' />
+                ) : (
+                  <ReplaceIcon data-icon='inline-start' />
+                )}
+                {replacing.label}
+              </Button>
+            ) : null}
+            {download}
+            {folder || fileSheet ? null : (
               <Button
                 variant={mode === 'history' ? 'secondary' : 'outline'}
                 aria-pressed={mode === 'history'}
-                onClick={() =>
-                  props.onMode(mode === 'history' ? 'read' : 'history')
-                }
+                onClick={toggleHistory}
               >
                 <HistoryIcon data-icon='inline-start' />
                 {t('knowledge.doc.history')}
               </Button>
             )}
             {menu}
+            {isFile ? replace.input : null}
           </div>
         </div>
         <div className='space-y-2'>
@@ -783,8 +1040,8 @@ export function DocPane(props: DocPaneProps): ReactElement {
                 file={file}
                 content={content}
                 version={older && version !== null ? version : current.version}
+                older={older}
                 editable={editable && !older && live}
-                proposable={proposes && !older && live}
                 highlight={older ? null : lines}
               />
             ) : content.trim() ? (
@@ -818,6 +1075,13 @@ export function DocPane(props: DocPaneProps): ReactElement {
           onShow={(shown) => props.onLines?.(shown)}
         />
       )}
+      {propertiesOpen ? (
+        <DocPropertiesDialog
+          open
+          onOpenChange={setPropertiesOpen}
+          doc={current}
+        />
+      ) : null}
       {proposingFile ? (
         <ProposeFileDialog
           open

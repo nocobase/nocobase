@@ -26,12 +26,17 @@ Signatures below are extracted from declaration output. Generic parameters, over
 | [MigrationRunResult](#migrationrunresult)                           | `@nocobase/db` type  |
 | [MigrationSource](#migrationsource)                                 | `@nocobase/db` type  |
 | [MigrationTransactionMode](#migrationtransactionmode)               | `@nocobase/db` type  |
+| [MigrationWarning](#migrationwarning)                               | `@nocobase/db` type  |
 | [Migrator](#migrator)                                               | `@nocobase/db` type  |
+| [MissingMigrationSource](#missingmigrationsource)                   | `@nocobase/db` type  |
+| [MissingSourcePolicy](#missingsourcepolicy)                         | `@nocobase/db` type  |
 | [StaleTaskLockTakeover](#staletasklocktakeover)                     | `@nocobase/db` type  |
 | [TASK_LOCK_EXPIRY_MS](#task_lock_expiry_ms)                         | `@nocobase/db` value |
 | [TASK_LOCK_HEARTBEAT_INTERVAL_MS](#task_lock_heartbeat_interval_ms) | `@nocobase/db` value |
 | [TaskLockBusyDetails](#tasklockbusydetails)                         | `@nocobase/db` type  |
 | [TaskLockBusyError](#tasklockbusyerror)                             | `@nocobase/db` value |
+| [TaskLockDescriptor](#tasklockdescriptor)                           | Supporting contract  |
+| [TaskLockOptions](#tasklockoptions)                                 | Supporting contract  |
 | [TaskLockReleaseOptions](#tasklockreleaseoptions)                   | `@nocobase/db` type  |
 | [TaskLockReleaseResult](#tasklockreleaseresult)                     | `@nocobase/db` type  |
 | [TaskLockState](#tasklockstate)                                     | `@nocobase/db` type  |
@@ -40,6 +45,7 @@ Signatures below are extracted from declaration output. Generic parameters, over
 | [isTaskLockBusyError](#istasklockbusyerror)                         | `@nocobase/db` value |
 | [loadMigrations](#loadmigrations)                                   | `@nocobase/db` value |
 | [validateMigrations](#validatemigrations)                           | `@nocobase/db` value |
+| [withDatabaseTaskLock](#withdatabasetasklock)                       | `@nocobase/db` value |
 
 ## ChecksumMismatch
 
@@ -89,6 +95,11 @@ Configuration for a standalone Migrator, including its database dependency.
 ```ts
 /** Configuration for a standalone Migrator, including its database dependency. */
 export interface CreateMigratorOptions extends LoadMigrationsOptions {
+  /** Select pending tasks while retaining every source for history validation. */
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
   readonly config?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
   readonly database: {
@@ -112,10 +123,15 @@ export interface CreateMigratorOptions extends LoadMigrationsOptions {
    * checksum recorded for it. Defaults to `warn`.
    */
   readonly onChecksumMismatch?: ChecksumMismatchPolicy;
+  /**
+   * Missing applied sources default to `warn`. A history newer than the
+   * package's newest source always fails. Rollback requires all target sources.
+   */
+  readonly onMissingSource?: MissingSourcePolicy;
 }
 ```
 
-Related declarations: [ChecksumMismatchPolicy](./migration.md#checksummismatchpolicy), [DatabaseConnection](./connection.md#databaseconnection), [DatabaseTaskConfig](./migration.md#databasetaskconfig), [LoadMigrationsOptions](./migration.md#loadmigrationsoptions), [StaleTaskLockTakeover](./migration.md#staletasklocktakeover).
+Related declarations: [ChecksumMismatchPolicy](./migration.md#checksummismatchpolicy), [DatabaseConnection](./connection.md#databaseconnection), [DatabaseTaskConfig](./migration.md#databasetaskconfig), [LoadMigrationsOptions](./migration.md#loadmigrationsoptions), [MissingSourcePolicy](./migration.md#missingsourcepolicy), [StaleTaskLockTakeover](./migration.md#staletasklocktakeover).
 
 ## DatabaseMigratorOptions
 
@@ -373,13 +389,13 @@ export interface MigrationRollbackResult {
    * each migration belongs to.
    */
   readonly records: MigrationHistoryRecord[];
-  /** Checksum drift the `warn` policy allowed the rollback to continue past. */
-  readonly warnings: ChecksumMismatch[];
+  /** Checksum drift and missing sources outside the target batch. */
+  readonly warnings: MigrationWarning[];
   readonly dryRun: boolean;
 }
 ```
 
-Related declarations: [ChecksumMismatch](./migration.md#checksummismatch), [MigrationHistoryRecord](./migration.md#migrationhistoryrecord).
+Related declarations: [MigrationHistoryRecord](./migration.md#migrationhistoryrecord), [MigrationWarning](./migration.md#migrationwarning).
 
 ## MigrationRunResult
 
@@ -395,12 +411,12 @@ export interface MigrationRunResult {
   readonly batch: number;
   readonly executed: string[];
   readonly skipped: string[];
-  /** Checksum drift the `warn` policy allowed the run to continue past. */
-  readonly warnings: ChecksumMismatch[];
+  /** Checksum drift and missing sources tolerated by the run. */
+  readonly warnings: MigrationWarning[];
 }
 ```
 
-Related declarations: [ChecksumMismatch](./migration.md#checksummismatch).
+Related declarations: [MigrationWarning](./migration.md#migrationwarning).
 
 ## MigrationSource
 
@@ -435,6 +451,18 @@ Controls whether an individual migration runs in a database transaction.
 /** Controls whether an individual migration runs in a database transaction. */
 export type MigrationTransactionMode = true | false | 'auto';
 ```
+
+## MigrationWarning
+
+[Source](../../../src/migration/types.ts)
+
+Import: `import type { MigrationWarning } from '@nocobase/db'`.
+
+```ts
+export type MigrationWarning = ChecksumMismatch | MissingMigrationSource;
+```
+
+Related declarations: [ChecksumMismatch](./migration.md#checksummismatch), [MissingMigrationSource](./migration.md#missingmigrationsource).
 
 ## Migrator
 
@@ -481,6 +509,36 @@ export interface Migrator {
 ```
 
 Related declarations: [MigrationHistoryRecord](./migration.md#migrationhistoryrecord), [MigrationRepairOptions](./migration.md#migrationrepairoptions), [MigrationRepairResult](./migration.md#migrationrepairresult), [MigrationRollbackOptions](./migration.md#migrationrollbackoptions), [MigrationRollbackResult](./migration.md#migrationrollbackresult), [MigrationRunResult](./migration.md#migrationrunresult), [TaskLockReleaseOptions](./migration.md#tasklockreleaseoptions), [TaskLockReleaseResult](./migration.md#tasklockreleaseresult), [TaskLockState](./migration.md#tasklockstate).
+
+## MissingMigrationSource
+
+[Source](../../../src/migration/types.ts)
+
+Import: `import type { MissingMigrationSource } from '@nocobase/db'`.
+
+An applied migration whose source is unavailable; its history is retained.
+
+```ts
+/** An applied migration whose source is unavailable; its history is retained. */
+export interface MissingMigrationSource {
+  readonly kind: 'missing-source';
+  readonly packageName: string;
+  readonly name: string;
+}
+```
+
+## MissingSourcePolicy
+
+[Source](../../../src/migration/types.ts)
+
+Import: `import type { MissingSourcePolicy } from '@nocobase/db'`.
+
+Policy for missing applied sources in packages that still participate.
+
+```ts
+/** Policy for missing applied sources in packages that still participate. */
+export type MissingSourcePolicy = 'error' | 'warn';
+```
 
 ## StaleTaskLockTakeover
 
@@ -587,6 +645,42 @@ export declare class TaskLockBusyError
 ```
 
 Related declarations: [TaskLockBusyDetails](./migration.md#tasklockbusydetails).
+
+## TaskLockDescriptor
+
+[Source](../../../src/migration/internal/lock.ts)
+
+Access: supporting contract reached through a public signature; no package-entry import.
+
+A task lock with its messages resolved: `Migration`, `Seed`, and so on.
+
+```ts
+/** A task lock with its messages resolved: `Migration`, `Seed`, and so on. */
+export interface TaskLockDescriptor extends TaskLockOptions {
+  readonly label: string;
+  readonly tableName: string;
+}
+```
+
+Related declarations: [TaskLockOptions](./migration.md#tasklockoptions).
+
+## TaskLockOptions
+
+[Source](../../../src/migration/internal/lock.ts)
+
+Access: supporting contract reached through a public signature; no package-entry import.
+
+```ts
+export interface TaskLockOptions {
+  readonly tableName?: string;
+  /** Defaults to {@link DEFAULT_TASK_LOCK_ACQUIRE_TIMEOUT_MS}. */
+  readonly acquireTimeoutMs?: number;
+  /** Called when an expired lock is taken over, before the task runs. */
+  readonly onStaleLock?: (takeover: StaleTaskLockTakeover) => void;
+}
+```
+
+Related declarations: [StaleTaskLockTakeover](./migration.md#staletasklocktakeover).
 
 ## TaskLockReleaseOptions
 
@@ -729,3 +823,22 @@ export declare function validateMigrations(
 ```
 
 Related declarations: [LoadMigrationsOptions](./migration.md#loadmigrationsoptions), [LoadedMigration](./migration.md#loadedmigration).
+
+## withDatabaseTaskLock
+
+[Source](../../../src/migration/task-lock.ts)
+
+Import: `import { withDatabaseTaskLock } from '@nocobase/db'`.
+
+Share the database task lease across admission, migration and activation.
+
+```ts
+/** Share the database task lease across admission, migration and activation. */
+export declare function withDatabaseTaskLock<T>(
+  connection: DatabaseConnection,
+  options: TaskLockDescriptor,
+  execute: () => Promise<T>,
+): Promise<T>;
+```
+
+Related declarations: [DatabaseConnection](./connection.md#databaseconnection), [TaskLockDescriptor](./migration.md#tasklockdescriptor).

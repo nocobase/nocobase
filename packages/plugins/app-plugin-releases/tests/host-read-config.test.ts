@@ -31,3 +31,26 @@ it.each([undefined, { idleTimeoutMs: 125, timeoutMs: 750 }])(
     }
   },
 );
+
+it.each([undefined, { timeoutMs: 600_000 }])(
+  'passes artifact worker settings through the generated child config: %s',
+  async (artifactWorker) => {
+    const rootDir = await mkdtemp(
+      path.join(os.tmpdir(), 'host-worker-config-'),
+    );
+    try {
+      const configPath = path.join(rootDir, 'host.yml');
+      await writeHostConfig(configPath, {
+        artifact: { driver: 'fs', location: path.join(rootDir, 'artifacts') },
+        appVolumesDir: path.join(rootDir, 'volumes'),
+        artifactWorker,
+      });
+      expect(
+        (await loadAppHostConfig({ rootDir, configPath, environment: {} }))
+          .artifactWorker,
+      ).toEqual(artifactWorker ?? { timeoutMs: 120_000 });
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  },
+);

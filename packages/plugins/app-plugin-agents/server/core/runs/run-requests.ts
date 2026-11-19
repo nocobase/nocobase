@@ -14,10 +14,11 @@
  *
  * A request leaves `pending` once and never changes status again.
  */
-import type {
-  ActorKind,
-  RunInputType,
-  RunStatus,
+import {
+  normalizeRunInputType,
+  type ActorKind,
+  type RunInputType,
+  type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 import { isDeepStrictEqual } from 'node:util';
@@ -107,7 +108,7 @@ export function toRunRequest(record: RunRequestRecord): RunRequest {
     maxAttempts:
       record.maxAttempts === null ? null : Number(record.maxAttempts),
     input: {
-      type: record.inputType as RunInputType,
+      type: normalizeRunInputType(record.inputType),
       actor: {
         kind: record.inputActorKind as ActorKind,
         id: record.inputActorId,

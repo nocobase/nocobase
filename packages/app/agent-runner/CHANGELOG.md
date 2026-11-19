@@ -1,5 +1,24 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- 761fb01: Collect bounded, sanitized runner diagnostics through heartbeat requests, retain UTC-dated runner journals with configurable cleanup, merge downloaded archives into local timelines, and propagate request IDs to application error toasts.
+
+  Apply one credential-key rule in structured and text logs, hiding numeric credentials while preserving token-count field names.
+
+  Stream runner diagnostics one temporary file at a time with abort cleanup, per-runner export queues, progress and file-consumption callbacks. Intersect up to 500 selected runs with the requested dates, remove selected-run priority and file-count preferences, and provide `logs export` plus local `logs timeline` commands.
+
+### Patch Changes
+
+- 761fb01: Collect main runtime logs before run logs on the same date when exporting diagnostics.
+- Updated dependencies [761fb01]
+- Updated dependencies [761fb01]
+  - @nocobase/app-cli-client@0.1.0-beta.23
+  - @nocobase/logging@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.20
+
 ## 0.1.0-beta.29
 
 ### Patch Changes

@@ -109,6 +109,8 @@ export type OnlineAgentSendOptions = {
   effort?: string | null;
   /** Pending Runner selection, committed atomically with message admission. */
   agentId?: string;
+  /** Pending runtime selection, committed only when the message is admitted. */
+  runnerId?: string;
   attachmentIds?: string[][];
   clientId?: string;
   messageId?: string;

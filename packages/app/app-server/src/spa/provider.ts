@@ -1,6 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-
 import { Hono } from 'hono';
 import type { AppDriveConfig, DriveUploadLimit } from '@nocobase/drive';
 import type { ServiceContainer } from '@nocobase/service-provider';
@@ -18,6 +15,10 @@ import {
 import { type SpaConfig } from './config.js';
 import { createMountedOriginProxyHandler } from '../proxy/index.js';
 import { joinBasePath } from '../support/index.js';
+import {
+  readAppPackage,
+  type AppPackageIdentity,
+} from '../support/app-package.js';
 import type { SpaClientConfigMap } from './types.js';
 
 export interface SpaRoutesApplication {
@@ -25,17 +26,17 @@ export interface SpaRoutesApplication {
   readonly config: AppConfigAccessor;
   readonly mode: 'standalone' | 'embedded';
   readonly publicBasePath: string;
-  /** Where the application's `package.json` is, read for the name and version the page shows. */
+  /** Application root; embedded releases may keep the manifest under `dist/`. */
   readonly paths: { readonly rootDir: string };
 }
 
 export const spaRootRoutes: AppRootRouteContribution<SpaRoutesApplication> =
-  defineRootRoutes((app: SpaRoutesApplication): Hono => {
+  defineRootRoutes(async (app: SpaRoutesApplication): Promise<Hono> => {
     const router = new Hono();
     const identity = app.config.get<AppIdentityConfig>('app')!;
     const spa = app.config.get<SpaConfig>('spa')!;
     const apiUrl = joinBasePath(app.publicBasePath, '/api');
-    const appPackage = readAppPackage(app.paths.rootDir);
+    const appPackage = await readAppPackage(app.paths.rootDir);
     const drive = app.config.get<AppDriveConfig>('drive');
     const manager = drive
       ? app.container.resolve(driveManagerToken)
@@ -133,23 +134,6 @@ function createPublicConfig(
         : {}),
       ...(appPackage.version ? { version: appPackage.version } : {}),
     },
-  };
-}
-
-interface AppPackageIdentity {
-  readonly displayName?: string;
-  readonly version?: string;
-}
-
-function readAppPackage(rootDir: string): AppPackageIdentity {
-  const packagePath = path.join(rootDir, 'package.json');
-  if (!existsSync(packagePath)) return {};
-  const value = JSON.parse(readFileSync(packagePath, 'utf8')) as unknown;
-  if (typeof value !== 'object' || value === null) return {};
-  const { displayName, version } = value as Record<string, unknown>;
-  return {
-    ...(typeof displayName === 'string' ? { displayName } : {}),
-    ...(typeof version === 'string' ? { version } : {}),
   };
 }
 

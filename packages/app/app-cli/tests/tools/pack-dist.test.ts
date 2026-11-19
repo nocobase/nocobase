@@ -1,11 +1,18 @@
 // @vitest-environment node
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { list } from 'tar';
+import { list, extract } from 'tar';
 import { afterEach, describe, expect, it } from 'vitest';
 
 // Run in place rather than copied: the script imports `tar`, which resolves from this package's own node_modules.
@@ -28,13 +35,17 @@ function createRoot(): string {
   return root;
 }
 
-function pack(root: string) {
-  return spawnSync(process.execPath, [scriptPath], {
-    cwd: root,
-    encoding: 'utf8',
-    env: { ...process.env, NOCOBASE_TOOL_ROOT: root },
-    timeout: 20_000,
-  });
+function pack(root: string, preload?: string) {
+  return spawnSync(
+    process.execPath,
+    [...(preload ? ['--import', preload] : []), scriptPath],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, NOCOBASE_TOOL_ROOT: root },
+      timeout: 20_000,
+    },
+  );
 }
 
 function archiveEntries(archivePath: string): string[] {
@@ -143,6 +154,110 @@ describe('deployment archive', () => {
     const entries = archiveEntries(archivePath);
     expect(entries).toContain('dist/keep.js');
     expect(entries.some((entry) => entry.includes('.bin'))).toBe(false);
+  });
+
+  it('excludes application runtime files while retaining dependency resources and external runtime configuration', () => {
+    const root = createRoot();
+    const files = {
+      'config.example.yml': 'server: {}\n',
+      'dist/.env': 'APP_SERVER_PORT=15150\n',
+      'dist/.env.local': 'DB_PASSWORD=fixture-secret\n',
+      'dist/.env.production': 'APP_SERVER_HOST=192.0.2.1\n',
+      'dist/config.yml': 'secret: fixture-secret\n',
+      'dist/config.yaml': 'secret: fixture-secret\n',
+      'dist/storage/uploads/file.bin': 'instance data',
+      'dist/node_modules/demo/config.yml': 'required package resource',
+      'dist/node_modules/demo/.env.example': 'package example',
+      'dist/node_modules/demo/storage/schema.json': '{}',
+      'dist/variables.json': '{"variables":[]}',
+      'dist/server/standalone.cjs': `const fs = require('node:fs');
+const path = require('node:path');
+console.log(JSON.stringify({
+  port: process.env.APP_SERVER_PORT,
+  config: fs.readFileSync(process.env.APP_CONFIG_PATH, 'utf8'),
+  resource: fs.readFileSync(path.join(__dirname, '../node_modules/demo/config.yml'), 'utf8'),
+}));`,
+    };
+    for (const [name, content] of Object.entries(files)) {
+      const file = path.join(root, name);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, content);
+    }
+    const result = pack(root);
+    expect(result.status).toBe(0);
+    const archive = path.join(root, 'storage/exports/dist.tar.gz');
+    const entries = archiveEntries(archive);
+    for (const name of [
+      'dist/.env',
+      'dist/.env.local',
+      'dist/.env.production',
+      'dist/config.yml',
+      'dist/config.yaml',
+      'dist/storage/uploads/file.bin',
+    ]) {
+      expect(entries).not.toContain(name);
+      expect(readFileSync(path.join(root, name), 'utf8')).toBe(
+        files[name as keyof typeof files],
+      );
+    }
+    for (const name of [
+      'dist/node_modules/demo/config.yml',
+      'dist/node_modules/demo/.env.example',
+      'dist/node_modules/demo/storage/schema.json',
+      'dist/variables.json',
+    ]) {
+      expect(entries).toContain(name);
+    }
+    const destination = createRoot();
+    extract({ file: archive, cwd: destination, sync: true, strict: true });
+    const configPath = path.join(destination, 'config.yml');
+    writeFileSync(configPath, 'deployment settings');
+    const run = spawnSync(
+      process.execPath,
+      [path.join(destination, 'dist/server/standalone.cjs')],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          APP_SERVER_PORT: '18080',
+          APP_CONFIG_PATH: configPath,
+        },
+      },
+    );
+    expect(run.status).toBe(0);
+    expect(JSON.parse(run.stdout)).toEqual({
+      port: '18080',
+      config: 'deployment settings',
+      resource: 'required package resource',
+    });
+  });
+
+  it('preserves the previous archive and cleans temporary output when packing fails after it begins', () => {
+    const root = createRoot();
+    mkdirSync(path.join(root, 'dist'), { recursive: true });
+    writeFileSync(path.join(root, 'config.example.yml'), '');
+    writeFileSync(path.join(root, 'dist/keep.js'), 'previous build');
+    expect(pack(root).status).toBe(0);
+    const exportsDir = path.join(root, 'storage/exports');
+    const archive = path.join(exportsDir, 'dist.tar.gz');
+    const previous = readFileSync(archive);
+    // Inject a read failure after tar has opened its temporary output, independent of user privileges and OS ACLs.
+    const preload = path.join(root, 'fail-read.mjs');
+    writeFileSync(
+      preload,
+      `import fs from 'node:fs';
+const open = fs.openSync;
+fs.openSync = function(file, ...args) {
+  if (String(file).endsWith('keep.js')) throw new Error('fixture read failure');
+  return open.call(this, file, ...args);
+};`,
+    );
+    const result = pack(root, preload);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('fixture read failure');
+    expect(readFileSync(archive)).toEqual(previous);
+    expect(archiveEntries(archive)).toContain('dist/keep.js');
+    expect(readdirSync(exportsDir)).toEqual(['dist.tar.gz']);
   });
 
   it('fails before writing anything when dist is missing', () => {

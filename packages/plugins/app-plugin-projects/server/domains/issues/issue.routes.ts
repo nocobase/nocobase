@@ -12,12 +12,7 @@ import {
 import type { Hono } from 'hono';
 import type { IssueSessionIntegration } from '../../tokens.js';
 
-import {
-  delegatedWrite,
-  refuseDelegated,
-  viewerOf,
-  type ViewerEnv,
-} from '../../access/request.js';
+import { viewerOf, type ViewerEnv } from '../../access/request.js';
 import {
   boundedList,
   cursorList,
@@ -191,21 +186,6 @@ export function createIssueRoutes(deps: {
           });
         input = { ...input, projectId };
       }
-      const delegated = await delegatedWrite(context, {
-        title: `Create "${input.title}"`,
-        rows: [{ op: 'issue.create', params: input }],
-      });
-      if (delegated) {
-        const created = delegated.plan.rows[0]?.result?.created?.id;
-        if (created && session) await session.link(created);
-        return context.json(
-          {
-            data: created ? await deps.queries.detail(viewer, created) : null,
-            meta: delegated.meta,
-          },
-          201,
-        );
-      }
       const created = await deps.issues.create(viewer, input);
       if (session) await session.link(created.id);
       return context.json({ data: created }, 201);
@@ -373,15 +353,6 @@ export function createIssueRoutes(deps: {
       const viewer = viewerOf(context);
       const { issueId } = context.req.valid('param');
       const { revision, ...set } = context.req.valid('json');
-      const delegated = await delegatedWrite(context, {
-        title: `Update ${issueId}`,
-        rows: [{ op: 'issue.update', params: { issue: issueId, set } }],
-      });
-      if (delegated)
-        return context.json({
-          data: { issue: await deps.queries.detail(viewer, issueId) },
-          meta: delegated.meta,
-        });
       const issue = await deps.issues.update(viewer, issueId, {
         ...set,
         revision:
@@ -416,7 +387,6 @@ export function createIssueRoutes(deps: {
     }),
     apiValidator('param', IssueParams),
     async (context) => {
-      refuseDelegated(context);
       await deps.issues.remove(
         viewerOf(context),
         context.req.valid('param').issueId,
@@ -454,7 +424,6 @@ export function createIssueRoutes(deps: {
     }),
     apiValidator('param', IssueParams),
     async (context) => {
-      refuseDelegated(context);
       return context.json({
         data: await deps.issues.restore(
           viewerOf(context),

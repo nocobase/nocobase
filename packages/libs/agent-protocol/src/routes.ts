@@ -25,6 +25,8 @@ export const RUN_BASE = '/api/agents/runs/current';
 export const CLI_BASE = '/api/agents/cli';
 
 export const RUNNER_ROUTES = {
+  /** POST gzip NDJSON DiagnosticsRecord stream; runner-key authenticated, one-use request. */
+  diagnostics: '/api/agents/runners/diagnostics/:requestId',
   /** `POST` `RegisterRequest` → `RegisterResponse`. */
   register: '/api/agents/runners/register',
   /** `POST` `HeartbeatRequest` → `HeartbeatResponse`. */

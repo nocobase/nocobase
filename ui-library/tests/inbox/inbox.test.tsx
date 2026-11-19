@@ -37,18 +37,21 @@ import { item, notice } from './fixtures';
 import { Frame } from './frame';
 
 /** A collection of records kept in another API, listed after the decisions. */
-const plans: InboxCollectionCategory = {
+const records: InboxCollectionCategory = {
   type: 'collection',
-  id: 'plans',
-  label: () => 'Plans',
-  param: 'plan',
+  id: 'records',
+  label: () => 'Records',
+  param: 'record',
   params: ['status'],
   after: 'decision',
   // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- the category's hook, which needs no other hook here
   useCollection: () => ({ count: 0, loaded: true, group: null, list: null }),
   Detail: () => null,
 };
-const withPlans: readonly InboxCategory[] = [...defaultInboxCategories, plans];
+const withRecords: readonly InboxCategory[] = [
+  ...defaultInboxCategories,
+  records,
+];
 
 describe('the inbox model', () => {
   it('lists waiting decisions first, settled ones after, and everything else as notifications', () => {
@@ -94,40 +97,44 @@ describe('the inbox model', () => {
 
   it('reads the view and the kind from the URL, offering in To do only what waits', () => {
     const read = (search: string) =>
-      readInboxFilter(new URLSearchParams(search), withPlans);
+      readInboxFilter(new URLSearchParams(search), withRecords);
     expect(read('')).toEqual({ view: 'all', kind: 'all' });
-    expect(read('view=todo&kind=plans')).toEqual({
+    expect(read('view=todo&kind=records')).toEqual({
       view: 'todo',
-      kind: 'plans',
+      kind: 'records',
     });
     expect(read('kind=info')).toEqual({ view: 'all', kind: 'info' });
     expect(read('view=todo&kind=info')).toEqual({ view: 'todo', kind: 'all' });
     expect(read('view=bogus&kind=bogus')).toEqual({ view: 'all', kind: 'all' });
-    expect(kindsOf('todo', withPlans)).toEqual(['all', 'decision', 'plans']);
-    expect(kindsOf('all', withPlans)).toEqual([
+    expect(kindsOf('todo', withRecords)).toEqual([
+      'all',
+      'decision',
+      'records',
+    ]);
+    expect(kindsOf('all', withRecords)).toEqual([
       'all',
       'decision',
       'info',
-      'plans',
+      'records',
     ]);
   });
 
   it("writes a filter over the URL, dropping the collections' parameters and selection", () => {
     const params = new URLSearchParams(
-      'kind=plans&status=voided&plan=p1&item=i1',
+      'kind=records&status=closed&record=r1&item=i1',
     );
     expect(
       inboxFilterParams(
         params,
         { view: 'todo', kind: 'decision' },
-        withPlans,
+        withRecords,
       ).toString(),
     ).toBe('kind=decision&item=i1&view=todo');
     expect(
       inboxFilterParams(
         params,
         { view: 'all', kind: 'all' },
-        withPlans,
+        withRecords,
       ).toString(),
     ).toBe('item=i1');
   });
@@ -142,17 +149,17 @@ describe('the inbox model', () => {
           notice('c', { kind: 'info' }),
         ],
       ),
-      withPlans,
+      withRecords,
     );
     const ids = (view: 'all' | 'todo', kind: string) =>
-      shownEntries({ view, kind }, groups, withPlans).map(
+      shownEntries({ view, kind }, groups, withRecords).map(
         (entry) => entry.item.id,
       );
     expect(ids('all', 'all')).toEqual(['b', 'a', 'c']);
     expect(ids('all', 'decision')).toEqual(['b', 'a']);
     expect(ids('all', 'info')).toEqual(['c']);
     expect(ids('todo', 'all')).toEqual(['b']);
-    expect(ids('all', 'plans')).toEqual([]);
+    expect(ids('all', 'records')).toEqual([]);
   });
 
   it('lists what waits in full before the pages, each once', () => {
@@ -255,7 +262,7 @@ describe('the inbox list', () => {
     const registry: InboxRegistry = {
       renderers: [],
       feeds: [],
-      categories: withPlans,
+      categories: withRecords,
     };
     const settled = entriesOf(
       [item('a'), item('s'), item('b')],
@@ -269,7 +276,7 @@ describe('the inbox list', () => {
       settled,
       {
         filter: { view: 'todo', kind: 'all' },
-        collections: { plans: { group: <p>open plans</p>, count: 1 } },
+        collections: { records: { group: <p>open records</p>, count: 1 } },
       },
       registry,
     );
@@ -279,7 +286,7 @@ describe('the inbox list', () => {
     expect(
       screen
         .getByText('Title a')
-        .compareDocumentPosition(screen.getByText('open plans')) &
+        .compareDocumentPosition(screen.getByText('open records')) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
@@ -288,15 +295,15 @@ describe('the inbox list', () => {
     renderList(
       entries,
       {
-        filter: { view: 'all', kind: 'plans' },
-        collections: { plans: { list: <p>plans list</p> } },
+        filter: { view: 'all', kind: 'records' },
+        collections: { records: { list: <p>records list</p> } },
       },
-      { renderers: [], feeds: [], categories: withPlans },
+      { renderers: [], feeds: [], categories: withRecords },
     );
-    expect(screen.getByText('plans list')).toBeInTheDocument();
+    expect(screen.getByText('records list')).toBeInTheDocument();
     expect(screen.queryByText('Title a')).toBeNull();
     expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent(
-      'Plans',
+      'Records',
     );
   });
 

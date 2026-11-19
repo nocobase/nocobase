@@ -133,7 +133,8 @@ function packerFor(source: string): {
     command: 'npm',
     args: (destination) => [
       'pack',
-      '--silent',
+      // Keep HTTP failures visible to the runner's credential launcher; stdout is captured by runCommand.
+      '--loglevel=error',
       source,
       '--pack-destination',
       path.dirname(destination),

@@ -19,10 +19,8 @@ import { createKindRegistry } from '../kernel/kinds.js';
 import { createUserDirectory } from '../kernel/users.js';
 import {
   projectsAccessToken,
-  projectsIntakeOrganizerToken,
   projectsKindsToken,
   projectsNoticeRulesToken,
-  projectsPlanHooksToken,
   projectsStatusEventsToken,
   projectsToken,
   projectsTriggersToken,
@@ -65,15 +63,6 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
           this.app.container.has(projectsTriggersToken)
             ? this.app.container.resolve(projectsTriggersToken)
             : undefined,
-        planHooks: () =>
-          this.app.container.has(projectsPlanHooksToken)
-            ? this.app.container.resolve(projectsPlanHooksToken)
-            : undefined,
-        intakeOrganizer: () =>
-          this.app.container.has(projectsIntakeOrganizerToken)
-            ? this.app.container.resolve(projectsIntakeOrganizerToken)
-            : undefined,
-        // Asked on each use: the application's default Drive disk, through the file plugin when it is registered.
         storage: createAttachmentStorage({
           uploader: () =>
             this.app.container.has(serverFileRepositoryManagerToken)

@@ -10,7 +10,7 @@
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { ActivityVia, ActivityExecution } from '../../shared/plans.js';
+import type { ActivityVia, ActivityExecution } from '../../shared/activity.js';
 import type { Viewer } from '../access/viewer.js';
 import type { Actor, ActorTrace } from './actor.js';
 import type { IdSource } from './ids.js';

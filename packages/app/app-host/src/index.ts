@@ -120,6 +120,7 @@ export interface AppHostOptions {
   maxActiveApps?: number;
   memoryBudget?: import('./app-registry.ts').AppMemoryBudget;
   artifactRead?: import('./artifact-read.ts').ArtifactReadOptions;
+  artifactWorker?: import('./artifact-worker-options.js').ArtifactWorkerConfig;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   /** How long a page request to a stopped App waits before it gets the starting page (1500 ms by default). */
@@ -173,6 +174,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
       logger: logger.child({ component: 'artifact-resolver' }),
       expandedRevisionLimit: mode === 'managed' ? 3 : undefined,
       artifactRead: options.artifactRead,
+      artifactWorker: options.artifactWorker,
     });
   const backendServices: AppHostBackendServices = {
     logger: logger.child({ component: 'app-backend' }),
@@ -548,6 +550,7 @@ export async function startAppHostFromEnv(
     maxActiveApps: config.maxActiveApps,
     memoryBudget: config.memoryBudget,
     artifactRead: config.artifactRead,
+    artifactWorker: config.artifactWorker,
     idleTtlMs: config.idleTtlMs,
     evictionIntervalMs: config.evictionIntervalMs,
     activationHoldMs: config.activationHoldMs,

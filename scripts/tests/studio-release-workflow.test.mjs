@@ -47,8 +47,8 @@ test('source overrides require a dry run and an immutable commit', () => {
   );
 });
 
-test('both editions build at one source and dry runs cannot publish', () => {
-  assert.match(workflow, /edition: \[studio, studio-ee\]/);
+test('all three editions build at one source and dry runs cannot publish', () => {
+  assert.match(workflow, /edition: \[studio, studio-ee, studio-ce\]/);
   assert.match(
     step('Build edition dist'),
     /pnpm build:image --edition "\$EDITION"/,
@@ -63,7 +63,7 @@ test('both editions build at one source and dry runs cannot publish', () => {
   }
 });
 
-test('public release notes go to the registry for both editions', async () => {
+test('public release notes go to the registry for all three editions', async () => {
   const { chmodSync, existsSync, mkdtempSync, mkdirSync, writeFileSync } =
     await import('node:fs');
   const { tmpdir } = await import('node:os');
@@ -86,7 +86,7 @@ test('public release notes go to the registry for both editions', async () => {
     mkdirSync(bin);
     mkdirSync(join(temp, 'notes'));
     if (withNotes) {
-      for (const edition of ['studio', 'studio-ee']) {
+      for (const edition of ['studio', 'studio-ee', 'studio-ce']) {
         writeFileSync(
           join(temp, `notes/release-notes.${edition}.en.md`),
           `- A ${edition}.\n`,
@@ -123,6 +123,7 @@ echo '{"ok":true}'
         REGISTRY: 'pkg-v3.nocobase.com',
         IMAGE_REPOSITORY: 'nocobase/studio',
         EE_IMAGE_REPOSITORY: 'nocobase/studio-ee',
+        CE_IMAGE_REPOSITORY: 'nocobase/studio-ce',
         FAILING: failing,
       },
     });
@@ -139,10 +140,11 @@ echo '{"ok":true}'
 
   const ok = run('');
   assert.equal(ok.output, 'result=uploaded\n');
-  assert.equal(ok.calls.length, 2);
+  assert.equal(ok.calls.length, 3);
   for (const [index, repository] of [
     'nocobase/studio',
     'nocobase/studio-ee',
+    'nocobase/studio-ce',
   ].entries()) {
     const [url, body, args] = ok.calls[index].split('\t');
     assert.equal(

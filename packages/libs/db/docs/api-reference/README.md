@@ -33,10 +33,10 @@ Permissions, transactions and events have dedicated chapters. Earlier chapters l
 
 | Entry                  | Runtime values | Type exports | Total | Audience                                       |
 | ---------------------- | -------------: | -----------: | ----: | ---------------------------------------------- |
-| `@nocobase/db`         |             69 |          349 |   418 | Application code and dialect extension authors |
+| `@nocobase/db`         |             72 |          352 |   424 | Application code and dialect extension authors |
 | `@nocobase/db/testing` |             12 |            9 |    21 | Dialect tests and test-database provisioning   |
 
-The signature pages additionally describe 127 supporting contracts. For example, `CollectionMetadataService`, `SchemaAdapter`, `JoinBuilder` and several option/result types are usable through their owning objects even though their names are not root exports. A declaration being exported from a source file does not make it importable from `@nocobase/db`.
+The signature pages additionally describe 129 supporting contracts. For example, `CollectionMetadataService`, `SchemaAdapter`, `JoinBuilder` and several option/result types are usable through their owning objects even though their names are not root exports. A declaration being exported from a source file does not make it importable from `@nocobase/db`.
 
 `CollectionBuilder` is a root **type** export: obtain an instance from `db.builder()` or `connection.builder`. `BaseSchemaInspector` and the exported metadata-store classes are runtime **value** exports and can be imported as classes. Standard TypeScript utility types and external types such as Knex and ServiceToken retain their own packages' contracts; the reference does not duplicate those libraries.
 

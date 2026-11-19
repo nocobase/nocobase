@@ -58,6 +58,10 @@ test('names and titles beta, legacy beta and stable entries', () => {
     title: 'NocoBase v3 · 2026-12-01.1',
     id: 'stable-2026-12-01.1',
   });
+  assert.deepEqual(
+    describeRelease('nocobase-v3/2026-12-01.1'),
+    describeRelease('release/2026-12-01.1'),
+  );
   assert.throws(() => describeRelease('@nocobase/app@1.0.0'), /aggregate/u);
 });
 
@@ -296,7 +300,7 @@ test('the GitHub Release workflow publishes the entry to website-v3 as a best-ef
     source,
     /    secrets:\n      NOCOBASE_APP_PRIVATE_KEY:\n        required: true\n(?:      #.*\n)?      RELEASE_RESULT_FEISHU_WEBHOOK_URL:\n        required: false/u,
   );
-  for (const name of ['v3-release-beta.yml', 'v3-release-stable.yml']) {
+  for (const name of ['v3-release.yml']) {
     const caller = readFileSync(
       fileURLToPath(
         new URL(`../../.github/workflows/${name}`, import.meta.url),
