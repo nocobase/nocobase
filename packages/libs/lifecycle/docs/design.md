@@ -143,6 +143,8 @@ Suspending preserves the business version and its current stay. Resuming restore
 
 For a Repository store with management enabled, add the policy's nullable JSON `field` and a nullable integer companion named `<field>Revision` to the business collection. Add nullable JSON `management` and integer `journalRevision` with a non-null default of zero to the transition journal. Replace its unique constraint on `(lifecycle, recordId, version)` with one on `(lifecycle, recordId, version, journalRevision)`. Preserve the request-key constraint. Existing records start active in round one. A separate management revision allows suspension and resumption to share the same business version.
 
+The Repository store serializes a managed transition with effect claims, pre-send checks and outcome recording by reading the business record and conditionally writing its current version back in the same transaction. This adds a record read and an UPDATE to a managed transition before its ordinary record read. Each of the three effect checkpoints takes the lock in its own transaction so an administrator can intervene while external work is in flight. Repository mutation subscribers receive an update even when the version is unchanged. Dispatch also reads the managed business record to check for suspension.
+
 ## Storage
 
 The runtime depends on the `LifecycleStore` interface and ships two implementations:

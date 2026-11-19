@@ -1,3 +1,4 @@
+import type { RecordCondition } from './store.js';
 import type {
   CreateContext,
   EffectDefinition,
@@ -10,6 +11,7 @@ import { LifecycleError, type Blocker, type InputProblem } from './errors.js';
 import type {
   JsonObject,
   LifecycleActor,
+  LifecycleRecord,
   LifecycleTypes,
   ParametersOf,
   ServicesOf,
@@ -315,4 +317,45 @@ export async function planTransition<T extends LifecycleTypes>(
     },
     effects: [...transition.effects, ...(lifecycle.onEnter.get(to) ?? [])],
   };
+}
+
+export function recordCondition(
+  lifecycle: Lifecycle<LifecycleTypes>,
+  record: LifecycleRecord,
+): RecordCondition {
+  const field = lifecycle.management
+    ? `${lifecycle.management.field}Revision`
+    : undefined;
+  return {
+    stateField: lifecycle.stateField,
+    state: stateOf(lifecycle, record),
+    versionField: lifecycle.versionField,
+    version: versionOf(lifecycle, record),
+    ...(field
+      ? {
+          managementRevision: {
+            field,
+            value: record[field] == null ? null : Number(record[field]),
+          },
+        }
+      : {}),
+  };
+}
+
+export function triggerDueAt(
+  lifecycle: Lifecycle<LifecycleTypes>,
+  state: string,
+  parameters: Readonly<object>,
+  now: Date,
+): string | null {
+  const delays = [...lifecycle.triggers.values()]
+    .filter((trigger) => trigger.when.includes(state))
+    .map((trigger) =>
+      trigger.definition.after(parameters as ParametersOf<LifecycleTypes>),
+    );
+  if (delays.some((delay) => !Number.isFinite(delay)))
+    throw new Error('Trigger delay must be finite.');
+  return delays.length
+    ? new Date(now.getTime() + Math.min(...delays)).toISOString()
+    : null;
 }

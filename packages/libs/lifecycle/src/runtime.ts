@@ -1,13 +1,13 @@
 import {
+  currentRound,
   managementState,
   type ManagementAuthorization,
-  type ManagementCommand,
   type ManagementDetails,
-  type ManagementEvent,
+  InstanceLockConflict,
+  LifecycleManagement,
   type ManagementOptions,
   type ManagementReentryContext,
   type ManagementResult,
-  type ManagementState,
 } from './management.js';
 import {
   normalizeParameterValues,
@@ -42,6 +42,8 @@ import {
 } from './errors.js';
 import {
   boundDefinitionOf,
+  recordCondition,
+  triggerDueAt,
   checkBinding,
   checkCreation,
   guardBlockers,
@@ -62,7 +64,6 @@ import {
   type IdleRecordCursor,
   type LifecycleStore,
   type PendingContinuation,
-  type RecordCondition,
   type TransactionOptions,
   type TransitionEntry,
 } from './store.js';
@@ -525,15 +526,6 @@ class EntryWork {
 
 const silent: LifecycleLogger = { warn: () => {}, error: () => {} };
 
-class InstanceLockConflict extends LifecycleError {
-  public constructor() {
-    super(
-      'CONFLICT',
-      'The lifecycle instance changed while acquiring its lock.',
-    );
-  }
-}
-
 const suspensionBlocker: Blocker = {
   source: 'state',
   kind: 'precondition',
@@ -757,12 +749,25 @@ export class LifecycleRuntime {
   private readonly parameterExecution =
     new AsyncLocalStorage<ParameterExecution>();
 
+  private readonly management: LifecycleManagement<Registered>;
+
   public constructor(options: LifecycleRuntimeOptions) {
     this.store = options.store;
+    this.clock = options.clock ?? ((): Date => new Date());
+    this.management = new LifecycleManagement<Registered>({
+      store: options.store,
+      clock: this.clock,
+      managedRecord: (...args) => this.managedRecord(...args),
+      reentryContext: (...args) => this.reentryContext(...args),
+      owe: (...args) => this.owe(...args),
+      handOver: (...args) => this.handOver(...args),
+      changed: (...args) => this.changed(...args),
+      tryContinuation: (...args) => this.tryContinuation(...args),
+      checkRequestId,
+    });
     this.creationRequestsCollection =
       options.creationRequestsCollection ?? 'lifecycleCreationRequests';
     this.dispatcher = options.dispatcher ?? new InlineDispatcher(this);
-    this.clock = options.clock ?? ((): Date => new Date());
     this.logger = options.logger ?? silent;
     this.leaseMs = options.leaseMs ?? 5 * 60_000;
     this.beforeEffect = options.beforeEffect;
@@ -1424,24 +1429,6 @@ export class LifecycleRuntime {
     return { scope, revision: current?.revision ?? 0, values, sources };
   }
 
-  private triggerDueAt(
-    lifecycle: Lifecycle<LifecycleTypes>,
-    state: string,
-    parameters: Readonly<object>,
-    now: Date,
-  ): string | null {
-    const delays = [...lifecycle.triggers.values()]
-      .filter((trigger) => trigger.when.includes(state))
-      .map((trigger) =>
-        trigger.definition.after(parameters as ParametersOf<LifecycleTypes>),
-      );
-    if (delays.some((delay) => !Number.isFinite(delay)))
-      throw new Error('Trigger delay must be finite.');
-    return delays.length
-      ? new Date(now.getTime() + Math.min(...delays)).toISOString()
-      : null;
-  }
-
   private async recordParameterUsage(
     registered: Registered,
     record: LifecycleRecord,
@@ -1958,7 +1945,7 @@ export class LifecycleRuntime {
             [lifecycle.versionField]: 1,
             ...(lifecycle.dueAtField
               ? {
-                  [lifecycle.dueAtField]: this.triggerDueAt(
+                  [lifecycle.dueAtField]: triggerDueAt(
                     lifecycle,
                     state,
                     parameters,
@@ -2108,7 +2095,7 @@ export class LifecycleRuntime {
     id: RecordId,
     options: ManagementOptions,
   ): Promise<ManagementResult> {
-    return this.manage(key, id, 'suspend', options);
+    return this.management.manage(key, id, 'suspend', options);
   }
 
   public resume(
@@ -2116,7 +2103,7 @@ export class LifecycleRuntime {
     id: RecordId,
     options: ManagementOptions,
   ): Promise<ManagementResult> {
-    return this.manage(key, id, 'resume', options);
+    return this.management.manage(key, id, 'resume', options);
   }
 
   public reset(
@@ -2124,7 +2111,7 @@ export class LifecycleRuntime {
     id: RecordId,
     options: ManagementOptions,
   ): Promise<ManagementResult> {
-    return this.manage(key, id, 'reset', options);
+    return this.management.manage(key, id, 'reset', options);
   }
 
   public restartAt(
@@ -2133,127 +2120,17 @@ export class LifecycleRuntime {
     target: string,
     options: ManagementOptions,
   ): Promise<ManagementResult> {
-    return this.manage(key, id, 'restartAt', options, target);
+    return this.management.manage(key, id, 'restartAt', options, target);
   }
 
   /** A preview. Each command repeats authorization and the entry checks under the record lock. */
-  public async managementDetails(
+  public managementDetails(
     key: string,
     id: RecordId,
     actor: LifecycleActor,
     authorize: ManagementAuthorization,
   ): Promise<ManagementDetails | undefined> {
-    return this.store.transaction(async (store) => {
-      const { registered, record } = await this.managedRecord(store, key, id);
-      const { lifecycle } = registered;
-      const policy = lifecycle.management;
-      if (!policy) return undefined;
-      const allowed = new Set<ManagementCommand>();
-      for (const command of [
-        'suspend',
-        'resume',
-        'reset',
-        'restartAt',
-      ] as const)
-        if (
-          await authorize({
-            actor,
-            command,
-            record,
-            lifecycle: lifecycle.name,
-            transactionHandle: store.transactionHandle,
-          })
-        )
-          allowed.add(command);
-      if (allowed.size === 0) return undefined;
-      const state = managementState(policy.field, record);
-      const result = this.managementResult(lifecycle, record, state);
-      const actions: ManagementCommand[] = [];
-      const targets: string[] = [];
-      const canEnter = async (
-        command: 'reset' | 'restartAt',
-        to: string,
-      ): Promise<boolean> => {
-        if (!policy.canEnter) return true;
-        return policy.canEnter(
-          await this.reentryContext(
-            store,
-            registered,
-            record,
-            command,
-            to,
-            actor,
-            '',
-            this.clock(),
-          ),
-        );
-      };
-      if (result.suspended) {
-        if (allowed.has('resume')) actions.push('resume');
-      } else if (policy.suspend && allowed.has('suspend')) {
-        actions.push('suspend');
-      }
-      if (
-        policy.reset &&
-        (result.suspended || policy.resetWhileActive) &&
-        allowed.has('reset') &&
-        (await canEnter('reset', lifecycle.initial))
-      )
-        actions.push('reset');
-      if (
-        (result.suspended || policy.restartWhileActive) &&
-        allowed.has('restartAt')
-      ) {
-        for (const target of policy.restartAt ?? [])
-          if (await canEnter('restartAt', target)) targets.push(target);
-        if (targets.length) actions.push('restartAt');
-      }
-      const runs = await store.listEffectRuns({
-        lifecycle: lifecycle.name,
-        recordId: String(record.id),
-      });
-      const history = await store.listTransitions(
-        lifecycle.name,
-        String(record.id),
-      );
-      const work: ManagementDetails['work'][number][] = [];
-      for (const run of runs) {
-        const status =
-          run.status === 'running'
-            ? 'running'
-            : run.status === 'queued'
-              ? 'queued'
-              : run.continuation
-                ? 'continuation'
-                : undefined;
-        if (
-          status &&
-          (status === 'running' || (await this.currentRound(store, state, run)))
-        )
-          work.push({ id: run.id, effect: run.effect, status });
-      }
-      return {
-        ...result,
-        initial: lifecycle.initial,
-        actions,
-        targets,
-        work,
-        history: history.flatMap((entry) =>
-          entry.management
-            ? [
-                {
-                  id: entry.id,
-                  actorId: entry.actorId,
-                  at: entry.at,
-                  from: entry.from!,
-                  requestId: entry.requestId!,
-                  event: entry.management,
-                },
-              ]
-            : [],
-        ),
-      };
-    });
+    return this.management.managementDetails(key, id, actor, authorize);
   }
 
   private async managedRecord(
@@ -2292,26 +2169,6 @@ export class LifecycleRuntime {
     return { registered, record };
   }
 
-  private managementResult(
-    lifecycle: Lifecycle<LifecycleTypes>,
-    record: LifecycleRecord,
-    state: ManagementState,
-  ): ManagementResult {
-    return {
-      lifecycle: lifecycle.name,
-      definitionVersion: lifecycle.version,
-      recordId: String(record.id),
-      state: stateOf(lifecycle, record),
-      suspended: state.suspendedAt !== null,
-      round: state.round,
-      version: JSON.stringify([
-        lifecycle.name,
-        versionOf(lifecycle, record),
-        state.revision,
-      ]),
-    };
-  }
-
   private async reentryContext(
     store: LifecycleStore,
     registered: Registered,
@@ -2343,314 +2200,6 @@ export class LifecycleRuntime {
     };
   }
 
-  private async manage(
-    key: string,
-    id: RecordId,
-    command: ManagementCommand,
-    options: ManagementOptions,
-    target?: string,
-  ): Promise<ManagementResult> {
-    checkRequestId(options.requestId);
-    if (
-      !options.requestId?.trim() ||
-      !options.reason?.trim() ||
-      !options.expectedVersion
-    )
-      throw new LifecycleError(
-        'INVALID_INPUT',
-        'A reason, request id and expected version are required.',
-      );
-    const submit = (): Promise<ManagementResult> =>
-      this.store.transaction(async (store) => {
-        const { registered, record } = await this.managedRecord(
-          store,
-          key,
-          id,
-          true,
-        );
-        const { lifecycle } = registered;
-        const access = {
-          actor: options.actor,
-          record,
-          lifecycle: lifecycle.name,
-          command,
-          transactionHandle: store.transactionHandle,
-        };
-        if (!(await options.authorize(access)))
-          throw new LifecycleError(
-            'MANAGEMENT_FORBIDDEN',
-            'You cannot manage this lifecycle instance.',
-          );
-        const policy = lifecycle.management;
-        if (!policy)
-          throw new LifecycleError(
-            'INVALID_STATE',
-            'This definition does not enable lifecycle management.',
-          );
-        const recordId = String(record.id);
-        const reason = options.reason.trim();
-        const earlier = await store.findTransitionByRequest(
-          lifecycle.name,
-          recordId,
-          options.requestId,
-        );
-        if (earlier) {
-          const event = earlier.management;
-          if (
-            event &&
-            event.command === command &&
-            event.reason === reason &&
-            event.expectedVersion === options.expectedVersion &&
-            earlier.actorId === options.actor.id &&
-            (command !== 'restartAt' || earlier.to === target)
-          )
-            return event.result;
-          throw new LifecycleError(
-            'CONFLICT',
-            'This request id was already used with different parameters.',
-          );
-        }
-        const previous = managementState(policy.field, record);
-        const current = this.managementResult(lifecycle, record, previous);
-        if (
-          current.version !== options.expectedVersion ||
-          (options.expectCurrent && !(await options.expectCurrent(access)))
-        )
-          throw new LifecycleError(
-            'CONFLICT',
-            'The lifecycle instance changed since it was read.',
-          );
-        const to =
-          command === 'reset' ? lifecycle.initial : (target ?? current.state);
-        const reenter = command === 'reset' || command === 'restartAt';
-        if (
-          command === 'suspend'
-            ? current.suspended || !policy.suspend
-            : !current.suspended &&
-              !(command === 'reset' && policy.resetWhileActive) &&
-              !(command === 'restartAt' && policy.restartWhileActive)
-        )
-          throw new LifecycleError(
-            'INVALID_STATE',
-            'This command is unavailable in the current lifecycle state.',
-          );
-        if (
-          (command === 'reset' && !policy.reset) ||
-          (command === 'restartAt' &&
-            (!target || !policy.restartAt?.includes(target)))
-        )
-          throw new LifecycleError(
-            'INVALID_STATE',
-            'This definition does not allow entry to that state by this command.',
-          );
-
-        const now = this.clock();
-        const at = now.toISOString();
-        const context = reenter
-          ? await this.reentryContext(
-              store,
-              registered,
-              record,
-              command,
-              to,
-              options.actor,
-              reason,
-              now,
-            )
-          : undefined;
-        if (context && policy.canEnter && !(await policy.canEnter(context)))
-          throw new LifecycleError(
-            'INVALID_STATE',
-            'The lifecycle cannot reenter that state for this record.',
-          );
-        const values = context && policy.set ? await policy.set(context) : {};
-        if (
-          Object.keys(values).some((field) =>
-            ownedFields(lifecycle).includes(field),
-          )
-        )
-          throw new LifecycleError(
-            'INVALID_SET',
-            'A management policy cannot set lifecycle-owned fields.',
-          );
-        const version = versionOf(lifecycle, record);
-        const nextVersion = (version ?? 0) + 1;
-        const pause =
-          command === 'resume'
-            ? Math.max(0, now.getTime() - Date.parse(previous.suspendedAt!))
-            : 0;
-        const state: ManagementState = {
-          revision: previous.revision + 1,
-          round: previous.round + Number(reenter),
-          roundStartedVersion: reenter
-            ? nextVersion
-            : previous.roundStartedVersion,
-          suspendedAt: command === 'suspend' ? at : null,
-          pausedMs: reenter ? 0 : previous.pausedMs + pause,
-        };
-        const dueField = lifecycle.dueAtField;
-        const originalDue = dueField ? record[dueField] : null;
-        const update = {
-          ...values,
-          [policy.field]: state,
-          [`${policy.field}Revision`]: state.revision,
-          ...(reenter
-            ? {
-                [lifecycle.stateField]: to,
-                [lifecycle.changedAtField]: at,
-                [lifecycle.versionField]: nextVersion,
-              }
-            : {}),
-          ...(dueField && context
-            ? {
-                [dueField]: this.triggerDueAt(
-                  lifecycle,
-                  to,
-                  context.parameters,
-                  now,
-                ),
-              }
-            : dueField && pause && typeof originalDue === 'string'
-              ? {
-                  [dueField]: new Date(
-                    Date.parse(originalDue) + pause,
-                  ).toISOString(),
-                }
-              : {}),
-        };
-        if (
-          !(await store.updateRecordIf(
-            lifecycle.collection,
-            id,
-            this.recordCondition(lifecycle, record),
-            update,
-          ))
-        )
-          throw new LifecycleError(
-            'CONFLICT',
-            'The lifecycle instance changed during the command.',
-          );
-        const written = (await store.findRecord(lifecycle.collection, id))!;
-        const result = this.managementResult(lifecycle, written, state);
-        const event: ManagementEvent = {
-          command,
-          reason,
-          expectedVersion: options.expectedVersion,
-          revision: state.revision,
-          previousRound: previous.round,
-          result,
-        };
-        const entry = await store.appendTransition({
-          lifecycle: lifecycle.name,
-          recordId,
-          transition: '$manage',
-          from: current.state,
-          to,
-          actorId: options.actor.id,
-          input: {},
-          management: event,
-          at,
-          version: reenter ? nextVersion : (version ?? 0),
-          requestId: options.requestId,
-        });
-        const runs = await store.listEffectRuns({
-          lifecycle: lifecycle.name,
-          recordId,
-        });
-        if (context) {
-          for (const run of runs) {
-            if (run.status === 'queued' || run.continuation)
-              await store.updateEffectRun(
-                run.id,
-                { status: run.status, attempts: run.attempts },
-                {
-                  ...(run.status === 'queued'
-                    ? {
-                        status: 'cancelled',
-                        error: 'The lifecycle execution restarted.',
-                      }
-                    : {}),
-                  continuation: null,
-                  updatedAt: at,
-                },
-              );
-          }
-          await policy.onReenter?.({
-            ...context,
-            record: written,
-            event,
-            entry,
-          });
-          const owed = await this.owe(
-            store,
-            lifecycle,
-            entry,
-            policy.onEnter?.[to] ?? [],
-            true,
-          );
-          store.afterCommit(async () => {
-            for (const run of owed) await this.handOver(run.id, run.runAfter);
-          });
-        }
-        store.afterCommit(() =>
-          this.changed({
-            lifecycle: lifecycle.name,
-            recordId,
-            kind: 'management',
-          }),
-        );
-        if (command === 'resume')
-          store.afterCommit(async () => {
-            for (const run of runs) {
-              if (run.status === 'queued')
-                await this.handOver(run.id, run.runAfter);
-              if (
-                run.continuation &&
-                !run.continuation.abandonedAt &&
-                run.continuation.dueAt <= at
-              )
-                await this.tryContinuation(run, registered);
-            }
-          });
-        return result;
-      }, joining(options.transaction));
-    try {
-      return await submit();
-    } catch (error) {
-      // A competing command may have spent the request id while this
-      // transaction was waiting for the business row.
-      if (
-        !(error instanceof InstanceLockConflict) ||
-        options.transaction !== undefined
-      )
-        throw error;
-      return submit();
-    }
-  }
-
-  private recordCondition(
-    lifecycle: Lifecycle<LifecycleTypes>,
-    record: LifecycleRecord,
-  ): RecordCondition {
-    const field = lifecycle.management
-      ? `${lifecycle.management.field}Revision`
-      : undefined;
-    return {
-      stateField: lifecycle.stateField,
-      state: stateOf(lifecycle, record),
-      versionField: lifecycle.versionField,
-      version: versionOf(lifecycle, record),
-      ...(field
-        ? {
-            managementRevision: {
-              field,
-              value: record[field] == null ? null : Number(record[field]),
-            },
-          }
-        : {}),
-    };
-  }
-
   /** Lock the business row before touching its Effect runs, in the caller's transaction. */
   private async lockInstance(
     store: LifecycleStore,
@@ -2663,23 +2212,13 @@ export class LifecycleRuntime {
       !(await store.updateRecordIf(
         lifecycle.collection,
         id,
-        this.recordCondition(lifecycle, record),
+        recordCondition(lifecycle, record),
         {
           [lifecycle.versionField]: versionOf(lifecycle, record),
         },
       ))
     )
       throw new InstanceLockConflict();
-  }
-
-  private async currentRound(
-    store: LifecycleStore,
-    state: ManagementState,
-    run: EffectRun,
-  ): Promise<boolean> {
-    if (state.roundStartedVersion === 0) return true;
-    const source = await store.findTransition(run.transitionId);
-    return source !== undefined && source.version >= state.roundStartedVersion;
   }
 
   private async lockRunInstance(
@@ -2693,7 +2232,7 @@ export class LifecycleRuntime {
     const record = await store.findRecord(lifecycle.collection, run.recordId);
     if (!record) return 'obsolete';
     const state = managementState(lifecycle.management.field, record);
-    if (!(await this.currentRound(store, state, run))) return 'obsolete';
+    if (!(await currentRound(store, state, run))) return 'obsolete';
     return state.suspendedAt ? 'suspended' : 'active';
   }
 
@@ -2968,7 +2507,7 @@ export class LifecycleRuntime {
         },
       );
       if (requeued) {
-        await this.handOver(runId, runAfter);
+        await this.handOver(run, runAfter);
         return this.store.findEffectRun(runId);
       }
       if (!lifecycle.management) {
@@ -3161,7 +2700,7 @@ export class LifecycleRuntime {
         `Effect "${effect.name}" ran, but its outcome could not be recorded; attempt ${attempt} is queued again.`,
         { runId, error },
       );
-      await this.handOver(runId, runAfter);
+      await this.handOver(run, runAfter);
       return this.store.findEffectRun(runId);
     }
     // The continuation, if any, was settled when the transaction committed.
@@ -3283,7 +2822,7 @@ export class LifecycleRuntime {
       },
       { reject: true },
     );
-    if (reset) await this.handOver(runId, null);
+    if (reset) await this.handOver(run, null);
     return this.store.findEffectRun(runId);
   }
 
@@ -3609,7 +3148,7 @@ export class LifecycleRuntime {
     const stranded = await this.strandedRuns();
     let dispatched = 0;
     for (const run of [...taken, ...stranded])
-      if (await this.handOver(run.id, run.runAfter)) dispatched += 1;
+      if (await this.handOver(run, run.runAfter)) dispatched += 1;
     return dispatched + (await this.continuePending());
   }
 
@@ -4024,7 +3563,7 @@ export class LifecycleRuntime {
     const queued = await this.store.listEffectRuns({ status: 'queued' });
     let dispatched = 0;
     for (const run of queued)
-      if (await this.handOver(run.id, run.runAfter)) dispatched += 1;
+      if (await this.handOver(run, run.runAfter)) dispatched += 1;
     return dispatched;
   }
 
@@ -4092,13 +3631,12 @@ export class LifecycleRuntime {
   }
 
   private async handOver(
-    runId: string,
+    run: EffectRun,
     runAfter: string | null,
   ): Promise<boolean> {
     try {
-      const run = await this.store.findEffectRun(runId);
-      const lifecycle = run && this.lifecycles.get(run.lifecycle)?.lifecycle;
-      if (run && lifecycle?.management) {
+      const lifecycle = this.lifecycles.get(run.lifecycle)?.lifecycle;
+      if (lifecycle?.management) {
         const record = await this.store.findRecord(
           lifecycle.collection,
           run.recordId,
@@ -4109,10 +3647,10 @@ export class LifecycleRuntime {
         )
           return false;
       }
-      await this.dispatcher.dispatch(runId, { runAfter });
+      await this.dispatcher.dispatch(run.id, { runAfter });
     } catch (error) {
       this.logger.error(
-        `Effect run "${runId}" could not be dispatched; reclaim() hands it over once it has waited a lease, and recover() at the next start.`,
+        `Effect run "${run.id}" could not be dispatched; reclaim() hands it over once it has waited a lease, and recover() at the next start.`,
         { error },
       );
     }
@@ -4264,7 +3802,7 @@ export class LifecycleRuntime {
     const written = await store.updateRecordIf(
       lifecycle.collection,
       id,
-      this.recordCondition(lifecycle, current),
+      recordCondition(lifecycle, current),
       {
         ...plan.values,
         ...(lifecycle.management && managed.pausedMs
@@ -4272,7 +3810,7 @@ export class LifecycleRuntime {
           : {}),
         ...(lifecycle.dueAtField
           ? {
-              [lifecycle.dueAtField]: this.triggerDueAt(
+              [lifecycle.dueAtField]: triggerDueAt(
                 lifecycle,
                 plan.to,
                 parameters,
@@ -4305,7 +3843,7 @@ export class LifecycleRuntime {
       ...plan.values,
       ...(lifecycle.dueAtField
         ? {
-            [lifecycle.dueAtField]: this.triggerDueAt(
+            [lifecycle.dueAtField]: triggerDueAt(
               lifecycle,
               plan.to,
               parameters,
@@ -4465,7 +4003,7 @@ export class LifecycleRuntime {
       kind: 'transition',
     });
     for (const run of committed.result.effectRuns)
-      await this.handOver(run.id, null);
+      await this.handOver(run, null);
   }
 
   /**
