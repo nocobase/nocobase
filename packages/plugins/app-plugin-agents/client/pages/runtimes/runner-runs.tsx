@@ -74,7 +74,7 @@ export function RunnerRuns({
         <Table className='table-fixed min-w-[600px]'>
           <colgroup>
             <col />
-            <col className='w-40' />
+            <col className='w-52' />
             <col className='w-28' />
             <col className='w-24' />
             <col className='w-20' />
@@ -142,8 +142,9 @@ export function RunnerRuns({
                       )}
                     </TableCell>
                     <TableCell
+                      // A provider/model id is read whole, so it wraps rather than truncating.
                       className={
-                        run.nameIsModel ? 'truncate font-mono' : 'truncate'
+                        run.nameIsModel ? 'font-mono break-all' : 'truncate'
                       }
                       title={run.title}
                     >
