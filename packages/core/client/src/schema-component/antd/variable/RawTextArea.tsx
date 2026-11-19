@@ -8,8 +8,8 @@
  */
 
 import { css } from '@emotion/css';
-import { Button, Input, Space } from 'antd';
-import React, { useRef, useState } from 'react';
+import { Input, Space } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { VariableSelect } from './VariableSelect';
 
 // NOTE: https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210
@@ -30,6 +30,7 @@ export function RawTextArea(props): JSX.Element {
     component: Component = Input.TextArea,
     fieldNames,
     scope,
+    syncScope = false,
     buttonClass,
     delimiters = ['{{', '}}'],
     ...others
@@ -37,7 +38,13 @@ export function RawTextArea(props): JSX.Element {
   const dataScope = typeof scope === 'function' ? scope() : scope;
   const [options, setOptions] = useState(dataScope ? dataScope : []);
 
-  function onInsert(selected) {
+  useEffect(() => {
+    if (syncScope && Array.isArray(scope)) {
+      setOptions(scope);
+    }
+  }, [scope, syncScope]);
+
+  function onInsert(selected: string[]) {
     if (!inputRef.current) {
       return;
     }

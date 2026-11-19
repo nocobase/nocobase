@@ -13,13 +13,11 @@ import { uid } from '@formily/shared';
 import {
   SchemaSettings,
   SchemaSettingsBlockHeightItem,
+  getVariableComponentWithScope,
   Variable,
   useAPIClient,
   useDesignable,
-  useFormBlockContext,
-  useRecord,
   useURLAndHTMLSchema,
-  useVariableOptions,
   SchemaSettingsLinkageRules,
   LinkageRuleCategory,
   FlagProvider,
@@ -29,23 +27,10 @@ import { Select, Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+const IframeHtmlEditor = getVariableComponentWithScope(Variable.RawTextArea);
+
 const IframeProvider = (props) => {
   return <FlagProvider collectionField={true}>{props.children}</FlagProvider>;
-};
-const getVariableComponentWithScope = (Com) => {
-  return (props) => {
-    const fieldSchema = useFieldSchema();
-    const { form } = useFormBlockContext();
-    const record = useRecord();
-    const scope = useVariableOptions({
-      collectionField: { uiSchema: fieldSchema },
-      form,
-      record,
-      uiSchema: fieldSchema,
-      noDisabled: true,
-    });
-    return <Com {...props} scope={scope} />;
-  };
 };
 
 const AllowOptionsHelp = ({ type }) => {
@@ -282,9 +267,10 @@ const commonOptions: any = {
                     title: t('html'),
                     type: 'string',
                     'x-decorator': 'FormItem',
-                    'x-component': getVariableComponentWithScope(Variable.RawTextArea),
+                    'x-component': IframeHtmlEditor,
                     'x-component-props': {
                       rows: 10,
+                      syncScope: true,
                     },
                     required: true,
                     description: descriptionContent,
