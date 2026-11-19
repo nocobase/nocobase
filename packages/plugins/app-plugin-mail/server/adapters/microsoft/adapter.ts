@@ -1,5 +1,5 @@
 import { originalMessageMissing } from '../original-message.js';
-import { diagnosticFetch } from '../../diagnostic-fetch.js';
+import { diagnosticFetch, type MailFetch } from '../../diagnostic-fetch.js';
 import { incompleteMessage } from '../incomplete-message.js';
 import type {
   MailAttachmentContent,
@@ -617,6 +617,8 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         return { stream: response.body, size };
       },
       '*/*',
+      // The download service owns the deadline for both headers and body.
+      (input, init) => this.fetch(input, init, globalThis.fetch),
     );
     return !result.ok && result.error.code === 'MICROSOFT_HTTP_404'
       ? originalMessageMissing()
@@ -1426,6 +1428,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
     init: RequestInit,
     read?: (response: Response) => Promise<T>,
     accept?: string,
+    fetcher: MailFetch = this.fetch,
   ): Promise<MailProviderResult<T>> {
     try {
       return await graphRequest<T>(
@@ -1433,7 +1436,7 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
         await this.accessToken(init.signal ?? undefined),
         pathOrUrl,
         init,
-        this.fetch,
+        fetcher,
         read,
         accept,
       );
@@ -1448,8 +1451,9 @@ export class MicrosoftMailProviderAdapter implements MailProviderAdapter {
   private readonly fetch = (
     input: Parameters<typeof fetch>[0],
     init?: RequestInit,
+    fetcher: MailFetch = fetchWithTimeout,
   ): Promise<Response> =>
-    diagnosticFetch(fetchWithTimeout, input, init, {
+    diagnosticFetch(fetcher, input, init, {
       logger: this.context.logger,
       provider: 'microsoft',
       classifyResponse: (response) => responseError(response),

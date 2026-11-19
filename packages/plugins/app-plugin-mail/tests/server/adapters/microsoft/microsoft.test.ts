@@ -75,6 +75,74 @@ describe('Microsoft Mail Provider', () => {
     if (decoded.ok) await decoded.value.stream.cancel();
   });
 
+  it('streams original MIME past 30 seconds and aborts at the download deadline', async () => {
+    vi.useFakeTimers();
+    const timeout = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation((ms) => {
+        const controller = new AbortController();
+        setTimeout(
+          () => controller.abort(new DOMException('Timed out', 'TimeoutError')),
+          ms,
+        );
+        return controller.signal;
+      });
+    try {
+      const credentials = memoryVault();
+      await credentials.putAt('credential-1', {
+        provider: 'microsoft',
+        accessToken: 'fixture-access-token',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+      });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async (_input, init) => {
+          const signal = init?.signal;
+          return new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                const chunk = setTimeout(
+                  () => controller.enqueue(originalMime),
+                  31_000,
+                );
+                signal?.addEventListener(
+                  'abort',
+                  () => {
+                    clearTimeout(chunk);
+                    controller.error(signal.reason);
+                  },
+                  { once: true },
+                );
+              },
+            }),
+          );
+        }),
+      );
+      const adapter = new MicrosoftMailProviderAdapter(
+        context(credentials),
+        config(),
+        account(),
+      );
+      const original = await adapter.getOriginalMessage(
+        'selected',
+        AbortSignal.timeout(60_000),
+      );
+      if (!original.ok) throw new Error('Expected original MIME');
+      const reader = original.value.stream.getReader();
+
+      await vi.advanceTimersByTimeAsync(31_000);
+      expect(await reader.read()).toEqual({ done: false, value: originalMime });
+
+      await Promise.all([
+        expect(reader.read()).rejects.toMatchObject({ name: 'TimeoutError' }),
+        vi.advanceTimersByTimeAsync(29_000),
+      ]);
+    } finally {
+      timeout.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('logs account reauthorization failures without refresh tokens', async () => {
     const credentials = memoryVault();
     await credentials.putAt('credential-1', {
