@@ -297,3 +297,121 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
   expect(roles[0]?.title).toBe('Dispatcher 2');
   expect(roles[0]?.grants).toEqual(seeded);
 });
+
+it('keeps a role’s own custom filters when View’s stored condition is applied again, and reads locked ones', async () => {
+  const user = userEvent.setup();
+  const filterOptions = structuredClone(options);
+  filterOptions.recordAccess.push({
+    key: 'customFilter',
+    title: 'Custom filter',
+  });
+  for (const resource of filterOptions.sections[0]!.subsections[0]!.resources)
+    for (const scopes of Object.values(resource.dataScopes))
+      for (const item of scopes) item.recordAccess.push('customFilter');
+  // Stored by the API as single conditions, with keys in their own order, not as the groups the form writes.
+  const below = (amount: number) => ({
+    type: 'recordAccess',
+    key: 'customFilter',
+    params: {
+      filter: {
+        value: amount,
+        operator: '$lt',
+        path: ['stationId'],
+        kind: 'condition',
+      },
+    },
+  });
+  const stored: readonly PermissionGrant[] = [
+    {
+      resource: { type: 'composite', id: 'tms.shipments' },
+      actions: [
+        {
+          action: 'view',
+          policy: { type: 'composite', scopes: { records: below(100) } },
+        },
+        {
+          action: 'create',
+          policy: {
+            type: 'composite',
+            scopes: {
+              stations: below(20),
+              carriers: 'activeRecords',
+              vehicles: 'activeRecords',
+            },
+          },
+        },
+        {
+          action: 'dispatch',
+          policy: {
+            type: 'composite',
+            scopes: { records: below(50), drivers: 'activeRecords' },
+          },
+        },
+      ],
+    },
+  ];
+  const roles = [
+    {
+      key: 'pricing',
+      title: 'Pricing',
+      grants: structuredClone(stored),
+      revision: 'one',
+    },
+  ] as PermissionSet[];
+  const base = api(roles);
+  const calls = vi.fn((request: Parameters<typeof base>[0]) =>
+    request.path === 'authorization/permissionSets/options'
+      ? { data: filterOptions }
+      : base(request),
+  );
+  await renderWithApp(
+    <Routes>
+      <Route path='/settings/roles' element={<RolesPage />}>
+        <Route path=':key/edit' element={<RoleForm />} />
+      </Route>
+    </Routes>,
+    {
+      route: '/settings/roles/pricing/edit',
+      namespace: settingsNamespace,
+      namespaces,
+      plugins,
+      services,
+      fetch: answerApi(calls),
+    },
+  );
+  await user.click(
+    await screen.findByRole('tab', { name: new RegExp(editor.objectsTab) }),
+  );
+  const list = screen.getByRole('navigation', { name: editor.objects });
+  await user.click(within(list).getByRole('button', { name: /^Shipments/ }));
+  // Every filter reads its conditions; the locked one on Stations names its scope rather than its key.
+  for (const amount of [100, 50, 20])
+    expect(screen.getByText(new RegExp(`Less than ${amount}$`))).toBeVisible();
+  const stations = screen.getByRole('combobox', { name: 'Create: Stations' });
+  expect(stations).toHaveTextContent('Custom filter');
+  expect(stations).toBeDisabled();
+  // Only View's filter can be opened. Applying its stored condition as it stands changes nothing and says nothing.
+  const open = screen
+    .getAllByRole('button', { name: words.permissionFilter.configure })
+    .filter((button) => !(button as HTMLButtonElement).disabled);
+  expect(open).toHaveLength(1);
+  await user.click(open[0]!);
+  await user.click(
+    await screen.findByRole('button', { name: words.permissionFilter.apply }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('button', { name: words.permissionFilter.apply }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(
+    screen.queryByText(/now follows the view scope/),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText(words.unsaved)).not.toBeInTheDocument();
+  await user.type(screen.getByRole('textbox', { name: /Role name/ }), ' 2');
+  await user.click(
+    screen.getByRole('button', { name: words.save, exact: true }),
+  );
+  await waitFor(() => expect(roles[0]?.title).toBe('Pricing 2'));
+  expect(roles[0]?.grants).toEqual(stored);
+});

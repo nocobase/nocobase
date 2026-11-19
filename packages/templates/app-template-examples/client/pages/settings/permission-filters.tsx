@@ -28,6 +28,12 @@ export function withPermissionFilters(
   disabled: boolean,
 ): readonly PermissionObject[] {
   const labels = permissionFilterLabels(text);
+  // The name a View's options give a custom filter, for a follower that lists none, such as one stored by a seed.
+  const customLabel = objects
+    .flatMap((object) => object.actions)
+    .flatMap((action) => action.scopes ?? [])
+    .flatMap((slot) => slot.options ?? [])
+    .find((option) => option.value === CUSTOM_FILTER)?.label;
   return objects.map((object) => ({
     ...object,
     actions: object.actions.map((action) => {
@@ -42,6 +48,18 @@ export function withPermissionFilters(
           const scope = binding.scopes.find((item) => item.key === slot.id);
           return {
             ...slot,
+            // A slot holding a custom filter its options do not list, such as a follower whose View is off, reads it
+            // by name rather than by its key.
+            ...(slot.options?.length &&
+            customLabel &&
+            !slot.options.some((option) => option.value === CUSTOM_FILTER)
+              ? {
+                  options: [
+                    ...slot.options,
+                    { value: CUSTOM_FILTER, label: customLabel },
+                  ],
+                }
+              : {}),
             configuration: (
               <PermissionFilter
                 open={editing === key}
