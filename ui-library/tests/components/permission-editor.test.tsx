@@ -156,6 +156,9 @@ describe('permission editor tabs', () => {
     expect(screen.queryByText(/Business objects the page uses/)).toBeNull();
     // Public menus are checked for everyone and cannot be changed.
     expect(screen.getByRole('checkbox', { name: /Home/ })).toBeChecked();
+    // The public menu carries no extra caption after its name.
+    expect(screen.getByRole('checkbox', { name: 'Home' })).toBeChecked();
+    expect(screen.queryByText(/Visible to everyone/)).toBeNull();
     expect(screen.getByRole('checkbox', { name: /Home/ })).toHaveAttribute(
       'aria-disabled',
       'true',
@@ -224,6 +227,42 @@ describe('permission editor tabs', () => {
 });
 
 describe('business objects tab', () => {
+  it('reads a stored scope equal to View as following View', () => {
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'department' } },
+            'contracts.update': { scopes: { records: 'department' } },
+          },
+        }}
+      />,
+    );
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'Same as view (Their department)',
+    );
+    expect(trigger('Data scope of Edit contracts')).toHaveAttribute(
+      'data-following',
+    );
+  });
+
+  it('shows no group title when every object is in the same group', () => {
+    render(
+      <Host
+        tab='objects'
+        items={objects.filter((object) => object.group === 'Sales')}
+        initial={{ menus: [], grants: {} }}
+      />,
+    );
+    const list = screen.getByRole('navigation', { name: 'Business objects' });
+    expect(within(list).queryByText('Sales')).toBeNull();
+    expect(
+      within(list).getByRole('button', { name: /^Contracts/ }),
+    ).toBeInTheDocument();
+  });
+
   it('lists objects with counts and scopes and shows the menus that use the object', () => {
     render(
       <Host
@@ -242,6 +281,11 @@ describe('business objects tab', () => {
       }),
     ).toHaveAttribute('aria-current', 'true');
     expect(within(list).getByText('System')).toBeInTheDocument();
+    // Long scope names wrap instead of ending in an ellipsis.
+    expect(trigger('Data scope of Edit contracts')).toHaveClass(
+      'whitespace-normal',
+      '*:data-[slot=select-value]:line-clamp-none',
+    );
     expect(
       screen.getByRole('heading', { name: 'Contracts' }),
     ).toBeInTheDocument();
