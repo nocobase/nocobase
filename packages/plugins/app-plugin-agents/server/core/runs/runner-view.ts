@@ -339,7 +339,6 @@ export function createRunnerView(deps: {
       const names = await agentNames(records);
       const runs = records.map(toRun);
       const labels = await subjectLabels(runs, viewerUserId);
-      // `names` are as shown: two providers' agents of one model each with their provider.
       const nameOf = (run: Run) => names.get(run.agentId) ?? null;
       return {
         meta: { nextCursor, total: await recentCount(runner.id) },

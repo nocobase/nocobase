@@ -265,7 +265,7 @@ export function readableModelName(tool: AgentTool, id: string): string {
 /**
  * How names show a tool's model: the catalog's label, else a readable name made from its id (`readableModelName`).
  * For OpenCode and Pi the provider is left out (`my-lan-gateway/qwen3.8-flash` reads "Qwen3.8 Flash"); the whole id is
- * shown beside the name (`agentModelOf`), and two providers' agents of one model are told apart by `agentNameFor`.
+ * shown beside the name (`agentModelOf`), and two providers' agents of one model are told apart by `uniqueAgentName`.
  */
 export function modelLabel(tool: AgentTool, model: string): string {
   // An ACP tool's id stays its identity (`normalizeModel` keeps it as reported); only its label is made readable.
@@ -309,7 +309,7 @@ export function agentNameOf(
 ): string {
   if (!model) return TOOL_DISPLAY_NAMES[tool] ?? tool;
   // A tool's own display name is taken as it is for single-provider tools; OpenCode and Pi names are made from the
-  // id the same way for every provider, so `agentNameFor` can tell two providers' agents apart.
+  // id the same way for every provider, so `uniqueAgentName` can tell two providers' agents apart.
   const label = sanitizeAgentNamePart(
     displayModel && displayModel !== model && !providerQualified(tool)
       ? displayModel
@@ -319,23 +319,27 @@ export function agentNameOf(
 }
 
 /**
- * The name a new agent of a tool and model gets, given whether a name is already taken: `agentNameOf`, and when
- * another agent holds it, that name with the provider after it ("OpenCode · Qwen3.8 Flash (my-lan-gateway)") for
- * OpenCode and Pi. Null when both are taken, or the tool has no provider, for the caller to number.
+ * The name a new agent of a tool and model is saved with, given whether a name is already held by another agent:
+ * `agentNameOf`; when that is held, for OpenCode and Pi, the name with the model's provider after it
+ * ("OpenCode · Qwen3.8 Flash（my-lan-gateway）"); else the first free `#2`, `#3`… after one of them. Agents are not
+ * renamed afterwards, so two agents that already read the same are renamed by an administrator.
  */
-export function agentNameFor(
+export function uniqueAgentName(
   tool: AgentTool,
   model: string,
   taken: (name: string) => boolean,
   displayModel?: string,
-): string | null {
+): string {
   const base = agentNameOf(tool, model, displayModel);
   if (!taken(base)) return base;
   const provider = model ? modelProvider(tool, model) : null;
-  const withProvider = provider
-    ? `${base} (${sanitizeAgentNamePart(provider)})`
-    : null;
-  return withProvider && !taken(withProvider) ? withProvider : null;
+  const named = provider
+    ? `${base}（${sanitizeAgentNamePart(provider)}）`
+    : base;
+  if (named !== base && !taken(named)) return named;
+  let suffix = 2;
+  while (taken(`${named} #${suffix}`)) suffix += 1;
+  return `${named} #${suffix}`;
 }
 
 /**
@@ -354,7 +358,7 @@ export interface AgentModel {
   readonly modelTitle?: string;
 }
 
-/** `AgentModel` of an agent, `name` being the name it is shown by (`shownAgentNames`). */
+/** `AgentModel` of an agent by its saved name. */
 export function agentModelOf(agent: {
   readonly name: string | null;
   readonly tool: AgentTool | null;
@@ -372,41 +376,6 @@ export function agentModelOf(agent: {
     ...(shortName ? { shortName } : {}),
     modelTitle: `${prefix}${model}`,
   };
-}
-
-/**
- * The names agents are shown by when two of them would read the same: agents of one model reached through two
- * providers both named by default ("OpenCode · Qwen3.8 Flash") are each shown with their provider after it
- * ("OpenCode · Qwen3.8 Flash (my-lan-gateway)"). Only an agent whose saved name is still its default name changes, and
- * only as shown: a renamed agent, and every saved name, stays as it is. `agents` are the agents shown together (the
- * non-removed ones); the map holds only the names that differ from the saved ones.
- */
-export function shownAgentNames(
-  agents: readonly {
-    readonly id: string;
-    readonly name: string | null;
-    readonly tool: AgentTool | null;
-    readonly model: string | null;
-  }[],
-): Map<string, string> {
-  const byDefault = new Map<string, (typeof agents)[number][]>();
-  for (const agent of agents) {
-    if (!agent.tool || !agent.model || !modelProvider(agent.tool, agent.model))
-      continue;
-    const name = agentNameOf(agent.tool, agent.model);
-    byDefault.set(name, [...(byDefault.get(name) ?? []), agent]);
-  }
-  const shown = new Map<string, string>();
-  for (const [name, group] of byDefault) {
-    if (group.length < 2) continue;
-    for (const agent of group)
-      if (agent.name === name)
-        shown.set(
-          agent.id,
-          `${name} (${sanitizeAgentNamePart(modelProvider(agent.tool!, agent.model!)!)})`,
-        );
-  }
-  return shown;
 }
 
 /** Whether two ids of one tool's model name the same model. */

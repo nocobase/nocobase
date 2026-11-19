@@ -347,7 +347,7 @@ describe('agents built from runner reports', () => {
     ).rejects.toMatchObject({ details: { reason: 'EFFORT_UNSUPPORTED' } });
   });
 
-  it('names two providers’ agents of one OpenCode model apart by the provider, and keeps an existing name', async () => {
+  it('names two providers’ agents of one OpenCode model apart by the provider when the second is created', async () => {
     h = await createHarness();
     await h.registerRunner({
       tools: [
@@ -371,8 +371,12 @@ describe('agents built from runner reports', () => {
     const consoleAgent = await create('opencode/qwen3.8-flash');
     expect([gateway.name, consoleAgent.name]).toEqual([
       'OpenCode · Qwen3.8 Flash',
-      'OpenCode · Qwen3.8 Flash (opencode)',
+      'OpenCode · Qwen3.8 Flash（opencode）',
     ]);
+    // The saved names are what every place shows.
+    expect((await h.services.agents.get(consoleAgent.id)).name).toBe(
+      'OpenCode · Qwen3.8 Flash（opencode）',
+    );
   });
 
   it('prefers application suggestions over the model catalog, for a model reported but not yet created too', async () => {

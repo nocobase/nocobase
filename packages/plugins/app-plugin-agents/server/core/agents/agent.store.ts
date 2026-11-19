@@ -16,10 +16,6 @@ import {
   type RunnerModelEntry,
 } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
-import {
-  modelProvider,
-  shownAgentNames,
-} from '../../../shared/model-catalog.js';
 import { jsonObject, stringArray } from '../../kernel/values.js';
 
 const AGENTS = 'agAgents';
@@ -196,47 +192,7 @@ export async function agentNamesOf(
   const records = await agentsRepo(conn).findMany({
     filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))),
   });
-  const shown = await shownNamesOf(conn, records);
-  return new Map(
-    records.map((record) => [record.id, shown.get(record.id) ?? record.name]),
-  );
-}
-
-/**
- * The names `records` are shown by when two providers' agents of one model would read the same (`shownAgentNames`),
- * read against the other agents of their tools. Reads them only when one of `records` is an OpenCode or Pi agent.
- */
-async function shownNamesOf(
-  conn: DatabaseConnection,
-  records: readonly AgentRecord[],
-): Promise<Map<string, string>> {
-  const tools = [
-    ...new Set(
-      records.flatMap((record) =>
-        record.tool &&
-        record.model &&
-        modelProvider(record.tool as AgentTool, record.model)
-          ? [record.tool]
-          : [],
-      ),
-    ),
-  ];
-  if (tools.length === 0) return new Map();
-  const peers = await agentsRepo(conn).findMany({
-    filter: (f) =>
-      f.and([
-        f.or(tools.map((tool) => f.string('tool').eq(tool))),
-        f.date('deletedAt').empty(),
-      ]),
-  });
-  return shownAgentNames(
-    peers.map((peer) => ({
-      id: peer.id,
-      name: peer.name,
-      tool: peer.tool as AgentTool | null,
-      model: peer.model,
-    })),
-  );
+  return new Map(records.map((record) => [record.id, record.name]));
 }
 
 /** Every agent's name (or, with `ids`, those agents'), removed ones included, by name. */
@@ -252,10 +208,9 @@ export async function agentDirectory(
       : {}),
     sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
   });
-  const shown = await shownNamesOf(conn, records);
   return records.map((record) => ({
     id: record.id,
-    name: shown.get(record.id) ?? record.name,
+    name: record.name,
     nameText: i18nTextOf(record.nameText),
   }));
 }

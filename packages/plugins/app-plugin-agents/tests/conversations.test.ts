@@ -37,11 +37,11 @@ describe('historical Runner conversation domain', () => {
         body,
       }),
   });
-  it('gives an agent its whole model, its name without the tool and the hover text, telling two providers apart', async () => {
+  it('gives an agent its whole model, its name without the tool and the hover text, by its saved name', async () => {
     h = await createHarness();
     const opencode = await h.createAgent({
       source: 'runner',
-      name: 'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+      name: 'OpenCode · Qwen3.8 Flash（my-lan-gateway）',
       modelEntries: [
         { tool: 'opencode', model: 'my-lan-gateway/qwen3.8-flash' },
       ],
@@ -55,7 +55,7 @@ describe('historical Runner conversation domain', () => {
       .agent;
     expect(named).toMatchObject({
       model: 'my-lan-gateway/qwen3.8-flash',
-      shortName: 'Qwen3.8 Flash (my-lan-gateway)',
+      shortName: 'Qwen3.8 Flash（my-lan-gateway）',
       modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
     });
     expect(
@@ -66,13 +66,13 @@ describe('historical Runner conversation domain', () => {
       shortName: 'Opus 5.5',
       modelTitle: 'Claude · claude-opus-5-5',
     });
-    // Another provider's agent of the same model, still named by default: both are shown with their provider.
+    // Two providers' agents that already read the same keep the saved name everywhere; an administrator renames one.
     const console = await h.createAgent({
       source: 'runner',
       name: 'OpenCode · Qwen3.8 Flash',
       modelEntries: [{ tool: 'opencode', model: 'opencode/qwen3.8-flash' }],
     });
-    const lan = await h.createAgent({
+    await h.createAgent({
       source: 'runner',
       name: 'OpenCode · Qwen3.8 Flash',
       modelEntries: [{ tool: 'opencode', model: 'other-lan/qwen3.8-flash' }],
@@ -80,29 +80,10 @@ describe('historical Runner conversation domain', () => {
     expect(
       (await domain().get(ALICE, await newConversation(console))).agent,
     ).toMatchObject({
-      name: 'OpenCode · Qwen3.8 Flash (opencode)',
-      shortName: 'Qwen3.8 Flash (opencode)',
+      name: 'OpenCode · Qwen3.8 Flash',
+      model: 'opencode/qwen3.8-flash',
+      shortName: 'Qwen3.8 Flash',
     });
-    expect(
-      (await domain().get(ALICE, await newConversation(lan))).agent.name,
-    ).toBe('OpenCode · Qwen3.8 Flash (other-lan)');
-    // Every place that names agents by id shows them the same way: runs, task feeds, the agent directory.
-    const read = h.services.tx.read();
-    expect(
-      Object.fromEntries(await h.services.agents.names(read, [console, lan])),
-    ).toEqual({
-      [console]: 'OpenCode · Qwen3.8 Flash (opencode)',
-      [lan]: 'OpenCode · Qwen3.8 Flash (other-lan)',
-    });
-    expect(
-      (await h.services.agents.directory(read, [console])).map(
-        (agent) => agent.name,
-      ),
-    ).toEqual(['OpenCode · Qwen3.8 Flash (opencode)']);
-    // The saved names are not changed.
-    expect((await h.services.agents.get(console)).name).toBe(
-      'OpenCode · Qwen3.8 Flash',
-    );
   });
 
   it('resolves historical consultation subjects without rewriting the original message and keeps ownership checks', async () => {

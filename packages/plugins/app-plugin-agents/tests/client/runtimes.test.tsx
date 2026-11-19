@@ -936,9 +936,9 @@ describe('runtimes page', () => {
       data: [
         {
           id: 'failed',
-          title: 'OpenCode · Qwen3.8 Flash (opencode)',
+          title: 'OpenCode · Qwen3.8 Flash（opencode）',
           model: 'opencode/qwen3.8-flash',
-          shortName: 'Qwen3.8 Flash (opencode)',
+          shortName: 'Qwen3.8 Flash（opencode）',
           modelTitle: 'OpenCode · opencode/qwen3.8-flash',
           subjectLabel: 'Fix login',
           path: '/samples/1',
@@ -975,7 +975,7 @@ describe('runtimes page', () => {
     const agentCell = within(table).getByTitle(
       'OpenCode · opencode/qwen3.8-flash',
     );
-    expect(agentCell.textContent).toBe('Qwen3.8 Flash (opencode)');
+    expect(agentCell.textContent).toBe('Qwen3.8 Flash（opencode）');
     expect(within(table).getByTitle('Coder').textContent).toBe('Coder');
   });
 

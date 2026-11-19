@@ -7,8 +7,7 @@ import {
   normalizeModel,
   sameModel,
   agentModelOf,
-  agentNameFor,
-  shownAgentNames,
+  uniqueAgentName,
 } from '../shared/model-catalog.js';
 
 describe('the model catalog', () => {
@@ -80,35 +79,36 @@ describe('the model catalog', () => {
     expect(modelLabel('codex', 'o1')).toBe('o1');
   });
 
-  it('tells two providers of one model apart by the provider, not a number', () => {
+  it('names a new agent of a model another provider already has with the provider, not a number', () => {
     const taken = new Set<string>();
-    const names = [
-      'my-lan-gateway/qwen3.8-flash',
-      'opencode/qwen3.8-flash',
-    ].map((model) => {
-      const name = agentNameFor('opencode', model, (n) => taken.has(n));
-      taken.add(name!);
+    const named = (tool: 'opencode' | 'codex', model: string) => {
+      const name = uniqueAgentName(tool, model, (n) => taken.has(n));
+      taken.add(name);
       return name;
-    });
-    expect(names).toEqual([
+    };
+    expect(named('opencode', 'my-lan-gateway/qwen3.8-flash')).toBe(
       'OpenCode · Qwen3.8 Flash',
-      'OpenCode · Qwen3.8 Flash (opencode)',
-    ]);
+    );
+    expect(named('opencode', 'opencode/qwen3.8-flash')).toBe(
+      'OpenCode · Qwen3.8 Flash（opencode）',
+    );
+    // When the name with the provider is held too (an agent saved with it was renamed back), it is numbered.
+    expect(
+      uniqueAgentName('opencode', 'opencode/qwen3.8-flash', (n) =>
+        taken.has(n),
+      ),
+    ).toBe('OpenCode · Qwen3.8 Flash（opencode） #2');
+    // A model without a namesake keeps its name.
+    expect(named('opencode', 'opencode/deepseek-v4.1-flash-free')).toBe(
+      'OpenCode · DeepSeek V4.1 Flash Free',
+    );
+    // A tool without providers is numbered as before.
+    expect(named('codex', 'gpt-6.2-astra')).toBe('Codex · GPT-6.2 Astra');
+    expect(named('codex', 'gpt-6.2-astra')).toBe('Codex · GPT-6.2 Astra #2');
     // OpenCode's own name for the model is not used: names are made the same way for every provider.
     expect(
       agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash', 'Qwen 3.8 Flash'),
     ).toBe('OpenCode · Qwen3.8 Flash');
-    // Both taken, or a tool without providers: the caller numbers it.
-    expect(
-      agentNameFor('opencode', 'opencode/qwen3.8-flash', () => true),
-    ).toBeNull();
-    expect(
-      agentNameFor(
-        'codex',
-        'gpt-6.2-astra',
-        (n) => n === 'Codex · GPT-6.2 Astra',
-      ),
-    ).toBeNull();
   });
 
   it('suggests what a known model is good at, in English and Chinese', () => {
@@ -138,13 +138,13 @@ describe('agentModelOf', () => {
   it('gives an OpenCode agent its whole id, its name without the tool and the hover text', () => {
     expect(
       agentModelOf({
-        name: 'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+        name: 'OpenCode · Qwen3.8 Flash（my-lan-gateway）',
         tool: 'opencode',
         model: 'my-lan-gateway/qwen3.8-flash',
       }),
     ).toEqual({
       model: 'my-lan-gateway/qwen3.8-flash',
-      shortName: 'Qwen3.8 Flash (my-lan-gateway)',
+      shortName: 'Qwen3.8 Flash（my-lan-gateway）',
       modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
     });
   });
@@ -198,62 +198,5 @@ describe('agentModelOf', () => {
       shortName: 'Gemini 3.1 Pro Preview',
       modelTitle: 'Gemini CLI · gemini-3.1-pro-preview',
     });
-  });
-});
-
-describe('shownAgentNames', () => {
-  const agent = (id: string, name: string, model: string) => ({
-    id,
-    name,
-    tool: 'opencode' as const,
-    model,
-  });
-
-  it('shows both providers of one default-named model with their provider', () => {
-    expect(
-      shownAgentNames([
-        agent('a', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
-        agent(
-          'b',
-          'OpenCode · Qwen3.8 Flash (opencode)',
-          'opencode/qwen3.8-flash',
-        ),
-        agent('c', 'OpenCode · Kimi K2', 'moonshotai/kimi-k2'),
-      ]),
-    ).toEqual(
-      // b's saved name already says its provider; c has no namesake.
-      new Map([['a', 'OpenCode · Qwen3.8 Flash (my-lan-gateway)']]),
-    );
-    expect(
-      shownAgentNames([
-        agent('a', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
-        agent('b', 'OpenCode · Qwen3.8 Flash', 'opencode/qwen3.8-flash'),
-      ]),
-    ).toEqual(
-      new Map([
-        ['a', 'OpenCode · Qwen3.8 Flash (my-lan-gateway)'],
-        ['b', 'OpenCode · Qwen3.8 Flash (opencode)'],
-      ]),
-    );
-  });
-
-  it('keeps a renamed agent and a model without a namesake as they are', () => {
-    expect(
-      shownAgentNames([
-        agent('a', 'Gateway fast', 'my-lan-gateway/qwen3.8-flash'),
-        agent('b', 'OpenCode · Qwen3.8 Flash', 'opencode/qwen3.8-flash'),
-        {
-          id: 'c',
-          name: 'Claude · Opus 5.5',
-          tool: 'claude',
-          model: 'claude-opus-5-5',
-        },
-      ]),
-    ).toEqual(new Map([['b', 'OpenCode · Qwen3.8 Flash (opencode)']]));
-    expect(
-      shownAgentNames([
-        agent('a', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
-      ]),
-    ).toEqual(new Map());
   });
 });

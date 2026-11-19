@@ -260,7 +260,7 @@ describe('the Agent page', () => {
     );
   });
 
-  it('shows two providers’ default-named agents of one model each with their provider, keeping a renamed one', async () => {
+  it('shows each agent by its saved name with its whole model id below', async () => {
     const qwen = (id: string, name: string, model: string) => ({
       ...agents[1]!,
       id,
@@ -273,24 +273,19 @@ describe('the Agent page', () => {
       qwen('lan', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
       qwen(
         'console',
-        'OpenCode · Qwen3.8 Flash (opencode)',
+        'OpenCode · Qwen3.8 Flash（opencode）',
         'opencode/qwen3.8-flash',
       ),
-      qwen('renamed', 'Gateway fast', 'other-gateway/qwen3.8-flash'),
     ];
     renderPage(<AgentsPage />);
-    expect(await screen.findByTestId('agent-lan')).toHaveTextContent(
-      'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+    const lan = await screen.findByTestId('agent-lan');
+    expect(lan).toHaveTextContent('OpenCode · Qwen3.8 Flash');
+    expect(lan).not.toHaveTextContent('（');
+    expect(within(lan).getByTestId('agent-model').textContent).toBe(
+      'my-lan-gateway/qwen3.8-flash',
     );
     expect(screen.getByTestId('agent-console')).toHaveTextContent(
-      'OpenCode · Qwen3.8 Flash (opencode)',
-    );
-    expect(screen.getByTestId('agent-renamed')).toHaveTextContent(
-      'Gateway fast',
-    );
-    fireEvent.click(screen.getByTestId('agent-edit-lan'));
-    expect(await screen.findByTestId('agent-dialog')).toHaveTextContent(
-      'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+      'OpenCode · Qwen3.8 Flash（opencode）',
     );
   });
 

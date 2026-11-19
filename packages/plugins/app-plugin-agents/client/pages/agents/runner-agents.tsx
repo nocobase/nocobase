@@ -32,10 +32,7 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
-import {
-  agentModelOf,
-  shownAgentNames,
-} from '../../../shared/model-catalog.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import { AvailableModelsDrawer } from './available-models-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
@@ -98,7 +95,7 @@ export function RunnerAgentsSection(): ReactElement {
       ) : (
         <AgentTable
           agents={ordered(
-            shownAgents(agents.data).filter(
+            agents.data.filter(
               (agent) =>
                 agent.status === 'enabled' ||
                 (showDisabled && agent.status === 'disabled'),
@@ -115,18 +112,6 @@ export function RunnerAgentsSection(): ReactElement {
       />
     </section>
   );
-}
-
-/**
- * The agents as the list and the edit dialog show them: two providers' agents of one model still named by default
- * are each shown with their provider (`shownAgentNames`); saved names are not changed.
- */
-function shownAgents(agents: readonly AgentView[]): AgentView[] {
-  const shown = shownAgentNames(agents);
-  return agents.map((agent) => {
-    const name = shown.get(agent.id);
-    return name ? { ...agent, name } : agent;
-  });
 }
 
 function AgentTable({
