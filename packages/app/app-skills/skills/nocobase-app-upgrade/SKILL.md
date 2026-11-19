@@ -40,8 +40,6 @@ Never: overwrite the application with a fresh template copy; bump `defaultTempla
 
 When the App already supplies the project plugin development Skill, check for a missed [global plugin Skill migration](references/plugin-development-skill.md) even if no template version change is needed. This cleanup does not advance `defaultTemplateVersion`.
 
-When merging an edition template, preserve local plugin registrations and preinstalled development dependencies. Review legacy production dependencies individually before demoting them: application code may use a plugin directly.
-
 ## 1. Secure a way back
 
 Git project: require a clean tree (ask the user to commit anything outstanding — do not stash or commit it for them), record `git rev-parse HEAD`, then `git checkout -b template-upgrade-<target>`. Editing the project directly is safe on a branch, and it is what lets `typecheck`/`test`/`build` actually run.
@@ -56,6 +54,8 @@ node -p "JSON.stringify(require('./package.json').nocobase, null, 2)"
 
 `templatePackage` names the template; `defaultTemplateVersion` is BASE. Treat that package name as authoritative even when it names a template this Skill has never seen. If it is missing, the application predates the field: inspect `templateKind`, dependency history, plugin registrations, database directories, and published template versions, then confirm the source package before fetching. `templateKind: "app"` alone does not distinguish Default from Examples, while `templateKind: "hub"` identifies the discontinued Hub template, which has no newer version to upgrade to: tell the user rather than picking another template as BASE. If `defaultTemplateVersion` itself is missing or was bumped without a merge, the baseline is unknown — work it out with the user from Git history rather than guessing, since too old a baseline replays changes already present and too new a one skips changes never applied.
 
+For Professional and Enterprise, compare two releases of the recorded edition package (`@nocobase/app-template-pro` or `@nocobase/app-template-enterprise`). Its `defaultTemplateVersion` is the edition release. The `upstreamTemplateVersion` and `upstreamTemplateCommit` fields identify the Default source used to build that release. A change of edition is a separate migration.
+
 If `nocobase.templatePackage` is missing, use the confirmed package name for `TEMPLATE` instead of the manifest lookup below, then record it in the manifest during the agreed source merge.
 
 ## 3. Select the release channel and fetch both releases
@@ -64,15 +64,16 @@ Resolve the user's requested channel before choosing TARGET. An explicit version
 
 The tags are independent pointers, not a version ordering: `beta` tracks beta releases, while `latest` is npm's default tag and can still point to an older beta before a stable release exists. Do not assume `latest` is newer or stable, or choose the highest version across all channels. If the user asks for a stable release but `latest` resolves to a prerelease, explain that the tag does not provide a stable target and clarify before proceeding. A missing requested tag is not permission to fall back to another channel.
 
+Run these commands from the application root so npm uses the project and user registry settings for each package scope. For a commercial template, verify read access to both releases through the configured `@nocobase:registry` (normally `https://pkg-v3.nocobase.com/`). If access fails, restore the scoped registry or login and retry the same edition and version.
+
 ```bash
-REGISTRY=https://registry.npmjs.org
 TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
-npm view "$TEMPLATE" dist-tags --json --registry="$REGISTRY"
+npm view "$TEMPLATE" dist-tags --json
 
 # Set CHANNEL to beta or latest according to the selection above.
 CHANNEL=beta
-TARGET=$(npm view "$TEMPLATE@$CHANNEL" version --registry="$REGISTRY")
+TARGET=$(npm view "$TEMPLATE@$CHANNEL" version)
 # For an explicitly requested version, assign that exact version to TARGET instead.
 ```
 
@@ -82,7 +83,7 @@ Use semantic version ordering to compare the resolved TARGET with BASE. If equal
 WORK=$(mktemp -d)
 
 for VERSION in "$BASE" "$TARGET"; do
-  npm pack "$TEMPLATE@$VERSION" --registry="$REGISTRY" --pack-destination "$WORK" >/dev/null
+  npm pack "$TEMPLATE@$VERSION" --ignore-scripts --pack-destination "$WORK" >/dev/null
   mkdir -p "$WORK/$VERSION"
   tar -xzf "$WORK"/*"-$VERSION.tgz" -C "$WORK/$VERSION" --strip-components=1
 done
@@ -94,12 +95,12 @@ These are published tarballs, not Git checkouts — they carry only what `files`
 
 ## 3a. Discover the target release’s requirements before editing
 
-Read TARGET’s `AGENTS.md` and `README.MD` from the extracted package, even when the installed upgrade Skill is older. Those files can introduce new mandatory upgrade requirements. Resolve the `@nocobase/app-skills` range in TARGET’s manifest against the selected registry, fetch that exact package, record its version/integrity, and read its `skills/nocobase-app-upgrade/SKILL.md` and applicable references before planning the source merge. Fetching and reading a package does not require installing or synchronizing it into the application first. Keep the application’s installed old Skill and dependencies until the plan is agreed.
+Read TARGET’s `AGENTS.md` and `README.MD` from the extracted package, even when the installed upgrade Skill is older. Those files can introduce new mandatory upgrade requirements. Resolve the `@nocobase/app-skills` range in TARGET’s manifest through the registry configured for its scope, fetch that exact package, record its version/integrity, and read its `skills/nocobase-app-upgrade/SKILL.md` and applicable references before planning the source merge. Fetching and reading a package does not require installing or synchronizing it into the application first. Keep the application’s installed old Skill and dependencies until the plan is agreed.
 
 ```bash
 SKILLS_RANGE=$(node -p "const p=require('$WORK/$TARGET/package.json'); p.devDependencies?.['@nocobase/app-skills'] ?? p.dependencies?.['@nocobase/app-skills'] ?? ''")
 # Stop if the target declares no guidance package; do not guess a replacement.
-npm pack "@nocobase/app-skills@$SKILLS_RANGE" --registry="$REGISTRY" --ignore-scripts --json --pack-destination "$WORK"
+npm pack "@nocobase/app-skills@$SKILLS_RANGE" --ignore-scripts --json --pack-destination "$WORK"
 # Extract the returned filename into a separate target-guidance directory; record version and integrity.
 # Read target-guidance/skills/nocobase-app-upgrade/SKILL.md and its applicable references.
 ```
@@ -195,6 +196,8 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 
 `pnpm install` can retain older transitive dependencies in `pnpm-lock.yaml` even after the template raises a direct dependency. Run `pnpm dedupe` to refresh compatible resolutions before synchronizing Skills from the final `node_modules`. Review and include the resulting lockfile changes in the upgrade. If type checking still reports incompatible types from two versions of the same package, follow [dependency resolution conflicts](references/edge-cases.md#dependency-resolution-conflicts) before changing application code.
 
+For changes to preinstalled packages, verify the [plugin and driver dependency placements](references/edge-cases.md#preinstalled-plugins-and-database-drivers) against the installed CLI and the built application.
+
 After synchronization, complete the applicable [global plugin Skill migration](references/plugin-development-skill.md): verify the project replacement before removing the old global installation, then report cleanup and session reload requirements.
 
 `typecheck` is doing real work here — it catches the broken import a removal left behind. Before starting the application against retained data, complete the applicable [database upgrade checks](references/database-upgrades.md); startup may apply migrations automatically. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves. For a theme or shell change, also complete the [theme upgrade checks](references/theme-upgrade.md); token changes alone do not verify the application-owned consumers.
@@ -205,7 +208,7 @@ For a notification contract change, complete the applicable [notification accept
 
 Before declaring completion, verify that the resolved runtime exports the target contracts, installed component copies and all request owners are connected, and applicable target acceptance checks pass with preserved customizations and data. Include both template-provided and application-owned lists and installed Registry copies. Compare retained business records, approval history, permissions and executed migration sources against the recovery checkpoint. If any required check fails, retain BASE and report the failure with recovery instructions.
 
-Only after those checks pass, set `defaultTemplateVersion` to the exact TARGET selected in step 3, verify the final manifest and lockfile, and commit the reconciled source, dependencies and marker together. Report the registry/channel, exact source and guidance package versions and integrity, range merged, how each contested file was decided, manual actions and their validation, and how to roll back. State whether the target is a local candidate or a publicly released package.
+Only after those checks pass, set `defaultTemplateVersion` to the exact TARGET selected in step 3. For an edition template, copy its `upstreamTemplateVersion` and `upstreamTemplateCommit` from that same TARGET. Verify the final manifest and lockfile and commit the reconciled source, dependencies and markers together. Report the registry/channel, exact source and guidance package versions and integrity, range merged, how each contested file was decided, manual actions and their validation, and how to roll back. State whether the target is a local candidate or a publicly released package.
 
 ## Crossing several releases
 

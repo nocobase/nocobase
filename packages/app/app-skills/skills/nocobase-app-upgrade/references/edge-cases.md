@@ -24,8 +24,6 @@ diff <(node -p "JSON.stringify(require('$WORK/$BASE/package.json'), null, 2)") \
 | `files`, `engines`, `packageManager`, `browserslist`, `prettier` | The template's.                                                                                                                      |
 | `pnpm`, `overrides`, `resolutions`                               | The user's, unless the template changed the same entry.                                                                              |
 
-When Default adds a preinstalled database driver, keep it in `dependencies` if the application already uses it at runtime, including SQLite. Check every configured connection with `pnpm nocobase config check --no-connect` after merging the manifest. Add the template’s `devDependencies` entry only for an unused driver, and declare the package once.
-
 Dependency keys get reordered between releases, so most of the raw diff is noise — compare key by key. A dependency the template dropped may be one the user now imports directly; search application code, configuration, tests, and build scripts before deleting it, same as a removed export. For plugins, complete the [code and configuration review](#review-a-removed-plugins-usage). Obtain confirmation before removing any apparently unused `@nocobase/*` capability, and keep each retained package in the appropriate dependency section together with any required registrations.
 
 After its references have been migrated and the user has confirmed the removal, run `pnpm nocobase package remove @nocobase/example` instead of deleting only the manifest key. Use `--dry-run` to preview or `--json` for structured output. The command invokes the application's package manager so `package.json` and the lockfile stay consistent, then removes only synchronized Skills recorded as owned by that package. For an `@nocobase/app-plugin-*` target it delegates to the plugin removal workflow and removes Client, Server, and CLI registrations together; `pnpm nocobase plugin remove <name>` remains available as the plugin-specific entry point. The removal command does not edit business code or configuration, which is why the usage review and any migration happen first.
@@ -35,6 +33,14 @@ After an interrupted or manual removal, confirm that the final manifest no longe
 Ranges in a published template are already resolved (`pnpm pack` expands `workspace:` and `catalog:`). Take them as published.
 
 Keep the existing application and template identities: changing from one template lineage to another is a separate source and database migration, and changing the package name does not transfer migration history.
+
+### Preinstalled plugins and database drivers
+
+Compare the published TARGET manifest with the application's manifest and its Client, Server and CLI registrations. Keep locally enabled plugins and packages imported by runtime code in `dependencies`. Add a new optional plugin such as Web Push to `devDependencies` at TARGET's published range and leave its registration entries absent. Preserve intentional local removals and custom registrations. After installing the target CLI and synchronizing Skills, use `pnpm nocobase plugin inspect <name>` to check the resulting state and any Skills the plugin ships. When the upgrade calls for disabling a plugin, `plugin unregister` retains it and its Skills for development. For an intended uninstall, use `plugin remove`; update older scripts that used `unregister` for that purpose.
+
+Keep a direct production dependency for each official database dialect used by an effective connection, including secondary connections and deployment environment overrides. For example, when TARGET moves SQLite to `devDependencies`, an application still using SQLite keeps it in `dependencies`. If the application uses PostgreSQL alone, keep PostgreSQL in production and SQLite in development when preinstalled. Declare each driver once, reconcile its range with TARGET and preserve deliberate project pins. Keep the existing database configuration and secrets. Fresh-project `config init` is unnecessary for an already configured application.
+
+For a configured project, run `pnpm nocobase config check --no-connect` with the relevant environment. Use the reported connection, package and repair command to resolve a missing production dependency. After building, check `dist/package.json` for the intended production drivers and confirm that plugins kept solely for preinstallation have stayed out of the production dependency tree.
 
 ### Dependency resolution conflicts
 
