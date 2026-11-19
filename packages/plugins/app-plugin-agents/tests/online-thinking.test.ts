@@ -43,7 +43,11 @@ afterEach(async () => {
 
 /** A native service recording the `reasoning` each call was sent. */
 async function fixture(
-  warnings: { type: 'unsupported'; feature: string; details?: string }[] = [],
+  warnings: {
+    type: 'unsupported' | 'compatibility';
+    feature: string;
+    details?: string;
+  }[] = [],
 ) {
   h = await createHarness();
   let counter = 0;
@@ -362,6 +366,48 @@ it.each([
     expect(await notices(agent)).toEqual([]);
   },
 );
+
+// What @ai-sdk/deepseek reports when it maps xhigh to DeepSeek's own max.
+const mapped = {
+  type: 'compatibility' as const,
+  feature: 'reasoning',
+  details:
+    'reasoning "xhigh" is not directly supported by this model. mapped to effort "max".',
+};
+
+it('saves no thinking notice when the provider package only maps the level to a nearby one', async () => {
+  const f = await fixture([mapped]);
+  const agent = await f.service.realtime(actor, {
+    selectedModel: withOff,
+    thinking: 'xhigh',
+  });
+  await send(agent);
+  expect(f.sent).toEqual(['xhigh']);
+  expect(await notices(agent)).toEqual([]);
+});
+
+it('saves only the unsupported warning when a compatibility warning comes with it', async () => {
+  const unsupported = {
+    type: 'unsupported' as const,
+    feature: 'reasoning',
+    details: 'reasoning is not supported by this model.',
+  };
+  const f = await fixture([mapped, unsupported]);
+  const agent = await f.service.realtime(actor, {
+    selectedModel: withOff,
+    thinking: 'xhigh',
+  });
+  await send(agent);
+  const saved = await notices(agent);
+  expect(saved).toEqual([
+    expect.objectContaining({
+      type: 'thinkingWarning',
+      params: { level: 'xhigh' },
+      title: expect.stringContaining(unsupported.details),
+    }),
+  ]);
+  expect(JSON.stringify(saved)).not.toContain('mapped to effort');
+});
 
 it('uses a code scope’s level as the Agent default, and the conversation’s choice over it', async () => {
   const f = await fixture();

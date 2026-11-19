@@ -163,52 +163,74 @@ const completion = {
   usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
 };
 
+/** One call at `level` the stubbed provider answers; the JSON body it was sent and the SDK's warnings. */
+async function answeredCall(
+  provider: ModelProviderName,
+  model: string,
+  level: ReasoningLevel,
+) {
+  const bodies: Record<string, unknown>[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_input: unknown, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return new Response(JSON.stringify(completion), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }),
+  );
+  const result = streamText({
+    model: languageModel(
+      { provider, baseUrl: null, apiKey: 'offline-key' },
+      model,
+    ),
+    prompt: 'Hi',
+    reasoning: level,
+    maxRetries: 0,
+  });
+  await result.consumeStream();
+  expect(bodies).toHaveLength(1);
+  return { body: bodies[0]!, warnings: await result.warnings };
+}
+
 it.each([
-  {
-    model: 'deepseek-flash',
-    provider: 'deepseek',
-    level: 'medium',
-    type: 'compatibility',
-  },
-  {
-    model: 'moonshot-v1-8k',
-    provider: 'moonshotai',
-    level: 'high',
-    type: 'unsupported',
-  },
+  { level: 'xhigh', effort: 'max' },
+  { level: 'medium', effort: 'high' },
 ] as const)(
-  'reports $provider’s $type warning about $level as the notice’s details',
-  async ({ provider, model, level, type }) => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify(completion), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          }),
-      ),
+  'sends DeepSeek $level as its own $effort and reports no thinking warning for the SDK’s compatibility warning',
+  async ({ level, effort }) => {
+    const { body, warnings } = await answeredCall(
+      'deepseek',
+      'deepseek-flash',
+      level,
     );
-    const result = streamText({
-      model: languageModel(
-        { provider, baseUrl: null, apiKey: 'offline-key' },
-        model,
-      ),
-      prompt: 'Hi',
-      reasoning: level,
-      maxRetries: 0,
+    expect(body).toMatchObject({
+      thinking: { type: 'enabled' },
+      reasoning_effort: effort,
     });
-    await result.consumeStream();
-    const warnings = await result.warnings;
-    const found = warnings.find(
-      (warning) => warning.type === type && warning.feature === 'reasoning',
-    );
-    expect(found).toBeDefined();
-    expect(thinkingWarnings(warnings)).toContain(
-      (found as { details: string }).details,
-    );
+    expect(warnings).toEqual([
+      expect.objectContaining({ type: 'compatibility', feature: 'reasoning' }),
+    ]);
+    expect(thinkingWarnings(warnings)).toBeUndefined();
   },
 );
+
+it('reports Moonshot’s unsupported warning about a level as the notice’s details', async () => {
+  const { warnings } = await answeredCall(
+    'moonshotai',
+    'moonshot-v1-8k',
+    'high',
+  );
+  const found = warnings.find(
+    (warning) =>
+      warning.type === 'unsupported' && warning.feature === 'reasoning',
+  );
+  expect(found).toBeDefined();
+  expect(thinkingWarnings(warnings)).toBe(
+    (found as { details: string }).details,
+  );
+});
 
 it('reports Moonshot’s warning that a model it does not know cannot turn thinking off', async () => {
   vi.stubGlobal(
@@ -287,7 +309,8 @@ it('leaves out a warning about another feature even when the model ID names thin
   expect(thinkingWarnings(warnings)).toBeUndefined();
 });
 
-// Features the locked provider packages report; the thinking ones are counted, the others are not.
+// Features the locked provider packages report; an unsupported warning about a thinking one is counted, the others are
+// not, and a compatibility warning never is.
 it.each([
   ['reasoning', true],
   ['reasoning "none"', true],
@@ -307,8 +330,33 @@ it.each([
     expect(
       thinkingWarnings([{ type: 'unsupported', feature, details: 'why' }]),
     ).toBe(counted ? 'why' : undefined);
+    expect(
+      thinkingWarnings([{ type: 'compatibility', feature, details: 'why' }]),
+    ).toBeUndefined();
   },
 );
+
+it('uses only the unsupported warning about thinking when a compatibility one comes with it', () => {
+  expect(
+    thinkingWarnings([
+      {
+        type: 'compatibility',
+        feature: 'reasoning',
+        details: 'mapped to effort "max".',
+      },
+      {
+        type: 'unsupported',
+        feature: 'provider-defined tool custom.thinking_search',
+        details: 'tool left out.',
+      },
+      {
+        type: 'unsupported',
+        feature: 'reasoning "none"',
+        details: 'cannot turn thinking off.',
+      },
+    ]),
+  ).toBe('cannot turn thinking off.');
+});
 
 it('fails the call as usual when the provider refuses the level, without trying another', async () => {
   const fetch = vi.fn(

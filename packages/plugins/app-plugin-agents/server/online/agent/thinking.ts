@@ -20,7 +20,7 @@ export interface ThinkingNotice {
   };
 }
 
-/** The notice an execution adds when the provider package ignored or changed the thinking level it was sent. */
+/** The notice an execution adds when the provider package reports it did not apply the thinking level it was sent. */
 export function thinkingWarningNotice(
   level: ReasoningLevel,
   details: string,
@@ -52,8 +52,10 @@ const THINKING_FEATURE =
   /^(?:providerOptions\.[\w-]+\.)?(?:extended thinking|thinking|reasoning(?:[A-Z]\w*)?)(?=$|[\s.])/;
 
 /**
- * The SDK's warnings about thinking, as one line; undefined when there are none. A warning counts when it is
- * `unsupported` or `compatibility` and its feature is a thinking setting (see `THINKING_FEATURE`).
+ * The SDK's warnings that the thinking level was not applied, as one line; undefined when there are none. A warning
+ * counts when it is `unsupported` and its feature is a thinking setting (see `THINKING_FEATURE`). A `compatibility`
+ * warning only says the provider package mapped the level to the provider's nearest one (DeepSeek sends `xhigh` as
+ * `max`), which the user need not be told, so it never counts.
  */
 export function thinkingWarnings(
   warnings:
@@ -67,7 +69,7 @@ export function thinkingWarnings(
 ): string | undefined {
   const found = (warnings ?? []).filter(
     (warning) =>
-      (warning.type === 'unsupported' || warning.type === 'compatibility') &&
+      warning.type === 'unsupported' &&
       THINKING_FEATURE.test(warning.feature ?? ''),
   );
   if (!found.length) return undefined;
