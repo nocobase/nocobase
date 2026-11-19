@@ -6,8 +6,7 @@ import {
 
 /**
  * Users and Permission management, in the Accounts and permissions category of the System settings shell
- * (`shell-routes.ts`). Register this contribution as business capabilities are developed; a bare application stays
- * without them.
+ * (`shell-routes.ts`). `client/routes.ts` registers this contribution from the start.
  */
 const systemSettingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
   {

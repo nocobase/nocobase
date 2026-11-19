@@ -262,6 +262,13 @@ describe('System settings navigation', () => {
     ]).routes;
     expect(catalog(routes)).toEqual([
       [
+        'settingsAccount',
+        [
+          ['settingsUsers', '/settings/users'],
+          ['permissionManagement', '/settings/roles'],
+        ],
+      ],
+      [
         'settingsSystem',
         [
           ['notificationManagement', '/settings/notifications/templates'],
@@ -290,8 +297,17 @@ it('places database browsing in System and hides its card when access is denied'
     resource: { type: 'page', id: 'database-explorer' },
     action: 'access',
   });
+  const account = [
+    'settingsAccount',
+    [
+      ['settingsUsers', '/settings/users'],
+      ['permissionManagement', '/settings/roles'],
+    ],
+  ];
   expect(catalog(routes)).toEqual([
+    account,
     ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
   ]);
-  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([]);
+  // The empty System category is hidden; Accounts and permissions stays.
+  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([account]);
 });

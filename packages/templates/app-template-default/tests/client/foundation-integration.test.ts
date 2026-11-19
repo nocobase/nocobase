@@ -17,7 +17,6 @@ import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
 import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
-import settingsRoutes from '../../client/pages/settings/routes.js';
 import {
   routeKey,
   buildRouteNavigation,
@@ -54,7 +53,7 @@ describe('default Foundation integration', () => {
     const runtime = await resolveAppRuntime(
       defineAppRuntime({
         ...appRuntime,
-        routes: () => [...createApplicationRoutes(), settingsRoutes],
+        routes: () => createApplicationRoutes(),
       }),
     );
     const menu = buildRouteNavigation(runtime.routes, new Set());
