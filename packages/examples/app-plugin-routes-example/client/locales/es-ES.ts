@@ -15,6 +15,11 @@ const esES: LocaleResource<typeof enUS> = {
   plugin: 'Complemento',
   scope: 'Ámbito',
   message: 'Mensaje',
+  settingsTitle: 'Ajustes del ejemplo de rutas',
+  settingsDescription:
+    'Declarado por el plugin de ejemplo de rutas con defineSettingsRoutes().',
+  settingsBody:
+    'Esta página de ajustes procede de un plugin. Se declara con defineSettingsRoutes(), se une a la categoría Sistema y se monta bajo /settings.',
 };
 
 export default esES;

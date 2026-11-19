@@ -14,11 +14,11 @@ export default function WorkflowsPage(): ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
   const definitionDetail = useMatch({
-    path: '/workflows/definitions/:workflowId',
+    path: '/settings/workflows/definitions/:workflowId',
     end: false,
   });
   const executionDetail = useMatch({
-    path: '/workflows/executions/:workflowId/:recordId',
+    path: '/settings/workflows/executions/:workflowId/:recordId',
     end: false,
   });
   const tab = location.pathname.includes('/executions')
@@ -40,7 +40,7 @@ export default function WorkflowsPage(): ReactElement {
         executions: t('workflows.executions'),
       }}
       tab={tab}
-      onTabChange={(value) => void navigate(`/workflows/${value}`)}
+      onTabChange={(value) => void navigate(`/settings/workflows/${value}`)}
       detail={Boolean(definitionDetail || executionDetail)}
     >
       <Outlet />

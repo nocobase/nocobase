@@ -115,7 +115,7 @@ export default function ExecutionPage(): ReactElement {
           // The record runs the version it is bound to, whichever is latest.
           <Link
             to={{
-              pathname: `/workflows/definitions/${request.data.data.workflow.id}`,
+              pathname: `/settings/workflows/definitions/${request.data.data.workflow.id}`,
               search: new URLSearchParams({
                 version: String(request.data.data.definition.version),
               }).toString(),
@@ -130,7 +130,10 @@ export default function ExecutionPage(): ReactElement {
       }
       description={t('workflows.executionDescription')}
       listTitle={t('workflows.executions')}
-      closeTo={{ pathname: '/workflows/executions', search: location.search }}
+      closeTo={{
+        pathname: '/settings/workflows/executions',
+        search: location.search,
+      }}
     >
       <DataState {...request} retry={request.reload} />
       {request.data && (

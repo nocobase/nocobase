@@ -5,30 +5,22 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
-import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import applicationRoutes, {
   createApplicationRoutes,
 } from '../../client/routes.ts';
 import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
-import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import { defineSettingsRoutes } from '@nocobase/app-client/plugins';
 
 describe('app client routes', () => {
   it('joins the settings system category across contributions without moving the log URL', () => {
-    const shell = defineAppRoutes([
+    const shell = defineSettingsRoutes([
       {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
-        children: [
-          {
-            name: 'settingsSystem',
-            navigation: { title: 'System' },
-            children: [],
-          },
-        ],
+        name: 'settingsSystem',
+        navigation: { title: 'System' },
+        children: [],
       },
     ]);
-    const logs = defineAppRoutes([
+    const logs = defineSettingsRoutes([
       {
         name: 'notificationManagement',
         parent: 'settingsSystem',
@@ -61,7 +53,7 @@ describe('app client routes', () => {
       '/settings/notifications/templates',
       '/settings/notifications/templates/:templateId',
     ]);
-    expect(built.routes[0].children[0].children).toHaveLength(1);
+    expect(built.routes[0].children[0].children).toHaveLength(2);
     const created = includeNotificationTemplateRoutes([shell], true);
     expect(
       created
@@ -94,11 +86,10 @@ describe('app client routes', () => {
   });
 
   it('reuses the notification module and preserves its logs and existing grants', () => {
-    const existing = defineAppRoutes([
+    const existing = defineSettingsRoutes([
       {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
+        name: 'settingsSystem',
+        navigation: { title: 'System' },
         children: [
           {
             name: 'notificationManagement',
@@ -140,7 +131,7 @@ describe('app client routes', () => {
       // A template's own address keeps the list page's grant.
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
     ]);
-    expect(built.routes[0].children).toHaveLength(1);
+    expect(built.routes[0].children?.[0].children).toHaveLength(2);
   });
 
   it('keeps the landing page and the authentication pages', () => {
@@ -190,28 +181,6 @@ describe('app client routes', () => {
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ]);
-  });
-
-  it('includes database browsing and supports business settings registration', async () => {
-    // The built-in database browser joins the settings home without enabling business administration.
-    expect(
-      pagePaths(resolveRoutes().routes).filter((path) =>
-        path.startsWith('/settings'),
-      ),
-    ).toEqual(['/settings', '/settings/database-explorer']);
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        routes: [...applicationRoutes, systemSettingsRoutes],
-        source: 'application',
-      },
-    ]);
-    expect(pageAuthorizations(built.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
-      { name: 'settingsHome', authorizedAs: null },
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
       { name: 'settingsUser', authorizedAs: 'user:*' },
@@ -238,7 +207,28 @@ describe('app client routes', () => {
       })),
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
-    for (const loader of componentLoadersIn(built.routes))
+  });
+
+  it('registers Users, Permission management and database browsing in System settings', async () => {
+    expect(
+      pagePaths(resolveRoutes().routes).filter((path) =>
+        path.startsWith('/settings'),
+      ),
+    ).toEqual([
+      '/settings',
+      '/settings/users',
+      '/settings/users/create',
+      '/settings/users/:userId',
+      '/settings/users/:userId/edit',
+      '/settings/roles',
+      '/settings/roles/create',
+      '/settings/roles/:key/edit',
+      '/settings/default-access',
+      '/settings/default-access/create',
+      '/settings/default-access/:key/edit',
+      '/settings/database-explorer',
+    ]);
+    for (const loader of componentLoadersIn(resolveRoutes().routes))
       await expect(loader()).resolves.toMatchObject({
         default: expect.any(Function),
       });

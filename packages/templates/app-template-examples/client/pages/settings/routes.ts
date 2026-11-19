@@ -1,6 +1,6 @@
 import { Users, ShieldCheck, KeyRound, ListFilter } from 'lucide-react';
 import {
-  defineAppRoutes,
+  defineSettingsRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
@@ -9,7 +9,7 @@ import {
  * (`shell-routes.ts`). Register this contribution as business capabilities are developed; a bare application stays
  * without them.
  */
-const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
+const systemSettingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
   {
     parent: 'settingsAccount',
     name: 'settingsUsers',

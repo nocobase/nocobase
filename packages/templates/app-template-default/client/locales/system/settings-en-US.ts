@@ -115,6 +115,8 @@ const settings = {
 
   reload: 'Reload role',
   title: 'System settings',
+  back: 'Back',
+  navigation: 'Settings navigation',
   home: {
     description:
       'Accounts, permissions, business configuration and system capabilities are all here.',

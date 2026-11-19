@@ -62,8 +62,8 @@ it('groups the modules an administrator may open into categories of cards that o
     'UsersManage accounts, access and active sessions.',
     'Permission managementSet what each role can open and do, and the data it can see.',
   ]);
-  expect(cards[0]).toHaveAttribute('href', '/main/users');
-  expect(cards[1]).toHaveAttribute('href', '/main/roles');
+  expect(cards[0]).toHaveAttribute('href', '/main/settings/users');
+  expect(cards[1]).toHaveAttribute('href', '/main/settings/roles');
   expect(
     screen
       .getAllByRole('region')
@@ -88,7 +88,7 @@ it('groups the modules an administrator may open into categories of cards that o
   await user.keyboard('{Enter}');
   await waitFor(() =>
     expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-      '/roles',
+      '/settings/roles',
     ),
   );
 });
@@ -110,7 +110,7 @@ it('shows a restricted viewer only what they may open, opening a tabbed module o
   expect(screen.getAllByRole('region')).toHaveLength(1);
   const cards = within(account).getAllByRole('link');
   expect(cards).toHaveLength(1);
-  expect(cards[0]).toHaveAttribute('href', '/main/default-access');
+  expect(cards[0]).toHaveAttribute('href', '/main/settings/default-access');
 });
 
 it('explains when there is nothing to manage', async () => {
@@ -120,7 +120,7 @@ it('explains when there is nothing to manage', async () => {
 });
 
 it('links the System settings breadcrumb back to the home from a module view', async () => {
-  await mount({}, '/roles');
+  await mount({}, '/settings/roles');
   const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
   expect(
     await within(trail).findByRole('link', { name: 'System settings' }),

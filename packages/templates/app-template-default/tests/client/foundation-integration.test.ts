@@ -17,7 +17,6 @@ import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
 import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
-import settingsRoutes from '../../client/pages/settings/routes.js';
 import {
   routeKey,
   buildRouteNavigation,
@@ -41,6 +40,7 @@ describe('default Foundation integration', () => {
       ({ route }) => route.name === 'capabilityGuide',
     );
     expect(guide?.target.path).toBe('/settings/capabilities');
+    expect(guide?.route.surface).toBe('settings');
     expect(guide?.route.auth).toBe('required');
     expect(guide?.route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
     expect(
@@ -54,7 +54,7 @@ describe('default Foundation integration', () => {
     const runtime = await resolveAppRuntime(
       defineAppRuntime({
         ...appRuntime,
-        routes: () => [...createApplicationRoutes(), settingsRoutes],
+        routes: () => createApplicationRoutes(),
       }),
     );
     const menu = buildRouteNavigation(runtime.routes, new Set());
@@ -168,6 +168,12 @@ it('offers one Features and extensions access control under system configuration
   expect(sections[0]?.id).toBe('configuration');
   expect(sections[0]?.groups.flatMap(({ rows }) => rows)).toEqual([row]);
   expect(
-    routes.find(({ name }) => name === 'capabilityGuideEntry')?.authz,
-  ).toEqual(CAPABILITY_GUIDE_ACCESS);
+    routes
+      .find(({ name }) => name === 'settingsSystem')
+      ?.children?.find(({ name }) => name === 'capabilityGuideEntry'),
+  ).toMatchObject({
+    path: '/settings/capabilities/:entryId',
+    surface: 'settings',
+    authz: CAPABILITY_GUIDE_ACCESS,
+  });
 });

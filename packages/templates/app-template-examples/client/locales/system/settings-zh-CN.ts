@@ -104,6 +104,8 @@ const settings = {
 
   reload: '重新加载角色',
   title: '系统设置',
+  back: '返回',
+  navigation: '设置导航',
   home: {
     description: '账号、权限、业务配置和系统能力都在这里。',
     empty: '暂时没有你可以管理的设置。',

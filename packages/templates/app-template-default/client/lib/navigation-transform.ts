@@ -1,4 +1,3 @@
-import { groupFoundationNavigation } from '@nocobase/app-plugin-foundation/client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import type { RouteNavigationItem } from '../routing/route-navigation.js';
 
@@ -11,77 +10,6 @@ export const SETTINGS_GROUP = 'settings';
 export const SETTINGS_HOME = 'settingsHome';
 /** The category a module registered directly under the settings group is shown in. */
 export const SETTINGS_FALLBACK_CATEGORY = 'settingsSystem';
-
-/**
- * Application-owned navigation structure, before the sidebar folds the settings group into one entry. `routes` is the
- * registered tree the permission-filtered `items` came from.
- */
-export function organizeNavigation(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  return groupFoundationNavigation(
-    withSettingsGroup(items, routes),
-    SETTINGS_GROUP,
-  );
-}
-
-/** Application-owned navigation customization, applied after permission filtering. */
-export function transformNavigation(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  const organized = organizeNavigation(items, routes);
-  const hasGuide = organized.some(
-    (item) =>
-      item.route.name === SETTINGS_GROUP &&
-      item.children.some(
-        (child) =>
-          child.route.packageName === '@nocobase/app-plugin-foundation' &&
-          child.route.name === 'capabilityGuide',
-      ),
-  );
-  return collapseSettingsNavigation(organized).map((item) =>
-    hasGuide && item.route.name === SETTINGS_HOME
-      ? {
-          ...item,
-          activeRouteKeys: [
-            ...(item.activeRouteKeys ?? []),
-            ...routes
-              .filter(
-                (route) =>
-                  route.packageName === '@nocobase/app-plugin-foundation' &&
-                  ['capabilityGuide', 'capabilityGuideEntry'].includes(
-                    route.name,
-                  ),
-              )
-              .map((route) => `${route.packageName}:${route.path}:${route.id}`),
-          ],
-        }
-      : item,
-  );
-}
-
-/**
- * Permission filtering drops a group with nothing visible in it, which the settings group is until a module joins it.
- * Keep it in place so a plugin's settings entry, such as App Foundation, still has a group to join.
- */
-function withSettingsGroup(
-  items: RouteNavigationItem[],
-  routes: readonly AppClientRegisteredRoute[],
-): RouteNavigationItem[] {
-  const index = routes.findIndex((route) => settingsHomeRoute(route));
-  if (index < 0 || items.some((item) => item.route === routes[index]))
-    return items;
-  const position = items.filter(
-    (item) => routes.indexOf(item.route) < index,
-  ).length;
-  return [
-    ...items.slice(0, position),
-    { route: routes[index], children: [] },
-    ...items.slice(position),
-  ];
-}
 
 /** The settings home page of a settings group route, when the application registers one. */
 export function settingsHomeRoute(
@@ -140,7 +68,7 @@ export interface SettingsCategory {
 }
 
 /**
- * The settings home's cards, from the permission-filtered navigation (`organizeNavigation` output): one category per
+ * The settings home's cards, from the permission-filtered navigation: one category per
  * child group of the settings group, in route order, and the modules the viewer may open in each. A module registered
  * directly under the settings group joins the fallback category. Empty categories are left out.
  */
@@ -196,4 +124,44 @@ function firstPage(
     if (nested) return nested;
   }
   return undefined;
+}
+
+/**
+ * The navigation shown in place of the application's while a settings page is open: each category a headed section,
+ * each module one entry. A module of several views opens its first view the viewer may open and stays selected on all
+ * of them, the tabs inside the page switching between them; an entry also stays selected on the pages below its own
+ * path, such as a record opened from it.
+ */
+export function settingsNavigation(
+  catalog: readonly SettingsCategory[],
+  routes: readonly AppClientRegisteredRoute[],
+): RouteNavigationItem[] {
+  const pages = allPages(routes);
+  const key = (route: AppClientRegisteredRoute): string =>
+    `${route.packageName}:${route.path}:${route.id}`;
+  return catalog.map((category) => ({
+    route: category.route,
+    children: category.modules.map((module) => {
+      const own = [module.target, ...descendantPages(module.route)];
+      const below = pages.filter((page) =>
+        own.some((route) => page.path.startsWith(`${route.path}/`)),
+      );
+      return {
+        route: module.route.componentLoader
+          ? module.route
+          : { ...module.target, navigation: module.route.navigation },
+        children: [],
+        activeRouteKeys: [...new Set([...own, ...below].map(key))],
+      };
+    }),
+  }));
+}
+
+function allPages(
+  routes: readonly AppClientRegisteredRoute[],
+): AppClientRegisteredRoute[] {
+  return routes.flatMap((route) => [
+    ...(route.componentLoader ? [route] : []),
+    ...allPages(route.children ?? []),
+  ]);
 }

@@ -327,7 +327,24 @@ export default {
 };
 ```
 
-Every page is an app route: there is no separate settings or dev surface. A page that configures something is an ordinary route in the application's navigation. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, authentication, navigation, and access metadata.
+Configuration pages are declared with `defineSettingsRoutes()`, mainly by plugins. They take the same definitions as `defineAppRoutes()`, share the one route tree, authorization, breadcrumbs and component loading, and are mounted under `/settings` (`SETTINGS_ROUTE_PATH`) with `surface: 'settings'` on every registered route, so the application can show them in a navigation of their own (`isSettingsRoute()`). A group declared at the root of a settings contribution is a category shared by every package: a page names it with a bare `parent`, and the application declares the categories it offers. A category without a path keeps its pages' URLs independent of it. `packageName:name` still names one package's group, such as a module whose pages are tabs, and a route cannot join a group of the other surface.
+
+```ts
+import { defineSettingsRoutes } from '@nocobase/app-client/plugins';
+
+export default defineSettingsRoutes([
+  {
+    parent: 'settingsSystem',
+    name: 'audit-settings',
+    path: '/audit',
+    authz: { resource: { type: 'settings', id: 'audit' }, action: 'read' },
+    navigation: { title: 'nav.auditSettings' },
+    componentLoader: () => import('./pages/audit-settings.js'),
+  },
+]);
+```
+
+A settings page's `auth` defaults to `required` and its `authz` to `unrestricted`, as on any protected page; declare a grant to open it to other roles. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, surface, authentication, navigation, and access metadata.
 
 ## Client plugin declaration
 

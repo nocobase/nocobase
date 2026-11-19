@@ -1,7 +1,8 @@
 import {
-  defineAppRoutes,
+  defineSettingsRoutes,
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
+  type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 import foundation from '@nocobase/app-plugin-foundation/client/routes';
@@ -11,6 +12,7 @@ import { createApplicationRoutes } from '../../client/routes.js';
 import {
   buildRouteNavigation,
   buildSettingsCatalog,
+  buildSettingsNavigation,
   filterRouteTree,
   selectedNavigationId,
   routeKey,
@@ -19,7 +21,7 @@ import {
 const componentLoader = async () => ({ default: () => null });
 const app = '@nocobase/app-template-default';
 
-function resolve(...extra: ReturnType<typeof defineAppRoutes>[]) {
+function resolve(...extra: AppClientRouteContribution[]) {
   return resolveAppClientContributions([
     {
       packageName: app,
@@ -109,6 +111,47 @@ describe('System settings navigation', () => {
       expect(selectedNavigationId(routes, path)).toBe(entry);
   });
 
+  it('lists the settings navigation by category, one entry per module selected on all of its pages', () => {
+    const routes = resolve();
+    const menu = buildSettingsNavigation(routes, new Set());
+    expect(
+      menu.map(({ route, children }) => [
+        route.name,
+        children.map((child) => [
+          child.route.path,
+          child.route.navigation?.title,
+        ]),
+      ]),
+    ).toEqual([
+      [
+        'settingsAccount',
+        [
+          ['/settings/users', 'settings.users'],
+          // A module of several views opens its first view and carries the module's title.
+          ['/settings/roles', 'settings.permissionManagement'],
+        ],
+      ],
+    ]);
+    const [users, permissions] = menu[0].children;
+    for (const [path, entry] of [
+      ['/settings/users', users],
+      ['/settings/users/create', users],
+      ['/settings/users/42/edit', users],
+      ['/settings/roles', permissions],
+      ['/settings/roles/member/edit', permissions],
+      ['/settings/default-access', permissions],
+    ] as const)
+      expect(selectedNavigationId(routes, path, new Set(), menu)).toBe(
+        routeKey(entry.route),
+      );
+    // A denied view leaves the module on the view still open to the viewer.
+    const roles = routeKey(find(routes, 'settingsRoles'));
+    expect(
+      buildSettingsNavigation(routes, new Set([roles]))[0].children[1].route
+        .path,
+    ).toBe('/settings/default-access');
+  });
+
   it('groups modules into categories, opens a tabbed module on its first readable tab and hides empty categories', () => {
     const routes = resolve();
     expect(catalog(routes)).toEqual([
@@ -142,7 +185,7 @@ describe('System settings navigation', () => {
 
   it('adds a later module with several views to its category without another sidebar entry', () => {
     const routes = resolve(
-      defineAppRoutes([
+      defineSettingsRoutes([
         {
           parent: 'settingsSystem',
           name: 'notificationManagement',
@@ -192,7 +235,7 @@ describe('System settings navigation', () => {
     const menu = buildRouteNavigation(routes, new Set());
     expect(menu.map(({ route }) => route.name)).toEqual(['settingsHome']);
     expect(catalog(routes)).toEqual([
-      ['settingsSystem', [['foundation', '/foundation']]],
+      ['settingsSystem', [['foundation', '/settings/foundation']]],
     ]);
     // The signed-in shell receives the tree filtered to its pages; empty categories keep their titles there.
     const signedIn = filterRouteTree(
@@ -200,7 +243,7 @@ describe('System settings navigation', () => {
       (route) => route.auth === 'required',
     );
     expect(catalog(signedIn)).toEqual([
-      ['settingsSystem', [['foundation', '/foundation']]],
+      ['settingsSystem', [['foundation', '/settings/foundation']]],
     ]);
     const page = find(routes, 'foundation');
     expect(page.navigation?.description).toBe('nav.foundationDescription');
@@ -218,6 +261,13 @@ describe('System settings navigation', () => {
       },
     ]).routes;
     expect(catalog(routes)).toEqual([
+      [
+        'settingsAccount',
+        [
+          ['settingsUsers', '/settings/users'],
+          ['permissionManagement', '/settings/roles'],
+        ],
+      ],
       [
         'settingsSystem',
         [
@@ -247,8 +297,17 @@ it('places database browsing in System and hides its card when access is denied'
     resource: { type: 'page', id: 'database-explorer' },
     action: 'access',
   });
+  const account = [
+    'settingsAccount',
+    [
+      ['settingsUsers', '/settings/users'],
+      ['permissionManagement', '/settings/roles'],
+    ],
+  ];
   expect(catalog(routes)).toEqual([
+    account,
     ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
   ]);
-  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([]);
+  // The empty System category is hidden; Accounts and permissions stays.
+  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([account]);
 });

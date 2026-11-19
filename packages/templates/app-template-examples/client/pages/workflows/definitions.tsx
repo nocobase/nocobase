@@ -16,7 +16,7 @@ import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 export default function DefinitionsPage(): ReactElement {
   const location = useLocation();
   const detail = useMatch({
-    path: '/workflows/definitions/:workflowId',
+    path: '/settings/workflows/definitions/:workflowId',
     end: false,
   });
   const { t, i18n } = useTranslation();
@@ -56,7 +56,7 @@ export default function DefinitionsPage(): ReactElement {
           <>
             <RecordLink
               to={{
-                pathname: `/workflows/definitions/${workflow.id}`,
+                pathname: `/settings/workflows/definitions/${workflow.id}`,
                 search: location.search,
               }}
             >
@@ -79,7 +79,7 @@ export default function DefinitionsPage(): ReactElement {
             <>
               <RecordLink
                 to={{
-                  pathname: '/workflows/executions',
+                  pathname: '/settings/workflows/executions',
                   search: new URLSearchParams({
                     workflowId: workflow.id,
                   }).toString(),
