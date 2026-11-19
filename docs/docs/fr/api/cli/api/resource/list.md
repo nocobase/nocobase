@@ -21,7 +21,6 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | Nom de la ressource, requis |
 | `--data-source` | string | Clé de la source de données, par défaut `main` |
 | `--source-id` | string | ID de l'enregistrement source pour une ressource d'association |
-| `--space` | string | Nom de l’espace à interroger avec le plugin Multi-Space. |
 | `--filter` | string | Conditions de filtre sous forme d'objet JSON |
 | `--fields` | string[] | Champs à inclure, répétable ou tableau JSON |
 | `--appends` | string[] | Champs d'association à ajouter, répétable ou tableau JSON |
@@ -37,7 +36,6 @@ Les paramètres de connexion communs de [`nb api resource`](./index.md) sont ég
 
 ```bash
 nb api resource list --resource users
-nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```

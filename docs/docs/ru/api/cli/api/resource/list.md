@@ -21,7 +21,6 @@ nb api resource list --resource <resource> [flags]
 | `--resource` | string | Имя ресурса, обязательно |
 | `--data-source` | string | Ключ источника данных, по умолчанию `main` |
 | `--source-id` | string | ID исходной записи для ресурсов связи |
-| `--space` | string | Имя одного пространства для запроса с плагином Multi-Space. |
 | `--filter` | string | Условия фильтрации в виде JSON-объекта |
 | `--fields` | string[] | Запрашиваемые поля; можно передавать несколько раз или JSON-массивом |
 | `--appends` | string[] | Связанные поля для подгрузки; можно передавать несколько раз или JSON-массивом |
@@ -37,7 +36,6 @@ nb api resource list --resource <resource> [flags]
 
 ```bash
 nb api resource list --resource users
-nb api resource list --resource orders --space sales
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 nb api resource list --resource users --filter '{"status":"active"}' --sort=-createdAt
 ```
