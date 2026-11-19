@@ -66,13 +66,13 @@ export function classifySshFailure(
     return 'hostKeyMismatch';
   if (
     push &&
-    /\[remote rejected\]|\[rejected\]|pre-push hook declined|write access|read.only|not allowed to push|permission to .* denied|denied to .*deploy key|non-fast-forward/iu.test(
+    /\[remote rejected\]|\[rejected\]|pre-push hook declined|write access|read.only|not allowed to push|is not authorized to write|you do not have permission (?:to )?push|deploykey does not support push code|permission to .* denied|denied to .*deploy key|non-fast-forward/iu.test(
       stderr,
     )
   )
     return 'pushRejected';
   if (
-    /permission denied \(publickey|authentication failed|repository (?:not found|does not exist)|project .* (?:not found|not have permission)|access denied|does not appear to be a git repository|no access to this repository|not authorized|no deployment key in the run/iu.test(
+    /permission denied \(publickey|authentication failed|repository (?:not found|does not exist)|project .* (?:not found|not have permission)|could not be found or you don['’]t have permission|access denied|does not appear to be a git repository|no access to this repository|not authorized|no deployment key in the run/iu.test(
       stderr,
     )
   )

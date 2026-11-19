@@ -1465,14 +1465,16 @@ export async function reportRepos(
           '--format=%(refname)',
           'refs/remotes/origin/',
         ])) !== '';
-      const pushFailure = await options.ssh?.pushFailure(repo.url);
+      const pushFailure = reachable
+        ? undefined
+        : await options.ssh?.pushFailure(repo.url);
       reports.push({
         url: repo.url,
         branch,
         targetBranch: repo.branch,
         localBranch: branch,
         headSha,
-        pushed: reachable && !dirty && pushFailure === undefined,
+        pushed: reachable && !dirty,
         ...(pushFailure !== undefined
           ? {
               failure: {

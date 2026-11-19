@@ -1,10 +1,36 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+import { supportsGitSsh } from '../src/core/git-ssh.ts';
 import { classifySshFailure } from '../src/core/ssh-command.ts';
 import { buildAgentEnv } from '../src/agent/env.ts';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 
 it.each([
   ['git@example.test: Permission denied (publickey).', false, 'authFailed'],
   ['remote: Repository not found.', false, 'authFailed'],
+  [
+    "remote: ERROR: The project you were looking for could not be found or you don't have permission to view it.",
+    false,
+    'authFailed',
+  ],
+  [
+    'Gitea: Deploy Key: 1:build-key is not authorized to write to team/repo.',
+    true,
+    'pushRejected',
+  ],
+  [
+    'Gitea: Deploy Key: 1:build-key is not authorized to read team/repo.',
+    false,
+    'authFailed',
+  ],
+  [
+    'Access deined: You do not have permission push to this repository',
+    true,
+    'pushRejected',
+  ],
+  ['Auth error: DeployKey does not support push code', true, 'pushRejected'],
   [
     'WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!',
     false,
@@ -66,3 +92,41 @@ it('places only the managed SSH command in the agent environment', () => {
     'synthetic private key for the test',
   );
 });
+
+it.runIf(process.platform === 'linux' || process.platform === 'darwin').each([
+  ['Error loading key "(stdin)": invalid format', true],
+  ['-: No such file or directory', false],
+] as const)(
+  'advertises Git SSH according to the ssh-add stdin probe (%s)',
+  (diagnostic, supported) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'nb-ssh-bin-'));
+    try {
+      writeFileSync(path.join(dir, 'ssh'), '#!/bin/sh\nexit 0\n', {
+        mode: 0o700,
+      });
+      writeFileSync(
+        path.join(dir, 'ssh-agent'),
+        '#!/bin/sh\nshift 4\nexec "$@"\n',
+        { mode: 0o700 },
+      );
+      writeFileSync(
+        path.join(dir, 'ssh-add'),
+        [
+          '#!/bin/sh',
+          '[ "$1" = "-" ] || exit 2',
+          'IFS= read -r input',
+          '[ "$input" = "invalid key" ] || exit 2',
+          `printf '%s\\n' '${diagnostic}' >&2`,
+          'exit 1',
+          '',
+        ].join('\n'),
+        { mode: 0o700 },
+      );
+      vi.stubEnv('PATH', path.relative(process.cwd(), dir));
+      expect(supportsGitSsh()).toBe(supported);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);

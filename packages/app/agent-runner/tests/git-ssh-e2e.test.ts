@@ -254,8 +254,18 @@ describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
       ]);
       const firstSha = git(['rev-parse', 'refs/heads/main'], bare);
 
+      writeFileSync(
+        path.join(bare, 'hooks', 'pre-receive'),
+        '#!/bin/sh\nwhile read -r old new ref; do case "$ref" in refs/tags/*) exit 1 ;; esac; done\n',
+        { mode: 0o700 },
+      );
       const next = enqueue(
-        `bash ${COMMIT}\nbash git push origin HEAD:refs/heads/agent/test\nsay done`,
+        [
+          `bash ${COMMIT}`,
+          'bash git push origin HEAD:refs/heads/agent/test',
+          'bash git push origin HEAD:refs/tags/refused',
+          'say done',
+        ].join('\n'),
         ssh,
         false,
       );
@@ -272,6 +282,12 @@ describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
       expect(next.complete?.repos).toEqual([
         expect.objectContaining({ url, pushed: true }),
       ]);
+      expect(next.complete?.repos?.[0]?.failure).toBeUndefined();
+      expect(
+        [...next.events.values()].some((event) =>
+          event.output?.includes('[remote rejected]'),
+        ),
+      ).toBe(true);
       const sha = git(['rev-parse', 'refs/heads/agent/test'], bare);
       expect(sha).not.toBe(firstSha);
 

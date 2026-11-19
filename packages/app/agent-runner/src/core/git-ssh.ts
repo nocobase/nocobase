@@ -1,4 +1,5 @@
-import { execFile, spawn } from 'node:child_process';
+import { execFile, spawn, spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { lstat, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -53,16 +54,56 @@ export function isGitSshUrl(url: string): boolean {
 
 function binaries(): string[] {
   const search = process.env.PATH ?? '';
-  return ['ssh', 'ssh-agent', 'ssh-add'].map(
-    (name) => which(name, search) ?? '',
-  );
+  return ['ssh', 'ssh-agent', 'ssh-add'].map((name) => {
+    const found = which(name, search);
+    return found === undefined ? '' : path.resolve(found);
+  });
 }
 
+let stdinSupport:
+  { agent: string; add: string; supported: boolean } | undefined;
+
+/** Probe the selected tools once per process, without contacting the user's agent or using a real key. */
 export function supportsGitSsh(): boolean {
-  return (
-    (process.platform === 'linux' || process.platform === 'darwin') &&
-    binaries().every(Boolean)
-  );
+  if (process.platform !== 'linux' && process.platform !== 'darwin')
+    return false;
+  const [ssh, agent, add] = binaries();
+  if (!ssh || !agent || !add) return false;
+  if (stdinSupport?.agent === agent && stdinSupport.add === add)
+    return stdinSupport.supported;
+
+  let supported = false;
+  let dir: string | undefined;
+  try {
+    dir = mkdtempSync(path.join(tmpdir(), 'ssh-probe-'));
+    const probe = spawnSync(
+      agent,
+      ['-a', path.join(dir, 'a'), '-P', '', add, '-'],
+      {
+        cwd: dir,
+        input: 'invalid key\n',
+        env: {
+          PATH: process.env.PATH,
+          LC_ALL: 'C',
+          SSH_ASKPASS_REQUIRE: 'never',
+        },
+        encoding: 'utf8',
+        timeout: 5_000,
+        killSignal: 'SIGKILL',
+        maxBuffer: 8_192,
+      },
+    );
+    // A supporting ssh-add parses "-" as stdin. Older versions try to open a file named "-".
+    supported =
+      probe.status === 1 &&
+      probe.stderr.startsWith('Error loading key "(stdin)":');
+  } catch {
+    // A runner that cannot launch the probe cannot offer this feature.
+  } finally {
+    if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
+  }
+  stdinSupport = { agent, add, supported };
+  return supported;
 }
 
 function quote(value: string): string {
