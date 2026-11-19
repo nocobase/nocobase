@@ -22,11 +22,16 @@ const RULES: readonly (readonly [RegExp, string])[] = [
 ];
 
 /**
- * At least 20 characters of a key alphabet, outside paths, model ids and hostnames (no `/`, `-` or `.` inside it); a
- * full stop or other punctuation that ends the sentence after it does not hide it.
+ * At least 20 characters of a key alphabet, hyphens included as URL-safe Base64 writes them, outside paths and
+ * hostnames (no `/` or `.` inside it); a full stop or other punctuation that ends the sentence after it does not hide it.
  */
 const CANDIDATE =
-  /(?<![A-Za-z0-9+_=./-])[A-Za-z0-9+_=]{20,}(?![A-Za-z0-9+_=/-]|\.[A-Za-z0-9])/gu;
+  /(?<![A-Za-z0-9+_=./-])[A-Za-z0-9+_=-]{20,}(?![A-Za-z0-9+_=/-]|\.[A-Za-z0-9])/gu;
+
+/** Upper case, lower case and digits mixed. */
+function mixed(text: string): boolean {
+  return /[0-9]/u.test(text) && /[a-z]/u.test(text) && /[A-Z]/u.test(text);
+}
 
 /** Shannon entropy per character, in bits. */
 function entropy(text: string): number {
@@ -40,14 +45,19 @@ function entropy(text: string): number {
   return bits;
 }
 
-/** Whether a string looks like a random credential: upper case, lower case and digits mixed (not a hex hash), varied. */
+/**
+ * Whether a string looks like a random credential: upper case, lower case and digits mixed (not a hex hash), varied,
+ * judged on the whole string. One with hyphens also needs a piece between them that is itself random-looking (8 or
+ * more mixed characters), so hyphenated words and model names (`GPT-OSS-120B-Instruct`,
+ * `claude-sonnet-4-5-20250929`) stay.
+ */
 function looksRandom(text: string): boolean {
   return (
-    /[0-9]/u.test(text) &&
-    /[a-z]/u.test(text) &&
-    /[A-Z]/u.test(text) &&
+    mixed(text) &&
     !text.includes(REDACTED) &&
-    entropy(text) >= 3.5
+    entropy(text) >= 3.5 &&
+    (!text.includes('-') ||
+      text.split('-').some((piece) => piece.length >= 8 && mixed(piece)))
   );
 }
 

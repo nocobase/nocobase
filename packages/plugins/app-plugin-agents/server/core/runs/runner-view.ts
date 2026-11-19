@@ -19,7 +19,7 @@ import {
 } from '../../../shared/runners.js';
 import { CONVERSATION_SUBJECT } from '../../../shared/conversations.js';
 import { agentModelOf } from '../../../shared/model-catalog.js';
-import type { Run } from '../../../shared/runs.js';
+import { failureDetailText, type Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
@@ -232,7 +232,9 @@ export function createRunnerView(deps: {
   ): { failureDetail?: string | null } =>
     run.status === 'failed' &&
     labels.has(`${run.subject.kind}:${run.subject.id}`)
-      ? { failureDetail: run.failureDetail }
+      ? // Only the one-line summary leaves the server (redacted as the run was read): an older record's later
+        // diagnostic lines and anything past 300 characters stay in the record.
+        { failureDetail: failureDetailText(run.failureDetail) }
       : {};
   const recentCount = (runnerId: string): Promise<number> =>
     runsRepo(deps.tx.read()).count({ filter: { runnerId } });

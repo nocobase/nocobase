@@ -39,6 +39,16 @@ describe('a failed run’s message', () => {
       'unknown credential [REDACTED]',
     ],
     [
+      'a URL-safe random credential with hyphens',
+      'gateway rejected Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3 for this model',
+      'gateway rejected [REDACTED] for this model',
+    ],
+    [
+      'a hyphenated random credential before a full stop',
+      'unknown credential q81mN0pL4kTx-7Rw2Vb9YcZ.',
+      'unknown credential [REDACTED].',
+    ],
+    [
       'a long random string before a full stop',
       'unknown credential Zq81mN0pL4kTx7Rw2Vb9Yc. Sign in again.',
       'unknown credential [REDACTED]. Sign in again.',
@@ -71,6 +81,12 @@ describe('a failed run’s message', () => {
     ['token counts', 'prompt has 128000 tokens, max_tokens: 4096'],
     ['a commit hash', 'HEAD is 3f2a9c1d8e7b6a5f4e3d2c1b0a9f8e7d6c5b4a39'],
     ['a dated model id', 'claude-sonnet-4-5-20250929 is overloaded'],
+    ['a hyphenated model name', 'GPT-OSS-120B-Instruct is not available here'],
+    [
+      'a hyphenated provider path',
+      'Model my-lan-gateway/DeepSeek-V4-Flash-Free2 not found',
+    ],
+    ['a lower-case UUID', 'run 0f8fad5b-d9cb-469f-a165-70867728950e failed'],
     ['a long word', 'internationalization-configuration failed'],
     [
       'a hostname at the end of a sentence',

@@ -1,6 +1,6 @@
 import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createHarness, type Harness } from './harness.js';
+import { claim, createHarness, type Harness } from './harness.js';
 
 describe('runner history pagination', () => {
   let h: Harness;
@@ -166,6 +166,11 @@ describe('runner history pagination', () => {
       tool: 'opencode',
       model: 'opencode/qwen3.8-flash',
     });
+    // An older record with later diagnostic lines and a hyphenated gateway credential: only one redacted line leaves.
+    await run('ffffff', {
+      failureDetail: `${said} Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3\nstderr: internal path /srv/gateway\n${'x'.repeat(50)}`,
+    });
+    await run('ggggggg', { failureDetail: `${said} ${'y'.repeat(400)}` });
     // A task the viewer may not read: its runner run is listed and linked, its words are not.
     await run('bb', {
       failureDetail: 'The secret task quoted here',
@@ -206,12 +211,49 @@ describe('runner history pagination', () => {
     });
     expect(byId.get('a')).not.toHaveProperty('shortName');
     expect(byId.get('eeeee')).not.toHaveProperty('model');
+    expect(byId.get('ffffff')).toMatchObject({
+      failureDetail: `${said} [REDACTED]`,
+    });
+    const long = (byId.get('ggggggg') as { failureDetail: string })
+      .failureDetail;
+    expect(long).toHaveLength(300);
+    expect(long.endsWith('…')).toBe(true);
     expect(byId.get('bb')).toMatchObject({ path: '/docs/secret' });
     for (const id of ['bb', 'ccc', 'dddd', 'eeeee'])
       expect(byId.get(id)).not.toHaveProperty('failureDetail');
     // The run's own record is redacted as it is read too.
     expect((await h.services.runs.get('a')).failureDetail).toBe(
       `${said} {"apiKey":"[REDACTED]"}`,
+    );
+  });
+
+  it('stores what a runner reports a run failed on without a gateway credential it quotes', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    const runId = await h.enqueue(agentId);
+    expect((await claim(h, runner)).map((item) => item.run.id)).toEqual([
+      runId,
+    ]);
+    const response = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/fail`,
+      {
+        runnerKey: runner.key,
+        body: {
+          reason: 'toolAuth',
+          detail:
+            'Reconnect OpenCode Console to continue. Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3',
+        },
+      },
+    );
+    expect(response.status).toBe(200);
+    const stored = await h.database
+      .connection()
+      .repository('agRuns')
+      .findOne({ filter: { id: runId } });
+    expect(stored?.failureDetail).toBe(
+      'Reconnect OpenCode Console to continue. [REDACTED]',
     );
   });
 

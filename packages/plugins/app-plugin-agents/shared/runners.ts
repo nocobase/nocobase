@@ -294,7 +294,7 @@ export interface RunnerRecentRun {
   readonly subjectLabel?: string | null;
   readonly failureReason?: string | null;
   /**
-   * What a failed run's tool said (`Run.failureDetail`, redacted); absent for other runs and when the viewer may not
+   * What a failed run's tool said, as one redacted line of at most 300 characters (`failureDetailText`); absent for other runs and when the viewer may not
    * see what it worked on, since the text can quote it.
    */
   readonly failureDetail?: string | null;

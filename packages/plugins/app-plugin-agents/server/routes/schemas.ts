@@ -2323,7 +2323,7 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .nullable()
       .optional()
       .describe(
-        'What the tool said when the run failed, redacted; only for failed runs whose task or conversation the viewer can see.',
+        'What the tool said when the run failed: one redacted line of at most 300 characters; only for failed runs whose task or conversation the viewer can see.',
       ),
     id: z.string(),
     title: z.string(),
