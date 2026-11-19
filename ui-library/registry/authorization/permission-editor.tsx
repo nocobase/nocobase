@@ -174,7 +174,7 @@ const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
 
 const TAB_TRIGGER =
-  'h-auto min-w-0 flex-col gap-0 px-1 py-1 text-center leading-tight whitespace-normal @min-[44rem]/permissions:h-[calc(100%-1px)] @min-[44rem]/permissions:flex-none @min-[44rem]/permissions:flex-row @min-[44rem]/permissions:gap-1.5 @min-[44rem]/permissions:py-0.5 @min-[44rem]/permissions:whitespace-nowrap';
+  'min-w-0 flex-col gap-0 px-1 py-1 text-center leading-tight whitespace-normal @max-[44rem]/permissions:!h-auto @min-[44rem]/permissions:flex-none @min-[44rem]/permissions:flex-row @min-[44rem]/permissions:gap-1.5 @min-[44rem]/permissions:py-0.5 @min-[44rem]/permissions:whitespace-nowrap';
 
 const DEFAULT_LABELS: PermissionEditorLabels = {
   menusTab: 'Menus',
