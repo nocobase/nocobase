@@ -911,6 +911,96 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(mail.previewSyncFolders).not.toHaveBeenCalled();
   });
 
+  it('ignores a deletion count that arrives after the dialog was closed, also once it is reopened', async () => {
+    const answers: ((value: { removedMessageCount: number }) => void)[] = [];
+    mail.previewSyncFolders.mockImplementation(
+      () =>
+        new Promise<{ removedMessageCount: number }>((resolve) =>
+          answers.push(resolve),
+        ),
+    );
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    let dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(answers).toHaveLength(1));
+    // The choice changes and the dialog closes before the count arrives.
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sent' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    // Reopened, the owner narrows again; the first opening's count arrives meanwhile and is ignored.
+    fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+    dialog = await screen.findByRole('dialog', { name: 'Confirm sync scope' });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await act(async () => answers[0]({ removedMessageCount: 0 }));
+    expect(mail.previewSyncFolders).toHaveBeenCalledTimes(2);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.startSync).not.toHaveBeenCalled();
+
+    // The current opening still gets its own count.
+    await act(async () => answers[1]({ removedMessageCount: 5 }));
+    expect(
+      await within(dialog).findByText(/^This change deletes 5 local messages/),
+    ).toBeVisible();
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+  });
+
+  it('starts no sync when the scope is switched back during a preview and the dialog is closed', async () => {
+    let answer!: (value: { removedMessageCount: number }) => void;
+    mail.previewSyncFolders.mockImplementation(
+      () =>
+        new Promise<{ removedMessageCount: number }>(
+          (resolve) => (answer = resolve),
+        ),
+    );
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(mail.previewSyncFolders).toHaveBeenCalled());
+    // Back to the saved scope, which would start an ordinary sync, then closed.
+    fireEvent.click(
+      within(dialog).getByRole('radio', { name: /^Entire mailbox/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await act(async () => answer({ removedMessageCount: 0 }));
+
+    expect(mail.previewSyncFolders).toHaveBeenCalledTimes(1);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.startSync).not.toHaveBeenCalled();
+  });
+
   it('previews again when the choice changes while a deletion count is on its way', async () => {
     let answer!: (value: { removedMessageCount: number }) => void;
     mail.previewSyncFolders

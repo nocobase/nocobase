@@ -204,13 +204,25 @@ function SyncFoldersForm({
 
   // The scope a submission would save right now; a preview answered for another scope is asked again.
   const target = scope === 'all' ? null : selection;
-  const latestRef = useRef({ target, submit: (): void => {} });
+  const submittable = listed && !empty;
+  const latestRef = useRef({ target, submittable, submit: (): void => {} });
+  // Closing the dialog unmounts this form, and reopening it mounts a new one, so answers to an earlier opening find
+  // this false and neither preview again, save nor start a sync.
+  const openRef = useRef(false);
+  useEffect(() => {
+    openRef.current = true;
+    return () => {
+      openRef.current = false;
+    };
+  }, []);
 
   const save = (syncFolderIds: readonly string[] | null): Promise<void> =>
     // Saving a new scope schedules the initial synchronization under it; no separate sync request follows.
     mail
       .updateAccount({ accountId: account.id, syncFolderIds })
-      .then((saved) => onSaved({ account: saved }));
+      .then((saved) => {
+        if (openRef.current) onSaved({ account: saved });
+      });
 
   const confirmRemoval = (syncFolderIds: readonly string[]): void => {
     setSaving(true);
@@ -230,7 +242,9 @@ function SyncFoldersForm({
           accountId: account.id,
           ...(receivedAfter ? { receivedAfter } : {}),
         })
-        .then((run) => onSaved({ account, run }))
+        .then((run) => {
+          if (openRef.current) onSaved({ account, run });
+        })
         .catch(failure)
         .finally(() => setSaving(false));
       return;
@@ -246,6 +260,7 @@ function SyncFoldersForm({
     void mail
       .previewSyncFolders(account.id, syncFolderIds)
       .then(async ({ removedMessageCount }) => {
+        if (!openRef.current) return;
         const now = latestRef.current.target;
         if (now === null || !sameFolders(syncFolderIds, now)) {
           stale = true;
@@ -259,13 +274,15 @@ function SyncFoldersForm({
       })
       .catch(failure)
       .finally(() => {
+        if (!openRef.current) return;
         setSaving(false);
-        // The choice changed while the preview was on its way; preview the current choice instead.
-        if (stale) latestRef.current.submit();
+        // The choice changed while the preview was on its way; preview the current choice instead, if it can be
+        // submitted at all.
+        if (stale && latestRef.current.submittable) latestRef.current.submit();
       });
   };
   useEffect(() => {
-    latestRef.current = { target, submit };
+    latestRef.current = { target, submittable, submit };
   });
 
   // A listing that stopped part way is started again; the dialog then waits for it as before.
