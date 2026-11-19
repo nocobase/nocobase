@@ -293,6 +293,11 @@ export interface RunnerHeldItem {
 export interface RunnerRecentRun {
   readonly subjectLabel?: string | null;
   readonly failureReason?: string | null;
+  /**
+   * What a failed run's tool said (`Run.failureDetail`, redacted); absent for other runs and when the viewer may not
+   * see what it worked on, since the text can quote it.
+   */
+  readonly failureDetail?: string | null;
   readonly id: string;
   /** The agent that ran. */
   readonly title: string;

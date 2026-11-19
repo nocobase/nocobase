@@ -116,6 +116,60 @@ describe('runner history pagination', () => {
     });
   });
 
+  it('shows what a failed run said only for runs whose subject the viewer can see', async () => {
+    h = await createHarness();
+    const { runnerId } = await h.registerRunner();
+    const repo = h.database.connection().repository('agRuns');
+    const run = (
+      id: string,
+      values: Record<string, unknown>,
+    ): Promise<unknown> =>
+      repo.createOne({
+        values: {
+          id,
+          agentId: 'agent',
+          runnerId,
+          subjectKind: 'sample',
+          subjectId: '1',
+          threadScope: 'main',
+          actorUserId: 'owner',
+          startedAt: new Date(`2026-10-27T10:00:0${id.length}Z`),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...values,
+        },
+      });
+    const said = 'provider.auth: Reconnect OpenCode Console to continue.';
+    await run('a', {
+      status: 'failed',
+      failureReason: 'toolAuth',
+      failureDetail: said,
+    });
+    // Someone else's conversation: its runner run is listed, its words are not.
+    await run('bb', {
+      status: 'failed',
+      failureReason: 'toolAuth',
+      failureDetail: 'Their prompt quoted here',
+      subjectKind: 'conversation',
+      subjectId: 'theirs',
+    });
+    await run('ccc', { status: 'completed', failureDetail: 'not a failure' });
+    const response = await h.request(
+      'GET',
+      `/agents/runners/${runnerId}/runs`,
+      { user: 'owner' },
+    );
+    const byId = new Map(
+      response.body.data.map((item: { id: string }) => [item.id, item]),
+    );
+    expect(byId.get('a')).toMatchObject({
+      failureReason: 'toolAuth',
+      failureDetail: said,
+    });
+    expect(byId.get('bb')).not.toHaveProperty('failureDetail');
+    expect(byId.get('ccc')).not.toHaveProperty('failureDetail');
+  });
+
   it.each([20, 21, 45])(
     'reports the exact tab count and continuation at the %i-row boundary',
     async (count) => {

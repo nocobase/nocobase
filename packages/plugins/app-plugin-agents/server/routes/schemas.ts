@@ -2282,6 +2282,13 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .nullable()
       .optional()
       .describe('Terminal failure classification, including toolQuota.'),
+    failureDetail: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'What the tool said when the run failed, redacted; only for failed runs whose task or conversation the viewer can see.',
+      ),
     id: z.string(),
     title: z.string(),
     status: RunStatusSchema,

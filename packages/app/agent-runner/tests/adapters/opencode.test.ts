@@ -761,6 +761,19 @@ describe('classifyOpencodeFailure', () => {
   ] as const)('%j -> %s', (signal, reason) => {
     expect(classifyOpencodeFailure(signal).reason).toBe(reason);
   });
+
+  it("keeps the tool's own words with a sign-in failure", () => {
+    const failure = classifyOpencodeFailure({
+      errorType: 'provider.auth',
+      error: 'Reconnect OpenCode Console to continue.',
+      details: ['opencode: provider opencode rejected the request'],
+    });
+    expect(failure).toEqual({
+      reason: 'toolAuth',
+      message:
+        'Reconnect OpenCode Console to continue.; opencode: provider opencode rejected the request',
+    });
+  });
 });
 
 describe('parseEventStream', () => {

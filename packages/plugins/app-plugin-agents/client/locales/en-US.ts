@@ -191,6 +191,7 @@ const pages = {
       title: 'Edit {{name}}',
       enabled: 'Enabled',
       done: '{{name}} saved',
+      model: 'Model',
     },
     available: {
       open: 'Add agent',

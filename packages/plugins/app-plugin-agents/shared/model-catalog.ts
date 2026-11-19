@@ -132,8 +132,11 @@ export const MODEL_CATALOG: readonly CatalogModel[] = [
   },
 ];
 
-/** Whether a tool names models `provider/model`. */
-function providerQualified(tool: AgentTool): boolean {
+/**
+ * Whether a tool names models `provider/model` (OpenCode, Pi). The same model can be reached through two providers
+ * (`opencode/qwen3.8-flash` and `my-lan-gateway/qwen3.8-flash`) with different credentials, so labels keep the provider.
+ */
+export function providerQualified(tool: AgentTool): boolean {
   return tool === 'opencode' || tool === 'pi';
 }
 
@@ -180,20 +183,15 @@ export function catalogEntry(
   return catalogById(slash > 0 ? id.slice(slash + 1) : id);
 }
 
-/** How names show a tool's model: the catalog's label, else its id without the provider. */
+/**
+ * How names show a tool's model: for OpenCode and Pi its whole normalized id with the provider
+ * (`my-lan-gateway/qwen3.8-flash`), so two providers' copies of one model stay apart; for the others the catalog's
+ * label, else its id.
+ */
 export function modelLabel(tool: AgentTool, model: string): string {
   if (!isNativeTool(tool)) return model;
-  const known = catalogEntry(tool, model);
-  if (known) return known.label;
-  const id = normalizeModel(tool, model);
-  const slash = id.lastIndexOf('/');
-  const label = slash >= 0 ? id.slice(slash + 1) : id;
-  if (label.startsWith('gemini-'))
-    return label
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  return label;
+  if (providerQualified(tool)) return normalizeModel(tool, model);
+  return catalogEntry(tool, model)?.label ?? normalizeModel(tool, model);
 }
 
 /**
@@ -220,8 +218,10 @@ export function agentNameOf(
   displayModel?: string,
 ): string {
   if (!model) return TOOL_DISPLAY_NAMES[tool] ?? tool;
+  // A tool's own display name drops the provider (OpenCode lists `qwen3.8-flash` under each provider), so it names
+  // only the agents of single-provider tools.
   const label = sanitizeAgentNamePart(
-    displayModel && displayModel !== model
+    displayModel && displayModel !== model && !providerQualified(tool)
       ? displayModel
       : modelLabel(tool, model),
   );

@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { Fragment, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 import { useChatPanel } from '../../chat/provider.js';
 import { agentsKeys } from '../../api/keys.js';
@@ -11,6 +11,7 @@ import {
   compactDateTime,
 } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
+import { failureDetailText } from '../../../shared/runs.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { TONE_CLASS } from '../../components/ag-tag-tones.js';
 import { Badge } from '../../components/ui/badge.js';
@@ -99,8 +100,11 @@ export function RunnerRuns({
                 </TableCell>
               </TableRow>
             ) : null}
-            {page.data.map((run) => (
-              <TableRow key={run.id}>
+            {page.data.map((run) => {
+              const detail = failureDetailText(run.failureDetail);
+              return (
+              <Fragment key={run.id}>
+              <TableRow className={detail ? 'border-b-0' : undefined}>
                 <TableCell
                   className='truncate'
                   title={run.subjectLabel ?? undefined}
@@ -156,7 +160,27 @@ export function RunnerRuns({
                   {durationText(run.startedAt, run.finishedAt) ?? '—'}
                 </TableCell>
               </TableRow>
-            ))}
+              {detail ? (
+                // What the tool said, so a classification such as "not signed in" shows its real cause.
+                <TableRow className='hover:bg-transparent'>
+                  <TableCell colSpan={5} className='pt-0 whitespace-normal'>
+                    <details
+                      className='min-w-0 text-xs text-muted-foreground'
+                      data-testid='runner-run-failure-detail'
+                    >
+                      <summary className='cursor-pointer truncate'>
+                        {detail.split('\n')[0]}
+                      </summary>
+                      <p className='max-h-48 overflow-auto pt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]'>
+                        {detail}
+                      </p>
+                    </details>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

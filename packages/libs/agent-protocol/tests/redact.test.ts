@@ -109,6 +109,31 @@ describe('redactPatterns', () => {
       `//registry/:_password = "${REDACTED}"`,
     ],
     ['a Slack token', 'xoxb-123456789012-abcdefABCDEF', REDACTED],
+    [
+      'a gateway key in a JSON error',
+      '{"provider":"my-lan-gateway","apiKey":"lan-9f8e7d6c5b4a"}',
+      `{"provider":"my-lan-gateway","apiKey":"${REDACTED}"}`,
+    ],
+    [
+      'a labelled token assignment',
+      'MY_GATEWAY_TOKEN=abcd1234efgh failed',
+      `MY_GATEWAY_TOKEN=${REDACTED} failed`,
+    ],
+    [
+      'a token parameter in text',
+      'request token=abcd1234efgh rejected',
+      `request token=${REDACTED} rejected`,
+    ],
+    [
+      'a YAML password',
+      'password: hunter2hunter2',
+      `password: ${REDACTED}`,
+    ],
+    [
+      'a quoted client secret',
+      "client_secret = 'Zq81mN0pL4kT'",
+      `client_secret = '${REDACTED}'`,
+    ],
   ])('redacts %s', (_name, input, expected) => {
     expect(redactPatterns(input)).toBe(expected);
   });
@@ -134,6 +159,12 @@ describe('redactPatterns', () => {
     [
       'code that mentions keys',
       'const apiKey = process.env.API_KEY; // set the bearer header',
+    ],
+    ['token counts', 'max_tokens: 4096, tokens: 12345678, "tokens":{"input":123456789}'],
+    ['a short labelled value', 'token: expired'],
+    [
+      'an OpenCode console message',
+      'provider.auth: Reconnect OpenCode Console to continue.',
     ],
   ])('leaves %s alone', (_name, input) => {
     expect(redactPatterns(input)).toBe(input);

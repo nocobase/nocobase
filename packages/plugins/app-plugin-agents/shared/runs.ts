@@ -400,6 +400,25 @@ export interface RunActivity {
 
 export const RUN_ACTIVITY_TEXT_MAX = 200;
 
+/** How much of a failed run's detail is shown; the record keeps up to 10,000 characters. */
+export const FAILURE_DETAIL_TEXT_MAX = 2_000;
+
+/**
+ * A failed run's detail as people read it: what the tool itself said (OpenCode's "Reconnect OpenCode Console to
+ * continue."), already redacted by the runner and the server, without control characters other than line breaks and
+ * tabs, and cut to `FAILURE_DETAIL_TEXT_MAX` characters. Null when there is nothing to show.
+ */
+export function failureDetailText(
+  detail: string | null | undefined,
+): string | null {
+  // eslint-disable-next-line no-control-regex -- terminal escapes and other control characters a tool's stderr carries.
+  const text = (detail ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/gu, '').trim();
+  if (text === '') return null;
+  return text.length > FAILURE_DETAIL_TEXT_MAX
+    ? `${text.slice(0, FAILURE_DETAIL_TEXT_MAX).trimEnd()}…`
+    : text;
+}
+
 /** An open run with what a board of work shows about it. */
 export interface WorkloadRun extends Run {
   /** The newest input's `payload.trigger`, what the subject says woke the agent; null without one. */

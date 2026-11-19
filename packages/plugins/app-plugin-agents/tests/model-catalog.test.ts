@@ -35,10 +35,37 @@ describe('the model catalog', () => {
     expect(agentNameOf('claude', 'claude-opus-5-5')).toBe('Claude · Opus 5.5');
     expect(agentNameOf('codex', 'gpt-6.1-sol')).toBe('Codex · GPT-6.1 Sol');
     expect(agentNameOf('opencode', 'openai/gpt-6-astra')).toBe(
-      'OpenCode · GPT-6 Astra',
+      'OpenCode · openai/gpt-6-astra',
     );
-    expect(agentNameOf('pi', 'qwen/qwen3-coder')).toBe('Pi · qwen3-coder');
-    expect(modelLabel('opencode', 'moonshotai/kimi-k2')).toBe('kimi-k2');
+    expect(agentNameOf('pi', 'qwen/qwen3-coder')).toBe('Pi · qwen/qwen3-coder');
+    expect(modelLabel('opencode', 'moonshotai/kimi-k2')).toBe(
+      'moonshotai/kimi-k2',
+    );
+  });
+
+  it('keeps the provider apart for one model reached through two providers', () => {
+    const models = ['opencode/qwen3.8-flash', 'my-lan-gateway/qwen3.8-flash'];
+    expect(models.map((model) => modelLabel('opencode', model))).toEqual(
+      models,
+    );
+    expect(models.map((model) => agentNameOf('opencode', model))).toEqual([
+      'OpenCode · opencode/qwen3.8-flash',
+      'OpenCode · my-lan-gateway/qwen3.8-flash',
+    ]);
+    // OpenCode's own name for the model drops the provider, so it does not name the agent.
+    expect(
+      agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash', 'Qwen3.8 Flash'),
+    ).toBe('OpenCode · my-lan-gateway/qwen3.8-flash');
+    expect(modelLabel('pi', 'anthropic/claude-opus-5-5-20261001')).toBe(
+      'anthropic/claude-opus-5-5',
+    );
+  });
+
+  it('keeps single-provider tools named by the catalog or the tool', () => {
+    expect(modelLabel('claude', 'claude-opus-5-5')).toBe('Opus 5.5');
+    expect(modelLabel('codex', 'gpt-6-astra')).toBe('GPT-6 Astra');
+    expect(modelLabel('codex', 'gpt-unknown')).toBe('gpt-unknown');
+    expect(agentNameOf('codex', 'gpt-x', 'GPT X')).toBe('Codex · GPT X');
   });
 
   it('suggests what a known model is good at, in English and Chinese', () => {
@@ -52,8 +79,8 @@ describe('the model catalog', () => {
     expect(catalogEntry('claude', 'claude-unknown')).toBeUndefined();
   });
 });
-it('uses readable Gemini display names without changing model identity', () => {
-  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe('Gemini 3.1 Pro');
+it('shows a provider-qualified Gemini model by its whole id', () => {
+  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe('google/gemini-3.1-pro');
 });
 
 it('keeps ACP aliases, provider paths and dated ids as distinct opaque identities', () => {

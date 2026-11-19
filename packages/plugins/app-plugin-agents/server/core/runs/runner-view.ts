@@ -220,6 +220,14 @@ export function createRunnerView(deps: {
       path: pathOf(run, viewerUserId),
     };
   };
+  /** A failed run's detail, for a viewer who may see what it worked on: the text can quote the task or conversation. */
+  const failureDetailOf = (
+    run: Run,
+    view: { readonly path: string | null },
+  ): { failureDetail?: string | null } =>
+    run.status === 'failed' && view.path !== null
+      ? { failureDetail: run.failureDetail }
+      : {};
   const recentCount = (runnerId: string): Promise<number> =>
     runsRepo(deps.tx.read()).count({ filter: { runnerId } });
   return {
@@ -327,16 +335,25 @@ export function createRunnerView(deps: {
       const labels = await subjectLabels(runs, viewerUserId);
       return {
         meta: { nextCursor, total: await recentCount(runner.id) },
-        data: runs.map((run) => ({
-          ...subjectView(run, viewerUserId, labels, conversationLabel),
-          failureReason: run.failureReason,
+        data: runs.map((run) => {
+          const view = subjectView(
+            run,
+            viewerUserId,
+            labels,
+            conversationLabel,
+          );
+          return {
+            ...view,
+            ...failureDetailOf(run, view),
+            failureReason: run.failureReason,
           id: run.id,
           title: names.get(run.agentId) ?? run.agentId,
           status: run.status,
           startedAt: run.startedAt ?? run.dispatchedAt,
           finishedAt: run.finishedAt,
-          createdAt: run.createdAt,
-        })),
+            createdAt: run.createdAt,
+          };
+        }),
       };
     },
   };

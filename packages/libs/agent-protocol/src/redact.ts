@@ -9,8 +9,8 @@
  *   key, API keys among its variables), each at least `MIN_SECRET_LENGTH` characters, also in their JSON-escaped form;
  * - common secret patterns (`SECRET_PATTERNS`): this protocol's own credentials, GitHub, npm, Slack and Google tokens,
  *   `sk-…` API keys, AWS access keys and labelled secret keys, private key blocks, JSON Web Tokens, `Bearer` and
- *   `Basic` credentials, `x-api-key` values, passwords in URLs (`https://user:password@host`, `?password=`) and
- *   `password=` assignments.
+ *   `Basic` credentials, `x-api-key` values, passwords in URLs (`https://user:password@host`, `?password=`),
+ *   `password=` assignments and other labelled secrets (`"apiKey": "…"`, `token=…`).
  *
  * It changes only strings: `redactValue` copies a JSON value with every string inside it redacted, so an event that was
  * valid JSON stays valid JSON. Each pattern needs a recognisable shape (a prefix, a label, or a length with a digit), so
@@ -140,6 +140,16 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   {
     name: 'password assignment',
     pattern: /\b((?:password|passwd)=)(?!\[REDACTED\])[^\s&"'#;,<>]+/giu,
+    replacement: `$1${REDACTED}`,
+  },
+  {
+    // A labelled secret of no recognisable shape, such as a private gateway's key in a tool's error or config:
+    // `"apiKey":"…"`, `api_key: …`, `MY_GATEWAY_TOKEN=…`. The label keeps; a value of 8 or more characters goes.
+    // `=` with spaces around an unquoted value is code (`apiKey = process.env.API_KEY`), and `max_tokens` or
+    // `tokens` are other labels, so both stay.
+    name: 'labelled secret',
+    pattern:
+      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?(?:\s*:\s*["']?|=["']?|\s*=\s*["']))(?!\[REDACTED\])[^\s"',;}&<>]{8,}/giu,
     replacement: `$1${REDACTED}`,
   },
 ];
