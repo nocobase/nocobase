@@ -15,6 +15,7 @@ import React from 'react';
 import { FormDraftRepository, type FormDraftValuePatch, type FormDraftValues } from './formDraftRepository';
 import { NAMESPACE, tExpr } from './locale';
 
+const UNAVAILABLE_DRAFT_MESSAGE = 'Drafts cannot be saved this time. You can still fill out and submit the form.';
 const RESTORED_DRAFT_MESSAGE =
   'This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.';
 const SAVED_DRAFT_MESSAGE =
@@ -183,11 +184,22 @@ FormBlockModel.registerFlow({
           draftCtx.draftRepository.disable();
           return;
         }
-        await draftCtx.draftRepository.connect();
-        const draft = await draftCtx.draftRepository.get();
+        const repository = draftCtx.draftRepository;
+        try {
+          await repository.connect();
+        } catch {
+          repository.disable();
+          const beforeContent = draftCtx.model.decoratorProps?.beforeContent;
+          if (React.isValidElement(beforeContent) && beforeContent.type === DraftAlert) {
+            setBeforeContent(draftCtx.model, null);
+          }
+          draftCtx.message.warning(draftCtx.t(UNAVAILABLE_DRAFT_MESSAGE, { ns: NAMESPACE }));
+          return;
+        }
+        const draft = await repository.get();
         const patches = draft?.patches?.length ? draft.patches : undefined;
         if (!patches?.length && (!draft?.values || Object.keys(draft.values).length === 0)) {
-          await draftCtx.draftRepository.create();
+          await repository.create();
           return;
         }
         await draftCtx.setFormValues(patches ?? buildDraftValuePatches(draft.values), {
