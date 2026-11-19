@@ -994,6 +994,63 @@ describe('role permission workspace', () => {
     ).toBeDefined();
   });
 
+  it('saves an Edit scope of its own unchanged when View widens', async () => {
+    const { workspace: ws } = await workspace();
+    const contracts = (records: Record<string, unknown>): PermissionGrant[] => [
+      {
+        resource: { type: 'composite', id: 'contracts' },
+        actions: [
+          {
+            action: 'view',
+            policy: { type: 'composite', scopes: { records: 'department' } },
+          },
+          {
+            action: 'update',
+            policy: { type: 'composite', scopes: records },
+          },
+        ],
+      },
+    ];
+    const editOf = (grants: readonly PermissionGrant[]) =>
+      grants
+        .find((grant) => grant.resource.id === 'contracts')
+        ?.actions.find((entry) => entry.action === 'update')?.policy?.scopes;
+    // Edit keeps a scope of its own: one View does not hold provably, and one the catalog does not declare.
+    for (const records of [
+      { records: 'own' },
+      {
+        records: {
+          type: 'recordAccess',
+          key: 'legacyLimited',
+          params: { depth: 1 },
+        },
+      },
+    ]) {
+      const existing = contracts(records);
+      const read = draftFromGrants(existing, ws);
+      const widened = setScopeValue(
+        ws.objects,
+        read.draft.grants,
+        contract('view'),
+        'records',
+        'allRecords',
+      );
+      expect(widened.notices).toEqual([]);
+      const saved = grantsFromDraft(
+        value(widened.grants),
+        read.filters,
+        existing,
+        ws,
+      );
+      expect(editOf(saved)).toEqual(records);
+      expect(
+        saved
+          .find((grant) => grant.resource.id === 'contracts')
+          ?.actions.find((entry) => entry.action === 'view')?.policy?.scopes,
+      ).toEqual({ records: 'allRecords' });
+    }
+  });
+
   it('keeps stored scope keys the catalog does not declare', async () => {
     const { workspace: ws } = await workspace();
     const original: PermissionGrant[] = [

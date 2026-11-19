@@ -705,8 +705,8 @@ export function applyQuickSet(
 }
 
 /**
- * Pick a scope value. Undefined on a follower means "Same as view". Narrowing View sends followers that were wider
- * than the new View scope back to "Same as view" and reports them.
+ * Pick a scope value. Undefined on a follower means "Same as view". Narrowing View sends followers that are not
+ * provably narrower than the new View scope back to "Same as view" and reports them; widening it keeps every follower.
  */
 export function setScopeValue(
   objects: readonly PermissionObject[],
@@ -740,6 +740,18 @@ export function setScopeValue(
     ...grants,
     [actionId]: { ...grant, scopes },
   };
+  // Widening a scope, as its declared order or pairs prove, cannot push any follower past it: each keeps its own value,
+  // one the scope does not list included. Only a change not provably wider caps the followers.
+  if (slot) {
+    const before = ownScopeValue(object, grants, action, slot, objects);
+    const after = ownScopeValue(object, next, action, slot, objects);
+    if (
+      before !== undefined &&
+      after !== undefined &&
+      (before === after || isNarrower(slot, before, after))
+    )
+      return { grants: next, notices: [] };
+  }
   return resetWiderFollowers(
     objects,
     next,
