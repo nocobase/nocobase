@@ -77,12 +77,18 @@ const partialPrefixes = [
       ].flatMap((key) => ['?' + key + '=', '&' + key + '=']),
       'aws_secret_access_key = ',
       'secret_access_key = ',
-      // The labels of `labelled secret` in redact.ts, in each spelling it accepts.
-      ...LABELLED_SECRETS,
     ].flatMap((prefix) =>
       Array.from({ length: prefix.length - 1 }, (_, i) =>
         prefix.slice(0, i + 1).toLowerCase(),
       ),
+    ),
+  ),
+].sort((a, b) => b.length - a.length);
+/** The unfinished starts of `labelled secret`'s labels; held back only at the start of a word, as the label matches. */
+const labelPrefixes = [
+  ...new Set(
+    LABELLED_SECRETS.flatMap((label) =>
+      Array.from({ length: label.length - 1 }, (_, i) => label.slice(0, i + 1)),
     ),
   ),
 ].sort((a, b) => b.length - a.length);
@@ -187,6 +193,15 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
     const lower = text.toLowerCase();
     for (const prefix of partialPrefixes)
       if (lower.endsWith(prefix)) {
+        cut = Math.min(cut, text.length - prefix.length);
+        break;
+      }
+    const before = (left + lower).slice(0, -1);
+    for (const prefix of labelPrefixes)
+      if (
+        lower.endsWith(prefix) &&
+        !/[a-z0-9]/iu.test(before.charAt(before.length - prefix.length))
+      ) {
         cut = Math.min(cut, text.length - prefix.length);
         break;
       }
