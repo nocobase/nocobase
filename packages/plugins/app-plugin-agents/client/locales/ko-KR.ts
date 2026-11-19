@@ -183,6 +183,7 @@ const koKR: LocaleResource<typeof enUS> = {
       title: '{{name}} 편집',
       enabled: '사용',
       done: '{{name}}을(를) 저장했습니다',
+      model: '모델',
     },
     available: {
       open: 'Agent 추가',

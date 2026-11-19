@@ -7,11 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
-import {
-  normalizeModel,
-  providerQualified,
-  TOOL_LABELS,
-} from '../../../shared/model-catalog.js';
+import { providerModelText } from '../../../shared/model-catalog.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -41,19 +37,6 @@ import { Textarea } from '../../components/ui/textarea.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { GoodAtTemplates } from './good-at-templates.js';
-
-/**
- * The whole model id of an agent whose tool reaches one model through several providers (OpenCode, Pi), such as
- * "OpenCode · my-lan-gateway/qwen3.8-flash": its name may predate the provider being shown, or have been edited.
- * Null for any other agent, whose name already says its model.
- */
-export function providerModelText(
-  agent: Pick<AgentView, 'tool' | 'model'>,
-): string | null {
-  if (!agent.tool || !agent.model || !providerQualified(agent.tool))
-    return null;
-  return `${TOOL_LABELS[agent.tool]} · ${normalizeModel(agent.tool, agent.model)}`;
-}
 
 /** The value the effort select holds for the tool's default. */
 const DEFAULT_EFFORT = '__default__';

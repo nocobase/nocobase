@@ -195,6 +195,7 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Modifier {{name}}',
       enabled: 'Activé',
       done: '{{name}} enregistré',
+      model: 'Modèle',
     },
     available: {
       open: 'Ajouter un Agent',

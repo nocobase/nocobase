@@ -1687,6 +1687,12 @@ const conversationAgent = z.object({
   nameText: I18nTextSchema.nullable(),
   avatar: z.string().nullable(),
   archived: z.boolean(),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'The tool and whole model id, such as "OpenCode · my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers.',
+    ),
 });
 
 const availability = z.object({

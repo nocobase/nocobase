@@ -930,6 +930,50 @@ describe('runtimes page', () => {
     within(runs).getByText('runs.status.completed');
   });
 
+  it('shows what a failed run’s tool said under its row, cut to a readable length', async () => {
+    const said = 'Reconnect OpenCode Console to continue.';
+    api.routes['agents/runners/r1/runs'] = () => ({
+      data: [
+        {
+          id: 'failed',
+          title: 'OpenCode · opencode/qwen3.8-flash',
+          subjectLabel: 'Fix login',
+          path: '/samples/1',
+          status: 'failed',
+          failureReason: 'toolAuth',
+          failureDetail: `${said}\u001b[0m\n${'x'.repeat(3000)}`,
+          startedAt: null,
+          finishedAt: null,
+          createdAt: '2026-10-01T08:00:00Z',
+        },
+        {
+          id: 'done',
+          title: 'Coder',
+          subjectLabel: 'Other',
+          path: '/samples/2',
+          status: 'completed',
+          startedAt: null,
+          finishedAt: null,
+          createdAt: '2026-10-01T08:00:00Z',
+        },
+      ],
+      meta: { nextCursor: null, total: 2 },
+    });
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await userEvent.click(
+      within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+    );
+    const table = await within(sheet).findByTestId('runner-runs');
+    const details = within(table).getAllByTestId('runner-run-failure-detail');
+    expect(details).toHaveLength(1);
+    expect(details[0]!.querySelector('summary')).toHaveTextContent(said);
+    const full = details[0]!.querySelector('p')!.textContent!;
+    expect(full.startsWith(`${said}\n`)).toBe(true);
+    expect(full).toHaveLength(2001);
+    expect(full.endsWith('…')).toBe(true);
+  });
+
   it.each([false, true])(
     'uses the native conversation entry (full page: %s) and leaves other conversations unlinked',
     async (fullPage) => {

@@ -192,6 +192,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       title: 'Изменить {{name}}',
       enabled: 'Включён',
       done: '{{name}} сохранён',
+      model: 'Модель',
     },
     available: {
       open: 'Добавить Agent',

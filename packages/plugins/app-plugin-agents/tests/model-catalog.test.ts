@@ -80,7 +80,9 @@ describe('the model catalog', () => {
   });
 });
 it('shows a provider-qualified Gemini model by its whole id', () => {
-  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe('google/gemini-3.1-pro');
+  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe(
+    'google/gemini-3.1-pro',
+  );
 });
 
 it('keeps ACP aliases, provider paths and dated ids as distinct opaque identities', () => {

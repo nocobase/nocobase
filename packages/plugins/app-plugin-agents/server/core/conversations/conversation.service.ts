@@ -41,6 +41,7 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
+import { providerModelText } from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -477,12 +478,14 @@ export function createConversationService(
   }
 
   function agentRef(id: string, agent: Agent | null): ConversationAgent {
+    const model = agent ? providerModelText(agent) : null;
     return {
       id,
       name: agent?.name ?? null,
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
       archived: agent ? agent.status !== 'enabled' : false,
+      ...(model ? { model } : {}),
     };
   }
 

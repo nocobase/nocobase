@@ -228,6 +228,20 @@ export function agentNameOf(
   return `${TOOL_LABELS[tool]} · ${label || model}`;
 }
 
+/**
+ * The whole model id of an agent whose tool reaches one model through several providers (OpenCode, Pi), such as
+ * "OpenCode · my-lan-gateway/qwen3.8-flash": its name may predate the provider being shown, or have been edited.
+ * Null for any other agent, whose name already says its model.
+ */
+export function providerModelText(agent: {
+  readonly tool: AgentTool | null;
+  readonly model: string | null;
+}): string | null {
+  if (!agent.tool || !agent.model || !providerQualified(agent.tool))
+    return null;
+  return `${TOOL_LABELS[agent.tool]} · ${normalizeModel(agent.tool, agent.model)}`;
+}
+
 /** Whether two ids of one tool's model name the same model. */
 export function sameModel(tool: AgentTool, a: string, b: string): boolean {
   return normalizeModel(tool, a) === normalizeModel(tool, b);

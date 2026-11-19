@@ -37,6 +37,26 @@ describe('historical Runner conversation domain', () => {
         body,
       }),
   });
+  it('names the whole provider model of an OpenCode agent, and no model for a Claude one', async () => {
+    h = await createHarness();
+    const opencode = await h.createAgent({
+      source: 'runner',
+      modelEntries: [
+        { tool: 'opencode', model: 'my-lan-gateway/qwen3.8-flash' },
+      ],
+    });
+    const claude = await h.createAgent({
+      source: 'runner',
+      modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
+    });
+    expect(
+      (await domain().get(ALICE, await newConversation(opencode))).agent.model,
+    ).toBe('OpenCode · my-lan-gateway/qwen3.8-flash');
+    expect(
+      (await domain().get(ALICE, await newConversation(claude))).agent,
+    ).not.toHaveProperty('model');
+  });
+
   it('resolves historical consultation subjects without rewriting the original message and keeps ownership checks', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'Project manager' });

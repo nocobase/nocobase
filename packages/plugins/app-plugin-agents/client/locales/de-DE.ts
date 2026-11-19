@@ -192,6 +192,7 @@ const deDE: LocaleResource<typeof enUS> = {
       title: '{{name}} bearbeiten',
       enabled: 'Aktiviert',
       done: '{{name}} gespeichert',
+      model: 'Modell',
     },
     available: {
       open: 'Agent hinzufügen',

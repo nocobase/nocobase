@@ -31,7 +31,8 @@ import {
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
-import { AgentDialog, providerModelText } from './agent-dialog.js';
+import { AgentDialog } from './agent-dialog.js';
+import { providerModelText } from '../../../shared/model-catalog.js';
 import { AvailableModelsDrawer } from './available-models-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 

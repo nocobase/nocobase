@@ -193,6 +193,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       enabled: 'Habilitado',
       done: '{{name}} salvo',
+      model: 'Modelo',
     },
     available: {
       open: 'Adicionar Agent',

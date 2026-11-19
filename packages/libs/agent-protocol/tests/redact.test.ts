@@ -124,11 +124,7 @@ describe('redactPatterns', () => {
       'request token=abcd1234efgh rejected',
       `request token=${REDACTED} rejected`,
     ],
-    [
-      'a YAML password',
-      'password: hunter2hunter2',
-      `password: ${REDACTED}`,
-    ],
+    ['a YAML password', 'password: hunter2hunter2', `password: ${REDACTED}`],
     [
       'a quoted client secret',
       "client_secret = 'Zq81mN0pL4kT'",
@@ -160,7 +156,10 @@ describe('redactPatterns', () => {
       'code that mentions keys',
       'const apiKey = process.env.API_KEY; // set the bearer header',
     ],
-    ['token counts', 'max_tokens: 4096, tokens: 12345678, "tokens":{"input":123456789}'],
+    [
+      'token counts',
+      'max_tokens: 4096, tokens: 12345678, "tokens":{"input":123456789}',
+    ],
     ['a short labelled value', 'token: expired'],
     [
       'an OpenCode console message',

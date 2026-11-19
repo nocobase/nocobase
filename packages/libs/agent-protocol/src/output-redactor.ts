@@ -3,6 +3,25 @@ import { REDACTED, SECRET_PATTERNS, type Redactor } from './redact.js';
 /** Only the conversation preview uses this bounded scanner; legacy log redaction is unchanged. */
 export const MAX_OUTPUT_HELD = 2048;
 const STEP = 256;
+const LABELLED_SECRETS = [
+  ...['api', 'access', 'refresh', 'auth', 'client', 'secret'].flatMap(
+    (head) => {
+      const tail =
+        head === 'api'
+          ? 'key'
+          : head === 'client'
+            ? 'secret'
+            : head === 'secret'
+              ? 'key'
+              : 'token';
+      return ['_', '-', ''].map((sep) => head + sep + tail);
+    },
+  ),
+  'secret',
+  'token',
+  'password',
+  'passwd',
+];
 const prefixes = [
   'fgk_',
   'fgr_',
@@ -58,6 +77,8 @@ const partialPrefixes = [
       ].flatMap((key) => ['?' + key + '=', '&' + key + '=']),
       'aws_secret_access_key = ',
       'secret_access_key = ',
+      // The labels of `labelled secret` in redact.ts, in each spelling it accepts.
+      ...LABELLED_SECRETS,
     ].flatMap((prefix) =>
       Array.from({ length: prefix.length - 1 }, (_, i) =>
         prefix.slice(0, i + 1).toLowerCase(),
@@ -68,7 +89,7 @@ const partialPrefixes = [
 const token =
   /\b(?:fg(?:k|r|o|reg|dl)_[A-Za-z0-9_-]*|gh[pousr]_[A-Za-z0-9]*|github_pat_[A-Za-z0-9_]*|npm_[A-Za-z0-9]*|xox[abposr]-[A-Za-z0-9-]*|AIza[A-Za-z0-9_-]*|sk-[A-Za-z0-9_-]*|[rs]k_(?:live|test)_[A-Za-z0-9]*|(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]*|eyJ[A-Za-z0-9_.-]*)$/u;
 const label =
-  /\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu;
+  /(?:\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)|(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd))["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu;
 const password =
   /(?:\b(?:password|passwd)=|[?&](?:password|passwd|pwd|access_token|api_key|apikey|client_secret|secret|token)=)[^&\s"'#<>]*$/iu;
 const url = /(?:\b[a-z][a-z0-9+.-]*)?:\/\/[^\s/?#@'"<>]*$/iu;

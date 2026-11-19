@@ -195,6 +195,15 @@ const tokenFamilies = [
     values: ['password=secret', '?token=secret', 'password='],
   },
   {
+    name: 'labelled secret',
+    values: [
+      '{"apiKey":"lan-9f8e7d6c5b4a"}',
+      'MY_GATEWAY_TOKEN=abcd1234efgh',
+      'password: hunter2hunter2',
+      'max_tokens: 40960',
+    ],
+  },
+  {
     name: 'private key',
     values: ['-----BEGIN PRIVATE KEY-----\nBODY\n-----END PRIVATE KEY-----'],
   },

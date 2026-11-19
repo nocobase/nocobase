@@ -192,6 +192,11 @@ export interface ConversationAgent {
   readonly nameText: I18nText | null;
   readonly avatar: string | null;
   readonly archived: boolean;
+  /**
+   * Its tool and whole model id (`providerModelText`), such as "OpenCode · my-lan-gateway/qwen3.8-flash", for a tool
+   * that reaches one model through several providers; absent for the others, whose name already says the model.
+   */
+  readonly model?: string;
 }
 
 /** Why a conversation's agent cannot answer now. */

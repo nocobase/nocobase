@@ -103,82 +103,82 @@ export function RunnerRuns({
             {page.data.map((run) => {
               const detail = failureDetailText(run.failureDetail);
               return (
-              <Fragment key={run.id}>
-              <TableRow className={detail ? 'border-b-0' : undefined}>
-                <TableCell
-                  className='truncate'
-                  title={run.subjectLabel ?? undefined}
-                >
-                  {run.path ? (
-                    <Link
-                      to={
-                        run.path.startsWith('?chat=') && conversationPath
-                          ? conversationPath(
-                              new URLSearchParams(run.path).get('chat')!,
-                            )
-                          : run.path
-                      }
-                      onClick={onNavigate}
-                      className='hover:underline'
+                <Fragment key={run.id}>
+                  <TableRow className={detail ? 'border-b-0' : undefined}>
+                    <TableCell
+                      className='truncate'
+                      title={run.subjectLabel ?? undefined}
                     >
-                      {run.subjectLabel ?? run.title}
-                    </Link>
-                  ) : (
-                    (run.subjectLabel ?? '—')
-                  )}
-                </TableCell>
-                <TableCell className='truncate' title={run.title}>
-                  {run.title}
-                </TableCell>
-                <TableCell>
-                  <div className='flex flex-wrap items-center gap-1.5'>
-                    <Badge
-                      variant='secondary'
-                      className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
+                      {run.path ? (
+                        <Link
+                          to={
+                            run.path.startsWith('?chat=') && conversationPath
+                              ? conversationPath(
+                                  new URLSearchParams(run.path).get('chat')!,
+                                )
+                              : run.path
+                          }
+                          onClick={onNavigate}
+                          className='hover:underline'
+                        >
+                          {run.subjectLabel ?? run.title}
+                        </Link>
+                      ) : (
+                        (run.subjectLabel ?? '—')
+                      )}
+                    </TableCell>
+                    <TableCell className='truncate' title={run.title}>
+                      {run.title}
+                    </TableCell>
+                    <TableCell>
+                      <div className='flex flex-wrap items-center gap-1.5'>
+                        <Badge
+                          variant='secondary'
+                          className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
+                        >
+                          <span
+                            aria-hidden='true'
+                            className='size-1.5 rounded-full bg-current'
+                          />
+                          {t(`runs.status.${run.status}`)}
+                        </Badge>
+                        {run.failureReason === 'toolQuota' ? (
+                          <QuotaLabel usage warning />
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell
+                      className='whitespace-nowrap text-xs text-muted-foreground'
+                      title={format.dateTime(run.startedAt ?? run.createdAt)}
                     >
-                      <span
-                        aria-hidden='true'
-                        className='size-1.5 rounded-full bg-current'
-                      />
-                      {t(`runs.status.${run.status}`)}
-                    </Badge>
-                    {run.failureReason === 'toolQuota' ? (
-                      <QuotaLabel usage warning />
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell
-                  className='whitespace-nowrap text-xs text-muted-foreground'
-                  title={format.dateTime(run.startedAt ?? run.createdAt)}
-                >
-                  {compactDateTime(
-                    run.startedAt ?? run.createdAt,
-                    i18n.language,
-                  )}
-                </TableCell>
-                <TableCell className='text-xs tabular-nums'>
-                  {durationText(run.startedAt, run.finishedAt) ?? '—'}
-                </TableCell>
-              </TableRow>
-              {detail ? (
-                // What the tool said, so a classification such as "not signed in" shows its real cause.
-                <TableRow className='hover:bg-transparent'>
-                  <TableCell colSpan={5} className='pt-0 whitespace-normal'>
-                    <details
-                      className='min-w-0 text-xs text-muted-foreground'
-                      data-testid='runner-run-failure-detail'
-                    >
-                      <summary className='cursor-pointer truncate'>
-                        {detail.split('\n')[0]}
-                      </summary>
-                      <p className='max-h-48 overflow-auto pt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]'>
-                        {detail}
-                      </p>
-                    </details>
-                  </TableCell>
-                </TableRow>
-              ) : null}
-              </Fragment>
+                      {compactDateTime(
+                        run.startedAt ?? run.createdAt,
+                        i18n.language,
+                      )}
+                    </TableCell>
+                    <TableCell className='text-xs tabular-nums'>
+                      {durationText(run.startedAt, run.finishedAt) ?? '—'}
+                    </TableCell>
+                  </TableRow>
+                  {detail ? (
+                    // What the tool said, so a classification such as "not signed in" shows its real cause.
+                    <TableRow className='hover:bg-transparent'>
+                      <TableCell colSpan={5} className='pt-0 whitespace-normal'>
+                        <details
+                          className='min-w-0 text-xs text-muted-foreground'
+                          data-testid='runner-run-failure-detail'
+                        >
+                          <summary className='cursor-pointer truncate'>
+                            {detail.split('\n')[0]}
+                          </summary>
+                          <p className='max-h-48 overflow-auto pt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]'>
+                            {detail}
+                          </p>
+                        </details>
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </Fragment>
               );
             })}
           </TableBody>

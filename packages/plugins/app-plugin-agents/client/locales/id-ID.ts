@@ -187,6 +187,7 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Sunting {{name}}',
       enabled: 'Aktif',
       done: '{{name}} disimpan',
+      model: 'Model',
     },
     available: {
       open: 'Tambahkan Agent',
