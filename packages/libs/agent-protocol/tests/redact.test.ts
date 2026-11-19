@@ -131,6 +131,22 @@ describe('redactPatterns', () => {
       `{"apiKey":"${REDACTED}","model":"qwen"}`,
     ],
     [
+      'a quoted key the text ends inside',
+      'error: {"apiKey":"lan-9f8e,7d6c 5b4a',
+      `error: {"apiKey":"${REDACTED}`,
+    ],
+    [
+      'a quoted x-api-key with a comma',
+      '{"x-api-key": "abc, def123456"}',
+      `{"x-api-key": "${REDACTED}"}`,
+    ],
+    [
+      'a quoted key an earlier version redacted in part',
+      '{"x-api-key": "[REDACTED], def123456", "apiKey": "[REDACTED], rest-of-it"}',
+      `{"x-api-key": "${REDACTED}", "apiKey": "${REDACTED}"}`,
+    ],
+    ['a dotted token', 'token: demo.example123', `token: ${REDACTED}`],
+    [
       'an INI assignment with spaces',
       'api_key = lan9f8e7d6c5b4a',
       `api_key = ${REDACTED}`,
@@ -171,6 +187,10 @@ describe('redactPatterns', () => {
       'max_tokens: 4096, tokens: 12345678, "tokens":{"input":123456789}',
     ],
     ['a short labelled value', 'token: expired'],
+    [
+      'environment references',
+      'key = os.environ["API_KEY"]; t = import.meta.env.VITE_TOKEN',
+    ],
     [
       'a variable as the value',
       'token = $GATEWAY_TOKEN and api_key = ${API_KEY}',

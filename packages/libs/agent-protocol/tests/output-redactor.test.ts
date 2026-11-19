@@ -59,6 +59,28 @@ it('drops an oversized unresolved candidate without unbounded memory or releasin
   expect(short.write('secret-val') + short.end(true)).toBe(REDACTED);
 });
 
+it.each([
+  ['an unclosed quoted key', '{"apiKey":"lan-9f8e,7d6c 5b4a'],
+  ['an unclosed short quoted key', '{"apiKey":"lan-9f'],
+  ['an unquoted key cut short', 'MY_GATEWAY_TOKEN=abc'],
+  ['a quoted x-api-key with a comma', '{"x-api-key": "abc, def123456'],
+])(
+  'never releases %s when the stream stops, in one piece or character by character',
+  (_name, text) => {
+    const value = text.replace(/^.*?[:=]\s*"?/u, '');
+    for (const size of [1, 3, text.length]) {
+      const stream = createOutputRedactor(() => createRedactor());
+      let live = '';
+      for (let at = 0; at < text.length; at += size)
+        live += stream.write(text.slice(at, at + size));
+      const out = live + stream.end(true);
+      expect(out).toContain(REDACTED);
+      expect(out).not.toContain(value);
+      expect(out).not.toContain(value.slice(0, 3));
+    }
+  },
+);
+
 it('preserves surrogate pairs across provider and internal scan boundaries', () => {
   const text = 'a'.repeat(255) + '😀你好🧪';
   for (let cut = 250; cut < text.length; cut++) {
@@ -204,6 +226,9 @@ const tokenFamilies = [
       '{"apiKey":"lan-9f8e, 7d6c 5b4a"}',
       'api_key = lan9f8e7d6c5b4a',
       'const apiKey = process.env.API_KEY;',
+      '{"x-api-key": "abc, def123456"}',
+      'token: demo.example123',
+      '{"apiKey":"lan-9f8e,7d6c 5b4a',
     ],
   },
   {

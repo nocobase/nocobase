@@ -120,8 +120,10 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   {
     name: 'x-api-key value',
     pattern:
-      /\b(x-api-key["']?\s*[:=]\s*["']?)(?!\[REDACTED\])[^\s"',;}]{8,}/giu,
-    replacement: `$1${REDACTED}`,
+      // A quoted value goes whole, up to its closing quote or the end of the line or text, including one an earlier
+      // version cut short at a space or a comma (`"[REDACTED], rest"`).
+      /\b(x-api-key["']?\s*[:=]\s*)(?:(["'])(?:\\.|(?!\2)[^\\\r\n])+(?=\2|[\r\n]|$)|(?!\[REDACTED\])[^\s"',;}]{8,})/giu,
+    replacement: `$1$2${REDACTED}`,
   },
   {
     // `scheme://user:password@host`, or a long token as the user (`https://<token>@github.com`); `git@host:` and
@@ -146,18 +148,20 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   // `"apiKey":"…"`, `api_key = …`, `MY_GATEWAY_TOKEN=…`. The label keeps; a value of 8 or more characters goes.
   // `max_tokens` and `tokens` are other labels and stay.
   {
-    // A quoted value goes whole, up to its closing quote, punctuation and spaces included.
+    // A quoted value goes whole, punctuation and spaces included, up to its closing quote, or to the end of the line or
+    // text when it is cut short there. One an earlier version redacted only in part (`"[REDACTED], rest"`) goes whole too.
     name: 'labelled secret',
     pattern:
-      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*(["']))(?!\[REDACTED\])(?:\\.|(?!\2)[^\\\r\n]){8,}(?=\2)/giu,
+      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*(["']))(?:\\.|(?!\2)[^\\\r\n]){8,}(?=\2|[\r\n]|$)/giu,
     replacement: `$1${REDACTED}`,
   },
   {
-    // An unquoted value, up to a space or a delimiter. A code reference (`apiKey = process.env.API_KEY`,
-    // `token = $TOKEN`) names where the secret is kept rather than the secret, and stays.
+    // An unquoted value, up to a space or a delimiter. A reference to an environment variable
+    // (`apiKey = process.env.API_KEY`, `token = $TOKEN`, `os.environ["KEY"]`) names where the secret is kept rather
+    // than the secret, and stays; any other value, dotted or not (`demo.example123`), goes.
     name: 'labelled secret (unquoted)',
     pattern:
-      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*)(?!["'])(?!\[REDACTED\])(?!(?:[A-Za-z_$][\w$]*\.)+[A-Za-z_$][\w$]*(?![\w$-])|\$\{?[A-Za-z_])[^\s"',;}&<>]{8,}/giu,
+      /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*)(?!["'])(?!\[REDACTED\])(?!(?:process\.env|import\.meta\.env|Deno\.env)\.[A-Za-z_$][\w$]*(?![\w$.-])|os\.(?:environ\b|getenv\()|\$\{?[A-Za-z_])[^\s"',;}&<>]{8,}/giu,
     replacement: `$1${REDACTED}`,
   },
 ];

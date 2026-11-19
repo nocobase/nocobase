@@ -96,6 +96,9 @@ const token =
   /\b(?:fg(?:k|r|o|reg|dl)_[A-Za-z0-9_-]*|gh[pousr]_[A-Za-z0-9]*|github_pat_[A-Za-z0-9_]*|npm_[A-Za-z0-9]*|xox[abposr]-[A-Za-z0-9-]*|AIza[A-Za-z0-9_-]*|sk-[A-Za-z0-9_-]*|[rs]k_(?:live|test)_[A-Za-z0-9]*|(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]*|eyJ[A-Za-z0-9_.-]*)$/u;
 const label =
   /(?:\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)|(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd))["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu;
+/** A labelled secret's value still being written when the stream stops: masked whatever its length. */
+const openLabelValue =
+  /(?<![A-Za-z0-9])((?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*["']?)(?!\[REDACTED\])[^\r\n"']+$/iu;
 /** A labelled secret's quoted value still open: it may hold spaces and punctuation until its closing quote. */
 const quotedLabel =
   /(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])["']?\s*[:=]\s*(["'])(?:\\.|(?!\1)[^\\\r\n])*$/iu;
@@ -277,13 +280,16 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       dropping = undefined;
       keyTail = '';
       if (stopped) return '';
-      if (interrupted)
+      if (interrupted) {
         for (const secret of current().secrets) {
           if (text.length >= 6 && secret.startsWith(text)) {
             text = REDACTED;
             break;
           }
         }
+        // A value cut off after its label may be the start of a secret too short to recognise yet.
+        text = text.replace(openLabelValue, `$1${REDACTED}`);
+      }
       return publish(
         current()
           .text((text.startsWith('://') ? 'x' : left) + text)
