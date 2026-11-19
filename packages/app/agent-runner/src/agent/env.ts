@@ -32,6 +32,8 @@ import {
 } from '../protocol/index.ts';
 import { PNPM_STORE_ENV, pnpmStoreEnv } from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
+import type { PreparedDir } from '../core/checkout.ts';
+import { git } from '../core/git.ts';
 import { PINNED_PNPM_ENV } from './runner-tools.ts';
 import { TRAILERS_ENV } from '../core/git-hooks.ts';
 import {
@@ -102,6 +104,8 @@ export interface BuildEnvOptions {
   pnpmStoreDir?: string;
   /** The runner's hooks directory (git-hooks.ts). */
   hooksDir?: string;
+  /** Origin rewrites scoped to this run's reused worktrees. */
+  worktreeOrigins?: readonly GitConfigEntry[];
   /** The run's repository credentials, through the runner's helper. */
   credentialHelper?: CredentialHelperOptions;
   gitSshCommand?: string;
@@ -117,6 +121,34 @@ export interface BuildEnvOptions {
   };
   /** The runner's own pnpm is on PATH (runner-tools.ts): keep a repository's `packageManager` from replacing it. */
   pinPnpm?: boolean;
+}
+
+type GitConfigEntry = readonly [key: string, value: string];
+
+/**
+ * A linked worktree inherits the cache's origin. Rewrite it for this run's Git in that worktree only, so another
+ * agent still using the same workspace keeps the transport and credentials it started with.
+ */
+export async function worktreeOriginConfig(
+  dirs: readonly PreparedDir[],
+  tmpDir: string,
+): Promise<GitConfigEntry[]> {
+  const config: GitConfigEntry[] = [];
+  for (const { repo } of dirs) {
+    if (repo?.cacheUrl === undefined) continue;
+    const file = path.join(tmpDir, `git-origin-${config.length}.config`);
+    await git(
+      ['config', '--file', file, `url.${repo.url}.insteadOf`, repo.cacheUrl],
+      repo.cache,
+    );
+    // gitdir conditions use Git's glob syntax, even when the directory must match literally.
+    const gitDir = repo.gitDir
+      .split(path.sep)
+      .join('/')
+      .replace(/[\\[?*]/gu, '\\$&');
+    config.push([`includeIf.gitdir:${gitDir}.path`, file]);
+  }
+  return config;
 }
 
 /** Names a run may not set and the runner's owner may not pass: the runner's own, and what it sets itself. */
@@ -223,7 +255,7 @@ export function buildAgentEnv(
     delete env.SSH_AUTH_SOCK;
     delete env.SSH_AGENT_PID;
   }
-  const config: [string, string][] = [];
+  const config = [...(options.worktreeOrigins ?? [])];
   if (options.hooksDir !== undefined)
     config.push(['core.hooksPath', options.hooksDir]);
   const git = options.workspace?.git;

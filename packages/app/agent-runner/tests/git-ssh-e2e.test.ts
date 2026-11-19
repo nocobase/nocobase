@@ -1,7 +1,8 @@
-// Run with NOCOBASE_TEST_OPENSSH=1 on a Linux host with sshd and PAM, including /run/sshd.
+// Run with NOCOBASE_TEST_OPENSSH=1 on a Linux host with sshd, PAM, /run/sshd and openssl.
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { generateKeyPairSync } from 'node:crypto';
 import { once } from 'node:events';
+import { createServer as createHttpsServer } from 'node:https';
 import {
   existsSync,
   readFileSync,
@@ -79,6 +80,94 @@ async function listening(port: number): Promise<boolean> {
     });
     client.once('error', () => resolve(false));
   });
+}
+
+/** Serve the same bare repository through Git's smart HTTP handler over TLS. */
+async function httpsGit(bare: string, home: string) {
+  const pem = execFileSync(
+    'bash',
+    [
+      '-o',
+      'pipefail',
+      '-c',
+      'openssl "$@" | cat',
+      'openssl',
+      'req',
+      '-x509',
+      '-newkey',
+      'rsa:2048',
+      '-nodes',
+      '-days',
+      '1',
+      '-subj',
+      '/CN=localhost',
+      '-addext',
+      'subjectAltName=IP:127.0.0.1',
+      '-keyout',
+      '/dev/stdout',
+    ],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+  );
+  const certAt = pem.indexOf('-----BEGIN CERTIFICATE-----');
+  const cert = pem.slice(certAt);
+  const certPath = path.join(home, 'git-https-ca.pem');
+  writeFileSync(certPath, cert);
+  const requests: string[] = [];
+  const server = createHttpsServer(
+    { key: pem.slice(0, certAt), cert },
+    (req, res) => {
+      const target = new URL(req.url ?? '/', 'https://localhost');
+      if (!target.pathname.startsWith(`${bare}/`)) {
+        res.writeHead(404).end();
+        return;
+      }
+      requests.push(`${target.pathname}${target.search}`);
+      const backend = spawn('git', ['http-backend'], {
+        env: {
+          ...process.env,
+          GIT_PROJECT_ROOT: path.dirname(bare),
+          GIT_HTTP_EXPORT_ALL: '1',
+          REMOTE_USER: 'test',
+          PATH_INFO: target.pathname.slice(path.dirname(bare).length),
+          QUERY_STRING: target.search.slice(1),
+          REQUEST_METHOD: req.method,
+          CONTENT_TYPE: req.headers['content-type'],
+          CONTENT_LENGTH: req.headers['content-length'],
+        },
+        stdio: ['pipe', 'pipe', 'ignore'],
+      });
+      const output: Buffer[] = [];
+      backend.stdout.on('data', (chunk: Buffer) => output.push(chunk));
+      backend.stdin.on('error', () => undefined);
+      req.pipe(backend.stdin);
+      backend.once('close', (code) => {
+        const cgi = Buffer.concat(output);
+        const headerEnd = cgi.indexOf('\r\n\r\n');
+        if (code !== 0 || headerEnd < 0) {
+          res.writeHead(502).end();
+          return;
+        }
+        for (const line of cgi
+          .subarray(0, headerEnd)
+          .toString()
+          .split('\r\n')) {
+          const colon = line.indexOf(':');
+          const name = line.slice(0, colon);
+          const value = line.slice(colon + 1).trim();
+          if (name === 'Status') res.statusCode = Number(value.split(' ')[0]);
+          else res.setHeader(name, value);
+        }
+        res.end(cgi.subarray(headerEnd + 4));
+      });
+    },
+  ).listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const url = `https://127.0.0.1:${(server.address() as { port: number }).port}${bare}`;
+  writeFileSync(
+    path.join(home, '.gitconfig'),
+    `[http "${url}"]\n\tsslCAInfo = ${certPath}\n`,
+  );
+  return { server, url, requests };
 }
 
 describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
@@ -394,5 +483,108 @@ describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
         }),
       );
     }, 60_000);
+
+    it('switches a reused task checkout from HTTPS to SSH and back without losing local work', async () => {
+      const https = await httpsGit(bare, home);
+      try {
+        env.HOME = home;
+        daemon = startDaemon(env);
+        const branch = 'refs/heads/agent/test';
+        const runAt = async (remote: string, turn: string, useSsh = false) => {
+          const run = app.enqueue({
+            run: { requires: useSsh ? ['checkout', 'gitSsh'] : ['checkout'] },
+            workspace: {
+              key: 'clone-method',
+              dirs: [
+                {
+                  kind: 'repo',
+                  url: remote,
+                  defaultBranch: 'main',
+                  branch: 'agent/test',
+                  path: 'repo',
+                  initializeIfEmpty: true,
+                },
+              ],
+              env: [],
+              ...(useSsh ? { git: { ssh: [ssh] } } : {}),
+            },
+            prompt: {
+              system: 'System rules.',
+              turn: [
+                'bash git remote get-url origin',
+                'bash git remote get-url --push origin',
+                turn,
+              ].join('\n'),
+              session: 'fresh',
+            },
+          });
+          await waitFor(
+            () => run.status === 'completed' || run.status === 'failed',
+            20_000,
+            `task checkout and push at ${remote}`,
+          );
+          expect(run.fail).toBeUndefined();
+          expect(run.complete?.repos?.[0]?.url).toBe(remote);
+          expect(
+            [...run.events.values()].filter(
+              (event) =>
+                event.type === 'toolResult' && event.output?.trim() === remote,
+            ),
+          ).toHaveLength(2);
+          return path.join(run.start!.workDir, 'repo');
+        };
+
+        const workDir = await runAt(
+          https.url,
+          `bash git fetch origin\nbash ${COMMIT}\nbash git push origin HEAD:refs/heads/main\nsay done`,
+        );
+        expect(
+          https.requests.some((req) => req.endsWith('/git-receive-pack')),
+        ).toBe(true);
+        const httpsRequests = https.requests.length;
+        const gitDir = git(['rev-parse', '--absolute-git-dir'], workDir);
+        git(['commit', '--allow-empty', '-qm', 'unpublished'], workDir);
+        const localSha = git(['rev-parse', 'HEAD'], workDir);
+        writeFileSync(path.join(workDir, 'local-work'), 'keep this file');
+
+        expect(
+          await runAt(
+            url,
+            `bash git fetch origin\nbash git push origin HEAD:${branch}\nsay done`,
+            true,
+          ),
+        ).toBe(workDir);
+        expect(https.requests).toHaveLength(httpsRequests);
+        expect(git(['remote', 'get-url', 'origin'], workDir)).toBe(https.url);
+        expect(git(['rev-parse', branch], bare)).toBe(localSha);
+        expect(readFileSync(path.join(workDir, 'local-work'), 'utf8')).toBe(
+          'keep this file',
+        );
+
+        expect(
+          await runAt(
+            https.url,
+            `bash git fetch origin\nbash ${COMMIT}\nbash git push origin HEAD:${branch}\nsay done`,
+          ),
+        ).toBe(workDir);
+        expect(https.requests.slice(httpsRequests)).toEqual(
+          expect.arrayContaining([
+            `${bare}/info/refs?service=git-upload-pack`,
+            `${bare}/git-receive-pack`,
+          ]),
+        );
+        expect(git(['rev-parse', '--absolute-git-dir'], workDir)).toBe(gitDir);
+        const newSha = git(['rev-parse', 'HEAD'], workDir);
+        expect(newSha).not.toBe(localSha);
+        expect(git(['rev-parse', branch], bare)).toBe(newSha);
+        expect(readFileSync(path.join(workDir, 'local-work'), 'utf8')).toBe(
+          'keep this file',
+        );
+      } finally {
+        await new Promise<void>((resolve) =>
+          https.server.close(() => resolve()),
+        );
+      }
+    }, 70_000);
   },
 );

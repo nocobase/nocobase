@@ -86,7 +86,12 @@ import {
 import { deleteRunCredentials } from './credentials.ts';
 import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
-import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
+import {
+  buildAgentEnv,
+  environmentSecrets,
+  providedVariables,
+  worktreeOriginConfig,
+} from './env.ts';
 import {
   allocateRunTemp,
   removeRunTemp,
@@ -881,8 +886,13 @@ export class RunWorker {
       return this.finishEnding();
     }
 
+    let worktreeOrigins: Awaited<ReturnType<typeof worktreeOriginConfig>>;
     try {
       this.runTemp ??= await allocateRunTemp(deps.paths, context.privateDir!);
+      worktreeOrigins = await worktreeOriginConfig(
+        context.dirs,
+        this.runTemp.dir,
+      );
     } catch (error) {
       return this.finishFailed('setupFailed', String(error));
     }
@@ -942,6 +952,7 @@ export class RunWorker {
       pnpmStoreDir,
       pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
+      worktreeOrigins,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
       npm: {
         dir: this.npmDir,

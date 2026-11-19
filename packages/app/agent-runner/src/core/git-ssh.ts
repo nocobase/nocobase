@@ -52,6 +52,24 @@ export function isGitSshUrl(url: string): boolean {
   );
 }
 
+/** Match the repository path across the connection's HTTPS and SSH clone addresses. */
+export function isGitTransportSwitch(before: string, after: string): boolean {
+  const [ssh, web] = isGitSshUrl(before) ? [before, after] : [after, before];
+  if (!isGitSshUrl(ssh) || !/^https?:\/\//iu.test(web)) return false;
+  const normalize = (value: string) =>
+    value.replace(/^\/+|\/+$/gu, '').replace(/\.git$/u, '');
+  try {
+    const sshPath = normalize(targetFor(ssh).repoPath);
+    const webPath = normalize(decodeURIComponent(new URL(web).pathname));
+    // An HTTPS installation may be served below a prefix absent from its SSH clone address.
+    return (
+      sshPath !== '' && (webPath === sshPath || webPath.endsWith(`/${sshPath}`))
+    );
+  } catch {
+    return false;
+  }
+}
+
 function binaries(): string[] {
   const search = process.env.PATH ?? '';
   return ['ssh', 'ssh-agent', 'ssh-add'].map((name) => {

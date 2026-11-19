@@ -2,10 +2,38 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { supportsGitSsh } from '../src/core/git-ssh.ts';
+import { isGitTransportSwitch, supportsGitSsh } from '../src/core/git-ssh.ts';
 import { classifySshFailure } from '../src/core/ssh-command.ts';
 import { buildAgentEnv } from '../src/agent/env.ts';
 import { expect, it, vi } from 'vitest';
+
+it.each([
+  [
+    'https://git.example.test/team/repo.git',
+    'git@git.example.test:team/repo.git',
+    true,
+  ],
+  [
+    'ssh://git@ssh.example.test:2222/team/repo.git',
+    'https://web.example.test/gitlab/team/repo',
+    true,
+  ],
+  [
+    'https://git.example.test/other/repo.git',
+    'git@git.example.test:team/repo.git',
+    false,
+  ],
+  [
+    'https://git.example.test/team/repo.git',
+    'https://other.example.test/team/repo.git',
+    false,
+  ],
+] as const)(
+  'matches HTTPS and SSH names for the same repository (%s, %s)',
+  (before, after, matches) => {
+    expect(isGitTransportSwitch(before, after)).toBe(matches);
+  },
+);
 
 it.each([
   ['git@example.test: Permission denied (publickey).', false, 'authFailed'],
