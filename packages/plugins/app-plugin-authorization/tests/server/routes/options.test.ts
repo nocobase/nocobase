@@ -18,7 +18,8 @@ import {
 } from '../../../server/authorization.js';
 import serverLocales from '../../../server/locales/index.js';
 import { AUTHORIZATION_NAMESPACE } from '../../../shared.js';
-import { mountedRouter } from '../../helpers/mounted-router.js';
+import { migratePlugins } from '../../helpers/database-fixture.js';
+import { mountedRouter, TEST_USER } from '../../helpers/mounted-router.js';
 import { createOrdersDatabase } from '../../helpers/orders-database.js';
 import { testRulePlugin } from '../../helpers/rule-plugin.js';
 
@@ -50,7 +51,6 @@ function authorization(): AppAuthorization {
 function permitted(
   authz: AppAuthorization,
   require: AuthorizationContext['require'] = () => Promise.resolve(),
-  unrestricted = true,
 ): AppAuthorization {
   const open = Object.create(authz) as AppAuthorization;
   open.middleware = () => async (context, next) => {
@@ -58,7 +58,7 @@ function permitted(
       require,
       can: () => Promise.resolve(true),
       authorize: () => Promise.resolve({ effect: 'permit', reasons: [] }),
-      snapshot: () => Promise.resolve({ unrestricted, permissions: [] }),
+      snapshot: () => Promise.resolve({ unrestricted: true, permissions: [] }),
     } as unknown as AuthorizationContext);
     await next();
   };
@@ -69,7 +69,6 @@ function permitted(
 async function localizedRouter(
   authz: AppAuthorization,
   require?: AuthorizationContext['require'],
-  unrestricted?: boolean,
 ): Promise<Hono> {
   const runtime = new I18nRuntime({
     defaultLocale: 'en-US',
@@ -79,10 +78,7 @@ async function localizedRouter(
   await runtime.init();
   const router = new Hono();
   router.use('*', createI18nMiddleware(runtime));
-  return router.route(
-    '/',
-    await mountedRouter(permitted(authz, require, unrestricted)),
-  );
+  return router.route('/', await mountedRouter(permitted(authz, require)));
 }
 
 async function options(
@@ -150,21 +146,50 @@ describe('the options and subject routes', () => {
     ).toThrow('Unknown settings item: authorization.inspector');
   });
 
-  it('opens the registered inspector routes to unrestricted roles only', async () => {
-    const path = '/api/authorization/inspector/options';
-    const root = await localizedRouter(authorization());
-    expect((await root.request(path)).status).toBe(200);
-    // A role granted every settings action, but not unrestricted, is refused.
-    const restricted = await localizedRouter(
-      authorization(),
-      () => Promise.resolve(),
-      false,
-    );
-    expect((await restricted.request(path)).status).toBe(403);
+  it('opens the inspector to the root Permission Set only, through the real middleware', async () => {
+    // The real registration, real Permission Sets in the database and the real authorization middleware.
+    await migratePlugins(database, 'app-plugin-authorization');
+    const authz = authorization();
+    const router = await mountedRouter(authz);
+    await authz.permissionSets.create({ key: 'root', grants: [] });
+    await authz.permissionSets.assign({
+      permissionSet: 'root',
+      subject: { type: 'user', id: 'admin' },
+    });
+    // An ordinary role that may read Permission Sets and still stores the old inspect grant.
+    await authz.permissionSets.create({
+      key: 'staff',
+      grants: [
+        {
+          resource: { type: 'settings', id: 'authorization.permission-sets' },
+          actions: [{ action: 'read' }],
+        },
+        {
+          resource: { type: 'settings', id: 'authorization.inspector' },
+          actions: [{ action: 'inspect' }],
+        },
+      ],
+    });
+    await authz.permissionSets.assign({
+      permissionSet: 'staff',
+      subject: { type: 'user', id: 'bob' },
+    });
+    const as = (user: string) => ({ headers: { [TEST_USER]: user } });
+    const inspector = '/api/authorization/inspector/options';
+    expect((await router.request(inspector, as('admin'))).status).toBe(200);
     expect(
-      (await restricted.request('/api/authorization/permissionSets/options'))
-        .status,
+      (
+        await router.request(
+          '/api/authorization/permissionSets/options',
+          as('bob'),
+        )
+      ).status,
     ).toBe(200);
+    const denied = await router.request(inspector, as('bob'));
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toMatchObject({
+      error: { reason: 'AUTHORIZATION_DENIED' },
+    });
   });
 
   it('sends a registered string or translation key unchanged, in every language', async () => {

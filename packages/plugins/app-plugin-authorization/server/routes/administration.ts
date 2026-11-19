@@ -18,8 +18,7 @@ const action = (name: string) => ({
 
 /**
  * The Permission Set settings item and the Permission Set and inspector routes. The inspector is not a settings item:
- * it is never offered as a grantable permission, and its routes still require `settings:authorization.inspector`
- * `inspect`, which unrestricted roles hold.
+ * it is never offered as a grantable permission, and its routes admit only an unrestricted identity.
  */
 export function installAuthorizationAdministration(
   authz: Authorization &

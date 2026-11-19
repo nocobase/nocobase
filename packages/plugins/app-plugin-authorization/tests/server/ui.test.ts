@@ -414,7 +414,7 @@ describe('options', () => {
         key: 'options.settingsModules.authorization',
       }),
     });
-    // The inspector is not a grantable settings item; its routes still check `settings:authorization.inspector`.
+    // The inspector is not a grantable settings item; its routes admit only an unrestricted identity.
     expect(administration[0]?.resources.map((resource) => resource.id)).toEqual(
       ['authorization.permission-sets'],
     );

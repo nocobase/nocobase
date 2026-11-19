@@ -386,33 +386,3 @@ async function authorization({
   });
   return authz;
 }
-
-it('opens the inspector to unrestricted roles only, whatever settings a role holds', async () => {
-  const root = await mountedRouter(await authorization({ unrestricted: true }));
-  expect(
-    (await root.request('/api/authorization/inspector/options')).status,
-  ).toBe(200);
-  // A role that may read and change Permission Sets, and still stores the old inspect grant, is refused.
-  const authz = await authorization({ unrestricted: false });
-  await authz.permissionSets.update('staff', {
-    grants: [
-      {
-        resource: { type: 'settings', id: 'authorization.permission-sets' },
-        actions: [{ action: 'read' }, { action: 'update' }],
-      },
-      {
-        resource: { type: 'settings', id: 'authorization.inspector' },
-        actions: [{ action: 'inspect' }],
-      },
-    ],
-  });
-  const staff = await mountedRouter(authz);
-  expect(
-    (await staff.request('/api/authorization/permissionSets/options')).status,
-  ).toBe(200);
-  const denied = await staff.request('/api/authorization/inspector/options');
-  expect(denied.status).toBe(403);
-  expect(await denied.json()).toMatchObject({
-    error: { reason: 'AUTHORIZATION_DENIED' },
-  });
-});
