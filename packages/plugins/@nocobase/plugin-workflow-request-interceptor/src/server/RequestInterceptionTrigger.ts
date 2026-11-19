@@ -91,13 +91,7 @@ export default class RequestInterceptionTrigger extends Trigger {
     const collection = dataSource.collectionManager.getCollection(resourceName);
 
     if (!collection) {
-      const configuredName = joinCollectionName(dataSourceHeader, resourceName);
-      const referencesMissingCollection = Array.from(this.workflow.enabledCache.values()).some(
-        (item) => item.type === RequestInterceptionTrigger.TYPE && item.config.collection === configuredName,
-      );
-      if (referencesMissingCollection) {
-        context.logger.warn(`[Workflow pre-action]: collection "${resourceName}" not found in "${dataSourceHeader}"`);
-      }
+      context.logger.debug(`[Workflow pre-action]: collection "${resourceName}" not found`);
       return next();
     }
 
