@@ -18,11 +18,7 @@ import {
   type RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import { CONVERSATION_SUBJECT } from '../../../shared/conversations.js';
-import {
-  agentModelOf,
-  modelProvider,
-  shownAgentNames,
-} from '../../../shared/model-catalog.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import type { Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
@@ -343,14 +339,8 @@ export function createRunnerView(deps: {
       const names = await agentNames(records);
       const runs = records.map(toRun);
       const labels = await subjectLabels(runs, viewerUserId);
-      // Two providers' agents of one model are told apart by provider; the agent list is read only for those tools.
-      const shown = runs.some(
-        (run) => run.tool && run.model && modelProvider(run.tool, run.model),
-      )
-        ? shownAgentNames(await deps.agents.list())
-        : new Map<string, string>();
-      const nameOf = (run: Run) =>
-        shown.get(run.agentId) ?? names.get(run.agentId) ?? null;
+      // `names` are as shown: two providers' agents of one model each with their provider.
+      const nameOf = (run: Run) => names.get(run.agentId) ?? null;
       return {
         meta: { nextCursor, total: await recentCount(runner.id) },
         data: runs.map((run) => {

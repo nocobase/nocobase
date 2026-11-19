@@ -86,6 +86,19 @@ describe('historical Runner conversation domain', () => {
     expect(
       (await domain().get(ALICE, await newConversation(lan))).agent.name,
     ).toBe('OpenCode · Qwen3.8 Flash (other-lan)');
+    // Every place that names agents by id shows them the same way: runs, task feeds, the agent directory.
+    const read = h.services.tx.read();
+    expect(
+      Object.fromEntries(await h.services.agents.names(read, [console, lan])),
+    ).toEqual({
+      [console]: 'OpenCode · Qwen3.8 Flash (opencode)',
+      [lan]: 'OpenCode · Qwen3.8 Flash (other-lan)',
+    });
+    expect(
+      (await h.services.agents.directory(read, [console])).map(
+        (agent) => agent.name,
+      ),
+    ).toEqual(['OpenCode · Qwen3.8 Flash (opencode)']);
     // The saved names are not changed.
     expect((await h.services.agents.get(console)).name).toBe(
       'OpenCode · Qwen3.8 Flash',
