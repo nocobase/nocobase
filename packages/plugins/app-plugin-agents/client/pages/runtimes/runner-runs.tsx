@@ -12,7 +12,6 @@ import {
 } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
 import { failureDetailText } from '../../../shared/runs.js';
-import { agentShortName } from '../../../shared/model-catalog.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { TONE_CLASS } from '../../components/ag-tag-tones.js';
 import { Badge } from '../../components/ui/badge.js';
@@ -74,7 +73,7 @@ export function RunnerRuns({
         <Table className='table-fixed min-w-[600px]'>
           <colgroup>
             <col />
-            <col className='w-52' />
+            <col className='w-48' />
             <col className='w-28' />
             <col className='w-24' />
             <col className='w-20' />
@@ -142,13 +141,11 @@ export function RunnerRuns({
                       )}
                     </TableCell>
                     <TableCell
-                      // A provider/model id is read whole, so it wraps rather than truncating.
-                      className={
-                        run.nameIsModel ? 'font-mono break-all' : 'truncate'
-                      }
-                      title={run.title}
+                      // OpenCode and Pi agents show their name without the tool; the hover says the whole model id.
+                      className='truncate'
+                      title={run.modelTitle ?? run.title}
                     >
-                      {agentShortName(run.title, run)}
+                      {run.shortName ?? run.title}
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-wrap items-center gap-1.5'>

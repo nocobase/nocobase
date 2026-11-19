@@ -18,7 +18,7 @@ import {
   type RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import { CONVERSATION_SUBJECT } from '../../../shared/conversations.js';
-import { providerModelOf } from '../../../shared/model-catalog.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import type { Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
@@ -354,7 +354,7 @@ export function createRunnerView(deps: {
             failureReason: run.failureReason,
             id: run.id,
             title: names.get(run.agentId) ?? run.agentId,
-            ...providerModelOf({
+            ...agentModelOf({
               name: names.get(run.agentId) ?? null,
               tool: run.tool,
               model: run.model,

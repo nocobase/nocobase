@@ -301,10 +301,12 @@ export interface RunnerRecentRun {
   readonly id: string;
   /** The agent that ran. */
   readonly title: string;
-  /** The run's whole model id with the provider, for a tool that reaches one model through several (`ProviderModel`). */
+  /** Its whole model id, shown beside its name (`AgentModel`). */
   readonly model?: string;
-  /** The agent's name is still the default one, the tool and `model`. */
-  readonly nameIsModel?: boolean;
+  /** Its name without its tool, for a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly shortName?: string;
+  /** Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly modelTitle?: string;
   readonly status: RunStatus;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;

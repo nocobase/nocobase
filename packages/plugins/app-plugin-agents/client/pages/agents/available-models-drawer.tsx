@@ -28,6 +28,7 @@ import type {
 } from '../../../shared/agents.js';
 import {
   agentNameOf,
+  modelLabel,
   normalizeModel,
   providerQualified,
   TOOL_LABELS,
@@ -743,17 +744,21 @@ function ModelRow({
         onCheckedChange={(next) => onSelect(model, next === true)}
       />
       <div className='min-w-0 flex-1'>
-        {/* The group names the tool. OpenCode and Pi rows say only the whole model id, since two providers can
-            offer one model; the others keep their name with the reported id below it. */}
-        {qualified ? (
-          <div className='font-mono text-sm font-medium break-words [overflow-wrap:anywhere]'>
-            {normalizeModel(model.tool, model.model)}
-          </div>
-        ) : (
-          <div className='font-medium'>{modelName(model)}</div>
-        )}
+        {/* The group names the tool. OpenCode and Pi rows name the model without it and show the whole id with
+            the provider below, since two providers can offer one model; the others keep their name and reported id. */}
+        <div className='font-medium'>
+          {qualified ? modelLabel(model.tool, model.model) : modelName(model)}
+        </div>
         <div className='flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground'>
-          {qualified ? null : <span>{model.model}</span>}
+          <span
+            className={
+              qualified
+                ? 'font-mono break-words [overflow-wrap:anywhere]'
+                : undefined
+            }
+          >
+            {qualified ? normalizeModel(model.tool, model.model) : model.model}
+          </span>
           {model.recommended ? (
             <span>{t('agents.available.recommended')}</span>
           ) : null}

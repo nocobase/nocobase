@@ -200,10 +200,11 @@ describe('runner history pagination', () => {
     expect(byId.get('a')).toMatchObject({
       failureReason: 'toolAuth',
       failureDetail: `${said} {"apiKey":"[REDACTED]"}`,
-      // The run's whole model id; its agent no longer exists, so no name says it.
+      // The run's whole model id; its agent no longer exists, so it has no name to shorten.
       model: 'opencode/qwen3.8-flash',
+      modelTitle: 'OpenCode · opencode/qwen3.8-flash',
     });
-    expect(byId.get('a')).not.toHaveProperty('nameIsModel');
+    expect(byId.get('a')).not.toHaveProperty('shortName');
     expect(byId.get('eeeee')).not.toHaveProperty('model');
     expect(byId.get('bb')).toMatchObject({ path: '/docs/secret' });
     for (const id of ['bb', 'ccc', 'dddd', 'eeeee'])

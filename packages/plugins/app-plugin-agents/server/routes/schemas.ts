@@ -1691,12 +1691,20 @@ const conversationAgent = z.object({
     .string()
     .optional()
     .describe(
-      'Its whole model id with the provider, such as "my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers (OpenCode, Pi).',
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
     ),
-  nameIsModel: z
-    .boolean()
+  shortName: z
+    .string()
     .optional()
-    .describe('Its name is still the default one: the tool and `model`.'),
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 const availability = z.object({
@@ -1965,12 +1973,20 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
     .string()
     .optional()
     .describe(
-      'Its whole model id with the provider, such as "my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers (OpenCode, Pi).',
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
     ),
-  nameIsModel: z
-    .boolean()
+  shortName: z
+    .string()
     .optional()
-    .describe('Its name is still the default one: the tool and `model`.'),
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
@@ -2315,12 +2331,20 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .string()
       .optional()
       .describe(
-        'Its whole model id with the provider, such as "my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers (OpenCode, Pi).',
+        'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
       ),
-    nameIsModel: z
-      .boolean()
+    shortName: z
+      .string()
       .optional()
-      .describe('Its name is still the default one: the tool and `model`.'),
+      .describe(
+        'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+      ),
+    modelTitle: z
+      .string()
+      .optional()
+      .describe(
+        'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+      ),
     status: RunStatusSchema,
     startedAt: dateTime.nullable(),
     finishedAt: dateTime.nullable(),

@@ -31,6 +31,7 @@ import {
   type SystemAgentInput,
 } from '../../../shared/agents.js';
 import {
+  agentNameFor,
   agentNameOf,
   catalogEntry,
   normalizeModel,
@@ -303,17 +304,29 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     };
   };
 
-  /** The name `base`, or `base #2`, `base #3`… the first not already held by a non-removed agent. */
+  /**
+   * The name a new agent of `tool` and `model` gets: its default name, else that name with the model's provider after
+   * it (`agentNameFor`), else `base #2`, `base #3`… the first not already held by a non-removed agent.
+   */
   async function uniqueAgentName(
     conn: DatabaseConnection,
-    base: string,
+    tool: AgentTool,
+    model: string,
+    displayModel: string | undefined,
   ): Promise<string> {
+    const base = agentNameOf(tool, model, displayModel);
     const clashes = await agentsRepo(conn).findMany({
       filter: (f) =>
         f.and([f.string('name').startsWith(base), f.date('deletedAt').empty()]),
     });
     const taken = new Set(clashes.map((record) => record.name));
-    if (!taken.has(base)) return base;
+    const named = agentNameFor(
+      tool,
+      model,
+      (name) => taken.has(name),
+      displayModel,
+    );
+    if (named) return named;
     let suffix = 2;
     while (taken.has(`${base} #${suffix}`)) suffix += 1;
     return `${base} #${suffix}`;
@@ -329,10 +342,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     const id = runnerAgentId(tool, model);
     const { instructions, actions } = currentDefaults();
     const description = suggestionOf(defaults(), tool, model)?.en ?? null;
-    const name = await uniqueAgentName(
-      unit.conn,
-      agentNameOf(tool, model, displayModel),
-    );
+    const name = await uniqueAgentName(unit.conn, tool, model, displayModel);
     try {
       // A savepoint: another runner's report creating the same agent at once leaves this transaction usable.
       await unit.conn.transaction((conn) =>
@@ -677,7 +687,9 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         const now = clock.now().toISOString();
         const name = await uniqueAgentName(
           conn,
-          agentNameOf(tool, model, input.displayModel),
+          tool,
+          model,
+          input.displayModel,
         );
         const { instructions, actions } = currentDefaults();
         await insertAgent(conn, {

@@ -347,6 +347,34 @@ describe('agents built from runner reports', () => {
     ).rejects.toMatchObject({ details: { reason: 'EFFORT_UNSUPPORTED' } });
   });
 
+  it('names two providers’ agents of one OpenCode model apart by the provider, and keeps an existing name', async () => {
+    h = await createHarness();
+    await h.registerRunner({
+      tools: [
+        {
+          kind: 'opencode',
+          authenticated: true,
+          models: [
+            { id: 'my-lan-gateway/qwen3.8-flash' },
+            { id: 'opencode/qwen3.8-flash' },
+          ],
+          modelsDetectionStatus: 'detected',
+        },
+      ],
+    });
+    const create = (model: string) =>
+      h.services.agents.createFromAvailable(
+        { tool: 'opencode', model, description: 'Quick questions' },
+        'alice',
+      );
+    const gateway = await create('my-lan-gateway/qwen3.8-flash');
+    const consoleAgent = await create('opencode/qwen3.8-flash');
+    expect([gateway.name, consoleAgent.name]).toEqual([
+      'OpenCode · Qwen3.8 Flash',
+      'OpenCode · Qwen3.8 Flash (opencode)',
+    ]);
+  });
+
   it('prefers application suggestions over the model catalog, for a model reported but not yet created too', async () => {
     h = await createHarness();
     const suggestion = { en: 'Application suggestion', zh: '应用建议' };

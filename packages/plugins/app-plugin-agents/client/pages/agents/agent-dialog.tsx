@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
-import { providerModelOf } from '../../../shared/model-catalog.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -114,9 +114,8 @@ function AgentForm({
   });
 
   const missing = enabled && goodAt.trim() === '';
-  // The title names an agent still called after its model; a renamed OpenCode or Pi agent shows its model here.
-  const { model, nameIsModel } = providerModelOf(agent);
-  const qualifiedModel = model && !nameIsModel ? model : null;
+  // OpenCode and Pi agents, and agents of a model the catalog does not know, show the whole model id here.
+  const qualifiedModel = agentModelOf(agent).model ?? null;
   const { runners } = agent;
   const reportedBy = t('agents.enable.reportedBy', {
     count: runners.team + runners.personal,

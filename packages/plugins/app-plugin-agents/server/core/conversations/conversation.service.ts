@@ -41,7 +41,7 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
-import { providerModelOf } from '../../../shared/model-catalog.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -484,7 +484,7 @@ export function createConversationService(
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
       archived: agent ? agent.status !== 'enabled' : false,
-      ...(agent ? providerModelOf(agent) : {}),
+      ...(agent ? agentModelOf(agent) : {}),
     };
   }
 
@@ -3171,7 +3171,7 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              ...providerModelOf(agent),
+              ...agentModelOf(agent),
               availability: availabilityOf(
                 agent,
                 userId,

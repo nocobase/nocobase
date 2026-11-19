@@ -6,8 +6,8 @@ import {
   modelLabel,
   normalizeModel,
   sameModel,
-  agentShortName,
-  providerModelOf,
+  agentModelOf,
+  agentNameFor,
 } from '../shared/model-catalog.js';
 
 describe('the model catalog', () => {
@@ -36,44 +36,78 @@ describe('the model catalog', () => {
   it('names an agent after its tool and model, known or not', () => {
     expect(agentNameOf('claude', 'claude-opus-5-5')).toBe('Claude · Opus 5.5');
     expect(agentNameOf('codex', 'gpt-6.1-sol')).toBe('Codex · GPT-6.1 Sol');
+    // The design's examples: a model the catalog does not know gets a readable name, for every tool.
+    expect(agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash')).toBe(
+      'OpenCode · Qwen3.8 Flash',
+    );
+    expect(agentNameOf('opencode', 'opencode/deepseek-v4.1-flash-free')).toBe(
+      'OpenCode · DeepSeek V4.1 Flash Free',
+    );
+    expect(agentNameOf('codex', 'gpt-6.2-astra')).toBe('Codex · GPT-6.2 Astra');
+    expect(agentNameOf('pi', 'qwen/qwen3-coder')).toBe('Pi · Qwen3 Coder');
+    expect(modelLabel('opencode', 'moonshotai/kimi-k2')).toBe('Kimi K2');
+    // A catalog model reached through a provider keeps the catalog's label.
     expect(agentNameOf('opencode', 'openai/gpt-6-astra')).toBe(
-      'OpenCode · openai/gpt-6-astra',
+      'OpenCode · GPT-6 Astra',
     );
-    expect(agentNameOf('pi', 'qwen/qwen3-coder')).toBe('Pi · qwen/qwen3-coder');
-    expect(modelLabel('opencode', 'moonshotai/kimi-k2')).toBe(
-      'moonshotai/kimi-k2',
-    );
-  });
-
-  it('keeps the provider apart for one model reached through two providers', () => {
-    const models = ['opencode/qwen3.8-flash', 'my-lan-gateway/qwen3.8-flash'];
-    expect(models.map((model) => modelLabel('opencode', model))).toEqual(
-      models,
-    );
-    expect(models.map((model) => agentNameOf('opencode', model))).toEqual([
-      'OpenCode · opencode/qwen3.8-flash',
-      'OpenCode · my-lan-gateway/qwen3.8-flash',
-    ]);
-    // OpenCode's own name for the model drops the provider, so it does not name the agent.
-    expect(
-      agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash', 'Qwen3.8 Flash'),
-    ).toBe('OpenCode · my-lan-gateway/qwen3.8-flash');
     expect(modelLabel('pi', 'anthropic/claude-opus-5-5-20261001')).toBe(
-      'anthropic/claude-opus-5-5',
+      'Opus 5.5',
     );
   });
 
-  it('keeps single-provider tools named by the catalog or the tool', () => {
-    expect(modelLabel('claude', 'claude-opus-5-5')).toBe('Opus 5.5');
-    expect(modelLabel('codex', 'gpt-6-astra')).toBe('GPT-6 Astra');
-    expect(modelLabel('codex', 'gpt-unknown')).toBe('gpt-unknown');
-    // A custom id with a path keeps its last segment, and an unknown Gemini model its title case, as before.
-    expect(modelLabel('codex', 'my-org/custom-model')).toBe('custom-model');
+  it('writes abbreviations, brands and versions the way the catalog does', () => {
+    expect(modelLabel('opencode', 'zai/glm-5.1')).toBe('GLM-5.1');
+    expect(modelLabel('opencode', 'openai/gpt-oss-120b')).toBe('GPT-OSS-120B');
+    expect(modelLabel('opencode', 'qwen/qwen3-vl-plus')).toBe('Qwen3 VL Plus');
+    expect(modelLabel('codex', 'o3-mini')).toBe('o3 Mini');
+    expect(modelLabel('claude', 'claude-opus-4-7')).toBe('Opus 4.7');
+    // A word written with capitals keeps them, and an underscore splits like a hyphen.
+    expect(modelLabel('pi', 'minimax/MiniMax-M2.7')).toBe('MiniMax M2.7');
+    expect(modelLabel('codex', 'my_custom_model')).toBe('My Custom Model');
+    expect(modelLabel('codex', 'my-org/custom-model')).toBe('Custom Model');
     expect(modelLabel('codex', 'gemini-9-pro')).toBe('Gemini 9 Pro');
-    expect(agentNameOf('codex', 'my-org/custom-model')).toBe(
-      'Codex · custom-model',
-    );
     expect(agentNameOf('codex', 'gpt-x', 'GPT X')).toBe('Codex · GPT X');
+  });
+
+  it('keeps the names of catalog models', () => {
+    expect(modelLabel('claude', 'claude-opus-5-5')).toBe('Opus 5.5');
+    expect(modelLabel('claude', 'opus')).toBe('Opus 5.5');
+    expect(modelLabel('codex', 'gpt-6-astra')).toBe('GPT-6 Astra');
+    expect(modelLabel('codex', 'gpt-4o-2024-05-13')).toBe(
+      'GPT-4o (2024-05-13)',
+    );
+    expect(modelLabel('codex', 'o1')).toBe('o1');
+  });
+
+  it('tells two providers of one model apart by the provider, not a number', () => {
+    const taken = new Set<string>();
+    const names = [
+      'my-lan-gateway/qwen3.8-flash',
+      'opencode/qwen3.8-flash',
+    ].map((model) => {
+      const name = agentNameFor('opencode', model, (n) => taken.has(n));
+      taken.add(name!);
+      return name;
+    });
+    expect(names).toEqual([
+      'OpenCode · Qwen3.8 Flash',
+      'OpenCode · Qwen3.8 Flash (opencode)',
+    ]);
+    // OpenCode's own name for the model is not used: names are made the same way for every provider.
+    expect(
+      agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash', 'Qwen 3.8 Flash'),
+    ).toBe('OpenCode · Qwen3.8 Flash');
+    // Both taken, or a tool without providers: the caller numbers it.
+    expect(
+      agentNameFor('opencode', 'opencode/qwen3.8-flash', () => true),
+    ).toBeNull();
+    expect(
+      agentNameFor(
+        'codex',
+        'gpt-6.2-astra',
+        (n) => n === 'Codex · GPT-6.2 Astra',
+      ),
+    ).toBeNull();
   });
 
   it('suggests what a known model is good at, in English and Chinese', () => {
@@ -87,10 +121,8 @@ describe('the model catalog', () => {
     expect(catalogEntry('claude', 'claude-unknown')).toBeUndefined();
   });
 });
-it('shows a provider-qualified Gemini model by its whole id', () => {
-  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe(
-    'google/gemini-3.1-pro',
-  );
+it('names a provider-qualified Gemini model without its provider', () => {
+  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe('Gemini 3.1 Pro');
 });
 
 it('keeps ACP aliases, provider paths and dated ids as distinct opaque identities', () => {
@@ -100,41 +132,48 @@ it('keeps ACP aliases, provider paths and dated ids as distinct opaque identitie
   );
 });
 
-describe('providerModelOf and agentShortName', () => {
-  it('names an OpenCode agent still called after its model by the model id alone', () => {
-    const agent = {
-      name: 'OpenCode · my-lan-gateway/qwen3.8-flash',
-      tool: 'opencode' as const,
+describe('agentModelOf', () => {
+  it('gives an OpenCode agent its whole id, its name without the tool and the hover text', () => {
+    expect(
+      agentModelOf({
+        name: 'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+        tool: 'opencode',
+        model: 'my-lan-gateway/qwen3.8-flash',
+      }),
+    ).toEqual({
       model: 'my-lan-gateway/qwen3.8-flash',
-    };
-    const model = providerModelOf(agent);
-    expect(model).toEqual({
-      model: 'my-lan-gateway/qwen3.8-flash',
-      nameIsModel: true,
+      shortName: 'Qwen3.8 Flash (my-lan-gateway)',
+      modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
     });
-    expect(agentShortName(agent.name, model)).toBe(
-      'my-lan-gateway/qwen3.8-flash',
-    );
   });
 
-  it('keeps a renamed agent’s name and gives its model id apart', () => {
-    const model = providerModelOf({
-      name: 'Gateway fast',
-      tool: 'pi',
+  it('keeps a renamed agent’s name whole', () => {
+    expect(
+      agentModelOf({
+        name: 'Gateway fast',
+        tool: 'pi',
+        model: 'my-lan-gateway/qwen3.8-flash',
+      }),
+    ).toEqual({
       model: 'my-lan-gateway/qwen3.8-flash',
+      modelTitle: 'Pi · my-lan-gateway/qwen3.8-flash',
     });
-    expect(model).toEqual({ model: 'my-lan-gateway/qwen3.8-flash' });
-    expect(agentShortName('Gateway fast', model)).toBe('Gateway fast');
   });
 
-  it('says nothing more for Claude and Codex agents', () => {
+  it('shows the id of a model the catalog does not know, and nothing more for a catalog model', () => {
+    expect(
+      agentModelOf({
+        name: 'Codex · GPT-6.2 Astra',
+        tool: 'codex',
+        model: 'gpt-6.2-astra',
+      }),
+    ).toEqual({ model: 'gpt-6.2-astra' });
     for (const [tool, model] of [
       ['claude', 'claude-opus-5-5'],
       ['codex', 'gpt-6-astra'],
-    ] as const) {
-      const name = agentNameOf(tool, model);
-      expect(providerModelOf({ name, tool, model })).toEqual({});
-      expect(agentShortName(name, {})).toBe(name);
-    }
+    ] as const)
+      expect(
+        agentModelOf({ name: agentNameOf(tool, model), tool, model }),
+      ).toEqual({});
   });
 });

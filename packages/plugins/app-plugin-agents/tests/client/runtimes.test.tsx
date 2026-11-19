@@ -930,15 +930,16 @@ describe('runtimes page', () => {
     within(runs).getByText('runs.status.completed');
   });
 
-  it('shows a failed run’s reason and what its tool said as one line, and an OpenCode agent by its model id', async () => {
+  it('shows a failed run’s reason and what its tool said as one line, and an OpenCode agent by its name without the tool', async () => {
     const said = 'Reconnect OpenCode Console to continue.';
     api.routes['agents/runners/r1/runs'] = () => ({
       data: [
         {
           id: 'failed',
-          title: 'OpenCode · opencode/qwen3.8-flash',
+          title: 'OpenCode · Qwen3.8 Flash (opencode)',
           model: 'opencode/qwen3.8-flash',
-          nameIsModel: true,
+          shortName: 'Qwen3.8 Flash (opencode)',
+          modelTitle: 'OpenCode · opencode/qwen3.8-flash',
           subjectLabel: 'Fix login',
           path: '/samples/1',
           status: 'failed',
@@ -974,7 +975,7 @@ describe('runtimes page', () => {
     const agentCell = within(table).getByTitle(
       'OpenCode · opencode/qwen3.8-flash',
     );
-    expect(agentCell.textContent).toBe('opencode/qwen3.8-flash');
+    expect(agentCell.textContent).toBe('Qwen3.8 Flash (opencode)');
     expect(within(table).getByTitle('Coder').textContent).toBe('Coder');
   });
 
