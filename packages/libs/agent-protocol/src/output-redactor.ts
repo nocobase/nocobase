@@ -1,34 +1,8 @@
-import {
-  OPEN_QUOTED_SECRET,
-  quotedSecretChar,
-  REDACTED,
-  SECRET_LABEL,
-  SECRET_PATTERNS,
-  type Redactor,
-} from './redact.js';
+import { REDACTED, SECRET_PATTERNS, type Redactor } from './redact.js';
 
 /** Only the conversation preview uses this bounded scanner; legacy log redaction is unchanged. */
 export const MAX_OUTPUT_HELD = 2048;
 const STEP = 256;
-const LABELLED_SECRETS = [
-  ...['api', 'access', 'refresh', 'auth', 'client', 'secret'].flatMap(
-    (head) => {
-      const tail =
-        head === 'api'
-          ? 'key'
-          : head === 'client'
-            ? 'secret'
-            : head === 'secret'
-              ? 'key'
-              : 'token';
-      return ['_', '-', ''].map((sep) => head + sep + tail);
-    },
-  ),
-  'secret',
-  'token',
-  'password',
-  'passwd',
-];
 const prefixes = [
   'fgk_',
   'fgr_',
@@ -91,31 +65,10 @@ const partialPrefixes = [
     ),
   ),
 ].sort((a, b) => b.length - a.length);
-/** The unfinished starts of `labelled secret`'s labels; held back only at the start of a word, as the label matches. */
-const labelPrefixes = [
-  ...new Set(
-    LABELLED_SECRETS.flatMap((label) =>
-      Array.from({ length: label.length - 1 }, (_, i) => label.slice(0, i + 1)),
-    ),
-  ),
-].sort((a, b) => b.length - a.length);
 const token =
   /\b(?:fg(?:k|r|o|reg|dl)_[A-Za-z0-9_-]*|gh[pousr]_[A-Za-z0-9]*|github_pat_[A-Za-z0-9_]*|npm_[A-Za-z0-9]*|xox[abposr]-[A-Za-z0-9-]*|AIza[A-Za-z0-9_-]*|sk-[A-Za-z0-9_-]*|[rs]k_(?:live|test)_[A-Za-z0-9]*|(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]*|eyJ[A-Za-z0-9_.-]*)$/u;
 const label =
-  /(?:\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)|(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd))["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu;
-/**
- * A labelled secret's value still being written when the stream stops: masked whatever its length. A quoted value is
- * read with the same quote and escape rule as whole-text redaction (`quotedSecretChar`), so a value holding the other
- * kind of quote or ending in a backslash is masked too; an unquoted one runs to the end of the line.
- */
-const openQuotedLabelValue = new RegExp(
-  String.raw`(${SECRET_LABEL}["']?\s*[:=]\s*(["']))(?!\[REDACTED\])${quotedSecretChar(2)}+$`,
-  'iu',
-);
-const openLabelValue = new RegExp(
-  String.raw`(${SECRET_LABEL}["']?\s*[:=]\s*)(?![\s"'])(?!\[REDACTED\])[^\r\n]+$`,
-  'iu',
-);
+  /\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu;
 const password =
   /(?:\b(?:password|passwd)=|[?&](?:password|passwd|pwd|access_token|api_key|apikey|client_secret|secret|token)=)[^&\s"'#<>]*$/iu;
 const url = /(?:\b[a-z][a-z0-9+.-]*)?:\/\/[^\s/?#@'"<>]*$/iu;
@@ -203,7 +156,7 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       }
     let cut = text.length;
     for (const { value, offset } of contexts)
-      for (const pattern of [token, label, OPEN_QUOTED_SECRET, password, url]) {
+      for (const pattern of [token, label, password, url]) {
         const match = pattern.exec(value);
         if (match) cut = Math.min(cut, Math.max(0, match.index + offset));
       }
@@ -213,15 +166,6 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
     const lower = text.toLowerCase();
     for (const prefix of partialPrefixes)
       if (lower.endsWith(prefix)) {
-        cut = Math.min(cut, text.length - prefix.length);
-        break;
-      }
-    const before = (left + lower).slice(0, -1);
-    for (const prefix of labelPrefixes)
-      if (
-        lower.endsWith(prefix) &&
-        !/[a-z0-9]/iu.test(before.charAt(before.length - prefix.length))
-      ) {
         cut = Math.min(cut, text.length - prefix.length);
         break;
       }
@@ -294,18 +238,13 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       dropping = undefined;
       keyTail = '';
       if (stopped) return '';
-      if (interrupted) {
+      if (interrupted)
         for (const secret of current().secrets) {
           if (text.length >= 6 && secret.startsWith(text)) {
             text = REDACTED;
             break;
           }
         }
-        // A value cut off after its label may be the start of a secret too short to recognise yet.
-        text = text
-          .replace(openQuotedLabelValue, `$1${REDACTED}`)
-          .replace(openLabelValue, `$1${REDACTED}`);
-      }
       return publish(
         current()
           .text((text.startsWith('://') ? 'x' : left) + text)

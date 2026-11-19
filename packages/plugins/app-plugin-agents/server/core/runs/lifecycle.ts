@@ -1,5 +1,6 @@
 import { waitForQuota } from './quota-wait.js';
 import { OutputPreview } from './output-preview.js';
+import { redactFailureMessage } from './failure-message.js';
 import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 /**
  * What a runner reports about the runs it holds: lease renewals, the start, events, and how the run ended. Every
@@ -733,7 +734,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             ? named
             : {
                 ...named,
-                detail: redactorOf(run.id).text(named.detail),
+                detail: redactFailureMessage(
+                  redactorOf(run.id).text(named.detail),
+                ),
               };
         await recordOutcome(
           unit,

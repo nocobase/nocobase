@@ -967,11 +967,9 @@ describe('runtimes page', () => {
     const table = await within(sheet).findByTestId('runner-runs');
     const details = within(table).getAllByTestId('runner-run-failure-detail');
     expect(details).toHaveLength(1);
-    expect(details[0]!.querySelector('summary')).toHaveTextContent(said);
-    const full = details[0]!.querySelector('p')!.textContent!;
-    expect(full.startsWith(`${said}\n`)).toBe(true);
-    expect(full).toHaveLength(2001);
-    expect(full.endsWith('…')).toBe(true);
+    // One line of what the tool said; the rest stays in the runner's log.
+    expect(details[0]).toHaveTextContent(said);
+    expect(details[0]!.textContent).toBe(said);
   });
 
   it.each([false, true])(

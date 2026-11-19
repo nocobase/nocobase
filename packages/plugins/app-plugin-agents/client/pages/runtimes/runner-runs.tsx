@@ -164,17 +164,13 @@ export function RunnerRuns({
                     // What the tool said, so a classification such as "not signed in" shows its real cause.
                     <TableRow className='hover:bg-transparent'>
                       <TableCell colSpan={5} className='pt-0 whitespace-normal'>
-                        <details
-                          className='min-w-0 text-xs text-muted-foreground'
+                        <p
+                          className='min-w-0 truncate text-xs text-muted-foreground'
+                          title={detail}
                           data-testid='runner-run-failure-detail'
                         >
-                          <summary className='cursor-pointer truncate'>
-                            {detail.split('\n')[0]}
-                          </summary>
-                          <p className='max-h-48 overflow-auto pt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]'>
-                            {detail}
-                          </p>
-                        </details>
+                          {detail}
+                        </p>
                       </TableCell>
                     </TableRow>
                   ) : null}

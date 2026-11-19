@@ -9,8 +9,8 @@
  *   key, API keys among its variables), each at least `MIN_SECRET_LENGTH` characters, also in their JSON-escaped form;
  * - common secret patterns (`SECRET_PATTERNS`): this protocol's own credentials, GitHub, npm, Slack and Google tokens,
  *   `sk-…` API keys, AWS access keys and labelled secret keys, private key blocks, JSON Web Tokens, `Bearer` and
- *   `Basic` credentials, `x-api-key` values, passwords in URLs (`https://user:password@host`, `?password=`),
- *   `password=` assignments and other labelled secrets (`"apiKey": "…"`, `token=…`).
+ *   `Basic` credentials, `x-api-key` values, passwords in URLs (`https://user:password@host`, `?password=`) and
+ *   `password=` assignments.
  *
  * It changes only strings: `redactValue` copies a JSON value with every string inside it redacted, so an event that was
  * valid JSON stays valid JSON. Each pattern needs a recognisable shape (a prefix, a label, or a length with a digit), so
@@ -49,49 +49,6 @@ export interface SecretPattern {
 
 const PRIVATE_KEY_BEGIN = /-----BEGIN ([A-Z0-9 ]*?)PRIVATE KEY( BLOCK)?-----/u;
 const PRIVATE_KEY_END = /-----END [A-Z0-9 ]*?PRIVATE KEY(?: BLOCK)?-----/u;
-
-/**
- * The labels of a labelled secret, at the start of a word (`apiKey`, `x-api-key`, `MY_GATEWAY_TOKEN`, not
- * `max_tokens` or `tokens`). Case-insensitive; no capturing group.
- */
-export const SECRET_LABEL =
-  '(?<![A-Za-z0-9])(?:api[_-]?key|(?:access|refresh|auth)[_-]?token|client[_-]?secret|secret[_-]?key|secret|token|password|passwd)(?![A-Za-z0-9_])';
-
-/**
- * One character of a quoted secret value whose opening quote is capture group `group`: an escape (a backslash and the
- * character after it, or a lone backslash where the value is cut off at the end of the line or text), or any character
- * but that quote and a line break. An escaped quote never closes the value, even when backtracking. The other kind of quote is an ordinary character. Whole-text redaction and the live preview's scanner share
- * it, so both agree where a quoted value ends.
- */
-export function quotedSecretChar(group: number): string {
-  const quote = `\\${group}`;
-  return String.raw`(?:\\(?:[^\r\n]|(?=[\r\n])|$)|(?!${quote})[^\\\r\n])`;
-}
-
-/**
- * A quoted secret value after its opening quote (capture group `group`): 8 or more characters up to the closing quote
- * or the end of the line, or any of it at the end of the text, where the value was cut off before it closed.
- */
-function quotedSecretValue(group: number): string {
-  const char = quotedSecretChar(group);
-  const quote = `\\${group}`;
-  return String.raw`(?:${char}{8,}(?=${quote}|[\r\n])|${char}+$)`;
-}
-
-/**
- * A labelled secret whose quoted value is still open at the end of the text: a stream holds it back from its label
- * until the closing quote arrives, since spaces and punctuation inside it are not word boundaries.
- */
-export const OPEN_QUOTED_SECRET: RegExp = new RegExp(
-  String.raw`${SECRET_LABEL}["']?\s*[:=]\s*(["'])${quotedSecretChar(1)}*$`,
-  'iu',
-);
-
-/** A secret's label at the end of the text, its value yet to come. */
-const PENDING_LABEL = new RegExp(
-  String.raw`${SECRET_LABEL}["']?\s*(?:[:=]\s*)?$`,
-  'iu',
-);
 
 /** The patterns every redactor applies, in order. */
 export const SECRET_PATTERNS: readonly SecretPattern[] = [
@@ -162,13 +119,9 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   },
   {
     name: 'x-api-key value',
-    pattern: new RegExp(
-      // A quoted value goes whole (`quotedSecretValue`), including one an earlier version cut short at a space or a
-      // comma (`"[REDACTED], rest"`).
-      String.raw`\b(x-api-key["']?\s*[:=]\s*)(?:(["'])${quotedSecretValue(2)}|(?!\[REDACTED\])[^\s"',;}]{8,})`,
-      'giu',
-    ),
-    replacement: `$1$2${REDACTED}`,
+    pattern:
+      /\b(x-api-key["']?\s*[:=]\s*["']?)(?!\[REDACTED\])[^\s"',;}]{8,}/giu,
+    replacement: `$1${REDACTED}`,
   },
   {
     // `scheme://user:password@host`, or a long token as the user (`https://<token>@github.com`); `git@host:` and
@@ -187,30 +140,6 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   {
     name: 'password assignment',
     pattern: /\b((?:password|passwd)=)(?!\[REDACTED\])[^\s&"'#;,<>]+/giu,
-    replacement: `$1${REDACTED}`,
-  },
-  // A labelled secret of no recognisable shape, such as a private gateway's key in a tool's error or config:
-  // `"apiKey":"…"`, `api_key = …`, `MY_GATEWAY_TOKEN=…`. The label keeps; a value of 8 or more characters goes.
-  // `max_tokens` and `tokens` are other labels and stay.
-  {
-    // A quoted value goes whole (`quotedSecretValue`). One an earlier version redacted only in part
-    // (`"[REDACTED], rest"`) goes whole too.
-    name: 'labelled secret',
-    pattern: new RegExp(
-      String.raw`(${SECRET_LABEL}["']?\s*[:=]\s*(["']))${quotedSecretValue(2)}`,
-      'giu',
-    ),
-    replacement: `$1${REDACTED}`,
-  },
-  {
-    // An unquoted value, up to a space or a delimiter. A reference to an environment variable
-    // (`apiKey = process.env.API_KEY`, `token = $TOKEN`, `os.environ["KEY"]`) names where the secret is kept rather
-    // than the secret, and stays; any other value, dotted or not (`demo.example123`), goes.
-    name: 'labelled secret (unquoted)',
-    pattern: new RegExp(
-      String.raw`(${SECRET_LABEL}["']?\s*[:=]\s*)(?!["'])(?!\[REDACTED\])(?!(?:process\.env|import\.meta\.env|Deno\.env)\.[A-Za-z_$][\w$]*(?![\w$.-])|os\.(?:environ\b|getenv\()|\$\{?[A-Za-z_])[^\s"',;}&<>]{8,}`,
-      'giu',
-    ),
     replacement: `$1${REDACTED}`,
   },
 ];
@@ -331,8 +260,6 @@ function cutShort(text: string, secrets: readonly string[]): string {
 export function createStreamRedactor(redactor: Redactor): StreamRedactor {
   let held = '';
   let inKey = false;
-  /** Inside a quoted secret value too long to hold, already replaced: its quote, and whether a backslash is pending. */
-  let skipping: { quote: string; escaped: boolean } | undefined;
   const longestSecret = Math.max(
     0,
     ...redactor.secrets.map((secret) => secret.length),
@@ -351,24 +278,6 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
     write(piece, options = {}) {
       let text = held + piece;
       held = '';
-      if (skipping) {
-        // Drop the rest of the value, with the escape rule of `quotedSecretChar`, up to its closing quote or line end.
-        let at = 0;
-        for (; at < text.length; at += 1) {
-          const char = text[at];
-          if (char === '\r' || char === '\n') break;
-          if (skipping.escaped) skipping.escaped = false;
-          else if (char === '\\') skipping.escaped = true;
-          else if (char === skipping.quote) break;
-        }
-        if (at === text.length) {
-          // A piece that ends its line ends the value with it.
-          if (!options.partial) skipping = undefined;
-          return '';
-        }
-        skipping = undefined;
-        text = text.slice(at);
-      }
       if (inKey) {
         // Inside a private key block, already replaced where it began: drop it up to its end marker.
         const end = PRIVATE_KEY_END.exec(text);
@@ -381,40 +290,16 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
         text = text.slice(end.index + end[0].length);
       }
       if (!options.partial) return redact(text);
-      // The unfinished last word, or from a label still waiting for its value or whose quoted value is still open.
       const word = /[^\s]*$/u.exec(text)?.[0] ?? '';
-      let start = text.length - word.length;
-      const open = OPEN_QUOTED_SECRET.exec(text) ?? PENDING_LABEL.exec(text);
-      if (open) start = Math.min(start, open.index);
-      // Never inside a match: a value redacted in part would release the rest of it.
-      const matches = SECRET_PATTERNS.flatMap(({ pattern }) =>
-        [...text.matchAll(pattern)].map((match) => ({
-          start: match.index,
-          end: match.index + match[0].length,
-        })),
-      ).sort((a, b) => b.start - a.start);
-      for (const match of matches)
-        if (match.start < start && match.end > start) start = match.start;
-      const length = text.length - start;
-      if (length === 0) return redact(text);
-      if (length > Math.max(MAX_HELD, longestSecret)) {
-        // Too long to hold. A quoted secret still open is replaced once here and its rest dropped as it arrives.
-        const quoted = OPEN_QUOTED_SECRET.exec(text);
-        if (quoted)
-          skipping = {
-            quote: quoted[1],
-            escaped: /\\*$/u.exec(text)![0].length % 2 === 1,
-          };
+      if (word.length === 0 || word.length > Math.max(MAX_HELD, longestSecret))
         return redact(text);
-      }
-      const out = redact(text.slice(0, start));
-      held = text.slice(start);
+      const out = redact(text.slice(0, text.length - word.length));
+      held = word;
       return out;
     },
     end() {
       const text = held;
       held = '';
-      skipping = undefined;
       if (inKey) {
         inKey = false;
         return '';

@@ -109,53 +109,6 @@ describe('redactPatterns', () => {
       `//registry/:_password = "${REDACTED}"`,
     ],
     ['a Slack token', 'xoxb-123456789012-abcdefABCDEF', REDACTED],
-    [
-      'a gateway key in a JSON error',
-      '{"provider":"my-lan-gateway","apiKey":"lan-9f8e7d6c5b4a"}',
-      `{"provider":"my-lan-gateway","apiKey":"${REDACTED}"}`,
-    ],
-    [
-      'a labelled token assignment',
-      'MY_GATEWAY_TOKEN=abcd1234efgh failed',
-      `MY_GATEWAY_TOKEN=${REDACTED} failed`,
-    ],
-    [
-      'a token parameter in text',
-      'request token=abcd1234efgh rejected',
-      `request token=${REDACTED} rejected`,
-    ],
-    ['a YAML password', 'password: hunter2hunter2', `password: ${REDACTED}`],
-    [
-      'a quoted gateway key with punctuation and spaces',
-      '{"apiKey":"lan-9f8e,7d6c 5b4a","model":"qwen"}',
-      `{"apiKey":"${REDACTED}","model":"qwen"}`,
-    ],
-    [
-      'a quoted key the text ends inside',
-      'error: {"apiKey":"lan-9f8e,7d6c 5b4a',
-      `error: {"apiKey":"${REDACTED}`,
-    ],
-    [
-      'a quoted x-api-key with a comma',
-      '{"x-api-key": "abc, def123456"}',
-      `{"x-api-key": "${REDACTED}"}`,
-    ],
-    [
-      'a quoted key an earlier version redacted in part',
-      '{"x-api-key": "[REDACTED], def123456", "apiKey": "[REDACTED], rest-of-it"}',
-      `{"x-api-key": "${REDACTED}", "apiKey": "${REDACTED}"}`,
-    ],
-    ['a dotted token', 'token: demo.example123', `token: ${REDACTED}`],
-    [
-      'an INI assignment with spaces',
-      'api_key = lan9f8e7d6c5b4a',
-      `api_key = ${REDACTED}`,
-    ],
-    [
-      'a quoted client secret',
-      "client_secret = 'Zq81mN0pL4kT'",
-      `client_secret = '${REDACTED}'`,
-    ],
   ])('redacts %s', (_name, input, expected) => {
     expect(redactPatterns(input)).toBe(expected);
   });
@@ -181,23 +134,6 @@ describe('redactPatterns', () => {
     [
       'code that mentions keys',
       'const apiKey = process.env.API_KEY; // set the bearer header',
-    ],
-    [
-      'token counts',
-      'max_tokens: 4096, tokens: 12345678, "tokens":{"input":123456789}',
-    ],
-    ['a short labelled value', 'token: expired'],
-    [
-      'environment references',
-      'key = os.environ["API_KEY"]; t = import.meta.env.VITE_TOKEN',
-    ],
-    [
-      'a variable as the value',
-      'token = $GATEWAY_TOKEN and api_key = ${API_KEY}',
-    ],
-    [
-      'an OpenCode console message',
-      'provider.auth: Reconnect OpenCode Console to continue.',
     ],
   ])('leaves %s alone', (_name, input) => {
     expect(redactPatterns(input)).toBe(input);
@@ -316,64 +252,5 @@ describe('createStreamRedactor', () => {
       'last words ',
     );
     expect(stream.end()).toBe(REDACTED);
-  });
-});
-
-describe('createStreamRedactor with a quoted value longer than it holds', () => {
-  // A fictional 1,200-character gateway key with escaped quotes and backslashes; its tail must never be logged.
-  const body =
-    String.raw`lan-fict\"ional, gate\\way key `.repeat(40) + 'TAIL-9f8e';
-  const after = ', "model": "qwen3.8-flash"} request done';
-  const cases = [
-    ['a double-quoted key', `{"apiKey": "${body}"${after}`],
-    [
-      'a single-quoted key',
-      `{'apiKey': '${body.replaceAll('\\"', "\\'")}'${after}`,
-    ],
-    ['an x-api-key', `{"x-api-key": "${body}"${after}`],
-  ] as const;
-  it.each(cases)(
-    'masks %s once and resumes after its closing quote, however it is split',
-    (_name, line) => {
-      const start = line.indexOf('lan-');
-      const close = line.indexOf('TAIL-9f8e') + 'TAIL-9f8e'.length;
-      const splits = [
-        [start + 600],
-        // Right after a backslash, so the escape is pending across the pieces.
-        [line.indexOf('\\', start + 1100) + 1],
-        [close],
-        Array.from(
-          { length: Math.ceil(line.length / 100) - 1 },
-          (_, i) => (i + 1) * 100,
-        ),
-      ];
-      for (const cuts of splits) {
-        const stream = createStreamRedactor(createRedactor());
-        const pieces = [0, ...cuts, line.length]
-          .slice(1)
-          .map((end, i, ends) => line.slice(i === 0 ? 0 : ends[i - 1], end));
-        const out =
-          pieces
-            .map((piece) => stream.write(piece, { partial: true }))
-            .join('') +
-          stream.write('\n') +
-          stream.end();
-        expect(out).toBe(
-          line.slice(0, start) + REDACTED + line.slice(close) + '\n',
-        );
-        expect(out).not.toContain('TAIL');
-        expect(out).not.toContain('fict');
-      }
-    },
-  );
-
-  it('ends the value with its line when no closing quote comes', () => {
-    const stream = createStreamRedactor(createRedactor());
-    const out =
-      stream.write(`token: "${body}`, { partial: true }) +
-      stream.write(' still the value\n') +
-      stream.write('next line\n') +
-      stream.end();
-    expect(out).toBe(`token: "${REDACTED}\nnext line\n`);
   });
 });
