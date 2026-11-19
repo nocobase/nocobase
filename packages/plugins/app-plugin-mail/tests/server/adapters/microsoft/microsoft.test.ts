@@ -25,13 +25,11 @@ describe('Microsoft Mail Provider', () => {
       scopes: [],
       tokenType: 'Bearer',
     });
-    const fetchMock = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        new Response(new Uint8Array(originalMime), {
-          headers: { 'content-length': String(originalMime.length) },
-        }),
-      );
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(new Uint8Array(originalMime), {
+        headers: { 'content-length': String(originalMime.length) },
+      }),
+    );
     vi.stubGlobal('fetch', fetchMock);
     const adapter = new MicrosoftMailProviderAdapter(
       context(credentials),
