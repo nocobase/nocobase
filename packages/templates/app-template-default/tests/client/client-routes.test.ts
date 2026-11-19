@@ -194,10 +194,13 @@ describe('app client routes', () => {
   });
 
   it('includes database browsing and supports business settings registration', async () => {
+    const hasUserManagement = applicationRoutes.some((contribution) =>
+      contribution.routes.some((route) => route.name === 'settingsUsers'),
+    );
     const built = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-template-default',
-        routes: applicationRoutes.includes(systemSettingsRoutes)
+        routes: hasUserManagement
           ? applicationRoutes
           : [...applicationRoutes, systemSettingsRoutes],
         source: 'application',

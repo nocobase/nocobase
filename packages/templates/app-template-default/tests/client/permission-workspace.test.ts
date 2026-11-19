@@ -230,12 +230,15 @@ const selection: PermissionWorkspaceSelection = {
 
 async function workspace(chosen: PermissionWorkspaceSelection = selection) {
   const appRoutes = createApplicationRoutes();
+  const hasUserManagement = appRoutes.some((contribution) =>
+    contribution.routes.some((route) => route.name === 'settingsUsers'),
+  );
   const { routes } = await resolveAppRuntime(
     defineAppRuntime({
       ...appRuntime,
       routes: () => [
         ...appRoutes,
-        ...(appRoutes.includes(settingsRoutes) ? [] : [settingsRoutes]),
+        ...(hasUserManagement ? [] : [settingsRoutes]),
         business,
       ],
     }),
