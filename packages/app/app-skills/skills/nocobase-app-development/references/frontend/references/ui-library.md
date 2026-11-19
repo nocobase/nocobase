@@ -150,7 +150,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A controlled permission editor for one role in two tabs: Menus, a checkbox tree of what the role sees in the sidebar with the business objects each page uses, and Business objects, each object's actions set once with a view scope that other actions follow or narrow, multi-scope actions, and dependencies that never turn risky actions on automatically.
+A controlled permission editor for one role in up to three tabs: Menus, a checkbox tree of the business menus the role sees with the objects each page uses; Business objects, each object's actions set once with a view scope that other actions follow or narrow; and System settings, each settings page's actions without data scopes, its entry showing while the action that opens it is on. Risky actions are never turned on automatically.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`

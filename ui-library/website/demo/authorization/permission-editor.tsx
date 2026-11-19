@@ -15,6 +15,7 @@ import {
   type PermissionAction,
   type PermissionMenuNode,
   type PermissionObject,
+  type PermissionSettingsPage,
   type PermissionScopeOption,
   type PermissionValue,
 } from '#components/permission-editor';
@@ -202,10 +203,14 @@ const OBJECTS: readonly PermissionObject[] = [
       follows('products.price', 'Change prices', { business: true }),
     ],
   },
+];
+
+// System settings: each page lists the settings objects it uses, without data scopes. A page shows in the sidebar
+// while the action that opens it is on.
+const SETTINGS_OBJECTS: readonly PermissionObject[] = [
   {
     id: 'users',
     label: 'Users',
-    group: 'System',
     actions: [
       { id: 'users.view', label: 'View users', view: true },
       { id: 'users.create', label: 'Invite users' },
@@ -221,7 +226,6 @@ const OBJECTS: readonly PermissionObject[] = [
   {
     id: 'roles',
     label: 'Roles',
-    group: 'System',
     actions: [
       { id: 'roles.view', label: 'View roles and permissions', view: true },
       {
@@ -233,6 +237,21 @@ const OBJECTS: readonly PermissionObject[] = [
     ],
     notice:
       'Anyone who can create and edit roles or assign them can give any role any permission, including Administrator. Grant these only to people trusted with full access.',
+  },
+];
+
+const SETTINGS: readonly PermissionSettingsPage[] = [
+  {
+    id: 'user-management',
+    label: 'User management',
+    group: 'Account and permissions',
+    objects: SETTINGS_OBJECTS.filter((object) => object.id === 'users'),
+  },
+  {
+    id: 'permission-management',
+    label: 'Permission management',
+    group: 'Account and permissions',
+    objects: SETTINGS_OBJECTS.filter((object) => object.id === 'roles'),
   },
 ];
 
@@ -285,25 +304,6 @@ const MENUS: readonly PermissionMenuNode[] = [
         id: 'payments',
         label: 'Payments',
         uses: { primary: ['payments'], related: ['contracts', 'customers'] },
-      },
-    ],
-  },
-  {
-    id: 'administration',
-    label: 'Administration',
-    children: [
-      // Settings pages open with reading their object, not with a menu permission of their own.
-      {
-        id: 'user-management',
-        label: 'User management',
-        opensWith: 'users.view',
-        uses: { primary: ['users'] },
-      },
-      {
-        id: 'permission-management',
-        label: 'Permission management',
-        opensWith: 'roles.view',
-        uses: { primary: ['roles'] },
       },
     ],
   },
@@ -402,6 +402,7 @@ export function PermissionEditorDemo(): ReactElement {
           key={roleKey}
           menus={MENUS}
           objects={OBJECTS}
+          settings={SETTINGS}
           value={draft}
           onChange={setDraft}
           unrestricted={role.unrestricted}

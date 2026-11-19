@@ -14,6 +14,7 @@ import {
 import {
   Fragment,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -61,10 +62,11 @@ import {
   setActionEnabled,
   setMenuChecked,
   setScopeValue,
+  settingsCount,
+  settingsPageObject,
   slotOptions,
   viewActionOf,
   viewScopeLabel,
-  viewScopeOptions,
   viewScopeValue,
   type PermissionAction,
   type PermissionChange,
@@ -75,6 +77,7 @@ import {
   type PermissionObject,
   type PermissionQuickSet,
   type PermissionScopeSlot,
+  type PermissionSettingsPage,
   type PermissionValue,
 } from './permission-editor-model.js';
 
@@ -89,14 +92,17 @@ export type {
   PermissionRisk,
   PermissionScopeOption,
   PermissionScopeSlot,
+  PermissionSettingsPage,
   PermissionValue,
 } from './permission-editor-model.js';
 
-export type PermissionEditorTab = 'menus' | 'objects';
+export type PermissionEditorTab = 'menus' | 'objects' | 'settings';
 
 export interface PermissionEditorLabels {
   readonly menusTab: string;
   readonly objectsTab: string;
+  readonly settingsTab: string;
+  readonly settingsIntro: string;
   readonly tabCount: (count: number, total: number) => string;
   readonly menusIntro: string;
   readonly menuColumn: string;
@@ -125,7 +131,6 @@ export interface PermissionEditorLabels {
   /** A slot following another object's View, such as the customers a Contacts action reads. */
   readonly sameAsObjectView: (object: string, scope: string) => string;
   readonly scopeFor: (action: string, scope?: string) => string;
-  readonly scopeNote: (options: readonly string[]) => string;
   readonly followHint: string;
   readonly managed: string;
   readonly appliesEverywhere: string;
@@ -148,6 +153,11 @@ export interface PermissionEditorProps {
   readonly menus: readonly PermissionMenuNode[];
   /** Business objects with their actions, each set once whichever menus use it. */
   readonly objects: readonly PermissionObject[];
+  /**
+   * System settings pages and the settings objects they use, set in their own tab. Their entries are not menus: each
+   * shows while the action that opens it is on. Leave empty to hide the tab.
+   */
+  readonly settings?: readonly PermissionSettingsPage[] | undefined;
   readonly value: PermissionValue;
   readonly onChange: (next: PermissionValue) => void;
   /** The role has every permission, such as Administrator: only an explanation is shown. */
@@ -166,12 +176,17 @@ export interface PermissionEditorProps {
   readonly className?: string | undefined;
 }
 
+const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
+
 const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
 
 const DEFAULT_LABELS: PermissionEditorLabels = {
   menusTab: 'Menus',
   objectsTab: 'Business objects',
+  settingsTab: 'System settings',
+  settingsIntro:
+    'Each settings page shows in the sidebar once the action that opens it, usually View, is on. Settings have no data scope.',
   tabCount: (count, total) => `${count} / ${total}`,
   menusIntro:
     'Only decides which menus this role sees in the sidebar. What data it can see and what it can do is set once per object under Business objects.',
@@ -202,8 +217,6 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   sameAsObjectView: (object, scope) => `Same as ${object} view (${scope})`,
   scopeFor: (action, scope) =>
     scope ? `${action}: ${scope}` : `Data scope of ${action}`,
-  scopeNote: (options) =>
-    `Data scope: ${options.join(' / ')}. Other actions cannot be wider than View.`,
   followHint:
     'Other actions follow the view scope; they can be narrower, never wider.',
   managed: 'Managed by the application',
@@ -481,10 +494,13 @@ function ObjectTags({
   ids,
   objects,
   grants,
+  checked,
 }: {
   readonly ids: readonly string[];
   readonly objects: readonly PermissionObject[];
   readonly grants: PermissionGrants;
+  /** Only a checked menu warns about objects the role cannot view; an unchecked one shows plain tags. */
+  readonly checked: boolean;
 }): ReactElement | null {
   const used = ids.flatMap((id) => {
     const object = objects.find((item) => item.id === id);
@@ -494,7 +510,7 @@ function ObjectTags({
   return (
     <span className='flex min-w-0 flex-wrap gap-1'>
       {used.map((object) => {
-        const viewable = canViewObject(object, grants);
+        const viewable = !checked || canViewObject(object, grants);
         return (
           <span
             key={object.id}
@@ -608,6 +624,7 @@ function MenuRows({
                     ids={uses}
                     objects={objects}
                     grants={value.grants}
+                    checked={state === 'checked'}
                   />
                 </div>
               )}
@@ -729,6 +746,7 @@ export function PermissionEditor({
   header,
   footer,
   dirty = false,
+  settings = NO_SETTINGS,
   defaultTab = 'menus',
   defaultObjectId,
   labels,
@@ -763,12 +781,18 @@ export function PermissionEditor({
       setPending(undefined);
     }
   }
+  // Requirements may cross between business and settings objects, so the rules see them all.
+  const allObjects = useMemo(
+    () => [...objects, ...settings.flatMap((page) => page.objects)],
+    [objects, settings],
+  );
   const current =
     objects.find((object) => object.id === selectedId) ?? objects[0];
   const filtered = filterObjects(objects, query);
   const warnings = menuWarnings(menus, objects, value);
   const menuTotals = menuCount(menus, value);
   const objectTotals = objectCount(objects, value.grants);
+  const settingsTotals = settingsCount(settings, value.grants);
 
   const select = (objectId: string): void => {
     setSelectedId(objectId);
@@ -801,13 +825,13 @@ export function PermissionEditor({
   const toggle = (action: PermissionAction, enabled: boolean): void => {
     if (readOnly) return;
     if (enabled) {
-      commit(setActionEnabled(objects, value.grants, action.id, true));
+      commit(setActionEnabled(allObjects, value.grants, action.id, true));
       return;
     }
-    const dependents = dependentsOf(objects, value.grants, [action.id]);
+    const dependents = dependentsOf(allObjects, value.grants, [action.id]);
     // Managed dependents block the change; the model explains why.
     if (!dependents.length || dependents.some((item) => item.managed)) {
-      commit(setActionEnabled(objects, value.grants, action.id, false));
+      commit(setActionEnabled(allObjects, value.grants, action.id, false));
       return;
     }
     ask(
@@ -817,7 +841,7 @@ export function PermissionEditor({
       ),
       (draft) => {
         const change = setActionEnabled(
-          objects,
+          allObjects,
           draft.grants,
           action.id,
           false,
@@ -832,16 +856,16 @@ export function PermissionEditor({
   const quick = (object: PermissionObject, mode: PermissionQuickSet): void => {
     if (readOnly) return;
     const { own, others } = quickSetRemovals(
-      objects,
+      allObjects,
       value.grants,
       object,
       mode,
     );
     if (
       !others.length ||
-      dependentsOf(objects, value.grants, own).some((item) => item.managed)
+      dependentsOf(allObjects, value.grants, own).some((item) => item.managed)
     ) {
-      commit(applyQuickSet(objects, value.grants, object, mode));
+      commit(applyQuickSet(allObjects, value.grants, object, mode));
       return;
     }
     ask(
@@ -850,7 +874,7 @@ export function PermissionEditor({
         others.map((item) => item.label),
       ),
       (draft) => {
-        const change = applyQuickSet(objects, draft.grants, object, mode);
+        const change = applyQuickSet(allObjects, draft.grants, object, mode);
         return {
           value: { menus: draft.menus, grants: change.grants },
           notices: change.notices,
@@ -858,12 +882,16 @@ export function PermissionEditor({
       },
     );
   };
+  const quickPage = (
+    page: PermissionSettingsPage,
+    mode: 'all' | 'none',
+  ): void => quick(settingsPageObject(page), mode);
   const check = (node: PermissionMenuNode, checked: boolean): void => {
     if (readOnly || node.public || !isMenuToggleable(node)) return;
     commitValue(setMenuChecked(menus, value, node.id, checked), []);
   };
   const openAction = (actionId: string): void => {
-    const found = findAction(objects, actionId);
+    const found = findAction(allObjects, actionId);
     if (!found) return;
     select(found.object.id);
     setTab('objects');
@@ -880,7 +908,9 @@ export function PermissionEditor({
       ? warnings.length
         ? words.attention(warnings.length)
         : undefined
-      : words.appliesEverywhere;
+      : tab === 'objects'
+        ? words.appliesEverywhere
+        : undefined;
   const footerBar = (
     <div className='flex min-w-0 flex-wrap items-center gap-2 border-t px-4 py-3'>
       <span
@@ -1054,7 +1084,6 @@ export function PermissionEditor({
     const object = current;
     const titleId = `${id}-title`;
     const { basic, business } = orderedActions(object);
-    const scopeOptions = viewScopeOptions(object);
     const hasFollowers = object.actions.some((action) =>
       action.scopes?.some((slot) => slot.followsView),
     );
@@ -1063,7 +1092,7 @@ export function PermissionEditor({
       <ActionRow
         key={action.id}
         object={object}
-        objects={objects}
+        objects={allObjects}
         action={action}
         grants={value.grants}
         readOnly={readOnly}
@@ -1071,7 +1100,9 @@ export function PermissionEditor({
         controlId={`${id}-${action.id}`}
         onToggle={toggle}
         onScope={(item, slotId, scope) =>
-          commit(setScopeValue(objects, value.grants, item.id, slotId, scope))
+          commit(
+            setScopeValue(allObjects, value.grants, item.id, slotId, scope),
+          )
         }
       />
     );
@@ -1168,15 +1199,126 @@ export function PermissionEditor({
           </div>
         )}
         {hasFollowers && (
-          <p className='text-xs text-muted-foreground'>
-            {scopeOptions.length
-              ? words.scopeNote(scopeOptions.map((option) => option.label))
-              : words.followHint}
-          </p>
+          <p className='text-xs text-muted-foreground'>{words.followHint}</p>
         )}
       </section>
     );
   })();
+
+  const settingsGroups = [...new Set(settings.map((page) => page.group ?? ''))];
+  const settingsPanel = (
+    <div className='grid min-w-0 gap-3 p-4'>
+      <p className='text-sm text-muted-foreground'>{words.settingsIntro}</p>
+      {readOnly && (
+        <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
+      )}
+      {messages}
+      {settingsGroups.map((group) => (
+        <div key={group} className='grid min-w-0 gap-2'>
+          {group && (
+            <h3 className='text-xs font-medium text-muted-foreground'>
+              {group}
+            </h3>
+          )}
+          {settings
+            .filter((page) => (page.group ?? '') === group)
+            .map((page) => {
+              const status = objectStatus(
+                settingsPageObject(page),
+                value.grants,
+              );
+              const titleId = `${id}-settings-${page.id}`;
+              return (
+                <section
+                  key={page.id}
+                  aria-labelledby={titleId}
+                  data-slot='permission-settings-page'
+                  className='grid min-w-0 gap-2 rounded-lg border p-3'
+                >
+                  <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2'>
+                    <h2 id={titleId} className='text-sm font-semibold'>
+                      {page.label}
+                    </h2>
+                    <span className='text-xs text-muted-foreground tabular-nums'>
+                      {status.enabled
+                        ? words.objectEnabled(status.enabled, status.total)
+                        : words.objectOff}
+                    </span>
+                    {!readOnly && (
+                      <div className='flex flex-wrap gap-1.5 @min-[44rem]/permissions:ml-auto'>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          aria-label={`${words.enableAll} · ${page.label}`}
+                          onClick={() => quickPage(page, 'all')}
+                        >
+                          {words.enableAll}
+                        </Button>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          aria-label={`${words.disableAll} · ${page.label}`}
+                          onClick={() => quickPage(page, 'none')}
+                        >
+                          {words.disableAll}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {page.description && (
+                    <p className='text-xs text-muted-foreground'>
+                      {page.description}
+                    </p>
+                  )}
+                  {page.objects.map((object) => (
+                    <div key={object.id} className='grid min-w-0 gap-1.5'>
+                      {page.objects.length > 1 && (
+                        <h4 className='text-xs font-medium text-muted-foreground'>
+                          {object.label}
+                        </h4>
+                      )}
+                      <ul className='min-w-0 divide-y overflow-hidden rounded-md border'>
+                        {[
+                          ...orderedActions(object).basic,
+                          ...orderedActions(object).business,
+                        ].map((action) => (
+                          <ActionRow
+                            key={action.id}
+                            object={object}
+                            objects={allObjects}
+                            action={action}
+                            grants={value.grants}
+                            readOnly={readOnly}
+                            labels={words}
+                            controlId={`${id}-${action.id}`}
+                            onToggle={toggle}
+                            onScope={() => undefined}
+                          />
+                        ))}
+                      </ul>
+                      {object.notice && (
+                        <div
+                          data-slot='permission-object-notice'
+                          className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
+                        >
+                          <InfoIcon
+                            aria-hidden
+                            className='mt-0.5 size-4 shrink-0'
+                          />
+                          <div className='min-w-0'>{object.notice}</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              );
+            })}
+        </div>
+      ))}
+    </div>
+  );
 
   const searchBox = (
     <InputGroup>
@@ -1243,16 +1385,28 @@ export function PermissionEditor({
                       .filter((object) => (object.group ?? '') === group)
                       .map((object) => {
                         const status = objectStatus(object, value.grants);
+                        const view = viewActionOf(object);
+                        const scope =
+                          view && value.grants[view.id]
+                            ? viewScopeLabel(object, value.grants)
+                            : undefined;
                         return (
                           <SelectItem key={object.id} value={object.id}>
-                            {object.label}
-                            <span className='ml-auto pl-3 text-xs text-muted-foreground'>
-                              {status.enabled
-                                ? words.objectEnabled(
-                                    status.enabled,
-                                    status.total,
-                                  )
-                                : words.objectOff}
+                            <span className='grid min-w-0'>
+                              <span className='truncate'>{object.label}</span>
+                              <span className='truncate text-xs text-muted-foreground'>
+                                {[
+                                  status.enabled
+                                    ? words.objectEnabled(
+                                        status.enabled,
+                                        status.total,
+                                      )
+                                    : words.objectOff,
+                                  scope,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </span>
                             </span>
                           </SelectItem>
                         );
@@ -1319,10 +1473,22 @@ export function PermissionEditor({
                 {words.tabCount(objectTotals.enabled, objectTotals.total)}
               </span>
             </TabsTrigger>
+            {settings.length > 0 && (
+              <TabsTrigger value='settings' className='flex-none px-1'>
+                {`③ ${words.settingsTab}`}
+                <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                  {words.tabCount(settingsTotals.enabled, settingsTotals.total)}
+                </span>
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
       </Tabs>
-      {tab === 'menus' ? menusPanel : objectsPanel}
+      {tab === 'menus'
+        ? menusPanel
+        : tab === 'settings' && settings.length
+          ? settingsPanel
+          : objectsPanel}
       {footerBar}
     </div>
   );

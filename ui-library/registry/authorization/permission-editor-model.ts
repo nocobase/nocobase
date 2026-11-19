@@ -72,6 +72,20 @@ export interface PermissionObject {
   readonly notice?: ReactNode;
 }
 
+/**
+ * A system settings page, such as Users or Permissions: the actions of the settings objects it uses, without data
+ * scopes. A page has no menu permission of its own; its entry shows while the action that opens it is on.
+ */
+export interface PermissionSettingsPage {
+  readonly id: string;
+  readonly label: string;
+  readonly description?: string | undefined;
+  /** The settings category it is listed under, such as Account and permissions. */
+  readonly group?: string | undefined;
+  /** The settings objects the page uses; several are listed under their own labels. */
+  readonly objects: readonly PermissionObject[];
+}
+
 /** Objects a page uses, by object id. Only for reference tags and the empty-page warning; it grants nothing. */
 export interface PermissionMenuUses {
   /** The objects the page lists; without View on them the page opens empty. */
@@ -890,4 +904,32 @@ export function menuWarnings(
     }
   }
   return warnings;
+}
+
+// System settings
+
+/** A settings page as one object, so Enable all and Disable all apply to every action it holds. */
+export function settingsPageObject(
+  page: PermissionSettingsPage,
+): PermissionObject {
+  return {
+    id: page.id,
+    label: page.label,
+    actions: page.objects.flatMap((object) => object.actions),
+  };
+}
+
+/** Settings pages with any action on, of all pages, for the tab's count like the other tabs. */
+export function settingsCount(
+  pages: readonly PermissionSettingsPage[],
+  grants: PermissionGrants,
+): { readonly enabled: number; readonly total: number } {
+  return {
+    enabled: pages.filter((page) =>
+      page.objects.some((object) =>
+        object.actions.some((action) => grants[action.id]),
+      ),
+    ).length,
+    total: pages.length,
+  };
 }
