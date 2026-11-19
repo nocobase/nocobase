@@ -91,7 +91,7 @@ export default class RequestInterceptionTrigger extends Trigger {
     const collection = dataSource.collectionManager.getCollection(resourceName);
 
     if (!collection) {
-      context.logger.warn(`[Workflow pre-action]: collection "${resourceName}" not found`);
+      context.logger.debug(`[Workflow pre-action]: collection "${resourceName}" not found`);
       return next();
     }
 
