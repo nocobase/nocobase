@@ -3,13 +3,13 @@ import { useTranslation } from '@nocobase/i18n/client';
 
 import { SettingsModulePage } from './settings-module-page.js';
 
-/** Permission management: Roles and permissions, Default data scopes and Permission check as tabs of one module. */
+/** Permission management: Roles and permissions and Default data scopes as tabs of one module. */
 export function PermissionManagementPage({
   tab,
   actions,
   children,
 }: {
-  tab: 'roles' | 'default-access' | 'permission-check';
+  tab: 'roles' | 'default-access';
   actions?: ReactNode;
   children: ReactNode;
 }): ReactElement {
@@ -20,9 +20,7 @@ export function PermissionManagementPage({
       description={t(
         tab === 'roles'
           ? 'settings.rolesDescription'
-          : tab === 'permission-check'
-            ? 'settings.permissionCheck.description'
-            : 'settings.defaultAccess.description',
+          : 'settings.defaultAccess.description',
       )}
       actions={actions}
     >

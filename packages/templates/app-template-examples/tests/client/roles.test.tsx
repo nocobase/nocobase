@@ -229,16 +229,13 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   ).toBeVisible();
   expect(screen.getByText(words.unsaved)).toBeVisible();
 
-  // Business objects: changing roles needs reading them and is explained as an escalation.
+  // System settings: changing roles needs reading them and is explained as an escalation.
   await user.click(
-    screen.getByRole('tab', { name: new RegExp(editor.objectsTab) }),
+    screen.getByRole('tab', { name: new RegExp(editor.settingsTab) }),
   );
-  await user.click(
-    within(screen.getByRole('navigation', { name: editor.objects })).getByRole(
-      'button',
-      { name: /^Permission sets/ },
-    ),
-  );
+  expect(
+    screen.getByRole('region', { name: words.permissionManagement }),
+  ).toBeVisible();
   expect(screen.getByText(words.escalation.roles)).toBeVisible();
   await user.click(screen.getByRole('switch', { name: 'Change roles' }));
   expect(screen.getByRole('switch', { name: 'Read roles' })).toBeChecked();
@@ -260,18 +257,18 @@ it('saves menu access apart from the actions, explains escalation and asks befor
       actions: [{ action: 'access' }],
     },
   ]);
-  // After saving, the editor stays on the object it was showing.
+  // After saving, the editor stays on the tab it was showing.
   await waitFor(() =>
     expect(screen.queryByText(words.unsaved)).not.toBeInTheDocument(),
   );
   expect(screen.getByRole('switch', { name: 'Change roles' })).toBeChecked();
-  // The settings page guarded by reading roles now opens for the role.
+  // The settings page shows with reading roles; it is not a menu to check.
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.menusTab) }),
   );
   expect(
-    screen.getByRole('checkbox', { name: words.permissionManagement }),
-  ).toBeChecked();
+    screen.queryByRole('checkbox', { name: words.permissionManagement }),
+  ).not.toBeInTheDocument();
 
   // Switching to another role with an unsaved change asks first.
   await user.click(

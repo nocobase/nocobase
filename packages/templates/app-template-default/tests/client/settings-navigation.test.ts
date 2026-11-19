@@ -135,7 +135,6 @@ describe('System settings navigation', () => {
         'settingsUsers',
         'settingsRoles',
         'settingsDefaultAccess',
-        'settingsPermissionCheck',
       ].map((name) => routeKey(find(routes, name))),
     );
     expect(catalog(routes, denied)).toEqual([]);

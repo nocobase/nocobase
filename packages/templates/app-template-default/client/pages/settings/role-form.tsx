@@ -438,6 +438,7 @@ function RoleEditor(): ReactElement {
             <PermissionEditor
               menus={workspace?.menus ?? []}
               objects={objects}
+              settings={workspace?.settings ?? []}
               value={value}
               onChange={(next) => setDraft(next)}
               unrestricted={unrestricted}

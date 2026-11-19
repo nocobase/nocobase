@@ -6,6 +6,7 @@ import type {
   PermissionGrants,
   PermissionMenuNode,
   PermissionObject,
+  PermissionSettingsPage,
   PermissionValue,
 } from '#components/permission-editor';
 
@@ -50,6 +51,8 @@ export interface PermissionWorkspace {
   readonly menus: readonly PermissionMenuNode[];
   /** What a role may do, set once per object. */
   readonly objects: readonly PermissionObject[];
+  /** System settings pages and their settings objects, set in their own tab; their entries are not menus. */
+  readonly settings: readonly PermissionSettingsPage[];
   /** Every editable action by editor id. */
   readonly bindings: ReadonlyMap<string, PermissionBinding>;
   /** The pages each menu's checkbox opens: stored as page access, independently of every object's actions. */

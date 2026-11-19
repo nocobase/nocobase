@@ -284,6 +284,7 @@ const settings = {
   discardChanges: 'Discard changes',
   unrestrictedRole: 'All permissions',
   permissionMainMenu: 'Main menu',
+  openPage: 'Open page',
   escalation: {
     roles:
       'Anyone who can create or change roles can give any role, including their own, any permission. The server does not limit them to the permissions they hold, so grant this only to trusted administrators.',
@@ -293,6 +294,9 @@ const settings = {
   permissionEditor: {
     menusTab: 'Menus',
     objectsTab: 'Business objects',
+    settingsTab: 'System settings',
+    settingsIntro:
+      'Each settings page shows in the sidebar once the action that opens it, usually View, is on. Settings have no data scope.',
     tabCount: '{{count}} / {{total}}',
     menusIntro:
       'Only decides which menus this role sees in the sidebar. What data it can see and what it can do is set once per object under Business objects.',
@@ -323,9 +327,6 @@ const settings = {
     sameAsObjectView: 'Same as {{object}} view ({{scope}})',
     scopeFor: 'Data scope of {{action}}',
     scopeForSlot: '{{action}}: {{scope}}',
-    scopeNote:
-      'Data scope: {{options}}. Other actions cannot be wider than View.',
-    scopeSeparator: ' / ',
     followHint:
       'Other actions follow the view scope; they can be narrower, never wider.',
     managed: 'Managed by the application',
@@ -357,33 +358,6 @@ const settings = {
       'Nothing was turned off: {{actions}} is managed by the application and needs it.',
     noticeManagedDependent_other:
       'Nothing was turned off: {{actions}} are managed by the application and need it.',
-  },
-  permissionCheck: {
-    title: 'Permission check',
-    description:
-      'See what a user can open and do, decided by the server from all of their roles and the data rules.',
-    role: 'Role',
-    anyRole: 'Any role',
-    user: 'User',
-    chooseUser: 'Choose a user',
-    noUsers: 'No users',
-    noRoleUsers: 'No user has this role yet',
-    noMatchingUsers: 'No matching users',
-    loadingUsers: 'Loading users…',
-    searchUsers: 'Find a user',
-    searchPlaceholder: 'Name or email',
-    moreUsers:
-      'Showing {{shown}} of {{total}} users; search to find the others.',
-    hint: 'A role is previewed through a user who holds it. The result includes the user’s other roles and the default, sharing and restriction rules.',
-    visibleMenus: '{{visible}} of {{total}} menus visible',
-    menuVisible: 'Visible',
-    menuHidden: 'Hidden',
-    roles: 'Effective roles',
-    effect: {
-      permit: 'Allowed',
-      conditional: 'By data scope',
-      deny: 'Not allowed',
-    },
   },
   recordScope: 'Record scope',
   levelFor: 'Scope for {{name}}',

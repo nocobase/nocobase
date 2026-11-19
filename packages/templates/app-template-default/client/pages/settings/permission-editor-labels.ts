@@ -13,6 +13,8 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
     return {
       menusTab: k('menusTab'),
       objectsTab: k('objectsTab'),
+      settingsTab: k('settingsTab'),
+      settingsIntro: k('settingsIntro'),
       tabCount: (count, total) => k('tabCount', { count, total }),
       menusIntro: k('menusIntro'),
       menuColumn: k('menuColumn'),
@@ -43,10 +45,6 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
         scope
           ? k('scopeForSlot', { action, scope })
           : k('scopeFor', { action }),
-      scopeNote: (options) =>
-        k('scopeNote', {
-          options: options.join(k('scopeSeparator')),
-        }),
       followHint: k('followHint'),
       managed: k('managed'),
       appliesEverywhere: k('appliesEverywhere'),

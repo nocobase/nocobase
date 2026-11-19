@@ -236,10 +236,6 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
-      {
-        name: 'settingsPermissionCheck',
-        authorizedAs: 'settings:authorization.inspector',
-      },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
     for (const loader of componentLoadersIn(built.routes))

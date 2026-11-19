@@ -11,6 +11,7 @@ import type {
   PermissionRisk,
   PermissionScopeOption,
   PermissionScopeSlot,
+  PermissionSettingsPage,
 } from '#components/permission-editor';
 import {
   buildRouteNavigation,
@@ -251,13 +252,6 @@ const ESCALATION: Readonly<
     'revoke-sessions': 'sensitive',
     disable: 'sensitive',
   },
-};
-
-/** Actions that reveal what others may do or hold: Enable all leaves them for a deliberate choice. */
-const SENSITIVE: Readonly<
-  Record<string, Readonly<Record<string, PermissionRisk>>>
-> = {
-  'settings:authorization.inspector': { inspect: 'sensitive' },
 };
 
 const BASIC_ACTIONS = new Set([
@@ -572,13 +566,18 @@ export function permissionWorkspace(
     objectIds.add(object.id);
   }
 
-  /** A settings resource as an object of its own, with the real actions the server registers for it. */
-  const settingsObject = (
-    resource: { type: string; id: string; action: string },
-    group: string,
-  ): PermissionObject | undefined => {
+  /**
+   * A settings resource as an object of its own, with the real actions the server registers for it. Settings objects
+   * are set only in the System settings tab, never among the business objects.
+   */
+  const settingsObjects: PermissionObject[] = [];
+  const settingsObject = (resource: {
+    type: string;
+    id: string;
+    action: string;
+  }): PermissionObject | undefined => {
     const key = resourceKey(resource);
-    const existing = objects.find((object) => object.id === key);
+    const existing = settingsObjects.find((object) => object.id === key);
     if (existing) return existing;
     const catalogResource = catalog.get(key);
     const available: readonly {
@@ -596,7 +595,7 @@ export function permissionWorkspace(
       ? resource.action
       : available[0]?.name;
     if (!viewName) return undefined;
-    const risks = { ...SENSITIVE[key], ...ESCALATION[key] };
+    const risks = ESCALATION[key] ?? {};
     const actions: PermissionAction[] = [];
     for (const action of [
       ...available.filter((item) => item.name === viewName),
@@ -625,7 +624,6 @@ export function permissionWorkspace(
       label: text(
         catalogResource?.title ?? { key: 'settings.userPermissions' },
       ),
-      group,
       actions,
       ...(ESCALATION[key]
         ? {
@@ -635,9 +633,24 @@ export function permissionWorkspace(
           }
         : {}),
     };
-    objects.push(object);
-    objectIds.add(key);
+    settingsObjects.push(object);
     return object;
+  };
+
+  /** A settings page guarded by a page grant: one action that opens it, stored as that page's access. */
+  const pageObject = (page: string, label: string): PermissionObject => {
+    const id = permissionRowId({ type: 'page', id: page }, 'access');
+    bindings.set(id, {
+      resource: { type: 'page', id: page },
+      action: 'access',
+      view: true,
+      scopes: [],
+    });
+    return {
+      id: `page:${page}`,
+      label,
+      actions: [{ id, label: t('settings.openPage'), view: true }],
+    };
   };
 
   const pageTitles = new Map<string, LocalizedText>();
@@ -774,13 +787,14 @@ export function permissionWorkspace(
       children: main,
     });
 
-  // System settings: one menu per settings module, grouped by the settings home's categories.
-  const administration: PermissionMenuNode[] = [];
-  const settingsGroup = t('settings.title');
+  // System settings: one page per settings module, grouped by the settings home's categories, in their own tab. A
+  // settings page has no menu checkbox: it shows in the sidebar while the action that opens it is on.
+  const settings: PermissionSettingsPage[] = [];
   for (const category of buildSettingsCatalog(routes, new Set())) {
-    const children: PermissionMenuNode[] = [];
+    const group = text(
+      navigationTitle(category.route, titles) ?? category.route.name,
+    );
     for (const module of category.modules) {
-      const id = `admin:${module.route.packageName}:${module.route.name}`;
       const label = text(
         navigationTitle(module.route, titles) ?? module.route.name,
       );
@@ -789,40 +803,31 @@ export function permissionWorkspace(
         .filter((resource) => resource.type === 'page')
         .map((resource) => resource.id)
         .filter((page) => !seenPages.has(page));
+      pages.forEach((page) => seenPages.add(page));
+      const pageObjects = pages.map((page, index) =>
+        pageObject(
+          page,
+          index === 0 ? label : text(pageTitles.get(page) ?? page),
+        ),
+      );
       const used = resources
         .filter((resource) => resource.type !== 'page')
         .flatMap((resource) => {
-          const object = settingsObject(resource, settingsGroup);
+          const object = settingsObject(resource);
           return object ? [object] : [];
         });
-      const uses = usesOf(
-        routeNames(module.route, false),
-        pages,
-        used.map((object) => object.id),
+      const pageObjectsUsed = [...pageObjects, ...used].filter(
+        (object, index, all) =>
+          all.findIndex((item) => item.id === object.id) === index,
       );
-      if (pages.length) {
-        pages.forEach((page) => seenPages.add(page));
-        menuPages.set(id, pages);
-        children.push({ id, label, ...(uses ? { uses } : {}) });
-        continue;
-      }
-      const view = used[0]?.actions.find((action) => action.view);
-      if (view)
-        children.push({
-          id,
-          label,
-          opensWith: view.id,
-          ...(uses ? { uses } : {}),
-        });
-    }
-    if (children.length)
-      administration.push({
-        id: `settings:${category.route.packageName}:${category.route.name}`,
-        label: text(
-          navigationTitle(category.route, titles) ?? category.route.name,
-        ),
-        children,
+      if (!pageObjectsUsed.length) continue;
+      settings.push({
+        id: `admin:${module.route.packageName}:${module.route.name}`,
+        label,
+        group,
+        objects: pageObjectsUsed,
       });
+    }
   }
 
   // Pages no menu reaches, such as overlays with a grant of their own.
@@ -861,11 +866,5 @@ export function permissionWorkspace(
       label: t('settings.pagesOutsideNavigation'),
       children: outside,
     });
-  if (administration.length)
-    menus.push({
-      id: 'group:settings',
-      label: settingsGroup,
-      children: administration,
-    });
-  return { menus, objects, bindings, menuPages };
+  return { menus, objects, settings, bindings, menuPages };
 }

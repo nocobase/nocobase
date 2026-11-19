@@ -262,6 +262,7 @@ const settings = {
   discardChanges: '放弃修改',
   unrestrictedRole: '全部权限',
   permissionMainMenu: '主菜单',
+  openPage: '打开页面',
   escalation: {
     roles:
       '能新建或修改角色的人，可以给任何角色（包括自己的角色）授予任何权限。服务端不会把它限制在其自身已有的权限之内，请只授予可信的管理员。',
@@ -271,6 +272,9 @@ const settings = {
   permissionEditor: {
     menusTab: '菜单',
     objectsTab: '业务对象',
+    settingsTab: '系统设置',
+    settingsIntro:
+      '开启设置页的查看（或进入该页所需的操作）后，侧边栏会显示对应菜单，不需要另外勾选菜单。系统设置没有数据范围。',
     tabCount: '{{count}} / {{total}}',
     menusIntro:
       '这里只决定这个角色在侧边栏能看到哪些菜单。能看哪些数据、能做什么，在「业务对象」里按对象统一设置。',
@@ -301,8 +305,6 @@ const settings = {
     sameAsObjectView: '和{{object}}的查看一样（{{scope}}）',
     scopeFor: '{{action}}的数据范围',
     scopeForSlot: '{{action}}：{{scope}}',
-    scopeNote: '数据范围：{{options}}。其他操作的范围不能比查看更宽。',
-    scopeSeparator: ' / ',
     followHint: '其他操作跟随查看的范围，可以更窄，不能更宽。',
     managed: '由应用管理',
     appliesEverywhere: '改动对所有用到该对象的菜单生效',
@@ -331,32 +333,6 @@ const settings = {
       '没有关闭任何操作：由应用管理的{{actions}}依赖它。',
     noticeManagedDependent_other:
       '没有关闭任何操作：由应用管理的{{actions}}依赖它。',
-  },
-  permissionCheck: {
-    title: '权限检查',
-    description:
-      '查看某个用户能打开什么、能做什么，由服务端按其全部角色和数据规则判定。',
-    role: '角色',
-    anyRole: '任意角色',
-    user: '用户',
-    chooseUser: '选择用户',
-    noUsers: '没有用户',
-    noRoleUsers: '还没有用户拥有该角色',
-    noMatchingUsers: '没有匹配的用户',
-    loadingUsers: '正在加载用户…',
-    searchUsers: '查找用户',
-    searchPlaceholder: '姓名或邮箱',
-    moreUsers: '显示 {{total}} 个用户中的 {{shown}} 个，搜索可找到其他用户。',
-    hint: '角色通过拥有它的用户来预览，结果包含该用户的其他角色，以及默认范围、共享和限制规则。',
-    visibleMenus: '能看到 {{visible}} / {{total}} 个菜单',
-    menuVisible: '可见',
-    menuHidden: '不可见',
-    roles: '生效的角色',
-    effect: {
-      permit: '允许',
-      conditional: '按数据范围',
-      deny: '不允许',
-    },
   },
   recordScope: '数据范围',
   levelFor: '{{name}} 的范围',

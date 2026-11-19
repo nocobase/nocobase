@@ -129,18 +129,14 @@ describe('user permission configuration', () => {
             fetch: answerApi(calls),
           },
         );
-      // Actions are set per business object, on the second tab.
+      // User management is a settings page, set on the System settings tab.
       const openUsers = async () => {
         await user.click(
           await screen.findByRole('tab', {
-            name: new RegExp(words.permissionEditor.objectsTab),
+            name: new RegExp(words.permissionEditor.settingsTab),
           }),
         );
-        await user.click(
-          await screen.findByRole('button', {
-            name: new RegExp(`^${words.userPermissions}`),
-          }),
-        );
+        await screen.findByRole('heading', { name: words.users });
       };
       const first = await mount();
       await openUsers();

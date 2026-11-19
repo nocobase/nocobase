@@ -28,6 +28,7 @@ import {
 } from '../../client/pages/settings/permissions-model.js';
 import {
   applyQuickSet,
+  settingsPageObject,
   menusUsing,
   dependentsOf,
   narrowerOptions,
@@ -330,48 +331,42 @@ describe('role permission workspace', () => {
     ).toEqual(['Fixture contracts', 'Fixture reports']);
   });
 
-  it('lists system settings with their real actions and the escalation notice', async () => {
+  it('sets system settings in their own tab, one page per settings module', async () => {
     const { workspace: ws } = await workspace();
-    const settings = ws.menus.at(-1)!;
-    expect(settings.label).toBe(enUS.settings.title);
-    const roles = leaves(settings.children ?? []).find(
-      ({ menu }) => menu.label === enUS.settings.permissionManagement,
-    )!.menu;
-    const sets = ws.objects.find(
+    const page = (label: string) =>
+      ws.settings.find((item) => item.label === label);
+    const roles = page(enUS.settings.permissionManagement)!;
+    const sets = roles.objects.find(
       (object) => object.id === 'settings:authorization.permission-sets',
     )!;
-    // Checking the whole System settings group, sensitive entries included, and clearing it again never changes
-    // what the role may do with an object: entries opened by an action stay as they are.
-    const grants: PermissionGrants = {
-      [permissionRowId(
-        { type: 'settings', id: 'authorization.permission-sets' },
-        'update',
-      )]: {},
-    };
-    const all = setMenuChecked(
-      ws.menus,
-      { menus: [], grants },
-      settings.id,
-      true,
-    );
-    expect(all.grants).toBe(grants);
-    expect(all.menus).not.toContain(roles.id);
-    const none = setMenuChecked(ws.menus, all, settings.id, false);
-    expect(none).toEqual({ menus: [], grants });
+    // Settings menus and objects appear only here, never among the business menus and objects.
     expect(
-      grantsFromDraft(all, {}, [], ws).filter(
-        (grant) => grant.resource.type !== 'page',
+      leaves(ws.menus).some(({ menu }) =>
+        [enUS.settings.users, enUS.settings.permissionManagement].includes(
+          menu.label,
+        ),
       ),
-    ).toEqual(grantsFromDraft(none, {}, [], ws));
-    // A settings page guarded by an action opens with it.
-    expect(roles.opensWith).toBe(
-      permissionRowId(
+    ).toBe(false);
+    expect(ws.objects.some((object) => object.id.startsWith('settings:'))).toBe(
+      false,
+    );
+    expect(ws.objects.some((object) => object.id === 'user:*')).toBe(false);
+    // Grouped by the settings home's categories; no data scopes.
+    expect(roles.group).toBe(enUS.settings.categories.account);
+    expect(
+      ws.settings.flatMap((item) =>
+        item.objects.flatMap((object) =>
+          object.actions.filter((action) => action.scopes?.length),
+        ),
+      ),
+    ).toEqual([]);
+    expect(sets.actions[0]).toMatchObject({
+      id: permissionRowId(
         { type: 'settings', id: 'authorization.permission-sets' },
         'read',
       ),
-    );
-    expect(roles.uses?.primary).toContain(sets.id);
-    expect(sets.group).toBe(enUS.settings.title);
+      view: true,
+    });
     expect(
       sets.actions.find(
         (action) =>
@@ -383,7 +378,7 @@ describe('role permission workspace', () => {
       ),
     ).toMatchObject({ risk: 'high' });
     expect(sets.notice).toBe(enUS.settings.escalation.roles);
-    const users = ws.objects.find((object) => object.id === 'user:*')!;
+    const users = page(enUS.settings.users)!.objects[0]!;
     expect(users.actions[0]).toMatchObject({
       label: enUS.settings.readUsers,
       view: true,
@@ -391,17 +386,55 @@ describe('role permission workspace', () => {
     expect(
       users.actions.find((action) => action.label === enUS.settings.assignRole),
     ).toMatchObject({ risk: 'high' });
-    // Settings pages are not business menus.
+    // A page guarded by a page grant opens with one action, stored as that page's access and not as a menu.
+    const guide = ws.settings.find((item) =>
+      item.objects.some((object) =>
+        object.actions.some(
+          (action) =>
+            action.id ===
+            permissionRowId(
+              { type: 'page', id: CAPABILITY_GUIDE_ACCESS.resource.id },
+              'access',
+            ),
+        ),
+      ),
+    )!;
+    const open = guide.objects[0]!.actions[0]!;
+    expect(open).toMatchObject({ label: enUS.settings.openPage, view: true });
     expect(
-      leaves(ws.menus.slice(0, -1)).some(
-        ({ menu }) => menu.label === enUS.settings.users,
+      [...ws.menuPages.values()].some((pages) =>
+        pages.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
       ),
     ).toBe(false);
-    // Features and extensions is one page, under System settings.
-    const guide = leaves(ws.menus).filter(({ menu }) =>
-      ws.menuPages.get(menu.id)?.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
+    const saved = grantsFromDraft(
+      { menus: [], grants: { [open.id]: {} } },
+      {},
+      [],
+      ws,
     );
-    expect(guide.map(({ path }) => path[0])).toEqual([enUS.settings.title]);
+    expect(saved).toEqual([
+      {
+        resource: { type: 'page', id: CAPABILITY_GUIDE_ACCESS.resource.id },
+        actions: [{ action: 'access' }],
+      },
+    ]);
+    expect(draftFromGrants(saved, ws).draft).toEqual({
+      menus: [],
+      grants: { [open.id]: {} },
+    });
+    // Enable all for a page leaves the risky actions off.
+    const enabled = applyQuickSet(
+      [...ws.objects, ...ws.settings.flatMap((item) => item.objects)],
+      {},
+      settingsPageObject(roles),
+      'all',
+    ).grants;
+    expect(Object.keys(enabled)).toContain(sets.actions[0]!.id);
+    expect(
+      sets.actions
+        .filter((action) => action.risk)
+        .some((action) => enabled[action.id]),
+    ).toBe(false);
   });
 
   it('stores what the editor shows and keeps what it does not', async () => {
@@ -798,22 +831,18 @@ describe('role permission workspace', () => {
     ).toEqual({ records: 'own', pluginSlot: 'kept' });
   });
 
-  it('leaves checking other users’ permissions out of Enable all', async () => {
+  it('shows no permission check: the server’s inspector resource is not offered anywhere', async () => {
     const { workspace: ws } = await workspace();
     const inspect = permissionRowId(
       { type: 'settings', id: 'authorization.inspector' },
       'inspect',
     );
-    const object = ws.objects.find((item) =>
-      item.actions.some((action) => action.id === inspect),
-    )!;
+    expect(ws.bindings.has(inspect)).toBe(false);
     expect(
-      object.actions.find((action) => action.id === inspect),
-    ).toMatchObject({
-      risk: 'sensitive',
-    });
-    const { grants } = applyQuickSet(ws.objects, {}, object, 'all');
-    expect(grants[inspect]).toBeUndefined();
+      [...ws.objects, ...ws.settings.flatMap((page) => page.objects)].some(
+        (object) => object.id === 'settings:authorization.inspector',
+      ),
+    ).toBe(false);
   });
 
   it('labels the scopes of a multi-scope action with their registered collection titles', async () => {
