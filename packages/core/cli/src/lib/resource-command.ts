@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
+import { translateCli } from './cli-locale.js';
 import { ensureCrossEnvConfirmed } from './env-guard.js';
 import { executeResourceRequest, type ResourceAction, type ResourceRequestArgs } from './resource-request.js';
 import { setVerboseMode } from './ui.js';
@@ -179,6 +180,16 @@ export const resourceAssociationFlags = {
 export const listFlags = {
   ...resourceBaseFlags,
   ...resourceAssociationFlags,
+  space: Flags.string({
+    description: translateCli('commands.resourceList.space'),
+    parse: async (input) => {
+      const space = input.trim();
+      if (!space || space.includes(',')) {
+        throw new Error(translateCli('commands.resourceList.invalidSpace'));
+      }
+      return space;
+    },
+  }),
   filter: Flags.string({
     description: 'Filter object as JSON',
   }),
@@ -329,6 +340,7 @@ function pickSharedArgs(flags: Record<string, any>): Pick<ResourceRequestArgs, '
 export function buildListArgs(flags: Record<string, any>): ResourceRequestArgs {
   return {
     ...pickSharedArgs(flags),
+    space: flags.space,
     filter: parseObjectFlag(flags.filter, 'filter'),
     fields: parseStringArrayFlags(flags.fields, 'fields'),
     appends: parseStringArrayFlags(flags.appends, 'appends'),
