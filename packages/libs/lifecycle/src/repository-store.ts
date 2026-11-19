@@ -1,3 +1,4 @@
+import type { ManagementEvent } from './management.js';
 import type {
   DatabaseConnection,
   DatabaseManager,
@@ -146,6 +147,11 @@ function toTransition(row: Row): TransitionEntry {
     at: text(row.at) ?? '',
     version: Number(row.version ?? 0),
     requestId: text(row.requestId),
+    ...(row.management == null
+      ? {}
+      : {
+          management: json(row.management, null) as unknown as ManagementEvent,
+        }),
   };
 }
 
@@ -324,6 +330,12 @@ class RepositoryLifecycleStore implements LifecycleStore {
         id: key(id),
         [condition.stateField]: condition.state,
         [condition.versionField]: condition.version,
+        ...(condition.managementRevision
+          ? {
+              [condition.managementRevision.field]:
+                condition.managementRevision.value,
+            }
+          : {}),
       },
       values: asRow(values),
     });
@@ -382,7 +394,13 @@ class RepositoryLifecycleStore implements LifecycleStore {
     entry: NewTransitionEntry,
   ): Promise<TransitionEntry> {
     const created = await this.repository(this.names.transitions).createOne({
-      values: asRow({ ...entry, requestKey: transitionRequestKey(entry) }),
+      values: asRow({
+        ...entry,
+        ...(entry.management
+          ? { journalRevision: entry.management.revision }
+          : {}),
+        requestKey: transitionRequestKey(entry),
+      }),
     });
     return toTransition(created.record);
   }
@@ -480,6 +498,7 @@ class RepositoryLifecycleStore implements LifecycleStore {
   }
 
   public async listEffectRuns(query: EffectRunQuery): Promise<EffectRun[]> {
+    const after = query.continuationAfter;
     const rows = await this.repository(this.names.effectRuns).findMany({
       filter: (filter) =>
         filter.and([
@@ -515,6 +534,18 @@ class RepositoryLifecycleStore implements LifecycleStore {
                   ? filter.date('continuationAbandonedAt').notEmpty()
                   : filter.date('continuationAbandonedAt').empty(),
               ]),
+          ...(after
+            ? [
+                filter.or([
+                  filter.date('continuationDueAt').after(after.dueAt),
+                  filter.and([
+                    filter.date('continuationDueAt').notBefore(after.dueAt),
+                    filter.date('continuationDueAt').notAfter(after.dueAt),
+                    filter.number('id').gt(key(after.id)),
+                  ]),
+                ]),
+              ]
+            : []),
           ...(query.continuationDueBy === undefined
             ? []
             : [

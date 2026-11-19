@@ -1,4 +1,15 @@
 import {
+  managementState,
+  type ManagementAuthorization,
+  type ManagementCommand,
+  type ManagementDetails,
+  type ManagementEvent,
+  type ManagementOptions,
+  type ManagementReentryContext,
+  type ManagementResult,
+  type ManagementState,
+} from './management.js';
+import {
   normalizeParameterValues,
   parameterIdentity,
   canonical,
@@ -51,6 +62,7 @@ import {
   type IdleRecordCursor,
   type LifecycleStore,
   type PendingContinuation,
+  type RecordCondition,
   type TransactionOptions,
   type TransitionEntry,
 } from './store.js';
@@ -318,6 +330,9 @@ export interface LifecycleTransaction {
   readonly now: Date;
   /** The record as this transaction sees it. */
   read(lifecycle: string, id: RecordId): Promise<LifecycleRecord | undefined>;
+  /** For domain writes that do not fire a transition. Check the stay after taking this lock. */
+  requireActive(lifecycle: string, id: RecordId): Promise<LifecycleRecord>;
+
   fire(
     lifecycle: string,
     id: RecordId,
@@ -359,7 +374,7 @@ export interface LifecycleEvent {
 export interface LifecycleRecordChange {
   readonly lifecycle: string;
   readonly recordId: RecordId;
-  readonly kind: 'transition' | 'effect';
+  readonly kind: 'transition' | 'effect' | 'management';
   readonly runId?: string;
 }
 
@@ -432,6 +447,7 @@ export interface RecordView {
   readonly version: number | null;
   readonly available: readonly AvailableTransition[];
   readonly history: RecordHistory;
+  readonly suspended?: boolean;
 }
 
 export interface RecordHistory {
@@ -507,6 +523,38 @@ class EntryWork {
 
 const silent: LifecycleLogger = { warn: () => {}, error: () => {} };
 
+class InstanceLockConflict extends LifecycleError {
+  public constructor() {
+    super(
+      'CONFLICT',
+      'The lifecycle instance changed while acquiring its lock.',
+    );
+  }
+}
+
+const suspensionBlocker: Blocker = {
+  source: 'state',
+  kind: 'precondition',
+  code: 'SUSPENDED',
+  message: 'This lifecycle instance is suspended.',
+};
+
+function suspendedInstance(): LifecycleError {
+  return new LifecycleError('SUSPENDED', suspensionBlocker.message, {
+    blockers: [suspensionBlocker],
+  });
+}
+
+function effectiveChangedAt(
+  lifecycle: Lifecycle<LifecycleTypes>,
+  record: LifecycleRecord,
+): number {
+  return (
+    Date.parse(String(record[lifecycle.changedAtField])) +
+    managementState(lifecycle.management?.field, record).pausedMs
+  );
+}
+
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -574,6 +622,7 @@ function triggerKey(lifecycle: string, trigger: string, id: RecordId): string {
 /** What a sweep expects when another sweep or a person got there first. */
 const RACED: ReadonlySet<LifecycleErrorCode> = new Set<LifecycleErrorCode>([
   ...MOVED_ON,
+  'SUSPENDED',
   'CONFLICT',
 ]);
 
@@ -879,6 +928,12 @@ export class LifecycleRuntime {
     const versions = this.versionsOf(lifecycle.key);
     if (!versions.length) return;
     for (const other of versions) {
+      if (
+        other.management &&
+        lifecycle.management &&
+        other.management.field !== lifecycle.management.field
+      )
+        refuse('managed versions must share a management field.');
       if (other.version === lifecycle.version)
         refuse(
           `version ${lifecycle.version} of "${lifecycle.key}" is already "${other.name}".`,
@@ -1479,6 +1534,23 @@ export class LifecycleRuntime {
         if (record) checkBinding(lifecycle, record);
         return record;
       },
+      requireActive: async (
+        name: string,
+        id: RecordId,
+      ): Promise<LifecycleRecord> => {
+        const { lifecycle } = this.get(name);
+        await this.lockInstance(store, lifecycle, id);
+        const record = await store.findRecord(lifecycle.collection, id);
+        if (!record)
+          throw new LifecycleError(
+            'RECORD_NOT_FOUND',
+            `No ${lifecycle.collection} record "${String(id)}".`,
+          );
+        checkBinding(lifecycle, record);
+        if (managementState(lifecycle.management?.field, record).suspendedAt)
+          throw suspendedInstance();
+        return record;
+      },
       fire: (
         name: string,
         id: RecordId,
@@ -1641,16 +1713,20 @@ export class LifecycleRuntime {
   ): Promise<AvailableTransition[]> {
     const { lifecycle } = registered;
     const result: AvailableTransition[] = [];
+    const suspended =
+      managementState(lifecycle.management?.field, record).suspendedAt !== null;
     for (const transition of transitionsFrom(
       lifecycle,
       stateOf(lifecycle, record),
     )) {
       if (!transition.manual) continue;
-      const blockers = await guardBlockers(
-        transition,
-        context,
-        registered.guards.get(transition.name),
-      );
+      const blockers = suspended
+        ? [suspensionBlocker]
+        : await guardBlockers(
+            transition,
+            context,
+            registered.guards.get(transition.name),
+          );
       result.push({
         name: transition.name,
         title: transition.title,
@@ -1699,6 +1775,8 @@ export class LifecycleRuntime {
         problems: [],
       };
     const record = await this.require(registered, id);
+    if (managementState(lifecycle.management?.field, record).suspendedAt)
+      return { allowed: false, blockers: [suspensionBlocker], problems: [] };
     const state = stateOf(lifecycle, record);
     if (!declared.from.includes(state))
       return {
@@ -2023,6 +2101,593 @@ export class LifecycleRuntime {
     return result;
   }
 
+  public suspend(
+    key: string,
+    id: RecordId,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.manage(key, id, 'suspend', options);
+  }
+
+  public resume(
+    key: string,
+    id: RecordId,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.manage(key, id, 'resume', options);
+  }
+
+  public reset(
+    key: string,
+    id: RecordId,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.manage(key, id, 'reset', options);
+  }
+
+  public restartAt(
+    key: string,
+    id: RecordId,
+    target: string,
+    options: ManagementOptions,
+  ): Promise<ManagementResult> {
+    return this.manage(key, id, 'restartAt', options, target);
+  }
+
+  /** A preview. Each command repeats authorization and the entry checks under the record lock. */
+  public async managementDetails(
+    key: string,
+    id: RecordId,
+    actor: LifecycleActor,
+    authorize: ManagementAuthorization,
+  ): Promise<ManagementDetails | undefined> {
+    return this.store.transaction(async (store) => {
+      const { registered, record } = await this.managedRecord(store, key, id);
+      const { lifecycle } = registered;
+      const policy = lifecycle.management;
+      if (!policy) return undefined;
+      const allowed = new Set<ManagementCommand>();
+      for (const command of [
+        'suspend',
+        'resume',
+        'reset',
+        'restartAt',
+      ] as const)
+        if (
+          await authorize({
+            actor,
+            command,
+            record,
+            lifecycle: lifecycle.name,
+            transactionHandle: store.transactionHandle,
+          })
+        )
+          allowed.add(command);
+      if (allowed.size === 0) return undefined;
+      const state = managementState(policy.field, record);
+      const result = this.managementResult(lifecycle, record, state);
+      const actions: ManagementCommand[] = [];
+      const targets: string[] = [];
+      const canEnter = async (
+        command: 'reset' | 'restartAt',
+        to: string,
+      ): Promise<boolean> => {
+        if (!policy.canEnter) return true;
+        return policy.canEnter(
+          await this.reentryContext(
+            store,
+            registered,
+            record,
+            command,
+            to,
+            actor,
+            '',
+            this.clock(),
+          ),
+        );
+      };
+      if (!result.suspended) {
+        if (policy.suspend && allowed.has('suspend')) actions.push('suspend');
+      } else {
+        if (allowed.has('resume')) actions.push('resume');
+        if (
+          policy.reset &&
+          allowed.has('reset') &&
+          (await canEnter('reset', lifecycle.initial))
+        )
+          actions.push('reset');
+        if (allowed.has('restartAt'))
+          for (const target of policy.restartAt ?? [])
+            if (await canEnter('restartAt', target)) targets.push(target);
+        if (targets.length) actions.push('restartAt');
+      }
+      const runs = await store.listEffectRuns({
+        lifecycle: lifecycle.name,
+        recordId: String(record.id),
+      });
+      const history = await store.listTransitions(
+        lifecycle.name,
+        String(record.id),
+      );
+      const work: ManagementDetails['work'][number][] = [];
+      for (const run of runs) {
+        const status =
+          run.status === 'running'
+            ? 'running'
+            : run.status === 'queued'
+              ? 'queued'
+              : run.continuation
+                ? 'continuation'
+                : undefined;
+        if (
+          status &&
+          (status === 'running' || (await this.currentRound(store, state, run)))
+        )
+          work.push({ id: run.id, effect: run.effect, status });
+      }
+      return {
+        ...result,
+        initial: lifecycle.initial,
+        actions,
+        targets,
+        work,
+        history: history.flatMap((entry) =>
+          entry.management
+            ? [
+                {
+                  id: entry.id,
+                  actorId: entry.actorId,
+                  at: entry.at,
+                  from: entry.from!,
+                  requestId: entry.requestId!,
+                  event: entry.management,
+                },
+              ]
+            : [],
+        ),
+      };
+    });
+  }
+
+  private async managedRecord(
+    store: LifecycleStore,
+    key: string,
+    id: RecordId,
+    lock = false,
+  ): Promise<{
+    registered: Registered;
+    record: LifecycleRecord;
+  }> {
+    const versions = this.versionsOf(this.keyOf(key));
+    const [first] = versions;
+    const locking = versions.find((definition) => definition.management);
+    let record = await store.findRecord(first.collection, id);
+    if (!record)
+      throw new LifecycleError(
+        'RECORD_NOT_FOUND',
+        `No ${first.collection} record "${String(id)}".`,
+      );
+    const registered = this.get(this.recordLifecycle(key, record));
+    if (lock && locking) {
+      await registered.lifecycle.management?.prepare?.(
+        this.scope(store, this.clock()),
+      );
+      await this.lockInstance(store, locking, id);
+      const current = await store.findRecord(first.collection, id);
+      if (!current)
+        throw new LifecycleError(
+          'RECORD_NOT_FOUND',
+          `No ${first.collection} record "${String(id)}".`,
+        );
+      record = current;
+      checkBinding(registered.lifecycle, record);
+    }
+    return { registered, record };
+  }
+
+  private managementResult(
+    lifecycle: Lifecycle<LifecycleTypes>,
+    record: LifecycleRecord,
+    state: ManagementState,
+  ): ManagementResult {
+    return {
+      lifecycle: lifecycle.name,
+      definitionVersion: lifecycle.version,
+      recordId: String(record.id),
+      state: stateOf(lifecycle, record),
+      suspended: state.suspendedAt !== null,
+      round: state.round,
+      version: JSON.stringify([
+        lifecycle.name,
+        versionOf(lifecycle, record),
+        state.revision,
+      ]),
+    };
+  }
+
+  private async reentryContext(
+    store: LifecycleStore,
+    registered: Registered,
+    record: LifecycleRecord,
+    command: 'reset' | 'restartAt',
+    to: string,
+    actor: LifecycleActor,
+    reason: string,
+    now: Date,
+  ): Promise<ManagementReentryContext<LifecycleTypes>> {
+    const { lifecycle } = registered;
+    return {
+      previous: record,
+      from: stateOf(lifecycle, record),
+      to,
+      actor,
+      command,
+      reason,
+      parameters: (await this.resolveParameters(lifecycle.name, {
+        record,
+        transactionHandle: store.transactionHandle,
+        purpose: 'action',
+      })) as ParametersOf<LifecycleTypes>,
+      services: registered.services(
+        store.transactionHandle,
+      ) as ServicesOf<LifecycleTypes>,
+      tx: this.scope(store, now),
+      now,
+    };
+  }
+
+  private async manage(
+    key: string,
+    id: RecordId,
+    command: ManagementCommand,
+    options: ManagementOptions,
+    target?: string,
+  ): Promise<ManagementResult> {
+    checkRequestId(options.requestId);
+    if (
+      !options.requestId?.trim() ||
+      !options.reason?.trim() ||
+      !options.expectedVersion
+    )
+      throw new LifecycleError(
+        'INVALID_INPUT',
+        'A reason, request id and expected version are required.',
+      );
+    const submit = (): Promise<ManagementResult> =>
+      this.store.transaction(async (store) => {
+        const { registered, record } = await this.managedRecord(
+          store,
+          key,
+          id,
+          true,
+        );
+        const { lifecycle } = registered;
+        const access = {
+          actor: options.actor,
+          record,
+          lifecycle: lifecycle.name,
+          command,
+          transactionHandle: store.transactionHandle,
+        };
+        if (!(await options.authorize(access)))
+          throw new LifecycleError(
+            'MANAGEMENT_FORBIDDEN',
+            'You cannot manage this lifecycle instance.',
+          );
+        const policy = lifecycle.management;
+        if (!policy)
+          throw new LifecycleError(
+            'INVALID_STATE',
+            'This definition does not enable lifecycle management.',
+          );
+        const recordId = String(record.id);
+        const reason = options.reason.trim();
+        const earlier = await store.findTransitionByRequest(
+          lifecycle.name,
+          recordId,
+          options.requestId,
+        );
+        if (earlier) {
+          const event = earlier.management;
+          if (
+            event &&
+            event.command === command &&
+            event.reason === reason &&
+            event.expectedVersion === options.expectedVersion &&
+            earlier.actorId === options.actor.id &&
+            (command !== 'restartAt' || earlier.to === target)
+          )
+            return event.result;
+          throw new LifecycleError(
+            'CONFLICT',
+            'This request id was already used with different parameters.',
+          );
+        }
+        const previous = managementState(policy.field, record);
+        const current = this.managementResult(lifecycle, record, previous);
+        if (
+          current.version !== options.expectedVersion ||
+          (options.expectCurrent && !(await options.expectCurrent(access)))
+        )
+          throw new LifecycleError(
+            'CONFLICT',
+            'The lifecycle instance changed since it was read.',
+          );
+        const to =
+          command === 'reset' ? lifecycle.initial : (target ?? current.state);
+        const reenter = command === 'reset' || command === 'restartAt';
+        if (
+          command === 'suspend'
+            ? current.suspended || !policy.suspend
+            : !current.suspended
+        )
+          throw new LifecycleError(
+            'INVALID_STATE',
+            'This command is unavailable in the current lifecycle state.',
+          );
+        if (
+          (command === 'reset' && !policy.reset) ||
+          (command === 'restartAt' &&
+            (!target || !policy.restartAt?.includes(target)))
+        )
+          throw new LifecycleError(
+            'INVALID_STATE',
+            'This definition does not allow entry to that state by this command.',
+          );
+
+        const now = this.clock();
+        const at = now.toISOString();
+        const context = reenter
+          ? await this.reentryContext(
+              store,
+              registered,
+              record,
+              command,
+              to,
+              options.actor,
+              reason,
+              now,
+            )
+          : undefined;
+        if (context && policy.canEnter && !(await policy.canEnter(context)))
+          throw new LifecycleError(
+            'INVALID_STATE',
+            'The lifecycle cannot reenter that state for this record.',
+          );
+        const values = context && policy.set ? await policy.set(context) : {};
+        if (
+          Object.keys(values).some((field) =>
+            ownedFields(lifecycle).includes(field),
+          )
+        )
+          throw new LifecycleError(
+            'INVALID_SET',
+            'A management policy cannot set lifecycle-owned fields.',
+          );
+        const version = versionOf(lifecycle, record);
+        const nextVersion = (version ?? 0) + 1;
+        const pause =
+          command === 'resume'
+            ? Math.max(0, now.getTime() - Date.parse(previous.suspendedAt!))
+            : 0;
+        const state: ManagementState = {
+          revision: previous.revision + 1,
+          round: previous.round + Number(reenter),
+          roundStartedVersion: reenter
+            ? nextVersion
+            : previous.roundStartedVersion,
+          suspendedAt: command === 'suspend' ? at : null,
+          pausedMs: reenter ? 0 : previous.pausedMs + pause,
+        };
+        const dueField = lifecycle.dueAtField;
+        const originalDue = dueField ? record[dueField] : null;
+        const update = {
+          ...values,
+          [policy.field]: state,
+          [`${policy.field}Revision`]: state.revision,
+          ...(reenter
+            ? {
+                [lifecycle.stateField]: to,
+                [lifecycle.changedAtField]: at,
+                [lifecycle.versionField]: nextVersion,
+              }
+            : {}),
+          ...(dueField && context
+            ? {
+                [dueField]: this.triggerDueAt(
+                  lifecycle,
+                  to,
+                  context.parameters,
+                  now,
+                ),
+              }
+            : dueField && pause && typeof originalDue === 'string'
+              ? {
+                  [dueField]: new Date(
+                    Date.parse(originalDue) + pause,
+                  ).toISOString(),
+                }
+              : {}),
+        };
+        if (
+          !(await store.updateRecordIf(
+            lifecycle.collection,
+            id,
+            this.recordCondition(lifecycle, record),
+            update,
+          ))
+        )
+          throw new LifecycleError(
+            'CONFLICT',
+            'The lifecycle instance changed during the command.',
+          );
+        const written = (await store.findRecord(lifecycle.collection, id))!;
+        const result = this.managementResult(lifecycle, written, state);
+        const event: ManagementEvent = {
+          command,
+          reason,
+          expectedVersion: options.expectedVersion,
+          revision: state.revision,
+          previousRound: previous.round,
+          result,
+        };
+        const entry = await store.appendTransition({
+          lifecycle: lifecycle.name,
+          recordId,
+          transition: '$manage',
+          from: current.state,
+          to,
+          actorId: options.actor.id,
+          input: {},
+          management: event,
+          at,
+          version: reenter ? nextVersion : (version ?? 0),
+          requestId: options.requestId,
+        });
+        const runs = await store.listEffectRuns({
+          lifecycle: lifecycle.name,
+          recordId,
+        });
+        if (context) {
+          for (const run of runs) {
+            if (run.status === 'queued' || run.continuation)
+              await store.updateEffectRun(
+                run.id,
+                { status: run.status, attempts: run.attempts },
+                {
+                  ...(run.status === 'queued'
+                    ? {
+                        status: 'cancelled',
+                        error: 'The lifecycle execution restarted.',
+                      }
+                    : {}),
+                  continuation: null,
+                  updatedAt: at,
+                },
+              );
+          }
+          await policy.onReenter?.({
+            ...context,
+            record: written,
+            event,
+            entry,
+          });
+          const owed = await this.owe(
+            store,
+            lifecycle,
+            entry,
+            policy.onEnter?.[to] ?? [],
+            true,
+          );
+          store.afterCommit(async () => {
+            for (const run of owed) await this.handOver(run.id, run.runAfter);
+          });
+        }
+        store.afterCommit(() =>
+          this.changed({
+            lifecycle: lifecycle.name,
+            recordId,
+            kind: 'management',
+          }),
+        );
+        if (command === 'resume')
+          store.afterCommit(async () => {
+            for (const run of runs) {
+              if (run.status === 'queued')
+                await this.handOver(run.id, run.runAfter);
+              if (
+                run.continuation &&
+                !run.continuation.abandonedAt &&
+                run.continuation.dueAt <= at
+              )
+                await this.tryContinuation(run, registered);
+            }
+          });
+        return result;
+      }, joining(options.transaction));
+    try {
+      return await submit();
+    } catch (error) {
+      // A competing command may have spent the request id while this
+      // transaction was waiting for the business row.
+      if (
+        !(error instanceof InstanceLockConflict) ||
+        options.transaction !== undefined
+      )
+        throw error;
+      return submit();
+    }
+  }
+
+  private recordCondition(
+    lifecycle: Lifecycle<LifecycleTypes>,
+    record: LifecycleRecord,
+  ): RecordCondition {
+    const field = lifecycle.management
+      ? `${lifecycle.management.field}Revision`
+      : undefined;
+    return {
+      stateField: lifecycle.stateField,
+      state: stateOf(lifecycle, record),
+      versionField: lifecycle.versionField,
+      version: versionOf(lifecycle, record),
+      ...(field
+        ? {
+            managementRevision: {
+              field,
+              value: record[field] == null ? null : Number(record[field]),
+            },
+          }
+        : {}),
+    };
+  }
+
+  /** Lock the business row before touching its Effect runs, in the caller's transaction. */
+  private async lockInstance(
+    store: LifecycleStore,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    id: RecordId,
+  ): Promise<void> {
+    const record = await store.findRecord(lifecycle.collection, id);
+    if (
+      record &&
+      !(await store.updateRecordIf(
+        lifecycle.collection,
+        id,
+        this.recordCondition(lifecycle, record),
+        {
+          [lifecycle.versionField]: versionOf(lifecycle, record),
+        },
+      ))
+    )
+      throw new InstanceLockConflict();
+  }
+
+  private async currentRound(
+    store: LifecycleStore,
+    state: ManagementState,
+    run: EffectRun,
+  ): Promise<boolean> {
+    if (state.roundStartedVersion === 0) return true;
+    const source = await store.findTransition(run.transitionId);
+    return source !== undefined && source.version >= state.roundStartedVersion;
+  }
+
+  private async lockRunInstance(
+    store: LifecycleStore,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    run: EffectRun,
+  ): Promise<'active' | 'suspended' | 'obsolete'> {
+    if (!lifecycle.management) return 'active';
+    await lifecycle.management.prepare?.(this.scope(store, this.clock()));
+    await this.lockInstance(store, lifecycle, run.recordId);
+    const record = await store.findRecord(lifecycle.collection, run.recordId);
+    if (!record) return 'obsolete';
+    const state = managementState(lifecycle.management.field, record);
+    if (!(await this.currentRound(store, state, run))) return 'obsolete';
+    return state.suspendedAt ? 'suspended' : 'active';
+  }
+
   /** The names of the registered lifecycles. */
   public names(): string[] {
     return [...this.lifecycles.keys()];
@@ -2082,6 +2747,13 @@ export class LifecycleRuntime {
         : {}),
       ...(snapshot ? { parameterSnapshot: structuredClone(snapshot) } : {}),
       history: await this.history(name, id),
+      ...(lifecycle.management
+        ? {
+            suspended:
+              managementState(lifecycle.management.field, record)
+                .suspendedAt !== null,
+          }
+        : {}),
     };
   }
 
@@ -2089,7 +2761,9 @@ export class LifecycleRuntime {
     const { lifecycle } = this.get(name);
     const recordId = String(id);
     return {
-      transitions: await this.store.listTransitions(lifecycle.name, recordId),
+      transitions: (
+        await this.store.listTransitions(lifecycle.name, recordId)
+      ).filter((entry) => !entry.management),
       effectRuns: await this.store.listEffectRuns({
         lifecycle: lifecycle.name,
         recordId,
@@ -2118,33 +2792,30 @@ export class LifecycleRuntime {
       return run;
     }
     const startedAt = this.clock().toISOString();
-    // Every attempt was claimed and none came back: the process running it
-    // stopped each time. Running it again could stop this one too.
-    if (run.attempts >= run.maxAttempts) {
-      await this.updateRun(
-        run,
-        { status: 'queued', attempts: run.attempts },
-        {
-          status: 'dead',
-          error: `None of its ${run.attempts} attempt(s) recorded an outcome; it needs a person to retry it.`,
-          claimedAt: null,
-          updatedAt: startedAt,
-        },
-      );
+    const attempt = run.attempts + 1;
+    const exhausted = run.attempts >= run.maxAttempts;
+    const claimed = await this.updateRunnable(
+      run,
+      { status: 'queued', attempts: run.attempts },
+      exhausted
+        ? {
+            status: 'dead',
+            error: `None of its ${run.attempts} attempt(s) recorded an outcome; it needs a person to retry it.`,
+            claimedAt: null,
+            updatedAt: startedAt,
+          }
+        : {
+            status: 'running',
+            attempts: attempt,
+            claimedAt: startedAt,
+            updatedAt: startedAt,
+          },
+      { notify: exhausted },
+    );
+    if (claimed && exhausted) {
       this.logger.error(`Effect "${effect.name}" is dead`, { runId });
       return this.store.findEffectRun(runId);
     }
-    const attempt = run.attempts + 1;
-    const claimed = await this.store.updateEffectRun(
-      runId,
-      { status: 'queued', attempts: run.attempts },
-      {
-        status: 'running',
-        attempts: attempt,
-        claimedAt: startedAt,
-        updatedAt: startedAt,
-      },
-    );
     if (!claimed) return this.store.findEffectRun(runId);
 
     const { lifecycle } = registered;
@@ -2212,10 +2883,17 @@ export class LifecycleRuntime {
       )
         return current;
       controller.signal.throwIfAborted();
+      if (
+        lifecycle.management &&
+        !(await this.readyToSend(run, lifecycle, attempt, startedAt))
+      )
+        return this.store.findEffectRun(runId);
+      controller.signal.throwIfAborted();
       const work = Promise.resolve(
         effect.run({
           record,
           input: entry.input,
+          ...(entry.management ? { management: entry.management } : {}),
           transition: entry.transition,
           from: entry.from,
           to: entry.to,
@@ -2267,7 +2945,7 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.updateRun(
+      const requeued = await this.updateRunnable(
         run,
         { status: 'running', attempts: attempt },
         {
@@ -2278,9 +2956,14 @@ export class LifecycleRuntime {
           updatedAt: finishedAt,
         },
       );
-      if (requeued) await this.handOver(runId, runAfter);
-      else this.discarded(effect.name, runId, attempt);
-      return this.store.findEffectRun(runId);
+      if (requeued) {
+        await this.handOver(runId, runAfter);
+        return this.store.findEffectRun(runId);
+      }
+      if (!lifecycle.management) {
+        this.discarded(effect.name, runId, attempt);
+        return this.store.findEffectRun(runId);
+      }
     }
 
     const status: PendingContinuation['outcome'] = outcome.ok
@@ -2317,9 +3000,9 @@ export class LifecycleRuntime {
     // Recording the outcome and firing what follows it commit together: a
     // stop between the two would otherwise leave a succeeded run whose
     // record never moves on.
-    let finished: FireResult | null | undefined;
-    try {
-      finished = await this.store.transaction(async (store) => {
+    const recordOutcome = (): Promise<FireResult | null | undefined> =>
+      this.store.transaction(async (store) => {
+        const activity = await this.lockRunInstance(store, lifecycle, run);
         const recorded = await store.updateEffectRun(
           runId,
           { status: 'running', attempts: attempt },
@@ -2327,7 +3010,28 @@ export class LifecycleRuntime {
         );
         if (!recorded) return undefined;
         store.afterCommit(() => this.effectChanged(run));
-        if (next === undefined) return null;
+        if (next === undefined || activity === 'obsolete') return null;
+        if (activity === 'suspended') {
+          await store.updateEffectRun(
+            runId,
+            { status, attempts: attempt },
+            {
+              continuation: {
+                transition: next,
+                outcome: status,
+                input,
+                code: 'SUSPENDED',
+                error: suspensionBlocker.message,
+                attempts: 0,
+                errorTries: 0,
+                failedAt: finishedAt,
+                dueAt: finishedAt,
+                abandonedAt: null,
+              },
+            },
+          );
+          return null;
+        }
         const continued: { decided?: Decision } = {};
         // Registered before deciding, as fire() does, so after the commit
         // the continuation is told about before anything its onTransition
@@ -2361,16 +3065,14 @@ export class LifecycleRuntime {
           );
           return continued.decided.result;
         } catch (error) {
-          // A conflict, or anything that is not a refusal, may go away: roll
-          // the outcome back too, so the attempt runs again rather than
-          // losing what should follow. Any other refusal would be the same
-          // on every attempt, so the effect does not run again: the outcome
-          // is recorded either way.
-          if (!(error instanceof LifecycleError) || error.code === 'CONFLICT')
-            throw error;
-          const message = `Effect "${run.effect}" could not continue with "${next}": ${error.message}`;
+          // Managed instances keep the real outcome even if the follow-up
+          // encounters a conflict or a transient error in another record.
+          const refusal = error instanceof LifecycleError;
+          const conflict = isRefusal(error, CONFLICTS);
+          if (!lifecycle.management && (!refusal || conflict)) throw error;
+          const message = `Effect "${run.effect}" could not continue with "${next}": ${errorText(error)}`;
           // The record moved on, or its guard refuses: nothing follows.
-          if (recordMovedOn(error)) {
+          if (refusal && recordMovedOn(error)) {
             this.logger.warn(message, { runId, code: error.code });
             return null;
           }
@@ -2379,10 +3081,15 @@ export class LifecycleRuntime {
           // process defines it — an old definition in a rolling deploy, a
           // bug in `set` or `route` — which time or a deploy can change: it
           // waits on the run for reclaim() or continueRun() to try again.
-          const nested = raisedInStep.has(error);
+          const nested = refusal && raisedInStep.has(error);
           const waits = `${message}. The outcome is recorded and the continuation is tried again by the sweep.`;
           if (nested) this.logger.warn(waits, { runId, code: error.code });
-          else this.logger.error(waits, { runId, code: error.code, error });
+          else
+            this.logger.error(waits, {
+              runId,
+              code: refusal ? error.code : CONTINUATION_ERROR,
+              error,
+            });
           const waiting = this.refusedContinuation(
             {
               transition: next,
@@ -2398,7 +3105,7 @@ export class LifecycleRuntime {
             },
             error,
             finishedAt,
-            'refusal',
+            conflict ? 'conflict' : refusal ? 'refusal' : 'error',
           );
           await store.updateEffectRun(
             runId,
@@ -2409,6 +3116,16 @@ export class LifecycleRuntime {
           return null;
         }
       });
+    let finished: FireResult | null | undefined;
+    try {
+      try {
+        finished = await recordOutcome();
+      } catch (error) {
+        if (!(error instanceof InstanceLockConflict)) throw error;
+        // A suspension or restart committed while the outcome tried to
+        // lock the record. Reread the new state before recording the result.
+        finished = await recordOutcome();
+      }
     } catch (error) {
       // Nothing of the outcome stuck. Put the attempt back in the queue now,
       // after a backoff, rather than leaving it claimed until a lease expires
@@ -2417,7 +3134,7 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.updateRun(
+      const requeued = await this.updateRunnable(
         run,
         { status: 'running', attempts: attempt },
         {
@@ -2536,7 +3253,7 @@ export class LifecycleRuntime {
         `Effect run "${runId}" is retried by force; the continuation "${continuation.transition}" it owed had not run and is dropped.`,
         { runId, reason: options.reason ?? null },
       );
-    const reset = await this.updateRun(
+    const reset = await this.updateRunnable(
       run,
       {
         status: run.status,
@@ -2553,6 +3270,7 @@ export class LifecycleRuntime {
         continuation: null,
         updatedAt: this.clock().toISOString(),
       },
+      { reject: true },
     );
     if (reset) await this.handOver(runId, null);
     return this.store.findEffectRun(runId);
@@ -2746,6 +3464,10 @@ export class LifecycleRuntime {
             // another's record.
             const bound = boundDefinitionOf(lifecycle, record);
             if (bound !== undefined && bound !== lifecycle.name) continue;
+            if (
+              managementState(lifecycle.management?.field, record).suspendedAt
+            )
+              continue;
             try {
               // The record must still be idle when the transition is
               // decided: another sweep may have moved it since this one read it.
@@ -2770,8 +3492,8 @@ export class LifecycleRuntime {
                   1,
               ).toISOString();
               if (
-                String(record[lifecycle.changedAtField]) >=
-                instanceChangedBefore
+                effectiveChangedAt(lifecycle, record) >=
+                Date.parse(instanceChangedBefore)
               )
                 continue;
               await this.fire(lifecycle.name, record.id, trigger.transition, {
@@ -2873,11 +3595,11 @@ export class LifecycleRuntime {
    */
   public async reclaim(): Promise<number> {
     const taken = await this.takeBackStale();
-    for (const run of taken) await this.handOver(run.id, null);
     const stranded = await this.strandedRuns();
-    for (const run of stranded) await this.handOver(run.id, null);
-    const continued = await this.continuePending();
-    return taken.length + stranded.length + continued;
+    let dispatched = 0;
+    for (const run of [...taken, ...stranded])
+      if (await this.handOver(run.id, run.runAfter)) dispatched += 1;
+    return dispatched + (await this.continuePending());
   }
 
   /**
@@ -2892,38 +3614,58 @@ export class LifecycleRuntime {
    * it leaves the batch to the runs behind it.
    */
   private async continuePending(): Promise<number> {
-    const pending = await this.store.listEffectRuns({
-      continuationDueBy: this.clock().toISOString(),
-      limit: this.continuations.batchSize,
-    });
+    const dueBy = this.clock().toISOString();
+    const batchSize = this.continuations.batchSize;
     let continued = 0;
-    for (const run of pending) {
-      const { continuation } = run;
-      if (!continuation) continue;
-      const registered = this.lifecycles.get(run.lifecycle);
-      if (!registered) {
-        await this.putOff(run, continuation);
-        continue;
+    let attempted = 0;
+    let after: EffectRunQuery['continuationAfter'];
+    while (attempted < batchSize) {
+      const pending = await this.store.listEffectRuns({
+        continuationDueBy: dueBy,
+        continuationAfter: after,
+        limit: batchSize,
+      });
+      if (!pending.length) break;
+      const last = pending.at(-1)!;
+      const dueAt = waitingDueAt(last.continuation);
+      if (!dueAt || after?.id === last.id) break;
+      after = { id: last.id, dueAt };
+      for (const run of pending) {
+        if (attempted >= batchSize) break;
+        attempted += 1;
+        const { continuation } = run;
+        if (!continuation) continue;
+        const registered = this.lifecycles.get(run.lifecycle);
+        if (!registered) {
+          await this.putOff(run, continuation);
+          continue;
+        }
+        let tried: ContinuationTry;
+        try {
+          tried = await this.tryContinuation(run, registered);
+        } catch (error) {
+          // The store failed even to record the failure: the next sweep tries again.
+          this.logger.warn(
+            `Effect run "${run.id}" could not continue with "${continuation.transition}" on this sweep; it is tried again.`,
+            { runId: run.id, error },
+          );
+          continue;
+        }
+        if (
+          tried.kind === 'refused' &&
+          tried.error instanceof LifecycleError &&
+          tried.error.code === 'SUSPENDED'
+        )
+          attempted -= 1;
+        if (tried.kind === 'continued') continued += 1;
+        else if (tried.kind === 'movedOn')
+          this.logger.warn(
+            `Effect run "${run.id}" no longer continues with "${continuation.transition}": ${tried.error.message}`,
+            { runId: run.id, code: tried.error.code },
+          );
+        else if (tried.kind === 'refused' && tried.recorded)
+          this.reportRefusal(run.id, tried);
       }
-      let tried: ContinuationTry;
-      try {
-        tried = await this.tryContinuation(run, registered);
-      } catch (error) {
-        // The store failed even to record the failure: the next sweep tries again.
-        this.logger.warn(
-          `Effect run "${run.id}" could not continue with "${continuation.transition}" on this sweep; it is tried again.`,
-          { runId: run.id, error },
-        );
-        continue;
-      }
-      if (tried.kind === 'continued') continued += 1;
-      else if (tried.kind === 'movedOn')
-        this.logger.warn(
-          `Effect run "${run.id}" no longer continues with "${continuation.transition}": ${tried.error.message}`,
-          { runId: run.id, code: tried.error.code },
-        );
-      else if (tried.kind === 'refused' && tried.recorded)
-        this.reportRefusal(run.id, tried);
     }
     return continued;
   }
@@ -3034,12 +3776,33 @@ export class LifecycleRuntime {
     try {
       return await this.store.transaction(
         async (store): Promise<ContinuationTry> => {
+          const activity = await this.lockRunInstance(
+            store,
+            registered.lifecycle,
+            run,
+          );
+          if (activity === 'suspended')
+            return {
+              kind: 'refused',
+              error: suspendedInstance(),
+              previous: pending,
+              continuation: pending,
+              recorded: false,
+            };
           const cleared = await store.updateEffectRun(run.id, read, {
             continuation: null,
             updatedAt: at,
           });
           if (!cleared) return { kind: 'changed' };
           store.afterCommit(() => this.effectChanged(run));
+          if (activity === 'obsolete')
+            return {
+              kind: 'movedOn',
+              error: new LifecycleError(
+                'INVALID_STATE',
+                'The lifecycle execution restarted.',
+              ),
+            };
           if (
             await store.findTransitionByRequest(
               run.lifecycle,
@@ -3209,6 +3972,9 @@ export class LifecycleRuntime {
     ).find(
       (later) =>
         (entry === undefined || later.version > entry.version) &&
+        (!later.management ||
+          later.management.command === 'reset' ||
+          later.management.command === 'restartAt') &&
         later.requestId?.startsWith(own) !== true,
     );
     if (!left) return undefined;
@@ -3245,8 +4011,10 @@ export class LifecycleRuntime {
   public async recover(): Promise<number> {
     await this.takeBackStale();
     const queued = await this.store.listEffectRuns({ status: 'queued' });
-    for (const run of queued) await this.handOver(run.id, run.runAfter);
-    return queued.length;
+    let dispatched = 0;
+    for (const run of queued)
+      if (await this.handOver(run.id, run.runAfter)) dispatched += 1;
+    return dispatched;
   }
 
   /**
@@ -3286,7 +4054,7 @@ export class LifecycleRuntime {
     const taken: EffectRun[] = [];
     for (const run of stale)
       if (
-        await this.updateRun(
+        await this.updateRunnable(
           run,
           { status: 'running', attempts: run.attempts },
           {
@@ -3295,6 +4063,7 @@ export class LifecycleRuntime {
             claimedAt: null,
             updatedAt: now.toISOString(),
           },
+          { expire: true },
         )
       )
         taken.push(run);
@@ -3314,8 +4083,21 @@ export class LifecycleRuntime {
   private async handOver(
     runId: string,
     runAfter: string | null,
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
+      const run = await this.store.findEffectRun(runId);
+      const lifecycle = run && this.lifecycles.get(run.lifecycle)?.lifecycle;
+      if (run && lifecycle?.management) {
+        const record = await this.store.findRecord(
+          lifecycle.collection,
+          run.recordId,
+        );
+        if (
+          !record ||
+          managementState(lifecycle.management.field, record).suspendedAt
+        )
+          return false;
+      }
       await this.dispatcher.dispatch(runId, { runAfter });
     } catch (error) {
       this.logger.error(
@@ -3323,6 +4105,7 @@ export class LifecycleRuntime {
         { error },
       );
     }
+    return true;
   }
 
   /**
@@ -3370,6 +4153,10 @@ export class LifecycleRuntime {
         'NOT_MANUAL',
         `"${transition}" is fired by the system, not by a person.`,
       );
+    if (lifecycle.management) {
+      await lifecycle.management.prepare?.(this.scope(store, now));
+      await this.lockInstance(store, lifecycle, id);
+    }
     const current = await store.findRecord(lifecycle.collection, id);
     if (!current)
       throw new LifecycleError(
@@ -3425,6 +4212,8 @@ export class LifecycleRuntime {
       const ended = await this.stayEnded(store, registered, continuing);
       if (ended) throw ended;
     }
+    const managed = managementState(lifecycle.management?.field, current);
+    if (managed.suspendedAt) throw suspendedInstance();
     const expected = options.expect;
     if (
       expected?.version !== undefined &&
@@ -3436,7 +4225,10 @@ export class LifecycleRuntime {
       );
     if (
       expected?.changedBefore !== undefined &&
-      !(String(current[lifecycle.changedAtField]) < expected.changedBefore)
+      !(
+        effectiveChangedAt(lifecycle, current) <
+        Date.parse(expected.changedBefore)
+      )
     )
       throw new LifecycleError(
         'CONFLICT',
@@ -3461,14 +4253,12 @@ export class LifecycleRuntime {
     const written = await store.updateRecordIf(
       lifecycle.collection,
       id,
-      {
-        stateField: lifecycle.stateField,
-        state: plan.from,
-        versionField: lifecycle.versionField,
-        version: plan.version,
-      },
+      this.recordCondition(lifecycle, current),
       {
         ...plan.values,
+        ...(lifecycle.management && managed.pausedMs
+          ? { [lifecycle.management.field]: { ...managed, pausedMs: 0 } }
+          : {}),
         ...(lifecycle.dueAtField
           ? {
               [lifecycle.dueAtField]: this.triggerDueAt(
@@ -3728,6 +4518,96 @@ export class LifecycleRuntime {
           );
         }
       }
+  }
+
+  private async readyToSend(
+    run: EffectRun,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    attempt: number,
+    startedAt: string,
+  ): Promise<boolean> {
+    return this.store.transaction(async (store) => {
+      const activity = await this.lockRunInstance(store, lifecycle, run);
+      const claimed = await store.findEffectRun(run.id);
+      if (
+        claimed?.status !== 'running' ||
+        claimed.attempts !== attempt ||
+        claimed.claimedAt !== startedAt ||
+        Date.parse(startedAt) < this.clock().getTime() - this.leaseMs
+      )
+        return false;
+      if (activity === 'active') return true;
+      await store.updateEffectRun(
+        run.id,
+        { status: 'running', attempts: attempt },
+        {
+          status: activity === 'suspended' ? 'queued' : 'cancelled',
+          attempts: run.attempts,
+          claimedAt: null,
+          updatedAt: this.clock().toISOString(),
+          ...(activity === 'obsolete'
+            ? { error: 'The lifecycle execution restarted.' }
+            : {}),
+        },
+      );
+      store.afterCommit(() => this.effectChanged(run));
+      return false;
+    });
+  }
+
+  private async updateRunnable(
+    run: EffectRun,
+    condition: EffectRunCondition,
+    changes: EffectRunChanges,
+    options: {
+      readonly notify?: boolean;
+      readonly reject?: boolean;
+      readonly expire?: boolean;
+    } = {},
+  ): Promise<boolean> {
+    const lifecycle = this.lifecycles.get(run.lifecycle)?.lifecycle;
+    if (!lifecycle?.management)
+      return options.notify === false
+        ? this.store.updateEffectRun(run.id, condition, changes)
+        : this.updateRun(run, condition, changes);
+    return this.store.transaction(async (store) => {
+      const activity = await this.lockRunInstance(store, lifecycle, run);
+      if (activity === 'suspended') {
+        if (options.reject) throw suspendedInstance();
+        // A running attempt may record a retryable failure. It stays queued
+        // until resume without claiming another attempt.
+        if (condition.status !== 'running' || options.expire) return false;
+      }
+      if (activity === 'obsolete') {
+        if (options.reject)
+          throw new LifecycleError(
+            'RUN_SETTLED',
+            'The lifecycle execution restarted.',
+          );
+        if (
+          condition.status === 'queued' &&
+          (await store.updateEffectRun(run.id, condition, {
+            status: 'cancelled',
+            error: 'The lifecycle execution restarted.',
+            claimedAt: null,
+            updatedAt: this.clock().toISOString(),
+          }))
+        )
+          store.afterCommit(() => this.effectChanged(run));
+        return false;
+      }
+      if (
+        condition.status === 'queued' &&
+        changes.status === 'running' &&
+        run.runAfter !== null &&
+        run.runAfter > this.clock().toISOString()
+      )
+        return false;
+      const updated = await store.updateEffectRun(run.id, condition, changes);
+      if (updated && options.notify !== false)
+        store.afterCommit(() => this.effectChanged(run));
+      return updated;
+    });
   }
 
   /** A root-store conditional write has committed when it resolves. */

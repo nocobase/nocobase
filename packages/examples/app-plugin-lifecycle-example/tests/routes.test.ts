@@ -992,6 +992,7 @@ describe('lifecycle example routes', () => {
         ]),
         'lifecycleExampleGetParameterGroup',
         'lifecycleExampleListParameterGroups',
+        'lifecycleExampleManageTicket',
         'lifecycleExampleParameterHistory',
         'lifecycleExamplePreviewReviewerCandidates',
         'lifecycleExampleSearchReviewerReferences',
