@@ -511,6 +511,59 @@ describe('business objects tab', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps an Edit scope View does not list, shown and saved as stored, when View widens', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Host
+        tab='objects'
+        initial={{
+          menus: [],
+          grants: {
+            'contracts.view': { scopes: { records: 'department' } },
+            'contracts.update': { scopes: { records: 'plugin.active' } },
+          },
+        }}
+        onChange={onChange}
+      />,
+    );
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'plugin.active',
+    );
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'All records' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'all' } },
+        'contracts.update': { scopes: { records: 'plugin.active' } },
+      },
+    });
+    expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
+      'plugin.active',
+    );
+    expect(screen.queryByText(/now follows the view scope/)).toBeNull();
+    // Narrowing it afterwards caps the value and says so.
+    await user.click(trigger('Data scope of View contracts'));
+    await user.click(
+      await screen.findByRole('option', { name: 'Their own records' }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      menus: [],
+      grants: {
+        'contracts.view': { scopes: { records: 'own' } },
+        'contracts.update': { scopes: {} },
+      },
+    });
+    expect(
+      screen.getByText(
+        'Edit contracts now follows the view scope (Their own records) again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('keeps the notice when a select only repeats the value it shows', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

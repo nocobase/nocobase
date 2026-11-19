@@ -291,6 +291,54 @@ describe('permission editor model', () => {
     expect(other.grants['contracts.update']).toBe(stored['contracts.update']);
   });
 
+  it('keeps every follower as it is when View widens', () => {
+    // A value View does not list, one narrower and one stored wider than View: widening cannot widen any of them.
+    const stored: PermissionGrants = {
+      'contracts.view': { scopes: { records: 'department' } },
+      'contracts.update': { scopes: { records: 'plugin.active' } },
+      'contracts.export': { scopes: { records: 'own' } },
+      'contracts.archive': { scopes: { records: 'all' } },
+    };
+    const widened = setScopeValue(
+      objects,
+      stored,
+      'contracts.view',
+      'records',
+      'all',
+    );
+    expect(widened.notices).toEqual([]);
+    expect(widened.grants['contracts.view']?.scopes).toEqual({
+      records: 'all',
+    });
+    for (const id of [
+      'contracts.update',
+      'contracts.export',
+      'contracts.archive',
+    ])
+      expect(widened.grants[id]).toBe(stored[id]);
+    expect(
+      effectiveScopeValue(contracts, widened.grants, update, updateSlot),
+    ).toBe('plugin.active');
+    // Narrowing it again still caps what is not provably narrower and names it.
+    const narrowed = setScopeValue(
+      objects,
+      widened.grants,
+      'contracts.view',
+      'records',
+      'own',
+    );
+    expect(narrowed.grants['contracts.update']?.scopes).toEqual({});
+    expect(narrowed.grants['contracts.archive']?.scopes).toEqual({});
+    expect(narrowed.grants['contracts.export']?.scopes).toEqual({});
+    expect(narrowed.notices).toEqual([
+      {
+        kind: 'scope-reset',
+        view: 'Their own records',
+        actions: ['Archive', 'Edit', 'Export'],
+      },
+    ]);
+  });
+
   it('names a follower equal to the new View scope when it goes back to following it', () => {
     const change = setScopeValue(
       objects,
