@@ -163,7 +163,7 @@ export const CompactSenderOptions: React.FC<{ options: SenderOptions }> = observ
                     onOpenChange={(nextOpen) => setMenuOpen('context', nextOpen)}
                     onSelect={closeOptions}
                     disabled={disabled}
-                    ignore={(key) => key === 'flow-model.variable'}
+                    ignore={(key) => key === 'flow-model.variable' || key === 'datasource'}
                   />
                 </Flex>
               ) : null}

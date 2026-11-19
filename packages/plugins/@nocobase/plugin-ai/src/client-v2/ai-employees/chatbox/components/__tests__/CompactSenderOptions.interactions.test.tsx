@@ -56,7 +56,10 @@ const mocks = vi.hoisted(() => {
         get: () => ({
           aiManager: {
             workContext: {
-              getValues: () => [{ name: 'flow-model', menu: { label: 'Pick block', onClick: pickBlock } }],
+              getValues: () => [
+                { name: 'flow-model', menu: { label: 'Pick block', onClick: pickBlock } },
+                { name: 'datasource', menu: { label: 'Datasource' } },
+              ],
             },
           },
         }),
@@ -203,7 +206,9 @@ describe('compact options with real employee, model and context selectors', () =
     const { getByRole, findByRole, queryByRole } = renderOptions();
     fireEvent.click(getByRole('button', { name: 'Chat options' }));
     fireEvent.click(getByRole('button', { name: 'Work context' }));
-    fireEvent.click(await findByRole('menuitem', { name: 'Pick block' }));
+    const pickBlock = await findByRole('menuitem', { name: 'Pick block' });
+    expect(queryByRole('menuitem', { name: 'Datasource' })).toBeNull();
+    fireEvent.click(pickBlock);
     expect(mocks.pickBlock).toHaveBeenCalledTimes(1);
     expect(getByRole('button', { name: 'Chat options' }).getAttribute('aria-expanded')).toBe('false');
     await waitFor(() => expect(queryByRole('menu')).toBeNull());
