@@ -152,6 +152,8 @@ describe('permission editor tabs', () => {
     expect(
       screen.getByRole('tab', { name: /Menus\s*1 \/ 5/ }),
     ).toBeInTheDocument();
+    // No intro or column headings above the menu tree.
+    expect(screen.queryByText(/Business objects the page uses/)).toBeNull();
     // Public menus are checked for everyone and cannot be changed.
     expect(screen.getByRole('checkbox', { name: /Home/ })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /Home/ })).toHaveAttribute(
@@ -242,9 +244,10 @@ describe('business objects tab', () => {
     expect(
       screen.getByRole('heading', { name: 'Contracts' }),
     ).toBeInTheDocument();
-    const usedBy = screen.getByText('Used by menus').parentElement!;
-    expect(within(usedBy).getByText('Contracts')).toBeInTheDocument();
-    expect(within(usedBy).getByText('Sales dashboard')).toBeInTheDocument();
+    // No explanatory lines: no list of the menus using the object, no rule below the actions, no footer note.
+    expect(screen.queryByText('Used by menus')).toBeNull();
+    expect(screen.queryByText(/follow the view scope/)).toBeNull();
+    expect(screen.queryByText(/Changes apply to every menu/)).toBeNull();
     const switches = screen.getAllByRole('switch');
     expect(switches[0]).toHaveAccessibleName('View contracts');
     expect(trigger('Data scope of Edit contracts')).toHaveTextContent(
@@ -462,9 +465,6 @@ describe('business objects tab', () => {
       'Edit contracts now follows the view scope (Their own records) again.';
     expect(screen.getByText(notice)).toBeInTheDocument();
     expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
-    expect(
-      screen.getByText('Changes apply to every menu that uses the object'),
-    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Discard' }));
     expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
     expect(screen.queryByText(notice)).not.toBeInTheDocument();

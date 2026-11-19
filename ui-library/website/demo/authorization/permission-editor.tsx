@@ -256,19 +256,14 @@ const SETTINGS: readonly PermissionSettingsPage[] = [
 ];
 
 const MENUS: readonly PermissionMenuNode[] = [
+  // Top-level pages are listed as they are, without a group around them.
+  { id: 'home', label: 'Home', public: true },
   {
-    id: 'main',
-    label: 'Main menu',
-    children: [
-      { id: 'home', label: 'Home', public: true },
-      {
-        id: 'sales-dashboard',
-        label: 'Sales dashboard',
-        uses: { primary: ['deals'], related: ['contracts', 'payments'] },
-      },
-      { id: 'products', label: 'Products', uses: { primary: ['products'] } },
-    ],
+    id: 'sales-dashboard',
+    label: 'Sales dashboard',
+    uses: { primary: ['deals'], related: ['contracts', 'payments'] },
   },
+  { id: 'products', label: 'Products', uses: { primary: ['products'] } },
   {
     id: 'customer-management',
     label: 'Customer management',
