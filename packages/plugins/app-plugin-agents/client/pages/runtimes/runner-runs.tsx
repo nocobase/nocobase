@@ -73,7 +73,7 @@ export function RunnerRuns({
         <Table className='table-fixed min-w-[600px]'>
           <colgroup>
             <col />
-            <col className='w-48' />
+            <col className='w-56' />
             <col className='w-28' />
             <col className='w-24' />
             <col className='w-20' />
