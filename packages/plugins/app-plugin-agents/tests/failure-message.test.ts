@@ -44,6 +44,16 @@ describe('a failed run’s message', () => {
       'gateway rejected [REDACTED] for this model',
     ],
     [
+      'a random credential in short hyphenated pieces',
+      'gateway rejected Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3 for this model',
+      'gateway rejected [REDACTED] for this model',
+    ],
+    [
+      'a random credential in four-character pieces before a full stop',
+      'unknown credential Zq81-mN0p-L4kT-x7Rw-2Vb9.',
+      'unknown credential [REDACTED].',
+    ],
+    [
       'a hyphenated random credential before a full stop',
       'unknown credential q81mN0pL4kTx-7Rw2Vb9YcZ.',
       'unknown credential [REDACTED].',
@@ -82,6 +92,18 @@ describe('a failed run’s message', () => {
     ['a commit hash', 'HEAD is 3f2a9c1d8e7b6a5f4e3d2c1b0a9f8e7d6c5b4a39'],
     ['a dated model id', 'claude-sonnet-4-5-20250929 is overloaded'],
     ['a hyphenated model name', 'GPT-OSS-120B-Instruct is not available here'],
+    ...[
+      'Llama-4-Maverick-17B-128E-Instruct',
+      'DeepSeek-R1-Distill-Qwen-32B',
+      'Qwen2-VL-72B-Instruct-AWQ',
+      'Mixtral-8x22B-Instruct-v0',
+      'Meta-Llama-3-70B-Instruct-Turbo',
+      'Phi-3-mini-4k-instruct',
+      'ERR-RateLimit-Exceeded-429',
+    ].map((model) => [
+      `the model name ${model}`,
+      `${model} is not available: ${SAID}`,
+    ]),
     [
       'a hyphenated provider path',
       'Model my-lan-gateway/DeepSeek-V4-Flash-Free2 not found',

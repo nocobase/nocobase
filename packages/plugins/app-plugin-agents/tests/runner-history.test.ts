@@ -171,6 +171,10 @@ describe('runner history pagination', () => {
       failureDetail: `${said} Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3\nstderr: internal path /srv/gateway\n${'x'.repeat(50)}`,
     });
     await run('ggggggg', { failureDetail: `${said} ${'y'.repeat(400)}` });
+    // An older record with a credential in short pieces, none of them random-looking on its own.
+    await run('hhhhhhhh', {
+      failureDetail: `${said} Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3`,
+    });
     // A task the viewer may not read: its runner run is listed and linked, its words are not.
     await run('bb', {
       failureDetail: 'The secret task quoted here',
@@ -214,6 +218,9 @@ describe('runner history pagination', () => {
     expect(byId.get('ffffff')).toMatchObject({
       failureDetail: `${said} [REDACTED]`,
     });
+    expect(byId.get('hhhhhhhh')).toMatchObject({
+      failureDetail: `${said} [REDACTED]`,
+    });
     const long = (byId.get('ggggggg') as { failureDetail: string })
       .failureDetail;
     expect(long).toHaveLength(300);
@@ -227,35 +234,37 @@ describe('runner history pagination', () => {
     );
   });
 
-  it('stores what a runner reports a run failed on without a gateway credential it quotes', async () => {
-    h = await createHarness();
-    const agentId = await h.createAgent();
-    const runner = await h.registerRunner();
-    const runId = await h.enqueue(agentId);
-    expect((await claim(h, runner)).map((item) => item.run.id)).toEqual([
-      runId,
-    ]);
-    const response = await h.request(
-      'POST',
-      `/agents/runners/runs/${runId}/fail`,
-      {
-        runnerKey: runner.key,
-        body: {
-          reason: 'toolAuth',
-          detail:
-            'Reconnect OpenCode Console to continue. Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3',
+  it.each(['Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3', 'Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3'])(
+    'stores what a runner reports a run failed on without a gateway credential it quotes (%s)',
+    async (credential) => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      const runner = await h.registerRunner();
+      const runId = await h.enqueue(agentId);
+      expect((await claim(h, runner)).map((item) => item.run.id)).toEqual([
+        runId,
+      ]);
+      const response = await h.request(
+        'POST',
+        `/agents/runners/runs/${runId}/fail`,
+        {
+          runnerKey: runner.key,
+          body: {
+            reason: 'toolAuth',
+            detail: `Reconnect OpenCode Console to continue. ${credential}`,
+          },
         },
-      },
-    );
-    expect(response.status).toBe(200);
-    const stored = await h.database
-      .connection()
-      .repository('agRuns')
-      .findOne({ filter: { id: runId } });
-    expect(stored?.failureDetail).toBe(
-      'Reconnect OpenCode Console to continue. [REDACTED]',
-    );
-  });
+      );
+      expect(response.status).toBe(200);
+      const stored = await h.database
+        .connection()
+        .repository('agRuns')
+        .findOne({ filter: { id: runId } });
+      expect(stored?.failureDetail).toBe(
+        'Reconnect OpenCode Console to continue. [REDACTED]',
+      );
+    },
+  );
 
   it.each([20, 21, 45])(
     'reports the exact tab count and continuation at the %i-row boundary',
