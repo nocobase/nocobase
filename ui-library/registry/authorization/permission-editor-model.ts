@@ -750,7 +750,8 @@ export function setScopeValue(
 
 /**
  * Send followers of the matching leaders that are not provably narrower than them back to "Same as view", and name them
- * in a notice. A value the leader does not list is kept as stored.
+ * in a notice. Only an active change of a leader calls this; opening or saving a role keeps every stored value. A value
+ * the leader does not list cannot be shown to stay within the new scope, so it follows too.
  */
 function resetWiderFollowers(
   objects: readonly PermissionObject[],
@@ -775,13 +776,9 @@ function resetWiderFollowers(
         const leader = leaderOf(owner, follower, objects, next);
         if (own === undefined || !leader || !matches(leader)) continue;
         const current = viewScopeValue(owner, next, follower, objects);
-        // A value the leader lists and that is not provably narrower, wider or now equal, goes back to following it, and
-        // the notice names it so the change in the list is explained. An unlisted value is kept as stored.
-        if (
-          current === undefined ||
-          !listed(leader.slot, own) ||
-          isNarrower(leader.slot, own, current)
-        )
+        // A value that is not provably narrower, whether wider, now equal or one the leader does not list, goes back to
+        // following it, and the notice names it so the change in the list is explained.
+        if (current === undefined || isNarrower(leader.slot, own, current))
           continue;
         delete otherScopes[follower.id];
         changed = true;
