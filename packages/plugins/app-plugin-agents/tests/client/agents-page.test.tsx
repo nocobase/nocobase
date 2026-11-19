@@ -221,11 +221,11 @@ describe('the Agent page', () => {
     );
   });
 
-  it('shows the whole provider model of an OpenCode agent whose name predates it, and none for Claude', async () => {
+  it('shows the model id of a renamed OpenCode agent once, below its name and in its dialog, and none for Claude', async () => {
     renderPage(<AgentsPage />);
     const row = await screen.findByTestId('agent-kimi');
-    expect(within(row).getByTestId('agent-model')).toHaveTextContent(
-      'OpenCode · moonshotai/kimi-k2',
+    expect(within(row).getByTestId('agent-model').textContent).toBe(
+      'moonshotai/kimi-k2',
     );
     expect(
       within(await screen.findByTestId('agent-sonnet')).queryByTestId(
@@ -234,9 +234,24 @@ describe('the Agent page', () => {
     ).toBeNull();
     fireEvent.click(screen.getByTestId('agent-edit-kimi'));
     const dialog = await screen.findByTestId('agent-dialog');
-    expect(within(dialog).getByTestId('agent-dialog-model')).toHaveTextContent(
-      'OpenCode · moonshotai/kimi-k2',
+    expect(within(dialog).getByTestId('agent-dialog-model').textContent).toBe(
+      'moonshotai/kimi-k2',
     );
+  });
+
+  it('adds no model line for an OpenCode agent still named after its model', async () => {
+    agents = agents.map((item) =>
+      item.id === 'kimi'
+        ? { ...item, name: 'OpenCode · moonshotai/kimi-k2' }
+        : item,
+    );
+    renderPage(<AgentsPage />);
+    const row = await screen.findByTestId('agent-kimi');
+    expect(row).toHaveTextContent('OpenCode · moonshotai/kimi-k2');
+    expect(within(row).queryByTestId('agent-model')).toBeNull();
+    fireEvent.click(screen.getByTestId('agent-edit-kimi'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).queryByTestId('agent-dialog-model')).toBeNull();
   });
 
   it('shows no model line when editing a Claude agent', async () => {

@@ -32,7 +32,7 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
-import { providerModelText } from '../../../shared/model-catalog.js';
+import { providerModelOf } from '../../../shared/model-catalog.js';
 import { AvailableModelsDrawer } from './available-models-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
@@ -184,7 +184,9 @@ function AgentRow({
         : runners.names.length > 0
           ? t('agents.where.names', { names: runners.names.join(', ') })
           : '';
-  const qualifiedModel = providerModelText(agent);
+  // A renamed OpenCode or Pi agent says its model below its name; one still named after it says nothing more.
+  const { model, nameIsModel } = providerModelOf(agent);
+  const qualifiedModel = model && !nameIsModel ? model : null;
   return (
     <TableRow
       data-testid={`agent-${agent.id}`}
@@ -196,7 +198,7 @@ function AgentRow({
           <div className='truncate font-medium'>{agent.name}</div>
           {qualifiedModel ? (
             <div
-              className='truncate text-xs text-muted-foreground'
+              className='truncate font-mono text-xs text-muted-foreground'
               title={qualifiedModel}
               data-testid='agent-model'
             >

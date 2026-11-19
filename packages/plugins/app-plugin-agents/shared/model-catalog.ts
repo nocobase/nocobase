@@ -239,17 +239,38 @@ export function agentNameOf(
 }
 
 /**
- * The whole model id of an agent whose tool reaches one model through several providers (OpenCode, Pi), such as
- * "OpenCode · my-lan-gateway/qwen3.8-flash": its name may predate the provider being shown, or have been edited.
- * Null for any other agent, whose name already says its model.
+ * What an agent of a tool that reaches one model through several providers (OpenCode, Pi) says about its model: the
+ * whole id with the provider (`my-lan-gateway/qwen3.8-flash`), and whether the agent's name is still the default one
+ * ("OpenCode · my-lan-gateway/qwen3.8-flash"), which already says it. Empty for any other agent, whose name says its
+ * model the way it always did.
  */
-export function providerModelText(agent: {
+export interface ProviderModel {
+  readonly model?: string;
+  readonly nameIsModel?: boolean;
+}
+
+/** `ProviderModel` of an agent. */
+export function providerModelOf(agent: {
+  readonly name: string | null;
   readonly tool: AgentTool | null;
   readonly model: string | null;
-}): string | null {
-  if (!agent.tool || !agent.model || !providerQualified(agent.tool))
-    return null;
-  return `${TOOL_LABELS[agent.tool]} · ${normalizeModel(agent.tool, agent.model)}`;
+}): ProviderModel {
+  if (!agent.tool || !agent.model || !providerQualified(agent.tool)) return {};
+  const model = normalizeModel(agent.tool, agent.model);
+  return agent.name === agentNameOf(agent.tool, agent.model)
+    ? { model, nameIsModel: true }
+    : { model };
+}
+
+/**
+ * How a narrow place (a chip, a picker, a table column) names an agent: the model id alone when its name is only its
+ * tool and that model, since the tool is said around it or on hover; else its name.
+ */
+export function agentShortName<T extends string | null>(
+  name: T,
+  agent: ProviderModel,
+): T | string {
+  return agent.nameIsModel && agent.model ? agent.model : name;
 }
 
 /** Whether two ids of one tool's model name the same model. */

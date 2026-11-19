@@ -12,6 +12,7 @@ import {
 } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
 import { failureDetailText } from '../../../shared/runs.js';
+import { agentShortName } from '../../../shared/model-catalog.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { TONE_CLASS } from '../../components/ag-tag-tones.js';
 import { Badge } from '../../components/ui/badge.js';
@@ -101,7 +102,20 @@ export function RunnerRuns({
               </TableRow>
             ) : null}
             {page.data.map((run) => {
-              const detail = failureDetailText(run.failureDetail);
+              const message = failureDetailText(run.failureDetail);
+              // One line: the classification, then what the tool said ("Not signed in · Reconnect … to continue.").
+              const detail = message
+                ? [
+                    run.failureReason
+                      ? t(`failures.${run.failureReason}`, {
+                          defaultValue: '',
+                        }).replace(/[.。]$/u, '')
+                      : '',
+                    message,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : null;
               return (
                 <Fragment key={run.id}>
                   <TableRow className={detail ? 'border-b-0' : undefined}>
@@ -127,8 +141,13 @@ export function RunnerRuns({
                         (run.subjectLabel ?? '—')
                       )}
                     </TableCell>
-                    <TableCell className='truncate' title={run.title}>
-                      {run.title}
+                    <TableCell
+                      className={
+                        run.nameIsModel ? 'truncate font-mono' : 'truncate'
+                      }
+                      title={run.title}
+                    >
+                      {agentShortName(run.title, run)}
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-wrap items-center gap-1.5'>
@@ -165,7 +184,7 @@ export function RunnerRuns({
                     <TableRow className='hover:bg-transparent'>
                       <TableCell colSpan={5} className='pt-0 whitespace-normal'>
                         <p
-                          className='min-w-0 truncate text-xs text-muted-foreground'
+                          className='min-w-0 truncate text-xs text-destructive'
                           title={detail}
                           data-testid='runner-run-failure-detail'
                         >

@@ -163,6 +163,8 @@ describe('runner history pagination', () => {
     // Stored before the labelled-secret pattern existed: its gateway key was never redacted.
     await run('a', {
       failureDetail: `${said} {"apiKey":"lan-9f8e7d6c5b4a"}`,
+      tool: 'opencode',
+      model: 'opencode/qwen3.8-flash',
     });
     // A task the viewer may not read: its runner run is listed and linked, its words are not.
     await run('bb', {
@@ -198,7 +200,11 @@ describe('runner history pagination', () => {
     expect(byId.get('a')).toMatchObject({
       failureReason: 'toolAuth',
       failureDetail: `${said} {"apiKey":"[REDACTED]"}`,
+      // The run's whole model id; its agent no longer exists, so no name says it.
+      model: 'opencode/qwen3.8-flash',
     });
+    expect(byId.get('a')).not.toHaveProperty('nameIsModel');
+    expect(byId.get('eeeee')).not.toHaveProperty('model');
     expect(byId.get('bb')).toMatchObject({ path: '/docs/secret' });
     for (const id of ['bb', 'ccc', 'dddd', 'eeeee'])
       expect(byId.get(id)).not.toHaveProperty('failureDetail');

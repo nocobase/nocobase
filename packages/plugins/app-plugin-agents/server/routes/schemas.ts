@@ -1691,8 +1691,12 @@ const conversationAgent = z.object({
     .string()
     .optional()
     .describe(
-      'The tool and whole model id, such as "OpenCode · my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers.',
+      'Its whole model id with the provider, such as "my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers (OpenCode, Pi).',
     ),
+  nameIsModel: z
+    .boolean()
+    .optional()
+    .describe('Its name is still the default one: the tool and `model`.'),
 });
 
 const availability = z.object({
@@ -1957,6 +1961,16 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
   }),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id with the provider, such as "my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers (OpenCode, Pi).',
+    ),
+  nameIsModel: z
+    .boolean()
+    .optional()
+    .describe('Its name is still the default one: the tool and `model`.'),
 });
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
@@ -2297,6 +2311,16 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       ),
     id: z.string(),
     title: z.string(),
+    model: z
+      .string()
+      .optional()
+      .describe(
+        'Its whole model id with the provider, such as "my-lan-gateway/qwen3.8-flash", for a tool that reaches a model through several providers (OpenCode, Pi).',
+      ),
+    nameIsModel: z
+      .boolean()
+      .optional()
+      .describe('Its name is still the default one: the tool and `model`.'),
     status: RunStatusSchema,
     startedAt: dateTime.nullable(),
     finishedAt: dateTime.nullable(),

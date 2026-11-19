@@ -192,11 +192,10 @@ export interface ConversationAgent {
   readonly nameText: I18nText | null;
   readonly avatar: string | null;
   readonly archived: boolean;
-  /**
-   * Its tool and whole model id (`providerModelText`), such as "OpenCode · my-lan-gateway/qwen3.8-flash", for a tool
-   * that reaches one model through several providers; absent for the others, whose name already says the model.
-   */
+  /** Its whole model id with the provider, for a tool that reaches one model through several (`ProviderModel`). */
   readonly model?: string;
+  /** Its name is still the default one, the tool and `model`. */
+  readonly nameIsModel?: boolean;
 }
 
 /** Why a conversation's agent cannot answer now. */
@@ -832,6 +831,10 @@ export interface ChatAgent {
   readonly availability: ChatAvailability;
   /** Only personal runners have it: it takes only their owners' work. */
   readonly personalOnly: boolean;
+  /** Its whole model id with the provider, for a tool that reaches one model through several (`ProviderModel`). */
+  readonly model?: string;
+  /** Its name is still the default one, the tool and `model`. */
+  readonly nameIsModel?: boolean;
 }
 
 /**

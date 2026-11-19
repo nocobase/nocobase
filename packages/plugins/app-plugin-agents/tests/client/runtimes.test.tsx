@@ -930,13 +930,15 @@ describe('runtimes page', () => {
     within(runs).getByText('runs.status.completed');
   });
 
-  it('shows what a failed run’s tool said under its row, cut to a readable length', async () => {
+  it('shows a failed run’s reason and what its tool said as one line, and an OpenCode agent by its model id', async () => {
     const said = 'Reconnect OpenCode Console to continue.';
     api.routes['agents/runners/r1/runs'] = () => ({
       data: [
         {
           id: 'failed',
           title: 'OpenCode · opencode/qwen3.8-flash',
+          model: 'opencode/qwen3.8-flash',
+          nameIsModel: true,
           subjectLabel: 'Fix login',
           path: '/samples/1',
           status: 'failed',
@@ -967,9 +969,13 @@ describe('runtimes page', () => {
     const table = await within(sheet).findByTestId('runner-runs');
     const details = within(table).getAllByTestId('runner-run-failure-detail');
     expect(details).toHaveLength(1);
-    // One line of what the tool said; the rest stays in the runner's log.
-    expect(details[0]).toHaveTextContent(said);
-    expect(details[0]!.textContent).toBe(said);
+    // One line: the reason, then what the tool said; the rest stays in the runner's log.
+    expect(details[0]!.textContent).toBe(`failures.toolAuth · ${said}`);
+    const agentCell = within(table).getByTitle(
+      'OpenCode · opencode/qwen3.8-flash',
+    );
+    expect(agentCell.textContent).toBe('opencode/qwen3.8-flash');
+    expect(within(table).getByTitle('Coder').textContent).toBe('Coder');
   });
 
   it.each([false, true])(

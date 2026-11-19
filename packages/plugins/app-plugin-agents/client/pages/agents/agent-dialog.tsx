@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
-import { providerModelText } from '../../../shared/model-catalog.js';
+import { providerModelOf } from '../../../shared/model-catalog.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -114,7 +114,9 @@ function AgentForm({
   });
 
   const missing = enabled && goodAt.trim() === '';
-  const qualifiedModel = providerModelText(agent);
+  // The title names an agent still called after its model; a renamed OpenCode or Pi agent shows its model here.
+  const { model, nameIsModel } = providerModelOf(agent);
+  const qualifiedModel = model && !nameIsModel ? model : null;
   const { runners } = agent;
   const reportedBy = t('agents.enable.reportedBy', {
     count: runners.team + runners.personal,
@@ -153,7 +155,7 @@ function AgentForm({
               </FieldLabel>
               <p
                 id='agent-model'
-                className='text-sm break-words [overflow-wrap:anywhere]'
+                className='font-mono text-sm break-words [overflow-wrap:anywhere]'
                 data-testid='agent-dialog-model'
               >
                 {qualifiedModel}

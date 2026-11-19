@@ -37,10 +37,11 @@ describe('historical Runner conversation domain', () => {
         body,
       }),
   });
-  it('names the whole provider model of an OpenCode agent, and no model for a Claude one', async () => {
+  it('gives the whole provider model of an OpenCode agent named after it, and no model for a Claude one', async () => {
     h = await createHarness();
     const opencode = await h.createAgent({
       source: 'runner',
+      name: 'OpenCode · my-lan-gateway/qwen3.8-flash',
       modelEntries: [
         { tool: 'opencode', model: 'my-lan-gateway/qwen3.8-flash' },
       ],
@@ -49,9 +50,10 @@ describe('historical Runner conversation domain', () => {
       source: 'runner',
       modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
     });
-    expect(
-      (await domain().get(ALICE, await newConversation(opencode))).agent.model,
-    ).toBe('OpenCode · my-lan-gateway/qwen3.8-flash');
+    const named = (await domain().get(ALICE, await newConversation(opencode)))
+      .agent;
+    expect(named.model).toBe('my-lan-gateway/qwen3.8-flash');
+    expect(named.nameIsModel).toBe(true);
     expect(
       (await domain().get(ALICE, await newConversation(claude))).agent,
     ).not.toHaveProperty('model');

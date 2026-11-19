@@ -301,6 +301,10 @@ export interface RunnerRecentRun {
   readonly id: string;
   /** The agent that ran. */
   readonly title: string;
+  /** The run's whole model id with the provider, for a tool that reaches one model through several (`ProviderModel`). */
+  readonly model?: string;
+  /** The agent's name is still the default one, the tool and `model`. */
+  readonly nameIsModel?: boolean;
   readonly status: RunStatus;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;

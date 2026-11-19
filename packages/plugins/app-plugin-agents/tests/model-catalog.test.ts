@@ -6,6 +6,8 @@ import {
   modelLabel,
   normalizeModel,
   sameModel,
+  agentShortName,
+  providerModelOf,
 } from '../shared/model-catalog.js';
 
 describe('the model catalog', () => {
@@ -96,4 +98,43 @@ it('keeps ACP aliases, provider paths and dated ids as distinct opaque identitie
   expect(modelLabel('gemini', 'vendor/Model (20261001)')).toBe(
     'vendor/Model (20261001)',
   );
+});
+
+describe('providerModelOf and agentShortName', () => {
+  it('names an OpenCode agent still called after its model by the model id alone', () => {
+    const agent = {
+      name: 'OpenCode · my-lan-gateway/qwen3.8-flash',
+      tool: 'opencode' as const,
+      model: 'my-lan-gateway/qwen3.8-flash',
+    };
+    const model = providerModelOf(agent);
+    expect(model).toEqual({
+      model: 'my-lan-gateway/qwen3.8-flash',
+      nameIsModel: true,
+    });
+    expect(agentShortName(agent.name, model)).toBe(
+      'my-lan-gateway/qwen3.8-flash',
+    );
+  });
+
+  it('keeps a renamed agent’s name and gives its model id apart', () => {
+    const model = providerModelOf({
+      name: 'Gateway fast',
+      tool: 'pi',
+      model: 'my-lan-gateway/qwen3.8-flash',
+    });
+    expect(model).toEqual({ model: 'my-lan-gateway/qwen3.8-flash' });
+    expect(agentShortName('Gateway fast', model)).toBe('Gateway fast');
+  });
+
+  it('says nothing more for Claude and Codex agents', () => {
+    for (const [tool, model] of [
+      ['claude', 'claude-opus-5-5'],
+      ['codex', 'gpt-6-astra'],
+    ] as const) {
+      const name = agentNameOf(tool, model);
+      expect(providerModelOf({ name, tool, model })).toEqual({});
+      expect(agentShortName(name, {})).toBe(name);
+    }
+  });
 });
