@@ -35,9 +35,9 @@ function targetFor(url: string): SshTarget {
   if (match === null || match[3]?.startsWith('//'))
     throw new Error('Invalid SSH clone URL.');
   return {
-    destination: match[1] + match[2]!.replace(/^\[|\]$/gu, '').toLowerCase(),
+    destination: match[1] + match[2].replace(/^\[|\]$/gu, '').toLowerCase(),
     port: '22',
-    repoPath: match[3]!,
+    repoPath: match[3],
   };
 }
 
@@ -59,7 +59,10 @@ function binaries(): string[] {
 }
 
 export function supportsGitSsh(): boolean {
-  return process.platform !== 'win32' && binaries().every(Boolean);
+  return (
+    (process.platform === 'linux' || process.platform === 'darwin') &&
+    binaries().every(Boolean)
+  );
 }
 
 function quote(value: string): string {
@@ -174,7 +177,9 @@ export async function openGitSsh(
           signal,
           credential.privateKey.trimEnd() + '\n',
         );
-        const keys = (await add(sshAdd, socket, ['-L'], signal)).split('\n');
+        const keys = (await add(sshAdd, socket, ['-L'], signal))
+          .split('\n')
+          .map((line) => line.split(/\s+/u, 2).join(' '));
         const key = keys.find((line) => !loaded.has(line));
         if (!key) throw new GitSshError('authFailed');
         loaded.add(key);
@@ -188,7 +193,7 @@ export async function openGitSsh(
       await writeFile(knownHosts, credential.knownHosts.trimEnd() + '\n', {
         mode: 0o600,
       });
-      identities.push({ ...targets[index]!, publicKey, knownHosts });
+      identities.push({ ...targets[index], publicKey, knownHosts });
     }
     const config = path.join(dir, 'config.json');
     await writeFile(

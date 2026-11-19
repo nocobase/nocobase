@@ -1323,8 +1323,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       },
       prepared,
     );
-    if (git?.ssh?.length && !runner.features.includes('gitSsh'))
-      throw new NotForThisRunner();
+    if (git?.ssh?.length) {
+      if (!runner.features.includes('gitSsh')) throw new NotForThisRunner();
+      if (!requires.includes('gitSsh')) requires.push('gitSsh');
+    }
     deps.secrets?.remember(runSecretsKey(run.id), [
       ...env.map((variable) => variable.value),
       token.value,

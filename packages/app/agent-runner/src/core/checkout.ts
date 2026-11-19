@@ -1472,8 +1472,8 @@ export async function reportRepos(
         targetBranch: repo.branch,
         localBranch: branch,
         headSha,
-        pushed: reachable && !dirty,
-        ...(!reachable && pushFailure !== undefined
+        pushed: reachable && !dirty && pushFailure === undefined,
+        ...(pushFailure !== undefined
           ? {
               failure: {
                 reason: SSH_PUSH_FAILURE[pushFailure],

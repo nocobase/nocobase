@@ -15,6 +15,7 @@
 // - its timeout passes: stop the command, `fail(jobTimeout)`;
 // - lease lost: stop the command; the job is no longer this runner's, so nothing is reported;
 // - SIGTERM (the runner is stopping): stop the command and `fail(runnerOffline)` so the server can requeue it.
+import { isGitSshUrl } from './git-ssh.ts';
 import { GitSshError, gitSshFailureOf } from './git.ts';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';

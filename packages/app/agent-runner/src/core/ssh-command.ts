@@ -72,7 +72,7 @@ export function classifySshFailure(
   )
     return 'pushRejected';
   if (
-    /permission denied \(publickey|authentication failed|repository (?:not found|does not exist)|project .* (?:not found|not have permission)|access denied|does not appear to be a git repository|no access to this repository|not authorized/iu.test(
+    /permission denied \(publickey|authentication failed|repository (?:not found|does not exist)|project .* (?:not found|not have permission)|access denied|does not appear to be a git repository|no access to this repository|not authorized|no deployment key in the run/iu.test(
       stderr,
     )
   )
@@ -83,6 +83,7 @@ export function classifySshFailure(
     )
   )
     return 'unreachable';
+  if (push && /failed to push some refs/iu.test(stderr)) return 'pushRejected';
   return undefined;
 }
 
