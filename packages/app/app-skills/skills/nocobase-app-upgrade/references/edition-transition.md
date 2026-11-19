@@ -1,6 +1,6 @@
 # Switching editions in an existing application
 
-Use this workflow when the user explicitly chooses a higher edition. Community here means `@nocobase/app-template-default`. Professional and Enterprise use `@nocobase/app-template-pro` and `@nocobase/app-template-enterprise`. The supported transitions are Default → Pro, Default → Enterprise directly, and Pro → Enterprise. An ordinary upgrade stays on the recorded package. Examples, Hub, Multi App and other specialized templates have their own source and data contracts.
+Use this workflow when the user explicitly chooses a higher edition. Community here means `@nocobase/app-template-default`. Professional and Enterprise use `@nocobase/app-template-pro` and `@nocobase/app-template-enterprise`. The supported transitions are Default → Pro, Default → Enterprise directly, and Pro → Enterprise. An ordinary upgrade stays on the recorded package. Examples, Multi App and other specialized templates have their own source and data contracts.
 
 ## Select compatible artifacts
 
@@ -11,13 +11,11 @@ Use this workflow when the user explicitly chooses a higher edition. Community h
 
 ## Reconcile the project's actual plugin and database state
 
-Use the target manifest to identify additions. Inspect PROJECT's dependency fields, Client/Server/CLI registrations, runtime imports and required plugin dependencies. If a Community project already uses Approval and Task Center, retain their production declarations and existing registrations exactly once. If it only preinstalled Approval, retain its development declaration and leave it inactive. Keep locally installed packages outside the destination edition when the project still needs them; resolve incompatible pins or missing entitlements explicitly. If a package was already in BASE and the project deliberately removed it, preserve that decision unless a retained runtime dependency requires it. New optional capabilities enter `devDependencies` at the target's published ranges. Reconcile compatible ranges and intentional project pins without adding a package to both dependency fields.
-
-Keep a production driver for each effective database connection, including secondary connections and deployment overrides. For example, a PostgreSQL application retains its selected driver and existing data when a target preinstalls additional dialects. Preserve the existing configuration and database. Apply database tasks only for separately identified runtime or plugin changes using the normal database upgrade procedure.
+Follow [preinstalled plugins and database drivers](edge-cases.md#preinstalled-plugins-and-database-drivers) to reconcile the target manifest with the project's active and preinstalled capabilities. Apply [database upgrade tasks](database-upgrades.md) only for separately identified runtime or plugin changes.
 
 ## Acceptance, retry and completion
 
-Install, synchronize Skills and run the normal upgrade checks. Use `plugin inspect` on retained and newly available plugins, run `config check --no-connect` for the active environment, then build and inspect the production manifest and installed packages. Check a customized page and retained business records. On an application using Approval, verify an existing approval and its task/history with the original permissions and identifiers. The existing plugin remains active and new optional capabilities gain Skills without new runtime registrations.
+Run the [upgrade finish checks](../SKILL.md#8-finish), including verification of a customized page and retained business records. If the project already uses Approval, open an existing approval and verify its task and history retain their original identifiers and permissions.
 
 Keep all original template markers until acceptance succeeds. Record the exact source and target artifacts with the upgrade branch and starting commit. On failure, report the failed check and keep the same BASE and selected TARGET for retry. Resume by comparing the current files and lockfile against the checkpoint; reuse already-applied edits. After success, write the destination package name, its edition, its own exact release in `defaultTemplateVersion`, and its Default version and commit together with the verified changes. A repeat request for the same accepted package and version is a no-op. Future ordinary upgrades follow that destination package.
 
