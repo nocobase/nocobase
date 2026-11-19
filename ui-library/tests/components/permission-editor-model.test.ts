@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyQuickSet,
+  blockedLeaderObject,
   dependentsOf,
   effectiveScopeValue,
   filterObjects,
@@ -500,6 +501,93 @@ describe('permission editor model', () => {
       'contacts.view',
       'customers.view',
     ]);
+  });
+
+  it('keeps a stored scope while the other object’s View it follows is off, and caps it once that View is on', () => {
+    const customers = {
+      id: 'customers',
+      label: 'Customers',
+      actions: [
+        {
+          id: 'customers.view',
+          label: 'View customers',
+          view: true,
+          scopes: [{ id: 'records', options: RECORDS, defaultValue: 'own' }],
+        },
+      ],
+    } satisfies PermissionObject;
+    const contacts = {
+      id: 'contacts',
+      label: 'Contacts',
+      actions: [
+        {
+          id: 'contacts.view',
+          label: 'View contacts',
+          view: true,
+          scopes: [{ id: 'records', options: RECORDS }],
+        },
+        {
+          id: 'contacts.create',
+          label: 'Create contacts',
+          scopes: [
+            {
+              id: 'customers',
+              label: 'Customers',
+              options: RECORDS,
+              followsView: 'customers.view',
+            },
+          ],
+        },
+      ],
+    } satisfies PermissionObject;
+    const all: readonly PermissionObject[] = [customers, contacts];
+    const create = contacts.actions[1]!;
+    const slot = create.scopes[0]!;
+    // Stored by a seed or the API: Create contacts reads all customers while Customers' View is off.
+    const stored: PermissionGrants = {
+      'contacts.view': { scopes: { records: 'all' } },
+      'contacts.create': { scopes: { customers: 'all' } },
+    };
+    expect(blockedLeaderObject(contacts, slot, all, stored)).toBe(customers);
+    expect(effectiveScopeValue(contacts, stored, create, slot, all)).toBe(
+      'all',
+    );
+    // It cannot be changed while that View is off.
+    expect(
+      setScopeValue(all, stored, 'contacts.create', 'customers', 'own').grants,
+    ).toBe(stored);
+    // Turning that View on caps it: wider than View's scope, it follows View and the notice names it.
+    const on = setActionEnabled(all, stored, 'customers.view', true);
+    expect(blockedLeaderObject(contacts, slot, all, on.grants)).toBeUndefined();
+    expect(on.grants['contacts.create']?.scopes).toEqual({});
+    expect(on.notices).toEqual([
+      {
+        kind: 'scope-reset',
+        view: 'Their own records',
+        actions: ['Create contacts'],
+      },
+    ]);
+    // Equal to it, it simply follows without a notice; narrower, it keeps its value.
+    const equal = setActionEnabled(
+      all,
+      { ...stored, 'contacts.create': { scopes: { customers: 'own' } } },
+      'customers.view',
+      true,
+    );
+    expect(equal.grants['contacts.create']?.scopes).toEqual({});
+    expect(equal.notices).toEqual([]);
+    const narrower = setActionEnabled(
+      all,
+      {
+        'customers.view': { scopes: { records: 'all' } },
+        'contacts.create': { scopes: { customers: 'own' } },
+      },
+      'contacts.view',
+      true,
+    );
+    expect(narrower.grants['contacts.create']?.scopes).toEqual({
+      customers: 'own',
+    });
   });
 
   it('keeps the scopes of a multi-scope action independent of View', () => {
