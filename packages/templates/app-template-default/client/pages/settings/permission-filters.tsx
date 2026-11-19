@@ -2,6 +2,7 @@ import type {
   PermissionGrants,
   PermissionObject,
 } from '#components/permission-editor';
+import { configurationLocked } from '#components/permission-editor-model';
 import {
   PermissionFilter,
   type PermissionFilterLabels,
@@ -23,7 +24,7 @@ export function withPermissionFilters(
   text: (key: string, fallback?: string) => string,
   editing: string | undefined,
   setEditing: (key: string | undefined) => void,
-  onApply: (key: string, filter: unknown) => void,
+  onApply: (actionId: string, slotId: string, filter: unknown) => void,
   disabled: boolean,
 ): readonly PermissionObject[] {
   const labels = permissionFilterLabels(text);
@@ -55,8 +56,11 @@ export function withPermissionFilters(
                   ),
                 }))}
                 labels={labels}
-                disabled={disabled}
-                onApply={(filter) => onApply(key, filter)}
+                // A follower's stored filter shows its summary; its scope is set by picking from its options.
+                disabled={
+                  disabled || configurationLocked(object, slot, objects)
+                }
+                onApply={(filter) => onApply(action.id, slot.id, filter)}
               />
             ),
           };

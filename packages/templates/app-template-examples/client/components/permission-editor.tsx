@@ -43,6 +43,7 @@ import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
   canViewObject,
+  configurationLocked,
   dependentsOf,
   effectiveScopeValue,
   blockedLeaderObject,
@@ -396,6 +397,30 @@ function ScopeControl({
   );
 }
 
+/**
+ * A slot's extra controls, such as a custom filter. Locked, as on a follower or a read-only row, its summary still shows
+ * but every control in it is natively disabled, so neither a click nor the keyboard opens it.
+ */
+function SlotConfiguration({
+  locked,
+  className,
+  children,
+}: {
+  readonly locked: boolean;
+  readonly className?: string;
+  readonly children: ReactNode;
+}): ReactElement {
+  return (
+    <fieldset
+      data-slot='permission-scope-configuration'
+      disabled={locked}
+      className={cn('m-0 min-w-0 border-0 p-0', className)}
+    >
+      {children}
+    </fieldset>
+  );
+}
+
 function ActionRow({
   object,
   objects,
@@ -513,15 +538,26 @@ function ActionRow({
                   onScope={(slotId, value) => onScope(action, slotId, value)}
                 />
               </div>
-              {enabled && slot.configuration}
+              {enabled && slot.configuration && (
+                <SlotConfiguration
+                  locked={
+                    disabled || configurationLocked(object, slot, objects)
+                  }
+                >
+                  {slot.configuration}
+                </SlotConfiguration>
+              )}
             </div>
           ))}
         </div>
       )}
       {inline && enabled && inline.configuration && (
-        <div className='col-span-full col-start-2 min-w-0'>
+        <SlotConfiguration
+          locked={disabled || configurationLocked(object, inline, objects)}
+          className='col-span-full col-start-2'
+        >
           {inline.configuration}
-        </div>
+        </SlotConfiguration>
       )}
     </li>
   );

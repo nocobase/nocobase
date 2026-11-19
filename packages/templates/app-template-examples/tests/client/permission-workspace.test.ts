@@ -19,6 +19,7 @@ import {
 import {
   CUSTOM_FILTER,
   NO_SCOPE,
+  applyFilter,
   draftFromGrants,
   filterKey,
   grantsFromDraft,
@@ -1049,6 +1050,125 @@ describe('role permission workspace', () => {
           ?.actions.find((entry) => entry.action === 'view')?.policy?.scopes,
       ).toEqual({ records: 'allRecords' });
     }
+  });
+
+  it('caps Edit to View when View gets new custom filter conditions, and keeps it otherwise', async () => {
+    const { workspace: ws } = await workspace();
+    const custom = (filter: unknown) => ({
+      type: 'recordAccess',
+      key: CUSTOM_FILTER,
+      params: { filter },
+    });
+    const below = (amount: number) => ({ amount: { $lt: amount } });
+    // View and Edit store their own custom filters; Approve follows View; Sign stores No records of its own.
+    const existing: PermissionGrant[] = [
+      {
+        resource: { type: 'composite', id: 'contracts' },
+        actions: [
+          {
+            action: 'view',
+            policy: {
+              type: 'composite',
+              scopes: { records: custom(below(100)) },
+            },
+          },
+          {
+            action: 'update',
+            policy: {
+              type: 'composite',
+              scopes: { records: custom(below(50)) },
+            },
+          },
+          {
+            action: 'approve',
+            policy: {
+              type: 'composite',
+              scopes: { records: custom(below(100)), departments: 'own' },
+            },
+          },
+          {
+            action: 'sign',
+            policy: {
+              type: 'composite',
+              scopes: { records: '', signers: 'own' },
+            },
+          },
+        ],
+      },
+    ];
+    const scopesOf = (grants: readonly PermissionGrant[], action: string) =>
+      grants
+        .find((grant) => grant.resource.id === 'contracts')
+        ?.actions.find((entry) => entry.action === action)?.policy?.scopes;
+    const read = draftFromGrants(existing, ws);
+    expect(read.draft.grants[contract('approve')]?.scopes).toEqual({
+      departments: 'own',
+    });
+    // Saving unchanged, as when only the name changes, stores exactly what was read.
+    expect(
+      sameGrants(
+        grantsFromDraft(read.draft, read.filters, existing, ws),
+        existing,
+      ),
+    ).toBe(true);
+    // The same conditions again change nothing and say nothing.
+    const again = applyFilter(
+      ws.objects,
+      read.draft,
+      read.filters,
+      contract('view'),
+      'records',
+      below(100),
+    );
+    expect(again.notices).toEqual([]);
+    expect(again.value).toBe(read.draft);
+    expect(
+      sameGrants(
+        grantsFromDraft(again.value, again.filters, existing, ws),
+        existing,
+      ),
+    ).toBe(true);
+    // New conditions with the same scope key: Edit's own filter cannot be shown to be inside them, so it follows View.
+    const narrowed = applyFilter(
+      ws.objects,
+      read.draft,
+      read.filters,
+      contract('view'),
+      'records',
+      below(10),
+    );
+    expect(narrowed.notices).toEqual([
+      expect.objectContaining({ kind: 'scope-reset', actions: ['Edit'] }),
+    ]);
+    const saved = grantsFromDraft(
+      narrowed.value,
+      narrowed.filters,
+      existing,
+      ws,
+    );
+    expect(scopesOf(saved, 'view')).toEqual({ records: custom(below(10)) });
+    expect(scopesOf(saved, 'update')).toEqual({ records: custom(below(10)) });
+    expect(scopesOf(saved, 'approve')).toEqual({
+      records: custom(below(10)),
+      departments: 'own',
+    });
+    // No records is declared inside every scope: it stays.
+    expect(scopesOf(saved, 'sign')).toEqual({ records: '', signers: 'own' });
+    // Widening View to All records keeps Edit's own filter.
+    const widened = setScopeValue(
+      ws.objects,
+      read.draft.grants,
+      contract('view'),
+      'records',
+      'allRecords',
+    );
+    expect(widened.notices).toEqual([]);
+    expect(
+      scopesOf(
+        grantsFromDraft(value(widened.grants), read.filters, existing, ws),
+        'update',
+      ),
+    ).toEqual({ records: custom(below(50)) });
   });
 
   it('keeps stored scope keys the catalog does not declare', async () => {

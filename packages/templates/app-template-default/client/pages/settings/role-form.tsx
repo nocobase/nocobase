@@ -39,6 +39,7 @@ import { pagePermissionTitles } from './page-permission-titles.js';
 import { permissionWorkspace } from './permission-workspace.js';
 import { withPermissionFilters } from './permission-filters.js';
 import {
+  applyFilter,
   draftFromGrants,
   grantsFromDraft,
   sameGrants,
@@ -303,9 +304,20 @@ function RoleEditor(): ReactElement {
         (key, fallback) => t(key, { defaultValue: fallback ?? key }),
         editingFilter,
         setEditingFilter,
-        (key, filter) => {
-          setFilters({ ...currentFilters, [key]: filter });
+        (actionId, slotId, filter) => {
+          const applied = applyFilter(
+            workspace.objects,
+            value,
+            currentFilters,
+            actionId,
+            slotId,
+            filter,
+          );
+          setFilters(applied.filters);
           setEditingFilter(undefined);
+          if (applied.value !== value) setDraft(applied.value);
+          for (const notice of applied.notices)
+            toaster.show({ type: 'info', title: labels.notice(notice) });
         },
         readOnly,
       )

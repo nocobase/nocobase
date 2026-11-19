@@ -299,6 +299,19 @@ export function blockedLeaderObject(
   return leader && !grants[leader.action.id] ? leader.object : undefined;
 }
 
+/**
+ * Whether a slot's extra controls, such as a custom filter, are read-only because the slot follows a View, its own or
+ * another object's, on or off. A follower's scope is set by picking from its options; a stored configuration on it is
+ * shown as it is but cannot be edited into one wider than what it follows.
+ */
+export function configurationLocked(
+  object: PermissionObject,
+  slot: PermissionScopeSlot,
+  objects?: readonly PermissionObject[],
+): boolean {
+  return Boolean(leaderOf(object, slot, objects));
+}
+
 export function slotOptions(
   object: PermissionObject,
   slot: PermissionScopeSlot,
@@ -755,6 +768,29 @@ export function setScopeValue(
   return resetWiderFollowers(
     objects,
     next,
+    (leader) => leader.action.id === actionId && leader.slot.id === slotId,
+    actionId,
+  );
+}
+
+/**
+ * Cap the followers of one scope after the host changed what its value means, such as the conditions of a custom
+ * filter, with the value itself unchanged. Such a change cannot be shown to be wider or narrower, so every follower not
+ * provably narrower goes back to "Same as view", as when View is narrowed; the notices name them. Call it only when the
+ * meaning actually changed: opening a role, saving it, or applying the same conditions again changes nothing.
+ */
+export function capFollowers(
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+  actionId: string,
+  slotId: string,
+): PermissionChange {
+  const found = findAction(objects, actionId);
+  if (!found || !grants[actionId] || found.action.managed)
+    return { grants, notices: [] };
+  return resetWiderFollowers(
+    objects,
+    grants,
     (leader) => leader.action.id === actionId && leader.slot.id === slotId,
     actionId,
   );

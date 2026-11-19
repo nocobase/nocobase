@@ -5,10 +5,12 @@ import type {
 import type {
   PermissionGrants,
   PermissionMenuNode,
+  PermissionNotice,
   PermissionObject,
   PermissionSettingsPage,
   PermissionValue,
 } from '#components/permission-editor';
+import { capFollowers } from '#components/permission-editor-model';
 
 export type CatalogResource =
   AuthorizationOptionsResponse['sections'][number]['subsections'][number]['resources'][number];
@@ -327,6 +329,36 @@ export function grantsFromDraft(
     }
   }
   return [...next.values()].filter((grant) => grant.actions.length);
+}
+
+/**
+ * Apply custom filter conditions to a scope. New conditions on a scope others follow cannot be shown to be wider or
+ * narrower than before, so followers not provably narrower go back to following it, as when View narrows, and the
+ * notices name them. Applying the same conditions again changes nothing; saving keeps every untouched scope as stored.
+ */
+export function applyFilter(
+  objects: readonly PermissionObject[],
+  value: PermissionValue,
+  filters: PermissionFilters,
+  actionId: string,
+  slotId: string,
+  filter: unknown,
+): {
+  readonly value: PermissionValue;
+  readonly filters: PermissionFilters;
+  readonly notices: readonly PermissionNotice[];
+} {
+  const key = filterKey(actionId, slotId);
+  const next = { ...filters, [key]: filter };
+  if (same(filters[key], filter)) return { value, filters: next, notices: [] };
+  const change = capFollowers(objects, value.grants, actionId, slotId);
+  return change.notices.length
+    ? {
+        value: { menus: value.menus, grants: change.grants },
+        filters: next,
+        notices: change.notices,
+      }
+    : { value, filters: next, notices: [] };
 }
 
 /** The first enabled scope whose custom filter has no conditions yet; it must be configured before saving. */
