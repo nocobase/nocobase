@@ -407,6 +407,16 @@ for (const template of templates) {
     }
   });
 
+  test(`${template.kind} pins direct NocoBase dependencies at pack time`, () => {
+    for (const section of ['dependencies', 'devDependencies']) {
+      for (const [name, range] of Object.entries(template.manifest[section])) {
+        if (name.startsWith('@nocobase/')) {
+          assert.equal(range, 'workspace:*', `${section}.${name}`);
+        }
+      }
+    }
+  });
+
   test(`${template.kind} declares server runtime packages in dependencies only`, () => {
     const { dependencies, devDependencies } = template.manifest;
     const duplicates = Object.keys(dependencies).filter(
@@ -431,7 +441,7 @@ for (const template of templates) {
         'postgres',
         'sqlite',
       ]) {
-        assert.equal(devDependencies[`@nocobase/db-${dialect}`], 'workspace:^');
+        assert.ok(devDependencies[`@nocobase/db-${dialect}`]);
       }
     }
     assert.equal(dependencies.hono, 'catalog:');
