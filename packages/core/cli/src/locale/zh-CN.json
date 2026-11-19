@@ -93,6 +93,10 @@
     "authRequiredHint": "认证失败或已保存的登录状态已过期。请运行 `{{command}}` 重新认证。"
   },
   "commands": {
+    "resourceList": {
+      "space": "指定本次列表查询使用的空间名称（多空间插件）。",
+      "invalidSpace": "--space 需要一个非空的空间名称，且不能包含逗号。"
+    },
     "envAdd": {
       "prompts": {
         "name": {

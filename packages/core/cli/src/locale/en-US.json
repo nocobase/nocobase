@@ -93,6 +93,10 @@
     "authRequiredHint": "Authentication failed or the saved session has expired. Run `{{command}}` to sign in again."
   },
   "commands": {
+    "resourceList": {
+      "space": "Select one space for this list request (Multi-Space plugin).",
+      "invalidSpace": "--space requires one non-empty space name without commas."
+    },
     "envAdd": {
       "prompts": {
         "name": {
