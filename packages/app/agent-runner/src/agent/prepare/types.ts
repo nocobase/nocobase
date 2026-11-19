@@ -16,6 +16,7 @@ import type {
   RepoAuthSource,
   WorkspaceLock,
 } from '../../core/checkout.ts';
+import type { GitSshSession } from '../../core/git-ssh.ts';
 import type { GitRetryOptions } from '../../core/git-retry.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
@@ -36,6 +37,7 @@ export interface PrepareContext {
   readonly onRelease: (release: () => Promise<void>) => void;
   /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
   readonly gitAuth?: RepoAuthSource;
+  gitSsh?: GitSshSession | undefined;
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
   readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;

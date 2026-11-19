@@ -44,6 +44,7 @@ import {
   type RunnerPaths,
 } from '../lib/home.ts';
 import type {
+  GitSshFailure,
   RepoDir,
   RepoPushFailure,
   RepoReport,
@@ -57,9 +58,18 @@ import {
 } from './git-retry.ts';
 import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
-import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
+import {
+  CheckoutError,
+  git,
+  gitAuthEnv,
+  gitOk,
+  gitSshFailureOf,
+  type GitAuth,
+} from './git.ts';
 import { WorkspaceBusyError } from './workspace-errors.ts';
 export { WorkspaceBusyError } from './workspace-errors.ts';
+import type { GitSshSession } from './git-ssh.ts';
+import { SSH_FAILURE_MESSAGES } from './ssh-command.ts';
 import { cacheGit, taskGit, taskGitDir, taskGitOk } from './task-git.ts';
 
 export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
@@ -213,12 +223,13 @@ export async function updateCache(
   url: string,
   options: {
     auth?: GitAuth;
+    ssh?: Readonly<Record<string, string>>;
     extra?: readonly string[];
     retry?: GitRetryOptions;
   } = {},
 ): Promise<string> {
   const cache = cachePath(paths, url);
-  const env = gitAuthEnv(options.auth);
+  const env = { ...gitAuthEnv(options.auth), ...options.ssh };
   const lock = await lockCache(cache);
   try {
     if (!existsSync(cache)) {
@@ -1023,6 +1034,7 @@ export interface PrepareDirsOptions {
   dirs: readonly WorkspaceDir[];
   /** The run's repository credentials (`workspace.git`). */
   auth?: RepoAuthSource;
+  ssh?: GitSshSession;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
   /** How cloning and fetching are retried. */
@@ -1118,9 +1130,12 @@ export async function prepareDirs(
       );
       const retry = options.retry === undefined ? {} : { retry: options.retry };
       const repoUrl = entry.url;
-      const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
+      const ssh = options.ssh?.env(repoUrl);
+      const authSource = ssh?.GIT_SSH_COMMAND ? undefined : options.auth;
+      const cache = await withRepoAuth(authSource, repoUrl, (auth) =>
         updateCache(paths, repoUrl, {
           ...(auth === undefined ? {} : { auth }),
+          ...(ssh === undefined ? {} : { ssh }),
           ...retry,
         }),
       );
@@ -1149,14 +1164,14 @@ export async function prepareDirs(
           cache,
         ))
       ) {
-        const refs = await withRepoAuth(options.auth, repoUrl, (auth) =>
+        const refs = await withRepoAuth(authSource, repoUrl, (auth) =>
           retryGit(
             `git ls-remote ${repoUrl}`,
             () =>
               git(
                 [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
                 cache,
-                gitAuthEnv(auth),
+                { ...gitAuthEnv(auth), ...ssh },
                 options.retry,
               ),
             options.retry,
@@ -1349,8 +1364,17 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
   }
 }
 
+const SSH_PUSH_FAILURE: Readonly<Record<GitSshFailure, RepoPushFailure>> = {
+  authFailed: 'sshAuthFailed',
+  hostKeyMismatch: 'sshHostKeyMismatch',
+  pushRejected: 'sshPushRejected',
+  unreachable: 'sshUnreachable',
+};
+
 /** Why a push failed, as `RepoReport.failure` names it. */
 export function pushFailureOf(error: unknown): RepoPushFailure {
+  const sshFailure = gitSshFailureOf(error);
+  if (sshFailure !== undefined) return SSH_PUSH_FAILURE[sshFailure];
   if (error instanceof RepoAccessFailure)
     return error.kind === 'leaseLost'
       ? 'leaseLost'
@@ -1381,6 +1405,7 @@ export async function reportRepos(
     signal?: AbortSignal;
     onAbort?: () => Promise<void>;
     auth?: RepoAuthSource;
+    ssh?: GitSshSession;
     log?: (message: string) => void;
   },
 ): Promise<RepoReport[]> {
@@ -1402,8 +1427,10 @@ export async function reportRepos(
       const dirty = (await taskGit(repo, ['status', '--porcelain'])) !== '';
       // Serialize only shared Git metadata operations, never the agent's time in the workspace.
       const lock = await lockCache(repo.cache);
+      const ssh = options.ssh?.env(repo.url);
+      const authSource = ssh?.GIT_SSH_COMMAND ? undefined : options.auth;
       try {
-        await withRepoAuth(options.auth, repo.url, (auth) =>
+        await withRepoAuth(authSource, repo.url, (auth) =>
           retryGit(
             `git fetch ${repo.url}`,
             () =>
@@ -1416,7 +1443,7 @@ export async function reportRepos(
                   repo.url,
                   '+refs/heads/*:refs/remotes/origin/*',
                 ],
-                {},
+                ssh,
                 {
                   ...(auth ? { auth } : {}),
                   ...(options.signal ? { signal: options.signal } : {}),
@@ -1438,6 +1465,7 @@ export async function reportRepos(
           '--format=%(refname)',
           'refs/remotes/origin/',
         ])) !== '';
+      const pushFailure = await options.ssh?.pushFailure(repo.url);
       reports.push({
         url: repo.url,
         branch,
@@ -1445,6 +1473,14 @@ export async function reportRepos(
         localBranch: branch,
         headSha,
         pushed: reachable && !dirty,
+        ...(!reachable && pushFailure !== undefined
+          ? {
+              failure: {
+                reason: SSH_PUSH_FAILURE[pushFailure],
+                message: SSH_FAILURE_MESSAGES[pushFailure],
+              },
+            }
+          : {}),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

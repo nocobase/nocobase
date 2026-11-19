@@ -1,4 +1,6 @@
 import { OutputWriter } from './output-writer.ts';
+import { isGitSshUrl, openGitSsh } from '../core/git-ssh.ts';
+import { GitSshError, gitSshFailureOf } from '../core/git.ts';
 import { PreviewTransport } from './preview-transport.ts';
 import { existsSync } from 'node:fs';
 import { protectUpgradeWorkspace } from '../core/workspace-use.ts';
@@ -132,7 +134,7 @@ export interface WorkerDeps {
   /** Overrides the client built from `connection`, for tests. */
   client?: ApiClient;
   /** Stops this isolated worker's descendants before ending this run. */
-  stopWriters?: () => Promise<void>;
+  stopWriters?: (keepPid?: number) => Promise<void>;
 }
 
 export type WorkerOutcome =
@@ -278,6 +280,8 @@ export function runSecrets(
   passEnv: readonly string[] = [],
 ): string[] {
   const secrets = payload.workspace.env.map((variable) => variable.value);
+  for (const credential of payload.workspace.git?.ssh ?? [])
+    secrets.push(credential.privateKey);
   const provided = providedVariables(
     source,
     passEnv,
@@ -686,6 +690,11 @@ export class RunWorker {
           `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
         ),
       );
+      await this.prepared?.gitSsh
+        ?.close()
+        .catch((error: unknown) =>
+          log(`Git SSH cleanup failed: ${String(error)}`),
+        );
       if (this.runTemp !== undefined) {
         try {
           if (this.writerStopFailure === undefined)
@@ -778,14 +787,41 @@ export class RunWorker {
           : { credentialsFile: context.credentialsFile }),
       });
       try {
+        if (step.name === 'dirs') {
+          const credentials = payload.workspace.git?.ssh;
+          if (
+            payload.run.requires.includes('gitSsh') &&
+            payload.workspace.dirs.some(
+              (dir) =>
+                dir.kind === 'repo' &&
+                isGitSshUrl(dir.url) &&
+                !credentials?.some(({ url }) => url === dir.url),
+            )
+          ) {
+            throw new GitSshError('authFailed');
+          }
+          if (credentials?.length) {
+            this.runTemp = await allocateRunTemp(
+              deps.paths,
+              context.privateDir!,
+            );
+            context.gitSsh = await openGitSsh(
+              credentials,
+              this.runTemp.dir,
+              this.abort.signal,
+            );
+          }
+        }
         await step.run(context);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
+        const gitSshFailure = gitSshFailureOf(error);
         this.writeEvent({
           type: 'error',
           content: detail,
           meta: {
             ...(error instanceof PrepareError ? error.meta : {}),
+            ...(gitSshFailure === undefined ? {} : { gitSshFailure }),
             phase: step.name,
           },
         });
@@ -846,7 +882,7 @@ export class RunWorker {
     }
 
     try {
-      this.runTemp = await allocateRunTemp(deps.paths, context.privateDir!);
+      this.runTemp ??= await allocateRunTemp(deps.paths, context.privateDir!);
     } catch (error) {
       return this.finishFailed('setupFailed', String(error));
     }
@@ -889,6 +925,9 @@ export class RunWorker {
       ...(payload.workspace.git?.tools === undefined
         ? {}
         : { tools: payload.workspace.git.tools }),
+      ...(context.gitSsh === undefined
+        ? {}
+        : { sshPushCommand: context.gitSsh.pushCommand }),
       log: deps.log,
     });
     if (hostTools.credentialed.length > 0)
@@ -920,6 +959,9 @@ export class RunWorker {
         : { processTag: process.env[PROCESS_TAG_ENV] }),
       localVariables: registration.variables,
       workspace: payload.workspace,
+      ...(context.gitSsh === undefined
+        ? {}
+        : { gitSshCommand: context.gitSsh.command }),
     });
     // The runner is not a security boundary: every call a tool asks about is allowed.
     const permission: PermissionCheck = () => {
@@ -1175,6 +1217,9 @@ export class RunWorker {
           ? {}
           : { onAbort: this.deps.stopWriters }),
         ...(this.broker === undefined ? {} : { auth: this.broker }),
+        ...(this.prepared?.gitSsh === undefined
+          ? {}
+          : { ssh: this.prepared.gitSsh }),
         log: this.deps.log,
       })
     ).map((report) =>
@@ -1183,7 +1228,7 @@ export class RunWorker {
         : {
             ...report,
             failure: {
-              reason: report.failure.reason,
+              ...report.failure,
               message: this.redactor.text(report.failure.message),
             },
           },
@@ -1203,7 +1248,7 @@ export class RunWorker {
     await this.stopTool();
     if (this.writerStopFailure === undefined) {
       try {
-        await this.deps.stopWriters?.();
+        await this.deps.stopWriters?.(this.prepared?.gitSsh?.pid);
       } catch (error) {
         this.writerStopFailure = `Process stop failed: ${String(error)}`;
       }
@@ -1230,11 +1275,13 @@ export class RunWorker {
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
     await this.stopTool();
-    await this.deps.stopWriters?.().catch((error: unknown) => {
-      // A read-only run keeps its checkout for GC; a writer pushes nothing past a writer it could not stop.
-      if (this.payload.workspace.readOnly !== true) throw error;
-      this.writerStopFailure = `Process stop failed: ${String(error)}`;
-    });
+    await this.deps
+      .stopWriters?.(this.prepared?.gitSsh?.pid)
+      .catch((error: unknown) => {
+        // A read-only run keeps its checkout for GC; a writer pushes nothing past a writer it could not stop.
+        if (this.payload.workspace.readOnly !== true) throw error;
+        this.writerStopFailure = `Process stop failed: ${String(error)}`;
+      });
     const repos = await this.repoReports(false);
     const workDir = this.prepared?.workspace?.workDir;
     const saved = await this.saveLocal();

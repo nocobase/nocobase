@@ -104,6 +104,7 @@ export interface BuildEnvOptions {
   hooksDir?: string;
   /** The run's repository credentials, through the runner's helper. */
   credentialHelper?: CredentialHelperOptions;
+  gitSshCommand?: string;
   /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
   processTag?: string;
   /** Where the npm launcher (npm-launcher.ts) writes the run's configuration and asks for the private registry's token. */
@@ -215,6 +216,12 @@ export function buildAgentEnv(
     env[CREDENTIAL_NONCE_ENV] = options.npm.nonce;
     if (options.npm.registry !== undefined)
       env[PRIVATE_REGISTRY_ENV] = options.npm.registry;
+  }
+  if (options.gitSshCommand !== undefined) {
+    env.GIT_SSH_COMMAND = options.gitSshCommand;
+    env.GIT_SSH_VARIANT = 'ssh';
+    delete env.SSH_AUTH_SOCK;
+    delete env.SSH_AGENT_PID;
   }
   const config: [string, string][] = [];
   if (options.hooksDir !== undefined)

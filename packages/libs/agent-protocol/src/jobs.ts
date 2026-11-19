@@ -21,8 +21,10 @@ import { z } from 'zod';
 
 import { FAILURE_REASONS, type FailureReason } from './events.js';
 import {
+  GitSshAuthSchema,
   RunAppSchema,
   RunStatusSchema,
+  type GitSshAuth,
   type RunApp,
   type RunStatus,
 } from './run.js';
@@ -115,12 +117,15 @@ export interface JobRepo {
   /** The commit to check out; the job fails `checkoutFailed` when the repository does not have it. */
   readonly sha?: string;
   readonly auth?: { readonly username?: string; readonly token: string };
+  /** Used for Git checkout only (the gitSsh feature). */
+  readonly ssh?: GitSshAuth;
 }
 
 const repoObject = z.object({
   url: z.string().min(1).max(2000),
   ref: z.string().min(1).max(255).optional(),
   sha: sha.optional(),
+  ssh: GitSshAuthSchema.optional(),
   auth: z
     .object({
       username: z.string().min(1).max(200).optional(),
@@ -471,6 +476,7 @@ export function jobSecrets(payload: Pick<JobPayload, 'job'>): string[] {
   const { job } = payload;
   const secrets: string[] = [];
   if (job.spec.repo.auth) secrets.push(job.spec.repo.auth.token);
+  if (job.spec.repo.ssh) secrets.push(job.spec.repo.ssh.privateKey);
   if (job.kind === 'build') {
     for (const variable of job.spec.env)
       if (variable.secret === true) secrets.push(variable.value);

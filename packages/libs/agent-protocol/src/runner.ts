@@ -774,6 +774,7 @@ export const StatusResponseSchema: z.ZodType<StatusResponse> = z.object({
  * - `credentialDenied`: the application will not issue one (no access to the repository, an installation gone);
  * - `leaseLost`: the run was no longer this runner's, so nothing was pushed;
  * - `rejected`: the remote or the push guard refused the push itself (not a fast-forward, a protected branch);
+ * - `sshAuthFailed`, `sshHostKeyMismatch`, `sshPushRejected` and `sshUnreachable`: SSH transport or push failures;
  * - `error`: anything else, such as the network.
  */
 export const REPO_PUSH_FAILURES = [
@@ -782,6 +783,10 @@ export const REPO_PUSH_FAILURES = [
   'credentialDenied',
   'leaseLost',
   'rejected',
+  'sshAuthFailed',
+  'sshHostKeyMismatch',
+  'sshPushRejected',
+  'sshUnreachable',
   'error',
 ] as const;
 

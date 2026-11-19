@@ -1323,10 +1323,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       },
       prepared,
     );
+    if (git?.ssh?.length && !runner.features.includes('gitSsh'))
+      throw new NotForThisRunner();
     deps.secrets?.remember(runSecretsKey(run.id), [
       ...env.map((variable) => variable.value),
       token.value,
       ...(git?.credentials ?? []).map((credential) => credential.password),
+      ...(git?.ssh ?? []).map((credential) => credential.privateKey),
     ]);
     const last = await eventsRepo(conn).findOne({
       filter: { runId: run.id },
