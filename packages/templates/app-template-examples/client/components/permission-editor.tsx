@@ -102,7 +102,6 @@ export interface PermissionEditorLabels {
   readonly objectsTab: string;
   readonly settingsTab: string;
   readonly tabCount: (count: number, total: number) => string;
-  readonly public: string;
   readonly noMenus: string;
   readonly emptyPage: (menu: string, object: string) => string;
   readonly openView: (action: string) => string;
@@ -176,7 +175,6 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   objectsTab: 'Business objects',
   settingsTab: 'System settings',
   tabCount: (count, total) => `${count} / ${total}`,
-  public: 'Visible to everyone',
   noMenus: 'No menus',
   emptyPage: (menu, object) =>
     `“${menu}” is checked, but this role cannot view ${object} yet, so the page opens empty.`,
@@ -259,17 +257,22 @@ function ScopeSelect({
         size='sm'
         aria-label={label}
         data-following={following ? '' : undefined}
+        // Long scope names wrap onto more lines instead of being cut off with an ellipsis.
         className={cn(
-          'w-full min-w-0',
+          'w-full min-w-0 py-1 text-left whitespace-normal data-[size=sm]:h-auto data-[size=sm]:min-h-7 *:data-[slot=select-value]:line-clamp-none',
           following === true && 'border-dashed text-muted-foreground',
         )}
       >
-        <SelectValue />
+        <SelectValue className='break-words' />
       </SelectTrigger>
       <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width)'>
         <SelectGroup>
           {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              className='*:min-w-0 *:shrink *:whitespace-normal'
+            >
               {option.label}
             </SelectItem>
           ))}
@@ -316,12 +319,16 @@ function ScopeControl({
           {same}
         </span>
       );
+    // A stored scope equal to (or no narrower than) View reads as following it, never as a raw value.
+    const picked = narrower.some((option) => option.value === own)
+      ? own
+      : undefined;
     return (
       <ScopeSelect
         label={accessibleName}
         options={[{ value: FOLLOW, label: same }, ...narrower]}
-        value={own ?? FOLLOW}
-        following={own === undefined}
+        value={picked ?? FOLLOW}
+        following={picked === undefined}
         disabled={disabled}
         onChange={(next) =>
           onScope(slot.id, next === FOLLOW ? undefined : next)
@@ -432,7 +439,7 @@ function ActionRow({
       {stacked.length > 0 && (
         <div
           data-slot='permission-scopes'
-          className='col-span-full col-start-2 flex min-w-0 flex-col gap-2 @min-[44rem]/permissions:flex-row @min-[44rem]/permissions:flex-wrap @min-[44rem]/permissions:items-center @min-[44rem]/permissions:gap-x-5'
+          className='col-span-full col-start-2 flex min-w-0 flex-col gap-2'
         >
           {stacked.map((slot) => (
             <div
@@ -445,7 +452,8 @@ function ActionRow({
                   {slot.label}
                 </span>
               )}
-              <div className='min-w-0 @min-[44rem]/permissions:w-60'>
+              {/* One scope per line; the select grows with its text and wraps only at the row's width. */}
+              <div className='w-full min-w-0 @min-[44rem]/permissions:w-fit @min-[44rem]/permissions:max-w-full @min-[44rem]/permissions:min-w-60'>
                 <ScopeControl
                   object={object}
                   objects={objects}
@@ -575,14 +583,6 @@ function MenuRows({
                 style={{ paddingInlineStart: `${depth * 1.25}rem` }}
               >
                 {node.label}
-                {node.public && (
-                  <span className='text-xs text-muted-foreground'>
-                    {' · '}
-                    {typeof node.public === 'string'
-                      ? node.public
-                      : labels.public}
-                  </span>
-                )}
               </label>
               {!group && node.opensWith && (
                 <Button
@@ -632,12 +632,14 @@ function MenuRows({
 
 function ObjectList({
   objects,
+  grouped,
   grants,
   selected,
   labels,
   onSelect,
 }: {
   readonly objects: readonly PermissionObject[];
+  readonly grouped: boolean;
   readonly grants: PermissionGrants;
   readonly selected: string | undefined;
   readonly labels: PermissionEditorLabels;
@@ -648,7 +650,7 @@ function ObjectList({
       {objects.map((object, index) => {
         const status = objectStatus(object, grants);
         const heading =
-          object.group && object.group !== objects[index - 1]?.group
+          grouped && object.group && object.group !== objects[index - 1]?.group
             ? object.group
             : undefined;
         const active = object.id === selected;
@@ -760,6 +762,8 @@ export function PermissionEditor({
   const current =
     objects.find((object) => object.id === selectedId) ?? objects[0];
   const filtered = filterObjects(objects, query);
+  // Group titles only tell groups apart, so a single group shows none.
+  const grouped = new Set(objects.map((object) => object.group ?? '')).size > 1;
   const warnings = menuWarnings(menus, objects, value);
   const menuTotals = menuCount(menus, value);
   const objectTotals = objectCount(objects, value.grants);
@@ -1316,7 +1320,7 @@ export function PermissionEditor({
               <SelectContent>
                 {groups.map((group) => (
                   <SelectGroup key={group}>
-                    {group && <SelectLabel>{group}</SelectLabel>}
+                    {grouped && group && <SelectLabel>{group}</SelectLabel>}
                     {filtered
                       .filter((object) => (object.group ?? '') === group)
                       .map((object) => {
@@ -1346,6 +1350,7 @@ export function PermissionEditor({
           {filtered.length > 0 && (
             <ObjectList
               objects={filtered}
+              grouped={grouped}
               grants={value.grants}
               selected={current?.id}
               labels={words}

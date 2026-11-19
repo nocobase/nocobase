@@ -295,7 +295,6 @@ const settings = {
     objectsTab: 'Business objects',
     settingsTab: 'System settings',
     tabCount: '{{count}} / {{total}}',
-    public: 'Visible to everyone',
     noMenus: 'No menus',
     emptyPage:
       '“{{menu}}” is checked, but this role cannot view {{object}} yet, so the page opens empty.',

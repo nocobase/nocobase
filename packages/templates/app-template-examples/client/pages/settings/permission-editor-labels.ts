@@ -15,7 +15,6 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
       objectsTab: k('objectsTab'),
       settingsTab: k('settingsTab'),
       tabCount: (count, total) => k('tabCount', { count, total }),
-      public: k('public'),
       noMenus: k('noMenus'),
       emptyPage: (menu, object) => k('emptyPage', { menu, object }),
       openView: (action) => k('openView', { action }),

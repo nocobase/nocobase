@@ -273,7 +273,6 @@ const settings = {
     objectsTab: '业务对象',
     settingsTab: '系统设置',
     tabCount: '{{count}} / {{total}}',
-    public: '所有人可见',
     noMenus: '没有菜单',
     emptyPage:
       '「{{menu}}」菜单已勾选，但这个角色还不能查看{{object}}，打开后会是空页面。',
