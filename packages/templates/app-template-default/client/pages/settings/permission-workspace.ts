@@ -66,7 +66,8 @@ export interface PermissionWorkspaceSelection {
   /**
    * The business objects each page uses, by application route name, as `business` ids. They are shown beside the menu
    * for reference and warn when a checked menu's primary object cannot be viewed; they never grant anything. A page
-   * whose page resource id equals a business id uses that object as its primary object without a declaration.
+   * whose page resource id equals a business id uses that object as its primary object unless this route has an
+   * explicit declaration. An empty declaration opts out of inference.
    */
   readonly pages?: Readonly<
     Record<
@@ -237,20 +238,16 @@ function routeResources(
   return [...found.values()];
 }
 
-/** Names of a route and its children that open without their own menu entry. */
-function routeNames(
+/** The menu's route and the descendants it reaches without opening another menu entry. */
+function menuRoutes(
   route: AppClientRegisteredRoute,
-  skipNavigation: boolean,
-): string[] {
-  const names: string[] = [];
-  const visit = (item: AppClientRegisteredRoute, root: boolean): void => {
-    if (!root && skipNavigation && item.navigation && item.componentLoader)
-      return;
-    names.push(item.name);
-    for (const child of item.children ?? []) visit(child, false);
-  };
-  visit(route, true);
-  return names;
+): AppClientRegisteredRoute[] {
+  return [
+    route,
+    ...(route.children ?? [])
+      .filter((child) => !child.navigation || !child.componentLoader)
+      .flatMap(menuRoutes),
+  ];
 }
 
 function navigationTitle(
@@ -615,19 +612,30 @@ export function permissionWorkspace(
       return key && objectIds.has(key) ? [key] : [];
     });
 
-  /** The objects a page uses: its declarations and the business object named after its page resource. */
+  /** Use each page's explicit mapping, or infer its primary object once per page grant. */
   const usesOf = (
-    names: readonly string[],
+    routes: readonly AppClientRegisteredRoute[],
     pages: readonly string[],
-    extra: readonly string[] = [],
   ): PermissionMenuUses | undefined => {
-    const primary = new Set<string>(extra);
+    const primary = new Set<string>();
     const related = new Set<string>();
-    for (const page of pages)
-      businessIds([page]).forEach((id) => primary.add(id));
-    for (const name of names) {
-      const declared = selection.pages?.[name];
-      businessIds(declared?.primary).forEach((id) => primary.add(id));
+    const remainingPages = new Set(pages);
+    for (const route of routes) {
+      const page =
+        route.componentLoader &&
+        typeof route.authz === 'object' &&
+        route.authz.resource.type === 'page'
+          ? route.authz.resource.id
+          : undefined;
+      // A descendant can inherit the same grant. It must not reintroduce an inferred object for that grant.
+      const infer = page !== undefined && remainingPages.delete(page);
+      const declared =
+        selection.pages && Object.hasOwn(selection.pages, route.name)
+          ? selection.pages[route.name]
+          : undefined;
+      businessIds(
+        declared ? declared.primary : infer ? [page] : undefined,
+      ).forEach((id) => primary.add(id));
       businessIds(declared?.related).forEach((id) => related.add(id));
     }
     for (const id of primary) related.delete(id);
@@ -648,13 +656,12 @@ export function permissionWorkspace(
     );
     if (route.authz === 'skip') return { id, label, public: true };
     if (typeof route.authz !== 'object') return undefined;
-    const names = routeNames(route, true);
     const resources = routeResources(route, true);
     const pages = resources
       .filter((resource) => resource.type === 'page')
       .map((resource) => resource.id)
       .filter((page) => !seenPages.has(page));
-    const uses = usesOf(names, pages);
+    const uses = usesOf(menuRoutes(route), pages);
     if (pages.length) {
       pages.forEach((page) => seenPages.add(page));
       menuPages.set(id, pages);
@@ -771,7 +778,7 @@ export function permissionWorkspace(
         const id = `page:${page}`;
         seenPages.add(page);
         menuPages.set(id, [page]);
-        const uses = usesOf([route.name], [page]);
+        const uses = usesOf([route], [page]);
         outside.push({
           id,
           label: text(

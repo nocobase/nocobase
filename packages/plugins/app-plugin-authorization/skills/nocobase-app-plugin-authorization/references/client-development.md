@@ -138,11 +138,127 @@ Request bodies for an App-owned `POST sales/orders/:id/relations` endpoint look 
 
 These are sample ids; fetch actual options from the endpoint. Never expose protected foreign keys or internal join fields as a shortcut around a denied relation operation. A rejected nested mutation must leave the whole write rolled back.
 
-### Application-owned permission editor
+## Configure the three-tab role editor
 
-Use `@nocobase/permission-editor` for the controlled UI and compose its catalog while developing the actual application. Choose the real business pages, operations and settings that administrators need to configure, with stable registered resource/action ids, meaningful business descriptions and only supported scope choices. Neither plugin installation nor presence in the options response means the application should expose every capability. Keep that selection in application-owned code, such as the templates' `client/pages/settings/permission-workspace.ts`; adapt it as features are built. Use `permissionWorkspaceSelection` for explicit resource/action opt-in. A setting also requires its real registered configuration page and a matching server action; omit empty categories. Do not synthesize a System and tools category, unused optional management controls or default CRUD actions. Demo data stays in demos.
+When you add an application feature with business permissions, update `client/pages/settings/permission-workspace.ts` in the same change. Keep the template's role form and its installed `@nocobase/permission-editor` component. Edit `permissionWorkspaceSelection` to expose the app's implemented business operations and connect its pages to the objects they use.
 
-Keep the original category navigation, vertically on desktop and horizontally on narrow screens. Page access contains business pages only; compose every actual system-settings page and operation, including user management and business configuration, under Configuration permissions. Preserve existing resource/action ids and grant values, omit duplicate menu links and explain the boundary in section descriptions. Resource cards contain compact action tiles. Each action shows a left-side checkbox, a name and visible description, with independently named scopes within their owning action tile. Scope controls are shown directly for enabled actions. Keep scope help and parameter editors outside checkbox labels. Use translated empty-state, read-only and managed-permission explanations. The host owns requests, draft state, explicit Save, revision conflicts and preservation of grants absent from the visible catalog; the component only emits explicit edits. A hidden setting is not a revoked grant, and presentation choices never replace server authorization.
+- **Menus** uses the application's registered navigation. A business route declares `authz: { resource: { type: 'page', id }, action: 'access' }`. The menu checkbox controls the page grant. Object tags are references, and checking a menu whose primary object lacks View triggers the empty-page warning. Give home pages that require sign-in only `authz: 'skip'` to keep their visible-for-everyone state.
+- **Business objects** has one `business` entry per server-registered composite resource. List the exact registered action IDs the app actually implements. Name the read action `view` or `read`, or designate it with `view`. Declare its data scope on its own collection. Other operations on that collection follow View, and an additional scope on a different selected object's collection follows that object's View. Followers can use the View scope or a provably narrower scope.
+- **System settings** comes from real settings routes and the catalog actions they use. Opening a settings page requires its opening action. Settings switches have no data scope controls.
+
+Keep the template and component's layout and copy. Leave the artificial Main menu group, explanatory banners and footers, and object-list scope summaries out of the app. Keep the object reference tags, empty-page warning, unsaved-change feedback, per-action data scope controls, and security reminders.
+
+Use stable, feature-qualified IDs, such as `sales.quotes`. The page permission ID is `route.authz.resource.id` and the business object ID is the name passed to `defineCompositeResource`. For a page dedicated to one object, give its page permission and composite the same ID. The template will infer the primary object if that object is selected. `pages` is keyed by `route.name` (for example, `'sales-quotes'`). Its `primary` and `related` arrays contain the selected business IDs without the `composite:` prefix. Use `primary` for the data needed to open a useful page and `related` for auxiliary data such as a picker. A declaration overrides inference for that route, so include `primary` when adding related objects to a page that would otherwise infer it. Omit `primary` for a related-only mapping or use `{}` to suppress the inferred object altogether. These associations leave stored grants unchanged.
+
+### Example: quotes with a project picker
+
+This example assumes the app registers `sales.quotes` with `view`, `edit` and `submit`, and `sales.projects` with `view`. Quote Submit declares separate scopes on the `quotes` and `projects` collections. Register each collection with a localized title and register each action with its localized business name. For example, register `projects` with title `{ key: 'sales.projects.title', ns: appPackageName }`, and give the Submit action `{ key: 'sales.quotes.actions.submit.title', ns: appPackageName }`. For catalog titles returned by the server, `appPackageName` is the application namespace from its `package.json`. A plugin uses its own package namespace for its own titles.
+
+In `client/routes.ts`, add these entries to the existing route list. Projects needs no explicit page mapping because its page ID matches its composite ID.
+
+```ts
+{
+  name: 'sales-quotes',
+  path: '/sales/quotes',
+  auth: 'required',
+  navigation: { title: 'sales.quotes.title' },
+  authz: { resource: { type: 'page', id: 'sales.quotes' }, action: 'access' },
+  componentLoader: () => import('./pages/sales/quotes.js'),
+},
+{
+  name: 'sales-projects',
+  path: '/sales/projects',
+  auth: 'required',
+  navigation: { title: 'sales.projects.title' },
+  authz: { resource: { type: 'page', id: 'sales.projects' }, action: 'access' },
+  componentLoader: () => import('./pages/sales/projects.js'),
+},
+```
+
+In `client/pages/settings/permission-workspace.ts`, replace the template's empty selection with:
+
+```ts
+export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
+  business: [
+    {
+      type: 'composite',
+      id: 'sales.quotes',
+      actions: ['view', 'edit', 'submit'],
+      actionDescriptions: {
+        view: { key: 'sales.quotes.actions.view.description' },
+        edit: { key: 'sales.quotes.actions.edit.description' },
+        submit: { key: 'sales.quotes.actions.submit.description' },
+      },
+      scopeOrder: ['allRecords', 'sales.teamQuotes', 'sales.myQuotes'],
+      scopeSubsets: { 'sales.teamQuotes': ['sales.myQuotes'] },
+      scopeTitles: {
+        quotes: { key: 'sales.quotes.title' },
+        projects: { key: 'sales.projects.title' },
+      },
+    },
+    {
+      type: 'composite',
+      id: 'sales.projects',
+      actions: ['view'],
+      actionDescriptions: {
+        view: { key: 'sales.projects.actions.view.description' },
+      },
+    },
+  ],
+  pages: {
+    'sales-quotes': {
+      primary: ['sales.quotes'],
+      related: ['sales.projects'],
+    },
+  },
+};
+```
+
+Give every selected action a one-sentence description in the app's locale files and reference it from `actionDescriptions`. Use the same feature/object/action keys for names and descriptions. Use `scopeOrder` for the display order of registered record access keys, widest first. Separately, declare every proven containment pair in `scopeSubsets`, outer key to inner keys, including any transitive pairs the editor should offer. In this example the server registers both custom quote scopes and Team quotes includes all My quotes for the same user. Leave independent scopes unrelated. Order and containment declarations configure presentation and do not implement server filtering.
+
+Use the registered collection's localized title for every named scope. When the default scope caption is just the scope key or collection name, the template can take that title from the catalog. If supplying `scopeTitles` explicitly, key it by the scope's collection name and reuse that collection's title key, as shown above. Do not set `risks` in new application business selections. The template supplies the security reminders for system settings.
+
+Add the following `sales` group to the existing exports in `client/locales/en-US.ts` and `client/locales/zh-CN.ts` respectively. Use the first group as the shape for every app locale. Keep application copy out of `client/locales/system/`.
+
+```ts
+// en-US.ts
+sales: {
+  quotes: {
+    title: 'Quotes',
+    actions: {
+      view: { title: 'View', description: 'Read quotes within the selected scope.' },
+      edit: { title: 'Edit draft', description: 'Change the amount and notes on draft quotes.' },
+      submit: { title: 'Submit', description: 'Submit a draft quote for its project.' },
+    },
+  },
+  projects: {
+    title: 'Projects',
+    actions: {
+      view: { title: 'View', description: 'Read projects within the selected scope.' },
+    },
+  },
+},
+
+// zh-CN.ts
+sales: {
+  quotes: {
+    title: '报价单',
+    actions: {
+      view: { title: '查看', description: '查看所选范围内的报价单。' },
+      edit: { title: '编辑草稿', description: '修改草稿报价单的金额和备注。' },
+      submit: { title: '提交', description: '提交项目的草稿报价单。' },
+    },
+  },
+  projects: {
+    title: '项目',
+    actions: {
+      view: { title: '查看', description: '查看所选范围内的项目。' },
+    },
+  },
+},
+```
+
+Before handing over the application, open the three tabs in Chinese. Check the menu's object tags and its warning when the menu is selected and its primary object's View is off. Open a multi-scope operation and verify its slot labels use the translated collection titles and each action shows a translated name and description. Save a scoped role and sign in as an ordinary user assigned to it. Verify that a record inside its scope appears and a record outside its scope stays inaccessible in the application and direct authorized requests.
 
 ## Settings screens
 
@@ -154,13 +270,11 @@ Verify menu and direct URL behavior, no-grant, page-only and action-only cases, 
 
 A settings screen and its detail routes check the relevant `settings` item, never `page` `access`, so they are not offered as page grants.
 
-Keep action tiles at the same column width before and after selection. Named ranges stack within the owning tile; show each distinct empty-range explanation visibly once rather than relying only on tooltips. Label an empty range Use default rules and explain that this role adds no records, while effective access also depends on other roles and default, sharing and restriction rules. Preserve native custom filters and separate parameter/help controls. Declare only the collections and writes the operation actually needs; do not attach every collection to every action. Application selection can explicitly move individual supported composite actions into Configuration permissions when their real application-owned configuration pages exist. Preserve resource/action IDs, scope values and hidden grants, and resolve native filter definitions by both resource and action when one composite appears in multiple categories. Removing declared scopes requires a separate compatibility change for stored grants and rules; never silently replace removed or empty values with All records.
-
 ## Match permissions to real business operations
 
 Build the application-owned action catalog from the operations that the application actually implements. Map each independently assignable operation to its visible entry or button, server request, affected fields and record scopes before composing the Registry rows. Reuse the same action when list and detail pages perform the same operation. Use the button's business name in the permission title and explain the outcome in its description. Do not invent CRUD actions for an application that has no such operation, and do not bundle independently assignable steps behind an ambiguous Manage permission. Save, Cancel, search and pagination are interaction controls, not additional business permissions.
 
-For example, an equipment borrowing application can expose Submit request, Approve, Reject, Register return and Withdraw; a repair application can expose Submit report, Start repair, Decline repair and Complete repair. These are illustrative operations, not a built-in catalog. Declare each application's actual steps. A page-access grant opens a business page; View reads permitted records; a transition grant authorizes that transition within its own record ranges. A read list must not require an unrelated write permission. Every system-settings entry belongs to Configuration permissions and still needs an actual exposed configuration page.
+For example, an equipment borrowing application can expose Submit request, Approve, Reject, Register return and Withdraw; a repair application can expose Submit report, Start repair, Decline repair and Complete repair. These are illustrative operations, not a built-in catalog. Declare each application's actual steps. A page-access grant opens a business page; View reads permitted records; a transition grant authorizes that transition within its own record ranges. A read list must not require an unrelated write permission. Every system-settings entry belongs to the System settings tab and still needs an actual exposed configuration page.
 
 Keep permission, data range and business eligibility distinct. Having Approve does not bypass the pending state, device availability, actor checks, validation or concurrency controls. Render action availability from the operation's server decision and current record state, and enforce the same action and all affected record scopes for direct requests. A form's related-record picker uses that operation's scope, rather than assuming that the broader register View scope authorizes submission. Only show the named ranges the operation uses; do not display every collection in the module.
 

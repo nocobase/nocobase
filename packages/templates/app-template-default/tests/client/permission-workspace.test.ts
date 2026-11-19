@@ -169,11 +169,18 @@ const business = defineAppRoutes([
         name: 'fixtureContracts',
         path: '/fixture-contracts',
         authz: {
-          resource: { type: 'page', id: 'fixture-contracts' },
+          resource: { type: 'page', id: 'contracts' },
           action: 'access',
         },
         navigation: { title: 'Fixture contracts' },
         componentLoader: async () => ({ default: () => null }),
+        children: [
+          {
+            name: 'fixtureContractDetails',
+            path: ':id',
+            componentLoader: async () => ({ default: () => null }),
+          },
+        ],
       },
       {
         name: 'fixtureReports',
@@ -322,13 +329,45 @@ describe('role permission workspace', () => {
     expect(menuOf(ws, 'Fixture reports')?.uses).toEqual({
       related: ['composite:contracts'],
     });
-    expect(ws.menuPages.get(contracts.id)).toEqual(['fixture-contracts']);
+    expect(ws.menuPages.get(contracts.id)).toEqual(['contracts']);
     expect(menuOf(ws, 'Fixture help')).toMatchObject({ public: true });
     // One object, used by two menus.
     expect(
       menusUsing(ws.menus, 'composite:contracts').map((menu) => menu.label),
     ).toEqual(['Fixture contracts', 'Fixture reports']);
   });
+
+  it('infers a primary object from the stored page id when no mapping is declared', async () => {
+    const { workspace: ws } = await workspace({ business: selection.business });
+    expect(menuOf(ws, 'Fixture contracts')?.uses).toEqual({
+      primary: ['composite:contracts'],
+    });
+    expect(menuOf(ws, 'Fixture reports')?.uses).toBeUndefined();
+  });
+
+  it.each([
+    {
+      declaration: { primary: ['contract-contacts'], related: ['contracts'] },
+      expected: {
+        primary: ['composite:contract-contacts'],
+        related: ['composite:contracts'],
+      },
+    },
+    {
+      declaration: { related: ['contracts'] },
+      expected: { related: ['composite:contracts'] },
+    },
+    { declaration: {}, expected: undefined },
+  ])(
+    'honors an explicit mapping over inference ($declaration)',
+    async ({ declaration, expected }) => {
+      const { workspace: ws } = await workspace({
+        business: selection.business,
+        pages: { fixtureContracts: declaration },
+      });
+      expect(menuOf(ws, 'Fixture contracts')?.uses).toEqual(expected);
+    },
+  );
 
   it('sets system settings in their own tab, one page per settings module', async () => {
     const { workspace: ws } = await workspace();
@@ -469,7 +508,7 @@ describe('role permission workspace', () => {
         ],
       },
       {
-        resource: { type: 'page', id: 'fixture-contracts' },
+        resource: { type: 'page', id: 'contracts' },
         actions: [{ action: 'access' }],
       },
     ];
@@ -520,7 +559,7 @@ describe('role permission workspace', () => {
 
   it('stores menu access apart from the objects’ actions', async () => {
     const { workspace: ws } = await workspace();
-    const page = { type: 'page', id: 'fixture-contracts' };
+    const page = { type: 'page', id: 'contracts' };
     const menu = menuOf(ws, 'Fixture contracts')!.id;
     // An action alone opens no menu.
     const actionOnly = grantsFromDraft(
@@ -807,7 +846,7 @@ describe('role permission workspace', () => {
         ],
       },
       {
-        resource: { type: 'page', id: 'fixture-contracts' },
+        resource: { type: 'page', id: 'contracts' },
         actions: [{ action: 'access' }],
       },
     ];
