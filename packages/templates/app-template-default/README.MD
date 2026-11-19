@@ -201,7 +201,7 @@ pnpm nocobase plugin update                                     # Update all reg
 pnpm nocobase plugin update @nocobase/app-plugin-authentication --dry-run  # Preview only
 ```
 
-Without a name, the command collects registered plugins from `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. It uses the application's package manager; with pnpm, `update` follows the declared version ranges without `--latest`. An unregistered name is rejected, and an application with no registered plugins is left unchanged. After a successful package update, all registered plugins' agent skills are re-synchronized, even when only one package was selected.
+With no arguments, the command updates every plugin registered in `client/plugins.ts`, `server/plugins.ts` or `cli/plugins.ts`. To update a preinstalled plugin in `devDependencies`, pass its name explicitly. The command uses the application's package manager. With pnpm, it follows the declared version ranges. After a successful update, the application synchronizes its agent Skills.
 
 Ordering in `client/plugins.ts` and `server/plugins.ts` is contribution order, and a plugin is enabled by appearing in the array. Reorder entries or pass a plugin its options by hand; leave adding and removing entries to the commands.
 
