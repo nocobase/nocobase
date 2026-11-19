@@ -72,12 +72,14 @@ describe('the permission inspector endpoint', () => {
         body: JSON.stringify(value),
       });
     const forbidden = await mountedRouter(
-      await authorization({ settings: false }),
+      await authorization({ unrestricted: false }),
     );
     expect((await send(forbidden, payload)).status).toBe(403);
     // Permission is checked before the body, so a malformed request is refused the same way.
     expect((await send(forbidden, {})).status).toBe(403);
-    const router = await mountedRouter(await authorization({ settings: true }));
+    const router = await mountedRouter(
+      await authorization({ unrestricted: true }),
+    );
     const response = await send(router, payload);
     expect(response.status).toBe(200);
     const result = (await response.json()) as {
@@ -103,7 +105,7 @@ describe('the permission inspector endpoint', () => {
   });
 
   it('inspects non-user subjects without adding authenticated-user grants', async () => {
-    const authz = await authorization({ settings: true });
+    const authz = await authorization({ unrestricted: true });
     const seen: unknown[] = [];
     authz.resourceTypes.add({
       type: 'subject-check',
@@ -155,11 +157,11 @@ describe('the permission inspector endpoint', () => {
     expect(
       (
         await send(
-          await mountedRouter(await authorization({ settings: false })),
+          await mountedRouter(await authorization({ unrestricted: false })),
         )
       ).status,
     ).toBe(403);
-    const authz = await authorization({ settings: true });
+    const authz = await authorization({ unrestricted: true });
     await authz.permissionSets.create({
       key: 'sales',
       grants: [
@@ -192,7 +194,7 @@ describe('the permission inspector endpoint', () => {
   });
 
   it('explains which inherited subject or direct assignment brings each set', async () => {
-    const authz = await authorization({ settings: true });
+    const authz = await authorization({ unrestricted: true });
     authz.subjects.add('department', {
       resolveFor: async (principal) =>
         principal.type === 'user' && principal.id === 'alice'
@@ -256,7 +258,7 @@ describe('the permission inspector endpoint', () => {
 
   it('returns the effect, the reasons and their plugin, untouched, and requires the settings permission', async () => {
     const forbidden = await mountedRouter(
-      await authorization({ settings: false }),
+      await authorization({ unrestricted: false }),
     );
     expect(
       (
@@ -266,7 +268,9 @@ describe('the permission inspector endpoint', () => {
         )
       ).status,
     ).toBe(403);
-    const router = await mountedRouter(await authorization({ settings: true }));
+    const router = await mountedRouter(
+      await authorization({ unrestricted: true }),
+    );
 
     const [permitted, denied, conditional] = await Promise.all(
       ['permitted', 'denied', 'conditional'].map(async (id) => {
@@ -303,7 +307,9 @@ describe('the permission inspector endpoint', () => {
   });
 
   it('refuses a body that names no subject, resource or action', async () => {
-    const router = await mountedRouter(await authorization({ settings: true }));
+    const router = await mountedRouter(
+      await authorization({ unrestricted: true }),
+    );
 
     const responses = await Promise.all(
       [
@@ -343,44 +349,70 @@ function inspect(id: string = 'permitted'): RequestInit {
   };
 }
 
-/** The caller is 'admin', holding the settings grants or holding nothing. */
+/**
+ * The caller is 'admin', holding the root Permission Set, which confers unrestricted access, or an ordinary set that
+ * still stores the old `settings:authorization.inspector` `inspect` grant, which no longer admits anyone.
+ */
 async function authorization({
-  settings,
+  unrestricted,
 }: {
-  settings: boolean;
+  unrestricted: boolean;
 }): Promise<Authorization> {
   const authz = createAuthorization({
     plugins: [
       testIdentity(),
       decisions,
       databasePlugin(),
-      permissionSetsPlugin({ store: new MockPermissionSetStore() }),
+      permissionSetsPlugin({
+        store: new MockPermissionSetStore(),
+        rootSet: 'root',
+      }),
     ],
   }) as unknown as Authorization;
-  await authz.permissionSets.create({
-    key: 'root',
-    grants: settings
-      ? [
-          {
-            resource: { type: 'settings', id: 'authorization.inspector' },
-            actions: [{ action: 'inspect' }],
-          },
-        ]
-      : [],
-  });
+  await authz.permissionSets.create({ key: 'root', grants: [] });
+  if (!unrestricted)
+    await authz.permissionSets.create({
+      key: 'staff',
+      grants: [
+        {
+          resource: { type: 'settings', id: 'authorization.inspector' },
+          actions: [{ action: 'inspect' }],
+        },
+      ],
+    });
   await authz.permissionSets.assign({
-    permissionSet: 'root',
+    permissionSet: unrestricted ? 'root' : 'staff',
     subject: { type: 'user', id: 'admin' },
   });
   return authz;
 }
 
-it('allows inspector options without permission-set read access', async () => {
-  const router = await mountedRouter(await authorization({ settings: true }));
+it('opens the inspector to unrestricted roles only, whatever settings a role holds', async () => {
+  const root = await mountedRouter(await authorization({ unrestricted: true }));
   expect(
-    (await router.request('/api/authorization/inspector/options')).status,
+    (await root.request('/api/authorization/inspector/options')).status,
   ).toBe(200);
+  // A role that may read and change Permission Sets, and still stores the old inspect grant, is refused.
+  const authz = await authorization({ unrestricted: false });
+  await authz.permissionSets.update('staff', {
+    grants: [
+      {
+        resource: { type: 'settings', id: 'authorization.permission-sets' },
+        actions: [{ action: 'read' }, { action: 'update' }],
+      },
+      {
+        resource: { type: 'settings', id: 'authorization.inspector' },
+        actions: [{ action: 'inspect' }],
+      },
+    ],
+  });
+  const staff = await mountedRouter(authz);
   expect(
-    (await router.request('/api/authorization/permissionSets/options')).status,
-  ).toBe(403);
+    (await staff.request('/api/authorization/permissionSets/options')).status,
+  ).toBe(200);
+  const denied = await staff.request('/api/authorization/inspector/options');
+  expect(denied.status).toBe(403);
+  expect(await denied.json()).toMatchObject({
+    error: { reason: 'AUTHORIZATION_DENIED' },
+  });
 });

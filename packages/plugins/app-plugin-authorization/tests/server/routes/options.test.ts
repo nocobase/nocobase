@@ -50,6 +50,7 @@ function authorization(): AppAuthorization {
 function permitted(
   authz: AppAuthorization,
   require: AuthorizationContext['require'] = () => Promise.resolve(),
+  unrestricted = true,
 ): AppAuthorization {
   const open = Object.create(authz) as AppAuthorization;
   open.middleware = () => async (context, next) => {
@@ -57,7 +58,7 @@ function permitted(
       require,
       can: () => Promise.resolve(true),
       authorize: () => Promise.resolve({ effect: 'permit', reasons: [] }),
-      snapshot: () => Promise.resolve({ unrestricted: true, permissions: [] }),
+      snapshot: () => Promise.resolve({ unrestricted, permissions: [] }),
     } as unknown as AuthorizationContext);
     await next();
   };
@@ -68,6 +69,7 @@ function permitted(
 async function localizedRouter(
   authz: AppAuthorization,
   require?: AuthorizationContext['require'],
+  unrestricted?: boolean,
 ): Promise<Hono> {
   const runtime = new I18nRuntime({
     defaultLocale: 'en-US',
@@ -77,7 +79,10 @@ async function localizedRouter(
   await runtime.init();
   const router = new Hono();
   router.use('*', createI18nMiddleware(runtime));
-  return router.route('/', await mountedRouter(permitted(authz, require)));
+  return router.route(
+    '/',
+    await mountedRouter(permitted(authz, require, unrestricted)),
+  );
 }
 
 async function options(
@@ -139,11 +144,27 @@ describe('the options and subject routes', () => {
     );
     expect(listed).toContain('settings:authorization.permission-sets');
     expect(listed).not.toContain('settings:authorization.inspector');
-    // The inspector routes still check `settings:authorization.inspector` `inspect`, which only unrestricted roles
-    // hold; it is no settings item a role can be given.
+    // It is no settings item a role can be given.
     expect(() =>
       authz.settings.grant('authorization.inspector', ['inspect']),
     ).toThrow('Unknown settings item: authorization.inspector');
+  });
+
+  it('opens the registered inspector routes to unrestricted roles only', async () => {
+    const path = '/api/authorization/inspector/options';
+    const root = await localizedRouter(authorization());
+    expect((await root.request(path)).status).toBe(200);
+    // A role granted every settings action, but not unrestricted, is refused.
+    const restricted = await localizedRouter(
+      authorization(),
+      () => Promise.resolve(),
+      false,
+    );
+    expect((await restricted.request(path)).status).toBe(403);
+    expect(
+      (await restricted.request('/api/authorization/permissionSets/options'))
+        .status,
+    ).toBe(200);
   });
 
   it('sends a registered string or translation key unchanged, in every language', async () => {
