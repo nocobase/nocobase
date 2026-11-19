@@ -517,7 +517,7 @@ const SenderFooter: React.FC<{
             onAdd={addContextItems}
             onRemove={removeContextItem}
             disabled={disabled}
-            ignore={(key) => key === 'flow-model.variable'}
+            ignore={(key) => key === 'flow-model.variable' || key === 'datasource'}
           />
         ) : null}
         {options.showUpload !== false ? <UploadFiles disabled={disabled} /> : null}
