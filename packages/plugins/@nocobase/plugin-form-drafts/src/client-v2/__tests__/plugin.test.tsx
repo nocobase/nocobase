@@ -8,9 +8,11 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
-import { FormBlockModel } from '@nocobase/client-v2';
+import { CreateFormModel, FormBlockModel } from '@nocobase/client-v2';
 import { FlowEngine, FlowModel, FlowRuntimeContext } from '@nocobase/flow-engine';
-import type { ReactElement } from 'react';
+import { act, fireEvent, render, renderHook } from '@testing-library/react';
+import { Form } from 'antd';
+import React, { type ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PluginFormDraftsClient } from '../plugin';
 
@@ -118,6 +120,64 @@ describe('PluginFormDraftsClient v2', () => {
     expect(resetFields).not.toHaveBeenCalled();
     expect(openDB).toHaveBeenCalledWith('FormDraftsDB', 1, { upgrade: expect.any(Function) });
     expect(db.createObjectStore).toHaveBeenCalledWith('drafts', { keyPath: 'uid' });
+  });
+
+  it('warns once and still submits the entered values when draft storage cannot be opened', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn().mockResolvedValue({ data: { data: { id: 1 } } });
+    engine.context.defineProperty('api', { value: { request } });
+    engine.registerModels({ CreateFormModel });
+    engine.context.dataSourceManager.getDataSource('main').addCollection({ name: 'posts', fields: [] });
+    const model = engine.createModel<CreateFormModel>({
+      use: 'CreateFormModel',
+      stepParams: {
+        resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'posts' } },
+        draftCreateFlow: { createDraft: { enabled: true } },
+      },
+    });
+    const { result } = renderHook(() => Form.useForm());
+    const [form] = result.current;
+    const warning = vi.fn();
+    model.context.defineProperty('form', { value: form });
+    model.context.defineProperty('view', { value: { inputArgs: {} } });
+    model.context.defineProperty('message', { value: { warning } });
+    model.context.defineMethod('t', (key: string) => key);
+    openDB.mockRejectedValueOnce(new DOMException('Cannot open backing store', 'UnknownError'));
+
+    await model.applyFlow('draftCreateFlow');
+    const { getByRole } = render(
+      <Form form={form} initialValues={{ title: '' }}>
+        <Form.Item name="title" label="Title">
+          <input />
+        </Form.Item>
+      </Form>,
+    );
+    fireEvent.change(getByRole('textbox', { name: 'Title' }), { target: { value: 'Entered after the warning' } });
+    await model.applyFlow('draftSaveFlow');
+    await act(async () => {
+      await model.submit({ requestConfig: { refresh: false } });
+    });
+
+    expect(warning).toHaveBeenCalledTimes(1);
+    expect(warning).toHaveBeenCalledWith(
+      'Drafts cannot be saved this time. You can still fill out and submit the form.',
+    );
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'post', url: 'posts:create', data: { title: 'Entered after the warning' } }),
+    );
+    expect(openDB).toHaveBeenCalledTimes(1);
+    expect(db.get).not.toHaveBeenCalled();
+    expect(db.put).not.toHaveBeenCalled();
+    expect(db.delete).not.toHaveBeenCalled();
+
+    await model.applyFlow('draftCreateFlow');
+    expect(db.put).toHaveBeenCalledTimes(1);
+    fireEvent.change(getByRole('textbox', { name: 'Title' }), { target: { value: 'Another entry' } });
+    await model.applyFlow('draftSaveFlow');
+    expect(model.decoratorProps.beforeContent).toBeTruthy();
+    openDB.mockRejectedValueOnce(new DOMException('Cannot open backing store', 'UnknownError'));
+    await model.applyFlow('draftCreateFlow');
+    expect(model.decoratorProps.beforeContent).toBeNull();
   });
 
   it('saves only runtime user-edited values when runtime is available', async () => {
