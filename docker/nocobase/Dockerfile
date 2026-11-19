@@ -20,7 +20,7 @@ RUN chmod +x /usr/local/bin/cleanup-node-modules.sh \
 FROM node:22-bookworm-slim
 
 ARG INSTALL_NGINX=1
-ARG NGINX_VERSION=1.30.1-1~bookworm
+ARG NGINX_VERSION=1.30.7-1~bookworm
 
 ENV NOCOBASE_RUNNING_IN_DOCKER=true
 
