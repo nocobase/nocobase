@@ -1,4 +1,4 @@
-import type { ConnectionSummary } from '@nocobase/app-plugin-database-explorer/client';
+import type { ConnectionSummary } from '../database-explorer-client.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { Search, Table2, X } from 'lucide-react';
@@ -9,20 +9,20 @@ import {
   type ReactElement,
 } from 'react';
 import { Link } from 'react-router';
-import { Badge } from '#components/ui/badge';
+import { Badge } from '../components/ui/badge.js';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from '#components/ui/input-group';
+} from '../components/ui/input-group.js';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '#components/ui/select';
+} from '../components/ui/select.js';
 import { LoadingLine, Recovery, StatusLine } from './feedback.js';
 import { tableMatches, type TableListing } from './model.js';
 import { describeFailure, type ReadState } from './read.js';
@@ -76,7 +76,7 @@ export function TablesPanel({
   onConnection,
   tableLink,
 }: TablesPanelProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   const listRef = useRef<HTMLUListElement>(null);
   const items = tables.status === 'ready' ? tables.data.items : [];
   const matched = items.filter((item) => tableMatches(query, item));

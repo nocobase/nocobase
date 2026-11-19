@@ -199,7 +199,7 @@
 | 数据库浏览器界面 | 浏览页面           | 客户端路由表中路由名 `databaseExplorer`（`InterfaceItem`） | 应用级 | 已配置 / 未配置 / 无权限 / 加载中 | Default 写作 `settings` 下的 `/database-explorer`，Examples 直接写 `/settings/database-explorer`，最终地址相同 | 已有接口 |
 | 数据库连接配置   | 链接到数据库详情页 | —                                                          | —      | 不单独判定                        | `/settings/capabilities/db`                                                                                    | —        |
 
-两个模板都由模板自己注册这个页面（[Default](../../../../templates/app-template-default/client/pages/settings/database-explorer/routes.ts)、[Examples](../../../../templates/app-template-examples/client/pages/settings/database-explorer/routes.ts)），插件客户端不注册路由。
+[数据库浏览器插件](../../../app-plugin-database-explorer/client/plugin.ts)注册页面。Default 和 Examples 通过插件选项将页面挂到系统设置的 System 分组。
 
 **通过 Agent 添加或完善**（页面文案）
 

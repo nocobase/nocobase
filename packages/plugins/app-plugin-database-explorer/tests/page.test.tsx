@@ -11,9 +11,9 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
-import DatabaseExplorerPage from '../../client/pages/settings/database-explorer/index.js';
-import enUS from '../../client/locales/en-US.js';
-import packageMetadata from '../../package.json' with { type: 'json' };
+import DatabaseExplorerPage from '../client/page/index.js';
+import databaseExplorer from '../client/plugin.js';
+import packageMetadata from '../package.json' with { type: 'json' };
 
 const table = (name: string, extra: Record<string, unknown> = {}) => ({
   name,
@@ -99,7 +99,7 @@ function mount(
     {
       route,
       namespace: packageMetadata.name,
-      namespaces: { [packageMetadata.name]: enUS },
+      plugins: [databaseExplorer()],
       fetch: answerApi(api),
     },
   );
