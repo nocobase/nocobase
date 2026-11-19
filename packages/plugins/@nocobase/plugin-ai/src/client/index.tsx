@@ -119,6 +119,7 @@ export class PluginAIClient extends Plugin {
     });
     this.app.pluginSettingsManager.add('ai.datasource', {
       sort: 99,
+      hidden: true,
       icon: 'CloudServerOutlined',
       title: tval('Datasource', { ns: namespace }),
       aclSnippet: 'pm.ai.datasource',
