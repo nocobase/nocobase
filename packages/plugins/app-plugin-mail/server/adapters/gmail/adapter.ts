@@ -601,7 +601,7 @@ export class GmailMailProviderAdapter implements MailProviderAdapter {
       return invalidOriginal();
     const lastDigit =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'.indexOf(
-        raw[unpaddedLength - 1]!,
+        raw[unpaddedLength - 1],
       );
     if (
       (remainder === 2 && (lastDigit & 15) !== 0) ||

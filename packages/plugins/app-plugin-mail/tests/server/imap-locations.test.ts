@@ -42,6 +42,7 @@ const server = vi.hoisted(() => {
     onFetchAll: undefined as (() => void) | undefined,
     failFlags: new Set<string>(),
     logouts: 0,
+    closes: 0,
     locks: 0,
     expunges: [] as string[],
     transfers: [] as string[],
@@ -80,6 +81,7 @@ const server = vi.hoisted(() => {
       this.onFetchAll = undefined;
       this.failFlags.clear();
       this.logouts = 0;
+      this.closes = 0;
       this.locks = 0;
       this.expunges.length = 0;
       this.transfers.length = 0;
@@ -171,7 +173,9 @@ vi.mock('imapflow', () => {
     public async logout(): Promise<void> {
       server.logouts += 1;
     }
-    public close(): void {}
+    public close(): void {
+      server.closes += 1;
+    }
     public async status(path: string): Promise<unknown> {
       await this.exec('STATUS', []);
       server.statuses += 1;
@@ -654,12 +658,14 @@ async function sync(
 
 describe('IMAP original message download', () => {
   it('reads complete MIME from a verified read-only copy and never changes flags', async () => {
+    expect(definition.capabilities.downloadOriginal).toBe(true);
     folder('INBOX');
     const uid = deliver('INBOX', { raw: originalMime });
     await sync();
     const [message] = await messages();
     server.selectionModes.length = 0;
     server.sourceReads.length = 0;
+    const previousCloses = server.closes;
     const original = await service().getOriginalMessage(
       owner,
       accountId,
@@ -673,6 +679,7 @@ describe('IMAP original message download', () => {
     expect(server.selectionModes).toEqual([true]);
     expect(server.sourceReads).toEqual([`INBOX:${uid}`, `INBOX:${uid}`]);
     expect(server.locks).toBe(0);
+    expect(server.closes).toBe(previousCloses + 1);
     expect(server.folders.get('INBOX')!.messages.get(uid)!.flags.size).toBe(0);
     expect(server.stores).toEqual([]);
   });

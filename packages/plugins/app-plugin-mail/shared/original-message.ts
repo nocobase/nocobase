@@ -1,7 +1,11 @@
 export const MAIL_ORIGINAL_MAX_BYTES: number = 40 * 1024 * 1024;
 
-export function canHaveOriginalMessage(providerMessageId: string): boolean {
-  return !providerMessageId.startsWith('local-draft:');
+export function canHaveOriginalMessage(
+  providerMessageId: string | undefined,
+): boolean {
+  return Boolean(
+    providerMessageId && !providerMessageId.startsWith('local-draft:'),
+  );
 }
 
 export function originalMessageFileName(subject: string): string {

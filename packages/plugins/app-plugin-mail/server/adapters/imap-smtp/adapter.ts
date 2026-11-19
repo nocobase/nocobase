@@ -80,6 +80,7 @@ import type { MailSyncRun } from '../../../shared/mail.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
 import {
   IMAP_SMTP_CAPABILITIES,
+  IMAP_SMTP_LOCATION_CAPABILITIES,
   MAX_IMAP_BODY_BYTES,
   MAX_IMAP_DETAIL_BODY_BYTES,
   MAX_IMAP_PROVIDER_ID_LENGTH,
@@ -130,8 +131,7 @@ import { classifyError, failure, throwIfAborted } from './errors.js';
 
 export class ImapSmtpAdapter implements MailProviderAdapter {
   public readonly identity: MailProviderAccount['provider'];
-  public readonly capabilities: MailProviderAdapter['capabilities'] =
-    IMAP_SMTP_CAPABILITIES;
+  public readonly capabilities: MailProviderAdapter['capabilities'];
   private readonly folderTypes = new Map<
     string,
     NormalizedMailFolder['type']
@@ -172,6 +172,9 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     private readonly operation?: ImapOperationSnapshot | undefined,
     private readonly pool?: ImapConnectionPool | undefined,
   ) {
+    this.capabilities = locations
+      ? IMAP_SMTP_LOCATION_CAPABILITIES
+      : IMAP_SMTP_CAPABILITIES;
     if (locations && locations.accountId !== account.id)
       throw new Error('The IMAP persistence belongs to another account.');
     if (operation && operation.accountId !== account.id)

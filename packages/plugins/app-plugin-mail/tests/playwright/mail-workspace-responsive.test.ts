@@ -64,6 +64,10 @@ test('downloads the original from an individual message in a two-message convers
   const selectedMessage = conversation.locator('article').filter({
     has: page.getByText('Original message sender', { exact: true }),
   });
+  await selectedMessage.getByRole('button', { name: 'Expand message' }).click();
+  await expect(
+    selectedMessage.getByRole('button', { name: 'Download sample.bin' }),
+  ).toBeVisible();
   await selectedMessage
     .getByRole('button', { name: 'More actions', exact: true })
     .click();

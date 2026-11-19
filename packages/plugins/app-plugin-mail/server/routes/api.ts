@@ -1181,8 +1181,8 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           description:
             'Requires access to the Mail workspace (page / mail.workspace / access) and ownership of the message and account. The MIME may be at most 40 MiB. A failure after streaming begins interrupts the download.',
           errors: {
-            400: 'The account is inactive, requires reauthorization, or the original is unsupported or exceeds the size limit.',
-            404: 'The account or message could not be found, or the original is no longer available at the provider.',
+            400: 'The account is inactive (`MAIL_ACCOUNT_INACTIVE`), requires reauthorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), or the original is unsupported (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`) or too large (`MAIL_ORIGINAL_TOO_LARGE`).',
+            404: 'The account or message could not be found, or the original is no longer available at the provider (`MAIL_ORIGINAL_NOT_FOUND`).',
             429: providerRateLimited,
             503: providerUnavailable,
           },
