@@ -331,6 +331,8 @@ function cutShort(text: string, secrets: readonly string[]): string {
 export function createStreamRedactor(redactor: Redactor): StreamRedactor {
   let held = '';
   let inKey = false;
+  /** Inside a quoted secret value too long to hold, already replaced: its quote, and whether a backslash is pending. */
+  let skipping: { quote: string; escaped: boolean } | undefined;
   const longestSecret = Math.max(
     0,
     ...redactor.secrets.map((secret) => secret.length),
@@ -349,6 +351,24 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
     write(piece, options = {}) {
       let text = held + piece;
       held = '';
+      if (skipping) {
+        // Drop the rest of the value, with the escape rule of `quotedSecretChar`, up to its closing quote or line end.
+        let at = 0;
+        for (; at < text.length; at += 1) {
+          const char = text[at];
+          if (char === '\r' || char === '\n') break;
+          if (skipping.escaped) skipping.escaped = false;
+          else if (char === '\\') skipping.escaped = true;
+          else if (char === skipping.quote) break;
+        }
+        if (at === text.length) {
+          // A piece that ends its line ends the value with it.
+          if (!options.partial) skipping = undefined;
+          return '';
+        }
+        skipping = undefined;
+        text = text.slice(at);
+      }
       if (inKey) {
         // Inside a private key block, already replaced where it began: drop it up to its end marker.
         const end = PRIVATE_KEY_END.exec(text);
@@ -376,8 +396,17 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
       for (const match of matches)
         if (match.start < start && match.end > start) start = match.start;
       const length = text.length - start;
-      if (length === 0 || length > Math.max(MAX_HELD, longestSecret))
+      if (length === 0) return redact(text);
+      if (length > Math.max(MAX_HELD, longestSecret)) {
+        // Too long to hold. A quoted secret still open is replaced once here and its rest dropped as it arrives.
+        const quoted = OPEN_QUOTED_SECRET.exec(text);
+        if (quoted)
+          skipping = {
+            quote: quoted[1],
+            escaped: /\\*$/u.exec(text)![0].length % 2 === 1,
+          };
         return redact(text);
+      }
       const out = redact(text.slice(0, start));
       held = text.slice(start);
       return out;
@@ -385,6 +414,7 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
     end() {
       const text = held;
       held = '';
+      skipping = undefined;
       if (inKey) {
         inKey = false;
         return '';

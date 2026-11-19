@@ -318,3 +318,62 @@ describe('createStreamRedactor', () => {
     expect(stream.end()).toBe(REDACTED);
   });
 });
+
+describe('createStreamRedactor with a quoted value longer than it holds', () => {
+  // A fictional 1,200-character gateway key with escaped quotes and backslashes; its tail must never be logged.
+  const body =
+    String.raw`lan-fict\"ional, gate\\way key `.repeat(40) + 'TAIL-9f8e';
+  const after = ', "model": "qwen3.8-flash"} request done';
+  const cases = [
+    ['a double-quoted key', `{"apiKey": "${body}"${after}`],
+    [
+      'a single-quoted key',
+      `{'apiKey': '${body.replaceAll('\\"', "\\'")}'${after}`,
+    ],
+    ['an x-api-key', `{"x-api-key": "${body}"${after}`],
+  ] as const;
+  it.each(cases)(
+    'masks %s once and resumes after its closing quote, however it is split',
+    (_name, line) => {
+      const start = line.indexOf('lan-');
+      const close = line.indexOf('TAIL-9f8e') + 'TAIL-9f8e'.length;
+      const splits = [
+        [start + 600],
+        // Right after a backslash, so the escape is pending across the pieces.
+        [line.indexOf('\\', start + 1100) + 1],
+        [close],
+        Array.from(
+          { length: Math.ceil(line.length / 100) - 1 },
+          (_, i) => (i + 1) * 100,
+        ),
+      ];
+      for (const cuts of splits) {
+        const stream = createStreamRedactor(createRedactor());
+        const pieces = [0, ...cuts, line.length]
+          .slice(1)
+          .map((end, i, ends) => line.slice(i === 0 ? 0 : ends[i - 1], end));
+        const out =
+          pieces
+            .map((piece) => stream.write(piece, { partial: true }))
+            .join('') +
+          stream.write('\n') +
+          stream.end();
+        expect(out).toBe(
+          line.slice(0, start) + REDACTED + line.slice(close) + '\n',
+        );
+        expect(out).not.toContain('TAIL');
+        expect(out).not.toContain('fict');
+      }
+    },
+  );
+
+  it('ends the value with its line when no closing quote comes', () => {
+    const stream = createStreamRedactor(createRedactor());
+    const out =
+      stream.write(`token: "${body}`, { partial: true }) +
+      stream.write(' still the value\n') +
+      stream.write('next line\n') +
+      stream.end();
+    expect(out).toBe(`token: "${REDACTED}\nnext line\n`);
+  });
+});
