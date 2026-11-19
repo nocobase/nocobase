@@ -289,7 +289,11 @@ export class JobWorker {
           'policyRefused',
           `The runner cannot isolate the build: ${check.problem}`,
         );
-      if (job.requires.includes('gitSsh') && job.spec.repo.ssh === undefined) {
+      if (
+        job.requires.includes('gitSsh') &&
+        isGitSshUrl(job.spec.repo.url) &&
+        job.spec.repo.ssh === undefined
+      ) {
         const error = new GitSshError('authFailed');
         throw new JobFailure('checkoutFailed', error.message, { cause: error });
       }
