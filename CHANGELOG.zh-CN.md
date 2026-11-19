@@ -5,6 +5,28 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.49](https://github.com/nocobase/nocobase/compare/v2.2.48...v2.2.49) - 2026-11-19
+
+### 🚀 优化
+
+- **[undefined]** NocoBase Docker 镜像中的内置 Nginx 已升级至 1.30.7。 ([#11620](https://github.com/nocobase/nocobase/pull/11620))
+
+- **[AI 员工]** 隐藏 AI 员工配置页的「数据源」标签和对话框上下文菜单中的「数据源」选项。 ([#11621](https://github.com/nocobase/nocobase/pull/11621))
+
+### 🐛 修复
+
+- **[cli]** `nb api resource list` 现支持通过 `--space <名称>` 查询指定空间的记录。 ([#11599](https://github.com/nocobase/nocobase/pull/11599))
+参考文档：[资源列表](https://github.com/nocobase/nocobase/pull/11615)
+- **[client]** 在旧版 iframe 的 HTML 编辑框中新建聚合变量后，可以直接在当前弹窗内选择并插入。 ([#11607](https://github.com/nocobase/nocobase/pull/11607))
+
+- **[文件管理器]** 展开文件的存储器关联时，保留文件规则、访问地址等普通字段，隐藏存储引擎选项和服务端请求设置。 ([#11611](https://github.com/nocobase/nocobase/pull/11611))
+
+- **[公开表单]** 公开表单现在只接受提交到其配置的数据源和数据表的数据。 ([#11536](https://github.com/nocobase/nocobase/pull/11536))
+
+- **[UI 模板]** 创建、编辑、删除界面模板及访问模板引用记录需要模板管理权限。登录用户仍可读取模板。 ([#11537](https://github.com/nocobase/nocobase/pull/11537))
+
+- **[表单草稿]** 浏览器无法打开草稿库时，表单会提示本次无法保存草稿，用户仍可正常填写并提交。 ([#11625](https://github.com/nocobase/nocobase/pull/11625))
+
 ## [v2.2.48](https://github.com/nocobase/nocobase/compare/v2.2.47...v2.2.48) - 2026-11-18
 
 ### 🐛 修复
