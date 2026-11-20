@@ -6,6 +6,7 @@ export type AppBackupFileReference = {
   schema?: string;
   table: string;
   keyColumn: string;
+  keyPrefix?: string;
 } & (
   { disk: string; diskColumn?: never } | { diskColumn: string; disk?: never }
 );

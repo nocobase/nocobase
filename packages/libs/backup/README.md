@@ -32,7 +32,7 @@ if (verified.ok) {
 - Supply `withDeferredDeletes(disks, operation)` when backing up local files online. Hold the Drive deletion deferral from before the first database snapshot through file copying and reference checks. Supply `withStoppedApp(operation)` when restoring or passing `online: false`. This guard confirms shutdown and prevents application startup for the duration of the operation.
 - Use `includeConnections` and `includeDisks` as allowlists, or use `excludeConnections` and `excludeDisks` to remove specific targets from the defaults. The defaults include managed connections and all disks. S3 and OSS disks record bucket and prefix. Supply `remoteFileExists` to check referenced objects on remote disks after restoration.
 - Set `skipPaths` to the absolute paths of application runtime directories. SQLite files and their sidecars, nested disk roots, and backup workspace and output directories are skipped automatically. Use a separate output directory when the requested output would sit directly in a disk root.
-- Pass an `AbortSignal` to stop a running operation. The CLI should connect SIGINT and SIGTERM to the signal. Find an interrupted process's unpublished files by the hidden `.partial-*` suffix when the operating system terminates it without allowing cleanup.
+- Pass an `AbortSignal` to stop a running operation. The CLI should connect SIGINT and SIGTERM to the signal. An operation can remove unpublished scratch owned by an identifiable dead process in the same process namespace. Preserve restore recovery directories if the operator still needs their contents.
 
 `inspectBackup` checks the gzip archive, manifest, inventory, and file digests without needing database clients. `verifyBackup` also checks the native dumps and can check application compatibility with a supplied target. A supplied `sha256` authenticates the complete file against a digest obtained through a trusted channel. Backups contain unencrypted data. Restore archives from trusted sources. SQLite and MySQL record when export started. The source can continue changing during an online export.
 
@@ -51,3 +51,5 @@ For a deployed app, use matched tools available on `PATH` or pass the executable
 ## Verification
 
 SQLite tests run through `pnpm --filter @nocobase/backup test`. Run the PostgreSQL and MySQL integration suites through `pnpm test:db <dialect> --filter @nocobase/backup -- tests/integration/server-roundtrip.test.ts`. For a separately provisioned local PostgreSQL, MySQL, or MariaDB test server with matching native clients on `PATH`, set `BACKUP_TEST_DIALECT`, `POSTGRES_PORT` or `MYSQL_PORT`, `BACKUP_TEST_USER`, and `BACKUP_TEST_PASSWORD` and run `pnpm --filter @nocobase/backup test tests/integration`. Use a disposable server because the tests create and drop databases.
+
+Application and CLI integration is covered by the [application backup Skill](skills/nocobase-app-backup/SKILL.md).

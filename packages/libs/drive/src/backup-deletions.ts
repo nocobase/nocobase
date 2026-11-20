@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import {
   lstat,
@@ -91,8 +92,12 @@ class DiskDeletions {
     if (!release) return false;
     try {
       for (const file of await readdir(this.state)) {
-        if (!/^delete-[0-9a-f-]+\.json$/.test(file)) continue;
         const path = join(this.state, file);
+        if (/^delete-[0-9a-f-]+\.part$/.test(file)) {
+          await rm(path, { force: true });
+          continue;
+        }
+        if (!/^delete-[0-9a-f-]+\.json$/.test(file)) continue;
         const items = JSON.parse(
           await readFile(path, 'utf8'),
         ) as PendingDelete[];
@@ -207,6 +212,49 @@ export class BackupAwareFsDriver extends FSDriver {
   ) {
     super(options);
     this.deletions = new DiskDeletions(root);
+  }
+
+  override async put(...args: Parameters<FSDriver['put']>): Promise<void> {
+    if (!safeKey(args[0])) throw new Error('Invalid Drive write key.');
+    return super.put(...args);
+  }
+
+  override async putStream(
+    ...args: Parameters<FSDriver['putStream']>
+  ): Promise<void> {
+    if (!safeKey(args[0])) throw new Error('Invalid Drive write key.');
+    return super.putStream(...args);
+  }
+
+  override async copy(source: string, destination: string): Promise<void> {
+    if (!safeKey(source) || !safeKey(destination))
+      throw new Error('Invalid Drive copy key.');
+    return super.copy(source, destination);
+  }
+
+  override async listAll(
+    ...args: Parameters<FSDriver['listAll']>
+  ): ReturnType<FSDriver['listAll']> {
+    const [prefix] = args;
+    if (prefix !== '/' && !safeKey(prefix))
+      throw new Error('Invalid Drive listing prefix.');
+    const result = await super.listAll(...args);
+    const root = this.deletions.root;
+    return {
+      ...result,
+      objects: {
+        *[Symbol.iterator]() {
+          for (const entry of result.objects) {
+            const key = entry.isDirectory ? entry.prefix : entry.key;
+            const parts = key.split('/');
+            // Flydrive removes the leading dot when reporting a root-level object.
+            const hiddenRoot =
+              reserved('.' + parts[0]) && !existsSync(join(root, key));
+            if (!hiddenRoot && !parts.some(reserved)) yield entry;
+          }
+        },
+      },
+    };
   }
 
   override async delete(key: string): Promise<void> {

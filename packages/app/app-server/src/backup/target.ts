@@ -186,7 +186,7 @@ async function* readReferences(
   reader: BackupReader,
   table: { name: string; schema?: string },
   keyColumn: string,
-  source: { disk?: string; diskColumn?: string },
+  source: { disk?: string; diskColumn?: string; keyPrefix?: string },
 ): AsyncGenerator<FileReference> {
   const columns = source.diskColumn
     ? [keyColumn, source.diskColumn]
@@ -196,7 +196,12 @@ async function* readReferences(
     const disk =
       source.disk ?? (source.diskColumn ? row[source.diskColumn] : undefined);
     if (typeof key === 'string' && key && typeof disk === 'string' && disk)
-      yield { key, disk };
+      yield {
+        key: source.keyPrefix
+          ? source.keyPrefix.replace(/\/+$/, '') + '/' + key
+          : key,
+        disk,
+      };
   }
 }
 
@@ -246,7 +251,18 @@ export async function resolveAppBackupTarget(
             (ref) =>
               (ref.connection ?? defaultConnectionName(database)) === name,
           ),
-          backup.connections?.[name],
+          backup.connections?.[name]?.tls?.caFile
+            ? {
+                ...backup.connections[name],
+                tls: {
+                  ...backup.connections[name].tls,
+                  caFile: resolve(
+                    app.paths.deploymentRootDir,
+                    backup.connections[name].tls.caFile,
+                  ),
+                },
+              }
+            : backup.connections?.[name],
         ),
       );
     }
@@ -307,6 +323,10 @@ export async function resolveAppBackupTarget(
       'config.yml',
       'config.yaml',
       'config.json',
+      'config.toml',
+      ...(app.nodeEnv
+        ? [`.env.${app.nodeEnv}`, `.env.${app.nodeEnv}.local`]
+        : []),
     ].map((file) => resolve(root, file)),
   );
   return {
@@ -336,7 +356,16 @@ export async function resolveAppBackupTarget(
         ? [resolve(app.runtimeLogging.file.directory)]
         : []),
     ],
-    tools: backup.tools,
+    tools:
+      backup.tools &&
+      Object.fromEntries(
+        Object.entries(backup.tools).map(([tool, executable]) => [
+          tool,
+          typeof executable === 'string' && /[\\/]/.test(executable)
+            ? resolve(app.paths.deploymentRootDir, executable)
+            : executable,
+        ]),
+      ),
     async remoteFileExists({ disk, key }) {
       if (manager && drive && Object.hasOwn(drive.disks, disk))
         return manager.use(disk).exists(key);

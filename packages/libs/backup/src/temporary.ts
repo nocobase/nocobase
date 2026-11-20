@@ -1,10 +1,20 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { readlinkSync } from 'node:fs';
 import { lstat, readdir, rm } from 'node:fs/promises';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
 
+function processNamespace(): string {
+  if (process.platform !== 'linux') return '';
+  try {
+    return readlinkSync('/proc/self/ns/pid');
+  } catch {
+    return '';
+  }
+}
+
 const machine = createHash('sha256')
-  .update(hostname())
+  .update(hostname() + '\0' + processNamespace())
   .digest('hex')
   .slice(0, 16);
 

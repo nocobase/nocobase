@@ -204,6 +204,14 @@ describe.skipIf(!enabled)('server backup round trip', () => {
       await query('SELECT path, content FROM uploads WHERE id = 1', name),
     ).toEqual([{ path: 'old.txt', content: 'old value' }]);
     await expect(query('SELECT * FROM added_later', name)).rejects.toThrow();
+    if (pgTest) {
+      expect(
+        await query(
+          "SELECT has_schema_privilege('public', 'public', 'USAGE') AS usage",
+          name,
+        ),
+      ).toEqual([{ usage: true }]);
+    }
     expect(await readFile(join(disk, 'old.txt'), 'utf8')).toBe('old file');
   }, 60_000);
 

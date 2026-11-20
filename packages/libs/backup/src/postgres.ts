@@ -195,7 +195,7 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
   async probe(connection) {
     return withClient(connection, serverInfo);
   },
-  async restore(connection, file, _server, context) {
+  async restore(connection, file, server, context) {
     // pg_restore --clean only removes objects recorded in the archive. Clear the
     // dedicated application database's user schemas in the same psql transaction.
     const schemas = await withClient(connection, async (client) => {
@@ -218,7 +218,10 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
     const prefix =
       schemas
         .map((schema) => `DROP SCHEMA ${quote(schema)} CASCADE;\n`)
-        .join('') + 'CREATE SCHEMA public AUTHORIZATION pg_database_owner;\n';
+        .join('') +
+      (server.majorVersion >= 15
+        ? 'CREATE SCHEMA public AUTHORIZATION pg_database_owner;\nGRANT USAGE ON SCHEMA public TO PUBLIC;\n'
+        : 'CREATE SCHEMA public;\nGRANT ALL ON SCHEMA public TO PUBLIC;\n');
     await pipeline(
       (async function* () {
         yield prefix;
