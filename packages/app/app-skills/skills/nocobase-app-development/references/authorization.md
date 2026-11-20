@@ -1,5 +1,9 @@
 # Design application permissions
 
+## Cross-object creation: read the complete example
+
+Before implementing a Create operation that selects existing records from other collections, read the [complete waybill example in the authorization Skill](../../nocobase-app-plugin-authorization/references/client-development.md#example-create-a-waybill-with-scoped-related-records). Keep each composite business-object ID different from its registered collection/table name; use registered table names as keys in `conditions.database` and `scopeTitles`. In the same example, `hiddenActionScopes.create` uses the registered own-scope key (`waybills`) to hide only the new record's own selector, leaving the Carriers, Sites and Vehicles relation scopes visible. Use short operation titles such as `View` and `Create`.
+
 For an executable application-owned implementation of scoped relation choices and batch assignments, see the [customer/contact reference](frontend/references/executable-relation-batch.md). It includes native-authenticated permission tests and separate relation-picker and batch-editor entry points.
 
 Use this reference when a feature distinguishes people, jobs, teams, pages, operations, fields or records. Model access while designing the feature; adding only hidden buttons after building unrestricted endpoints leaves the system incomplete.
@@ -24,9 +28,31 @@ Declare reusable collection permissions and business operations, defined as comp
 
 Every `server/routes/` endpoint installs authentication and authorization. A business operation checks `{ resource: { type: 'composite', id }, action }` with the request context's `authorize` once and binds each returned `conditions.database` policy through `repository.withPolicy`. Do not replace it with collection-level authorization or an in-memory filter. Use `authz.database.policyFor` for collection CRUD and `authz.database.authorizeRepository` for simple business Repository routes, mapping each method to its composite action. The authorization Skill documents these choices and their contracts.
 
-`conditions.database` is keyed by the registered collection/table name, not the composite ID, route name or named scope slot. For a `sales.quotes` operation touching `salesQuotes` and `salesProjects`, read `decision.conditions?.database?.salesQuotes` and `decision.conditions?.database?.salesProjects`. Reject a denied decision or a missing required policy. Bind each policy to the repository of the same name, such as `connection.repository('salesQuotes').withPolicy(quotePolicy)`. For a complete multi-scope Create flow that uses different business and table identifiers, follow the [waybill example in the authorization Skill](../../nocobase-app-plugin-authorization/references/client-development.md#example-create-a-waybill-with-scoped-related-records).
+`conditions.database` is keyed by the registered collection/table name, not the composite ID, route name or named scope slot. For a `sales.quotes` operation touching `salesQuotes` and `salesProjects`, read `decision.conditions?.database?.salesQuotes` and `decision.conditions?.database?.salesProjects`. Reject a denied decision or a missing required policy. Bind each policy to the repository of the same name, such as `connection.repository('salesQuotes').withPolicy(quotePolicy)`.
 
-Keep permission failures separate from business state refusals. For lifecycle-backed operations, keep the lifecycle library's error mapping: `INVALID_STATE` and `GUARD_REJECTED` whose blockers are all preconditions become HTTP 400 `FAILED_PRECONDITION`; do not override this mapping in the application. Reserve HTTP 409 for a stale expected version (`CONFLICT`, mapped to `ABORTED`) or duplicate creation (`ALREADY_EXISTS`). Clients branch on `error.reason`.
+Keep permission failures separate from business state refusals. Let `lifecycleErrorFields()` map lifecycle errors instead of assigning HTTP statuses yourself: a stale expected version (`CONFLICT`) becomes `ABORTED` / HTTP 409, while an invalid state (`INVALID_STATE`) or a `GUARD_REJECTED` whose blockers are all preconditions becomes `FAILED_PRECONDITION` / HTTP 400. The [lifecycle route example](lifecycle.md#4-the-record-routes) shows `runtime.fire()` with an expected version and the shared error conversion. For a duplicate create, throw the standard `ApiError` with status `ALREADY_EXISTS`, which the shared API error handler maps to HTTP 409:
+
+```ts
+import { ApiError } from '@nocobase/app-server/router';
+import { LifecycleError, lifecycleErrorFields } from '@nocobase/lifecycle';
+
+function toLifecycleApiError(error: unknown): unknown {
+  if (!(error instanceof LifecycleError)) return error;
+  const fields = lifecycleErrorFields(error);
+  return fields ? new ApiError({ ...fields, domain: 'tms' }) : error;
+}
+
+function duplicateCarrierError(): ApiError {
+  return new ApiError({
+    status: 'ALREADY_EXISTS',
+    reason: 'CARRIER_CODE_TAKEN',
+    domain: 'tms',
+    message: 'A carrier with this code already exists.',
+  });
+}
+```
+
+After checking the unique key, raise the duplicate with `throw duplicateCarrierError()`. Wire lifecycle route errors through `apiErrorHandler(toLifecycleApiError(error), context)` as in the linked route example, and let `ApiError` use the same handler. Do not replace either mapping with a hand-written response. Clients branch on `error.reason`.
 
 Declare `authz` on the first page of every path in `client/routes.ts`: `{ resource: { type: 'page', id }, action: 'access' }` for a business page, the page's `settings` item for a configuration page, `'unrestricted'` for a root-only page, or `'skip'` explicitly; nothing is inferred from the route name. Nested pages inherit it; an omitted value on a first page defaults to `'unrestricted'` for protected pages and `'skip'` otherwise, with a development warning. Use `useCan({ resource, action })` for button visibility and server-computed eligibility for record-sensitive actions. Keep pending/failed checks closed and refresh after permission changes. Client visibility does not enforce the API. The authorization Skill’s `references/client-development.md` includes the component, relation controls and settings lifecycle; all required APIs are bundled in that Skill rather than external package documentation.
 
@@ -173,6 +199,10 @@ Before accepting a new application's permission workspace, write an operation-to
 Treat that map as an acceptance gate, not merely design notes. For each action, verify with an ordinary user that its grant enables the matching button and direct request, that an unrelated sibling remains denied, and that page access alone and action access alone do not bypass the other boundary. Check existing-record and related-record scopes, state eligibility, and create actions without a meaningless new-record range selector. Record any intentionally combined operations and why they must be assigned together. Do not declare the permission design complete from a screenshot of the editor alone.
 
 ## Verify and explain
+
+For a template-derived app, keep `@nocobase/app-plugin-users` and `@nocobase/app-plugin-authorization` registered, and preserve the public `Home` route and its navigation row. If the generated Home row has unwanted explanatory copy, omit that copy only; do not remove the route or its menu entry. Keep the template's `tests/client/client-routes.test.ts` and `tests/client/permission-workspace.test.ts` unchanged and run them from the template root with `pnpm exec vitest run tests/client/client-routes.test.ts tests/client/permission-workspace.test.ts`; both must pass as written.
+
+In the generated app's API self-check, try creating a record with an existing unique key and require HTTP 409 (`ALREADY_EXISTS`); submit a lifecycle transition with an old expected version and require HTTP 409 (`ABORTED` / `CONFLICT`); then request a transition the current state forbids and require HTTP 400 (`FAILED_PRECONDITION` / `INVALID_STATE`). For every refusal, confirm that relevant row counts and values, versions, transition logs and effect runs remain unchanged.
 
 Test an ordinary user with no grant, page-only and action-only grants, rows owned by another user, forbidden fields, invalid relation targets, and stale workflow states. For multi-table operations, remove each required scope independently. Test direct API requests, rollback and independent revocation of direct/inherited sources. Use the inspector to understand decisions, not as a substitute for running the operation.
 
