@@ -441,14 +441,14 @@ export async function createWaybill(
     await connection
       .repository('tmsWaybills')
       .withPolicy(policies.tmsWaybills)
-      .create({ values: input });
+      .createOne({ values: input });
   });
 }
 ```
 
 Validate and normalize request fields with the route's input schema, and include any server-owned fields required by the collection. The role's View grants for Carriers, Sites and Vehicles must also be present when the user needs to choose those records; the Create action does not grant those separate View actions.
 
-After generating the application, compare the registered resource/action scope slots with `permissionWorkspaceSelection`. In the role editor, confirm the operation titles are `View` and `Create`, Create shows exactly Carriers, Sites and Vehicles, and no selector appears for the new waybill's own `waybills` slot. Inspect the handler to confirm it reads and binds all four policies by table name, then try an out-of-scope carrier, site and vehicle as an ordinary user; each request must be denied and leave the waybill count unchanged.
+After generating the application, verify directly that `defineCompositeResource('tms.waybills', ...)` uses a different identifier from the `tmsWaybills` table, and that each `scopeTitles` key matches a registered table name (`tmsWaybills`, `tmsCarriers`, `tmsSites` or `tmsVehicles`). In the role editor, confirm the operation titles are `View` and `Create`, Create shows exactly Carriers, Sites and Vehicles, and no selector appears for the new waybill's own `waybills` slot. Submit one valid Create request with in-scope carrier, site and vehicle choices and verify exactly one waybill is written. Then submit out-of-scope carrier, site and vehicle choices separately as an ordinary user; each request must be denied and leave the waybill count unchanged.
 
 ## Settings screens
 
