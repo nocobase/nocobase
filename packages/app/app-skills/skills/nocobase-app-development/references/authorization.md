@@ -4,6 +4,37 @@
 
 Before implementing a Create operation that selects existing records from other collections, read the [complete waybill example in the authorization Skill](../../nocobase-app-plugin-authorization/references/client-development.md#example-create-a-waybill-with-scoped-related-records). Keep each composite business-object ID different from its registered collection/table name; use registered table names as keys in `conditions.database` and `scopeTitles`. In the same example, `hiddenActionScopes.create` uses the registered own-scope key (`waybills`) to hide only the new record's own selector, leaving the Carriers, Sites and Vehicles relation scopes visible. Use short operation titles such as `View` and `Create`.
 
+## Seed parameterized Custom Filter scopes
+
+For a preconfigured custom record scope, `params.filter` accepts a native filter node (`FilterNode`), such as a filter group or condition. `buildFilter()` returns a `FilterAst` wrapper whose `.root` is the native condition tree; assign that root to `params.filter`, not the whole wrapper. The built-in `customFilter` record access declares a `filter-node` parameter schema, and the Permission Set API validates this shape before saving. See [parameterized record scopes in the authorization API](../../nocobase-app-plugin-authorization/references/core-api.md#parameterized-record-scopes-in-administration) for the stored shape.
+
+Put the value below in `database/seed-data/permission-sets.ts` and import `waybillResource` from the application module that declares the registered `tms.waybills` composite. Register that resource in the owning provider during app boot; seeds persist permission-set values and do not register resources or resolve the authorization service. Keep the existing `carriers`, `sites` and `vehicles` selections on the Create grant when adding the `waybills` slot shown here.
+
+```ts
+import { selection } from '@nocobase/authorization/core';
+import { definePermissionSet } from '@nocobase/authorization/permission-sets';
+import { buildFilter } from '@nocobase/repository-input';
+import { waybillResource } from '../../server/waybill-resources.js';
+
+const params = {
+  filter: buildFilter((f) => f.string('stationId').eq('north-station')).root,
+};
+const northStationWaybills = selection.recordAccess('customFilter', params);
+
+export const northDispatcher = definePermissionSet('tms-north-dispatcher')
+  .title('North dispatcher')
+  .grant(
+    waybillResource.reference().grant({
+      view: { waybills: northStationWaybills },
+      create: { waybills: northStationWaybills },
+      dispatch: { waybills: northStationWaybills },
+    }),
+  )
+  .build();
+```
+
+Persist this value through the normal permission-set seed lifecycle. Then save a name-only edit in the built-in role editor, read the set again, and confirm the `waybills` filter parameters are unchanged. Sign in as the assigned dispatcher and verify scoped Create and Dispatch still succeed. See [code and seeds](../../nocobase-app-plugin-authorization/references/code-and-seeds.md) for the seed lifecycle and stored row shape.
+
 For an executable application-owned implementation of scoped relation choices and batch assignments, see the [customer/contact reference](frontend/references/executable-relation-batch.md). It includes native-authenticated permission tests and separate relation-picker and batch-editor entry points.
 
 Use this reference when a feature distinguishes people, jobs, teams, pages, operations, fields or records. Model access while designing the feature; adding only hidden buttons after building unrestricted endpoints leaves the system incomplete.
