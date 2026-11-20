@@ -42,6 +42,24 @@ export function buildSettingsCatalog(
   );
 }
 
+/** A denied Home can hand sign-in off to a concrete page the viewer may actually open. */
+export function firstAccessiblePage(
+  items: readonly RouteNavigationItem[],
+): string | undefined {
+  for (const { route, children } of items) {
+    if (
+      route.componentLoader &&
+      route.path !== '/' &&
+      !route.path.includes(':') &&
+      !route.path.includes('*')
+    )
+      return route.path;
+    const child = firstAccessiblePage(children);
+    if (child) return child;
+  }
+  return undefined;
+}
+
 function visibleRouteNavigation(
   routes: readonly AppClientRegisteredRoute[],
   denied: ReadonlySet<string>,

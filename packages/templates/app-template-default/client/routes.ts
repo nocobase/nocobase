@@ -4,6 +4,7 @@ import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import { Home } from 'lucide-react';
 import settingsShellRoutes from './pages/settings/shell-routes.js';
+import systemSettingsRoutes from './pages/settings/routes.js';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -11,9 +12,8 @@ import {
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
-    // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
-    // no permission change can leave a user signed in with nowhere to land.
-    authz: 'skip',
+    // The landing page is a business-facing entry and must be grantable in Page access.
+    authz: { resource: { type: 'page', id: 'home' }, action: 'access' },
     auth: 'required',
     componentLoader: () => import('./pages/home/index.js'),
     name: 'home',
@@ -69,14 +69,18 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-// The System settings shell stays registered: it shows only the modules a viewer may open, and none until the
-// application or its plugins contribute one. Business administration such as `./pages/settings/routes.js` joins it.
+// Keep core account and permission administration registered in every new application.
 export function createApplicationRoutes(
   rawConfig: unknown = readAppClientRuntimeConfig(),
 ): readonly AppClientRouteContribution[] {
   const config = createAppClientConfig({ rawConfig });
   return includeNotificationTemplateRoutes(
-    [appRoutes, settingsShellRoutes, databaseExplorerRoutes],
+    [
+      appRoutes,
+      settingsShellRoutes,
+      systemSettingsRoutes,
+      databaseExplorerRoutes,
+    ],
     config.get<boolean>('notificationTemplates.invitationConfigured') === true,
   );
 }

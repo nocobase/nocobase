@@ -5,7 +5,6 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
-import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import applicationRoutes, {
   createApplicationRoutes,
 } from '../../client/routes.ts';
@@ -185,31 +184,9 @@ describe('app client routes', () => {
     // access is a new grant somebody has to be given.
     const resolved = resolveRoutes();
 
-    // The landing page and the inbox opted out of page authorization, so they are reachable by every signed-in user.
+    // Home is a grantable page; the self-service inbox remains available to signed-in users.
     expect(pageAuthorizations(resolved.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
-      { name: 'settingsHome', authorizedAs: null },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ]);
-  });
-
-  it('includes database browsing and supports business settings registration', async () => {
-    // The built-in database browser joins the settings home without enabling business administration.
-    expect(
-      pagePaths(resolveRoutes().routes).filter((path) =>
-        path.startsWith('/settings'),
-      ),
-    ).toEqual(['/settings', '/settings/database-explorer']);
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        routes: [...applicationRoutes, systemSettingsRoutes],
-        source: 'application',
-      },
-    ]);
-    expect(pageAuthorizations(built.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
+      { name: 'home', authorizedAs: 'home' },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
       { name: 'settingsUsers', authorizedAs: 'user:*' },
@@ -238,6 +215,21 @@ describe('app client routes', () => {
       })),
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
+  });
+
+  it('includes core permission administration from the first run', async () => {
+    const built = resolveRoutes();
+    expect(
+      pagePaths(built.routes).filter((path) => path.startsWith('/settings')),
+    ).toEqual(
+      expect.arrayContaining([
+        '/settings',
+        '/settings/users',
+        '/settings/roles',
+        '/settings/default-access',
+        '/settings/database-explorer',
+      ]),
+    );
     for (const loader of componentLoadersIn(built.routes))
       await expect(loader()).resolves.toMatchObject({
         default: expect.any(Function),

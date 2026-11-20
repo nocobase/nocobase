@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import type { AuthorizationOptionsResponse } from '@nocobase/app-plugin-authorization/client';
 import {
+  businessSelectionIssues,
   permissionWorkspaceCatalog,
   permissionScopeVisible,
   permissionFilterFieldLabel,
@@ -117,6 +118,32 @@ const configurationRoutes = [
 ] as unknown as AppClientRegisteredRoute[];
 
 describe('application-owned permission presentation', () => {
+  it('rejects stale and duplicate business controls instead of silently dropping them', () => {
+    expect(
+      businessSelectionIssues(source, {
+        business: [
+          {
+            type: 'composite',
+            id: 'borrowing',
+            actions: ['approve', 'reject'],
+          },
+          { type: 'composite', id: 'borrowing', actions: ['approve'] },
+          { type: 'composite', id: 'missing', actions: ['read'] },
+          {
+            type: 'settings',
+            id: 'authorization.sharing-rules',
+            actions: ['update'],
+          },
+        ],
+        settings: [],
+      }),
+    ).toEqual([
+      'Unknown business action ["composite","borrowing"]/reject',
+      'Duplicate business resource ["composite","borrowing"]',
+      'Unknown business resource ["composite","missing"]',
+      'Unknown business resource ["settings","authorization.sharing-rules"]',
+    ]);
+  });
   it('omits the generic Page access description and retains other section descriptions', () => {
     const sections = permissionSections(source, [], (value) =>
       typeof value === 'string' ? value : value.key,

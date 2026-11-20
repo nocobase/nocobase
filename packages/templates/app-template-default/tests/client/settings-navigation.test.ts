@@ -219,6 +219,13 @@ describe('System settings navigation', () => {
     ]).routes;
     expect(catalog(routes)).toEqual([
       [
+        'settingsAccount',
+        [
+          ['settingsUsers', '/settings/users'],
+          ['permissionManagement', '/settings/roles'],
+        ],
+      ],
+      [
         'settingsSystem',
         [
           ['notificationManagement', '/settings/notifications/templates'],
@@ -248,7 +255,22 @@ it('places database browsing in System and hides its card when access is denied'
     action: 'access',
   });
   expect(catalog(routes)).toEqual([
+    [
+      'settingsAccount',
+      [
+        ['settingsUsers', '/settings/users'],
+        ['permissionManagement', '/settings/roles'],
+      ],
+    ],
     ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
   ]);
-  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([]);
+  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([
+    [
+      'settingsAccount',
+      [
+        ['settingsUsers', '/settings/users'],
+        ['permissionManagement', '/settings/roles'],
+      ],
+    ],
+  ]);
 });

@@ -47,6 +47,39 @@ export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
   ],
 };
 
+/** Catch stale or misspelled business controls before a generated app is delivered. */
+const visibleBusinessSections: readonly string[] = ['pages', 'business'];
+
+export function businessSelectionIssues(
+  source: AuthorizationOptionsResponse,
+  selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
+): string[] {
+  const resources = source.sections
+    .filter((section) => visibleBusinessSections.includes(section.name))
+    .flatMap((section) =>
+      section.subsections.flatMap((subsection) => subsection.resources),
+    );
+  const seen = new Set<string>();
+  const issues: string[] = [];
+  for (const entry of selection.business) {
+    const key = JSON.stringify([entry.type, entry.id]);
+    if (seen.has(key)) issues.push(`Duplicate business resource ${key}`);
+    seen.add(key);
+    const resource = resources.find(
+      (candidate) => candidate.type === entry.type && candidate.id === entry.id,
+    );
+    if (!resource) {
+      issues.push(`Unknown business resource ${key}`);
+      continue;
+    }
+    for (const action of entry.actions) {
+      if (!resource.actions.some((candidate) => candidate.name === action))
+        issues.push(`Unknown business action ${key}/${action}`);
+    }
+  }
+  return issues;
+}
+
 /** Share application-owned data captions across role and default-scope editors. */
 export function permissionScopeTitle(
   resource: { readonly type: string; readonly id: string },
@@ -146,7 +179,6 @@ export function permissionWorkspaceCatalog(
   selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
 ): AuthorizationOptionsResponse {
   const configurationBusiness: CatalogResource[] = [];
-  const visibleSections: readonly string[] = ['pages', 'business'];
   const settings = source.sections
     .flatMap((section) => section.subsections.flatMap((sub) => sub.resources))
     .flatMap((resource) => {
@@ -227,7 +259,7 @@ export function permissionWorkspaceCatalog(
           ]
         : []),
       ...source.sections
-        .filter((section) => visibleSections.includes(section.name))
+        .filter((section) => visibleBusinessSections.includes(section.name))
         .map((section) => ({
           ...section,
           subsections: section.subsections.map((sub) => ({
