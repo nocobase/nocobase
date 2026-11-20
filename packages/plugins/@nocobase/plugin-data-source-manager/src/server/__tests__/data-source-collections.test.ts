@@ -37,7 +37,12 @@ describe('data source collection', () => {
     });
     await vi.waitFor(() => expect(app.dataSourceManager.get('external')).toBeTruthy());
     const collections = app.agent().resource('dataSources.collections', 'external');
-    const savedField = { name: 'quantity', type: 'integer', interface: 'integer', uiSchema: { title: 'Quantity' } };
+    const savedField = {
+      name: 'quantity',
+      type: 'integer',
+      interface: 'integer',
+      uiSchema: { title: 'Quantity', 'x-validator': 'integer' },
+    };
     for (const name of ['items', 'other']) {
       const res = await collections.create({ values: { name, fields: [savedField] } });
       expect(res.status).toBe(200);
@@ -68,6 +73,28 @@ describe('data source collection', () => {
       { ...savedField, key: original.get('key') },
       { name: 'unit', key: newField.get('key'), type: 'string' },
     ]);
+    // A display-name edit after extraction changes uiSchema.title while the field still has no key.
+    const renamed = extracted.map((field) => ({
+      ...field,
+      title: field.name,
+      uiSchema: { title: field.name === 'quantity' ? 'Available quantity' : 'Unit of measure' },
+    }));
+    const rename = await collections.update({ filterByTk: 'items', values: { fields: renamed } });
+    expect(rename.status).toBe(200);
+    const reopened = await collections.list({ paginate: false });
+    const items = reopened.body.data.find((collection) => collection.name === 'items');
+    expect(items.fields).toHaveLength(2);
+    expect(items.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ...savedField,
+          key: original.get('key'),
+          uiSchema: { ...savedField.uiSchema, title: 'Available quantity' },
+        }),
+        expect.objectContaining({ name: 'unit', key: newField.get('key'), uiSchema: { title: 'Unit of measure' } }),
+      ]),
+    );
+
     const edit = await collections.update({
       filterByTk: 'items',
       values: { fields: [{ ...savedField, key: original.get('key'), uiSchema: { title: 'On hand' } }] },

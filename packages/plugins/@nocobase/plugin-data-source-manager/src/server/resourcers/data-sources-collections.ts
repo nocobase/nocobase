@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { filterMatch } from '@nocobase/database';
+import { filterMatch, type Model } from '@nocobase/database';
 import type { Transaction } from 'sequelize';
 
 function isExtractedField(field: { key?: string; name?: string; rawType?: string }) {
@@ -119,13 +119,27 @@ export default {
               collectionName: collection.get('name'),
               name: fields.filter(isExtractedField).map((field) => field.name),
             },
-            fields: ['key', 'name'],
+            fields: ['key', 'name', 'uiSchema'],
             transaction,
           });
-          const keysByName = new Map(savedFields.map((field) => [field.get('name'), field.get('key')]));
+          const savedByName = new Map<string, Model>(savedFields.map((field) => [field.get('name'), field]));
           values = {
             ...values,
-            fields: fields.map((field) => (isExtractedField(field) ? keysByName.get(field.name) ?? field : field)),
+            fields: fields.map((field) => {
+              const saved = isExtractedField(field) && savedByName.get(field.name);
+              if (!saved) {
+                return field;
+              }
+
+              const key = saved.get('key');
+              const title = field.uiSchema?.title;
+              // REST extraction initializes the display title to the field name; the editor changes uiSchema.title.
+              if (typeof title !== 'string' || title === field.name) {
+                return key;
+              }
+
+              return { key, uiSchema: { ...lodash.omit(saved.get('uiSchema'), 'rawTitle'), title } };
+            }),
           };
         }
 
