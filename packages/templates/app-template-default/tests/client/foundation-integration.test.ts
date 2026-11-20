@@ -91,6 +91,17 @@ describe('default Foundation integration', () => {
         ],
       ],
       [
+        'settingsAi',
+        [
+          ['agents', '/settings/agents'],
+          ['runtimes', '/settings/runtimes'],
+          ['skills', '/settings/skills'],
+          ['models', '/settings/models'],
+          ['agentChatSettings', '/settings/agent-chat'],
+          ['usage', '/settings/usage'],
+        ],
+      ],
+      [
         'settingsSystem',
         [
           ['configInspector', '/settings/config-inspector'],

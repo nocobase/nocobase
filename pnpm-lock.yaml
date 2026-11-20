@@ -5854,6 +5854,12 @@ importers:
       '@noble/hashes':
         specifier: 2.3.0
         version: 2.3.0
+      '@nocobase/agent-runner':
+        specifier: workspace:*
+        version: link:../../app/agent-runner
+      '@nocobase/app-cli-client':
+        specifier: workspace:*
+        version: link:../../app/app-cli-client
       '@nocobase/app-client':
         specifier: workspace:*
         version: link:../../app/app-client
@@ -5896,6 +5902,9 @@ importers:
       '@nocobase/logging':
         specifier: workspace:*
         version: link:../../libs/logging
+      '@nocobase/markdown-mermaid':
+        specifier: workspace:*
+        version: link:../../libs/markdown-mermaid
       '@nocobase/session':
         specifier: workspace:*
         version: link:../../libs/session

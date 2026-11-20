@@ -2,10 +2,14 @@ import { usePageBreadcrumb } from '@nocobase/app-client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { renderWithApp, answerApi } from '@nocobase/app-testing/client';
 import { screen, within } from '@testing-library/react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { Route, Routes } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+vi.mock('../../client/components/online-agent/provider.js', () => ({
+  OnlineAgentProvider: ({ children }: { readonly children: ReactNode }) =>
+    children,
+}));
 import { AppLayout } from '../../client/layouts/app-layout.js';
 import {
   createAppSidebarPreferenceStore,

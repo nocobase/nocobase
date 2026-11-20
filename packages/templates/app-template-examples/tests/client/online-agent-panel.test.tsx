@@ -315,7 +315,7 @@ it.each(['en-US', 'zh-CN'])(
       name: locale === 'zh-CN' ? '打开模型配置' : 'Open models',
     });
     links.forEach((link) =>
-      expect(link).toHaveAttribute('href', '/demo/models'),
+      expect(link).toHaveAttribute('href', '/demo/settings/models'),
     );
     const input = screen.getByRole('textbox', {
       name: locale === 'zh-CN' ? '发给 Agent 的消息' : 'Message to the agent',
@@ -1089,7 +1089,10 @@ it.each([401, 403, 404, 500])(
   async (status) => {
     render(
       <TestI18nProvider runtime={runtime}>
-        <MemoryRouter basename='/demo' initialEntries={['/demo/models']}>
+        <MemoryRouter
+          basename='/demo'
+          initialEntries={['/demo/settings/models']}
+        >
           <LoadError title='Failed' error={{ status }} onRetry={vi.fn()} />
         </MemoryRouter>
       </TestI18nProvider>,
@@ -1097,7 +1100,7 @@ it.each([401, 403, 404, 500])(
     if (status === 401)
       expect(screen.getByRole('button', { name: 'Sign in' })).toHaveAttribute(
         'href',
-        '/demo/login?redirect=%2Fmodels',
+        '/demo/login?redirect=%2Fsettings%2Fmodels',
       );
     expect(screen.queryByRole('button', { name: 'Retry' }) !== null).toBe(
       status === 500,

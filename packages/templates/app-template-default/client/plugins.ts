@@ -1,3 +1,4 @@
+import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
 import applicationManifest from '../package.json' with { type: 'json' };
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
@@ -28,6 +29,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
+  agents(),
   configInspector(),
   databaseExplorer(),
   users(),

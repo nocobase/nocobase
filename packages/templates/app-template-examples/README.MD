@@ -45,7 +45,7 @@ Business lists reuse the template's standard `DataTable` and companions from `#c
 
 ## OnlineAgent example
 
-Open **Agents → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
+Open **System settings → AI → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
 
 ## Customers and contacts example
 
@@ -64,6 +64,12 @@ The regional comparison formats the same number, USD amount and fixed UTC timest
 ## Maintain this template
 
 Keep framework files aligned with Default: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
+
+## Agent conversations
+
+Open the chat icon next to the account menu to start a conversation or return to its history. System settings groups Agents, Runtimes, Skills, Models, the team default agent, and Usage under AI. Open Agent preferences in the account menu to choose a personal default agent and preferred runtime. Online chat requires an enabled chat model and a configured model service; runner conversations require an enabled agent and a compatible connected runtime.
+
+To serve the application CLI and runner to new runtimes, run `pnpm nocobase cli build --universal` and `pnpm nocobase cli build --runner --universal` in the application directory, then follow the connection instructions under System settings → AI → Runtimes. The universal packages use Node.js 24 or newer on the runner machine.
 
 ## Getting started
 

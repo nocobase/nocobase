@@ -20,7 +20,7 @@ export function ModelsLink({
       variant='outline'
       size='sm'
       nativeButton={false}
-      render={<Link to='/models' />}
+      render={<Link to='/settings/models' />}
     >
       {t('onlineAgent.openModels')}
     </Button>

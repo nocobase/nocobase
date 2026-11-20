@@ -88,20 +88,17 @@ describe('app client routes', () => {
     expect(group.componentLoader).toBeUndefined();
     expect(group.navigation?.title).toBe('onlineAgent.group');
     expect(group.children?.map((route) => route.name)).toEqual([
-      'agents',
-      'runtimes',
-      'skills',
-      'models',
       'ai-translation',
       'ai-structured-extraction',
       'ai-form-fill',
     ]);
-    for (const name of ['agents', 'runtimes', 'skills']) {
-      expect(
-        group.children?.find((route) => route.name === name),
-      ).toMatchObject({
+    const ai = resolveRoutes().routes.find(
+      (route) => route.name === 'settingsAi',
+    )!;
+    for (const name of ['agents', 'runtimes', 'skills', 'usage']) {
+      expect(ai.children?.find((route) => route.name === name)).toMatchObject({
         name,
-        path: `/${name}`,
+        path: `/settings/${name}`,
         auth: 'required',
         navigation: { title: `onlineAgent.${name}` },
         breadcrumb: { title: `onlineAgent.${name}` },
@@ -109,28 +106,28 @@ describe('app client routes', () => {
       });
     }
     expect(
-      group.children?.find((route) => route.name === 'runtimes')?.children,
+      ai.children?.find((route) => route.name === 'runtimes')?.children,
     ).toEqual([
       expect.objectContaining({
         name: 'runtimes-connect',
-        path: '/runtimes/connect',
+        path: '/settings/runtimes/connect',
         auth: 'required',
         componentLoader: expect.any(Function),
       }),
     ]);
-    expect(
-      group.children?.find((route) => route.name === 'models'),
-    ).toMatchObject({
-      name: 'models',
-      path: '/models',
-      auth: 'required',
-      navigation: { title: 'onlineAgent.models' },
-      breadcrumb: { title: 'onlineAgent.models' },
-      authz: {
-        resource: { type: 'settings', id: 'agents.services' },
-        action: 'read',
+    expect(ai.children?.find((route) => route.name === 'models')).toMatchObject(
+      {
+        name: 'models',
+        path: '/settings/models',
+        auth: 'required',
+        navigation: { title: 'onlineAgent.models' },
+        breadcrumb: { title: 'onlineAgent.models' },
+        authz: {
+          resource: { type: 'settings', id: 'agents.services' },
+          action: 'read',
+        },
       },
-    });
+    );
     expect(
       group.children?.find((route) => route.name === 'ai-translation'),
     ).toMatchObject({
@@ -158,19 +155,19 @@ describe('app client routes', () => {
   });
   it('retains the public Skills creation and detail routes under its protected library', () => {
     const group = resolveRoutes().routes.find(
-      (route) => route.name === 'agentsNavigation',
+      (route) => route.name === 'settingsAi',
     );
     const library = group?.children?.find((route) => route.name === 'skills');
     expect(library?.children).toEqual([
       expect.objectContaining({
         name: 'skills-new',
-        path: '/skills/new',
+        path: '/settings/skills/new',
         auth: 'required',
         componentLoader: expect.any(Function),
       }),
       expect.objectContaining({
         name: 'skills-detail',
-        path: '/skills/:skillId',
+        path: '/settings/skills/:skillId',
         auth: 'required',
         componentLoader: expect.any(Function),
       }),
@@ -214,7 +211,18 @@ describe('app client routes', () => {
         ],
       ],
       ['settingsBusiness', [['workflows', '/settings/workflows']]],
-      ['settingsAi', [['knowledgeIndexing', '/settings/knowledge/indexing']]],
+      [
+        'settingsAi',
+        [
+          ['knowledgeIndexing', '/settings/knowledge/indexing'],
+          ['agents', '/settings/agents'],
+          ['runtimes', '/settings/runtimes'],
+          ['skills', '/settings/skills'],
+          ['models', '/settings/models'],
+          ['agentChatSettings', '/settings/agent-chat'],
+          ['usage', '/settings/usage'],
+        ],
+      ],
       [
         'settingsSystem',
         [
@@ -315,13 +323,6 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
-      { name: 'agents', authorizedAs: 'agents' },
-      { name: 'runtimes', authorizedAs: 'runtimes' },
-      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
-      { name: 'skills', authorizedAs: 'skills' },
-      { name: 'skills-new', authorizedAs: 'skills' },
-      { name: 'skills-detail', authorizedAs: 'skills' },
-      { name: 'models', authorizedAs: 'settings:agents.services' },
       { name: 'ai-translation', authorizedAs: null },
       { name: 'ai-structured-extraction', authorizedAs: null },
       { name: 'ai-form-fill', authorizedAs: null },
@@ -372,6 +373,15 @@ describe('app client routes', () => {
         authorizedAs: 'settings:workflow-management',
       },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'skills', authorizedAs: 'skills' },
+      { name: 'skills-new', authorizedAs: 'skills' },
+      { name: 'skills-detail', authorizedAs: 'skills' },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'agentChatSettings', authorizedAs: 'settings:agents.agents' },
+      { name: 'usage', authorizedAs: 'usage' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
       // A plugin's settings page without its own `authz` admits unrestricted administrators only.

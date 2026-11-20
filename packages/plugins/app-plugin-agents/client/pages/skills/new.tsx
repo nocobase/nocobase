@@ -8,7 +8,7 @@ import { usePageBreadcrumb } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router';
+import { useResolvedPath, useNavigate } from 'react-router';
 
 import type { SkillFrontMatterProblem } from '../../../shared/skills.js';
 import { agentsKeys } from '../../api/keys.js';
@@ -41,6 +41,7 @@ function NewSkill(): ReactElement {
   const api = useAgentsApi();
   const notify = useNotify();
   const navigate = useNavigate();
+  const listPath = useResolvedPath('..', { relative: 'path' }).pathname;
   const queryClient = useQueryClient();
   const state = useWorkbench({
     content: skillTemplate({
@@ -61,7 +62,7 @@ function NewSkill(): ReactElement {
     readonly problems: readonly SkillFrontMatterProblem[];
   } | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const leave = () => void navigate('/skills');
+  const leave = () => void navigate(listPath);
   const check = checkDraft(state.draft, state.uploading);
   const serverProblems =
     refused && refused.content === state.draft.content ? refused.problems : [];
@@ -74,7 +75,7 @@ function NewSkill(): ReactElement {
     onSuccess: (skill) => {
       notify.success(t('skills.created', { name: skill.name }));
       void queryClient.invalidateQueries({ queryKey: agentsKeys.skills });
-      void navigate(`/skills/${encodeURIComponent(skill.id)}`, {
+      void navigate(`${listPath}/${encodeURIComponent(skill.id)}`, {
         replace: true,
       });
     },
@@ -89,7 +90,7 @@ function NewSkill(): ReactElement {
     },
   });
   usePageBreadcrumb([
-    { label: t('skills.title'), to: '/skills' },
+    { label: t('skills.title'), to: listPath },
     { label: t('skills.newTitle') },
   ]);
   return (

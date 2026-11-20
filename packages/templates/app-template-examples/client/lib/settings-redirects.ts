@@ -5,6 +5,10 @@
  * definitions reject wildcards, so the redirects are plain router entries; the destination's own guards still apply.
  */
 export const SETTINGS_REDIRECTS: readonly (readonly [string, string])[] = [
+  ['/agents', '/settings/agents'],
+  ['/models', '/settings/models'],
+  ['/runtimes', '/settings/runtimes'],
+  ['/skills', '/settings/skills'],
   ['/users', '/settings/users'],
   ['/roles', '/settings/roles'],
   ['/default-access', '/settings/default-access'],

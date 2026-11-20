@@ -1,3 +1,4 @@
+import agents from '@nocobase/app-plugin-agents/server';
 import concurrency from '@nocobase/app-plugin-concurrency/server';
 import foundation from '@nocobase/app-plugin-foundation/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
@@ -39,6 +40,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   file,
   scheduler,
   mail,
+  agents,
   foundation,
 ]);
 

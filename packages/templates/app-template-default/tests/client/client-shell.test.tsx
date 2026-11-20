@@ -4,6 +4,7 @@ import {
 } from '../../client/layouts/use-sidebar-preference.js';
 import {
   apiClientToken,
+  realtimeClientToken,
   ClientApplicationContext,
   NavigationGuardProvider,
   type ClientApplication,
@@ -308,6 +309,14 @@ function renderApplication(
   };
   const registered = new Map<unknown, unknown>([
     [apiClientToken, apiClient],
+    [
+      realtimeClientToken,
+      {
+        subscribe: vi.fn(() => vi.fn()),
+        onOpen: vi.fn(() => vi.fn()),
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    ],
     [authenticationClientToken, authClient],
     [authorizationClientToken, authorizationClient],
   ]);
@@ -315,6 +324,7 @@ function renderApplication(
     config: createAppClientConfig({ rawConfig: {} }),
     services: {
       has: (token: unknown) => registered.has(token),
+      resolveIfCreated: (token: unknown) => registered.get(token),
       resolve: (token: unknown) => {
         if (registered.has(token)) return registered.get(token);
         throw new Error(`Unexpected service token: ${String(token)}`);

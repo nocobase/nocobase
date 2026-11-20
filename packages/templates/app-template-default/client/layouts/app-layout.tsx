@@ -6,6 +6,8 @@ import { Outlet, useLocation } from 'react-router';
 import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
+import { OnlineAgentProvider } from '#components/online-agent/provider';
+import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
@@ -37,7 +39,15 @@ export interface AppLayoutProps {
   readonly routes: readonly AppClientRegisteredRoute[];
 }
 
-export function AppLayout({
+export function AppLayout({ routes }: AppLayoutProps): ReactElement {
+  return (
+    <OnlineAgentProvider>
+      <AuthenticatedLayout routes={routes} />
+    </OnlineAgentProvider>
+  );
+}
+
+function AuthenticatedLayout({
   routes: registered,
 }: AppLayoutProps): ReactElement {
   // The browser decides what it renders; this tells the server the same language so its messages match.
@@ -106,16 +116,20 @@ export function AppLayout({
               </div>
               <HeaderActions />
             </LayoutHeader>
-            <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
-              <BrandWatermark className='-z-10' />
-              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+            {/* The conversation docks beside the current page without replacing the route. */}
+            <div className='relative flex min-h-0 flex-1'>
+              <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-hidden'>
+                <BrandWatermark className='-z-10' />
+                {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
-              <div className='h-full overflow-y-auto'>
-                <RouteLeaveBoundary hidden={loading}>
-                  <Outlet />
-                </RouteLeaveBoundary>
-              </div>
-            </main>
+                <div className='h-full overflow-y-auto'>
+                  <RouteLeaveBoundary hidden={loading}>
+                    <Outlet />
+                  </RouteLeaveBoundary>
+                </div>
+              </main>
+              <OnlineAgentPanelHost />
+            </div>
           </div>
         </AppSidebarProvider>
       </PageBreadcrumbProvider>

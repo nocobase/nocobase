@@ -1,3 +1,4 @@
+import agentSettingsRoutes from './pages/settings/agent-routes.js';
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import { createAppClientConfig } from '@nocobase/app-client';
 import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
@@ -11,6 +12,14 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'conversation',
+    path: '/chat/:conversationId',
+    auth: 'required',
+    // The API checks ownership or an explicit snapshot grant on every read.
+    authz: 'skip',
+    componentLoader: () => import('./pages/chat/index.js'),
+  },
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
     // no permission change can leave a user signed in with nowhere to land.
@@ -82,6 +91,7 @@ export function createApplicationRoutes(
       appRoutes,
       settingsShellRoutes,
       systemSettingsRoutes,
+      agentSettingsRoutes,
       databaseExplorerRoutes,
     ],
     config.get<boolean>('notificationTemplates.invitationConfigured') === true,

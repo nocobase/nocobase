@@ -116,7 +116,7 @@ function AuthenticatedLayout({
               </div>
               <HeaderActions />
             </LayoutHeader>
-            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}
+            {/* The conversation docks beside the current page without replacing the route. */}
             <div className='relative flex min-h-0 flex-1'>
               <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-hidden'>
                 <BrandWatermark className='-z-10' />

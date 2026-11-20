@@ -178,6 +178,7 @@ describe('app client routes', () => {
 
     // The landing page and the inbox opted out of page authorization, so they are reachable by every signed-in user.
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      { name: 'conversation', authorizedAs: null },
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
@@ -205,6 +206,15 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'skills', authorizedAs: 'skills' },
+      { name: 'skills-new', authorizedAs: 'skills' },
+      { name: 'skills-detail', authorizedAs: 'skills' },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'agentChatSettings', authorizedAs: 'settings:agents.agents' },
+      { name: 'usage', authorizedAs: 'usage' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
   });
@@ -226,6 +236,15 @@ describe('app client routes', () => {
       '/settings/default-access',
       '/settings/default-access/create',
       '/settings/default-access/:key/edit',
+      '/settings/agents',
+      '/settings/runtimes',
+      '/settings/runtimes/connect',
+      '/settings/skills',
+      '/settings/skills/new',
+      '/settings/skills/:skillId',
+      '/settings/models',
+      '/settings/agent-chat',
+      '/settings/usage',
       '/settings/database-explorer',
     ]);
     for (const loader of componentLoadersIn(resolveRoutes().routes))

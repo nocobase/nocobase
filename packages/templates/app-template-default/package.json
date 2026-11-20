@@ -10,13 +10,22 @@
   "packageManager": "pnpm@11.11.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.98"
+    "defaultTemplateVersion": "1.0.0-beta.98",
+    "cli": {
+      "bin": "nocobase-app",
+      "displayName": "NocoBase",
+      "auth": {
+        "clientId": "nocobase-cli"
+      }
+    }
   },
   "devDependencies": {
     "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
     "@hookform/resolvers": "^5.0.1",
+    "@nocobase/agent-runner": "workspace:*",
+    "@nocobase/app-cli-client": "workspace:*",
     "@nocobase/app-client": "workspace:*",
     "@nocobase/app-plugin-notification-web-push": "workspace:*",
     "@nocobase/app-plugin-template-print": "workspace:*",
@@ -31,6 +40,7 @@
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:*",
     "@nocobase/logging": "workspace:*",
+    "@nocobase/markdown-mermaid": "workspace:*",
     "@nocobase/session": "workspace:*",
     "@playwright/test": "catalog:",
     "@silurus/ooxml": "0.85.1",

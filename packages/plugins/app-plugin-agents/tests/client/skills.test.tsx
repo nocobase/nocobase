@@ -509,37 +509,45 @@ describe('skill pages', () => {
     });
   });
 
-  it('starts a new skill from a template and creates it from its SKILL.md', async () => {
-    resetApi(
-      {
-        'POST agents/skills': (request) => ({
-          ...current,
-          id: 's9',
-          name: 'release-notes',
-          content: (request.json as SkillInput).content,
-        }),
-      },
-      ['agents.agents/read', 'agents.agents/manage'],
-    );
-    renderRoute(<NewSkillPage />, '/skills/new', '/skills/new');
-    const source = screen.getByLabelText('skills.content');
-    expect((source as HTMLTextAreaElement).value).toContain('name: new-skill');
-    expect((source as HTMLTextAreaElement).value).toContain(
-      '## skills.template.whenToUse',
-    );
-    const content = (source as HTMLTextAreaElement).value.replace(
-      'new-skill',
-      'release-notes',
-    );
-    fireEvent.change(source, { target: { value: content } });
-    fireEvent.click(screen.getByRole('button', { name: 'common.create' }));
-    await waitFor(() =>
-      expect(callsTo('POST', 'agents/skills')).toHaveLength(1),
-    );
-    expect(callsTo('POST', 'agents/skills')[0]?.json).toEqual({
-      content,
-      files: [],
-    });
-    expect(await screen.findByText('elsewhere')).toBeInTheDocument();
-  });
+  it.each(['/skills', '/settings/skills'])(
+    'creates a skill from its template under %s',
+    async (listPath) => {
+      resetApi(
+        {
+          'POST agents/skills': (request) => ({
+            ...current,
+            id: 's9',
+            name: 'release-notes',
+            content: (request.json as SkillInput).content,
+          }),
+        },
+        ['agents.agents/read', 'agents.agents/manage'],
+      );
+      renderRoute(<NewSkillPage />, listPath + '/new', listPath + '/new');
+      expect(
+        screen.getByRole('link', { name: 'skills.title', hidden: true }),
+      ).toHaveAttribute('href', listPath);
+      const source = screen.getByLabelText('skills.content');
+      expect((source as HTMLTextAreaElement).value).toContain(
+        'name: new-skill',
+      );
+      expect((source as HTMLTextAreaElement).value).toContain(
+        '## skills.template.whenToUse',
+      );
+      const content = (source as HTMLTextAreaElement).value.replace(
+        'new-skill',
+        'release-notes',
+      );
+      fireEvent.change(source, { target: { value: content } });
+      fireEvent.click(screen.getByRole('button', { name: 'common.create' }));
+      await waitFor(() =>
+        expect(callsTo('POST', 'agents/skills')).toHaveLength(1),
+      );
+      expect(callsTo('POST', 'agents/skills')[0]?.json).toEqual({
+        content,
+        files: [],
+      });
+      expect(await screen.findByText('elsewhere')).toBeInTheDocument();
+    },
+  );
 });
