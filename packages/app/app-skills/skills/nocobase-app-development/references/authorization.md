@@ -215,7 +215,30 @@ The fourth argument is the `Idempotency-Key`. In a form, use the template's `use
 
 ### Provision opt-in demo accounts
 
-Keep fictional users, their roles and representative records together in opt-in sample data. Use `defineSeed({ name, sample: true, run })` for sample rows. When creating accounts or assigning roles requires plugin services, register a `sampleDataToken` hook and use the Users service in the sample transaction. Enable it on a fresh development database with `APP_SAMPLE_DATA=true pnpm dev`. Normal seeds prepare real permission sets and their grants. Use User management for ongoing real assignments. See [sample seeds](migrations.md#sample-data-and-demo-systems) and the installed `nocobase-app-plugin-users` Skill.
+Keep fictional users, their roles and representative records together in opt-in sample data. Use `defineSeed({ name, sample: true, run })` for sample rows. Accounts and role assignments go through the Users service, so register them on `sampleDataToken` from a service provider's `boot()`; the hook runs once the application is ready, after the normal seeds created the permission sets, so the role ids it assigns already exist. `create()` takes `name`, `email`, `password` and optionally `username`, and `roleScopes: { app: [<permission set id>] }` assigns the direct roles in the same call:
+
+```ts
+import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
+import { sampleDataToken } from '@nocobase/app-server/sample-data';
+
+container.resolve(sampleDataToken).register({
+  name: 'sales/demo',
+  packageName: metadata.name,
+  async run() {
+    const users = container.resolve(userManagementServiceToken);
+    const alice = await users.create({
+      name: 'Alice Chen',
+      username: 'alice',
+      email: 'alice@example.com',
+      password: 'demo12345',
+      roleScopes: { app: ['sales-engineer'] },
+    });
+    // Use alice.id for the records that belong to her.
+  },
+});
+```
+
+Enable it on a fresh development database with `APP_SAMPLE_DATA=true pnpm dev`. After `pnpm nocobase db reset --force` the application is not started, so the hook has not run: follow it with `pnpm nocobase db sample`, which builds every registration still missing. Normal seeds prepare real permission sets and their grants. Use User management for ongoing real assignments. See [sample seeds](migrations.md#sample-data-and-demo-systems) and the installed `nocobase-app-plugin-users` Skill.
 
 A global default is supported only when the user explicitly requests it and the application delivers an authorized administration control to inspect its recipient population, change the default role and revoke that assignment. User access details must distinguish direct roles from inherited roles and link to the source. If those controls are unavailable, explain the limitation and use explicit user assignments instead. Never invent a configuration flag, seed-only setting or undocumented SQL instruction as the administrator's normal adjustment interface.
 

@@ -24,7 +24,7 @@ Write `pnpm nocobase`, not a bare `nocobase`: a machine may have an unrelated gl
 | Start the schema over from empty                                      | `pnpm nocobase db reset` — destructive, see below                                   |
 | Clear a checksum warning after a deliberate, schema-neutral edit      | `pnpm nocobase db repair --dry-run`, then without `--dry-run`                       |
 | Release a migration lock a killed run left behind                     | `pnpm nocobase db unlock`                                                           |
-| Load sample data an installation skipped, in development              | `pnpm nocobase db sample`                                                           |
+| Load sample data a `db reset` or installation skipped, in development | `pnpm nocobase db sample`                                                           |
 | Read the current data model                                           | the files under `database/<connection>/collections/`, see below                     |
 | Find Collection metadata that disagrees with its table                | `pnpm nocobase collections doctor`                                                  |
 | Check that client and server declare the same languages               | `pnpm nocobase locales check`                                                       |
