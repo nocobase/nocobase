@@ -46,12 +46,15 @@ export const RUN_INPUT_TYPES = [
   'comment',
   'statusChange',
   'retry',
-  'planDecided',
   'signal',
   'custom',
 ] as const;
 
 export type RunInputType = (typeof RUN_INPUT_TYPES)[number];
+
+export function normalizeRunInputType(type: string): RunInputType {
+  return RUN_INPUT_TYPES.find((known) => known === type) ?? 'custom';
+}
 
 export const ACTOR_KINDS = ['user', 'agent', 'system'] as const;
 
@@ -85,7 +88,10 @@ export interface RunInput {
 
 export const RunInputSchema: z.ZodType<RunInput> = z.object({
   id: z.string().min(1),
-  type: z.enum(RUN_INPUT_TYPES),
+  type: z
+    .string()
+    .overwrite(normalizeRunInputType)
+    .pipe(z.enum(RUN_INPUT_TYPES)),
   at: z.string(),
   actor: ActorRefSchema,
   text: z.string(),
@@ -334,6 +340,39 @@ export const RepoCredentialSchema: z.ZodType<RepoCredential> = z.object({
   expiresAt: z.string(),
 });
 
+/** SSH credentials sent only to the runner holding the job or run. */
+export interface GitSshAuth {
+  readonly privateKey: string;
+  /** An OpenSSH known_hosts file containing the pre-verified host keys for this repository. */
+  readonly knownHosts: string;
+}
+
+const gitSshAuth = z.object({
+  privateKey: z.string().min(1).max(32_768),
+  knownHosts: z.string().min(1).max(65_536),
+});
+
+export const GitSshAuthSchema: z.ZodType<GitSshAuth> = gitSshAuth;
+
+export interface RepoSshCredential extends GitSshAuth {
+  /** The SSH clone URL exactly as a RepoDir names it. */
+  readonly url: string;
+}
+
+export const RepoSshCredentialSchema: z.ZodType<RepoSshCredential> =
+  gitSshAuth.extend({ url: z.string().min(1).max(2000) });
+
+/** SSH transport failures a runner can report without forwarding remote output. */
+export const GIT_SSH_FAILURES = [
+  'authFailed',
+  'hostKeyMismatch',
+  'pushRejected',
+  'unreachable',
+] as const;
+export type GitSshFailure = (typeof GIT_SSH_FAILURES)[number];
+export const GitSshFailureSchema: z.ZodType<GitSshFailure> =
+  z.enum(GIT_SSH_FAILURES);
+
 /**
  * How the run's commits are made and its repositories reached (runners with the `checkout` feature):
  *
@@ -354,6 +393,8 @@ export interface RunGit {
   readonly trailers?: readonly string[];
   readonly credentials?: readonly RepoCredential[];
   readonly onDemand?: readonly string[];
+  /** Deployment keys and pinned host keys by SSH clone URL (the gitSsh feature). */
+  readonly ssh?: readonly RepoSshCredential[];
   readonly tools?: readonly RunGitTool[];
 }
 
@@ -408,6 +449,7 @@ export const RunGitSchema: z.ZodType<RunGit> = z.object({
   trailers: z.array(z.string().min(1).max(500)).max(20).optional(),
   credentials: z.array(RepoCredentialSchema).optional(),
   onDemand: z.array(z.string().min(1)).optional(),
+  ssh: z.array(RepoSshCredentialSchema).optional(),
   tools: z
     .array(RunGitToolSchema)
     .max(8)

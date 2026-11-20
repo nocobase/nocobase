@@ -183,6 +183,7 @@ const koKR: LocaleResource<typeof enUS> = {
       title: '{{name}} 편집',
       enabled: '사용',
       done: '{{name}}을(를) 저장했습니다',
+      model: '모델',
     },
     available: {
       open: 'Agent 추가',
@@ -940,6 +941,23 @@ const koKR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': '기본값',
+        none: '끄기',
+        minimal: '최소',
+        low: '낮음',
+        medium: '중간',
+        high: '높음',
+        xhigh: '매우 높음',
+      },
+      adjusted:
+        '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 "{{used}}"을(를) 사용했습니다.',
+      adjustedToDefault:
+        '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 제공업체 기본값을 사용했습니다.',
+      warning:
+        '모델이 이번 답변에 사고 수준 "{{level}}"을(를) 적용하지 않았을 수 있습니다.',
+    },
     executionFailed:
       '실행에 실패했습니다. 다시 시도하기 전에 저장된 대화를 확인하세요.',
     untitled: '제목 없는 대화',

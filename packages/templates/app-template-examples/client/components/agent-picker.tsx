@@ -34,6 +34,7 @@ import type {
   ModelService,
 } from '@nocobase/app-plugin-agents/shared/models';
 import { Badge } from '#components/ui/badge';
+import { Input } from '#components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -279,7 +280,7 @@ export interface AgentPickerNoneOption {
 
 /**
  * `field` looks like a form's select: as wide as its container, the chosen agent and its availability, no tags.
- * `toolbar` is sized for a composer's toolbar, which is an `@container`: the name truncates only past a generous width.
+ * `toolbar` is sized for a composer's toolbar, which is an `@container`: model names stay complete and may wrap; Runner names keep a generous truncation limit.
  */
 export type AgentPickerAppearance = 'field' | 'toolbar';
 
@@ -288,6 +289,10 @@ export interface AgentPickerModels {
   readonly services: readonly ModelService[];
   readonly value: ModelRef | null;
   readonly onSelect: (model: ModelRef) => void;
+  /** Optional inline controls for the selected model. Non-null controls keep its row open on selection. */
+  readonly renderSettings?: (model: ModelRef) => ReactElement | null;
+  /** A compact, accessible summary beside the selected model's name, even while the menu is closed. */
+  readonly summary?: () => { text: string; label: string } | null;
   /** Blocks only model choices, never the Runner choices. */
   readonly disabled?: boolean;
 }
@@ -421,8 +426,10 @@ export function AgentPicker({
     : name;
   // A field holding no agent shows the words alone, as a select shows its choice.
   const avatarless = !toolbar && !shown && !chosen;
+  const summary = modelTrigger && selectedModel ? models?.summary?.() : null;
   return (
     <DropdownMenu
+      modal={!models}
       onOpenChange={(open) => {
         if (!open) setQuery('');
       }}
@@ -437,14 +444,25 @@ export function AgentPicker({
           <button
             type='button'
             id={id}
-            className={cn(toolbar ? TOOLBAR_TRIGGER : FIELD_TRIGGER, className)}
+            className={cn(
+              toolbar ? TOOLBAR_TRIGGER : FIELD_TRIGGER,
+              className,
+              toolbar &&
+                modelTrigger &&
+                'h-auto min-h-7 max-w-full @md:max-w-full',
+            )}
             aria-label={
               modelTrigger
                 ? selectedModel
-                  ? format(words.modelSwitch, {
-                      name: selectedModel.name,
-                      service: selectedModel.service.title,
-                    })
+                  ? [
+                      format(words.modelSwitch, {
+                        name: selectedModel.name,
+                        service: selectedModel.service.title,
+                      }),
+                      summary?.label,
+                    ]
+                      .filter(Boolean)
+                      .join('; ')
                   : words.modelPlaceholder
                 : format(toolbar ? words.switch : words.field, {
                     name: subject,
@@ -462,14 +480,27 @@ export function AgentPicker({
               aria-hidden='true'
             />
             <span
+              data-testid='agent-picker-model-name'
               className={cn(
-                'min-w-0 truncate',
+                toolbar
+                  ? 'min-w-0 whitespace-normal [overflow-wrap:anywhere]'
+                  : 'min-w-0 truncate',
                 toolbar ? 'font-medium text-foreground' : 'flex-1',
                 !selectedModel && 'text-muted-foreground',
               )}
             >
               {selectedModel?.name ?? words.modelPlaceholder}
             </span>
+            {summary ? (
+              <span
+                className='shrink-0 whitespace-nowrap text-muted-foreground'
+                aria-hidden='true'
+                title={summary.label}
+                data-testid='agent-picker-model-summary'
+              >
+                · {summary.text}
+              </span>
+            ) : null}
           </>
         ) : avatarless ? (
           <span
@@ -513,7 +544,9 @@ export function AgentPicker({
         className={cn(
           models && 'flex flex-col overflow-hidden',
           toolbar
-            ? 'w-72 max-w-(--available-width)'
+            ? models?.renderSettings
+              ? 'w-max min-w-80 max-w-(--available-width)'
+              : 'w-72 max-w-(--available-width)'
             : 'w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width)',
         )}
       >
@@ -524,7 +557,7 @@ export function AgentPicker({
                 className='size-3.5 shrink-0 text-muted-foreground'
                 aria-hidden='true'
               />
-              <input
+              <Input
                 ref={searchRef}
                 type='search'
                 aria-label={words.search}
@@ -548,7 +581,7 @@ export function AgentPicker({
                     item?.focus();
                   }
                 }}
-                className='h-6 w-full min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50'
+                className='h-7 w-full min-w-0 rounded-sm border-0 bg-transparent px-0 py-0 text-base shadow-none outline-none md:text-xs dark:bg-transparent placeholder:text-muted-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50'
               />
             </div>
             <DropdownMenuSeparator className='shrink-0' />
@@ -602,36 +635,49 @@ export function AgentPicker({
                   >
                     {service.title}
                   </DropdownMenuLabel>
-                  {options.map(({ model, name: modelName }) => (
-                    <DropdownMenuItem
-                      key={JSON.stringify([service.name, model.value])}
-                      disabled={models.disabled ?? false}
-                      onClick={() =>
-                        models.onSelect({
-                          modelService: service.name,
-                          model: model.value,
-                        })
-                      }
-                      aria-label={`${modelName} ${service.title}`}
-                      data-model-service={service.name}
-                      data-model={model.value}
-                      className='pl-4'
-                    >
-                      <span
-                        className='min-w-0 flex-1 truncate'
-                        title={modelName}
+                  {options.map(({ model, name: modelName }) => {
+                    const ref = {
+                      modelService: service.name,
+                      model: model.value,
+                    };
+                    const selected =
+                      !bound &&
+                      selectedModel?.service.name === service.name &&
+                      selectedModel.model.value === model.value;
+                    const settings = models.renderSettings?.(ref);
+                    return (
+                      <div
+                        key={JSON.stringify([service.name, model.value])}
+                        data-model-option={model.value}
                       >
-                        {modelName}
-                      </span>
-                      <span className='inline-flex size-3.5 shrink-0 items-center justify-center'>
-                        {!bound &&
-                        selectedModel?.service.name === service.name &&
-                        selectedModel.model.value === model.value ? (
-                          <CheckIcon className='size-3.5' aria-hidden='true' />
-                        ) : null}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
+                        <DropdownMenuItem
+                          disabled={models.disabled ?? false}
+                          closeOnClick={!settings}
+                          onClick={() => models.onSelect(ref)}
+                          aria-label={`${modelName} ${service.title}`}
+                          data-model-service={service.name}
+                          data-model={model.value}
+                          className='pl-4'
+                        >
+                          <span
+                            className='min-w-0 flex-1 truncate'
+                            title={modelName}
+                          >
+                            {modelName}
+                          </span>
+                          <span className='inline-flex size-3.5 shrink-0 items-center justify-center'>
+                            {selected ? (
+                              <CheckIcon
+                                className='size-3.5'
+                                aria-hidden='true'
+                              />
+                            ) : null}
+                          </span>
+                        </DropdownMenuItem>
+                        {selected ? settings : null}
+                      </div>
+                    );
+                  })}
                 </DropdownMenuGroup>
               ))}
             </DropdownMenuGroup>

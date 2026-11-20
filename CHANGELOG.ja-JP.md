@@ -2,6 +2,47 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 新機能
+
+- **[Agent]** オンライン Agent のチャットで、どのオンラインモデルでもモデルの横から思考レベル（デフォルト、オフ、または最小から超高まで）を選べます。モデルがそのレベルに対応していない場合は会話に通知が表示されます。 ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent ランナー]** ランナーは、デプロイキーと確認済みのホスト鍵フィンガープリントを使って、SSH でリポジトリのチェックアウト、プッシュ、ビルドを実行できます。 ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[プラグインライフサイクル]** 管理者はライフサイクルインスタンスを一時停止、再開、リセット、再始動し、チケットのサンプルで操作履歴を確認できます。 ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 改善
+
+- **[Agent]** OpenCode と Pi のモデルをプロバイダー付きで表示し、実行が失敗したときにコーディングツールのメッセージを表示します。 ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 不具合修正
+
+- **[CLI]** ゲートウェイが同一オリジンにリダイレクトする環境で CLI とランナーのインストールに失敗する問題を修正 ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent ランナー]** 読み取り専用の実行では管理対象の SSH 接続で取得でき、プッシュはランナーによって拒否されます。 ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 新機能
+
+- **[CLI]** プラグインとその Skills を事前にインストールし、必要に応じてデプロイ対象に追加したり、登録解除やアンインストールを選択したりできます。 ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 改善
+
+- **[CLI]** `logs export` から `--issue` フィルターを削除しました。選択した日付の、選択したランナーのログをすべてエクスポートします。 ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[データベース]** 適用済みマイグレーションのソース欠落を既定で警告し、最新バッチのロールバック前に欠落または不可逆な対象をすべて表示します。 ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[ナレッジベース]**
+  - ナレッジ文書内のリンクは新しいタブで開くようになりました（同じページ内の見出しへのリンクを除く）。幅の広い表は列を詰めずに横スクロールします。 ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - ナレッジベースのファイル項目で、置換・ダウンロード・履歴をヘッダーにまとめ、Markdown を記事と同じ見た目でプレビューし、抽出テキストを行番号付きで表示して引用行を強調し、プレビューを全画面で開けるようにしました。 ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[プロジェクト]** プロジェクトのタスクとサブタスクの作成は手動フォームに統一され、操作プラン、要件整理ツール、それらのコマンドが廃止されます。 ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[アプリテンプレート]** 同じバージョンの Default または Examples テンプレートから作成したアプリは、直接依存する NocoBase パッケージに同じバージョンを使用します。 ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 不具合修正
+
+- **[Agent ランナー]** 非公開パッケージレジストリの認証エラー時に実行中の認証情報で再試行し、アプリ作成とテンプレートのダウンロードに対応します。 ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[データベース]** 空の日付・時刻の値はすべてのデータベースで空として読み込まれ、Oracle 互換モードの KingbaseES で不正な値 "Z" として失敗しなくなります。 ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[CLI]** 開発環境の実行時設定をデプロイ用アーカイブに含めず、パッケージ化に失敗した場合は以前のアーカイブを保持します。 ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[サーバー]** 埋め込みアプリの画面と API ドキュメントに正しいアプリ名とバージョンを表示します。 ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agent]** Codex が最新の使用状況を報告すると、実行環境に表示される使用枠から廃止された枠が消えます ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
 ## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
 
 ### 🎉 新機能

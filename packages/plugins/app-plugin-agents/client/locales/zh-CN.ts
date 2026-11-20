@@ -186,6 +186,7 @@ const zhCN: AgentsResource = {
       title: '编辑 {{name}}',
       enabled: '启用',
       done: '{{name}} 已保存',
+      model: '模型',
     },
     available: {
       open: '添加 Agent',

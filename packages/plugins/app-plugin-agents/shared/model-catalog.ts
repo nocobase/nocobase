@@ -132,8 +132,11 @@ export const MODEL_CATALOG: readonly CatalogModel[] = [
   },
 ];
 
-/** Whether a tool names models `provider/model`. */
-function providerQualified(tool: AgentTool): boolean {
+/**
+ * Whether a tool names models `provider/model` (OpenCode, Pi). The same model can be reached through two providers
+ * (`opencode/qwen3.8-flash` and `my-lan-gateway/qwen3.8-flash`) with different credentials, so labels keep the provider.
+ */
+export function providerQualified(tool: AgentTool): boolean {
   return tool === 'opencode' || tool === 'pi';
 }
 
@@ -180,20 +183,105 @@ export function catalogEntry(
   return catalogById(slash > 0 ? id.slice(slash + 1) : id);
 }
 
-/** How names show a tool's model: the catalog's label, else its id without the provider. */
+/** Abbreviations names write in capitals: `gpt-6.2-astra` reads "GPT-6.2 Astra". */
+const MODEL_ACRONYMS: ReadonlySet<string> = new Set([
+  'ai',
+  'api',
+  'glm',
+  'gpt',
+  'llm',
+  'oss',
+  'r1',
+  'vl',
+]);
+
+/** Brands written their own way, at the start of a word such as `qwen3.8` or `deepseek`. */
+const MODEL_BRANDS: Readonly<Record<string, string>> = {
+  chatglm: 'ChatGLM',
+  deepseek: 'DeepSeek',
+  gemini: 'Gemini',
+  gemma: 'Gemma',
+  kimi: 'Kimi',
+  llama: 'Llama',
+  minimax: 'MiniMax',
+  mistral: 'Mistral',
+  qwen: 'Qwen',
+  qwq: 'QwQ',
+};
+
+/** One word of a model id as a name shows it: `flash` "Flash", `qwen3.8` "Qwen3.8", `v4.1` "V4.1", `o3` "o3". */
+function modelWord(word: string): string {
+  const lower = word.toLowerCase();
+  if (MODEL_ACRONYMS.has(lower)) return lower.toUpperCase();
+  // A parameter count: `120b` reads "120B".
+  if (/^\d+(?:\.\d+)?[bkmt]$/u.test(lower)) return lower.toUpperCase();
+  const brand = /^([a-z]+)(.*)$/u.exec(lower);
+  if (brand && MODEL_BRANDS[brand[1]] && word === lower)
+    return `${MODEL_BRANDS[brand[1]]}${brand[2]}`;
+  // OpenAI's reasoning models are written in lower case, as the catalog writes `o1`.
+  if (/^o\d/u.test(word)) return word;
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/**
+ * A readable name for a model id the catalog does not know: the part after its last `/`, split at `-` and `_`, each
+ * word capitalized, abbreviations in capitals and versions written as the catalog writes them, so
+ * `my-lan-gateway/qwen3.8-flash` reads "Qwen3.8 Flash" and `gpt-6.2-astra` "GPT-6.2 Astra". A leading word naming the
+ * tool itself (`claude-…` under Claude) is dropped, since the agent's name says the tool, unless a version follows it. A word already written with
+ * capitals (`MiniMax-M2.7`) keeps them.
+ */
+export function readableModelName(tool: AgentTool, id: string): string {
+  const slash = id.lastIndexOf('/');
+  const words = (slash >= 0 ? id.slice(slash + 1) : id)
+    .split(/[-_]+/u)
+    .filter(Boolean);
+  // `claude-opus-9` under Claude reads "Opus 9", but `gemini-3.1-pro` keeps its brand before the version.
+  if (
+    words.length > 1 &&
+    words[0].toLowerCase() === tool &&
+    !/^\d/u.test(words[1])
+  )
+    words.shift();
+  let name = '';
+  words.forEach((word, index) => {
+    const previous = words[index - 1];
+    const shown = modelWord(word);
+    if (index === 0) name = shown;
+    // `gpt-6.2` is "GPT-6.2", `gpt-oss` "GPT-OSS" and `opus-4-7` "Opus 4.7": a version or another abbreviation keeps
+    // its hyphen after an abbreviation, and two numbers are joined by a dot.
+    else if (/^\d+$/u.test(word) && previous && /^\d+$/u.test(previous))
+      name += `.${shown}`;
+    else if (
+      (/^\d/u.test(word) || MODEL_ACRONYMS.has(word.toLowerCase())) &&
+      previous &&
+      MODEL_ACRONYMS.has(previous.toLowerCase())
+    )
+      name += `-${shown}`;
+    else name += ` ${shown}`;
+  });
+  return name || id;
+}
+
+/**
+ * How names show a tool's model: the catalog's label, else a readable name made from its id (`readableModelName`).
+ * For OpenCode and Pi the provider is left out (`my-lan-gateway/qwen3.8-flash` reads "Qwen3.8 Flash"); the whole id is
+ * shown beside the name (`agentModelOf`), and two providers' agents of one model are told apart by `uniqueAgentName`.
+ */
 export function modelLabel(tool: AgentTool, model: string): string {
-  if (!isNativeTool(tool)) return model;
+  // An ACP tool's id stays its identity (`normalizeModel` keeps it as reported); only its label is made readable.
+  if (!isNativeTool(tool))
+    return model ? readableModelName(tool, model) : model;
   const known = catalogEntry(tool, model);
   if (known) return known.label;
+  return readableModelName(tool, normalizeModel(tool, model));
+}
+
+/** The provider an OpenCode or Pi model is reached through (`my-lan-gateway`); null for other tools. */
+export function modelProvider(tool: AgentTool, model: string): string | null {
+  if (!providerQualified(tool)) return null;
   const id = normalizeModel(tool, model);
-  const slash = id.lastIndexOf('/');
-  const label = slash >= 0 ? id.slice(slash + 1) : id;
-  if (label.startsWith('gemini-'))
-    return label
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  return label;
+  const slash = id.indexOf('/');
+  return slash > 0 ? id.slice(0, slash) : null;
 }
 
 /**
@@ -220,12 +308,74 @@ export function agentNameOf(
   displayModel?: string,
 ): string {
   if (!model) return TOOL_DISPLAY_NAMES[tool] ?? tool;
+  // A tool's own display name is taken as it is for single-provider tools; OpenCode and Pi names are made from the
+  // id the same way for every provider, so `uniqueAgentName` can tell two providers' agents apart.
   const label = sanitizeAgentNamePart(
-    displayModel && displayModel !== model
+    displayModel && displayModel !== model && !providerQualified(tool)
       ? displayModel
       : modelLabel(tool, model),
   );
   return `${TOOL_LABELS[tool]} · ${label || model}`;
+}
+
+/**
+ * The name a new agent of a tool and model is saved with, given whether a name is already held by another agent:
+ * `agentNameOf`; when that is held, for OpenCode and Pi, the name with the model's provider after it
+ * ("OpenCode · Qwen3.8 Flash（my-lan-gateway）"); else the first free `#2`, `#3`… after one of them. Agents are not
+ * renamed afterwards, so two agents that already read the same are renamed by an administrator.
+ */
+export function uniqueAgentName(
+  tool: AgentTool,
+  model: string,
+  taken: (name: string) => boolean,
+  displayModel?: string,
+): string {
+  const base = agentNameOf(tool, model, displayModel);
+  if (!taken(base)) return base;
+  const provider = model ? modelProvider(tool, model) : null;
+  const named = provider
+    ? `${base}（${sanitizeAgentNamePart(provider)}）`
+    : base;
+  if (named !== base && !taken(named)) return named;
+  let suffix = 2;
+  while (taken(`${named} #${suffix}`)) suffix += 1;
+  return `${named} #${suffix}`;
+}
+
+/**
+ * What a page shows about an agent's model beside its name, for every tool.
+ *
+ * - `model`: the whole model id (`my-lan-gateway/qwen3.8-flash`, `claude-opus-5-5`), shown under the name or as its
+ *   "Model" line.
+ * - `shortName`: what a narrow place (a chip, a picker, a table column) shows, the name without its tool
+ *   ("Qwen3.8 Flash (my-lan-gateway)"); absent when the name does not start with the tool, such as an agent someone
+ *   renamed, which shows its own name.
+ * - `modelTitle`: what that place shows on hover, the tool and the whole id ("OpenCode · my-lan-gateway/qwen3.8-flash").
+ */
+export interface AgentModel {
+  readonly model?: string;
+  readonly shortName?: string;
+  readonly modelTitle?: string;
+}
+
+/** `AgentModel` of an agent by its saved name. */
+export function agentModelOf(agent: {
+  readonly name: string | null;
+  readonly tool: AgentTool | null;
+  readonly model: string | null;
+}): AgentModel {
+  if (!agent.tool || !agent.model) return {};
+  const model = normalizeModel(agent.tool, agent.model);
+  const prefix = `${TOOL_LABELS[agent.tool] ?? agent.tool} · `;
+  const shortName =
+    agent.name?.startsWith(prefix) && agent.name.length > prefix.length
+      ? agent.name.slice(prefix.length)
+      : undefined;
+  return {
+    model,
+    ...(shortName ? { shortName } : {}),
+    modelTitle: `${prefix}${model}`,
+  };
 }
 
 /** Whether two ids of one tool's model name the same model. */

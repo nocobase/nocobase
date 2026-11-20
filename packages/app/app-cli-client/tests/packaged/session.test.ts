@@ -33,14 +33,14 @@ const COMMANDS: CliCommand[] = [
     examples: ['issue get PM-12'],
   },
   {
-    id: 'plan:undo',
-    summary: 'Undo a plan.',
+    id: 'issue:archive',
+    summary: 'Archive an issue.',
     method: 'POST',
-    path: '/api/projects/plans/{planId}/undo',
+    path: '/api/projects/issues/{issueId}/archive',
     parameters: [
       {
-        name: 'plan',
-        field: 'planId',
+        name: 'issue',
+        field: 'issueId',
         in: 'path',
         position: 0,
         type: 'string',
@@ -56,7 +56,7 @@ const COMMANDS: CliCommand[] = [
     ],
     body: { media: 'application/json' },
     output: { kind: 'data' },
-    confirm: 'Undo the plan?',
+    confirm: 'Archive the issue?',
     identities: ['person'],
   },
 ];
@@ -376,15 +376,15 @@ describe('signing in, profiles and the global flags', () => {
 
   it('passes --dry-run to a command that has one, refuses it elsewhere, and keeps -q quiet', async () => {
     await login();
-    const undo = await cli(
-      ['plan', 'undo', 'p1', '--dry-run', '--yes', '--json'],
+    const archive = await cli(
+      ['issue', 'archive', 'PM-1', '--dry-run', '--yes', '--json'],
       env,
       { cwd: home },
     );
-    expect(json(undo.stdout).status).toBe('success-noop');
+    expect(json(archive.stdout).status).toBe('success-noop');
     expect(server.seen.at(-1)).toMatchObject({
       method: 'POST',
-      path: '/api/projects/plans/p1/undo',
+      path: '/api/projects/issues/PM-1/archive',
       body: { dryRun: true },
     });
     const refused = await cli(
@@ -433,6 +433,6 @@ describe('signing in, profiles and the global flags', () => {
     });
     const overview = await cli(['docs'], env, { cwd: home });
     expect(overview.stdout).toContain('GLOBAL FLAGS');
-    expect(overview.stdout).toMatch(/issue\s+1 command/u);
+    expect(overview.stdout).toMatch(/issue\s+2 commands/u);
   });
 });

@@ -362,7 +362,7 @@ function formatReferenceError(packageName, references) {
         return app === '.'
           ? []
           : [
-              `  pnpm nocobase plugin unregister ${shortName} --workspace-root . --app ${app}`,
+              `  pnpm nocobase plugin remove ${shortName} --workspace-root . --app ${app}`,
             ];
       }),
     ),
@@ -550,7 +550,7 @@ function unregisterSuggestions(packageName, references) {
     if (app === '.') continue;
     const suggestion = {
       command: 'pnpm',
-      args: ['plugin:unregister', shortName, '--app', app],
+      args: ['plugin:remove', shortName, '--app', app],
     };
     suggestions.set(JSON.stringify(suggestion), suggestion);
   }

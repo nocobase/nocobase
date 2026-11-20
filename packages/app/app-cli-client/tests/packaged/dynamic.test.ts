@@ -447,9 +447,15 @@ class ManifestServer {
         const body = seen.json as { content?: string };
         if (body.content === 'conflict')
           return c.json(
-            failure('PLAN_REQUIRED', 'FAILED_PRECONDITION', 400, 'Plan.', {
-              reasons: ['quota'],
-            }),
+            failure(
+              'ISSUE_CLOSED',
+              'FAILED_PRECONDITION',
+              400,
+              'Issue closed.',
+              {
+                reasons: ['closed'],
+              },
+            ),
             400,
           );
         if (body.content === 'refused')
@@ -835,22 +841,22 @@ describe('business commands from the manifest', () => {
   });
 
   it('answers a refusal in the envelope with its reason, and exits with its code', async () => {
-    const plan = await cli(
+    const conflict = await cli(
       ['issue', 'comment', 'add', 'PM-1', '--content', 'conflict', '--json'],
       env,
     );
-    expect(plan.code).toBe(7);
-    expect(JSON.parse(plan.stdout)).toMatchObject({
+    expect(conflict.code).toBe(6);
+    expect(JSON.parse(conflict.stdout)).toMatchObject({
       ok: false,
       command: 'issue comment add',
       status: 'failure',
       error: {
-        code: 'PLAN_REQUIRED',
-        message: 'Plan.',
+        code: 'ISSUE_CLOSED',
+        message: 'Issue closed.',
         details: {
           httpStatus: 400,
           status: 'FAILED_PRECONDITION',
-          metadata: { reasons: ['quota'] },
+          metadata: { reasons: ['closed'] },
         },
       },
     });

@@ -42,11 +42,7 @@ import type {
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
-import type {
-  AgentStatus,
-  ConfirmChanges,
-  RunnerModelEntry,
-} from '../shared/agents.js';
+import type { AgentStatus, RunnerModelEntry } from '../shared/agents.js';
 import { agentsRepo } from '../server/core/agents/agent.store.js';
 import { replaceAttachments } from '../server/core/skills/skill.store.js';
 
@@ -58,7 +54,6 @@ export interface TestAgentInput {
   readonly modelEntries?: readonly RunnerModelEntry[];
   readonly instructions?: string | null;
   readonly actions?: readonly string[];
-  readonly confirmChanges?: ConfirmChanges;
   readonly skillIds?: readonly string[];
   readonly maxConcurrentRuns?: number;
   readonly maxAttempts?: number;
@@ -629,7 +624,6 @@ export async function createHarness(
             maxConcurrentRuns: input.maxConcurrentRuns ?? 2,
             maxAttempts: input.maxAttempts ?? 3,
             toolPolicy: input.toolPolicy ?? null,
-            confirmChanges: input.confirmChanges ?? 'larger',
             ...(input.status ? { status: input.status } : {}),
             ...(input.source === 'runner'
               ? {

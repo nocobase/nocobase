@@ -193,6 +193,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       enabled: 'Habilitado',
       done: '{{name}} salvo',
+      model: 'Modelo',
     },
     available: {
       open: 'Adicionar Agent',
@@ -994,6 +995,23 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Padrão',
+        none: 'Desativado',
+        minimal: 'Mínimo',
+        low: 'Baixo',
+        medium: 'Médio',
+        high: 'Alto',
+        xhigh: 'Muito alto',
+      },
+      adjusted:
+        'Este modelo não aceita o nível de raciocínio "{{requested}}"; nesta resposta foi usado "{{used}}".',
+      adjustedToDefault:
+        'Este modelo não aceita o nível de raciocínio "{{requested}}"; nesta resposta foi usado o padrão do provedor.',
+      warning:
+        'O modelo pode não ter aplicado o nível de raciocínio "{{level}}" nesta resposta.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'A execução falhou. Revise a conversa salva antes de tentar de novo.',

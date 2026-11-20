@@ -51,7 +51,6 @@ import {
   AGENT_SOURCES,
   AGENT_STATUSES,
   AGENT_UNUSABLE_REASONS,
-  CONFIRM_CHANGES,
   MODEL_AVAILABILITY_STATUSES,
   type Agent,
   type AgentActionOption,
@@ -686,7 +685,6 @@ const agentObject = z.object({
   }),
   instructions: z.string().nullable(),
   actions: z.array(z.string()),
-  confirmChanges: z.enum(CONFIRM_CHANGES),
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
@@ -1689,6 +1687,24 @@ const conversationAgent = z.object({
   nameText: I18nTextSchema.nullable(),
   avatar: z.string().nullable(),
   archived: z.boolean(),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
+    ),
+  shortName: z
+    .string()
+    .optional()
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 const availability = z.object({
@@ -1834,7 +1850,6 @@ const notice = z.discriminatedUnion('code', [
     usage: z
       .object({ inputTokens: z.number(), outputTokens: z.number() })
       .nullable(),
-    plans: z.number().int(),
   }),
 ]);
 
@@ -1954,6 +1969,24 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
   }),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
+    ),
+  shortName: z
+    .string()
+    .optional()
+    .describe(
+      'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+    ),
+  modelTitle: z
+    .string()
+    .optional()
+    .describe(
+      'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+    ),
 });
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
@@ -2285,8 +2318,33 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .nullable()
       .optional()
       .describe('Terminal failure classification, including toolQuota.'),
+    failureDetail: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'What the tool said when the run failed: one redacted line of at most 300 characters; only for failed runs whose task or conversation the viewer can see.',
+      ),
     id: z.string(),
     title: z.string(),
+    model: z
+      .string()
+      .optional()
+      .describe(
+        'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
+      ),
+    shortName: z
+      .string()
+      .optional()
+      .describe(
+        'Its name without its tool, for a narrow place; OpenCode and Pi only.',
+      ),
+    modelTitle: z
+      .string()
+      .optional()
+      .describe(
+        'Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only.',
+      ),
     status: RunStatusSchema,
     startedAt: dateTime.nullable(),
     finishedAt: dateTime.nullable(),

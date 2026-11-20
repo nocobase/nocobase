@@ -129,11 +129,11 @@ describe('chat attachments', () => {
     const agentId = await h.createAgent();
     const file = await uploaded(ALICE, 'screen.png', PNG, 'image/png');
     h.services.conversations.sources.register({
-      key: 'intake',
-      title: { key: 'intake', ns: 'test' },
+      key: 'workspace',
+      title: { key: 'workspace', ns: 'test' },
     });
     const started = await h.services.conversations.start(ALICE, {
-      source: 'intake',
+      source: 'workspace',
       agentId,
       text: 'Read the image',
       attachmentIds: [file.id],

@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.34
+
+### Minor Changes
+
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+
+### Patch Changes
+
+- Updated dependencies [e830c36]
+- Updated dependencies [b737800]
+- Updated dependencies [a727ebe]
+- Updated dependencies [b83a645]
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
 ## 0.1.0-beta.33
 
 ### Patch Changes

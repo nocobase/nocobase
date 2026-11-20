@@ -195,6 +195,7 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Modifier {{name}}',
       enabled: 'Activé',
       done: '{{name}} enregistré',
+      model: 'Modèle',
     },
     available: {
       open: 'Ajouter un Agent',
@@ -998,6 +999,23 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Par défaut',
+        none: 'Désactivé',
+        minimal: 'Minimal',
+        low: 'Faible',
+        medium: 'Moyen',
+        high: 'Élevé',
+        xhigh: 'Très élevé',
+      },
+      adjusted:
+        'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé « {{used}} ».',
+      adjustedToDefault:
+        'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé la valeur par défaut du fournisseur.',
+      warning:
+        'Le modèle n’a peut-être pas appliqué le niveau de réflexion « {{level}} » à cette réponse.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'L’exécution a échoué. Relisez la conversation enregistrée avant de réessayer.',

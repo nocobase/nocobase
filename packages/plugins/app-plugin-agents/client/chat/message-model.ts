@@ -1,5 +1,6 @@
 /** UIMessage reconciliation at the durable-history boundary. SDK Chat owns the active messages. */
 import { isFileInputFailureReason } from '../../shared/file-input-failures.js';
+import { isReasoningLevel } from '../../shared/models.js';
 import type { ConsultationIdentity } from './consultation-identity.js';
 import type { RunEvent } from '@nocobase/agent-protocol';
 import type {
@@ -498,6 +499,21 @@ export function noticeText(
         );
       if (notice.type === 'failed' && notice.title === 'Interrupted')
         return t('chat.executionFailed');
+      if (notice.type === 'thinkingAdjusted' && notice.params?.requested) {
+        const used = notice.params.used ?? 'default';
+        return used === 'default'
+          ? t('chat.thinking.adjustedToDefault', {
+              requested: thinkingLevelText(notice.params.requested, t),
+            })
+          : t('chat.thinking.adjusted', {
+              requested: thinkingLevelText(notice.params.requested, t),
+              used: thinkingLevelText(used, t),
+            });
+      }
+      if (notice.type === 'thinkingWarning' && notice.params?.level)
+        return t('chat.thinking.warning', {
+          level: thinkingLevelText(notice.params.level, t),
+        });
       return notice.title;
     }
     case 'consultation':
@@ -522,4 +538,9 @@ export function noticeText(
     default:
       return fallback;
   }
+}
+
+/** A thinking level as the chat names it (`chat.thinking.levels.<level>`); one that is not a standard level, as it is. */
+export function thinkingLevelText(level: string, t: Translate): string {
+  return isReasoningLevel(level) ? t(`chat.thinking.levels.${level}`) : level;
 }

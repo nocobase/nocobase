@@ -1,6 +1,5 @@
 import accessZhCN from '../../shared/locales/access.zh-CN.js';
 import type { ProjectsResource } from './en-US.js';
-import plansZhCN from './plans.zh-CN.js';
 
 const pages = {
   actions: {
@@ -275,14 +274,6 @@ const pages = {
     INVALID_STAGE: '请输入 0 到 1000 的整数，或留空。',
     ISSUE_BLOCKED: '任务还在等待阻塞它的任务。',
     SUBTASKS_OPEN: '请先完成或取消它的子任务。',
-    PLAN_INVALID: '计划中有些改动没有通过。',
-    PLAN_NOT_OPEN: '计划已不在等待确认。',
-    PLAN_EXPIRED: '计划已过期。',
-    UNDO_EXPIRED: '计划已超过可撤销的时间。',
-    NOTHING_TO_UNDO: '计划做的改动之后都被改过，没有可撤销的内容。',
-    INVALID_INTAKE: '请填写文字或添加文件，并且不要超过上限。',
-    AI_UNAVAILABLE: 'AI 当前不可用。',
-    INTAKE_JOB_CLOSED: '这次 AI 请求已经结束。',
     INVALID_FILE: '有文件不是你上传的。',
     FILE_TOO_LARGE: '文件太大。',
     FILES_UNAVAILABLE: '这个应用没有配置文件存储。',
@@ -485,8 +476,6 @@ const pages = {
     settings: '设置',
   },
   newIssue: {
-    tabs: { ai: 'AI 整理', manual: '手动' },
-    tabsLabel: '创建方式',
     title: '新建任务',
   },
   pagination: {
@@ -802,8 +791,6 @@ const pages = {
     loadFailed: '无法加载设置',
   },
   subtasks: {
-    aiIntro:
-      'AI 会阅读这个任务并起草子任务。你可以检查和修改草稿，确认后才会创建。',
     blockedByHint: '这些任务完成或取消之前，它不会开始。',
     blockedByLabel: '等待',
     blockedByPlaceholder: '选择同级子任务',
@@ -818,7 +805,6 @@ const pages = {
     stageHint: '可选。数字小的阶段先执行。',
     stageInvalid: '请输入 0 到 1000 的整数，或留空。',
     stageLabel: '阶段',
-    tabs: { ai: 'AI 拆解', manual: '手动' },
     title: '子任务',
     waiting_one: '等待 {{count}} 项前置',
     waiting_other: '等待 {{count}} 项前置',
@@ -876,7 +862,6 @@ const pages = {
 
 const zhCN: ProjectsResource = {
   ...pages,
-  ...plansZhCN,
   access: accessZhCN.access,
   roles: { ...pages.roles, ...accessZhCN.roles },
 };

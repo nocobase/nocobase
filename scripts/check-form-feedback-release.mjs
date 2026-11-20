@@ -56,13 +56,19 @@ function exportedNames(file) {
   );
 }
 
-function checkRuntimePackage(directory, requiredValues, requiredTypes) {
+function checkRuntimePackage(
+  directory,
+  requiredValues,
+  requiredTypes,
+  subpath = '.',
+) {
   const manifest = JSON.parse(
     fs.readFileSync(path.join(directory, 'package.json'), 'utf8'),
   );
-  const entry = manifest.exports?.['.'];
-  const runtime = entry?.import ?? manifest.main;
-  const declarations = entry?.types ?? manifest.types;
+  const entry = manifest.exports?.[subpath];
+  const runtime = entry?.import ?? (subpath === '.' ? manifest.main : null);
+  const declarations =
+    entry?.types ?? (subpath === '.' ? manifest.types : null);
   if (!runtime || !declarations)
     throw new Error(
       'The runtime package must publish JavaScript and declarations.',
@@ -101,19 +107,49 @@ export function checkAvatarInitialsPackage(directory) {
   );
 }
 
-export function runtimeFloor(registry, itemName = 'feedback-form') {
+/** The exports the agents Registry items import from the agents plugin, by the subpath they import them from. */
+const AGENTS_EXPORTS = [
+  [
+    './shared/models',
+    ['REASONING_LEVELS', 'isReasoningLevel'],
+    ['ReasoningLevel'],
+  ],
+  [
+    './client/chat',
+    ['useThinkingMemory', 'shownThinking', 'thinkingLevelText'],
+    [],
+  ],
+];
+
+export function checkAgentsPluginPackage(directory) {
+  let version;
+  for (const [subpath, requiredValues, requiredTypes] of AGENTS_EXPORTS)
+    version = checkRuntimePackage(
+      directory,
+      requiredValues,
+      requiredTypes,
+      subpath,
+    );
+  return version;
+}
+
+export function runtimeFloor(
+  registry,
+  itemName = 'feedback-form',
+  packageName = '@nocobase/app-client',
+) {
   const item = registry.items.find((entry) => entry.name === itemName);
   const spec = item?.dependencies?.find((value) =>
-    value.startsWith('@nocobase/app-client@'),
+    value.startsWith(`${packageName}@`),
   );
-  const range = spec?.slice('@nocobase/app-client@'.length);
+  const range = spec?.slice(`${packageName}@`.length);
   // Fail closed for unions or ranges whose minimum has not been explicitly checked.
   const floor = range?.match(
     /^(?:\^|~)?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/,
   )?.[1];
   if (!floor)
     throw new Error(
-      `${itemName} must declare a single exact, caret or tilde app-client version floor.`,
+      `${itemName} must declare a single exact, caret or tilde ${packageName.replace('@nocobase/', '')} version floor.`,
     );
   return floor;
 }
@@ -150,25 +186,50 @@ export function checkRelease(
       'utf8',
     ),
   ),
+  agentsRegistry = JSON.parse(
+    fs.readFileSync(
+      path.join(repo, 'ui-library/registry/agents/registry.json'),
+      'utf8',
+    ),
+  ),
 ) {
   const work = fs.mkdtempSync(
     path.join(os.tmpdir(), 'registry-runtime-release-'),
   );
   try {
-    for (const [itemName, checkPackage] of [
-      ['feedback-form', checkFormFeedbackPackage],
-      ['property-fields', checkAvatarInitialsPackage],
-      ['loading', checkPendingFeedbackPackage],
-      ['pending-button', checkPendingFeedbackPackage],
-    ]) {
-      const floor = runtimeFloor(registry, itemName);
+    for (const [itemName, checkPackage, source, packageName] of [
+      ['feedback-form', checkFormFeedbackPackage, registry],
+      ['property-fields', checkAvatarInitialsPackage, registry],
+      ['loading', checkPendingFeedbackPackage, registry],
+      ['pending-button', checkPendingFeedbackPackage, registry],
+      // The thinking level menu imports these plugin exports.
+      [
+        'agent-picker',
+        checkAgentsPluginPackage,
+        agentsRegistry,
+        '@nocobase/app-plugin-agents',
+      ],
+      [
+        'agent-chat',
+        checkAgentsPluginPackage,
+        agentsRegistry,
+        '@nocobase/app-plugin-agents',
+      ],
+    ].filter(
+      // The components are required; an agents registry without these items has nothing to check.
+      ([itemName, , source]) =>
+        source === registry ||
+        source.items.some((entry) => entry.name === itemName),
+    )) {
+      const runtimePackage = packageName ?? '@nocobase/app-client';
+      const floor = runtimeFloor(source, itemName, runtimePackage);
       const itemWork = path.join(work, itemName);
       fs.mkdirSync(itemWork);
       try {
         const [packed] = JSON.parse(
           run('npm', [
             'pack',
-            `@nocobase/app-client@${floor}`,
+            `${runtimePackage}@${floor}`,
             `--registry=${registryUrl}`,
             '--ignore-scripts',
             '--json',
@@ -199,11 +260,11 @@ export function checkRelease(
             'The downloaded runtime does not match the declared floor.',
           );
         console.log(
-          `${itemName} registry release allowed: @nocobase/app-client@${version} (${packed.integrity}).`,
+          `${itemName} registry release allowed: ${runtimePackage}@${version} (${packed.integrity}).`,
         );
       } catch (error) {
         throw new Error(
-          `${itemName} requires a published @nocobase/app-client@${floor}: ${error.message}`,
+          `${itemName} requires a published ${runtimePackage}@${floor}: ${error.message}`,
           { cause: error },
         );
       }

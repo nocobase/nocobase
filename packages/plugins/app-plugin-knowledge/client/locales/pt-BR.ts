@@ -222,7 +222,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       count_other: 'Documentos {{count}}',
       archivedCount_one: 'Documento arquivado {{count}}',
       archivedCount_other: 'Documentos arquivados {{count}}',
-      selectTarget: 'Abrir {{title}}',
       target: 'Criar em {{title}}',
       chooseTarget:
         'Escolha um projeto ou conhecimento do sistema para criar em',
@@ -335,6 +334,19 @@ const ptBR: LocaleResource<typeof enUS> = {
       uploaded_other:
         'Arquivos {{count}} carregados; seu texto está sendo extraído.',
       download: 'Baixar',
+      fullscreen: 'Tela cheia',
+      close: 'Fechar',
+      olderVersion: 'Versão {{version}} (versão anterior)',
+      textHint_one:
+        'A busca e as respostas da IA usam exatamente este texto · {{count}} linha',
+      textHint_other:
+        'A busca e as respostas da IA usam exatamente este texto · {{count}} linhas',
+      textHint_many:
+        'A busca e as respostas da IA usam exatamente este texto · {{count}} linhas',
+      copy: 'Copiar',
+      copied: 'Copiado.',
+      copyFailed:
+        'Não é possível copiar automaticamente aqui; selecione o texto e copie-o você mesmo.',
       version: 'Versão {{version}}',
       statusHint: {
         parsing:
@@ -419,6 +431,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       contents: 'Conteúdo',
       edit: 'Editar',
       rename: 'Renomear',
+      properties: 'Propriedades e resumo',
       history: 'História',
       verify: 'Marca verificada',
       verifiedToast: 'Marcado como verificado.',

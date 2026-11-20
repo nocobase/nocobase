@@ -2,6 +2,47 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 New Features
+
+- **[Agents]** Choose how hard an online agent thinks (default, off, or minimal to extra high) beside the model in the chat, for any online model, with a notice in the conversation when the model does not support the level. ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent runner]** Runners can check out, push and build SSH repositories with deployment keys and verified host fingerprints. ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[Plugin lifecycle]** Administrators can suspend, resume, reset, or restart a lifecycle instance and review the changes in the ticket example. ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 Improvements
+
+- **[Agents]** Show OpenCode and Pi models with their provider, and show what the coding tool said when a run fails. ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 Bug Fixes
+
+- **[CLI]** Fixed CLI and runner installation behind gateways that redirect requests to the same origin ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent runner]** Read-only runs can fetch over managed SSH, and the runner rejects pushes through that connection. ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
+## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
+
+### 🎉 New Features
+
+- **[CLI]** Preinstall plugins with their Skills, enable them for deployment, and use separate commands to unregister or uninstall them. ([#11612](https://github.com/nocobase/nocobase/pull/11612))
+
+### 🚀 Improvements
+
+- **[CLI]** `logs export` no longer has an `--issue` filter; exports cover the selected dates for every chosen runner. ([#11594](https://github.com/nocobase/nocobase/pull/11594))
+- **[Database]** Warn by default when applied migration sources are missing and report every missing or irreversible target before rolling back the latest batch. ([#11595](https://github.com/nocobase/nocobase/pull/11595))
+- **[Knowledge base]**
+  - Links in knowledge documents now open in a new tab, except links to a heading on the same page, and wide tables scroll sideways instead of squeezing columns. ([#11598](https://github.com/nocobase/nocobase/pull/11598))
+  - Knowledge base file entries gather Replace, Download and History in their header, preview Markdown like articles, show the extracted text with line numbers and highlighted citations, and open previews in full screen. ([#11601](https://github.com/nocobase/nocobase/pull/11601))
+- **[Projects]** Projects uses manual task and subtask forms and retires operation plans and intake tools, including their CLI commands. ([#11604](https://github.com/nocobase/nocobase/pull/11604))
+- **[App templates]** Applications created from the same Default or Examples release now install the same direct NocoBase package versions. ([#11613](https://github.com/nocobase/nocobase/pull/11613))
+
+### 🐛 Bug Fixes
+
+- **[Agent runner]** Retry private package registry authorization failures with the run's credentials and support application creation and template downloads. ([#11584](https://github.com/nocobase/nocobase/pull/11584))
+- **[Database]** Empty date and time values read back as empty on every database, instead of failing as the invalid value "Z" on KingbaseES in Oracle-compatible mode. ([#11597](https://github.com/nocobase/nocobase/pull/11597))
+- **[CLI]** Keep development runtime configuration out of deployment archives and preserve the previous archive when packing fails. ([#11600](https://github.com/nocobase/nocobase/pull/11600))
+- **[Server]** Show the correct application name and version in embedded application pages and API documentation. ([#11608](https://github.com/nocobase/nocobase/pull/11608))
+- **[Agents]** Remove retired quota windows from runtime usage when Codex reports its current set of windows ([#11609](https://github.com/nocobase/nocobase/pull/11609))
+
 ## [nocobase-v3-beta/2026-11-17.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-17.2)
 
 ### 🎉 New Features

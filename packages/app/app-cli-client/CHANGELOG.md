@@ -1,5 +1,23 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- Updated dependencies [188e419]
+  - @nocobase/agent-protocol@0.1.0-beta.22
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- b6d6ca0: Remove the `--issue` flag from `logs export`; log exports no longer filter runner logs by issue.
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+- Updated dependencies [848e4db]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+
 ## 0.1.0-beta.23
 
 ### Minor Changes

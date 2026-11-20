@@ -76,6 +76,8 @@ export interface PluginInspectResult {
     readonly range: string | undefined;
   };
   readonly registration: { readonly enabled: boolean };
+  readonly state:
+    'absent' | 'preinstalled' | 'registered' | 'unregistered' | 'inconsistent';
   readonly composition: {
     readonly client: PluginInspectComposition;
     readonly server: PluginInspectComposition;
@@ -199,6 +201,13 @@ async function inspectPlugin(
   const server = await inspectComposition(appRoot, packageName, 'server');
   const cli = await inspectComposition(appRoot, packageName, 'cli');
   const enabled = client.registered || server.registered || cli.registered;
+  if (enabled && dependencyField === 'devDependencies')
+    issues.push({
+      code: 'REGISTERED_DEV_DEPENDENCY',
+      severity: 'error',
+      message:
+        'Run plugin register to include this registered plugin in deployment dependencies.',
+    });
   if (client.registered && !clientExport)
     issues.push({
       code: 'CLIENT_ENTRY_UNEXPECTED',
@@ -254,6 +263,16 @@ async function inspectPlugin(
       },
     },
     dependency: { field: dependencyField, range: dependencyRange },
+    state:
+      !pluginDirectory && !dependencyField && !enabled
+        ? 'absent'
+        : issues.some((issue) => issue.severity === 'error')
+          ? 'inconsistent'
+          : enabled
+            ? 'registered'
+            : dependencyField === 'devDependencies'
+              ? 'preinstalled'
+              : 'unregistered',
     registration: { enabled },
     composition: {
       client,
@@ -386,7 +405,7 @@ function suggestionFor(
   target: readonly string[],
 ): PluginInspectSuggestion {
   const shortName = packageName.replace('@nocobase/app-plugin-', '');
-  if (code === 'PLUGIN_NOT_INSTALLED')
+  if (code === 'PLUGIN_NOT_INSTALLED' || code === 'REGISTERED_DEV_DEPENDENCY')
     return {
       command: 'pnpm',
       args: ['nocobase', 'plugin', 'register', shortName, ...target],

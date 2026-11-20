@@ -48,7 +48,7 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 - Installs to: `client/components/agent-picker.tsx`
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Example: `@nocobase/agent-picker-demo` (`pnpm exec shadcn view @nocobase/agent-picker-demo`)
-- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, AgentTags and AgentTag. Every word comes from the labels prop, English by default.
+- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, AgentTags and AgentTag. Every word comes from the labels prop, English by default. With models, renderSettings(model) adds inline controls below the selected model's row (keeping the menu open on selection) and summary() shows a short text, such as the thinking level, beside the model's name.
 
 ### agent-chat
 
@@ -521,18 +521,6 @@ A project's page as presentational parts: the header with progress, the overview
 - Also installs: `@nocobase/issue-table`, `@nocobase/property-fields`, `@nocobase/rich-text-editor`, `@nocobase/markdown-view`
 - Example: `@nocobase/project-detail-demo` (`pnpm exec shadcn view @nocobase/project-detail-demo`)
 - After installing: Compose the page from the parts with your own tabs and sections between them; lay the properties out with property-fields. Every part takes data through props and performs changes through callbacks (promises it waits for); feed them from @nocobase/app-plugin-projects/client/projects. Links go through the link renderer. Build ProjectDetailLabels from your locale resources.
-
-### plan-card
-
-An operation plan of @nocobase/app-plugin-projects as a card: the issues it is about, its changes row by row with whom each wakes and what it risks, execute with a second confirmation for risky rows, void, check again, undo within the window after a preview, and an in-place editor of an open plan's rows over property-fields; a frame prop lays its parts out under a header of the caller's, such as an inbox detail pane's. Use it wherever an agent's or a status rule's plan is reviewed and decided, such as a chat timeline, an inbox or a plan page. Wired: reads and acts through the plugin's headless hooks in /client/kit and its pure plan rules in /client/plan-model.
-
-- Kind: block
-- Install: `yes n | pnpm exec shadcn add @nocobase/plan-card`
-- Installs to: `client/extensions/nocobase-plan-card/`
-- Plugin dependencies: `@nocobase/app-plugin-projects`
-- Also installs: `@nocobase/property-fields`, `@nocobase/markdown-view`
-- Example: `@nocobase/plan-card-demo` (`pnpm exec shadcn view @nocobase/plan-card-demo`)
-- After installing: Requires @nocobase/app-plugin-projects registered on the server and client, a router, and a QueryClientProvider with the application client's cache (which the plugin's plan announcements refresh) above the card. Render <PlanCard planId={id} /> from plan-card.tsx; it links the issues the plan is about under its title, firstIssueId (the issue it was opened from) first, and issueHref decides where each goes. Links go to the plugin's routes (/issues/plans/:id, /issues/:id, /projects/:id) unless the caller gives its own. Optionally provide PlanWordingContext from @nocobase/app-plugin-projects/client/kit to word plans another plugin proposed, and spread locales/ into client/locales/.
 
 ## Route overlays
 

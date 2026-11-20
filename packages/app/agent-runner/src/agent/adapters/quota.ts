@@ -71,12 +71,15 @@ export function codexQuota(
 ): QuotaReport | undefined {
   const limits = object(value);
   let windows: QuotaWindow[] = [];
+  let replacesUsage =
+    !exhausted && (limits.limitId == null || limits.limitId === 'codex');
   for (const key of ['primary', 'secondary']) {
     const item = object(limits[key]);
     const usedPercent =
       typeof item.usedPercent === 'number' && Number.isFinite(item.usedPercent)
         ? Math.min(100, Math.max(0, item.usedPercent))
         : undefined;
+    if (limits[key] != null && usedPercent === undefined) replacesUsage = false;
     if (usedPercent === undefined && !reset(item.resetsAt)) continue;
     windows.push({
       window:
@@ -120,5 +123,7 @@ export function codexQuota(
         window.exhausted ? { ...window, resetsAt: errorReset } : window,
       );
   }
-  return windows.length ? { windows } : undefined;
+  return windows.length
+    ? { windows, ...(replacesUsage ? { replacesUsage: true } : {}) }
+    : undefined;
 }

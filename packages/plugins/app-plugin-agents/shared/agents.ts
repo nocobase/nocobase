@@ -36,11 +36,6 @@ export type AgentStatus = (typeof AGENT_STATUSES)[number];
 /** How long a tool and model may go unreported by every runner before its agent shows as having no runner. */
 export const AGENT_UNREPORTED_AFTER_MS: number = 14 * 24 * 60 * 60_000;
 
-/** When in a conversation an agent asks before changing data: every change, or only larger ones. */
-export const CONFIRM_CHANGES = ['always', 'larger'] as const;
-
-export type ConfirmChanges = (typeof CONFIRM_CHANGES)[number];
-
 /**
  * An entry of an agent's list: a coding tool, its model (null: the tool's default) and its reasoning effort, one of the
  * tool's (`TOOL_EFFORTS`; null or absent: the tool's default).
@@ -98,8 +93,6 @@ export interface Agent {
   readonly instructions: string | null;
   /** Business action keys the agent may perform, within what the person who woke it may do. */
   readonly actions: readonly string[];
-  /** In conversations: whether it asks before every change or only before larger ones. */
-  readonly confirmChanges: ConfirmChanges;
   readonly maxConcurrentRuns: number;
   readonly maxAttempts: number;
   /** Overrides of the default tool policy (`DEFAULT_TOOL_POLICY`). */

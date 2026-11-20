@@ -22,6 +22,7 @@ import {
   appUIMessageMetadataSchema,
   appUIToolApprovalInputSchema,
 } from '../../shared/online-agent.js';
+import { REASONING_LEVELS } from '../../shared/models.js';
 import { cleanTitle } from '../core/conversations/titles.js';
 import { jsonSafe } from '../online/agent/messages/json.js';
 import { bodyLimit } from 'hono/body-limit';
@@ -86,7 +87,12 @@ const MessagePosition = z.object({ before: z.number().int().min(1) });
 const ConfigInput = z.strictObject({
   agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
-  thinking: z.string().optional(),
+  thinking: z
+    .enum(REASONING_LEVELS)
+    .optional()
+    .describe(
+      'The thinking level, passed to the AI SDK unchanged; omitted keeps the current one.',
+    ),
   webSearch: z.boolean().optional(),
   context: z
     .strictObject({

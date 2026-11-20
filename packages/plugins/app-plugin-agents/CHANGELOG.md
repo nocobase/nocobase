@@ -1,5 +1,50 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.18
+
+### Minor Changes
+
+- 2c66475: Let native online agent conversations choose a thinking level (the AI SDK's seven reasoning levels: provider default, none, minimal, low, medium, high or extra high) for any online chat model, passed to the provider through the AI SDK, with a notice in the conversation when the model reports it does not support the level, and a thinking level menu beside the model choice in the Examples chat and the UI Library agent-chat block.
+- 39f8245: Name agents of a model the catalog does not know readably for every tool (`my-lan-gateway/qwen3.8-flash` → "OpenCode · Qwen3.8 Flash"), and save a new agent whose name another agent holds with its provider after the name ("OpenCode · Qwen3.8 Flash（opencode）") instead of `#2`; existing agents keep their names. Show every agent's whole model id in the agent list, the edit dialog and conversation details, and its name without the tool, with the whole id on hover, in chips, pickers and the runtime's runs. Show what the coding tool said when a run failed as one line of at most 300 characters, under the runtime's recent runs to people who may read the run's task or conversation; add `failureDetail` to that list and `model`, `shortName` and `modelTitle` to conversation agents. A failed run's message has keys, credentials, labelled and quoted values and long random strings removed when it is stored and again when it is read. OpenCode reports only its own error message as the failure; the stderr tail goes to the runner's log.
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
+### Patch Changes
+
+- Updated dependencies [88bb385]
+- Updated dependencies [188e419]
+  - @nocobase/app-cli-distribution@0.1.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.22
+  - @nocobase/app-cli-client@0.1.0-beta.25
+
+## 2.0.0-beta.17
+
+### Minor Changes
+
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+
+### Patch Changes
+
+- 848e4db: Remove retired Codex quota windows from runtime usage and quota thresholds when a fresh account snapshot arrives.
+- 18636df: Retry private registry authorization failures once with the run's token and cover application creation and template downloads. Deploy the application before upgrading runners to protocol 17.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [b6d6ca0]
+- Updated dependencies [b737800]
+- Updated dependencies [858fcc4]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [b83a645]
+  - @nocobase/agent-protocol@0.1.0-beta.21
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.24
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-cli@1.0.0-beta.37
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
 ## 2.0.0-beta.16
 
 ### Minor Changes

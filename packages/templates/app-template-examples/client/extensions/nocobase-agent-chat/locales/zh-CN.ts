@@ -22,6 +22,25 @@ const agentChatZhCN: AgentChatLocale = {
       older: '加载更早的消息',
       empty: '此快照尚无已结束的轮次。',
     },
+    thinking: {
+      title: '思考等级',
+      choose: '思考等级：{{level}}',
+      useDefault: '改用厂商默认设置',
+      levels: {
+        'provider-default': '默认',
+        none: '关闭',
+        minimal: '极低',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+      },
+      adjusted:
+        '当前模型不支持「{{requested}}」思考等级，本次回复使用了「{{used}}」。',
+      adjustedToDefault:
+        '当前模型不支持「{{requested}}」思考等级，本次回复使用了厂商默认设置。',
+      warning: '模型可能未在本次回复中应用「{{level}}」思考等级。',
+    },
     webSearch: {
       title: '联网搜索',
       queryCount: '{{count}} 个搜索词',

@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.23
+
+### Minor Changes
+
+- a0e0c5b: Gather a file entry's actions in its header (Replace or Propose a replacement, Download, History and a menu with Rename and Properties and summary, in a bottom sheet on phones), render Markdown files with the documents' Markdown view, show extracted text numbered line by line with the cited lines highlighted, add a full-screen preview, and select a space by its name in the sidebar.
+
+### Patch Changes
+
+- e90a91e: Render knowledge documents with the shared UI Library `markdown-view`: citation anchors, highlights, the hidden leading title and Mermaid diagrams are kept, `#anchor` links stay on the page and every other link opens in a new tab. The UI Library catalog describes the new `components` and `remarkPlugins` extension points of `markdown-view`.
+- Updated dependencies [848e4db]
+- Updated dependencies [e830c36]
+- Updated dependencies [b737800]
+- Updated dependencies [a727ebe]
+- Updated dependencies [18636df]
+- Updated dependencies [a1cfe45]
+- Updated dependencies [b83a645]
+  - @nocobase/app-plugin-agents@2.0.0-beta.17
+  - @nocobase/app-server@5.0.0-beta.8
+  - @nocobase/db@1.0.0-beta.29
+  - @nocobase/app-plugin-authentication@2.0.0-beta.23
+  - @nocobase/app-plugin-file@1.0.0-beta.32
+
 ## 0.1.0-beta.22
 
 ### Patch Changes

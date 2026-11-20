@@ -1,6 +1,24 @@
 import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createHarness, type Harness } from './harness.js';
+import { claim, createHarness, type Harness } from './harness.js';
+
+const RECONNECT = 'Reconnect OpenCode Console to continue.';
+const GATEWAY_VALUES = [
+  [
+    'with long hyphenated segments',
+    'Zq81mN0p-L4kTx7Rw2Vb9Yc-Hq3',
+    '[REDACTED]',
+  ],
+  [
+    'with short hyphenated segments',
+    'Zq81mN0-pL4kTx7-Rw2Vb9Y-cHq3',
+    '[REDACTED]',
+  ],
+  ['with word-like segments', 'fTakerm-Opaseha-Targao-7rya', '[REDACTED]'],
+  ['with only lower-case letters', 'cfvizbxmjqpkhdgslaorwynut', '[REDACTED]'],
+  ['with 20 characters', 'Zq81mN0pL4kTx7Rw2Vb9', '[REDACTED]'],
+  ['with 19 characters', 'Zq81mN0pL4kTx7Rw2Vb', 'Zq81mN0pL4kTx7Rw2Vb'],
+] as const;
 
 describe('runner history pagination', () => {
   let h: Harness;
@@ -115,6 +133,152 @@ describe('runner history pagination', () => {
       meta: { nextCursor: null, total: 0 },
     });
   });
+
+  it('shows what a failed run said only to who may read its subject, redacted as it is read', async () => {
+    h = await createHarness();
+    // A task-like kind with a link for every run but readable only where `describe` says so.
+    h.services.subjects.register({
+      kind: 'doc',
+      path: '/docs/{id}',
+      context: h.services.subjects.get('sample')!.context,
+      reports: {
+        describe(_conn, _userId, ids) {
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                { label: `DOC-${id}`, visible: id !== 'secret', group: null },
+              ]),
+            ),
+          );
+        },
+      },
+    });
+    const { runnerId } = await h.registerRunner();
+    const repo = h.database.connection().repository('agRuns');
+    const run = (
+      id: string,
+      values: Record<string, unknown>,
+    ): Promise<unknown> =>
+      repo.createOne({
+        values: {
+          id,
+          agentId: 'agent',
+          runnerId,
+          subjectKind: 'doc',
+          subjectId: 'open',
+          threadScope: 'main',
+          actorUserId: 'owner',
+          status: 'failed',
+          failureReason: 'toolAuth',
+          startedAt: new Date(`2026-10-27T10:00:0${id.length}Z`),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...values,
+        },
+      });
+    // Stored before the labelled-secret pattern existed: its gateway key was never redacted.
+    await run('a', {
+      failureDetail: `${RECONNECT} {"apiKey":"lan-9f8e7d6c5b4a"}`,
+      tool: 'opencode',
+      model: 'opencode/qwen3.8-flash',
+    });
+    // Old records can contain raw values and later diagnostic lines.
+    for (const [index, [, value]] of GATEWAY_VALUES.entries()) {
+      await run(`legacy-${index}`, {
+        failureDetail: `${RECONNECT} Gateway refused ${value}. Try again.\nstderr: internal path /srv/gateway`,
+      });
+    }
+    await run('ggggggg', { failureDetail: `${RECONNECT} ${'y'.repeat(400)}` });
+    // A task the viewer may not read: its runner run is listed and linked, its words are not.
+    await run('bb', {
+      failureDetail: 'The secret task quoted here',
+      subjectId: 'secret',
+    });
+    // Someone else's conversation.
+    await run('ccc', {
+      failureDetail: 'Their prompt quoted here',
+      subjectKind: 'conversation',
+      subjectId: 'theirs',
+    });
+    // A kind that cannot say who may read it.
+    await run('dddd', {
+      failureDetail: 'A sample quoted here',
+      subjectKind: 'sample',
+      subjectId: '1',
+    });
+    await run('eeeee', {
+      status: 'completed',
+      failureReason: null,
+      failureDetail: 'not a failure',
+    });
+    const response = await h.request(
+      'GET',
+      `/agents/runners/${runnerId}/runs`,
+      { user: 'owner' },
+    );
+    expect(response.status).toBe(200);
+    const byId = new Map(
+      response.body.data.map((item: { id: string }) => [item.id, item]),
+    );
+    expect(byId.get('a')).toMatchObject({
+      failureReason: 'toolAuth',
+      failureDetail: `${RECONNECT} {"apiKey":"[REDACTED]"}`,
+      // The run's whole model id; its agent no longer exists, so it has no name to shorten.
+      model: 'opencode/qwen3.8-flash',
+      modelTitle: 'OpenCode · opencode/qwen3.8-flash',
+    });
+    expect(byId.get('a')).not.toHaveProperty('shortName');
+    expect(byId.get('eeeee')).not.toHaveProperty('model');
+    for (const [index, [, , expected]] of GATEWAY_VALUES.entries()) {
+      expect(byId.get(`legacy-${index}`)).toMatchObject({
+        failureDetail: `${RECONNECT} Gateway refused ${expected}. Try again.`,
+      });
+    }
+    const long = (byId.get('ggggggg') as { failureDetail: string })
+      .failureDetail;
+    expect(long).toHaveLength(300);
+    expect(long.endsWith('…')).toBe(true);
+    expect(byId.get('bb')).toMatchObject({ path: '/docs/secret' });
+    for (const id of ['bb', 'ccc', 'dddd', 'eeeee'])
+      expect(byId.get(id)).not.toHaveProperty('failureDetail');
+    // The run's own record is redacted as it is read too.
+    expect((await h.services.runs.get('a')).failureDetail).toBe(
+      `${RECONNECT} {"apiKey":"[REDACTED]"}`,
+    );
+  });
+
+  it.each(GATEWAY_VALUES)(
+    'stores the runner failure message after checking a gateway value %s',
+    async (_name, value, expected) => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      const runner = await h.registerRunner();
+      const runId = await h.enqueue(agentId);
+      expect((await claim(h, runner)).map((item) => item.run.id)).toEqual([
+        runId,
+      ]);
+      const response = await h.request(
+        'POST',
+        `/agents/runners/runs/${runId}/fail`,
+        {
+          runnerKey: runner.key,
+          body: {
+            reason: 'toolAuth',
+            detail: `${RECONNECT} Gateway refused ${value}. Try again.`,
+          },
+        },
+      );
+      expect(response.status).toBe(200);
+      const stored = await h.database
+        .connection()
+        .repository('agRuns')
+        .findOne({ filter: { id: runId } });
+      expect(stored?.failureDetail).toBe(
+        `${RECONNECT} Gateway refused ${expected}. Try again.`,
+      );
+    },
+  );
 
   it.each([20, 21, 45])(
     'reports the exact tab count and continuation at the %i-row boundary',

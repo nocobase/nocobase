@@ -46,8 +46,7 @@ export async function cacheGit(
       `core.hooksPath=${path.join(cache, 'hooks')}`,
       '-c',
       'core.fsmonitor=false',
-      '-c',
-      'core.sshCommand=ssh',
+      ...(env.GIT_SSH_COMMAND ? [] : ['-c', 'core.sshCommand=ssh']),
       '-c',
       'credential.helper=',
       ...(helper
@@ -202,7 +201,7 @@ export async function taskGit(
   // The cache is runner-owned. Retain its host helper only when this invocation has no run credential.
   // --get-urlmatch returns only the last matching helper if the host config contains several.
   const trustedHelpers =
-    options.auth === undefined
+    options.auth === undefined && env.GIT_SSH_COMMAND === undefined
       ? await git(
           [
             'config',
@@ -221,7 +220,7 @@ export async function taskGit(
   const settings = [
     `core.hooksPath=${path.join(context.cache, 'hooks')}`,
     'core.fsmonitor=false',
-    'core.sshCommand=ssh',
+    ...(env.GIT_SSH_COMMAND ? [] : ['core.sshCommand=ssh']),
     'credential.helper=',
     // Submodule children have their own origin; do not replace it with the superproject's URL.
     ...(args[0] === 'submodule' ? [] : [`remote.origin.url=${context.url}`]),

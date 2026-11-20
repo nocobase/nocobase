@@ -19,8 +19,12 @@ import { publicInstallScript } from '../src/public-install.js';
 
 const exec = promisify(execFile);
 
-it.each([{ public: true }, { public: false }])(
-  'installs using the explicit public=$public policy',
+it.each([
+  { public: true, redirect: false },
+  { public: false, redirect: false },
+  { public: false, redirect: true },
+])(
+  'installs using the public=$public policy with redirect=$redirect',
   async (policy) => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'cli-install-policy-'));
     const requests: Array<{ url: string; credential: string | undefined }> = [];
@@ -46,6 +50,14 @@ it.each([{ public: true }, { public: false }])(
           req.headers['x-nocobase-download-token'] !== 'test-token'
         ) {
           res.writeHead(401).end('Unauthorized');
+        } else if (policy.redirect && !req.url!.includes('_esa=')) {
+          const url = new URL(req.url!, 'http://' + req.headers.host);
+          url.searchParams.set('_esa', 'test');
+          res
+            .writeHead(302, {
+              location: req.url!.includes('/targets/') ? url.search : url.href,
+            })
+            .end();
         } else if (req.url!.includes('/targets/')) {
           res.end(
             `version=1.0.0\nurl=/api/agents/dist/cli.tar.gz\nsha256=${createHash('sha256').update(bytes).digest('hex')}\nuniversal=true\n`,
@@ -92,15 +104,18 @@ it.each([{ public: true }, { public: false }])(
           await readFile(path.join(root, 'installed/install.json'), 'utf8'),
         ).mode,
       ).toBe('cli');
-      expect(requests).toHaveLength(2);
+      expect(requests).toHaveLength(policy.redirect ? 4 : 2);
       expect(
         requests.every((req) =>
           req.url.startsWith('/nested/main/api/agents/dist/'),
         ),
       ).toBe(true);
-      expect(requests.map((req) => req.credential)).toEqual(
-        policy.public ? [undefined, undefined] : ['test-token', 'test-token'],
-      );
+      expect(
+        requests.every(
+          (req) =>
+            req.credential === (policy.public ? undefined : 'test-token'),
+        ),
+      ).toBe(true);
     } finally {
       server.closeAllConnections();
       await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -152,3 +167,48 @@ it('fails a public install on a protected response instead of retaining an exist
     await rm(root, { recursive: true, force: true });
   }
 });
+
+it.each(['another origin', 'a loop'])(
+  'stops protected installation on a redirect to %s',
+  async (destination) => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'cli-install-redirect-'));
+    let hits = 0;
+    const server = createServer((_req, res) => {
+      hits++;
+      res
+        .writeHead(302, {
+          location:
+            destination === 'a loop'
+              ? '/main/again'
+              : 'https://other.invalid/cli',
+        })
+        .end();
+    });
+    try {
+      await new Promise<void>((resolve) =>
+        server.listen(0, '127.0.0.1', resolve),
+      );
+      const { port } = server.address() as { port: number };
+      const script = path.join(root, 'install.sh');
+      await writeFile(
+        script,
+        installScript({ cli: 'acme', server: `http://127.0.0.1:${port}/main` }),
+      );
+      await expect(
+        exec('sh', [script, '--dry-run', '--token', 'test-token']),
+      ).rejects.toMatchObject({
+        code: 1,
+        stderr: expect.stringContaining(
+          destination === 'a loop'
+            ? 'Too many redirects'
+            : 'redirect to the same server',
+        ),
+      });
+      expect(hits).toBe(destination === 'a loop' ? 6 : 1);
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);

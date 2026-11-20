@@ -1,5 +1,20 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.70
+
+### Patch Changes
+
+- 2c66475: Describe the agent-picker's inline model settings and the agent-chat block's thinking level menu in the UI Library catalog.
+
+## 0.1.0-beta.69
+
+### Patch Changes
+
+- b83a645: Update migration guidance for the default missing-source warning policy, strict validation, downgrade protection, and target-batch rollback preflight with recovery instructions.
+- a727ebe: Preinstall plugins with their Skills, unregister them while retaining the development dependency, and use plugin remove for a complete uninstall. Create apps from Professional and Enterprise template packages by alias. Default preinstalls Web Push and its Skill for opt-in registration. Default preinstalls SQLite, PostgreSQL, MySQL, SQL Server and Oracle as development dependencies. Source configuration promotes the selected driver. Configuration checks, migrations and builds report missing production driver declarations and how to fix them. The application upgrade Skill covers Community to Professional or Enterprise and Professional to Enterprise while preserving existing plugin registrations and database choices.
+- a1cfe45: Retire operation plans, intake uploads and text extraction, and their commands. Issue and sub-issue creation use their manual forms. Issue history still identifies changes made through a retired plan, and old run inputs remain readable.
+- e90a91e: Render knowledge documents with the shared UI Library `markdown-view`: citation anchors, highlights, the hidden leading title and Mermaid diagrams are kept, `#anchor` links stay on the page and every other link opens in a new tab. The UI Library catalog describes the new `components` and `remarkPlugins` extension points of `markdown-view`.
+
 ## 0.1.0-beta.68
 
 ### Patch Changes

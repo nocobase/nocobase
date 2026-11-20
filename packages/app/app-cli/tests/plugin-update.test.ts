@@ -99,6 +99,17 @@ describe('planPluginUpdate', () => {
     expect(plan.packageNames).toEqual(['@nocobase/app-plugin-alpha']);
   });
 
+  it('updates a preinstalled plugin only when explicitly selected', async () => {
+    const packageName = '@nocobase/app-plugin-alpha';
+    const appRoot = await createApp([], {
+      devDependencies: { [packageName]: '1' },
+    });
+    expect((await planPluginUpdate({ appRoot })).packageNames).toEqual([]);
+    expect(
+      (await planPluginUpdate({ appRoot, plugins: ['alpha'] })).packageNames,
+    ).toEqual([packageName]);
+  });
+
   it('refuses a plugin the application does not register', async () => {
     const appRoot = await createApp(['@nocobase/app-plugin-alpha']);
 

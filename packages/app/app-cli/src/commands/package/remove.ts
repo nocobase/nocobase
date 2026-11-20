@@ -5,9 +5,9 @@ import path from 'node:path';
 
 import { CommandError, isCommandError } from '../../command/errors.ts';
 import {
-  PluginUnregistrationCommand,
-  type PluginUnregisterResult,
-} from '../plugin/unregister.ts';
+  PluginRemovalCommand,
+  type PluginRemoveResult,
+} from '../plugin/remove.ts';
 import {
   appPackageManager,
   removeDependencyCommand,
@@ -58,11 +58,9 @@ export interface PackageRemoveRemovedResult {
   readonly commands: readonly PluginCommandInvocation[];
 }
 
-/** A plugin package is unregistered, so it answers with `plugin unregister`'s result. */
+/** Plugin removal preserves the established package remove JSON response. */
 export type PackageRemoveResult =
-  | PackageRemoveDryRunResult
-  | PackageRemoveRemovedResult
-  | PluginUnregisterResult;
+  PackageRemoveDryRunResult | PackageRemoveRemovedResult | PluginRemoveResult;
 
 function packageManagerRemovalError(
   packageManager: string,
@@ -85,7 +83,7 @@ function packageManagerRemovalError(
   );
 }
 
-export default class PackageRemove extends PluginUnregistrationCommand {
+export default class PackageRemove extends PluginRemovalCommand {
   static override summary =
     'Remove a direct NocoBase package dependency and its synchronized Skills.';
   static override description =
@@ -161,7 +159,7 @@ export default class PackageRemove extends PluginUnregistrationCommand {
     );
 
     if (isPluginPackageName(packageName)) {
-      return this.unregisterPlugin(packageName, {
+      return this.removePlugin(packageName, {
         app: flags.app,
         dependencySections,
         dir: flags.dir,

@@ -4,7 +4,7 @@ import type { Tool, ModelMessage, UIMessage, UIMessageChunk } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import type { ZodObject } from 'zod';
-import type { ModelRef } from '../../../shared/models.js';
+import type { ModelRef, ReasoningLevel } from '../../../shared/models.js';
 import type { ResolvedPageContext } from '../../../shared/conversations.js';
 import type {
   AppUIMessage,
@@ -49,7 +49,8 @@ export type OnlineAgentScope = {
   tool?: string[];
   skill?: string[];
   model?: string[];
-  thinking?: string;
+  /** The thinking level: a code scope's is the Agent's default, and what the conversation chooses comes after it. */
+  thinking?: ReasoningLevel;
   webSearch?: boolean;
   permissions?: never;
 };
@@ -67,7 +68,11 @@ export type OnlineAgentConfig = {
   toolVersions: Record<string, string>;
   /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
   model?: string[];
-  thinking?: string;
+  /**
+   * The conversation's thinking level; the provider's default when absent. A configuration an earlier preview build
+   * saved may hold another string: `assertRunnableThinking` refuses it where the saved configuration runs.
+   */
+  thinking?: ReasoningLevel;
   webSearch?: boolean;
 };
 export type OnlineAgentToolDefinition<

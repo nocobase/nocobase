@@ -192,6 +192,7 @@ const deDE: LocaleResource<typeof enUS> = {
       title: '{{name}} bearbeiten',
       enabled: 'Aktiviert',
       done: '{{name}} gespeichert',
+      model: 'Modell',
     },
     available: {
       open: 'Agent hinzufügen',
@@ -993,6 +994,23 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        'provider-default': 'Standard',
+        none: 'Aus',
+        minimal: 'Minimal',
+        low: 'Niedrig',
+        medium: 'Mittel',
+        high: 'Hoch',
+        xhigh: 'Sehr hoch',
+      },
+      adjusted:
+        'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde „{{used}}“ verwendet.',
+      adjustedToDefault:
+        'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde die Standardeinstellung des Anbieters verwendet.',
+      warning:
+        'Das Modell hat die Denkstufe „{{level}}“ für diese Antwort möglicherweise nicht angewendet.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Die Ausführung ist fehlgeschlagen. Prüfen Sie die gespeicherte Unterhaltung, bevor Sie es erneut versuchen.',

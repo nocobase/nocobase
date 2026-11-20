@@ -160,7 +160,6 @@ let records: AppUIMessage[] = [
             answer: 'The display contract is ready for review.',
             error: null,
             usage: null,
-            plans: 0,
           },
         },
       },
@@ -313,7 +312,7 @@ function Contract() {
     controller = useChatController();
   const conversation = useConversation('fixture'),
     messages = useConversationMessages('fixture');
-  const [plan, setPlan] = useState('Ready for review');
+  const [artifact, setArtifact] = useState('Ready for review');
   useEffect(() => openChat({ conversationId: 'fixture' }), [openChat]);
   const segments = chatMessageSegments(messages.items);
   return (
@@ -358,7 +357,7 @@ function Contract() {
               ],
             });
             void controller.loadHistory('fixture', false, true);
-            setPlan('Updated after notification');
+            setArtifact('Updated after notification');
           }}
         >
           Publish independent notice
@@ -408,8 +407,11 @@ function Contract() {
             />,
             ...(index === 1
               ? [
-                  <li key='plan-card' className='rounded-lg border p-3 text-sm'>
-                    Plan card · {plan}
+                  <li
+                    key='artifact-card'
+                    className='rounded-lg border p-3 text-sm'
+                  >
+                    Artifact card · {artifact}
                   </li>,
                 ]
               : []),

@@ -15,6 +15,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import {
+  checkAgentsPluginPackage,
   checkFormFeedbackPackage,
   checkFormFeedbackPeer,
   checkPendingFeedbackPackage,
@@ -101,6 +102,91 @@ test('release gate checks the oldest accepted version and fails closed on unboun
   assert.throws(
     () => runtimeFloor(registry('^1.0.0 || ^2.0.0')),
     /version floor/,
+  );
+});
+
+test('release gate requires the agents plugin exports the thinking level menu imports, from their subpaths', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'agents-package-'));
+  try {
+    mkdirSync(path.join(dir, 'dist/shared'), { recursive: true });
+    mkdirSync(path.join(dir, 'dist/client'), { recursive: true });
+    writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: '@nocobase/app-plugin-agents',
+        version: '2.0.0-test.1',
+        type: 'module',
+        exports: {
+          './shared/models': {
+            import: './dist/shared/models.js',
+            types: './dist/shared/models.d.ts',
+          },
+          './client/chat': {
+            import: './dist/client/chat.js',
+            types: './dist/client/chat.d.ts',
+          },
+        },
+      }),
+    );
+    // A version from before the thinking levels.
+    writeFileSync(
+      path.join(dir, 'dist/shared/models.js'),
+      'export const other = 1;',
+    );
+    writeFileSync(
+      path.join(dir, 'dist/shared/models.d.ts'),
+      'export declare const other: number;',
+    );
+    writeFileSync(
+      path.join(dir, 'dist/client/chat.js'),
+      'export function useChatPanel() {}',
+    );
+    writeFileSync(
+      path.join(dir, 'dist/client/chat.d.ts'),
+      'export declare function useChatPanel(): void;',
+    );
+    assert.throws(
+      () => checkAgentsPluginPackage(dir),
+      /lacks REASONING_LEVELS, isReasoningLevel in .*models.js/,
+    );
+    writeFileSync(
+      path.join(dir, 'dist/shared/models.js'),
+      "export const REASONING_LEVELS = ['provider-default'];\nexport function isReasoningLevel() {}",
+    );
+    writeFileSync(
+      path.join(dir, 'dist/shared/models.d.ts'),
+      "export declare const REASONING_LEVELS: readonly ['provider-default'];\nexport type ReasoningLevel = 'provider-default';\nexport declare function isReasoningLevel(value: unknown): value is ReasoningLevel;",
+    );
+    assert.throws(
+      () => checkAgentsPluginPackage(dir),
+      /lacks useThinkingMemory, shownThinking, thinkingLevelText in .*chat.js/,
+    );
+    writeFileSync(
+      path.join(dir, 'dist/client/chat.js'),
+      'export function useThinkingMemory() {}\nexport function shownThinking() {}\nexport function thinkingLevelText() {}',
+    );
+    writeFileSync(
+      path.join(dir, 'dist/client/chat.d.ts'),
+      'export declare function useThinkingMemory(): void;\nexport declare function shownThinking(): void;\nexport declare function thinkingLevelText(): string;',
+    );
+    assert.equal(checkAgentsPluginPackage(dir), '2.0.0-test.1');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  assert.equal(
+    runtimeFloor(
+      {
+        items: [
+          {
+            name: 'agent-chat',
+            dependencies: ['@nocobase/app-plugin-agents@^2.0.0-test.2'],
+          },
+        ],
+      },
+      'agent-chat',
+      '@nocobase/app-plugin-agents',
+    ),
+    '2.0.0-test.2',
   );
 });
 
@@ -260,7 +346,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 process.env.NPM_CONFIG_USERCONFIG = process.argv[5];
 process.env.NPM_CONFIG_GLOBALCONFIG = process.argv[6];
 process.chdir(process.argv[7]);
-checkRelease(process.argv[2], JSON.parse(readFileSync(process.argv[3], 'utf8')));
+checkRelease(process.argv[2], JSON.parse(readFileSync(process.argv[3], 'utf8')), { items: [] });
 writeFileSync(process.argv[4], 'allowed');
 `,
     );
