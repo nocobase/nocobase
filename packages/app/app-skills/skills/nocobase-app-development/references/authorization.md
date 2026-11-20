@@ -27,6 +27,10 @@ When you add business permissions, update the application's `permissionWorkspace
 
 Test with an ordinary user: confirm menu access, each operation and its effective scope independently. Save and reload the role to verify hidden grants survive a name-only edit. Exercise direct API denials as described in the [authorization verification guide](../../nocobase-app-plugin-authorization/references/business-module.md#7-client-and-verification).
 
+In a template-derived app, keep `@nocobase/app-plugin-users` and `@nocobase/app-plugin-authorization` registered, and keep the Home route and its navigation entry available to all signed-in users. Home's explanatory copy is optional. Keep both template client tests unchanged and pass them from the app root with `pnpm exec vitest run tests/client/client-routes.test.ts tests/client/permission-workspace.test.ts`.
+
+Before the API self-check, compare `permission-workspace.ts` with the server registration. Each business-object ID must differ from its table name, every `scopeTitles` and `conditions.database` key must be a registered table name, and every `hiddenActionScopes` entry must name a slot registered for that action. Use short operation titles such as View and Create, avoiding `New <object>` and `Create <object>`. Verify each [business key's unique constraint](#verify-write-refusals) in its migration.
+
 ## Seed parameterized Custom Filter scopes
 
 Use `buildFilter(...).root` as `params.filter` when seeding a [parameterized Custom Filter scope](../../nocobase-app-plugin-authorization/references/core-api.md#parameterized-record-scopes-in-administration).
