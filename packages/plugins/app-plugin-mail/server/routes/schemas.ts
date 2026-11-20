@@ -6,6 +6,7 @@ import {
   MAIL_LABEL_COLORS,
   MAIL_PROVIDER_CAPABILITIES,
   type MailAccountView,
+  type MailUpdatedAccountView,
   type MailAuthorizationStartResult,
   type MailFolder,
   type MailSyncFolderPreview,
@@ -1128,6 +1129,16 @@ export const MailSyncRunSchema: z.ZodType<MailSyncRunView> = z
       .meta({ description: 'Whether the caller may retry or cancel the run.' }),
   })
   .meta({ ref: 'MailSyncRun' });
+
+export const MailUpdatedAccountSchema: z.ZodType<MailUpdatedAccountView> = z
+  .object({
+    ...accountFields,
+    syncRun: MailSyncRunSchema.optional().meta({
+      description:
+        'The initial run that replaced the active one because `syncFolderIds` changed, to follow with `mailGetSyncRun`; absent when the folders did not change.',
+    }),
+  })
+  .meta({ ref: 'MailUpdatedAccount' });
 
 export const MailTemplateSchema: z.ZodType<MailTemplate> = z
   .object({

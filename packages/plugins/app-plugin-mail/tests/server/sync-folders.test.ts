@@ -439,15 +439,17 @@ describe.each(['gmail', 'microsoft'] as const)(
       expect(await service().startSync(owner, { accountId })).toMatchObject({
         id: active.id,
       });
-      await service().updateAccount(owner, {
+      // An unchanged scope schedules nothing, so it answers no run.
+      const unchanged = await service().updateAccount(owner, {
         accountId,
         syncFolderIds: ['inbox', 'archive'],
       });
+      expect(unchanged).not.toHaveProperty('syncRun');
       expect(await store.findActiveSyncRun(accountId)).toMatchObject({
         id: active.id,
       });
 
-      await service().updateAccount(owner, {
+      const changed = await service().updateAccount(owner, {
         accountId,
         syncFolderIds: ['inbox'],
       });
@@ -462,6 +464,12 @@ describe.each(['gmail', 'microsoft'] as const)(
         mode: 'initial',
         policy: { syncFolderIds: ['inbox'] },
       });
+      // The answer names that run, so a client can follow it without starting another.
+      expect(changed).toMatchObject({
+        syncFolderIds: ['inbox'],
+        syncRun: { id: runs[0].id, mode: 'initial', status: 'pending' },
+      });
+      expect(changed.syncRun).not.toHaveProperty('leaseToken');
       await settle();
       expect(await local()).toEqual({ inboxed: ['inbox'] });
     });

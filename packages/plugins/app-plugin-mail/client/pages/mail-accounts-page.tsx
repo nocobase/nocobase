@@ -154,10 +154,12 @@ export default function MailAccountsPage({
           mail.getSyncRun(run.id).then(
             (nextRun) => {
               if (signal.aborted) return;
-              setSyncRuns((current) => ({
-                ...current,
-                [nextRun.accountId]: nextRun,
-              }));
+              // A newer run, such as the one a scope change scheduled, may have replaced this one meanwhile.
+              setSyncRuns((current) =>
+                current[nextRun.accountId]?.id === nextRun.id
+                  ? { ...current, [nextRun.accountId]: nextRun }
+                  : current,
+              );
               if (
                 nextRun.status !== 'pending' &&
                 nextRun.status !== 'running'
@@ -185,6 +187,7 @@ export default function MailAccountsPage({
               )
                 throw cause;
               setSyncRuns((current) => {
+                if (current[run.accountId]?.id !== run.id) return current;
                 const next = { ...current };
                 delete next[run.accountId];
                 return next;
@@ -883,16 +886,20 @@ export default function MailAccountsPage({
             : undefined
         }
         onClose={() => setFolderAccount(undefined)}
-        onSaved={({ account, run }) => {
+        onSaved={({ account, scopeSaved, run }) => {
           setFolderAccount(undefined);
           setAuthorizationNotice(undefined);
           if (run) {
-            // An unchanged scope started a run; follow its progress like any manual sync.
-            if (run.status === 'pending' || run.status === 'running')
-              setSyncing(account.id);
+            // Follow the run the confirmation started, reused or scheduled for a new scope like any manual sync. It
+            // takes the place of the run shown before, which a scope change has cancelled.
+            setSyncing(
+              run.status === 'pending' || run.status === 'running'
+                ? account.id
+                : (current) => (current === account.id ? undefined : current),
+            );
             setSyncRuns((current) => ({ ...current, [account.id]: run }));
-            return;
           }
+          if (!scopeSaved) return;
           setAccounts((current) =>
             current.map((item) => (item.id === account.id ? account : item)),
           );

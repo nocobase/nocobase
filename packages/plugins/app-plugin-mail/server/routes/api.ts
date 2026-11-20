@@ -88,6 +88,7 @@ import {
   UpdateSignatureInput,
   UpdateTemplateInput,
   MailAccountSchema,
+  MailUpdatedAccountSchema,
   MailAuthorizationSchema,
   MailBoundedListMeta,
   MailFolderListMeta,
@@ -330,10 +331,10 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       mailRoute(
         'mailUpdateAccount',
         'Update an account',
-        { '200': dataResponse(MailAccountSchema) },
+        { '200': dataResponse(MailUpdatedAccountSchema) },
         {
           description:
-            'Suspends or resumes an account, or changes the folders it synchronizes. A changed `syncFolderIds` restarts the initial synchronization under the new selection: newly selected folders are imported from the account start date, and local messages left in no selected folder are deleted, with their folder links, participants, attachments and IMAP copies. Messages on the mail server are not affected. Use `mailPreviewSyncFolders` to show the count first.',
+            'Suspends or resumes an account, or changes the folders it synchronizes. A changed `syncFolderIds` restarts the initial synchronization under the new selection and answers that run as `syncRun`: newly selected folders are imported from the account start date, and local messages left in no selected folder are deleted, with their folder links, participants, attachments and IMAP copies. Messages on the mail server are not affected. Use `mailPreviewSyncFolders` to show the count first.',
           errors: {
             400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`), must be reauthorized before it can be resumed (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), is not active when changing its folders (`MAIL_ACCOUNT_INACTIVE`), or a selected folder is not a folder of the account (`INVALID_MAIL_REQUEST`).',
             404: true,

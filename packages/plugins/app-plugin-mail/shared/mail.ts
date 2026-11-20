@@ -451,6 +451,12 @@ export interface MailSyncRunView {
   readonly canManage?: boolean;
 }
 
+/** An account after `updateAccount`, with the initial run a changed folder selection scheduled. */
+export interface MailUpdatedAccountView extends MailAccountView {
+  /** The initial run that replaced the active one because `syncFolderIds` changed; absent otherwise. */
+  readonly syncRun?: MailSyncRunView;
+}
+
 export interface MailStartSyncInput {
   readonly accountId: string;
   readonly mode?: MailSyncMode;

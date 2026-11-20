@@ -4,10 +4,12 @@ import {
   type MailAccountView,
   type MailOperationContext,
   type MailSyncFolderPreview,
+  type MailSyncRun,
+  type MailUpdatedAccountView,
 } from '../../shared/mail.js';
 import { requireActiveAccount } from './access.js';
 import { type MailSyncService } from './sync.js';
-import { toMailAccountView } from '../views.js';
+import { toMailAccountView, toSyncRunView } from '../views.js';
 import { type MailServiceDependencies } from './dependencies.js';
 import {
   mailAccountInactive,
@@ -44,7 +46,7 @@ export class MailAccountsService {
   public async updateAccount(
     context: MailOperationContext,
     input: import('../../shared/mail.js').MailUpdateAccountInput,
-  ): Promise<MailAccountView> {
+  ): Promise<MailUpdatedAccountView> {
     const account = await this.dependencies.store.getAccount(input.accountId);
     if (!account || account.userId !== context.actorId) {
       throw mailAccountNotFound();
@@ -87,9 +89,15 @@ export class MailAccountsService {
         );
       }
     }
+    let syncRun: MailSyncRun | undefined;
     if (selection)
-      updated = await this.updateSyncFolders(context, updated, selection.value);
-    return toMailAccountView(updated);
+      ({ account: updated, syncRun } = await this.updateSyncFolders(
+        context,
+        updated,
+        selection.value,
+      ));
+    const view = toMailAccountView(updated);
+    return syncRun ? { ...view, syncRun: toSyncRunView(syncRun) } : view;
   }
 
   /** What saving a folder selection would delete locally; selecting every folder deletes nothing. */
@@ -118,16 +126,20 @@ export class MailAccountsService {
     context: MailOperationContext,
     account: MailAccount,
     selection: readonly string[] | undefined,
-  ): Promise<MailAccount> {
-    if (sameSelection(account.syncFolderIds, selection)) return account;
-    if (!(await this.sync.replaceSyncFolders(context, account, selection)))
-      throw mailAccountInactive();
+  ): Promise<{ account: MailAccount; syncRun?: MailSyncRun }> {
+    if (sameSelection(account.syncFolderIds, selection)) return { account };
+    const syncRun = await this.sync.replaceSyncFolders(
+      context,
+      account,
+      selection,
+    );
+    if (!syncRun) throw mailAccountInactive();
     const { syncFolderIds: _previous, ...rest } = account;
     const updated: MailAccount = selection
       ? { ...rest, syncFolderIds: selection }
       : rest;
     this.dependencies.outbox.accountChanged?.(updated);
-    return updated;
+    return { account: updated, syncRun };
   }
 
   private async validSyncFolders(

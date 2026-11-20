@@ -27,7 +27,12 @@ import {
 
 export interface MailSyncFoldersSaved {
   readonly account: MailAccountView;
-  /** The run a synchronization without a scope change started; a scope change schedules its own initial run. */
+  /** Whether the confirmation saved a changed scope into `account`. */
+  readonly scopeSaved: boolean;
+  /**
+   * The run the confirmation started or reused: the normal synchronization of an unchanged scope, or the initial run
+   * saving a changed scope scheduled in place of the active one.
+   */
   readonly run?: MailSyncRunView;
 }
 
@@ -221,7 +226,13 @@ function SyncFoldersForm({
     mail
       .updateAccount({ accountId: account.id, syncFolderIds })
       .then((saved) => {
-        if (openRef.current) onSaved({ account: saved });
+        if (!openRef.current) return;
+        const { syncRun, ...updated } = saved;
+        onSaved({
+          account: updated,
+          scopeSaved: true,
+          ...(syncRun ? { run: syncRun } : {}),
+        });
       });
 
   const confirmRemoval = (syncFolderIds: readonly string[]): void => {
@@ -243,7 +254,7 @@ function SyncFoldersForm({
           ...(receivedAfter ? { receivedAfter } : {}),
         })
         .then((run) => {
-          if (openRef.current) onSaved({ account, run });
+          if (openRef.current) onSaved({ account, scopeSaved: false, run });
         })
         .catch(failure)
         .finally(() => setSaving(false));

@@ -119,7 +119,7 @@ export class DefaultMailService implements MailService {
   public async updateAccount(
     context: MailOperationContext,
     input: import('../shared/mail.js').MailUpdateAccountInput,
-  ): Promise<MailAccountView> {
+  ): Promise<import('../shared/mail.js').MailUpdatedAccountView> {
     return this.accounts.updateAccount(context, input);
   }
 

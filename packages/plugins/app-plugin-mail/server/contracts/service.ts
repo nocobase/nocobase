@@ -38,6 +38,7 @@ import type {
   MailSyncRunView,
   MailTemplate,
   MailUpdateAccountInput,
+  MailUpdatedAccountView,
   MailUpdateIdentityInput,
   MailUpdateLabelInput,
   MailUpdateSignatureInput,
@@ -71,7 +72,7 @@ export interface MailService {
   updateAccount(
     context: MailOperationContext,
     input: MailUpdateAccountInput,
-  ): Promise<MailAccountView>;
+  ): Promise<MailUpdatedAccountView>;
   /**
    * Mark an account for removal; a background task deletes it. Answers the account in its `removing` state, or
    * `undefined` when the removal already finished.

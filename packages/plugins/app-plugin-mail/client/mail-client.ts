@@ -1,6 +1,7 @@
 import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import type {
   MailAccountView,
+  MailUpdatedAccountView,
   MailAuthorizationStartResult,
   MailConnectAccountInput,
   MailComposeInput,
@@ -196,12 +197,13 @@ export class MailClient {
       .then((response) => response.data);
   }
 
+  /** Update an account; a changed folder selection answers the initial run it scheduled as `syncRun`. */
   public updateAccount(
     input: MailUpdateAccountInput,
-  ): Promise<MailAccountView> {
+  ): Promise<MailUpdatedAccountView> {
     const { accountId, ...json } = input;
     return this.client
-      .request<DataResponse<MailAccountView>>({
+      .request<DataResponse<MailUpdatedAccountView>>({
         path: `mail/accounts/${encodeURIComponent(accountId)}`,
         method: 'PATCH',
         json,
