@@ -194,6 +194,7 @@ const esES: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       enabled: 'Habilitado',
       done: '{{name}} guardado',
+      model: 'Modelo',
     },
     available: {
       open: 'Añadir Agent',

@@ -189,6 +189,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '{{name}}を編集',
       enabled: '有効',
       done: '{{name}} が保存されました',
+      model: 'モデル',
     },
     available: {
       open: 'Agentを追加',

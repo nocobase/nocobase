@@ -26,6 +26,8 @@ export interface OpencodeFailureSignal {
 export interface ClassifiedFailure {
   reason: FailureReason;
   message: string;
+  /** The stderr tail, for the runner's log. */
+  log?: string;
 }
 
 const ERROR_TYPES: Readonly<Record<string, FailureReason>> = {
@@ -62,15 +64,11 @@ const TEXT_RULES: readonly (readonly [RegExp, FailureReason])[] = [
   ],
 ];
 
-export function classifyOpencodeFailure(
-  signal: OpencodeFailureSignal,
-): ClassifiedFailure {
+function classify(signal: OpencodeFailureSignal): ClassifiedFailure {
+  // What is reported is the tool's own message; the stderr tail only helps classify it and stays in the runner's log.
   const message =
-    [messageOf(signal.error), ...(signal.details ?? [])]
-      .filter(Boolean)
-      .join('; ') ||
-    signal.errorType ||
-    'OpenCode run failed';
+    messageOf(signal.error) || signal.errorType || 'OpenCode run failed';
+  const text = [message, ...(signal.details ?? [])].filter(Boolean).join('; ');
 
   if (signal.aborted) return { reason: 'cancelled', message };
 
@@ -78,7 +76,7 @@ export function classifyOpencodeFailure(
     return { reason: ERROR_TYPES[signal.errorType], message };
 
   // A model the account cannot use is often answered 403 or 404: name it before the status does.
-  if (MODEL_UNAVAILABLE_RULE[0].test(message))
+  if (MODEL_UNAVAILABLE_RULE[0].test(text))
     return { reason: 'modelUnavailable', message };
 
   const status = signal.status;
@@ -91,7 +89,15 @@ export function classifyOpencodeFailure(
   }
 
   for (const [pattern, reason] of TEXT_RULES) {
-    if (pattern.test(message)) return { reason, message };
+    if (pattern.test(text)) return { reason, message };
   }
   return { reason: 'unknown', message };
+}
+
+export function classifyOpencodeFailure(
+  signal: OpencodeFailureSignal,
+): ClassifiedFailure {
+  const failure = classify(signal);
+  const log = (signal.details ?? []).filter(Boolean).join('\n');
+  return log ? { ...failure, log } : failure;
 }

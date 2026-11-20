@@ -186,6 +186,7 @@ const viVN: LocaleResource<typeof enUS> = {
       title: 'Chỉnh sửa {{name}}',
       enabled: 'Đã bật',
       done: '{{name}} đã lưu',
+      model: 'Mô hình',
     },
     available: {
       open: 'Thêm agent',

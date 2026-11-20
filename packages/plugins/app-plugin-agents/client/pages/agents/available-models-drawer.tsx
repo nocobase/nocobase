@@ -28,6 +28,9 @@ import type {
 } from '../../../shared/agents.js';
 import {
   agentNameOf,
+  modelLabel,
+  normalizeModel,
+  providerQualified,
   TOOL_LABELS,
   TOOL_SIGN_IN,
 } from '../../../shared/model-catalog.js';
@@ -726,6 +729,7 @@ function ModelRow({
 }): ReactElement {
   const { t } = useTranslation();
   const added = model.agentId !== null;
+  const qualified = providerQualified(model.tool);
   return (
     <div
       data-testid={`available-model-${model.tool}-${model.model}`}
@@ -740,9 +744,21 @@ function ModelRow({
         onCheckedChange={(next) => onSelect(model, next === true)}
       />
       <div className='min-w-0 flex-1'>
-        <div className='font-medium'>{modelName(model)}</div>
+        {/* The group names the tool. OpenCode and Pi rows name the model without it and show the whole id with
+            the provider below, since two providers can offer one model; the others keep their name and reported id. */}
+        <div className='font-medium'>
+          {qualified ? modelLabel(model.tool, model.model) : modelName(model)}
+        </div>
         <div className='flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground'>
-          <span>{model.model}</span>
+          <span
+            className={
+              qualified
+                ? 'font-mono break-words [overflow-wrap:anywhere]'
+                : undefined
+            }
+          >
+            {qualified ? normalizeModel(model.tool, model.model) : model.model}
+          </span>
           {model.recommended ? (
             <span>{t('agents.available.recommended')}</span>
           ) : null}

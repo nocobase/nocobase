@@ -183,6 +183,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       title: '編輯{{name}}',
       enabled: '已啟用',
       done: '{{name}} 已儲存',
+      model: '模型',
     },
     available: {
       open: '新增 Agent',

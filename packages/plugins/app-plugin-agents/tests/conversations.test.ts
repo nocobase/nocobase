@@ -37,6 +37,55 @@ describe('historical Runner conversation domain', () => {
         body,
       }),
   });
+  it('gives an agent its whole model, its name without the tool and the hover text, by its saved name', async () => {
+    h = await createHarness();
+    const opencode = await h.createAgent({
+      source: 'runner',
+      name: 'OpenCode · Qwen3.8 Flash（my-lan-gateway）',
+      modelEntries: [
+        { tool: 'opencode', model: 'my-lan-gateway/qwen3.8-flash' },
+      ],
+    });
+    const claude = await h.createAgent({
+      source: 'runner',
+      name: 'Claude · Opus 5.5',
+      modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
+    });
+    const named = (await domain().get(ALICE, await newConversation(opencode)))
+      .agent;
+    expect(named).toMatchObject({
+      model: 'my-lan-gateway/qwen3.8-flash',
+      shortName: 'Qwen3.8 Flash（my-lan-gateway）',
+      modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
+    });
+    expect(
+      (await domain().get(ALICE, await newConversation(claude))).agent,
+    ).toMatchObject({
+      name: 'Claude · Opus 5.5',
+      model: 'claude-opus-5-5',
+      shortName: 'Opus 5.5',
+      modelTitle: 'Claude · claude-opus-5-5',
+    });
+    // Two providers' agents that already read the same keep the saved name everywhere; an administrator renames one.
+    const console = await h.createAgent({
+      source: 'runner',
+      name: 'OpenCode · Qwen3.8 Flash',
+      modelEntries: [{ tool: 'opencode', model: 'opencode/qwen3.8-flash' }],
+    });
+    await h.createAgent({
+      source: 'runner',
+      name: 'OpenCode · Qwen3.8 Flash',
+      modelEntries: [{ tool: 'opencode', model: 'other-lan/qwen3.8-flash' }],
+    });
+    expect(
+      (await domain().get(ALICE, await newConversation(console))).agent,
+    ).toMatchObject({
+      name: 'OpenCode · Qwen3.8 Flash',
+      model: 'opencode/qwen3.8-flash',
+      shortName: 'Qwen3.8 Flash',
+    });
+  });
+
   it('resolves historical consultation subjects without rewriting the original message and keeps ownership checks', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'Project manager' });
