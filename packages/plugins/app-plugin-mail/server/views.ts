@@ -79,5 +79,6 @@ export function toMailAccountView(account: MailAccount): MailAccountView {
     removalFailed: account.removalFailed,
     initialSyncReceivedAfter: account.initialSyncReceivedAfter,
     automaticSyncIntervalMinutes: account.automaticSyncIntervalMinutes,
+    ...(account.syncFolderIds ? { syncFolderIds: account.syncFolderIds } : {}),
   };
 }

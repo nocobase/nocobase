@@ -1,3 +1,4 @@
+import { syncedFolders } from './sync-folders.js';
 import { MailMessageMutations } from '../operations/message-mutations.js';
 import {
   type MailFolder,
@@ -109,10 +110,12 @@ export class MailManagementService {
     _context: MailOperationContext,
     accountId: string,
   ): Promise<readonly MailFolder[]> {
-    if (!(await this.dependencies.store.getAccount(accountId))) {
-      throw mailAccountNotFound();
-    }
-    return this.dependencies.store.listFolders(accountId);
+    const account = await this.dependencies.store.getAccount(accountId);
+    if (!account) throw mailAccountNotFound();
+    return syncedFolders(
+      account,
+      await this.dependencies.store.listFolders(accountId),
+    );
   }
 
   public listManagedMessages(
@@ -187,8 +190,9 @@ export class MailManagementService {
         return;
       case 'archive':
       case 'move': {
-        const destination = (
-          await this.dependencies.store.listFolders(account.id)
+        const destination = syncedFolders(
+          account,
+          await this.dependencies.store.listFolders(account.id),
         ).find((folder) =>
           input.action === 'archive'
             ? folder.type === 'archive'

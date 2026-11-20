@@ -42,7 +42,7 @@ export const mailOAuthCallbackRoutes: AppRootRouteContribution<AppPluginApplicat
         );
       }
       try {
-        await mail.completeAuthorization({
+        const account = await mail.completeAuthorization({
           state,
           code: context.req.query('code'),
           error: context.req.query('error'),
@@ -54,6 +54,7 @@ export const mailOAuthCallbackRoutes: AppRootRouteContribution<AppPluginApplicat
             new URL(context.req.url).origin,
             publicBasePath,
             'success',
+            account.id,
           ),
         );
       } catch {

@@ -333,7 +333,7 @@ const deDE: LocaleResource<typeof enUS> = {
     eyebrow: 'Kommunikation',
     loading: 'E-Mail-Konfiguration wird geladen…',
     authorizationSuccess:
-      'Konto erfolgreich verbunden. Neu verbundene Postfächer werden automatisch im Hintergrund synchronisiert. Die anfängliche Synchronisierung kann einige Zeit dauern. Fortschritt in den Synchronisierungsprotokollen anzeigen; Es ist nicht erforderlich, eine weitere Synchronisierung zu starten.',
+      'Konto verbunden. Wählen Sie die zu synchronisierenden Ordner, um den Import zu starten. Die erste Synchronisierung kann einige Zeit dauern; den Fortschritt sehen Sie in den Synchronisierungsprotokollen.',
     authorizationFailure:
       'Das E-Mail-Konto konnte nicht verbunden werden. Versuchen Sie es erneut.',
     initialSync: {
@@ -343,10 +343,48 @@ const deDE: LocaleResource<typeof enUS> = {
       receivedAfter: 'Nachher empfangene Nachrichten importieren',
       pickDate: 'Wählen Sie ein Datum',
     },
+    syncFolders: {
+      title: 'Synchronisierungsumfang bestätigen',
+      descriptionFirst:
+        'Das Konto ist verbunden. Bestätigen Sie den Umfang, um die erste Synchronisierung zu starten.',
+      description:
+        'Bestätigen Sie die zu synchronisierenden Ordner. Automatische Synchronisierungen verwenden denselben Umfang.',
+      scope: 'Synchronisierungsumfang',
+      allFolders: 'Gesamtes Postfach',
+      allFoldersHint: 'Synchronisiert alle Ordner, auch später erstellte.',
+      someFolders: 'Ausgewählte Ordner',
+      someFoldersHint:
+        'Synchronisiert nur die markierten Ordner; neue Ordner fügen Sie selbst hinzu.',
+      loading: 'Ordner werden geladen…',
+      listingFailed:
+        'Die Ordnerliste konnte nicht vom Mailserver gelesen werden.',
+      retry: 'Erneut versuchen',
+      waiting: 'Ordnerliste wird vom Mailserver abgerufen…',
+      selectedCount: '{{count}} von {{total}} Ordnern ausgewählt',
+      selectAll: 'Alle auswählen',
+      clearAll: 'Auswahl aufheben',
+      emptySelection: 'Wählen Sie mindestens einen Ordner aus.',
+      sentHint:
+        '„Gesendet“ ist nicht ausgewählt, daher fehlen Ihre eigenen Antworten möglicherweise in Unterhaltungen. Das Senden funktioniert weiterhin.',
+      removeTitle: 'Lokale Nachrichten außerhalb des Umfangs löschen?',
+      removeDescription:
+        'Diese Änderung löscht {{count}} lokale Nachrichten und ihre lokalen Daten. Nachrichten auf dem Mailserver werden nicht gelöscht, und Nachrichten in einem ausgewählten Ordner bleiben erhalten.',
+      back: 'Zurück',
+      confirm: 'Lokale Nachrichten löschen und synchronisieren',
+      saving: 'Wird gespeichert…',
+      cancel: 'Abbrechen',
+      submit: 'Bestätigen und synchronisieren',
+      outcomeInitial: 'Synchronisiert Nachrichten ab {{date}}.',
+      outcomeIncremental:
+        'Synchronisiert neue und geänderte Nachrichten seit der letzten Synchronisierung.',
+      outcomeRescan:
+        'Synchronisiert erneut mit dem neuen Umfang; vorhandene Nachrichten werden nicht doppelt hinzugefügt.',
+      pending: 'Ordner wählen, um die Synchronisierung zu starten',
+    },
     providers: {
       title: 'E-Mail-Konto hinzufügen',
       description:
-        'Wählen Sie einen Kontotyp aus, autorisieren Sie ihn dann oder geben Sie seine Postfach-Anmeldeinformationen ein. Neu verbundene Postfächer beginnen automatisch mit der Synchronisierung. Die erste Synchronisierung kann je nach Anzahl der Nachrichten und Netzwerkbedingungen einige Zeit dauern. Überprüfen Sie den Fortschritt in den Synchronisierungsprotokollen. Es ist nicht erforderlich, eine weitere Synchronisierung zu starten.',
+        'Wählen Sie einen Kontotyp und autorisieren Sie ihn oder geben Sie die Zugangsdaten des Postfachs ein. Wählen Sie nach dem Verbinden die zu synchronisierenden Ordner; Nachrichten werden ab dem Startdatum der ersten Synchronisierung importiert. Die erste Synchronisierung kann je nach Nachrichtenanzahl und Netzwerk einige Zeit dauern. Den Fortschritt sehen Sie in den Synchronisierungsprotokollen.',
       accountType: 'E-Mail-Kontotyp',
       chooseAccountType: 'Wählen Sie einen Kontotyp aus',
       emptyTitle: 'Keine E-Mail-Anbieter konfiguriert',

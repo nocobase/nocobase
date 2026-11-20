@@ -331,7 +331,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     eyebrow: 'Comunicação',
     loading: 'Carregando configuração de email…',
     authorizationSuccess:
-      'Conta conectada com sucesso. As caixas de correio recém-conectadas são sincronizadas automaticamente em segundo plano. A sincronização inicial pode levar algum tempo. Veja o progresso nos registros de sincronização; não há necessidade de iniciar outra sincronização.',
+      'Conta conectada. Escolha as pastas sincronizadas para começar a importar mensagens. A sincronização inicial pode levar algum tempo; acompanhe o progresso nos registros de sincronização.',
     authorizationFailure:
       'A conta de email não pôde ser conectada. Tente novamente.',
     initialSync: {
@@ -341,10 +341,49 @@ const ptBR: LocaleResource<typeof enUS> = {
       receivedAfter: 'Importar mensagens recebidas após',
       pickDate: 'Escolha uma data',
     },
+    syncFolders: {
+      title: 'Confirmar o escopo da sincronização',
+      descriptionFirst:
+        'A conta está conectada. Confirme o escopo para iniciar a primeira sincronização.',
+      description:
+        'Confirme as pastas a sincronizar. As sincronizações automáticas usarão o mesmo escopo.',
+      scope: 'Escopo da sincronização',
+      allFolders: 'Caixa de correio inteira',
+      allFoldersHint:
+        'Sincroniza todas as pastas, incluindo as criadas depois.',
+      someFolders: 'Pastas selecionadas',
+      someFoldersHint:
+        'Sincroniza apenas as pastas marcadas; adicione novas pastas manualmente.',
+      loading: 'Carregando pastas…',
+      listingFailed:
+        'Não foi possível ler a lista de pastas do servidor de e-mail.',
+      retry: 'Tentar novamente',
+      waiting: 'Obtendo a lista de pastas do servidor de e-mail…',
+      selectedCount: '{{count}} de {{total}} pastas selecionadas',
+      selectAll: 'Selecionar tudo',
+      clearAll: 'Desmarcar tudo',
+      emptySelection: 'Selecione pelo menos uma pasta.',
+      sentHint:
+        'Enviados não está selecionado, então suas próprias respostas podem não aparecer nas conversas. O envio de e-mails continua funcionando.',
+      removeTitle: 'Excluir as mensagens locais fora do escopo?',
+      removeDescription:
+        'Esta alteração exclui {{count}} mensagens locais e seus dados locais. As mensagens no servidor de e-mail não são excluídas, e as que ainda estão em uma pasta selecionada são mantidas.',
+      back: 'Voltar',
+      confirm: 'Excluir mensagens locais e sincronizar',
+      saving: 'Salvando…',
+      cancel: 'Cancelar',
+      submit: 'Confirmar e sincronizar',
+      outcomeInitial: 'Sincroniza as mensagens desde {{date}}.',
+      outcomeIncremental:
+        'Sincroniza as mensagens novas e alteradas desde a última sincronização.',
+      outcomeRescan:
+        'Sincroniza novamente com o novo escopo; as mensagens existentes não são duplicadas.',
+      pending: 'Escolha as pastas para começar a sincronizar',
+    },
     providers: {
       title: 'Adicionar conta de e-mail',
       description:
-        'Escolha um tipo de conta e autorize-a ou insira as credenciais da caixa de correio. As caixas de correio recém-conectadas começam a sincronizar automaticamente. A sincronização inicial pode demorar algum tempo, dependendo do número de mensagens e das condições da rede. Verifique o progresso nos registros de sincronização; não há necessidade de iniciar outra sincronização.',
+        'Escolha um tipo de conta e autorize-a ou informe as credenciais da caixa de correio. Depois de conectar, escolha as pastas sincronizadas; as mensagens são importadas a partir da data de sincronização inicial. A sincronização inicial pode levar algum tempo, dependendo do número de mensagens e da rede. Acompanhe o progresso nos registros de sincronização.',
       accountType: 'Tipo de conta de correio',
       chooseAccountType: 'Selecione um tipo de conta',
       emptyTitle: 'Nenhum provedor de e-mail configurado',

@@ -334,7 +334,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     const startedAt = Date.now();
     try {
       throwIfAborted(signal);
-      const mailboxes = this.selectableMailboxes(await this.listMailboxes());
+      const mailboxes = this.syncMailboxes(await this.listMailboxes());
       const folders: Record<string, ImapFolderCursor> = {};
       for (const mailbox of mailboxes) {
         throwIfAborted(signal);
@@ -372,7 +372,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       throwIfAborted(input.signal);
       const folders = input.providerFolderIds?.length
         ? [...input.providerFolderIds]
-        : this.selectableMailboxes(await this.listMailboxes()).map(
+        : this.syncMailboxes(await this.listMailboxes()).map(
             (mailbox) => mailbox.path,
           );
       let position: ReturnType<typeof parseHistoryCursor>;
@@ -578,7 +578,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           },
         };
       }
-      const mailboxes = this.selectableMailboxes(await this.listMailboxes());
+      const mailboxes = this.syncMailboxes(await this.listMailboxes());
       // Unvisited folders must retain their high-water marks when a completed
       // folder's new copies are committed before the next folder is inspected.
       const nextFolders: Record<string, ImapFolderCursor> = Object.fromEntries(
@@ -1733,6 +1733,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     return mailboxes;
   }
 
+  /** The mailboxes a sync run reads: every selectable mailbox, or only the run's selected folders. */
+  private syncMailboxes(mailboxes: readonly ListResponse[]): ListResponse[] {
+    const selectable = this.selectableMailboxes(mailboxes);
+    const scope = this.syncRun?.policy.syncFolderIds;
+    if (!scope) return selectable;
+    const selected = new Set(scope);
+    return selectable.filter((mailbox) => selected.has(mailbox.path));
+  }
+
   private selectableMailboxes(
     mailboxes: readonly ListResponse[],
   ): ListResponse[] {
@@ -1916,9 +1925,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       lastUidCheck = now;
       const client = await this.imap();
       if (client.capabilities.has('LIST-STATUS')) {
-        const changed = this.selectableMailboxes(
-          await this.listMailboxes(),
-        ).some(
+        const changed = this.syncMailboxes(await this.listMailboxes()).some(
           (box) =>
             box.status?.uidNext !== undefined &&
             box.status.uidNext !== folders[box.path]?.uidNext,
@@ -2498,7 +2505,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       }
       if (unbound.some((uid) => !excludedUids.has(uid))) stable = false;
     }
-    const after = this.selectableMailboxes(await this.listMailboxes());
+    const after = this.syncMailboxes(await this.listMailboxes());
     checkNewMail.uidChecked();
     if (changed(after)) return interrupted();
     if (
@@ -2530,7 +2537,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       if (state.uidValidity !== snapshot[mailbox.path]?.uidValidity)
         uncertainGenerations.add(mailbox.path);
     }
-    const finalRange = this.selectableMailboxes(await this.listMailboxes());
+    const finalRange = this.syncMailboxes(await this.listMailboxes());
     if (changed(finalRange)) return interrupted();
     const finalPaths = new Set(finalRange.map((mailbox) => mailbox.path));
     if (
