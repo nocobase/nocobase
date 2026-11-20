@@ -1,7 +1,9 @@
 {
   "The filter query parameter must be valid JSON.": "查询参数 filter 必须是有效的 JSON。",
   "Validation error": "{{field}} 字段规则验证失败",
-  "notNull Violation": "{{field}} cannot be null",
+  "notNull Violation": "{{field}} 字段不能为空",
   "notNull violation": "{{field}} 字段不能为空",
-  "unique violation": "{{field}} 字段值已存在"
+  "unique violation": "{{field}} 字段值已存在",
+  "A record in {{collection}} already exists.": "{{collection}}中存在重复记录",
+  "A record already exists.": "存在重复记录"
 }

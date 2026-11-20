@@ -7,9 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
+
+function titleKey(title: string) {
+  return /{{\s*t\(\s*(['"`])([^'"`]+)\1\s*\)\s*}}/.exec(title)?.[2] || title;
+}
+
+function findConstraintField(collection: Collection, path: string, unique: boolean) {
+  const findField = (name: string) => collection.getField(name) || collection.findField((f) => f.columnName() === name);
+  const field = findField(path);
+  if (field || !unique) {
+    return field;
+  }
+
+  // Sequelize v6 keeps generated index names (including shortened names) in _indexes.
+  const model = collection.model as typeof collection.model & { _indexes?: typeof collection.model.options.indexes };
+  const index = model._indexes?.find((index) => index.unique && index.name === path);
+  if (index?.fields?.length === 1) {
+    const [column] = index.fields;
+    if (typeof column === 'string') {
+      return findField(column);
+    }
+    if ('name' in column) {
+      return findField(column.name);
+    }
+  }
+}
 
 export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
@@ -21,45 +46,32 @@ export class PluginErrorHandlerServer extends Plugin {
   }
 
   registerSequelizeValidationErrorHandler() {
-    const findFieldTitle = (instance, path, ctx) => {
-      if (!instance) {
-        return path;
-      }
-
-      const model = instance.constructor;
-      const dataSourceKey = ctx.get('x-data-source');
-      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
-      const database = dataSource ? dataSource.collectionManager.db : ctx.db;
-
-      const collection = database.modelCollection.get(model);
-
-      if (!collection) {
-        return path;
-      }
-
-      const field = collection.getField(path);
-      const fieldOptions = field?.options;
-      const title = lodash.get(fieldOptions, 'uiSchema.title', path);
-      const re = /{{\s*t\(\s*(['"`])([^'"`]+)\1\s*\)\s*}}/g;
-      const parsed = re.exec(title);
-      return parsed?.[2] || title;
-    };
-
     this.errorHandler.register(
       (err) =>
         err?.errors?.length &&
         (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError'),
       (err, ctx) => {
         ctx.body = {
-          errors: err.errors.map((err) => {
+          errors: err.errors.map((item) => {
             const t = ctx.i18n.t;
-            const title = findFieldTitle(err.instance, err.path, ctx);
-            return {
-              message: t(err.type, {
-                ns: this.i18nNs,
-                field: t(title, { ns: ['lm-collections', 'client'] }),
-              }),
-            };
+            const collection: Collection | undefined = item.instance?.constructor.collection;
+            const unique = item.type === 'unique violation';
+            const constraint = unique || item.type === 'notNull Violation' || item.type === 'notNull violation';
+            const titles = { ns: ['lm-collections', 'client'] };
+            const collectionTitle = collection && t(titleKey(collection.options.title || collection.name), titles);
+            const field =
+              constraint && collection && item.path
+                ? findConstraintField(collection, item.path, unique)
+                : collection?.getField(item.path);
+
+            if (unique && !field) {
+              const key = collectionTitle ? 'A record in {{collection}} already exists.' : 'A record already exists.';
+              return { message: t(key, { ns: this.i18nNs, collection: collectionTitle }) };
+            }
+
+            const fieldTitle = t(titleKey(field?.options.uiSchema?.title || field?.name || item.path), titles);
+            const label = constraint && collectionTitle ? `${collectionTitle}: ${fieldTitle}` : fieldTitle;
+            return { message: t(item.type, { ns: this.i18nNs, field: label }) };
           }),
         };
         ctx.status = 400;
