@@ -31,7 +31,7 @@ A compact index of the `@nocobase` shadcn registry (the NocoBase UI Library, pre
 
 ## Authorization
 
-- `permission-editor` (component): A controlled permission workspace with top category tabs, application-owned menu paths, compact action groups, status filtering and independent data scopes.
+- `permission-editor` (component): A controlled permission editor for one role in up to three tabs: Menus, a checkbox tree of the business menus the role sees with the objects each page uses; Business objects, each object's actions set once with a view scope that other actions follow or narrow; and System settings, each settings page's actions without data scopes, its entry showing while the action that opens it is on.
 - `role-list` (component): A role administration table built with the standard DataTable: localized column headers, sortable names and identifiers, protected/custom badges, and pagination.
 - `default-access-editor` (component): Controlled default data scope fields grouped by operation, with independently named ranges and native custom-filter slots.
 

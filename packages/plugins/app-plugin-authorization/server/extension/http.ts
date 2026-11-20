@@ -6,10 +6,11 @@ import {
   inspectApiRoutes,
   type ApiDocsService,
 } from '@nocobase/app-server/router';
-import type {
-  AuthorizationContext,
-  AuthorizationRouteHandler,
-  AuthorizationRouteRegistry,
+import {
+  AuthorizationDeniedError,
+  type AuthorizationContext,
+  type AuthorizationRouteHandler,
+  type AuthorizationRouteRegistry,
 } from '@nocobase/authorization/core';
 import {
   PermissionSetConflictError,
@@ -203,6 +204,24 @@ export function settingsAccess(
 ): MiddlewareHandler<SettingsRouterEnv> {
   return createMiddleware<SettingsRouterEnv>(async (context, next) => {
     await requireSettings(context.env.authorization, id, action);
+    await next();
+  });
+}
+
+/**
+ * Lets only an unrestricted identity through, such as a holder of the root Permission Set; anyone else gets the
+ * standard `403`. For surfaces that are no grant anyone can be given, such as the permission inspector.
+ */
+export function unrestrictedAccess(
+  message: string,
+): MiddlewareHandler<SettingsRouterEnv> {
+  return createMiddleware<SettingsRouterEnv>(async (context, next) => {
+    const { unrestricted } = await context.env.authorization.snapshot();
+    if (!unrestricted)
+      throw new AuthorizationDeniedError({
+        effect: 'deny',
+        reasons: [{ code: 'UNRESTRICTED_REQUIRED', message }],
+      });
     await next();
   });
 }

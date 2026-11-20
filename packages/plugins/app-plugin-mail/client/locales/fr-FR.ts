@@ -330,7 +330,7 @@ const frFR: LocaleResource<typeof enUS> = {
     eyebrow: 'Communications',
     loading: 'Chargement de la configuration de la messagerie…',
     authorizationSuccess:
-      "Compte connecté avec succès. Les boîtes aux lettres nouvellement connectées se synchronisent automatiquement en arrière-plan. La synchronisation initiale peut prendre un certain temps. Afficher la progression dans les journaux de synchronisation ; il n'est pas nécessaire de démarrer une autre synchronisation.",
+      'Compte connecté. Choisissez les dossiers à synchroniser pour commencer l’import des messages. La synchronisation initiale peut prendre du temps ; suivez sa progression dans les journaux de synchronisation.',
     authorizationFailure:
       "Le compte de messagerie n'a pas pu être connecté. Essayer à nouveau.",
     initialSync: {
@@ -340,10 +340,50 @@ const frFR: LocaleResource<typeof enUS> = {
       receivedAfter: 'Importer les messages reçus après',
       pickDate: 'Choisissez une date',
     },
+    syncFolders: {
+      title: 'Confirmer l’étendue de la synchronisation',
+      descriptionFirst:
+        'Le compte est connecté. Confirmez l’étendue pour lancer la première synchronisation.',
+      description:
+        'Confirmez les dossiers à synchroniser. Les synchronisations automatiques utiliseront la même étendue.',
+      scope: 'Étendue de la synchronisation',
+      allFolders: 'Toute la boîte aux lettres',
+      allFoldersHint:
+        'Synchronise tous les dossiers, y compris ceux créés plus tard.',
+      someFolders: 'Dossiers sélectionnés',
+      someFoldersHint:
+        'Synchronise uniquement les dossiers cochés ; ajoutez vous-même les nouveaux dossiers.',
+      loading: 'Chargement des dossiers…',
+      listingFailed:
+        'Impossible de lire la liste des dossiers depuis le serveur de messagerie.',
+      retry: 'Réessayer',
+      waiting:
+        'Récupération de la liste des dossiers auprès du serveur de messagerie…',
+      selectedCount: '{{count}} dossiers sur {{total}} sélectionnés',
+      selectAll: 'Tout sélectionner',
+      clearAll: 'Tout désélectionner',
+      emptySelection: 'Sélectionnez au moins un dossier.',
+      sentHint:
+        'Envoyés n’est pas sélectionné : vos propres réponses peuvent manquer dans les conversations. L’envoi de messages fonctionne toujours.',
+      removeTitle: 'Supprimer les messages locaux hors de l’étendue ?',
+      removeDescription:
+        'Cette modification supprime {{count}} messages locaux et leurs données locales. Les messages du serveur de messagerie ne sont pas supprimés, et ceux encore dans un dossier sélectionné sont conservés.',
+      back: 'Retour',
+      confirm: 'Supprimer les messages locaux et synchroniser',
+      saving: 'Enregistrement…',
+      cancel: 'Annuler',
+      submit: 'Confirmer et synchroniser',
+      outcomeInitial: 'Synchronise les messages reçus depuis le {{date}}.',
+      outcomeIncremental:
+        'Synchronise les messages nouveaux et modifiés depuis la dernière synchronisation.',
+      outcomeRescan:
+        'Resynchronise avec la nouvelle étendue ; les messages existants ne sont pas ajoutés deux fois.',
+      pending: 'Choisissez les dossiers pour lancer la synchronisation',
+    },
     providers: {
       title: 'Ajouter un compte de messagerie',
       description:
-        "Choisissez un type de compte, puis autorisez-le ou saisissez ses identifiants de boîte aux lettres. Les boîtes aux lettres nouvellement connectées commencent à se synchroniser automatiquement. La synchronisation initiale peut prendre un certain temps, en fonction du nombre de messages et des conditions du réseau. Vérifiez la progression dans les journaux de synchronisation ; il n'est pas nécessaire de démarrer une autre synchronisation.",
+        'Choisissez un type de compte, puis autorisez-le ou saisissez les identifiants de la boîte aux lettres. Après la connexion, choisissez les dossiers à synchroniser ; les messages sont importés à partir de la date de synchronisation initiale. La synchronisation initiale peut prendre du temps selon le nombre de messages et le réseau. Suivez la progression dans les journaux de synchronisation.',
       accountType: 'Type de compte de messagerie',
       chooseAccountType: 'Sélectionnez un type de compte',
       emptyTitle: 'Aucun fournisseur de messagerie configuré',

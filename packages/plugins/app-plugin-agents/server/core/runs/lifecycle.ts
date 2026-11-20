@@ -1,5 +1,6 @@
 import { waitForQuota } from './quota-wait.js';
 import { OutputPreview } from './output-preview.js';
+import { redactFailureMessage } from './failure-message.js';
 import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 /**
  * What a runner reports about the runs it holds: lease renewals, the start, events, and how the run ended. Every
@@ -8,6 +9,7 @@ import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
  */
 import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 import {
+  GitSshFailureSchema,
   isRetryable,
   MAX_EVENT_CONTENT_BYTES,
   ProtocolError,
@@ -21,7 +23,9 @@ import {
   type EventsResponse,
   type FailRequest,
   type FinishResponse,
+  type GitSshFailure,
   type LeaseResponse,
+  type RepoPushFailure,
   type RepoReport,
   type StartRequest,
   type StartResponse,
@@ -76,6 +80,26 @@ const executionReport = z.object({
   effort: z.string().trim().min(1).max(200).nullable(),
   source: z.string().trim().min(1).max(200),
 });
+
+const SSH_REPO_FAILURES: Partial<Record<RepoPushFailure, GitSshFailure>> = {
+  sshAuthFailed: 'authFailed',
+  sshHostKeyMismatch: 'hostKeyMismatch',
+  sshPushRejected: 'pushRejected',
+  sshUnreachable: 'unreachable',
+};
+
+function sshFailureParams(
+  repos: readonly RepoReport[] | undefined,
+  checkout?: GitSshFailure,
+): { gitSshFailure: GitSshFailure } | undefined {
+  if (checkout !== undefined) return { gitSshFailure: checkout };
+  for (const repo of repos ?? []) {
+    if (repo.pushed || repo.failure === undefined) continue;
+    const gitSshFailure = SSH_REPO_FAILURES[repo.failure.reason];
+    if (gitSshFailure !== undefined) return { gitSshFailure };
+  }
+  return undefined;
+}
 
 export interface RunnerReports {
   /** Resolves while `runner` holds the run; `LEASE_LOST`, `RUN_NOT_ACTIVE` or `RUN_NOT_OWNED` otherwise. */
@@ -529,6 +553,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         let lastSeq = 0;
         const reportedUsage: Usage[] = [];
         const efforts: RunEffortReport[] = [];
+        let checkoutSshFailure: GitSshFailure | undefined;
         for (const event of request.events) {
           lastSeq = Math.max(lastSeq, event.seq);
           if (stored.has(event.seq)) continue;
@@ -582,6 +607,17 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             );
             if (usage.success) reportedUsage.push(...usage.data);
           }
+          if (
+            run.status === 'dispatched' &&
+            event.type === 'error' &&
+            event.tool === undefined &&
+            event.meta?.phase === 'dirs'
+          ) {
+            const parsed = GitSshFailureSchema.safeParse(
+              event.meta.gitSshFailure,
+            );
+            if (parsed.success) checkoutSshFailure = parsed.data;
+          }
           if (event.type === 'status' && event.tool === run.tool) {
             const meta = jsonObject(redact.value(event.meta));
             const report = executionReport.safeParse(meta.execution);
@@ -595,8 +631,22 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           }
         }
         await runsRepo(conn).updateMany({
-          filter: { id: run.id },
-          values: { lastActivityAt: now },
+          filter:
+            checkoutSshFailure === undefined
+              ? { id: run.id }
+              : {
+                  id: run.id,
+                  status: 'dispatched',
+                  runnerId: runner.id,
+                  attempt: run.attempt,
+                },
+          values: {
+            lastActivityAt: now,
+            // The worker drains preparation events before failing. Keep this attempt's code in the same write.
+            ...(checkoutSshFailure === undefined
+              ? {}
+              : { failureParams: { gitSshFailure: checkoutSshFailure } }),
+          },
         });
         await recordActualModels(conn, run, reportedUsage, now, efforts, true);
         if (accepted > 0)
@@ -691,6 +741,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             {
               status: 'completed',
               summary: redactorOf(run.id).text(request.summary),
+              failureParams: sshFailureParams(request.repos) ?? null,
               ...(request.sessionId ? { sessionId: request.sessionId } : {}),
             },
             true,
@@ -733,7 +784,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             ? named
             : {
                 ...named,
-                detail: redactorOf(run.id).text(named.detail),
+                detail: redactFailureMessage(
+                  redactorOf(run.id).text(named.detail),
+                ),
               };
         await recordOutcome(
           unit,
@@ -817,6 +870,15 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             ...(waiting.availableAt ? { retryAt: waiting.availableAt } : {}),
           };
         }
+        const checkout =
+          run.status === 'dispatched' &&
+          (request.reason === 'checkoutFailed' ||
+            request.reason === 'prepareNetwork')
+            ? GitSshFailureSchema.safeParse(
+                jsonObject(run.failureParams).gitSshFailure,
+              ).data
+            : undefined;
+        const failureParams = sshFailureParams(request.repos, checkout);
         if (isRetryable(request.reason) && run.cancelRequestedAt === null) {
           const outcome = await requeueRun(
             unit,
@@ -824,6 +886,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             run,
             request.reason,
             request.detail,
+            { failureParams },
           );
           if (!outcome.run)
             throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');
@@ -841,6 +904,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           status: run.cancelRequestedAt === null ? 'failed' : 'cancelled',
           reason: run.cancelRequestedAt === null ? request.reason : 'cancelled',
           ...(request.detail === undefined ? {} : { detail: request.detail }),
+          ...(run.cancelRequestedAt === null && failureParams !== undefined
+            ? { failureParams }
+            : {}),
           ...(request.sessionId ? { sessionId: request.sessionId } : {}),
         });
         if (!ended)

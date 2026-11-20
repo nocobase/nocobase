@@ -84,14 +84,13 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
               action: 'create',
             },
             breadcrumb: { title: 'settings.newRole' },
-            presentation: { kind: 'child-page' },
+            // Rendered in the roles page's right column, beside the role list.
             componentLoader: () => import('./role-form.js'),
           },
           {
             name: 'settingsRoleEdit',
             path: ':key/edit',
             breadcrumb: { title: 'settings.editRole' },
-            presentation: { kind: 'child-page' },
             componentLoader: () => import('./role-form.js'),
           },
         ],

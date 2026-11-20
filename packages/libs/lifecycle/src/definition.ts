@@ -1,3 +1,4 @@
+import type { ManagementEvent, ManagementPolicy } from './management.js';
 import {
   normalizeParameterValues,
   type ParameterConfigurationDefinition,
@@ -132,6 +133,7 @@ export type EnterStateHook<T extends LifecycleTypes> = (
 ) => void | Promise<void>;
 
 export interface EffectContext<T extends LifecycleTypes> {
+  readonly management?: ManagementEvent;
   /** The record as it is when the attempt starts. */
   readonly record: T['record'];
   readonly input: JsonObject;
@@ -383,6 +385,7 @@ export interface LifecycleDefinition<T extends LifecycleTypes> {
   readonly changedAtField?: string;
   /** Indexed earliest trigger deadline, computed from the instance snapshot. */
   readonly dueAtField?: string;
+  readonly management?: ManagementPolicy<T>;
   /**
    * Defaults to `lifecycleVersion`: an integer every transition increments.
    * The conditional update checks it as well as the state, so two
@@ -465,6 +468,7 @@ export interface Lifecycle<T extends LifecycleTypes> {
   readonly stateField: string;
   readonly changedAtField: string;
   readonly dueAtField?: string;
+  readonly management?: ManagementPolicy<T>;
   readonly versionField: string;
   /** The default initial state. */
   readonly initial: T['state'];
@@ -662,6 +666,20 @@ export function defineLifecycle<T extends LifecycleTypes>(
     owned.add(definition.dueAtField);
   }
 
+  const management = definition.management;
+  if (management) {
+    if (
+      !NAME.test(management.field) ||
+      owned.has(management.field) ||
+      owned.has(`${management.field}Revision`)
+    )
+      throw invalid(name, 'management.field must be a distinct record field.');
+    for (const state of management.restartAt ?? [])
+      known(state, 'management.restartAt');
+    for (const state of Object.keys(management.onEnter ?? {}))
+      known(state, 'management.onEnter');
+  }
+
   const effects = new Map<string, EffectDefinition<T>>();
   const collect = (effect: EffectDefinition<T>, where: string): void => {
     const existing = effects.get(effect.name);
@@ -672,6 +690,11 @@ export function defineLifecycle<T extends LifecycleTypes>(
       );
     effects.set(effect.name, effect);
   };
+
+  for (const effects of Object.values<
+    readonly EffectDefinition<T>[] | undefined
+  >(management?.onEnter ?? {}))
+    for (const effect of effects ?? []) collect(effect, 'management.onEnter');
 
   const transitions = new Map<string, LifecycleTransition<T>>();
   for (const [key, transition] of Object.entries(definition.transitions)) {
@@ -901,6 +924,7 @@ export function defineLifecycle<T extends LifecycleTypes>(
     collection: definition.collection ?? name,
     stateField,
     changedAtField,
+    ...(management ? { management } : {}),
     ...(definition.dueAtField ? { dueAtField: definition.dueAtField } : {}),
     versionField,
     initial: initialStates[0],

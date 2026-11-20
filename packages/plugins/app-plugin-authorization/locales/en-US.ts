@@ -17,7 +17,6 @@ const enUS = {
     actions: {
       assign: 'Manage assignments',
       configure: 'Configure',
-      inspect: 'Inspect permissions',
 
       read: 'Read',
       create: 'Create',
@@ -32,7 +31,6 @@ const enUS = {
         'Allow access to every page, including pages added later.',
     },
     settings: {
-      inspector: 'Permission inspector',
       'permission-sets': 'Permission Sets',
     },
     subjectTypes: {

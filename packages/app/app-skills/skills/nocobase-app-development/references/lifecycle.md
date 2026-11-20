@@ -48,7 +48,7 @@ A parent and its children can each have a lifecycle and point at each other by f
 ```text
 server/lifecycles/<name>.ts          types, effects and defineLifecycle()
 server/providers/lifecycles.ts       the runtime, the store, the jobs dispatcher
-database/main/migrations/            the record table and the two log tables
+database/main/migrations/            the record table, log tables and creation requests
 server/routes/<name>.ts              the record routes the page calls
 client/lib/lifecycle.ts              createLifecycleHook(), configured once
 client/pages/                        pages that call the hook
@@ -208,19 +208,27 @@ The record table needs, besides its business fields:
 
 The two log tables, created once for every lifecycle in the application:
 
-- `lifecycleTransitions`: `id`, `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
-- `lifecycleEffectRuns`: `id`, `transitionId`, `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
+- `lifecycleTransitions`: `id` (`bigInt`, primary key, `autoIncrement`), `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
+- `lifecycleEffectRuns`: `id` (`bigInt`, primary key, `autoIncrement`), `transitionId` (`bigInt`, not null, the id of the transition that queued it), `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
 
-The store never passes a log `id`: the database assigns it. Both log tables therefore key on an auto-increment `bigInt`, and `transitionId` refers to it, even when the record table keys on an application UUID; a required `string` id with no generator makes every `runtime.create()` fail with a not-null error:
+Use `table.bigInt('id').primary().autoIncrement().notNull()` for both log IDs: the database assigns them and the store reads entries in that order, even when the business record has a UUID. Different log table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`.
+
+When any caller uses `runtime.create(name, values, { actor, requestId })`, including an importer or a sample seed, add the creation-request table before calling it. The Runtime uses `lifecycleCreationRequests` by default. A custom name is set with the Runtime's `creationRequestsCollection` option. Add this to the self-contained migration's `up`, and drop the same table in its `down`:
 
 ```ts
-// In both log tables:
-table.bigInt('id').primary().autoIncrement().notNull();
-// In lifecycleEffectRuns:
-table.bigInt('transitionId').notNull();
+await builder.createCollection('lifecycleCreationRequests', (table) => {
+  table.string('id', { length: 64 }).primary().notNull();
+  table.string('status').notNull();
+  table.integer('revision').notNull();
+  table.string('actorId').notNull();
+  table.text('fingerprint').notNull();
+  table.string('recordId').nullable();
+  table.string('entryId').nullable();
+  table.datetimeTz('at').notNull();
+});
 ```
 
-Different table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`. Copy the column list from the installed package's README or the lifecycle example's migration (`packages/examples/app-plugin-lifecycle-example/database/migrations/` in the NocoBase repository) rather than guessing, and test it with `describeMigration()` as [testing](testing.md) describes.
+The primary key backs the unique claim for creation retries. Check this table and the two log tables using `describeMigration()` as [testing](testing.md) describes. Retry the same creation with the same request ID and normalized inputs, and verify that only one record and one creation entry exist. Creation without a Runtime request ID, such as creation already deduplicated by the application's operation receipt, uses the two log tables. Transition request IDs are stored on `lifecycleTransitions`.
 
 As soon as the migration, provider and create route exist, before building the page, run one route test against a started application on a real database: create a record, fire its first manual transition, then read back the new state, the two `lifecycleTransitions` entries (`$create` and the transition) and any effect run. This catches a wrong log schema, and a runtime API the installed `@nocobase/lifecycle` does not export (check its `dist/*.d.ts`, not only its version number), while they are still one-line fixes.
 
@@ -265,8 +273,22 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
   }
 
   public override async start(): Promise<void> {
-    // Registers the effect job, opens the executors, schedules the sweep
-    // (reclaim, triggers, onSweep) and recovers runs an earlier process left.
+    const { container } = this.app;
+    if (
+      !container.has(databaseManagerToken) ||
+      !container.has(jobExecutorServiceToken)
+    )
+      return;
+    const collections = container.resolve(databaseManagerToken).collections();
+    if (!(await collections.get('lifecycleEffectRuns'))) {
+      container
+        .resolve(loggingToken)
+        .getLogger('lifecycle')
+        .warn(
+          'Lifecycle recovery is idle because its log collections are not installed.',
+        );
+      return;
+    }
     await this.effectJobs().start(this.lifecycleRuntime());
   }
 
@@ -315,7 +337,7 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
 }
 ```
 
-Add the provider to `server/providers/index.ts`. Business services that create or move records take the runtime from `lifecycleRuntimeToken` rather than writing the table. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
+Add the provider to `server/providers/index.ts`. Keep runtime and dispatcher resolution lazy. The template's [minimal server composition](testing.md#minimal-template-composition) can start application providers without the installed workflow collections or jobs service. The check in `start()` keeps recovery and sweep registration idle in that composition and uses the logical collection name from the store configuration. Let schema inspection and dispatcher errors propagate. Verify the real application through a migrated standalone fixture, including worker startup and execution history. Business services that create or move records take the runtime from `lifecycleRuntimeToken` and use it to maintain state. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 
 To react to changes elsewhere — refresh a page through realtime, keep a to-do list — subscribe with `runtime.on('completed' | 'entered' | 'announce', filter, listener)`. Delivery is best effort: work that must happen is an effect.
 
@@ -331,6 +353,8 @@ The library ships no routes. Write them in `server/routes/` like every other `/a
 | `POST <lifecycle>/{id}/effectRuns/{runId}/retry` with `{ force?, reason? }`          | the record view                           |
 | `POST <lifecycle>/{id}/effectRuns/{runId}/continue`                                  | the record view                           |
 | `POST <lifecycle>/{id}/effectRuns/{runId}/cancel`                                    | the record view                           |
+
+When a list or detail obtains a record through `repository.withPolicy(policy)`, include the definition's `definitionField` (here `lifecycleDefinition`) in that action's server-side read fields and any explicit Repository projection. Also include `id`, the configured state field, `statusChangedAt`, and `lifecycleVersion` when the lifecycle view uses them. For example, the Leave View policy reads `['id', 'applicantId', 'approverId', 'days', 'status', 'statusChangedAt', 'lifecycleVersion', 'lifecycleDefinition']`. `runtime.recordLifecycle(key, row)` reads the stored definition from that row. Select the intended response fields separately if the client does not need the definition field.
 
 Lists and creation are ordinary routes of the application; creation calls `runtime.create(name, values, { actor })` with the definition this entry starts. `<lifecycle>` in these paths is the process's key: the page never names a version. Each record route first asks `runtime.boundLifecycle(key, id)` which definition the record is bound to and calls the runtime with that name, so one page serves the records of every version; a list or a route that has read the record already uses `runtime.recordLifecycle(key, record)`. The description route takes an optional `?definition=<name>` and describes the latest version without one. A record no version started is refused with `DEFINITION_MISMATCH`, which `lifecycleErrorFields()` maps to `400 FAILED_PRECONDITION`; never fall back to the latest version. The fire route passes `manual: true`, so a transition marked `manual: false` is refused with `NOT_MANUAL`:
 

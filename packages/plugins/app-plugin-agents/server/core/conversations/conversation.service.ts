@@ -41,6 +41,7 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -483,6 +484,7 @@ export function createConversationService(
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
       archived: agent ? agent.status !== 'enabled' : false,
+      ...(agent ? agentModelOf(agent) : {}),
     };
   }
 
@@ -735,6 +737,10 @@ export function createConversationService(
     const conn = tx.read();
     const { record, share } = await conversationAccess(conn, userId, id);
     if (!share) return detailOf(conn, record);
+    const agent =
+      !jsonObject(record.metadata).onlineAgent && record.agentId
+        ? await findAgent(conn, record.agentId)
+        : null;
     // Whitelist snapshot fields: no latest runner, project, execution, usage, wait or owner attention.
     return {
       id,
@@ -753,10 +759,7 @@ export function createConversationService(
             archived: false,
           }
         : {
-            ...agentRef(
-              record.agentId,
-              record.agentId ? await findAgent(conn, record.agentId) : null,
-            ),
+            ...agentRef(record.agentId, agent),
             avatar: null,
             archived: false,
           },
@@ -3169,6 +3172,7 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
+              ...agentModelOf(agent),
               availability: availabilityOf(
                 agent,
                 userId,

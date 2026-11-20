@@ -132,6 +132,26 @@ test('lists orders for an administrator only', async ({ testApp, request }) => {
 
 The application starts as `pnpm start` starts it and installs its migrations and seeds on start; one application serves the test file. A user other than the administrator is one a seed of the application created, signed in the same way.
 
+### Minimal template composition
+
+The template's `tests/server/app-server.test.ts` includes a composition test that deliberately replaces routes and plugins. Some of its minimal hosts still load the application's provider list. Keep the scaffold test intact when you add a feature. Resolve feature services lazily, check `container.has(authorizationToken)` before registering catalog entries in a provider that may run without Authorization, and defer lifecycle worker startup until the configured collections are installed. The [lifecycle provider example](lifecycle.md#3-the-provider) shows that check using logical collection metadata. Full application tests should also exercise the new provider on the installed schema with its owning plugins.
+
+When writing your own small composition test, explicitly choose the routes, providers and plugins the fixture exercises. For example, inside the template's embedded test, keep the test route and provider while replacing the production provider list:
+
+```ts
+const resolved = await resolveAppRuntime(
+  {
+    ...appRuntime,
+    plugins: defineServerPlugins<AppConfig>([]),
+    routes: [fixtureRoutes],
+    serviceProviders: [FixtureProvider],
+  },
+  scope,
+);
+```
+
+Use this shape for assembly behavior. Use the standalone fixture above for permission declarations, lifecycle execution or requests that depend on real migrations and plugins.
+
 ### The API document
 
 The same started application proves that every route declares itself for the [API document](http-api.md#api-documentation):

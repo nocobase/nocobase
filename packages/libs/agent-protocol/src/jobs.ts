@@ -21,8 +21,10 @@ import { z } from 'zod';
 
 import { FAILURE_REASONS, type FailureReason } from './events.js';
 import {
+  GitSshAuthSchema,
   RunAppSchema,
   RunStatusSchema,
+  type GitSshAuth,
   type RunApp,
   type RunStatus,
 } from './run.js';
@@ -105,8 +107,9 @@ const sha = z.string().regex(/^[0-9a-f]{7,64}$/u, 'must be a commit hash');
 const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/u;
 
 /**
- * The repository a job works on. The runner fetches it into its bare cache with its own git credentials, or with
- * `auth` when given (an HTTPS token, sent only to git for this fetch); the job's command never sees either.
+ * The repository a job works on. The runner fetches it into its bare cache with the credentials it was given:
+ * `ssh` for pinned SSH, or `auth` for HTTPS. Without either it uses its own Git credentials. The job's command
+ * receives neither kind of credential.
  */
 export interface JobRepo {
   readonly url: string;
@@ -115,12 +118,15 @@ export interface JobRepo {
   /** The commit to check out; the job fails `checkoutFailed` when the repository does not have it. */
   readonly sha?: string;
   readonly auth?: { readonly username?: string; readonly token: string };
+  /** Used for Git checkout only (the gitSsh feature). */
+  readonly ssh?: GitSshAuth;
 }
 
 const repoObject = z.object({
   url: z.string().min(1).max(2000),
   ref: z.string().min(1).max(255).optional(),
   sha: sha.optional(),
+  ssh: GitSshAuthSchema.optional(),
   auth: z
     .object({
       username: z.string().min(1).max(200).optional(),
@@ -294,8 +300,8 @@ export type JobHeader = {
 }[JobKind];
 
 /**
- * What a claim hands a runner for a job. Secrets the job needs (`spec.env` values marked `secret`, `repo.auth`) appear
- * only here and only once.
+ * What a claim hands a runner for a job. Secrets the job needs (`spec.env` values marked `secret`, `repo.auth`,
+ * `repo.ssh`) only appear here.
  */
 export interface JobPayload {
   readonly job: JobHeader;
@@ -464,13 +470,14 @@ export const JobFinishResponseSchema: z.ZodType<JobFinishResponse> = z.object({
 });
 
 /**
- * The secret values a job carries, to keep out of what is reported about it: its repository token, its variables
+ * The secret values a job carries, to keep out of what is reported about it: its repository credentials, its variables
  * marked `secret`, and its upload headers (and the credential alone of one such as `Bearer <ticket>`).
  */
 export function jobSecrets(payload: Pick<JobPayload, 'job'>): string[] {
   const { job } = payload;
   const secrets: string[] = [];
   if (job.spec.repo.auth) secrets.push(job.spec.repo.auth.token);
+  if (job.spec.repo.ssh) secrets.push(job.spec.repo.ssh.privateKey);
   if (job.kind === 'build') {
     for (const variable of job.spec.env)
       if (variable.secret === true) secrets.push(variable.value);

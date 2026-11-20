@@ -74,10 +74,10 @@ Output status, folder-type and Provider error category/reason types have `Known.
 
 ### `MailClient` method groups
 
-- **Providers and accounts:** `listProviders`, `listAccounts`, `startAuthorization`, `connectAccount`, `updateAccount`, `removeAccount`, `getUnreadCount`.
+- **Providers and accounts:** `listProviders`, `listAccounts`, `startAuthorization`, `connectAccount`, `updateAccount`, `previewSyncFolders`, `removeAccount`, `getUnreadCount`. `updateAccount({ accountId, syncFolderIds })` saves the folders an account synchronizes (`null` for every folder) and answers `MailUpdatedAccountView`, whose optional `syncRun` is the initial run a changed selection scheduled and `previewSyncFolders(accountId, syncFolderIds)` returns `MailSyncFolderPreview`, the local messages that selection would delete.
 - **Managed accounts:** `listManagedAccounts`, `listManagementAccounts`, `listManagedFolders`, `listManagedSyncRunsPage`, `listManagedSubmissionsPage`.
 - **Identities and signatures:** `listIdentities`, `updateIdentity`, `listSignatures`, `saveSignature`, `deleteSignature`.
-- **Folders, labels and templates:** `listFolders`, `listLabels`, `createLabel`, `updateLabel`, `deleteLabel`, `listTemplates`, `saveTemplate`, `deleteTemplate`.
+- **Folders, labels and templates:** `listFolders` (synchronized folders; `{ includeUnsynced: true }` adds the others with `synced: false`), `listFolderChoices` (every folder with `synced`; `complete` is false until a synchronization run has read the whole folder list, `failed` means that listing stopped, so start it again with `startSync`, and `initialSyncCompleted` tells whether a sync that keeps the selection runs incrementally), `listLabels`, `createLabel`, `updateLabel`, `deleteLabel`, `listTemplates`, `saveTemplate`, `deleteTemplate`.
 - **Mailbox reads and message actions:** `listMessages`, `listManagedMessages`, `manageMessages`, `listConversationMessages`, `getMessage`, `getManagedMessage`, `retryMessageContent`, `updateMessage`, `updateMessageLabels`, `moveMessage`, `deleteMessage`.
 - **Attachments:** `uploadAttachment`, `downloadAttachment`, `downloadManagedAttachment`.
 - **Compose and drafts:** `sendMessage`, `sendBulk`, `saveDraft`, `resolveDraftConflict`.

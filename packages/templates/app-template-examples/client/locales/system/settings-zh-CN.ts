@@ -23,6 +23,9 @@ const settings = {
 
   permissionManagement: '权限管理',
   defaultAccess: {
+    kindBusiness: '业务操作',
+    kindTable: '数据表',
+    kindLabel: '{{title}}（{{kind}}）',
     noResourcesShort: '暂无可配置的业务对象',
     scopeInvalid: '请重新选择有效的数据范围或完善筛选条件。',
 
@@ -119,7 +122,7 @@ const settings = {
   users: '用户管理',
   roles: '角色与权限',
   usersDescription: '管理用户账户、角色及登录会话。',
-  rolesDescription: '设置每个角色可访问的页面与可执行的操作。',
+  rolesDescription: '设置每个角色能看到的菜单，以及对每类业务数据能做什么。',
   userSearch: '搜索姓名、用户名或邮箱',
   roleSearch: '搜索角色名称',
   newUser: '新建用户',
@@ -252,6 +255,72 @@ const settings = {
       $empty: '为空',
       $notEmpty: '不为空',
     },
+  },
+  copyOfRole: '{{name}}（副本）',
+  selectRole: '选择角色',
+  duplicateRole: '复制为新角色',
+  discardChanges: '放弃修改',
+  unrestrictedRole: '全部权限',
+  openPage: '打开页面',
+  escalation: {
+    roles:
+      '能新建或修改角色的人，可以给任何角色（包括自己的角色）授予任何权限。服务端不会把它限制在其自身已有的权限之内，请只授予可信的管理员。',
+    users:
+      '分配角色会让用户获得这些角色的全部权限，包括管理员角色。请只授予可信的管理员。',
+  },
+  permissionEditor: {
+    menusTab: '菜单',
+    objectsTab: '业务对象',
+    settingsTab: '系统设置',
+    tabCount: '{{count}} / {{total}}',
+    noMenus: '没有菜单',
+    emptyPage:
+      '「{{menu}}」菜单已勾选，但这个角色还不能查看{{object}}，打开后会是空页面。',
+    openView: '去开启「{{action}}」',
+    opensWith: '随「{{action}}」显示，去业务对象设置',
+    attention_one: '{{count}} 个菜单需要注意',
+    attention_other: '{{count}} 个菜单需要注意',
+    objects: '业务对象',
+    search: '搜索业务对象或操作',
+    clearSearch: '清除搜索',
+    noResults: '没有匹配的业务对象或操作',
+    empty: '没有可设置的业务对象',
+    objectEnabled: '{{total}} 项中开 {{enabled}} 项',
+    objectOff: '未开启',
+    enableAll: '全部开启',
+    viewOnly: '只开查看',
+    disableAll: '全部关闭',
+    sameAsView: '和查看一样（{{scope}}）',
+    sameAsObjectView: '和{{object}}的查看一样（{{scope}}）',
+    needsView: '需要开启{{object}}的查看',
+    scopeFor: '{{action}}的数据范围',
+    scopeForSlot: '{{action}}：{{scope}}',
+    managed: '由应用管理',
+    unrestrictedTitle: '全部权限（不受限）',
+    unrestrictedDescription:
+      '该角色可以打开所有菜单，对所有数据执行所有操作，无需设置。',
+    confirmDisable_one: '关闭{{actions}}也会关闭依赖它的{{dependents}}。',
+    confirmDisable_other: '关闭{{actions}}也会关闭依赖它的{{dependents}}。',
+    confirm: '关闭',
+    dismiss: '知道了',
+    noticeScopeReset_one:
+      '查看已收窄，{{actions}}已改回和查看一样（{{view}}）。',
+    noticeScopeReset_other:
+      '查看已收窄，{{actions}}已改回和查看一样（{{view}}）。',
+    noticeAutoEnabled: '已同时开启它依赖的{{actions}}。',
+    noticeStaysOff: '{{action}}保持关闭。',
+    noticeTurnOnFirst_one:
+      '它依赖{{actions}}，这类权限不会自动开启，请先开启。',
+    noticeTurnOnFirst_other:
+      '它依赖{{actions}}，这类权限不会自动开启，请先开启。',
+    noticeManagedRequirement_one:
+      '它依赖{{actions}}，这些由应用管理，无法在这里开启。',
+    noticeManagedRequirement_other:
+      '它依赖{{actions}}，这些由应用管理，无法在这里开启。',
+    noticeManagedDependent_one:
+      '没有关闭任何操作：由应用管理的{{actions}}依赖它。',
+    noticeManagedDependent_other:
+      '没有关闭任何操作：由应用管理的{{actions}}依赖它。',
   },
   recordScope: '数据范围',
   levelFor: '{{name}} 的范围',

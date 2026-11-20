@@ -24,7 +24,7 @@ Sample data is optional example content for exploring or developing an applicati
 
 Use `@nocobase/app-plugin-demo-mode` when the requirement is a dedicated demo system with a separate database and storage, repeatable data lifecycle, visitor write policies and optional Agent or external-call simulation. Follow that installed plugin's Skill for its application-owned dataset and full-business cleanup contract. A request for a few example records does not require this plugin. Both mechanisms can use the same fictional story or application fixture helpers, but keep their execution and cleanup lifecycles separate; do not register the same data-generation routine in both paths and run it twice.
 
-Declare sample data as a sample seed or on `sampleDataToken`, as the [nocobase-db Skill](../../nocobase-db/SKILL.md#2-migrations-and-seeds) describes; it runs only on a fresh install with `APP_SAMPLE_DATA=true`. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it.
+Declare sample data as a sample seed or on `sampleDataToken`, as the [nocobase-db Skill](../../nocobase-db/SKILL.md#2-migrations-and-seeds) describes; it runs only on a fresh install with `APP_SAMPLE_DATA=true`. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it. To rebuild a disposable development database with its demo data, run `pnpm nocobase db reset --force` followed by `pnpm nocobase db sample`. The second command runs the provider hooks skipped by reset or apply; see the database Skill above.
 
 ## Multiple connections
 

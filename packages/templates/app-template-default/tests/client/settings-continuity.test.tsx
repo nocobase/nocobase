@@ -21,8 +21,6 @@ import { expect, it, vi } from 'vitest';
 import UsersPage from '../../client/pages/settings/users.js';
 import UserDetail from '../../client/pages/settings/user-detail.js';
 import UserForm from '../../client/pages/settings/user-form.js';
-import RolesPage from '../../client/pages/settings/roles.js';
-import { BackButton } from '../../client/components/back-button.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 const namespace = '@nocobase/continuity-test';
@@ -391,59 +389,6 @@ it.each(['/settings/users', '/users'])(
     );
   },
 );
-
-it('restores a controlled role table from URL after unmounting a detail view', async () => {
-  const roles = Array.from({ length: 25 }, (_, i) => ({
-    key: `role-${i}`,
-    title: `Role ${String(i).padStart(2, '0')}`,
-    grants: [],
-  }));
-  const user = userEvent.setup();
-  await renderWithApp(
-    <>
-      <Routes>
-        <Route path='/settings/roles' element={<RolesPage />} />
-        <Route
-          path='/settings/roles/:id/edit'
-          element={
-            <BackButton
-              to={{
-                pathname: '/settings/roles',
-                search: '?page=2&pageSize=10&sort=title&order=desc',
-              }}
-            />
-          }
-        />
-      </Routes>
-      <Location />
-    </>,
-    {
-      route: '/settings/roles?page=2&pageSize=10&sort=title&order=desc',
-      namespace,
-      namespaces,
-      services,
-      fetch: answerApi(({ path }) =>
-        path === 'authorization/permissions'
-          ? { data: { unrestricted: false, permissions: [] } }
-          : { data: roles },
-      ),
-    },
-  );
-  const link = await screen.findByRole('link', {
-    name: 'Role 14',
-    exact: true,
-  });
-  expect(screen.getByText('Page 2 of 3')).toBeVisible();
-  expect(
-    within(screen.getAllByRole('row')[1]!).getByText('Role 14'),
-  ).toBeVisible();
-  await user.click(link);
-  await user.click(screen.getByRole('link', { name: 'Back' }));
-  expect(
-    await screen.findByRole('link', { name: 'Role 14', exact: true }),
-  ).toBeVisible();
-  expect(screen.getByText('Page 2 of 3')).toBeVisible();
-});
 
 it('keeps loaded users visible when role labels fail and provides retry without an empty actions menu', async () => {
   await renderWithApp(<UsersPage />, {

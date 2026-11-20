@@ -10,16 +10,51 @@ Default access, sharing rules and restriction rules are optional plugins; read t
 
 ## Where the pieces live in the application
 
-| Piece                                                                      | Application location                                                                             | Contract                                                                                                                                                                                                                 |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Collection, composite, record-access, settings and workspace registrations | The feature's provider in `server/providers/`, resolving `authorizationToken`                    | [Implement in this order](../../nocobase-app-plugin-authorization/SKILL.md#implement-in-this-order), [fluent declarations](../../nocobase-app-plugin-authorization/references/fluent-registration.md)                    |
-| Endpoint enforcement                                                       | Every endpoint in `server/routes/` installs authentication and authorization                     | [Repository route integration](../../nocobase-app-plugin-authorization/references/repository-routes.md)                                                                                                                  |
-| Page grants                                                                | `authz` on the first page of every path in `client/routes.ts`; `useCan` for buttons              | [Client development](../../nocobase-app-plugin-authorization/references/client-development.md)                                                                                                                           |
-| Role editor catalog                                                        | `client/pages/settings/permission-workspace.ts`, composed with the permission UI Registry        | [Application-owned permission editor](../../nocobase-app-plugin-authorization/references/client-development.md#application-owned-permission-editor), [role list presentation](system-settings.md#role-list-presentation) |
-| Initial configuration                                                      | Idempotent seeds for fresh installs, authorized services for existing ones; schema in migrations | [Code versus seeds](../../nocobase-app-plugin-authorization/references/code-and-seeds.md)                                                                                                                                |
-| Departments or teams as inherited subjects                                 | Application-owned organisation model                                                             | [Organisation dimension](../../nocobase-app-plugin-authorization/references/organization/overview.md)                                                                                                                    |
+| Piece                                                                      | Application location                                                                             | Contract                                                                                                                                                                                              |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Collection, composite, record-access, settings and workspace registrations | The feature's provider in `server/providers/`, resolving `authorizationToken`                    | [Implement in this order](../../nocobase-app-plugin-authorization/SKILL.md#implement-in-this-order), [fluent declarations](../../nocobase-app-plugin-authorization/references/fluent-registration.md) |
+| Endpoint enforcement                                                       | Every endpoint in `server/routes/` installs authentication and authorization                     | [Repository route integration](../../nocobase-app-plugin-authorization/references/repository-routes.md)                                                                                               |
+| Page grants                                                                | `authz` on the first page of every path in `client/routes.ts`; `useCan` for buttons              | [Client development](../../nocobase-app-plugin-authorization/references/client-development.md)                                                                                                        |
+| Role editor catalog                                                        | `client/pages/settings/permission-workspace.ts`, composed with the permission UI Registry        | [Three-tab role editor](#configure-the-three-tab-role-editor), [role list presentation](system-settings.md#role-list-presentation)                                                                    |
+| Initial configuration                                                      | Idempotent seeds for fresh installs, authorized services for existing ones; schema in migrations | [Code versus seeds](../../nocobase-app-plugin-authorization/references/code-and-seeds.md)                                                                                                             |
+| Departments or teams as inherited subjects                                 | Application-owned organisation model                                                             | [Organisation dimension](../../nocobase-app-plugin-authorization/references/organization/overview.md)                                                                                                 |
 
 Keep permission declarations with the feature that owns them: in the App for application-owned features, or in the plugin when the feature is a plugin. For an executable application-owned example of scoped relation choices and batch assignments, see the [customer/contact reference](frontend/references/executable-relation-batch.md).
+
+## Configure the three-tab role editor
+
+When you add business permissions, update the application's `permissionWorkspaceSelection` in `client/pages/settings/permission-workspace.ts`. Follow the authorization Skill's [three-tab role editor setup](../../nocobase-app-plugin-authorization/references/client-development.md#configure-the-three-tab-role-editor) for menu-to-object mappings, View scope limits, action descriptions and scope titles. The [waybill example](../../nocobase-app-plugin-authorization/references/client-development.md#example-create-a-waybill-with-scoped-related-records) covers Create with existing related records. Use `filterFieldTitles` for localized filter captions keyed by collection and field, as in the templates' workspace selection.
+
+Test with an ordinary user: confirm menu access, each operation and its effective scope independently. Save and reload the role to verify hidden grants survive a name-only edit. Exercise direct API denials as described in the [authorization verification guide](../../nocobase-app-plugin-authorization/references/business-module.md#7-client-and-verification).
+
+## Seed parameterized Custom Filter scopes
+
+Use `buildFilter(...).root` as `params.filter` when seeding a [parameterized Custom Filter scope](../../nocobase-app-plugin-authorization/references/core-api.md#parameterized-record-scopes-in-administration).
+
+Declare the value in `database/seed-data/permission-sets.ts` using the `waybills` resource from the linked example. Its provider registers the resource at app boot. The role below grants View for one origin site. When applying the same filter to additional actions, use their declared scope slots and retain all existing related-object grants and scope selections.
+
+```ts
+import { selection } from '@nocobase/authorization/core';
+import { definePermissionSet } from '@nocobase/authorization/permission-sets';
+import { buildFilter } from '@nocobase/repository-input';
+import { waybills } from '../../server/waybill-resources.js';
+
+const params = {
+  filter: buildFilter((f) => f.string('originSiteId').eq('north-site')).root,
+};
+const northSiteWaybills = selection.recordAccess('customFilter', params);
+
+export const northDispatcher = definePermissionSet('tms-north-dispatcher')
+  .title('North dispatcher')
+  .grant(waybills.reference().grant({ view: { waybills: northSiteWaybills } }))
+  .build();
+```
+
+Persist the value through the [permission-set seed lifecycle](../../nocobase-app-plugin-authorization/references/code-and-seeds.md). Rename the role, reload it and verify its filter parameters survive. Sign in as the assigned dispatcher and verify that View returns only the selected site's waybills and that any other configured actions still enforce their scopes.
+
+## Verify write refusals
+
+Use the [standard API errors](http-api.md#errors) and the [lifecycle route's error conversion](lifecycle.md#4-the-record-routes). For duplicate creation, declare a unique constraint on the business key in a migration. Catch `isUniqueConstraintViolation` from `@nocobase/db` outside the write transaction and answer with `ApiError` (`ALREADY_EXISTS`). Test duplicate creation, stale expected versions and invalid lifecycle states against the running application. Verify that each refusal leaves records, versions, transition history and effects intact.
 
 ## Initial administrator
 
@@ -32,8 +67,6 @@ Default to named users selected through User management → Assign roles. Do not
 A global default is supported only when the user explicitly requests it and the application delivers an authorized administration control to inspect its recipient population, change the default role and revoke that assignment. User access details must distinguish direct roles from inherited roles and link to the source. If those controls are unavailable, explain the limitation and use explicit user assignments instead. Never invent a configuration flag, seed-only setting or undocumented SQL instruction as the administrator's normal adjustment interface.
 
 Retain and run `pnpm exec vitest run tests/server/authorization-assignment-safety.test.ts` from the template. The test starts the real application on an isolated database, including registered migrations/seeds, and checks actual global assignments and member grants rather than searching source literals. When adding a genuinely requested global default, extend the expected baseline narrowly only after delivering the management UI and testing its visibility, update, revocation and authorization. Record that deliberate exception with the feature's tests; never delete or skip the guard. This test covers initialized state, not every later administrative write or custom subject resolver; also test effective access and direct API denials with ordinary identities.
-
-For page-access presentation, compose `section.navigation` from the application's complete runtime menu hierarchy and its existing navigation transforms, without filtering the catalog by the signed-in editor's own visible menus. Reference stable page row ids, deduplicate inherited/shared page grants, retain independently protected non-menu pages, and keep flat menus at one level. Structural groups only expand/collapse; actual parent pages and child pages have independent checkboxes. Searching retains ancestor context and never changes grants. See the permission-editor Registry contract for its optional navigation nodes and translated disclosure labels. Page access holds business pages only; settings pages go under Configuration permissions, as the [permission editor contract](../../nocobase-app-plugin-authorization/references/client-development.md#application-owned-permission-editor) describes.
 
 ## Explain the result
 

@@ -42,9 +42,9 @@ export class JobFailure extends Error {
   constructor(
     reason: JobFailureReason,
     message: string,
-    facts: { exitCode?: number; sha?: string } = {},
+    facts: { exitCode?: number; sha?: string; cause?: unknown } = {},
   ) {
-    super(message);
+    super(message, { cause: facts.cause });
     this.reason = reason;
     this.exitCode = facts.exitCode;
     this.sha = facts.sha;

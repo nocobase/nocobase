@@ -6,16 +6,15 @@ import {
   authorizationClientToken,
   type PermissionGrant,
 } from '@nocobase/app-plugin-authorization/client';
-import {
-  defineAppRoutes,
-  defineClientPlugin,
-} from '@nocobase/app-client/plugins';
-import { screen, waitFor, within } from '@testing-library/react';
+import { defineClientPlugin } from '@nocobase/app-client/plugins';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import RoleForm from '../../client/pages/settings/role-form.js';
 import RolesPage from '../../client/pages/settings/roles.js';
+import settingsShellRoutes from '../../client/pages/settings/shell-routes.js';
+import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
@@ -95,17 +94,7 @@ describe('user permission configuration', () => {
             plugins: [
               defineClientPlugin({
                 packageName: namespace,
-                routes: defineAppRoutes([
-                  {
-                    name: 'users',
-                    path: '/users',
-                    authz: {
-                      resource: { type: 'user', id: '*' },
-                      action: 'read',
-                    },
-                    componentLoader: async () => ({ default: () => null }),
-                  },
-                ]),
+                routes: [settingsShellRoutes, systemSettingsRoutes],
               })(),
             ],
             services: (app: ClientApplication) =>
@@ -116,29 +105,29 @@ describe('user permission configuration', () => {
             fetch: answerApi(calls),
           },
         );
+      // User management is a settings page, set on the System settings tab.
+      const openUsers = async () => {
+        await user.click(
+          await screen.findByRole('tab', {
+            name: new RegExp(words.permissionEditor.settingsTab),
+          }),
+        );
+        await screen.findByRole('heading', { name: words.users });
+      };
       const first = await mount();
+      await openUsers();
       const labels = [
         words.createUsers,
         words.updateUsers,
         words.revokeSessions,
       ];
       for (const label of labels) {
-        const toggle = await screen.findByRole('checkbox', { name: label });
-        await waitFor(() =>
-          expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
-        );
+        const toggle = await screen.findByRole('switch', { name: label });
+        await waitFor(() => expect(toggle).not.toBeDisabled());
         expect(toggle).not.toBeChecked();
         await user.click(toggle);
       }
-      expect(
-        screen.getByRole('heading', { name: words.userInformation }),
-      ).toBeVisible();
-      expect(
-        screen.getByRole('heading', { name: words.accountSecurity }),
-      ).toBeVisible();
-      expect(
-        screen.getByRole('heading', { name: words.roleAssignment }),
-      ).toBeVisible();
+      // The Users pages implement exactly these operations; changing a user's roles is marked high risk.
       const permissionNames = [
         words.readUsers,
         words.createUsers,
@@ -148,27 +137,12 @@ describe('user permission configuration', () => {
         words.revokeSessions,
         words.assignRole,
       ];
-      const permissionCheckboxes = permissionNames.map((name) =>
-        screen.getByRole('checkbox', { name, exact: true }),
-      );
-      expect(screen.getAllByRole('checkbox')).toHaveLength(
-        permissionNames.length,
-      );
+      for (const name of permissionNames)
+        expect(screen.getByRole('switch', { name })).toBeVisible();
       expect(
-        screen.queryByRole('checkbox', { name: words.inviteUsers }),
+        screen.queryByRole('switch', { name: words.inviteUsers }),
       ).not.toBeInTheDocument();
-      const rowIds = permissionCheckboxes.map((node) => node.id);
-      expect(rowIds).not.toContain('');
-      expect(new Set(rowIds).size).toBe(permissionNames.length);
-      const status = within(
-        screen.getByRole('tablist', { name: words.permissionStatus }),
-      );
-      expect(status.getAllByRole('tab')).toHaveLength(3);
-      expect(
-        status.getByRole('tab', { name: words.permissionAll, exact: true }),
-      ).toHaveAttribute('aria-selected', 'true');
-      for (const name of [words.permissionGranted, words.permissionUngranted])
-        expect(status.getByRole('tab', { name, exact: true })).toBeVisible();
+      expect(screen.getByText(words.escalation.users)).toBeVisible();
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );
@@ -193,13 +167,12 @@ describe('user permission configuration', () => {
       );
       first.unmount();
       await mount();
+      await openUsers();
       for (const label of labels)
         expect(
-          await screen.findByRole('checkbox', { name: label }),
+          await screen.findByRole('switch', { name: label }),
         ).toBeChecked();
-      await user.click(
-        screen.getByRole('checkbox', { name: words.updateUsers }),
-      );
+      await user.click(screen.getByRole('switch', { name: words.updateUsers }));
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );

@@ -91,7 +91,12 @@ export interface AuthorizationOptions {
   readonly resourceGroups?: readonly AuthorizationOptionsResourceGroup[];
   readonly subjectTypes: readonly AuthorizationOptionsSubjectType[];
   readonly recordAccess: readonly AuthorizationOptionsRecordAccess[];
-  readonly collections: readonly { name: string; fields: readonly string[] }[];
+  /** The registered collections, with the title they were registered with. */
+  readonly collections: readonly {
+    name: string;
+    title: OptionText;
+    fields: readonly string[];
+  }[];
 }
 
 const title = (value: AuthorizationTitle | undefined, fallback: string) =>
@@ -118,9 +123,15 @@ export async function authorizationOptions(
 ): Promise<AuthorizationOptions> {
   const database = databaseHost(host.database);
   const described = await Promise.all(
-    host.database.collections.list().map(async ({ name }) => {
-      const collection = await database?.describe(name);
-      return collection && { name, fields: collection.fields };
+    host.database.collections.list().map(async (definition) => {
+      const collection = await database?.describe(definition.name);
+      return (
+        collection && {
+          name: definition.name,
+          title: title(definition.title, definition.name),
+          fields: collection.fields,
+        }
+      );
     }),
   );
   const collections = described.filter((item) => item !== undefined);

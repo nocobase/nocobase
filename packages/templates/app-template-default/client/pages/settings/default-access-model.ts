@@ -3,7 +3,10 @@ import type {
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
 import type { CatalogResource } from './permissions-model.js';
-import { permissionScopeTitle } from './permission-workspace.js';
+import {
+  collectionTitles,
+  permissionScopeTitle,
+} from './permission-workspace.js';
 
 export type ScopeSelection =
   | { readonly type: 'all' }
@@ -46,6 +49,7 @@ export function ruleResources(
     .filter((resource) =>
       Object.values(resource.dataScopes ?? {}).some((scopes) => scopes.length),
     );
+  const titles = collectionTitles(catalog);
   const seen = new Set<string>();
   return [
     ...resources,
@@ -55,6 +59,9 @@ export function ruleResources(
       title: permissionScopeTitle(
         { type: 'database.collection', id: collection.name },
         { collection: collection.name, title: collection.name },
+        undefined,
+        undefined,
+        titles,
       ),
       actions: ['read', 'update', 'delete'].map((name) => ({
         name,
@@ -70,6 +77,32 @@ export function ruleResources(
     seen.add(key);
     return true;
   });
+}
+/**
+ * Labels of rule resources by `resourceKey`. A business resource and a data table often share a name, such as
+ * Customers; those labels say which kind each one is.
+ */
+export function ruleResourceLabels(
+  resources: readonly CatalogResource[],
+  text: (value: LocalizedText) => string,
+  label: (title: string, kind: 'business' | 'table') => string,
+): ReadonlyMap<string, string> {
+  const titles = resources.map((resource) => text(resource.title));
+  return new Map(
+    resources.map((resource, index) => {
+      const title = titles[index];
+      const shared = titles.filter((other) => other === title).length > 1;
+      return [
+        resourceKey(resource),
+        shared
+          ? label(
+              title,
+              resource.type === 'database.collection' ? 'table' : 'business',
+            )
+          : title,
+      ];
+    }),
+  );
 }
 export function ruleScopes(
   resource: CatalogResource | undefined,
@@ -102,7 +135,13 @@ export function ruleScopes(
           action: action.name,
           scopeKey: scope.key,
           actionTitle: action.title,
-          title: permissionScopeTitle(resource, scope, undefined, action.name),
+          title: permissionScopeTitle(
+            resource,
+            scope,
+            undefined,
+            action.name,
+            collectionTitles(catalog),
+          ),
           collection: scope.collection,
           fields: scope.fields,
           recordAccess: scope.recordAccess,

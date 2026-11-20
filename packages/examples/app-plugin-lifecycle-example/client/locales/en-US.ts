@@ -1,6 +1,34 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
+  ticketManagement: {
+    title: 'Manage lifecycle',
+    action: 'Management action',
+    current: 'Current state',
+    target: 'Target state',
+    reason: 'Reason',
+    submit: 'Apply action',
+    suspended: 'Suspended',
+    paused:
+      'This workflow is suspended. Ticket actions are paused until an administrator resumes or restarts it.',
+    history: 'Management history',
+    audit: 'Administrator {{actor}} · {{time}} · Round {{from}} → {{to}}',
+    restartNotice:
+      'This starts a new round and invalidates queued work and pending continuations. In-flight notifications may still complete.',
+    conflict:
+      'The ticket changed. Close this dialog and review the latest state before submitting again.',
+    commands: {
+      suspend: 'Suspend',
+      resume: 'Resume current stay',
+      reset: 'Reset to New',
+      restartAt: 'Restart at a state',
+    },
+    work: {
+      queued: 'Queued work will be cancelled',
+      running: 'In-flight work may complete',
+      continuation: 'Pending continuation will be dropped',
+    },
+  },
   navigation: {
     parameters: 'Runtime parameters',
     group: 'Workflow',

@@ -120,6 +120,7 @@ export function gitWrapperScript(
   real: string,
   guard: string,
   node: string = process.execPath,
+  sshPushCommand?: string,
 ): string {
   return [
     '#!/bin/sh',
@@ -129,6 +130,15 @@ export function gitWrapperScript(
     `    config|credential|-c|--config-env*|*://*@*) ${quote(node)} ${quote(guard)} "$@" || exit 1; break ;;`,
     '  esac',
     'done',
+    ...(sshPushCommand === undefined
+      ? []
+      : [
+          'for arg do',
+          '  case "$arg" in',
+          `    push) exec ${sshPushCommand} ${quote(real)} "$@" ;;`,
+          '  esac',
+          'done',
+        ]),
     `exec ${quote(real)} "$@"`,
     '',
   ].join('\n');
@@ -308,6 +318,7 @@ export interface WriteHostToolsOptions {
   /** The URLs the broker answers for, in its order. */
   urls?: readonly string[];
   tools?: readonly RunGitTool[];
+  sshPushCommand?: string;
   /** Where real binaries are looked for, outside `binDir`. */
   searchPath?: string;
   log?: (message: string) => void;
@@ -347,7 +358,12 @@ export async function writeHostTools(
     let script: string;
     if (bin === 'git') {
       guard ??= await installCommandGuard(options.helpersDir);
-      script = gitWrapperScript(real, guard);
+      script = gitWrapperScript(
+        real,
+        guard,
+        process.execPath,
+        options.sshPushCommand,
+      );
     } else {
       const tool = byBin.get(bin);
       const index =
