@@ -41,9 +41,9 @@ describe('historical Runner conversation domain', () => {
     h = await createHarness();
     const opencode = await h.createAgent({
       source: 'runner',
-      name: 'OpenCode · Qwen3.8 Flash（my-lan-gateway）',
+      name: 'OpenCode · Qwen3.8 Flash (example-provider)',
       modelEntries: [
-        { tool: 'opencode', model: 'my-lan-gateway/qwen3.8-flash' },
+        { tool: 'opencode', model: 'example-provider/qwen3.8-flash' },
       ],
     });
     const claude = await h.createAgent({
@@ -54,9 +54,9 @@ describe('historical Runner conversation domain', () => {
     const named = (await domain().get(ALICE, await newConversation(opencode)))
       .agent;
     expect(named).toMatchObject({
-      model: 'my-lan-gateway/qwen3.8-flash',
-      shortName: 'Qwen3.8 Flash（my-lan-gateway）',
-      modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
+      model: 'example-provider/qwen3.8-flash',
+      shortName: 'Qwen3.8 Flash (example-provider)',
+      modelTitle: 'OpenCode · example-provider/qwen3.8-flash',
     });
     expect(
       (await domain().get(ALICE, await newConversation(claude))).agent,

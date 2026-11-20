@@ -270,22 +270,22 @@ describe('the Agent page', () => {
     });
     agents = [
       ...agents,
-      qwen('lan', 'OpenCode · Qwen3.8 Flash', 'my-lan-gateway/qwen3.8-flash'),
+      qwen('lan', 'OpenCode · Qwen3.8 Flash', 'example-provider/qwen3.8-flash'),
       qwen(
         'console',
-        'OpenCode · Qwen3.8 Flash（opencode）',
+        'OpenCode · Qwen3.8 Flash (opencode)',
         'opencode/qwen3.8-flash',
       ),
     ];
     renderPage(<AgentsPage />);
     const lan = await screen.findByTestId('agent-lan');
     expect(lan).toHaveTextContent('OpenCode · Qwen3.8 Flash');
-    expect(lan).not.toHaveTextContent('（');
+    expect(lan).not.toHaveTextContent('Flash (');
     expect(within(lan).getByTestId('agent-model').textContent).toBe(
-      'my-lan-gateway/qwen3.8-flash',
+      'example-provider/qwen3.8-flash',
     );
     expect(screen.getByTestId('agent-console')).toHaveTextContent(
-      'OpenCode · Qwen3.8 Flash（opencode）',
+      'OpenCode · Qwen3.8 Flash (opencode)',
     );
   });
 
