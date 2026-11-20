@@ -276,6 +276,180 @@ sales: {
 
 Before handing over the application, open the three tabs in Chinese. Check the menu's object tags and its warning when the menu is selected and its primary object's View is off. Open a multi-scope operation and verify its slot labels use the translated collection titles and each action shows a translated name and description. Save a scoped role and sign in as an ordinary user assigned to it. Verify that a record inside its scope appears and a record outside its scope stays inaccessible in the application and direct authorized requests.
 
+### Example: create a waybill with scoped related records
+
+This example registers the business object `tms.waybills`, whose collection/table is `tmsWaybills`. The `create` action has four registered scope slots: `waybills` for the new row, plus `carriers`, `sites` and `vehicles` for the existing related rows selected by the form. The authorization API returns policies keyed by collection/table name, so use `conditions.database.tmsWaybills`, `tmsCarriers`, `tmsSites` and `tmsVehicles`, never the composite ID or scope-slot names.
+
+The server declaration uses the same slot names as the editor configuration below. It grants create fields on `tmsWaybills` and read access on each related table. Register those four collections and place the composite in the owning provider so the editor catalog includes it.
+
+```ts
+import { defineCompositeResource } from '@nocobase/authorization/core';
+import { defineDatabasePermission } from '@nocobase/app-plugin-authorization/server';
+
+interface Waybill {
+  id: string;
+  reference: string;
+  carrierId: string;
+  originSiteId: string;
+  destinationSiteId: string;
+  vehicleId: string;
+}
+interface NamedRecord {
+  id: string;
+  name: string;
+}
+
+const waybillData = defineDatabasePermission((p) =>
+  p
+    .collection<Waybill>('tmsWaybills')
+    .title('Waybills')
+    .read([
+      'id',
+      'reference',
+      'carrierId',
+      'originSiteId',
+      'destinationSiteId',
+      'vehicleId',
+    ]),
+);
+const carrierData = defineDatabasePermission((p) =>
+  p
+    .collection<NamedRecord>('tmsCarriers')
+    .title('Carriers')
+    .read(['id', 'name']),
+);
+const siteData = defineDatabasePermission((p) =>
+  p.collection<NamedRecord>('tmsSites').title('Sites').read(['id', 'name']),
+);
+const vehicleData = defineDatabasePermission((p) =>
+  p
+    .collection<NamedRecord>('tmsVehicles')
+    .title('Vehicles')
+    .read(['id', 'name']),
+);
+
+export const waybills = defineCompositeResource('tms.waybills', (r) =>
+  r
+    .title('Waybills')
+    .action('view', (a) => a.title('View').grant('waybills', waybillData))
+    .action('create', (a) =>
+      a
+        .title('Create')
+        .grant(
+          'waybills',
+          waybillData.create([
+            'reference',
+            'carrierId',
+            'originSiteId',
+            'destinationSiteId',
+            'vehicleId',
+          ]),
+        )
+        .grant('carriers', carrierData)
+        .grant('sites', siteData)
+        .grant('vehicles', vehicleData),
+    ),
+);
+
+// In the owning provider's boot method:
+authz.database.collections.add({ name: 'tmsWaybills', title: 'Waybills' });
+authz.database.collections.add({ name: 'tmsCarriers', title: 'Carriers' });
+authz.database.collections.add({ name: 'tmsSites', title: 'Sites' });
+authz.database.collections.add({ name: 'tmsVehicles', title: 'Vehicles' });
+const reference = authz.compositeResources.define(waybills);
+authz.ui.sections.add({ name: 'tms', title: 'Transport', parent: 'business' });
+authz.ui.place(reference, { section: 'tms' });
+```
+
+In `client/pages/settings/permission-workspace.ts`, configure that exact composite and hide only the new waybill's own scope. Keep all three related-record scopes visible, with short action titles supplied by the registered resource; use the registered collection names as the `scopeTitles` keys.
+
+```ts
+export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
+  business: [
+    {
+      type: 'composite',
+      id: 'tms.waybills',
+      actions: ['view', 'create'],
+      actionDescriptions: {
+        view: { key: 'tms.waybills.actions.view.description' },
+        create: { key: 'tms.waybills.actions.create.description' },
+      },
+      scopeTitles: {
+        tmsWaybills: { key: 'tms.waybills.title' },
+        tmsCarriers: { key: 'tms.carriers.title' },
+        tmsSites: { key: 'tms.sites.title' },
+        tmsVehicles: { key: 'tms.vehicles.title' },
+      },
+      hiddenActionScopes: { create: ['waybills'] },
+    },
+  ],
+};
+```
+
+Authorize the action before opening the write transaction. Check every expected collection policy, then use each one with the repository of the same name. The related-record lookups enforce the three picker scopes; the waybill repository policy enforces the create grant on the new row.
+
+```ts
+import { AuthorizationDeniedError } from '@nocobase/authorization/core';
+import type { AuthorizationContext } from '@nocobase/app-plugin-authorization/server';
+import type { DatabaseManager } from '@nocobase/db';
+
+export async function createWaybill(
+  database: DatabaseManager,
+  authorization: AuthorizationContext,
+  input: {
+    reference: string;
+    carrierId: string;
+    originSiteId: string;
+    destinationSiteId: string;
+    vehicleId: string;
+  },
+): Promise<void> {
+  const decision = await authorization.authorize({
+    resource: { type: 'composite', id: 'tms.waybills' },
+    action: 'create',
+  });
+  const policies = decision.conditions?.database;
+  if (
+    decision.effect === 'deny' ||
+    !policies?.tmsWaybills ||
+    !policies.tmsCarriers ||
+    !policies.tmsSites ||
+    !policies.tmsVehicles
+  )
+    throw new AuthorizationDeniedError(decision);
+
+  await database.transaction(async (connection) => {
+    const carrier = await connection
+      .repository('tmsCarriers')
+      .withPolicy(policies.tmsCarriers)
+      .findOne({ filter: { id: input.carrierId } });
+    const origin = await connection
+      .repository('tmsSites')
+      .withPolicy(policies.tmsSites)
+      .findOne({ filter: { id: input.originSiteId } });
+    const destination = await connection
+      .repository('tmsSites')
+      .withPolicy(policies.tmsSites)
+      .findOne({ filter: { id: input.destinationSiteId } });
+    const vehicle = await connection
+      .repository('tmsVehicles')
+      .withPolicy(policies.tmsVehicles)
+      .findOne({ filter: { id: input.vehicleId } });
+    if (!carrier || !origin || !destination || !vehicle)
+      throw new AuthorizationDeniedError(decision);
+
+    await connection
+      .repository('tmsWaybills')
+      .withPolicy(policies.tmsWaybills)
+      .create({ values: input });
+  });
+}
+```
+
+Validate and normalize request fields with the route's input schema, and include any server-owned fields required by the collection. The role's View grants for Carriers, Sites and Vehicles must also be present when the user needs to choose those records; the Create action does not grant those separate View actions.
+
+After generating the application, compare the registered resource/action scope slots with `permissionWorkspaceSelection`. In the role editor, confirm the operation titles are `View` and `Create`, Create shows exactly Carriers, Sites and Vehicles, and no selector appears for the new waybill's own `waybills` slot. Inspect the handler to confirm it reads and binds all four policies by table name, then try an out-of-scope carrier, site and vehicle as an ordinary user; each request must be denied and leave the waybill count unchanged.
+
 ## Settings screens
 
 A settings screen is an ordinary application page: declare it among the App's own routes in `client/routes.ts` with `defineAppRoutes`, a lazy page module, navigation keys and `authz: { resource: { type: 'settings', id }, action: 'read' }` naming a settings item registered on the server with `authz.settings.add`. Declare `authz` on every such entry page: one that omits it defaults to `'unrestricted'`, which only root may open. Check read and each write action separately in the endpoints. Plugins contribute no settings screens, and the authorization plugins ship no permission-set or rule editors; an App that needs one builds it on the management HTTP API.
