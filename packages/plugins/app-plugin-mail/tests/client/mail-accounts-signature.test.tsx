@@ -1012,6 +1012,85 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(mail.startSync).toHaveBeenCalledTimes(1);
   });
 
+  it('shows no error of a replaced run whose status request fails late', async () => {
+    const previous = {
+      id: 'run-previous',
+      accountId: 'account-1',
+      mode: 'incremental',
+      status: 'running',
+      phase: 'incremental',
+      processedMessages: 3,
+      processedPages: 1,
+    };
+    const initial = {
+      id: 'run-initial',
+      accountId: 'account-1',
+      mode: 'initial',
+      status: 'pending',
+      phase: 'preparing',
+      processedMessages: 0,
+      processedPages: 0,
+    };
+    mail.startSync.mockResolvedValue(previous);
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+      syncRun: initial,
+    }));
+    let failPrevious: (cause: unknown) => void = () => {};
+    mail.getSyncRun.mockImplementation(
+      (id: string) =>
+        new Promise((resolve, reject) => {
+          if (id === 'run-previous') failPrevious = reject;
+          else resolve({ ...initial, status: 'running', processedMessages: 5 });
+        }),
+    );
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await renderPage(<MailAccountsPage />);
+      await confirmSync(await screen.findByRole('button', { name: 'Sync' }));
+      notifyMailChanged();
+      await waitFor(() =>
+        expect(mail.getSyncRun).toHaveBeenCalledWith('run-previous'),
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Confirm sync scope',
+      });
+      fireEvent.click(
+        await within(dialog).findByRole('radio', {
+          name: /^Selected folders/,
+        }),
+      );
+      fireEvent.click(
+        within(dialog).getByRole('checkbox', { name: 'Archive' }),
+      );
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+      );
+      expect(await screen.findByText('0 messages in 0 batches')).toBeVisible();
+
+      // The cancelled run's request fails only now; nothing of it reaches the page or is retried.
+      await act(async () =>
+        failPrevious(new Error('Status of the replaced run failed')),
+      );
+      mail.getSyncRun.mockClear();
+      notifyMailChanged();
+      expect(await screen.findByText('5 messages in 0 batches')).toBeVisible();
+      expect(
+        screen.queryByText('Status of the replaced run failed'),
+      ).toBeNull();
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(mail.getSyncRun.mock.calls).toEqual([['run-initial']]);
+      expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+      expect(mail.startSync).toHaveBeenCalledTimes(1);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it('keeps a saved scope whose folder was deleted on the server when the owner changes nothing', async () => {
     mail.listAccounts.mockResolvedValue([
       {

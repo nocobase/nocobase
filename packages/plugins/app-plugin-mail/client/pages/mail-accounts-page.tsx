@@ -2,7 +2,14 @@ import { useRealtimeRefresh, ApiClientError } from '@nocobase/app-client';
 import { MAIL_REALTIME_TOPIC } from '../../shared/realtime.js';
 import { PageContainer } from '../components/page-container.js';
 import { FileText, Link2, Mail, PenLine, RefreshCw, Tag } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 
@@ -70,9 +77,19 @@ export default function MailAccountsPage({
     useState<string>();
   const [syncing, setSyncing] = useState<string>();
   const [updatingAccountId, setUpdatingAccountId] = useState<string>();
-  const [syncRuns, setSyncRuns] = useState<
-    Readonly<Record<string, MailSyncRunView>>
-  >({});
+  const [syncRuns, setSyncRuns] = useState<SyncRuns>({});
+  // The runs the page follows, current as soon as they change, so a status answer that arrives after its run was
+  // replaced, such as by the initial run of a new scope, is recognised before it shows anything.
+  const syncRunsRef = useRef<SyncRuns>({});
+  const updateSyncRuns = useCallback(
+    (update: (current: SyncRuns) => SyncRuns) => {
+      syncRunsRef.current = update(syncRunsRef.current);
+      setSyncRuns(syncRunsRef.current);
+    },
+    [],
+  );
+  const isFollowed = (run: MailSyncRunView): boolean =>
+    syncRunsRef.current[run.accountId]?.id === run.id;
   const [policy, setPolicy] = useState<MailSyncPolicyValue>(() => ({
     receivedAfter: mailSyncDateMonthsAgo(1),
   }));
@@ -153,13 +170,11 @@ export default function MailAccountsPage({
         activeRuns.map((run) =>
           mail.getSyncRun(run.id).then(
             (nextRun) => {
-              if (signal.aborted) return;
-              // A newer run, such as the one a scope change scheduled, may have replaced this one meanwhile.
-              setSyncRuns((current) =>
-                current[nextRun.accountId]?.id === nextRun.id
-                  ? { ...current, [nextRun.accountId]: nextRun }
-                  : current,
-              );
+              if (signal.aborted || !isFollowed(run)) return;
+              updateSyncRuns((current) => ({
+                ...current,
+                [nextRun.accountId]: nextRun,
+              }));
               if (
                 nextRun.status !== 'pending' &&
                 nextRun.status !== 'running'
@@ -170,7 +185,8 @@ export default function MailAccountsPage({
               }
             },
             (cause: unknown) => {
-              if (signal.aborted) return;
+              // A replaced run's failure is neither shown nor retried.
+              if (signal.aborted || !isFollowed(run)) return;
               setError(
                 mailErrorMessage(
                   cause,
@@ -186,8 +202,7 @@ export default function MailAccountsPage({
                 cause.status === 429
               )
                 throw cause;
-              setSyncRuns((current) => {
-                if (current[run.accountId]?.id !== run.id) return current;
+              updateSyncRuns((current) => {
                 const next = { ...current };
                 delete next[run.accountId];
                 return next;
@@ -352,7 +367,7 @@ export default function MailAccountsPage({
             item.id === account.id ? { ...item, status: 'removing' } : item,
           ),
         );
-        setSyncRuns((current) => {
+        updateSyncRuns((current) => {
           const next = { ...current };
           delete next[account.id];
           return next;
@@ -897,7 +912,7 @@ export default function MailAccountsPage({
                 ? account.id
                 : (current) => (current === account.id ? undefined : current),
             );
-            setSyncRuns((current) => ({ ...current, [account.id]: run }));
+            updateSyncRuns((current) => ({ ...current, [account.id]: run }));
           }
           if (!scopeSaved) return;
           setAccounts((current) =>
@@ -1167,6 +1182,8 @@ function ConnectedAccountRow({
     </tr>
   );
 }
+
+type SyncRuns = Readonly<Record<string, MailSyncRunView>>;
 
 function SyncProgress({
   run,
