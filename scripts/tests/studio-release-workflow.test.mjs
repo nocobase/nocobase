@@ -198,7 +198,7 @@ test('the installer is uploaded only by a real release that moves studio-ce:late
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const source = script(step('Decide the installer upload'));
-  const decide = (dry, ceTags, enabled) => {
+  const decide = (dry, ceTags) => {
     const output = join(
       mkdtempSync(join(tmpdir(), 'studio-installer-')),
       'out',
@@ -209,7 +209,6 @@ test('the installer is uploaded only by a real release that moves studio-ce:late
         ...process.env,
         DRY_RUN: dry,
         CE_TAGS: ceTags,
-        UPLOAD_ENABLED: enabled,
         GITHUB_OUTPUT: output,
       },
     });
@@ -221,26 +220,24 @@ test('the installer is uploaded only by a real release that moves studio-ce:late
     };
   };
   const moved = '1.0.0\nlatest';
-  assert.equal(decide('false', moved, 'true').upload, 'true');
-  assert.equal(
-    decide('false', '1.0.0-beta.9\nbeta\nlatest', 'true').upload,
-    'true',
-  );
-  const kept = decide('false', '1.0.0-beta.9\nbeta', 'true');
+  const up = decide('false', moved);
+  assert.equal(up.upload, 'true');
+  assert.match(up.reason, /moves studio-ce:latest/u);
+  assert.equal(decide('false', '1.0.0-beta.9\nbeta\nlatest').upload, 'true');
+  const kept = decide('false', '1.0.0-beta.9\nbeta');
   assert.equal(kept.upload, 'false');
   assert.match(kept.reason, /leaves studio-ce:latest alone/u);
-  // `latest-foo` or a version containing "latest" is not the latest tag.
-  assert.equal(decide('false', '1.0.0-latest.1\nbeta', 'true').upload, 'false');
-  const off = decide('false', moved, '');
-  assert.equal(off.upload, 'false');
-  assert.match(off.reason, /GET_STUDIO_UPLOAD_ENABLED is not true/u);
-  const dry = decide('true', moved, 'true');
+  // A version containing "latest" is not the latest tag.
+  assert.equal(decide('false', '1.0.0-latest.1\nbeta').upload, 'false');
+  const dry = decide('true', moved);
   assert.equal(dry.upload, 'false');
   assert.match(dry.reason, /dry run \(a release would upload it/u);
   assert.equal(
-    decide('true', '1.0.0-beta.9\nbeta', 'true').reason,
+    decide('true', '1.0.0-beta.9\nbeta').reason,
     'not uploaded in a dry run',
   );
+  // The release decides from its own outputs alone; the upload configuration is the installer's to check.
+  assert.doesNotMatch(step('Decide the installer upload'), /secrets\./u);
 
   // The reason reaches both summaries.
   assert.match(step('Summary'), /\| Installer \| \$\{INSTALLER_REASON\} \|/u);
@@ -263,16 +260,8 @@ test('the installer runs beside the release and never holds it back', () => {
   );
   assert.match(caller, /ref: \$\{\{ needs\.prepare\.outputs\.commit \}\}/u);
   assert.match(caller, /upload: true/u);
-  assert.match(caller, /skip_if_missing: true/u);
-  for (const secret of [
-    'NOCOBASE_APP_PRIVATE_KEY',
-    'DOCS_ALI_OSS_ACCESS_KEY_ID',
-    'DOCS_ALI_OSS_ACCESS_KEY_SECRET',
-  ])
-    assert.match(
-      caller,
-      new RegExp(`${secret}: \\$\\{\\{ secrets\\.${secret} \\}\\}`, 'u'),
-    );
+  assert.match(caller, /skip_unavailable: true/u);
+  assert.match(caller, /secrets: inherit/u);
   // Nothing else waits for it, so its failure cannot skip the tag, the notes or the bump.
   for (const name of ['release', 'notify-failure'])
     assert.doesNotMatch(
@@ -287,14 +276,27 @@ test('the installer runs beside the release and never holds it back', () => {
   assert.match(notice, /!inputs\.dry_run/u);
 });
 
-test('the installer workflow takes both triggers and keeps its upload gate', () => {
+test('the installer workflow takes both triggers and uploads only a complete configuration', () => {
   const on = installer.split('\non:\n')[1].split('\npermissions:')[0];
   assert.match(on, /^  workflow_call:\n/mu);
   assert.match(on, /^  workflow_dispatch:\n/mu);
   assert.match(
     job(installer, 'upload'),
-    /if: \$\{\{ inputs\.upload && vars\.GET_STUDIO_UPLOAD_ENABLED == 'true' \}\}/u,
+    /inputs\.upload && needs\.configuration\.outputs\.configured == 'yes'/u,
   );
+  assert.match(job(installer, 'upload'), /needs\.build\.result == 'success'/u);
+  assert.match(
+    job(installer, 'configuration'),
+    /if: \$\{\{ inputs\.upload && needs\.prepare\.outputs\.present == 'true' \}\}/u,
+  );
+  assert.doesNotMatch(installer, /vars\.GET_STUDIO/u);
+  // Secrets are masked in the logs of the jobs that read them, so only these two read the OSS settings.
+  for (const name of ['prepare', 'test', 'build'])
+    assert.doesNotMatch(
+      job(installer, name).replace(/^\s*#.*$/gmu, ''),
+      /secrets\.(?:GET_STUDIO_OSS|DOCS_ALI_OSS)/u,
+      name,
+    );
   assert.match(installer, /cancel-in-progress: \$\{\{ !inputs\.upload \}\}/u);
   // ossutil reads the credentials under its own names, in the upload step alone.
   const upload = installer
@@ -313,10 +315,85 @@ test('the installer workflow takes both triggers and keeps its upload gate', () 
   assert.doesNotMatch(installer, /GET_STUDIO_OSS_ACCESS_KEY/u);
   for (const name of ['test', 'build', 'upload'])
     assert.ok(job(installer, name).includes('needs:'), name);
-  assert.match(
-    job(installer, 'test'),
-    /if: \$\{\{ needs\.prepare\.outputs\.present == 'true' \}\}/u,
+  const tests = job(installer, 'test');
+  assert.match(tests, /needs\.prepare\.outputs\.present == 'true'/u);
+  assert.match(tests, /needs\.configuration\.result != 'failure'/u);
+  assert.match(tests, /needs\.configuration\.outputs\.configured != 'no'/u);
+});
+
+test('an incomplete upload configuration fails a manual run and only warns the release', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const source = script(
+    installer
+      .split('      - name: Check the upload configuration\n')[1]
+      .split('\n      - name:')[0],
   );
+  const complete = {
+    OSS_BUCKET: 'bucket-value',
+    OSS_REGION: 'region-value',
+    OSS_KEY: 'studio',
+    ACCESS_KEY_ID: 'id-value',
+    ACCESS_KEY_SECRET: 'secret-value',
+  };
+  const run = (settings, skip) => {
+    const temp = mkdtempSync(join(tmpdir(), 'studio-installer-'));
+    const output = join(temp, 'output');
+    const summary = join(temp, 'summary');
+    writeFileSync(output, '');
+    writeFileSync(summary, '');
+    const result = spawnSync('bash', ['-e', '-c', source], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        ...settings,
+        SKIP_UNAVAILABLE: skip,
+        GITHUB_OUTPUT: output,
+        GITHUB_STEP_SUMMARY: summary,
+      },
+    });
+    const text = result.stdout + result.stderr + readFileSync(summary, 'utf8');
+    for (const value of Object.values(settings))
+      if (value && value !== 'studio')
+        assert.ok(!text.includes(value), 'no setting value is printed');
+    return {
+      status: result.status,
+      stdout: result.stdout,
+      output: readFileSync(output, 'utf8'),
+      summary: readFileSync(summary, 'utf8'),
+    };
+  };
+  for (const skip of ['false', 'true']) {
+    const ok = run(complete, skip);
+    assert.equal(ok.status, 0);
+    assert.equal(ok.output, 'configured=yes\n');
+  }
+  const missing = { ...complete, OSS_BUCKET: '', ACCESS_KEY_SECRET: '' };
+  const manual = run(missing, 'false');
+  assert.equal(manual.status, 1);
+  assert.equal(manual.output, 'configured=no\n');
+  assert.match(manual.stdout, /::error::.*GET_STUDIO_OSS_BUCKET is not set/u);
+  assert.match(
+    manual.stdout,
+    /::error::.*DOCS_ALI_OSS_ACCESS_KEY_SECRET is not set/u,
+  );
+  assert.doesNotMatch(manual.stdout, /GET_STUDIO_OSS_REGION/u);
+  const release = run(missing, 'true');
+  assert.equal(release.status, 0);
+  assert.equal(release.output, 'configured=no\n');
+  assert.match(
+    release.stdout,
+    /::warning::.*GET_STUDIO_OSS_BUCKET is not set/u,
+  );
+  assert.match(release.summary, /Skipped: the upload is not configured/u);
+  assert.match(
+    release.summary,
+    /- The secret DOCS_ALI_OSS_ACCESS_KEY_SECRET is not set/u,
+  );
+  const badKey = run({ ...complete, OSS_KEY: '/studio' }, 'false');
+  assert.equal(badKey.status, 1);
+  assert.match(badKey.stdout, /GET_STUDIO_OSS_KEY is not a plain object key/u);
 });
 
 test('a commit without the installer skips only when the caller allows it', async () => {
@@ -348,7 +425,7 @@ test('a commit without the installer skips only when the caller allows it', asyn
         GITHUB_STEP_SUMMARY: summary,
         COMMIT: 'a'.repeat(40),
         REF: 'main',
-        SKIP_IF_MISSING: skip,
+        SKIP_UNAVAILABLE: skip,
       },
     });
     return {

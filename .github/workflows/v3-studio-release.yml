@@ -30,9 +30,10 @@ run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)'
 #   one-command installer of the released commit to https://get.nocobase.com/studio, whose default image is
 #   `nocobase/studio-ce:latest`, by calling v3-studio-installer.yml (the `installer` job). It is best-effort too, in a
 #   job of its own that `release` does not wait for: its failure never holds back or undoes the images, the tag, the
-#   notes or the bump, and is posted to Feishu on its own; a released commit without scripts/get-studio only skips with
-#   a notice. It does not run in a dry run, for a release that leaves studio-ce's `latest` alone, or while the
-#   variable GET_STUDIO_UPLOAD_ENABLED is not `true`; prepare's summary says which.
+#   notes or the bump, and is posted to Feishu on its own. It does not run in a dry run or for a release that leaves
+#   studio-ce's `latest` alone, which prepare's summary says; a released commit without scripts/get-studio skips with a
+#   notice, and an upload configuration that is not complete (the GET_STUDIO_OSS_* secrets) skips with a warning in
+#   the summary, neither failing the run.
 # - dry_run resolves, validates and builds all three editions on both platforms, but never signs in to the registry for a push, pushes,
 #   tags, pushes a branch, opens a pull request, creates a GitHub release or notifies. With DOCKER_PUBLISH_TOKEN
 #   configured it also runs the read-only registry checks, so the tag decision can be previewed. It writes no release
@@ -50,8 +51,9 @@ run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)'
 # Secrets: DOCKER_PUBLISH_TOKEN (the registry's PUBLISH_TOKEN), NOCOBASE_APP_PRIVATE_KEY with vars.NOCOBASE_APP_ID (the
 # NocoBase GitHub App, installed on nocobase/studio), PRO_NPM_TOKEN (read access to pkg-v3's npm packages),
 # ALI_DOCKER_USERNAME and ALI_DOCKER_PASSWORD, DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (the public CE registries),
-# RELEASE_RESULT_FEISHU_WEBHOOK_URL, and for the installer upload DOCS_ALI_OSS_ACCESS_KEY_ID and
-# DOCS_ALI_OSS_ACCESS_KEY_SECRET with the variables GET_STUDIO_UPLOAD_ENABLED and GET_STUDIO_OSS_* (listed in
+# RELEASE_RESULT_FEISHU_WEBHOOK_URL, and for the installer upload, which the `installer` job passes on with
+# `secrets: inherit`, GET_STUDIO_OSS_BUCKET, GET_STUDIO_OSS_REGION, the optional GET_STUDIO_OSS_ENDPOINT and
+# GET_STUDIO_OSS_KEY, DOCS_ALI_OSS_ACCESS_KEY_ID and DOCS_ALI_OSS_ACCESS_KEY_SECRET (described in
 # v3-studio-installer.yml).
 
 on:
@@ -291,7 +293,6 @@ jobs:
         env:
           DRY_RUN: ${{ inputs.dry_run }}
           CE_TAGS: ${{ steps.tags.outputs.ce_tags }}
-          UPLOAD_ENABLED: ${{ vars.GET_STUDIO_UPLOAD_ENABLED }}
         run: |
           moves=false
           if grep -qxF latest <<< "$CE_TAGS"; then moves=true; fi
@@ -301,11 +302,9 @@ jobs:
             if [ "$moves" = "true" ]; then reason="${reason} (a release would upload it: it moves studio-ce:latest)"; fi
           elif [ "$moves" != "true" ]; then
             reason="not uploaded: this release leaves studio-ce:latest alone"
-          elif [ "$UPLOAD_ENABLED" != "true" ]; then
-            reason="not uploaded: the variable GET_STUDIO_UPLOAD_ENABLED is not true"
           else
             upload=true
-            reason="uploaded by the installer job once Studio CE is public, since this release moves studio-ce:latest"
+            reason="uploaded by the installer job once Studio CE is public, since this release moves studio-ce:latest (skipped with a warning while the GET_STUDIO_OSS_* secrets are not configured)"
           fi
           {
             echo "upload=${upload}"
@@ -1141,7 +1140,7 @@ jobs:
             extra="${extra:+${extra}${nl}}⚠️ GitHub Release 没有创建成功，需要手动创建。"
           fi
           if [ "$INSTALLER_UPLOAD" = "true" ]; then
-            extra="${extra:+${extra}${nl}}一键安装脚本 https://get.nocobase.com/studio 由 installer 任务另外上传，失败会单独通知。"
+            extra="${extra:+${extra}${nl}}一键安装脚本 https://get.nocobase.com/studio 由 installer 任务另外上传（OSS 没配置时跳过，见构建详情），失败会单独通知。"
           fi
           if [ "$NOTES_AVAILABLE" = "true" ] && [ -s "${notes}/release-notes.zh-CN.md" ]; then
             # shellcheck disable=SC2016 # the single-quoted script is JavaScript
@@ -1193,8 +1192,10 @@ jobs:
   # v3-studio-installer.yml, which tests and builds it first; only when prepare decided so (see "Decide the installer
   # upload"), and only after both public registries have Studio CE, the image the installer pulls. `release` and
   # notify-failure do not need it, so its failure (a job calling a reusable workflow cannot continue-on-error) holds
-  # back nothing else, and Re-run failed jobs reruns it alone; notify-installer-failure reports it. A released commit
-  # without scripts/get-studio ends with a notice instead of failing.
+  # back nothing else, and Re-run failed jobs reruns it alone; notify-installer-failure reports it. With
+  # `skip_unavailable`, a released commit without scripts/get-studio ends with a notice and an incomplete upload
+  # configuration with a warning, instead of failing. The secrets are inherited: the GET_STUDIO_OSS_* ones are optional,
+  # and the installer reads each of them only in the jobs that need it.
   installer:
     name: Upload the one-command installer
     needs: [prepare, public-ce]
@@ -1203,11 +1204,8 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.commit }}
       upload: true
-      skip_if_missing: true
-    secrets:
-      NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-      DOCS_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
-      DOCS_ALI_OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
+      skip_unavailable: true
+    secrets: inherit
     permissions:
       contents: read
 
