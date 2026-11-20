@@ -143,6 +143,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     permanentlyDelete: '永久刪除',
     permanentlyDeleteConfirm: '永久刪除此訊息？此操作無法撤銷。',
     download: '下載',
+    downloadOriginal: '下載原始郵件',
+    downloadOriginalFailed: '無法下載原始郵件。',
     downloadFailed: '無法下載附件。',
     markRead: '標記已讀',
     markUnread: '標記為未讀',

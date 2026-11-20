@@ -4,6 +4,11 @@ import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound:
+      'El mensaje original ya no está disponible en el proveedor de correo.',
+    originalTooLarge:
+      'El mensaje original supera el límite de descarga de 40 MiB.',
+    operationUnsupported: 'Esta operación de correo no está disponible.',
     connectionAuthenticationFailed:
       'Falló la autenticación {{protocol}}. Compruebe el usuario y la contraseña o contraseña de aplicación.',
     connectionHostNotFound:

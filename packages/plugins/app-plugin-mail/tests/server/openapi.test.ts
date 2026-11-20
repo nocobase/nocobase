@@ -107,6 +107,11 @@ const expectedOperations: readonly (readonly [string, string, string])[] = [
     'mailGetMessage',
   ],
   [
+    'get',
+    '/api/mail/accounts/{accountId}/messages/{messageId}/original',
+    'mailDownloadOriginalMessage',
+  ],
+  [
     'patch',
     '/api/mail/accounts/{accountId}/messages/{messageId}',
     'mailUpdateMessage',
@@ -221,6 +226,25 @@ describe('Mail API document', () => {
     }
     const operationIds = expectedOperations.map(([, , id]) => id);
     expect(new Set(operationIds).size).toBe(operationIds.length);
+  });
+
+  it('documents original MIME and the authenticated download failures', () => {
+    const original = operation(
+      document,
+      'get',
+      '/api/mail/accounts/{accountId}/messages/{messageId}/original',
+    );
+    expect(original.responses).toMatchObject({
+      '200': {
+        content: {
+          'message/rfc822': { schema: { type: 'string', format: 'binary' } },
+        },
+      },
+    });
+    expect(Object.keys(original.responses ?? {})).toEqual(
+      expect.arrayContaining(['400', '401', '403', '404', '429', '503']),
+    );
+    expect(original.description).toContain('page / mail.workspace / access');
   });
 
   it('documents request inputs from the validators', () => {

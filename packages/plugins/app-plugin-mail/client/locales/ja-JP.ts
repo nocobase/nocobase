@@ -156,6 +156,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'このメッセージを完全に削除しますか?この操作は元に戻すことができません。',
     download: 'ダウンロード',
+    downloadOriginal: '元のメッセージをダウンロード',
+    downloadOriginalFailed: '元のメッセージをダウンロードできませんでした。',
     downloadFailed: '添付ファイルをダウンロードできません。',
     markRead: '既読マーク',
     markUnread: '未読としてマークする',

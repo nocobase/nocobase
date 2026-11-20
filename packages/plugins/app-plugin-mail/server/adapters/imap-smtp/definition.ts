@@ -8,7 +8,10 @@ import type {
 
 import type { ImapLocationPersistence, ImapSmtpCredential } from './types.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
-import { IMAP_SMTP_CAPABILITIES } from './constants.js';
+import {
+  IMAP_SMTP_CAPABILITIES,
+  IMAP_SMTP_LOCATION_CAPABILITIES,
+} from './constants.js';
 import { ImapSmtpAdapter } from './adapter.js';
 import { ImapConnectionPool } from './connection-pool.js';
 import { validateConfig, verifyConnections } from './connection.js';
@@ -29,7 +32,9 @@ export function createImapSmtpMailProviderDefinition(
   return {
     type: 'imap-smtp',
     label: 'IMAP / SMTP',
-    capabilities: IMAP_SMTP_CAPABILITIES,
+    capabilities: locations
+      ? IMAP_SMTP_LOCATION_CAPABILITIES
+      : IMAP_SMTP_CAPABILITIES,
     validateConfig,
     connection: createConnection(),
     async createAdapter(

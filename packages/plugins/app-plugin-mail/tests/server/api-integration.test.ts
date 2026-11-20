@@ -1,3 +1,9 @@
+import { originalMime } from '../fixtures/original-message.js';
+import { originalMessageBytes } from '../../server/adapters/original-message.js';
+import {
+  MAIL_ORIGINAL_MAX_BYTES,
+  originalMessageFileName,
+} from '../../shared/original-message.js';
 import { randomUUID } from 'node:crypto';
 import { createApiClient } from '@nocobase/app-client';
 import {
@@ -52,10 +58,20 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
   let alice: MailClient;
   let bob: MailClient;
   const send = vi.fn<NonNullable<MailProviderAdapter['sendMessage']>>();
+  const getOriginal =
+    vi.fn<NonNullable<MailProviderAdapter['getOriginalMessage']>>();
+  const closeProvider = vi.fn<NonNullable<MailProviderAdapter['close']>>();
+  let originalSupported: boolean;
 
   beforeEach(async () => {
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
+    originalSupported = true;
+    getOriginal.mockReset().mockImplementation(async () => ({
+      ok: true,
+      value: originalMessageBytes(originalMime),
+    }));
+    closeProvider.mockReset().mockResolvedValue(undefined);
     send.mockReset().mockResolvedValue({
       status: 'accepted',
       providerMessageId: 'remote-sent',
@@ -99,7 +115,12 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
       async createAdapter(_context, _config, account) {
         return {
           identity: account.provider,
-          capabilities: definition.capabilities,
+          capabilities: {
+            ...definition.capabilities,
+            downloadOriginal: originalSupported,
+          },
+          getOriginalMessage: getOriginal,
+          close: closeProvider,
           sendMessage: send,
           getCurrentSyncCursor: async () => ({
             ok: true,
@@ -193,7 +214,8 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
       middleware: () => async (context: Context<FixtureEnv>, next: Next) => {
         context.set('authz', {
           can: async ({ resource }: { resource: { id: string } }) =>
-            resource.id === 'mail.workspace' ||
+            (resource.id === 'mail.workspace' &&
+              context.req.header('x-test-no-workspace') !== 'true') ||
             context.req.header('x-test-user') === 'admin',
         });
         await next();
@@ -244,6 +266,255 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
       }),
     );
   }
+
+  async function originalMessageFixture(providerMessageId = 'remote-original') {
+    const id = randomUUID();
+    const account = {
+      id,
+      userId: 'alice',
+      address: `${id}@example.test`,
+      status: 'active' as const,
+      provider: { type: 'fixture', name: 'fixture' },
+      credentialReference: 'fixture-reference',
+      scopes: [],
+    };
+    const otherAccount = {
+      ...account,
+      id: randomUUID(),
+      address: `other-${id}@example.test`,
+    };
+    await store.saveAccount(account);
+    await store.saveAccount(otherAccount);
+    const message = await store.saveMessage(account.id, {
+      providerMessageId,
+      providerFolderIds: [],
+      to: [],
+      cc: [],
+      bcc: [],
+      replyTo: [],
+      references: [],
+      subject: 'Résumé / Q4\r\n\\ "final" 😀',
+      read: false,
+      starred: false,
+      draft: providerMessageId.startsWith('local-draft:'),
+      attachments: [],
+    });
+    const path = (accountId: string) =>
+      `/api/mail/accounts/${accountId}/messages/${message.id}/original`;
+    return { account, otherAccount, message, path };
+  }
+
+  it('checks workspace access and ownership before streaming a named RFC822 file', async () => {
+    const { account, otherAccount, message, path } =
+      await originalMessageFixture();
+    for (const [url, headers, status] of [
+      [path(account.id), {}, 401],
+      [
+        path(account.id),
+        { 'x-test-user': 'alice', 'x-test-no-workspace': 'true' },
+        403,
+      ],
+      [path(account.id), { 'x-test-user': 'bob' }, 404],
+      [path(otherAccount.id), { 'x-test-user': 'alice' }, 404],
+    ] as const) {
+      expect((await router.request(url, { headers })).status).toBe(status);
+    }
+    expect(getOriginal).not.toHaveBeenCalled();
+    const response = await router.request(path(account.id), {
+      headers: { 'x-test-user': 'alice' },
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('message/rfc822');
+    expect(response.headers.get('content-length')).toBe(
+      String(originalMime.length),
+    );
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    const disposition = response.headers.get('content-disposition')!;
+    expect(disposition).toMatch(
+      /^attachment; filename="[ -~]+\.eml"; filename\*=UTF-8''/u,
+    );
+    expect(decodeURIComponent(disposition.split("UTF-8''")[1])).toBe(
+      originalMessageFileName(message.subject),
+    );
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(originalMime);
+    expect(getOriginal).toHaveBeenCalledExactlyOnceWith(
+      'remote-original',
+      expect.any(AbortSignal),
+    );
+    expect(closeProvider).toHaveBeenCalledOnce();
+    const fromClient = await alice.downloadOriginalMessage(
+      account.id,
+      message.id,
+    );
+    expect(Buffer.from(await new Response(fromClient).arrayBuffer())).toEqual(
+      originalMime,
+    );
+  });
+
+  it('reports safe errors for unavailable originals, credentials, limits and unsupported providers', async () => {
+    const { account, path } = await originalMessageFixture();
+    const request = () =>
+      router.request(path(account.id), { headers: { 'x-test-user': 'alice' } });
+    originalSupported = false;
+    let response = await request();
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { reason: 'MAIL_PROVIDER_OPERATION_UNSUPPORTED' },
+    });
+    expect(getOriginal).not.toHaveBeenCalled();
+    originalSupported = true;
+    for (const [code, category, status, reason] of [
+      ['MAIL_ORIGINAL_NOT_FOUND', 'provider', 404, 'MAIL_ORIGINAL_NOT_FOUND'],
+      ['MAIL_ORIGINAL_TOO_LARGE', 'provider', 400, 'MAIL_ORIGINAL_TOO_LARGE'],
+      [
+        'private-token',
+        'authentication',
+        400,
+        'MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED',
+      ],
+      ['private-token', 'rate_limit', 429, 'MAIL_PROVIDER_REQUEST_FAILED'],
+      ['private-token', 'provider', 503, 'MAIL_PROVIDER_REQUEST_FAILED'],
+    ] as const) {
+      getOriginal.mockResolvedValueOnce({
+        ok: false,
+        error: {
+          code,
+          category,
+          message: 'private-mime',
+          retryable: false,
+          retryAfterMs: 2500,
+        },
+      });
+      response = await request();
+      expect(response.status).toBe(status);
+      if (status === 429) expect(response.headers.get('retry-after')).toBe('3');
+      else if (status !== 503)
+        expect(response.headers.get('retry-after')).toBeNull();
+      const payload = await response.text();
+      expect(JSON.parse(payload)).toMatchObject({ error: { reason } });
+      expect(payload).not.toMatch(/private-token|private-mime/u);
+    }
+    const local = await originalMessageFixture('local-draft:test');
+    response = await router.request(local.path(local.account.id), {
+      headers: { 'x-test-user': 'alice' },
+    });
+    expect(response.status).toBe(400);
+    expect(getOriginal).toHaveBeenCalledTimes(5);
+  });
+
+  it('cancels the provider on disconnect and fails oversized or incomplete byte streams', async () => {
+    const { account, path } = await originalMessageFixture();
+    const headers = { 'x-test-user': 'alice' };
+    const cancel = vi.fn();
+    const pending = new ReadableStream<Uint8Array>({ cancel });
+    const abort = new AbortController();
+    getOriginal.mockResolvedValueOnce({ ok: true, value: { stream: pending } });
+    const response = await router.request(path(account.id), {
+      headers,
+      signal: abort.signal,
+    });
+    const bytes = response.arrayBuffer();
+    abort.abort();
+    await expect(bytes).rejects.toThrow(
+      'Original message download was interrupted',
+    );
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(closeProvider).toHaveBeenCalledOnce();
+
+    const oversized = new ReadableStream<Uint8Array>({ cancel });
+    getOriginal.mockResolvedValueOnce({
+      ok: true,
+      value: { stream: oversized, size: MAIL_ORIGINAL_MAX_BYTES + 1 },
+    });
+    const limited = await router.request(path(account.id), { headers });
+    expect(limited.status).toBe(400);
+    expect(await limited.json()).toMatchObject({
+      error: { reason: 'MAIL_ORIGINAL_TOO_LARGE' },
+    });
+    expect(cancel).toHaveBeenCalledTimes(2);
+
+    for (const size of [originalMime.length + 1, originalMime.length - 1]) {
+      getOriginal.mockResolvedValueOnce({
+        ok: true,
+        value: { ...originalMessageBytes(originalMime), size },
+      });
+      const interrupted = await router.request(path(account.id), { headers });
+      await expect(interrupted.arrayBuffer()).rejects.toThrow(
+        'Original message download was interrupted',
+      );
+    }
+    expect(closeProvider).toHaveBeenCalledTimes(4);
+  });
+
+  it('enforces the download deadline and the rolling limit without a provider length', async () => {
+    const { account, path } = await originalMessageFixture();
+    const request = () =>
+      router.request(path(account.id), { headers: { 'x-test-user': 'alice' } });
+    const cancel = vi.fn();
+    const deadline = new AbortController();
+    const timer = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockReturnValue(deadline.signal);
+    try {
+      getOriginal.mockResolvedValueOnce({
+        ok: true,
+        value: { stream: new ReadableStream<Uint8Array>({ cancel }) },
+      });
+      const response = await request();
+      expect(timer).toHaveBeenCalledWith(60_000);
+      deadline.abort();
+      await expect(response.arrayBuffer()).rejects.toThrow(
+        'Original message download was interrupted',
+      );
+      expect(cancel).toHaveBeenCalledOnce();
+    } finally {
+      timer.mockRestore();
+    }
+
+    const chunk = new Uint8Array(1024 * 1024);
+    getOriginal.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        stream: new ReadableStream<Uint8Array>(
+          {
+            pull(controller) {
+              controller.enqueue(chunk);
+            },
+            cancel,
+          },
+          { highWaterMark: 0 },
+        ),
+      },
+    });
+    const response = await request();
+    const reader = response.body!.getReader();
+    for (
+      let offset = 0;
+      offset < MAIL_ORIGINAL_MAX_BYTES;
+      offset += chunk.length
+    ) {
+      const result = await reader.read();
+      expect(result.value?.byteLength).toBe(chunk.length);
+    }
+    await expect(reader.read()).rejects.toThrow(
+      'Original message download was interrupted',
+    );
+    expect(cancel).toHaveBeenCalledTimes(2);
+    expect(closeProvider).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['', 'message.eml'],
+    [' .. ', 'message.eml'],
+    ['../\\/:*?"<>|', 'message.eml'],
+    ['東京.eml ', '東京.eml'],
+    ['CON.txt', '_CON.txt.eml'],
+    ['\ud800', 'message.eml'],
+    ['😀'.repeat(61), `${'😀'.repeat(60)}.eml`],
+  ])('sanitizes original filenames (%j)', (subject, expected) => {
+    expect(originalMessageFileName(subject)).toBe(expected);
+  });
 
   it.each([
     [undefined, 'Alice@Example.com'],

@@ -416,6 +416,14 @@ export class DefaultMailService implements MailService {
     return this.messages.retryMessageContent(context, accountId, messageId);
   }
 
+  public getOriginalMessage(
+    context: MailOperationContext,
+    accountId: string,
+    messageId: string,
+  ): Promise<MailAttachmentContent> {
+    return this.messages.getOriginalMessage(context, accountId, messageId);
+  }
+
   public getMessage(
     context: MailOperationContext,
     accountId: string,
