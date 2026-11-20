@@ -1,5 +1,11 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.70
+
+### Patch Changes
+
+- 2c66475: Describe the agent-picker's inline model settings and the agent-chat block's thinking level menu in the UI Library catalog.
+
 ## 0.1.0-beta.69
 
 ### Patch Changes

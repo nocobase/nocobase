@@ -2,6 +2,23 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`nocobase-v3/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 新特性
+
+- **[Agent]** 在线 Agent 对话可在模型旁为任意在线模型选择思考等级（默认、关闭，或极低到超高），模型不支持该等级时会在对话中提示。 ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent 运行器]** 执行机可使用部署密钥和已核对的主机指纹，通过 SSH 检出、推送并构建仓库。 ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[插件生命周期]** 管理员可以挂起、恢复、重置或重启流程实例，并在工单示例中查看处置历史。 ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 优化
+
+- **[Agent]** OpenCode、Pi 的模型显示服务商前缀；运行失败时显示编码工具的原始报错。 ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 修复
+
+- **[命令行]** 修复网关进行同源跳转时 CLI 和执行机安装失败的问题 ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent 运行器]** 只读步骤可通过执行机管理的 SSH 连接拉取，推送会被执行机拒绝。 ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
 ## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
 
 ### 🎉 新特性
