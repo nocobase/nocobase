@@ -164,14 +164,14 @@ export async function submitQuote(
     if (!project) throw forbidden();
     if (quote.status !== 'draft')
       throw new ApiError({
-        status: 'ABORTED',
+        status: 'FAILED_PRECONDITION',
         reason: 'QUOTE_NOT_DRAFT',
         domain: 'sales',
         message: 'Only a draft quote can be submitted.',
       });
     if (typeof quote.amount !== 'number' || quote.amount <= 0)
       throw new ApiError({
-        status: 'ABORTED',
+        status: 'FAILED_PRECONDITION',
         reason: 'QUOTE_AMOUNT_REQUIRED',
         domain: 'sales',
         message: 'A quote needs a positive amount before it is submitted.',
@@ -193,7 +193,7 @@ export async function submitQuote(
 
 Each `ApiError` is answered in the standard error body; clients branch on `reason`. Repository errors that propagate are rendered by the application (a refused read or write is 403, `RECORD_NOT_FOUND` 404); a route that must not disclose which records exist translates `RECORD_NOT_FOUND` into its own 403 `ApiError` in its `onError` before delegating to `apiErrorHandler`. It does not expose database errors. A concurrent change that invalidates the update predicate must fail; never retry it as an unconditional write. If a workflow requires a parent state to remain unchanged until commit, add appropriate locking or version checks for that parent too; a transaction alone does not supply that guarantee.
 
-Use `ABORTED` (HTTP 409) and a specific reason such as `QUOTE_NOT_DRAFT` for a business state conflict, not a permission denial. Use `ALREADY_EXISTS` (409) for a create that conflicts with an existing record. Use input validation for malformed requests rather than treating them as state conflicts.
+For lifecycle-backed operations, keep the lifecycle library's error mapping: `INVALID_STATE` and `GUARD_REJECTED` whose blockers are all preconditions become HTTP 400 `FAILED_PRECONDITION`; do not override this mapping in the application. Reserve HTTP 409 `ABORTED` for a stale expected version (`CONFLICT`) and `ALREADY_EXISTS` for duplicate creation. Use input validation for malformed requests rather than treating them as state refusals.
 
 Do not fetch unrestricted data and filter it in JavaScript. Do not query only the parent ID supplied by the client. Do not call `require` or `authz.database.policyFor` after this decision; the business decision already includes every underlying check and policy. Resolve authorization once per request and bind its results to the repositories on the transaction connection.
 
