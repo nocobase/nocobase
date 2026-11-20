@@ -96,7 +96,9 @@ import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
 // `RUNNER_ROUTES.npmCredential`). Nothing of version 15 changed; update the application first.
 // Version 17 adds the npm credential reason `unauthorized` for private-registry 401/403 retries.
 // Deploy the application before upgrading runners; version 16 runners remain supported.
-export const PROTOCOL_VERSION = 17;
+// Version 18 adds pinned SSH repository credentials and the gitSsh feature.
+// Deploy the application first. Older runners remain eligible for runs that do not require gitSsh.
+export const PROTOCOL_VERSION = 18;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -152,6 +154,7 @@ export const RUNNER_FEATURES = [
   'npm',
   'gitCredentials',
   'gitTools',
+  'gitSsh',
   'npmCredentials',
 ] as const;
 

@@ -217,12 +217,15 @@ export async function requeueRun(
   run: RunRecord,
   reason: FailureReason,
   detail?: string,
-  source: 'runner' | 'sweeper' = 'runner',
+  options: {
+    source?: 'runner' | 'sweeper';
+    failureParams?: FinishOutcome['failureParams'];
+  } = {},
 ): Promise<RequeueOutcome> {
   const now = deps.clock.now();
   const waits = workspaceWaits(run, reason === 'workspaceBusy');
   const preStartInterruption =
-    source === 'sweeper' &&
+    options.source === 'sweeper' &&
     run.status === 'dispatched' &&
     run.startedAt === null &&
     (reason === 'runnerOfflineBeforeStart' || reason === 'startTimeout');
@@ -253,6 +256,9 @@ export async function requeueRun(
       status: 'failed',
       reason,
       ...(detail === undefined ? {} : { detail }),
+      ...(options.failureParams === undefined
+        ? {}
+        : { failureParams: options.failureParams }),
     });
     return { status: ended?.status ?? run.status, run: ended };
   }

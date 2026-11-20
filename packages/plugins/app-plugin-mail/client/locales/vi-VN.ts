@@ -330,7 +330,7 @@ const viVN: LocaleResource<typeof enUS> = {
     eyebrow: 'Truyền thông',
     loading: 'Đang tải cấu hình thư…',
     authorizationSuccess:
-      'Tài khoản được kết nối thành công. Hộp thư mới được kết nối sẽ tự động đồng bộ hóa trong nền. Đồng bộ hóa lần đầu có thể mất một chút thời gian. Xem tiến trình trong nhật ký Đồng bộ hóa; không cần phải bắt đầu đồng bộ hóa khác.',
+      'Đã kết nối tài khoản. Hãy chọn các thư mục đồng bộ để bắt đầu nhập thư. Lần đồng bộ đầu tiên có thể mất một lúc; xem tiến độ trong nhật ký đồng bộ.',
     authorizationFailure: 'Không thể kết nối tài khoản thư. Hãy thử lại.',
     initialSync: {
       title: 'Ngày đồng bộ hóa lần đầu',
@@ -339,10 +339,47 @@ const viVN: LocaleResource<typeof enUS> = {
       receivedAfter: 'Nhập tin nhắn nhận được sau',
       pickDate: 'Chọn một ngày',
     },
+    syncFolders: {
+      title: 'Xác nhận phạm vi đồng bộ',
+      descriptionFirst:
+        'Tài khoản đã được kết nối. Xác nhận phạm vi để bắt đầu đồng bộ lần đầu.',
+      description:
+        'Xác nhận các thư mục cần đồng bộ. Các lần đồng bộ tự động sẽ dùng cùng phạm vi.',
+      scope: 'Phạm vi đồng bộ',
+      allFolders: 'Toàn bộ hộp thư',
+      allFoldersHint: 'Đồng bộ mọi thư mục, kể cả thư mục tạo sau này.',
+      someFolders: 'Thư mục được chọn',
+      someFoldersHint:
+        'Chỉ đồng bộ các thư mục được đánh dấu; thư mục mới cần thêm thủ công.',
+      loading: 'Đang tải thư mục…',
+      listingFailed: 'Không thể đọc danh sách thư mục từ máy chủ thư.',
+      retry: 'Thử lại',
+      waiting: 'Đang lấy danh sách thư mục từ máy chủ thư…',
+      selectedCount: 'Đã chọn {{count}}/{{total}} thư mục',
+      selectAll: 'Chọn tất cả',
+      clearAll: 'Bỏ chọn tất cả',
+      emptySelection: 'Hãy chọn ít nhất một thư mục.',
+      sentHint:
+        'Chưa chọn Đã gửi, nên các thư trả lời của chính bạn có thể không hiển thị trong hội thoại. Việc gửi thư vẫn hoạt động.',
+      removeTitle: 'Xóa thư cục bộ ngoài phạm vi?',
+      removeDescription:
+        'Thay đổi này xóa {{count}} thư cục bộ cùng dữ liệu cục bộ liên quan. Thư trên máy chủ thư không bị xóa, và thư vẫn thuộc thư mục được chọn sẽ được giữ lại.',
+      back: 'Quay lại',
+      confirm: 'Xóa thư cục bộ và đồng bộ',
+      saving: 'Đang lưu…',
+      cancel: 'Hủy',
+      submit: 'Xác nhận và đồng bộ',
+      outcomeInitial: 'Đồng bộ thư từ ngày {{date}}.',
+      outcomeIncremental:
+        'Đồng bộ thư mới và thư thay đổi kể từ lần đồng bộ trước.',
+      outcomeRescan:
+        'Đồng bộ lại theo phạm vi mới; thư đã có sẽ không bị thêm trùng.',
+      pending: 'Chọn thư mục để bắt đầu đồng bộ',
+    },
     providers: {
       title: 'Thêm tài khoản thư',
       description:
-        'Chọn một loại tài khoản, sau đó ủy quyền cho nó hoặc nhập thông tin xác thực hộp thư của nó. Các hộp thư mới được kết nối sẽ tự động đồng bộ hóa. Quá trình đồng bộ hóa lần đầu có thể mất chút thời gian, tùy thuộc vào số lượng tin nhắn và điều kiện mạng. Kiểm tra tiến trình trong nhật ký Đồng bộ hóa; không cần phải bắt đầu đồng bộ hóa khác.',
+        'Chọn loại tài khoản, sau đó ủy quyền hoặc nhập thông tin đăng nhập hộp thư. Sau khi kết nối, chọn các thư mục đồng bộ; thư được nhập từ ngày đồng bộ ban đầu. Lần đồng bộ đầu tiên có thể mất một lúc, tùy số lượng thư và mạng. Xem tiến độ trong nhật ký đồng bộ.',
       accountType: 'Loại tài khoản thư',
       chooseAccountType: 'Chọn loại tài khoản',
       emptyTitle: 'Không có nhà cung cấp thư nào được cấu hình',

@@ -186,6 +186,7 @@ const zhCN: AgentsResource = {
       title: '编辑 {{name}}',
       enabled: '启用',
       done: '{{name}} 已保存',
+      model: '模型',
     },
     available: {
       open: '添加 Agent',
@@ -255,10 +256,6 @@ const zhCN: AgentsResource = {
     save: '保存技能',
     descriptionOnline:
       '按需读取的操作手册，只有描述匹配时 Agent 才会打开；在服务器上的只读沙箱中读取。',
-    onlineScripts:
-      '脚本不会在在线 Agent 中执行：Agent 能读到脚本，但不会运行它们。',
-    skippedScripts: '：{{paths}}',
-    pathSeparator: '、',
   },
   brief: {
     preview: '预览完整提示词',

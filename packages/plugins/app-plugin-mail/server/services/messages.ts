@@ -3,6 +3,7 @@ import { notifyMailMessageChange } from '../realtime.js';
 import {
   type MailAttachmentContent,
   type MailFolder,
+  type MailFolderChoices,
   type MailListConversationMessagesInput,
   type MailListMessagesInput,
   type MailMessage,
@@ -15,6 +16,7 @@ import { type MailServiceDependencies } from './dependencies.js';
 import { assertProviderResult } from './errors.js';
 import { closeAdapter } from './provider-lifecycle.js';
 import { openOriginalMessage } from './original-message.js';
+import { isSyncedFolder, syncedFolders } from './sync-folders.js';
 import { mailFailedPrecondition, mailNotFound } from './errors.js';
 
 export class MailMessagesService {
@@ -23,6 +25,7 @@ export class MailMessagesService {
     private readonly dependencies: MailServiceDependencies<
       | 'countUnreadMessages'
       | 'deleteMessage'
+      | 'getFolderCatalog'
       | 'getAccount'
       | 'getMessage'
       | 'listConversationMessages'
@@ -42,9 +45,43 @@ export class MailMessagesService {
   public async listFolders(
     context: MailOperationContext,
     accountId: string,
+    options: { readonly includeUnsynced?: boolean } = {},
   ): Promise<readonly MailFolder[]> {
-    await requireOwnedAccount(this.dependencies.store, context, accountId);
-    return this.dependencies.store.listFolders(accountId);
+    const account = await requireOwnedAccount(
+      this.dependencies.store,
+      context,
+      accountId,
+    );
+    const folders = await this.dependencies.store.listFolders(accountId);
+    return options.includeUnsynced
+      ? folders.map((folder) => ({
+          ...folder,
+          synced: isSyncedFolder(account, folder.providerFolderId),
+        }))
+      : syncedFolders(account, folders);
+  }
+
+  /**
+   * Every folder of the account, each with `synced`, and whether they form a complete listing, read together so a
+   * folder selection never starts from a partial list.
+   */
+  public async listFolderChoices(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<MailFolderChoices> {
+    const account = await requireOwnedAccount(
+      this.dependencies.store,
+      context,
+      accountId,
+    );
+    const catalog = await this.dependencies.store.getFolderCatalog(accountId);
+    return {
+      ...catalog,
+      folders: catalog.folders.map((folder) => ({
+        ...folder,
+        synced: isSyncedFolder(account, folder.providerFolderId),
+      })),
+    };
   }
 
   public async updateMessageLabels(

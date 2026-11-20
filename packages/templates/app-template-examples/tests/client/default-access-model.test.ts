@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import type { AuthorizationOptionsResponse } from '@nocobase/app-plugin-authorization/client';
 import {
   actionKey,
+  ruleResourceLabels,
   ruleResources,
   ruleScopes,
   replaceRuleScope,
@@ -164,4 +165,64 @@ it('offers database rules without unsupported create actions and never confuses 
     ['delete', undefined],
   ]);
   expect(new Set(scopes.map((scope) => scope.id)).size).toBe(scopes.length);
+});
+
+it('titles data with registered collection titles and tells same-named business operations and tables apart', () => {
+  const registered: AuthorizationOptionsResponse = {
+    ...catalog,
+    sections: [
+      {
+        ...catalog.sections[0]!,
+        subsections: [
+          {
+            name: 'crm',
+            title: 'CRM',
+            resources: [
+              {
+                type: 'composite',
+                id: 'crm.customers',
+                title: 'Customers',
+                actions: [{ name: 'view', title: 'View' }],
+                dataScopes: {
+                  view: [
+                    {
+                      // The server titles an untitled scope with its key.
+                      key: 'crmCustomers',
+                      title: 'crmCustomers',
+                      collection: 'crmCustomers',
+                      fields: ['name'],
+                      recordAccess: ['own'],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    collections: [
+      { name: 'crmCustomers', title: 'Customers', fields: ['name'] },
+    ],
+  };
+  const resources = ruleResources(registered);
+  const text = (value: unknown) => String(value);
+  expect(resources.map((entry) => [entry.type, text(entry.title)])).toEqual([
+    ['composite', 'Customers'],
+    ['database.collection', 'Customers'],
+  ]);
+  expect(
+    ruleScopes(resources[0], registered).map((scope) => text(scope.title)),
+  ).toEqual(['Customers']);
+  expect([
+    ...ruleResourceLabels(resources, text, (title, kind) =>
+      kind === 'table'
+        ? `${title} (data table)`
+        : `${title} (business operations)`,
+    ).values(),
+  ]).toEqual(['Customers (business operations)', 'Customers (data table)']);
+  // A name used once stays as it is.
+  expect([
+    ...ruleResourceLabels(resources.slice(0, 1), text, () => 'unused').values(),
+  ]).toEqual(['Customers']);
 });

@@ -109,6 +109,11 @@ export interface MailAccount {
   readonly initialSyncReceivedAfter?: string;
   /** Minimum time between automatic synchronization sweeps for this account. */
   readonly automaticSyncIntervalMinutes?: number;
+  /**
+   * Provider folder IDs this account synchronizes. Absent means every folder, including folders created later; an
+   * empty list means the folders have not been chosen yet and no messages are imported.
+   */
+  readonly syncFolderIds?: readonly string[];
   readonly syncCursor?: MailSyncCursor;
 }
 
@@ -219,6 +224,22 @@ export interface MailFolder {
   readonly unreadCount?: number;
   /** Gmail labels and Outlook folders share this model without sharing semantics. */
   readonly kind: 'folder' | 'label';
+  /** Whether the account synchronizes this folder; only reported when unsynchronized folders are requested. */
+  readonly synced?: boolean;
+}
+
+/** Every folder of an account for choosing its synchronized folders, and whether that list is complete. */
+export interface MailFolderChoices {
+  readonly folders: readonly MailFolder[];
+  /** False until a synchronization run has read the whole folder list from the mail server. */
+  readonly complete: boolean;
+  /** No folder listing completed and none is running; start a synchronization to list the folders again. */
+  readonly failed: boolean;
+  /**
+   * True once an initial synchronization saved its cursor, so a synchronization that keeps the folder selection runs
+   * incrementally; false means it imports from the initial sync date.
+   */
+  readonly initialSyncCompleted: boolean;
 }
 
 export interface MailAddress {
@@ -379,6 +400,8 @@ export interface MailInitialSyncPolicy {
   /** @deprecated Historical imports no longer have a total message limit. */
   readonly maxMessages?: number;
   readonly batchSize: number;
+  /** The account's folder selection when the run was created; absent means every folder. */
+  readonly syncFolderIds?: readonly string[];
 }
 
 export interface MailSyncRun {
@@ -431,6 +454,12 @@ export interface MailSyncRunView {
   readonly canManage?: boolean;
 }
 
+/** An account after `updateAccount`, with the initial run a changed folder selection scheduled. */
+export interface MailUpdatedAccountView extends MailAccountView {
+  /** The initial run that replaced the active one because `syncFolderIds` changed; absent otherwise. */
+  readonly syncRun?: MailSyncRunView;
+}
+
 export interface MailStartSyncInput {
   readonly accountId: string;
   readonly mode?: MailSyncMode;
@@ -440,6 +469,17 @@ export interface MailStartSyncInput {
 export interface MailUpdateAccountInput {
   readonly accountId: string;
   readonly status?: 'active' | 'suspended';
+  /**
+   * The folders to synchronize, at least one; `null` synchronizes every folder, including folders created later. A
+   * change restarts the initial synchronization and deletes local messages left in no selected folder.
+   */
+  readonly syncFolderIds?: readonly string[] | null;
+}
+
+/** What changing an account's synchronized folders would do to its local messages. */
+export interface MailSyncFolderPreview {
+  /** Local messages that would be deleted because they belong to no selected folder. */
+  readonly removedMessageCount: number;
 }
 
 export type MailCommandType =
@@ -493,6 +533,8 @@ export interface MailStartAuthorizationInput {
   readonly redirectUri: string;
   readonly scopes?: readonly string[];
   readonly initialSyncReceivedAfter: string;
+  /** Pass an empty list to choose the folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export interface MailConnectAccountInput {
@@ -502,6 +544,8 @@ export interface MailConnectAccountInput {
   readonly username?: string;
   readonly password: string;
   readonly initialSyncReceivedAfter: string;
+  /** Pass an empty list to choose the folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export interface MailCompleteAuthorizationInput {

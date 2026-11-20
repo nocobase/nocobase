@@ -141,7 +141,7 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
             current,
             reason,
             undefined,
-            'sweeper',
+            { source: 'sweeper' },
           );
           if (outcome.status === 'queued') counts.requeued += 1;
           else if (outcome.run) counts.failed += 1;

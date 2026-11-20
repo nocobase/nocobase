@@ -36,7 +36,7 @@ export interface Skill {
   readonly fileCount: number;
   /** The bytes of `SKILL.md` and every file. */
   readonly size: number;
-  /** Files that are scripts (executable, or under `scripts/`): an online agent reads them but never runs them. */
+  /** Files that are scripts (executable, or under `scripts/`). */
   readonly scriptCount: number;
   /** Their paths. */
   readonly scripts: readonly string[];
@@ -165,7 +165,7 @@ export const SKILL_FOLDERS: readonly string[] = [
   'assets',
 ];
 
-/** A file an agent may run: executable, or under `scripts/`. Online agents read scripts but never run them. */
+/** A file an agent may run: executable, or under `scripts/`. */
 export function isSkillScript(file: {
   readonly path: string;
   readonly executable: boolean;

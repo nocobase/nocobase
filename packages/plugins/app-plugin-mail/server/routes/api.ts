@@ -54,6 +54,9 @@ import {
   AccountParams,
   AttachmentParams,
   ConnectAccountInput,
+  ListFoldersQuery,
+  MailSyncFolderPreviewSchema,
+  PreviewSyncFoldersInput,
   ConversationMessagesQuery,
   DeleteMessageQuery,
   IdentityParams,
@@ -86,8 +89,10 @@ import {
   UpdateSignatureInput,
   UpdateTemplateInput,
   MailAccountSchema,
+  MailUpdatedAccountSchema,
   MailAuthorizationSchema,
   MailBoundedListMeta,
+  MailFolderListMeta,
   MailCursorListMeta,
   MailFolderSchema,
   MailIdentitySchema,
@@ -317,6 +322,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
               username: input.username ?? input.address,
               password: input.password,
               initialSyncReceivedAfter: input.initialSyncReceivedAfter,
+              ...connectSyncFolders(input.syncFolderIds),
             }),
           },
           201,
@@ -327,11 +333,13 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       '/accounts/:accountId',
       mailRoute(
         'mailUpdateAccount',
-        'Suspend or resume an account',
-        { '200': dataResponse(MailAccountSchema) },
+        'Update an account',
+        { '200': dataResponse(MailUpdatedAccountSchema) },
         {
+          description:
+            'Suspends or resumes an account, or changes the folders it synchronizes. A changed `syncFolderIds` restarts the initial synchronization under the new selection and answers that run as `syncRun`: newly selected folders are imported from the account start date, and local messages left in no selected folder are deleted, with their folder links, participants, attachments and IMAP copies. Messages on the mail server are not affected. Use `mailPreviewSyncFolders` to show the count first.',
           errors: {
-            400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`), or must be reauthorized before it can be resumed (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`).',
+            400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`), must be reauthorized before it can be resumed (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), is not active when changing its folders (`MAIL_ACCOUNT_INACTIVE`), or a selected folder is not a folder of the account (`INVALID_MAIL_REQUEST`).',
             404: true,
             413: true,
           },
@@ -344,7 +352,38 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           data: await mail.updateAccount(operationContext(context), {
             accountId: context.req.valid('param').accountId,
             status: context.req.valid('json').status,
+            ...(context.req.valid('json').syncFolderIds !== undefined
+              ? { syncFolderIds: context.req.valid('json').syncFolderIds }
+              : {}),
           }),
+        }),
+    );
+    // Previewing changes nothing, but the selection can name many long folder IDs, so it is a custom method with a body.
+    routes.post(
+      '/accounts/:accountId/previewSyncFolders',
+      mailRoute(
+        'mailPreviewSyncFolders',
+        'Preview a change of synchronized folders',
+        { '200': dataResponse(MailSyncFolderPreviewSchema) },
+        {
+          description:
+            'Counts the local messages that saving this folder selection with `mailUpdateAccount` would delete, without changing anything.',
+          errors: {
+            400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`) or is not active (`MAIL_ACCOUNT_INACTIVE`), or a selected folder is not a folder of the account (`INVALID_MAIL_REQUEST`).',
+            404: true,
+            413: true,
+          },
+        },
+      ),
+      apiValidator('param', AccountParams),
+      apiValidator('json', PreviewSyncFoldersInput),
+      async (context) =>
+        context.json({
+          data: await mail.previewSyncFolders(
+            operationContext(context),
+            context.req.valid('param').accountId,
+            context.req.valid('json').syncFolderIds,
+          ),
         }),
     );
     // Removal is durable and asynchronous: the account is marked for removal and a background task deletes its
@@ -414,6 +453,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
               ).toString(),
               ...(input.scopes !== undefined ? { scopes: input.scopes } : {}),
               initialSyncReceivedAfter: input.initialSyncReceivedAfter,
+              ...connectSyncFolders(input.syncFolderIds),
             }),
           },
           201,
@@ -584,7 +624,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       mailRoute(
         'mailListFolders',
         "List an account's folders",
-        { '200': listResponse(MailFolderSchema, MailBoundedListMeta) },
+        { '200': listResponse(MailFolderSchema, MailFolderListMeta) },
         {
           errors: {
             400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`).',
@@ -593,15 +633,27 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       ),
       apiValidator('param', AccountParams),
-      async (context) =>
-        context.json(
-          boundedList(
-            await mail.listFolders(
-              operationContext(context),
-              context.req.valid('param').accountId,
+      apiValidator('query', ListFoldersQuery),
+      async (context) => {
+        const { accountId } = context.req.valid('param');
+        if (!context.req.valid('query').includeUnsynced)
+          return context.json(
+            boundedList(
+              await mail.listFolders(operationContext(context), accountId),
             ),
-          ),
-        ),
+          );
+        const { folders, complete, failed, initialSyncCompleted } =
+          await mail.listFolderChoices(operationContext(context), accountId);
+        return context.json({
+          data: folders,
+          meta: {
+            total: folders.length,
+            complete,
+            failed,
+            initialSyncCompleted,
+          },
+        });
+      },
     );
     routes.post(
       '/accounts/:accountId/sync',
@@ -1741,6 +1793,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.route('/mail', routes);
     return router;
   });
+
+/** Connecting accepts only an empty selection, meaning the folders are chosen after connecting. */
+function connectSyncFolders(
+  syncFolderIds: readonly string[] | null | undefined,
+): { readonly syncFolderIds?: readonly [] | null } {
+  if (syncFolderIds === undefined) return {};
+  return { syncFolderIds: syncFolderIds === null ? null : [] };
+}
 
 function operationContext(context: {
   get(

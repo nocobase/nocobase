@@ -87,6 +87,8 @@ For notification configuration or sending, follow the notification plugin Skill:
 
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
 
+Whenever you add business permissions, fill in `permissionWorkspaceSelection` in `client/pages/settings/permission-workspace.ts`. Use the [three-tab role editor guide](references/authorization.md#configure-the-three-tab-role-editor) to match page and object IDs, translate each action description and scope title, and check the result with an ordinary user.
+
 Business role assignments must be visible and editable through administration. Default to explicit users; do not assign application roles to every authenticated identity or broaden the inherited member role merely to enable a feature. Follow [permission assignment safety](references/authorization.md#visible-and-manageable-assignments) and run the template's initialized-assignment guard before delivery.
 
 ## Waiting feedback

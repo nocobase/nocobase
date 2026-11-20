@@ -1,5 +1,11 @@
 # @nocobase/lifecycle
 
+## 0.1.0-beta.6
+
+### Minor Changes
+
+- 51453de: Let administrators suspend, resume, reset, or restart a lifecycle instance and review the audit history in the ticket example.
+
 ## 0.1.0-beta.5
 
 ### Minor Changes

@@ -113,6 +113,8 @@ export interface EnqueueJobInput {
   /** What it is for, as the application names it; for finding its jobs again. */
   readonly subject?: { readonly kind: string; readonly id: string };
   readonly title?: string;
+  /** Additional runner features required by this job. */
+  readonly requires?: readonly RunnerFeature[];
   /** Only these runners may take it. */
   readonly runnerIds?: readonly string[];
   /** Lower runs first; 0 by default. */
@@ -400,6 +402,9 @@ export function createJobService(deps: JobServiceDeps): JobService {
           })
         : new Map<string, string>();
     const spec = runnerSpec(registration.executor, input, values);
+    if (spec.repo.ssh && !covers(runner.features, ['gitSsh']))
+      throw new NotForThisRunner();
+    if (spec.repo.ssh && !requires.includes('gitSsh')) requires.push('gitSsh');
     const header = {
       id: job.id,
       attempt: Number(job.attempt),
@@ -864,6 +869,12 @@ export function createJobService(deps: JobServiceDeps): JobService {
           if (error instanceof ProtocolError) throw error;
           throw invalid(error instanceof Error ? error.message : String(error));
         }
+        if (
+          (spec as { repo?: { ssh?: unknown } } | null)?.repo?.ssh !== undefined
+        )
+          throw invalid(
+            'Build SSH credentials must be provided at claim time.',
+          );
         if (!registration.prepare) checkSpecInput(registration.executor, spec);
         const maxAttempts = Math.min(
           5,
@@ -890,7 +901,10 @@ export function createJobService(deps: JobServiceDeps): JobService {
             runnerId: null,
             heldBy: [],
             spec: asJson(spec),
-            requires: [jobFeature(registration.executor)],
+            requires: cleanList([
+              jobFeature(registration.executor),
+              ...(input.requires ?? []),
+            ]),
             result: null,
             exitCode: null,
             sha: null,

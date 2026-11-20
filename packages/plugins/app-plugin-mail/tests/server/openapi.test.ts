@@ -55,6 +55,11 @@ const expectedOperations: readonly (readonly [string, string, string])[] = [
   ['post', '/api/mail/accounts/connect', 'mailConnectAccount'],
   ['patch', '/api/mail/accounts/{accountId}', 'mailUpdateAccount'],
   ['delete', '/api/mail/accounts/{accountId}', 'mailDeleteAccount'],
+  [
+    'post',
+    '/api/mail/accounts/{accountId}/previewSyncFolders',
+    'mailPreviewSyncFolders',
+  ],
   ['post', '/api/mail/authorizations', 'mailCreateAuthorization'],
   ['get', '/api/mail/accounts/{accountId}/identities', 'mailListIdentities'],
   [

@@ -4,7 +4,7 @@ import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import type { SettingsAuthorizationApi } from '../settings.js';
 import { AUTHORIZATION_SETTINGS_SECTION } from '../ui.js';
-import { createInspectorHandler, INSPECTOR_SETTINGS } from './inspector.js';
+import { createInspectorHandler } from './inspector.js';
 import {
   createPermissionSetHandler,
   PERMISSION_SETS_SETTINGS,
@@ -16,7 +16,10 @@ const action = (name: string) => ({
   title: text(`options.actions.${name}`),
 });
 
-/** The Permission Set and inspector settings items and their routes. */
+/**
+ * The Permission Set settings item and the Permission Set and inspector routes. The inspector is not a settings item:
+ * it is never offered as a grantable permission, and its routes admit only an unrestricted identity.
+ */
 export function installAuthorizationAdministration(
   authz: Authorization &
     AuthorizationExtensionHost &
@@ -28,19 +31,10 @@ export function installAuthorizationAdministration(
     title: text('options.settings.permission-sets'),
     actions: ['read', 'create', 'update', 'delete', 'assign'].map(action),
   });
-  authz.settings.add({
-    id: INSPECTOR_SETTINGS,
-    title: text('options.settings.inspector'),
-    actions: [action('inspect')],
-  });
-  // Permission sets lead the section and the inspector closes it; rule plugins sit between.
+  // Permission sets lead the section; rule plugins follow.
   authz.ui.place(
     { type: 'settings', id: PERMISSION_SETS_SETTINGS },
     { section: AUTHORIZATION_SETTINGS_SECTION, order: 0 },
-  );
-  authz.ui.place(
-    { type: 'settings', id: INSPECTOR_SETTINGS },
-    { section: AUTHORIZATION_SETTINGS_SECTION, order: 1000 },
   );
   authz.routes.add(
     '/permissionSets',

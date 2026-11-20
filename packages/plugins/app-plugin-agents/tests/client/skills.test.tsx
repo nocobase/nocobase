@@ -193,12 +193,12 @@ describe('skill pages', () => {
     );
   });
 
-  it('lists skills with their scripts, compatibility, version and scope defaults', async () => {
+  it('lists skills with their compatibility, version and scope defaults', async () => {
     renderPage(<SkillsPage />);
     const row = await screen.findByTestId('skill-s1');
     expect(within(row).getByText('pr-etiquette')).toBeInTheDocument();
     expect(within(row).getByText('v2')).toBeInTheDocument();
-    expect(within(row).getByText('skills.scriptsNote')).toBeInTheDocument();
+    expect(within(row).queryByText('skills.scriptsNote')).toBeNull();
     expect(
       within(row).getByText('skills.compatibility(value=Needs git)'),
     ).toBeInTheDocument();
@@ -215,21 +215,26 @@ describe('skill pages', () => {
     expect(screen.queryByText(/name: pr-etiquette/u)).toBeNull();
     expect(screen.queryByText('Coder')).not.toBeInTheDocument();
     expect(screen.queryByText('skills.mountedAgents')).not.toBeInTheDocument();
-    expect(screen.getByTestId('skill-scripts-note')).toHaveTextContent(
-      'skills.scriptsNote',
-    );
+    expect(screen.queryByText('skills.scriptsNote')).toBeNull();
     const tree = screen.getByTestId('skill-tree');
     expect(within(tree).getByText('scripts')).toBeInTheDocument();
     expect(within(tree).getByText('check.sh')).toBeInTheDocument();
-    expect(within(tree).getByTestId('skill-script-badge')).toHaveTextContent(
-      'skills.scriptBadge',
-    );
+    // Only the `scripts` folder row carries the script mark, as an icon named "Script".
+    expect(within(tree).queryByText('skills.scriptBadge')).toBeNull();
+    expect(
+      within(tree).getAllByTestId('skill-scripts-folder-icon'),
+    ).toHaveLength(1);
+    expect(
+      within(tree).getByTestId('skill-scripts-folder-icon'),
+    ).toHaveAccessibleName('skills.scriptBadge');
     // Read-only: no tree actions.
     expect(
       within(tree).queryByRole('button', { name: 'skills.tree.newFile' }),
     ).toBeNull();
     fireEvent.click(within(tree).getByText('check.sh'));
     expect(screen.getByText('echo ok')).toBeInTheDocument();
+    // The open script's header keeps its badge.
+    expect(screen.getByText('skills.scriptBadge')).toBeInTheDocument();
     fireEvent.click(within(tree).getByText('logo.png'));
     expect(
       screen.getByText('skills.binaryFile(size=2.0 KB)'),

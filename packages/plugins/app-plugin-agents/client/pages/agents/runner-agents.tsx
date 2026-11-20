@@ -32,6 +32,7 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import { AvailableModelsDrawer } from './available-models-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
@@ -183,6 +184,8 @@ function AgentRow({
         : runners.names.length > 0
           ? t('agents.where.names', { names: runners.names.join(', ') })
           : '';
+  // Every agent shows its whole model id below its name.
+  const qualifiedModel = agentModelOf(agent).model ?? null;
   return (
     <TableRow
       data-testid={`agent-${agent.id}`}
@@ -192,6 +195,15 @@ function AgentRow({
       <TableCell>
         <div className='min-w-0 leading-tight'>
           <div className='truncate font-medium'>{agent.name}</div>
+          {qualifiedModel ? (
+            <div
+              className='truncate font-mono text-xs text-muted-foreground'
+              title={qualifiedModel}
+              data-testid='agent-model'
+            >
+              {qualifiedModel}
+            </div>
+          ) : null}
         </div>
       </TableCell>
       <TableCell className='max-w-80 whitespace-normal'>
