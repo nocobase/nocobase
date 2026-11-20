@@ -142,6 +142,7 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
         'SELECT pg_export_snapshot() AS snapshot, statement_timestamp() AS time',
       );
       const { snapshot, time } = rows[0];
+      const lsn = await walPosition(client);
       const server = await serverInfo(client);
       let mode: 'dump' | 'recovery-point' = 'dump';
       try {
@@ -166,7 +167,6 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
           throw error;
         mode = 'recovery-point';
       }
-      const lsn = await walPosition(client);
       return {
         mode,
         server,

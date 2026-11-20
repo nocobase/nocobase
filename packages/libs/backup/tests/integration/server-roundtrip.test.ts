@@ -387,6 +387,74 @@ exec ${shell(client)} "$@"`,
     60_000,
   );
 
+  it.skipIf(pgTest)(
+    'falls back only on a confirmed MySQL export permission denial',
+    async () => {
+      if (connection.dialect !== 'mysql')
+        throw new Error('This scenario needs a MySQL server.');
+      const account = name + '_reader';
+      await query(
+        `CREATE USER '${account}'@'%' IDENTIFIED BY 'backup-fixture'`,
+      );
+      try {
+        await query('CREATE TABLE private_data (value INT)', name);
+        await query(`GRANT SELECT ON ${name}.uploads TO '${account}'@'%'`);
+        await query(`GRANT UPDATE ON ${name}.private_data TO '${account}'@'%'`);
+        target.connections = [
+          {
+            ...connection,
+            hosting: 'managed',
+            username: account,
+            password: 'backup-fixture',
+          },
+        ];
+        const saved = await createBackup(target, {
+          output: archive,
+          tmpDir: root,
+        });
+        expect(saved.manifest.connections[0]).toMatchObject({
+          mode: 'recovery-point',
+          reason: 'export-permission-denied',
+        });
+        expect(
+          await verifyBackup(archive, { target, tmpDir: root }),
+        ).toMatchObject({ ok: true });
+      } finally {
+        await query(`DROP USER '${account}'@'%'`);
+      }
+    },
+    60_000,
+  );
+
+  it.skipIf(pgTest)(
+    'fails interrupted or invalid dumps even for a managed MySQL server',
+    async () => {
+      if (connection.dialect !== 'mysql')
+        throw new Error('This scenario needs a MySQL server.');
+      target.connections = [{ ...connection, hosting: 'managed' }];
+      for (const [script, code] of [
+        [
+          "printf 'incomplete dump'; kill -TERM $$",
+          'BACKUP_CLIENT_INTERRUPTED',
+        ],
+        ["printf 'invalid dump'", 'BACKUP_MYSQL_INCOMPLETE'],
+      ] as const) {
+        const dump = await wrapper(join(root, 'failed-dump'), script);
+        target.tools = {
+          ...target.tools,
+          ...(mariaTest ? { mariadbDump: dump } : { mysqlDump: dump }),
+        };
+        await expect(
+          createBackup(target, { output: archive, tmpDir: root }),
+        ).rejects.toMatchObject({ code });
+        await expect(readFile(archive)).rejects.toMatchObject({
+          code: 'ENOENT',
+        });
+      }
+    },
+    60_000,
+  );
+
   it.skipIf(!pgTest)(
     'records the managed server recovery point on confirmed export permission denial',
     async () => {
