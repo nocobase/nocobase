@@ -102,7 +102,7 @@ Create one context per request and reuse it within that request only. Unknown ty
 
 ### Caller-owned transactions
 
-`context.withTransaction(tx)` creates a context for the same principal, subjects, and credential scope, with fresh grant and rule caches. Reuse it for checks within the transaction callback, and discard it when the transaction ends. If permissions change again during the callback, derive a new context for the next checks. The caller commits or rolls back the transaction.
+`context.withTransaction(tx)` creates a context for the same principal, subjects, and credential scope, with fresh grant and rule caches. Reuse it for checks within the transaction callback, and discard it when the transaction ends. If permissions change again during the callback, derive a new context for the next checks. The caller commits or rolls back the transaction. Hosts can supply `validateTransaction` to `createAuthorization` to verify ownership and reject a handle before any provider or resolver uses it.
 
 A Grant Provider or constraint resolver must implement `withTransaction(tx)` to bind its reads, or declare `transactionIndependent: true` if it reads no transactional state. Unsupported providers and resolvers fail when a caller tries to bind a context. Database-backed resource handlers and record access callbacks must use the transaction supplied in their runtime context.
 

@@ -1,5 +1,9 @@
 import './subjects.js';
-import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import {
+  isDatabaseTransactionOf,
+  type DatabaseConnection,
+  type DatabaseManager,
+} from '@nocobase/db';
 import {
   createAuthorization,
   type Authorization,
@@ -69,6 +73,12 @@ export function createAppAuthorization(
   );
   const authz: AppAuthorization = createAuthorization({
     connection: options.connection,
+    validateTransaction: (transaction) => {
+      if (!isDatabaseTransactionOf(transaction, connection.resolve()))
+        throw new TypeError(
+          'Authorization requires an active transaction on its database connection',
+        );
+    },
     onInvalidGrant: (grant) => options.onInvalidGrant?.(grant),
     plugins: [
       permissionSetsPlugin<DatabaseConnection>({

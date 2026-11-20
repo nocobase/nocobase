@@ -233,6 +233,50 @@ describe('authorization plugin database stores', () => {
     await authorization.permissionSets.delete(key);
   });
 
+  it('rejects transactions from another same-named database before binding permission sets or rules', async () => {
+    const connection = database.connection();
+    const authz = createAppAuthorization({ connection });
+    const context = authz.for({ principal: { type: 'user', id: 'alice' } });
+    const resolve = async () => [];
+    const bindRules = vi.fn(() => ({ id: 'test-rules', resolve }));
+    authz.constraints.add({
+      id: 'test-rules',
+      resolve,
+      withTransaction: bindRules,
+    });
+    const other = await createTestDatabase();
+    const bindSets = vi.spyOn(
+      DatabasePermissionSetStore.prototype,
+      'withTransaction',
+    );
+    const invalid =
+      'Authorization requires an active transaction on its database connection';
+    try {
+      expect(other.connection.name).toBe(connection.name);
+      expect(() => context.withTransaction(connection)).toThrow(invalid);
+      await other.connection.transaction(async (tx) => {
+        expect(() => context.withTransaction(tx)).toThrow(invalid);
+      });
+      const completed = await connection.transaction(async (tx) => tx);
+      expect(() => context.withTransaction(completed)).toThrow(invalid);
+      expect(bindSets).not.toHaveBeenCalled();
+      expect(bindRules).not.toHaveBeenCalled();
+
+      await connection.transaction(async (tx) => {
+        await tx.transaction(async (savepoint) => {
+          expect(context.withTransaction(savepoint).identity).toBe(
+            context.identity,
+          );
+          expect(bindSets).toHaveBeenCalledExactlyOnceWith(savepoint);
+          expect(bindRules).toHaveBeenCalledExactlyOnceWith(savepoint);
+        });
+      });
+    } finally {
+      bindSets.mockRestore();
+      await other.destroy();
+    }
+  });
+
   it('isolates transaction authorization caches and retains inherited and key-scoped access', async () => {
     const connection = database.connection();
     const authz = createAppAuthorization({ connection });

@@ -1,5 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import type { RepositoryMutationEvent } from '../../../../../db/src/index.js';
+import {
+  isDatabaseTransactionOf,
+  type DatabaseConnection,
+  type RepositoryMutationEvent,
+} from '../../../../../db/src/index.js';
 import { describeIntegrationDatabases } from '../../helpers.js';
 import { collectEvents, createEventsFixture, rowsOf } from './fixture.js';
 
@@ -222,11 +226,16 @@ describeIntegrationDatabases(
       await createEventsFixture(context);
       const notes = collectEvents();
       let parent: RepositoryMutationEvent | undefined;
+      let listenerConnection: DatabaseConnection | undefined;
       subscribe(
         { collections: ['tasks'] },
         {
           inTransaction: async (event, connection) => {
             parent = event;
+            listenerConnection = connection;
+            expect(
+              isDatabaseTransactionOf(connection, context.connection),
+            ).toBe(true);
             await connection
               .repository('notes')
               .createOne({ values: { body: `audit ${event.operation}` } });
@@ -240,6 +249,10 @@ describeIntegrationDatabases(
         values: { title: 'Audited' },
       });
 
+      expect(listenerConnection).toBeDefined();
+      expect(
+        isDatabaseTransactionOf(listenerConnection, context.connection),
+      ).toBe(false);
       expect(notes.batches).toHaveLength(1);
       expect(notes.batches[0]).toMatchObject([
         {

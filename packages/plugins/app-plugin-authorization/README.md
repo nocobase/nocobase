@@ -485,7 +485,7 @@ Settings action names are semantic. Permission sets declare `read`, `create`, `u
 
 ## Subjects and transactions
 
-When a service owns a write transaction, use the active `DatabaseConnection` from the authorization database to derive its authorization context. Permission sets, enabled rules, and collection metadata then read through that connection, including for an unrestricted identity. Qualified collections on another data source cannot be checked in that transaction.
+When a service owns a write transaction, use the active `DatabaseConnection` from the authorization database to derive its authorization context. Permission sets, enabled rules, and collection metadata then read through that connection, including for an unrestricted identity. Binding verifies the connection's owning database and requires an active transaction before creating the authorization context. Qualified collections on another data source cannot be checked in that transaction.
 
 ```ts
 await database.transaction(async (tx) => {

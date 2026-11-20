@@ -106,13 +106,13 @@ export interface CreateAuthorizationOptions<
    * nothing while the identity's other grants keep working.
    */
   onInvalidGrant?: (grant: InvalidGrant) => void;
+  /** The host may reject a transaction before any provider or resolver is bound. */
+  validateTransaction?: (transaction: object) => void;
 }
 
-interface AuthorizationOptions {
-  connection?: unknown;
-  plugins: readonly AuthorizationPlugin[];
-  onInvalidGrant?: (grant: InvalidGrant) => void;
-}
+type AuthorizationOptions = CreateAuthorizationOptions<
+  readonly AuthorizationPlugin[]
+>;
 
 export class Authorization {
   readonly resourceTypes: ResourceTypeRegistry = new ResourceTypeRegistry();
@@ -127,10 +127,12 @@ export class Authorization {
     new AuthorizationRouteRegistry();
   private readonly plugins: readonly AuthorizationPlugin[];
   private readonly provider: AuthorizationGrantService;
+  private readonly validateTransaction: AuthorizationOptions['validateTransaction'];
   private readonly compositeResourceRegistry: CompositeResourceRegistry;
   private readonly middlewares: AuthorizationMiddleware[] = [];
 
   constructor(options: AuthorizationOptions) {
+    this.validateTransaction = options.validateTransaction;
     this.plugins = sortAuthorizationPlugins(options.plugins);
     const grantProvider = this.plugins.find((plugin) => plugin.grants);
     this.provider = grantProvider?.grants ?? missingGrantService();
@@ -215,6 +217,7 @@ export class Authorization {
   ): TransactionBindableAuthorizationContext {
     let provider = this.provider;
     if (transaction !== undefined) {
+      this.validateTransaction?.(transaction);
       if (provider.withTransaction) {
         provider = provider.withTransaction(transaction);
       } else if (!provider.transactionIndependent) {

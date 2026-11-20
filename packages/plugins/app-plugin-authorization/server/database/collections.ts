@@ -1,4 +1,5 @@
 import {
+  isDatabaseTransactionOf,
   writableFields,
   type DatabaseConnection,
   type DatabaseManager,
@@ -26,9 +27,9 @@ export function collectionResolver(
 ): ResolveAuthorizationCollection {
   return async (name) => {
     const parts = name.split('.');
-    if (transaction && transaction.name !== connection.name)
+    if (transaction && !isDatabaseTransactionOf(transaction, connection))
       throw new TypeError(
-        'Authorization requires a transaction on its database connection',
+        'Authorization requires an active transaction on its database connection',
       );
     if (!database || parts.length !== 2)
       return describeCollection(transaction ?? connection, name);

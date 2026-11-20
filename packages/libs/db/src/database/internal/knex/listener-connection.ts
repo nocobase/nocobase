@@ -43,46 +43,54 @@ import {
  * writes without ambient state.
  */
 export class RepositoryListenerConnection implements PolicyBindableConnection {
+  readonly #inner: KnexDatabaseConnection;
+
+  static unwrap(connection: object): KnexDatabaseConnection | undefined {
+    return #inner in connection ? connection.#inner : undefined;
+  }
+
   constructor(
-    private readonly inner: KnexDatabaseConnection,
+    inner: KnexDatabaseConnection,
     private readonly parent: RepositoryOperationParent,
-  ) {}
+  ) {
+    this.#inner = inner;
+  }
 
   get name(): string {
-    return this.inner.name;
+    return this.#inner.name;
   }
   get driver(): DatabaseDriver {
-    return this.inner.driver;
+    return this.#inner.driver;
   }
   get dialect(): string {
-    return this.inner.dialect;
+    return this.#inner.dialect;
   }
   get schemaManagement(): SchemaManagementMode {
-    return this.inner.schemaManagement;
+    return this.#inner.schemaManagement;
   }
   get capabilities(): DatabaseCapabilities {
-    return this.inner.capabilities;
+    return this.#inner.capabilities;
   }
   get runtime(): DatabaseDriverRuntime {
-    return this.inner.runtime;
+    return this.#inner.runtime;
   }
   get builder(): CollectionBuilder {
-    return this.inner.builder;
+    return this.#inner.builder;
   }
   get collections(): ConnectionCollections {
-    return this.inner.collections;
+    return this.#inner.collections;
   }
   get collectionMetadata(): CollectionMetadataService {
-    return this.inner.collectionMetadata;
+    return this.#inner.collectionMetadata;
   }
   get query(): QueryAdapter {
-    return this.inner.query;
+    return this.#inner.query;
   }
   get schema(): SchemaAdapter {
-    return this.inner.schema;
+    return this.#inner.schema;
   }
   get schemaInspector(): SchemaInspector {
-    return this.inner.schemaInspector;
+    return this.#inner.schemaInspector;
   }
 
   repository<
@@ -104,7 +112,7 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
     collection: string,
     policy: NormalizedRepositoryPolicy | undefined,
   ): Repository<TRecord, TCreate, TUpdate> {
-    return this.inner.createRepository<TRecord, TCreate, TUpdate>(
+    return this.#inner.createRepository<TRecord, TCreate, TUpdate>(
       collection,
       policy,
       { parent: this.parent },
@@ -126,31 +134,31 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
   }
 
   async client<T = unknown>(): Promise<T> {
-    return this.inner.client<T>();
+    return this.#inner.client<T>();
   }
 
   async connect(): Promise<this> {
-    await this.inner.connect();
+    await this.#inner.connect();
     return this;
   }
 
   async disconnect(): Promise<void> {
-    return this.inner.disconnect();
+    return this.#inner.disconnect();
   }
 
   async reconnect(): Promise<this> {
-    await this.inner.reconnect();
+    await this.#inner.reconnect();
     return this;
   }
 
   async resetManagedSchema(): Promise<void> {
-    return this.inner.resetManagedSchema();
+    return this.#inner.resetManagedSchema();
   }
 
   async transaction<T>(
     fn: (connection: DatabaseConnection) => Promise<T>,
   ): Promise<T> {
-    return this.inner.transaction((connection) =>
+    return this.#inner.transaction((connection) =>
       fn(
         new RepositoryListenerConnection(
           connection as KnexDatabaseConnection,
@@ -161,23 +169,23 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
   }
 
   afterCommit(callback: () => void | Promise<void>): void {
-    this.inner.afterCommit(callback);
+    this.#inner.afterCommit(callback);
   }
 
   afterRollback(callback: (error: unknown) => void | Promise<void>): void {
-    this.inner.afterRollback(callback);
+    this.#inner.afterRollback(callback);
   }
 
   onRepositoryMutation(
     options: RepositoryMutationSubscriptionOptions,
     listeners: RepositoryMutationListeners,
   ): () => void {
-    return this.inner.onRepositoryMutation(options, listeners);
+    return this.#inner.onRepositoryMutation(options, listeners);
   }
 
   explainRepositoryEvents(
     options: ExplainRepositoryEventsOptions,
   ): Promise<RepositoryEventsExplanation> {
-    return this.inner.explainRepositoryEvents(options);
+    return this.#inner.explainRepositoryEvents(options);
   }
 }
