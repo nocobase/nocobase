@@ -29,6 +29,13 @@ const sharedFiles = new Set([
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
   ...['postgres', 'mysql'].map((dialect) => ({
+    paths: ['packages/libs/backup/'],
+    dialect,
+    filter: '@nocobase/backup',
+    tests: ['tests/integration/server-roundtrip.test.ts'],
+  })),
+
+  ...['postgres', 'mysql'].map((dialect) => ({
     paths: [
       'packages/plugins/app-plugin-releases/server/services/releases.ts',
       'packages/plugins/app-plugin-releases/database/migrations/',
