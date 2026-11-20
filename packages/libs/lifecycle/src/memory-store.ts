@@ -352,10 +352,17 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
     const rows = this.rows(collection);
     const current = rows.get(String(id));
     const version = current?.[condition.versionField] ?? null;
+    const revision = condition.managementRevision;
+    const storedRevision = revision
+      ? (current?.[revision.field] ?? null)
+      : null;
     if (
       !current ||
       current[condition.stateField] !== condition.state ||
-      (version === null ? null : Number(version)) !== condition.version
+      (version === null ? null : Number(version)) !== condition.version ||
+      (revision &&
+        (storedRevision === null ? null : Number(storedRevision)) !==
+          revision.value)
     )
       return Promise.resolve(false);
     this.log(update(rows, String(id), current, values)[1]);
@@ -397,7 +404,9 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
         (other) =>
           other.lifecycle === entry.lifecycle &&
           other.recordId === entry.recordId &&
-          (other.version === entry.version ||
+          ((other.version === entry.version &&
+            (other.management?.revision ?? 0) ===
+              (entry.management?.revision ?? 0)) ||
             transitionRequestKey(other) === requestKey),
       )
     )
@@ -501,6 +510,7 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
 
   public listEffectRuns(query: EffectRunQuery): Promise<EffectRun[]> {
     if (this.scope?.finished) return Promise.reject(new Error(FINISHED));
+    const after = query.continuationAfter;
     const runs = [...this.state.effectRuns.values()].filter(
       (run) =>
         (query.lifecycle === undefined || run.lifecycle === query.lifecycle) &&
@@ -518,7 +528,11 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
           (abandonedAt(run.continuation) !== null) ===
             query.continuationAbandoned) &&
         (query.continuationDueBy === undefined ||
-          isDueBy(waitingDueAt(run.continuation), query.continuationDueBy)),
+          isDueBy(waitingDueAt(run.continuation), query.continuationDueBy)) &&
+        (!after ||
+          (waitingDueAt(run.continuation) ?? '') > after.dueAt ||
+          (waitingDueAt(run.continuation) === after.dueAt &&
+            Number(run.id) > Number(after.id))),
     );
     if (query.continuationDueBy !== undefined)
       runs.sort((a, b) => {

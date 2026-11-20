@@ -1,8 +1,8 @@
+import enUS from './en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
-
 const zhTW: LocaleResource<typeof enUS> = {
+  ticketManagement: enUS.ticketManagement,
   navigation: {
     parameters: '執行環境引數',
     group: '工作流程',
