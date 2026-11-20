@@ -355,7 +355,7 @@ describe('agents built from runner reports', () => {
           kind: 'opencode',
           authenticated: true,
           models: [
-            { id: 'my-lan-gateway/qwen3.8-flash' },
+            { id: 'example-provider/qwen3.8-flash' },
             { id: 'opencode/qwen3.8-flash' },
           ],
           modelsDetectionStatus: 'detected',
@@ -367,7 +367,7 @@ describe('agents built from runner reports', () => {
         { tool: 'opencode', model, description: 'Quick questions' },
         'alice',
       );
-    const gateway = await create('my-lan-gateway/qwen3.8-flash');
+    const gateway = await create('example-provider/qwen3.8-flash');
     const consoleAgent = await create('opencode/qwen3.8-flash');
     expect([gateway.name, consoleAgent.name]).toEqual([
       'OpenCode · Qwen3.8 Flash',

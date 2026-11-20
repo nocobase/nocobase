@@ -121,13 +121,13 @@ describe('a failed run’s message', () => {
     ['the tool’s own words', SAID],
     [
       'a path and a model id',
-      'Model not found: my-lan-gateway/qwen3.8-flash in /home/runner/work',
+      'Model not found: example-provider/qwen3.8-flash in /home/runner/work',
     ],
     ['token counts', 'prompt has 128000 tokens, max_tokens: 4096'],
     ['a short model name', `qwen3.8-flash is not available: ${SAID}`],
     [
       'a hyphenated provider path',
-      'Model my-lan-gateway/DeepSeek-V4-Flash-Free2 not found',
+      'Model example-provider/DeepSeek-V4-Flash-Free2 not found',
     ],
     [
       'a high-entropy value of 19 characters',

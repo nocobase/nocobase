@@ -1691,7 +1691,7 @@ const conversationAgent = z.object({
     .string()
     .optional()
     .describe(
-      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
     ),
   shortName: z
     .string()
@@ -1973,7 +1973,7 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
     .string()
     .optional()
     .describe(
-      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
+      'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
     ),
   shortName: z
     .string()
@@ -2331,7 +2331,7 @@ export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
       .string()
       .optional()
       .describe(
-        'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("my-lan-gateway/qwen3.8-flash"), and for a model the catalog does not know.',
+        'Its whole model id, shown beside its name: with the provider for OpenCode and Pi ("example-provider/qwen3.8-flash"), and for a model the catalog does not know.',
       ),
     shortName: z
       .string()

@@ -37,7 +37,7 @@ describe('the model catalog', () => {
     expect(agentNameOf('claude', 'claude-opus-5-5')).toBe('Claude · Opus 5.5');
     expect(agentNameOf('codex', 'gpt-6.1-sol')).toBe('Codex · GPT-6.1 Sol');
     // The design's examples: a model the catalog does not know gets a readable name, for every tool.
-    expect(agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash')).toBe(
+    expect(agentNameOf('opencode', 'example-provider/qwen3.8-flash')).toBe(
       'OpenCode · Qwen3.8 Flash',
     );
     expect(agentNameOf('opencode', 'opencode/deepseek-v4.1-flash-free')).toBe(
@@ -86,7 +86,7 @@ describe('the model catalog', () => {
       taken.add(name);
       return name;
     };
-    expect(named('opencode', 'my-lan-gateway/qwen3.8-flash')).toBe(
+    expect(named('opencode', 'example-provider/qwen3.8-flash')).toBe(
       'OpenCode · Qwen3.8 Flash',
     );
     expect(named('opencode', 'opencode/qwen3.8-flash')).toBe(
@@ -107,7 +107,7 @@ describe('the model catalog', () => {
     expect(named('codex', 'gpt-6.2-astra')).toBe('Codex · GPT-6.2 Astra #2');
     // OpenCode's own name for the model is not used: names are made the same way for every provider.
     expect(
-      agentNameOf('opencode', 'my-lan-gateway/qwen3.8-flash', 'Qwen 3.8 Flash'),
+      agentNameOf('opencode', 'example-provider/qwen3.8-flash', 'Qwen 3.8 Flash'),
     ).toBe('OpenCode · Qwen3.8 Flash');
   });
 
@@ -138,14 +138,14 @@ describe('agentModelOf', () => {
   it('gives an OpenCode agent its whole id, its name without the tool and the hover text', () => {
     expect(
       agentModelOf({
-        name: 'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
+        name: 'OpenCode · Qwen3.8 Flash (example-provider)',
         tool: 'opencode',
-        model: 'my-lan-gateway/qwen3.8-flash',
+        model: 'example-provider/qwen3.8-flash',
       }),
     ).toEqual({
-      model: 'my-lan-gateway/qwen3.8-flash',
-      shortName: 'Qwen3.8 Flash (my-lan-gateway)',
-      modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
+      model: 'example-provider/qwen3.8-flash',
+      shortName: 'Qwen3.8 Flash (example-provider)',
+      modelTitle: 'OpenCode · example-provider/qwen3.8-flash',
     });
   });
 
@@ -154,11 +154,11 @@ describe('agentModelOf', () => {
       agentModelOf({
         name: 'Gateway fast',
         tool: 'pi',
-        model: 'my-lan-gateway/qwen3.8-flash',
+        model: 'example-provider/qwen3.8-flash',
       }),
     ).toEqual({
-      model: 'my-lan-gateway/qwen3.8-flash',
-      modelTitle: 'Pi · my-lan-gateway/qwen3.8-flash',
+      model: 'example-provider/qwen3.8-flash',
+      modelTitle: 'Pi · example-provider/qwen3.8-flash',
     });
   });
 

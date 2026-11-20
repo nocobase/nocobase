@@ -134,7 +134,7 @@ export const MODEL_CATALOG: readonly CatalogModel[] = [
 
 /**
  * Whether a tool names models `provider/model` (OpenCode, Pi). The same model can be reached through two providers
- * (`opencode/qwen3.8-flash` and `my-lan-gateway/qwen3.8-flash`) with different credentials, so labels keep the provider.
+ * (`opencode/qwen3.8-flash` and `example-provider/qwen3.8-flash`) with different credentials, so labels keep the provider.
  */
 export function providerQualified(tool: AgentTool): boolean {
   return tool === 'opencode' || tool === 'pi';
@@ -226,7 +226,7 @@ function modelWord(word: string): string {
 /**
  * A readable name for a model id the catalog does not know: the part after its last `/`, split at `-` and `_`, each
  * word capitalized, abbreviations in capitals and versions written as the catalog writes them, so
- * `my-lan-gateway/qwen3.8-flash` reads "Qwen3.8 Flash" and `gpt-6.2-astra` "GPT-6.2 Astra". A leading word naming the
+ * `example-provider/qwen3.8-flash` reads "Qwen3.8 Flash" and `gpt-6.2-astra` "GPT-6.2 Astra". A leading word naming the
  * tool itself (`claude-…` under Claude) is dropped, since the agent's name says the tool, unless a version follows it. A word already written with
  * capitals (`MiniMax-M2.7`) keeps them.
  */
@@ -264,7 +264,7 @@ export function readableModelName(tool: AgentTool, id: string): string {
 
 /**
  * How names show a tool's model: the catalog's label, else a readable name made from its id (`readableModelName`).
- * For OpenCode and Pi the provider is left out (`my-lan-gateway/qwen3.8-flash` reads "Qwen3.8 Flash"); the whole id is
+ * For OpenCode and Pi the provider is left out (`example-provider/qwen3.8-flash` reads "Qwen3.8 Flash"); the whole id is
  * shown beside the name (`agentModelOf`), and two providers' agents of one model are told apart by `uniqueAgentName`.
  */
 export function modelLabel(tool: AgentTool, model: string): string {
@@ -276,7 +276,7 @@ export function modelLabel(tool: AgentTool, model: string): string {
   return readableModelName(tool, normalizeModel(tool, model));
 }
 
-/** The provider an OpenCode or Pi model is reached through (`my-lan-gateway`); null for other tools. */
+/** The provider an OpenCode or Pi model is reached through (`example-provider`); null for other tools. */
 export function modelProvider(tool: AgentTool, model: string): string | null {
   if (!providerQualified(tool)) return null;
   const id = normalizeModel(tool, model);
@@ -321,7 +321,7 @@ export function agentNameOf(
 /**
  * The name a new agent of a tool and model is saved with, given whether a name is already held by another agent:
  * `agentNameOf`; when that is held, for OpenCode and Pi, the name with the model's provider after it
- * ("OpenCode · Qwen3.8 Flash (my-lan-gateway)"); else the first free `#2`, `#3`… after one of them. Agents are not
+ * ("OpenCode · Qwen3.8 Flash (example-provider)"); else the first free `#2`, `#3`… after one of them. Agents are not
  * renamed afterwards, so two agents that already read the same are renamed by an administrator.
  */
 export function uniqueAgentName(
@@ -345,12 +345,12 @@ export function uniqueAgentName(
 /**
  * What a page shows about an agent's model beside its name, for every tool.
  *
- * - `model`: the whole model id (`my-lan-gateway/qwen3.8-flash`, `claude-opus-5-5`), shown under the name or as its
+ * - `model`: the whole model id (`example-provider/qwen3.8-flash`, `claude-opus-5-5`), shown under the name or as its
  *   "Model" line.
  * - `shortName`: what a narrow place (a chip, a picker, a table column) shows, the name without its tool
- *   ("Qwen3.8 Flash (my-lan-gateway)"); absent when the name does not start with the tool, such as an agent someone
+ *   ("Qwen3.8 Flash (example-provider)"); absent when the name does not start with the tool, such as an agent someone
  *   renamed, which shows its own name.
- * - `modelTitle`: what that place shows on hover, the tool and the whole id ("OpenCode · my-lan-gateway/qwen3.8-flash").
+ * - `modelTitle`: what that place shows on hover, the tool and the whole id ("OpenCode · example-provider/qwen3.8-flash").
  */
 export interface AgentModel {
   readonly model?: string;
