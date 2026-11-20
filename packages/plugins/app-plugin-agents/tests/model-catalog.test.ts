@@ -107,7 +107,11 @@ describe('the model catalog', () => {
     expect(named('codex', 'gpt-6.2-astra')).toBe('Codex · GPT-6.2 Astra #2');
     // OpenCode's own name for the model is not used: names are made the same way for every provider.
     expect(
-      agentNameOf('opencode', 'example-provider/qwen3.8-flash', 'Qwen 3.8 Flash'),
+      agentNameOf(
+        'opencode',
+        'example-provider/qwen3.8-flash',
+        'Qwen 3.8 Flash',
+      ),
     ).toBe('OpenCode · Qwen3.8 Flash');
   });
 
