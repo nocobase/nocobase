@@ -11,7 +11,7 @@ import { agentsKeys } from '../api/keys.js';
 import { useAgentsApi } from '../hooks/use-agents-api.js';
 import { useNotify } from '../hooks/use-notify.js';
 import { AgSection } from './ag-section.js';
-import { SkillScriptsNotice, SkillsSelect } from './skills-select.js';
+import { SkillsSelect } from './skills-select.js';
 import { Button } from './ui/button.js';
 import { Skeleton } from './ui/skeleton.js';
 import { Spinner } from './ui/spinner.js';
@@ -102,7 +102,6 @@ function DefaultSkillsForm({
         disabled={!canEdit || save.isPending}
         onChange={setSelected}
       />
-      <SkillScriptsNotice value={selected} />
       {canEdit ? (
         <div className='flex justify-end'>
           <Button

@@ -273,10 +273,6 @@ const esES: LocaleResource<typeof enUS> = {
     save: 'Guardar habilidades',
     descriptionOnline:
       'Manuales que el Agent lee cuando una tarea coincide con su descripción, en un entorno limitado de solo lectura en el servidor.',
-    onlineScripts:
-      'Los scripts no se ejecutan para los Agents en línea: el Agent puede leerlos, no ejecutarlos.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Vista previa del mensaje completo',
@@ -1347,8 +1343,6 @@ const esES: LocaleResource<typeof enUS> = {
     binaryFile: 'Archivo binario, {{size}}. No se puede editar aquí.',
     executable: 'Ejecutable',
     scriptBadge: 'Guión',
-    scriptsNote:
-      'Tiene scripts: los Agents en línea pueden leerlos pero nunca ejecutarlos',
     compatibility: 'Compatibilidad: {{value}}',
     fileContent: 'Contenido de {{path}}',
     export: 'Exportar',
@@ -1380,8 +1374,7 @@ const esES: LocaleResource<typeof enUS> = {
       name: 'Nombre',
       renameTitle: 'Cambiar el nombre de "{{name}}"',
       conventional: {
-        scripts:
-          'Los Agents de código pueden ejecutarse. Los Agents en línea solo lo leen.',
+        scripts: 'Código que los Agents pueden ejecutar.',
         references: 'Los Agents de documentación leen cuando la necesitan.',
         assets: 'Plantillas, imágenes y otros recursos.',
       },

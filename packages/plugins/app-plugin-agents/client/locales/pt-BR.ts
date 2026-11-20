@@ -272,10 +272,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     save: 'Salvar habilidades',
     descriptionOnline:
       'Manuais que o Agent lê quando uma tarefa corresponde à sua descrição, em uma sandbox somente leitura no servidor.',
-    onlineScripts:
-      'Os scripts não são executados para Agents online: o Agent pode lê-los, não executá-los.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Pré-visualização do prompt completo',
@@ -1339,8 +1335,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     binaryFile: 'Arquivo binário, {{size}}. Não pode ser editado aqui.',
     executable: 'Executável',
     scriptBadge: 'Roteiro',
-    scriptsNote:
-      'Possui scripts: os Agents online podem lê-los, mas nunca executá-los',
     compatibility: 'Compatibilidade: {{value}}',
     fileContent: 'Conteúdo de {{path}}',
     export: 'Exportar',
@@ -1372,8 +1366,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       renameTitle: 'Renomear "{{name}}"',
       conventional: {
-        scripts:
-          'Os Agents de código podem ser executados. Os Agents online apenas leem.',
+        scripts: 'Código que os Agents podem executar.',
         references: 'Os Agents de documentação leem quando precisam.',
         assets: 'Modelos, imagens e outros recursos.',
       },

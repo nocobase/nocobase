@@ -275,10 +275,6 @@ const frFR: LocaleResource<typeof enUS> = {
     save: 'Sauvegarder les compétences',
     descriptionOnline:
       "Manuels que l'Agent lit lorsqu'une tâche correspond à sa description, dans un bac à sable en lecture seule sur le serveur.",
-    onlineScripts:
-      "Les scripts ne sont pas exécutés pour les Agents en ligne : l'Agent peut les lire, pas les exécuter.",
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: "Aperçu de l'invite complète",
@@ -1345,8 +1341,6 @@ const frFR: LocaleResource<typeof enUS> = {
     binaryFile: 'Fichier binaire, {{size}}. Il ne peut pas être modifié ici.',
     executable: 'Exécutable',
     scriptBadge: 'Scénario',
-    scriptsNote:
-      'Possède des scripts : les Agents en ligne peuvent les lire mais ne les exécutent jamais',
     compatibility: 'Compatibilité : {{value}}',
     fileContent: 'Contenu de {{path}}',
     export: 'Exporter',
@@ -1380,8 +1374,7 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       renameTitle: 'Renommer "{{name}}"',
       conventional: {
-        scripts:
-          "Les Agents de code peuvent s'exécuter. Les Agents en ligne le lisent uniquement.",
+        scripts: 'Du code que les Agents peuvent exécuter.',
         references:
           'Les Agents de documentation lisent quand ils en ont besoin.',
         assets: 'Modèles, images et autres ressources.',

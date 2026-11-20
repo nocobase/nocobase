@@ -279,10 +279,6 @@ const ruRU: LocaleResource<typeof enUS> = {
     save: 'Сохранить навыки',
     descriptionOnline:
       'Руководства, которые Agent читает, когда задача подходит под их описание, в изолированной среде только для чтения на сервере.',
-    onlineScripts:
-      'Онлайн-Agent не выполняют скрипты: Agent может их читать, но не запускать.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Предпросмотр полного запроса',
@@ -1342,8 +1338,6 @@ const ruRU: LocaleResource<typeof enUS> = {
     binaryFile: 'Двоичный файл, {{size}}. Здесь его нельзя редактировать.',
     executable: 'Исполняемый',
     scriptBadge: 'Скрипт',
-    scriptsNote:
-      'Содержит скрипты: онлайн-Agent могут их читать, но никогда не запускают',
     compatibility: 'Совместимость: {{value}}',
     fileContent: 'Содержимое {{path}}',
     export: 'Экспорт',
@@ -1376,8 +1370,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       name: 'Имя',
       renameTitle: 'Переименовать «{{name}}»',
       conventional: {
-        scripts:
-          'Код, который Agent могут запускать. Онлайн-Agent его только читают.',
+        scripts: 'Код, который Agent могут запускать.',
         references: 'Документация, которую Agent читают по необходимости.',
         assets: 'Шаблоны, изображения и другие ресурсы.',
       },
