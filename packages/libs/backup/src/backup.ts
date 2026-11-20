@@ -1,6 +1,6 @@
 import { cleanAbandonedWork, temporaryName } from './temporary.js';
 import { mkdir, mkdtemp, link, rm, stat } from 'node:fs/promises';
-import { basename, dirname, isAbsolute, join } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   describeEntry,
@@ -488,6 +488,7 @@ export async function createBackup(
         const tools = target.tools ?? {};
         const entries: Awaited<ReturnType<typeof describeEntry>>[] = [];
         const references: FileReference[] = [];
+        let capturedPaths: Set<string> | undefined;
         const manifest: BackupManifest = {
           formatVersion: 1,
           app: { name: target.appName, version: target.appVersion },
@@ -585,10 +586,11 @@ export async function createBackup(
               manifest.disks.push({ ...disk, mode: 'reference' });
             }
           }
+          capturedPaths = new Set(entries.map(({ path }) => path));
           const missing = missingFromArchive(
             references,
             new Set(diskNames),
-            new Set(entries.map(({ path }) => path)),
+            capturedPaths,
           );
           if (missing.length) {
             throw new BackupError(
@@ -599,7 +601,14 @@ export async function createBackup(
           }
         };
         if (online && target.withDeferredDeletes) {
-          await target.withDeferredDeletes(diskNames, capture);
+          await target.withDeferredDeletes(diskNames, capture, (file) =>
+            diskNames.find((name) => {
+              const key = relative(resolved.get(name)!.root, file)
+                .split(sep)
+                .join('/');
+              return capturedPaths?.has(`files/${name}/${key}`);
+            }),
+          );
         } else {
           if (online && diskNames.length) {
             throw new BackupError(

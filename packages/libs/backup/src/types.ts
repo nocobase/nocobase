@@ -114,6 +114,8 @@ export interface BackupTarget {
   withDeferredDeletes?<T>(
     disks: readonly string[],
     operation: () => Promise<T>,
+    /** Find the disk that actually contributed this absolute file path, after capture succeeds. */
+    findCapturedDisk: (file: string) => string | undefined,
   ): Promise<T>;
 }
 

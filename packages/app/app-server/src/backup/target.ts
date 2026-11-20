@@ -402,7 +402,7 @@ export async function resolveAppBackupTarget(
     },
     withStoppedApp: (operation) =>
       withStoppedApplication(app, connections, operation),
-    async withDeferredDeletes(selected, operation) {
+    async withDeferredDeletes(selected, operation, findCapturedDisk) {
       const release = await enterRunningApplication(app.paths);
       try {
         const protectedRoots = roots.filter(({ name }) =>
@@ -418,13 +418,18 @@ export async function resolveAppBackupTarget(
             )
             .map(({ root }) => root),
           operation,
+          (file) => findCapturedDisk(file) !== undefined,
         );
       } catch (error) {
         if (error instanceof DriveBackupConflictError)
           throw new BackupError('BACKUP_FILE_CHANGED', error.message, {
-            disks: roots
-              .filter(({ root }) => error.roots.includes(root))
-              .map(({ name }) => name),
+            disks: [
+              ...new Set(
+                error.files
+                  .map(findCapturedDisk)
+                  .filter((name) => name !== undefined),
+              ),
+            ].sort(),
           });
         throw error;
       } finally {

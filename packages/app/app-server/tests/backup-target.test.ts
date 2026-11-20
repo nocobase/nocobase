@@ -1,3 +1,5 @@
+// db-test-portability: sqlite-only — an on-disk SQLite snapshot lets this test replace the live record during capture.
+import { execFile } from 'node:child_process';
 import {
   access,
   mkdir,
@@ -9,12 +11,16 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { createBackup, restoreBackup } from '@nocobase/backup';
+import sqlite from '@nocobase/db-sqlite';
 import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { Application } from '../src/application/index.js';
 import { resolveAppBackupTarget } from '../src/backup/target.js';
 import { AppConfig, createAppPaths } from '../src/config/index.js';
+import { createAppDatabaseManager } from '../src/database/index.js';
 
 let root: string;
 beforeEach(async () => {
@@ -126,22 +132,111 @@ it('rejects factory disks even when excluded from a parent disk backup', async (
   await expect(access(output)).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
-it('discards a backup on an overlapping disk write and lets the next backup publish', async () => {
-  const { app, drive } = await application({
-    local: {
-      driver: 'fs',
-      location: join(root, 'storage'),
-      visibility: 'private',
-    },
-    nested: {
-      driver: 'fs',
-      location: join(root, 'storage', 'nested'),
-      visibility: 'private',
-    },
-  });
-  const parent = createDriveManager(drive).use('local');
-  await parent.put('nested/upload', 'v1');
+const nestedDisks = (): AppDriveConfig['disks'] => ({
+  local: {
+    driver: 'fs',
+    location: join(root, 'storage'),
+    visibility: 'private',
+  },
+  artifacts: {
+    driver: 'fs',
+    location: join(root, 'storage', 'deployment', 'artifacts'),
+    visibility: 'private',
+  },
+});
+
+it('archives the parent disk while a deployment artifact on the excluded disk is replaced', async () => {
+  const { app, drive } = await application(nestedDisks());
+  const manager = createDriveManager(drive);
+  const local = manager.use('local');
+  const artifacts = manager.use('artifacts');
+  await local.put('upload', 'retained');
+  await local.put('worker-state/queue.bin', 'old');
+  await artifacts.put('install.zip', 'old');
   const target = await resolveAppBackupTarget(app);
+  const output = join(root, 'exports');
+  await mkdir(output);
+  const result = await createBackup(
+    {
+      ...target,
+      withDeferredDeletes: (names, capture, findCapturedDisk) =>
+        target.withDeferredDeletes!(
+          names,
+          async () => {
+            await capture();
+            await artifacts.put('install.zip', 'new');
+            await local.put('worker-state/queue.bin', 'new');
+          },
+          findCapturedDisk,
+        ),
+    },
+    { output: join(output, 'backup.tgz'), excludeDisks: ['artifacts'] },
+  );
+  expect(await readdir(output)).toEqual(['backup.tgz']);
+  expect(result.manifest.disks).toEqual([
+    expect.objectContaining({
+      name: 'local',
+      count: 1,
+      skippedPaths: expect.arrayContaining([
+        'deployment/artifacts',
+        'worker-state',
+      ]),
+    }),
+    expect.objectContaining({ name: 'artifacts', mode: 'excluded' }),
+  ]);
+  expect(await artifacts.get('install.zip')).toBe('new');
+  expect(await local.get('worker-state/queue.bin')).toBe('new');
+});
+
+it('rejects publication when a separate process overwrites a selected child through its parent and restores matching bytes on retry', async () => {
+  const { app, drive, paths } = await application(nestedDisks());
+  const parent = createDriveManager(drive).use('local');
+  const key = 'deployment/artifacts/upload';
+  await parent.put(key, 'v1');
+  const database = {
+    drivers: { sqlite },
+    default: 'main',
+    connections: {
+      main: {
+        dialect: 'sqlite' as const,
+        filename: paths.storage('data.sqlite'),
+      },
+    },
+  };
+  app.config.mergeDefaults({ database });
+  const writeVersion = async (version: string) => {
+    const db = createAppDatabaseManager(database, paths)!;
+    try {
+      await db
+        .query('main')
+        .updateTable('uploads')
+        .set({ version })
+        .where('key', '=', 'upload')
+        .execute();
+    } finally {
+      await db.destroy();
+    }
+  };
+  const db = createAppDatabaseManager(database, paths)!;
+  try {
+    await db.connection('main').builder.createCollection('uploads', (table) => {
+      table.increments('id');
+      table.string('disk');
+      table.string('key');
+      table.string('version');
+    });
+    await db
+      .query('main')
+      .insertInto('uploads')
+      .values({ disk: 'artifacts', key: 'upload', version: 'v1' })
+      .execute();
+  } finally {
+    await db.destroy();
+  }
+  const target = await resolveAppBackupTarget(app);
+  const [connection] = target.connections;
+  if (!connection)
+    throw new Error('The fixture requires an SQLite connection.');
   const output = join(root, 'exports');
   await mkdir(output);
   const archive = join(output, 'backup.tgz');
@@ -149,22 +244,62 @@ it('discards a backup on an overlapping disk write and lets the next backup publ
     createBackup(
       {
         ...target,
-        withDeferredDeletes: (names, capture) =>
-          target.withDeferredDeletes!(names, async () => {
-            await capture();
-            await parent.put('nested/upload', 'v2');
-          }),
+        connections: [
+          {
+            ...connection,
+            async *readFileReferences(reader) {
+              for await (const row of reader.readRows({ name: 'uploads' }, [
+                'version',
+              ]))
+                expect(row.version).toBe('v1');
+              await promisify(execFile)(
+                process.execPath,
+                [
+                  '--import',
+                  'tsx',
+                  '--input-type=module',
+                  '-e',
+                  `import { createDriveManager } from '@nocobase/drive';
+const [location, key] = process.argv.slice(1);
+const disk = createDriveManager({ default: 'local', disks: { local: { driver: 'fs', location, visibility: 'private' } } }).use();
+await disk.put(key, 'v2');`,
+                  paths.storage(),
+                  key,
+                ],
+                { cwd: fileURLToPath(new URL('..', import.meta.url)) },
+              );
+              await writeVersion('v2');
+              yield* connection.readFileReferences!(reader);
+            },
+          },
+        ],
       },
-      { output: archive, includeDisks: ['nested'] },
+      { output: archive, includeDisks: ['artifacts'] },
     ),
   ).rejects.toMatchObject({
     code: 'BACKUP_FILE_CHANGED',
-    details: { disks: ['local'] },
+    details: { disks: ['artifacts'] },
   });
-  expect(await parent.get('nested/upload')).toBe('v2');
+  expect(await parent.get(key)).toBe('v2');
   expect(await readdir(output)).toEqual([]);
-  await createBackup(target, { output: archive, includeDisks: ['nested'] });
-  await parent.put('nested/upload', 'v3');
-  await restoreBackup(archive, target, { filesOnly: true });
-  expect(await parent.get('nested/upload')).toBe('v2');
+  await createBackup(target, { output: archive, includeDisks: ['artifacts'] });
+  await parent.put(key, 'v3');
+  await writeVersion('v3');
+  expect((await restoreBackup(archive, target)).missingFiles).toEqual([]);
+  const restored = createAppDatabaseManager(database, paths)!;
+  try {
+    const row = await restored
+      .query('main')
+      .selectFrom('uploads')
+      .selectAll()
+      .executeTakeFirstOrThrow();
+    expect(row).toMatchObject({
+      disk: 'artifacts',
+      key: 'upload',
+      version: 'v2',
+    });
+    expect(await parent.get(key)).toBe(row.version);
+  } finally {
+    await restored.destroy();
+  }
 });

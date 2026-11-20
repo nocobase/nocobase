@@ -1,9 +1,11 @@
 import { mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import Sqlite from 'better-sqlite3';
 
 export type ReleaseStorageLock = () => void;
+
+const pendingLocks = new Map<string, Promise<void>>();
 
 /**
  * Use SQLite's process-scoped file locks, with no application data in the file.
@@ -37,13 +39,29 @@ export async function withStorageLock<T>(
   file: string,
   operation: () => Promise<T>,
 ): Promise<T> {
-  let release: ReleaseStorageLock | undefined;
-  while (!(release = await tryStorageLock(file, 'exclusive'))) {
-    await setTimeout(25);
-  }
+  // Only the head of the local queue probes SQLite. Other processes still
+  // coordinate through the same exclusive transaction.
+  const path = resolve(file);
+  const previous = pendingLocks.get(path) ?? Promise.resolve();
+  const current = previous.then(async () => {
+    let release: ReleaseStorageLock | undefined;
+    while (!(release = await tryStorageLock(path, 'exclusive'))) {
+      await setTimeout(25);
+    }
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
+  });
+  const settled = current.then(
+    () => {},
+    () => {},
+  );
+  pendingLocks.set(path, settled);
   try {
-    return await operation();
+    return await current;
   } finally {
-    release();
+    if (pendingLocks.get(path) === settled) pendingLocks.delete(path);
   }
 }

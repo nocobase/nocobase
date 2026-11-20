@@ -1,10 +1,12 @@
 import { createWriteStream, existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import {
+  appendFile,
   lstat,
   mkdir,
   mkdtemp,
   readdir,
+  realpath,
   rename,
   rm,
   unlink,
@@ -12,7 +14,7 @@ import {
   readFile,
   rmdir,
 } from 'node:fs/promises';
-import { dirname, join, relative, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { FSDriver } from 'flydrive/drivers/fs';
 import { tryStorageLock, withStorageLock } from './storage-lock.js';
@@ -80,13 +82,27 @@ class DiskDeletions {
     });
   }
 
-  async finish(release: ReleaseStorageLock): Promise<boolean> {
+  async finish(
+    release: ReleaseStorageLock,
+    includesFile?: (file: string) => boolean,
+  ): Promise<string[]> {
     try {
       return await withStorageLock(this.mutex, async () => {
-        const conflicted = existsSync(this.conflict);
-        release();
-        await this.flushIfIdle();
-        return conflicted;
+        try {
+          if (!includesFile || !existsSync(this.conflict)) return [];
+          const log = await readFile(this.conflict, 'utf8');
+          if (!log.endsWith('\0'))
+            throw new Error('The Drive backup replacement log is incomplete.');
+          const files = log.slice(0, -1).split('\0');
+          if (!files.every(isAbsolute))
+            throw new Error(
+              'The Drive backup replacement log has an invalid path.',
+            );
+          return [...new Set(files)].filter(includesFile);
+        } finally {
+          release();
+          await this.flushIfIdle();
+        }
       });
     } finally {
       release();
@@ -100,14 +116,36 @@ class DiskDeletions {
     });
   }
 
-  async markReplacement(key: string, deferred: boolean): Promise<void> {
-    if (deferred && (await fingerprint(join(this.root, key))))
-      await writeFile(this.conflict, '', { mode: 0o600 });
+  async markReplacement(
+    key: string,
+    deferred: boolean,
+    followLink = true,
+  ): Promise<void> {
+    if (!deferred) return;
+    const destination = join(this.root, key);
+    let file: string;
+    try {
+      // A stream is published by rename. Replacing a symlink leaves its
+      // target intact, while put, copy and move may write through the link.
+      if (!followLink && (await lstat(destination)).isSymbolicLink()) return;
+      file = await realpath(destination);
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
+        return;
+      throw error;
+    }
+    // The mutex serializes writers in every process. Record the destination
+    // before publishing, using a delimiter that cannot occur in a file name.
+    await appendFile(this.conflict, file + '\0', { mode: 0o600 });
   }
 
-  async publish(key: string, work: () => Promise<void>): Promise<void> {
+  async publish(
+    key: string,
+    work: () => Promise<void>,
+    followLink = true,
+  ): Promise<void> {
     await this.mutate(async (deferred) => {
-      await this.markReplacement(key, deferred);
+      await this.markReplacement(key, deferred, followLink);
       await work();
     });
   }
@@ -191,7 +229,10 @@ class DiskDeletions {
 }
 
 export class DriveBackupConflictError extends Error {
-  constructor(readonly roots: readonly string[]) {
+  constructor(
+    readonly roots: readonly string[],
+    readonly files: readonly string[],
+  ) {
     super(
       'A local Drive file was replaced during the backup. Retry the backup.',
     );
@@ -211,10 +252,11 @@ async function rmEmptyDirectory(path: string): Promise<void> {
   }
 }
 
-/** Hold deletion deferral on each root for the complete consistent capture. */
+/** Hold deletion deferral during capture and check replaced paths before releasing it. */
 export async function withDriveBackup<T>(
   roots: readonly string[],
   operation: () => Promise<T>,
+  includesFile: (file: string) => boolean = () => true,
 ): Promise<T> {
   const leases: { disk: DiskDeletions; release: ReleaseStorageLock }[] = [];
   let captured = false;
@@ -227,16 +269,16 @@ export async function withDriveBackup<T>(
     captured = true;
     return result;
   } finally {
-    await releaseLeases(leases, captured);
+    await releaseLeases(leases, captured ? includesFile : undefined);
   }
 }
 
 async function releaseLeases(
   leases: readonly { disk: DiskDeletions; release: ReleaseStorageLock }[],
-  captured: boolean,
+  includesFile?: (file: string) => boolean,
 ): Promise<void> {
   const results = await Promise.allSettled(
-    leases.map(({ disk, release }) => disk.finish(release)),
+    leases.map(({ disk, release }) => disk.finish(release, includesFile)),
   );
   const failures = results.flatMap((result): unknown[] =>
     result.status === 'rejected' ? [result.reason] : [],
@@ -246,12 +288,14 @@ async function releaseLeases(
       failures,
       'Could not flush deferred Drive deletions.',
     );
-  const changed = leases.filter((_, index) => {
-    const result = results[index];
-    return result?.status === 'fulfilled' && result.value;
-  });
-  if (captured && changed.length)
-    throw new DriveBackupConflictError(changed.map(({ disk }) => disk.root));
+  const roots: string[] = [];
+  const files = new Set<string>();
+  for (const [index, result] of results.entries()) {
+    if (result.status !== 'fulfilled' || !result.value.length) continue;
+    roots.push(leases[index].disk.root);
+    for (const file of result.value) files.add(file);
+  }
+  if (files.size) throw new DriveBackupConflictError(roots, [...files]);
 }
 
 export class BackupAwareFsDriver extends FSDriver {
@@ -289,10 +333,14 @@ export class BackupAwareFsDriver extends FSDriver {
       await pipeline(contents, createWriteStream(temporary, { flags: 'wx' }), {
         signal,
       });
-      await this.deletions.publish(key, async () => {
-        signal?.throwIfAborted();
-        await rename(temporary, destination);
-      });
+      await this.deletions.publish(
+        key,
+        async () => {
+          signal?.throwIfAborted();
+          await rename(temporary, destination);
+        },
+        false,
+      );
     } finally {
       contents.removeListener('error', watchSource);
       if (staging) await rm(staging, { recursive: true, force: true });

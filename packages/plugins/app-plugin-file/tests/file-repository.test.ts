@@ -850,7 +850,7 @@ describe('server repository and Client API', () => {
   it.each(['', 'expenses/receipts'])(
     'cleans a partially written object under prefix %j',
     async (storagePrefix) => {
-      const { files, drive } = await fixture({ storagePrefix });
+      const { files, drive, root } = await fixture({ storagePrefix });
       const disk = drive.use('local');
       const original = disk.putStream.bind(disk);
       const put = vi
@@ -866,10 +866,12 @@ describe('server repository and Client API', () => {
       const key = put.mock.calls[0]![0];
       expect(remove).toHaveBeenCalledWith(key);
       expect(await disk.exists(key)).toBe(false);
-      expect([
-        ...(await disk.listAll(storagePrefix || '/', { recursive: true }))
-          .objects,
-      ]).toEqual([]);
+      const directory = path.join(root, storagePrefix);
+      const entries = await readdir(directory, { withFileTypes: true });
+      expect(entries.map((entry) => entry.name)).toEqual(
+        storagePrefix ? [] : ['.nocobase-backup'],
+      );
+      if (!storagePrefix) expect(entries[0]?.isDirectory()).toBe(true);
       expect(await files.count()).toBe(0);
     },
   );

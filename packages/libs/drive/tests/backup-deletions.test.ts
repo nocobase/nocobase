@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — Drive's filesystem coordination uses a SQLite lock file.
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -5,7 +6,9 @@ import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import Sqlite from 'better-sqlite3';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { withStorageLock } from '../src/storage-lock.js';
 import {
   createDriveManager,
   DriveBackupConflictError,
@@ -132,5 +135,35 @@ it('excludes startup from an exclusive maintenance window', async () => {
     expect(await readFile(filename)).toBeDefined();
   } finally {
     exclusive?.();
+  }
+});
+
+it('queues local lock users without a busy probe and keeps draining after a failure', async () => {
+  const file = join(root, 'lock.sqlite');
+  const active = Promise.withResolvers<void>();
+  const finish = Promise.withResolvers<void>();
+  const exec = vi.spyOn(Sqlite.prototype, 'exec');
+  try {
+    const first = withStorageLock(file, async () => {
+      active.resolve();
+      await finish.promise;
+      throw new Error('failed mutation');
+    });
+    await active.promise;
+    const operations = [1, 2, 3].map((value) =>
+      withStorageLock(file, async () => value),
+    );
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    const probesWhileHeld = exec.mock.calls.length;
+    finish.resolve();
+    await expect(first).rejects.toThrow('failed mutation');
+    await expect(Promise.all(operations)).resolves.toEqual([1, 2, 3]);
+    expect(probesWhileHeld).toBe(1);
+    expect(exec.mock.calls).toEqual(
+      Array.from({ length: 4 }, () => ['BEGIN EXCLUSIVE']),
+    );
+  } finally {
+    finish.resolve();
+    exec.mockRestore();
   }
 });
