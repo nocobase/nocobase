@@ -25,6 +25,7 @@ export interface SshIdentity extends SshTarget {
 export interface SshConfig {
   readonly ssh: string;
   readonly socket: string;
+  readonly readOnly: boolean;
   readonly identities: readonly SshIdentity[];
 }
 
@@ -144,6 +145,11 @@ async function ssh(config: SshConfig, args: readonly string[]): Promise<void> {
   const trace = process.env[TRACE_DIR];
   if (trace)
     writeFileSync(path.join(trace, String(index)), '', { mode: 0o600 });
+  if (
+    config.readOnly &&
+    command !== `git-upload-pack ${gitQuote(identity.repoPath)}`
+  )
+    throw new Error('This read-only run permits only Git fetch over SSH.');
   const file = (value: string) =>
     '"' + value.replaceAll('%', '%%').replace(/["\\]/gu, '\\$&') + '"';
   const env = { ...process.env, LC_ALL: 'C' };
