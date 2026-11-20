@@ -30,31 +30,53 @@ Every `server/routes/` endpoint installs authentication and authorization. A bus
 
 `conditions.database` is keyed by the registered collection/table name, not the composite ID, route name or named scope slot. For a `sales.quotes` operation touching `salesQuotes` and `salesProjects`, read `decision.conditions?.database?.salesQuotes` and `decision.conditions?.database?.salesProjects`. Reject a denied decision or a missing required policy. Bind each policy to the repository of the same name, such as `connection.repository('salesQuotes').withPolicy(quotePolicy)`.
 
-Keep permission failures separate from business state refusals. Let `lifecycleErrorFields()` map lifecycle errors instead of assigning HTTP statuses yourself: a stale expected version (`CONFLICT`) becomes `ABORTED` / HTTP 409, while an invalid state (`INVALID_STATE`) or a `GUARD_REJECTED` whose blockers are all preconditions becomes `FAILED_PRECONDITION` / HTTP 400. The [lifecycle route example](lifecycle.md#4-the-record-routes) shows `runtime.fire()` with an expected version and the shared error conversion. For a duplicate create, throw the standard `ApiError` with status `ALREADY_EXISTS`, which the shared API error handler maps to HTTP 409:
+Declare `authz` on the first page of every path in `client/routes.ts`: `{ resource: { type: 'page', id }, action: 'access' }` for a business page, the page's `settings` item for a configuration page, `'unrestricted'` for a root-only page, or `'skip'` explicitly; nothing is inferred from the route name. Nested pages inherit it; an omitted value on a first page defaults to `'unrestricted'` for protected pages and `'skip'` otherwise, with a development warning. Use `useCan({ resource, action })` for button visibility and server-computed eligibility for record-sensitive actions. Keep pending/failed checks closed and refresh after permission changes. Client visibility does not enforce the API. The authorization Skill’s `references/client-development.md` includes the component, relation controls and settings lifecycle; all required APIs are bundled in that Skill rather than external package documentation.
+
+## Map refusals to standard errors
+
+Keep permission failures separate from business state refusals. Let `lifecycleErrorFields()` map lifecycle errors instead of assigning HTTP statuses yourself: a stale expected version (`CONFLICT`) becomes `ABORTED` / HTTP 409, while an invalid state (`INVALID_STATE`) or a `GUARD_REJECTED` whose blockers are all preconditions becomes `FAILED_PRECONDITION` / HTTP 400. The [lifecycle route example](lifecycle.md#4-the-record-routes) shows `runtime.fire()` with an expected version and the shared error conversion. For a duplicate create, declare a unique constraint for the business key (`collection.unique('code')` in the table's migration; checking first and then inserting alone lets two requests race), catch `isUniqueConstraintViolation` around the write, and throw the standard `ApiError` with status `ALREADY_EXISTS`, which the shared API error handler maps to HTTP 409. Catch it outside the transaction: the failed write has already rolled back, so nothing is stored. Without the catch, the driver's error becomes an opaque 500.
 
 ```ts
 import { ApiError } from '@nocobase/app-server/router';
+import {
+  isUniqueConstraintViolation,
+  type DatabaseManager,
+} from '@nocobase/db';
 import { LifecycleError, lifecycleErrorFields } from '@nocobase/lifecycle';
 
-function toLifecycleApiError(error: unknown): unknown {
+/** A lifecycle refusal as the standard error body; anything else is returned as it is. */
+export function toLifecycleApiError(
+  error: unknown,
+  inputField?: string,
+): unknown {
   if (!(error instanceof LifecycleError)) return error;
-  const fields = lifecycleErrorFields(error);
+  const fields = lifecycleErrorFields(error, inputField ? { inputField } : {});
   return fields ? new ApiError({ ...fields, domain: 'tms' }) : error;
 }
 
-function duplicateCarrierError(): ApiError {
-  return new ApiError({
-    status: 'ALREADY_EXISTS',
-    reason: 'CARRIER_CODE_TAKEN',
-    domain: 'tms',
-    message: 'A carrier with this code already exists.',
-  });
+export async function createCarrier(
+  database: DatabaseManager,
+  input: { code: string; name: string },
+): Promise<string> {
+  try {
+    const created = await database.transaction((connection) =>
+      connection.repository('tmsCarriers').createOne({ values: input }),
+    );
+    return String(created.record.id);
+  } catch (error) {
+    if (!isUniqueConstraintViolation(error)) throw error;
+    throw new ApiError({
+      status: 'ALREADY_EXISTS',
+      reason: 'CARRIER_CODE_TAKEN',
+      domain: 'tms',
+      message: 'A carrier with this code already exists.',
+      cause: error,
+    });
+  }
 }
 ```
 
-After checking the unique key, raise the duplicate with `throw duplicateCarrierError()`. Wire lifecycle route errors through `apiErrorHandler(toLifecycleApiError(error), context)` as in the linked route example, and let `ApiError` use the same handler. Do not replace either mapping with a hand-written response. Clients branch on `error.reason`.
-
-Declare `authz` on the first page of every path in `client/routes.ts`: `{ resource: { type: 'page', id }, action: 'access' }` for a business page, the page's `settings` item for a configuration page, `'unrestricted'` for a root-only page, or `'skip'` explicitly; nothing is inferred from the route name. Nested pages inherit it; an omitted value on a first page defaults to `'unrestricted'` for protected pages and `'skip'` otherwise, with a development warning. Use `useCan({ resource, action })` for button visibility and server-computed eligibility for record-sensitive actions. Keep pending/failed checks closed and refresh after permission changes. Client visibility does not enforce the API. The authorization Skill’s `references/client-development.md` includes the component, relation controls and settings lifecycle; all required APIs are bundled in that Skill rather than external package documentation.
+Wire lifecycle route errors through `apiErrorHandler(toLifecycleApiError(error, 'input'), context)` as in the linked route example, and let `ApiError` use the same handler. Do not replace either mapping with a hand-written response. Clients branch on `error.reason`.
 
 ## Configure the three-tab role editor
 
@@ -71,6 +93,29 @@ Keep the template and component's layout and copy. Leave the artificial Main men
 Use stable, feature-qualified IDs, such as `sales.quotes`. The page permission ID is `route.authz.resource.id` and the business object ID is the name passed to `defineCompositeResource`. For a page dedicated to one object, give its page permission and composite the same ID. The template will infer the primary object if that object is selected. `pages` is keyed by `route.name` (for example, `'sales-quotes'`). Its `primary` and `related` arrays contain the selected business IDs without the `composite:` prefix. Use `primary` for the data needed to open a useful page and `related` for auxiliary data such as a picker. A declaration overrides inference for that route, so include `primary` when adding related objects to a page that would otherwise infer it. Omit `primary` for a related-only mapping or use `{}` to suppress the inferred object altogether. These associations leave stored grants unchanged.
 
 Use localized operation titles in the role editor: generic names such as View, Create, Edit and Delete for standard actions, and short verb phrases such as Receive or Verify dispatch for business actions. Do not repeat the object name in the operation label; describe the object and effects in `actionDescriptions`.
+
+A Create that selects existing records of other collections declares one slot per collection and hides only its own. For business object `tms.waybills` (table `tmsWaybills`), the server action is `.action('create', (a) => a.title('Create').grant('waybills', waybillData.create([...])).grant('carriers', carrierData).grant('sites', siteData).grant('vehicles', vehicleData))`, and the workspace entry is:
+
+```ts
+{
+  type: 'composite',
+  id: 'tms.waybills',
+  actions: ['view', 'create'],
+  actionDescriptions: {
+    view: { key: 'tms.waybills.actions.view.description' },
+    create: { key: 'tms.waybills.actions.create.description' },
+  },
+  scopeTitles: {
+    tmsWaybills: { key: 'tms.waybills.title' },
+    tmsCarriers: { key: 'tms.carriers.title' },
+    tmsSites: { key: 'tms.sites.title' },
+    tmsVehicles: { key: 'tms.vehicles.title' },
+  },
+  hiddenActionScopes: { create: ['waybills'] },
+}
+```
+
+The editor then shows `View` and `Create`, and Create offers exactly the Carriers, Sites and Vehicles scopes. The [complete example](../../nocobase-app-plugin-authorization/references/client-development.md#example-create-a-waybill-with-scoped-related-records) adds the server declaration and the route that enforces all four policies.
 
 ### Permission workspace fields
 
@@ -201,6 +246,8 @@ Treat that map as an acceptance gate, not merely design notes. For each action, 
 ## Verify and explain
 
 For a template-derived app, keep `@nocobase/app-plugin-users` and `@nocobase/app-plugin-authorization` registered, and preserve the public `Home` route and its navigation row. If the generated Home row has unwanted explanatory copy, omit that copy only; do not remove the route or its menu entry. Keep the template's `tests/client/client-routes.test.ts` and `tests/client/permission-workspace.test.ts` unchanged and run them from the template root with `pnpm exec vitest run tests/client/client-routes.test.ts tests/client/permission-workspace.test.ts`; both must pass as written.
+
+Before the API self-check, read `permission-workspace.ts` and the server registration once: each business-object ID differs from its table name, every `scopeTitles` and `conditions.database` key is a registered table name, every `hiddenActionScopes` entry names a slot the action registers, and no operation title is `New <object>` or `Create <object>`. Every business key has a unique constraint in its migration.
 
 In the generated app's API self-check, try creating a record with an existing unique key and require HTTP 409 (`ALREADY_EXISTS`); submit a lifecycle transition with an old expected version and require HTTP 409 (`ABORTED` / `CONFLICT`); then request a transition the current state forbids and require HTTP 400 (`FAILED_PRECONDITION` / `INVALID_STATE`). For every refusal, confirm that relevant row counts and values, versions, transition logs and effect runs remain unchanged.
 
