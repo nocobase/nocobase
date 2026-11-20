@@ -436,8 +436,10 @@ jobs:
           ossutil cp "$BUNDLE" "$target" --force \
             --content-type 'text/plain; charset=utf-8' \
             --cache-control 'max-age=300'
-          # Read it back: what the bucket serves is what was built.
-          stored=$(ossutil cat "$target" | sha256sum | cut -d ' ' -f 1)
+          # Read it back: what the bucket serves is what was built. Into a file, because `ossutil cat` follows the object
+          # with its own timing line on stdout.
+          ossutil cp "$target" "$RUNNER_TEMP/stored.sh" --force
+          stored=$(sha256sum "$RUNNER_TEMP/stored.sh" | cut -d ' ' -f 1)
           if [ "$stored" != "$SHA256" ]; then
             echo "::error::The configured object has sha256 ${stored}, expected ${SHA256}."
             exit 1
