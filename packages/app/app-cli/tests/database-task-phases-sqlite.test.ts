@@ -80,7 +80,7 @@ it.skipIf(testDatabaseDialect() !== 'sqlite')(
           await setTimeout(20);
         expect(existsSync(maintenancePaused)).toBe(true);
         const refused = await f.run(['backup', 'restore', saved.file]);
-        expect(refused.document, refused.stdout).toMatchObject({
+        expect(refused.document).toMatchObject({
           ok: false,
           error: { code: 'RESTORE_APP_RUNNING' },
         });
@@ -108,7 +108,7 @@ it.skipIf(testDatabaseDialect() !== 'sqlite')(
       try {
         await Promise.race([held.promise, restore]);
         const refused = await f.run(['db', 'reset', '--force']);
-        expect(refused.document, refused.stdout).toMatchObject({
+        expect(refused.document).toMatchObject({
           ok: false,
           error: { code: 'RESTORE_IN_PROGRESS' },
         });
