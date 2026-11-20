@@ -72,7 +72,7 @@ test('downloads the original from an individual message in a two-message convers
     .getByRole('button', { name: 'More actions', exact: true })
     .click();
   const originalAction = page.getByRole('menuitem', {
-    name: 'Download original (.eml)',
+    name: 'Download original',
     exact: true,
   });
   await expect(originalAction).toBeVisible();

@@ -153,7 +153,7 @@ const enUS = {
     permanentlyDeleteConfirm:
       'Permanently delete this message? This action cannot be undone.',
     download: 'Download',
-    downloadOriginal: 'Download original (.eml)',
+    downloadOriginal: 'Download original',
     downloadOriginalFailed: 'Unable to download the original message.',
     downloadFailed: 'Unable to download attachment.',
     markRead: 'Mark read',

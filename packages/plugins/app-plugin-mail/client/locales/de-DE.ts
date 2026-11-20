@@ -158,7 +158,7 @@ const deDE: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'Diese Nachricht dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
     download: 'Herunterladen',
-    downloadOriginal: 'Original herunterladen (.eml)',
+    downloadOriginal: 'Original herunterladen',
     downloadOriginalFailed:
       'Die Originalnachricht konnte nicht heruntergeladen werden.',
     downloadFailed: 'Der Anhang konnte nicht heruntergeladen werden.',
