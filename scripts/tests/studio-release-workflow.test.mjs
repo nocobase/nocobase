@@ -181,7 +181,7 @@ const installer = readFileSync(
 function job(source, name) {
   const start = source.indexOf(`\n  ${name}:\n`);
   assert.notEqual(start, -1, name);
-  const end = source.slice(start + 1).search(/\n  [a-z][\w-]*:\n/u);
+  const end = source.slice(start + 1).search(/\n {2}[a-z][\w-]*:\n/u);
   return source.slice(start + 1, end < 0 ? undefined : start + 1 + end);
 }
 function script(block) {
@@ -278,8 +278,8 @@ test('the installer runs beside the release and never holds it back', () => {
 
 test('the installer workflow takes both triggers and uploads only a complete configuration', () => {
   const on = installer.split('\non:\n')[1].split('\npermissions:')[0];
-  assert.match(on, /^  workflow_call:\n/mu);
-  assert.match(on, /^  workflow_dispatch:\n/mu);
+  assert.match(on, /^ {2}workflow_call:\n/mu);
+  assert.match(on, /^ {2}workflow_dispatch:\n/mu);
   assert.match(
     job(installer, 'upload'),
     /inputs\.upload && needs\.configuration\.outputs\.configured == 'yes'/u,
