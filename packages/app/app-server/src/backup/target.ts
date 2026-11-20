@@ -13,7 +13,13 @@ import type {
 } from '@nocobase/backup';
 import { loadMigrations } from '@nocobase/db';
 import type { ConnectionConfig } from '@nocobase/db';
-import { createDriveManager, withDriveBackup } from '@nocobase/drive';
+import {
+  createDriveManager,
+  DriveBackupConflictError,
+  withDriveBackup,
+} from '@nocobase/drive';
+import { jobsPersistencePaths } from '@nocobase/jobs';
+import { queuePersistencePaths } from '@nocobase/queue';
 import type { Application } from '../application/index.js';
 import { resolveConnections } from '../database/manager.js';
 import {
@@ -25,8 +31,11 @@ import type {
   AppDatabaseMigrationConfig,
 } from '../database/types.js';
 import { resolveAppDriveConfig } from '../drive/config.js';
+import type { AppJobsConfig } from '../jobs/config.js';
 import type { AppLoggingConfig } from '../logging/config.js';
+import type { AppQueueConfig } from '../queue/config.js';
 import { createSecretsService } from '../secrets/service.js';
+import type { AppSessionConfigInput } from '../session/config.js';
 import { readAppPackage } from '../support/app-package.js';
 import type { AppBackupConfig, AppBackupFileReference } from './config.js';
 import { enterRunningApplication, withStoppedApplication } from './guard.js';
@@ -271,7 +280,13 @@ export async function resolveAppBackupTarget(
   const manager = drive && createDriveManager(drive);
   const disks: BackupDisk[] = [];
   for (const [name, definition] of Object.entries(drive?.disks ?? {})) {
-    if (typeof definition === 'function') continue;
+    if (typeof definition === 'function') {
+      throw new BackupError(
+        'BACKUP_DISK_METADATA_REQUIRED',
+        `Drive disk "${name}" needs a declarative configuration so backup can identify and isolate its storage.`,
+        { disk: name },
+      );
+    }
     if (definition.driver === 'fs') {
       const root = await realpath(definition.location).catch(
         (error: unknown) => {
@@ -307,6 +322,20 @@ export async function resolveAppBackupTarget(
     ? createSecretsService(secrets).keyring('nocobase/backup/fingerprint')
     : [];
   const logger = app.config.get<AppLoggingConfig>('logging');
+  const session = app.config.get<AppSessionConfigInput>('session');
+  const runtimePaths = [
+    ...jobsPersistencePaths(app.config.get<AppJobsConfig>('jobs'), {
+      appName: app.appName,
+      storagePath: app.paths.storage('jobs'),
+    }),
+    ...queuePersistencePaths(app.config.get<AppQueueConfig>('queue'), {
+      appName: app.appName,
+      storagePath: app.paths.storage('queue'),
+    }),
+    ...Object.values(session?.stores ?? {}).flatMap((store) =>
+      store.driver === 'fs' ? [resolve(store.base)] : [],
+    ),
+  ];
   const configurationRoots = new Set([
     app.paths.deploymentRootDir,
     app.paths.rootDir,
@@ -351,6 +380,7 @@ export async function resolveAppBackupTarget(
         'deployment/hosts',
         '.dev-server.lock',
       ].map((name) => app.paths.storage(name)),
+      ...runtimePaths,
       ...(logger?.file?.directory ? [resolve(logger.file.directory)] : []),
       ...(app.runtimeLogging?.file?.directory
         ? [resolve(app.runtimeLogging.file.directory)]
@@ -389,6 +419,14 @@ export async function resolveAppBackupTarget(
             .map(({ root }) => root),
           operation,
         );
+      } catch (error) {
+        if (error instanceof DriveBackupConflictError)
+          throw new BackupError('BACKUP_FILE_CHANGED', error.message, {
+            disks: roots
+              .filter(({ root }) => error.roots.includes(root))
+              .map(({ name }) => name),
+          });
+        throw error;
       } finally {
         release();
       }

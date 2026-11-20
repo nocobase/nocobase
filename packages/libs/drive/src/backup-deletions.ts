@@ -1,7 +1,9 @@
-import { existsSync } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import {
   lstat,
+  mkdir,
+  mkdtemp,
   readdir,
   rename,
   rm,
@@ -10,14 +12,18 @@ import {
   readFile,
   rmdir,
 } from 'node:fs/promises';
-import { join, relative, sep } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { FSDriver } from 'flydrive/drivers/fs';
 import { tryStorageLock, withStorageLock } from './storage-lock.js';
 import type { ReleaseStorageLock } from './storage-lock.js';
 
 const marker = '.nocobase-backup';
+const uploadPrefix = '.nocobase-backup-upload-';
 const reserved = (name: string) =>
-  name === marker || name.startsWith('.nocobase-restore-');
+  name === marker ||
+  name.startsWith(uploadPrefix) ||
+  name.startsWith('.nocobase-restore-');
 
 function safeKey(key: string): boolean {
   return (
@@ -54,26 +60,33 @@ class DiskDeletions {
   readonly state: string;
   readonly gate: string;
   readonly mutex: string;
+  readonly active: string;
+  readonly conflict: string;
   constructor(readonly root: string) {
     this.state = join(root, marker);
     this.gate = join(this.state, 'readers.sqlite');
     this.mutex = join(this.state, 'writes.sqlite');
+    this.active = join(this.state, 'active');
+    this.conflict = join(this.state, 'conflict');
   }
 
   async start(): Promise<ReleaseStorageLock> {
     return withStorageLock(this.mutex, async () => {
-      await this.flushIfIdle();
+      if (existsSync(this.active)) await this.flushIfIdle();
+      await writeFile(this.active, '', { mode: 0o600 });
       const release = await tryStorageLock(this.gate, 'shared');
       if (!release) throw new Error('Could not acquire the Drive backup lock.');
       return release;
     });
   }
 
-  async finish(release: ReleaseStorageLock): Promise<void> {
+  async finish(release: ReleaseStorageLock): Promise<boolean> {
     try {
-      await withStorageLock(this.mutex, async () => {
+      return await withStorageLock(this.mutex, async () => {
+        const conflicted = existsSync(this.conflict);
         release();
         await this.flushIfIdle();
+        return conflicted;
       });
     } finally {
       release();
@@ -82,8 +95,20 @@ class DiskDeletions {
 
   async mutate(work: (deferring: boolean) => Promise<void>): Promise<void> {
     await withStorageLock(this.mutex, async () => {
-      const clear = await this.flushIfIdle();
-      await work(!clear);
+      const deferred = existsSync(this.active) && !(await this.flushIfIdle());
+      await work(deferred);
+    });
+  }
+
+  async markReplacement(key: string, deferred: boolean): Promise<void> {
+    if (deferred && (await fingerprint(join(this.root, key))))
+      await writeFile(this.conflict, '', { mode: 0o600 });
+  }
+
+  async publish(key: string, work: () => Promise<void>): Promise<void> {
+    await this.mutate(async (deferred) => {
+      await this.markReplacement(key, deferred);
+      await work();
     });
   }
 
@@ -115,6 +140,8 @@ class DiskDeletions {
         }
         await unlink(path);
       }
+      await rm(this.conflict, { force: true });
+      await rm(this.active, { force: true });
       return true;
     } finally {
       release();
@@ -135,26 +162,39 @@ class DiskDeletions {
     }
   }
 
-  async collect(key: string, recursive = false): Promise<PendingDelete[]> {
+  async collect(
+    key: string,
+    recursive = false,
+    items: PendingDelete[] = [],
+  ): Promise<PendingDelete[]> {
     const path = join(this.root, key);
     const version = await fingerprint(path);
-    if (!version) return [];
+    if (!version) return items;
     const stat = await lstat(path);
-    if (!stat.isDirectory()) return [{ key, version }];
+    if (!stat.isDirectory()) {
+      items.push({ key, version });
+      return items;
+    }
     if (!recursive)
       throw new Error('Use deleteAll to remove a Drive directory.');
-    const items: PendingDelete[] = [];
     for (const child of await readdir(path)) {
       if (!reserved(child))
-        items.push(
-          ...(await this.collect(
-            relative(this.root, join(path, child)).split(sep).join('/'),
-            true,
-          )),
+        await this.collect(
+          relative(this.root, join(path, child)).split(sep).join('/'),
+          true,
+          items,
         );
     }
     if (key !== '/') items.push({ key, version, directory: true });
     return items;
+  }
+}
+
+export class DriveBackupConflictError extends Error {
+  constructor(readonly roots: readonly string[]) {
+    super(
+      'A local Drive file was replaced during the backup. Retry the backup.',
+    );
   }
 }
 
@@ -177,19 +217,23 @@ export async function withDriveBackup<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
   const leases: { disk: DiskDeletions; release: ReleaseStorageLock }[] = [];
+  let captured = false;
   try {
     for (const root of [...new Set(roots)].sort()) {
       const disk = new DiskDeletions(root);
       leases.push({ disk, release: await disk.start() });
     }
-    return await operation();
+    const result = await operation();
+    captured = true;
+    return result;
   } finally {
-    await releaseLeases(leases);
+    await releaseLeases(leases, captured);
   }
 }
 
 async function releaseLeases(
   leases: readonly { disk: DiskDeletions; release: ReleaseStorageLock }[],
+  captured: boolean,
 ): Promise<void> {
   const results = await Promise.allSettled(
     leases.map(({ disk, release }) => disk.finish(release)),
@@ -202,6 +246,12 @@ async function releaseLeases(
       failures,
       'Could not flush deferred Drive deletions.',
     );
+  const changed = leases.filter((_, index) => {
+    const result = results[index];
+    return result?.status === 'fulfilled' && result.value;
+  });
+  if (captured && changed.length)
+    throw new DriveBackupConflictError(changed.map(({ disk }) => disk.root));
 }
 
 export class BackupAwareFsDriver extends FSDriver {
@@ -216,20 +266,46 @@ export class BackupAwareFsDriver extends FSDriver {
 
   override async put(...args: Parameters<FSDriver['put']>): Promise<void> {
     if (!safeKey(args[0])) throw new Error('Invalid Drive write key.');
-    return super.put(...args);
+    return this.deletions.publish(args[0], () => super.put(...args));
   }
 
   override async putStream(
     ...args: Parameters<FSDriver['putStream']>
   ): Promise<void> {
-    if (!safeKey(args[0])) throw new Error('Invalid Drive write key.');
-    return super.putStream(...args);
+    const [key, contents, options] = args;
+    if (!safeKey(key)) throw new Error('Invalid Drive write key.');
+    const signal = options?.signal as AbortSignal | undefined;
+    const destination = join(this.deletions.root, key);
+    const parent = dirname(destination);
+    let staging: string | undefined;
+    // The source can fail while we create its temporary destination. Pipeline
+    // will report its error even if the stream has already been destroyed.
+    const watchSource = () => {};
+    contents.on('error', watchSource);
+    try {
+      await mkdir(parent, { recursive: true });
+      staging = await mkdtemp(join(parent, uploadPrefix));
+      const temporary = join(staging, 'contents');
+      await pipeline(contents, createWriteStream(temporary, { flags: 'wx' }), {
+        signal,
+      });
+      await this.deletions.publish(key, async () => {
+        signal?.throwIfAborted();
+        await rename(temporary, destination);
+      });
+    } finally {
+      contents.removeListener('error', watchSource);
+      if (staging) await rm(staging, { recursive: true, force: true });
+    }
   }
 
   override async copy(source: string, destination: string): Promise<void> {
     if (!safeKey(source) || !safeKey(destination))
       throw new Error('Invalid Drive copy key.');
-    return super.copy(source, destination);
+    if (source === destination) return super.copy(source, destination);
+    return this.deletions.publish(destination, () =>
+      super.copy(source, destination),
+    );
   }
 
   override async listAll(
@@ -269,9 +345,11 @@ export class BackupAwareFsDriver extends FSDriver {
   override async move(source: string, destination: string): Promise<void> {
     if (!safeKey(source) || !safeKey(destination))
       throw new Error('Invalid Drive move key.');
+    if (source === destination) return;
     return this.deletions.mutate(async (deferred) => {
-      if (deferred && source !== destination) {
+      if (deferred) {
         const removal = await this.deletions.collect(source);
+        await this.deletions.markReplacement(destination, deferred);
         await super.copy(source, destination);
         await this.deletions.queue(removal);
       } else {

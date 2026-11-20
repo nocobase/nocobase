@@ -157,6 +157,23 @@ describe('SQLite application backup', () => {
     });
   }
 
+  it('creates and verifies a backup with 200,000 snapshot references', async () => {
+    const db = new Sqlite(dbFile);
+    try {
+      db.exec(`WITH RECURSIVE count(n) AS (
+        SELECT 1 UNION ALL SELECT n + 1 FROM count WHERE n < 199999
+      ) INSERT INTO uploads SELECT 'local', 'upload.txt' FROM count`);
+    } finally {
+      db.close();
+    }
+
+    const created = await createOnline();
+    expect(created.manifest.disks[0]).toMatchObject({ count: 1 });
+    await expect(
+      verifyBackup(archive, { target, sha256: created.sha256 }),
+    ).resolves.toMatchObject({ ok: true });
+  }, 15_000);
+
   it('restores a live SQLite snapshot and uploads while preserving nested excluded paths', async () => {
     const db = new Sqlite(dbFile);
     db.exec("INSERT INTO uploads VALUES ('artifacts', 'removed.zip')");

@@ -31,7 +31,9 @@ export interface ResolvedDisk {
 }
 
 const internal = (segment: string) =>
-  segment === '.nocobase-backup' || segment.startsWith('.nocobase-restore-');
+  segment === '.nocobase-backup' ||
+  segment.startsWith('.nocobase-backup-upload-') ||
+  segment.startsWith('.nocobase-restore-');
 const beneath = (parent: string, child: string) =>
   parent === child || child.startsWith(parent + '/');
 const portableRelative = (parent: string, child: string) =>

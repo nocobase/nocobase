@@ -539,7 +539,8 @@ export async function createBackup(
                   snapshot: data.snapshot,
                   migrations: migrationSummary(data.migrations),
                 };
-                references.push(...data.references);
+                for (const reference of data.references)
+                  references.push(reference);
                 if (data.mode === 'recovery-point') {
                   manifest.connections.push({
                     ...entry,
@@ -579,7 +580,7 @@ export async function createBackup(
                 options.signal,
               );
               manifest.disks.push(local.manifest);
-              entries.push(...local.entries);
+              for (const entry of local.entries) entries.push(entry);
             } else {
               manifest.disks.push({ ...disk, mode: 'reference' });
             }

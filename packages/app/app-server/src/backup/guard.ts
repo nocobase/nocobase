@@ -17,7 +17,7 @@ export async function enterRunningApplication(
   if (!release)
     throw new BackupError(
       'RESTORE_IN_PROGRESS',
-      'The application is being restored. Start it again after the restore finishes.',
+      'The application is being restored. Retry after the restore finishes.',
     );
   return release;
 }
@@ -31,7 +31,7 @@ export async function withStoppedApplication<T>(
   if (!release)
     throw new BackupError(
       'RESTORE_APP_RUNNING',
-      'The application or another backup operation is active. Stop the application before restoring.',
+      'The application, a backup, or database maintenance is active. Stop the application and let active operations finish before restoring.',
     );
   try {
     if (await hasRunningListener(app)) {

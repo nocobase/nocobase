@@ -50,6 +50,8 @@ Store `saved.sha256` and the per-connection modes with the backup record. Pass a
 
 The app resolver reads migration history and file references from the exported snapshot. It detects tables with physical `disk` and `key` columns. Configure other layouts in `backup.fileReferences` with `table`, `keyColumn`, and either `disk` or `diskColumn`. Set `connection` for a non-default connection and `schema` when needed. Add `keyPrefix` when the database stores keys relative to a subdirectory of the disk. Set `backup.excludePaths` to paths relative to each fs disk root for additional runtime directories or configuration files to preserve.
 
+Retry `BACKUP_FILE_CHANGED` after uploads finish. It means a local file was replaced during capture, the new file is still available to Drive, and the archive was not published. Configure factory disks as declarative Drive disks before backup. A factory has no storage metadata that backup can use to isolate its files, even if it is explicitly excluded.
+
 Declare a dedicated database per PostgreSQL or MySQL connection. Use standard Drive filesystem disk definitions to include their bytes and coordinate deletion. Use local or shared filesystems that support atomic hard links for publishing archives and SQLite filesystem locks for coordination.
 
 ## Database clients and recovery
