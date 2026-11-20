@@ -258,9 +258,7 @@ for (const template of templates) {
     ]) {
       assert.equal(
         sharedFrameworkSource(template, file),
-        template.kind === 'examples'
-          ? withExamplesChat(sharedFrameworkSource(baseline, file), file)
-          : sharedFrameworkSource(baseline, file),
+        sharedFrameworkSource(baseline, file),
         `${template.kind}: ${file}`,
       );
     }
