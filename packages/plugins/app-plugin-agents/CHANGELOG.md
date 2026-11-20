@@ -1,5 +1,23 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.18
+
+### Minor Changes
+
+- 2c66475: Let native online agent conversations choose a thinking level (the AI SDK's seven reasoning levels: provider default, none, minimal, low, medium, high or extra high) for any online chat model, passed to the provider through the AI SDK, with a notice in the conversation when the model reports it does not support the level, and a thinking level menu beside the model choice in the Examples chat and the UI Library agent-chat block.
+- 39f8245: Name agents of a model the catalog does not know readably for every tool (`my-lan-gateway/qwen3.8-flash` → "OpenCode · Qwen3.8 Flash"), and save a new agent whose name another agent holds with its provider after the name ("OpenCode · Qwen3.8 Flash（opencode）") instead of `#2`; existing agents keep their names. Show every agent's whole model id in the agent list, the edit dialog and conversation details, and its name without the tool, with the whole id on hover, in chips, pickers and the runtime's runs. Show what the coding tool said when a run failed as one line of at most 300 characters, under the runtime's recent runs to people who may read the run's task or conversation; add `failureDetail` to that list and `model`, `shortName` and `modelTitle` to conversation agents. A failed run's message has keys, credentials, labelled and quoted values and long random strings removed when it is stored and again when it is read. OpenCode reports only its own error message as the failure; the stderr tail goes to the runner's log.
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
+### Patch Changes
+
+- Updated dependencies [88bb385]
+- Updated dependencies [188e419]
+  - @nocobase/app-cli-distribution@0.1.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.22
+  - @nocobase/app-cli-client@0.1.0-beta.25
+
 ## 2.0.0-beta.17
 
 ### Minor Changes
