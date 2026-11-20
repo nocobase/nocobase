@@ -226,20 +226,21 @@
   "dependencies": {
     "@hono/node-server": "catalog:",
     "@nocobase/app-websocket": "workspace:^",
+    "@nocobase/backup": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/mailer": "workspace:^",
     "@nocobase/realtime": "workspace:^",
     "@nocobase/secrets": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@nocobase/snowflake": "workspace:^",
     "@sinclair/typebox": "catalog:",
-    "hono": "catalog:",
     "@standard-schema/spec": "^1.0.0",
+    "hono": "catalog:",
     "hono-openapi": "catalog:",
-    "zod": "catalog:",
     "openapi-types": "^12.1.3",
-    "@nocobase/mailer": "workspace:^"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nocobase/db-mysql": "workspace:*",

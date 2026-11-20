@@ -46,6 +46,20 @@ function sqliteReader(db: Sqlite.Database): BackupReader {
     return quoteIdentifier(table.name, '"');
   }
   return {
+    async findTables(columns) {
+      const tables = db
+        .prepare<[], { name: string }>(
+          "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+        )
+        .all();
+      const lookup = db.prepare<[string], { name: string }>(
+        'SELECT name FROM pragma_table_info(?)',
+      );
+      return tables.filter((table) => {
+        const names = new Set(lookup.all(table.name).map(({ name }) => name));
+        return columns.every((column) => names.has(column));
+      });
+    },
     async hasTable(table) {
       name(table);
       return (

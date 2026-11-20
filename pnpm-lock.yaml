@@ -594,6 +594,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../app-server
+      '@nocobase/backup':
+        specifier: workspace:^
+        version: link:../../libs/backup
       '@nocobase/cli-envelope':
         specifier: workspace:^
         version: link:../../libs/cli-envelope
@@ -918,6 +921,9 @@ importers:
       '@nocobase/app-websocket':
         specifier: workspace:^
         version: link:../app-websocket
+      '@nocobase/backup':
+        specifier: workspace:^
+        version: link:../../libs/backup
       '@nocobase/caching':
         specifier: workspace:^
         version: link:../../libs/caching
@@ -2899,6 +2905,9 @@ importers:
       ali-oss:
         specifier: ^6.23.0
         version: 6.23.0(supports-color@8.1.1)
+      better-sqlite3:
+        specifier: 'catalog:'
+        version: 13.0.3
       flydrive:
         specifier: ^2.1.0
         version: 2.1.0(@aws-sdk/client-s3@3.1111.0)(@aws-sdk/s3-request-presigner@3.1111.0)
@@ -2909,6 +2918,9 @@ importers:
       '@types/ali-oss':
         specifier: ^6.23.3
         version: 6.23.3
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3

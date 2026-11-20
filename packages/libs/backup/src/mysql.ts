@@ -136,6 +136,18 @@ function mysqlReader(client: Connection, database: string): BackupReader {
     return quote(database) + '.' + quote(table.name);
   }
   return {
+    async findTables(columns) {
+      const names = [...new Set(columns)];
+      if (!names.length) return [];
+      const [rows] = await client.query<(RowDataPacket & BackupTable)[]>(
+        `SELECT c.TABLE_NAME AS name FROM information_schema.columns c
+         JOIN information_schema.tables t USING (TABLE_SCHEMA, TABLE_NAME)
+         WHERE t.TABLE_TYPE = 'BASE TABLE' AND c.TABLE_SCHEMA = ? AND c.COLUMN_NAME IN (?)
+         GROUP BY c.TABLE_NAME HAVING COUNT(*) = ?`,
+        [database, names, names.length],
+      );
+      return rows;
+    },
     async hasTable(table) {
       tableName(table);
       const [result] = await client.query<RowDataPacket[]>(
@@ -347,3 +359,14 @@ export const mysqlEngine: DatabaseEngine<MysqlBackupConnection> = {
     );
   },
 };
+
+export async function hasOtherMysqlSessions(
+  connection: MysqlBackupConnection,
+): Promise<boolean> {
+  return withClient(connection, async (client) => {
+    const [rows] = await client.query<RowDataPacket[]>(
+      "SELECT 1 FROM information_schema.PROCESSLIST WHERE DB = DATABASE() AND ID <> CONNECTION_ID() AND COMMAND NOT IN ('Daemon', 'Binlog Dump', 'Binlog Dump GTID') LIMIT 1",
+    );
+    return rows.length > 0;
+  });
+}

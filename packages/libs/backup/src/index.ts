@@ -1,6 +1,7 @@
 export { BackupError } from './errors.js';
 export {
   createBackup,
+  assertBackupDatabasesIdle,
   inspectBackup,
   restoreBackup,
   verifyBackup,

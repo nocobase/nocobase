@@ -1,13 +1,7 @@
+import { cleanAbandonedWork, temporaryName } from './temporary.js';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  stat,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -131,7 +125,11 @@ export async function withWorkspace<T>(
   base: string | undefined,
   operation: (dir: string) => Promise<T>,
 ): Promise<T> {
-  const directory = await mkdtemp(join(base ?? tmpdir(), 'nocobase-backup-'));
+  const parent = base ?? tmpdir();
+  const prefix = 'nocobase-backup-';
+  await cleanAbandonedWork(parent, prefix, 'directory');
+  const directory = join(parent, temporaryName(prefix));
+  await mkdir(directory, { mode: 0o700 });
   try {
     return await operation(directory);
   } finally {

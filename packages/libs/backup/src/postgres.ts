@@ -96,6 +96,18 @@ async function serverInfo(client: pg.Client): Promise<ServerInfo> {
 function postgresReader(client: pg.Client): BackupReader {
   const schema = (table: BackupTable) => table.schema ?? 'public';
   return {
+    async findTables(columns) {
+      if (!columns.length) return [];
+      const { rows } = await client.query<BackupTable>(
+        `SELECT c.table_schema AS schema, c.table_name AS name
+         FROM information_schema.columns c JOIN information_schema.tables t USING (table_schema, table_name)
+         WHERE t.table_type = 'BASE TABLE' AND c.table_schema NOT LIKE 'pg\\_%'
+           AND c.table_schema <> 'information_schema' AND c.column_name = ANY($1::text[])
+         GROUP BY c.table_schema, c.table_name HAVING COUNT(*) = $2`,
+        [columns, new Set(columns).size],
+      );
+      return rows;
+    },
     async hasTable(table) {
       const result = await client.query(
         'SELECT 1 FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2',
@@ -237,3 +249,14 @@ export const postgresEngine: DatabaseEngine<PostgresBackupConnection> = {
     return withClient(connection, (client) => use(postgresReader(client)));
   },
 };
+
+export async function hasOtherPostgresSessions(
+  connection: PostgresBackupConnection,
+): Promise<boolean> {
+  return withClient(connection, async (client) => {
+    const result = await client.query(
+      "SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid() AND backend_type = 'client backend' LIMIT 1",
+    );
+    return result.rows.length > 0;
+  });
+}

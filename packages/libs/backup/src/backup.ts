@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, rename, rm, stat } from 'node:fs/promises';
+import { cleanAbandonedWork, temporaryName } from './temporary.js';
+import { mkdir, mkdtemp, link, rm, stat } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -29,9 +29,9 @@ import {
   undoDisk,
 } from './files.js';
 import type { DiskStage } from './files.js';
-import { mysqlEngine } from './mysql.js';
+import { hasOtherMysqlSessions, mysqlEngine } from './mysql.js';
 import { assertName, canonical, fileStat } from './paths.js';
-import { postgresEngine } from './postgres.js';
+import { hasOtherPostgresSessions, postgresEngine } from './postgres.js';
 import { sqliteEngine } from './sqlite.js';
 import type {
   BackupConnection,
@@ -401,15 +401,14 @@ async function verifyTarget(
       'RESTORE_PREFLIGHT_FAILED',
       async () => {
         assertServerMatches(entry, await database(connection).probe());
-        const catalog = new Map(
-          (await connection.readMigrationCatalog()).map((migration) => [
-            migrationKey(migration),
-            migration.checksum,
-          ]),
+        const catalog = new Set(
+          (await connection.readMigrationCatalog()).map((entry) =>
+            JSON.stringify([migrationKey(entry), entry.checksum]),
+          ),
         );
         const mismatch = entry.migrations.history.find(
-          (migration) =>
-            catalog.get(migrationKey(migration)) !== migration.checksum,
+          (entry) =>
+            !catalog.has(JSON.stringify([migrationKey(entry), entry.checksum])),
         );
         if (mismatch) {
           throw new BackupError(
@@ -478,14 +477,9 @@ export async function createBackup(
             'The requested backup output already exists.',
           );
         const payload = join(workspace, 'payload');
-        const partial = join(
-          dirname(file),
-          `.${basename(file)}.partial-${randomUUID()}`,
-        );
-        const outputLock = join(
-          dirname(file),
-          `.${basename(file)}.backup-lock`,
-        );
+        const prefix = `.${basename(file)}.partial-`;
+        await cleanAbandonedWork(dirname(file), prefix, 'file');
+        const partial = join(dirname(file), temporaryName(prefix));
         const resolved = await resolveDisks(target, [
           dirname(file),
           workspace,
@@ -603,15 +597,15 @@ export async function createBackup(
             );
           }
         };
-        if (online && diskNames.length) {
-          if (!target.withDeferredDeletes) {
+        if (online && target.withDeferredDeletes) {
+          await target.withDeferredDeletes(diskNames, capture);
+        } else {
+          if (online && diskNames.length) {
             throw new BackupError(
               'BACKUP_DELETE_GUARD_REQUIRED',
               'Online backup of a local disk requires a Drive deletion deferral guard.',
             );
           }
-          await target.withDeferredDeletes(diskNames, capture);
-        } else {
           await capture();
         }
         try {
@@ -635,18 +629,20 @@ export async function createBackup(
           });
           const size = (await stat(partial)).size;
           checkAbort(options.signal);
-          // Serialize publication at a given path so concurrent creates cannot replace each other's backup.
-          await mkdir(outputLock, { mode: 0o700 });
+          // A hard link publishes the verified inode atomically and refuses to overwrite an existing archive.
           try {
-            if (await fileStat(file))
-              throw new BackupError(
-                'BACKUP_OUTPUT_EXISTS',
-                'The requested backup output already exists.',
-              );
-            checkAbort(options.signal);
-            await rename(partial, file);
-          } finally {
-            await rm(outputLock, { force: true, recursive: true });
+            await link(partial, file);
+          } catch (error) {
+            if (
+              !(error instanceof Error) ||
+              !('code' in error) ||
+              error.code !== 'EEXIST'
+            )
+              throw error;
+            throw new BackupError(
+              'BACKUP_OUTPUT_EXISTS',
+              'The requested backup output already exists.',
+            );
           }
           return {
             file,
@@ -1063,5 +1059,29 @@ export async function restoreBackup(
       'The backup could not be restored.',
       options.signal,
     );
+  }
+}
+
+/** Check server sessions before an offline operation. Local startup coordination is held by the caller. */
+export async function assertBackupDatabasesIdle(
+  connections: readonly BackupConnection[],
+): Promise<void> {
+  for (const connection of connections) {
+    if (
+      connection.dialect === 'sqlite' ||
+      connection.schemaManagement === 'external'
+    )
+      continue;
+    await inConnection(connection, 'RESTORE_SESSION_CHECK_FAILED', async () => {
+      const busy =
+        connection.dialect === 'postgres'
+          ? await hasOtherPostgresSessions(connection)
+          : await hasOtherMysqlSessions(connection);
+      if (busy)
+        throw new BackupError(
+          'RESTORE_APP_RUNNING',
+          'Database sessions are still connected. Stop the application and disconnect clients.',
+        );
+    });
   }
 }

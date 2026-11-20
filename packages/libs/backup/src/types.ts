@@ -20,6 +20,7 @@ export interface BackupTable {
 /** A read-only view of the data represented by the artifact currently being exported. */
 export interface BackupReader {
   hasTable(table: BackupTable): Promise<boolean>;
+  findTables(columns: readonly string[]): Promise<BackupTable[]>;
   readRows(
     table: BackupTable,
     columns: readonly string[],

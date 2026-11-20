@@ -186,12 +186,23 @@ export async function mysqlDumpReader(
   file: string,
   database: string,
 ): Promise<BackupReader> {
-  const tables = new Map<string, Range | undefined>();
+  const tables = new Map<string, { columns: Set<string>; range?: Range }>();
+  const field = new RegExp('^  (' + identifier.source + ') ');
+  let definition: string | undefined;
   let current: string | undefined;
   let inInsert = false;
   for await (const { line, start, end } of dumpLines(file)) {
-    const definition = tableStructure.exec(line);
-    if (definition) tables.set(decodeIdentifier(definition[1]), undefined);
+    const structure = tableStructure.exec(line);
+    if (structure) {
+      definition = decodeIdentifier(structure[1]);
+      tables.set(definition, { columns: new Set() });
+    }
+    if (definition !== undefined) {
+      const column = field.exec(line);
+      if (column)
+        tables.get(definition)?.columns.add(decodeIdentifier(column[1]));
+      if (line.startsWith(')')) definition = undefined;
+    }
     const data = dataSection.exec(line);
     if (data) current = decodeIdentifier(data[1]);
     if (line === 'UNLOCK TABLES;') current = undefined;
@@ -200,8 +211,9 @@ export async function mysqlDumpReader(
       (inInsert || line.startsWith('INSERT INTO '))
     ) {
       inInsert = !line.endsWith(';');
-      const range = tables.get(current);
-      tables.set(current, { start: range?.start ?? start, end });
+      const table = tables.get(current);
+      if (!table) throw invalidDump();
+      table.range = { start: table.range?.start ?? start, end };
     }
   }
   function checkSchema(table: BackupTable): void {
@@ -213,6 +225,13 @@ export async function mysqlDumpReader(
     }
   }
   return {
+    async findTables(columns) {
+      return [...tables]
+        .filter(([, table]) =>
+          columns.every((column) => table.columns.has(column)),
+        )
+        .map(([name]) => ({ name }));
+    },
     async hasTable(table) {
       checkSchema(table);
       return tables.has(table.name);
@@ -221,7 +240,7 @@ export async function mysqlDumpReader(
       checkSchema(table);
       if (!columns.length) return;
       if (!tables.has(table.name)) throw invalidDump();
-      const range = tables.get(table.name);
+      const range = tables.get(table.name)?.range;
       if (!range) return;
       let statement: string[] = [];
       for await (const { line } of dumpLines(file, range)) {
