@@ -371,11 +371,11 @@ describe('agents built from runner reports', () => {
     const consoleAgent = await create('opencode/qwen3.8-flash');
     expect([gateway.name, consoleAgent.name]).toEqual([
       'OpenCode · Qwen3.8 Flash',
-      'OpenCode · Qwen3.8 Flash（opencode）',
+      'OpenCode · Qwen3.8 Flash (opencode)',
     ]);
     // The saved names are what every place shows.
     expect((await h.services.agents.get(consoleAgent.id)).name).toBe(
-      'OpenCode · Qwen3.8 Flash（opencode）',
+      'OpenCode · Qwen3.8 Flash (opencode)',
     );
   });
 

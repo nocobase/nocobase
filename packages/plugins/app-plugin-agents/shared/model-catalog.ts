@@ -321,7 +321,7 @@ export function agentNameOf(
 /**
  * The name a new agent of a tool and model is saved with, given whether a name is already held by another agent:
  * `agentNameOf`; when that is held, for OpenCode and Pi, the name with the model's provider after it
- * ("OpenCode · Qwen3.8 Flash（my-lan-gateway）"); else the first free `#2`, `#3`… after one of them. Agents are not
+ * ("OpenCode · Qwen3.8 Flash (my-lan-gateway)"); else the first free `#2`, `#3`… after one of them. Agents are not
  * renamed afterwards, so two agents that already read the same are renamed by an administrator.
  */
 export function uniqueAgentName(
@@ -334,7 +334,7 @@ export function uniqueAgentName(
   if (!taken(base)) return base;
   const provider = model ? modelProvider(tool, model) : null;
   const named = provider
-    ? `${base}（${sanitizeAgentNamePart(provider)}）`
+    ? `${base} (${sanitizeAgentNamePart(provider)})`
     : base;
   if (named !== base && !taken(named)) return named;
   let suffix = 2;

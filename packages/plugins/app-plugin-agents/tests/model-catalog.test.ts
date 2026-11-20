@@ -90,14 +90,14 @@ describe('the model catalog', () => {
       'OpenCode · Qwen3.8 Flash',
     );
     expect(named('opencode', 'opencode/qwen3.8-flash')).toBe(
-      'OpenCode · Qwen3.8 Flash（opencode）',
+      'OpenCode · Qwen3.8 Flash (opencode)',
     );
     // When the name with the provider is held too (an agent saved with it was renamed back), it is numbered.
     expect(
       uniqueAgentName('opencode', 'opencode/qwen3.8-flash', (n) =>
         taken.has(n),
       ),
-    ).toBe('OpenCode · Qwen3.8 Flash（opencode） #2');
+    ).toBe('OpenCode · Qwen3.8 Flash (opencode) #2');
     // A model without a namesake keeps its name.
     expect(named('opencode', 'opencode/deepseek-v4.1-flash-free')).toBe(
       'OpenCode · DeepSeek V4.1 Flash Free',
@@ -138,13 +138,13 @@ describe('agentModelOf', () => {
   it('gives an OpenCode agent its whole id, its name without the tool and the hover text', () => {
     expect(
       agentModelOf({
-        name: 'OpenCode · Qwen3.8 Flash（my-lan-gateway）',
+        name: 'OpenCode · Qwen3.8 Flash (my-lan-gateway)',
         tool: 'opencode',
         model: 'my-lan-gateway/qwen3.8-flash',
       }),
     ).toEqual({
       model: 'my-lan-gateway/qwen3.8-flash',
-      shortName: 'Qwen3.8 Flash（my-lan-gateway）',
+      shortName: 'Qwen3.8 Flash (my-lan-gateway)',
       modelTitle: 'OpenCode · my-lan-gateway/qwen3.8-flash',
     });
   });
