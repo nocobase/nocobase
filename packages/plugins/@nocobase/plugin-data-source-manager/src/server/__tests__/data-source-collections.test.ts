@@ -24,6 +24,62 @@ describe('data source collection', () => {
     await app.destroy();
   });
 
+  it('should reuse saved REST fields after clearing and extracting them again', async () => {
+    class HttpTestDataSource extends DataSource {
+      createCollectionManager() {
+        return new CollectionManager();
+      }
+    }
+
+    app.dataSourceManager.factory.register('http', HttpTestDataSource);
+    await app.db.getRepository('dataSources').create({
+      values: { key: 'external', type: 'http', displayName: 'External', options: {} },
+    });
+    await vi.waitFor(() => expect(app.dataSourceManager.get('external')).toBeTruthy());
+    const collections = app.agent().resource('dataSources.collections', 'external');
+    const savedField = { name: 'quantity', type: 'integer', interface: 'integer', uiSchema: { title: 'Quantity' } };
+    for (const name of ['items', 'other']) {
+      const res = await collections.create({ values: { name, fields: [savedField] } });
+      expect(res.status).toBe(200);
+    }
+
+    const repo = app.db.getRepository('dataSourcesFields');
+    const filter = { collectionName: 'items', dataSourceKey: 'external' };
+    const original = await repo.findOne({ filter });
+    const extracted = [
+      { name: 'quantity', rawType: 'number', type: 'float', interface: 'number', uiSchema: { title: 'quantity' } },
+      { name: 'unit', rawType: 'string', type: 'string' },
+    ];
+
+    const duplicate = await collections.update({
+      filterByTk: 'items',
+      values: { fields: [...extracted, extracted[1]] },
+    });
+    expect(duplicate.status).toBe(400);
+    expect(await repo.count({ filter })).toBe(1);
+
+    const save = () => collections.update({ filterByTk: 'items', values: { fields: extracted } });
+    const first = await save();
+    expect(first.status).toBe(200);
+    const newField = await repo.findOne({ filter: { ...filter, name: 'unit' } });
+    expect((await save()).status).toBe(200);
+    const fields = await repo.find({ filter, sort: ['name'] });
+    expect(fields.map((field) => field.toJSON())).toMatchObject([
+      { ...savedField, key: original.get('key') },
+      { name: 'unit', key: newField.get('key'), type: 'string' },
+    ]);
+    const edit = await collections.update({
+      filterByTk: 'items',
+      values: { fields: [{ ...savedField, key: original.get('key'), uiSchema: { title: 'On hand' } }] },
+    });
+    expect(edit.status).toBe(200);
+    const updated = await repo.findOne({ filter: { ...filter, name: 'quantity' } });
+    expect(updated.toJSON()).toMatchObject({ key: original.get('key'), uiSchema: { title: 'On hand' } });
+    const other = await repo.findOne({ filter: { collectionName: 'other', dataSourceKey: 'external' } });
+    expect(other.toJSON()).toMatchObject(savedField);
+    expect(other.get('key')).not.toBe(original.get('key'));
+  });
+
   it('should update collection fields', async () => {
     class MockDataSource extends DataSource {
       static testConnection(options?: any): Promise<boolean> {
