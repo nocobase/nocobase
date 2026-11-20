@@ -19,7 +19,7 @@ export * from './spa/index.js';
 export * from './support/index.js';
 
 export { resolveAppBackupTarget } from './backup/target.js';
-export { enterRunningApplication } from './backup/guard.js';
+export { enterRunningApplication } from './backup/runtime-guard.js';
 export type {
   AppBackupConfig,
   AppBackupFileReference,

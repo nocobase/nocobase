@@ -1,8 +1,6 @@
-import {
-  enterRunningApplication,
-  type Application,
-} from '@nocobase/app-server';
-import { BackupError } from '@nocobase/backup';
+import type { Application } from '@nocobase/app-server';
+import { enterRunningApplication } from '@nocobase/app-server/backup/runtime-guard';
+import { BackupError } from '@nocobase/backup/errors';
 import {
   databaseManagerToken,
   isTaskLockBusyError,

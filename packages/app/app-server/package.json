@@ -14,6 +14,10 @@
       "types": "./src/application/index.ts",
       "import": "./src/application/index.ts"
     },
+    "./backup/runtime-guard": {
+      "types": "./src/backup/runtime-guard.ts",
+      "import": "./src/backup/runtime-guard.ts"
+    },
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
@@ -115,6 +119,10 @@
       "./application": {
         "types": "./dist/application/index.d.ts",
         "import": "./dist/application/index.js"
+      },
+      "./backup/runtime-guard": {
+        "types": "./dist/backup/runtime-guard.d.ts",
+        "import": "./dist/backup/runtime-guard.js"
       },
       ".": {
         "types": "./dist/index.d.ts",

@@ -38,7 +38,8 @@ import { createSecretsService } from '../secrets/service.js';
 import type { AppSessionConfigInput } from '../session/config.js';
 import { readAppPackage } from '../support/app-package.js';
 import type { AppBackupConfig, AppBackupFileReference } from './config.js';
-import { enterRunningApplication, withStoppedApplication } from './guard.js';
+import { withStoppedApplication } from './guard.js';
+import { enterRunningApplication } from './runtime-guard.js';
 
 function text(config: object, key: string): string | undefined {
   const value: unknown = Reflect.get(config, key);

@@ -13,6 +13,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./errors": {
+      "types": "./src/errors/index.ts",
+      "import": "./src/errors/index.ts"
     }
   },
   "publishConfig": {
@@ -20,6 +24,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./errors": {
+        "types": "./dist/errors/index.d.ts",
+        "import": "./dist/errors/index.js"
       }
     },
     "access": "public"

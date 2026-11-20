@@ -1,4 +1,4 @@
-import { enterRunningApplication } from '../backup/guard.js';
+import { enterRunningApplication } from '../backup/runtime-guard.js';
 import type { ReleaseStorageLock } from '@nocobase/drive';
 import { MailSenderFactoryProvider } from '../mailers/index.js';
 import type { AppRuntimeLogging } from '../logging/config.js';
