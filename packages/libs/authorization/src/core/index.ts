@@ -7,6 +7,7 @@ export {
   type AuthorizationPermission,
   type AuthorizationSnapshot,
   type CreateAuthorizationOptions,
+  type TransactionBindableAuthorizationContext,
 } from './authorization.js';
 export {
   CompositeResourceActionBuilder,

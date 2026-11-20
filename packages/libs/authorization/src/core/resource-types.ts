@@ -137,6 +137,8 @@ function resolveItem(
 export interface AuthorizationRuntimeContext {
   readonly grants: AuthorizationGrantService;
   readonly constraints: AccessConstraintService;
+  /** The caller's transaction. Database-backed resource checks must use it when present. */
+  readonly transaction?: unknown;
 }
 
 export type ResourceAuthorize<TParams = undefined> = (
@@ -146,6 +148,7 @@ export type ResourceAuthorize<TParams = undefined> = (
 
 export type ResourceAuthorizeUnrestricted<TParams = undefined> = (
   request: AuthorizationRequest<TParams>,
+  context: AuthorizationRuntimeContext,
 ) => Promise<AuthorizationDecision>;
 
 /** An action every item of the type may declare, with its own judgement. */
@@ -241,6 +244,7 @@ export interface ResourceTypeHandler {
   ): Promise<AuthorizationDecision>;
   authorizeUnrestricted(
     request: AuthorizationRequest<unknown>,
+    context: AuthorizationRuntimeContext,
   ): Promise<AuthorizationDecision>;
 }
 
@@ -367,14 +371,14 @@ export class ResourceTypeRegistry {
           typed(request),
           context,
         ),
-      authorizeUnrestricted: async (request) => {
+      authorizeUnrestricted: async (request, context) => {
         const denied = unsupported(request);
         if (denied) return denied;
         const authorize =
           actionOf(request)?.authorizeUnrestricted ??
           definition.authorizeUnrestricted;
         return authorize
-          ? authorize(typed(request))
+          ? authorize(typed(request), context)
           : {
               effect: 'permit',
               reasons: [

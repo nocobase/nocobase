@@ -1,6 +1,6 @@
 import revisionMigration from '../../database/migrations/202610150001_authorization_permission_set_revision.js';
 import { createAuthorization } from '../helpers/authorization-fixture.js';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import permissionSetMigration from '../../database/migrations/202608210001_create_permission_set_tables.js';
 import {
   permissionSetsPlugin,
@@ -231,6 +231,101 @@ describe('authorization plugin database stores', () => {
     ).toHaveLength(1);
     expect(notifications).toEqual([]);
     await authorization.permissionSets.delete(key);
+  });
+
+  it('isolates transaction authorization caches and retains inherited and key-scoped access', async () => {
+    const connection = database.connection();
+    const authz = createAppAuthorization({ connection });
+    const resource = { type: 'settings', id: 'transaction-test' };
+    authz.settings.add({
+      id: resource.id,
+      title: 'Transaction test',
+      actions: ['view', 'publish', 'delete'],
+    });
+    const identity = {
+      principal: {
+        type: 'user',
+        id: 'transaction-alice',
+        attributes: { department: 'sales' },
+      },
+      subjects: [{ type: 'team', id: 'transaction-editors' }],
+      keyScope: {
+        keyId: 'transaction-key',
+        allows: (_resource: typeof resource, action: string) =>
+          action !== 'delete',
+        objects: () => ['allowed-record'],
+        permissions: [{ resource, actions: ['view', 'publish'] }],
+      },
+    };
+    const view = { resource, action: 'view' };
+    const publish = { resource, action: 'publish' };
+    const key = 'transaction-editors';
+    await authz.permissionSets.create({
+      key,
+      grants: [
+        {
+          resource,
+          actions: ['view', 'publish', 'delete'].map((action) => ({ action })),
+        },
+      ],
+    });
+
+    const denied = authz.for(identity);
+    await expect(denied.can(view)).resolves.toBe(false);
+    await connection.transaction(async (tx) => {
+      await authz.permissionSets.withTransaction(tx).assign({
+        id: key,
+        permissionSet: key,
+        subject: identity.subjects[0],
+      });
+
+      const reads = vi.spyOn(
+        DatabasePermissionSetStore.prototype,
+        'findAssignments',
+      );
+      try {
+        const bound = denied.withTransaction(tx);
+        expect(bound.identity).toBe(identity);
+        expect(bound.identity.keyScope?.objects('example')).toEqual([
+          'allowed-record',
+        ]);
+        await expect(bound.require(view)).resolves.toBeUndefined();
+        await expect(bound.can(publish)).resolves.toBe(true);
+        await expect(
+          bound.authorize({ resource, action: 'delete' }),
+        ).resolves.toMatchObject({
+          effect: 'deny',
+          reasons: [{ code: 'KEY_SCOPE' }],
+        });
+        await expect(bound.snapshot()).resolves.toEqual({
+          unrestricted: false,
+          permissions: [{ resource, actions: ['publish', 'view'] }],
+        });
+        expect(reads).toHaveBeenCalledTimes(1);
+      } finally {
+        reads.mockRestore();
+      }
+    });
+    await expect(denied.can(view)).resolves.toBe(false);
+
+    const permitted = authz.for(identity);
+    await expect(permitted.authorize(view)).resolves.toMatchObject({
+      effect: 'permit',
+    });
+    const rollback = new Error('roll back permission revocation');
+    await expect(
+      connection.transaction(async (tx) => {
+        await authz.permissionSets.withTransaction(tx).revoke(key);
+        const bound = permitted.withTransaction(tx);
+        await expect(bound.require(view)).rejects.toMatchObject({
+          reason: 'AUTHORIZATION_DENIED',
+        });
+        await expect(bound.can(publish)).resolves.toBe(false);
+        throw rollback;
+      }),
+    ).rejects.toBe(rollback);
+    await expect(permitted.can(view)).resolves.toBe(true);
+    await expect(authz.for(identity).can(view)).resolves.toBe(true);
   });
 
   it('persists Permission Sets independently from database access rules', async () => {

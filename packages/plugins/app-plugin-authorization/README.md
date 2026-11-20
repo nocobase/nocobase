@@ -485,6 +485,21 @@ Settings action names are semantic. Permission sets declare `read`, `create`, `u
 
 ## Subjects and transactions
 
+When a service owns a write transaction, use the active `DatabaseConnection` from the authorization database to derive its authorization context. Permission sets, enabled rules, and collection metadata then read through that connection, including for an unrestricted identity. Qualified collections on another data source cannot be checked in that transaction.
+
+```ts
+await database.transaction(async (tx) => {
+  const bound = authz.for(identity).withTransaction(tx);
+  await bound.require({
+    resource: { type: 'settings', id: 'orders' },
+    action: 'write',
+  });
+  await writeOrders(tx);
+});
+```
+
+To keep the authenticated request's subjects and API key scope, derive from its existing context with `context.withTransaction(tx)`. The method is optional on the structural `AuthorizationContext` interface so custom contexts can continue to serve ordinary checks. If a caller requires transaction-bound authorization, it must reject a custom context that lacks the method.
+
 `authz.subjects.add(type, { resolveFor?, filterActive, administration? })` declares an inherited subject type such as teams; it returns a function that removes it. `administration` is `{ title, selection }` where `selection` is `{ type: 'fixed', id }` or `{ type: 'collection', list(query, context), resolve(ids, context) }`, answering `{ items: [{ id, title, description? }], total }` and items respectively. `title` and `description` may be plain text or a `{ key, ns }` translation descriptor, which the workspace renders in the viewer's language.
 
 A permission-set assignment change to a `user` refreshes that user's clients; a change to any other subject, `authenticated` included, refreshes every client, because only the subject's owner knows which users it reaches. For a user removal, bind `authz.permissionSets.withTransaction(connection).assertSubjectRemovable(subject)` to the same transaction as the mutation and call `notifyAssignmentsChanged(subject)` on that bound API; it publishes once the transaction commits.

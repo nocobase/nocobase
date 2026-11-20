@@ -32,8 +32,12 @@ export interface ResolveAccessConstraintsInput {
   action: string;
 }
 
-export interface AccessConstraintResolver {
+export interface AccessConstraintResolver<TTransaction = unknown> {
   id: string;
+  /** True for resolvers that do not read transactional state. */
+  readonly transactionIndependent?: true;
+  /** Binds reads to the caller's transaction before the identity cache is created. */
+  withTransaction?(transaction: TTransaction): AccessConstraintResolver;
   /** A resolver bound to one identity, shared by all of its checks. */
   for?(identity: AuthorizationIdentity): AccessConstraintResolver;
   resolve(
@@ -73,11 +77,24 @@ export class AccessConstraintRegistry implements AccessConstraintService {
   }
 
   /** Caches each answer for the lifetime of one identity's context. */
-  for(identity: AuthorizationIdentity): AccessConstraintService {
+  for(
+    identity: AuthorizationIdentity,
+    transaction?: unknown,
+  ): AccessConstraintService {
     const cache = new Map<string, Promise<readonly AccessConstraint[]>>();
-    const resolvers = [...this.resolvers.values()].map(
-      (resolver) => resolver.for?.(identity) ?? resolver,
-    );
+    const resolvers = [...this.resolvers.values()].map((resolver) => {
+      let source = resolver;
+      if (transaction !== undefined) {
+        if (resolver.withTransaction) {
+          source = resolver.withTransaction(transaction);
+        } else if (!resolver.transactionIndependent) {
+          throw new TypeError(
+            `Authorization constraint resolver "${resolver.id}" does not support transactions`,
+          );
+        }
+      }
+      return source.for?.(identity) ?? source;
+    });
     return {
       resolve: (input) => {
         const key = JSON.stringify([

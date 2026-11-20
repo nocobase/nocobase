@@ -33,22 +33,34 @@ export function databasePlugin(database?: DatabaseManager): DatabasePlugin {
       for (const definition of builtInRecordAccess)
         authz.recordAccess.define(definition);
       const connection = authz.connection;
-      const resolveCollection = connection
-        ? collectionResolver(connection, database)
-        : undefined;
-      const authorizer = new DatabaseResourceAuthorizer({
-        recordAccess: authz.recordAccess,
-        ...(resolveCollection ? { resolveCollection } : {}),
-      });
+      const createAuthorizer = (transaction?: DatabaseConnection) => {
+        const resolveCollection = connection
+          ? collectionResolver(connection, database, transaction)
+          : undefined;
+        return new DatabaseResourceAuthorizer({
+          recordAccess: authz.recordAccess,
+          ...(resolveCollection ? { resolveCollection } : {}),
+          ...(transaction ? { transaction } : {}),
+        });
+      };
+      const authorizer = createAuthorizer();
+      const authorizerFor = (transaction?: unknown) =>
+        transaction === undefined
+          ? authorizer
+          : createAuthorizer(transaction as DatabaseConnection);
       authz.resourceTypes.add<DatabaseAuthorizationParams>({
         type: 'database.collection',
         items: api.collections.items,
         actions: ['read', 'create', 'update', 'delete'],
         recordAccess: true,
         authorize: (request, context) =>
-          authorizer.authorize(request, context.grants, context.constraints),
-        authorizeUnrestricted: (request) =>
-          authorizer.authorizeUnrestricted(request),
+          authorizerFor(context.transaction).authorize(
+            request,
+            context.grants,
+            context.constraints,
+          ),
+        authorizeUnrestricted: (request, context) =>
+          authorizerFor(context.transaction).authorizeUnrestricted(request),
       });
       api.attach({
         compositeResources: authz.compositeResources,

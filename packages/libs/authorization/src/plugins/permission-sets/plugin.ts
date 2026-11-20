@@ -314,8 +314,10 @@ class PermissionSetService<
   }
 
   /** The Grant Provider side, kept off the public API. */
-  grantService(): AuthorizationGrantService {
+  grantService(): AuthorizationGrantService<TTransaction> {
     return {
+      withTransaction: (transaction) =>
+        this.withTransaction(transaction).grantService(),
       resolve: (input) => this.resolveGrants(input),
       resolveAll: (input) => this.resolveAllGrants(input),
       for: (identity) => this.grantsFor(identity),
@@ -672,7 +674,9 @@ class PermissionSetService<
     for (const listener of this.shared.subscribers) await listener(subject);
   }
 
-  withTransaction(transaction: TTransaction): PermissionSetsApi<TTransaction> {
+  withTransaction(
+    transaction: TTransaction,
+  ): PermissionSetService<TTransaction> {
     return new PermissionSetService<TTransaction>(
       this.store.withTransaction(transaction),
       this.shared,

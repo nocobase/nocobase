@@ -69,7 +69,11 @@ export type AuthorizationGrantsChangedListener = (
 ) => void | Promise<void>;
 
 /** The Grant Provider contract. */
-export interface AuthorizationGrantService {
+export interface AuthorizationGrantService<TTransaction = unknown> {
+  /** True for providers that do not read transactional state. */
+  readonly transactionIndependent?: true;
+  /** Binds reads to the caller's transaction before the identity cache is created. */
+  withTransaction?(transaction: TTransaction): AuthorizationGrantService;
   resolve(
     input: ResolveAuthorizationGrantsInput,
   ): Promise<readonly AuthorizationGrant[]>;

@@ -6,6 +6,7 @@ import {
 } from '@nocobase/app-testing/server';
 import type { Knex } from 'knex';
 import { afterEach, expect, vi } from 'vitest';
+import { databasePlugin } from '../../../server/database/plugin.js';
 import {
   collectionResolver,
   describeCollection,
@@ -216,6 +217,95 @@ test('warm authorization does not issue database statements or inspect the schem
   ).not.toContain('injected');
 });
 
+test('authorizes against uncommitted collection metadata for regular and unrestricted identities', async ({
+  connection,
+  database,
+}) => {
+  const resource = {
+    type: 'database.collection',
+    id: `${connection.name}.transactionDocuments`,
+  };
+  const subject = { type: 'user', id: 'reader' };
+  const root = { type: 'user', id: 'administrator' };
+  const store = new MockPermissionSetStore({
+    permissionSets: [
+      {
+        key: 'reader',
+        grants: [
+          {
+            resource,
+            actions: [
+              {
+                action: 'read',
+                policy: {
+                  type: 'database',
+                  fields: '*',
+                  recordAccess: ['transactionAccessible'],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      { key: 'root', grants: [] },
+    ],
+    assignments: [
+      { id: 'reader', permissionSet: 'reader', subject },
+      { id: 'root', permissionSet: 'root', subject: root },
+    ],
+  });
+  const authz = createAuthorization({
+    connection,
+    plugins: [
+      permissionSetsPlugin({ store, rootSet: 'root' }),
+      databasePlugin(database),
+    ],
+  });
+  authz.database.collections.add({
+    name: resource.id,
+    title: 'Transaction documents',
+  });
+  const resolve = vi.fn(() => true);
+  authz.recordAccess.define({
+    key: 'transactionAccessible',
+    collections: [resource.id],
+    resolve,
+  });
+
+  const read = { resource, action: 'read' };
+  const rollback = new Error('roll back metadata');
+  await expect(
+    connection.transaction(async (tx) => {
+      await tx.builder.createCollection(
+        'transactionDocuments',
+        (collection) => {
+          collection.increments('id').primary();
+          collection.string('title', { length: 64 });
+        },
+      );
+      for (const principal of [subject, root]) {
+        await expect(
+          authz.for({ principal }).withTransaction(tx).authorize(read),
+        ).resolves.toMatchObject({
+          effect: 'conditional',
+          conditions: { collection: resource.id, fields: ['id', 'title'] },
+        });
+      }
+      expect(resolve).toHaveBeenCalledWith(
+        expect.objectContaining({ transaction: tx }),
+      );
+      expect(resolve).toHaveBeenCalledTimes(1);
+      throw rollback;
+    }),
+  ).rejects.toBe(rollback);
+  await expect(
+    authz.for({ principal: root }).authorize(read),
+  ).resolves.toMatchObject({
+    effect: 'deny',
+    reasons: [{ code: 'UNKNOWN_DATABASE_RESOURCE_OR_ACTION' }],
+  });
+});
+
 test('preserves create and update permissions for defaulted and manual string keys', async ({
   connection,
 }) => {
@@ -313,6 +403,12 @@ test('uses each data source definition without leaking same-named collections', 
       fields: ['id'],
       primaryKey: 'id',
       generatedPrimaryKey: true,
+    });
+    await connection.transaction(async (tx) => {
+      const resolveBound = collectionResolver(connection, other.database, tx);
+      await expect(resolveBound('main.documents')).rejects.toThrow(
+        'Authorization cannot read data source "main" in this transaction',
+      );
     });
   } finally {
     await other.destroy();

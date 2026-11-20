@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ResourceItems,
   createAuthorization,
@@ -287,4 +287,44 @@ it('preserves localized action descriptions even when an action has no title', (
   expect(items.get('tools')?.actions).toEqual([
     { name: 'delete', description },
   ]);
+});
+
+describe('transaction authorization extensions', () => {
+  it('fails closed when a provider cannot bind to the transaction', () => {
+    const authz = withGrants([]);
+    expect(() => authz.for(alice).withTransaction({})).toThrow(
+      'The Authorization Grant Provider does not support transactions',
+    );
+  });
+
+  it('allows independent providers and fails closed for unsupported rule resolvers', async () => {
+    const authz = createAuthorization({
+      plugins: [
+        {
+          id: 'independent',
+          grants: {
+            ...grantProvider([
+              { resource: { type: 'report', id: 'sales' }, action: 'view' },
+            ]),
+            transactionIndependent: true,
+          },
+        },
+      ],
+    });
+    authz.resourceTypes.add({ type: 'report', actions: ['view'] });
+    const request = {
+      resource: { type: 'report', id: 'sales' },
+      action: 'view',
+    };
+    const context = authz.for(alice);
+    await expect(context.withTransaction({}).can(request)).resolves.toBe(true);
+
+    const resolve = vi.fn(async () => []);
+    authz.constraints.add({ id: 'external', resolve });
+    expect(() => context.withTransaction({})).toThrow(
+      'Authorization constraint resolver "external" does not support transactions',
+    );
+    expect(resolve).not.toHaveBeenCalled();
+    await expect(authz.for(alice).can(request)).resolves.toBe(true);
+  });
 });

@@ -22,16 +22,23 @@ const relationTypes: ReadonlySet<string> = new Set([
 export function collectionResolver(
   connection: DatabaseConnection,
   database?: DatabaseManager,
+  transaction?: DatabaseConnection,
 ): ResolveAuthorizationCollection {
   return async (name) => {
     const parts = name.split('.');
+    if (transaction && transaction.name !== connection.name)
+      throw new TypeError(
+        'Authorization requires a transaction on its database connection',
+      );
     if (!database || parts.length !== 2)
-      return describeCollection(connection, name);
+      return describeCollection(transaction ?? connection, name);
     const [source, collection] = parts;
-    const resolved = await describeCollection(
-      database.connection(source),
-      collection,
-    );
+    const owner = database.connection(source);
+    if (transaction && owner !== connection)
+      throw new TypeError(
+        `Authorization cannot read data source "${source}" in this transaction`,
+      );
+    const resolved = await describeCollection(transaction ?? owner, collection);
     return (
       resolved && {
         ...resolved,
