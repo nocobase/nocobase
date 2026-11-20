@@ -1,3 +1,8 @@
+import { MAIL_ORIGINAL_MAX_BYTES } from '../../../shared/original-message.js';
+import {
+  originalMessageMissing,
+  originalMessageTooLarge,
+} from '../original-message.js';
 import {
   logMailFailure,
   MailConnectionError,
@@ -23,6 +28,7 @@ import {
   bodyParts,
   readBody,
   readRawSource,
+  rawSourceWindows,
   rawComparable,
   metadataQuery,
   attachmentMetadata,
@@ -36,6 +42,7 @@ import type {
   MailSyncCursor,
 } from '../../../shared/mail.js';
 import type {
+  MailOriginalMessageContent,
   MailProviderAdapter,
   MailProviderMoveResult,
   MailProviderAccount,
@@ -73,6 +80,7 @@ import type { MailSyncRun } from '../../../shared/mail.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
 import {
   IMAP_SMTP_CAPABILITIES,
+  IMAP_SMTP_LOCATION_CAPABILITIES,
   MAX_IMAP_BODY_BYTES,
   MAX_IMAP_DETAIL_BODY_BYTES,
   MAX_IMAP_PROVIDER_ID_LENGTH,
@@ -123,8 +131,7 @@ import { classifyError, failure, throwIfAborted } from './errors.js';
 
 export class ImapSmtpAdapter implements MailProviderAdapter {
   public readonly identity: MailProviderAccount['provider'];
-  public readonly capabilities: MailProviderAdapter['capabilities'] =
-    IMAP_SMTP_CAPABILITIES;
+  public readonly capabilities: MailProviderAdapter['capabilities'];
   private readonly folderTypes = new Map<
     string,
     NormalizedMailFolder['type']
@@ -165,6 +172,9 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     private readonly operation?: ImapOperationSnapshot | undefined,
     private readonly pool?: ImapConnectionPool | undefined,
   ) {
+    this.capabilities = locations
+      ? IMAP_SMTP_LOCATION_CAPABILITIES
+      : IMAP_SMTP_CAPABILITIES;
     if (locations && locations.accountId !== account.id)
       throw new Error('The IMAP persistence belongs to another account.');
     if (operation && operation.accountId !== account.id)
@@ -806,6 +816,125 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           signal,
         ),
       };
+    }
+  }
+
+  public async getOriginalMessage(
+    providerMessageId: string,
+    signal: AbortSignal,
+  ): Promise<MailProviderResult<MailOriginalMessageContent>> {
+    let streamed = false;
+    let client: ImapFlow | undefined;
+    let release: (() => void) | undefined;
+    let streamController:
+      ReadableStreamDefaultController<Uint8Array> | undefined;
+    const finish = () => {
+      signal.removeEventListener('abort', abort);
+      const unlock = release;
+      release = undefined;
+      // Each original download selects a fresh mailbox session. Do not pool it.
+      const connection = client;
+      client = undefined;
+      connection?.close();
+      unlock?.();
+    };
+    const abort = () => {
+      finish();
+      streamController?.error(
+        new Error('IMAP original message download was interrupted.'),
+      );
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    try {
+      throwIfAborted(signal);
+      const locations =
+        await this.locations?.listValidLocations(providerMessageId);
+      throwIfAborted(signal);
+      if (!locations?.length) return originalMessageMissing();
+      const connection = this.protocol.imap(this.config.imap, this.credential);
+      client = connection;
+      await connection.connect();
+      for (const location of locations) {
+        throwIfAborted(signal);
+        let lock: Awaited<ReturnType<ImapFlow['getMailboxLock']>>;
+        try {
+          lock = await connection.getMailboxLock(location.folder, {
+            readOnly: true,
+          });
+        } catch (error) {
+          if ((error as { mailboxMissing?: boolean })?.mailboxMissing === true)
+            continue;
+          throw error;
+        }
+        release = () => lock.release();
+        throwIfAborted(signal);
+        const mailbox = connection.mailbox;
+        if (mailbox && String(mailbox.uidValidity) === location.uidValidity) {
+          const message = await connection.fetchOne(
+            location.uid,
+            { uid: true, size: true, envelope: true, flags: true },
+            { uid: true },
+          );
+          throwIfAborted(signal);
+          if (
+            message &&
+            !message.flags?.has('\\Deleted') &&
+            copyMatches(location, message, this.nativeSource(connection))
+          ) {
+            const size = message.size;
+            if (size === undefined || !Number.isSafeInteger(size) || size < 1)
+              throw new Error(
+                'The IMAP server did not report a valid MIME size.',
+              );
+            if (size > MAIL_ORIGINAL_MAX_BYTES)
+              return originalMessageTooLarge();
+            const windows = rawSourceWindows(
+              connection,
+              location.uid,
+              size,
+              signal,
+            );
+            const first = await windows.next();
+            if (!first.done) {
+              const stream = new ReadableStream<Uint8Array>(
+                {
+                  async pull(controller) {
+                    try {
+                      const next = await windows.next();
+                      if (!next.done) controller.enqueue(next.value);
+                      else if (next.value) {
+                        finish();
+                        controller.close();
+                      } else {
+                        abort();
+                      }
+                    } catch {
+                      abort();
+                    }
+                  },
+                  cancel() {
+                    abort();
+                  },
+                  start(controller) {
+                    streamController = controller;
+                    controller.enqueue(first.value);
+                  },
+                },
+                { highWaterMark: 0 },
+              );
+              streamed = true;
+              return { ok: true, value: { size, stream } };
+            }
+          }
+        }
+        release();
+        release = undefined;
+      }
+      return originalMessageMissing();
+    } catch (error) {
+      return { ok: false, error: classifyError(error, 'IMAP_ORIGINAL_FAILED') };
+    } finally {
+      if (!streamed) finish();
     }
   }
 
@@ -2064,8 +2193,8 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     return messages;
   }
 
-  private nativeSource(): ImapIdSource | undefined {
-    const capabilities = this.imapClient?.capabilities;
+  private nativeSource(client = this.imapClient): ImapIdSource | undefined {
+    const capabilities = client?.capabilities;
     if (capabilities?.has('OBJECTID')) return 'objectid';
     if (capabilities?.has('X-GM-EXT-1')) return 'x-gm-msgid';
     return undefined;

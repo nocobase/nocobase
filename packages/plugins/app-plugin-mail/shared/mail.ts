@@ -8,6 +8,7 @@ export const MAIL_PROVIDER_CAPABILITIES: readonly [
   'drafts',
   'moveMessage',
   'aliases',
+  'downloadOriginal',
 ] = [
   'receive',
   'send',
@@ -18,6 +19,7 @@ export const MAIL_PROVIDER_CAPABILITIES: readonly [
   'drafts',
   'moveMessage',
   'aliases',
+  'downloadOriginal',
 ];
 
 /** Folder relation used for drafts that are owned by Mail rather than a Provider. */
@@ -38,6 +40,7 @@ export interface MailProviderCapabilities {
   readonly drafts?: boolean;
   readonly moveMessage?: boolean;
   readonly aliases?: boolean;
+  readonly downloadOriginal?: boolean;
 }
 
 export const MAIL_LABEL_COLORS = [

@@ -18,6 +18,7 @@ import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
+  cliRoute,
   dataResponse,
   defineApiRoutes,
   describeRoute,
@@ -139,6 +140,7 @@ interface MailRouteOptions {
    */
   readonly errors?: Partial<Record<ApiErrorResponseCode, true | string>>;
   readonly requestBody?: DescribeRouteOptions['requestBody'];
+  readonly cli?: false;
 }
 
 /** The API document entry of one Mail route. */
@@ -158,6 +160,7 @@ function mailRoute(
   }
   return describeRoute({
     tags: ['Mail'],
+    ...(options.cli === false ? cliRoute(false) : {}),
     operationId,
     summary,
     ...(options.description ? { description: options.description } : {}),
@@ -1210,6 +1213,48 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
     routes.get(
+      '/accounts/:accountId/messages/:messageId/original',
+      mailRoute(
+        'mailDownloadOriginalMessage',
+        'Download the original MIME of one message',
+        {
+          '200': {
+            description:
+              'The complete provider-supplied MIME, with an attachment disposition naming the .eml file.',
+            content: {
+              'message/rfc822': {
+                schema: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+        },
+        {
+          cli: false,
+          description:
+            'Requires access to the Mail workspace (page / mail.workspace / access) and ownership of the message and account. The MIME may be at most 40 MiB. A failure after streaming begins interrupts the download.',
+          errors: {
+            400: 'The account is inactive (`MAIL_ACCOUNT_INACTIVE`), requires reauthorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), or the original is unsupported (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`) or too large (`MAIL_ORIGINAL_TOO_LARGE`).',
+            404: 'The account or message could not be found, or the original is no longer available at the provider (`MAIL_ORIGINAL_NOT_FOUND`).',
+            429: providerRateLimited,
+            503: providerUnavailable,
+          },
+        },
+      ),
+      apiValidator('param', AccountMessageParams),
+      async (context) => {
+        const { accountId, messageId } = context.req.valid('param');
+        const response = attachmentResponse(
+          await mail.getOriginalMessage(
+            operationContext(context),
+            accountId,
+            messageId,
+          ),
+        );
+        response.headers.set('cache-control', 'private, no-store');
+        return response;
+      },
+    );
+    routes.get(
       '/accounts/:accountId/messages/:messageId/attachments/:attachmentId',
       mailRoute(
         'mailDownloadMessageAttachment',
@@ -1932,7 +1977,8 @@ function toMailApiError(error: unknown, context: Context): unknown {
       message: error.message,
       ...localized(
         context,
-        imapMoveLocale(error.reason) ??
+        originalMessageLocale(error.reason) ??
+          imapMoveLocale(error.reason) ??
           (error.reason === 'MAIL_MESSAGE_NOT_FOUND'
             ? 'errors.messageNotFound'
             : error.reason === 'MAIL_SYNC_RUN_NOT_FOUND'
@@ -2058,6 +2104,19 @@ function safeContentType(value: string): string {
   return /^[\w!#$&^_.+-]+\/[\w!#$&^_.+-]+(?:\s*;[^\r\n]*)?$/u.test(value)
     ? value
     : 'application/octet-stream';
+}
+
+function originalMessageLocale(reason: string): string | undefined {
+  switch (reason) {
+    case 'MAIL_ORIGINAL_NOT_FOUND':
+      return 'errors.originalNotFound';
+    case 'MAIL_ORIGINAL_TOO_LARGE':
+      return 'errors.originalTooLarge';
+    case 'MAIL_PROVIDER_OPERATION_UNSUPPORTED':
+      return 'errors.operationUnsupported';
+    default:
+      return undefined;
+  }
 }
 
 function imapMoveLocale(reason: string): string | undefined {

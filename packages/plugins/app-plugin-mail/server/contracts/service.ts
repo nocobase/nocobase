@@ -236,6 +236,11 @@ export interface MailService {
     accountId: string,
     messageId: string,
   ): Promise<MailMessage>;
+  getOriginalMessage(
+    context: MailOperationContext,
+    accountId: string,
+    messageId: string,
+  ): Promise<MailAttachmentContent>;
   getMessage(
     context: MailOperationContext,
     accountId: string,

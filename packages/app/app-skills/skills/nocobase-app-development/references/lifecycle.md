@@ -34,7 +34,7 @@ A parent and its children can each have a lifecycle and point at each other by f
 ## Rules that are never broken
 
 1. **The state lives only in the record's own field.** Query, filter and count on it like any other column; keep no copy elsewhere.
-2. **Only the runtime changes the state.** Create with `runtime.create()`, change with `runtime.fire()`. Forms, imports, generic data endpoints, seeds of live data and SQL never write the state field, `statusChangedAt` or `lifecycleVersion`; doing so bypasses guards, the log, effects and the version check and leaves no trace. A data fix is a transition only the system may fire.
+2. **Only the runtime changes the state.** Create with `runtime.create()` and run business transitions with `runtime.fire()`. For administrator suspension, resumption, reset, or restart, use the opt-in [lifecycle management commands](lifecycle-management.md). Forms, imports, generic data endpoints, seeds of live data and SQL never write the state field, `statusChangedAt` or `lifecycleVersion`; doing so bypasses guards, the log, effects and the version check and leaves no trace. A data fix outside the management policy is a transition only the system may fire.
 3. **Anything that leaves the database is an effect.** Never send mail or call an API from a guard, `route`, `set`, `onTransition` or a state hook.
 4. **Fields that must change atomically with the state go in `accept` or `set`,** never in an effect, which runs after commit.
 5. **Pass the effect's `idempotencyKey` to the external system.** An effect runs at least once; the key is what makes it take effect once. The key covers one run: a call that must happen once per business fact is keyed by that fact.

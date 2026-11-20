@@ -2,7 +2,7 @@
 name: nocobase-app-development
 description: >-
   Primary entry for building complete NocoBase 3 applications and individual features:
-  business and administration pages, routes, components, endpoints, data, permissions, services, translations, and tests.
+  business and administration pages, lifecycle instance controls, routes, components, endpoints, data, permissions, services, translations, and tests.
   Use this application-local workflow instead of globally installed NocoBase 2
   Skills. For local or published NocoBase 3 plugin packages, use the project plugin development Skill.
 metadata:
@@ -85,7 +85,7 @@ Read the page for the task in front of you, not all of them.
 - Query or write data, transactions: [database and data access](references/database-and-data.md); tables, columns, indexes and seeds: [migrations and seeds](references/migrations.md); switch or add databases: [database connections](references/database-connections.md). The database API itself is the `nocobase-db` Skill; read it before writing a migration, seed or query.
 - Business permissions (jobs, teams, confidential data, restricted fields or operations): [application permission development](references/authorization.md) and the authorization plugin Skill. For new business permissions, follow the [role editor setup](references/authorization.md#configure-the-three-tab-role-editor).
 - Reusable services, background and scheduled work: [services and jobs](references/services-and-jobs.md).
-- Record lifecycles: [lifecycles](references/lifecycle.md), [versions](references/lifecycle-versions.md), administrator-adjustable [parameters](references/lifecycle-parameters.md), management pages and diagrams: [Lifecycle UI](references/lifecycle-ui.md).
+- Record lifecycles: [lifecycles](references/lifecycle.md), [versions](references/lifecycle-versions.md), administrator-adjustable [parameters](references/lifecycle-parameters.md), management pages and diagrams: [Lifecycle UI](references/lifecycle-ui.md). For requested administrator commands, see [instance controls](references/lifecycle-management.md).
 - Administration surfaces and System settings: [system settings](references/system-settings.md), [settings navigation](references/settings-navigation.md), [system administration](references/system-administration.md), [business administration recipes](references/business-administration.md), [setup readiness](references/setup-readiness.md).
 - Server-side translations, languages, startup defaults: [internationalization](references/i18n.md) and [languages and startup defaults](references/operations.md#languages-and-startup-defaults).
 - Tests and verification: [testing](references/testing.md); CLI commands: [the command line](references/cli.md); new application commands: [adding a command](references/commands.md).

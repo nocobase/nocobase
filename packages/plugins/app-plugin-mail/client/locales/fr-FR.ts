@@ -154,6 +154,8 @@ const frFR: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       'Supprimer définitivement ce message ? Cette action ne peut pas être annulée.',
     download: 'Télécharger',
+    downloadOriginal: 'Télécharger l’original',
+    downloadOriginalFailed: 'Impossible de télécharger le message original.',
     downloadFailed: 'Impossible de télécharger la pièce jointe.',
     markRead: 'Marc a lu',
     markUnread: 'Marquer comme non lu',
