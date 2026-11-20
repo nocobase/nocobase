@@ -1370,8 +1370,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       name: 'Имя',
       renameTitle: 'Переименовать «{{name}}»',
       conventional: {
-        scripts:
-          'Код, который Agent могут запускать. Онлайн-Agent его только читают.',
+        scripts: 'Код, который Agent могут запускать.',
         references: 'Документация, которую Agent читают по необходимости.',
         assets: 'Шаблоны, изображения и другие ресурсы.',
       },

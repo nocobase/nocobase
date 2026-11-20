@@ -1374,8 +1374,7 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       renameTitle: 'Renommer "{{name}}"',
       conventional: {
-        scripts:
-          "Les Agents de code peuvent s'exécuter. Les Agents en ligne le lisent uniquement.",
+        scripts: 'Du code que les Agents peuvent exécuter.',
         references:
           'Les Agents de documentation lisent quand ils en ont besoin.',
         assets: 'Modèles, images et autres ressources.',

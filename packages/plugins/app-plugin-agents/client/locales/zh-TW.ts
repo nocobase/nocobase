@@ -1262,7 +1262,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       name: '名稱',
       renameTitle: '重新命名“{{name}}”',
       conventional: {
-        scripts: '程式碼Agents可以執行。線上Agents只能閱讀。',
+        scripts: 'Agent 可以執行的程式碼。',
         references: '檔案Agents在需要時閱讀。',
         assets: '模板、影像和其他資源。',
       },

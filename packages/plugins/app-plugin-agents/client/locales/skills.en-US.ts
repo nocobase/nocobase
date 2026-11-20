@@ -93,7 +93,7 @@ const skillsEnUS = {
       name: 'Name',
       renameTitle: 'Rename "{{name}}"',
       conventional: {
-        scripts: 'Code agents can run. Online agents only read it.',
+        scripts: 'Code agents can run.',
         references: 'Documentation agents read when they need it.',
         assets: 'Templates, images and other resources.',
       },

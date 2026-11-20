@@ -1366,8 +1366,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       renameTitle: 'Renomear "{{name}}"',
       conventional: {
-        scripts:
-          'Os Agents de código podem ser executados. Os Agents online apenas leem.',
+        scripts: 'Código que os Agents podem executar.',
         references: 'Os Agents de documentação leem quando precisam.',
         assets: 'Modelos, imagens e outros recursos.',
       },

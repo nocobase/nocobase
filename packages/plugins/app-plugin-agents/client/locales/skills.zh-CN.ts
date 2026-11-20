@@ -88,7 +88,7 @@ const skillsZhCN: typeof skillsEnUS = {
       name: '名称',
       renameTitle: '重命名“{{name}}”',
       conventional: {
-        scripts: 'Agent 可以运行的代码；在线 Agent 只读取。',
+        scripts: 'Agent 可以运行的代码。',
         references: 'Agent 需要时读取的文档。',
         assets: '模板、图片等资源。',
       },

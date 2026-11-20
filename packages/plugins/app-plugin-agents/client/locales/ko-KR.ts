@@ -1306,8 +1306,7 @@ const koKR: LocaleResource<typeof enUS> = {
       name: '이름',
       renameTitle: '"{{name}}" 이름 바꾸기',
       conventional: {
-        scripts:
-          'Agent가 실행할 수 있는 코드입니다. 온라인 Agent는 읽기만 합니다.',
+        scripts: 'Agent가 실행할 수 있는 코드입니다.',
         references: 'Agent가 필요할 때 읽는 문서입니다.',
         assets: '템플릿, 이미지 및 기타 리소스입니다.',
       },

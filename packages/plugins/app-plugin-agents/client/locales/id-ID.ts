@@ -1335,7 +1335,7 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       renameTitle: 'Ganti nama "{{name}}"',
       conventional: {
-        scripts: 'Agent kode dapat berjalan. Agent online hanya membacanya.',
+        scripts: 'Kode yang dapat dijalankan Agent.',
         references: 'Agent dokumentasi membaca saat mereka membutuhkannya.',
         assets: 'Templat, gambar, dan sumber daya lainnya.',
       },

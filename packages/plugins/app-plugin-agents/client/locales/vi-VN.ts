@@ -1332,7 +1332,7 @@ const viVN: LocaleResource<typeof enUS> = {
       name: 'Tên',
       renameTitle: 'Đổi tên "{{name}}"',
       conventional: {
-        scripts: 'Agents mã có thể chạy. Agents trực tuyến chỉ đọc nó.',
+        scripts: 'Mã mà Agents có thể chạy.',
         references: 'Agents tài liệu đọc khi họ cần.',
         assets: 'Mẫu, hình ảnh và các tài nguyên khác.',
       },

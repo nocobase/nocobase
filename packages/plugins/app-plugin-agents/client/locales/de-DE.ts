@@ -1372,8 +1372,7 @@ const deDE: LocaleResource<typeof enUS> = {
       name: 'Name',
       renameTitle: '„{{name}}“ umbenennen',
       conventional: {
-        scripts:
-          'Code-Agents können ausgeführt werden. Online-Agents lesen es nur.',
+        scripts: 'Code, den Agents ausführen können.',
         references: 'Dokumentationsagenten lesen, wenn sie es brauchen.',
         assets: 'Vorlagen, Bilder und andere Ressourcen.',
       },

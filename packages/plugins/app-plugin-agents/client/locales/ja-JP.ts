@@ -1334,8 +1334,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       name: '名前',
       renameTitle: '「{{name}}」の名前を変更',
       conventional: {
-        scripts:
-          'コードAgentsを実行できます。オンライン Agentsは読むだけです。',
+        scripts: 'Agent が実行できるコードです。',
         references: '文書Agentsは必要なときに読みます。',
         assets: 'テンプレート、画像、その他のリソース。',
       },
