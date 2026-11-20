@@ -8,11 +8,7 @@ import { usePageBreadcrumb } from '@nocobase/app-client';
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  DownloadIcon,
-  PencilIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { DownloadIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
