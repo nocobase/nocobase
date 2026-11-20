@@ -14,9 +14,9 @@ const zhCN: LocaleResource<typeof enUS> = {
   scope: '作用域',
   message: '消息',
   settingsTitle: '路由示例设置',
-  settingsDescription: '由路由示例插件通过 defineSettingsRoutes() 声明。',
+  settingsDescription: '由路由示例插件通过 defineSystemSettingsRoutes() 声明。',
   settingsBody:
-    '这个设置页来自插件：它用 defineSettingsRoutes() 声明，加入“系统”分类，挂在 /settings 下。',
+    '这个设置页来自插件：它用 defineSystemSettingsRoutes() 声明，加入“系统”分类，挂在 /settings 下。',
 };
 
 export default zhCN;

@@ -33,14 +33,68 @@ export type AppClientRouteAuthz =
 export type AppClientContributionSource = 'application' | 'plugin';
 
 /**
- * Where a route lives. `app` holds the application's own pages, declared with `defineAppRoutes()`. `settings` holds
- * configuration pages, declared with `defineSettingsRoutes()` and mounted under `SETTINGS_ROUTE_PATH`; an application
- * shows them in a navigation of their own. Both share one route tree, authorization, breadcrumbs and component loading.
+ * Where a route lives. `app` holds the application's own pages, declared with `defineAppRoutes()`. `systemSettings`
+ * holds the pages that configure the whole application, declared with `defineSystemSettingsRoutes()` and mounted
+ * under `SYSTEM_SETTINGS_ROUTE_PATH`. `personalSettings` holds the pages where each signed-in person configures their
+ * own account, declared with `definePersonalSettingsRoutes()` and mounted under `PERSONAL_SETTINGS_ROUTE_PATH`. An
+ * application shows each settings surface in a navigation of its own. All share one route tree, authorization,
+ * breadcrumbs and component loading.
  */
-export type AppClientRouteSurface = 'app' | 'settings';
+export type AppClientRouteSurface = 'app' | AppClientSettingsRouteSurface;
 
-/** The path every settings page is mounted under. */
-export const SETTINGS_ROUTE_PATH = '/settings';
+/** The two settings surfaces. */
+export type AppClientSettingsRouteSurface =
+  'systemSettings' | 'personalSettings';
+
+/** The path every system settings page is mounted under. */
+export const SYSTEM_SETTINGS_ROUTE_PATH = '/settings';
+
+/** The path every personal settings page is mounted under. */
+export const PERSONAL_SETTINGS_ROUTE_PATH = '/me';
+
+interface SettingsSurfaceSpec {
+  readonly path: string;
+  readonly define: string;
+  readonly label: string;
+  /**
+   * Settings categories share one namespace per surface across packages. The prefix keeps them apart from
+   * package-scoped groups, whose ids start with a package name, and from the other surface's categories.
+   */
+  readonly categoryPrefix: string;
+}
+
+const SETTINGS_SURFACES: Readonly<
+  Record<AppClientSettingsRouteSurface, SettingsSurfaceSpec>
+> = Object.freeze({
+  systemSettings: Object.freeze({
+    path: SYSTEM_SETTINGS_ROUTE_PATH,
+    define: 'defineSystemSettingsRoutes()',
+    label: 'system settings',
+    categoryPrefix: 'system-settings:',
+  }),
+  personalSettings: Object.freeze({
+    path: PERSONAL_SETTINGS_ROUTE_PATH,
+    define: 'definePersonalSettingsRoutes()',
+    label: 'personal settings',
+    categoryPrefix: 'personal-settings:',
+  }),
+});
+
+function isSettingsSurface(
+  surface: unknown,
+): surface is AppClientSettingsRouteSurface {
+  return surface === 'systemSettings' || surface === 'personalSettings';
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function defineFunctionOf(surface: AppClientRouteSurface): string {
+  return surface === 'app'
+    ? 'defineAppRoutes()'
+    : SETTINGS_SURFACES[surface].define;
+}
 
 export type AppClientReactProviderLayer = 'root' | 'application' | 'extension';
 
@@ -80,8 +134,8 @@ export interface AppClientRoutePresentation {
 export interface AppClientRoutePageDefinition {
   /**
    * Group name in this package, or packageName:name for another package; contribution roots only. In
-   * `defineSettingsRoutes()` a bare name names a settings category instead: a group declared at the root of any
-   * settings contribution, whichever package declared it.
+   * `defineSystemSettingsRoutes()` and `definePersonalSettingsRoutes()` a bare name names a settings category instead: a
+   * group declared at the root of any contribution of the same settings surface, whichever package declared it.
    */
   readonly parent?: string;
   readonly name: string;
@@ -97,7 +151,7 @@ export interface AppClientRoutePageDefinition {
 }
 
 export interface AppClientRouteGroupDefinition {
-  /** As on a page: a group in this package, packageName:name, or in `defineSettingsRoutes()` a settings category. */
+  /** As on a page: a group in this package, packageName:name, or in a settings contribution a settings category. */
   readonly parent?: string;
   readonly name: string;
   readonly path?: string;
@@ -125,7 +179,7 @@ export interface AppClientRegisteredRoute {
   readonly id: string;
   readonly packageName: string;
   readonly source: AppClientContributionSource;
-  /** `settings` on every route declared with `defineSettingsRoutes()`; omitted on application routes. */
+  /** The settings surface of every route declared with a settings define function; omitted on application routes. */
   readonly surface?: AppClientRouteSurface;
 }
 
@@ -180,13 +234,20 @@ export interface AppClientAppRoutesContribution {
   readonly routes: readonly AppClientRouteDefinition[];
 }
 
-export interface AppClientSettingsRoutesContribution {
-  readonly parent: 'settings';
+export interface AppClientSystemSettingsRoutesContribution {
+  readonly parent: 'systemSettings';
+  readonly routes: readonly AppClientRouteDefinition[];
+}
+
+export interface AppClientPersonalSettingsRoutesContribution {
+  readonly parent: 'personalSettings';
   readonly routes: readonly AppClientRouteDefinition[];
 }
 
 export type AppClientRouteContribution =
-  AppClientAppRoutesContribution | AppClientSettingsRoutesContribution;
+  | AppClientAppRoutesContribution
+  | AppClientSystemSettingsRoutesContribution
+  | AppClientPersonalSettingsRoutesContribution;
 
 export interface AppClientRouteComponentOverrideDefinition {
   readonly routeId: string;
@@ -400,30 +461,54 @@ export function defineAppRoutes(
 }
 
 /**
- * Declares settings pages: the same definitions as `defineAppRoutes()`, mounted under `/settings` and marked with the
- * `settings` surface, mainly so a plugin can contribute its configuration pages without knowing how the application
- * arranges them.
+ * Declares system settings pages, where administrators configure the whole application: the same definitions as
+ * `defineAppRoutes()`, mounted under `/settings` and marked with the `systemSettings` surface, mainly so a plugin can
+ * contribute its configuration pages without knowing how the application arranges them. A page that declares no
+ * `authz` is open only to unrestricted identities, so declare one to let other roles in.
  *
- * A group declared at the root of a settings contribution is a category, shared by every package: a page or group
- * names it with a bare `parent`, such as `parent: 'system'`, and the application declares the categories it offers.
- * A category's path, when it has one, is part of its pages' paths; the usual categories declare none, so moving a page
- * between categories keeps its URL. `packageName:name` still names a group of one package, such as a module whose
- * pages are tabs. Routes of one surface cannot nest under a group of the other.
+ * A group declared at the root of a settings contribution is a category, shared by every package of the same surface:
+ * a page or group names it with a bare `parent`, such as `parent: 'system'`, and the application declares the
+ * categories it offers. A category's path, when it has one, is part of its pages' paths; the usual categories declare
+ * none, so moving a page between categories keeps its URL. `packageName:name` still names a group of one package, such
+ * as a module whose pages are tabs. Routes of one surface cannot nest under a group of another.
  */
-export function defineSettingsRoutes(
+export function defineSystemSettingsRoutes(
   routes: readonly AppClientRouteDefinition[],
-): AppClientSettingsRoutesContribution {
+): AppClientSystemSettingsRoutesContribution {
   return Object.freeze({
-    parent: 'settings',
+    parent: 'systemSettings',
     routes: freezeNavigationRoutes(routes),
   });
 }
 
-/** Whether a registered route belongs to the settings surface. */
-export function isSettingsRoute(
+/**
+ * Declares personal settings pages, where each signed-in person configures their own account: the same definitions
+ * and category rules as `defineSystemSettingsRoutes()`, mounted under `/me` and marked with the `personalSettings`
+ * surface. A page that declares neither `auth` nor `authz` is open to every signed-in person (`auth: 'required'`,
+ * `authz: 'skip'`), so it stays out of role permissions; its data belongs to the current person, whom the server takes
+ * from the session.
+ */
+export function definePersonalSettingsRoutes(
+  routes: readonly AppClientRouteDefinition[],
+): AppClientPersonalSettingsRoutesContribution {
+  return Object.freeze({
+    parent: 'personalSettings',
+    routes: freezeNavigationRoutes(routes),
+  });
+}
+
+/** Whether a registered route belongs to the system settings surface. */
+export function isSystemSettingsRoute(
   route: Pick<AppClientRegisteredRoute, 'surface'>,
 ): boolean {
-  return route.surface === 'settings';
+  return route.surface === 'systemSettings';
+}
+
+/** Whether a registered route belongs to the personal settings surface. */
+export function isPersonalSettingsRoute(
+  route: Pick<AppClientRegisteredRoute, 'surface'>,
+): boolean {
+  return route.surface === 'personalSettings';
 }
 
 function freezeNavigationRoutes(
@@ -529,9 +614,9 @@ export function resolveAppClientContributions(
     const routeContributions = normalizeRouteContributions(contribution.routes);
     for (const routeContribution of routeContributions) {
       const surface = routeContribution.parent as unknown;
-      if (surface !== 'app' && surface !== 'settings') {
+      if (surface !== 'app' && !isSettingsSurface(surface)) {
         throw new Error(
-          `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes() or defineSettingsRoutes().`,
+          `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().`,
         );
       }
       inputs.push({
@@ -565,14 +650,16 @@ export function resolveAppClientContributions(
       roots.filter((node) => node.surface === 'app'),
       { parentPath: '', surface: 'app', ids: routeIds, claimed: claimedPaths },
     ),
-    ...resolveRouteTree(
-      roots.filter((node) => node.surface === 'settings'),
-      {
-        parentPath: SETTINGS_ROUTE_PATH,
-        surface: 'settings',
-        ids: routeIds,
-        claimed: claimedPaths,
-      },
+    ...(['systemSettings', 'personalSettings'] as const).flatMap((surface) =>
+      resolveRouteTree(
+        roots.filter((node) => node.surface === surface),
+        {
+          parentPath: SETTINGS_SURFACES[surface].path,
+          surface,
+          ids: routeIds,
+          claimed: claimedPaths,
+        },
+      ),
     ),
   ]);
 
@@ -597,16 +684,10 @@ interface RouteNode {
   children?: RouteNode[];
 }
 
-/**
- * Settings categories share one namespace across packages. The prefix keeps them apart from package-scoped groups,
- * whose ids start with a package name; only an unscoped package named `settings` could collide.
- */
-const SETTINGS_CATEGORY_PREFIX = 'settings:';
-
 function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   const roots: RouteNode[] = [];
   const groups = new Map<string, RouteNode>();
-  const pending: { node: RouteNode; parent: string }[] = [];
+  const pending: { node: RouteNode; parent: string; category?: string }[] = [];
   const all: RouteNode[] = [];
   const groupId = (name: string, packageName: string): string =>
     `${packageName}:${normalizeContributionName(name, packageName, 'route')}`;
@@ -631,17 +712,17 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
       all.push(node);
       if (!definition.componentLoader) {
         const category =
-          input.surface === 'settings' &&
+          isSettingsSurface(input.surface) &&
           !nested &&
           definition.parent === undefined;
         const id = category
-          ? `${SETTINGS_CATEGORY_PREFIX}${normalizeContributionName(definition.name, input.packageName, 'route')}`
+          ? `${SETTINGS_SURFACES[input.surface as AppClientSettingsRouteSurface].categoryPrefix}${normalizeContributionName(definition.name, input.packageName, 'route')}`
           : groupId(definition.name, input.packageName);
         const previous = groups.get(id);
         if (previous)
           throw new Error(
             category
-              ? `Settings category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
+              ? `${capitalize(SETTINGS_SURFACES[input.surface as AppClientSettingsRouteSurface].label)} category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
               : `Client route group "${id}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`,
           );
         groups.set(id, node);
@@ -657,24 +738,28 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
           node,
           parent: parent.includes(':')
             ? parent
-            : input.surface === 'settings'
-              ? `${SETTINGS_CATEGORY_PREFIX}${parent}`
+            : isSettingsSurface(input.surface)
+              ? `${SETTINGS_SURFACES[input.surface].categoryPrefix}${parent}`
               : groupId(parent, input.packageName),
+          category:
+            !parent.includes(':') && isSettingsSurface(input.surface)
+              ? parent
+              : undefined,
         });
       }
     }
   }
-  for (const { node, parent } of pending) {
+  for (const { node, parent, category } of pending) {
     const target = groups.get(parent);
     if (!target)
       throw new Error(
-        parent.startsWith(SETTINGS_CATEGORY_PREFIX)
-          ? `settings route "${node.definition.name}" from "${node.packageName}" references missing settings category "${parent.slice(SETTINGS_CATEGORY_PREFIX.length)}"; the application declares its categories with defineSettingsRoutes().`
+        category !== undefined && isSettingsSurface(node.surface)
+          ? `${SETTINGS_SURFACES[node.surface].label} route "${node.definition.name}" from "${node.packageName}" references missing ${SETTINGS_SURFACES[node.surface].label} category "${category}"; the application declares its categories with ${SETTINGS_SURFACES[node.surface].define}.`
           : `${node.surface} route "${node.definition.name}" from "${node.packageName}" references missing group "${parent}" (the target must be a group, not a page).`,
       );
     if (target.surface !== node.surface)
       throw new Error(
-        `${node.surface} route "${node.definition.name}" from "${node.packageName}" cannot join ${target.surface} group "${parent}"; declare it with ${target.surface === 'settings' ? 'defineSettingsRoutes()' : 'defineAppRoutes()'}.`,
+        `${node.surface} route "${node.definition.name}" from "${node.packageName}" cannot join ${target.surface} group "${parent}"; declare it with ${defineFunctionOf(target.surface)}.`,
       );
     if (!target.children)
       throw new Error(`app group "${parent}" must declare children.`);
@@ -1028,7 +1113,7 @@ function resolveRouteTree(
       auth,
       packageName,
       source,
-      ...(context.surface === 'settings' ? { surface: context.surface } : {}),
+      ...(context.surface !== 'app' ? { surface: context.surface } : {}),
       ...(breadcrumb ? { breadcrumb } : {}),
       ...(navigation ? { navigation } : {}),
       ...(presentation ? { presentation } : {}),
@@ -1096,6 +1181,9 @@ function normalizeRouteAuthz(
   }
   if (!isPage) return 'skip';
   if (context.ancestorAuthz !== undefined) return context.ancestorAuthz;
+  // Personal settings belong to whoever is signed in, so an omission there opens the page to every signed-in person.
+  if (context.surface === 'personalSettings' && auth === 'required')
+    return 'skip';
   // An omission never stops the application: a protected page stays closed to all but unrestricted identities.
   const fallback = auth !== 'required' ? 'skip' : 'unrestricted';
   if (isDevelopment())

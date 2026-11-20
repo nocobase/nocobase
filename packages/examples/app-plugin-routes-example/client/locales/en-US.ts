@@ -13,7 +13,7 @@ export default {
   message: 'Message',
   settingsTitle: 'Routes example settings',
   settingsDescription:
-    'Declared by the Routes example plugin with defineSettingsRoutes().',
+    'Declared by the Routes example plugin with defineSystemSettingsRoutes().',
   settingsBody:
-    'This settings page comes from a plugin. It is declared with defineSettingsRoutes(), joins the System category and is mounted under /settings.',
+    'This settings page comes from a plugin. It is declared with defineSystemSettingsRoutes(), joins the System category and is mounted under /settings.',
 };

@@ -14,9 +14,9 @@ const zhTW: LocaleResource<typeof enUS> = {
   scope: '範圍',
   message: '留言',
   settingsTitle: '路由範例設定',
-  settingsDescription: '由路由範例外掛透過 defineSettingsRoutes() 宣告。',
+  settingsDescription: '由路由範例外掛透過 defineSystemSettingsRoutes() 宣告。',
   settingsBody:
-    '這個設定頁來自外掛：它以 defineSettingsRoutes() 宣告，加入「系統」分類，掛在 /settings 下。',
+    '這個設定頁來自外掛：它以 defineSystemSettingsRoutes() 宣告，加入「系統」分類，掛在 /settings 下。',
 };
 
 export default zhTW;

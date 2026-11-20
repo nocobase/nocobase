@@ -716,7 +716,7 @@ describe('route contributions', () => {
       routes: { parent: 'dev', routes: [] },
     } as unknown as Parameters<typeof resolveAppClientContributions>[0][0];
     expect(() => resolveAppClientContributions([contribution])).toThrow(
-      'Plugin "@nocobase/app-plugin-legacy" contributed routes to unsupported parent "dev"; declare them with defineAppRoutes() or defineSettingsRoutes().',
+      'Plugin "@nocobase/app-plugin-legacy" contributed routes to unsupported parent "dev"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().',
     );
   });
 });

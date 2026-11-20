@@ -36,7 +36,7 @@ describe('Examples Foundation integration', () => {
       ({ route }) => route.name === 'capabilityGuide',
     );
     expect(guide?.target.path).toBe('/settings/capabilities');
-    expect(guide?.route.surface).toBe('settings');
+    expect(guide?.route.surface).toBe('systemSettings');
     expect(guide?.route.auth).toBe('required');
     expect(guide?.route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
     expect(
@@ -162,7 +162,7 @@ it('offers one Features and extensions access control under system configuration
       ?.children?.find(({ name }) => name === 'capabilityGuideEntry'),
   ).toMatchObject({
     path: '/settings/capabilities/:entryId',
-    surface: 'settings',
+    surface: 'systemSettings',
     authz: CAPABILITY_GUIDE_ACCESS,
   });
 });

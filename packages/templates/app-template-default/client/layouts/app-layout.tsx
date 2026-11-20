@@ -21,13 +21,16 @@ import { NavigationMenu } from './components/navigation-menu.js';
 import { HeaderActions } from './components/header-actions.js';
 import { AppSidebarFooter } from './components/sidebar-footer.js';
 import { SettingsBack } from './components/settings-back.js';
+import { PersonalSettingsIdentity } from './components/personal-settings-identity.js';
 import {
+  buildPersonalSettingsNavigation,
   buildSettingsNavigation,
   useRouteNavigation,
   selectedNavigationId,
 } from '../routing/route-navigation.js';
 import { SETTINGS_HOME } from '#lib/navigation-transform';
 import {
+  isPersonalSettingsPath,
   isSettingsPath,
   useRememberSettingsReturn,
   withSettingsShell,
@@ -50,13 +53,19 @@ export function AppLayout({
   const { items, denied, loading } = useRouteNavigation(routes);
   const access = useMemo(() => ({ denied, loading }), [denied, loading]);
   useRememberSettingsReturn();
-  // Settings pages replace the application's menu with their own, the way back first; elsewhere the single Settings
-  // entry stands apart at the bottom of the menu.
-  const inSettings = isSettingsPath(pathname);
+  // System and personal settings pages replace the application's menu with their own, the way back first; elsewhere
+  // the single System settings entry stands apart at the bottom of the menu, and personal settings open from the
+  // account menu.
+  const inPersonalSettings = isPersonalSettingsPath(pathname);
+  const inSettings = isSettingsPath(pathname) || inPersonalSettings;
   const settingsItems = useMemo(
     () =>
-      inSettings && !loading ? buildSettingsNavigation(routes, denied) : [],
-    [inSettings, loading, routes, denied],
+      !inSettings || loading
+        ? []
+        : inPersonalSettings
+          ? buildPersonalSettingsNavigation(routes, denied)
+          : buildSettingsNavigation(routes, denied),
+    [inSettings, inPersonalSettings, loading, routes, denied],
   );
   const settingsEntry = items.filter(
     (item) => item.route.name === SETTINGS_HOME,
@@ -70,9 +79,11 @@ export function AppLayout({
     denied,
     inSettings ? settingsItems : undefined,
   );
-  const navigationLabel = inSettings
-    ? t('settings.navigation', { defaultValue: 'Settings navigation' })
-    : t('navigation.label', { defaultValue: 'Application navigation' });
+  const navigationLabel = inPersonalSettings
+    ? t('settings.personal.navigation')
+    : inSettings
+      ? t('settings.navigation', { defaultValue: 'Settings navigation' })
+      : t('navigation.label', { defaultValue: 'Application navigation' });
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
@@ -81,6 +92,7 @@ export function AppLayout({
         <AppSidebarProvider>
           <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
             {inSettings ? <SettingsBack /> : null}
+            {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
             <NavigationMenu
               items={menuItems}
               label={navigationLabel}

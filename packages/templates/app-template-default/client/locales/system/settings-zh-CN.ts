@@ -106,6 +106,21 @@ const settings = {
   title: '系统设置',
   back: '返回',
   navigation: '设置导航',
+  personal: {
+    title: '个人设置',
+    navigation: '个人设置导航',
+    empty: '暂时没有个人设置。',
+    categories: {
+      account: '账号',
+      preferences: '偏好',
+      connections: '连接',
+    },
+    appearance: {
+      title: '语言与外观',
+      description:
+        '与账号菜单中的“语言”和“主题”是同一设置，只对你在这个浏览器中生效。',
+    },
+  },
   home: {
     description: '账号、权限、业务配置和系统能力都在这里。',
     empty: '暂时没有你可以管理的设置。',

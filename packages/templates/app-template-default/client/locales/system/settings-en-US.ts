@@ -117,6 +117,21 @@ const settings = {
   title: 'System settings',
   back: 'Back',
   navigation: 'Settings navigation',
+  personal: {
+    title: 'Personal settings',
+    navigation: 'Personal settings navigation',
+    empty: 'There are no personal settings yet.',
+    categories: {
+      account: 'Account',
+      preferences: 'Preferences',
+      connections: 'Connections',
+    },
+    appearance: {
+      title: 'Language and appearance',
+      description:
+        'The same choices as Language and Theme in the account menu; they apply to you in this browser.',
+    },
+  },
   home: {
     description:
       'Accounts, permissions, business configuration and system capabilities are all here.',

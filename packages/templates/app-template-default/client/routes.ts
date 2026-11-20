@@ -3,6 +3,7 @@ import { createAppClientConfig } from '@nocobase/app-client';
 import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import { Home } from 'lucide-react';
+import personalSettingsRoutes from './pages/me/routes.js';
 import settingsShellRoutes from './pages/settings/shell-routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import {
@@ -81,6 +82,7 @@ export function createApplicationRoutes(
     [
       appRoutes,
       settingsShellRoutes,
+      personalSettingsRoutes,
       systemSettingsRoutes,
       databaseExplorerRoutes,
     ],

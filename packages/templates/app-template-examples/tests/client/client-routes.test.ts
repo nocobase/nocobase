@@ -377,6 +377,9 @@ describe('app client routes', () => {
       // A plugin's settings page without its own `authz` admits unrestricted administrators only.
       { name: 'exampleSettings', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
+      // Personal settings belong to whoever is signed in, so they stay out of page authorization.
+      { name: 'personalSettingsHome', authorizedAs: null },
+      { name: 'personalAppearance', authorizedAs: null },
     ]);
   });
 });
@@ -399,7 +402,7 @@ function resolveRoutes() {
         })),
       })),
     },
-    // A plugin's own settings page, declared with `defineSettingsRoutes()`.
+    // A plugin's own settings page, declared with `defineSystemSettingsRoutes()`.
     {
       packageName: '@nocobase/app-plugin-routes-example',
       routes: routesExampleSettings,

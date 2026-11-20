@@ -17,9 +17,9 @@ const deDE: LocaleResource<typeof enUS> = {
   message: 'Nachricht',
   settingsTitle: 'Einstellungen des Routenbeispiels',
   settingsDescription:
-    'Vom Routenbeispiel-Plugin mit defineSettingsRoutes() deklariert.',
+    'Vom Routenbeispiel-Plugin mit defineSystemSettingsRoutes() deklariert.',
   settingsBody:
-    'Diese Einstellungsseite stammt aus einem Plugin. Sie wird mit defineSettingsRoutes() deklariert, gehört zur Kategorie „System“ und liegt unter /settings.',
+    'Diese Einstellungsseite stammt aus einem Plugin. Sie wird mit defineSystemSettingsRoutes() deklariert, gehört zur Kategorie „System“ und liegt unter /settings.',
 };
 
 export default deDE;

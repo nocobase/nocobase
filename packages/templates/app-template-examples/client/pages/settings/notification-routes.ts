@@ -1,7 +1,7 @@
 import { Bell, FileText } from 'lucide-react';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
+  defineSystemSettingsRoutes,
   type AppClientRouteContribution,
   type AppClientRouteDefinition,
 } from '@nocobase/app-client/plugins';
@@ -37,7 +37,7 @@ export function includeNotificationTemplateRoutes(
 ): readonly AppClientRouteContribution[] {
   // Only settings pages are considered: their paths are relative to `/settings`.
   const roots = contributions.flatMap((contribution) =>
-    contribution.parent === 'settings' ? contribution.routes : [],
+    contribution.parent === 'systemSettings' ? contribution.routes : [],
   );
   const nodes = new Map<
     string,
@@ -87,8 +87,8 @@ export function includeNotificationTemplateRoutes(
             : {}),
       }));
     return contributions.map((contribution) =>
-      contribution.parent === 'settings'
-        ? defineSettingsRoutes(add(contribution.routes))
+      contribution.parent === 'systemSettings'
+        ? defineSystemSettingsRoutes(add(contribution.routes))
         : defineAppRoutes(add(contribution.routes)),
     );
   }
@@ -108,6 +108,8 @@ export function includeNotificationTemplateRoutes(
   // System category the module stands as a category of its own.
   return [
     ...contributions,
-    defineSettingsRoutes([nodes.has(parent) ? { ...module, parent } : module]),
+    defineSystemSettingsRoutes([
+      nodes.has(parent) ? { ...module, parent } : module,
+    ]),
   ];
 }
