@@ -200,3 +200,76 @@ it('keeps the condition limit explained and restores focus when removing a row a
   await userEvent.click(screen.getAllByRole('button', { name: 'Remove' })[0]!);
   expect(screen.getByRole('button', { name: 'Add condition' })).toHaveFocus();
 });
+it('reads stored conditions beside the button, also while it is disabled', () => {
+  const { rerender } = render(
+    <PermissionFilter
+      open={false}
+      onOpenChange={() => undefined}
+      value={{
+        kind: 'condition',
+        path: ['amountCents'],
+        operator: '$lt',
+        value: 50,
+      }}
+      fields={fields}
+      labels={labels}
+      disabled
+      onApply={() => undefined}
+    />,
+  );
+  expect(screen.getByRole('button', { name: 'Conditions' })).toBeDisabled();
+  expect(screen.getByText('Amount (cents) Less than 50')).toBeInTheDocument();
+  rerender(
+    <PermissionFilter
+      open={false}
+      onOpenChange={() => undefined}
+      value={{
+        kind: 'group',
+        logic: 'or',
+        items: [
+          {
+            kind: 'condition',
+            path: ['department'],
+            operator: '$eq',
+            value: 'Sales',
+          },
+          { kind: 'condition', path: ['amountCents'], operator: '$empty' },
+        ],
+      }}
+      fields={fields}
+      labels={labels}
+      onApply={() => undefined}
+    />,
+  );
+  expect(
+    screen.getByText(
+      'Any condition: Department Equals Sales; Amount (cents) Empty',
+    ),
+  ).toBeInTheDocument();
+  rerender(
+    <PermissionFilter
+      open={false}
+      onOpenChange={() => undefined}
+      value={{ $and: [{ amountCents: { $lt: 50 } }] }}
+      fields={fields}
+      labels={labels}
+      onApply={() => undefined}
+    />,
+  );
+  expect(
+    screen.getByText('Advanced conditions are preserved'),
+  ).toBeInTheDocument();
+  rerender(
+    <PermissionFilter
+      open={false}
+      onOpenChange={() => undefined}
+      value={undefined}
+      fields={fields}
+      labels={labels}
+      onApply={() => undefined}
+    />,
+  );
+  expect(
+    document.querySelector('[data-slot="permission-filter-summary"]'),
+  ).toBeNull();
+});
