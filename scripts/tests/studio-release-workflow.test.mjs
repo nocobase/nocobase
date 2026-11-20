@@ -173,3 +173,206 @@ echo '{"ok":true}'
   assert.equal(old.output, 'result=skipped\n');
   assert.deepEqual(old.calls, []);
 });
+
+const installer = readFileSync(
+  new URL('../../.github/workflows/v3-studio-installer.yml', import.meta.url),
+  'utf8',
+);
+function job(source, name) {
+  const start = source.indexOf(`\n  ${name}:\n`);
+  assert.notEqual(start, -1, name);
+  const end = source.slice(start + 1).search(/\n  [a-z][\w-]*:\n/u);
+  return source.slice(start + 1, end < 0 ? undefined : start + 1 + end);
+}
+function script(block) {
+  return block
+    .split('        run: |\n')[1]
+    .split('\n')
+    .filter((line) => line === '' || line.startsWith('          '))
+    .map((line) => line.slice(10))
+    .join('\n');
+}
+
+test('the installer is uploaded only by a real release that moves studio-ce:latest', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const source = script(step('Decide the installer upload'));
+  const decide = (dry, ceTags, enabled) => {
+    const output = join(
+      mkdtempSync(join(tmpdir(), 'studio-installer-')),
+      'out',
+    );
+    const result = spawnSync('bash', ['-e', '-c', source], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        DRY_RUN: dry,
+        CE_TAGS: ceTags,
+        UPLOAD_ENABLED: enabled,
+        GITHUB_OUTPUT: output,
+      },
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const lines = readFileSync(output, 'utf8').trim().split('\n');
+    return {
+      upload: lines[0].replace('upload=', ''),
+      reason: lines[1].replace('reason=', ''),
+    };
+  };
+  const moved = '1.0.0\nlatest';
+  assert.equal(decide('false', moved, 'true').upload, 'true');
+  assert.equal(
+    decide('false', '1.0.0-beta.9\nbeta\nlatest', 'true').upload,
+    'true',
+  );
+  const kept = decide('false', '1.0.0-beta.9\nbeta', 'true');
+  assert.equal(kept.upload, 'false');
+  assert.match(kept.reason, /leaves studio-ce:latest alone/u);
+  // `latest-foo` or a version containing "latest" is not the latest tag.
+  assert.equal(decide('false', '1.0.0-latest.1\nbeta', 'true').upload, 'false');
+  const off = decide('false', moved, '');
+  assert.equal(off.upload, 'false');
+  assert.match(off.reason, /GET_STUDIO_UPLOAD_ENABLED is not true/u);
+  const dry = decide('true', moved, 'true');
+  assert.equal(dry.upload, 'false');
+  assert.match(dry.reason, /dry run \(a release would upload it/u);
+  assert.equal(
+    decide('true', '1.0.0-beta.9\nbeta', 'true').reason,
+    'not uploaded in a dry run',
+  );
+
+  // The reason reaches both summaries.
+  assert.match(step('Summary'), /\| Installer \| \$\{INSTALLER_REASON\} \|/u);
+  assert.match(
+    workflow,
+    /One-command installer at https:\/\/get\.nocobase\.com\/studio: \$\{INSTALLER_REASON\}/u,
+  );
+});
+
+test('the installer runs beside the release and never holds it back', () => {
+  const caller = job(workflow, 'installer');
+  assert.match(caller, /needs: \[prepare, public-ce\]/u);
+  assert.match(
+    caller,
+    /if: \$\{\{ !inputs\.dry_run && needs\.prepare\.outputs\.installer_upload == 'true' \}\}/u,
+  );
+  assert.match(
+    caller,
+    /uses: \.\/\.github\/workflows\/v3-studio-installer\.yml/u,
+  );
+  assert.match(caller, /ref: \$\{\{ needs\.prepare\.outputs\.commit \}\}/u);
+  assert.match(caller, /upload: true/u);
+  assert.match(caller, /skip_if_missing: true/u);
+  for (const secret of [
+    'NOCOBASE_APP_PRIVATE_KEY',
+    'DOCS_ALI_OSS_ACCESS_KEY_ID',
+    'DOCS_ALI_OSS_ACCESS_KEY_SECRET',
+  ])
+    assert.match(
+      caller,
+      new RegExp(`${secret}: \\$\\{\\{ secrets\\.${secret} \\}\\}`, 'u'),
+    );
+  // Nothing else waits for it, so its failure cannot skip the tag, the notes or the bump.
+  for (const name of ['release', 'notify-failure'])
+    assert.doesNotMatch(
+      job(workflow, name).split('\n    steps:')[0],
+      /\binstaller\b/u,
+      name,
+    );
+  const notice = job(workflow, 'notify-installer-failure');
+  assert.match(notice, /needs: \[prepare, installer\]/u);
+  assert.match(notice, /needs\.installer\.result == 'failure'/u);
+  assert.match(notice, /needs\.installer\.result == 'cancelled'/u);
+  assert.match(notice, /!inputs\.dry_run/u);
+});
+
+test('the installer workflow takes both triggers and keeps its upload gate', () => {
+  const on = installer.split('\non:\n')[1].split('\npermissions:')[0];
+  assert.match(on, /^  workflow_call:\n/mu);
+  assert.match(on, /^  workflow_dispatch:\n/mu);
+  assert.match(
+    job(installer, 'upload'),
+    /if: \$\{\{ inputs\.upload && vars\.GET_STUDIO_UPLOAD_ENABLED == 'true' \}\}/u,
+  );
+  assert.match(installer, /cancel-in-progress: \$\{\{ !inputs\.upload \}\}/u);
+  // ossutil reads the credentials under its own names, in the upload step alone.
+  const upload = installer
+    .split('      - name: Upload to OSS\n')[1]
+    .split('\n      - name:')[0];
+  assert.match(
+    upload,
+    /OSS_ACCESS_KEY_ID: \$\{\{ secrets\.DOCS_ALI_OSS_ACCESS_KEY_ID \}\}/u,
+  );
+  assert.match(
+    upload,
+    /OSS_ACCESS_KEY_SECRET: \$\{\{ secrets\.DOCS_ALI_OSS_ACCESS_KEY_SECRET \}\}/u,
+  );
+  assert.match(upload, /--content-type 'text\/plain; charset=utf-8'/u);
+  assert.match(upload, /--cache-control 'max-age=300'/u);
+  assert.doesNotMatch(installer, /GET_STUDIO_OSS_ACCESS_KEY/u);
+  for (const name of ['test', 'build', 'upload'])
+    assert.ok(job(installer, name).includes('needs:'), name);
+  assert.match(
+    job(installer, 'test'),
+    /if: \$\{\{ needs\.prepare\.outputs\.present == 'true' \}\}/u,
+  );
+});
+
+test('a commit without the installer skips only when the caller allows it', async () => {
+  const { chmodSync, mkdtempSync, mkdirSync, writeFileSync } =
+    await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const block = installer
+    .split('      - name: Check that the commit has the installer\n')[1]
+    .split('\n      - name:')[0];
+  const source = script(block);
+  const run = (gh, skip) => {
+    const temp = mkdtempSync(join(tmpdir(), 'studio-installer-'));
+    const bin = join(temp, 'bin');
+    mkdirSync(bin);
+    writeFileSync(join(bin, 'gh'), `#!/usr/bin/env bash\n${gh}\n`);
+    chmodSync(join(bin, 'gh'), 0o755);
+    const output = join(temp, 'output');
+    const summary = join(temp, 'summary');
+    writeFileSync(output, '');
+    writeFileSync(summary, '');
+    const result = spawnSync('bash', ['-e', '-c', source], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        RUNNER_TEMP: temp,
+        GITHUB_OUTPUT: output,
+        GITHUB_STEP_SUMMARY: summary,
+        COMMIT: 'a'.repeat(40),
+        REF: 'main',
+        SKIP_IF_MISSING: skip,
+      },
+    });
+    return {
+      status: result.status,
+      stdout: result.stdout,
+      output: readFileSync(output, 'utf8'),
+      summary: readFileSync(summary, 'utf8'),
+    };
+  };
+  const present = run('exit 0', 'false');
+  assert.equal(present.status, 0);
+  assert.equal(present.output, 'present=true\n');
+  const missing = 'echo "gh: Not Found (HTTP 404)" >&2; exit 1';
+  const skipped = run(missing, 'true');
+  assert.equal(skipped.status, 0);
+  assert.equal(skipped.output, 'present=false\n');
+  assert.match(skipped.stdout, /::notice::.*has no scripts\/get-studio/u);
+  assert.match(skipped.summary, /Skipped:/u);
+  const required = run(missing, 'false');
+  assert.equal(required.status, 1);
+  assert.match(required.stdout, /::error::.*has no scripts\/get-studio/u);
+  // Any other API error is a real failure, even for the release.
+  assert.equal(
+    run('echo "gh: Bad credentials (HTTP 401)" >&2; exit 1', 'true').status,
+    1,
+  );
+});

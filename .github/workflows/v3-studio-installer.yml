@@ -1,0 +1,433 @@
+name: V3 Studio Installer
+run-name: studio-installer:${{ inputs.ref }}${{ inputs.upload && ' (upload)' || '' }}
+
+# Tests the one-command installer of NocoBase Studio community edition, scripts/get-studio in the private nocobase/studio
+# repository, and builds its bundle, a single install.sh, from any branch, tag or commit. It runs here because
+# nocobase/studio has no Actions budget; pull requests of nocobase/studio do not start it. It has two callers:
+#
+# - V3 Studio Release (v3-studio-release.yml) calls it with `upload: true` and the released commit, once a release has
+#   moved studio-ce's `latest` tag, so that the installer served to everyone is the one of the Studio it installs. See
+#   the `installer` job there for when it does and does not.
+# - A person dispatches it by hand from the default branch, to test and build any ref, or to upload a fix between
+#   releases:
+#
+#     gh workflow run v3-studio-installer.yml -R nocobase/nocobase -f ref=dev
+#
+# - `Test` runs the installer's tests on Linux (dash as /bin/sh) and on macOS (bash 3.2 as /bin/sh), the two shells the
+#   installer has to run under.
+# - `Build` builds the bundle stamped with the short commit SHA, prints its size and SHA-256 and keeps it as an artifact
+#   of the run for seven days. That is all a default run does.
+# - `Upload` runs only with `upload: true`: it puts the bundle on the Alibaba Cloud OSS bucket behind
+#   https://get.nocobase.com/studio, the address `curl -fsSL https://get.nocobase.com/studio | sh` reads.
+#
+# A ref without scripts/get-studio fails the run, except for the release, which passes `skip_if_missing: true`: Studio
+# commits older than the installer are released too, and for them the run ends after `Resolve the commit` with a notice.
+#
+# Uploads are switched off until the maintainers switch them on: `upload: true` fails in the first job, before anything
+# is tested or built, until the repository variable GET_STUDIO_UPLOAD_ENABLED is `true` (the release does not even call
+# this workflow then). Configured in this repository (Settings > Secrets and variables > Actions):
+#
+#   Variables  GET_STUDIO_UPLOAD_ENABLED         `true` switches uploads on; anything else, or unset, keeps them off
+#              GET_STUDIO_OSS_BUCKET             bucket name, without `oss://`
+#              GET_STUDIO_OSS_REGION             region ID such as `cn-hangzhou`, without the `oss-` prefix
+#              GET_STUDIO_OSS_ENDPOINT           optional; ossutil derives the public endpoint from the region
+#              GET_STUDIO_OSS_KEY                optional object key, `studio` by default, so that the domain can map
+#                                                /studio straight to the object
+#   Secrets    DOCS_ALI_OSS_ACCESS_KEY_ID        the Alibaba Cloud account v3-docs.yml and v3-ui-library.yml upload
+#              DOCS_ALI_OSS_ACCESS_KEY_SECRET    with; it must be allowed oss:PutObject and oss:GetObject on that key
+#              NOCOBASE_APP_PRIVATE_KEY          with vars.NOCOBASE_APP_ID: the NocoBase GitHub App, installed on
+#                                                nocobase/studio, for read-only tokens of its source
+#
+# This repository is public and Studio is private: nothing uploads Studio's source and nothing is cached. The bundle is
+# the one exception, kept as an artifact: it is the file meant to be served to everyone at the address above.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Branch, tag or commit of nocobase/studio to build.
+        required: true
+        type: string
+      upload:
+        description: Upload the bundle to OSS.
+        type: boolean
+        default: false
+      skip_if_missing:
+        description: End with a notice instead of failing when the ref has no scripts/get-studio.
+        type: boolean
+        default: false
+    secrets:
+      NOCOBASE_APP_PRIVATE_KEY:
+        required: true
+      # Only an upload reads them; `prepare` names whichever is missing.
+      DOCS_ALI_OSS_ACCESS_KEY_ID:
+        required: false
+      DOCS_ALI_OSS_ACCESS_KEY_SECRET:
+        required: false
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit of nocobase/studio to build.
+        required: true
+        default: dev
+        type: string
+      upload:
+        description: Upload the bundle to OSS (switched off until the variable GET_STUDIO_UPLOAD_ENABLED is true)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Uploads share one group and never cancel each other, whether a release or a person started them, so two of them
+# cannot interleave and the object always ends as the later run's bundle. A newer default run of the same ref replaces
+# the one in progress. Called from the release, this group is taken on top of the release's own.
+concurrency:
+  group: studio-installer-${{ inputs.upload && 'upload' || inputs.ref }}
+  cancel-in-progress: ${{ !inputs.upload }}
+
+jobs:
+  # Says at once why a run cannot upload, then resolves the ref once, so that every job tests and builds the same commit
+  # even if the branch moves during the run, and checks that the commit has the installer at all.
+  prepare:
+    name: Resolve the commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.resolve.outputs.commit }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      present: ${{ steps.present.outputs.present }}
+    steps:
+      - name: Check that uploads are switched on
+        if: ${{ inputs.upload }}
+        env:
+          UPLOAD_ENABLED: ${{ vars.GET_STUDIO_UPLOAD_ENABLED }}
+        run: |
+          if [ "$UPLOAD_ENABLED" != true ]; then
+            echo "::error::Uploads are switched off. Run without upload to test and build only. To switch them on, set the repository variable GET_STUDIO_UPLOAD_ENABLED to true (Settings > Secrets and variables > Actions) and configure the GET_STUDIO_OSS_* variables listed at the top of this workflow."
+            exit 1
+          fi
+
+      # A read-only token for nocobase/studio alone, revoked as soon as the ref is resolved.
+      - name: Create a read-only source token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: studio
+          permission-contents: read
+          skip-token-revoke: true
+
+      - name: Resolve the ref
+        id: resolve
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REF: ${{ inputs.ref }}
+        run: |
+          commit=$(gh api "repos/nocobase/studio/commits/${REF}" --jq .sha)
+          {
+            echo "commit=${commit}"
+            echo "sha=${commit:0:7}"
+          } >> "$GITHUB_OUTPUT"
+
+      # Only a 404 means the commit has no installer; any other error of the API fails the run as it is.
+      - name: Check that the commit has the installer
+        id: present
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          COMMIT: ${{ steps.resolve.outputs.commit }}
+          REF: ${{ inputs.ref }}
+          SKIP_IF_MISSING: ${{ inputs.skip_if_missing }}
+        run: |
+          if gh api "repos/nocobase/studio/contents/scripts/get-studio/bundle.mjs?ref=${COMMIT}" --silent 2> "$RUNNER_TEMP/contents.err"; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! grep -q 'HTTP 404' "$RUNNER_TEMP/contents.err"; then
+            cat "$RUNNER_TEMP/contents.err" >&2
+            exit 1
+          fi
+          echo "present=false" >> "$GITHUB_OUTPUT"
+          message="nocobase/studio ${REF} (${COMMIT:0:7}) has no scripts/get-studio, so there is no installer to test, build or upload."
+          if [ "$SKIP_IF_MISSING" != "true" ]; then
+            echo "::error::${message}"
+            exit 1
+          fi
+          echo "::notice::${message} Skipped."
+          {
+            echo '### get-studio install.sh'
+            echo
+            echo "Skipped: ${message}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Revoke the source token
+        if: ${{ always() && steps.app-token.outputs.token != '' }}
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --location \
+            --request DELETE \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $APP_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/installation/token
+
+      # After the installer check, so that a release of a commit without it is not failed by a configuration it does
+      # not need.
+      - name: Check the upload configuration
+        if: ${{ inputs.upload && steps.present.outputs.present == 'true' }}
+        env:
+          OSS_BUCKET: ${{ vars.GET_STUDIO_OSS_BUCKET }}
+          OSS_REGION: ${{ vars.GET_STUDIO_OSS_REGION }}
+          OSS_KEY: ${{ vars.GET_STUDIO_OSS_KEY || 'studio' }}
+          ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
+          ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
+        run: |
+          failed=0
+          require() {
+            if [ -z "$2" ]; then
+              echo "::error::$1 is not set. Add it under Settings > Secrets and variables > Actions, or run without upload."
+              failed=1
+            fi
+          }
+          require 'Variable GET_STUDIO_OSS_BUCKET' "$OSS_BUCKET"
+          require 'Variable GET_STUDIO_OSS_REGION' "$OSS_REGION"
+          require 'Secret DOCS_ALI_OSS_ACCESS_KEY_ID' "$ACCESS_KEY_ID"
+          require 'Secret DOCS_ALI_OSS_ACCESS_KEY_SECRET' "$ACCESS_KEY_SECRET"
+          case "$OSS_KEY" in
+            /* | */ | *//* | *[!A-Za-z0-9._/-]*)
+              echo "::error::Variable GET_STUDIO_OSS_KEY must be a plain object key such as studio, not '$OSS_KEY'."
+              failed=1
+              ;;
+          esac
+          exit "$failed"
+
+  # The tests need Node.js and shellcheck and nothing else: no install, no submodule, no Docker. They build the bundle
+  # into a temporary directory and run it against stub commands (scripts/get-studio/README.md in nocobase/studio).
+  test:
+    name: Test (${{ matrix.os }})
+    needs: prepare
+    if: ${{ needs.prepare.outputs.present == 'true' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      # With CI set, a missing shellcheck fails the tests instead of skipping them.
+      CI: true
+    steps:
+      # A read-only token for nocobase/studio alone, revoked as soon as the source is checked out.
+      - name: Create a read-only source token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: studio
+          permission-contents: read
+          skip-token-revoke: true
+
+      - name: Check out Studio
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/studio
+          ref: ${{ needs.prepare.outputs.commit }}
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Revoke the source token
+        if: ${{ always() && steps.app-token.outputs.token != '' }}
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --location \
+            --request DELETE \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $APP_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/installation/token
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # ubuntu-latest ships shellcheck; the macOS image does not.
+      - name: Install shellcheck
+        if: ${{ runner.os == 'macOS' }}
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+        run: brew install shellcheck
+
+      - name: Test
+        run: |
+          shellcheck --version
+          node --test "scripts/get-studio/tests/*.test.mjs"
+
+  # dist/ is not committed in nocobase/studio: the bundle is built here from the checked-out sources.
+  build:
+    name: Build
+    needs: [prepare, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      size: ${{ steps.build.outputs.size }}
+      sha256: ${{ steps.build.outputs.sha256 }}
+    steps:
+      # A read-only token for nocobase/studio alone, revoked as soon as the source is checked out.
+      - name: Create a read-only source token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: studio
+          permission-contents: read
+          skip-token-revoke: true
+
+      - name: Check out Studio
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/studio
+          ref: ${{ needs.prepare.outputs.commit }}
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Revoke the source token
+        if: ${{ always() && steps.app-token.outputs.token != '' }}
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --location \
+            --request DELETE \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $APP_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/installation/token
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build the bundle
+        id: build
+        env:
+          VERSION: ${{ needs.prepare.outputs.sha }}
+        run: |
+          node scripts/get-studio/bundle.mjs --version "$VERSION"
+          bundle=scripts/get-studio/dist/install.sh
+          sh -n "$bundle"
+          size=$(wc -c < "$bundle" | tr -d ' ')
+          sha256=$(sha256sum "$bundle" | cut -d ' ' -f 1)
+          echo "install.sh ${VERSION}: ${size} bytes, sha256 ${sha256}"
+          {
+            echo "size=${size}"
+            echo "sha256=${sha256}"
+          } >> "$GITHUB_OUTPUT"
+
+      # The only file of the Studio checkout that leaves the runner: the installer is public, served to anyone who runs
+      # the one-line command. `Upload` takes it from here, so what it uploads is what this job built and printed.
+      - name: Keep the bundle as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: get-studio-install-${{ needs.prepare.outputs.sha }}
+          path: scripts/get-studio/dist/install.sh
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Summary
+        env:
+          REF: ${{ inputs.ref }}
+          VERSION: ${{ needs.prepare.outputs.sha }}
+          SIZE: ${{ steps.build.outputs.size }}
+          SHA256: ${{ steps.build.outputs.sha256 }}
+        run: |
+          {
+            echo '### get-studio install.sh'
+            echo
+            echo "Built \`${REF}\` (\`${VERSION}\`); the bundle is an artifact of this run."
+            echo
+            echo "- Size: ${SIZE} bytes"
+            echo "- SHA-256: \`${SHA256}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Skipped unless the run asks for an upload and uploads are switched on; `prepare` has already failed the run with the
+  # reason when they are not. It needs no source: the bundle comes from `Build`.
+  upload:
+    name: Upload
+    if: ${{ inputs.upload && vars.GET_STUDIO_UPLOAD_ENABLED == 'true' }}
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      OSS_BUCKET: ${{ vars.GET_STUDIO_OSS_BUCKET }}
+      OSS_REGION: ${{ vars.GET_STUDIO_OSS_REGION }}
+      OSS_ENDPOINT: ${{ vars.GET_STUDIO_OSS_ENDPOINT }}
+      OSS_KEY: ${{ vars.GET_STUDIO_OSS_KEY || 'studio' }}
+      # ossutil 2 from Alibaba Cloud's download host, pinned by version and checksum.
+      OSSUTIL_VERSION: 2.2.2
+      OSSUTIL_SHA256: d4308515689144c6b213d4998787abbd232dd6714fc43dedbe87064c2c34dee1
+    steps:
+      - name: Download the bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: get-studio-install-${{ needs.prepare.outputs.sha }}
+          path: ${{ runner.temp }}/bundle
+
+      - name: Install ossutil
+        run: |
+          name="ossutil-${OSSUTIL_VERSION}-linux-amd64"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/ossutil.zip" \
+            "https://gosspublic.alicdn.com/ossutil/v2/${OSSUTIL_VERSION}/${name}.zip"
+          echo "${OSSUTIL_SHA256}  $RUNNER_TEMP/ossutil.zip" | sha256sum --check --quiet
+          unzip -q -o "$RUNNER_TEMP/ossutil.zip" -d "$RUNNER_TEMP/ossutil"
+          chmod 755 "$RUNNER_TEMP/ossutil/${name}/ossutil"
+          echo "$RUNNER_TEMP/ossutil/${name}" >> "$GITHUB_PATH"
+
+      # One object, at the key the domain maps /studio to. Served as text/plain rather than text/x-shellscript: curl
+      # does not care, and a person who opens the address in a browser to read the script before running it sees it
+      # instead of getting a download. Five minutes of caching keeps a fix from waiting long on the CDN.
+      # ossutil reads the credentials, OSS_REGION and, when set, OSS_ENDPOINT from the environment; the credentials
+      # are the DOCS_ALI_OSS_* secrets under the names ossutil reads, and only this step sees them.
+      - name: Upload to OSS
+        env:
+          OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
+          BUNDLE: ${{ runner.temp }}/bundle/install.sh
+          SHA256: ${{ needs.build.outputs.sha256 }}
+        run: |
+          # An unset optional variable arrives as an empty string, which ossutil would take for an endpoint.
+          [ -n "$OSS_ENDPOINT" ] || unset OSS_ENDPOINT
+          echo "${SHA256}  ${BUNDLE}" | sha256sum --check --quiet
+          target="oss://${OSS_BUCKET}/${OSS_KEY}"
+          ossutil cp "$BUNDLE" "$target" --force \
+            --content-type 'text/plain; charset=utf-8' \
+            --cache-control 'max-age=300'
+          # Read it back: what the bucket serves is what was built.
+          stored=$(ossutil cat "$target" | sha256sum | cut -d ' ' -f 1)
+          if [ "$stored" != "$SHA256" ]; then
+            echo "::error::The object at ${OSS_KEY} has sha256 ${stored}, expected ${SHA256}."
+            exit 1
+          fi
+
+      - name: Summary
+        env:
+          VERSION: ${{ needs.prepare.outputs.sha }}
+          SHA256: ${{ needs.build.outputs.sha256 }}
+        run: |
+          {
+            echo '### get-studio upload'
+            echo
+            echo "Uploaded \`${VERSION}\` to object \`${OSS_KEY}\`, SHA-256 \`${SHA256}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
