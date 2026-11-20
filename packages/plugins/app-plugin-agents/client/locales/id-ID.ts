@@ -261,10 +261,6 @@ const idID: LocaleResource<typeof enUS> = {
     save: 'Simpan keterampilan',
     descriptionOnline:
       'Manual yang dibaca Agent ketika tugas cocok dengan deskripsinya, dalam kotak pasir hanya-baca di server.',
-    onlineScripts:
-      'Skrip tidak dijalankan untuk Agent online: Agent dapat membacanya, bukan menjalankannya.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Pratinjau perintah lengkap',
@@ -1307,8 +1303,6 @@ const idID: LocaleResource<typeof enUS> = {
     binaryFile: 'File biner, {{size}}. Itu tidak dapat diedit di sini.',
     executable: 'Dapat dieksekusi',
     scriptBadge: 'Naskah',
-    scriptsNote:
-      'Memiliki skrip: Agent online dapat membacanya tetapi tidak pernah menjalankannya',
     compatibility: 'Kompatibilitas: {{value}}',
     fileContent: 'Konten {{path}}',
     export: 'Ekspor',

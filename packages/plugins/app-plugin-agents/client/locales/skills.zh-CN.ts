@@ -58,7 +58,6 @@ const skillsZhCN: typeof skillsEnUS = {
     binaryFile: '二进制文件，{{size}}，不能在这里编辑。',
     executable: '可执行',
     scriptBadge: '脚本',
-    scriptsNote: '含脚本：在线 Agent 只能读取，不会执行',
     compatibility: '兼容性：{{value}}',
     fileContent: '{{path}} 的内容',
     export: '导出',

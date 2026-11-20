@@ -62,7 +62,6 @@ const skillsEnUS = {
     binaryFile: 'Binary file, {{size}}. It cannot be edited here.',
     executable: 'Executable',
     scriptBadge: 'Script',
-    scriptsNote: 'Has scripts: online agents can read them but never run them',
     compatibility: 'Compatibility: {{value}}',
     fileContent: 'Content of {{path}}',
     export: 'Export',

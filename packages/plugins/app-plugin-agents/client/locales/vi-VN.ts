@@ -260,10 +260,6 @@ const viVN: LocaleResource<typeof enUS> = {
     save: 'Lưu kỹ năng',
     descriptionOnline:
       'Hướng dẫn Agent đọc khi tác vụ khớp với mô tả của họ, trong hộp cát chỉ đọc trên máy chủ.',
-    onlineScripts:
-      'Các tập lệnh không được thực thi cho các Agents trực tuyến: Agent có thể đọc chúng chứ không thể chạy chúng.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Xem trước lời nhắc đầy đủ',
@@ -1305,8 +1301,6 @@ const viVN: LocaleResource<typeof enUS> = {
     binaryFile: 'Tệp nhị phân, {{size}}. Nó không thể được chỉnh sửa ở đây.',
     executable: 'Có thể thực thi được',
     scriptBadge: 'Kịch bản',
-    scriptsNote:
-      'Có tập lệnh: Agents trực tuyến có thể đọc chúng nhưng không bao giờ chạy chúng',
     compatibility: 'Khả năng tương thích: {{value}}',
     fileContent: 'Nội dung của {{path}}',
     export: 'Xuất khẩu',

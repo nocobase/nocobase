@@ -254,10 +254,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     save: '儲存技能',
     descriptionOnline:
       '當任務與其描述相符時，Agent在伺服器上的唯讀沙箱中手動讀取。',
-    onlineScripts:
-      '線上Agents不會執行指令碼：Agent可以讀取它們，但不能執行它們。',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: '預覽完整提示',
@@ -1236,7 +1232,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     binaryFile: '二進位檔案，{{size}}。此處無法對其進行編輯。',
     executable: '執行檔',
     scriptBadge: '指令碼',
-    scriptsNote: '有指令碼：線上Agents可以讀取它們，但從不執行它們',
     compatibility: '相容性：{{value}}',
     fileContent: '{{path}} 的內容',
     export: '出口',

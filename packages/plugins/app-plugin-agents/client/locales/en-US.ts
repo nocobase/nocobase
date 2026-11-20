@@ -265,10 +265,6 @@ const pages = {
     save: 'Save skills',
     descriptionOnline:
       'Manuals the agent reads when a task matches their description, in a read-only sandbox on the server.',
-    onlineScripts:
-      'Scripts are not executed for online agents: the agent can read them, not run them.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Preview full prompt',

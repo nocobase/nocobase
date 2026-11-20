@@ -266,10 +266,6 @@ const deDE: LocaleResource<typeof enUS> = {
     save: 'Fähigkeiten speichern',
     descriptionOnline:
       'Handbücher, die der Agent liest, wenn eine Aufgabe mit ihrer Beschreibung übereinstimmt, in einer schreibgeschützten Sandbox auf dem Server.',
-    onlineScripts:
-      'Skripte werden für Online-Agents nicht ausgeführt: Der Agent kann sie lesen, nicht ausführen.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'Vorschau der vollständigen Eingabeaufforderung',
@@ -1342,8 +1338,6 @@ const deDE: LocaleResource<typeof enUS> = {
     binaryFile: 'Binärdatei, {{size}}. Es kann hier nicht bearbeitet werden.',
     executable: 'Ausführbar',
     scriptBadge: 'Skript',
-    scriptsNote:
-      'Verfügt über Skripte: Online-Agents können sie lesen, aber niemals ausführen',
     compatibility: 'Kompatibilität: {{value}}',
     fileContent: 'Inhalt von {{path}}',
     export: 'Exportieren',

@@ -256,10 +256,6 @@ const koKR: LocaleResource<typeof enUS> = {
     save: '스킬 저장',
     descriptionOnline:
       '작업이 설명과 맞을 때 Agent가 서버의 읽기 전용 샌드박스에서 읽는 매뉴얼입니다.',
-    onlineScripts:
-      '온라인 Agent는 스크립트를 실행하지 않습니다. 읽을 수는 있지만 실행할 수는 없습니다.',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: '전체 프롬프트 미리 보기',
@@ -1279,8 +1275,6 @@ const koKR: LocaleResource<typeof enUS> = {
     binaryFile: '바이너리 파일, {{size}}. 여기서 편집할 수 없습니다.',
     executable: '실행 가능',
     scriptBadge: '스크립트',
-    scriptsNote:
-      '스크립트 포함: 온라인 Agent는 읽을 수 있지만 실행하지 않습니다',
     compatibility: '호환성: {{value}}',
     fileContent: '{{path}}의 내용',
     export: '내보내기',

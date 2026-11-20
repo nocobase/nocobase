@@ -1,8 +1,8 @@
 import { usePageBreadcrumb } from '@nocobase/app-client';
 /**
  * Route `/skills/:skillId`: the skill as a directory (its files in a tree beside the selected one: SKILL.md rendered,
- * other files shown or previewed), what its front matter says (description, compatibility; whether it holds scripts,
- * which online agents read but never run), where it is attached, and its versions. Who may edit it gets "Edit" (the
+ * other files shown or previewed), what its front matter says (description, compatibility), where it is attached,
+ * and its versions. Who may edit it gets "Edit" (the
  * same workbench, editable; saving makes a new version) and "Delete". Agents always get the latest version; an older
  * one can be compared with it and restored.
  */
@@ -11,7 +11,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   DownloadIcon,
   PencilIcon,
-  TerminalIcon,
   Trash2Icon,
 } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
@@ -237,7 +236,7 @@ function SkillBody({
   );
 }
 
-/** What the front matter says beyond the description, and whether the skill holds scripts. */
+/** What the front matter says beyond the description. */
 function SkillFacts({
   skill,
   canEdit,
@@ -246,15 +245,9 @@ function SkillFacts({
   readonly canEdit: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
-  if (!skill.compatibility && skill.scriptCount === 0 && canEdit) return null;
+  if (!skill.compatibility && canEdit) return null;
   return (
     <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
-      {skill.scriptCount > 0 ? (
-        <Badge variant='secondary' data-testid='skill-scripts-note'>
-          <TerminalIcon data-icon='inline-start' />
-          {t('skills.scriptsNote')}
-        </Badge>
-      ) : null}
       {skill.compatibility ? (
         <Badge variant='outline' className='max-w-full truncate'>
           {t('skills.compatibility', { value: skill.compatibility })}
