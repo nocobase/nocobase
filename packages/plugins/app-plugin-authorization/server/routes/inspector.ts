@@ -17,7 +17,7 @@ import { z } from 'zod';
 import {
   createRouteHandler,
   createSettingsRouter,
-  settingsAccess,
+  unrestrictedAccess,
 } from '../extension/http.js';
 import {
   AUTHORIZATION_API_TAGS as tags,
@@ -35,14 +35,19 @@ import {
   DecideBody,
 } from './schemas.js';
 
-export const INSPECTOR_SETTINGS = 'authorization.inspector';
-
 /** A decision, with the underlying checks of a composite action. */
 export type InspectedDecision = AuthorizationDecision & {
   readonly checks?: readonly unknown[];
 };
 
-/** Every `/inspector` route, gated by `settings:authorization.inspector` `inspect`. */
+/**
+ * Every `/inspector` route, open to unrestricted roles only. The inspector shows what any subject may do, so it is no
+ * permission a role can be given and no settings item.
+ */
+const inspectorAccess = unrestrictedAccess(
+  'Only an unrestricted role can use the permission inspector.',
+);
+
 export function createInspectorHandler(
   host: AuthorizationExtensionHost & Pick<Authorization, 'for'>,
   permissionSets: Pick<
@@ -65,13 +70,13 @@ export function createInspectorHandler(
 
   routes.get(
     '/inspector/options',
-    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    inspectorAccess,
     describeRoute({
       tags,
       summary: 'List what the permission inspector can check',
       operationId: 'authorizationListInspectorOptions',
       description:
-        'The workspace catalogue the inspector picks resources and actions from. Requires `settings:authorization.inspector` `inspect`.',
+        'The workspace catalogue the inspector picks resources and actions from. Requires an unrestricted role.',
       responses: {
         200: dataResponse(AuthorizationOptionsSchema),
         ...apiErrorResponses,
@@ -84,20 +89,20 @@ export function createInspectorHandler(
     createSubjectRoutes(
       host,
       '/inspector',
-      INSPECTOR_SETTINGS,
-      'inspect',
+      { guard: inspectorAccess, requirement: 'an unrestricted role' },
+      undefined,
       'Inspector',
     ),
   );
   routes.post(
     '/inspector/decide',
-    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    inspectorAccess,
     describeRoute({
       tags,
       summary: 'Decide one action for a subject',
       operationId: 'authorizationDecideAccess',
       description:
-        'The decision the application would reach if `subject` asked to perform `action` on `resource`, with the subjects the request middleware would add for it. Nothing is performed. Requires `settings:authorization.inspector` `inspect`.',
+        'The decision the application would reach if `subject` asked to perform `action` on `resource`, with the subjects the request middleware would add for it. Nothing is performed. Requires an unrestricted role.',
       responses: {
         200: dataResponse(AuthorizationDecisionSchema),
         ...apiErrorResponses,
@@ -114,13 +119,13 @@ export function createInspectorHandler(
   );
   routes.post(
     '/inspector/batchDecide',
-    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    inspectorAccess,
     describeRoute({
       tags,
       summary: 'Decide up to 100 actions for a subject',
       operationId: 'authorizationBatchDecideAccess',
       description:
-        'One decision per check, in the order of `checks`. Requires `settings:authorization.inspector` `inspect`.',
+        'One decision per check, in the order of `checks`. Requires an unrestricted role.',
       responses: {
         200: dataResponse(z.array(BatchDecisionSchema)),
         ...apiErrorResponses,
@@ -148,13 +153,13 @@ export function createInspectorHandler(
   // A pure read of what one subject's stored grants cover, so a GET.
   routes.get(
     '/inspector/configuredAccess',
-    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    inspectorAccess,
     describeRoute({
       tags,
       summary: "Summarize a subject's configured access",
       operationId: 'authorizationGetConfiguredAccess',
       description:
-        'What the stored grants of the Permission Sets a subject holds cover, and which assignment brings each set. Requires `settings:authorization.inspector` `inspect`.',
+        'What the stored grants of the Permission Sets a subject holds cover, and which assignment brings each set. Requires an unrestricted role.',
       responses: {
         200: dataResponse(ConfiguredAccessSchema),
         ...apiErrorResponses,

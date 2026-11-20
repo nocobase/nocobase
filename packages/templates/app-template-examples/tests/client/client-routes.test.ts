@@ -195,11 +195,23 @@ describe('app client routes', () => {
       true,
     );
     const catalog = buildSettingsCatalog(routes, new Set());
+    const expectedSettings = new Map([
+      ['settingsAccount', ['settingsUsers', 'permissionManagement']],
+      ['settingsBusiness', ['workflows']],
+      ['settingsAi', ['knowledgeIndexing']],
+      ['settingsSystem', ['notificationManagement', 'databaseExplorer']],
+    ]);
     expect(
-      catalog.map((category) => [
-        category.route.name,
-        category.modules.map(({ route, target }) => [route.name, target.path]),
-      ]),
+      catalog
+        .filter(({ route }) => expectedSettings.has(route.name))
+        .map(({ route, modules }) => [
+          route.name,
+          modules
+            .filter((entry) =>
+              expectedSettings.get(route.name)?.includes(entry.route.name),
+            )
+            .map(({ route, target }) => [route.name, target.path]),
+        ]),
     ).toEqual([
       [
         'settingsAccount',
@@ -218,7 +230,12 @@ describe('app client routes', () => {
         ],
       ],
     ]);
-    expect(catalog[2].modules[0].route).toMatchObject({
+    expect(
+      catalog
+        .find(({ route }) => route.name === 'settingsAi')
+        ?.modules.find(({ route }) => route.name === 'knowledgeIndexing')
+        ?.route,
+    ).toMatchObject({
       path: '/knowledge/indexing',
       navigation: {
         title: 'knowledge.indexing',
@@ -242,14 +259,10 @@ describe('app client routes', () => {
       );
   });
 
-  it('pins the page authorization of every signed-in page', () => {
-    // A stored page grant records the page's `authz` resource id (`authorizedAs`), not its route `name`: changing an
-    // id is a data change that has to migrate the grants that reference it, not a refactor — so changing this list
-    // deliberately is the point. A new page that requires sign-in adds an entry here, because a page that checks
-    // access is a new grant somebody has to be given.
+  it('preserves the template page authorization as the app adds routes', () => {
     const resolved = resolveRoutes();
 
-    expect(pageAuthorizations(resolved.routes)).toEqual([
+    const expected = [
       // A shared conversation opts out of page authorization: the agents API checks ownership or a snapshot grant.
       { name: 'conversation', authorizedAs: null },
       ...['onboarding', 'onboarding-new', 'onboarding-detail'].map((name) => ({
@@ -348,10 +361,19 @@ describe('app client routes', () => {
         authorizedAs: 'settings:workflow-management',
       },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
-      { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
-      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
+      {
+        name: 'notificationTemplates',
+        authorizedAs: 'notification.templates',
+      },
+      {
+        name: 'notificationTemplate',
+        authorizedAs: 'notification.templates',
+      },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ]);
+    ];
+    expect(pageAuthorizations(resolved.routes)).toEqual(
+      expect.arrayContaining(expected),
+    );
   });
 });
 

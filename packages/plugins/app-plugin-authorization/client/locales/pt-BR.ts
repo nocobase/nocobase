@@ -21,7 +21,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Gerenciar atribuições',
       configure: 'Configurar',
-      inspect: 'Inspecionar permissões',
       read: 'Ler',
       create: 'Criar',
       update: 'Atualizar',
@@ -37,7 +36,6 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Permitir acesso a todas as páginas, incluindo páginas adicionadas posteriormente.',
     },
     settings: {
-      inspector: 'Inspetor de permissão',
       'permission-sets': 'Conjuntos de permissões',
     },
     subjectTypes: {

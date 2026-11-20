@@ -400,7 +400,13 @@ export const AuthorizationOptionsSchema: z.ZodType = z
       }),
     ),
     collections: z.array(
-      z.object({ name: z.string(), fields: z.array(z.string()) }),
+      z.object({
+        name: z.string(),
+        title: OptionTextSchema.meta({
+          description: 'The title the collection was registered with.',
+        }),
+        fields: z.array(z.string()),
+      }),
     ),
   })
   .meta({ ref: 'AuthorizationOptions' });
