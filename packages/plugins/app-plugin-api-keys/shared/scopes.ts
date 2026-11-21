@@ -406,8 +406,11 @@ export interface ApiKeyView {
    * @deprecated Read `permissions`.
    */
   readonly scope: KeyScopeInput | null;
-  /** What the key may do; null for a key that is its owner in full. */
-  readonly permissions: KeyPermissions | null;
+  /**
+   * What the key may do; null for a key that is its owner in full. Every key the server answers has it; optional so a
+   * caller that builds views of its own in the format-`1` shape keeps compiling.
+   */
+  readonly permissions?: KeyPermissions | null;
 }
 
 /**
