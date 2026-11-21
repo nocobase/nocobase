@@ -2,7 +2,10 @@ import { driveManagerToken } from '@nocobase/app-server/drive';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
-import { ServerFileRepositoryManager } from '../repository.js';
+import {
+  ServerFileRepositoryManager,
+  type FileDriveConfig,
+} from '../repository.js';
 import { serverFileRepositoryManagerToken } from '../token.js';
 
 export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginApplication> {
@@ -14,6 +17,7 @@ export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginAppl
         new ServerFileRepositoryManager(
           container.resolve(databaseManagerToken),
           container.resolve(driveManagerToken),
+          this.app.config.get<FileDriveConfig>('drive'),
         ),
     );
   }
