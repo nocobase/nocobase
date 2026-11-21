@@ -245,6 +245,62 @@ describe('authz.ui groups and placement', () => {
   });
 });
 
+describe('page declarations of a composite', () => {
+  it('lists the pages it is used on and the pages that turn each action on', async () => {
+    const authz = createAppAuthorization({});
+    authz.database.collections.add({ name: 'quotes', title: 'Quotes' });
+    authz.compositeResources.define(
+      defineCompositeResource('sales.declared', (resource) =>
+        resource
+          .title('Declared quotes')
+          .usedOn('sales.quotes', 'dashboard')
+          .action('view', (action) =>
+            action.defaultFor('sales.quotes').grant({
+              build: () => ({
+                grants: [
+                  {
+                    resource: { type: 'database.collection', id: 'quotes' },
+                    actions: [{ action: 'read' }],
+                  },
+                ],
+              }),
+            }),
+          )
+          .action('approve', (action) =>
+            action.grant({
+              build: () => ({
+                grants: [
+                  {
+                    resource: { type: 'database.collection', id: 'quotes' },
+                    actions: [{ action: 'update' }],
+                  },
+                ],
+              }),
+            }),
+          ),
+      ),
+    );
+    authz.compositeResources.define(quotes);
+    const resources = (await authorizationOptions(authz)).sections
+      .flatMap((section) => section.subsections)
+      .flatMap((subsection) => subsection.resources)
+      .filter((resource) => resource.type === 'composite');
+    expect(resources).toMatchObject([
+      {
+        id: 'sales.declared',
+        usedOn: ['sales.quotes', 'dashboard'],
+        actions: [
+          { name: 'view', defaultFor: ['sales.quotes'] },
+          { name: 'approve' },
+        ],
+      },
+      { id: 'sales.quotes' },
+    ]);
+    expect(resources[0]?.actions[1]).not.toHaveProperty('defaultFor');
+    expect(resources[1]).not.toHaveProperty('usedOn');
+  });
+});
+
 describe('the page subsection', () => {
   it('is registered by pagesPlugin and marked for the client to fill, titled in this plugin', async () => {
     const authz = createAppAuthorization({});

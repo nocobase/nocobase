@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import {
   defineSystemSettingsRoutes,
   resolveAppClientContributions,
@@ -28,6 +29,7 @@ function resolve(...extra: AppClientRouteContribution[]) {
       source: 'application',
       routes: [shell, settings, ...extra],
     },
+    authorizationPages(),
   ]).routes;
 }
 
@@ -174,9 +176,12 @@ describe('System settings navigation', () => {
       ],
     ]);
     const denied = new Set(
-      ['settingsUsers', 'settingsRoles', 'settingsDefaultAccess'].map((name) =>
-        routeKey(find(routes, name)),
-      ),
+      [
+        'settingsUsers',
+        'settingsRoles',
+        'settingsDefaultAccess',
+        'settingsPermissionCheck',
+      ].map((name) => routeKey(find(routes, name))),
     );
     expect(catalog(routes, denied)).toEqual([]);
     // Without a module to open, the sidebar entry disappears too.
@@ -260,6 +265,7 @@ describe('System settings navigation', () => {
           notificationTemplates: { invitationConfigured: true },
         }),
       },
+      authorizationPages(),
     ]).routes;
     expect(catalog(routes)).toEqual([
       [
@@ -291,6 +297,7 @@ it('places database browsing in Data and files and hides its card when access is
       source: 'application',
       routes: createApplicationRoutes({}),
     },
+    authorizationPages(),
   ]).routes;
   const page = find(routes, 'databaseExplorer');
   expect(page.path).toBe('/settings/database-explorer');

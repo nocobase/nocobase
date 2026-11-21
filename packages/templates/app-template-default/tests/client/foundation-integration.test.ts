@@ -1,6 +1,5 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
-import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
-import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
+import { permissionPageCatalog } from '../../client/pages/settings/permission-catalog.js';
 import { describe, expect, it } from 'vitest';
 import {
   createCapabilityCatalog,
@@ -159,30 +158,19 @@ describe('default Foundation integration', () => {
   });
 });
 
-it('offers one Features and extensions page on the System settings tab', async () => {
+it('lists one Features and extensions page in the role editor’s System category, not among the menus', async () => {
   const { routes } = await resolveAppRuntime(appRuntime);
-  const workspace = permissionWorkspace(
-    { sections: [], recordAccess: [], subjectTypes: [], collections: [] },
-    routes,
-    {},
-    {
-      text: (value) => (typeof value === 'string' ? value : value.key),
-      t: (key) => key,
-    },
+  const catalog = permissionPageCatalog(routes);
+  const owners = catalog.settings.flatMap((category) =>
+    category.modules
+      .filter(({ route }) => route.name === 'capabilityGuide')
+      .map(() => category.route.name),
   );
-  const open = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
-  const owners = workspace.settings.filter((page) =>
-    page.objects.some((object) =>
-      object.actions.some((action) => action.id === open),
-    ),
-  );
-  expect(owners.map((page) => page.label)).toEqual(['nav.capabilityGuide']);
+  expect(owners).toEqual(['systemSettings.system']);
   // It is not a business menu.
-  expect(
-    [...workspace.menuPages.values()].some((pages) =>
-      pages.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
-    ),
-  ).toBe(false);
+  const menu = (items: typeof catalog.navigation): readonly string[] =>
+    items.flatMap((item) => [item.route.name, ...menu(item.children)]);
+  expect(menu(catalog.navigation)).not.toContain('capabilityGuide');
   expect(
     routes
       .find(({ name }) => name === 'systemSettings.system')

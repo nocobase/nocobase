@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
@@ -357,6 +358,8 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      // Reading anyone's permissions is for an unrestricted role only.
+      { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },
       {
         name: 'workflowDefinitions',
@@ -414,6 +417,7 @@ function resolveRoutes() {
       packageName: '@nocobase/app-plugin-routes-example',
       routes: routesExampleSettings,
     },
+    authorizationPages(),
   ]);
 }
 

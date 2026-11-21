@@ -20,7 +20,7 @@ Adds sharing rules: selected records, or a record access selection, for the subj
  ──────────────────────      ─────────────────────────────────────────────────        ────────────────────────────
  sharing rules ────────────▶ `expand` constraint for the rule's subjects ─┐           context.authorize(...)
                               Permission Set grants ──────────────────────┴▶ type     authz.database.policyFor(...)
- display: its settings item is placed in the authorization subsection through authz.ui; the plugin contributes no page
+ display: its settings item is placed in the authorization subsection through authz.ui; its client adds a tab to Data rules
 ```
 
 ## Entry points
@@ -34,7 +34,7 @@ Adds sharing rules: selected records, or a record access selection, for the subj
 
 ## Install
 
-Register the default exports of `./client` and `./server` beside the main authorization plugin and run the application's migrations. Then add the factory to the application's authorization configuration:
+Register the default exports of `./client` and `./server` beside the main authorization plugin and run the application's migrations. The client plugin adds the Sharing rules tab to the Data rules of the authorization plugin's Roles and permissions page, shown to those who may read `authorization.sharing-rules`; its rules are created, edited and deleted there in a side sheet. Then add the factory to the application's authorization configuration:
 
 ```ts
 import { sharingRules } from '@nocobase/app-plugin-authz-sharing-rules/server';
