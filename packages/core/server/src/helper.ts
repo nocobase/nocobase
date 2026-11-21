@@ -8,6 +8,7 @@
  */
 
 import cors from '@koa/cors';
+import type { Database } from '@nocobase/database';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
 import {
@@ -339,23 +340,24 @@ function getFieldFromCollectionManager(ctx, resourceName: string, fieldPath: str
   return field;
 }
 
-export function createContextVariablesScope(ctx) {
+export function createContextVariablesScope(ctx, target?: { database: Database; resourceName: string }) {
   const state = JSON.parse(JSON.stringify(ctx.state));
   return {
     timezone: ctx.get('x-timezone'),
     now: new Date().toISOString(),
     getField: (path) => {
-      const { resourceName } = ctx.action;
+      const resourceName = target?.resourceName ?? ctx.action.resourceName;
       const fieldPath = path
         .split('.')
         .filter((p) => !p.startsWith('$') && !isNumeric(p))
         .join('.');
 
-      if (!ctx.database) {
+      const database = target?.database ?? ctx.database;
+      if (!database) {
         return getFieldFromCollectionManager(ctx, resourceName, fieldPath);
       }
 
-      return ctx.database.getFieldByPath(`${resourceName}.${fieldPath}`);
+      return database.getFieldByPath(`${resourceName}.${fieldPath}`);
     },
     vars: {
       ctx: {
