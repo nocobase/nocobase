@@ -17,7 +17,6 @@ import { CredentialCatalog } from './credentials.js';
 import type {
   AuthorizationGrant,
   AuthorizationGrantService,
-  AuthorizationPolicy,
   AuthorizationGrantsChangedListener,
 } from './grants.js';
 import {
@@ -465,7 +464,7 @@ export class Authorization {
         source: { plugin: 'key-scope', id: unrestrictedKey.keyId },
         resource: request.resource,
         action: request.action,
-        policy: policy,
+        policy,
       };
       const composed = composedGrants(
         {
