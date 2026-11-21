@@ -185,7 +185,7 @@ const runtimesZhCN: RuntimesLocale = {
     variables: {
       title: '本机提供的变量',
       description:
-        '它能提供给「从运行环境取」的变量，只显示名字，值留在那台机器上。在那台机器上用 `nocobase-runner env set NAME` 设置，或用 `--pass-env NAME` 放行。',
+        '这里只显示变量名，值保存在运行环境所在机器上。在那台机器上执行 `nocobase-runner env set NAME`，可从标准输入保存变量值。若变量已在当前终端中通过 export 设置，前台运行可执行 `nocobase-runner start --pass-env NAME`；后台服务可执行 `nocobase-runner service install --pass-env NAME`，保存当前值并重启服务。后台服务不会读取 shell 配置文件，修改变量值后需再次执行服务安装命令。多个变量可重复添加 `--pass-env NAME`。',
       none: '没有：需要从运行环境取变量的运行会在开始前失败。',
       unknown: '未上报：它的执行机版本较旧。更新执行机后可以看到。',
     },

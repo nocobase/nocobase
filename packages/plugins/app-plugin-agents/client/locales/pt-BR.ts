@@ -813,7 +813,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variáveis desta máquina',
       description:
-        'As variáveis ​​que ele fornece às execuções que as retiram do ambiente de execução, por nome; os valores ficam na máquina. Defina um lá com `nocobase-runner env set NAME` ou passe-o com `--pass-env NAME`.',
+        'Aqui são exibidos apenas os nomes das variáveis; os valores ficam na máquina. Nessa máquina, use `nocobase-runner env set NAME` para salvar um valor pela entrada padrão. Para passar uma variável já exportada no terminal atual, use `nocobase-runner start --pass-env NAME` para executar em primeiro plano, ou `nocobase-runner service install --pass-env NAME` para salvar o valor atual e reiniciar o serviço em segundo plano. Os serviços não leem os arquivos de configuração do shell; execute novamente o comando do serviço após alterar o valor. Repita `--pass-env NAME` para cada variável.',
       none: 'Nenhum: uma execução que utiliza uma variável do ambiente de execução falha aqui antes de ser iniciada.',
       unknown:
         'Não relatado: seu runner é mais antigo que esse recurso. Atualize o ambiente de execução para vê-los.',
