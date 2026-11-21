@@ -9,6 +9,7 @@ const idID: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Jadwal',
     read: 'Baca',
+    manage: 'Kelola',
   },
 };
 

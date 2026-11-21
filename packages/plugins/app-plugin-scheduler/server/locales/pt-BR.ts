@@ -9,6 +9,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Agendamentos',
     read: 'Ler',
+    manage: 'Gerenciar',
   },
 };
 
