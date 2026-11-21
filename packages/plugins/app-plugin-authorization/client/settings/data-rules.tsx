@@ -7,7 +7,7 @@ import {
   type ComponentType,
   type ReactElement,
 } from 'react';
-import { useSearchParams } from 'react-router';
+import { Outlet, useSearchParams } from 'react-router';
 
 import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { Skeleton } from '#components/ui/skeleton';
@@ -92,6 +92,8 @@ export default function DataRulesPage(): ReactElement {
           {t('settings.noDataRules')}
         </p>
       )}
+      {/* The old `create` and `:key/edit` addresses, which redirect back here. */}
+      <Outlet />
     </AuthorizationPage>
   );
 }

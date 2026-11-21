@@ -176,9 +176,12 @@ describe('System settings navigation', () => {
       ],
     ]);
     const denied = new Set(
-      ['settingsUsers', 'settingsRoles', 'settingsDefaultAccess'].map((name) =>
-        routeKey(find(routes, name)),
-      ),
+      [
+        'settingsUsers',
+        'settingsRoles',
+        'settingsDefaultAccess',
+        'settingsPermissionCheck',
+      ].map((name) => routeKey(find(routes, name))),
     );
     expect(catalog(routes, denied)).toEqual([]);
     // Without a module to open, the sidebar entry disappears too.

@@ -358,6 +358,8 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      // Reading anyone's permissions is for an unrestricted role only.
+      { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },
       {
         name: 'workflowDefinitions',

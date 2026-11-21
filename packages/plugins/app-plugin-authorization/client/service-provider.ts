@@ -16,7 +16,11 @@ import {
   authorizationClientToken,
   authorizationSettingsToken,
 } from './tokens.js';
-import { DATA_RULES_TAB, ROLES_TAB } from './settings/tab-keys.js';
+import {
+  DATA_RULES_TAB,
+  PERMISSION_CHECK_TAB,
+  ROLES_TAB,
+} from './settings/tab-keys.js';
 import {
   AUTHORIZATION_NAMESPACE,
   AUTHORIZATION_GLOBAL_PERMISSIONS_CHANGED_TOPIC,
@@ -67,7 +71,7 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
 }
 
 /**
- * The Roles and permissions page's extension points, with the application's page catalog. Its own two top tabs are
+ * The Roles and permissions page's extension points, with the application's page catalog. Its own three top tabs are
  * registered first, so another package's tab follows them unless it gives a lower `order`.
  */
 export function authorizationSettingsProvider(
@@ -99,6 +103,17 @@ export function authorizationSettingsProvider(
             resource: { type: 'settings', id: 'authorization.default-access' },
             action: 'read',
           },
+        });
+        // Reading anyone's permissions is for an unrestricted role only, as the inspector it reads requires.
+        settings.pageTabs.add({
+          key: PERMISSION_CHECK_TAB,
+          title: {
+            key: 'settings.permissionCheck.title',
+            ns: AUTHORIZATION_NAMESPACE,
+          },
+          order: 30,
+          path: '/permission-check',
+          authz: 'unrestricted',
         });
         return settings;
       });

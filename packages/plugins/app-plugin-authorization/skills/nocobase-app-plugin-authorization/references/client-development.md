@@ -479,12 +479,12 @@ authorization({
 });
 ```
 
-Every option is optional. Without `pageCatalog` the editor reads the registered routes through `defaultPermissionPageCatalog`; without `workspace` it lists no business objects. Route names (`permissionManagement`, `roles`, `defaultAccess` and their detail routes) and the settings items they check (`authorization.permission-sets`, `authorization.default-access`) are stable, so existing grants keep working.
+Every option is optional. Without `pageCatalog` the editor reads the registered routes through `defaultPermissionPageCatalog`; without `workspace` it lists no business objects. Route names (`permissionManagement`, `roles`, `defaultAccess` and their detail routes, and `settingsPermissionCheck`) and the settings items they check (`authorization.permission-sets`, `authorization.default-access`) are stable, so existing grants keep working.
 
 Another package extends the page from its client service provider through `authorizationSettingsToken`, imported from `@nocobase/app-plugin-authorization/client/settings`. That entry point holds only types, the token and lazy loaders, so importing it at startup loads no page code. It offers three ordered registries; `add` returns a function that removes the tab, and adding a key twice throws.
 
 - `pageTabs`: a top tab of the page. Each one is a System settings page of its own that its package registers with `defineSystemSettingsRoutes` under the `permissionManagement` module, rendered inside `AuthorizationPage` so a link, Back and a reload keep the tab. The entry names its `path` and the page's own `authz`; the tab shows only to those it admits, and the tab bar hides when only one tab is open to the person.
-- `ruleTabs`: one kind of data rule under the Data rules tab, loaded lazily through `component` and shown to those who pass its `authz`.
+- `ruleTabs`: one kind of data rule under the Data rules tab, chosen with `?rule=<key>`, loaded lazily through `component` and shown to those who pass its `authz`. The Default access, Sharing rules and Restriction rules plugins each add theirs with the loaders `loadDefaultAccessRules`, `loadSharingRules` and `loadRestrictionRules` (orders 10, 20 and 30). Their lists share one component: a rule opens in a side sheet over its list through `?create=1` or `?edit=<key>`, so closing the sheet with unsaved changes asks once, and the old `default-access/create` and `default-access/:key/edit` addresses redirect there.
 - `roleTabs`: a tab of a role's detail after Members, loaded lazily through `component` and shown to those who pass its `authz`. It receives `permissionSet`, the saved role, and `editable`, whether the person may change it.
 
 ```ts
@@ -500,7 +500,9 @@ this.app.container.resolve(authorizationSettingsToken).ruleTabs.add({
 });
 ```
 
-Give a tab a lower `order` to place it earlier; the built-in tabs are `ROLES_TAB` and `DATA_RULES_TAB`. Translate its title in the contributing package's namespace.
+Give a tab a lower `order` to place it earlier; the built-in tabs are `ROLES_TAB` (10), `DATA_RULES_TAB` (20) and `PERMISSION_CHECK_TAB` (30). Translate its title in the contributing package's namespace.
+
+The Permission check tab (`settingsPermissionCheck`, `/permission-check`) reads the inspector, so its route and tab require `'unrestricted'`. It picks a user, then lists everything the user may do with the role each permission comes from (`inspector/configuredAccess` and `inspector/batchDecide`), or checks one operation (`inspector/decide`) step by step: the roles that grant it, then the Default access, Sharing and Restriction rules that name the object, the operation and the user or a subject the user inherits, each linking to its rule. A rule plugin the application does not install shows as not installed. It never writes.
 
 ## Settings screens
 

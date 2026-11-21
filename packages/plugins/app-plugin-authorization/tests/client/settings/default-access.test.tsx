@@ -4,7 +4,7 @@ import { answerApi } from '@nocobase/app-testing/client';
 import { type AuthorizationOptionsResponse } from '../../../client/index.js';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Routes, Route, useLocation, useNavigate } from 'react-router';
+import { Outlet, Routes, Route, useLocation, useNavigate } from 'react-router';
 import { expect, it, vi } from 'vitest';
 import Page from '../../../client/settings/default-access.js';
 import Form from '../../../client/settings/default-access-form.js';
@@ -85,7 +85,16 @@ const existing = {
 function tree() {
   return (
     <Routes>
-      <Route path='/default-access' element={<Page />}>
+      <Route
+        path='/default-access'
+        element={
+          <>
+            <Page />
+            {/* The old addresses, which redirect to the list with the rule's sheet open. */}
+            <Outlet />
+          </>
+        }
+      >
         <Route path='create' element={<Form />} />
         <Route path=':key/edit' element={<Form />} />
       </Route>
@@ -364,13 +373,13 @@ it('configures custom conditions in a temporary draft and cancels without saving
   expect(
     screen.getByRole('button', { name: 'Save', exact: true }),
   ).toBeDisabled();
-  const dialog = screen.getByRole('dialog');
+  const dialog = screen.getByRole('dialog', {
+    name: 'Configure record filter',
+  });
   await user.click(
     within(dialog).getByRole('button', { name: 'Cancel', exact: true }),
   );
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-  );
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
   expect(
     screen.getByRole('combobox', { name: 'Edit · Projects' }),
   ).toHaveTextContent('Own records');
@@ -449,7 +458,7 @@ it('keeps one authorized create entry in the header for an empty list', async ()
   });
   const label = enUS.settings.defaultAccess.new;
   const create = await screen.findByRole('button', { name: label });
-  expect(create).toHaveAttribute('href', '/default-access/create');
+  expect(create).toHaveAttribute('href', '/default-access?create=1');
   expect(screen.getAllByRole('button', { name: label })).toHaveLength(1);
 });
 

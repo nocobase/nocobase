@@ -27,6 +27,12 @@ export interface DefaultAccessRule {
   readonly resource: { readonly type: string; readonly id: string };
   readonly actions: readonly DefaultAccessAction[];
 }
+/** A rule of any kind: sharing and restriction rules also name their subjects, a title and a reason. */
+export interface DataRule extends DefaultAccessRule {
+  readonly title?: string | { readonly key: string; readonly ns: string };
+  readonly subjects?: readonly { readonly type: string; readonly id: string }[];
+  readonly reason?: string;
+}
 export interface RuleScope {
   readonly id: string;
   readonly action: string;

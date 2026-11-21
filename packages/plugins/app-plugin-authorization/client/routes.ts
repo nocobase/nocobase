@@ -3,7 +3,7 @@ import {
   SYSTEM_SETTINGS_CATEGORIES,
   type AppClientSystemSettingsRoutesContribution,
 } from '@nocobase/app-client/plugins';
-import { KeyRound, ListFilter, ShieldCheck } from 'lucide-react';
+import { KeyRound, ListFilter, SearchCheck, ShieldCheck } from 'lucide-react';
 
 const PERMISSION_SETS = {
   type: 'settings',
@@ -64,13 +64,13 @@ export function authorizationSettingsRoutes(): AppClientSystemSettingsRoutesCont
           navigation: { title: 'settings.dataRules', icon: ListFilter },
           breadcrumb: { title: 'settings.dataRules' },
           componentLoader: () => import('./settings/data-rules.js'),
+          // The addresses a rule once opened on: each redirects to the list with the rule's side sheet open.
           children: [
             {
               name: 'settingsDefaultAccessCreate',
               path: 'create',
               authz: { resource: DEFAULT_ACCESS, action: 'create' },
               breadcrumb: { title: 'settings.defaultAccess.new' },
-              presentation: { kind: 'child-page' },
               componentLoader: () =>
                 import('./settings/default-access-form.js'),
             },
@@ -79,11 +79,23 @@ export function authorizationSettingsRoutes(): AppClientSystemSettingsRoutesCont
               name: 'settingsDefaultAccessEdit',
               path: ':key/edit',
               breadcrumb: { title: 'settings.defaultAccess.edit' },
-              presentation: { kind: 'child-page' },
               componentLoader: () =>
                 import('./settings/default-access-form.js'),
             },
           ],
+        },
+        // Reads anyone's permissions, so only an unrestricted role opens it, as the inspector it reads requires.
+        {
+          name: 'settingsPermissionCheck',
+          path: '/permission-check',
+          auth: 'required',
+          authz: 'unrestricted',
+          navigation: {
+            title: 'settings.permissionCheck.title',
+            icon: SearchCheck,
+          },
+          breadcrumb: { title: 'settings.permissionCheck.title' },
+          componentLoader: () => import('./settings/permission-check.js'),
         },
       ],
     },
