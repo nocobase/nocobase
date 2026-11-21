@@ -128,7 +128,8 @@ const denyAll: MiddlewareHandler = () => {
     status: 'PERMISSION_DENIED',
     reason: 'AUTHENTICATION_SETTINGS_FORBIDDEN',
     domain: 'authentication',
-    message: 'Reading the authentication settings requires the authorization plugin.',
+    message:
+      'Reading the authentication settings requires the authorization plugin.',
   });
 };
 

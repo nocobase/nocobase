@@ -17,18 +17,29 @@ export const PasswordResetCapabilitySchema: z.ZodType<PasswordResetCapability> =
 
 const ConfigOriginSchema: z.ZodType<ConfigOrigin> = z
   .object({
-    path: z.string().meta({ description: 'The configuration path, such as `auth.session.expiresIn`.' }),
+    path: z
+      .string()
+      .meta({
+        description:
+          'The configuration path, such as `auth.session.expiresIn`.',
+      }),
     source: z.enum(['env', 'file', 'code', 'default']).meta({
       description:
         'Where the value comes from: an environment variable, `config.yml`, the application code, or the default.',
     }),
-    env: z.string().optional().meta({ description: 'The environment variable, for `env`.' }),
+    env: z
+      .string()
+      .optional()
+      .meta({ description: 'The environment variable, for `env`.' }),
   })
   .meta({ ref: 'AuthenticationConfigOrigin' });
 
 const TextSchema: z.ZodType<SignInMethodText> = z
   .object({ key: z.string(), ns: z.string(), defaultValue: z.string() })
-  .meta({ ref: 'AuthenticationText', description: 'A translatable text and its English default.' });
+  .meta({
+    ref: 'AuthenticationText',
+    description: 'A translatable text and its English default.',
+  });
 
 const setting = <TValue extends z.ZodType>(schema: TValue) =>
   z.object({ value: schema, origin: ConfigOriginSchema });
@@ -37,7 +48,11 @@ export const AuthenticationSettingsSchema: z.ZodType<AuthenticationSettings> = z
   .object({
     issues: z.array(
       z.object({
-        code: z.enum(['passwordResetUnavailable', 'publicOriginMissing', 'registrationFeedback']),
+        code: z.enum([
+          'passwordResetUnavailable',
+          'publicOriginMissing',
+          'registrationFeedback',
+        ]),
         path: z.string(),
       }),
     ),
@@ -75,7 +90,11 @@ export const AuthenticationSettingsSchema: z.ZodType<AuthenticationSettings> = z
       minLength: setting(z.number()),
       maxLength: setting(z.number()),
       username: z
-        .object({ minLength: z.number(), maxLength: z.number(), origin: ConfigOriginSchema })
+        .object({
+          minLength: z.number(),
+          maxLength: z.number(),
+          origin: ConfigOriginSchema,
+        })
         .nullable(),
     }),
     passwordReset: z.object({
@@ -127,13 +146,21 @@ export const AuthenticationSettingsSchema: z.ZodType<AuthenticationSettings> = z
       'The effective sign-in and authentication settings, where each comes from, and the problems to fix. Never holds a secret, a signing key, a client secret or a mail credential.',
   });
 
-export const AuthenticationProviderSchema: z.ZodType<AuthenticationProviderSummary> = z
-  .object({
-    id: z.string().meta({ description: 'The provider id Better Auth links accounts with.' }),
-    name: z.string(),
-    type: z.enum(['oidc', 'social']),
-  })
-  .meta({ ref: 'AuthenticationProvider', description: 'A single sign-on or social provider a person can link.' });
+export const AuthenticationProviderSchema: z.ZodType<AuthenticationProviderSummary> =
+  z
+    .object({
+      id: z
+        .string()
+        .meta({
+          description: 'The provider id Better Auth links accounts with.',
+        }),
+      name: z.string(),
+      type: z.enum(['oidc', 'social']),
+    })
+    .meta({
+      ref: 'AuthenticationProvider',
+      description: 'A single sign-on or social provider a person can link.',
+    });
 
 export const AuthenticationProvidersMetaSchema: z.ZodType<{ total: number }> =
   z.object({ total: z.number().int() });

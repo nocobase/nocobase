@@ -18,9 +18,7 @@ export interface SettingValue<TValue> {
 /** Something an administrator should fix, named by a stable code the page translates. */
 export interface AuthenticationSettingsIssue {
   readonly code:
-    | 'passwordResetUnavailable'
-    | 'publicOriginMissing'
-    | 'registrationFeedback';
+    'passwordResetUnavailable' | 'publicOriginMissing' | 'registrationFeedback';
   /** The configuration path to change. */
   readonly path: string;
 }
@@ -213,7 +211,8 @@ function pluginOptions(
 export async function configuredProviders(
   authentication: Auth,
 ): Promise<readonly { id: string; name: string; type: 'oidc' | 'social' }[]> {
-  const context = (await authentication.administrationContext()) as unknown as AuthContext;
+  const context =
+    (await authentication.administrationContext()) as unknown as AuthContext;
   const providers = new Map<
     string,
     { id: string; name: string; type: 'oidc' | 'social' }
@@ -251,7 +250,8 @@ export async function collectAuthenticationSettings(
     path: string,
     effective: TValue,
   ): SettingValue<TValue> => ({ value: effective, origin: originOf(path) });
-  const context = (await input.authentication.administrationContext()) as unknown as AuthContext;
+  const context =
+    (await input.authentication.administrationContext()) as unknown as AuthContext;
   const options = context.options;
   const diagnosis = input.authentication.passwordResetDiagnosis();
   const providers = await configuredProviders(input.authentication);
@@ -271,10 +271,9 @@ export async function collectAuthenticationSettings(
     {
       id: 'password',
       title: text('password.title', 'Password'),
-      description: text(
-        'password.description',
-        username ? 'Email or username and a password' : 'Email and a password',
-      ),
+      description: username
+        ? text('password.description', 'Email or username and a password')
+        : text('password.descriptionEmail', 'Email and a password'),
       config: username ? 'emailAndPassword · username()' : 'emailAndPassword',
       status: passwordSignIn ? 'enabled' : 'notConfigured',
       origin: originOf('auth.emailAndPassword.enabled'),
@@ -408,7 +407,8 @@ export async function collectAuthenticationSettings(
     methods,
     signInPage: {
       password: passwordSignIn,
-      signUp: passwordSignIn && options.emailAndPassword?.disableSignUp !== true,
+      signUp:
+        passwordSignIn && options.emailAndPassword?.disableSignUp !== true,
       forgotPassword: diagnosis.available,
       providers: [...oidcProviders, ...socialProviders],
     },

@@ -1,6 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   errors: {
@@ -36,9 +36,14 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Esta origem não é confiável. Defina app.publicOrigin em config.yml como {{origin}}, reinicie o aplicativo e tente novamente.',
     INVALID_ORIGIN:
       'Esta origem não é confiável. Verifique app.publicOrigin em config.yml, reinicie o aplicativo e tente novamente.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Este pedido veio de outro site e foi recusado. Atualize a página e tente novamente.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: enUS.settings,
+  sso: enUS.sso,
+  account: enUS.account,
 };
 
 export default ptBR;

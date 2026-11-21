@@ -1,4 +1,7 @@
-import type { AppConfigAccessor, AppIdentityConfig } from '@nocobase/app-server/config';
+import type {
+  AppConfigAccessor,
+  AppIdentityConfig,
+} from '@nocobase/app-server/config';
 import type { MailSenderFactory } from '@nocobase/app-server/mailers';
 import {
   createServiceToken,

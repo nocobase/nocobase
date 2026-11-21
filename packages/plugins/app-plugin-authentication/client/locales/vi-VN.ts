@@ -1,6 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   errors: {
@@ -36,9 +36,14 @@ const viVN: LocaleResource<typeof enUS> = {
       'Nguồn gốc này không đáng tin cậy. Đặt app.publicOrigin trong config.yml thành {{origin}}, khởi động lại ứng dụng và thử lại.',
     INVALID_ORIGIN:
       'Nguồn gốc này không đáng tin cậy. Kiểm tra app.publicOrigin trong config.yml, khởi động lại ứng dụng và thử lại.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Yêu cầu này đến từ một trang web khác và đã bị từ chối. Tải lại trang và thử lại.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: enUS.settings,
+  sso: enUS.sso,
+  account: enUS.account,
 };
 
 export default viVN;

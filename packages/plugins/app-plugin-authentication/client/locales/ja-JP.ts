@@ -1,6 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   errors: {
@@ -38,9 +38,14 @@ const jaJP: LocaleResource<typeof enUS> = {
       'この発信元は信頼できません。 config.yml の app.publicOrigin を {{origin}} に設定し、アプリケーションを再起動して、再試行してください。',
     INVALID_ORIGIN:
       'この発信元は信頼できません。 config.yml の app.publicOrigin を確認し、アプリケーションを再起動して、再試行してください。',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'このリクエストは別のサイトから来たもので拒否されました。ページをリロードして、もう一度お試しください。',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: enUS.settings,
+  sso: enUS.sso,
+  account: enUS.account,
 };
 
 export default jaJP;

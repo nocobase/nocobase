@@ -1,6 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   errors: {
@@ -35,9 +35,14 @@ const idID: LocaleResource<typeof enUS> = {
       'Asal ini tidak dipercaya. Atur app.publicOrigin di config.yml ke {{origin}}, mulai ulang aplikasi, dan coba lagi.',
     INVALID_ORIGIN:
       'Asal ini tidak dipercaya. Centang app.publicOrigin di config.yml, mulai ulang aplikasi, dan coba lagi.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Permintaan ini datang dari situs lain dan ditolak. Muat ulang halaman dan coba lagi.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: enUS.settings,
+  sso: enUS.sso,
+  account: enUS.account,
 };
 
 export default idID;
