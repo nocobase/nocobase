@@ -25,10 +25,19 @@ export async function listAccessibleAIEmployees(ctx: Context): Promise<Model[]> 
 
 export async function getAccessibleAIEmployee(ctx: Context, username: string): Promise<Model | null> {
   const filter = await buildAccessibleEmployeeFilter(ctx);
+  // The model chooses `username`; it must narrow the role-restricted list, never replace it.
+  if (typeof username !== 'string' || !username) {
+    return null;
+  }
+  if (Array.isArray(filter.username) && !filter.username.includes(username)) {
+    return null;
+  }
+  if (typeof filter.username === 'string' && filter.username !== username) {
+    return null;
+  }
   return ctx.db.getRepository('aiEmployees').findOne({
     filter: {
-      ...filter,
-      username,
+      $and: [filter, { username }],
     },
   });
 }
