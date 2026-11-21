@@ -1,4 +1,9 @@
-import { useLocation, useResolvedPath, useSearchParams } from 'react-router';
+import {
+  useLocation,
+  useOutlet,
+  useResolvedPath,
+  useSearchParams,
+} from 'react-router';
 
 /**
  * The list's query and whether the list itself is showing. Its child routes (the create dialog and the edit drawer)
@@ -11,8 +16,10 @@ export function useListLocation(): {
 } {
   const location = useLocation();
   const listPath = useResolvedPath('.').pathname;
+  const child = useOutlet();
   const [params, setParams] = useSearchParams();
   const active =
+    (listPath === '/' && child === null) ||
     location.pathname.replace(/\/$/u, '') === listPath.replace(/\/$/u, '');
   return { params, setParams, active };
 }

@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import * as React from 'react';
 import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
 import { cn } from 'cn';
@@ -54,7 +55,7 @@ function SheetContent({
   side?: 'top' | 'right' | 'bottom' | 'left';
   showCloseButton?: boolean;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   return (
     <SheetPortal>
       <SheetOverlay />

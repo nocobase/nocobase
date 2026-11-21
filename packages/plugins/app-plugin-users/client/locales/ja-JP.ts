@@ -3,6 +3,63 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: '閉じる',
+  },
+  dataTable: {
+    filters: 'フィルター',
+    filtersApplied: 'フィルター · {{count}}',
+    firstPage: '最初のページへ',
+    hideColumn: '非表示',
+    lastPage: '最後のページへ',
+    nextPage: '次のページへ',
+    pageOf: '{{page}} / {{pageCount}} ページ',
+    previousPage: '前のページへ',
+    rowsPerPage: '1 ページの行数',
+    selectPage: 'このページをすべて選択',
+    selectedCount: '{{total}} 行中 {{selected}} 行を選択中。',
+    sort: '並べ替え',
+    sortAscending: '昇順',
+    sortBy: '並べ替え基準',
+    sortDescending: '降順',
+    toggleColumns: '列の表示切り替え',
+    view: '表示',
+  },
+  formFeedback: {
+    denied:
+      '現在の権限ではこのフォームを送信できません。入力内容は保持されています。',
+    failed:
+      '保存できませんでした。入力内容は保持されています。再試行してください。',
+    field: 'この値は受け付けられませんでした。確認して再試行してください。',
+    invalid: '強調表示された項目を確認して再試行してください。',
+    network:
+      '接続できません。接続を確認して再試行してください。入力内容は保持されています。',
+  },
+  listFeedback: {
+    clear: 'フィルターをクリア',
+    loading: '読み込み中',
+    refreshFailed: '更新に失敗しました。以前のデータを表示しています',
+    retry: '再試行',
+    retrying: '再試行中…',
+    signIn: 'サインイン',
+    empty: 'データはまだありません',
+    noResults: '結果がありません',
+    forbidden: 'アクセスが拒否されました',
+    unauthenticated: 'セッションの有効期限が切れました',
+    failed: '一覧を読み込めません',
+  },
+  pendingFeedback: {
+    longWait: '通常より時間がかかっています。そのままお待ちいただけます。',
+    working: '処理中…',
+  },
+  routeOverlay: {
+    close: '閉じる',
+  },
+  status: {
+    loading: '読み込み中',
+    refreshing: '更新中',
+  },
   management: {
     actions: '操作',
     actionsFor: '{{name}} の操作',

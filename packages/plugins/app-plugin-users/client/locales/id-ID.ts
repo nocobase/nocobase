@@ -3,6 +3,63 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Tutup',
+  },
+  dataTable: {
+    filters: 'Filter',
+    filtersApplied: 'Filter · {{count}}',
+    firstPage: 'Ke halaman pertama',
+    hideColumn: 'Sembunyikan',
+    lastPage: 'Ke halaman terakhir',
+    nextPage: 'Ke halaman berikutnya',
+    pageOf: 'Halaman {{page}} dari {{pageCount}}',
+    previousPage: 'Ke halaman sebelumnya',
+    rowsPerPage: 'Baris per halaman',
+    selectPage: 'Pilih semua di halaman ini',
+    selectedCount: '{{selected}} dari {{total}} baris dipilih.',
+    sort: 'Urutkan',
+    sortAscending: 'Naik',
+    sortBy: 'Urutkan menurut',
+    sortDescending: 'Turun',
+    toggleColumns: 'Tampilkan/sembunyikan kolom',
+    view: 'Tampilan',
+  },
+  formFeedback: {
+    denied:
+      'Anda tidak dapat mengirim formulir ini dengan akses Anda saat ini. Masukan Anda tetap disimpan.',
+    failed: 'Tidak dapat menyimpan. Masukan Anda tetap disimpan. Coba lagi.',
+    field: 'Nilai ini ditolak. Periksa lalu coba lagi.',
+    invalid: 'Periksa bidang yang ditandai lalu coba lagi.',
+    network:
+      'Tidak dapat terhubung. Periksa koneksi Anda lalu coba lagi. Masukan Anda tetap disimpan.',
+  },
+  listFeedback: {
+    clear: 'Hapus filter',
+    loading: 'Memuat',
+    refreshFailed: 'Gagal menyegarkan; menampilkan data sebelumnya',
+    retry: 'Coba lagi',
+    retrying: 'Mencoba lagi…',
+    signIn: 'Masuk',
+    empty: 'Belum ada data',
+    noResults: 'Tidak ada hasil',
+    forbidden: 'Akses ditolak',
+    unauthenticated: 'Sesi berakhir',
+    failed: 'Tidak dapat memuat daftar',
+  },
+  pendingFeedback: {
+    longWait:
+      'Ini memakan waktu lebih lama dari biasanya. Anda dapat terus menunggu.',
+    working: 'Memproses…',
+  },
+  routeOverlay: {
+    close: 'Tutup',
+  },
+  status: {
+    loading: 'Memuat',
+    refreshing: 'Menyegarkan',
+  },
   management: {
     actions: 'Tindakan',
     actionsFor: 'Tindakan untuk {{name}}',

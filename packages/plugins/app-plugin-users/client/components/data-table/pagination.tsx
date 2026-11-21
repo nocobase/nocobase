@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import type { Table as TableInstance } from '@tanstack/react-table';
 import {
   ChevronLeftIcon,
@@ -46,7 +47,7 @@ export function DataTablePagination<TData>({
   className,
   ...props
 }: DataTablePaginationProps<TData>): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const { pageIndex, pageSize } = table.getState().pagination;
   const pageCount = Math.max(table.getPageCount(), 1);
   const selected = table.getFilteredSelectedRowModel().rows.length;

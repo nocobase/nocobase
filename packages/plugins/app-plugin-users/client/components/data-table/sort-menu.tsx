@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import type { Column, Table as TableInstance } from '@tanstack/react-table';
 import { ArrowUpDownIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
@@ -47,7 +48,7 @@ export function DataTableSortMenu<TData>({
   compact = false,
   getColumnLabel,
 }: DataTableSortMenuProps<TData>): ReactElement | null {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const columns = table.getAllColumns().filter((column) => column.getCanSort());
   if (columns.length === 0) return null;
   const [current] = table.getState().sorting;

@@ -3,6 +3,60 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: '關閉',
+  },
+  dataTable: {
+    filters: '篩選',
+    filtersApplied: '篩選 · {{count}}',
+    firstPage: '第一頁',
+    hideColumn: '隱藏',
+    lastPage: '最後一頁',
+    nextPage: '下一頁',
+    pageOf: '第 {{page}} 頁，共 {{pageCount}} 頁',
+    previousPage: '上一頁',
+    rowsPerPage: '每頁列數',
+    selectPage: '全選本頁',
+    selectedCount: '已選擇 {{selected}} / {{total}} 列。',
+    sort: '排序',
+    sortAscending: '升冪',
+    sortBy: '排序方式',
+    sortDescending: '降冪',
+    toggleColumns: '顯示欄',
+    view: '檢視',
+  },
+  formFeedback: {
+    denied: '目前的權限無法提交此表單。已保留您的輸入。',
+    failed: '儲存失敗，已保留您的輸入，請重試。',
+    field: '此欄位的值未通過驗證，請檢查並修改後重試。',
+    invalid: '請檢查標示的欄位後重試。',
+    network: '無法連線，請檢查網路後重試。已保留您的輸入。',
+  },
+  listFeedback: {
+    clear: '清除篩選',
+    loading: '載入中',
+    refreshFailed: '重新整理失敗，仍顯示舊資料',
+    retry: '重試',
+    retrying: '正在重試…',
+    signIn: '登入',
+    empty: '尚無資料',
+    noResults: '沒有結果',
+    forbidden: '無權存取',
+    unauthenticated: '工作階段已過期',
+    failed: '清單載入失敗',
+  },
+  pendingFeedback: {
+    longWait: '耗時比平常更長，您可以繼續等待。',
+    working: '正在處理…',
+  },
+  routeOverlay: {
+    close: '關閉',
+  },
+  status: {
+    loading: '載入中',
+    refreshing: '正在重新整理',
+  },
   management: {
     actions: '操作',
     actionsFor: '{{name}} 的操作',

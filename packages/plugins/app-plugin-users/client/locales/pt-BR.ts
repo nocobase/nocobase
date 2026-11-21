@@ -3,6 +3,64 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Fechar',
+  },
+  dataTable: {
+    filters: 'Filtros',
+    filtersApplied: 'Filtros · {{count}}',
+    firstPage: 'Ir para a primeira página',
+    hideColumn: 'Ocultar',
+    lastPage: 'Ir para a última página',
+    nextPage: 'Ir para a próxima página',
+    pageOf: 'Página {{page}} de {{pageCount}}',
+    previousPage: 'Ir para a página anterior',
+    rowsPerPage: 'Linhas por página',
+    selectPage: 'Selecionar tudo nesta página',
+    selectedCount: '{{selected}} de {{total}} linha(s) selecionada(s).',
+    sort: 'Ordenar',
+    sortAscending: 'Cresc.',
+    sortBy: 'Ordenar por',
+    sortDescending: 'Decr.',
+    toggleColumns: 'Alternar colunas',
+    view: 'Visualizar',
+  },
+  formFeedback: {
+    denied:
+      'Você não pode enviar este formulário com seu acesso atual. Seus dados foram mantidos.',
+    failed:
+      'Não foi possível salvar. Seus dados foram mantidos. Tente novamente.',
+    field: 'Este valor foi rejeitado. Verifique-o e tente novamente.',
+    invalid: 'Verifique os campos destacados e tente novamente.',
+    network:
+      'Não foi possível conectar. Verifique sua conexão e tente novamente. Seus dados foram mantidos.',
+  },
+  listFeedback: {
+    clear: 'Limpar filtros',
+    loading: 'Carregando',
+    refreshFailed: 'Falha ao atualizar; exibindo os dados anteriores',
+    retry: 'Tentar novamente',
+    retrying: 'Tentando novamente…',
+    signIn: 'Entrar',
+    empty: 'Ainda não há dados',
+    noResults: 'Nenhum resultado',
+    forbidden: 'Acesso negado',
+    unauthenticated: 'Sessão expirada',
+    failed: 'Não foi possível carregar a lista',
+  },
+  pendingFeedback: {
+    longWait:
+      'Está demorando mais que o normal. Você pode continuar aguardando.',
+    working: 'Processando…',
+  },
+  routeOverlay: {
+    close: 'Fechar',
+  },
+  status: {
+    loading: 'Carregando',
+    refreshing: 'Atualizando',
+  },
   management: {
     actions: 'Ações',
     actionsFor: 'Ações para {{name}}',

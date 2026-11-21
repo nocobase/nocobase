@@ -1,6 +1,60 @@
 import type { UsersResource } from './en-US.js';
 
 const zhCN: UsersResource = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: '关闭',
+  },
+  dataTable: {
+    filters: '筛选',
+    filtersApplied: '筛选 · {{count}}',
+    firstPage: '第一页',
+    hideColumn: '隐藏',
+    lastPage: '最后一页',
+    nextPage: '下一页',
+    pageOf: '第 {{page}} 页，共 {{pageCount}} 页',
+    previousPage: '上一页',
+    rowsPerPage: '每页行数',
+    selectPage: '全选本页',
+    selectedCount: '已选择 {{selected}} / {{total}} 行。',
+    sort: '排序',
+    sortAscending: '升序',
+    sortBy: '排序方式',
+    sortDescending: '降序',
+    toggleColumns: '显示列',
+    view: '视图',
+  },
+  formFeedback: {
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+  },
+  listFeedback: {
+    clear: '清空筛选',
+    loading: '加载中',
+    refreshFailed: '刷新失败，仍显示旧数据',
+    retry: '重试',
+    retrying: '正在重试…',
+    signIn: '登录',
+    empty: '暂无数据',
+    noResults: '无结果',
+    forbidden: '无权访问',
+    unauthenticated: '会话已过期',
+    failed: '列表加载失败',
+  },
+  pendingFeedback: {
+    longWait: '耗时比平常更长，您可以继续等待。',
+    working: '正在处理…',
+  },
+  routeOverlay: {
+    close: '关闭',
+  },
+  status: {
+    loading: '加载中',
+    refreshing: '正在刷新',
+  },
   management: {
     actions: '操作',
     actionsFor: '{{name}} 的操作',

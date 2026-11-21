@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import type { Column, Table as TableInstance } from '@tanstack/react-table';
 import { Settings2Icon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
@@ -31,7 +32,7 @@ export function DataTableViewOptions<TData>({
   className,
   getColumnLabel,
 }: DataTableViewOptionsProps<TData>): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const columns = table
     .getAllColumns()
     .filter(

@@ -1,5 +1,6 @@
 import type { ListState } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../namespace.js';
 import {
   CircleAlert,
   Inbox,
@@ -66,7 +67,7 @@ export function ListFeedbackActions({
   onRetry,
   busy = false,
 }: ListFeedbackActionsProps): ReactElement | null {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
 
   const clear =
     onClear &&
@@ -121,7 +122,7 @@ export function ListFeedback({
   emptyAction,
   identity,
 }: ListFeedbackProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
 
   if (state === 'ready') {
     return <Fragment key='list-feedback-content'>{children}</Fragment>;

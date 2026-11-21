@@ -7,6 +7,7 @@ import {
   type FormFeedbackState,
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../namespace.js';
 import {
   createContext,
   type Context,
@@ -125,7 +126,7 @@ export function FeedbackForm({
   ref,
   ...props
 }: FeedbackFormProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const unsavedValues = useContext(UnsavedValuesContext);
   const valuesRef = useRef(values);
   const savedValuesRef = useRef(savedValues);

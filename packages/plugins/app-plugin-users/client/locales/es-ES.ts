@@ -3,6 +3,63 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Cerrar',
+  },
+  dataTable: {
+    filters: 'Filtros',
+    filtersApplied: 'Filtros · {{count}}',
+    firstPage: 'Ir a la primera página',
+    hideColumn: 'Ocultar',
+    lastPage: 'Ir a la última página',
+    nextPage: 'Ir a la página siguiente',
+    pageOf: 'Página {{page}} de {{pageCount}}',
+    previousPage: 'Ir a la página anterior',
+    rowsPerPage: 'Filas por página',
+    selectPage: 'Seleccionar todo en esta página',
+    selectedCount: '{{selected}} de {{total}} fila(s) seleccionada(s).',
+    sort: 'Ordenar',
+    sortAscending: 'Asc',
+    sortBy: 'Ordenar por',
+    sortDescending: 'Desc',
+    toggleColumns: 'Mostrar u ocultar columnas',
+    view: 'Vista',
+  },
+  formFeedback: {
+    denied:
+      'No puedes enviar este formulario con tu acceso actual. Se han conservado tus datos.',
+    failed:
+      'No se pudo guardar. Se han conservado tus datos. Inténtalo de nuevo.',
+    field: 'Este valor se ha rechazado. Revísalo e inténtalo de nuevo.',
+    invalid: 'Revisa los campos resaltados e inténtalo de nuevo.',
+    network:
+      'No se puede conectar. Revisa tu conexión e inténtalo de nuevo. Se han conservado tus datos.',
+  },
+  listFeedback: {
+    clear: 'Borrar filtros',
+    loading: 'Cargando',
+    refreshFailed: 'Error al actualizar; se muestran los datos anteriores',
+    retry: 'Reintentar',
+    retrying: 'Reintentando…',
+    signIn: 'Iniciar sesión',
+    empty: 'Aún no hay datos',
+    noResults: 'Sin resultados',
+    forbidden: 'Acceso denegado',
+    unauthenticated: 'La sesión ha caducado',
+    failed: 'No se pudo cargar la lista',
+  },
+  pendingFeedback: {
+    longWait: 'Está tardando más de lo habitual. Puedes seguir esperando.',
+    working: 'Procesando…',
+  },
+  routeOverlay: {
+    close: 'Cerrar',
+  },
+  status: {
+    loading: 'Cargando',
+    refreshing: 'Actualizando',
+  },
   management: {
     actions: 'Acciones',
     actionsFor: 'Acciones para {{name}}',

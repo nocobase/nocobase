@@ -1,5 +1,6 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../namespace.js';
 import { XIcon } from 'lucide-react';
 import {
   createContext,
@@ -108,7 +109,7 @@ function RouteOverlayFrame({
   readonly drawer?: boolean;
   readonly closeBlocked?: boolean;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const parentPopup = useContext(ParentPopupContext);
   const popupRef = useRef<HTMLDivElement>(null);
   const [portal, setPortal] = useState<HTMLDivElement | null>(null);

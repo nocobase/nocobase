@@ -3,6 +3,64 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Закрыть',
+  },
+  dataTable: {
+    filters: 'Фильтры',
+    filtersApplied: 'Фильтры · {{count}}',
+    firstPage: 'На первую страницу',
+    hideColumn: 'Скрыть',
+    lastPage: 'На последнюю страницу',
+    nextPage: 'На следующую страницу',
+    pageOf: 'Страница {{page}} из {{pageCount}}',
+    previousPage: 'На предыдущую страницу',
+    rowsPerPage: 'Строк на странице',
+    selectPage: 'Выбрать всё на этой странице',
+    selectedCount: 'Выбрано строк: {{selected}} из {{total}}.',
+    sort: 'Сортировка',
+    sortAscending: 'По возр.',
+    sortBy: 'Сортировать по',
+    sortDescending: 'По убыв.',
+    toggleColumns: 'Показать или скрыть столбцы',
+    view: 'Вид',
+  },
+  formFeedback: {
+    denied:
+      'С вашими текущими правами нельзя отправить эту форму. Введённые данные сохранены.',
+    failed:
+      'Не удалось сохранить. Введённые данные сохранены. Повторите попытку.',
+    field: 'Это значение отклонено. Проверьте его и повторите попытку.',
+    invalid: 'Проверьте выделенные поля и повторите попытку.',
+    network:
+      'Нет соединения. Проверьте подключение и повторите попытку. Введённые данные сохранены.',
+  },
+  listFeedback: {
+    clear: 'Сбросить фильтры',
+    loading: 'Загрузка',
+    refreshFailed: 'Не удалось обновить; показаны прежние данные',
+    retry: 'Повторить',
+    retrying: 'Повторная попытка…',
+    signIn: 'Войти',
+    empty: 'Данных пока нет',
+    noResults: 'Нет результатов',
+    forbidden: 'Доступ запрещён',
+    unauthenticated: 'Сеанс истёк',
+    failed: 'Не удалось загрузить список',
+  },
+  pendingFeedback: {
+    longWait:
+      'Это занимает больше времени, чем обычно. Можно продолжать ждать.',
+    working: 'Выполняется…',
+  },
+  routeOverlay: {
+    close: 'Закрыть',
+  },
+  status: {
+    loading: 'Загрузка',
+    refreshing: 'Обновление',
+  },
   management: {
     actions: 'Действия',
     actionsFor: 'Действия для {{name}}',

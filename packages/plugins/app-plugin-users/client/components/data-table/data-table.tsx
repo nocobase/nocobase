@@ -1,5 +1,6 @@
 import type { ListState } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import { ListFeedback, ListFeedbackActions } from '../list-feedback.js';
 import { RefreshIndicator } from '../loading.js';
 import {
@@ -270,7 +271,7 @@ export function DataTable<TData, TValue = unknown>({
   selectionColumnId = 'select',
   sortableColumns,
 }: DataTableProps<TData, TValue>): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const phone = useIsPhone(renderCard !== undefined || filters !== undefined);
   const cards = phone && renderCard;
   const tableData = useMemo(() => [...data], [data]);

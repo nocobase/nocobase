@@ -3,6 +3,65 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Schließen',
+  },
+  dataTable: {
+    filters: 'Filter',
+    filtersApplied: 'Filter · {{count}}',
+    firstPage: 'Zur ersten Seite',
+    hideColumn: 'Ausblenden',
+    lastPage: 'Zur letzten Seite',
+    nextPage: 'Zur nächsten Seite',
+    pageOf: 'Seite {{page}} von {{pageCount}}',
+    previousPage: 'Zur vorherigen Seite',
+    rowsPerPage: 'Zeilen pro Seite',
+    selectPage: 'Alle auf dieser Seite auswählen',
+    selectedCount: '{{selected}} von {{total}} Zeile(n) ausgewählt.',
+    sort: 'Sortieren',
+    sortAscending: 'Aufst.',
+    sortBy: 'Sortieren nach',
+    sortDescending: 'Abst.',
+    toggleColumns: 'Spalten ein-/ausblenden',
+    view: 'Ansicht',
+  },
+  formFeedback: {
+    denied:
+      'Mit Ihren aktuellen Berechtigungen können Sie dieses Formular nicht absenden. Ihre Eingaben bleiben erhalten.',
+    failed:
+      'Speichern nicht möglich. Ihre Eingaben bleiben erhalten. Versuchen Sie es erneut.',
+    field:
+      'Dieser Wert wurde abgelehnt. Prüfen Sie ihn und versuchen Sie es erneut.',
+    invalid: 'Prüfen Sie die markierten Felder und versuchen Sie es erneut.',
+    network:
+      'Keine Verbindung. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.',
+  },
+  listFeedback: {
+    clear: 'Filter zurücksetzen',
+    loading: 'Wird geladen',
+    refreshFailed:
+      'Aktualisierung fehlgeschlagen; frühere Daten werden angezeigt',
+    retry: 'Erneut versuchen',
+    retrying: 'Erneuter Versuch…',
+    signIn: 'Anmelden',
+    empty: 'Noch keine Daten',
+    noResults: 'Keine Ergebnisse',
+    forbidden: 'Zugriff verweigert',
+    unauthenticated: 'Sitzung abgelaufen',
+    failed: 'Liste konnte nicht geladen werden',
+  },
+  pendingFeedback: {
+    longWait: 'Das dauert länger als üblich. Sie können weiter warten.',
+    working: 'Wird bearbeitet…',
+  },
+  routeOverlay: {
+    close: 'Schließen',
+  },
+  status: {
+    loading: 'Wird geladen',
+    refreshing: 'Wird aktualisiert',
+  },
   management: {
     actions: 'Aktionen',
     actionsFor: 'Aktionen für {{name}}',

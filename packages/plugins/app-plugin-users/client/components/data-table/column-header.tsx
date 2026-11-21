@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import type { Column, SortDirection } from '@tanstack/react-table';
 import {
   ArrowDownIcon,
@@ -47,7 +48,7 @@ export function DataTableColumnHeader<TData, TValue>({
   className,
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
 
   if (!column.getCanSort()) {
     return (

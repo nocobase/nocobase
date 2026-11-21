@@ -1,5 +1,6 @@
 import { usePendingFeedback } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../namespace.js';
 import {
   useImperativeHandle,
   useRef,
@@ -37,7 +38,7 @@ export function PendingButton({
   'aria-label': ariaLabel,
   ...props
 }: PendingButtonProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const anchorRef = useRef<HTMLButtonElement>(null);
   useImperativeHandle(ref, () => anchorRef.current!, []);
   const feedback = usePendingFeedback(busy, identity);

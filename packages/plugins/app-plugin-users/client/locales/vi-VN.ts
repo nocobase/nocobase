@@ -3,6 +3,62 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Đóng',
+  },
+  dataTable: {
+    filters: 'Bộ lọc',
+    filtersApplied: 'Bộ lọc · {{count}}',
+    firstPage: 'Đến trang đầu',
+    hideColumn: 'Ẩn',
+    lastPage: 'Đến trang cuối',
+    nextPage: 'Đến trang sau',
+    pageOf: 'Trang {{page}} / {{pageCount}}',
+    previousPage: 'Đến trang trước',
+    rowsPerPage: 'Số hàng mỗi trang',
+    selectPage: 'Chọn tất cả trên trang này',
+    selectedCount: 'Đã chọn {{selected}} / {{total}} hàng.',
+    sort: 'Sắp xếp',
+    sortAscending: 'Tăng dần',
+    sortBy: 'Sắp xếp theo',
+    sortDescending: 'Giảm dần',
+    toggleColumns: 'Ẩn/hiện cột',
+    view: 'Hiển thị',
+  },
+  formFeedback: {
+    denied:
+      'Bạn không thể gửi biểu mẫu này với quyền truy cập hiện tại. Dữ liệu bạn nhập đã được giữ lại.',
+    failed: 'Không thể lưu. Dữ liệu bạn nhập đã được giữ lại. Hãy thử lại.',
+    field: 'Giá trị này bị từ chối. Hãy kiểm tra và thử lại.',
+    invalid: 'Hãy kiểm tra các trường được đánh dấu rồi thử lại.',
+    network:
+      'Không thể kết nối. Hãy kiểm tra kết nối rồi thử lại. Dữ liệu bạn nhập đã được giữ lại.',
+  },
+  listFeedback: {
+    clear: 'Xóa bộ lọc',
+    loading: 'Đang tải',
+    refreshFailed: 'Làm mới thất bại; đang hiển thị dữ liệu cũ',
+    retry: 'Thử lại',
+    retrying: 'Đang thử lại…',
+    signIn: 'Đăng nhập',
+    empty: 'Chưa có dữ liệu',
+    noResults: 'Không có kết quả',
+    forbidden: 'Bị từ chối truy cập',
+    unauthenticated: 'Phiên đã hết hạn',
+    failed: 'Không thể tải danh sách',
+  },
+  pendingFeedback: {
+    longWait: 'Việc này đang lâu hơn bình thường. Bạn có thể tiếp tục chờ.',
+    working: 'Đang xử lý…',
+  },
+  routeOverlay: {
+    close: 'Đóng',
+  },
+  status: {
+    loading: 'Đang tải',
+    refreshing: 'Đang làm mới',
+  },
   management: {
     actions: 'Thao tác',
     actionsFor: 'Thao tác cho {{name}}',

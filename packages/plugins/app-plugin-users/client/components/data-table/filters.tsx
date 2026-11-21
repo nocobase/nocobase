@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import { FilterIcon } from 'lucide-react';
 import {
   createContext,
@@ -85,7 +86,7 @@ export function DataTableFilterSheet({
   readonly count: number;
   readonly children: ReactNode;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const [open, setOpen] = useState(false);
   const title = t('dataTable.filters', { defaultValue: 'Filters' });
   return (

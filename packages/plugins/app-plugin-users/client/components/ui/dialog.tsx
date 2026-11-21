@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../../namespace.js';
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from 'cn';
@@ -52,7 +53,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   return (
     <DialogPortal>
       {/* Base UI leaves out the backdrop of a dialog opened inside another one; render it anyway, so the layer below
@@ -108,7 +109,7 @@ function DialogFooter({
 }: React.ComponentProps<'div'> & {
   showCloseButton?: boolean;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   return (
     <div
       data-slot='dialog-footer'

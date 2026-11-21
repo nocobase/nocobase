@@ -3,6 +3,65 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Fermer',
+  },
+  dataTable: {
+    filters: 'Filtres',
+    filtersApplied: 'Filtres · {{count}}',
+    firstPage: 'Aller à la première page',
+    hideColumn: 'Masquer',
+    lastPage: 'Aller à la dernière page',
+    nextPage: 'Aller à la page suivante',
+    pageOf: 'Page {{page}} sur {{pageCount}}',
+    previousPage: 'Aller à la page précédente',
+    rowsPerPage: 'Lignes par page',
+    selectPage: 'Tout sélectionner sur cette page',
+    selectedCount: '{{selected}} ligne(s) sélectionnée(s) sur {{total}}.',
+    sort: 'Trier',
+    sortAscending: 'Croissant',
+    sortBy: 'Trier par',
+    sortDescending: 'Décroissant',
+    toggleColumns: 'Afficher ou masquer les colonnes',
+    view: 'Affichage',
+  },
+  formFeedback: {
+    denied:
+      'Vous ne pouvez pas envoyer ce formulaire avec vos accès actuels. Votre saisie a été conservée.',
+    failed:
+      'Enregistrement impossible. Votre saisie a été conservée. Réessayez.',
+    field: 'Cette valeur a été refusée. Vérifiez-la et réessayez.',
+    invalid: 'Vérifiez les champs signalés et réessayez.',
+    network:
+      'Connexion impossible. Vérifiez votre connexion et réessayez. Votre saisie a été conservée.',
+  },
+  listFeedback: {
+    clear: 'Effacer les filtres',
+    loading: 'Chargement',
+    refreshFailed:
+      'Échec de l’actualisation ; affichage des données précédentes',
+    retry: 'Réessayer',
+    retrying: 'Nouvelle tentative…',
+    signIn: 'Se connecter',
+    empty: 'Aucune donnée pour le moment',
+    noResults: 'Aucun résultat',
+    forbidden: 'Accès refusé',
+    unauthenticated: 'Session expirée',
+    failed: 'Impossible de charger la liste',
+  },
+  pendingFeedback: {
+    longWait:
+      'Cela prend plus de temps que d’habitude. Vous pouvez continuer à patienter.',
+    working: 'Traitement…',
+  },
+  routeOverlay: {
+    close: 'Fermer',
+  },
+  status: {
+    loading: 'Chargement',
+    refreshing: 'Actualisation',
+  },
   management: {
     actions: 'Actions',
     actionsFor: 'Actions pour {{name}}',

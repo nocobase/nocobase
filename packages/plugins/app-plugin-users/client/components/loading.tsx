@@ -1,5 +1,6 @@
 import { usePendingFeedback } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { USERS_NAMESPACE } from '../namespace.js';
 import type { ComponentPropsWithoutRef, ReactElement } from 'react';
 import { cn } from 'cn';
 import { BrandLoadingMark } from './brand-loading-mark.js';
@@ -22,7 +23,7 @@ export function Loading({
   longWaitLabel,
   ...props
 }: LoadingProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const feedback = usePendingFeedback(pending, identity);
   const loadingLabel =
     label ?? t('status.loading', { defaultValue: 'Loading' });
@@ -105,7 +106,7 @@ export function RefreshIndicator({
   longWaitLabel,
   className,
 }: RefreshIndicatorProps): ReactElement | null {
-  const { t } = useTranslation();
+  const { t } = useTranslation(USERS_NAMESPACE);
   const feedback = usePendingFeedback(pending, identity);
   if (!feedback.visible) return null;
   const message = feedback.longWaiting

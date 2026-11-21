@@ -3,6 +3,62 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: '닫기',
+  },
+  dataTable: {
+    filters: '필터',
+    filtersApplied: '필터 · {{count}}',
+    firstPage: '첫 페이지로 이동',
+    hideColumn: '숨기기',
+    lastPage: '마지막 페이지로 이동',
+    nextPage: '다음 페이지로 이동',
+    pageOf: '{{page}} / {{pageCount}} 페이지',
+    previousPage: '이전 페이지로 이동',
+    rowsPerPage: '페이지당 행 수',
+    selectPage: '이 페이지 모두 선택',
+    selectedCount: '{{total}}개 행 중 {{selected}}개 선택됨.',
+    sort: '정렬',
+    sortAscending: '오름차순',
+    sortBy: '정렬 기준',
+    sortDescending: '내림차순',
+    toggleColumns: '열 표시 전환',
+    view: '보기',
+  },
+  formFeedback: {
+    denied:
+      '현재 권한으로는 이 양식을 제출할 수 없습니다. 입력한 내용은 유지됩니다.',
+    failed: '저장할 수 없습니다. 입력한 내용은 유지됩니다. 다시 시도하세요.',
+    field: '이 값이 거부되었습니다. 확인한 후 다시 시도하세요.',
+    invalid: '강조 표시된 필드를 확인한 후 다시 시도하세요.',
+    network:
+      '연결할 수 없습니다. 연결을 확인한 후 다시 시도하세요. 입력한 내용은 유지됩니다.',
+  },
+  listFeedback: {
+    clear: '필터 지우기',
+    loading: '로딩 중',
+    refreshFailed: '새로 고침 실패, 이전 데이터를 표시합니다',
+    retry: '다시 시도',
+    retrying: '다시 시도 중…',
+    signIn: '로그인',
+    empty: '아직 데이터가 없습니다',
+    noResults: '결과 없음',
+    forbidden: '접근 거부됨',
+    unauthenticated: '세션이 만료되었습니다',
+    failed: '목록을 불러올 수 없습니다',
+  },
+  pendingFeedback: {
+    longWait: '평소보다 오래 걸리고 있습니다. 계속 기다리셔도 됩니다.',
+    working: '처리 중…',
+  },
+  routeOverlay: {
+    close: '닫기',
+  },
+  status: {
+    loading: '로딩 중',
+    refreshing: '새로 고치는 중',
+  },
   management: {
     actions: '작업',
     actionsFor: '{{name}} 작업',

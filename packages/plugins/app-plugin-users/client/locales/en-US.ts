@@ -1,6 +1,62 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
+  // The shared list, form and overlay components (`components/`).
+  actions: {
+    close: 'Close',
+  },
+  dataTable: {
+    filters: 'Filters',
+    filtersApplied: 'Filters · {{count}}',
+    firstPage: 'Go to first page',
+    hideColumn: 'Hide',
+    lastPage: 'Go to last page',
+    nextPage: 'Go to next page',
+    pageOf: 'Page {{page}} of {{pageCount}}',
+    previousPage: 'Go to previous page',
+    rowsPerPage: 'Rows per page',
+    selectPage: 'Select all on this page',
+    selectedCount: '{{selected}} of {{total}} row(s) selected.',
+    sort: 'Sort',
+    sortAscending: 'Asc',
+    sortBy: 'Sort by',
+    sortDescending: 'Desc',
+    toggleColumns: 'Toggle columns',
+    view: 'View',
+  },
+  formFeedback: {
+    denied:
+      'You cannot submit this form with your current access. Your input has been kept.',
+    failed: 'Unable to save. Your input has been kept. Try again.',
+    field: 'This value was rejected. Check it and try again.',
+    invalid: 'Check the highlighted fields and try again.',
+    network:
+      'Unable to connect. Check your connection and try again. Your input has been kept.',
+  },
+  listFeedback: {
+    clear: 'Clear filters',
+    loading: 'Loading',
+    refreshFailed: 'Refresh failed; showing previous data',
+    retry: 'Retry',
+    retrying: 'Retrying…',
+    signIn: 'Sign in',
+    empty: 'No data yet',
+    noResults: 'No results',
+    forbidden: 'Access denied',
+    unauthenticated: 'Session expired',
+    failed: 'Unable to load list',
+  },
+  pendingFeedback: {
+    longWait: 'This is taking longer than usual. You can keep waiting.',
+    working: 'Working…',
+  },
+  routeOverlay: {
+    close: 'Close',
+  },
+  status: {
+    loading: 'Loading',
+    refreshing: 'Refreshing',
+  },
   management: {
     actions: 'Actions',
     actionsFor: 'Actions for {{name}}',

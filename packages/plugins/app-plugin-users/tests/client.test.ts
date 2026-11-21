@@ -95,9 +95,9 @@ describe('@nocobase/app-plugin-users Client routes', () => {
       path: '/settings/users/:userId/edit',
       presentation: { kind: 'drawer', title: 'management.editUser' },
     });
-    expect(
-      byId(routes, '@nocobase/app-plugin-users:settingsUser').path,
-    ).toBe('/settings/users/:userId');
+    expect(byId(routes, '@nocobase/app-plugin-users:settingsUser').path).toBe(
+      '/settings/users/:userId',
+    );
     expect(await component(routes, USERS_ROUTE_ID)).toBe(UsersPage);
     expect(await component(routes, USER_CREATE_ROUTE_ID)).toBe(UserFormPage);
     expect(await component(routes, USER_EDIT_ROUTE_ID)).toBe(UserFormPage);
@@ -121,9 +121,7 @@ describe('@nocobase/app-plugin-users Client routes', () => {
     expect(await component(routes, USER_EDIT_ROUTE_ID)).toBe(UserFormPage);
     // The address, authorization and presentation stay the plugin's.
     expect(byId(routes, USERS_ROUTE_ID).path).toBe('/settings/users');
-    expect(byId(routes, USER_EDIT_ROUTE_ID).presentation?.kind).toBe(
-      'drawer',
-    );
+    expect(byId(routes, USER_EDIT_ROUTE_ID).presentation?.kind).toBe('drawer');
   }, 15_000);
 
   it('replaces all three pages when each is overridden', async () => {
