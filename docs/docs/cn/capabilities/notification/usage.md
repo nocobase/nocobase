@@ -16,6 +16,10 @@ description: '介绍站内信、邮件、飞书和钉钉通知，演示站内信
 
 应用决定何时通知、收件人、内容和点击后的业务页面；通知能力负责消息投递、投递记录和重试历史。还可以按需要扩展其他通知服务。
 
+## 用户邀请邮件
+
+用户邀请邮件优先使用 `users.invitations.mailer`，否则使用 `mailers.default`。显式设置 `users.invitations.emailChannel` 时会选择旧版通知渠道而非默认邮件服务；未指定两种选择且没有默认邮件服务时，Users 插件回退到 `system-email`。可在 `mailers` 下配置共享邮件服务，或在 `notification.channels.system-email` 中配置并启用回退渠道。模板的 `config.example.yml` 提供了这两种配置示例。未配置邮件服务或可用回退渠道时，创建邀请仍会成功，但结果会包含 `emailError: "Email not sent: no email channel configured"` 和邀请链接，供有权限的邀请人手动转发。Studio 中文界面显示「邮件未发送：未配置邮件渠道」。
+
 ## 示例：发送站内信通知
 
 需要在应用内向用户发送业务提醒时，可以使用站内信。本例向操作人发送运输订单进度通知，并在消息中提供订单详情入口。
