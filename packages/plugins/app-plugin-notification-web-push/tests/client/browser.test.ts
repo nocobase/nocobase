@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/app-client';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   deviceKey,
@@ -54,4 +55,32 @@ it('uses the default device identity and logout protocol', async () => {
   expect(postMessage).toHaveBeenCalledWith({ kind: 'webPush.logout' });
   expect(close).toHaveBeenCalledOnce();
   expect(currentDevice(base, 'alice')).toBeNull();
+});
+
+it('lets sign-out continue when the device was already removed, and stops it on other failures', async () => {
+  const base = '/main/';
+  vi.stubGlobal('navigator', {});
+  const failure = (status: number) =>
+    new ApiClientError('Request failed', {
+      status,
+      method: 'DELETE',
+      url: '/main/api/webPush/subscriptions/gone',
+    });
+  rememberDevice(base, 'alice', 'gone');
+  await unsubscribeDevice(
+    { request: vi.fn(async () => Promise.reject(failure(404))) } as never,
+    base,
+    'alice',
+  );
+  expect(currentDevice(base, 'alice')).toBeNull();
+
+  rememberDevice(base, 'alice', 'kept');
+  await expect(
+    unsubscribeDevice(
+      { request: vi.fn(async () => Promise.reject(failure(503))) } as never,
+      base,
+      'alice',
+    ),
+  ).rejects.toBeInstanceOf(ApiClientError);
+  expect(currentDevice(base, 'alice')).toBe('kept');
 });

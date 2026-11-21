@@ -27,6 +27,10 @@ export {
 export { ClientApplicationContext } from './application-context.js';
 export { resolveAppBase, resolveAppUrl, resolveAssetUrl } from './client.js';
 export {
+  mountInstallLinks,
+  type InstallLinksOptions,
+} from './install-links.js';
+export {
   ApiClientError,
   buildFindManyOptions,
   createApiClient,

@@ -1,4 +1,8 @@
-import { ClientApplication, toasterToken } from '@nocobase/app-client';
+import {
+  ClientApplication,
+  mountInstallLinks,
+  toasterToken,
+} from '@nocobase/app-client';
 import type { ClientServiceProviderConstructor } from '@nocobase/app-client/plugins';
 import { ServiceProvider } from '@nocobase/service-provider';
 
@@ -7,6 +11,7 @@ import { createToaster } from './lib/toaster.js';
 export class DefaultClientServiceProvider extends ServiceProvider<ClientApplication> {
   public readonly name: string = '@nocobase/app-template-examples/client';
   private previousDocumentTitle: string | undefined;
+  private unmountInstallLinks: (() => void) | undefined;
 
   public override register(): void {
     // What plugins and pages report through useToaster() reaches the Toaster in client/react-providers.ts from here.
@@ -21,10 +26,20 @@ export class DefaultClientServiceProvider extends ServiceProvider<ClientApplicat
         : 'NocoBase';
     this.previousDocumentTitle = document.title;
     document.title = title;
+    // Lets browsers offer installation; turned off with pwa.enabled on the server. Asks for no permission.
+    if (this.app.config.public.get('pwa.enabled', false)) {
+      this.unmountInstallLinks?.();
+      this.unmountInstallLinks = mountInstallLinks({
+        basePath: this.app.config.get<string>('app.basePath'),
+        appleTouchIcon: this.app.config.public.get('pwa.appleTouchIcon'),
+      });
+    }
     return Promise.resolve();
   }
 
   public override shutdown(): Promise<void> {
+    this.unmountInstallLinks?.();
+    this.unmountInstallLinks = undefined;
     if (this.previousDocumentTitle !== undefined) {
       document.title = this.previousDocumentTitle;
     }

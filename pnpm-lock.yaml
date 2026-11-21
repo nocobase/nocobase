@@ -5714,6 +5714,9 @@ importers:
       '@nocobase/app-plugin-notification-providers':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-scheduler':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-scheduler
@@ -5793,9 +5796,6 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:*
         version: link:../../app/app-client
-      '@nocobase/app-plugin-notification-web-push':
-        specifier: workspace:*
-        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
@@ -6087,6 +6087,9 @@ importers:
       '@nocobase/app-plugin-notification-providers':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-office-flows-example':
         specifier: workspace:*
         version: link:../../examples/app-plugin-office-flows-example

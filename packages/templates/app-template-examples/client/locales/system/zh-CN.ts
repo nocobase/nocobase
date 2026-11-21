@@ -200,6 +200,8 @@ const systemZhCN: SystemResource = {
     fallback: '账户',
     signOut: '退出登录',
     signingOut: '正在退出…',
+    pushNotifications: '推送通知',
+    pushNotificationsDescription: '选择你的哪些设备接收本应用的通知。',
   },
   navigation: {
     resources: '参考资料',

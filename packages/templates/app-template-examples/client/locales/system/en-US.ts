@@ -214,6 +214,9 @@ const systemEnUS = {
     fallback: 'Account',
     signOut: 'Sign out',
     signingOut: 'Signing out…',
+    pushNotifications: 'Push notifications',
+    pushNotificationsDescription:
+      'Choose which of your devices receive notifications from this application.',
   },
   navigation: {
     resources: 'Resources',
