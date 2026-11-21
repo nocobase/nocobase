@@ -6,6 +6,8 @@ export interface RecordAccessContext<P = unknown> {
   collection: string;
   action: string;
   params: P;
+  /** The caller's transaction. Database-backed record access must use it when present. */
+  transaction?: unknown;
 }
 
 /** A named way to select records. The database adapter owns the result. */

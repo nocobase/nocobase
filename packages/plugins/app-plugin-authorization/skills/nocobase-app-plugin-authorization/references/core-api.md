@@ -15,6 +15,8 @@ Resolve the existing `authorizationToken` in the application. This reference cov
 
 Create one context per request and reuse it within that request only, never across identities. Its grant and rule reads are shared by the underlying checks of a business action. Execute a conditional decision only through the adapter that understands its conditions. Unknown types, unregistered catalog items or actions, conditional decisions without conditions and handler failures deny.
 
+For checks that must share a write transaction, derive `context.withTransaction(tx)` from the request context using the active connection to the authorization database. Reuse that derived context for checks within the transaction callback and execute conditional policies through the same connection. Deriving keeps the principal, subjects, and API key scope and starts fresh grant and rule caches. The caller commits or rolls back.
+
 ## Permission sets
 
 `definePermissionSet(key).title(title).grant(...grants).build()` from `@nocobase/authorization/permission-sets` returns `{ key, title?, grants }`. Each grant is `{ resource: { type, id }, actions: [{ action, policy? }] }`; build them with `authz.pages.grant(id)`, `authz.settings.grant(id, actions)` and a composite reference's `grant(...)` rather than by hand. A composite grant stores `policy: { type: 'composite', scopes }`, one value per data scope: a record access key such as `'recordsIOwn'`, or a record selection. An empty value `''` selects nothing. Titles accept strings or `{ key, ns }`.

@@ -90,6 +90,18 @@ export interface RepositoryEventScope {
   readonly observed?: boolean;
 }
 
+/** Whether this handle carries an active transaction opened by the given root connection. */
+export function isDatabaseTransactionOf(
+  transaction: unknown,
+  root: DatabaseConnection,
+): transaction is DatabaseConnection {
+  if (!transaction || typeof transaction !== 'object') return false;
+  return KnexDatabaseConnection.isTransactionOf(
+    RepositoryListenerConnection.unwrap(transaction) ?? transaction,
+    root,
+  );
+}
+
 export class KnexDatabaseConnection implements DatabaseConnection {
   readonly driver: DatabaseDriver;
   readonly dialect: DatabaseDialect;
@@ -106,6 +118,23 @@ export class KnexDatabaseConnection implements DatabaseConnection {
   private knexInstance?: Knex;
   private readonly config: KnexConnectionConfig;
   private readonly metadataStore: CollectionMetadataStore;
+  /** The root this transaction was opened from, including through a savepoint. */
+  readonly #rootConnection: KnexDatabaseConnection | undefined;
+
+  static isTransactionOf(
+    transaction: object,
+    root: DatabaseConnection,
+  ): boolean {
+    if (
+      !(#rootConnection in transaction) ||
+      transaction.#rootConnection !== root
+    )
+      return false;
+    // Only the transaction callback creates a connection with an owning root.
+    return (
+      (transaction.knexInstance as Knex.Transaction).isCompleted() === false
+    );
+  }
 
   constructor(
     readonly name: string,
@@ -120,10 +149,9 @@ export class KnexDatabaseConnection implements DatabaseConnection {
       TransactionCallbacks | undefined = undefined,
     /** Owned by the root connection and shared with all its transactions. */
     private readonly mutationRegistry: RepositoryMutationRegistry = new RepositoryMutationRegistry(),
-    /** The connection this transaction connection was opened from; none on the root. */
-    private readonly rootConnection:
-      KnexDatabaseConnection | undefined = undefined,
+    rootConnection?: KnexDatabaseConnection,
   ) {
+    this.#rootConnection = rootConnection;
     const maxDepth = sourceConfig.repositoryEventMaxDepth;
     if (
       maxDepth !== undefined &&
@@ -348,7 +376,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
         new RepositoryListenerConnection(this, operation),
       afterCommitConnection: (operation) =>
         new RepositoryListenerConnection(
-          this.rootConnection ?? this,
+          this.#rootConnection ?? this,
           operation,
         ),
       reportError: (error, context) =>
@@ -458,7 +486,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
           this.dialectDriver,
           callbacks,
           this.mutationRegistry,
-          this.rootConnection ?? this,
+          this.#rootConnection ?? this,
         );
         const transactionResult = await fn(connection);
         await invalidations.validateRelations(connection.collections);

@@ -1,3 +1,4 @@
+import type { DatabaseConnection } from '@nocobase/db';
 import {
   RelationPermissionResolver,
   mergeRelationPermissions,
@@ -50,6 +51,7 @@ export interface DatabaseResourceAuthorizerOptions {
   recordAccess: RecordAccessRegistry;
   /** Absent when the application installed the plugin without a connection. */
   resolveCollection?: ResolveAuthorizationCollection;
+  transaction?: DatabaseConnection;
 }
 
 export class DatabaseResourceAuthorizer {
@@ -57,9 +59,12 @@ export class DatabaseResourceAuthorizer {
   private readonly resolveCollection:
     ResolveAuthorizationCollection | undefined;
 
+  private readonly transaction: DatabaseConnection | undefined;
+
   constructor(options: DatabaseResourceAuthorizerOptions) {
     this.recordAccess = options.recordAccess;
     this.resolveCollection = options.resolveCollection;
+    this.transaction = options.transaction;
   }
 
   /** db owns the metadata, so an unknown Collection is whatever db does not hold. */
@@ -468,6 +473,7 @@ export class DatabaseResourceAuthorizer {
         throw new Error(`Unknown Record Access policy: ${config.key}`);
       }
       let value: unknown = await this.recordAccess.resolve(config.key, {
+        ...(this.transaction ? { transaction: this.transaction } : {}),
         principal,
         collection: resource.name,
         action,

@@ -8,10 +8,7 @@ import {
   type CompositeResourceConditions,
   type InvalidGrant,
 } from './composite.js';
-import {
-  AccessConstraintRegistry,
-  type AccessConstraintService,
-} from './constraints.js';
+import { AccessConstraintRegistry } from './constraints.js';
 import type {
   AuthorizationGrantService,
   AuthorizationGrantsChangedListener,
@@ -27,7 +24,11 @@ import {
   type AuthorizationPluginApis,
 } from './plugin.js';
 import { RecordAccessRegistry } from './record-access.js';
-import { ResourceTypeRegistry, resourceTypeHandler } from './resource-types.js';
+import {
+  ResourceTypeRegistry,
+  resourceTypeHandler,
+  type AuthorizationRuntimeContext,
+} from './resource-types.js';
 import { AuthorizationRouteRegistry } from './routes.js';
 import { AuthorizationSubjectRegistry } from './subjects.js';
 import {
@@ -60,6 +61,10 @@ export interface AuthorizationSnapshot {
 /** Checks for one identity, sharing grant and rule reads between them. */
 export interface AuthorizationContext {
   readonly identity: AuthorizationIdentity;
+  /** Derives fresh authorization caches for use within the caller's active transaction. */
+  withTransaction?(
+    transaction: object,
+  ): TransactionBindableAuthorizationContext;
   authorize(
     request: Omit<AuthorizationCheckRequest, 'resource'> & {
       resource: { type: 'composite'; id: string };
@@ -79,6 +84,11 @@ export interface AuthorizationContext {
   snapshot(): Promise<AuthorizationSnapshot>;
 }
 
+/** The context created by the framework, including its transaction binding capability. */
+export interface TransactionBindableAuthorizationContext extends AuthorizationContext {
+  withTransaction(transaction: object): TransactionBindableAuthorizationContext;
+}
+
 export interface AuthorizationEnv {
   Variables: { authz: AuthorizationContext };
 }
@@ -96,13 +106,13 @@ export interface CreateAuthorizationOptions<
    * nothing while the identity's other grants keep working.
    */
   onInvalidGrant?: (grant: InvalidGrant) => void;
+  /** The host may reject a transaction before any provider or resolver is bound. */
+  validateTransaction?: (transaction: object) => void;
 }
 
-interface AuthorizationOptions {
-  connection?: unknown;
-  plugins: readonly AuthorizationPlugin[];
-  onInvalidGrant?: (grant: InvalidGrant) => void;
-}
+type AuthorizationOptions = CreateAuthorizationOptions<
+  readonly AuthorizationPlugin[]
+>;
 
 export class Authorization {
   readonly resourceTypes: ResourceTypeRegistry = new ResourceTypeRegistry();
@@ -117,10 +127,12 @@ export class Authorization {
     new AuthorizationRouteRegistry();
   private readonly plugins: readonly AuthorizationPlugin[];
   private readonly provider: AuthorizationGrantService;
+  private readonly validateTransaction: AuthorizationOptions['validateTransaction'];
   private readonly compositeResourceRegistry: CompositeResourceRegistry;
   private readonly middlewares: AuthorizationMiddleware[] = [];
 
   constructor(options: AuthorizationOptions) {
+    this.validateTransaction = options.validateTransaction;
     this.plugins = sortAuthorizationPlugins(options.plugins);
     const grantProvider = this.plugins.find((plugin) => plugin.grants);
     this.provider = grantProvider?.grants ?? missingGrantService();
@@ -193,13 +205,37 @@ export class Authorization {
     return this.provider.onChange?.(listener) ?? ((): void => {});
   }
 
-  for(identity: AuthorizationIdentity): AuthorizationContext {
-    const constraints = this.constraints.for(identity);
-    const grants = composedGrants(
-      this.provider.for?.(identity) ?? this.provider,
-      this.compositeResourceRegistry,
+  for(
+    identity: AuthorizationIdentity,
+  ): TransactionBindableAuthorizationContext {
+    return this.contextFor(identity);
+  }
+
+  private contextFor(
+    identity: AuthorizationIdentity,
+    transaction?: object,
+  ): TransactionBindableAuthorizationContext {
+    let provider = this.provider;
+    if (transaction !== undefined) {
+      this.validateTransaction?.(transaction);
+      if (provider.withTransaction) {
+        provider = provider.withTransaction(transaction);
+      } else if (!provider.transactionIndependent) {
+        throw new TypeError(
+          'The Authorization Grant Provider does not support transactions',
+        );
+      }
+    }
+    const constraints = this.constraints.for(identity, transaction);
+    const runtime: AuthorizationRuntimeContext = {
+      grants: composedGrants(
+        provider.for?.(identity) ?? provider,
+        this.compositeResourceRegistry,
+        constraints,
+      ),
       constraints,
-    );
+      ...(transaction === undefined ? {} : { transaction }),
+    };
     const request = <TParams>(
       input: AuthorizationCheckRequest<TParams>,
     ): AuthorizationRequest<TParams> =>
@@ -221,20 +257,19 @@ export class Authorization {
       input: AuthorizationCheckRequest<TParams>,
     ): Promise<AuthorizationDecision> =>
       outOfScope(input) ??
-      (await this.authorizeWithGrants(request(input), grants, constraints));
+      (await this.authorizeWithGrants(request(input), runtime));
     return {
       identity,
+      withTransaction: (transaction) => {
+        if (!transaction || typeof transaction !== 'object')
+          throw new TypeError('Authorization requires a transaction handle');
+        return this.contextFor(identity, transaction);
+      },
       authorize: authorize as AuthorizationContext['authorize'],
       can: async (input) =>
         !outOfScope(input) &&
-        (
-          await this.authorizeWithGrants(
-            request(input),
-            grants,
-            constraints,
-            false,
-          )
-        ).effect === 'permit',
+        (await this.authorizeWithGrants(request(input), runtime, false))
+          .effect === 'permit',
       require: async (input) => {
         const decision = await authorize(input);
         if (decision.effect !== 'permit') {
@@ -242,14 +277,13 @@ export class Authorization {
         }
       },
       snapshot: async () => {
-        const unscoped = await this.snapshot(identity, grants, constraints);
+        const unscoped = await this.snapshot(identity, runtime);
         return identity.keyScope
           ? await this.scopedSnapshot(
               identity,
               identity.keyScope,
               unscoped,
-              grants,
-              constraints,
+              runtime,
             )
           : unscoped;
       },
@@ -264,8 +298,7 @@ export class Authorization {
     identity: AuthorizationIdentity,
     scope: KeyScope,
     unscoped: AuthorizationSnapshot,
-    grants: AuthorizationGrantService,
-    constraints: AccessConstraintService,
+    runtime: AuthorizationRuntimeContext,
   ): Promise<AuthorizationSnapshot> {
     if (scope.permissions === null) {
       if (unscoped.unrestricted) return unscoped;
@@ -291,8 +324,7 @@ export class Authorization {
               (
                 await this.authorizeWithGrants<undefined>(
                   { ...identity, resource: permission.resource, action },
-                  grants,
-                  constraints,
+                  runtime,
                   false,
                 )
               ).effect === 'permit'
@@ -330,8 +362,7 @@ export class Authorization {
 
   private async authorizeWithGrants<TParams>(
     request: AuthorizationRequest<TParams>,
-    grants: AuthorizationGrantService,
-    constraints: AccessConstraintService,
+    runtime: AuthorizationRuntimeContext,
     resolveConditions = true,
   ): Promise<AuthorizationDecision> {
     const handler = resourceTypeHandler(
@@ -347,15 +378,15 @@ export class Authorization {
     const stored = request as AuthorizationRequest<unknown>;
     try {
       const unrestricted =
-        (await grants.unrestricted?.({
+        (await runtime.grants.unrestricted?.({
           principal: request.principal,
           ...(request.subjects === undefined
             ? {}
             : { subjects: request.subjects }),
         })) === true;
       const decision = unrestricted
-        ? await handler.authorizeUnrestricted(stored)
-        : await handler.authorize(stored, { grants, constraints });
+        ? await handler.authorizeUnrestricted(stored, runtime)
+        : await handler.authorize(stored, runtime);
       if (
         decision.effect === 'conditional' &&
         decision.conditions === undefined
@@ -371,7 +402,7 @@ export class Authorization {
         request.resource.type !== COMPOSITE_RESOURCE_TYPE
       )
         return decision;
-      return await this.composeComposite(stored, decision, grants, constraints);
+      return await this.composeComposite(stored, decision, runtime);
     } catch (error) {
       return deny(
         'AUTHORIZATION_HANDLER_FAILED',
@@ -384,8 +415,7 @@ export class Authorization {
   private async composeComposite(
     request: AuthorizationRequest<unknown>,
     decision: AuthorizationDecision,
-    grants: AuthorizationGrantService,
-    constraints: AccessConstraintService,
+    runtime: AuthorizationRuntimeContext,
   ): Promise<AuthorizationDecision> {
     const action = this.compositeResourceRegistry.getAction(
       request.resource.id,
@@ -398,6 +428,7 @@ export class Authorization {
       grant.origin?.resource.type === COMPOSITE_RESOURCE_TYPE &&
       grant.origin.resource.id === request.resource.id &&
       grant.origin.action === request.action;
+    const { grants } = runtime;
     const scoped: AuthorizationGrantService = {
       ...grants,
       resolveAll: async (input) =>
@@ -405,6 +436,7 @@ export class Authorization {
       resolve: async (input) =>
         (await grants.resolve(input)).filter(fromThisAction),
     };
+    const scopedRuntime = { ...runtime, grants: scoped };
     const targets = new Map<
       string,
       { resource: ResourceRef; action: string }
@@ -432,8 +464,7 @@ export class Authorization {
               },
             },
           },
-          scoped,
-          constraints,
+          scopedRuntime,
         ),
       })),
     );
@@ -463,16 +494,15 @@ export class Authorization {
    */
   private async snapshot(
     identity: AuthorizationIdentity,
-    grants: AuthorizationGrantService,
-    constraints: AccessConstraintService,
+    runtime: AuthorizationRuntimeContext,
   ): Promise<AuthorizationSnapshot> {
-    if ((await grants.unrestricted?.(identity)) === true)
+    if ((await runtime.grants.unrestricted?.(identity)) === true)
       return { unrestricted: true, permissions: [] };
     const candidates = new Map<
       string,
       { resource: ResourceRef; action: string }
     >();
-    for (const grant of await grants.resolveAll(identity))
+    for (const grant of await runtime.grants.resolveAll(identity))
       candidates.set(
         JSON.stringify([grant.resource.type, grant.resource.id, grant.action]),
         {
@@ -487,8 +517,7 @@ export class Authorization {
           (
             await this.authorizeWithGrants<undefined>(
               { ...identity, ...candidate },
-              grants,
-              constraints,
+              runtime,
               false,
             )
           ).effect === 'permit',
@@ -559,6 +588,7 @@ function deny(code: string, message: string): AuthorizationDecision {
 
 function missingGrantService(): AuthorizationGrantService {
   return {
+    transactionIndependent: true,
     resolve(): Promise<never> {
       return Promise.reject(new Error('Authorization has no Grant Provider'));
     },

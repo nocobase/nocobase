@@ -66,7 +66,9 @@ export function validateRule(rule: StoredRule, kind: RuleKind): void {
 }
 
 export class RuleService<TRule extends StoredRule, TTransaction>
-  implements RuleApi<TRule, TTransaction>, AccessConstraintResolver
+  implements
+    RuleApi<TRule, TTransaction>,
+    AccessConstraintResolver<TTransaction>
 {
   readonly id: string;
 
@@ -77,7 +79,7 @@ export class RuleService<TRule extends StoredRule, TTransaction>
     this.id = kind.id;
   }
 
-  withTransaction(transaction: TTransaction): RuleApi<TRule, TTransaction> {
+  withTransaction(transaction: TTransaction): RuleService<TRule, TTransaction> {
     return new RuleService(this.kind, this.store.withTransaction(transaction));
   }
 
