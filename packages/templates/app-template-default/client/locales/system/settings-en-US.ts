@@ -27,6 +27,9 @@ const settings = {
 
   permissionManagement: 'Permission management',
   defaultAccess: {
+    kindBusiness: 'business operations',
+    kindTable: 'data table',
+    kindLabel: '{{title}} ({{kind}})',
     noResourcesShort: 'No configurable objects available',
     scopeInvalid:
       'Choose a valid data scope or complete its filter conditions.',
@@ -117,6 +120,21 @@ const settings = {
   title: 'System settings',
   back: 'Back',
   navigation: 'Settings navigation',
+  personal: {
+    title: 'Personal settings',
+    navigation: 'Personal settings navigation',
+    empty: 'There are no personal settings yet.',
+    categories: {
+      account: 'Account',
+      preferences: 'Preferences',
+      connections: 'Connections',
+    },
+    appearance: {
+      title: 'Language and appearance',
+      description:
+        'The same choices as Language and Theme in the account menu; they apply to you in this browser.',
+    },
+  },
   home: {
     description:
       'Accounts, permissions, business configuration and system capabilities are all here.',
@@ -133,7 +151,8 @@ const settings = {
   users: 'Users',
   roles: 'Roles and permissions',
   usersDescription: 'Manage accounts, access and active sessions.',
-  rolesDescription: 'Define what each role can access and do.',
+  rolesDescription:
+    'Set the menus each role sees and what it may do with each kind of business data.',
   userSearch: 'Search names, usernames or emails',
   roleSearch: 'Search role names',
   newUser: 'New user',
@@ -275,6 +294,74 @@ const settings = {
       $empty: 'Is empty',
       $notEmpty: 'Is not empty',
     },
+  },
+  copyOfRole: '{{name}} (copy)',
+  selectRole: 'Select a role',
+  duplicateRole: 'Duplicate as new role',
+  discardChanges: 'Discard changes',
+  unrestrictedRole: 'All permissions',
+  openPage: 'Open page',
+  escalation: {
+    roles:
+      'Anyone who can create or change roles can give any role, including their own, any permission. The server does not limit them to the permissions they hold, so grant this only to trusted administrators.',
+    users:
+      'Assigning roles gives users everything those roles allow, including administrator roles. Grant it only to trusted administrators.',
+  },
+  permissionEditor: {
+    menusTab: 'Menus',
+    objectsTab: 'Business objects',
+    settingsTab: 'System settings',
+    tabCount: '{{count}} / {{total}}',
+    noMenus: 'No menus',
+    emptyPage:
+      '“{{menu}}” is checked, but this role cannot view {{object}} yet, so the page opens empty.',
+    openView: 'Turn on “{{action}}”',
+    opensWith: 'Shown with “{{action}}”',
+    attention_one: '{{count}} menu needs attention',
+    attention_other: '{{count}} menus need attention',
+    objects: 'Business objects',
+    search: 'Search objects or actions',
+    clearSearch: 'Clear search',
+    noResults: 'No matching objects or actions',
+    empty: 'No business objects to configure',
+    objectEnabled: '{{enabled}} of {{total}} on',
+    objectOff: 'Off',
+    enableAll: 'Enable all',
+    viewOnly: 'View only',
+    disableAll: 'Disable all',
+    sameAsView: 'Same as view ({{scope}})',
+    sameAsObjectView: 'Same as {{object}} view ({{scope}})',
+    needsView: 'Needs {{object}} view',
+    scopeFor: 'Data scope of {{action}}',
+    scopeForSlot: '{{action}}: {{scope}}',
+    managed: 'Managed by the application',
+    unrestrictedTitle: 'All permissions (unrestricted)',
+    unrestrictedDescription:
+      'This role can open every menu and perform every action on all data. There is nothing to set.',
+    confirmDisable_one:
+      'Turning off {{actions}} also turns off {{dependents}}, which needs it.',
+    confirmDisable_other:
+      'Turning off {{actions}} also turns off {{dependents}}, which need it.',
+    confirm: 'Turn off',
+    dismiss: 'Dismiss',
+    noticeScopeReset_one:
+      '{{actions}} now follows the view scope ({{view}}) again.',
+    noticeScopeReset_other:
+      '{{actions}} now follow the view scope ({{view}}) again.',
+    noticeAutoEnabled: 'Also turned on {{actions}}, which this needs.',
+    noticeStaysOff: '{{action}} stays off.',
+    noticeTurnOnFirst_one:
+      'It needs {{actions}}, which is never turned on automatically. Turn it on first.',
+    noticeTurnOnFirst_other:
+      'It needs {{actions}}, which are never turned on automatically. Turn them on first.',
+    noticeManagedRequirement_one:
+      'It needs {{actions}}, which is managed by the application and cannot be turned on here.',
+    noticeManagedRequirement_other:
+      'It needs {{actions}}, which are managed by the application and cannot be turned on here.',
+    noticeManagedDependent_one:
+      'Nothing was turned off: {{actions}} is managed by the application and needs it.',
+    noticeManagedDependent_other:
+      'Nothing was turned off: {{actions}} are managed by the application and need it.',
   },
   recordScope: 'Record scope',
   levelFor: 'Scope for {{name}}',

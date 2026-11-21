@@ -183,6 +183,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       title: '編輯{{name}}',
       enabled: '已啟用',
       done: '{{name}} 已儲存',
+      model: '模型',
     },
     available: {
       open: '新增 Agent',
@@ -253,10 +254,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     save: '儲存技能',
     descriptionOnline:
       '當任務與其描述相符時，Agent在伺服器上的唯讀沙箱中手動讀取。',
-    onlineScripts:
-      '線上Agents不會執行指令碼：Agent可以讀取它們，但不能執行它們。',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: '預覽完整提示',
@@ -1235,7 +1232,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     binaryFile: '二進位檔案，{{size}}。此處無法對其進行編輯。',
     executable: '執行檔',
     scriptBadge: '指令碼',
-    scriptsNote: '有指令碼：線上Agents可以讀取它們，但從不執行它們',
     compatibility: '相容性：{{value}}',
     fileContent: '{{path}} 的內容',
     export: '出口',
@@ -1266,7 +1262,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       name: '名稱',
       renameTitle: '重新命名“{{name}}”',
       conventional: {
-        scripts: '程式碼Agents可以執行。線上Agents只能閱讀。',
+        scripts: 'Agent 可以執行的程式碼。',
         references: '檔案Agents在需要時閱讀。',
         assets: '模板、影像和其他資源。',
       },

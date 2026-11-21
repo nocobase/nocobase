@@ -1,7 +1,7 @@
 import {
   defineAppRoutes,
   defineClientPlugin,
-  SETTINGS_ROUTE_PATH,
+  SYSTEM_SETTINGS_ROUTE_PATH,
   type AppClientPluginFactory,
 } from '@nocobase/app-client/plugins';
 
@@ -30,7 +30,7 @@ const foundation: AppClientPluginFactory<FoundationClientOptions> =
       if (options.routes === false) return [];
       const { path, auth, authz } = foundationDefinition(options);
       const settings = createFoundationRoutes(options);
-      if (path.startsWith(SETTINGS_ROUTE_PATH + '/')) return settings;
+      if (path.startsWith(SYSTEM_SETTINGS_ROUTE_PATH + '/')) return settings;
       return [
         settings,
         defineAppRoutes([
@@ -44,7 +44,11 @@ const foundation: AppClientPluginFactory<FoundationClientOptions> =
                 const { search, hash } = useLocation();
                 return createElement(Navigate, {
                   replace: true,
-                  to: { pathname: SETTINGS_ROUTE_PATH + path, search, hash },
+                  to: {
+                    pathname: SYSTEM_SETTINGS_ROUTE_PATH + path,
+                    search,
+                    hash,
+                  },
                 });
               },
             }),

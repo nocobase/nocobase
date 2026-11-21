@@ -15,12 +15,13 @@ export async function requireOwnedAccount(
   store: Pick<MailStore, 'getAccount'>,
   context: MailOperationContext,
   accountId: string,
-): Promise<void> {
+): Promise<MailAccount> {
   const account = await store.getAccount(accountId);
   if (!account || account.userId !== context.actorId) {
     throw mailAccountNotFound();
   }
   if (account.status === 'removing') throw mailAccountRemoving();
+  return account;
 }
 
 export async function requireOwnedMessage(

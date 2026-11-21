@@ -112,4 +112,5 @@ Open transport order details and click **Compose progress email**.
 
 - Synchronize to retrieve new mail; refreshing displays messages already synchronized to the application.
 - Choose the required history range for the initial synchronization.
+- Choose which folders each mailbox synchronizes with **Folders** in the account list. Removing a folder deletes its local copies after a confirmation; mail on the server is not affected.
 - Organize mail with search, stars, and labels. Whether changes reach the provider depends on the integration.

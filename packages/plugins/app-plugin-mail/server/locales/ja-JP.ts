@@ -4,6 +4,11 @@ import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound:
+      '元のメッセージはメールプロバイダーで利用できなくなりました。',
+    originalTooLarge:
+      '元のメッセージはダウンロード上限の 40 MiB を超えています。',
+    operationUnsupported: 'このメール操作は利用できません。',
     connectionAuthenticationFailed:
       '{{protocol}} 認証に失敗しました。ログイン名とパスワードまたはアプリパスワードを確認してください。',
     connectionHostNotFound:

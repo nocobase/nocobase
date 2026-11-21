@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
-  isSettingsRoute,
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
+  isPersonalSettingsRoute,
+  isSystemSettingsRoute,
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
 } from '../src/plugins.js';
@@ -12,7 +14,7 @@ const page = async () => ({ default: () => null });
 const categories = {
   packageName: '@example/app',
   source: 'application' as const,
-  routes: defineSettingsRoutes([
+  routes: defineSystemSettingsRoutes([
     {
       name: 'account',
       navigation: { title: 'settings.account', order: 10 },
@@ -32,7 +34,7 @@ function flatten(
   return routes.flatMap((route) => [route, ...flatten(route.children ?? [])]);
 }
 
-describe('defineSettingsRoutes', () => {
+describe('defineSystemSettingsRoutes', () => {
   it('mounts pages under /settings in the shared route tree, keeping the category out of the URL', () => {
     const { routes } = resolveAppClientContributions([
       {
@@ -45,7 +47,7 @@ describe('defineSettingsRoutes', () => {
       categories,
       {
         packageName: '@example/plugin',
-        routes: defineSettingsRoutes([
+        routes: defineSystemSettingsRoutes([
           {
             parent: 'system',
             name: 'storage',
@@ -63,25 +65,25 @@ describe('defineSettingsRoutes', () => {
       routes.map((route) => [route.id, route.path, route.surface]),
     ).toEqual([
       ['@example/app:home', '/', undefined],
-      ['@example/app:account', '/settings', 'settings'],
-      ['@example/app:system', '/settings', 'settings'],
+      ['@example/app:account', '/settings', 'systemSettings'],
+      ['@example/app:system', '/settings', 'systemSettings'],
     ]);
     const storage = flatten(routes).find((route) => route.name === 'storage');
     expect(storage).toMatchObject({
       id: '@example/plugin:storage',
       path: '/settings/storage',
       packageName: '@example/plugin',
-      surface: 'settings',
+      surface: 'systemSettings',
       auth: 'required',
       authz: 'unrestricted',
     });
     expect(storage?.children?.[0]).toMatchObject({
       path: '/settings/storage/:id',
-      surface: 'settings',
+      surface: 'systemSettings',
       authz: 'unrestricted',
     });
-    expect(isSettingsRoute(storage!)).toBe(true);
-    expect(isSettingsRoute(routes[0]!)).toBe(false);
+    expect(isSystemSettingsRoute(storage!)).toBe(true);
+    expect(isSystemSettingsRoute(routes[0]!)).toBe(false);
   });
 
   it('mounts a root page at /settings itself and keeps package-scoped groups addressable', () => {
@@ -89,7 +91,7 @@ describe('defineSettingsRoutes', () => {
       {
         packageName: '@example/app',
         source: 'application',
-        routes: defineSettingsRoutes([
+        routes: defineSystemSettingsRoutes([
           {
             name: 'settingsHome',
             path: '/',
@@ -119,7 +121,7 @@ describe('defineSettingsRoutes', () => {
       },
       {
         packageName: '@example/plugin',
-        routes: defineSettingsRoutes([
+        routes: defineSystemSettingsRoutes([
           {
             parent: '@example/app:permissions',
             name: 'rules',
@@ -143,7 +145,7 @@ describe('defineSettingsRoutes', () => {
   it('orders a plugin page in its category regardless of registration order', () => {
     const plugin = {
       packageName: '@example/plugin',
-      routes: defineSettingsRoutes([
+      routes: defineSystemSettingsRoutes([
         {
           parent: 'account',
           name: 'apiKeys',
@@ -169,7 +171,7 @@ describe('defineSettingsRoutes', () => {
       resolveAppClientContributions([
         {
           packageName: '@example/plugin',
-          routes: defineSettingsRoutes([
+          routes: defineSystemSettingsRoutes([
             {
               parent: 'missing',
               name: 'orphan',
@@ -179,18 +181,18 @@ describe('defineSettingsRoutes', () => {
           ]),
         },
       ]),
-    ).toThrow(/missing settings category "missing"/);
+    ).toThrow(/missing system settings category "missing"/);
     expect(() =>
       resolveAppClientContributions([
         categories,
         {
           packageName: '@example/plugin',
-          routes: defineSettingsRoutes([
+          routes: defineSystemSettingsRoutes([
             { name: 'system', navigation: { title: 'System' }, children: [] },
           ]),
         },
       ]),
-    ).toThrow(/Settings category "system".*already registered/);
+    ).toThrow(/System settings category "system".*already registered/);
     expect(() =>
       resolveAppClientContributions([
         {
@@ -201,7 +203,7 @@ describe('defineSettingsRoutes', () => {
         },
         {
           packageName: '@example/app',
-          routes: defineSettingsRoutes([
+          routes: defineSystemSettingsRoutes([
             {
               parent: '@example/app:tools',
               name: 'misplaced',
@@ -220,7 +222,7 @@ describe('defineSettingsRoutes', () => {
         categories,
         {
           packageName: '@example/a',
-          routes: defineSettingsRoutes([
+          routes: defineSystemSettingsRoutes([
             {
               parent: 'system',
               name: 'one',
@@ -231,7 +233,7 @@ describe('defineSettingsRoutes', () => {
         },
         {
           packageName: '@example/b',
-          routes: defineSettingsRoutes([
+          routes: defineSystemSettingsRoutes([
             {
               parent: 'account',
               name: 'two',
@@ -242,5 +244,132 @@ describe('defineSettingsRoutes', () => {
         },
       ]),
     ).toThrow(/Client route path "\/settings\/same".*conflicts/);
+  });
+});
+
+const personalCategories = {
+  packageName: '@example/app',
+  source: 'application' as const,
+  routes: definePersonalSettingsRoutes([
+    {
+      name: 'personalAccount',
+      navigation: { title: 'me.account', order: 10 },
+      children: [],
+    },
+    {
+      name: 'personalPreferences',
+      navigation: { title: 'me.preferences', order: 20 },
+      children: [],
+    },
+  ]),
+};
+
+describe('definePersonalSettingsRoutes', () => {
+  it('mounts pages under /me, open to every signed-in person by default', () => {
+    const { routes } = resolveAppClientContributions([
+      personalCategories,
+      {
+        packageName: '@example/plugin',
+        routes: definePersonalSettingsRoutes([
+          {
+            parent: 'personalPreferences',
+            name: 'appearance',
+            path: '/appearance',
+            navigation: { title: 'Appearance' },
+            componentLoader: page,
+          },
+        ]),
+      },
+    ]);
+    const appearance = flatten(routes).find(
+      (route) => route.name === 'appearance',
+    );
+    expect(appearance).toMatchObject({
+      path: '/me/appearance',
+      surface: 'personalSettings',
+      auth: 'required',
+      authz: 'skip',
+    });
+    expect(isPersonalSettingsRoute(appearance!)).toBe(true);
+    expect(isSystemSettingsRoute(appearance!)).toBe(false);
+  });
+
+  it('keeps a declared authz on a personal settings page', () => {
+    const { routes } = resolveAppClientContributions([
+      personalCategories,
+      {
+        packageName: '@example/plugin',
+        routes: definePersonalSettingsRoutes([
+          {
+            parent: 'personalAccount',
+            name: 'tokens',
+            path: '/tokens',
+            authz: {
+              resource: { type: 'settings', id: 'tokens' },
+              action: 'read',
+            },
+            componentLoader: page,
+          },
+        ]),
+      },
+    ]);
+    expect(
+      flatten(routes).find((route) => route.name === 'tokens')?.authz,
+    ).toEqual({ resource: { type: 'settings', id: 'tokens' }, action: 'read' });
+  });
+
+  it("keeps each surface's categories apart", () => {
+    // A personal settings page cannot name a system settings category, nor join a system settings group.
+    expect(() =>
+      resolveAppClientContributions([
+        categories,
+        {
+          packageName: '@example/plugin',
+          routes: definePersonalSettingsRoutes([
+            {
+              parent: 'system',
+              name: 'misplaced',
+              path: '/misplaced',
+              componentLoader: page,
+            },
+          ]),
+        },
+      ]),
+    ).toThrow(
+      /missing personal settings category "system".*definePersonalSettingsRoutes\(\)/,
+    );
+    expect(() =>
+      resolveAppClientContributions([
+        {
+          packageName: '@example/app',
+          routes: defineSystemSettingsRoutes([
+            {
+              name: 'tools',
+              navigation: { title: 'Tools' },
+              children: [
+                {
+                  name: 'shared',
+                  navigation: { title: 'Shared' },
+                  children: [],
+                },
+              ],
+            },
+          ]),
+        },
+        {
+          packageName: '@example/app',
+          routes: definePersonalSettingsRoutes([
+            {
+              parent: '@example/app:shared',
+              name: 'crossing',
+              path: '/crossing',
+              componentLoader: page,
+            },
+          ]),
+        },
+      ]),
+    ).toThrow(
+      /cannot join systemSettings group .*defineSystemSettingsRoutes\(\)/,
+    );
   });
 });

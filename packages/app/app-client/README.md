@@ -327,14 +327,17 @@ export default {
 };
 ```
 
-Configuration pages are declared with `defineSettingsRoutes()`, mainly by plugins. They take the same definitions as `defineAppRoutes()`, share the one route tree, authorization, breadcrumbs and component loading, and are mounted under `/settings` (`SETTINGS_ROUTE_PATH`) with `surface: 'settings'` on every registered route, so the application can show them in a navigation of their own (`isSettingsRoute()`). A group declared at the root of a settings contribution is a category shared by every package: a page names it with a bare `parent`, and the application declares the categories it offers. A category without a path keeps its pages' URLs independent of it. `packageName:name` still names one package's group, such as a module whose pages are tabs, and a route cannot join a group of the other surface.
+Settings pages come in two kinds, declared mainly by plugins. System settings, declared with `defineSystemSettingsRoutes()`, configure the whole application and are mounted under `/settings` (`SYSTEM_SETTINGS_ROUTE_PATH`, `surface: 'systemSettings'`, `isSystemSettingsRoute()`). Personal settings, declared with `definePersonalSettingsRoutes()`, are where each signed-in person configures their own account and are mounted under `/me` (`PERSONAL_SETTINGS_ROUTE_PATH`, `surface: 'personalSettings'`, `isPersonalSettingsRoute()`). Both take the same definitions as `defineAppRoutes()` and share the one route tree, authorization, breadcrumbs and component loading, so the application can show each in a navigation of its own. A group declared at the root of a settings contribution is a category shared by every package of the same surface: a page names it with a bare `parent`, and the application declares the categories it offers. A category without a path keeps its pages' URLs independent of it. `packageName:name` still names one package's group, such as a module whose pages are tabs, and a route cannot join a group of another surface.
 
 ```ts
-import { defineSettingsRoutes } from '@nocobase/app-client/plugins';
+import {
+  definePersonalSettingsRoutes,
+  defineSystemSettingsRoutes,
+} from '@nocobase/app-client/plugins';
 
-export default defineSettingsRoutes([
+export const systemSettings = defineSystemSettingsRoutes([
   {
-    parent: 'settingsSystem',
+    parent: 'system',
     name: 'audit-settings',
     path: '/audit',
     authz: { resource: { type: 'settings', id: 'audit' }, action: 'read' },
@@ -342,9 +345,19 @@ export default defineSettingsRoutes([
     componentLoader: () => import('./pages/audit-settings.js'),
   },
 ]);
+
+export const personalSettings = definePersonalSettingsRoutes([
+  {
+    parent: 'preferences',
+    name: 'audit-preferences',
+    path: '/audit',
+    navigation: { title: 'nav.auditPreferences' },
+    componentLoader: () => import('./pages/my-audit-preferences.js'),
+  },
+]);
 ```
 
-A settings page's `auth` defaults to `required` and its `authz` to `unrestricted`, as on any protected page; declare a grant to open it to other roles. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, surface, authentication, navigation, and access metadata.
+A settings page's `auth` defaults to `required`. A system settings page's `authz` defaults to `unrestricted`, as on any protected page; declare a grant to open it to other roles. A personal settings page's `authz` defaults to `skip`, so every signed-in person can open it and it stays out of role permissions; its data belongs to the current person, whom the server takes from the session. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, surface, authentication, navigation, and access metadata.
 
 ## Client plugin declaration
 

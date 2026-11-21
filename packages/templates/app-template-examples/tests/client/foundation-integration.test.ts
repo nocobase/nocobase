@@ -1,16 +1,17 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
-import {
-  pagePermissionResources,
-  permissionNavigationSections,
-} from '../../client/pages/settings/page-permissions.js';
+import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
 import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
-import { resolveAppRuntime } from '@nocobase/app-client/runtime';
+import {
+  defineAppRuntime,
+  resolveAppRuntime,
+} from '@nocobase/app-client/runtime';
 import { describe, expect, it } from 'vitest';
 
 import appRuntime from '../../client/runtime.js';
 import {
   routeKey,
   buildSettingsCatalog,
+  buildRouteNavigation,
 } from '../../client/routing/route-navigation.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
@@ -19,6 +20,9 @@ import {
   guideContent,
   type DependencyManifest,
 } from '@nocobase/app-plugin-foundation/capability-guide';
+
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import applicationRoutes from '../../client/routes.js';
 
 describe('Examples Foundation integration', () => {
   it('ships the plugin as a deployment dependency', () => {
@@ -33,7 +37,7 @@ describe('Examples Foundation integration', () => {
     expect(
       system?.children?.find((route) => route.name === 'configInspector'),
     ).toMatchObject({
-      surface: 'settings',
+      surface: 'systemSettings',
       path: '/settings/config-inspector',
       auth: 'required',
       authz: {
@@ -52,7 +56,7 @@ describe('Examples Foundation integration', () => {
       ({ route }) => route.name === 'capabilityGuide',
     );
     expect(guide?.target.path).toBe('/settings/capabilities');
-    expect(guide?.route.surface).toBe('settings');
+    expect(guide?.route.surface).toBe('systemSettings');
     expect(guide?.route.auth).toBe('required');
     expect(guide?.route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
     expect(
@@ -85,6 +89,55 @@ describe('Examples Foundation integration', () => {
       .map((entry) => [entry.id, entry.demo]);
     expect(demos.length).toBeGreaterThan(0);
     expect(demos.filter(([, demo]) => !paths.has(demo!))).toEqual([]);
+  });
+
+  it('keeps Features and extensions in System when business and account routes are registered', async () => {
+    const orders = defineAppRoutes([
+      {
+        name: 'fixtureOrders',
+        path: '/fixture-orders',
+        auth: 'required',
+        authz: {
+          resource: { type: 'page', id: 'fixture-orders' },
+          action: 'access',
+        },
+        navigation: { title: 'Orders' },
+        componentLoader: async () => ({ default: () => null }),
+      },
+    ]);
+    const { routes } = await resolveAppRuntime(
+      defineAppRuntime({
+        ...appRuntime,
+        routes: [...applicationRoutes, orders],
+      }),
+    );
+    const catalog = buildSettingsCatalog(routes, new Set());
+    const modules = (name: string) =>
+      catalog
+        .find(({ route }) => route.name === name)
+        ?.modules.map(({ route, target }) => [route.name, target.path]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'settingsUsers',
+      '/settings/users',
+    ]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'permissionManagement',
+      '/settings/roles',
+    ]);
+    expect(modules('settingsSystem')).toContainEqual([
+      'capabilityGuide',
+      '/settings/capabilities',
+    ]);
+    const menu = buildRouteNavigation(routes, new Set());
+    const menuNames = menu.map(({ route }) => route.name);
+    expect(menuNames).toContain('fixtureOrders');
+    expect(menuNames).not.toContain('foundationSettings');
+    expect(menuNames).not.toContain('capabilityGuide');
+    expect(
+      menu.filter(({ route }) => route.path.startsWith('/settings')),
+    ).toMatchObject([
+      { route: { name: 'settingsHome', path: '/settings' }, children: [] },
+    ]);
   });
 
   it('lists every plugin this application declares in the capability guide, with the standalone core modules', () => {
@@ -143,42 +196,37 @@ describe('Examples Foundation integration', () => {
   });
 });
 
-it('offers one Features and extensions access control under system configuration', async () => {
+it('offers one Features and extensions page on the System settings tab', async () => {
   const { routes } = await resolveAppRuntime(appRuntime);
-  const pages = pagePermissionResources(routes, {}, (path) => path);
-  const controls = pages.filter(
-    ({ id }) => id === CAPABILITY_GUIDE_ACCESS.resource.id,
-  );
-  expect(controls).toHaveLength(1);
-  expect(controls[0]).toMatchObject({
-    title: {
-      key: 'nav.capabilityGuide',
-      ns: '@nocobase/app-plugin-foundation',
-    },
-    actions: [{ name: 'access' }],
-  });
-  const row = {
-    id: permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access'),
-    label: 'Access',
-    enabled: false,
-  };
-  const sections = permissionNavigationSections(
-    [{ id: 'pages', title: 'Pages', groups: [{ id: 'guide', rows: [row] }] }],
+  const workspace = permissionWorkspace(
+    { sections: [], recordAccess: [], subjectTypes: [], collections: [] },
     routes,
     {},
-    (path) => path,
-    (value) => (typeof value === 'string' ? value : value.key),
+    {
+      text: (value) => (typeof value === 'string' ? value : value.key),
+      t: (key) => key,
+    },
   );
-  expect(sections).toHaveLength(1);
-  expect(sections[0]?.id).toBe('configuration');
-  expect(sections[0]?.groups.flatMap(({ rows }) => rows)).toEqual([row]);
+  const open = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
+  const owners = workspace.settings.filter((page) =>
+    page.objects.some((object) =>
+      object.actions.some((action) => action.id === open),
+    ),
+  );
+  expect(owners.map((page) => page.label)).toEqual(['nav.capabilityGuide']);
+  // It is not a business menu.
+  expect(
+    [...workspace.menuPages.values()].some((pages) =>
+      pages.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
+    ),
+  ).toBe(false);
   expect(
     routes
       .find(({ name }) => name === 'settingsSystem')
       ?.children?.find(({ name }) => name === 'capabilityGuideEntry'),
   ).toMatchObject({
     path: '/settings/capabilities/:entryId',
-    surface: 'settings',
+    surface: 'systemSettings',
     authz: CAPABILITY_GUIDE_ACCESS,
   });
 });

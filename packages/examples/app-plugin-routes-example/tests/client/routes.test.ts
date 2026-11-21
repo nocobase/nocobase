@@ -24,7 +24,7 @@ describe('client routes', () => {
 
 describe('client settings routes', () => {
   it('contributes a settings page to the System category', async () => {
-    expect(settingsRoutes.parent).toBe('settings');
+    expect(settingsRoutes.parent).toBe('systemSettings');
     const [page] = settingsRoutes.routes;
     expect(page).toMatchObject({
       parent: 'settingsSystem',

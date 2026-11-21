@@ -13,18 +13,18 @@ import {
 } from '#components/ui/sidebar';
 
 import {
-  isSettingsPath,
+  isAnySettingsPath,
   readSettingsReturn,
 } from '../../routing/settings-shell.js';
 
-/** The settings navigation's first entry: back to where the viewer came from. */
+/** The first entry of the system and personal settings navigations: back to where the viewer came from. */
 export function SettingsBack(): ReactElement {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const label = t('settings.back', { defaultValue: 'Back' });
   // Read on every settings location, after the layout stored the page the viewer left (`useRememberSettingsReturn`).
-  const to = isSettingsPath(pathname) ? readSettingsReturn() : '/';
+  const to = isAnySettingsPath(pathname) ? readSettingsReturn() : '/';
   return (
     <SidebarGroup>
       <SidebarGroupContent>

@@ -2,6 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    originalNotFound:
+      'The original message is no longer available at the mail provider.',
+    originalTooLarge: 'The original message exceeds the 40 MiB download limit.',
+    operationUnsupported: 'This mail operation is unavailable.',
     connectionAuthenticationFailed:
       '{{protocol}} authentication failed. Check the login name and password or app password.',
     connectionHostNotFound:

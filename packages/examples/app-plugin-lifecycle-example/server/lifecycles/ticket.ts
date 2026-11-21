@@ -110,6 +110,20 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
     definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.tickets,
     initial: 'new',
+    management: {
+      field: 'lifecycleManagement',
+      suspend: true,
+      reset: true,
+      resetWhileActive: true,
+      restartAt: ['new', 'open', 'awaitingCustomer', 'closed'],
+      restartWhileActive: true,
+      canEnter: ({ previous, to }) =>
+        to === 'new' || to === 'closed' || Boolean(previous.assigneeId),
+      set: ({ to }): Readonly<Record<string, unknown>> => ({
+        closedReason: to === 'closed' ? 'administrative' : null,
+        ...(to === 'new' ? { assigneeId: null } : {}),
+      }),
+    },
     // Every way a ticket is filed meets the same rule: a customer, for themselves.
     create: {
       validate: ticketProblems,

@@ -3,7 +3,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 
 import { SettingsModulePage } from './settings-module-page.js';
 
-/** Permission management: Roles and permissions and Default data scopes as tabs of one settings module. */
+/** Permission management: Roles and permissions and Default data scopes as tabs of one module. */
 export function PermissionManagementPage({
   tab,
   actions,

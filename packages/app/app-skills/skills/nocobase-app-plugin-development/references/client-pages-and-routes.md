@@ -84,7 +84,7 @@ The authorization plugin's permission workspace lists every route whose `authz` 
 
 ## One route kind
 
-Declare business pages with `defineAppRoutes()` and settings pages with `defineSettingsRoutes()`, which mounts them under `/settings` in an application category ([client routes](client-routing.md#settings-pages)). There is no `/dev` surface. Back every settings page with settings items and APIs ([system settings](system-settings.md)) that check the page's grant.
+Declare business pages with `defineAppRoutes()`, system settings pages with `defineSystemSettingsRoutes()`, which mounts them under `/settings` in an application category, and personal settings pages with `definePersonalSettingsRoutes()`, which mounts them under `/me` ([client routes](client-routing.md#settings-pages)). There is no `/dev` surface. Back every settings page with settings items and APIs ([system settings](system-settings.md)) that check the page's grant.
 
 ## Putting the page in the sidebar
 

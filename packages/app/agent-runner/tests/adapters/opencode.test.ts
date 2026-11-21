@@ -761,6 +761,33 @@ describe('classifyOpencodeFailure', () => {
   ] as const)('%j -> %s', (signal, reason) => {
     expect(classifyOpencodeFailure(signal).reason).toBe(reason);
   });
+
+  it('classifies by the stderr tail without reporting it', () => {
+    expect(
+      classifyOpencodeFailure({
+        error: 'Request failed',
+        details: ['ECONNREFUSED 10.0.0.8:8443'],
+      }),
+    ).toEqual({
+      reason: 'toolNetwork',
+      message: 'Request failed',
+      log: 'ECONNREFUSED 10.0.0.8:8443',
+    });
+  });
+
+  it("keeps the tool's own words with a sign-in failure", () => {
+    const failure = classifyOpencodeFailure({
+      errorType: 'provider.auth',
+      error: 'Reconnect OpenCode Console to continue.',
+      details: ['opencode: provider opencode rejected the request'],
+    });
+    // The tool's own message is reported; the stderr tail goes to the runner's log only.
+    expect(failure).toEqual({
+      reason: 'toolAuth',
+      message: 'Reconnect OpenCode Console to continue.',
+      log: 'opencode: provider opencode rejected the request',
+    });
+  });
 });
 
 describe('parseEventStream', () => {

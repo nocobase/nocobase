@@ -18,6 +18,11 @@ import {
   LifecyclePanel,
   StateBadge,
 } from '../components/record-ui.js';
+import {
+  TicketManagementDialog,
+  TicketManagementHistory,
+} from '../components/ticket-management.js';
+import { Badge } from '../components/ui/badge.js';
 import { Textarea } from '../components/textarea.js';
 import { Button } from '../components/ui/button.js';
 import { Card, CardContent } from '../components/ui/card.js';
@@ -246,6 +251,7 @@ export default function TicketsPage(): ReactElement {
           ) : current.detail ? (
             <>
               <TicketView
+                key={String(current.detail.record.id)}
                 detail={current.detail}
                 fire={current.lifecycle.fire}
                 actor={actor}
@@ -502,6 +508,8 @@ function TicketView({
   };
 
   const banner = ((): ReactElement => {
+    if (detail.suspended)
+      return <Banner tone='warning'>{t('ticketManagement.paused')}</Banner>;
     if (state === 'new')
       return <Banner tone='info'>{t('tickets.banner.new')}</Banner>;
     if (state === 'open')
@@ -513,7 +521,11 @@ function TicketView({
         </Banner>
       );
     if (state === 'awaitingCustomer') {
-      const left = countdown(changedAt + waitMinutes * 60_000, now);
+      const due = Date.parse(text(record.lifecycleDueAt));
+      const left = countdown(
+        Number.isNaN(due) ? changedAt + waitMinutes * 60_000 : due,
+        now,
+      );
       return (
         <Banner tone='neutral'>
           {left
@@ -527,7 +539,9 @@ function TicketView({
       <Banner tone='success'>
         {record.closedReason === 'timeout'
           ? t('tickets.banner.timeout')
-          : t('tickets.banner.resolved')}{' '}
+          : record.closedReason === 'administrative'
+            ? t('states.closed')
+            : t('tickets.banner.resolved')}{' '}
         {until > now
           ? t('tickets.banner.reopenUntil', {
               date: dateTime(new Date(until).toISOString(), i18n.language),
@@ -574,6 +588,18 @@ function TicketView({
               {text(record.subject)}
             </h2>
             <StateBadge state={state} />
+            {detail.suspended && (
+              <Badge variant='outline'>{t('ticketManagement.suspended')}</Badge>
+            )}
+            {detail.management && (
+              <TicketManagementDialog
+                id={id}
+                subject={text(record.subject)}
+                state={state}
+                management={detail.management}
+                refresh={onChange}
+              />
+            )}
           </div>
           <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5'>
             <Field label={t('tickets.meta.customer')}>
@@ -600,6 +626,10 @@ function TicketView({
           </div>
           {banner}
         </div>
+
+        {detail.management && (
+          <TicketManagementHistory history={detail.management.history} />
+        )}
 
         <ol className='space-y-3'>
           {thread.map((item) =>

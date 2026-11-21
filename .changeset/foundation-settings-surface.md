@@ -5,4 +5,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Register the Foundation overview and capability guide as settings pages. The overview moves to `/settings/foundation` with a redirect from its previous address, and capability guide links keep their existing URLs.
+Register the Foundation overview and capability guide as system settings pages. The overview moves to `/settings/foundation` with a redirect from its previous address, and capability guide links keep their existing URLs.

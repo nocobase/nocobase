@@ -1,5 +1,22 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.84
+
+### Minor Changes
+
+- 2c66475: Let native online agent conversations choose a thinking level (the AI SDK's seven reasoning levels: provider default, none, minimal, low, medium, high or extra high) for any online chat model, passed to the provider through the AI SDK, with a notice in the conversation when the model reports it does not support the level, and a thinking level menu beside the model choice in the Examples chat and the UI Library agent-chat block.
+
+### Patch Changes
+
+- 2c66475: Move Online Agent thinking settings into the selected model's row with compact segmented levels, a separate provider-default choice, and immediate selection without a confirmation button. Show the full model name and current thinking level in the trigger, and size the picker to fit all levels. Keep Runner Agent choices unchanged.
+- Updated dependencies [51453de]
+- Updated dependencies [2c66475]
+- Updated dependencies [39f8245]
+- Updated dependencies [188e419]
+  - @nocobase/lifecycle@0.1.0-beta.6
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.20
+  - @nocobase/app-plugin-agents@2.0.0-beta.18
+
 ## 1.0.0-beta.83
 
 ### Patch Changes

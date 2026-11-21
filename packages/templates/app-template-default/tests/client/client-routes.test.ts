@@ -9,18 +9,18 @@ import applicationRoutes, {
   createApplicationRoutes,
 } from '../../client/routes.ts';
 import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
-import { defineSettingsRoutes } from '@nocobase/app-client/plugins';
+import { defineSystemSettingsRoutes } from '@nocobase/app-client/plugins';
 
 describe('app client routes', () => {
   it('joins the settings system category across contributions without moving the log URL', () => {
-    const shell = defineSettingsRoutes([
+    const shell = defineSystemSettingsRoutes([
       {
         name: 'settingsSystem',
         navigation: { title: 'System' },
         children: [],
       },
     ]);
-    const logs = defineSettingsRoutes([
+    const logs = defineSystemSettingsRoutes([
       {
         name: 'notificationManagement',
         parent: 'settingsSystem',
@@ -86,7 +86,7 @@ describe('app client routes', () => {
   });
 
   it('reuses the notification module and preserves its logs and existing grants', () => {
-    const existing = defineSettingsRoutes([
+    const existing = defineSystemSettingsRoutes([
       {
         name: 'settingsSystem',
         navigation: { title: 'System' },
@@ -206,6 +206,9 @@ describe('app client routes', () => {
         authorizedAs: 'settings:authorization.default-access',
       })),
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
+      // Personal settings belong to whoever is signed in, so they stay out of page authorization.
+      { name: 'personalSettingsHome', authorizedAs: null },
+      { name: 'personalAppearance', authorizedAs: null },
     ]);
   });
 

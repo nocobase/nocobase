@@ -175,6 +175,7 @@ export async function openGitSsh(
   credentials: readonly RepoSshCredential[] | undefined,
   parent: string = tmpdir(),
   signal: AbortSignal = new AbortController().signal,
+  readOnly: boolean = false,
 ): Promise<GitSshSession | undefined> {
   if (!credentials?.length) return undefined;
   const [ssh, agent, sshAdd] = binaries();
@@ -257,7 +258,7 @@ export async function openGitSsh(
     const config = path.join(dir, 'config.json');
     await writeFile(
       config,
-      JSON.stringify({ ssh, socket, identities } satisfies SshConfig),
+      JSON.stringify({ ssh, socket, identities, readOnly } satisfies SshConfig),
       { mode: 0o600 },
     );
     const extension = path.extname(import.meta.filename);

@@ -62,7 +62,6 @@ const skillsEnUS = {
     binaryFile: 'Binary file, {{size}}. It cannot be edited here.',
     executable: 'Executable',
     scriptBadge: 'Script',
-    scriptsNote: 'Has scripts: online agents can read them but never run them',
     compatibility: 'Compatibility: {{value}}',
     fileContent: 'Content of {{path}}',
     export: 'Export',
@@ -94,7 +93,7 @@ const skillsEnUS = {
       name: 'Name',
       renameTitle: 'Rename "{{name}}"',
       conventional: {
-        scripts: 'Code agents can run. Online agents only read it.',
+        scripts: 'Code agents can run.',
         references: 'Documentation agents read when they need it.',
         assets: 'Templates, images and other resources.',
       },

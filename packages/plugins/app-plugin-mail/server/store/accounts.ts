@@ -13,7 +13,8 @@ import {
 } from './account-writes.js';
 import { fromAccountRow } from './mappers.js';
 import { type AccountRow } from './rows.js';
-import { normalizeAddress } from './serialization.js';
+import { countMessagesOutsideSyncFolders } from './message-writes.js';
+import { jsonOrNull, normalizeAddress } from './serialization.js';
 
 export class MailAccountsStore {
   public constructor(private readonly database: DatabaseManager) {}
@@ -99,6 +100,34 @@ export class MailAccountsStore {
         .where('id', '=', accountId)
         .execute();
     });
+  }
+
+  public async updateAccountSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[] | undefined,
+  ): Promise<boolean> {
+    const result = await this.database
+      .query()
+      .updateTable<AccountRow>('mailAccounts')
+      .set({
+        syncFolderIds: jsonOrNull(syncFolderIds),
+        updatedAt: new Date().toISOString(),
+      })
+      .where('id', '=', accountId)
+      .where('status', '=', 'active')
+      .execute();
+    return result.updatedCount === 1;
+  }
+
+  public async countMessagesOutsideSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[],
+  ): Promise<number> {
+    return countMessagesOutsideSyncFolders(
+      this.database.query(),
+      accountId,
+      syncFolderIds,
+    );
   }
 
   public async saveAccount(account: MailAccount): Promise<MailAccount> {

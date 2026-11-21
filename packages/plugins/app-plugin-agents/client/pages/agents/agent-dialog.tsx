@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
+import { agentModelOf } from '../../../shared/model-catalog.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -113,6 +114,8 @@ function AgentForm({
   });
 
   const missing = enabled && goodAt.trim() === '';
+  // Every agent shows its whole model id here.
+  const qualifiedModel = agentModelOf(agent).model ?? null;
   const { runners } = agent;
   const reportedBy = t('agents.enable.reportedBy', {
     count: runners.team + runners.personal,
@@ -144,6 +147,20 @@ function AgentForm({
         }}
       >
         <FieldGroup>
+          {qualifiedModel ? (
+            <Field>
+              <FieldLabel htmlFor='agent-model'>
+                {t('agents.edit.model')}
+              </FieldLabel>
+              <p
+                id='agent-model'
+                className='font-mono text-sm break-words [overflow-wrap:anywhere]'
+                data-testid='agent-dialog-model'
+              >
+                {qualifiedModel}
+              </p>
+            </Field>
+          ) : null}
           <Field data-invalid={submitted && missing ? true : undefined}>
             <div className='flex flex-wrap items-center justify-between gap-2'>
               <FieldLabel htmlFor='agent-good-at'>

@@ -1,6 +1,6 @@
 import {
   defineClientPlugin,
-  defineSettingsRoutes,
+  defineSystemSettingsRoutes,
   type AppClientPluginFactory,
 } from '@nocobase/app-client/plugins';
 import { Settings } from 'lucide-react';
@@ -11,7 +11,7 @@ const plugin: AppClientPluginFactory = defineClientPlugin({
     'en-US': () => import('./en-US.js'),
     'zh-CN': () => import('./zh-CN.js'),
   },
-  routes: defineSettingsRoutes([
+  routes: defineSystemSettingsRoutes([
     {
       parent: 'settingsSystem',
       name: 'configInspector',

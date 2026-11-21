@@ -293,9 +293,20 @@ export interface RunnerHeldItem {
 export interface RunnerRecentRun {
   readonly subjectLabel?: string | null;
   readonly failureReason?: string | null;
+  /**
+   * What a failed run's tool said, as one redacted line of at most 300 characters (`failureDetailText`); absent for other runs and when the viewer may not
+   * see what it worked on, since the text can quote it.
+   */
+  readonly failureDetail?: string | null;
   readonly id: string;
   /** The agent that ran. */
   readonly title: string;
+  /** Its whole model id, shown beside its name (`AgentModel`). */
+  readonly model?: string;
+  /** Its name without its tool, for a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly shortName?: string;
+  /** Its tool and whole model id, shown on hover in a narrow place; OpenCode and Pi only (`AgentModel`). */
+  readonly modelTitle?: string;
   readonly status: RunStatus;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;

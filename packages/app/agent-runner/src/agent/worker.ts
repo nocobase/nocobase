@@ -814,6 +814,7 @@ export class RunWorker {
               credentials,
               this.runTemp.dir,
               this.abort.signal,
+              payload.workspace.readOnly === true,
             );
           }
         }
@@ -1095,6 +1096,10 @@ export class RunWorker {
       if (this.ending !== undefined) return this.finishEnding();
       if (result.exit === 'error') {
         const { reason, detail } = failureReason(result);
+        if (result.error?.log)
+          this.deps.log(
+            `run ${this.runId}: ${reason}: ${this.redactor.text(result.error.log)}`,
+          );
         if (
           reason === 'toolQuota' &&
           (payload.tool.kind === 'opencode' || payload.tool.kind === 'pi') &&

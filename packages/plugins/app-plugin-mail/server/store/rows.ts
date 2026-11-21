@@ -22,6 +22,7 @@ export interface AuthorizationStateRow extends Row {
   verifierCredentialReference: string;
   scopes: readonly string[] | string;
   initialSyncReceivedAfter?: string | null;
+  syncFolderIds?: readonly string[] | string | null;
   expiresAt: string;
   consumedAt?: string | null;
   createdAt: string;
@@ -73,6 +74,7 @@ export interface AccountRow extends Row {
   removalFailed?: boolean;
   initialSyncReceivedAfter?: string | null;
   automaticSyncIntervalMinutes?: number | null;
+  syncFolderIds?: readonly string[] | string | null;
   createdAt: string;
   updatedAt: string;
 }

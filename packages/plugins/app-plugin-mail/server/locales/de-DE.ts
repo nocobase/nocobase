@@ -4,6 +4,11 @@ import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound:
+      'Die Originalnachricht ist beim E-Mail-Anbieter nicht mehr verfügbar.',
+    originalTooLarge:
+      'Die Originalnachricht überschreitet das Downloadlimit von 40 MiB.',
+    operationUnsupported: 'Diese E-Mail-Aktion ist nicht verfügbar.',
     connectionAuthenticationFailed:
       '{{protocol}}-Authentifizierung fehlgeschlagen. Prüfen Sie den Anmeldenamen und das Passwort oder App-Passwort.',
     connectionHostNotFound:

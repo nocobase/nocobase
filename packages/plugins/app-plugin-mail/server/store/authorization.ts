@@ -1,7 +1,8 @@
 import { type DatabaseManager } from '@nocobase/db';
 import { type MailAuthorizationTransaction } from '../contracts/persistence.js';
 import { type AuthorizationStateRow } from './rows.js';
-import { parseJson } from './serialization.js';
+import { syncFolderIdsField } from './mappers.js';
+import { jsonOrNull, parseJson } from './serialization.js';
 
 export class MailAuthorizationStore {
   public constructor(private readonly database: DatabaseManager) {}
@@ -21,6 +22,7 @@ export class MailAuthorizationStore {
         verifierCredentialReference: transaction.verifierCredentialReference,
         scopes: JSON.stringify(transaction.scopes),
         initialSyncReceivedAfter: transaction.initialSyncReceivedAfter ?? null,
+        syncFolderIds: jsonOrNull(transaction.syncFolderIds ?? undefined),
         expiresAt: transaction.expiresAt,
         createdAt: new Date().toISOString(),
       })
@@ -61,6 +63,7 @@ export class MailAuthorizationStore {
               'authorization scopes',
             ),
             initialSyncReceivedAfter: row.initialSyncReceivedAfter,
+            ...syncFolderIdsField(row.syncFolderIds),
             expiresAt: row.expiresAt,
           }
         : undefined;

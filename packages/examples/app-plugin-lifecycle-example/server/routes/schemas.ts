@@ -1,3 +1,7 @@
+import {
+  TicketManagementSchema,
+  type TicketManagement,
+} from './ticket-management-schemas.js';
 import type {
   AvailableTransition,
   Blocker,
@@ -425,14 +429,18 @@ const recordView = {
     description: 'Send it back as `expectVersion` so a stale page is refused.',
   }),
   available: z.array(Available),
+  suspended: z.boolean().optional(),
+  roundStartedVersion: z.number().int().nonnegative().optional(),
   history: z.object({
     transitions: z.array(Entry),
     effectRuns: z.array(Run),
   }),
 };
 
-export const RecordViewSchema: z.ZodType<RecordView> = z
-  .object(recordView)
+export const RecordViewSchema: z.ZodType<
+  RecordView & { readonly management?: TicketManagement }
+> = z
+  .object({ ...recordView, management: TicketManagementSchema.optional() })
   .meta({ ref: 'LifecycleExampleRecordView' });
 
 export const FireViewSchema: z.ZodType<FireView> = z

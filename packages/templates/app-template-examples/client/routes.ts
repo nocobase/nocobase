@@ -1,5 +1,6 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
+import personalSettingsRoutes from './pages/me/routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
@@ -30,7 +31,7 @@ import {
 } from 'lucide-react';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
+  defineSystemSettingsRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
@@ -447,7 +448,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 
 // System settings, mounted under `/settings`: the home, the categories every package shares, and the application's own
 // administration modules. A module joins a category with `parent`; its path is relative to `/settings`.
-const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
+const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
   {
     // Lists only modules the viewer may open, so it needs no grant of its own.
     name: 'settingsHome',
@@ -560,7 +561,13 @@ const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
 // Their former URLs outside `/settings` redirect through `lib/settings-redirects.ts`.
 const routes: readonly AppClientRouteContribution[] =
   includeNotificationTemplateRoutes(
-    [appRoutes, settingsRoutes, systemSettingsRoutes, databaseExplorerRoutes],
+    [
+      appRoutes,
+      settingsRoutes,
+      personalSettingsRoutes,
+      systemSettingsRoutes,
+      databaseExplorerRoutes,
+    ],
     true,
   );
 
