@@ -34,6 +34,32 @@
     "./server/extension": {
       "types": "./server/extension/index.ts",
       "import": "./server/extension/index.ts"
+    },
+    "./client/settings": {
+      "types": "./client/settings/index.ts",
+      "import": "./client/settings/index.ts"
+    }
+  },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./client/components/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./client/hooks/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./client/lib/*.js"
+    },
+    "#settings/*": {
+      "development": "./client/settings/*.js",
+      "default": "./client/settings/*.js"
+    },
+    "#components/data-table": {
+      "development": "./client/components/data-table/index.js",
+      "default": "./client/components/data-table/index.js"
     }
   },
   "files": [
@@ -68,7 +94,18 @@
       "./server/extension": {
         "types": "./dist/server/extension/index.d.ts",
         "import": "./dist/server/extension/index.js"
+      },
+      "./client/settings": {
+        "types": "./dist/client/settings/index.d.ts",
+        "import": "./dist/client/settings/index.js"
       }
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js",
+      "#lib/*": "./dist/client/lib/*.js",
+      "#settings/*": "./dist/client/settings/*.js",
+      "#components/data-table": "./dist/client/components/data-table/index.js"
     }
   },
   "scripts": {
@@ -90,14 +127,21 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "@tanstack/react-table": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "@nocobase/authorization": "workspace:^"
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -105,15 +149,20 @@
     "@nocobase/repository-input": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "better-sqlite3": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "knex": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

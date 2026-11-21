@@ -8,8 +8,17 @@ import type { ClientServiceProviderConstructor } from '@nocobase/app-client/plug
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { AuthorizationClient } from './authorization-client.js';
-import { authorizationClientToken } from './tokens.js';
 import {
+  AuthorizationSettings,
+  type AuthorizationSettingsOptions,
+} from './settings/extensions.js';
+import {
+  authorizationClientToken,
+  authorizationSettingsToken,
+} from './tokens.js';
+import { DATA_RULES_TAB, ROLES_TAB } from './settings/tab-keys.js';
+import {
+  AUTHORIZATION_NAMESPACE,
   AUTHORIZATION_GLOBAL_PERMISSIONS_CHANGED_TOPIC,
   AUTHORIZATION_PERMISSIONS_CHANGED_TOPIC,
 } from '../shared.js';
@@ -57,8 +66,48 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
   }
 }
 
-const serviceProviders: readonly ClientServiceProviderConstructor[] = [
-  AuthorizationServiceProvider,
-];
+/**
+ * The Roles and permissions page's extension points, with the application's page catalog. Its own two top tabs are
+ * registered first, so another package's tab follows them unless it gives a lower `order`.
+ */
+export function authorizationSettingsProvider(
+  options: AuthorizationSettingsOptions,
+): ClientServiceProviderConstructor {
+  return class AuthorizationSettingsServiceProvider extends ServiceProvider<ClientApplication> {
+    public readonly name: string =
+      '@nocobase/app-plugin-authorization/client/settings';
 
-export default serviceProviders;
+    public override register(): void {
+      this.app.container.singleton(authorizationSettingsToken, () => {
+        const settings = new AuthorizationSettings(options);
+        settings.pageTabs.add({
+          key: ROLES_TAB,
+          title: { key: 'settings.roles', ns: AUTHORIZATION_NAMESPACE },
+          order: 10,
+          path: '/roles',
+          authz: {
+            resource: { type: 'settings', id: 'authorization.permission-sets' },
+            action: 'read',
+          },
+        });
+        settings.pageTabs.add({
+          key: DATA_RULES_TAB,
+          title: { key: 'settings.dataRules', ns: AUTHORIZATION_NAMESPACE },
+          order: 20,
+          path: '/default-access',
+          authz: {
+            resource: { type: 'settings', id: 'authorization.default-access' },
+            action: 'read',
+          },
+        });
+        return settings;
+      });
+    }
+  };
+}
+
+export default function serviceProviders(
+  options: AuthorizationSettingsOptions,
+): readonly ClientServiceProviderConstructor[] {
+  return [AuthorizationServiceProvider, authorizationSettingsProvider(options)];
+}

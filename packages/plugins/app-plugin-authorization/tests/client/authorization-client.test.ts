@@ -24,8 +24,13 @@ import { useAuthorizationClient } from '../../client/use-authorization-client.js
 import { authorizationClientToken } from '../../client/tokens.js';
 
 describe('@nocobase/app-plugin-authorization client', () => {
-  it('contributes its provider and no pages', () => {
-    expect(plugin().routes).toEqual([]);
+  it('contributes its provider and the Roles and permissions pages, which an application may leave out', () => {
+    const names = (registration: ReturnType<typeof plugin>) =>
+      registration.routes.flatMap((contribution) =>
+        contribution.routes.map((route) => route.name),
+      );
+    expect(names(plugin())).toEqual(['permissionManagement']);
+    expect(plugin({ routes: false }).routes).toEqual([]);
     expect(reactProviders).toMatchObject([
       {
         name: 'authorization',

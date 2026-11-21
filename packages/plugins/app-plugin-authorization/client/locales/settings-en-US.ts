@@ -1,0 +1,221 @@
+// The Roles and permissions pages: the role list and editor, data rules and their shared components.
+const settings = {
+  permissionManagement: 'Roles and permissions',
+  permissionManagementDescription:
+    'Set what each role can open and do, and the data it can see.',
+  rolesDescription:
+    'Set the menus each role sees and what it may do with each kind of business data.',
+  editRole: 'Edit role',
+  dataRules: 'Data rules',
+  dataRulesDescription:
+    'Rules that apply to every role: the records each role starts from, the records shared with more people, and the records no role may reach.',
+  noDataRules: 'No data rules are installed in this application.',
+  listChanged: 'The list has changed. Please retry.',
+  defaultAccess: {
+    kindBusiness: 'business operations',
+    kindTable: 'data table',
+    kindLabel: '{{title}} ({{kind}})',
+    noResourcesShort: 'No configurable objects available',
+    scopeInvalid:
+      'Choose a valid data scope or complete its filter conditions.',
+    deleteChanged:
+      'This rule changed or was removed. The list was refreshed; review it before deleting.',
+    filterDescription:
+      'Apply conditions to this rule draft, then save the rule to make them effective.',
+    fieldLabels: {
+      name: 'Name',
+      id: 'ID',
+    },
+    delete: 'Delete',
+    description:
+      'Adds data access for users with operation permission, combined with role-granted scopes and subject to restriction rules.',
+    new: 'New default scope',
+    edit: 'Default scope details',
+    resource: 'Business object',
+    chooseResource: 'Choose a business object',
+    action: 'Operation',
+    scope: 'Data scope',
+    scopes: 'Operations and data scopes',
+    none: 'No default scope',
+    all: 'All records',
+    custom: 'Custom filter',
+    records: 'Selected records ({{count}})',
+    retained: 'Retain existing configuration',
+    search: 'Search business objects or keys',
+    noResources:
+      'Every available business object already has a default rule, or no configurable objects are registered.',
+    unsupported:
+      'This rule includes configuration absent from the current plugin catalog. It is preserved and shown read-only.',
+    changed:
+      'This rule changed or was removed while you were editing. Reload it before saving. Your draft has not been saved.',
+    duplicate:
+      'This key or business object already has a default rule. Use a different key or edit the existing rule.',
+    invalid:
+      'The configuration is not accepted. Check the business object, operation and data scope.',
+    keyRequired: 'Enter a key other than options, subjects or records.',
+    resourceRequired: 'Choose a business object.',
+    reload: 'Reload rule',
+    saved: 'Saved default scope “{{name}}”',
+    deleted: 'Deleted default scope “{{name}}”',
+    deleteTitle: 'Delete default scope “{{name}}”?',
+    deleteHint:
+      'This removes the baseline access supplied by this rule. Existing role grants and other rules remain. This cannot be undone.',
+    back: 'Back to default scopes',
+    open: 'View / edit',
+  },
+  unnamedPage: 'Unnamed page ({{path}})',
+  keyConflict: 'This role key is already in use.',
+  userPermissions: 'Users and accounts',
+  readUsers: 'View users',
+  createUsers: 'Create users',
+  updateUsers: 'Edit users',
+  assignRole: 'Assign roles',
+  identityConflict: 'This email or username is already in use.',
+  signInAgain: 'Sign in again',
+  reload: 'Reload role',
+  roles: 'Roles',
+  roleSearch: 'Search role names',
+  newRole: 'New role',
+  roleName: 'Role name',
+  key: 'Key',
+  actions: 'Actions',
+  actionsFor: 'Actions for {{name}}',
+  clear: 'Clear filters',
+  save: 'Save',
+  cancel: 'Cancel',
+  saving: 'Saving…',
+  confirm: 'Confirm',
+  enable: 'Enable',
+  disable: 'Disable',
+  revokeSessions: 'Revoke sessions',
+  saved: 'Saved "{{name}}"',
+  required: 'Enter a value for this field',
+  protected: 'Protected',
+  protectedHint:
+    'This role is protected. Only explicitly permitted changes are available.',
+  unsaved: 'Unsaved changes',
+  discardTitle: 'Discard changes?',
+  discardHint: 'Your unsaved changes will be lost.',
+  failed: 'Unable to complete the request. Try again.',
+  invalidRequest:
+    'Some values are invalid. Check your input or filters and try again.',
+  retry: 'Retry',
+  loading: 'Loading',
+  denied: 'You do not have access. Contact an administrator.',
+  missing: 'This record does not exist or has been deleted.',
+  conflict:
+    'The request conflicts with current data. Review the latest record before trying again.',
+  sessionEnded: 'Your session has ended. Sign in again.',
+  access: 'Access',
+  pagesOutsideNavigation: 'Pages outside navigation',
+  permissionReadOnlyHint: 'These permissions are read-only.',
+  noRecordScope: 'Use default rules',
+  permissionFilter: {
+    limit: 'Up to 20 conditions',
+    configure: 'Conditions',
+    title: 'Configure record filter',
+    description:
+      'Apply conditions to the role draft, then save the role to make them effective.',
+    all: 'Match all conditions',
+    any: 'Match any condition',
+    field: 'Field',
+    operator: 'Operator',
+    valueType: 'Value type',
+    value: 'Value',
+    text: 'Text',
+    number: 'Number',
+    boolean: 'Boolean',
+    true: 'Yes',
+    false: 'No',
+    add: 'Add condition',
+    remove: 'Remove',
+    cancel: 'Cancel',
+    apply: 'Apply',
+    invalid:
+      'Choose valid fields and complete all values. Include at least one condition.',
+    advanced:
+      'This existing filter uses advanced conditions. It will be preserved unless you explicitly reconfigure it.',
+    reconfigure: 'Reconfigure',
+    operators: {
+      $eq: 'Equals',
+      $ne: 'Does not equal',
+      $includes: 'Contains',
+      $gt: 'Greater than',
+      $gte: 'At least',
+      $lt: 'Less than',
+      $lte: 'At most',
+      $empty: 'Is empty',
+      $notEmpty: 'Is not empty',
+    },
+  },
+  copyOfRole: '{{name}} (copy)',
+  selectRole: 'Select a role',
+  duplicateRole: 'Duplicate as new role',
+  discardChanges: 'Discard changes',
+  unrestrictedRole: 'All permissions',
+  openPage: 'Open page',
+  escalation: {
+    roles:
+      'Anyone who can create or change roles can give any role, including their own, any permission. The server does not limit them to the permissions they hold, so grant this only to trusted administrators.',
+    users:
+      'Assigning roles gives users everything those roles allow, including administrator roles. Grant it only to trusted administrators.',
+  },
+  permissionEditor: {
+    menusTab: 'Menus',
+    objectsTab: 'Business objects',
+    settingsTab: 'System settings',
+    tabCount: '{{count}} / {{total}}',
+    noMenus: 'No menus',
+    emptyPage:
+      '“{{menu}}” is checked, but this role cannot view {{object}} yet, so the page opens empty.',
+    openView: 'Turn on “{{action}}”',
+    opensWith: 'Shown with “{{action}}”',
+    attention_one: '{{count}} menu needs attention',
+    attention_other: '{{count}} menus need attention',
+    objects: 'Business objects',
+    search: 'Search objects or actions',
+    clearSearch: 'Clear search',
+    noResults: 'No matching objects or actions',
+    empty: 'No business objects to configure',
+    objectEnabled: '{{enabled}} of {{total}} on',
+    objectOff: 'Off',
+    enableAll: 'Enable all',
+    viewOnly: 'View only',
+    disableAll: 'Disable all',
+    sameAsView: 'Same as view ({{scope}})',
+    sameAsObjectView: 'Same as {{object}} view ({{scope}})',
+    needsView: 'Needs {{object}} view',
+    scopeFor: 'Data scope of {{action}}',
+    scopeForSlot: '{{action}}: {{scope}}',
+    managed: 'Managed by the application',
+    unrestrictedTitle: 'All permissions (unrestricted)',
+    unrestrictedDescription:
+      'This role can open every menu and perform every action on all data. There is nothing to set.',
+    confirmDisable_one:
+      'Turning off {{actions}} also turns off {{dependents}}, which needs it.',
+    confirmDisable_other:
+      'Turning off {{actions}} also turns off {{dependents}}, which need it.',
+    confirm: 'Turn off',
+    dismiss: 'Dismiss',
+    noticeScopeReset_one:
+      '{{actions}} now follows the view scope ({{view}}) again.',
+    noticeScopeReset_other:
+      '{{actions}} now follow the view scope ({{view}}) again.',
+    noticeAutoEnabled: 'Also turned on {{actions}}, which this needs.',
+    noticeStaysOff: '{{action}} stays off.',
+    noticeTurnOnFirst_one:
+      'It needs {{actions}}, which is never turned on automatically. Turn it on first.',
+    noticeTurnOnFirst_other:
+      'It needs {{actions}}, which are never turned on automatically. Turn them on first.',
+    noticeManagedRequirement_one:
+      'It needs {{actions}}, which is managed by the application and cannot be turned on here.',
+    noticeManagedRequirement_other:
+      'It needs {{actions}}, which are managed by the application and cannot be turned on here.',
+    noticeManagedDependent_one:
+      'Nothing was turned off: {{actions}} is managed by the application and needs it.',
+    noticeManagedDependent_other:
+      'Nothing was turned off: {{actions}} are managed by the application and need it.',
+  },
+};
+
+export default settings;

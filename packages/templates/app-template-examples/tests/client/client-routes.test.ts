@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
@@ -414,6 +415,7 @@ function resolveRoutes() {
       packageName: '@nocobase/app-plugin-routes-example',
       routes: routesExampleSettings,
     },
+    authorizationPages(),
   ]);
 }
 

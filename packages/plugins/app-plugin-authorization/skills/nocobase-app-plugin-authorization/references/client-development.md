@@ -140,7 +140,7 @@ These are sample ids; fetch actual options from the endpoint. Never expose prote
 
 ## Configure the three-tab role editor
 
-When you add an application feature with business permissions, update `client/pages/settings/permission-workspace.ts` in the same change. Keep the template's role form and its installed `@nocobase/permission-editor` component. Edit `permissionWorkspaceSelection` to expose the app's implemented business operations and connect its pages to the objects they use.
+The role editor is part of this plugin's Roles and permissions page, which the client plugin registers in the System settings' Account and permissions category; an application never copies it. The application passes what only it knows through the plugin's options in `client/plugins.ts`: `pageCatalog`, `workspace` (`permissionWorkspaceSelection`) and `pageTitles`. When you add an application feature with business permissions, update `client/pages/settings/permission-workspace.ts` in the same change: edit `permissionWorkspaceSelection` to expose the app's implemented business operations and connect its pages to the objects they use. To add to the page itself, see [Extend the Roles and permissions page](#extend-the-roles-and-permissions-page).
 
 - **Menus** uses the application's registered navigation. A business route declares `authz: { resource: { type: 'page', id }, action: 'access' }`. The menu checkbox controls the page grant. Object tags are references, and checking a menu whose primary object lacks View triggers the empty-page warning. Give home pages that require sign-in only `authz: 'skip'` to keep their visible-for-everyone state.
 - **Business objects** has one `business` entry per server-registered composite resource. List the exact registered action IDs the app actually implements. Name the read action `view` or `read`, or designate it with `view`. Declare its data scope on its own collection. Other operations on that collection follow View, and an additional scope on a different selected object's collection follows that object's View. Followers can use the View scope or a provably narrower scope.
@@ -450,9 +450,45 @@ Validate and normalize request fields with the route's input schema, and include
 
 After generating the application, verify directly that `defineCompositeResource('tms.waybills', ...)` uses a different identifier from the `tmsWaybills` table, and that each `scopeTitles` key matches a registered table name (`tmsWaybills`, `tmsCarriers`, `tmsSites` or `tmsVehicles`). In the role editor, confirm the operation titles are `View` and `Create`, Create shows exactly Carriers, Sites and Vehicles, and no selector appears for the new waybill's own `waybills` slot. Submit one valid Create request with in-scope carrier, site and vehicle choices and verify exactly one waybill is written. Then submit out-of-scope carrier, site and vehicle choices separately as an ordinary user; each request must be denied and leave the waybill count unchanged.
 
+## Extend the Roles and permissions page
+
+The page and its options belong to the plugin:
+
+```ts
+authorization({
+  pageCatalog: permissionPageCatalog, // how the role editor lists the application's pages
+  workspace: permissionWorkspaceSelection, // business objects and the pages that use them
+  pageTitles: pagePermissionTitles, // titles of pages without a navigation or breadcrumb title, by route name
+  // routes: false leaves the pages unregistered
+});
+```
+
+Every option is optional. Without `pageCatalog` the editor reads the registered routes through `defaultPermissionPageCatalog`; without `workspace` it lists no business objects. Route names (`permissionManagement`, `roles`, `defaultAccess` and their detail routes) and the settings items they check (`authorization.permission-sets`, `authorization.default-access`) are stable, so existing grants keep working.
+
+Another package extends the page from its client service provider through `authorizationSettingsToken`, imported from `@nocobase/app-plugin-authorization/client/settings`. That entry point holds only types, the token and lazy loaders, so importing it at startup loads no page code. It offers three ordered registries; `add` returns a function that removes the tab, and adding a key twice throws.
+
+- `pageTabs`: a top tab of the page. Each one is a System settings page of its own that its package registers with `defineSystemSettingsRoutes` under the `permissionManagement` module, rendered inside `AuthorizationPage` so a link, Back and a reload keep the tab. The entry names its `path` and the page's own `authz`; the tab shows only to those it admits, and the tab bar hides when only one tab is open to the person.
+- `ruleTabs`: one kind of data rule under the Data rules tab, loaded lazily through `component` and shown to those who pass its `authz`.
+- `roleTabs`: a tab of a role's detail, which receives the role and whether the person may change it.
+
+```ts
+this.app.container.resolve(authorizationSettingsToken).ruleTabs.add({
+  key: 'default-access',
+  title: { key: 'settings.defaultAccess.title', ns: AUTHORIZATION_NAMESPACE },
+  order: 10,
+  authz: {
+    resource: { type: 'settings', id: 'authorization.default-access' },
+    action: 'read',
+  },
+  component: loadDefaultAccessRules,
+});
+```
+
+Give a tab a lower `order` to place it earlier; the built-in tabs are `ROLES_TAB` and `DATA_RULES_TAB`. Translate its title in the contributing package's namespace.
+
 ## Settings screens
 
-A settings screen is an ordinary application page: declare it among the App's own routes in `client/routes.ts` with `defineAppRoutes`, a lazy page module, navigation keys and `authz: { resource: { type: 'settings', id }, action: 'read' }` naming a settings item registered on the server with `authz.settings.add`. Declare `authz` on every such entry page: one that omits it defaults to `'unrestricted'`, which only root may open. Check read and each write action separately in the endpoints. Plugins contribute no settings screens, and the authorization plugins ship no permission-set or rule editors; an App that needs one builds it on the management HTTP API.
+A settings screen is an ordinary application page: declare it among the App's own routes in `client/routes.ts` with `defineAppRoutes`, a lazy page module, navigation keys and `authz: { resource: { type: 'settings', id }, action: 'read' }` naming a settings item registered on the server with `authz.settings.add`. Declare `authz` on every such entry page: one that omits it defaults to `'unrestricted'`, which only root may open. Check read and each write action separately in the endpoints. The Roles and permissions page, with its role editor and the Data rules tab, comes from this plugin; extend it through its extension points instead of building another one.
 
 For a new configuration screen, use the shared API client, one saved baseline and one draft per saved section, route-backed child tabs with `Outlet`, unsaved-navigation protection and explicit save and error states. Read-only access renders data without writable controls. Options and search endpoints need the calling settings permission too. Only add an independent directory permission if the business directory has that additional boundary; a subject picker relies on the calling management permission.
 
