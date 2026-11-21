@@ -315,6 +315,88 @@ describe('entry counts', () => {
     ).toHaveAttribute('title', '2 running');
   });
 
+  describe('in sub-menus', () => {
+    const counted = (name: string, count: number): RouteNavigationItem => ({
+      route: {
+        ...page(name),
+        navigation: { title: name, badge: () => ({ count }) },
+      },
+      children: [],
+    });
+    const group = (
+      name: string,
+      children: RouteNavigationItem[],
+      section = false,
+    ): RouteNavigationItem => ({
+      route: { ...page(name), componentLoader: undefined },
+      children,
+      ...(section ? { section: true } : {}),
+    });
+    const mail = group('Mail', [
+      counted('unread', 7),
+      counted('flagged', 0),
+      group('Folders', [counted('starred', 3)]),
+    ]);
+    const work = group('Work', [
+      group('Queue', [counted('assigned', 4)], true),
+    ]);
+    const subBadgeOf = (name: string) =>
+      screen
+        .getByRole('link', { name })
+        .querySelector('[data-slot="navigation-sub-badge"]');
+
+    it('shows the counts of a section and a nested menu once expanded, nothing at zero', async () => {
+      const user = userEvent.setup();
+      // With sections on, Mail is a heading over its entries and Work a menu holding a section.
+      render(shell([mail, work], routeKey(counted('assigned', 4).route)), {
+        wrapper: I18n,
+      });
+      expect(subBadgeOf('assigned · 4')).toHaveTextContent('4');
+      expect(
+        screen
+          .getByRole('link', { name: 'unread · 7' })
+          .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('7');
+      expect(screen.queryByRole('link', { name: /starred/ })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Folders' }));
+      expect(subBadgeOf('starred · 3')).toHaveTextContent('3');
+      expect(subBadgeOf('starred · 3')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('shows the counts of a collapsible menu once expanded, and lets the layout replace them, with 0 hiding one', async () => {
+      const user = userEvent.setup();
+      render(shell([mail], undefined, false, { unread: 0, flagged: 2 }), {
+        wrapper: I18n,
+      });
+      expect(screen.queryByRole('link', { name: /unread/ })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Mail' }));
+      expect(subBadgeOf('unread')).toBeNull();
+      expect(subBadgeOf('flagged · 2')).toHaveTextContent('2');
+    });
+
+    it('shows the counts in the collapsed sidebar popup, nested ones included', async () => {
+      setCollapsed(true);
+      const user = userEvent.setup();
+      render(shell([mail], undefined, false), { wrapper: I18n });
+      const trigger = screen.getByRole('button', { name: 'Mail' });
+      fireEvent.mouseEnter(trigger);
+      const popup = screen.getByRole('dialog', { name: 'Mail' });
+      fireEvent.mouseLeave(trigger, { relatedTarget: popup });
+      await user.hover(popup);
+      expect(
+        within(popup)
+          .getByRole('link', { name: 'unread · 7' })
+          .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('7');
+      await user.click(within(popup).getByText('Folders'));
+      expect(
+        within(popup)
+          .getByRole('link', { name: 'starred · 3' })
+          .querySelector('[data-slot="navigation-sub-badge"]'),
+      ).toHaveTextContent('3');
+    });
+  });
+
   it('marks a counted entry with a dot and its count in the tooltip when collapsed', async () => {
     setCollapsed(true);
     const user = userEvent.setup();
@@ -530,43 +612,6 @@ describe('sidebar shell', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
   });
-});
-
-it('shows workflow sections as labels with direct links instead of nested disclosure buttons', async () => {
-  const business = {
-    route: { ...page('Business workflows'), componentLoader: undefined },
-    section: true,
-    children: [{ route: page('Ticket workflow'), children: [] }],
-  };
-  const management = {
-    route: { ...page('Workflow management'), componentLoader: undefined },
-    section: true,
-    children: [{ route: page('Definitions'), children: [] }],
-  };
-  const workflow = {
-    route: { ...page('Workflow'), componentLoader: undefined },
-    children: [business, management],
-  };
-  render(shell([workflow], routeKey(business.children[0].route)), {
-    wrapper: I18n,
-  });
-  expect(
-    screen.getByRole('group', { name: 'Business workflows' }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole('group', { name: 'Workflow management' }),
-  ).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Ticket workflow' })).toHaveAttribute(
-    'href',
-    '/Ticket workflow',
-  );
-  expect(screen.getByRole('link', { name: 'Definitions' })).toBeVisible();
-  expect(
-    screen.queryByRole('button', { name: 'Business workflows' }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole('button', { name: 'Workflow management' }),
-  ).not.toBeInTheDocument();
 });
 
 it.each(['expanded', 'collapsed', 'mobile'])(

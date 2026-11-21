@@ -1,5 +1,5 @@
 import type { ServiceToken } from '@nocobase/service-provider';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 
 import type { ApiClient } from '@nocobase/api-client';
 import { apiClientToken, type ClientApplication } from './application.js';
@@ -11,12 +11,24 @@ const NO_HEADER_ACTIONS: readonly AppClientRegisteredHeaderAction[] =
 
 /**
  * The header actions the application and its plugins registered, in header order with the application's overrides
- * applied. A layout renders them left of its account menu; outside an application there are none.
+ * applied, that the viewer may see. A layout renders them left of its account menu and says whether someone is signed
+ * in: for a signed-out visitor only `auth: 'optional'` actions remain, so a `required` action's component and badge hook
+ * never run there. Outside an application there are none.
  */
-export function useHeaderActions(): readonly AppClientRegisteredHeaderAction[] {
-  return (
+export function useHeaderActions({
+  signedIn,
+}: {
+  readonly signedIn: boolean;
+}): readonly AppClientRegisteredHeaderAction[] {
+  const actions =
     useContext(ClientApplicationContext)?.runtime.headerActions ??
-    NO_HEADER_ACTIONS
+    NO_HEADER_ACTIONS;
+  return useMemo(
+    () =>
+      signedIn
+        ? actions
+        : actions.filter((action) => action.auth === 'optional'),
+    [actions, signedIn],
   );
 }
 

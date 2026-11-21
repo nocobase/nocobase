@@ -5,15 +5,20 @@ import {
   type AppClientBadgeHook,
   type AppClientRegisteredHeaderAction,
 } from '@nocobase/app-client';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Ellipsis } from 'lucide-react';
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
   type ReactElement,
   type ReactNode,
+  type ReactPortal,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from 'cn';
 
 import { Button } from '#components/ui/button';
@@ -28,24 +33,31 @@ import { useIsMobile } from '#hooks/use-mobile';
 import { UserMenu } from './user-menu.js';
 
 /**
- * How many registered actions a phone's header shows beside the account menu. With more, the first stays and the rest
- * move into a More popover, so the header keeps one line at 390px.
+ * How many shown actions a phone's header holds beside the account menu. With more, the first stays and the rest move
+ * into a More popover, so the header keeps one line at 390px.
  */
 const PHONE_INLINE_ACTIONS = 2;
 
 /**
- * The header's right-hand actions, shared by every authenticated page: the buttons the application and its plugins
- * register (`headerActions`), in their order, then the account menu, always last.
+ * The header's right-hand actions: the buttons the application and its plugins register (`headerActions`) that the
+ * viewer may see, in their order, then the account menu, always last.
  */
 export function HeaderActions(): ReactElement {
+  const { session } = useAuthentication();
   return (
-    <HeaderActionBar actions={useHeaderActions()}>
+    <HeaderActionBar
+      actions={useHeaderActions({ signedIn: Boolean(session?.user) })}
+    >
       <UserMenu />
     </HeaderActionBar>
   );
 }
 
-/** The registered actions, each with its badge, and `children` after them. */
+/**
+ * The actions, each with its badge, and `children` after them. An action that renders nothing, such as a feature this
+ * viewer cannot use, takes no place: the phone's More popover holds only actions that render something, and a badge
+ * shows only on a shown action.
+ */
 export function HeaderActionBar({
   actions,
   children,
@@ -53,10 +65,32 @@ export function HeaderActionBar({
   readonly actions: readonly AppClientRegisteredHeaderAction[];
   readonly children?: ReactNode;
 }): ReactElement {
-  // Each action's badge hook runs once, in an always-mounted probe, so an action in the closed More popover still
-  // counts and its hook is never called twice.
+  const isMobile = useIsMobile();
+  // Each action's component and badge hook stay mounted once, whether the action sits in the bar, in the More popover
+  // or nowhere: the component renders into an element of its own, which moves between those places as plain DOM, so
+  // moving it never remounts the component or calls its hooks twice.
+  const [hosts] = useState(() => new Map<string, HTMLElement>());
+  const hostOf = (name: string): HTMLElement => {
+    let host = hosts.get(name);
+    if (!host) {
+      host = document.createElement('div');
+      host.style.display = 'contents';
+      hosts.set(name, host);
+    }
+    return host;
+  };
+  const [rendered, setRendered] = useState<Readonly<Record<string, boolean>>>(
+    {},
+  );
   const [badges, setBadges] = useState<Badges>({});
-  const report = useCallback(
+  const reportRendered = useCallback(
+    (name: string, value: boolean) =>
+      setRendered((current) =>
+        current[name] === value ? current : { ...current, [name]: value },
+      ),
+    [],
+  );
+  const reportBadge = useCallback(
     (name: string, badge: AppClientBadge | undefined) =>
       setBadges((current) =>
         sameBadge(current[name], badge)
@@ -65,27 +99,48 @@ export function HeaderActionBar({
       ),
     [],
   );
+  const shown = actions.filter((action) => rendered[action.name]);
+  const inlineCount =
+    isMobile && shown.length > PHONE_INLINE_ACTIONS
+      ? PHONE_INLINE_ACTIONS - 1
+      : shown.length;
+  const inline = shown.slice(0, inlineCount);
+  const overflow = shown.slice(inlineCount);
   return (
     <TooltipProvider>
       <div
         className='flex shrink-0 items-center gap-2'
         data-testid='header-actions'
       >
+        {actions.map((action) => (
+          <ActionHost
+            key={action.name}
+            action={action}
+            host={hostOf(action.name)}
+            report={reportRendered}
+          />
+        ))}
         {actions.map((action) =>
           action.badge ? (
             <BadgeProbe
               key={action.name}
               name={action.name}
               useBadge={action.badge}
-              report={report}
+              report={reportBadge}
             />
           ) : null,
         )}
-        {actions.length > PHONE_INLINE_ACTIONS ? (
-          <ResponsiveActionSlots actions={actions} badges={badges} />
-        ) : (
-          <ActionSlots inline={actions} overflow={[]} badges={badges} />
-        )}
+        {inline.map((action) => (
+          <HeaderActionSlot
+            key={action.name}
+            name={action.name}
+            host={hostOf(action.name)}
+            badge={badges[action.name]}
+          />
+        ))}
+        {overflow.length ? (
+          <MoreActions actions={overflow} hostOf={hostOf} badges={badges} />
+        ) : null}
         {children}
       </div>
     </TooltipProvider>
@@ -94,93 +149,82 @@ export function HeaderActionBar({
 
 type Badges = Readonly<Record<string, AppClientBadge | undefined>>;
 
-/** More actions than a phone's header holds: on a phone the first stays and the rest go into More. */
-function ResponsiveActionSlots({
+/** The phone's More popover, its button carrying the sum of the badges inside. */
+function MoreActions({
   actions,
+  hostOf,
   badges,
 }: {
   readonly actions: readonly AppClientRegisteredHeaderAction[];
-  readonly badges: Badges;
-}): ReactElement {
-  const isMobile = useIsMobile();
-  const inline = isMobile
-    ? actions.slice(0, PHONE_INLINE_ACTIONS - 1)
-    : actions;
-  return (
-    <ActionSlots
-      inline={inline}
-      overflow={actions.slice(inline.length)}
-      badges={badges}
-    />
-  );
-}
-
-function ActionSlots({
-  inline,
-  overflow,
-  badges,
-}: {
-  readonly inline: readonly AppClientRegisteredHeaderAction[];
-  readonly overflow: readonly AppClientRegisteredHeaderAction[];
+  readonly hostOf: (name: string) => HTMLElement;
   readonly badges: Badges;
 }): ReactElement {
   const { t } = useTranslation();
-  const overflowCount = overflow.reduce(
+  const count = actions.reduce(
     (sum, action) => sum + badgeCount(badges[action.name]),
     0,
   );
-  const overflowAttention = overflow.some(
+  const attention = actions.some(
     (action) =>
       badgeCount(badges[action.name]) > 0 &&
       badges[action.name]?.tone === 'attention',
   );
   return (
-    <>
-      {inline.map((action) => (
-        <HeaderActionSlot
-          key={action.name}
-          action={action}
-          badge={badges[action.name]}
-        />
-      ))}
-      {overflow.length ? (
-        <Popover>
-          <PopoverTrigger
-            render={
-              <Button
-                variant='outline'
-                size='icon'
-                className='relative size-10 rounded-xl border-border bg-background/60 text-foreground dark:border-border'
-                aria-label={t('navigation.moreActions')}
-                data-testid='header-actions-more'
-              />
-            }
-          >
-            <Ellipsis />
-            {overflowCount > 0 ? (
-              <CornerBadge
-                count={overflowCount}
-                attention={overflowAttention}
-              />
-            ) : null}
-          </PopoverTrigger>
-          <PopoverContent
-            align='end'
-            className='w-auto flex-row flex-wrap items-center gap-2 p-2'
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            variant='outline'
+            size='icon'
+            className='relative size-10 rounded-xl border-border bg-background/60 text-foreground dark:border-border'
             aria-label={t('navigation.moreActions')}
-          >
-            {overflow.map((action) => (
-              <HeaderActionSlot
-                key={action.name}
-                action={action}
-                badge={badges[action.name]}
-              />
-            ))}
-          </PopoverContent>
-        </Popover>
-      ) : null}
-    </>
+            data-testid='header-actions-more'
+          />
+        }
+      >
+        <Ellipsis />
+        {count > 0 ? <CornerBadge count={count} attention={attention} /> : null}
+      </PopoverTrigger>
+      <PopoverContent
+        align='end'
+        className='w-auto flex-row flex-wrap items-center gap-2 p-2'
+        aria-label={t('navigation.moreActions')}
+      >
+        {actions.map((action) => (
+          <HeaderActionSlot
+            key={action.name}
+            name={action.name}
+            host={hostOf(action.name)}
+            badge={badges[action.name]}
+          />
+        ))}
+      </PopoverContent>
+    </Popover>
   );
+}
+
+/** Renders one action's component into its own element and tells the bar whether it rendered anything. */
+function ActionHost({
+  action,
+  host,
+  report,
+}: {
+  readonly action: AppClientRegisteredHeaderAction;
+  readonly host: HTMLElement;
+  readonly report: (name: string, rendered: boolean) => void;
+}): ReactPortal {
+  const { name, component: Component } = action;
+  useLayoutEffect(() => {
+    const update = () => report(name, host.hasChildNodes());
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(host, { childList: true });
+    return () => {
+      observer.disconnect();
+      report(name, false);
+    };
+  }, [name, host, report]);
+  return createPortal(<Component />, host);
 }
 
 /** Calls one action's badge hook and hands its result to the bar. */
@@ -203,22 +247,29 @@ function BadgeProbe({
   return null;
 }
 
+/** Where a shown action sits, in the bar or in More: its rendered element moved in, and its badge on the corner. */
 function HeaderActionSlot({
-  action,
+  name,
+  host,
   badge,
 }: {
-  readonly action: AppClientRegisteredHeaderAction;
+  readonly name: string;
+  readonly host: HTMLElement;
   readonly badge: AppClientBadge | undefined;
 }): ReactElement {
-  const Component = action.component;
+  const anchorRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const target = anchorRef.current;
+    if (!target) return;
+    target.append(host);
+    return () => {
+      if (host.parentNode === target) target.removeChild(host);
+    };
+  }, [host]);
   const count = badgeCount(badge);
-  // An action that renders nothing, such as a feature this viewer cannot use, takes no room.
   return (
-    <div
-      className='relative flex shrink-0 empty:hidden'
-      data-header-action={action.name}
-    >
-      <Component />
+    <div className='relative flex shrink-0' data-header-action={name}>
+      <div ref={anchorRef} className='contents' />
       {count > 0 ? (
         <CornerBadge count={count} attention={badge?.tone === 'attention'} />
       ) : null}

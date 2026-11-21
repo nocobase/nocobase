@@ -45,7 +45,8 @@ export interface AppClientHeaderActionDefinition {
   readonly component: ComponentType;
   /**
    * `required` (the default) shows it only to a signed-in person; `optional` also where the application renders a
-   * header for signed-out visitors.
+   * header for signed-out visitors. `useHeaderActions({ signedIn })` applies it, so for a visitor a `required` action's
+   * component and badge hook never run.
    */
   readonly auth?: 'required' | 'optional';
   /** The count on the button's corner. */

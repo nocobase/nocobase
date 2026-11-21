@@ -145,27 +145,33 @@ describe('header actions', () => {
     ).toThrow('Header action "inbox" badge must be a hook function.');
   });
 
-  it('gives a layout the runtime actions, and none outside an application', async () => {
-    const runtime = await runtimeWith();
-    const Names = (): ReactElement =>
+  it('gives a layout the runtime actions, only optional ones to a signed-out visitor, and none outside an application', async () => {
+    const runtime = await runtimeWith({
+      headerActions: [
+        { name: 'help', order: 5, component: Assistant, auth: 'optional' },
+      ],
+    });
+    const Names = ({ signedIn }: { signedIn: boolean }): ReactElement =>
       createElement(
         'output',
         null,
-        useHeaderActions()
+        useHeaderActions({ signedIn })
           .map((action) => action.name)
           .join(',') || 'none',
       );
-    const { unmount } = render(createElement(Names));
+    const { unmount } = render(createElement(Names, { signedIn: true }));
     expect(screen.getByRole('status').textContent).toBe('none');
     unmount();
-    render(
+    const inApplication = (signedIn: boolean) =>
       createElement(
         ClientApplicationContext,
         { value: { runtime } as unknown as ClientApplication },
-        createElement(Names),
-      ),
-    );
-    expect(screen.getByRole('status').textContent).toBe('inbox');
+        createElement(Names, { signedIn }),
+      );
+    const { rerender } = render(inApplication(true));
+    expect(screen.getByRole('status').textContent).toBe('help,inbox');
+    rerender(inApplication(false));
+    expect(screen.getByRole('status').textContent).toBe('help');
   });
 });
 

@@ -123,7 +123,7 @@ export default function OrdersPage(): ReactElement {
 
 ### Badges on navigation entries
 
-`navigation.badge` puts a count beside a menu entry, such as unread messages. It is a React hook returning `{ count, tone? }` (`tone` is `default` or `attention`) or `undefined`; the menu calls it while it renders the entry, and `undefined` or `0` shows nothing. The hook runs inside the signed-in session, and the shell remounts when the person changes, so it starts over for each person. The hook owns its data: read it with a query and refresh it from a realtime topic or a write's invalidation; never start a request from the hook's body on each render. The templates show it on top-level entries and on a section's entries; a layout may pass its own count for an entry through `NavigationMenu`'s `badges`, which replaces the declared one.
+`navigation.badge` puts a count beside a menu entry, such as unread messages. It is a React hook returning `{ count, tone? }` (`tone` is `default` or `attention`) or `undefined`; the menu calls it while it renders the entry, and `undefined` or `0` shows nothing. The hook runs inside the signed-in session, and the shell remounts when the person changes, so it starts over for each person. The hook owns its data: read it with a query and refresh it from a realtime topic or a write's invalidation; never start a request from the hook's body on each render. The templates show it on every page entry, inside sub-menus, sections and the collapsed sidebar's popover too; a layout may pass its own count for an entry through `NavigationMenu`'s `badges`, which replaces the declared one.
 
 ```ts
 import { defineAppRoutes } from '@nocobase/app-client/plugins';
