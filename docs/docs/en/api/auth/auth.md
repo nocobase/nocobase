@@ -7,7 +7,7 @@
 ```ts
 interface IAuth {
   user: Model;
-  // Check the authenticaiton status and return the current user.
+  // Check the authentication status and return the current user.
   check(): Promise<Model>;
   signIn(): Promise<any>;
   signUp(): Promise<any>;

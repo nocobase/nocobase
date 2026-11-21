@@ -43,7 +43,7 @@ Creates system runtime logs printed in a specified method. Refer to [Logger - Sy
 
 ```ts
 export interface SystemLoggerOptions extends LoggerOptions {
-  seperateError?: boolean; // print error seperately, default true
+  seperateError?: boolean; // print error separately, default true
 }
 ```
 

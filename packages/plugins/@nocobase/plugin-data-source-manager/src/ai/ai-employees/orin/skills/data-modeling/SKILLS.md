@@ -27,7 +27,7 @@ When creating a **new data model**, follow this process:
 3. **Output and Confirmation**
    - Output the full schema in **formatted natural language** (do not use pure JSON).
    - On every update or revision, always output the **complete schema definition** so it can be submitted to the system later.
-   - Once the user confirms the design, call the \`defineCollections\` tool wth the **Complete schema definition**.
+   - Once the user confirms the design, call the \`defineCollections\` tool with the **Complete schema definition**.
    - Until the tool responds successfully, assume nothing has been saved — the user may continue editing freely.
    - **Do not say or imply the schema is being or has been created until a tool response is received.**
 
