@@ -2,9 +2,14 @@ import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon, XIcon } from 'lucide-react';
 import {
+  Suspense,
+  createElement,
+  use,
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -49,7 +54,12 @@ import {
   matchingRules,
   type CheckResource,
 } from './permission-check-model.js';
+import type {
+  AuthorizationCheckSubject,
+  AuthorizationCheckSubjectPickerProps,
+} from './extensions.js';
 import { SettingsError, SettingsLoading } from './shared.js';
+import { useAuthorizationSettings } from './use-authorization-settings.js';
 import { PERMISSION_CHECK_TAB } from './tab-keys.js';
 
 /** The surface whose catalog and user directory the page reads; it answers only an unrestricted viewer. */
@@ -64,7 +74,15 @@ export default function PermissionCheckPage(): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const authz = useAuthorizationClient();
   const [params, setParams] = useSearchParams();
-  const userId = params.get('user') ?? '';
+  const text = useLocalizedText();
+  const settings = useAuthorizationSettings();
+  const kinds = useSyncExternalStore(
+    settings.checkSubjects.subscribe,
+    settings.checkSubjects.list,
+  );
+  // A member by default; `as` names another kind of subject a plugin added, such as an API key.
+  const kind = kinds.find((entry) => entry.key === params.get('as'));
+  const userId = (kind ? params.get('subject') : params.get('user')) ?? '';
   const mode = params.get('mode') === 'check' ? 'check' : 'all';
   const [catalog, setCatalog] = useState<AuthorizationOptionsResponse>();
   const [error, setError] = useState<unknown>();
@@ -103,7 +121,43 @@ export default function PermissionCheckPage(): ReactElement {
         )
       ) : (
         <div className='flex flex-col gap-6'>
-          <UserPicker value={userId} onChange={(id) => update({ user: id })} />
+          {kinds.length > 0 && (
+            <Tabs
+              value={kind?.key ?? MEMBER_KIND}
+              onValueChange={(next) =>
+                update({
+                  as: next === MEMBER_KIND ? undefined : String(next),
+                  user: undefined,
+                  subject: undefined,
+                })
+              }
+            >
+              <TabsList aria-label={t('settings.permissionCheck.subjectKind')}>
+                <TabsTrigger value={MEMBER_KIND}>
+                  {t('settings.permissionCheck.member')}
+                </TabsTrigger>
+                {kinds.map((entry) => (
+                  <TabsTrigger key={entry.key} value={entry.key}>
+                    {text(entry.title)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+          {kind ? (
+            <Suspense fallback={<SettingsLoading />}>
+              <SubjectPicker
+                kind={kind}
+                value={userId}
+                onChange={(id) => update({ subject: id })}
+              />
+            </Suspense>
+          ) : (
+            <UserPicker
+              value={userId}
+              onChange={(id) => update({ user: id })}
+            />
+          )}
           {userId ? (
             <>
               <Tabs
@@ -123,8 +177,8 @@ export default function PermissionCheckPage(): ReactElement {
                 </TabsList>
               </Tabs>
               <UserAccess
-                key={userId}
-                subject={{ type: 'user', id: userId }}
+                key={`${kind?.type ?? 'user'}:${userId}`}
+                subject={{ type: kind?.type ?? 'user', id: userId }}
                 catalog={catalog}
                 mode={mode}
                 resource={params.get('resource') ?? ''}
@@ -141,6 +195,33 @@ export default function PermissionCheckPage(): ReactElement {
       )}
     </AuthorizationPage>
   );
+}
+
+const MEMBER_KIND = '$member';
+
+const pickerModules = new WeakMap<
+  AuthorizationCheckSubject['picker'],
+  Promise<{
+    readonly default: ComponentType<AuthorizationCheckSubjectPickerProps>;
+  }>
+>();
+
+/** The picker a plugin registered for its kind of subject, loaded when it is chosen. */
+function SubjectPicker({
+  kind,
+  value,
+  onChange,
+}: {
+  readonly kind: AuthorizationCheckSubject;
+  readonly value: string;
+  readonly onChange: (id: string | undefined) => void;
+}): ReactElement {
+  let module = pickerModules.get(kind.picker);
+  if (!module) {
+    module = kind.picker();
+    pickerModules.set(kind.picker, module);
+  }
+  return createElement(use(module).default, { value, onChange });
 }
 
 function UserPicker({

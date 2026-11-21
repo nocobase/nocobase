@@ -94,6 +94,24 @@ export class AuthorizationTabRegistry<TTab extends RegisteredTab> {
   }
 }
 
+/**
+ * A kind of subject Permission check can check besides a member, such as an API key: the inspector's subject type it
+ * stands for (`authz.inspector.identities`) and the picker that chooses one by id.
+ */
+export interface AuthorizationCheckSubject extends RegisteredTab {
+  /** The inspector's subject type, such as `apiKey`. */
+  readonly type: string;
+  readonly picker: () => Promise<{
+    readonly default: ComponentType<AuthorizationCheckSubjectPickerProps>;
+  }>;
+}
+
+/** What a picker of a kind of subject receives: the chosen id, and a way to choose. */
+export interface AuthorizationCheckSubjectPickerProps {
+  readonly value: string;
+  readonly onChange: (id: string | undefined) => void;
+}
+
 /** What a data rule tab receives; it renders one kind of rule, such as sharing rules. */
 export type AuthorizationRuleTabProps = Record<string, never>;
 
@@ -137,6 +155,9 @@ export class AuthorizationSettings {
   public readonly roleTabs: AuthorizationTabRegistry<
     AuthorizationContentTab<AuthorizationRoleTabProps>
   > = new AuthorizationTabRegistry('role');
+  /** Kinds of subject Permission check offers besides members, such as API keys. */
+  public readonly checkSubjects: AuthorizationTabRegistry<AuthorizationCheckSubject> =
+    new AuthorizationTabRegistry('permission check subject');
   public readonly pageCatalog: PermissionPageCatalogSource;
   public readonly workspace: PermissionWorkspaceSelection;
   public readonly pageTitles: PagePermissionTitles;

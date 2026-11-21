@@ -129,6 +129,8 @@ const settings = {
     duplicate: 'This key is already in use. Use a different key.',
   },
   permissionCheck: {
+    subjectKind: 'Who',
+    member: 'A member',
     title: 'Permission check',
     description:
       'Find out why someone cannot see something, or why they can change it. This only reads; nothing is changed.',

@@ -3,7 +3,10 @@
 export {
   AuthorizationSettings,
   AuthorizationTabRegistry,
+  type AuthorizationCheckSubject,
+  type AuthorizationCheckSubjectPickerProps,
   type AuthorizationContentTab,
+  type AuthorizationTabTarget,
   type AuthorizationPageTab,
   type AuthorizationRoleTabProps,
   type AuthorizationRuleTabProps,

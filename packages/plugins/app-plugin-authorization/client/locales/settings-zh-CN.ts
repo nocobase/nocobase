@@ -124,6 +124,8 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     duplicate: '此标识已被使用，请更换标识。',
   },
   permissionCheck: {
+    subjectKind: '检查对象',
+    member: '成员',
     title: '权限检查',
     description:
       '排查“他为什么看不到”或“他为什么能改”。这里只查看，不会修改任何配置。',
