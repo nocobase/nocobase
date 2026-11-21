@@ -105,8 +105,10 @@ export interface PermissionSetProtection {
   keys: readonly string[];
   /**
    * Every set whose key starts with one of these, present or created later, by any process: for an owner that creates
-   * its sets at run time, such as one per API key. Such a protection cannot be unrestricted or require an active
-   * assignment.
+   * its sets at run time, such as one per API key. The prefix is reserved for the owner: no other owner may protect an
+   * overlapping prefix or a key in it, and the management surface cannot create a set in it (unless `allow` names
+   * `create`). A set already named so before is protected too, so an owner should check for one at boot. Such a
+   * protection cannot be unrestricted or require an active assignment.
    */
   prefixes?: readonly string[];
   /** Operations the generic management surface may still perform. */
@@ -358,12 +360,22 @@ class PermissionSetService<
       );
     const byPrefix: Map<string, PermissionSetProtectionInfo> =
       (this.shared.prefixes ??= new Map<string, PermissionSetProtectionInfo>());
+    // A prefix reserves every key it starts: no other owner may reserve an overlapping prefix or hold a key in it.
     for (const prefix of prefixes) {
-      const existing = byPrefix.get(prefix);
-      if (!prefix || (existing && existing.owner !== protection.owner))
-        throw new Error(
-          `Permission Sets starting with "${prefix}" are already protected by ${existing?.owner ?? 'another owner'}`,
-        );
+      if (!prefix) throw new Error('A protected key prefix cannot be empty');
+      for (const [other, info] of byPrefix)
+        if (
+          info.owner !== protection.owner &&
+          (other.startsWith(prefix) || prefix.startsWith(other))
+        )
+          throw new Error(
+            `Permission Sets starting with "${prefix}" overlap "${other}", which ${info.owner} protects`,
+          );
+      for (const [key, info] of this.protections)
+        if (info.owner !== protection.owner && key.startsWith(prefix))
+          throw new Error(
+            `Permission Set "${key}", which ${info.owner} protects, starts with "${prefix}"`,
+          );
     }
     const registered: string[] = [];
     for (const key of protection.keys) {

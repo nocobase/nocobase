@@ -91,6 +91,20 @@ export const DecideBody: Strict<{
   action: z.string().min(1),
 });
 
+export const InspectRecordsBody: Strict<{
+  subject: typeof ReferenceInput;
+  resource: typeof ReferenceInput;
+  action: z.ZodString;
+  scope: z.ZodString;
+  ids: z.ZodArray<z.ZodString>;
+}> = z.strictObject({
+  subject: ReferenceInput,
+  resource: ReferenceInput,
+  action: z.string().min(1),
+  scope: z.string().min(1),
+  ids: z.array(z.string().min(1)).max(100),
+});
+
 export const BatchDecideBody: Strict<{
   subject: typeof ReferenceInput;
   checks: z.ZodArray<

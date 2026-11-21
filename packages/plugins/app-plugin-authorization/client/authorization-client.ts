@@ -547,6 +547,22 @@ export class AuthorizationClient {
     });
   }
 
+  /** Of `ids`, the records of a composite action's data scope `subject` reaches as decided now. */
+  inspectRecords(
+    subject: AuthorizationSubject,
+    input: {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly action: string;
+      readonly scope: string;
+      readonly ids: readonly string[];
+    },
+  ): Promise<{ readonly reached: readonly string[] }> {
+    return this.send('authorization/inspector/records', 'POST', {
+      subject,
+      ...input,
+    });
+  }
+
   inspectConfigured(subject: AuthorizationSubject): Promise<ConfiguredAccess> {
     return this.api
       .request<DataResponse<ConfiguredAccess>>({

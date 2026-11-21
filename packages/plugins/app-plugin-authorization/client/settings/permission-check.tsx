@@ -730,6 +730,7 @@ function CheckOne({
             roleTitle={roleTitle}
             holders={holders}
             credential={configured.credential}
+            subject={subject}
           />
         ) : error ? null : (
           <SettingsLoading />
@@ -747,7 +748,9 @@ function Verdict({
   roleTitle,
   holders,
   credential,
+  subject,
 }: {
+  readonly subject: AuthorizationSubject;
   readonly decision: AuthorizationDecision;
   readonly resource: CheckResource;
   readonly action: string;
@@ -794,6 +797,7 @@ function Verdict({
           <Step index={1} title={t('settings.permissionCheck.key.step')}>
             <CredentialStep
               credential={credential}
+              subject={subject}
               resource={resource}
               action={action}
             />
@@ -901,13 +905,18 @@ function CredentialSummary({
   );
 }
 
-/** A credential's part in one decision: whether it covers the operation, and the records it keeps. */
+/**
+ * A credential's part in one decision: whether it covers the operation, the records it keeps as configured, and — for
+ * chosen records — which of them it reaches now, the others being left out by the roles and data rules below.
+ */
 function CredentialStep({
   credential,
+  subject,
   resource,
   action,
 }: {
   readonly credential: ConfiguredCredential;
+  readonly subject: AuthorizationSubject;
   readonly resource: CheckResource;
   readonly action: string;
 }): ReactElement {
@@ -927,24 +936,105 @@ function CredentialStep({
   const scopes: unknown = entry.policy?.scopes;
   const records =
     scopes && typeof scopes === 'object'
-      ? Object.entries(scopes as Record<string, unknown>).map(
-          ([scope, value]) => ({ scope, label: scopeLabel(value, t) }),
-        )
+      ? Object.entries(scopes as Record<string, unknown>)
       : [];
   return (
-    <span className='flex flex-col gap-0.5'>
+    <span className='flex flex-col gap-1'>
       <span>{t('settings.permissionCheck.key.stepCovers')}</span>
-      {records.map((record) => (
-        <span key={record.scope} data-slot='credential-records'>
-          {t('settings.permissionCheck.key.stepRecords', {
-            scope: record.scope,
-            records: record.label,
-          })}
-        </span>
+      {records.map(([scope, value]) => (
+        <ScopeRecords
+          key={scope}
+          subject={subject}
+          resource={resource}
+          action={action}
+          scope={scope}
+          value={value}
+        />
       ))}
-      {records.length ? (
+    </span>
+  );
+}
+
+/** One data scope of a key: what it is configured to keep, and for chosen records which of them it reaches now. */
+function ScopeRecords({
+  subject,
+  resource,
+  action,
+  scope,
+  value,
+}: {
+  readonly subject: AuthorizationSubject;
+  readonly resource: CheckResource;
+  readonly action: string;
+  readonly scope: string;
+  readonly value: unknown;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  const authz = useAuthorizationClient();
+  const ids = useMemo(() => {
+    if (!value || typeof value !== 'object') return undefined;
+    const chosen: unknown = Reflect.get(value, 'ids');
+    return Reflect.get(value, 'type') === 'records' && Array.isArray(chosen)
+      ? chosen.filter((id): id is string => typeof id === 'string')
+      : undefined;
+  }, [value]);
+  const [reached, setReached] = useState<readonly string[]>();
+  useEffect(() => {
+    if (!ids?.length) return;
+    let active = true;
+    authz
+      .inspectRecords(subject, {
+        resource: { type: resource.type, id: resource.id },
+        action,
+        scope,
+        ids,
+      })
+      .then(
+        (answer) => {
+          if (active) setReached(answer.reached);
+        },
+        () => {
+          if (active) setReached([]);
+        },
+      );
+    return () => {
+      active = false;
+    };
+  }, [authz, subject, resource.type, resource.id, action, scope, ids]);
+  const list = (values: readonly string[]) =>
+    values.length
+      ? values.join(', ')
+      : t('settings.permissionCheck.key.noRecords');
+  return (
+    <span className='flex flex-col' data-slot='credential-records'>
+      <span>
+        {t('settings.permissionCheck.key.configured', {
+          scope,
+          records: scopeLabel(value, t),
+        })}
+      </span>
+      {ids?.length ? (
+        reached === undefined ? (
+          <span>…</span>
+        ) : (
+          <>
+            <span data-slot='credential-reached'>
+              {t('settings.permissionCheck.key.reached', {
+                records: list(reached),
+              })}
+            </span>
+            {ids.some((id) => !reached.includes(id)) ? (
+              <span data-slot='credential-left-out'>
+                {t('settings.permissionCheck.key.leftOut', {
+                  records: list(ids.filter((id) => !reached.includes(id))),
+                })}
+              </span>
+            ) : null}
+          </>
+        )
+      ) : (
         <span>{t('settings.permissionCheck.key.intersection')}</span>
-      ) : null}
+      )}
     </span>
   );
 }

@@ -859,6 +859,23 @@ describe('protecting Permission Sets by key prefix', () => {
         unrestricted: true,
       }),
     ).toThrow(/prefix/u);
+    // Another owner may not reserve an overlapping prefix, or one covering a key it does not own.
+    authorization.permissionSets.protect({
+      owner: '@nocobase/test',
+      keys: ['kept-set'],
+    });
+    for (const prefixes of [['system-'], ['system-key-x'], ['kept-']])
+      expect(() =>
+        authorization.permissionSets.protect({
+          owner: '@nocobase/other',
+          keys: [],
+          prefixes,
+        }),
+      ).toThrow(/protects/u);
+    // The management surface cannot create a set in the reserved prefix.
+    expect(() =>
+      authorization.permissionSets.assertWritable('system-key-new', 'create'),
+    ).toThrow(PermissionSetProtectedError);
     release();
     expect(
       authorization.permissionSets.protection('system-key-42'),

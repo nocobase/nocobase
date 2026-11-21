@@ -163,6 +163,7 @@ describe('the API document', () => {
       '/api/authorization/inspector/configuredAccess',
       '/api/authorization/inspector/decide',
       '/api/authorization/inspector/options',
+      '/api/authorization/inspector/records',
       '/api/authorization/inspector/subjects/{type}',
       '/api/authorization/inspector/subjects/{type}/resolve',
       '/api/authorization/permissionSets',
@@ -250,6 +251,7 @@ describe('the API document', () => {
     expect(operationIds(document)).toEqual(
       [
         'authorizationGetPermissions',
+        'authorizationInspectRecords',
         ...settingsOperationIds,
         ...ruleOperationIds,
       ].sort(),

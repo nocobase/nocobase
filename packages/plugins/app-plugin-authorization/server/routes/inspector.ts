@@ -6,6 +6,7 @@ import type {
   AuthorizationSubject,
   ResourceRef,
 } from '@nocobase/authorization/core';
+import { dataScopeTarget } from '@nocobase/authorization/core';
 import type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
 import {
   ApiError,
@@ -21,6 +22,7 @@ import {
   createSettingsRouter,
   unrestrictedAccess,
 } from '../extension/http.js';
+import { databaseHost } from '../database/api.js';
 import type { InspectorApi } from '../inspector-identities.js';
 import {
   AUTHORIZATION_API_TAGS as tags,
@@ -35,6 +37,7 @@ import {
   BatchDecisionSchema,
   ConfiguredAccessQuery,
   ConfiguredAccessSchema,
+  InspectRecordsBody,
   DecideBody,
 } from './schemas.js';
 
@@ -197,6 +200,37 @@ export function createInspectorHandler(
       return context.json({ data: results });
     },
   );
+  routes.post(
+    '/inspector/records',
+    inspectorAccess,
+    describeRoute({
+      tags,
+      summary: 'Find which records a composite action reaches for a subject',
+      operationId: 'authorizationInspectRecords',
+      description:
+        "Of `ids`, the records of a composite action's data scope the subject reaches as decided now: its grants, a credential's scope and every data rule. For showing which of the records a key keeps it still reaches. At most 100 ids. Requires an unrestricted role.",
+      responses: {
+        200: dataResponse(
+          z.object({
+            reached: z.array(z.string()).meta({
+              description: 'The ids of `ids` the subject reaches.',
+            }),
+          }),
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('json', InspectRecordsBody),
+    async (context) => {
+      const input = context.req.valid('json');
+      const inspected = await contextFor(input.subject);
+      return context.json({
+        data: {
+          reached: await reachedRecords(host, inspected, input),
+        },
+      });
+    },
+  );
   // A pure read of what one subject's stored grants cover, so a GET.
   routes.get(
     '/inspector/configuredAccess',
@@ -303,4 +337,76 @@ async function decide(
   if (resource.type !== 'composite') return decision;
   const checks: unknown = decision.conditions?.checks;
   return { ...decision, checks: Array.isArray(checks) ? checks : [] };
+}
+
+/**
+ * Of `ids`, the records of a composite action's data scope `context` reaches: read through the repository policy its
+ * decision composes for the scope's collection, as a composite repository reads them. None when it reaches no record or
+ * the scope is not a collection's.
+ */
+async function reachedRecords(
+  host: Pick<AuthorizationExtensionHost, 'compositeResources' | 'database'>,
+  context: AuthorizationContext,
+  input: {
+    readonly resource: { readonly type: string; readonly id: string };
+    readonly action: string;
+    readonly scope: string;
+    readonly ids: readonly string[];
+  },
+): Promise<string[]> {
+  const declared = host.compositeResources.getAction(
+    input.resource.id,
+    input.action,
+  );
+  const connection = databaseHost(host.database)?.connection;
+  if (!declared || !input.ids.length || !connection) return [];
+  let target: { type: string; id: string };
+  try {
+    target = dataScopeTarget(declared, input.scope);
+  } catch {
+    return [];
+  }
+  if (target.type !== 'database.collection') return [];
+  const decision = await context.authorize({
+    resource: { type: 'composite', id: input.resource.id },
+    action: input.action,
+  });
+  const policies: unknown =
+    decision.conditions && typeof decision.conditions === 'object'
+      ? Reflect.get(decision.conditions, 'database')
+      : undefined;
+  const policy: unknown =
+    policies && typeof policies === 'object'
+      ? Reflect.get(policies, target.id)
+      : undefined;
+  if (decision.effect === 'deny' || !policy || typeof policy !== 'object')
+    return [];
+  try {
+    const rows = await (
+      connection as unknown as {
+        repository(name: string): {
+          withPolicy(policy: unknown): {
+            findMany(
+              input: unknown,
+            ): Promise<readonly Record<string, unknown>[]>;
+          };
+        };
+      }
+    )
+      .repository(target.id)
+      .withPolicy(policy)
+      .findMany({
+        select: (select: { fields(...names: string[]): unknown }) =>
+          select.fields('id'),
+        filter: (f: {
+          or(nodes: readonly unknown[]): unknown;
+          string(field: string): { eq(value: string): unknown };
+        }) => f.or(input.ids.map((id) => f.string('id').eq(id))),
+        limit: input.ids.length,
+      });
+    return rows.map((row) => String(row.id));
+  } catch {
+    // A subject that cannot read the records, not even their ids, reaches none it can be shown.
+    return [];
+  }
 }

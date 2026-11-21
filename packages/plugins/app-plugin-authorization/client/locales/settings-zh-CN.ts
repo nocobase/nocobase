@@ -130,24 +130,22 @@ const settings: LocaleResource<typeof settingsEnUS> = {
       disabled: '这把密钥已停用：用它发出的请求一律被拒绝。',
       expired: '这把密钥已过期：用它发出的请求一律被拒绝。',
       unbounded: '这把密钥能做其持有者的角色允许的一切。',
-      bounded_one:
-        '这把密钥允许 {{count}} 项操作，且不超过持有者的角色和数据规则允许的范围。',
-      bounded_other:
-        '这把密钥允许 {{count}} 项操作，且不超过持有者的角色和数据规则允许的范围。',
+      bounded:
+        '密钥允许的操作：{{count}} 项，且不超过持有者的角色和数据规则允许的范围。',
       personless:
         '它不代表任何成员：默认访问和共享规则中按「本人」计算的记录不会加给它。限制规则照常生效。',
-      objects_one: '{{business}}：限定为 {{count}} 条选定记录。',
-      objects_other: '{{business}}：限定为 {{count}} 条选定记录。',
+      objects: '{{business}}：限定为选定记录（{{count}} 条）。',
       stepUnbounded: '密钥不做限制，由持有者的角色决定。',
       stepMissing: '密钥不包含这项操作，因此被拒绝。',
       stepCovers: '密钥包含这项操作。',
-      stepRecords: '{{scope}}：密钥保留{{records}}。',
+      configured: '{{scope}} 的配置范围：{{records}}。',
+      reached: '当前实际可访问：{{records}}。',
+      leftOut: '被下方角色和数据规则排除：{{records}}。',
       intersection:
         '最终能访问的记录 = 密钥保留的记录 ∩ 角色和下方数据规则允许的记录。',
       allRecords: '全部记录',
       noRecords: '无记录',
-      chosen_one: '{{count}} 条选定记录（{{ids}}）',
-      chosen_other: '{{count}} 条选定记录（{{ids}}）',
+      chosen: '选定记录（{{count}} 条）：{{ids}}',
     },
     subjectKind: '检查对象',
     member: '成员',
@@ -372,8 +370,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     settingsVisible: '这把密钥能进入的系统设置页面：{{pages}}。',
     settingsNoneVisible: '这把密钥不能进入任何系统设置页面。',
     selectedRecords: '选定记录',
-    recordsChosen_one: '已选 {{count}} 条记录',
-    recordsChosen_other: '已选 {{count}} 条记录',
+    recordsChosen: '已选记录：{{count}} 条',
   },
   permissionEditor: {
     menusTab: '页面访问',
