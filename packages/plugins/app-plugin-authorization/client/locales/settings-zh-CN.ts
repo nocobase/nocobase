@@ -341,7 +341,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     restrictionDescription: '去掉任何角色都不能触及的记录，无论之前是否允许。',
   },
   keyPermissions: {
-    missing: "你没有：{{actions}}",
+    missing: '你没有：{{actions}}',
   },
   permissionEditor: {
     menusTab: '页面访问',

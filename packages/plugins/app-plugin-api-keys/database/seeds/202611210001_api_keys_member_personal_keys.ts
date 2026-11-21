@@ -47,7 +47,10 @@ const seed: SeedDefinition = defineSeed({
     const next = existing
       ? grants.map((grant) =>
           grant === existing
-            ? { ...grant, actions: [...(grant.actions ?? []), { action: ACTION }] }
+            ? {
+                ...grant,
+                actions: [...(grant.actions ?? []), { action: ACTION }],
+              }
             : grant,
         )
       : [...grants, { resource: RESOURCE, actions: [{ action: ACTION }] }];

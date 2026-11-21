@@ -73,7 +73,11 @@ const GrantableOptionsQuery: z.ZodType<{ include?: string[] | undefined }> =
       ])
       .optional()
       .transform((value) =>
-        value === undefined ? undefined : Array.isArray(value) ? value : [value],
+        value === undefined
+          ? undefined
+          : Array.isArray(value)
+            ? value
+            : [value],
       )
       .describe('A resource to list whole, as `<type>:<id>`; repeat it.'),
   });

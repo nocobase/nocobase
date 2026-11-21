@@ -277,7 +277,11 @@ export interface PermissionEditorProps {
 }
 
 const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
-const ALL_TABS: readonly PermissionEditorTab[] = ['menus', 'objects', 'settings'];
+const ALL_TABS: readonly PermissionEditorTab[] = [
+  'menus',
+  'objects',
+  'settings',
+];
 const NO_TABS: readonly PermissionEditorExtraTab[] = [];
 const NO_GROUPS: ReadonlySet<string> = new Set();
 
@@ -1183,7 +1187,9 @@ export function PermissionEditor({
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<string>(
-    builtInTabs.includes(defaultTab) ? defaultTab : (builtInTabs[0] ?? 'objects'),
+    builtInTabs.includes(defaultTab)
+      ? defaultTab
+      : (builtInTabs[0] ?? 'objects'),
   );
   const [flash, setFlash] = useState<MenuFlash | undefined>();
   const [query, setQuery] = useState('');

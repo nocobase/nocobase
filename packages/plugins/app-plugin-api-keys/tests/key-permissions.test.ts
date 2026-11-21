@@ -66,9 +66,7 @@ function personGrants(): AuthorizationGrantService {
     { resource: quotes, action: 'view', policy: everyQuote },
   ].map((grant) => ({ ...grant, source: { plugin: 'test', id: 'person' } }));
   const grants = () =>
-    all.filter(
-      (grant) => !revoked.has(`${grant.resource.id}/${grant.action}`),
-    );
+    all.filter((grant) => !revoked.has(`${grant.resource.id}/${grant.action}`));
   return {
     resolveAll: () => Promise.resolve(grants()),
     resolve: (input) =>

@@ -153,7 +153,10 @@ interface Ceiling {
    * For composite actions, by `scopeActionKey`, the record access keys each data scope is held at, from the roles
    * that give the action. Absent for an action held with no record scope known here: every scope is then open.
    */
-  readonly scopes: ReadonlyMap<string, ReadonlyMap<string, ReadonlySet<string>>>;
+  readonly scopes: ReadonlyMap<
+    string,
+    ReadonlyMap<string, ReadonlySet<string>>
+  >;
 }
 
 /** The record access key that reaches every record. */

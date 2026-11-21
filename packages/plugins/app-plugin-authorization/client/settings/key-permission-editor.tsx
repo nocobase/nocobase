@@ -142,9 +142,7 @@ function keyWorkspace(
       // Read-only, a key shows the actions it has.
       if (options.shown) {
         if (!options.shown.has(key)) return [];
-        return [
-          options.lapsed.has(key) ? { ...action, lapsed: true } : action,
-        ];
+        return [options.lapsed.has(key) ? { ...action, lapsed: true } : action];
       }
       const entry = held.get(key);
       if (!entry && !options.ceiling?.unrestricted) {
@@ -153,7 +151,11 @@ function keyWorkspace(
       }
       if (entry?.humanOnly)
         return [
-          { ...action, managed: true, humanOnly: options.text(entry.humanOnly) },
+          {
+            ...action,
+            managed: true,
+            humanOnly: options.text(entry.humanOnly),
+          },
         ];
       return [
         action.scopes
@@ -216,7 +218,9 @@ function KeyPermissionTable({
   const settings = useAuthorizationSettings();
   const labels = usePermissionEditorLabels();
   const include = useMemo(
-    () => [...new Set((lapsed ?? []).map((grant) => resourceKey(grant.resource)))],
+    () => [
+      ...new Set((lapsed ?? []).map((grant) => resourceKey(grant.resource))),
+    ],
     [lapsed],
   );
   const query = include.length

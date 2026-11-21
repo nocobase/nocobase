@@ -246,13 +246,10 @@ const GrantableActionSchema = z.object({
     description: 'Why no key may hold this action; null when a key may.',
   }),
   risk: z.enum(['high', 'sensitive']).nullable(),
-  scopes: z
-    .record(z.string(), z.array(z.string()))
-    .optional()
-    .meta({
-      description:
-        'For a composite action, the record access keys the caller holds each data scope at; a key may be given these or narrower ones. Absent when every scope is open to the caller.',
-    }),
+  scopes: z.record(z.string(), z.array(z.string())).optional().meta({
+    description:
+      'For a composite action, the record access keys the caller holds each data scope at; a key may be given these or narrower ones. Absent when every scope is open to the caller.',
+  }),
 });
 
 export const GrantablePermissionsSchema: z.ZodType<GrantablePermissions> =

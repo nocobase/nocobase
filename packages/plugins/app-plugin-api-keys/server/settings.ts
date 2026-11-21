@@ -5,7 +5,10 @@
  */
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 
-import { API_KEYS_SETTINGS, PERSONAL_API_KEYS_SETTINGS } from './scoped-keys.js';
+import {
+  API_KEYS_SETTINGS,
+  PERSONAL_API_KEYS_SETTINGS,
+} from './scoped-keys.js';
 
 const NAMESPACE = '@nocobase/app-plugin-api-keys';
 const text = (key: string) => ({ key, ns: NAMESPACE });
@@ -28,8 +31,6 @@ export function registerApiKeySettings(authz: AppAuthorization): void {
   authz.settings.add({
     id: PERSONAL_API_KEYS_SETTINGS,
     title: text('permissions.personalApiKeys'),
-    actions: [
-      { name: 'create', title: text('permissions.create'), humanOnly },
-    ],
+    actions: [{ name: 'create', title: text('permissions.create'), humanOnly }],
   });
 }
