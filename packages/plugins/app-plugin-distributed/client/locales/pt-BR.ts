@@ -16,6 +16,7 @@ const ptBR: DistributedResource = {
   summary: {
     single: 'Instância única',
     singleCaption: 'A configuração atual atende a uma instância',
+    singleBlockedCaption: 'Há itens a corrigir mesmo com uma instância',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'serviços compartilhados',
     requiredCaption: 'a corrigir',
@@ -33,6 +34,8 @@ const ptBR: DistributedResource = {
     recommended: 'Recomendado',
     ok: 'OK',
   },
+  singleBlocked:
+    'Mesmo com uma única instância, os itens marcados como “Corrigir” precisam de atenção.',
   singleHint:
     'Rodar uma única instância não exige nenhuma alteração. Para escalar: prepare o Redis e um banco de dados PostgreSQL ou MySQL compartilhado → instale os plugins de Redis necessários → altere a configuração → verifique com duas instâncias.',
   fix: 'Como corrigir',
@@ -117,7 +120,7 @@ const ptBR: DistributedResource = {
       shared: {
         title: 'Banco de dados',
         detail:
-          '{{dialect}}: todas as instâncias se conectam ao mesmo banco de dados.',
+          '{{dialect}} pode ser compartilhado por várias instâncias. Antes de publicar, confirme que todas as instâncias se conectam ao mesmo banco de dados.',
       },
     },
     service: {
@@ -137,6 +140,11 @@ const ptBR: DistributedResource = {
         title: '{{service}}',
         detail:
           'O adaptador “{{adapter}}” não declara se é compartilhado entre instâncias. Confirme com o plugin que o fornece.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} usa explicitamente o backend “{{backend}}”, cujo adaptador não declara se é compartilhado entre instâncias. Confirme com o plugin que o fornece.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -169,6 +177,11 @@ const ptBR: DistributedResource = {
         detail:
           'Nenhuma coleção de arquivos guarda arquivos no disco deste host.',
       },
+      unchecked: {
+        title: 'Armazenamento de arquivos',
+        detail:
+          'Não foi possível ler as coleções de arquivos das conexões {{connections}}, então não se sabe se guardam arquivos no disco deste servidor.',
+      },
     },
     idGeneration: {
       auto: {
@@ -197,6 +210,12 @@ const ptBR: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Endereço público',
+        detail:
+          'app.publicOrigin está definido, mas não é um endereço http ou https.',
+        fix: 'Defina app.publicOrigin como o endereço que os usuários abrem, por exemplo https://apps.example.com.',
+      },
       set: {
         title: 'Endereço público',
         detail: 'app.publicOrigin = {{origin}}',

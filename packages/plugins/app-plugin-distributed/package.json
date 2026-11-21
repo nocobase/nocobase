@@ -67,6 +67,11 @@
     "lucide-react": "catalog:",
     "react": "^19.0.0"
   },
+  "peerDependenciesMeta": {
+    "@nocobase/app-plugin-concurrency": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",

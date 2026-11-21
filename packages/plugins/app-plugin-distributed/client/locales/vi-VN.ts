@@ -16,6 +16,7 @@ const viVN: DistributedResource = {
   summary: {
     single: 'Một phiên bản',
     singleCaption: 'Cấu hình hiện tại phù hợp với một phiên bản',
+    singleBlockedCaption: 'Có mục cần sửa ngay cả khi chỉ chạy một phiên bản',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'dịch vụ được dùng chung',
     requiredCaption: 'cần khắc phục',
@@ -33,6 +34,8 @@ const viVN: DistributedResource = {
     recommended: 'Khuyến nghị',
     ok: 'Ổn',
   },
+  singleBlocked:
+    'Ngay cả khi chỉ chạy một phiên bản, các mục được đánh dấu “Cần sửa” bên dưới vẫn cần xử lý.',
   singleHint:
     'Chạy một phiên bản thì không cần thay đổi gì. Để mở rộng: chuẩn bị Redis và một cơ sở dữ liệu PostgreSQL hoặc MySQL dùng chung → cài các plugin Redis cần thiết → thay đổi cấu hình → kiểm chứng với hai phiên bản.',
   fix: 'Cách khắc phục',
@@ -116,7 +119,7 @@ const viVN: DistributedResource = {
       shared: {
         title: 'Cơ sở dữ liệu',
         detail:
-          '{{dialect}}: mọi phiên bản kết nối tới cùng một cơ sở dữ liệu.',
+          '{{dialect}} có thể được nhiều phiên bản dùng chung. Trước khi đưa vào hoạt động, hãy xác nhận mọi phiên bản đều kết nối tới cùng một cơ sở dữ liệu.',
       },
     },
     service: {
@@ -136,6 +139,11 @@ const viVN: DistributedResource = {
         title: '{{service}}',
         detail:
           'Bộ điều hợp “{{adapter}}” không khai báo có được chia sẻ giữa các phiên bản hay không. Hãy xác nhận với plugin cung cấp nó.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} chủ động dùng backend “{{backend}}”, mà bộ chuyển đổi của nó không khai báo có được chia sẻ giữa các phiên bản hay không. Hãy xác nhận với plugin cung cấp nó.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -167,6 +175,11 @@ const viVN: DistributedResource = {
         title: 'Lưu trữ tệp',
         detail: 'Không có bảng tệp nào lưu tệp trên ổ đĩa của máy chủ này.',
       },
+      unchecked: {
+        title: 'Lưu trữ tệp',
+        detail:
+          'Không đọc được các bộ sưu tập tệp của kết nối {{connections}}, nên không rõ chúng có lưu tệp trên đĩa của máy này hay không.',
+      },
     },
     idGeneration: {
       auto: {
@@ -194,6 +207,12 @@ const viVN: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Địa chỉ công khai',
+        detail:
+          'app.publicOrigin đã được đặt nhưng không phải địa chỉ http hoặc https.',
+        fix: 'Đặt app.publicOrigin thành địa chỉ người dùng mở, ví dụ https://apps.example.com.',
+      },
       set: {
         title: 'Địa chỉ công khai',
         detail: 'app.publicOrigin = {{origin}}',

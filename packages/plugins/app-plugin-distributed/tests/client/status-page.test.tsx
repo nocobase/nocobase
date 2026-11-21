@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — a fake configuration names SQLite to exercise the database check; no database is opened
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -139,6 +140,37 @@ describe('cluster and distributed page', () => {
     expect(
       screen.getByText(/There is no “Test connection”/u),
     ).toBeInTheDocument();
+  });
+
+  it('does not tell a single instance with a blocking item that nothing needs to change', async () => {
+    await show({
+      ...SINGLE,
+      checks: [
+        {
+          id: 'service.unregistered',
+          level: 'required',
+          title: 'Caching',
+          detail: 'caching.default selects the adapter "acme".',
+          params: {
+            service: 'caching',
+            adapter: 'acme',
+            configPath: 'caching.default',
+            plugin: '@nocobase/app-plugin-caching-redis',
+          },
+        },
+        ...SINGLE.checks,
+      ],
+    });
+
+    expect(await screen.findByText('Single instance')).toBeInTheDocument();
+    expect(
+      screen.getByText('Items below must be fixed even for one instance'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('must be fixed')).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Even with one instance, the items marked “Must fix” below need attention.',
+    );
+    expect(screen.getByRole('note')).not.toHaveTextContent('needs no change');
   });
 
   it('lists what must be fixed before running several instances', async () => {

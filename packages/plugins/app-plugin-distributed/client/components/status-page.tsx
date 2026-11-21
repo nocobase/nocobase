@@ -181,6 +181,8 @@ function useCheckText(): (check: DistributedCheckResult) => {
         .join(', ');
     if (Array.isArray(params.collections))
       params.collections = params.collections.join(', ');
+    if (Array.isArray(params.connections))
+      params.connections = params.connections.join(', ');
     const key = `checks.${check.id}`;
     if (!has(`${key}.title`))
       return { title: check.title, detail: check.detail, fix: check.fix?.text };
@@ -248,14 +250,31 @@ function Summary({
   ).length;
   const count = (level: DistributedCheckLevel) =>
     status.checks.filter((check) => check.level === level).length;
+  const required = count('required');
+  // One instance can still have blocking items, such as an adapter no plugin provides; then the summary says so.
   const cards =
     status.mode === 'single'
       ? [
-          { value: t('summary.single'), caption: t('summary.singleCaption') },
+          {
+            value: t('summary.single'),
+            caption:
+              required > 0
+                ? t('summary.singleBlockedCaption')
+                : t('summary.singleCaption'),
+          },
           {
             value: t('summary.shared', { shared, total: present.length }),
             caption: t('summary.sharedCaption'),
           },
+          ...(required > 0
+            ? [
+                {
+                  value: String(required),
+                  caption: t('summary.requiredCaption'),
+                  tone: 'text-destructive',
+                },
+              ]
+            : []),
         ]
       : [
           {
@@ -263,9 +282,9 @@ function Summary({
             caption: t('summary.sharedCaption'),
           },
           {
-            value: String(count('required')),
+            value: String(required),
             caption: t('summary.requiredCaption'),
-            tone: count('required') > 0 ? 'text-destructive' : undefined,
+            tone: required > 0 ? 'text-destructive' : undefined,
           },
           {
             value: String(count('recommended')),
@@ -542,6 +561,7 @@ export function DistributedStatusView({
   readonly status: DistributedStatus;
 }): ReactElement {
   const { t } = useText();
+  const blocked = status.checks.some(({ level }) => level === 'required');
   return (
     <>
       <Summary status={status} />
@@ -549,10 +569,13 @@ export function DistributedStatusView({
         {status.mode === 'single' ? (
           <div
             role='note'
-            className='flex gap-2 rounded-md border border-primary/15 bg-primary/5 p-3 text-sm'
+            className={`flex gap-2 rounded-md border p-3 text-sm ${blocked ? 'border-destructive/20 bg-destructive/5' : 'border-primary/15 bg-primary/5'}`}
           >
-            <Info aria-hidden className='mt-0.5 size-4 shrink-0 text-primary' />
-            <span>{t('singleHint')}</span>
+            <Info
+              aria-hidden
+              className={`mt-0.5 size-4 shrink-0 ${blocked ? 'text-destructive' : 'text-primary'}`}
+            />
+            <span>{t(blocked ? 'singleBlocked' : 'singleHint')}</span>
           </div>
         ) : null}
         <ul>

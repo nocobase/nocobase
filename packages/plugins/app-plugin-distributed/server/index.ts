@@ -3,7 +3,7 @@ export {
   createDistributedStatusRegistry,
   distributedStatusToken,
   type DistributedCheck,
-  type DistributedDataReader,
+  type DistributedData,
   type DistributedStatusContext,
   type DistributedStatusRegistry,
 } from './registry.js';

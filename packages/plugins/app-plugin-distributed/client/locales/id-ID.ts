@@ -16,6 +16,8 @@ const idID: DistributedResource = {
   summary: {
     single: 'Instans tunggal',
     singleCaption: 'Konfigurasi saat ini cocok untuk satu instans',
+    singleBlockedCaption:
+      'Ada item yang harus diperbaiki meski hanya satu instans',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'layanan dibagikan',
     requiredCaption: 'wajib diperbaiki',
@@ -33,6 +35,8 @@ const idID: DistributedResource = {
     recommended: 'Disarankan',
     ok: 'OK',
   },
+  singleBlocked:
+    'Meski hanya menjalankan satu instans, item bertanda “Wajib diperbaiki” di bawah tetap perlu ditangani.',
   singleHint:
     'Menjalankan satu instans tidak memerlukan perubahan. Untuk menskalakan: siapkan Redis dan database PostgreSQL atau MySQL bersama → instal plugin Redis yang diperlukan → ubah konfigurasi → verifikasi dengan dua instans.',
   fix: 'Cara memperbaiki',
@@ -115,7 +119,8 @@ const idID: DistributedResource = {
       },
       shared: {
         title: 'Database',
-        detail: '{{dialect}}: setiap instans terhubung ke database yang sama.',
+        detail:
+          '{{dialect}} dapat dipakai bersama oleh beberapa instans. Sebelum go-live, pastikan setiap instans terhubung ke database yang sama.',
       },
     },
     service: {
@@ -135,6 +140,11 @@ const idID: DistributedResource = {
         title: '{{service}}',
         detail:
           'Adaptor “{{adapter}}” tidak menyatakan apakah dibagikan antar-instans. Pastikan dengan plugin yang menyediakannya.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} secara eksplisit memakai backend “{{backend}}”, yang adaptornya tidak menyatakan apakah dibagikan antarinstans. Konfirmasikan dengan plugin yang menyediakannya.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -166,6 +176,11 @@ const idID: DistributedResource = {
         detail:
           'Tidak ada koleksi berkas yang menyimpan berkas di disk host ini.',
       },
+      unchecked: {
+        title: 'Penyimpanan file',
+        detail:
+          'Koleksi file pada koneksi {{connections}} tidak dapat dibaca, sehingga tidak diketahui apakah ada file yang disimpan di disk host ini.',
+      },
     },
     idGeneration: {
       auto: {
@@ -194,6 +209,12 @@ const idID: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Alamat publik',
+        detail:
+          'app.publicOrigin sudah diatur tetapi bukan alamat http atau https.',
+        fix: 'Atur app.publicOrigin ke alamat yang dibuka pengguna, misalnya https://apps.example.com.',
+      },
       set: { title: 'Alamat publik', detail: 'app.publicOrigin = {{origin}}' },
       missing: {
         title: 'Alamat publik',

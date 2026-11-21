@@ -16,6 +16,7 @@ const frFR: DistributedResource = {
   summary: {
     single: 'Instance unique',
     singleCaption: 'La configuration actuelle convient à une instance',
+    singleBlockedCaption: 'Des éléments sont à corriger même avec une instance',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'services partagés',
     requiredCaption: 'à corriger',
@@ -33,6 +34,8 @@ const frFR: DistributedResource = {
     recommended: 'Recommandé',
     ok: 'OK',
   },
+  singleBlocked:
+    'Même avec une seule instance, les éléments marqués « À corriger » ci-dessous doivent être traités.',
   singleHint:
     'Une seule instance ne nécessite aucune modification. Pour passer à plusieurs instances : préparez Redis et une base de données PostgreSQL ou MySQL partagée → installez les plugins Redis nécessaires → modifiez la configuration → vérifiez avec deux instances.',
   fix: 'Comment corriger',
@@ -117,7 +120,7 @@ const frFR: DistributedResource = {
       shared: {
         title: 'Base de données',
         detail:
-          '{{dialect}} : toutes les instances se connectent à la même base de données.',
+          '{{dialect}} peut être partagé par plusieurs instances. Avant la mise en production, vérifiez que toutes les instances se connectent à la même base de données.',
       },
     },
     service: {
@@ -137,6 +140,11 @@ const frFR: DistributedResource = {
         title: '{{service}}',
         detail:
           'L’adaptateur « {{adapter}} » ne déclare pas s’il est partagé entre les instances. Vérifiez-le auprès du plugin qui le fournit.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} utilise explicitement le backend « {{backend}} », dont l’adaptateur ne déclare pas s’il est partagé entre les instances. Vérifiez-le auprès du plugin qui le fournit.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -169,6 +177,11 @@ const frFR: DistributedResource = {
         detail:
           'Aucune collection de fichiers ne conserve ses fichiers sur le disque de cet hôte.',
       },
+      unchecked: {
+        title: 'Stockage des fichiers',
+        detail:
+          'Les collections de fichiers des connexions {{connections}} n’ont pas pu être lues ; on ignore si elles gardent des fichiers sur le disque de cet hôte.',
+      },
     },
     idGeneration: {
       auto: {
@@ -197,6 +210,12 @@ const frFR: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Adresse publique',
+        detail:
+          'app.publicOrigin est défini mais n’est pas une adresse http ou https.',
+        fix: 'Définissez app.publicOrigin sur l’adresse que les utilisateurs ouvrent, par exemple https://apps.example.com.',
+      },
       set: {
         title: 'Adresse publique',
         detail: 'app.publicOrigin = {{origin}}',

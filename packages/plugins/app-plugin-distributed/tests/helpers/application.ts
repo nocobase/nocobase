@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — a fake configuration names SQLite to exercise the database check; no database is opened
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { concurrencyServiceToken } from '@nocobase/app-plugin-concurrency/server';
@@ -44,6 +45,12 @@ export interface ServiceShape {
   readonly sharing: Sharing;
   readonly registered?: boolean;
   readonly selections?: readonly { consumer?: string; backend: string }[];
+  /** Further configured backends, beside the default one. */
+  readonly backends?: readonly {
+    name: string;
+    adapter: string;
+    sharing: Sharing;
+  }[];
 }
 
 export interface ApplicationOptions {
@@ -59,7 +66,8 @@ export interface ApplicationOptions {
   readonly userProvided?: readonly string[];
   readonly localDiskUsage?: {
     defaultDiskIsLocal: boolean;
-    collections: string[];
+    collections: { connection: string; collection: string }[];
+    uncheckedConnections?: string[];
   };
   readonly autoWorkerIds?: boolean;
   readonly registry?: DistributedStatusRegistry;
@@ -90,6 +98,11 @@ function leakyDescription(shape: ServiceShape) {
         registered: shape.registered ?? true,
         connection,
       },
+      ...(shape.backends ?? []).map((backend) => ({
+        ...backend,
+        registered: true,
+        connection,
+      })),
     ],
     selections: (shape.selections ?? []).map((selection) => ({
       ...selection,
@@ -161,7 +174,7 @@ export function application(
     }));
   }
   if (options.localDiskUsage) {
-    const usage = options.localDiskUsage;
+    const usage = { uncheckedConnections: [], ...options.localDiskUsage };
     container.singleton(serverFileRepositoryManagerToken as never, () => ({
       localDiskUsage: async () => usage,
     }));

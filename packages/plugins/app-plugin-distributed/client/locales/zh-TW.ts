@@ -15,6 +15,7 @@ const zhTW: DistributedResource = {
   summary: {
     single: '單一執行個體',
     singleCaption: '目前的設定適合單一執行個體',
+    singleBlockedCaption: '即使只執行一個執行個體，下方也有必須處理的項目',
     shared: '{{shared}} / {{total}}',
     sharedCaption: '項服務已共用',
     requiredCaption: '必須處理',
@@ -32,6 +33,8 @@ const zhTW: DistributedResource = {
     recommended: '建議處理',
     ok: '正常',
   },
+  singleBlocked:
+    '即使只執行一個執行個體，下方標為「必須處理」的項目也需要處理。',
   singleHint:
     '以單一執行個體執行無需任何變更。如需擴充為多執行個體：準備 Redis 和共用的 PostgreSQL 或 MySQL 資料庫 → 安裝所需的 Redis 外掛 → 修改設定 → 以兩個執行個體驗證。',
   fix: '處理方式',
@@ -108,7 +111,8 @@ const zhTW: DistributedResource = {
       },
       shared: {
         title: '資料庫',
-        detail: '{{dialect}}：所有執行個體連線到同一個資料庫。',
+        detail:
+          '{{dialect}} 支援多個執行個體共用。上線前確認每個執行個體連線的是同一個資料庫。',
       },
     },
     service: {
@@ -128,6 +132,11 @@ const zhTW: DistributedResource = {
         title: '{{service}}',
         detail:
           '適配器「{{adapter}}」沒有聲明是否在實例間共享，請向提供它的外掛確認。',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} 明確使用後端「{{backend}}」，其介面卡沒有宣告是否在執行個體間共享。請向提供它的外掛確認。',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -157,6 +166,11 @@ const zhTW: DistributedResource = {
         title: '檔案儲存',
         detail: '沒有檔案表將檔案存放在本機磁碟上。',
       },
+      unchecked: {
+        title: '檔案儲存',
+        detail:
+          '無法讀取連線 {{connections}} 的檔案表，不確定其中是否有檔案存在本機磁碟上。',
+      },
     },
     idGeneration: {
       auto: {
@@ -183,6 +197,11 @@ const zhTW: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: '公開位址',
+        detail: 'app.publicOrigin 已設定，但不是 http 或 https 位址。',
+        fix: '將 app.publicOrigin 設為使用者開啟的位址，例如 https://apps.example.com。',
+      },
       set: { title: '公開位址', detail: 'app.publicOrigin = {{origin}}' },
       missing: {
         title: '公開位址',

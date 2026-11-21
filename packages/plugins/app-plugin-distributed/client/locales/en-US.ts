@@ -16,6 +16,7 @@ const enUS = {
   summary: {
     single: 'Single instance',
     singleCaption: 'The current configuration fits one instance',
+    singleBlockedCaption: 'Items below must be fixed even for one instance',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'services shared',
     requiredCaption: 'must be fixed',
@@ -33,6 +34,8 @@ const enUS = {
     recommended: 'Recommended',
     ok: 'OK',
   },
+  singleBlocked:
+    'Even with one instance, the items marked “Must fix” below need attention.',
   singleHint:
     'Running one instance needs no change. To scale out: prepare Redis and a shared PostgreSQL or MySQL database → install the Redis plugins you need → change the configuration → verify with two instances.',
   fix: 'How to fix',
@@ -112,7 +115,8 @@ const enUS = {
       },
       shared: {
         title: 'Database',
-        detail: '{{dialect}}: every instance connects to the same database.',
+        detail:
+          '{{dialect}} can be shared by several instances. Confirm before going live that every instance connects to the same database.',
       },
     },
     service: {
@@ -132,6 +136,11 @@ const enUS = {
         title: '{{service}}',
         detail:
           'The adapter “{{adapter}}” does not declare whether it is shared between instances. Confirm it with the plugin that provides it.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} explicitly uses the backend “{{backend}}”, whose adapter does not declare whether it is shared between instances. Confirm it with the plugin that provides it.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -162,6 +171,11 @@ const enUS = {
         title: 'File storage',
         detail: 'No file collection keeps files on this host’s disk.',
       },
+      unchecked: {
+        title: 'File storage',
+        detail:
+          'The file collections of the connections {{connections}} could not be read, so whether they keep files on this host’s disk is unknown.',
+      },
     },
     idGeneration: {
       auto: {
@@ -190,6 +204,11 @@ const enUS = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Public address',
+        detail: 'app.publicOrigin is set but is not an http or https address.',
+        fix: 'Set app.publicOrigin to the address users open, such as https://apps.example.com.',
+      },
       set: { title: 'Public address', detail: 'app.publicOrigin = {{origin}}' },
       missing: {
         title: 'Public address',

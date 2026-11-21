@@ -16,6 +16,7 @@ const jaJP: DistributedResource = {
   summary: {
     single: '単一インスタンス',
     singleCaption: '現在の構成は単一インスタンス向けです',
+    singleBlockedCaption: '単一インスタンスでも対応が必要な項目があります',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'サービスが共有済み',
     requiredCaption: '要対応',
@@ -33,6 +34,8 @@ const jaJP: DistributedResource = {
     recommended: '推奨',
     ok: '問題なし',
   },
+  singleBlocked:
+    '単一インスタンスでも、下の「要対応」の項目には対応が必要です。',
   singleHint:
     '単一インスタンスで実行する場合は変更不要です。スケールアウトするには：Redis と共有の PostgreSQL または MySQL データベースを用意 → 必要な Redis プラグインをインストール → 構成を変更 → 2 つのインスタンスで検証します。',
   fix: '対処方法',
@@ -117,7 +120,7 @@ const jaJP: DistributedResource = {
       shared: {
         title: 'データベース',
         detail:
-          '{{dialect}}：すべてのインスタンスが同じデータベースに接続します。',
+          '{{dialect}} は複数のインスタンスで共有できます。本番前に、すべてのインスタンスが同じデータベースに接続していることを確認してください。',
       },
     },
     service: {
@@ -137,6 +140,11 @@ const jaJP: DistributedResource = {
         title: '{{service}}',
         detail:
           'アダプター「{{adapter}}」はインスタンス間で共有されるかを宣言していません。提供しているプラグインで確認してください。',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} はバックエンド「{{backend}}」を明示的に使用していますが、そのアダプターはインスタンス間で共有されるかを宣言していません。提供元のプラグインで確認してください。',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -169,6 +177,11 @@ const jaJP: DistributedResource = {
         detail:
           'このホストのディスクにファイルを保存しているファイルコレクションはありません。',
       },
+      unchecked: {
+        title: 'ファイルストレージ',
+        detail:
+          '接続 {{connections}} のファイルコレクションを読み取れなかったため、このホストのディスクにファイルがあるかどうかは不明です。',
+      },
     },
     idGeneration: {
       auto: {
@@ -196,6 +209,12 @@ const jaJP: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: '公開アドレス',
+        detail:
+          'app.publicOrigin は設定されていますが、http または https のアドレスではありません。',
+        fix: 'app.publicOrigin をユーザーが開くアドレス（例: https://apps.example.com）に設定してください。',
+      },
       set: { title: '公開アドレス', detail: 'app.publicOrigin = {{origin}}' },
       missing: {
         title: '公開アドレス',

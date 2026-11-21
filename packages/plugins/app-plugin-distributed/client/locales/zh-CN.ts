@@ -15,6 +15,7 @@ const zhCN: DistributedResource = {
   summary: {
     single: '单实例',
     singleCaption: '当前配置适合单实例运行',
+    singleBlockedCaption: '即使只运行一个实例，下面也有必须处理的项',
     shared: '{{shared}} / {{total}}',
     sharedCaption: '项服务已共享',
     requiredCaption: '必须处理',
@@ -32,6 +33,7 @@ const zhCN: DistributedResource = {
     recommended: '建议处理',
     ok: '正常',
   },
+  singleBlocked: '即使只运行一个实例，下面标为「必须处理」的项也需要处理。',
   singleHint:
     '单实例运行无需任何改动。如需扩展为多实例：准备 Redis 和共享的 PostgreSQL 或 MySQL 数据库 → 安装所需的 Redis 插件 → 修改配置 → 用两个实例验证。',
   fix: '处理方法',
@@ -104,7 +106,8 @@ const zhCN: DistributedResource = {
       },
       shared: {
         title: '数据库',
-        detail: '{{dialect}}：所有实例连接同一个数据库。',
+        detail:
+          '{{dialect}} 支持多个实例共用。上线前确认每个实例连接的是同一个数据库。',
       },
     },
     service: {
@@ -124,6 +127,11 @@ const zhCN: DistributedResource = {
         title: '{{service}}',
         detail:
           '适配器“{{adapter}}”没有声明是否在实例间共享，请向提供它的插件确认。',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} 显式使用后端「{{backend}}」，其适配器没有声明是否在实例间共享。请向提供它的插件确认。',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -151,6 +159,11 @@ const zhCN: DistributedResource = {
         title: '文件存储',
         detail: '没有文件表将文件存放在本机磁盘上。',
       },
+      unchecked: {
+        title: '文件存储',
+        detail:
+          '无法读取连接 {{connections}} 的文件表，不确定其中是否有文件存在本机磁盘上。',
+      },
     },
     idGeneration: {
       auto: {
@@ -177,6 +190,11 @@ const zhCN: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: '公开地址',
+        detail: 'app.publicOrigin 已设置，但不是 http 或 https 地址。',
+        fix: '把 app.publicOrigin 设为用户访问的地址，例如 https://apps.example.com。',
+      },
       set: { title: '公开地址', detail: 'app.publicOrigin = {{origin}}' },
       missing: {
         title: '公开地址',

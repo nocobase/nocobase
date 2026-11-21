@@ -1,5 +1,4 @@
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
-import { concurrencyServiceToken } from '@nocobase/app-plugin-concurrency/server';
 import { cachingToken } from '@nocobase/app-server/caching';
 import { idGeneratorImplementationToken } from '@nocobase/app-server/id-generator';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
@@ -49,6 +48,24 @@ export const SERVICE_CONFIG_PATHS: Readonly<
   realtime: 'realtime.broker.adapter',
 };
 
+/**
+ * The concurrency service, when its optional plugin is installed. Imported lazily so an application without
+ * `@nocobase/app-plugin-concurrency` still loads this plugin and shows the other services.
+ */
+async function describeConcurrency(
+  container: AppPluginApplication['container'],
+): Promise<ServiceDescription | undefined> {
+  let entry: typeof import('@nocobase/app-plugin-concurrency/server');
+  try {
+    entry = await import('@nocobase/app-plugin-concurrency/server');
+  } catch {
+    return undefined;
+  }
+  return container.has(entry.concurrencyServiceToken)
+    ? container.resolve(entry.concurrencyServiceToken).describe?.()
+    : undefined;
+}
+
 export interface StatusLogger {
   warn(bindings: Record<string, unknown>, message: string): void;
 }
@@ -65,9 +82,9 @@ export async function collectDistributedStatus(
   const { container, config } = app;
   const userProvided = (path: string): boolean =>
     config.isUserProvided?.(path) ?? false;
-  const describe = (
+  const describe = async (
     key: DistributedServiceKey,
-  ): ServiceDescription | undefined => {
+  ): Promise<ServiceDescription | undefined> => {
     try {
       switch (key) {
         case 'caching':
@@ -75,9 +92,7 @@ export async function collectDistributedStatus(
             ? container.resolve(cachingToken).describe()
             : undefined;
         case 'concurrency':
-          return container.has(concurrencyServiceToken)
-            ? container.resolve(concurrencyServiceToken).describe?.()
-            : undefined;
+          return await describeConcurrency(container);
         case 'jobs':
           return container.has(jobExecutorServiceToken)
             ? container.resolve(jobExecutorServiceToken).describe?.()
@@ -101,10 +116,10 @@ export async function collectDistributedStatus(
       return undefined;
     }
   };
-  const services = (
-    Object.keys(SERVICE_CONFIG_PATHS) as DistributedServiceKey[]
-  ).map((key): DistributedService => {
-    const description = describe(key);
+  const keys = Object.keys(SERVICE_CONFIG_PATHS) as DistributedServiceKey[];
+  const descriptions = await Promise.all(keys.map((key) => describe(key)));
+  const services = keys.map((key, index): DistributedService => {
+    const description = descriptions[index];
     const configPath = SERVICE_CONFIG_PATHS[key];
     return {
       key,
@@ -139,9 +154,17 @@ export async function collectDistributedStatus(
         workerId: typeof workerId === 'number' ? workerId : null,
         source: userProvided('snowflake.workerId') ? 'configured' : 'default',
       };
+  // A shared backend a caller selected by name shows the intent as much as a shared default does.
   const mode =
-    services.some((service) => service.sharing === 'shared') ||
-    idGeneration.mode === 'auto'
+    services.some(
+      (service) =>
+        service.sharing === 'shared' ||
+        service.selections.some(
+          ({ backend }) =>
+            service.backends.find(({ name }) => name === backend)?.sharing ===
+            'shared',
+        ),
+    ) || idGeneration.mode === 'auto'
       ? 'multi'
       : 'single';
   const context: DistributedStatusContext = {
@@ -185,9 +208,16 @@ export async function collectDistributedStatus(
     }
   }
   const extensions: Record<string, unknown> = {};
-  for (const [key, read] of registry?.data() ?? []) {
+  for (const [key, entry] of registry?.data() ?? []) {
     try {
-      extensions[key] = await read(context);
+      // The registered schema is the allow-list: `z.object` drops every key it does not declare, at any depth.
+      const parsed = entry.schema.safeParse(await entry.read(context));
+      if (parsed.success) extensions[key] = parsed.data;
+      else
+        logger?.warn(
+          { data: key },
+          'Distributed status data did not match its declared schema.',
+        );
     } catch (error) {
       logger?.warn(
         { data: key, error: error instanceof Error ? error.name : 'Error' },

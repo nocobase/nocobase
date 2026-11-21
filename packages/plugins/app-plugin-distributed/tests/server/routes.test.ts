@@ -8,8 +8,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { apiRoutes } from '../../server/routes/index.js';
 import { DISTRIBUTED_STATUS_ACCESS } from '../../shared/types.js';
 import type { DistributedStatus } from '../../shared/types.js';
+import { z } from 'zod';
+
 import {
   createDistributedStatusRegistry,
+  distributedStatusToken,
   sharedBackendSnippet,
 } from '../../server/index.js';
 import { FixtureStatusExtension } from '../fixtures/server-extension.js';
@@ -181,7 +184,10 @@ describe('GET /api/distributed/status', () => {
     const result = await status({
       localDiskUsage: {
         defaultDiskIsLocal: true,
-        collections: ['attachments', 'contracts'],
+        collections: [
+          { connection: 'main', collection: 'attachments' },
+          { connection: 'main', collection: 'contracts' },
+        ],
       },
     });
     expect(result.checks).toContainEqual(
@@ -190,6 +196,146 @@ describe('GET /api/distributed/status', () => {
         params: { collections: ['attachments', 'contracts'] },
       }),
     );
+  });
+
+  it('names local files of another connection even when the default disk is shared', async () => {
+    const result = await status({
+      services: SHARED,
+      localDiskUsage: {
+        defaultDiskIsLocal: false,
+        collections: [
+          { connection: 'main', collection: 'attachments' },
+          { connection: 'reports', collection: 'attachments' },
+        ],
+        uncheckedConnections: ['archive'],
+      },
+    });
+    const files = result.checks.filter(({ id }) => id.startsWith('files.'));
+    expect(files).toEqual([
+      expect.objectContaining({
+        id: 'files.local',
+        level: 'required',
+        params: { collections: ['attachments', 'reports.attachments'] },
+      }),
+      expect.objectContaining({
+        id: 'files.unchecked',
+        level: 'recommended',
+        params: { connections: ['archive'] },
+      }),
+    ]);
+  });
+
+  it('does not report files as fine when a connection could not be checked', async () => {
+    const result = await status({
+      localDiskUsage: {
+        defaultDiskIsLocal: false,
+        collections: [],
+        uncheckedConnections: ['archive'],
+      },
+    });
+    const ids = result.checks.map(({ id }) => id);
+    expect(ids).toContain('files.unchecked');
+    expect(ids).not.toContain('files.shared');
+  });
+
+  it('shows only the origin of the public address', async () => {
+    const result = await status({
+      config: {
+        app: {
+          publicOrigin:
+            'https://admin:hunter2@apps.example.com:8443/base?token=tok_live_123',
+        },
+      },
+    });
+    const check = result.checks.find(({ id }) => id === 'publicOrigin.set');
+    expect(check).toMatchObject({
+      params: { origin: 'https://apps.example.com:8443' },
+      detail: 'app.publicOrigin = https://apps.example.com:8443',
+    });
+    const body = JSON.stringify(result);
+    for (const secret of ['hunter2', 'tok_live_123', 'admin'])
+      expect(body).not.toContain(secret);
+  });
+
+  it('does not echo a public address that is not http or https', async () => {
+    const result = await status({
+      services: SHARED,
+      config: { app: { publicOrigin: 'redis://user:hunter2@redis.internal' } },
+    });
+    expect(result.checks).toContainEqual(
+      expect.objectContaining({
+        id: 'publicOrigin.invalid',
+        level: 'required',
+      }),
+    );
+    expect(JSON.stringify(result)).not.toContain('hunter2');
+  });
+
+  it('asks to confirm that a shareable database is the same for every instance', async () => {
+    const result = await status({
+      config: {
+        database: {
+          default: 'main',
+          connections: { main: { dialect: 'postgres' } },
+        },
+      },
+    });
+    expect(
+      result.checks.find(({ id }) => id === 'database.shared')?.detail,
+    ).toMatch(/can be shared by several instances\. Confirm/u);
+  });
+
+  it('counts a shared backend a caller selected by name as the intent to scale out', async () => {
+    const result = await status({
+      services: {
+        caching: {
+          default: 'memory',
+          adapter: 'memory',
+          sharing: 'local',
+          backends: [{ name: 'redis', adapter: 'redis', sharing: 'shared' }],
+          selections: [{ consumer: 'sessions', backend: 'redis' }],
+        },
+      },
+    });
+    expect(result.mode).toBe('multi');
+    expect(result.checks).toContainEqual(
+      expect.objectContaining({
+        id: 'service.local',
+        level: 'required',
+        params: expect.objectContaining({ service: 'caching' }),
+      }),
+    );
+    expect(result.checks.map(({ id }) => id)).not.toContain(
+      'service.selectionLocal',
+    );
+  });
+
+  it('tells a local selection from an undeclared one under a shared default', async () => {
+    const result = await status({
+      services: {
+        ...SHARED,
+        caching: {
+          default: 'redis',
+          adapter: 'redis',
+          sharing: 'shared',
+          backends: [
+            { name: 'memory', adapter: 'memory', sharing: 'local' },
+            { name: 'acme', adapter: 'acme', sharing: 'unknown' },
+          ],
+          selections: [
+            { consumer: 'local-only', backend: 'memory' },
+            { consumer: 'custom', backend: 'acme' },
+          ],
+        },
+      },
+    });
+    const selection = result.checks
+      .filter(({ id }) => id.startsWith('service.selection'))
+      .map(({ id, params }) => [id, params?.consumer]);
+    expect(selection).toEqual([
+      ['service.selectionLocal', 'local-only'],
+      ['service.selectionUndeclared', 'custom'],
+    ]);
   });
 
   it('treats automatic worker IDs as the intent to run several instances', async () => {
@@ -234,7 +380,14 @@ describe('GET /api/distributed/status', () => {
         throw new Error('boom');
       },
     });
-    registry.addData('fixture', () => ({ instances: 2 }));
+    registry.addData('fixture', {
+      schema: z.object({ instances: z.number() }),
+      read: () => ({ instances: 2 }),
+    });
+    registry.addData('mismatch', {
+      schema: z.object({ instances: z.number() }),
+      read: () => ({ instances: 'two' }),
+    });
 
     const result = await status({ registry });
 
@@ -268,6 +421,40 @@ describe('GET /api/distributed/status', () => {
     expect(result.extensions).toEqual({
       fixture: { instances: ['node-a', 'node-b'] },
     });
+  });
+
+  it('sends only the fields extension data declares, at any depth', async () => {
+    const app = application();
+    await new FixtureStatusExtension(app).boot();
+    app.container.resolve(distributedStatusToken).addData('nested', {
+      schema: z.object({ pool: z.object({ size: z.number() }) }),
+      read: () => ({
+        pool: {
+          size: 2,
+          options: { url: 'redis://user:hunter2@redis.internal' },
+        },
+        token: 'tok_live_123',
+      }),
+    });
+    const router = await apiRoutes.createRouter(app);
+
+    const body = await (await router.request(PATH)).text();
+    const result = (JSON.parse(body) as { data: DistributedStatus }).data;
+
+    expect(result.extensions).toEqual({
+      fixture: { instances: ['node-a', 'node-b'] },
+      nested: { pool: { size: 2 } },
+    });
+    for (const secret of ['redis.internal', 'hunter2', 'tok_live_123'])
+      expect(body).not.toContain(secret);
+  });
+
+  it('rejects data registered without a schema', () => {
+    expect(() =>
+      createDistributedStatusRegistry().addData('bare', {
+        read: () => ({}),
+      } as never),
+    ).toThrow('zod schema');
   });
 
   it('declares itself in the API document', async () => {

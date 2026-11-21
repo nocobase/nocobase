@@ -7,14 +7,14 @@ The plugin contributes one read-only settings page, **System settings › System
 ## Register the plugin
 
 ```ts
-// server/plugins.ts, after Authentication, Authorization, Concurrency and File
+// server/plugins.ts, after Authentication, Authorization, File and, when installed, Concurrency
 distributed;
 
 // client/plugins.ts
 distributed();
 ```
 
-Both application templates register it. To replace the whole page, pass `distributed({ statusComponentLoader: () => import('./pages/cluster.js') })`; the replacement reads the same endpoint.
+Both application templates register it. `@nocobase/app-plugin-concurrency` is an optional peer: without it the page shows the concurrency service as not running and reports the others. To replace the whole page, pass `distributed({ statusComponentLoader: () => import('./pages/cluster.js') })`; the replacement reads the same endpoint.
 
 ## Access
 
@@ -26,8 +26,8 @@ The page and the endpoint share one grant, `page:distributed.status/access`: the
 
 - `services`: for caching, concurrency, jobs, queue and realtime, the default backend's name and adapter, whether it is `shared` between instances, `local` to this instance or `unknown`, whether its adapter is registered, every configured backend by name and adapter, the backends business code selects by name, and whether the selection is `configured` or the code `default`.
 - `idGeneration`: `auto` when a plugin provides `idGeneratorImplementationToken` and assigns each instance its worker ID, otherwise `manual` with `snowflake.workerId`.
-- `checks`: each with a level (`required`, `recommended` or `ok`), English text, interpolation `params` and, where it applies, how to fix it with a configuration fragment. Built-in checks cover the database dialect, file collections stored on a local disk, the shared services, ID generation, `secrets.keys` and `app.publicOrigin`.
-- `mode`: `multi` when a service is shared or worker IDs are automatic, `single` otherwise. In `single` mode nothing is required: running one instance needs no change.
+- `checks`: each with a level (`required`, `recommended` or `ok`), English text, interpolation `params` and, where it applies, how to fix it with a configuration fragment. Built-in checks cover the database dialect, file collections stored on a local disk on every configured connection (a collection of another connection is named `<connection>.<collection>`, and a connection that cannot be read is reported as unchecked), the shared services and the backends callers select by name, ID generation, `secrets.keys` and `app.publicOrigin`, of which only the scheme, host and port are shown.
+- `mode`: `multi` when a service's default backend or a backend a caller selects by name is shared, or worker IDs are automatic; `single` otherwise. In `single` mode scaling items are only recommended, and the page says running one instance needs no change unless a check is still `required`, such as an adapter no registered plugin provides.
 - `extensions`: data other plugins add.
 
 A service reports its sharing from what its adapter declares when it registers (`sharing: 'local' | 'shared'`); an adapter that declares nothing is `unknown`. The response is assembled field by field from the services' `describe()` and parsed through a closed schema, so connection addresses, user names, passwords and tokens never reach it. The page reflects only the instance that answers, offers no connection test (Redis plugins connect at startup and the application does not start without them), and lists running instances only through a plugin that assigns worker IDs automatically.
@@ -46,10 +46,13 @@ status.addCheck({
     { id: 'acme.workers', level: 'ok', title: 'Workers', detail: '2 running' },
   ],
 });
-status.addData('acme', () => ({ workers: 2 }));
+status.addData('acme', {
+  schema: z.object({ workers: z.number() }),
+  read: () => workerPool.stats(),
+});
 ```
 
-A check that throws shows as one recommended `checkFailed` entry instead of failing the page.
+A check that throws shows as one recommended `checkFailed` entry instead of failing the page. Extension data passes through its `schema`: only the fields a `z.object` declares are sent, so `read()` may return a runtime object without leaking its connection settings; data that does not match the schema is left out and logged. Keep check `title`, `detail` and `params` free of addresses and credentials, because they are sent as written.
 
 On the client, resolve `distributedStatusSlotsToken` from `@nocobase/app-plugin-distributed/client` and register a block in one of the slots `overview`, `services`, `idGeneration` or `checklist`:
 

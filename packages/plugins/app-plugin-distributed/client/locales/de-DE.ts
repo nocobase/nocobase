@@ -16,6 +16,7 @@ const deDE: DistributedResource = {
   summary: {
     single: 'Einzelne Instanz',
     singleCaption: 'Die aktuelle Konfiguration passt für eine Instanz',
+    singleBlockedCaption: 'Auch für eine Instanz gibt es Punkte zu beheben',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'Dienste gemeinsam genutzt',
     requiredCaption: 'zu beheben',
@@ -33,6 +34,8 @@ const deDE: DistributedResource = {
     recommended: 'Empfohlen',
     ok: 'OK',
   },
+  singleBlocked:
+    'Auch mit nur einer Instanz müssen die unten als „Beheben“ markierten Punkte erledigt werden.',
   singleHint:
     'Für eine einzelne Instanz ist keine Änderung nötig. Zum Skalieren: Redis und eine gemeinsame PostgreSQL- oder MySQL-Datenbank bereitstellen → die benötigten Redis-Plugins installieren → die Konfiguration ändern → mit zwei Instanzen prüfen.',
   fix: 'So beheben Sie es',
@@ -120,7 +123,7 @@ const deDE: DistributedResource = {
       shared: {
         title: 'Datenbank',
         detail:
-          '{{dialect}}: Alle Instanzen verbinden sich mit derselben Datenbank.',
+          '{{dialect}} kann von mehreren Instanzen gemeinsam genutzt werden. Prüfen Sie vor dem Go-live, dass alle Instanzen mit derselben Datenbank verbunden sind.',
       },
     },
     service: {
@@ -140,6 +143,11 @@ const deDE: DistributedResource = {
         title: '{{service}}',
         detail:
           'Der Adapter „{{adapter}}“ gibt nicht an, ob er zwischen Instanzen geteilt wird. Klären Sie das mit dem Plugin, das ihn bereitstellt.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} verwendet ausdrücklich das Backend „{{backend}}“, dessen Adapter nicht angibt, ob es zwischen Instanzen geteilt wird. Klären Sie das mit dem bereitstellenden Plugin.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -172,6 +180,11 @@ const deDE: DistributedResource = {
         detail:
           'Keine Dateisammlung legt Dateien auf der Festplatte dieses Hosts ab.',
       },
+      unchecked: {
+        title: 'Dateispeicher',
+        detail:
+          'Die Dateisammlungen der Verbindungen {{connections}} konnten nicht gelesen werden; ob sie Dateien auf der Festplatte dieses Hosts speichern, ist unbekannt.',
+      },
     },
     idGeneration: {
       auto: {
@@ -200,6 +213,12 @@ const deDE: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Öffentliche Adresse',
+        detail:
+          'app.publicOrigin ist gesetzt, aber keine http- oder https-Adresse.',
+        fix: 'Setzen Sie app.publicOrigin auf die Adresse, die Benutzer öffnen, etwa https://apps.example.com.',
+      },
       set: {
         title: 'Öffentliche Adresse',
         detail: 'app.publicOrigin = {{origin}}',

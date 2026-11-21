@@ -22,7 +22,11 @@ interface CheckDependencies {
   /** Absent when the file plugin is not registered. */
   readonly localDiskUsage?: () => Promise<{
     readonly defaultDiskIsLocal: boolean;
-    readonly collections: readonly string[];
+    readonly collections: readonly {
+      readonly connection: string;
+      readonly collection: string;
+    }[];
+    readonly uncheckedConnections?: readonly string[];
   }>;
 }
 
@@ -73,7 +77,7 @@ export function builtInChecks({
                 id: 'database.shared',
                 level: 'ok',
                 title: 'Database',
-                detail: `${dialect}: every instance connects to the same database.`,
+                detail: `${dialect} can be shared by several instances. Confirm before going live that every instance connects to the same database.`,
                 params: { dialect },
               },
             ];
@@ -87,44 +91,64 @@ export function builtInChecks({
       ? [
           {
             id: 'files',
-            run: async ({ mode }: { mode: 'single' | 'multi' }) => {
+            run: async ({
+              mode,
+            }: {
+              mode: 'single' | 'multi';
+            }): Promise<DistributedCheckResult[]> => {
               const usage = await localDiskUsage();
-              if (usage.collections.length > 0)
-                return [
-                  {
-                    id: 'files.local',
-                    level: blocking(mode),
-                    title: 'File storage',
-                    detail: `Files in ${usage.collections.join(', ')} are on this host's disk; other instances cannot read them.`,
-                    params: { collections: [...usage.collections] },
-                    fix: {
-                      text: 'Use a shared disk such as S3 for these file collections, and move their existing files there.',
-                    },
+              const defaultConnection = config.get<{ default?: unknown }>(
+                'database',
+              )?.default;
+              // A collection of another connection carries its connection's name, so same-named tables stay apart.
+              const names = usage.collections.map(
+                ({ connection, collection }) =>
+                  connection === defaultConnection
+                    ? collection
+                    : `${connection}.${collection}`,
+              );
+              const unchecked = [...(usage.uncheckedConnections ?? [])];
+              const results: DistributedCheckResult[] = [];
+              if (names.length > 0)
+                results.push({
+                  id: 'files.local',
+                  level: blocking(mode),
+                  title: 'File storage',
+                  detail: `Files in ${names.join(', ')} are on this host's disk; other instances cannot read them.`,
+                  params: { collections: names },
+                  fix: {
+                    text: 'Use a shared disk such as S3 for these file collections, and move their existing files there.',
                   },
-                ];
-              if (usage.defaultDiskIsLocal)
-                return [
-                  {
-                    id: 'files.defaultLocal',
-                    level: blocking(mode),
-                    title: 'File storage',
-                    detail:
-                      "The default disk stores files on this host's disk; other instances cannot read them.",
-                    fix: {
-                      text: 'Set drive.default to a shared disk such as S3.',
-                      snippet:
-                        'drive:\n  default: s3\n  disks:\n    s3:\n      driver: s3\n      # bucket, region and credentials of the shared storage',
-                    },
+                });
+              else if (usage.defaultDiskIsLocal)
+                results.push({
+                  id: 'files.defaultLocal',
+                  level: blocking(mode),
+                  title: 'File storage',
+                  detail:
+                    "The default disk stores files on this host's disk; other instances cannot read them.",
+                  fix: {
+                    text: 'Set drive.default to a shared disk such as S3.',
+                    snippet:
+                      'drive:\n  default: s3\n  disks:\n    s3:\n      driver: s3\n      # bucket, region and credentials of the shared storage',
                   },
-                ];
-              return [
-                {
+                });
+              if (unchecked.length > 0)
+                results.push({
+                  id: 'files.unchecked',
+                  level: 'recommended',
+                  title: 'File storage',
+                  detail: `The file collections of the connections ${unchecked.join(', ')} could not be read, so whether they keep files on this host's disk is unknown.`,
+                  params: { connections: unchecked },
+                });
+              else if (results.length === 0)
+                results.push({
                   id: 'files.shared',
-                  level: 'ok' as const,
+                  level: 'ok',
                   title: 'File storage',
                   detail: 'No file collection keeps files on this host’s disk.',
-                },
-              ];
+                });
+              return results;
             },
           },
         ]
@@ -193,16 +217,30 @@ export function builtInChecks({
         const origin = config.get<{ publicOrigin?: unknown }>(
           'app',
         )?.publicOrigin;
-        if (typeof origin === 'string' && origin)
+        if (typeof origin === 'string' && origin) {
+          // Only the scheme, host and port are shown: a pasted URL may carry user information or query parameters.
+          const safe = publicOriginOf(origin);
           return [
-            {
-              id: 'publicOrigin.set',
-              level: 'ok',
-              title: 'Public address',
-              detail: `app.publicOrigin = ${origin}`,
-              params: { origin },
-            },
+            safe
+              ? {
+                  id: 'publicOrigin.set',
+                  level: 'ok',
+                  title: 'Public address',
+                  detail: `app.publicOrigin = ${safe}`,
+                  params: { origin: safe },
+                }
+              : {
+                  id: 'publicOrigin.invalid',
+                  level: blocking(mode),
+                  title: 'Public address',
+                  detail:
+                    'app.publicOrigin is set but is not an http or https address.',
+                  fix: {
+                    text: 'Set app.publicOrigin to the address users open, such as https://apps.example.com.',
+                  },
+                },
           ];
+        }
         return mode === 'multi'
           ? [
               {
@@ -221,6 +259,18 @@ export function builtInChecks({
       },
     },
   ];
+}
+
+/** `scheme://host[:port]` of an http(s) address, or `undefined`; never the user information, path or query. */
+function publicOriginOf(value: string): string | undefined {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url.origin
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function serviceChecks(
@@ -277,7 +327,19 @@ function serviceChecks(
         const backend = service.backends.find(
           ({ name }) => name === selection.backend,
         );
-        if (backend && backend.sharing !== 'shared')
+        if (backend?.sharing === 'unknown')
+          results.push({
+            id: 'service.selectionUndeclared',
+            level: 'recommended',
+            title: SERVICE_NAMES[service.key],
+            detail: `${selection.consumer ?? 'A caller'} explicitly uses the ${service.key} backend "${selection.backend}", whose adapter does not declare whether it is shared between instances. Confirm it with the plugin that provides it.`,
+            params: {
+              ...params,
+              consumer: selection.consumer ?? '',
+              backend: selection.backend,
+            },
+          });
+        else if (backend?.sharing === 'local')
           results.push({
             id: 'service.selectionLocal',
             level: 'recommended',

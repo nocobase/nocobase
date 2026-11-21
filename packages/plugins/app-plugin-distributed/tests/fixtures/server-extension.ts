@@ -1,5 +1,6 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceProvider } from '@nocobase/service-provider';
+import { z } from 'zod';
 
 import { distributedStatusToken } from '../../server/index.js';
 
@@ -24,6 +25,13 @@ export class FixtureStatusExtension extends ServiceProvider<
         },
       ],
     });
-    status.addData('fixture', () => ({ instances: ['node-a', 'node-b'] }));
+    status.addData('fixture', {
+      schema: z.object({ instances: z.array(z.string()) }),
+      // A runtime object with more than the public fields: only `instances` reaches the response.
+      read: () => ({
+        instances: ['node-a', 'node-b'],
+        connection: { host: 'redis.internal', password: 'hunter2' },
+      }),
+    });
   }
 }

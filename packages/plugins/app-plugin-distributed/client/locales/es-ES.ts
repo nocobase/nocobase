@@ -16,6 +16,8 @@ const esES: DistributedResource = {
   summary: {
     single: 'Instancia única',
     singleCaption: 'La configuración actual sirve para una instancia',
+    singleBlockedCaption:
+      'Hay elementos que corregir incluso con una instancia',
     shared: '{{shared}} / {{total}}',
     sharedCaption: 'servicios compartidos',
     requiredCaption: 'por corregir',
@@ -33,6 +35,8 @@ const esES: DistributedResource = {
     recommended: 'Recomendado',
     ok: 'Correcto',
   },
+  singleBlocked:
+    'Incluso con una sola instancia, los elementos marcados como «Corregir» deben resolverse.',
   singleHint:
     'Para ejecutar una sola instancia no hace falta cambiar nada. Para escalar: prepara Redis y una base de datos PostgreSQL o MySQL compartida → instala los plugins de Redis que necesites → cambia la configuración → verifica con dos instancias.',
   fix: 'Cómo corregirlo',
@@ -117,7 +121,7 @@ const esES: DistributedResource = {
       shared: {
         title: 'Base de datos',
         detail:
-          '{{dialect}}: todas las instancias se conectan a la misma base de datos.',
+          '{{dialect}} puede compartirse entre varias instancias. Antes de publicar, confirme que todas las instancias se conectan a la misma base de datos.',
       },
     },
     service: {
@@ -137,6 +141,11 @@ const esES: DistributedResource = {
         title: '{{service}}',
         detail:
           'El adaptador «{{adapter}}» no declara si se comparte entre instancias. Confírmalo con el plugin que lo proporciona.',
+      },
+      selectionUndeclared: {
+        title: '{{service}}',
+        detail:
+          '{{consumer}} usa explícitamente el backend «{{backend}}», cuyo adaptador no declara si se comparte entre instancias. Confírmelo con el plugin que lo proporciona.',
       },
       selectionLocal: {
         title: '{{service}}',
@@ -169,6 +178,11 @@ const esES: DistributedResource = {
         detail:
           'Ninguna colección de archivos guarda archivos en el disco de este host.',
       },
+      unchecked: {
+        title: 'Almacenamiento de archivos',
+        detail:
+          'No se pudieron leer las colecciones de archivos de las conexiones {{connections}}, así que no se sabe si guardan archivos en el disco de este servidor.',
+      },
     },
     idGeneration: {
       auto: {
@@ -197,6 +211,12 @@ const esES: DistributedResource = {
       },
     },
     publicOrigin: {
+      invalid: {
+        title: 'Dirección pública',
+        detail:
+          'app.publicOrigin está definido pero no es una dirección http o https.',
+        fix: 'Defina app.publicOrigin con la dirección que abren los usuarios, por ejemplo https://apps.example.com.',
+      },
       set: {
         title: 'Dirección pública',
         detail: 'app.publicOrigin = {{origin}}',
