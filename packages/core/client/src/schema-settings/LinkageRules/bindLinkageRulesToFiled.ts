@@ -8,6 +8,7 @@
  */
 
 import { Field } from '@formily/core';
+import { validateSelf } from '@formily/core/esm/shared/internals';
 import { reaction } from '@formily/reactive';
 import { evaluators } from '@nocobase/evaluators/client';
 import { getValuesByPath, uid } from '@nocobase/utils/client';
@@ -328,7 +329,12 @@ function getSubscriber(
             });
           });
         } else {
+          const wasRequired = fieldName === 'required' && field.required;
           field[fieldName] = lastState?.value;
+          if (wasRequired && !field.required && (field.selfInvalid || field.validating)) {
+            // Re-run field validators so format and custom errors remain visible.
+            validateSelf(field);
+          }
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
