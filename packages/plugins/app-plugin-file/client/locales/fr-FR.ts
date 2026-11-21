@@ -16,6 +16,7 @@ const frFR: LocaleResource<typeof enUS> = {
     tabs: { disks: 'Stockage', usages: 'Fonctionnalités' },
     hints: {
       title_one: '{{count}} avertissement',
+      title_many: '{{count}} avertissements',
       title_other: '{{count}} avertissements',
       incomplete:
         'Le disque {{disk}} n’est pas entièrement configuré ({{problems}}) : sans conséquence tant qu’il n’est pas utilisé, il échoue lorsqu’il est choisi.',
@@ -42,6 +43,7 @@ const frFR: LocaleResource<typeof enUS> = {
     default: 'Par défaut',
     details: 'Détails',
     usageCount_one: '{{count}} fonctionnalité',
+    usageCount_many: '{{count}} fonctionnalités',
     usageCount_other: '{{count}} fonctionnalités',
     drivers: {
       fs: 'Disque local',

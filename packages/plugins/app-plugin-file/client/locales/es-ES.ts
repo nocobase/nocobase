@@ -16,6 +16,7 @@ const esES: LocaleResource<typeof enUS> = {
     tabs: { disks: 'Almacenamiento', usages: 'Funciones' },
     hints: {
       title_one: '{{count}} aviso',
+      title_many: '{{count}} avisos',
       title_other: '{{count}} avisos',
       incomplete:
         'El disco {{disk}} no está configurado por completo ({{problems}}): no causa problemas mientras no se use y falla cuando se elige.',
@@ -42,6 +43,7 @@ const esES: LocaleResource<typeof enUS> = {
     default: 'Predeterminado',
     details: 'Detalles',
     usageCount_one: '{{count}} función',
+    usageCount_many: '{{count}} funciones',
     usageCount_other: '{{count}} funciones',
     drivers: {
       fs: 'Disco local',

@@ -1,6 +1,5 @@
-import { useClientApplication } from '@nocobase/app-client';
+import { ClientApplicationContext } from '@nocobase/app-client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   AlertTriangle,
@@ -11,10 +10,15 @@ import {
   Minus,
   X,
 } from 'lucide-react';
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useContext,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { Link, useSearchParams } from 'react-router';
 
-import { FILE_STORAGE_CHECK } from '../../../shared/storage-access.js';
 import {
   formatAgo,
   formatBytes,
@@ -236,7 +240,7 @@ function Hints({
 
 /** The cluster settings page, when the application has one; the hint names it without a link otherwise. */
 function useClusterSettingsPath(): string | undefined {
-  const app = useClientApplication();
+  const app = useContext(ClientApplicationContext);
   return useMemo(() => {
     const visit = (
       routes: readonly AppClientRegisteredRoute[],
@@ -249,7 +253,7 @@ function useClusterSettingsPath(): string | undefined {
       }
       return undefined;
     };
-    return visit(app.runtime.routes);
+    return app ? visit(app.runtime.routes) : undefined;
   }, [app]);
 }
 
@@ -598,7 +602,13 @@ function DiskDetail({
           </p>
         </details>
       </div>
-      <CheckPanel disk={disk} check={check} t={t} locale={locale} />
+      <CheckPanel
+        disk={disk}
+        canCheck={view.canCheck}
+        check={check}
+        t={t}
+        locale={locale}
+      />
       <div className='rounded-xl border bg-card text-card-foreground'>
         <div className='flex items-center gap-2 px-4 py-3 text-sm'>
           <span className='font-semibold'>{t('storage.usedBy')}</span>
@@ -620,16 +630,17 @@ function DiskDetail({
 
 function CheckPanel({
   disk,
+  canCheck,
   check,
   t,
   locale,
 }: {
   readonly disk: StorageDisk;
+  readonly canCheck: boolean;
   readonly check: (disk: string) => Promise<CheckResult>;
   readonly t: Translate;
   readonly locale: string;
 }): ReactElement {
-  const canCheck = useCan(FILE_STORAGE_CHECK).can;
   const [running, setRunning] = useState(false);
   const [failed, setFailed] = useState(false);
   const [latest, setLatest] = useState<CheckResult>();

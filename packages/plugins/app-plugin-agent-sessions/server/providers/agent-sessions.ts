@@ -115,18 +115,20 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
   public override boot(): Promise<void> {
     // Listed on the file storage settings page, with the disk its files go to and how many it holds.
     if (this.app.container.has(serverFileRepositoryManagerToken))
-      this.app.container.resolve(serverFileRepositoryManagerToken).registerUsage({
-        id: 'agentSessions.images',
-        title: {
-          key: 'fileUsage',
-          ns: '@nocobase/app-plugin-agent-sessions',
-          defaultValue: 'Session images',
-        },
-        plugin: '@nocobase/app-plugin-agent-sessions',
-        collection: 'agentSessionImages',
-        disk: { default: true },
-        download: 'authenticated',
-      });
+      this.app.container
+        .resolve(serverFileRepositoryManagerToken)
+        .registerUsage({
+          id: 'agentSessions.images',
+          title: {
+            key: 'fileUsage',
+            ns: '@nocobase/app-plugin-agent-sessions',
+            defaultValue: 'Session images',
+          },
+          plugin: '@nocobase/app-plugin-agent-sessions',
+          collection: 'agentSessionImages',
+          disk: { default: true },
+          download: 'authenticated',
+        });
     const { container } = this.app;
     const service = container.resolve(agentSessionsToken);
     if (container.has(authenticationToken))

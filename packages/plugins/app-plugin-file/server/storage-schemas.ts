@@ -129,6 +129,8 @@ const usageSchema: z.ZodType<
 
 export interface FileStorageView {
   readonly defaultDisk: string;
+  /** Whether the caller holds the grant to check a disk. */
+  readonly canCheck: boolean;
   readonly disks: readonly (DiskDescription & {
     readonly lastCheck: CheckResult | null;
   })[];
@@ -140,6 +142,10 @@ export interface FileStorageView {
 export const FileStorageSchema: z.ZodType<FileStorageView> = z
   .object({
     defaultDisk: z.string(),
+    canCheck: z.boolean().meta({
+      description:
+        'Whether the caller may check a disk: holds `settings:file-storage/check`.',
+    }),
     disks: z.array(diskSchema),
     usages: z.array(usageSchema),
   })

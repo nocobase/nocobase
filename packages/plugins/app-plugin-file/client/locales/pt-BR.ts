@@ -16,6 +16,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     tabs: { disks: 'Armazenamento', usages: 'Recursos' },
     hints: {
       title_one: '{{count}} aviso',
+      title_many: '{{count}} avisos',
       title_other: '{{count}} avisos',
       incomplete:
         'O disco {{disk}} não está totalmente configurado ({{problems}}): não causa problemas enquanto não é usado e falha quando é escolhido.',
@@ -42,6 +43,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     default: 'Padrão',
     details: 'Detalhes',
     usageCount_one: '{{count}} recurso',
+    usageCount_many: '{{count}} recursos',
     usageCount_other: '{{count}} recursos',
     drivers: {
       fs: 'Disco local',

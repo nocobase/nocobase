@@ -138,6 +138,7 @@ export const storageRoutes: AppApiRouteContribution<AppPluginApplication> =
         return context.json({
           data: {
             defaultDisk: defaultDiskOf(app.config),
+            canCheck: await context.get('authz').can(FILE_STORAGE_CHECK),
             disks: disks().map((disk) => ({
               ...disk,
               lastCheck: checks.get(disk.name) ?? null,

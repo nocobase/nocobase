@@ -393,6 +393,7 @@ describe('file storage routes', () => {
       expect(text).not.toContain(forbidden);
     const { data } = JSON.parse(text);
     expect(data.defaultDisk).toBe('local');
+    expect(data.canCheck).toBe(true);
     expect(
       data.disks.map((disk: any) => [disk.name, disk.isDefault, disk.complete]),
     ).toEqual([
@@ -483,8 +484,10 @@ describe('file storage routes', () => {
       resource: { type: 'settings', id: 'file-storage' },
       action: 'check',
     });
-    // Reading still works without the check grant.
-    expect((await denied.router.request('/file/storage')).status).toBe(200);
+    // Reading still works without the check grant, and tells the page to hide the check.
+    const read = await denied.router.request('/file/storage');
+    expect(read.status).toBe(200);
+    expect((await json(read)).data.canCheck).toBe(false);
     const { router } = await fixture();
     const missing = await router.request('/file/disks/nowhere/check', {
       method: 'POST',
