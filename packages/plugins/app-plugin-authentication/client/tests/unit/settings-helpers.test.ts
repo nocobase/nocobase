@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { canUnlink } from '../../pages/linked-accounts.js';
+import {
+  canUnlink,
+  passwordSignInKnownOn,
+} from '../../pages/linked-accounts.js';
 import { providerEntries } from '../../pages/sign-in-entries.js';
-import { ssoConfig } from '../../pages/sso-config.js';
+import { ssoCallbackUrl, ssoConfig } from '../../pages/sso-config.js';
 import type { AuthenticationSignInMethod } from '../../settings/data.js';
 
 describe('ssoConfig', () => {
@@ -29,6 +32,51 @@ describe('ssoConfig', () => {
     expect(
       ssoConfig({ type: 'sso', id: 'feishu', signUp: 'create' }),
     ).toContain('disableSignUp: false');
+  });
+});
+
+describe('ssoCallbackUrl and the OIDC configuration', () => {
+  it('returns every provider, social or genericOAuth(), to /callback/<id>', () => {
+    expect(
+      ssoCallbackUrl('https://apps.example.com/main/api/auth/', 'feishu'),
+    ).toBe('https://apps.example.com/main/api/auth/callback/feishu');
+  });
+
+  it('asks for no browser plugin Better Auth does not ship', () => {
+    const config = ssoConfig({ type: 'sso', id: 'feishu', signUp: 'create' });
+    expect(config).not.toContain('genericOAuthClient');
+    expect(config).not.toContain('client/config/auth.ts');
+  });
+});
+
+describe('passwordSignInKnownOn', () => {
+  const config = (values: Record<string, unknown>) => ({
+    has: (path: string) => path in values,
+    get: (path: string) => values[path],
+  });
+
+  it('counts a password only when the application publishes that password sign-in is on', () => {
+    expect(
+      passwordSignInKnownOn(config({ 'auth.emailAndPassword.enabled': true })),
+    ).toBe(true);
+    expect(
+      passwordSignInKnownOn(config({ 'auth.emailAndPassword.enabled': false })),
+    ).toBe(false);
+    // An application without defineAuthConfig publishes nothing: password sign-in may be off.
+    expect(passwordSignInKnownOn(config({}))).toBe(false);
+  });
+
+  it('keeps the only provider when the password switch is not published', () => {
+    const accounts = [
+      { id: 'a1', providerId: 'credential' },
+      { id: 'a2', providerId: 'github' },
+    ];
+    expect(
+      canUnlink(accounts[1]!, accounts, {
+        password: passwordSignInKnownOn(config({})),
+        providers: ['github'],
+      }),
+    ).toBe(false);
   });
 });
 

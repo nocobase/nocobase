@@ -35,7 +35,7 @@ import {
   type AuthenticationProviderSummary,
 } from '../settings/data.js';
 import { describeDevice } from './device.js';
-import { canUnlink } from './linked-accounts.js';
+import { canUnlink, passwordSignInKnownOn } from './linked-accounts.js';
 import { Panel, SettingsPage } from './shared.js';
 import { useAuthenticationTranslation } from './i18n.js';
 
@@ -549,11 +549,9 @@ function LinkedAccountsPanel({
   const toaster = useToaster();
   const resolveError = useAuthenticationErrorResolver();
   const [busy, setBusy] = useState<string>();
-  // Published by `defineAuthConfig`; absent reads as Better Auth's default, on.
-  const publicConfig = useClientApplication().config.public;
-  const passwordSignIn =
-    !publicConfig.has('auth.emailAndPassword.enabled') ||
-    publicConfig.get('auth.emailAndPassword.enabled') !== false;
+  const passwordSignIn = passwordSignInKnownOn(
+    useClientApplication().config.public,
+  );
   if (!providers.data?.length) return null;
   const linked = accounts.items ?? [];
   const available = {
@@ -566,22 +564,11 @@ function LinkedAccountsPanel({
     setBusy(provider.id);
     try {
       const callbackURL = window.location.href;
-      // A social provider links through `linkSocial`; one `genericOAuth()` configures is not among Better Auth's
-      // social providers (`PROVIDER_NOT_FOUND`) and links through its `/oauth2/link`.
-      const social = await client.linkSocial({
-        provider: provider.id,
-        callbackURL,
-      });
-      const result =
-        social.error &&
-        Reflect.get(social.error, 'code') === 'PROVIDER_NOT_FOUND'
-          ? await unwrap(
-              client.$fetch<{ url?: string }>('/oauth2/link', {
-                method: 'POST',
-                body: { providerId: provider.id, callbackURL },
-              }) as Promise<{ data: { url?: string } | null; error: unknown }>,
-            )
-          : await unwrap(Promise.resolve(social));
+      // `genericOAuth()` providers are Better Auth social providers too, so every provider links through
+      // `linkSocial`; a failure is reported as it is.
+      const result = await unwrap(
+        client.linkSocial({ provider: provider.id, callbackURL }),
+      );
       const url = (result as { url?: string } | null)?.url;
       if (url) window.location.assign(url);
     } catch (failure) {

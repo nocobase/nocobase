@@ -7,6 +7,15 @@ export interface SsoConfigInput {
   readonly signUp: 'create' | 'existing';
 }
 
+/**
+ * The callback URL to register with the identity provider. Better Auth 1.7 registers a `genericOAuth()` provider as
+ * one more social provider, so both kinds return to `<auth base>/callback/<id>`, the `redirect_uri` its authorization
+ * request sends.
+ */
+export function ssoCallbackUrl(authBase: string, id: string): string {
+  return `${authBase.replace(/\/+$/u, '')}/callback/${id}`;
+}
+
 /** `feishu` → `AUTH_FEISHU`, the prefix of the environment variables that hold its client id and secret. */
 export function variablePrefix(id: string): string {
   return `AUTH_${id.toUpperCase().replace(/[^A-Z0-9]+/gu, '_')}`;
@@ -54,7 +63,6 @@ export function ssoConfig(input: SsoConfigInput): string {
     `  disableSignUp: ${existingOnly},`,
     '}] })',
     '',
-    "// client/config/auth.ts → plugins (import { genericOAuthClient } from 'better-auth/client/plugins')",
-    'genericOAuthClient()',
+    '// The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
   ].join('\n');
 }

@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label.js';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group.js';
 import { Spinner } from '../components/ui/spinner.js';
 import { useAuthenticationSettings } from '../settings/data.js';
-import { ssoConfig, variablePrefix } from './sso-config.js';
+import { ssoCallbackUrl, ssoConfig, variablePrefix } from './sso-config.js';
 import { SettingsPage } from './shared.js';
 import { useAuthenticationTranslation } from './i18n.js';
 
@@ -67,10 +67,7 @@ export default function SsoGuidePage(): ReactElement {
   const authBase =
     settings.data?.app.authBaseUrl ??
     `${window.location.origin}${settings.data?.app.authBasePath ?? '/api/auth'}`;
-  const callback =
-    type === 'social'
-      ? `${authBase}/callback/${id}`
-      : `${authBase}/oauth2/callback/${id}`;
+  const callback = ssoCallbackUrl(authBase, id);
   const prefix = variablePrefix(id);
   const config = ssoConfig({
     type,

@@ -36,3 +36,21 @@ export function canUnlink(
     (account) => account.id !== target.id && isUsable(account, available),
   );
 }
+
+/** The part of the browser's public configuration `passwordSignInKnownOn` reads. */
+export interface PublicConfigReader {
+  has(path: string): boolean;
+  get(path: string): unknown;
+}
+
+/**
+ * Whether password sign-in is known to be on, from what `defineAuthConfig` publishes. An application that does not
+ * declare its `auth` section with `defineAuthConfig` publishes nothing; password sign-in may be off there, so a
+ * stored password is not counted as a way to sign in, and the person keeps the account they could still use.
+ */
+export function passwordSignInKnownOn(config: PublicConfigReader): boolean {
+  return (
+    config.has('auth.emailAndPassword.enabled') &&
+    config.get('auth.emailAndPassword.enabled') !== false
+  );
+}
