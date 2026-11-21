@@ -60,10 +60,26 @@ export function useFileStorage(): FileStorageState {
         method: 'POST',
         path: `/file/disks/${encodeURIComponent(disk)}/check`,
       });
-      reload();
-      return response.data;
+      // The answer is this disk's new latest check: put it in place instead of reading the whole page again.
+      const checked = response.data;
+      setResult((previous) =>
+        previous?.data
+          ? {
+              ...previous,
+              data: {
+                ...previous.data,
+                disks: previous.data.disks.map((item) =>
+                  item.name === checked.disk
+                    ? { ...item, lastCheck: checked }
+                    : item,
+                ),
+              },
+            }
+          : previous,
+      );
+      return checked;
     },
-    [api, reload],
+    [api],
   );
   return { data, error, loading, reload, check };
 }

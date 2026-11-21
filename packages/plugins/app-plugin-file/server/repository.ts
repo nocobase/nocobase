@@ -162,13 +162,27 @@ export interface FileUsageStats {
 
 export class ServerFileRepositoryManager {
   private readonly usages = new FileUsageRegistry();
+  private readonly driveSource: AppDriveManager | (() => AppDriveManager);
 
   constructor(
     private readonly database: DatabaseManager,
-    private readonly drive: AppDriveManager,
+    /**
+     * Drive, or a function returning it. A function defers creating Drive to the first file operation, so declaring
+     * usages and reading the file storage page keep working when Drive cannot be created, such as when the default
+     * disk is an S3 disk without a bucket.
+     */
+    drive: AppDriveManager | (() => AppDriveManager),
     /** The application's configuration, which resolves the disk a feature follows. */
     private readonly config?: FileUsageConfig | undefined,
-  ) {}
+  ) {
+    this.driveSource = drive;
+  }
+
+  private get drive(): AppDriveManager {
+    return typeof this.driveSource === 'function'
+      ? this.driveSource()
+      : this.driveSource;
+  }
 
   /**
    * Declares a feature that stores files: its Collection, the disk it stores new files on and how its files are

@@ -643,13 +643,16 @@ function CheckPanel({
 }): ReactElement {
   const [running, setRunning] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [latest, setLatest] = useState<CheckResult>();
-  const result = latest ?? disk.lastCheck ?? undefined;
+  // The page's data holds the latest check: a check's answer replaces it there.
+  const result = disk.lastCheck ?? undefined;
   const run = () => {
     setRunning(true);
     setFailed(false);
     check(disk.name)
-      .then(setLatest, () => setFailed(true))
+      .then(
+        () => undefined,
+        () => setFailed(true),
+      )
       .finally(() => setRunning(false));
   };
   return (
@@ -918,15 +921,22 @@ function configSnippet(disk: StorageDisk): string {
     `    ${disk.name}:`,
     '      maxFileSizeMb: 50    # max size of one file, in MB',
   ];
-  if (disk.driver === 's3' || disk.driver === 'oss')
+  // Each driver's own required settings, with placeholders the driver accepts.
+  if (disk.driver === 's3')
     lines.push(
       '      bucket: my-bucket',
       '      region: us-east-1',
       '      credentials:         # supply through environment variables, never commit them',
       '        accessKeyId: ...',
-      disk.driver === 's3'
-        ? '        secretAccessKey: ...'
-        : '        accessKeySecret: ...',
+      '        secretAccessKey: ...',
+    );
+  if (disk.driver === 'oss')
+    lines.push(
+      '      bucket: my-bucket',
+      '      region: oss-cn-hangzhou # always oss-<region>',
+      '      credentials:         # access keys, or provider: aliyun-ecs-ram-role; never both',
+      '        accessKeyId: ...',
+      '        accessKeySecret: ...',
     );
   return lines.join('\n');
 }

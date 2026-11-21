@@ -79,6 +79,10 @@ const viVN: LocaleResource<typeof enUS> = {
       BUCKET_MISSING: 'bucket trống',
       REGION_MISSING: 'region trống',
       CREDENTIALS_MISSING: 'thiếu thông tin xác thực',
+      REGION_INVALID: 'region phải có dạng oss-<region>',
+      CREDENTIALS_INVALID:
+        'thông tin xác thực trộn hai nguồn hoặc không hợp lệ',
+      SETTINGS_INVALID: 'timeout hoặc domain không hợp lệ',
       NOT_LOADED: 'chưa được ứng dụng tải',
     },
     sources: { code: 'Mã', config: 'Cấu hình', default: 'Giá trị mặc định' },

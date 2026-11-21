@@ -82,6 +82,10 @@ const esES: LocaleResource<typeof enUS> = {
       BUCKET_MISSING: 'bucket está vacío',
       REGION_MISSING: 'region está vacío',
       CREDENTIALS_MISSING: 'faltan las credenciales',
+      REGION_INVALID: 'region debe tener la forma oss-<region>',
+      CREDENTIALS_INVALID:
+        'las credenciales mezclan dos orígenes o no son válidas',
+      SETTINGS_INVALID: 'timeout o domain no es válido',
       NOT_LOADED: 'la aplicación no lo ha cargado',
     },
     sources: {

@@ -82,6 +82,10 @@ const ptBR: LocaleResource<typeof enUS> = {
       BUCKET_MISSING: 'bucket está vazio',
       REGION_MISSING: 'region está vazio',
       CREDENTIALS_MISSING: 'credenciais ausentes',
+      REGION_INVALID: 'region deve ter a forma oss-<region>',
+      CREDENTIALS_INVALID:
+        'as credenciais misturam duas origens ou são inválidas',
+      SETTINGS_INVALID: 'timeout ou domain é inválido',
       NOT_LOADED: 'não carregado pela aplicação',
     },
     sources: {

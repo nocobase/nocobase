@@ -76,6 +76,9 @@ export default {
       BUCKET_MISSING: 'bucket is empty',
       REGION_MISSING: 'region is empty',
       CREDENTIALS_MISSING: 'credentials are missing',
+      REGION_INVALID: 'region must look like oss-<region>',
+      CREDENTIALS_INVALID: 'credentials mix two sources or are invalid',
+      SETTINGS_INVALID: 'timeout or domain is invalid',
       NOT_LOADED: 'not loaded by the application',
     },
     sources: {

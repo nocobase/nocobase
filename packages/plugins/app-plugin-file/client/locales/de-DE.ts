@@ -80,6 +80,10 @@ const deDE: LocaleResource<typeof enUS> = {
       BUCKET_MISSING: 'bucket ist leer',
       REGION_MISSING: 'region ist leer',
       CREDENTIALS_MISSING: 'Zugangsdaten fehlen',
+      REGION_INVALID: 'region muss die Form oss-<region> haben',
+      CREDENTIALS_INVALID:
+        'Zugangsdaten mischen zwei Quellen oder sind ungültig',
+      SETTINGS_INVALID: 'timeout oder domain ist ungültig',
       NOT_LOADED: 'von der Anwendung nicht geladen',
     },
     sources: { code: 'Code', config: 'Konfiguration', default: 'Standardwert' },

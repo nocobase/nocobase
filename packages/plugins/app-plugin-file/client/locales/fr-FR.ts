@@ -82,6 +82,10 @@ const frFR: LocaleResource<typeof enUS> = {
       BUCKET_MISSING: 'bucket est vide',
       REGION_MISSING: 'region est vide',
       CREDENTIALS_MISSING: 'identifiants manquants',
+      REGION_INVALID: 'region doit être de la forme oss-<region>',
+      CREDENTIALS_INVALID:
+        'les identifiants mélangent deux sources ou sont invalides',
+      SETTINGS_INVALID: 'timeout ou domain est invalide',
       NOT_LOADED: 'non chargé par l’application',
     },
     sources: {

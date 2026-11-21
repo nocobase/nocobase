@@ -119,13 +119,14 @@ async function fixture(
       overrides: { drive: { disks: { local: { maxFileSizeMb: 50 } } } },
     }),
   };
+  const container = new ServiceContainer();
+  // Created on first use, as the application does; it throws when the default disk is one that was dropped.
+  container.singleton(driveManagerToken, () => createDriveManager(loaded));
   const manager = new ServerFileRepositoryManager(
     db,
-    createDriveManager(loaded),
+    () => container.resolve(driveManagerToken),
     config,
   );
-  const container = new ServiceContainer();
-  container.instance(driveManagerToken, createDriveManager(loaded));
   container.instance(serverFileRepositoryManagerToken, manager);
   const can = vi.fn(async ({ resource }: { resource: { type: string } }) =>
     resource.type === 'page' ? (options.page ?? true) : (options.check ?? true),
@@ -447,6 +448,43 @@ describe('file storage routes', () => {
     expect(list.data.disks[1].lastCheck).toBeNull();
   });
 
+  it('still lists disks and answers CONFIG_INCOMPLETE when the default disk is an S3 disk without a bucket', async () => {
+    const { router, manager } = await fixture({
+      drive: (root) => ({ ...templateDrive(root), default: 's3' }),
+    });
+    // Declaring a usage does not need Drive, which cannot be created now.
+    manager.registerUsage({
+      id: 'x',
+      title: 'X',
+      collection: 'missingTable',
+      disk: { default: true },
+      download: 'authenticated',
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const list = await router.request('/file/storage');
+    expect(list.status).toBe(200);
+    const { data } = await json(list);
+    expect(data.defaultDisk).toBe('s3');
+    expect(
+      data.disks.map((disk: any) => [disk.name, disk.isDefault, disk.problems]),
+    ).toEqual([
+      ['local', false, ['NOT_LOADED']],
+      ['s3', true, ['BUCKET_MISSING']],
+    ]);
+    expect(data.usages).toEqual([
+      expect.objectContaining({ id: 'x', disk: 's3' }),
+    ]);
+    const check = await router.request('/file/disks/s3/check', {
+      method: 'POST',
+    });
+    expect(check.status).toBe(200);
+    expect((await json(check)).data.steps[0]).toMatchObject({
+      status: 'failed',
+      reason: 'CONFIG_INCOMPLETE',
+      detail: 'BUCKET_MISSING',
+    });
+  });
+
   it('reports an incomplete disk without contacting it, and keeps credentials out of the answer', async () => {
     const { router } = await fixture();
     const response = await router.request('/file/disks/s3/check', {
@@ -517,38 +555,41 @@ describe('file storage routes', () => {
   });
 });
 
-describe('runCheck', () => {
-  it('reports a failing write by a fixed reason and the error name, never its message', async () => {
-    const log = vi.fn();
-    const disk = describeDisks({
-      drive: {
-        default: 'local',
-        disks: {
-          local: { driver: 'fs', location: '/tmp/x', visibility: 'private' },
-        },
+function localDisk() {
+  return describeDisks({
+    drive: {
+      default: 'local',
+      disks: {
+        local: { driver: 'fs', location: '/tmp/x', visibility: 'private' },
       },
-      rootDir: '/tmp',
-      loaded: ['local'],
-    })[0];
+    },
+    rootDir: '/tmp',
+    loaded: ['local'],
+  })[0];
+}
+
+/** Drive over a driver whose operations a test scripts, behind Drive's own disk wrapper. */
+function scriptedDrive(driver: Record<string, unknown>) {
+  return createDriveManager({
+    default: 'local',
+    disks: { local: () => driver as never },
+  });
+}
+
+describe('runCheck', () => {
+  it('reports a failing write by a fixed reason and a known code, and logs neither message nor unknown code', async () => {
+    const log = vi.fn();
     const failure = Object.assign(new Error(`denied for key ${SECRET}`), {
       name: 'AccessDenied',
     });
-    // A driver whose write is refused, behind Drive's own disk wrapper.
-    const drive = createDriveManager({
-      default: 'local',
-      disks: {
-        local: () =>
-          ({
-            put: async () => {
-              throw failure;
-            },
-            delete: async () => {},
-          }) as never,
-      },
-    });
     const result = await runCheck({
-      disk,
-      drive,
+      disk: localDisk(),
+      drive: scriptedDrive({
+        put: async () => {
+          throw failure;
+        },
+        delete: async () => {},
+      }),
       log,
     });
     expect(result.ok).toBe(false);
@@ -559,9 +600,136 @@ describe('runCheck', () => {
       errorName: 'AccessDenied',
     });
     expect(JSON.stringify(result)).not.toContain(SECRET);
-    expect(log).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ cause: failure }),
-    );
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0]).toHaveLength(1);
+    expect(log.mock.calls[0][0]).toContain('WRITE_FAILED (AccessDenied)');
+    expect(log.mock.calls[0][0]).not.toContain(SECRET);
+  });
+
+  it('reports no code from nested causes that are not known ones, however they look', async () => {
+    const log = vi.fn();
+    // An identifier-shaped credential two causes deep, under codes that are not on the known list either.
+    const failure = Object.assign(new Error('outer'), {
+      code: 'CustomWrapper',
+      cause: Object.assign(new Error(`inner ${SECRET}`), {
+        name: 'VendorError',
+        cause: { code: KEY_ID.replaceAll('-', '_'), message: SECRET },
+      }),
+    });
+    const result = await runCheck({
+      disk: localDisk(),
+      drive: scriptedDrive({
+        put: async () => {
+          throw failure;
+        },
+        delete: async () => {},
+      }),
+      log,
+    });
+    // Only Drive's own wrapper code is known; nothing from the causes is reported.
+    expect(result.steps[0]).toMatchObject({
+      reason: 'WRITE_FAILED',
+      errorName: 'E_CANNOT_WRITE_FILE',
+    });
+    const text = JSON.stringify(result) + String(log.mock.calls[0][0]);
+    for (const forbidden of [
+      SECRET,
+      KEY_ID.replaceAll('-', '_'),
+      'VendorError',
+      'CustomWrapper',
+    ])
+      expect(text).not.toContain(forbidden);
+  });
+
+  it('cleans up after a partial write and says so', async () => {
+    const files = new Map<string, string>();
+    const result = await runCheck({
+      disk: localDisk(),
+      drive: scriptedDrive({
+        put: async (key: string) => {
+          files.set(key, 'partial');
+          throw Object.assign(new Error('disk full'), { code: 'ENOSPC' });
+        },
+        delete: async (key: string) => {
+          files.delete(key);
+        },
+      }),
+    });
+    expect(result.steps.map((step) => [step.step, step.status])).toEqual([
+      ['write', 'failed'],
+      ['read', 'skipped'],
+      ['url', 'skipped'],
+      ['delete', 'passed'],
+    ]);
+    expect(result.steps[0].errorName).toBe('ENOSPC');
+    expect(files.size).toBe(0);
+  });
+
+  it('reports DELETE_FAILED when the cleanup after a partial write fails too', async () => {
+    const result = await runCheck({
+      disk: localDisk(),
+      drive: scriptedDrive({
+        put: async () => {
+          throw Object.assign(new Error('disk full'), { code: 'ENOSPC' });
+        },
+        delete: async () => {
+          throw Object.assign(new Error('read-only'), { code: 'EROFS' });
+        },
+      }),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.steps[3]).toMatchObject({
+      step: 'delete',
+      status: 'failed',
+      reason: 'DELETE_FAILED',
+      errorName: 'EROFS',
+      detail: expect.stringMatching(/^nocobase-check\//),
+    });
+  });
+});
+
+describe('OSS disks', () => {
+  const oss = (overrides: Record<string, unknown>) =>
+    describeDisks({
+      drive: {
+        default: 'local',
+        disks: {
+          local: { driver: 'fs', location: '/tmp/x', visibility: 'private' },
+          oss: {
+            driver: 'oss',
+            bucket: 'files',
+            region: 'oss-cn-hangzhou',
+            visibility: 'private',
+            credentials: { accessKeyId: KEY_ID, accessKeySecret: SECRET },
+            ...overrides,
+          } as never,
+        },
+      },
+      rootDir: '/tmp',
+      loaded: ['local', 'oss'],
+    })[1];
+
+  it('is complete only as the OSS driver accepts it', () => {
+    expect(oss({})).toMatchObject({ complete: true, problems: [] });
+    expect(oss({ region: 'us-east-1' }).problems).toEqual(['REGION_INVALID']);
+    expect(
+      oss({
+        credentials: {
+          provider: 'aliyun-ecs-ram-role',
+          accessKeyId: KEY_ID,
+        },
+      }).problems,
+    ).toEqual(['CREDENTIALS_INVALID']);
+    expect(
+      oss({ credentials: { provider: 'aliyun-ecs-ram-role' } }).problems,
+    ).toEqual([]);
+    expect(oss({ credentials: { accessKeyId: KEY_ID } }).problems).toEqual([
+      'CREDENTIALS_MISSING',
+    ]);
+    expect(oss({ domain: 'http://files.example.test' }).problems).toEqual([
+      'SETTINGS_INVALID',
+    ]);
+    expect(oss({ timeout: 0 }).problems).toEqual(['SETTINGS_INVALID']);
+    expect(JSON.stringify(oss({}))).not.toContain(SECRET);
   });
 });

@@ -83,6 +83,10 @@ const ruRU: LocaleResource<typeof enUS> = {
       BUCKET_MISSING: 'bucket пуст',
       REGION_MISSING: 'region пуст',
       CREDENTIALS_MISSING: 'нет учётных данных',
+      REGION_INVALID: 'region должен иметь вид oss-<region>',
+      CREDENTIALS_INVALID:
+        'учётные данные смешивают два источника или недействительны',
+      SETTINGS_INVALID: 'timeout или domain недействителен',
       NOT_LOADED: 'не загружен приложением',
     },
     sources: {

@@ -28,7 +28,10 @@ export type DiskProblem =
   | 'LOCATION_MISSING'
   | 'BUCKET_MISSING'
   | 'REGION_MISSING'
+  | 'REGION_INVALID'
   | 'CREDENTIALS_MISSING'
+  | 'CREDENTIALS_INVALID'
+  | 'SETTINGS_INVALID'
   | 'NOT_LOADED';
 
 export interface DiskLocation {
@@ -182,19 +185,10 @@ function describeDisk(
     const region = nonEmpty(definition.region);
     if (!bucket) problems.push('BUCKET_MISSING');
     if (!region) problems.push('REGION_MISSING');
-    if (definition.driver === 'oss') {
-      const credentials = definition.credentials as
-        Record<string, unknown> | undefined;
-      if (
-        !credentials ||
-        (!credentials.provider &&
-          !(
-            nonEmpty(credentials.accessKeyId) &&
-            nonEmpty(credentials.accessKeySecret)
-          ))
-      )
-        problems.push('CREDENTIALS_MISSING');
-    }
+    if (definition.driver === 'oss')
+      problems.push(
+        ...ossProblems(definition as unknown as Record<string, unknown>),
+      );
     location = {
       ...emptyLocation,
       bucket,
@@ -234,7 +228,7 @@ export interface RunCheckInput {
   readonly disk: DiskDescription;
   readonly drive: { use(disk: string): NocoBaseDriveDisk };
   /** Where the raw error goes; never into the response. */
-  readonly log?: (message: string, error: unknown) => void;
+  readonly log?: (message: string) => void;
   readonly now?: () => Date;
 }
 
@@ -260,10 +254,11 @@ export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
       reason,
       errorName: error === undefined ? null : errorNameOf(error),
     });
+    // Only the fixed reason and a known error code are logged: an SDK's message, or an unknown code, may quote a
+    // credential or a request.
     if (error !== undefined)
       input.log?.(
-        `File storage check of disk "${disk.name}" failed at ${name}.`,
-        error,
+        `File storage check of disk "${disk.name}" failed at ${name}: ${reason ?? 'UNKNOWN'} (${errorNameOf(error) ?? 'unknown error'}).`,
       );
   };
   const finish = (): CheckResult => ({
@@ -321,34 +316,146 @@ export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
     step('read', 'skipped');
     step('url', 'skipped');
   }
-  // Always try to remove the file, even after a failed write, which may have left part of it behind.
+  // Always remove the file, even after a failed write, which may have left part of it behind. Deleting a key that
+  // does not exist succeeds on every driver, so a failure here means the disk may still hold the file.
   try {
     await driver.delete(key);
-    step('delete', written ? 'passed' : 'skipped');
+    step('delete', 'passed');
   } catch (error) {
-    if (written) step('delete', 'failed', null, 'DELETE_FAILED', error);
-    else step('delete', 'skipped');
+    step('delete', 'failed', key, 'DELETE_FAILED', error);
   }
   return finish();
 }
 
-/** A storage SDK's error class or code, such as `AccessDenied` or `ENOENT`, never its message. */
+/**
+ * Error codes a check may report: file system, network, Drive and S3/OSS codes that name a condition and never carry
+ * data. Anything else, however harmless it looks, is reported as no code at all, since an SDK may put a credential in
+ * a field shaped like an identifier.
+ */
+export const KNOWN_ERROR_CODES: ReadonlySet<string> = new Set([
+  // File system and network.
+  'EACCES',
+  'EPERM',
+  'ENOENT',
+  'ENOSPC',
+  'EROFS',
+  'EISDIR',
+  'ENOTDIR',
+  'EEXIST',
+  'EBUSY',
+  'EMFILE',
+  'EDQUOT',
+  'ETIMEDOUT',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'EPIPE',
+  // Drive.
+  'E_CANNOT_WRITE_FILE',
+  'E_CANNOT_READ_FILE',
+  'E_CANNOT_DELETE_FILE',
+  'E_CANNOT_GENERATE_URL',
+  'E_CANNOT_GENERATE_TEMP_URL',
+  'E_UNALLOWED_CHARACTERS',
+  'E_INVALID_KEY',
+  // S3 and OSS.
+  'AccessDenied',
+  'AllAccessDisabled',
+  'NoSuchBucket',
+  'NoSuchKey',
+  'InvalidAccessKeyId',
+  'SignatureDoesNotMatch',
+  'ExpiredToken',
+  'InvalidToken',
+  'InvalidBucketName',
+  'PermanentRedirect',
+  'AuthorizationHeaderMalformed',
+  'RequestTimeTooSkewed',
+  'RequestTimeout',
+  'SlowDown',
+  'ServiceUnavailable',
+  'InternalError',
+  'NotImplemented',
+  'InvalidRequest',
+  'InvalidArgument',
+  'EntityTooLarge',
+  'QuotaExceeded',
+  'CredentialsProviderError',
+  'TimeoutError',
+  'NetworkingError',
+  'ConnectionTimeoutError',
+  'ResponseTimeoutError',
+  'RequestError',
+]);
+
+/** The most specific known code in an error and its causes, such as `AccessDenied` under Drive's `E_CANNOT_WRITE_FILE`. */
 function errorNameOf(error: unknown, depth = 0): string | null {
   if (!error || typeof error !== 'object' || depth > 3) return null;
-  // Drive wraps a driver's error (`E_CANNOT_WRITE_FILE`); the storage's own reason, such as `AccessDenied`, is its cause.
   const cause = errorNameOf((error as { cause?: unknown }).cause, depth + 1);
   if (cause) return cause;
-  const identifier = /^[A-Za-z][A-Za-z0-9_.]{0,63}$/;
   for (const key of ['code', 'Code', 'name'] as const) {
     const value = (error as Record<string, unknown>)[key];
-    if (
-      typeof value === 'string' &&
-      identifier.test(value) &&
-      value !== 'Error'
-    )
-      return value;
+    if (typeof value === 'string' && KNOWN_ERROR_CODES.has(value)) return value;
   }
   return null;
+}
+
+/**
+ * What the OSS driver refuses when it is created (`@nocobase/drive`'s `oss.ts`): a region of the form `oss-<region>`,
+ * exactly one credentials source, and a valid timeout and domain. An empty bucket or region is reported by the caller.
+ */
+function ossProblems(definition: Record<string, unknown>): DiskProblem[] {
+  const problems: DiskProblem[] = [];
+  const region = nonEmpty(definition.region);
+  if (region && !/^oss-[a-z0-9-]+$/.test(region))
+    problems.push('REGION_INVALID');
+  const credentials = definition.credentials;
+  if (!credentials || typeof credentials !== 'object')
+    problems.push('CREDENTIALS_MISSING');
+  else {
+    const value = credentials as Record<string, unknown>;
+    if ('provider' in value) {
+      if (
+        value.provider !== 'aliyun-ecs-ram-role' ||
+        'accessKeyId' in value ||
+        'accessKeySecret' in value ||
+        (value.roleName !== undefined && !nonEmpty(value.roleName))
+      )
+        problems.push('CREDENTIALS_INVALID');
+    } else if ('roleName' in value) problems.push('CREDENTIALS_INVALID');
+    else if (!nonEmpty(value.accessKeyId) || !nonEmpty(value.accessKeySecret))
+      problems.push('CREDENTIALS_MISSING');
+  }
+  const timeout = definition.timeout;
+  let domainValid = true;
+  if (definition.domain !== undefined && definition.domain !== '') {
+    try {
+      if (typeof definition.domain !== 'string') throw new TypeError();
+      const domain = new URL(definition.domain);
+      domainValid =
+        domain.protocol === 'https:' &&
+        !domain.username &&
+        !domain.password &&
+        domain.pathname === '/' &&
+        !domain.search &&
+        !domain.hash;
+    } catch {
+      domainValid = false;
+    }
+  }
+  if (
+    (timeout !== undefined &&
+      (typeof timeout !== 'number' ||
+        !Number.isInteger(timeout) ||
+        timeout < 1 ||
+        timeout > 2147483647)) ||
+    !domainValid
+  )
+    problems.push('SETTINGS_INVALID');
+  return problems;
 }
 
 function relativeLocation(

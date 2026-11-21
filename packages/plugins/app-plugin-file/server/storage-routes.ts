@@ -73,15 +73,22 @@ export const storageRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     const disks = (): DiskDescription[] => {
       const drive = app.config.get<AppDriveConfig>('drive');
-      const loaded = container.has(driveManagerToken)
-        ? Object.keys(container.resolve(driveManagerToken).limits)
-        : [];
       return describeDisks({
         drive,
         layers: (app.config as LayeredConfig).layers?.(),
         rootDir: app.paths.rootDir,
-        loaded,
+        loaded: loadedDisks(),
       });
+    };
+    // The disks Drive loaded. Drive is not created at all when the default disk is one it drops, such as an S3 disk
+    // without a bucket; then no disk is loaded, and the page still lists every disk with its problems.
+    const loadedDisks = (): string[] => {
+      if (!container.has(driveManagerToken)) return [];
+      try {
+        return Object.keys(container.resolve(driveManagerToken).limits);
+      } catch {
+        return [];
+      }
     };
 
     router.onError((error, context) => apiErrorHandler(error, context));
@@ -195,8 +202,12 @@ export const storageRoutes: AppApiRouteContribution<AppPluginApplication> =
           });
         const result = await runCheck({
           disk,
-          drive: container.resolve(driveManagerToken),
-          log: (message, error) => console.error(message, error),
+          // Resolved only for a complete disk, so an incomplete one answers CONFIG_INCOMPLETE even when Drive cannot be
+          // created.
+          drive: {
+            use: (name) => container.resolve(driveManagerToken).use(name),
+          },
+          log: (message) => console.error(message),
         });
         checks.set(disk.name, result);
         return context.json({ data: result });
