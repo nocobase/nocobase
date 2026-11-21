@@ -46,13 +46,13 @@ function createProvider(): LLMProvider {
   } as unknown as LLMProvider;
 }
 
-async function runStream(chunks: AIMessageChunk[], events: string[], errorAfterChunks = false) {
+async function runStream(chunks: AIMessageChunk[], events: string[], errorAfterChunks?: Error) {
   async function* stream() {
     for (const chunk of chunks) {
       yield ['messages', [chunk, { currentConversation: conversation }]];
     }
     if (errorAfterChunks) {
-      throw new Error('stream failed');
+      throw errorAfterChunks;
     }
   }
 
@@ -62,7 +62,7 @@ async function runStream(chunks: AIMessageChunk[], events: string[], errorAfterC
     from: conversation.from,
     employee: { username: conversation.username },
     ctx: { log: { error: vi.fn() }, res: { end: vi.fn() } },
-    sendErrorResponse: () => events.push('error'),
+    sendErrorResponse: vi.fn((_message: string) => events.push('error')),
     sendSpecificError: () => events.push('error'),
     saveKnowledgeBaseReferences: vi.fn(),
   };
@@ -74,6 +74,7 @@ async function runStream(chunks: AIMessageChunk[], events: string[], errorAfterC
     provider: createProvider(),
     responseMetadata: new Map(),
   });
+  return fakeEmployee;
 }
 
 describe('AIEmployee reasoning stream ordering', () => {
@@ -137,9 +138,40 @@ describe('AIEmployee reasoning stream ordering', () => {
     await runStream(
       [new AIMessageChunk({ content: '', additional_kwargs: { reasoning_content: 'partial reasoning' } })],
       events,
-      true,
+      new Error('stream failed'),
     );
 
     expect(events).toEqual(['start', 'reasoning:partial reasoning', 'reasoning:stop', 'error']);
+  });
+});
+
+describe('AI employee stream error logging', () => {
+  it('logs the innermost stack frames on the server when middleware wraps a RangeError', async () => {
+    const cause = new RangeError('private provider message\n    at private input');
+    cause.stack = cause.toString() + '\n  at modelCall (/app/provider.js:42:7)';
+    const wrapper = new Error('middleware failure', { cause });
+    const error = new Error('public error', { cause: wrapper });
+    error.name = 'RangeError';
+
+    const employee = await runStream([], [], error);
+
+    expect(employee.ctx.log.error.mock.calls).toEqual([
+      [error],
+      [
+        'AI employee stream nested RangeError stack',
+        { causeDepth: 2, stackFrames: ['  at modelCall (/app/provider.js:42:7)'] },
+      ],
+    ]);
+    expect(employee.sendErrorResponse).toHaveBeenCalledWith('public error');
+  });
+
+  it('keeps the existing log for a RangeError whose cause points back to itself', async () => {
+    const error = new RangeError('stream failed');
+    error.cause = error;
+
+    const employee = await runStream([], [], error);
+
+    expect(employee.ctx.log.error.mock.calls).toEqual([[error]]);
+    expect(employee.sendErrorResponse).toHaveBeenCalledWith('stream failed');
   });
 });
