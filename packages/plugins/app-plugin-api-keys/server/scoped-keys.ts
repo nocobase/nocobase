@@ -757,6 +757,29 @@ export class ScopedApiKeys {
       if (held.length > 0)
         grants.push({ resource, title: null, actions: held });
     }
+    // Someone who holds everything holds no grant to list a type without items by, such as accounts (`user:*`): its
+    // person-only actions are listed all the same, so the editor shows them greyed out rather than on offer.
+    if (ceiling.unrestricted && authz)
+      for (const type of authz.resourceTypes.list()) {
+        if (type.items || !this.pickableType(type.type)) continue;
+        const resource = { type: type.type, id: '*' };
+        if (listed.has(resourceKey(resource))) continue;
+        const humanOnly = (type.actions ?? []).flatMap(
+          (declared): GrantableAction[] =>
+            declared.humanOnly === undefined
+              ? []
+              : [
+                  {
+                    action: declared.name,
+                    title: declared.title ?? null,
+                    humanOnly: declared.humanOnly,
+                    risk: declared.risk ?? null,
+                  },
+                ],
+        );
+        if (humanOnly.length > 0)
+          grants.push({ resource, title: null, actions: humanOnly });
+      }
     return {
       unrestricted: ceiling.unrestricted,
       grants,

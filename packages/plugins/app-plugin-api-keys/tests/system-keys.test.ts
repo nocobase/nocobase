@@ -160,6 +160,11 @@ describe('system keys', () => {
       actions: [{ name: 'read' }, { name: 'update' }],
     });
     registerApiKeySettings(authz);
+    // A type without items whose one action is a person's only, as the users plugin registers accounts.
+    authz.resourceTypes.add({
+      type: 'account',
+      actions: [{ name: 'manage', humanOnly: 'People only' }, { name: 'read' }],
+    });
     await authz.permissionSets.create({ key: 'root', grants: [] });
     await authz.permissionSets.assign({
       subject: { type: 'user', id: adminId },
@@ -246,6 +251,43 @@ describe('system keys', () => {
 
   afterAll(async () => {
     await testDatabase.destroy();
+  });
+
+  it('shows someone who holds everything the person-only actions of a type without items, and refuses them to a key', async () => {
+    const admin = await keys.grantable(adminId);
+    expect(admin.unrestricted).toBe(true);
+    expect(
+      admin.grants.find((grant) => grant.resource.type === 'account'),
+    ).toEqual({
+      resource: { type: 'account', id: '*' },
+      title: null,
+      actions: [
+        {
+          action: 'manage',
+          title: null,
+          humanOnly: 'People only',
+          risk: null,
+        },
+      ],
+    });
+    const member = await keys.grantable(memberId);
+    expect(
+      member.grants.some((grant) => grant.resource.type === 'account'),
+    ).toBe(false);
+    await expect(
+      systemKeys.create(adminId, {
+        name: 'accounts',
+        expiresInDays: 30,
+        permissions: {
+          grants: [
+            {
+              resource: { type: 'account', id: '*' },
+              actions: [{ action: 'manage' }],
+            },
+          ],
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'KEY_ACTION_HUMAN_ONLY' });
   });
 
   it('acts as an identity of its own, changes at once with a record of the change, rotates, stops and outlives its owner', async () => {
