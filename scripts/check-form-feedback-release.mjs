@@ -231,6 +231,8 @@ export function checkRelease(
             'pack',
             `${runtimePackage}@${floor}`,
             `--registry=${registryUrl}`,
+            // A scoped registry takes precedence over --registry (including setup-node's CI config).
+            `--@nocobase:registry=${registryUrl}`,
             '--ignore-scripts',
             '--json',
             '--pack-destination',
