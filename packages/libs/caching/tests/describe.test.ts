@@ -87,6 +87,33 @@ describe('Caching.describe()', () => {
       expect(json).not.toContain(secret);
   });
 
+  it('keeps every provider one namespace selected, ignores the default, and bounds what it records', () => {
+    const caching = createCaching({
+      default: 'memory',
+      providers: {
+        memory: { driver: 'memory' },
+        other: { driver: 'memory' },
+        third: { driver: 'memory' },
+      },
+    });
+    caching.getCache({ namespace: 'mixed', provider: 'other' });
+    caching.getBloomFilter({ namespace: 'mixed', provider: 'third' });
+    caching.getCounter({ namespace: 'mixed', provider: 'memory' });
+    caching.getCache({ namespace: 'mixed', provider: 'other' });
+    for (let index = 0; index < 100; index++)
+      caching.getCache({ namespace: `dynamic-${index}`, provider: 'other' });
+
+    const { selections } = caching.describe();
+
+    const other = selections.filter(({ backend }) => backend === 'other');
+    expect(other[0]).toEqual({ consumer: 'mixed', backend: 'other' });
+    expect(other.length).toBe(20);
+    expect(new Set(other.map(({ consumer }) => consumer)).size).toBe(20);
+    expect(selections.filter(({ backend }) => backend !== 'other')).toEqual([
+      { consumer: 'mixed', backend: 'third' },
+    ]);
+  });
+
   it('does not record a selection whose provider cannot be created', () => {
     const caching = createCaching();
     expect(() =>

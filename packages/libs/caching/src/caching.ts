@@ -22,13 +22,20 @@ interface ProviderState {
   initializationConfig: CacheProviderConfig;
 }
 
+/** How many namespaces {@link Caching.describe} names per explicitly selected provider. */
+const MAX_RECORDED_NAMESPACES = 20;
+
 export class Caching {
   private readonly providers = new Map<string, ProviderState>();
   private readonly drivers = new Map<string, CacheProviderDriver>([
     [memoryCacheProviderDriver.name, memoryCacheProviderDriver],
   ]);
-  /** Namespaces that named a provider explicitly, for {@link Caching.describe}. */
-  private readonly selections = new Map<string, string>();
+  /**
+   * Non-default providers callers named explicitly, each with the first namespaces that named it, for
+   * {@link Caching.describe}. Bounded by the configured providers and {@link MAX_RECORDED_NAMESPACES}, so dynamic
+   * namespaces never grow it.
+   */
+  private readonly selections = new Map<string, Set<string>>();
 
   constructor(
     private readonly config: CachingConfig = createDefaultCachingConfig(),
@@ -90,9 +97,9 @@ export class Caching {
       sharing: selected.sharing,
       registered: selected.registered,
       backends,
-      selections: [...this.selections]
-        .filter(([, backend]) => backend !== this.config.default)
-        .map(([consumer, backend]) => ({ consumer, backend })),
+      selections: [...this.selections].flatMap(([backend, namespaces]) =>
+        [...namespaces].map((consumer) => ({ consumer, backend })),
+      ),
     };
   }
 
@@ -143,7 +150,10 @@ export class Caching {
     namespace: string,
     provider: string | undefined,
   ): void {
-    if (provider !== undefined) this.selections.set(namespace, provider);
+    if (provider === undefined || provider === this.config.default) return;
+    let namespaces = this.selections.get(provider);
+    if (!namespaces) this.selections.set(provider, (namespaces = new Set()));
+    if (namespaces.size < MAX_RECORDED_NAMESPACES) namespaces.add(namespace);
   }
 
   private getOrCreateProvider(
