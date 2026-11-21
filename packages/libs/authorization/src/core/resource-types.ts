@@ -8,12 +8,26 @@ import type {
   AuthorizationDecision,
   AuthorizationReason,
   AuthorizationRequest,
+  ResourceRef,
 } from './types.js';
 
-export interface ResourceItemAction {
-  readonly name: string;
+/** How much harm an action can do: an editor asks before it is turned on (`high`) or marks it (`sensitive`). */
+export type ResourceActionRisk = 'high' | 'sensitive';
+
+/** What every catalog action may say about itself beyond its name: display and credential metadata, never access. */
+export interface ResourceActionMetadata {
   readonly title?: AuthorizationTitle;
   readonly description?: AuthorizationTitle;
+  /**
+   * Why the action is a person's only: no credential such as an API key may hold it, whatever its holder may do, and
+   * a request made with one is denied it. Present means human only.
+   */
+  readonly humanOnly?: AuthorizationTitle;
+  readonly risk?: ResourceActionRisk;
+}
+
+export interface ResourceItemAction extends ResourceActionMetadata {
+  readonly name: string;
 }
 
 /** One thing of a resource type that can be granted. */
@@ -125,10 +139,12 @@ function resolveItem(
   const actions = (item.actions ?? declared).map(
     (action): ResourceItemAction => {
       const value = typeof action === 'string' ? { name: action } : action;
-      const title =
-        value.title ??
-        declared.find((entry) => entry.name === value.name)?.title;
-      return { ...value, ...(title === undefined ? {} : { title }) };
+      // The type's declaration fills in what the item leaves out.
+      const inherited = declared.find((entry) => entry.name === value.name);
+      const merged: Record<string, unknown> = { ...inherited };
+      for (const [key, entry] of Object.entries(value))
+        if (entry !== undefined) merged[key] = entry;
+      return merged as unknown as ResourceItemAction;
     },
   );
   return structuredClone({ ...item, actions });
@@ -149,9 +165,10 @@ export type ResourceAuthorizeUnrestricted<TParams = undefined> = (
 ) => Promise<AuthorizationDecision>;
 
 /** An action every item of the type may declare, with its own judgement. */
-export interface ResourceTypeAction<TParams = undefined> {
+export interface ResourceTypeAction<
+  TParams = undefined,
+> extends ResourceActionMetadata {
   readonly name: string;
-  readonly title?: AuthorizationTitle;
   readonly authorize?: ResourceAuthorize<TParams>;
   readonly authorizeUnrestricted?: ResourceAuthorizeUnrestricted<TParams>;
 }
@@ -313,8 +330,14 @@ export class ResourceTypeRegistry {
       throw new TypeError(
         `Resource type ${type} needs items or declared actions`,
       );
-    const declared = actions?.map(({ name, title }): ResourceItemAction =>
-      title === undefined ? { name } : { name, title },
+    const declared = actions?.map(
+      ({ name, title, description, humanOnly, risk }): ResourceItemAction => ({
+        name,
+        ...(title === undefined ? {} : { title }),
+        ...(description === undefined ? {} : { description }),
+        ...(humanOnly === undefined ? {} : { humanOnly }),
+        ...(risk === undefined ? {} : { risk }),
+      }),
     );
     if (items) {
       if (itemBindings.has(items))
@@ -406,6 +429,23 @@ export class ResourceTypeRegistry {
     if (!registered)
       throw new Error(`Resource type is not registered: ${type}`);
     return registered;
+  }
+
+  /**
+   * What `action` of `resource` declares about itself: the item's action on a catalog type, the type's declared action
+   * otherwise; undefined when neither knows it.
+   */
+  action(
+    resource: ResourceRef,
+    action: string,
+  ): ResourceItemAction | undefined {
+    const registered = this.registered.get(resource.type);
+    if (!registered) return undefined;
+    if (registered.items)
+      return registered.items
+        .get(resource.id)
+        ?.actions.find((entry) => entry.name === action);
+    return registered.actions.find((entry) => entry.name === action);
   }
 
   list(): readonly RegisteredResourceType[] {
