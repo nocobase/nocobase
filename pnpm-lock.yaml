@@ -3625,6 +3625,12 @@ importers:
       '@nocobase/app-plugin-authorization':
         specifier: workspace:^
         version: link:../app-plugin-authorization
+      '@nocobase/app-plugin-notification':
+        specifier: workspace:^
+        version: link:../app-plugin-notification
+      '@nocobase/app-plugin-scheduler':
+        specifier: workspace:^
+        version: link:../app-plugin-scheduler
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server

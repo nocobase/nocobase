@@ -62,6 +62,8 @@ export interface ApiKeysConfig {
    * key can do everything its owner can, account endpoints included. Keys that exist keep working either way.
    */
   readonly allowSameAsMe?: boolean | null;
+  /** The in-app channel reminders about idle keys go to; `inbox` unless set. */
+  readonly inboxChannel?: string;
 }
 
 /** The settings item whose `create` lets a person create keys of their own, when no application policy is set. */
@@ -1490,6 +1492,11 @@ export class ScopedApiKeys {
       if (group.objects && this.options.scopes.groups.objects(group.id))
         businesses.add(group.objects.business);
     return [...businesses].sort();
+  }
+
+  /** A row of `apikey` as its view, never its secret: for a list of keys read in one query. */
+  viewOfRow(row: unknown): ApiKeyView {
+    return this.viewOf(row as KeyRow);
   }
 
   private viewOf(row: KeyRow): ApiKeyView {

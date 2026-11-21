@@ -1,4 +1,9 @@
-import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
+import {
+  authenticationToken,
+  userAdministrationServiceToken,
+} from '@nocobase/app-plugin-authentication/server';
+import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
+import { schedulerServiceToken } from '@nocobase/app-plugin-scheduler/server/tokens';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import type {
   AppPluginApplication,
@@ -20,7 +25,19 @@ import {
 } from '../scoped-keys.js';
 import { registerApiKeySettings } from '../settings.js';
 import { apiKeyScopesToken, createApiKeyScopes } from '../scopes.js';
-import { scopedApiKeysToken } from '../tokens.js';
+import { IdleKeys, type IdleReminder } from '../idle.js';
+import { MemberKeys } from '../member-keys.js';
+import { SystemApiKeys } from '../system-keys.js';
+import {
+  idleApiKeysToken,
+  memberApiKeysToken,
+  scopedApiKeysToken,
+  systemApiKeysToken,
+} from '../tokens.js';
+
+/** The scheduler target that sweeps idle keys, and the schedule that runs it once a day. */
+const IDLE_TARGET = 'api-keys.idle';
+const DEFAULT_INBOX_CHANNEL = 'inbox';
 
 /**
  * Binds the key-scope registry and the scoped-key service, and at boot teaches authentication and authorization to
@@ -51,6 +68,64 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
           config: () => this.app.config.get<ApiKeysConfig>('apiKeys'),
         }),
     );
+    container.singleton(
+      systemApiKeysToken,
+      (resolver) =>
+        new SystemApiKeys({
+          connection: () => resolver.resolve(databaseManagerToken).connection(),
+          keys: resolver.resolve(scopedApiKeysToken),
+          users: () => resolver.resolve(userAdministrationServiceToken),
+          authorization: () =>
+            container.has(authorizationToken)
+              ? resolver.resolve(authorizationToken)
+              : undefined,
+        }),
+    );
+    container.singleton(
+      memberApiKeysToken,
+      (resolver) =>
+        new MemberKeys({
+          connection: () => resolver.resolve(databaseManagerToken).connection(),
+          keys: resolver.resolve(scopedApiKeysToken),
+        }),
+    );
+    container.singleton(
+      idleApiKeysToken,
+      (resolver) =>
+        new IdleKeys({
+          connection: () => resolver.resolve(databaseManagerToken).connection(),
+          config: () => this.app.config.get<ApiKeysConfig>('apiKeys'),
+          systemKeys: resolver.resolve(systemApiKeysToken),
+          remind: (reminder) => this.remind(reminder),
+        }),
+    );
+  }
+
+  /** Tells a key's person, in the in-app inbox, that it is disabled soon unless used. */
+  private async remind(reminder: IdleReminder): Promise<void> {
+    const { container } = this.app;
+    if (!container.has(notificationServiceToken)) return;
+    const channel =
+      this.app.config.get<ApiKeysConfig>('apiKeys')?.inboxChannel ??
+      DEFAULT_INBOX_CHANNEL;
+    const name = reminder.keyName ?? 'API key';
+    await container.resolve(notificationServiceToken).send({
+      idempotencyKey: `api-keys:idle:${reminder.keyId}:${reminder.disableAt.toISOString().slice(0, 10)}`,
+      source: { type: 'api-keys', referenceId: reminder.keyId },
+      messages: {
+        [channel]: {
+          to: [reminder.userId],
+          title: `The API key “${name}” will be disabled`,
+          body: `“${name}” has not been used for a while. Unless it is used, it is disabled on ${reminder.disableAt.toISOString().slice(0, 10)}.`,
+          target: {
+            type: 'route',
+            path: reminder.system
+              ? '/settings/api-keys'
+              : `/me/api-keys/${encodeURIComponent(reminder.keyId)}`,
+          },
+        },
+      },
+    });
   }
 
   public override async boot(): Promise<void> {
@@ -78,8 +153,34 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
           (await keys.resolve(session, request)) !== null,
       ),
     );
-    if (container.has(authorizationToken))
+    if (container.has(authorizationToken)) {
       registerApiKeySettings(container.resolve(authorizationToken));
+      const systemKeys = container.resolve(systemApiKeysToken);
+      await systemKeys.protectExisting();
+      this.releases.push(() => systemKeys.release());
+    }
+    if (container.has(schedulerServiceToken)) {
+      const scheduler = container.resolve(schedulerServiceToken);
+      const idle = container.resolve(idleApiKeysToken);
+      scheduler.registerTarget({
+        type: IDLE_TARGET,
+        title: 'Disable idle API keys',
+        validate: () => ({ valid: true }),
+        start: async () => ({
+          state: 'completed',
+          outcome: 'succeeded',
+          result: { ...(await idle.sweep()) },
+        }),
+      });
+      scheduler.defineSchedule({
+        key: IDLE_TARGET,
+        title: 'Disable idle API keys',
+        description:
+          'Reminds about and disables API keys nobody uses, as the API key rules say. Does nothing while the rules leave keys alone.',
+        schedule: { cron: '0 3 * * *' },
+        target: { type: IDLE_TARGET, config: {} },
+      });
+    }
     if (container.has(authorizationToken))
       container.resolve(authorizationToken).use(async (request, next) => {
         // Every plugin has booted by the first request, so every deprecated scope group is registered: keys still in

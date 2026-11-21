@@ -74,7 +74,8 @@ export class ApiKeyScopeError extends Error {
       | 'SCOPE_OBJECTS_NOT_OFFERED'
       | 'UNKNOWN_SCOPE_OBJECT'
       | 'UNKNOWN_PERMISSION'
-      | 'KEY_ACTION_HUMAN_ONLY',
+      | 'KEY_ACTION_HUMAN_ONLY'
+      | 'SYSTEM_KEY_SCOPE',
     message: string,
   ) {
     super(message);

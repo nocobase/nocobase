@@ -26,7 +26,12 @@ import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import { requireSignInSession } from '../key-sessions.js';
 import { ApiKeyRequestError } from '../scoped-keys.js';
-import { scopedApiKeysToken } from '../tokens.js';
+import {
+  memberApiKeysToken,
+  scopedApiKeysToken,
+  systemApiKeysToken,
+} from '../tokens.js';
+import { installKeyAdministration, installSystemKeys } from './admin.js';
 import { toApiKeysApiError } from './errors.js';
 import {
   ApiKeyDetailSchema,
@@ -85,6 +90,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const identity = async (context: Context<Env>) =>
       context.get('authz')?.identity ??
       (await keys.identityOf(userId(context)));
+    // Members' keys and the rules: administration, registered before `/:keyId`, which would otherwise match them.
+    if (container.has(authorizationToken))
+      installKeyAdministration(routes, {
+        keys,
+        members: container.resolve(memberApiKeysToken),
+      });
     // Creating and rotating are refused before the input is read when the person may not create keys.
     const mayCreate: MiddlewareHandler<Env> = async (context, next) => {
       await keys.requireOwnCreation(userId(context));
@@ -407,6 +418,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
 
     router.route('/apiKeys', routes);
+    if (container.has(authorizationToken)) {
+      const system = new Hono<Env>();
+      system.onError((error, context) =>
+        apiErrorHandler(toApiKeysApiError(error), context),
+      );
+      system.use('*', container.resolve(authenticationToken).required());
+      system.use('*', requireSignInSession());
+      system.use('*', container.resolve(authorizationToken).middleware());
+      installSystemKeys(system, container.resolve(systemApiKeysToken));
+      router.route('/systemApiKeys', system);
+    }
     return router;
   });
 
