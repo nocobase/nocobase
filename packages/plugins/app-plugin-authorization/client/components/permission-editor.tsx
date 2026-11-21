@@ -7,6 +7,9 @@
  * draft it is given.
  */
 import {
+  CheckIcon,
+  ChevronDownIcon,
+  CircleIcon,
   InfoIcon,
   SearchIcon,
   ShieldCheckIcon,
@@ -26,6 +29,12 @@ import { cn } from 'cn';
 import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '#components/ui/dropdown-menu';
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
@@ -44,7 +53,6 @@ import { Switch } from '#components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
-  canViewObject,
   enableDefaults,
   menuActionCount,
   menuLeaves,
@@ -58,6 +66,7 @@ import {
   followedObject,
   filterObjects,
   findAction,
+  isMenuChecked,
   isMenuToggleable,
   menuCheckState,
   menuCount,
@@ -172,7 +181,28 @@ export interface PermissionEditorLabels {
   readonly settingsNone: string;
   readonly settingsView: string;
   readonly settingsManage: string;
-  readonly settingsPartial: string;
+  /** A settings page set action by action: how many of its actions are on. */
+  readonly settingsCustom: (enabled: number, total: number) => string;
+  readonly settingsDetails: string;
+  readonly settingsCollapse: string;
+  /** Above the settings pages: the ones this role sees in System settings. */
+  readonly settingsVisible: (pages: readonly string[]) => string;
+  readonly settingsNoneVisible: string;
+  /** Beside a settings page with a high-risk operation. */
+  readonly containsHighRisk: string;
+  /** Beside a public page, which has no checkbox. */
+  readonly publicPage: string;
+  readonly searchPages: string;
+  readonly onlyChecked: string;
+  readonly noMatchingPages: string;
+  /** Beside a group: how many of its pages are checked. */
+  readonly groupChecked: (checked: number, total: number) => string;
+  readonly toggleGroup: (group: string) => string;
+  /** The menu of an object's quick settings, such as Enable all. */
+  readonly bulk: string;
+  readonly usedOnLabel: string;
+  readonly pageOpens: string;
+  readonly pageClosed: string;
   /** Unsaved changes on a tab, as its badge's accessible name. */
   readonly tabChanges: (count: number) => string;
 }
@@ -217,6 +247,7 @@ export interface PermissionEditorProps {
 
 const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
 const NO_TABS: readonly PermissionEditorExtraTab[] = [];
+const NO_GROUPS: ReadonlySet<string> = new Set();
 
 const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
@@ -277,7 +308,23 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   settingsNone: 'None',
   settingsView: 'View',
   settingsManage: 'Manage',
-  settingsPartial: 'Partial',
+  settingsCustom: (enabled, total) => `Custom ${enabled}/${total}`,
+  settingsDetails: 'Set one by one',
+  settingsCollapse: 'Hide',
+  settingsVisible: (pages) =>
+    `This role sees in System settings: ${list(pages)}.`,
+  settingsNoneVisible: 'This role sees no System settings pages.',
+  containsHighRisk: 'Includes high risk',
+  publicPage: 'Everyone',
+  searchPages: 'Search pages',
+  onlyChecked: 'Only checked',
+  noMatchingPages: 'No matching pages',
+  groupChecked: (checked, total) => `${checked}/${total} checked`,
+  toggleGroup: (group) => `Show or hide ${group}`,
+  bulk: 'Bulk set',
+  usedOnLabel: 'Used on',
+  pageOpens: 'This role opens this page',
+  pageClosed: 'This role cannot open this page',
   tabChanges: (count) =>
     `${count} unsaved ${count === 1 ? 'change' : 'changes'}`,
   notice: (notice) =>
@@ -526,7 +573,11 @@ function ActionRow({
       data-slot='permission-action'
       data-enabled={enabled ? '' : undefined}
       className={cn(
-        'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(14rem,16rem)] @min-[44rem]/permissions:px-4',
+        'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5',
+        // Settings rows have no scope column and sit in a grid of cards.
+        scoped
+          ? '@min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(14rem,16rem)] @min-[44rem]/permissions:px-4'
+          : 'rounded-md border bg-card',
         action.view && 'bg-muted/30',
       )}
     >
@@ -579,7 +630,8 @@ function ActionRow({
           </p>
         )}
       </div>
-      {inline && (
+      {/* An operation that is off has no data scope to choose, so its scope stays hidden until it is on. */}
+      {inline && enabled && (
         <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
           <ScopeControl
             object={object}
@@ -593,7 +645,7 @@ function ActionRow({
           />
         </div>
       )}
-      {stacked.length > 0 && (
+      {stacked.length > 0 && enabled && (
         <div
           data-slot='permission-scopes'
           className='col-span-full col-start-2 flex min-w-0 flex-col gap-2'
@@ -647,45 +699,39 @@ function ActionRow({
   );
 }
 
-function ObjectTags({
-  ids,
-  objects,
-  grants,
-  checked,
-}: {
-  readonly ids: readonly string[];
-  readonly objects: readonly PermissionObject[];
-  readonly grants: PermissionGrants;
-  /** Only a checked menu warns about objects the role cannot view; an unchecked one shows plain tags. */
-  readonly checked: boolean;
-}): ReactElement | null {
-  const used = ids.flatMap((id) => {
-    const object = objects.find((item) => item.id === id);
-    return object ? [object] : [];
+/** The labels of the objects a page lists, for its operation count's tooltip. */
+function objectNames(
+  ids: readonly string[],
+  objects: readonly PermissionObject[],
+): string {
+  return ids
+    .flatMap((id) => objects.find((item) => item.id === id)?.label ?? [])
+    .join(' · ');
+}
+
+/**
+ * The menus a search and "only checked" keep. A group whose name matches keeps all its menus; another group keeps the
+ * menus that match. Public menus open for everyone, so "only checked" leaves them out.
+ */
+function filterMenus(
+  nodes: readonly PermissionMenuNode[],
+  query: string,
+  onlyChecked: boolean,
+  value: PermissionValue,
+): readonly PermissionMenuNode[] {
+  const needle = query.trim().toLocaleLowerCase();
+  if (!needle && !onlyChecked) return nodes;
+  const keep = (node: PermissionMenuNode, matched: boolean): boolean =>
+    (matched || node.label.toLocaleLowerCase().includes(needle)) &&
+    (!onlyChecked || (!node.public && isMenuChecked(node, value)));
+  return nodes.flatMap((node): PermissionMenuNode[] => {
+    if (!node.children?.length) return keep(node, !needle) ? [node] : [];
+    const matched = !needle || node.label.toLocaleLowerCase().includes(needle);
+    const children = matched
+      ? filterMenus(node.children, '', onlyChecked, value)
+      : filterMenus(node.children, query, onlyChecked, value);
+    return children.length ? [{ ...node, children }] : [];
   });
-  if (!used.length) return null;
-  return (
-    <span className='flex min-w-0 flex-wrap gap-1'>
-      {used.map((object) => {
-        const viewable = !checked || canViewObject(object, grants);
-        return (
-          <span
-            key={object.id}
-            data-slot='permission-object-tag'
-            data-viewable={viewable ? '' : undefined}
-            className={cn(
-              'rounded px-1.5 text-xs leading-5',
-              viewable
-                ? 'bg-muted text-muted-foreground'
-                : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
-            )}
-          >
-            {object.label}
-          </span>
-        );
-      })}
-    </span>
-  );
 }
 
 /** The operations a page just turned on, shown under it until the next change. */
@@ -706,6 +752,8 @@ function MenuRows({
   idPrefix,
   empty,
   flash,
+  collapsed,
+  onToggleGroup,
   onCheck,
   onOpenAction,
   onOpenObject,
@@ -720,6 +768,9 @@ function MenuRows({
   /** Checked menus that would open empty. */
   readonly empty: ReadonlySet<string>;
   readonly flash: MenuFlash | undefined;
+  /** Groups folded away; a search unfolds every group it keeps. */
+  readonly collapsed: ReadonlySet<string>;
+  readonly onToggleGroup: (id: string) => void;
   readonly onCheck: (node: PermissionMenuNode, checked: boolean) => void;
   readonly onOpenAction: (actionId: string) => void;
   readonly onOpenObject: (objectId: string) => void;
@@ -739,88 +790,118 @@ function MenuRows({
         const count = group
           ? undefined
           : menuActionCount(node, objects, value.grants);
+        const opensEmpty = empty.has(node.id);
+        const folded = group && collapsed.has(node.id);
+        const groupTotals = group ? menuCount([node], value) : undefined;
         return (
           <Fragment key={node.id}>
             <li
               data-slot={group ? 'permission-menu-group' : 'permission-menu'}
               className={cn(
-                'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t px-3 py-2 first:border-t-0 @min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(0,20rem)]',
+                'flex min-w-0 items-center gap-3 border-t py-2 pr-3 first:border-t-0',
                 group && 'bg-muted/40',
               )}
+              style={{ paddingInlineStart: `${0.75 + depth * 1.25}rem` }}
             >
-              <Checkbox
-                id={controlId}
-                checked={state === 'checked'}
-                indeterminate={state === 'mixed'}
-                disabled={
-                  readOnly || Boolean(node.public) || !isMenuToggleable(node)
-                }
-                className='data-disabled:cursor-not-allowed data-disabled:opacity-50 data-indeterminate:border-primary data-indeterminate:bg-primary/60'
-                onCheckedChange={(checked: boolean) =>
-                  onCheck(node, state === 'mixed' ? true : checked)
-                }
-              />
-              <label
-                htmlFor={controlId}
-                className={cn(
-                  'min-w-0 text-sm break-words',
-                  group ? 'font-semibold' : 'cursor-pointer',
-                )}
-                style={{ paddingInlineStart: `${depth * 1.25}rem` }}
-              >
-                {node.label}
-              </label>
-              {(count || empty.has(node.id)) && (
-                <span
-                  className='col-start-2 flex min-w-0 flex-wrap items-center gap-1.5'
-                  style={{ marginInlineStart: `${depth * 1.25}rem` }}
+              {!group && node.public ? (
+                // A public page opens for everyone: there is nothing to check, only a tag beside its name.
+                <span aria-hidden className='size-4 shrink-0' />
+              ) : (
+                <Checkbox
+                  id={controlId}
+                  checked={state === 'checked'}
+                  indeterminate={state === 'mixed'}
+                  disabled={readOnly || !isMenuToggleable(node)}
+                  className='data-disabled:cursor-not-allowed data-disabled:opacity-50 data-indeterminate:border-primary data-indeterminate:bg-primary/60'
+                  onCheckedChange={(checked: boolean) =>
+                    onCheck(node, state === 'mixed' ? true : checked)
+                  }
+                />
+              )}
+              <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
+                <label
+                  htmlFor={!group && node.public ? undefined : controlId}
+                  className={cn(
+                    'min-w-0 text-sm break-words',
+                    group ? 'font-semibold' : !node.public && 'cursor-pointer',
+                  )}
                 >
-                  {count && (
-                    <Button
-                      type='button'
-                      variant='link'
-                      size='xs'
-                      data-slot='permission-menu-operations'
-                      className='h-auto p-0 text-xs tabular-nums'
-                      onClick={() => onOpenObject(count.object.id)}
-                    >
-                      {labels.operationCount(count.enabled, count.total)}
-                    </Button>
-                  )}
-                  {empty.has(node.id) && (
-                    <span
-                      data-slot='permission-menu-empty'
-                      className='rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 dark:text-amber-300'
-                    >
-                      {labels.opensEmpty}
-                    </span>
-                  )}
+                  {node.label}
+                </label>
+                {!group && node.public && (
+                  <span
+                    data-slot='permission-menu-public'
+                    className='rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'
+                  >
+                    {labels.publicPage}
+                  </span>
+                )}
+                {count && (
+                  <Button
+                    type='button'
+                    variant='link'
+                    size='xs'
+                    data-slot='permission-menu-operations'
+                    title={objectNames(uses, objects) || undefined}
+                    className={cn(
+                      'h-auto rounded px-1.5 py-0 text-xs leading-5 tabular-nums no-underline hover:underline',
+                      opensEmpty
+                        ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                        : count.enabled
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-muted-foreground',
+                    )}
+                    onClick={() => onOpenObject(count.object.id)}
+                  >
+                    {labels.operationCount(count.enabled, count.total)}
+                  </Button>
+                )}
+                {opensEmpty && (
+                  <span
+                    data-slot='permission-menu-empty'
+                    className='inline-flex items-center gap-1 text-xs leading-5 text-amber-800 dark:text-amber-300'
+                  >
+                    <TriangleAlertIcon aria-hidden className='size-3' />
+                    {labels.opensEmpty}
+                  </span>
+                )}
+                {!group && node.opensWith && (
+                  <Button
+                    type='button'
+                    variant='link'
+                    size='xs'
+                    className='h-auto p-0 text-xs'
+                    onClick={() => onOpenAction(node.opensWith!)}
+                  >
+                    {labels.opensWith(
+                      findAction(objects, node.opensWith)?.action.label ??
+                        node.opensWith,
+                    )}
+                  </Button>
+                )}
+              </div>
+              {groupTotals && groupTotals.total > 0 && (
+                <span className='shrink-0 text-xs text-muted-foreground tabular-nums'>
+                  {labels.groupChecked(groupTotals.checked, groupTotals.total)}
                 </span>
               )}
-              {!group && node.opensWith && (
+              {group && (
                 <Button
                   type='button'
-                  variant='link'
-                  size='xs'
-                  className='col-start-2 h-auto justify-self-start p-0 text-xs'
-                  style={{ marginInlineStart: `${depth * 1.25}rem` }}
-                  onClick={() => onOpenAction(node.opensWith!)}
+                  variant='ghost'
+                  size='icon-xs'
+                  aria-expanded={!folded}
+                  aria-label={labels.toggleGroup(node.label)}
+                  onClick={() => onToggleGroup(node.id)}
                 >
-                  {labels.opensWith(
-                    findAction(objects, node.opensWith)?.action.label ??
-                      node.opensWith,
-                  )}
-                </Button>
-              )}
-              {!group && uses.length > 0 && (
-                <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
-                  <ObjectTags
-                    ids={uses}
-                    objects={objects}
-                    grants={value.grants}
-                    checked={state === 'checked'}
+                  <ChevronDownIcon
+                    aria-hidden
+                    className={cn(
+                      'transition-transform',
+                      folded && '-rotate-90',
+                    )}
                   />
-                </div>
+                </Button>
               )}
             </li>
             {flash?.menu === node.id && (
@@ -828,7 +909,7 @@ function MenuRows({
                 role='status'
                 data-slot='permission-menu-defaults'
                 className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-t bg-emerald-500/5 px-3 py-1.5 text-xs text-emerald-900 dark:text-emerald-200'
-                style={{ paddingInlineStart: `${2.25 + depth * 1.25}rem` }}
+                style={{ paddingInlineStart: `${2.5 + depth * 1.25}rem` }}
               >
                 <span className='min-w-0'>
                   {labels.defaultsAdded(flash.actions)}
@@ -844,7 +925,7 @@ function MenuRows({
                 </Button>
               </li>
             )}
-            {group && (
+            {group && !folded && (
               <MenuRows
                 nodes={node.children ?? []}
                 depth={depth + 1}
@@ -855,6 +936,8 @@ function MenuRows({
                 idPrefix={idPrefix}
                 empty={empty}
                 flash={flash}
+                collapsed={collapsed}
+                onToggleGroup={onToggleGroup}
                 onCheck={onCheck}
                 onOpenAction={onOpenAction}
                 onOpenObject={onOpenObject}
@@ -916,27 +999,28 @@ function ObjectList({
                 )}
                 onClick={() => onSelect(object.id)}
               >
-                <span className='grid min-w-0 flex-1'>
-                  <span
-                    className={cn(
-                      'truncate text-sm',
-                      active && 'font-semibold',
-                    )}
-                  >
-                    {object.label}
-                  </span>
-                  <span className='truncate text-xs text-muted-foreground'>
-                    {status.enabled
-                      ? labels.objectEnabled(status.enabled, status.total)
-                      : labels.objectOff}
-                  </span>
-                  {object.usedOn && (
-                    <span className='truncate text-xs text-muted-foreground'>
-                      {object.usedOn.length
-                        ? labels.usedOn(object.usedOn)
-                        : labels.notOnPage}
-                    </span>
+                <span
+                  className={cn(
+                    'min-w-0 flex-1 truncate text-sm',
+                    active && 'font-semibold',
                   )}
+                >
+                  {object.label}
+                </span>
+                {/* One line per object: the count reads "off" by its colour, the pages it is used on are in the detail. */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    'shrink-0 text-xs tabular-nums',
+                    status.enabled ? 'text-primary' : 'text-muted-foreground',
+                  )}
+                >
+                  {status.enabled}/{status.total}
+                </span>
+                <span className='sr-only'>
+                  {status.enabled
+                    ? labels.objectEnabled(status.enabled, status.total)
+                    : labels.objectOff}
                 </span>
                 {gaps.has(object.id) && (
                   <TriangleAlertIcon
@@ -987,6 +1071,9 @@ function SettingsLevelControl({
   readonly onLevel: (level: 'none' | 'view' | 'manage') => void;
 }): ReactElement {
   const several = page.objects.some((object) => object.actions.length > 1);
+  const risky = page.objects.some((object) =>
+    object.actions.some((action) => action.risk === 'high'),
+  );
   const levels: ['none' | 'view' | 'manage', string][] = [
     ['none', labels.settingsNone],
     ['view', labels.settingsView],
@@ -995,37 +1082,33 @@ function SettingsLevelControl({
       : []),
   ];
   return (
-    <div className='flex flex-wrap items-center gap-2 @min-[44rem]/permissions:ml-auto'>
-      {level === 'partial' && (
-        <span className='rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'>
-          {labels.settingsPartial}
-        </span>
-      )}
-      <div
-        role='group'
-        aria-label={labels.settingsLevel(page.label)}
-        data-slot='permission-settings-level'
-        className='inline-flex overflow-hidden rounded-md border'
-      >
-        {levels.map(([item, label]) => (
-          <button
-            key={item}
-            type='button'
-            aria-pressed={level === item}
-            disabled={readOnly}
-            className={cn(
-              'border-l px-2.5 py-1 text-xs first:border-l-0 hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
-              level === item &&
-                (item === 'none'
-                  ? 'bg-muted font-medium'
+    <div
+      role='group'
+      aria-label={labels.settingsLevel(page.label)}
+      data-slot='permission-settings-level'
+      className='inline-flex shrink-0 overflow-hidden rounded-md border'
+    >
+      {levels.map(([item, label]) => (
+        <button
+          key={item}
+          type='button'
+          aria-pressed={level === item}
+          disabled={readOnly}
+          className={cn(
+            'min-w-12 border-l px-3 py-1.5 text-sm first:border-l-0 hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            level === item &&
+              (item === 'none'
+                ? 'bg-muted font-medium'
+                : // Managing a page with high-risk operations reads as the risk it is.
+                  item === 'manage' && risky
+                  ? 'bg-destructive font-medium text-white hover:bg-destructive/90'
                   : 'bg-primary font-medium text-primary-foreground hover:bg-primary/90'),
-            )}
-            onClick={() => onLevel(item)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+          )}
+          onClick={() => onLevel(item)}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -1069,6 +1152,14 @@ export function PermissionEditor({
     defaultObjectId ?? objects[0]?.id,
   );
   const [notices, setNotices] = useState<readonly PermissionNotice[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState<
+    Readonly<Record<string, boolean>>
+  >({});
+  const [menuQuery, setMenuQuery] = useState('');
+  const [onlyChecked, setOnlyChecked] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [pending, setPending] = useState<PendingDisable | undefined>();
   // A host that turns read-only while a confirmation is open cancels it.
   if (readOnly && pending) setPending(undefined);
@@ -1252,32 +1343,29 @@ export function PermissionEditor({
         ? words.attention(warnings.length)
         : undefined
       : undefined;
+  // Saving is offered while there is something to save: a bar that stays at the bottom of the screen, so the changes
+  // made far down a long list can be saved without scrolling back.
   const footerBar = (
-    <div className='flex min-w-0 flex-wrap items-center gap-2 border-t px-4 py-3'>
+    <div
+      data-slot='permission-save-bar'
+      className='sticky bottom-3 z-10 mx-3 mb-3 flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-background shadow-lg'
+    >
       <span
         role='status'
-        className='mr-auto inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground'
+        className='mr-auto inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-sm'
       >
-        {unrestricted ? null : (
-          <>
-            {status && <span>{status}</span>}
-            {dirty && (
-              <span className='inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400'>
-                <span
-                  aria-hidden
-                  className='size-1.5 rounded-full bg-current'
-                />
-                {words.unsaved}
-              </span>
-            )}
-          </>
-        )}
+        <span className='inline-flex items-center gap-1.5'>
+          <span aria-hidden className='size-1.5 rounded-full bg-amber-400' />
+          {words.unsaved}
+        </span>
+        {status && <span className='text-background/70'>{status}</span>}
       </span>
       {footer && (
         <div className='flex flex-wrap items-center gap-2'>{footer}</div>
       )}
     </div>
   );
+  const saveBar = dirty && !unrestricted && footer ? footerBar : null;
 
   if (unrestricted)
     return (
@@ -1316,7 +1404,6 @@ export function PermissionEditor({
             {extra.content}
           </section>
         ))}
-        {footer && footerBar}
       </div>
     );
 
@@ -1376,6 +1463,8 @@ export function PermissionEditor({
     </>
   );
 
+  const filtering = Boolean(menuQuery.trim()) || onlyChecked;
+  const shownMenus = filterMenus(menus, menuQuery, onlyChecked, value);
   const menusPanel = (
     <div className='grid min-w-0 gap-3 p-4'>
       {readOnly && (
@@ -1402,11 +1491,58 @@ export function PermissionEditor({
         </div>
       ))}
       {messages}
-      {menus.length ? (
+      {menus.length > 0 && (
+        <div className='flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2'>
+          <InputGroup className='w-full @min-[44rem]/permissions:w-72'>
+            <InputGroupAddon>
+              <SearchIcon aria-hidden />
+            </InputGroupAddon>
+            <InputGroupInput
+              value={menuQuery}
+              aria-label={words.searchPages}
+              placeholder={words.searchPages}
+              onChange={(event) => setMenuQuery(event.target.value)}
+            />
+            {menuQuery && (
+              <InputGroupAddon align='inline-end'>
+                <InputGroupButton
+                  type='button'
+                  size='icon-xs'
+                  aria-label={words.clearSearch}
+                  onClick={() => setMenuQuery('')}
+                >
+                  <XIcon aria-hidden />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+          <label className='inline-flex cursor-pointer items-center gap-2 text-sm'>
+            <Switch
+              size='sm'
+              checked={onlyChecked}
+              onCheckedChange={(on: boolean) => setOnlyChecked(on)}
+            />
+            {words.onlyChecked}
+          </label>
+        </div>
+      )}
+      {menus.length && !shownMenus.length ? (
+        <p role='status' className='text-sm text-muted-foreground'>
+          {words.noMatchingPages}
+        </p>
+      ) : menus.length ? (
         <div className='min-w-0 overflow-hidden rounded-lg border'>
           <ul data-slot='permission-menus' className='min-w-0'>
             <MenuRows
-              nodes={menus}
+              nodes={shownMenus}
+              collapsed={filtering ? NO_GROUPS : collapsedGroups}
+              onToggleGroup={(groupId) =>
+                setCollapsedGroups((current) => {
+                  const next = new Set(current);
+                  if (!next.delete(groupId)) next.add(groupId);
+                  return next;
+                })
+              }
               depth={0}
               value={value}
               objects={objects}
@@ -1432,6 +1568,12 @@ export function PermissionEditor({
     const object = current;
     const titleId = `${id}-title`;
     const { basic, business } = orderedActions(object);
+    // The pages that list this object, each marked by whether this role opens it.
+    const usedBy = menuLeaves(menus).filter(
+      (menu) =>
+        menu.uses?.primary?.includes(object.id) ||
+        menu.uses?.related?.includes(object.id),
+    );
     const row = (action: PermissionAction): ReactElement => (
       <ActionRow
         key={action.id}
@@ -1465,48 +1607,85 @@ export function PermissionEditor({
             {object.label}
           </h2>
           {!readOnly && (
-            <div className='flex flex-wrap gap-1.5 @min-[44rem]/permissions:ml-auto'>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => quick(object, 'all')}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='@min-[44rem]/permissions:ml-auto'
+                  />
+                }
               >
-                {words.enableAll}
-              </Button>
-              {viewActionOf(object) && (
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => quick(object, 'view')}
+                {words.bulk}
+                <ChevronDownIcon aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end' className='w-auto min-w-36'>
+                <DropdownMenuItem onClick={() => quick(object, 'all')}>
+                  {words.enableAll}
+                </DropdownMenuItem>
+                {viewActionOf(object) && (
+                  <DropdownMenuItem onClick={() => quick(object, 'view')}>
+                    {words.viewOnly}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  variant='destructive'
+                  onClick={() => quick(object, 'none')}
                 >
-                  {words.viewOnly}
-                </Button>
-              )}
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => quick(object, 'none')}
-              >
-                {words.disableAll}
-              </Button>
-            </div>
+                  {words.disableAll}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
         {object.description && (
           <p className='text-sm text-muted-foreground'>{object.description}</p>
         )}
-        {object.usedOn && (
-          <p
+        {usedBy.length > 0 ? (
+          <div
             data-slot='permission-object-used-on'
-            className='text-xs text-muted-foreground'
+            className='flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground'
           >
-            {object.usedOn.length
-              ? words.usedOn(object.usedOn)
-              : words.notOnPage}
-          </p>
+            <span>{words.usedOnLabel}</span>
+            {usedBy.map((menu) => {
+              const opens = isMenuChecked(menu, value);
+              return (
+                <span
+                  key={menu.id}
+                  title={opens ? words.pageOpens : words.pageClosed}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded px-1.5 leading-5',
+                    opens
+                      ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {opens ? (
+                    <CheckIcon aria-hidden className='size-3' />
+                  ) : (
+                    <CircleIcon aria-hidden className='size-2.5' />
+                  )}
+                  {menu.label}
+                  <span className='sr-only'>
+                    {opens ? words.pageOpens : words.pageClosed}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          object.usedOn && (
+            <p
+              data-slot='permission-object-used-on'
+              className='text-xs text-muted-foreground'
+            >
+              {object.usedOn.length
+                ? words.usedOn(object.usedOn)
+                : words.notOnPage}
+            </p>
+          )
         )}
         {gaps
           .filter((gap: PermissionPageGap) => gap.object.id === object.id)
@@ -1558,11 +1737,22 @@ export function PermissionEditor({
   })();
 
   const settingsGroups = [...new Set(settings.map((page) => page.group ?? ''))];
+  const visibleSettings = settings.filter(
+    (page) => settingsLevel(page, value.grants) !== 'none',
+  );
   const settingsPanel = (
     <div className='grid min-w-0 gap-3 p-4'>
       {readOnly && (
         <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
       )}
+      <p
+        data-slot='permission-settings-summary'
+        className='text-sm text-muted-foreground'
+      >
+        {visibleSettings.length
+          ? words.settingsVisible(visibleSettings.map((page) => page.label))
+          : words.settingsNoneVisible}
+      </p>
       {messages}
       {settingsGroups.map((group) => (
         <div key={group} className='grid min-w-0 gap-2'>
@@ -1578,7 +1768,14 @@ export function PermissionEditor({
                 settingsPageObject(page),
                 value.grants,
               );
+              const level = settingsLevel(page, value.grants);
+              // A page set action by action opens with its actions shown; the others fold them away until asked.
+              const expanded = settingsOpen[page.id] ?? level === 'partial';
+              const risky = page.objects.some((object) =>
+                object.actions.some((action) => action.risk === 'high'),
+              );
               const titleId = `${id}-settings-${page.id}`;
+              const detailsId = `${titleId}-details`;
               return (
                 <section
                   key={page.id}
@@ -1587,77 +1784,117 @@ export function PermissionEditor({
                   className='grid min-w-0 gap-2 rounded-lg border p-3'
                 >
                   <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2'>
-                    <h2 id={titleId} className='text-sm font-semibold'>
-                      {page.label}
-                    </h2>
-                    <span className='text-xs text-muted-foreground tabular-nums'>
-                      {status.enabled
-                        ? words.objectEnabled(status.enabled, status.total)
-                        : words.objectOff}
-                    </span>
-                    <SettingsLevelControl
-                      page={page}
-                      level={settingsLevel(page, value.grants)}
-                      readOnly={readOnly}
-                      labels={words}
-                      onLevel={(level) =>
-                        commit(
-                          setSettingsLevel(
-                            allObjects,
-                            value.grants,
-                            page,
-                            level,
-                          ),
-                        )
-                      }
-                    />
+                    <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
+                      <h2 id={titleId} className='text-sm font-semibold'>
+                        {page.label}
+                      </h2>
+                      {risky && (
+                        <span
+                          data-slot='permission-risk'
+                          className='rounded bg-destructive/10 px-1.5 text-xs leading-5 text-destructive'
+                        >
+                          {words.containsHighRisk}
+                        </span>
+                      )}
+                      {level === 'partial' && (
+                        <span className='rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 tabular-nums dark:text-amber-300'>
+                          {words.settingsCustom(status.enabled, status.total)}
+                        </span>
+                      )}
+                    </div>
+                    <div className='flex flex-wrap items-center gap-2'>
+                      <SettingsLevelControl
+                        page={page}
+                        level={level}
+                        readOnly={readOnly}
+                        labels={words}
+                        onLevel={(next) =>
+                          commit(
+                            setSettingsLevel(
+                              allObjects,
+                              value.grants,
+                              page,
+                              next,
+                            ),
+                          )
+                        }
+                      />
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        aria-expanded={expanded}
+                        aria-controls={detailsId}
+                        onClick={() =>
+                          setSettingsOpen((open) => ({
+                            ...open,
+                            [page.id]: !expanded,
+                          }))
+                        }
+                      >
+                        {expanded
+                          ? words.settingsCollapse
+                          : words.settingsDetails}
+                        <ChevronDownIcon
+                          aria-hidden
+                          className={cn(
+                            'transition-transform',
+                            expanded && 'rotate-180',
+                          )}
+                        />
+                      </Button>
+                    </div>
                   </div>
                   {page.description && (
                     <p className='text-xs text-muted-foreground'>
                       {page.description}
                     </p>
                   )}
-                  {page.objects.map((object) => (
-                    <div key={object.id} className='grid min-w-0 gap-1.5'>
-                      {page.objects.length > 1 && (
-                        <h4 className='text-xs font-medium text-muted-foreground'>
-                          {object.label}
-                        </h4>
-                      )}
-                      <ul className='min-w-0 divide-y overflow-hidden rounded-md border'>
-                        {[
-                          ...orderedActions(object).basic,
-                          ...orderedActions(object).business,
-                        ].map((action) => (
-                          <ActionRow
-                            key={action.id}
-                            object={object}
-                            objects={allObjects}
-                            action={action}
-                            grants={value.grants}
-                            readOnly={readOnly}
-                            labels={words}
-                            controlId={`${id}-${action.id}`}
-                            onToggle={toggle}
-                            onScope={() => undefined}
-                            scoped={false}
-                          />
-                        ))}
-                      </ul>
-                      {object.notice && (
-                        <div
-                          data-slot='permission-object-notice'
-                          className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
-                        >
-                          <InfoIcon
-                            aria-hidden
-                            className='mt-0.5 size-4 shrink-0'
-                          />
-                          <div className='min-w-0'>{object.notice}</div>
+                  {expanded && (
+                    <div id={detailsId} className='grid min-w-0 gap-2'>
+                      {page.objects.map((object) => (
+                        <div key={object.id} className='grid min-w-0 gap-1.5'>
+                          {page.objects.length > 1 && (
+                            <h4 className='text-xs font-medium text-muted-foreground'>
+                              {object.label}
+                            </h4>
+                          )}
+                          <ul className='grid min-w-0 gap-2 @min-[44rem]/permissions:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]'>
+                            {[
+                              ...orderedActions(object).basic,
+                              ...orderedActions(object).business,
+                            ].map((action) => (
+                              <ActionRow
+                                key={action.id}
+                                object={object}
+                                objects={allObjects}
+                                action={action}
+                                grants={value.grants}
+                                readOnly={readOnly}
+                                labels={words}
+                                controlId={`${id}-${action.id}`}
+                                onToggle={toggle}
+                                onScope={() => undefined}
+                                scoped={false}
+                              />
+                            ))}
+                          </ul>
+                          {object.notice && (
+                            <div
+                              data-slot='permission-object-notice'
+                              className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
+                            >
+                              <InfoIcon
+                                aria-hidden
+                                className='mt-0.5 size-4 shrink-0'
+                              />
+                              <div className='min-w-0'>{object.notice}</div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </section>
               );
             })}
@@ -1850,7 +2087,7 @@ export function PermissionEditor({
       ) : (
         objectsPanel
       )}
-      {footerBar}
+      {saveBar}
     </div>
   );
 }

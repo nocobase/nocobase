@@ -246,9 +246,13 @@ it('turns on the operations a page declares when it is checked and lists where e
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  expect(
-    screen.getAllByText(editor.usedOn.replace('{{pages}}', crmTitle)).length,
-  ).toBeGreaterThan(0);
+  // The pages that list the object, each marked by whether the role opens it.
+  const usedOn = document.querySelector<HTMLElement>(
+    '[data-slot=permission-object-used-on]',
+  );
+  expect(usedOn).toHaveTextContent(editor.usedOnLabel);
+  expect(usedOn).toHaveTextContent(crmTitle);
+  expect(within(usedOn!).getByText(editor.pageOpens)).toBeInTheDocument();
   // Reports are used on no page, so they are listed last, under Other operations.
   expect(screen.getByText(editor.otherOperations)).toBeVisible();
 
@@ -282,6 +286,15 @@ it('reviews every change before saving and marks high-risk permissions', async (
   await user.click(crm);
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.settingsTab) }),
+  );
+  // A settings page folds its operations away until they are set one by one.
+  expect(
+    screen.queryByRole('switch', { name: 'Change roles' }),
+  ).not.toBeInTheDocument();
+  await user.click(
+    within(
+      screen.getByRole('region', { name: words.permissionManagement }),
+    ).getByRole('button', { name: editor.settingsDetails }),
   );
   await user.click(screen.getByRole('switch', { name: 'Change roles' }));
   expect(
@@ -362,10 +375,10 @@ it('adds and removes members at once and keeps the last one', async () => {
   expect(assignments.map((item) => item.subject.id)).toEqual(['u1', 'u2']);
   await user.keyboard('{Escape}');
   expect(await screen.findByRole('cell', { name: /Bob/ })).toBeVisible();
-  // Members change apart from the role's draft, which stays unchanged.
+  // Members change apart from the role's draft, which stays unchanged, so there is nothing to save.
   expect(
-    screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
-  ).toBeDisabled();
+    screen.queryByRole('button', { name: words.reviewAndSave, exact: true }),
+  ).not.toBeInTheDocument();
 
   await user.click(
     screen.getByRole('button', {

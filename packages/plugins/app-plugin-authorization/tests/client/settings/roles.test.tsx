@@ -194,9 +194,15 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.settingsTab) }),
   );
-  expect(
-    screen.getByRole('region', { name: words.permissionManagement }),
-  ).toBeVisible();
+  const permissionSets = screen.getByRole('region', {
+    name: words.permissionManagement,
+  });
+  expect(permissionSets).toBeVisible();
+  await user.click(
+    within(permissionSets).getByRole('button', {
+      name: words.permissionEditor.settingsDetails,
+    }),
+  );
   expect(screen.getByText(words.escalation.roles)).toBeVisible();
   await user.click(screen.getByRole('switch', { name: 'Change roles' }));
   expect(screen.getByRole('switch', { name: 'Read roles' })).toBeChecked();

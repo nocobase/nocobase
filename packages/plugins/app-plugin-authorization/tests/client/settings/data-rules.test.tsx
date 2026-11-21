@@ -288,8 +288,11 @@ it('deletes a restriction rule from its sheet after confirmation', async () => {
   const sheet = await screen.findByRole('dialog', {
     name: words.restrictionRules.edit,
   });
+  // The sheet's actions show once the rule has loaded.
   await user.click(
-    within(sheet).getByRole('button', { name: words.defaultAccess.delete }),
+    await within(sheet).findByRole('button', {
+      name: words.defaultAccess.delete,
+    }),
   );
   const confirm = await screen.findByRole('alertdialog');
   expect(writes).toEqual([]);

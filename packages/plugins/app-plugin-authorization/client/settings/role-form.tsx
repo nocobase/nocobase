@@ -34,7 +34,15 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router';
-import { CopyIcon } from 'lucide-react';
+import { CopyIcon, PencilIcon } from 'lucide-react';
+import { Badge } from '#components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '#components/ui/dialog';
 import {
   PermissionEditor,
   type PermissionEditorExtraTab,
@@ -231,6 +239,7 @@ function RoleEditor(): ReactElement {
   const canAssign = useRolePermission('assign');
   const [reviewing, setReviewing] = useState(false);
   const [memberCount, setMemberCount] = useState<number>();
+  const [renaming, setRenaming] = useState(false);
   const changes = useMemo(
     () =>
       workspace
@@ -275,6 +284,20 @@ function RoleEditor(): ReactElement {
     (count: number) => setMemberCount(count),
     [],
   );
+  // The members tab shows its count before it is opened.
+  useEffect(() => {
+    if (creating || !key) return;
+    let active = true;
+    authz.listAssignments(key).then(
+      (assignments) => {
+        if (active) setMemberCount((count) => count ?? assignments.length);
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [authz, creating, key]);
   const extraTabs = useMemo<readonly PermissionEditorExtraTab[]>(() => {
     if (creating || !key || !initial) return [];
     return [
@@ -458,75 +481,117 @@ function RoleEditor(): ReactElement {
 
   const keyInvalid = keyConflict || (submitted && !roleKey.trim());
   const nameInvalid = submitted && !name.trim();
-  const header = (
-    <div className='flex flex-col gap-3'>
-      <div className='flex flex-wrap items-end gap-3'>
-        <div className='flex min-w-48 flex-1 flex-col gap-1.5'>
-          <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
-          <Input
-            id='role-name'
-            name='title'
-            required
-            value={name}
-            disabled={readOnly}
-            aria-invalid={nameInvalid}
-            aria-errormessage={nameInvalid ? 'role-name-error' : undefined}
-            onChange={(event) => setNameDraft(event.target.value)}
-          />
-          {nameInvalid && (
-            <p id='role-name-error' className='text-xs text-destructive'>
-              {t('settings.required')}
-            </p>
-          )}
-        </div>
-        <div className='flex min-w-40 flex-col gap-1.5 sm:max-w-56'>
-          <Label htmlFor='role-key'>{t('settings.key')} *</Label>
-          <Input
-            id='role-key'
-            name='key'
-            required
-            value={roleKey}
-            disabled={!creating || readOnly}
-            aria-invalid={keyInvalid}
-            aria-errormessage={keyInvalid ? 'role-key-error' : undefined}
-            onChange={(event) => {
-              setKeyConflict(false);
-              setKeyDraft(event.target.value);
+  const duplicate =
+    !creating && canCreate && !unrestricted ? (
+      <Button
+        variant='outline'
+        size='sm'
+        nativeButton={false}
+        render={
+          <Link
+            to={{
+              pathname: `${parent.base}/create`,
+              search: `?copy=${encodeURIComponent(key)}`,
             }}
           />
-          {keyInvalid && (
-            <p id='role-key-error' className='text-xs text-destructive'>
-              {t(keyConflict ? 'settings.keyConflict' : 'settings.required')}
-            </p>
-          )}
-        </div>
-        {!creating && (
-          <div className='flex flex-wrap gap-2'>
-            {canCreate && !unrestricted && (
-              <Button
-                variant='outline'
-                size='sm'
-                nativeButton={false}
-                render={
-                  <Link
-                    to={{
-                      pathname: `${parent.base}/create`,
-                      search: `?copy=${encodeURIComponent(key)}`,
-                    }}
-                  />
-                }
-              >
-                <CopyIcon />
-                {t('settings.duplicateRole')}
-              </Button>
+        }
+      >
+        <CopyIcon />
+        {t('settings.duplicateRole')}
+      </Button>
+    ) : null;
+  const header = (
+    <div className='flex flex-col gap-3'>
+      {creating ? (
+        <div className='flex flex-wrap items-end gap-3'>
+          <div className='flex min-w-48 flex-1 flex-col gap-1.5'>
+            <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
+            <Input
+              id='role-name'
+              name='title'
+              required
+              value={name}
+              disabled={readOnly}
+              aria-invalid={nameInvalid}
+              aria-errormessage={nameInvalid ? 'role-name-error' : undefined}
+              onChange={(event) => setNameDraft(event.target.value)}
+            />
+            {nameInvalid && (
+              <p id='role-name-error' className='text-xs text-destructive'>
+                {t('settings.required')}
+              </p>
             )}
           </div>
-        )}
-      </div>
+          <div className='flex min-w-40 flex-col gap-1.5 sm:max-w-56'>
+            <Label htmlFor='role-key'>{t('settings.key')} *</Label>
+            <Input
+              id='role-key'
+              name='key'
+              required
+              value={roleKey}
+              disabled={!creating || readOnly}
+              aria-invalid={keyInvalid}
+              aria-errormessage={keyInvalid ? 'role-key-error' : undefined}
+              onChange={(event) => {
+                setKeyConflict(false);
+                setKeyDraft(event.target.value);
+              }}
+            />
+            {keyInvalid && (
+              <p id='role-key-error' className='text-xs text-destructive'>
+                {t(keyConflict ? 'settings.keyConflict' : 'settings.required')}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        // An existing role reads as a title; its key never changes and its name changes through Rename.
+        <div className='flex flex-wrap items-center gap-x-3 gap-y-2'>
+          <div className='flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1'>
+            <h2 className='min-w-0 truncate text-lg font-semibold' title={name}>
+              {name}
+            </h2>
+            <code className='rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground'>
+              {roleKey}
+            </code>
+            {unrestricted ? (
+              <Badge variant='secondary'>
+                {t('settings.unrestrictedRole')}
+              </Badge>
+            ) : initial?.protection ? (
+              <Badge variant='outline'>{t('settings.protected')}</Badge>
+            ) : null}
+          </div>
+          <div className='flex flex-wrap gap-2'>
+            {!readOnly && (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => setRenaming(true)}
+              >
+                <PencilIcon />
+                {t('settings.rename')}
+              </Button>
+            )}
+            {duplicate}
+          </div>
+        </div>
+      )}
       {initial?.protection && !unrestricted && (
         <p className='text-sm text-muted-foreground'>
           {t('settings.protectedHint')}
         </p>
+      )}
+      {renaming && (
+        <RenameRole
+          name={name}
+          onCancel={() => setRenaming(false)}
+          onRename={(next) => {
+            setRenaming(false);
+            setNameDraft(next === defaultName ? undefined : next);
+          }}
+        />
       )}
     </div>
   );
@@ -535,7 +600,9 @@ function RoleEditor(): ReactElement {
       {dirty && allowed && (
         <Button
           type='button'
-          variant='outline'
+          variant='ghost'
+          // The footer sits on the editor's dark save bar.
+          className='text-background hover:bg-background/10 hover:text-background'
           disabled={busy}
           onClick={() => {
             if (creating) void navigate({ pathname: parent.base, search: '' });
@@ -634,6 +701,64 @@ function RoleEditor(): ReactElement {
         }}
       />
     </div>
+  );
+}
+
+/** Renames a role. The new name is part of the unsaved changes, saved with the rest after the review. */
+function RenameRole({
+  name,
+  onCancel,
+  onRename,
+}: {
+  readonly name: string;
+  readonly onCancel: () => void;
+  readonly onRename: (name: string) => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  const [value, setValue] = useState(name);
+  const empty = !value.trim();
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
+      <DialogContent className='sm:max-w-md'>
+        <form
+          className='grid gap-4'
+          onSubmit={(event) => {
+            // The dialog sits inside the role form: its submit must not save the role.
+            event.preventDefault();
+            event.stopPropagation();
+            if (!empty) onRename(value.trim());
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{t('settings.renameTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className='grid gap-1.5'>
+            <Label htmlFor='role-rename'>{t('settings.roleName')} *</Label>
+            <Input
+              id='role-rename'
+              autoFocus
+              required
+              value={value}
+              aria-invalid={empty}
+              onChange={(event) => setValue(event.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button type='button' variant='outline' onClick={onCancel}>
+              {t('settings.cancel')}
+            </Button>
+            <Button type='submit' disabled={empty}>
+              {t('settings.rename')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -219,7 +219,14 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
   }
   expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
   // Only the name changes.
+  await user.click(screen.getByRole('button', { name: words.rename }));
   await user.type(screen.getByRole('textbox', { name: /Role name/ }), ' 2');
+  await user.click(
+    within(screen.getByRole('dialog', { name: words.renameTitle })).getByRole(
+      'button',
+      { name: words.rename },
+    ),
+  );
   await user.click(
     screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
   );
@@ -344,7 +351,14 @@ it('keeps a role’s own custom filters when View’s stored condition is applie
     screen.queryByText(/now follows the view scope/),
   ).not.toBeInTheDocument();
   expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: words.rename }));
   await user.type(screen.getByRole('textbox', { name: /Role name/ }), ' 2');
+  await user.click(
+    within(screen.getByRole('dialog', { name: words.renameTitle })).getByRole(
+      'button',
+      { name: words.rename },
+    ),
+  );
   await user.click(
     screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
   );

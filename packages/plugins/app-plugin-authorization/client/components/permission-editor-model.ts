@@ -899,12 +899,15 @@ export function menuCheckState(
       : 'mixed';
 }
 
-/** Checked menus of all menus, public ones included, for the tab's count. */
+/**
+ * Checked menus of the menus a role decides, for the tab's and a group's count. Public menus open for everyone and are
+ * left out, so the count reads only what this role changes.
+ */
 export function menuCount(
   nodes: readonly PermissionMenuNode[],
   value: PermissionValue,
 ): { readonly checked: number; readonly total: number } {
-  const leaves = menuLeaves(nodes);
+  const leaves = menuLeaves(nodes).filter((leaf) => !leaf.public);
   return {
     checked: leaves.filter((leaf) => isMenuChecked(leaf, value)).length,
     total: leaves.length,
