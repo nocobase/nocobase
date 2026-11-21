@@ -343,12 +343,8 @@ function NavigationItem({
             tooltip={
               tooltip && counted ? { ...tooltip, children: counted } : tooltip
             }
-            // Room for the count left of the disclosure arrow.
-            className={
-              counted
-                ? `${SELECTED} group-has-data-[sidebar=menu-action]/menu-item:pr-16`
-                : SELECTED
-            }
+            // `styles.css` leaves room for the count left of the disclosure arrow.
+            className={SELECTED}
           >
             {Icon ? <Icon /> : null}
             <span>{label}</span>
