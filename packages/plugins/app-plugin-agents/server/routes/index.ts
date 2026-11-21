@@ -85,8 +85,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           : null,
         can: (item, action) =>
           authz.can({ resource: { type: 'settings', id: item }, action }),
-        opens: (page) =>
-          authz.can({ resource: { type: 'page', id: page }, action: 'access' }),
         // Business levels come from the application's roles; without them, every level is none.
         scope: (key) =>
           container.has(agentsAccessToken)

@@ -119,7 +119,6 @@ async function fixture() {
     c.set('caller', {
       userId: id,
       can: async () => false,
-      opens: async () => true,
       scope: async () => 'none',
       onlineContext: {
         user: { id },

@@ -33,6 +33,7 @@ const frFR: LocaleResource<typeof enUS> = {
         runners: 'Environnements d’exécution',
         prices: 'Tarifs des modèles',
         services: 'Services modèles',
+        skills: 'Compétences',
       },
     },
     actions: {

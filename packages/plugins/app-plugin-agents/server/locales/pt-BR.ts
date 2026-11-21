@@ -31,6 +31,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         runners: 'Ambientes de execução',
         prices: 'Preços dos modelos',
         services: 'Serviços modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {

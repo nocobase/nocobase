@@ -34,7 +34,6 @@ const guard: MiddlewareHandler<AdminEnv> = async (context, next) => {
   context.set('caller', {
     userId: id,
     can: async () => false,
-    opens: async () => true,
     scope: async () => 'none',
     onlineContext: actor(id),
   });

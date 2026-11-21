@@ -38,7 +38,6 @@ import { type MiddlewareHandler, Hono } from 'hono';
 import type {
   BusinessKey,
   Scope,
-  Page,
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
@@ -467,7 +466,6 @@ export async function createHarness(
           grants.includes(`${item}/${action}`) ||
             (action === 'read' && grants.includes(`${item}/manage`)),
         ),
-      opens: (page: Page) => Promise.resolve(grants.includes(`page/${page}`)),
       scope: (key: BusinessKey) => {
         const level = levels.get(key) ?? 'none';
         return Promise.resolve(
@@ -485,7 +483,6 @@ export async function createHarness(
     context.set('caller', {
       userId: run.actorUserId,
       can: () => Promise.resolve(false),
-      opens: () => Promise.resolve(false),
       scope: () => Promise.resolve('none' as Scope),
       run: {
         id: run.id,

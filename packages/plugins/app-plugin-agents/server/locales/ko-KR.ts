@@ -29,6 +29,7 @@ const koKR: LocaleResource<typeof enUS> = {
         runners: '실행 환경',
         prices: '모델 가격',
         services: '모델 서비스',
+        skills: '스킬',
       },
     },
     actions: {

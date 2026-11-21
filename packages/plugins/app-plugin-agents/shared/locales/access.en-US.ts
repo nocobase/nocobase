@@ -8,9 +8,10 @@ export interface AccessLocale {
     readonly settings: {
       readonly agents: {
         readonly agents: string;
-        readonly runners: string;
-        readonly prices: string;
         readonly services: string;
+        readonly runners: string;
+        readonly skills: string;
+        readonly prices: string;
       };
     };
     readonly actions: { readonly read: string; readonly manage: string };
@@ -42,8 +43,8 @@ export interface AccessLocale {
 
 const accessEnUS: AccessLocale = {
   access: {
-    section: 'Agent management',
-    businessSection: 'Agent management',
+    section: 'AI',
+    businessSection: 'AI',
     businesses: {
       agents: {
         title: 'Agents and skills',
@@ -64,10 +65,11 @@ const accessEnUS: AccessLocale = {
     },
     settings: {
       agents: {
-        agents: 'Agents',
-        runners: 'Runtimes',
-        prices: 'Model prices',
+        agents: 'Agent',
         services: 'Model services',
+        runners: 'Runtimes',
+        skills: 'Skills',
+        prices: 'Usage',
       },
     },
     actions: { read: 'View', manage: 'Manage' },
@@ -82,9 +84,9 @@ const accessEnUS: AccessLocale = {
         description: 'See runners and registration tokens; manage runners.',
       },
       prices: {
-        title: 'Model prices',
+        title: 'Usage',
         description:
-          'See the model prices costs are estimated from; change them.',
+          'See every run\'s usage and the model prices costs are estimated from; change the prices.',
       },
       services: {
         title: 'Model services',

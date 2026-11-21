@@ -23,15 +23,16 @@ import {
 import { Bot, BrainCircuit, ChartColumn, Server, Sparkles } from 'lucide-react';
 import { createElement, type ComponentType } from 'react';
 
-import type { Page } from '../shared/access.js';
+import type { SettingsItem } from '../shared/access.js';
 import {
   AgentsMountContext,
   settingsMount,
   type AgentsMount,
 } from './mount.js';
 
-const page = (id: Page) =>
-  ({ resource: { type: 'page', id }, action: 'access' }) as const;
+/** Each page stands behind reading the settings item its API checks. */
+const reads = (id: SettingsItem) =>
+  ({ resource: { type: 'settings', id }, action: 'read' }) as const;
 
 /** A page module, loaded with this plugin's cache and translations. */
 function withPlugin(
@@ -69,7 +70,7 @@ export const agentsRoute: AppClientRoutePageDefinition = {
   name: 'agents',
   path: '/agents',
   auth: 'required',
-  authz: page('agents'),
+  authz: reads('agents.agents'),
   componentLoader: withPlugin(() => import('./pages/agents/index.js')),
 };
 
@@ -78,7 +79,7 @@ export const runtimesRoute: AppClientRoutePageDefinition = {
   name: 'runtimes',
   path: '/runtimes',
   auth: 'required',
-  authz: page('runtimes'),
+  authz: reads('agents.runners'),
   componentLoader: withPlugin(() => import('./pages/runtimes/index.js')),
   children: [
     {
@@ -99,7 +100,7 @@ export const skillsRoute: AppClientRoutePageDefinition = {
   name: 'skills',
   path: '/skills',
   auth: 'required',
-  authz: page('skills'),
+  authz: reads('agents.skills'),
   componentLoader: withPlugin(() => import('./pages/skills/index.js')),
   children: [
     {
@@ -124,7 +125,7 @@ export const usageRoute: AppClientRoutePageDefinition = {
   name: 'usage',
   path: '/usage',
   auth: 'required',
-  authz: page('usage'),
+  authz: reads('agents.prices'),
   componentLoader: withPlugin(() => import('./pages/usage/index.js')),
 };
 
@@ -136,10 +137,7 @@ export const modelsRoute: AppClientRoutePageDefinition = {
   name: 'models',
   path: '/models',
   auth: 'required',
-  authz: {
-    resource: { type: 'settings', id: 'agents.services' },
-    action: 'read',
-  },
+  authz: reads('agents.services'),
   componentLoader: withPlugin(() => import('./pages/models/index.js')),
 };
 
