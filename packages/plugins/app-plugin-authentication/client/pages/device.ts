@@ -11,7 +11,7 @@ const BROWSERS: readonly [RegExp, string][] = [
   [/\bEdg(?:e|A|iOS)?\//u, 'Edge'],
   [/\bOPR\//u, 'Opera'],
   [/\bFirefox\/|\bFxiOS\//u, 'Firefox'],
-  [/\bChrome\/|\bCriOS\//u, 'Chrome'],
+  [/Chrome\/|\bCriOS\//u, 'Chrome'],
   [/\bSafari\//u, 'Safari'],
 ];
 

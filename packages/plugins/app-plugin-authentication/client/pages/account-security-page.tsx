@@ -140,7 +140,7 @@ export default function AccountSecurityPage(): ReactElement {
       description={t('account.description')}
     >
       <Panel title={t('account.signIn.title')}>
-        <dl className='grid gap-x-4 gap-y-2 px-4 py-3 text-sm sm:grid-cols-[8rem_1fr]'>
+        <dl className='grid gap-x-4 gap-y-2 px-4 py-3 text-sm grid-cols-[6rem_minmax(0,1fr)] sm:grid-cols-[8rem_1fr]'>
           {user?.username ? (
             <>
               <dt className='text-muted-foreground'>
@@ -483,7 +483,7 @@ function DevicesPanel({
                   className='size-5 shrink-0 text-muted-foreground'
                   aria-hidden
                 />
-                <div className='min-w-0 flex-1'>
+                <div className='min-w-48 flex-1'>
                   <div className='text-sm font-semibold'>{name}</div>
                   <div className='text-xs text-muted-foreground'>
                     {item.ipAddress || t('account.devices.noAddress')}

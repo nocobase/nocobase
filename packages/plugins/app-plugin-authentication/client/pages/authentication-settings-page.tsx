@@ -206,17 +206,19 @@ function MethodsTab({
                 </code>
               ) : null}
             </div>
-            <div>
-              <StatusBadge on={method.status === 'enabled'}>
-                {t(`settings.status.${method.status}`)}
-              </StatusBadge>
-            </div>
-            <div>
-              {method.origin ? (
-                <SourceBadge origin={method.origin} />
-              ) : (
-                <span className='text-muted-foreground'>—</span>
-              )}
+            <div className='flex flex-wrap items-center gap-2 lg:contents'>
+              <div>
+                <StatusBadge on={method.status === 'enabled'}>
+                  {t(`settings.status.${method.status}`)}
+                </StatusBadge>
+              </div>
+              <div>
+                {method.origin ? (
+                  <SourceBadge origin={method.origin} />
+                ) : (
+                  <span className='text-muted-foreground'>—</span>
+                )}
+              </div>
             </div>
             <div className='lg:text-right'>
               {method.detailsPath ? (

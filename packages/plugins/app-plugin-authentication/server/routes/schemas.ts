@@ -17,12 +17,9 @@ export const PasswordResetCapabilitySchema: z.ZodType<PasswordResetCapability> =
 
 const ConfigOriginSchema: z.ZodType<ConfigOrigin> = z
   .object({
-    path: z
-      .string()
-      .meta({
-        description:
-          'The configuration path, such as `auth.session.expiresIn`.',
-      }),
+    path: z.string().meta({
+      description: 'The configuration path, such as `auth.session.expiresIn`.',
+    }),
     source: z.enum(['env', 'file', 'code', 'default']).meta({
       description:
         'Where the value comes from: an environment variable, `config.yml`, the application code, or the default.',
@@ -149,11 +146,9 @@ export const AuthenticationSettingsSchema: z.ZodType<AuthenticationSettings> = z
 export const AuthenticationProviderSchema: z.ZodType<AuthenticationProviderSummary> =
   z
     .object({
-      id: z
-        .string()
-        .meta({
-          description: 'The provider id Better Auth links accounts with.',
-        }),
+      id: z.string().meta({
+        description: 'The provider id Better Auth links accounts with.',
+      }),
       name: z.string(),
       type: z.enum(['oidc', 'social']),
     })
