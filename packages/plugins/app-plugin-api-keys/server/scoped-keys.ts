@@ -619,6 +619,7 @@ export class ScopedApiKeys {
     for (const [key, actions] of ceiling.held) {
       if (listed.has(key) || !authz) continue;
       const [type, id] = JSON.parse(key) as [string, string];
+      if (!this.pickableType(type)) continue;
       const resource = { type, id };
       const held = [...actions].flatMap((action): GrantableAction[] => {
         const declared = authz.resourceTypes.action(resource, action);
@@ -1084,6 +1085,16 @@ export class ScopedApiKeys {
     return source.list({ identity, ...filter });
   }
 
+  /**
+   * Whether a resource type without items is one a person gives a key resource by resource, such as pages or users. A
+   * type with record access, such as database collections, is reached through the composite actions that expand into
+   * it, never given on its own.
+   */
+  private pickableType(type: string): boolean {
+    const types = this.options.authorization?.()?.resourceTypes;
+    return Boolean(types?.has(type) && !types.get(type).recordAccess);
+  }
+
   /** What `identity` holds today, by its own grants: never a credential's scope. */
   private async ceiling(identity: AuthorizationIdentity): Promise<Ceiling> {
     const authz = this.options.authorization?.();
@@ -1259,6 +1270,26 @@ export class ScopedApiKeys {
           grants.push({
             resource: entry.resource,
             actions: actions.map(({ action }) => ({ action })),
+          });
+      }
+      // And of resources of a type without items, such as users, the ones held.
+      const listed = new Set(
+        catalog.map((entry) => resourceKey(entry.resource)),
+      );
+      const authz = this.options.authorization?.();
+      for (const [key, held] of ceiling.held) {
+        if (listed.has(key)) continue;
+        const [type, id] = JSON.parse(key) as [string, string];
+        if (!this.pickableType(type)) continue;
+        const actions = [...held].filter(
+          (action) =>
+            READ_ONLY_ACTIONS.has(action.split('.')[0]) &&
+            authz?.humanOnly({ type, id }, action) === undefined,
+        );
+        if (actions.length > 0)
+          grants.push({
+            resource: { type, id },
+            actions: actions.sort().map((action) => ({ action })),
           });
       }
     } else
