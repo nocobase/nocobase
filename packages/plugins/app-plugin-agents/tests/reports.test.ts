@@ -748,7 +748,7 @@ describe('reporting service', () => {
     ).toEqual([]);
   });
 
-  it('seeds current prices once, keeping prices someone changed', async () => {
+  it('seeds default coding tool prices on a fresh database', async () => {
     h = await createHarness();
     const seeder = () =>
       h.database
@@ -786,6 +786,79 @@ describe('reporting service', () => {
     ).toBe(1);
     // Claude Code is not priced at OpenAI's models.
     expect(priceFor(prices, claude('gpt-5-codex'))).toBeNull();
+
+    for (const tool of ['codex', 'opencode', 'pi'] as const) {
+      expect(
+        priceFor(prices, {
+          tool,
+          modelService: null,
+          model: 'openai/gpt-6.2-astra-2026-11-17',
+        }),
+      ).toMatchObject({
+        inputPerM: 8,
+        outputPerM: 40,
+        cacheReadPerM: 0.4,
+        cacheWritePerM: 10,
+        currency: 'USD',
+      });
+      expect(
+        priceFor(prices, { tool, modelService: null, model: 'gpt-6.2-sol' }),
+      ).toMatchObject({
+        inputPerM: 2,
+        outputPerM: 10,
+        cacheReadPerM: 0.1,
+        cacheWritePerM: 2.5,
+        currency: 'USD',
+      });
+    }
+    expect(priceFor(prices, claude('gpt-6.2-astra'))).toBeNull();
+  });
+
+  it('adds GPT-6.2 prices on upgrade while preserving an existing price rule', async () => {
+    h = await createHarness();
+    const previousSeed = '202610020007_ag_default_model_prices';
+    const nextSeed = '202611210010_ag_gpt_62_model_prices';
+    const seeder = (taskFilter?: (task: { name: string }) => boolean) =>
+      h.database.createSeeder({
+        directory: path.resolve(import.meta.dirname, '../database/seeds'),
+        packageName: '@nocobase/app-plugin-agents',
+        onChecksumMismatch: 'error',
+        taskFilter,
+      });
+    await seeder(({ name }) => name === previousSeed).run();
+
+    const connection = h.database.connection();
+    const repository = connection.repository('agModelPrices');
+    const filter = { id: 'custom-astra' };
+    const now = new Date();
+    await repository.createOne({
+      values: {
+        ...filter,
+        tool: 'codex',
+        modelService: null,
+        model: 'gpt-6.2-astra*',
+        inputPerM: 3,
+        outputPerM: 7,
+        cacheReadPerM: 0.2,
+        cacheWritePerM: 4,
+        currency: 'USD',
+        note: 'Custom price',
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    const saved = await repository.findOne({ filter });
+    expect(saved).toMatchObject({ inputPerM: 3, note: 'Custom price' });
+    const before = await listPrices(connection);
+    const upgrade = seeder(({ name }) => name === nextSeed);
+    await upgrade.run();
+    const after = await listPrices(connection);
+    expect(after.prices).toHaveLength(before.prices.length + 5);
+    expect(after.prices).toEqual(expect.arrayContaining(before.prices));
+    expect(await repository.findOne({ filter })).toEqual(saved);
+
+    await upgrade.run();
+    expect(await listPrices(connection)).toEqual(after);
   });
 
   it('records the usage a lost runner reported before it went silent', async () => {
