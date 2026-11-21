@@ -7,9 +7,7 @@
  * draft it is given.
  */
 import {
-  CheckIcon,
   ChevronDownIcon,
-  CircleIcon,
   InfoIcon,
   SearchIcon,
   ShieldCheckIcon,
@@ -18,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   Fragment,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -28,6 +27,13 @@ import {
 import { cn } from 'cn';
 import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '#components/ui/popover';
 import {
   InputGroup,
   InputGroupAddon,
@@ -47,7 +53,7 @@ import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
   applyQuickSetMany,
-  quickSetLevel,
+  quickSelection,
   quickSetManyRemovals,
   enableDefaults,
   menuActionCount,
@@ -138,21 +144,20 @@ export interface PermissionEditorLabels {
   readonly empty: string;
   readonly objectEnabled: (enabled: number, total: number) => string;
   readonly objectOff: string;
-  /** The quick settings of an object or a group: off, View only, and every action but risky ones. */
-  readonly quickNone: string;
-  readonly quickView: string;
-  readonly quickAll: string;
+  /** The column titles of the Operations table. */
+  readonly objectColumn: string;
+  readonly viewColumn: string;
+  readonly operationsColumn: string;
+  /** The checkbox of an object, a group or every object: on turns every operation but risky ones on, off turns all off. */
+  readonly selectObject: (object: string) => string;
+  readonly selectGroup: (group: string) => string;
+  readonly selectAll: string;
   readonly quickAllHint: string;
-  /** Beside an object set action by action, which none of the quick settings matches. */
-  readonly quickCustom: string;
-  readonly quickLevel: (object: string) => string;
-  readonly groupQuick: string;
-  readonly groupQuickLevel: (group: string) => string;
+  /** A follower's scope tag while it follows View. */
+  readonly sameAsViewShort: string;
   readonly groupEnabled: (enabled: number, total: number) => string;
   readonly objectsHint: string;
   readonly onlyEnabled: string;
-  readonly expandObject: string;
-  readonly collapseObject: string;
   readonly sameAsView: (scope: string) => string;
   /** A slot following another object's View, such as the customers a Contacts action reads. */
   readonly sameAsObjectView: (object: string, scope: string) => string;
@@ -280,20 +285,18 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   empty: 'No business objects to configure',
   objectEnabled: (enabled, total) => `${enabled} of ${total} on`,
   objectOff: 'Off',
-  quickNone: 'Off',
-  quickView: 'View only',
-  quickAll: 'All',
+  objectColumn: 'Object',
+  viewColumn: 'View · data scope',
+  operationsColumn: 'Operations',
+  selectObject: (object) => `All operations on ${object}`,
+  selectGroup: (group) => `All operations in ${group}`,
+  selectAll: 'All operations',
   quickAllHint: 'Turns on every operation except high-risk ones',
-  quickCustom: 'Custom',
-  quickLevel: (object) => `Operations on ${object}`,
-  groupQuick: 'Whole group',
-  groupQuickLevel: (group) => `Operations on everything in ${group}`,
+  sameAsViewShort: 'Same as view',
   groupEnabled: (enabled, total) => `${enabled} of ${total} objects on`,
   objectsHint:
-    'Checking a page turns on the operations it uses. Set objects here with Off, View only or All, at their default data scope, and open one to set its operations one by one.',
-  onlyEnabled: 'Only on',
-  expandObject: 'One by one',
-  collapseObject: 'Hide',
+    'Checking a page turns on the operations it uses; adjust them here. A check takes effect at once; click a scope tag to change the data scope, and a dashed tag means it is the same as view.',
+  onlyEnabled: 'Only show enabled',
   sameAsView: (scope) => `Same as view (${scope})`,
   sameAsObjectView: (object, scope) => `Same as ${object} view (${scope})`,
   needsView: (object) => `Needs ${object} view`,
@@ -546,6 +549,279 @@ function SlotConfiguration({
     >
       {children}
     </fieldset>
+  );
+}
+
+/** The columns of the Operations table: the object's checkbox, the object, View with its scope, the other operations. */
+const OBJECT_ROW =
+  'grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-2 px-2 @min-[44rem]/permissions:grid-cols-[2rem_minmax(8rem,13rem)_minmax(10rem,15rem)_minmax(0,1fr)] @min-[44rem]/permissions:gap-x-4';
+const SELECT_BOX =
+  'data-disabled:cursor-not-allowed data-disabled:opacity-50 data-indeterminate:border-primary data-indeterminate:bg-primary/60';
+
+interface ScopeSummary {
+  readonly text: string;
+  /** Follows View, shown as a dashed tag. */
+  readonly following: boolean;
+  /** Follows another object's View that is off: kept as it is until that View is on. */
+  readonly blocked: boolean;
+  /** There is something to pick, so the tag opens the scope's controls. */
+  readonly choosable: boolean;
+}
+
+/** What one scope slot of an action is set to, in a word or two, mirroring what {@link ScopeControl} offers. */
+function slotSummary(
+  object: PermissionObject,
+  objects: readonly PermissionObject[],
+  action: PermissionAction,
+  slot: PermissionScopeSlot,
+  grants: PermissionGrants,
+  labels: PermissionEditorLabels,
+): ScopeSummary | undefined {
+  const options = slotOptions(object, slot, objects);
+  const labelOf = (value: string): string =>
+    options.find((option) => option.value === value)?.label ?? value;
+  const configurable = Boolean(slot.configuration);
+  const blocked = blockedLeaderObject(object, slot, objects, grants);
+  const own = ownScopeValue(object, grants, action, slot, objects);
+  // The value it keeps, read-only in the popover beside what turning it back on needs.
+  if (blocked)
+    return {
+      text: own === undefined ? labels.needsView(blocked.label) : labelOf(own),
+      following: false,
+      blocked: true,
+      choosable: true,
+    };
+  const viewValue = viewScopeValue(object, grants, slot, objects);
+  if (slot.followsView && viewValue !== undefined) {
+    const narrower = narrowerOptions(object, grants, slot, objects);
+    const stored =
+      own !== undefined &&
+      own !== viewValue &&
+      !narrower.some((option) => option.value === own);
+    const picked =
+      stored || narrower.some((option) => option.value === own)
+        ? own
+        : undefined;
+    return picked === undefined
+      ? {
+          text: labels.sameAsViewShort,
+          following: true,
+          blocked: false,
+          choosable: narrower.length > 0 || configurable,
+        }
+      : {
+          text: labelOf(picked),
+          following: false,
+          blocked: false,
+          choosable: true,
+        };
+  }
+  if (!options.length) return undefined;
+  const current = effectiveScopeValue(object, grants, action, slot, objects);
+  return {
+    text: current === undefined ? '' : labelOf(current),
+    following: false,
+    blocked: false,
+    choosable: options.length > 1 || configurable,
+  };
+}
+
+/**
+ * An enabled action's data scope as a small tag beside it. A tag with something to pick opens the scope's controls in
+ * a popover; a dashed tag follows View. A follower with nothing narrower to pick shows no tag.
+ */
+function ScopeTag({
+  object,
+  objects,
+  action,
+  grants,
+  disabled,
+  labels,
+  onScope,
+}: {
+  readonly object: PermissionObject;
+  readonly objects: readonly PermissionObject[];
+  readonly action: PermissionAction;
+  readonly grants: PermissionGrants;
+  readonly disabled: boolean;
+  readonly labels: PermissionEditorLabels;
+  readonly onScope: (slotId: string, value: string | undefined) => void;
+}): ReactElement | null {
+  const slots = action.scopes ?? [];
+  const parts = slots
+    .map((slot) => slotSummary(object, objects, action, slot, grants, labels))
+    .filter((part): part is ScopeSummary => Boolean(part?.text));
+  const choosable = parts.some((part) => part.choosable);
+  const following = parts.every((part) => part.following);
+  const blocked = parts.some((part) => part.blocked);
+  // Nothing to say: a follower that can only be the same as View.
+  if (!parts.length || (following && !choosable)) return null;
+  // Several scopes show the first one and how many more the popover holds; the accessible name lists them all.
+  const text =
+    parts.length > 1
+      ? `${parts[0]?.text ?? ''} +${parts.length - 1}`
+      : (parts[0]?.text ?? '');
+  const fullText = parts.map((part) => part.text).join(' · ');
+  const className = cn(
+    'inline-flex max-w-full min-w-0 items-center gap-0.5 rounded-full border bg-background px-2 text-xs leading-5',
+    following && 'border-dashed text-muted-foreground',
+    blocked && 'border-amber-500/50 text-amber-700 dark:text-amber-400',
+  );
+  if (!choosable)
+    return (
+      <span data-slot='permission-scope-tag' className={className}>
+        <span className='truncate'>{text}</span>
+      </span>
+    );
+  const title = labels.scopeFor(action.label);
+  return (
+    <Popover>
+      <PopoverTrigger
+        data-slot='permission-scope-tag'
+        aria-label={`${title}: ${fullText}`}
+        className={cn(
+          className,
+          'cursor-pointer hover:border-primary focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+        )}
+      >
+        <span className='truncate'>{text}</span>
+        <ChevronDownIcon aria-hidden className='size-3 shrink-0' />
+      </PopoverTrigger>
+      <PopoverContent align='start' className='w-80 max-w-[calc(100vw-2rem)]'>
+        <PopoverHeader>
+          <PopoverTitle>{title}</PopoverTitle>
+        </PopoverHeader>
+        {slots.map((slot) => (
+          <div
+            key={slot.id}
+            data-slot='permission-scope'
+            className='grid min-w-0 gap-1'
+          >
+            {slot.label && (
+              <span className='text-xs text-muted-foreground'>
+                {slot.label}
+              </span>
+            )}
+            <ScopeControl
+              object={object}
+              objects={objects}
+              action={action}
+              slot={slot}
+              grants={grants}
+              disabled={disabled}
+              labels={labels}
+              onScope={onScope}
+            />
+            {slot.configuration && (
+              <SlotConfiguration
+                locked={disabled || configurationLocked(object, slot, objects)}
+              >
+                {slot.configuration}
+              </SlotConfiguration>
+            )}
+          </div>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** One action in the Operations table: a checkbox with its name, its risk and, while on, its data scope. */
+function OperationItem({
+  object,
+  objects,
+  action,
+  grants,
+  readOnly,
+  labels,
+  controlId,
+  dimmed,
+  onToggle,
+  onScope,
+}: {
+  readonly object: PermissionObject;
+  readonly objects: readonly PermissionObject[];
+  readonly action: PermissionAction;
+  readonly grants: PermissionGrants;
+  readonly readOnly: boolean;
+  readonly labels: PermissionEditorLabels;
+  readonly controlId: string;
+  readonly dimmed: boolean;
+  readonly onToggle: (action: PermissionAction, enabled: boolean) => void;
+  readonly onScope: (
+    action: PermissionAction,
+    slotId: string,
+    value: string | undefined,
+  ) => void;
+}): ReactElement {
+  const enabled = Boolean(grants[action.id]);
+  const locked = readOnly || Boolean(action.managed);
+  const description = [
+    action.description,
+    action.managed ? labels.managed : undefined,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <div
+      data-slot='permission-action'
+      data-enabled={enabled ? '' : undefined}
+      className='flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1'
+    >
+      <Checkbox
+        id={controlId}
+        checked={enabled}
+        disabled={locked}
+        aria-describedby={description ? `${controlId}-description` : undefined}
+        className='data-disabled:cursor-not-allowed data-disabled:opacity-50'
+        onCheckedChange={(on: boolean) => onToggle(action, on)}
+      />
+      <label
+        htmlFor={controlId}
+        title={description || undefined}
+        className={cn(
+          'cursor-pointer text-sm leading-5 break-words',
+          dimmed && 'text-muted-foreground',
+          locked && 'cursor-default',
+        )}
+      >
+        {action.label}
+      </label>
+      {description && (
+        <span id={`${controlId}-description`} className='sr-only'>
+          {description}
+        </span>
+      )}
+      {action.risk && (
+        <span
+          data-slot='permission-risk'
+          className={cn(
+            'inline-flex rounded px-1.5 text-xs leading-5',
+            action.risk === 'high'
+              ? 'bg-destructive/10 text-destructive'
+              : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
+          )}
+        >
+          {action.risk === 'high' ? labels.highRisk : labels.sensitive}
+        </span>
+      )}
+      {enabled && (
+        <ScopeTag
+          object={object}
+          objects={objects}
+          action={action}
+          grants={grants}
+          disabled={locked}
+          labels={labels}
+          onScope={(slotId, value) => onScope(action, slotId, value)}
+        />
+      )}
+      {enabled && action.warning && (
+        <p className='basis-full text-xs leading-5 text-destructive'>
+          {action.warning}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -1075,20 +1351,6 @@ export function PermissionEditor({
   const [tab, setTab] = useState<string>(defaultTab);
   const [flash, setFlash] = useState<MenuFlash | undefined>();
   const [query, setQuery] = useState('');
-  // Objects set action by action when the editor opened show their actions; the others fold them away until asked.
-  // Kept from the first render, so an object does not fold away while it is being changed.
-  const [initiallyCustom] = useState<ReadonlySet<string>>(
-    () =>
-      new Set(
-        objects
-          .filter((object) => quickSetLevel(object, value.grants) === 'custom')
-          .map((object) => object.id)
-          .concat(defaultObjectId ? [defaultObjectId] : []),
-      ),
-  );
-  const [expandedObjects, setExpandedObjects] = useState<
-    Readonly<Record<string, boolean>>
-  >({});
   const [onlyEnabled, setOnlyEnabled] = useState(false);
   const [notices, setNotices] = useState<readonly PermissionNotice[]>([]);
   const [settingsOpen, setSettingsOpen] = useState<
@@ -1130,14 +1392,12 @@ export function PermissionEditor({
   const warnings = menuWarnings(menus, objects, value);
   const emptyMenus = new Set(warnings.map((warning) => warning.menu.id));
   const gaps = pageAccessGaps(menus, objects, value);
-  const gapIds = new Set(gaps.map((gap) => gap.object.id));
   const menuTotals = menuCount(menus, value);
   const objectTotals = objectCount(objects, value.grants);
   const settingsTotals = settingsCount(settings, value.grants);
 
-  /** Opens an object's actions in Operations and moves the focus to it. */
-  const select = (objectId: string): void => {
-    setExpandedObjects((open) => ({ ...open, [objectId]: true }));
+  /** Shows an object in Operations, clearing what would hide it, before the focus moves to it. */
+  const reveal = (): void => {
     setQuery('');
     setOnlyEnabled(false);
     setNotices([]);
@@ -1150,6 +1410,13 @@ export function PermissionEditor({
       title?.scrollIntoView?.({ block: 'start' });
     });
   };
+  // The object a host opens first, such as from a link to one of its rules, takes the focus once.
+  useEffect(() => {
+    if (!defaultObjectId || defaultTab !== 'objects') return;
+    const title = document.getElementById(`${id}-object-${defaultObjectId}`);
+    title?.focus();
+    title?.scrollIntoView?.({ block: 'start' });
+  }, [id, defaultObjectId, defaultTab]);
   const commitValue = (
     next: PermissionValue,
     changeNotices: readonly PermissionNotice[],
@@ -1301,7 +1568,7 @@ export function PermissionEditor({
   };
   const openObject = (objectId: string): void => {
     if (!objects.some((object) => object.id === objectId)) return;
-    select(objectId);
+    reveal();
     setTab('objects');
     setFlash(undefined);
     focusObject(objectId);
@@ -1309,12 +1576,12 @@ export function PermissionEditor({
   const openAction = (actionId: string): void => {
     const found = findAction(allObjects, actionId);
     if (!found) return;
-    select(found.object.id);
+    reveal();
     setTab('objects');
     focusObject(found.object.id);
   };
   const openView = (warning: PermissionMenuWarning): void => {
-    select(warning.object.id);
+    reveal();
     setTab('objects');
     focusObject(warning.object.id);
   };
@@ -1545,79 +1812,31 @@ export function PermissionEditor({
     </div>
   );
 
-  const quickLabels: Record<PermissionQuickSet, string> = {
-    none: words.quickNone,
-    view: words.quickView,
-    all: words.quickAll,
-  };
-  /** Off, View only or Enable all for one object or a group, one tap each; a custom mix highlights none of them. */
-  const quickControl = (
-    label: string,
-    level: PermissionQuickSet | 'custom' | undefined,
-    withView: boolean,
-    onPick: (mode: PermissionQuickSet) => void,
-    size: 'sm' | 'xs' = 'sm',
-  ): ReactElement => (
-    <div
-      role='group'
-      aria-label={label}
-      data-slot='permission-quick-set'
-      data-level={level}
-      className={cn(
-        'inline-flex shrink-0 overflow-hidden rounded-md border',
-        level === 'custom' && 'border-amber-500/60',
-      )}
-    >
-      {(['none', 'view', 'all'] as const)
-        .filter((mode) => mode !== 'view' || withView)
-        .map((mode) => (
-          <button
-            key={mode}
-            type='button'
-            aria-pressed={level === mode}
-            disabled={readOnly}
-            title={mode === 'all' ? words.quickAllHint : undefined}
-            className={cn(
-              'min-w-11 flex-1 border-l text-center whitespace-nowrap first:border-l-0 hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
-              size === 'sm' ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs',
-              level === mode &&
-                (mode === 'none'
-                  ? 'bg-muted font-medium'
-                  : 'bg-primary font-medium text-primary-foreground hover:bg-primary/90'),
-            )}
-            onClick={() => onPick(mode)}
-          >
-            {quickLabels[mode]}
-          </button>
-        ))}
-    </div>
-  );
-  const objectCard = (object: PermissionObject): ReactElement => {
+  const objectRow = (object: PermissionObject): ReactElement => {
     const titleId = `${id}-object-${object.id}`;
-    const detailsId = `${titleId}-details`;
+    const view = viewActionOf(object);
     const { basic, business } = orderedActions(object);
+    const others = [...basic, ...business].filter((action) => !action.view);
+    const viewOn = Boolean(view && value.grants[view.id]);
     const status = objectStatus(object, value.grants);
-    const level = quickSetLevel(object, value.grants);
-    const search = query.trim().toLocaleLowerCase();
-    // A search that finds an operation, not the object, opens the object to show it.
-    const foundInside =
-      Boolean(search) &&
-      !object.label.toLocaleLowerCase().includes(search) &&
-      object.actions.some((action) =>
-        action.label.toLocaleLowerCase().includes(search),
-      );
-    const expanded =
-      expandedObjects[object.id] ??
-      (foundInside || initiallyCustom.has(object.id));
-    const risky = object.actions.some((action) => action.risk === 'high');
-    // The pages that list this object, each marked by whether this role opens it.
-    const usedBy = menuLeaves(menus).filter(
-      (menu) =>
-        menu.uses?.primary?.includes(object.id) ||
-        menu.uses?.related?.includes(object.id),
+    const selection = quickSelection([object], value.grants);
+    const settable = object.actions.some(
+      (action) => !action.risk && !action.managed,
     );
-    const row = (action: PermissionAction): ReactElement => (
-      <ActionRow
+    const gap = gaps.find(
+      (item: PermissionPageGap) => item.object.id === object.id,
+    );
+    // The pages that list this object.
+    const usedBy = menuLeaves(menus)
+      .filter(
+        (menu) =>
+          menu.uses?.primary?.includes(object.id) ||
+          menu.uses?.related?.includes(object.id),
+      )
+      .map((menu) => menu.label);
+    const pages = usedBy.length ? usedBy : (object.usedOn ?? []);
+    const item = (action: PermissionAction): ReactElement => (
+      <OperationItem
         key={action.id}
         object={object}
         objects={allObjects}
@@ -1626,30 +1845,43 @@ export function PermissionEditor({
         readOnly={readOnly}
         labels={words}
         controlId={`${id}-${action.id}`}
+        // Operations need View: while it is off they read as unavailable, and checking one turns View on.
+        dimmed={Boolean(view) && !action.view && !viewOn}
         onToggle={toggle}
-        onScope={(item, slotId, scope) =>
+        onScope={(target, slotId, scope) =>
           commit(
-            setScopeValue(allObjects, value.grants, item.id, slotId, scope),
+            setScopeValue(allObjects, value.grants, target.id, slotId, scope),
           )
         }
       />
     );
-    const enabledLabels = object.actions
-      .filter((action) => value.grants[action.id])
-      .map((action) => action.label);
     return (
       <section
         key={object.id}
         aria-labelledby={titleId}
         data-slot='permission-object'
         data-state={status.state}
-        className='grid min-w-0 border-t first:border-t-0'
+        className={cn(OBJECT_ROW, 'border-t py-2.5')}
       >
-        <div className='flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 px-3 py-2.5'>
-          <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
+        <div className='flex justify-center pt-0.5'>
+          <Checkbox
+            aria-label={words.selectObject(object.label)}
+            title={words.quickAllHint}
+            checked={selection === 'all'}
+            indeterminate={selection === 'some'}
+            disabled={readOnly || !settable}
+            className={SELECT_BOX}
+            onCheckedChange={() =>
+              quick(object, selection === 'all' ? 'none' : 'all')
+            }
+          />
+        </div>
+        <div className='grid min-w-0 content-start gap-0.5'>
+          <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
             <h3
               id={titleId}
               tabIndex={-1}
+              title={object.description}
               className='text-sm font-semibold outline-none'
             >
               {object.label}
@@ -1671,154 +1903,70 @@ export function PermissionEditor({
                   : words.objectOff}
               </span>
             </span>
-            {level === 'custom' && (
-              <span className='rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 dark:text-amber-300'>
-                {words.quickCustom}
-              </span>
-            )}
-            {risky && (
-              <span
-                data-slot='permission-risk'
-                className='rounded bg-destructive/10 px-1.5 text-xs leading-5 text-destructive'
-              >
-                {words.containsHighRisk}
-              </span>
-            )}
-            {gapIds.has(object.id) && (
+          </div>
+          {gap ? (
+            <p
+              role='note'
+              data-slot='permission-object-page-gap'
+              className='flex min-w-0 items-start gap-1 text-xs text-amber-700 dark:text-amber-400'
+            >
               <TriangleAlertIcon
                 aria-hidden
-                data-slot='permission-object-gap'
-                className='size-3.5 shrink-0 text-amber-600'
+                className='mt-0.5 size-3 shrink-0'
               />
-            )}
-            {usedBy.length > 0 && (
-              <span
-                data-slot='permission-object-used-on'
-                className='flex min-w-0 flex-wrap items-center gap-1 text-xs'
-              >
-                <span className='sr-only'>{words.usedOnLabel}</span>
-                {usedBy.map((menu) => {
-                  const opens = isMenuChecked(menu, value);
-                  return (
-                    <span
-                      key={menu.id}
-                      title={opens ? words.pageOpens : words.pageClosed}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded px-1.5 leading-5',
-                        opens
-                          ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
-                          : 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {opens ? (
-                        <CheckIcon aria-hidden className='size-3' />
-                      ) : (
-                        <CircleIcon aria-hidden className='size-2.5' />
-                      )}
-                      {menu.label}
-                      <span className='sr-only'>
-                        {opens ? words.pageOpens : words.pageClosed}
-                      </span>
-                    </span>
-                  );
-                })}
+              <span className='min-w-0'>
+                {words.missingPage(gap.menus.map((menu) => menu.label))}
               </span>
-            )}
-          </div>
-          {/* On a phone the three choices take the row's width under the name, easy to tap. */}
-          <div className='order-last flex w-full shrink-0 @min-[44rem]/permissions:order-none @min-[44rem]/permissions:w-auto [&>[data-slot=permission-quick-set]]:w-full @min-[44rem]/permissions:[&>[data-slot=permission-quick-set]]:w-auto'>
-            {quickControl(
-              words.quickLevel(object.label),
-              level,
-              Boolean(viewActionOf(object)),
-              (mode) => quick(object, mode),
-            )}
-          </div>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            className='ml-auto @min-[44rem]/permissions:ml-0'
-            aria-expanded={expanded}
-            aria-controls={detailsId}
-            aria-label={`${expanded ? words.collapseObject : words.expandObject} ${object.label}`}
-            onClick={() =>
-              setExpandedObjects((open) => ({
-                ...open,
-                [object.id]: !expanded,
-              }))
-            }
-          >
-            {expanded ? words.collapseObject : words.expandObject}
-            <ChevronDownIcon
-              aria-hidden
-              className={cn('transition-transform', expanded && 'rotate-180')}
-            />
-          </Button>
+            </p>
+          ) : (
+            <p
+              data-slot='permission-object-used-on'
+              className='text-xs break-words text-muted-foreground'
+            >
+              {pages.length ? words.usedOn(pages) : words.notOnPage}
+            </p>
+          )}
         </div>
-        {!expanded && enabledLabels.length > 0 && (
-          <p className='-mt-1 px-3 pb-2.5 text-xs text-muted-foreground'>
-            {enabledLabels.join(' · ')}
-          </p>
-        )}
-        {expanded && (
-          <div
-            id={detailsId}
-            className='grid min-w-0 gap-3 border-t border-dashed bg-muted/20 px-3 py-3'
-          >
-            {object.description && (
-              <p className='text-sm text-muted-foreground'>
-                {object.description}
-              </p>
-            )}
-            {usedBy.length === 0 && object.usedOn && (
-              <p className='text-xs text-muted-foreground'>
-                {object.usedOn.length
-                  ? words.usedOn(object.usedOn)
-                  : words.notOnPage}
-              </p>
-            )}
-            {gaps
-              .filter((gap: PermissionPageGap) => gap.object.id === object.id)
-              .map((gap) => (
-                <div
-                  key={gap.object.id}
-                  role='note'
-                  data-slot='permission-object-page-gap'
-                  className='flex min-w-0 items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
-                >
-                  <TriangleAlertIcon
-                    aria-hidden
-                    className='mt-0.5 size-4 shrink-0'
-                  />
-                  <span className='min-w-0'>
-                    {words.missingPage(gap.menus.map((menu) => menu.label))}
-                  </span>
-                </div>
-              ))}
+        <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-auto'>
+          {view ? (
+            item(view)
+          ) : (
+            <span
+              aria-hidden
+              className='hidden text-muted-foreground/50 @min-[44rem]/permissions:inline'
+            >
+              —
+            </span>
+          )}
+        </div>
+        <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-auto'>
+          {others.length ? (
             <ul
               data-slot='permission-actions'
-              className='min-w-0 divide-y overflow-hidden rounded-lg border bg-card'
+              className='flex min-w-0 flex-wrap gap-x-5 gap-y-2'
             >
-              {basic.map(row)}
-              {basic.length > 0 && business.length > 0 && (
-                <li
-                  aria-hidden
-                  data-slot='permission-divider'
-                  className='h-1.5 bg-muted/50'
-                />
-              )}
-              {business.map(row)}
+              {others.map((action) => (
+                <li key={action.id} className='min-w-0'>
+                  {item(action)}
+                </li>
+              ))}
             </ul>
-            {object.notice && (
-              <div
-                data-slot='permission-object-notice'
-                className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
-              >
-                <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
-                <div className='min-w-0'>{object.notice}</div>
-              </div>
-            )}
+          ) : (
+            <span
+              aria-hidden
+              className='hidden text-muted-foreground/50 @min-[44rem]/permissions:inline'
+            >
+              —
+            </span>
+          )}
+        </div>
+        {object.notice && (
+          <div
+            data-slot='permission-object-notice'
+            className='col-span-full col-start-2 flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
+          >
+            <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
+            <div className='min-w-0'>{object.notice}</div>
           </div>
         )}
       </section>
@@ -2056,7 +2204,52 @@ export function PermissionEditor({
       )}
       {messages}
       {shownObjects.length ? (
-        <nav aria-label={words.objects} className='grid min-w-0 gap-3'>
+        <nav
+          aria-label={words.objects}
+          data-slot='permission-object-table'
+          className='min-w-0 overflow-hidden rounded-lg border'
+        >
+          <div
+            aria-hidden={grouped}
+            className={cn(
+              OBJECT_ROW,
+              'bg-muted/40 py-2 text-xs font-medium text-muted-foreground',
+              grouped && 'hidden @min-[44rem]/permissions:grid',
+            )}
+          >
+            <div className='flex justify-center'>
+              {!grouped && (
+                <Checkbox
+                  aria-label={words.selectAll}
+                  title={words.quickAllHint}
+                  checked={quickSelection(objects, value.grants) === 'all'}
+                  indeterminate={
+                    quickSelection(objects, value.grants) === 'some'
+                  }
+                  disabled={readOnly}
+                  className={SELECT_BOX}
+                  onCheckedChange={() =>
+                    quickMany(
+                      objects,
+                      quickSelection(objects, value.grants) === 'all'
+                        ? 'none'
+                        : 'all',
+                      words.selectAll,
+                    )
+                  }
+                />
+              )}
+            </div>
+            <span className={cn(!grouped && 'self-center')}>
+              {words.objectColumn}
+            </span>
+            <span className='hidden @min-[44rem]/permissions:inline'>
+              {words.viewColumn}
+            </span>
+            <span className='hidden @min-[44rem]/permissions:inline'>
+              {words.operationsColumn}
+            </span>
+          </div>
           {groups.map((group) => {
             const members = objects.filter(
               (object) => (object.group ?? '') === group,
@@ -2064,43 +2257,51 @@ export function PermissionEditor({
             const shown = shownObjects.filter(
               (object) => (object.group ?? '') === group,
             );
-            const levels = new Set(
-              members.map((object) => quickSetLevel(object, value.grants)),
-            );
-            const groupLevel =
-              levels.size === 1 ? [...levels][0] : ('custom' as const);
+            const selection = quickSelection(members, value.grants);
             const enabled = members.filter(
               (object) => objectStatus(object, value.grants).enabled,
             ).length;
             return (
               <div
                 key={group}
+                role='group'
+                aria-label={group || undefined}
                 data-slot='permission-object-group'
-                className='min-w-0 overflow-hidden rounded-lg border'
+                className='min-w-0'
               >
                 {grouped && group && (
-                  <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 bg-muted/40 px-3 py-2'>
-                    <h2 className='text-sm font-semibold'>{group}</h2>
-                    <span className='mr-auto text-xs text-muted-foreground tabular-nums'>
-                      {words.groupEnabled(enabled, members.length)}
-                    </span>
-                    {!readOnly && (
-                      <div className='flex w-full items-center gap-2 @min-[44rem]/permissions:w-auto [&>[data-slot=permission-quick-set]]:flex-1'>
-                        <span className='text-xs text-muted-foreground'>
-                          {words.groupQuick}
-                        </span>
-                        {quickControl(
-                          words.groupQuickLevel(group),
-                          groupLevel === 'custom' ? undefined : groupLevel,
-                          members.some((object) => viewActionOf(object)),
-                          (mode) => quickMany(members, mode, group),
-                          'xs',
-                        )}
-                      </div>
+                  <div
+                    className={cn(
+                      OBJECT_ROW,
+                      'items-center border-t bg-muted/60 py-2',
                     )}
+                  >
+                    <div className='flex justify-center'>
+                      <Checkbox
+                        aria-label={words.selectGroup(group)}
+                        title={words.quickAllHint}
+                        checked={selection === 'all'}
+                        indeterminate={selection === 'some'}
+                        disabled={readOnly}
+                        className={SELECT_BOX}
+                        onCheckedChange={() =>
+                          quickMany(
+                            members,
+                            selection === 'all' ? 'none' : 'all',
+                            group,
+                          )
+                        }
+                      />
+                    </div>
+                    <div className='col-span-full col-start-2 flex min-w-0 flex-wrap items-baseline gap-x-2'>
+                      <h2 className='text-sm font-semibold'>{group}</h2>
+                      <span className='text-xs text-muted-foreground tabular-nums'>
+                        {words.groupEnabled(enabled, members.length)}
+                      </span>
+                    </div>
                   </div>
                 )}
-                {shown.map(objectCard)}
+                {shown.map(objectRow)}
               </div>
             );
           })}

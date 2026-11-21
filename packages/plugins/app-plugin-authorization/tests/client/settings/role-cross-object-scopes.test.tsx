@@ -173,6 +173,20 @@ function api(roles: PermissionSet[]) {
   );
 }
 
+/** Opens the scope tag of an object's action, as a person clicks it in the Operations table. */
+async function openScope(
+  user: ReturnType<typeof userEvent.setup>,
+  object: string,
+  action: string,
+): Promise<void> {
+  const row = screen.getByRole('region', { name: object });
+  await user.click(
+    within(row).getByRole('button', {
+      name: new RegExp(`^${editor.scopeFor.replace('{{action}}', action)}:`),
+    }),
+  );
+}
+
 it('shows and keeps the scopes a dispatcher has on objects it cannot view when only its name changes', async () => {
   const user = userEvent.setup();
   const roles = [
@@ -201,23 +215,34 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
   await user.click(
     await screen.findByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  // Shipments opens to show its operations one by one.
-  await user.click(
-    screen.getByRole('button', { name: `${editor.expandObject} Shipments` }),
-  );
-  // Each scope shows what is stored, read-only, beside what it needs.
-  for (const [label, shown, needs] of [
-    ['Create: Stations', 'My stations', 'Stations'],
-    ['Create: Carriers', 'Active records', 'Carriers'],
-    ['Create: Vehicles', 'Active records', 'Vehicles'],
-    ['Dispatch: Drivers', 'Active records', 'Drivers'],
+  // Each scope tag of Shipments opens what is stored, read-only, beside what it needs.
+  for (const [action, scopes] of [
+    [
+      'Create',
+      [
+        ['Create: Stations', 'My stations', 'Stations'],
+        ['Create: Carriers', 'Active records', 'Carriers'],
+        ['Create: Vehicles', 'Active records', 'Vehicles'],
+      ],
+    ],
+    ['Dispatch', [['Dispatch: Drivers', 'Active records', 'Drivers']]],
   ] as const) {
-    const select = screen.getByRole('combobox', { name: label });
-    expect(select).toHaveTextContent(shown);
-    expect(select).toBeDisabled();
-    expect(
-      screen.getByText(editor.needsView.replace('{{object}}', needs)),
-    ).toBeVisible();
+    await openScope(user, 'Shipments', action);
+    const popover = await screen.findByRole('dialog', {
+      name: editor.scopeFor.replace('{{action}}', action),
+    });
+    for (const [label, shown, needs] of scopes) {
+      const select = within(popover).getByRole('combobox', { name: label });
+      expect(select).toHaveTextContent(shown);
+      expect(select).toBeDisabled();
+      expect(
+        within(popover).getByText(
+          editor.needsView.replace('{{object}}', needs),
+        ),
+      ).toBeVisible();
+    }
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(popover).not.toBeInTheDocument());
   }
   expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
   // Only the name changes.
@@ -327,22 +352,40 @@ it('keeps a role’s own custom filters when View’s stored condition is applie
   await user.click(
     await screen.findByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  // Shipments opens to show its operations one by one.
-  await user.click(
-    screen.getByRole('button', { name: `${editor.expandObject} Shipments` }),
-  );
   // Every filter reads its conditions; the locked one on Stations names its scope rather than its key.
-  for (const amount of [100, 50, 20])
-    expect(screen.getByText(new RegExp(`Less than ${amount}$`))).toBeVisible();
-  const stations = screen.getByRole('combobox', { name: 'Create: Stations' });
+  const filters = async (action: string): Promise<HTMLElement> => {
+    await openScope(user, 'Shipments', action);
+    return screen.findByRole('dialog', {
+      name: editor.scopeFor.replace('{{action}}', action),
+    });
+  };
+  const dispatch = await filters('Dispatch');
+  expect(within(dispatch).getByText(/Less than 50$/)).toBeVisible();
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(dispatch).not.toBeInTheDocument());
+  const create = await filters('Create');
+  expect(within(create).getByText(/Less than 20$/)).toBeVisible();
+  const stations = within(create).getByRole('combobox', {
+    name: 'Create: Stations',
+  });
   expect(stations).toHaveTextContent('Custom filter');
   expect(stations).toBeDisabled();
-  // Only View's filter can be opened. Applying its stored condition as it stands changes nothing and says nothing.
-  const open = screen
-    .getAllByRole('button', { name: words.permissionFilter.configure })
-    .filter((button) => !(button as HTMLButtonElement).disabled);
-  expect(open).toHaveLength(1);
-  await user.click(open[0]!);
+  // Only View's filter can be opened.
+  expect(
+    within(create)
+      .getAllByRole('button', { name: words.permissionFilter.configure })
+      .filter((button) => !(button as HTMLButtonElement).disabled),
+  ).toHaveLength(0);
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(create).not.toBeInTheDocument());
+  const view = await filters('View');
+  expect(within(view).getByText(/Less than 100$/)).toBeVisible();
+  // Applying View's stored condition as it stands changes nothing and says nothing.
+  await user.click(
+    within(view).getByRole('button', {
+      name: words.permissionFilter.configure,
+    }),
+  );
   await user.click(
     await screen.findByRole('button', { name: words.permissionFilter.apply }),
   );

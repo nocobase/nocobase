@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyQuickSetMany,
   enableDefaults,
+  quickSelection,
   quickSetLevel,
   quickSetManyRemovals,
   permissionChanges,
@@ -103,6 +104,35 @@ describe('permission editor rules', () => {
       'customers.view': {},
       'notes.view': {},
     });
+  });
+
+  it('reads the checkbox of objects as all while every action but risky ones is on', () => {
+    const notes: PermissionObject = {
+      id: 'notes',
+      label: 'Notes',
+      actions: [{ id: 'notes.view', label: 'View', view: true }],
+    };
+    expect(quickSelection([customers, notes], {})).toBe('none');
+    // A sensitive Export left off does not keep Customers from reading as all.
+    expect(quickSelection([customers], { 'customers.view': {} })).toBe('all');
+    expect(quickSelection([customers, notes], { 'customers.view': {} })).toBe(
+      'some',
+    );
+    expect(
+      quickSelection([customers, notes], {
+        'customers.view': {},
+        'notes.view': {},
+      }),
+    ).toBe('all');
+    // Roles' high-risk change is left off, so its read alone is all.
+    expect(quickSelection([roles], { 'roles.read': {} })).toBe('all');
+    // An object with nothing Enable all turns on never reads as all.
+    const risky: PermissionObject = {
+      id: 'purge',
+      label: 'Purge',
+      actions: [{ id: 'purge.run', label: 'Run', risk: 'high' }],
+    };
+    expect(quickSelection([risky], { 'purge.run': {} })).toBe('some');
   });
 
   it('sets a settings page to none, view or manage, risky actions included in manage', () => {

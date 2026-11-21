@@ -714,6 +714,26 @@ export function quickSetLevel(
   return 'custom';
 }
 
+/**
+ * The state of the checkbox that sets objects at once: `all` while every action Enable all turns on is on, `none` while
+ * nothing is, `some` otherwise. Risky and managed actions are left out of `all`, so an object whose only off actions
+ * are high risk still reads as fully set. Objects with nothing Enable all could turn on only count towards `some`.
+ */
+export function quickSelection(
+  targets: readonly PermissionObject[],
+  grants: PermissionGrants,
+): 'none' | 'some' | 'all' {
+  const actions = targets.flatMap((object) => object.actions);
+  if (!actions.some((action) => grants[action.id])) return 'none';
+  const settable = actions.filter((action) => !action.risk && !action.managed);
+  const everyObject = targets.every((object) =>
+    object.actions.some((action) => !action.risk && !action.managed),
+  );
+  return everyObject && settable.every((action) => grants[action.id])
+    ? 'all'
+    : 'some';
+}
+
 /** One quick setting applied to several objects in turn, such as a whole group. */
 export function applyQuickSetMany(
   objects: readonly PermissionObject[],

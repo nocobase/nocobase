@@ -246,27 +246,32 @@ it('turns on the operations a page declares when it is checked and lists where e
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  // The pages that list the object, each marked by whether the role opens it.
+  // The pages that list the object.
   const usedOn = document.querySelector<HTMLElement>(
     '[data-slot=permission-object-used-on]',
   );
-  expect(usedOn).toHaveTextContent(editor.usedOnLabel);
   expect(usedOn).toHaveTextContent(crmTitle);
-  expect(within(usedOn!).getByText(editor.pageOpens)).toBeInTheDocument();
   // Reports are used on no page, so they are listed last, under Other operations.
   expect(screen.getByText(editor.otherOperations)).toBeVisible();
-  // Checking the page left Customers at View only, set in one tap from the list.
-  const customers = screen.getByRole('group', {
-    name: editor.quickLevel.replace('{{object}}', 'Customers'),
+  // Checking the page left Customers at View only: its checkbox is partly checked.
+  const customers = screen.getByRole('checkbox', {
+    name: editor.selectObject.replace('{{object}}', 'Customers'),
   });
+  expect(customers).toHaveAttribute('aria-checked', 'mixed');
   expect(
-    within(customers).getByRole('button', { name: editor.quickView }),
-  ).toHaveAttribute('aria-pressed', 'true');
+    screen.getByRole('checkbox', { name: 'View customers' }),
+  ).toBeChecked();
+
+  // Every operation but high-risk ones in one tap, and off again.
+  await user.click(customers);
+  expect(customers).toBeChecked();
+  await user.click(customers);
+  expect(customers).not.toBeChecked();
+  expect(
+    screen.getByRole('checkbox', { name: 'View customers' }),
+  ).not.toBeChecked();
 
   // With View off the checked page opens empty.
-  await user.click(
-    within(customers).getByRole('button', { name: editor.quickNone }),
-  );
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.menusTab) }),
   );
@@ -277,13 +282,7 @@ it('turns on the operations a page declares when it is checked and lists where e
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  // An object opens to set its operations one by one.
-  await user.click(
-    screen.getByRole('button', {
-      name: `${editor.expandObject} Customers`,
-    }),
-  );
-  await user.click(screen.getByRole('switch', { name: 'View customers' }));
+  await user.click(screen.getByRole('checkbox', { name: 'View customers' }));
   expect(
     await screen.findByText(
       editor.missingPage.replace('{{pages}}', `“${crmTitle}”`),
