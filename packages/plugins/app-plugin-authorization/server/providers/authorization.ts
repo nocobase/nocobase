@@ -1,4 +1,8 @@
-import { authenticationToken } from '@nocobase/app-plugin-authentication';
+import {
+  AUTHENTICATION_SETTINGS_ID,
+  authenticationSettingsAccessToken,
+  authenticationToken,
+} from '@nocobase/app-plugin-authentication';
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -18,7 +22,12 @@ import {
   type AppAuthorization,
   type AuthorizationConfig,
 } from '../authorization.js';
-import { documentAuthorizationRoutes } from '../extension/http.js';
+import {
+  documentAuthorizationRoutes,
+  requireSettings,
+} from '../extension/http.js';
+import type { Context } from 'hono';
+import type { AuthorizationEnv } from '@nocobase/authorization/core';
 import { authorizationToken } from '../tokens.js';
 import { reportAuthorizationUi } from '../ui.js';
 import { reportStoredGrants, storedGrantProblems } from '../stored-grants.js';
@@ -47,6 +56,22 @@ export class AuthorizationProvider<
   public override register(): void {
     this.app.container.singleton(authorizationToken, (container) =>
       this.authorization(container),
+    );
+    // The check in front of the authentication plugin's settings route, which cannot depend on this plugin.
+    this.app.container.singleton(
+      authenticationSettingsAccessToken,
+      (container) => {
+        const identity = container.resolve(authorizationToken).middleware();
+        return (context, next) =>
+          identity(context, async () => {
+            await requireSettings(
+              (context as Context<AuthorizationEnv>).var.authz,
+              AUTHENTICATION_SETTINGS_ID,
+              'read',
+            );
+            await next();
+          });
+      },
     );
   }
 

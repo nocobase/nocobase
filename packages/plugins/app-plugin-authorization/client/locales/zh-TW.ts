@@ -36,6 +36,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': '許可權集',
+      'authentication-settings': '登入與認證',
     },
     subjectTypes: {
       authenticated: '所有登入使用者',

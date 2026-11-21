@@ -37,6 +37,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Conjuntos de permissões',
+      'authentication-settings': 'Login e autenticação',
     },
     subjectTypes: {
       authenticated: 'Todos os usuários conectados',

@@ -37,6 +37,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': '権限セット',
+      'authentication-settings': 'サインインと認証',
     },
     subjectTypes: {
       authenticated: 'サインインしているすべてのユーザー',

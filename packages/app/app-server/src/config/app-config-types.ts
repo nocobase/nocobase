@@ -41,6 +41,10 @@ export interface AppConfigAccessor {
   publicValues?(): ConfigMap;
   /** Every published path in full, such as `auth.emailAndPassword.disableSignUp`. */
   publicPaths?(): readonly string[];
+  /** The code defaults and the values the application's own sources supply, kept apart; see {@link AppConfigLayers}. */
+  layers?(): AppConfigLayers;
+  /** Every environment variable the sections declare, with the absolute path it sets, such as `{ AUTH_SECRET: 'auth.secret' }`. */
+  sectionEnvironmentVariables?(): Readonly<Record<string, string>>;
   subscribe<TValue>(
     namespace: string,
     listener: AppConfigChangeListener<TValue>,
