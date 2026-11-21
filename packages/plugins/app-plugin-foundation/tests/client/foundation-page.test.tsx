@@ -11,7 +11,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import {
@@ -345,11 +345,29 @@ describe('App Foundation page', () => {
         .getByRole('button', { name: 'Data modeling: In use' })
         .closest('li'),
     ).not.toHaveClass('opacity-40');
-    fireEvent.click(
-      within(matrix).getAllByRole('button', {
-        name: 'Inspect Orders × Permissions',
-      })[0]!,
-    );
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(chip);
+    fireEvent.mouseLeave(chip);
+    fireEvent.blur(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen
+        .getByRole('button', { name: 'Data modeling: In use' })
+        .closest('li'),
+    ).toHaveClass('opacity-40');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      screen
+        .getByRole('button', { name: 'Data modeling: In use' })
+        .closest('li'),
+    ).not.toHaveClass('opacity-40');
+    const associations = within(matrix).getAllByRole('button', {
+      name: 'Inspect Orders × Permissions',
+    });
+    fireEvent.click(associations[1]!);
+    for (const association of associations)
+      expect(association).toHaveAttribute('aria-pressed', 'true');
     expect(
       within(matrix).getByText('Page access controlled by permissions'),
     ).toBeInTheDocument();
@@ -367,6 +385,20 @@ describe('App Foundation page', () => {
     expect(
       within(matrix).getAllByLabelText('Not identified').length,
     ).toBeGreaterThan(0);
+  });
+
+  it('respects reduced motion when locating capability details', async () => {
+    await render();
+    const detail = await screen.findByRole('region', { name: /Data modeling/ });
+    const scroll = vi.fn();
+    detail.scrollIntoView = scroll;
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Permissions: In use' }),
+    );
+    expect(scroll).toHaveBeenCalledWith({
+      block: 'nearest',
+      behavior: 'instant',
+    });
   });
 
   it('shows the selected capability’s evidence, numbers and packages', async () => {
@@ -1153,6 +1185,16 @@ describe('App Foundation page', () => {
         },
       },
     }));
+    const extensions = await screen.findByRole('button', {
+      name: /Additional providers · awaiting recognition/,
+    });
+    expect(extensions).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('button', {
+        name: 'Pro approval: Pending recognition',
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(extensions);
     const button = await screen.findByRole('button', {
       name: 'Pro approval: Pending recognition',
     });
@@ -1197,6 +1239,16 @@ describe('App Foundation page', () => {
         },
       },
     }));
+    const extensions = await screen.findByRole('button', {
+      name: /Additional providers · awaiting recognition/,
+    });
+    expect(extensions).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('button', {
+        name: '@vendor/app-plugin-concurrency: Pending recognition',
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(extensions);
     const tile = await screen.findByRole('button', {
       name: '@vendor/app-plugin-concurrency: Pending recognition',
     });
@@ -1357,6 +1409,11 @@ describe('App Foundation page', () => {
     expect(
       within(mailDetail).queryByText('@nocobase/db'),
     ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Additional providers · awaiting recognition/,
+      }),
+    );
     fireEvent.click(
       screen.getByRole('button', { name: 'Pro audit: Pending recognition' }),
     );

@@ -59,9 +59,10 @@ class Snapshot implements ModuleSourceObservation {
     }
   }
 
-  public async valid(): Promise<boolean> {
+  public async valid(signal?: AbortSignal): Promise<boolean> {
     if (!this.cacheable) return false;
     for (const [file, before] of this.paths) {
+      signal?.throwIfAborted();
       try {
         if ((await fingerprint(file)) !== before) return false;
       } catch {
@@ -86,7 +87,9 @@ export class ModuleSourceCache {
   public async read(
     rootDir: string,
     runtime: readonly RuntimeProviderEvidence[] = [],
+    signal?: AbortSignal,
   ): Promise<FoundationModuleSources> {
+    signal?.throwIfAborted();
     const key = JSON.stringify([
       path.resolve(rootDir),
       runtime.map(({ name, version, rootDir: root, evidence }) => [
@@ -100,19 +103,23 @@ export class ModuleSourceCache {
     if (
       previous?.key === key &&
       this.now() - previous.at < TTL_MS &&
-      (await previous.files.valid())
-    )
+      (await previous.files.valid(signal))
+    ) {
+      signal?.throwIfAborted();
       return previous.sources;
+    }
     this.cached = undefined;
     const files = new Snapshot();
-    const sources = await collectModuleSources(rootDir, runtime, files);
+    const sources = await collectModuleSources(rootDir, runtime, files, signal);
+    signal?.throwIfAborted();
     if (
       files.cacheable &&
       Buffer.byteLength(key) <= MAX_BYTES &&
       Buffer.byteLength(JSON.stringify(sources)) <= MAX_BYTES &&
-      (await files.valid())
+      (await files.valid(signal))
     )
       this.cached = { key, at: this.now(), files, sources };
+    signal?.throwIfAborted();
     return sources;
   }
 }

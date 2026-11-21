@@ -2,6 +2,7 @@
 export class ReadQueue {
   private active = 0;
   private readonly waiting: (() => void)[] = [];
+  private readonly idle = new Set<() => void>();
 
   public constructor(private readonly limit = 4) {}
 
@@ -41,8 +42,18 @@ export class ReadQueue {
     });
   }
 
+  /** Wait for driver reads that cannot be cancelled before the application closes its database. */
+  public async settled(): Promise<void> {
+    if (this.active === 0 && this.waiting.length === 0) return;
+    await new Promise<void>((resolve) => this.idle.add(resolve));
+  }
+
   private drain(): void {
     while (this.active < this.limit && this.waiting.length)
       this.waiting.shift()?.();
+    if (this.active === 0 && this.waiting.length === 0) {
+      for (const resolve of this.idle) resolve();
+      this.idle.clear();
+    }
   }
 }
