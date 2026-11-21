@@ -12,6 +12,7 @@ import type {
   AuthorizationIdentity,
   KeyScope,
 } from '@nocobase/authorization/core';
+import { parseRecordSelection } from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -165,12 +166,17 @@ interface Ceiling {
   readonly scopes: ReadonlyMap<string, ReadonlyMap<string, HeldScope>>;
 }
 
-/** One data scope of a composite action as the holder's roles give it. */
+/** One data scope of a composite action as the holder's roles give it, each value as its role stores it or defaults. */
 interface HeldScope {
-  /** The record access keys the values name. */
+  /** Some role reaches every record of it: no selection at all, or the native every-record one. */
+  readonly unbounded: boolean;
+  /** The values, as stored or declared, beside their normalized selections; none for a role giving no records. */
+  readonly values: readonly {
+    readonly raw: unknown;
+    readonly selection: unknown;
+  }[];
+  /** The record access keys the values name, for an editor to offer; `allRecords` when unbounded. */
   readonly keys: ReadonlySet<string>;
-  /** The values as stored, including those no key names, such as a custom filter. */
-  readonly values: readonly unknown[];
 }
 
 /** The record access key that reaches every record. */
@@ -180,45 +186,42 @@ const scopeActionKey = (resource: KeyResourceRef, action: string) =>
   JSON.stringify([resource.type, resource.id, action]);
 
 /**
- * The record access key a stored data scope value selects: `''` for none, a key, or null for a value no key names,
- * such as some records by id or a custom filter, which only a holder of every record may give.
+ * A data scope value as core compares it: none (`null`) for an empty value, a record access key as its selection, any
+ * other selection as parsed, parameters included; `undefined` for a value that does not parse.
  */
-function scopeKeyOf(value: unknown): string | null {
-  if (value === undefined || value === null || value === '') return '';
-  if (typeof value === 'string') return value;
-  if (isRecord(value)) {
-    if (value.type === 'all') return ALL_RECORDS;
-    if (
-      value.type === 'recordAccess' &&
-      typeof value.key === 'string' &&
-      value.key !== 'customFilter'
-    )
-      return value.key;
+function normalizedSelection(value: unknown): unknown {
+  if (value === undefined || value === null || value === '') return null;
+  try {
+    return parseRecordSelection(
+      typeof value === 'string' ? { type: 'recordAccess', key: value } : value,
+    );
+  } catch {
+    return undefined;
   }
-  return null;
 }
 
 /**
- * Whether a data scope value is no wider than what is held of it: none, a held key, a value one of the holder's roles
- * stores exactly, or anything under every record.
+ * Whether a data scope value is no wider than what is held of it: none, anything under a role that reaches every
+ * record, or exactly a selection one of the holder's roles gives, parameters and all.
  */
 function withinHeld(value: unknown, held: HeldScope): boolean {
-  if (held.keys.has(ALL_RECORDS)) return true;
-  const key = scopeKeyOf(value);
-  if (key === '' || (key !== null && held.keys.has(key))) return true;
-  return held.values.some((stored) => isDeepStrictEqual(stored, value));
+  const selection = normalizedSelection(value);
+  if (selection === null) return true;
+  if (selection === undefined) return false;
+  if (held.unbounded) return true;
+  return held.values.some((entry) =>
+    isDeepStrictEqual(entry.selection, selection),
+  );
 }
 
 /**
  * The value a key gets for a data scope it leaves out: what the holder holds at the time, pinned so the key never
- * follows the holder's roles wider later. Every record when held; otherwise the first named key, or the first stored
- * value, which is one of the holder's own and so never wider than they are.
+ * follows the holder's roles wider later. Every record as core's own selection when held; otherwise the first value
+ * one of the holder's roles gives, kept as it is stored, parameters included, so it is never wider than they are.
  */
 function heldDefault(held: HeldScope): unknown {
-  if (held.keys.has(ALL_RECORDS)) return ALL_RECORDS;
-  const [first] = [...held.keys].filter(Boolean).sort();
-  if (first !== undefined) return first;
-  return held.values.find((value) => scopeKeyOf(value) !== '') ?? '';
+  if (held.unbounded) return { type: 'all' };
+  return held.values.find((entry) => entry.selection !== null)?.raw ?? '';
 }
 
 /** The policy a key's composite action gets when it names none: the holder's record scopes at the time. */
@@ -1231,16 +1234,46 @@ export class ScopedApiKeys {
       for (const grant of set.grants) {
         if (grant.resource.type !== 'composite') continue;
         for (const { action, policy } of grant.actions) {
-          const values: unknown = policy?.scopes;
-          if (!isRecord(values)) continue;
+          const declared = authz.compositeResources.getAction(
+            grant.resource.id,
+            action,
+          );
+          if (!declared?.dataScopes?.length) continue;
+          const stored: unknown = policy?.scopes;
           const key = scopeActionKey(grant.resource, action);
           const byScope = scopes.get(key) ?? new Map<string, HeldScope>();
-          for (const [scope, value] of Object.entries(values)) {
-            const entry = byScope.get(scope) ?? { keys: new Set(), values: [] };
-            const selected = scopeKeyOf(value);
-            byScope.set(scope, {
-              keys: selected ? new Set([...entry.keys, selected]) : entry.keys,
-              values: [...entry.values, value],
+          for (const scope of declared.dataScopes) {
+            // A scope the role leaves out takes the action's declared default, as core does; none reaches every record.
+            const raw: unknown =
+              isRecord(stored) && scope.key in stored
+                ? stored[scope.key]
+                : scope.defaultValue;
+            const selection = normalizedSelection(raw);
+            const entry = byScope.get(scope.key) ?? {
+              unbounded: false,
+              values: [],
+              keys: new Set<string>(),
+            };
+            const unbounded =
+              raw === undefined ||
+              (isRecord(selection) && selection.type === 'all');
+            const named =
+              isRecord(selection) &&
+              selection.type === 'recordAccess' &&
+              typeof selection.key === 'string'
+                ? selection.key
+                : undefined;
+            byScope.set(scope.key, {
+              unbounded: entry.unbounded || unbounded,
+              values:
+                raw === undefined || selection === undefined
+                  ? entry.values
+                  : [...entry.values, { raw, selection }],
+              keys: new Set([
+                ...entry.keys,
+                ...(named ? [named] : []),
+                ...(unbounded ? [ALL_RECORDS] : []),
+              ]),
             });
           }
           scopes.set(key, byScope);

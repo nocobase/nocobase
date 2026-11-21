@@ -50,6 +50,9 @@ describe('GET /api/authorization/permissionSets/grantableOptions', () => {
           }[];
         }[];
         subjectTypes: unknown[];
+        recordAccess: unknown[];
+        collections: unknown[];
+        resourceGroups?: unknown[];
       };
     };
     const resources = body.data.sections.flatMap((section) =>
@@ -63,5 +66,9 @@ describe('GET /api/authorization/permissionSets/grantableOptions', () => {
       }),
     ]);
     expect(body.data.subjectTypes).toEqual([]);
+    // What the held resource does not read stays out: no record access, collections or resource groups.
+    expect(body.data.recordAccess).toEqual([]);
+    expect(body.data.collections).toEqual([]);
+    expect(body.data.resourceGroups).toBeUndefined();
   });
 });

@@ -15,6 +15,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { higherRisk } from '#components/permission-editor-model';
 import {
   PermissionEditor,
   type PermissionAction,
@@ -180,7 +181,8 @@ function keyWorkspace(
             humanOnly: options.text(entry.humanOnly),
           },
         ];
-      const risk = action.risk ?? entry?.risk ?? undefined;
+      // Whichever says higher, the table or the server, so a high-risk action always asks first.
+      const risk = higherRisk(action.risk, entry?.risk);
       return [
         {
           ...action,

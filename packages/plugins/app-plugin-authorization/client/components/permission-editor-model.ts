@@ -193,6 +193,15 @@ export interface PermissionMenuWarning {
   readonly action: PermissionAction;
 }
 
+/** The higher of two risk levels, such as the table's and the server's for one action; none when neither says. */
+export function higherRisk(
+  ...risks: readonly (PermissionRisk | null | undefined)[]
+): PermissionRisk | undefined {
+  if (risks.includes('high')) return 'high';
+  if (risks.includes('sensitive')) return 'sensitive';
+  return undefined;
+}
+
 // Business objects
 
 export function viewActionOf(

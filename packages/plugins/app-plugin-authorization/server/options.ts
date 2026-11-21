@@ -417,10 +417,50 @@ export function grantableAuthorizationOptions(
     });
     return subsections.length ? [{ ...section, subsections }] : [];
   });
+  // Rebuilt from what is kept, so nothing about a resource the caller does not hold shows: the groups the kept
+  // resources name with their ancestors, and the record access keys their data scopes offer, on the collections read.
+  const kept = sections.flatMap((section) =>
+    section.subsections.flatMap((subsection) => subsection.resources),
+  );
+  const offered = new Set(
+    kept.flatMap((resource) =>
+      Object.values(resource.dataScopes ?? {}).flatMap((scopes) =>
+        scopes.flatMap((scope) => scope.recordAccess),
+      ),
+    ),
+  );
+  const groupsByName = new Map(
+    (options.resourceGroups ?? []).map((group) => [group.name, group]),
+  );
+  const wanted = new Set<string>();
+  for (const resource of kept) {
+    let name = resource.group;
+    while (name !== undefined && !wanted.has(name)) {
+      wanted.add(name);
+      name = groupsByName.get(name)?.parent;
+    }
+  }
+  const resourceGroups = (options.resourceGroups ?? []).filter((group) =>
+    wanted.has(group.name),
+  );
+  const { resourceGroups: _all, ...rest } = options;
   return {
-    ...options,
+    ...rest,
     sections,
+    ...(resourceGroups.length ? { resourceGroups } : {}),
     subjectTypes: [],
+    recordAccess: options.recordAccess.flatMap((definition) =>
+      offered.has(definition.key)
+        ? [
+            {
+              ...definition,
+              collections: definition.collections.filter((name) =>
+                read.has(name),
+              ),
+            },
+          ]
+        : [],
+    ),
     collections: options.collections.filter((collection) =>
       read.has(collection.name),
     ),

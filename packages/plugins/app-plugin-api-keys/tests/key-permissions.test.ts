@@ -28,6 +28,8 @@ import { createMigrator, type DatabaseManager } from '@nocobase/db';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
+
 import { apiKey } from '../server/api-keys.js';
 import { apiRoutes } from '../server/routes/index.js';
 import { connectOwnKeyPolicy, ScopedApiKeys } from '../server/scoped-keys.js';
@@ -39,6 +41,69 @@ import {
   type KeyPermissions,
 } from '../shared/scopes.js';
 
+/** The whole catalogue the authorization plugin would build: what the person holds, and what they do not. */
+const CATALOGUE = {
+  sections: [
+    {
+      name: 'business',
+      title: 'Business',
+      order: 0,
+      subsections: [
+        {
+          name: 'shop',
+          title: 'Shop',
+          resources: [
+            {
+              type: 'settings',
+              id: 'orders',
+              title: 'Orders',
+              group: 'shop',
+              actions: [
+                { name: 'read', title: 'Read' },
+                { name: 'update', title: 'Update' },
+              ],
+            },
+            {
+              type: 'composite',
+              id: 'shop.payroll',
+              title: 'Payroll',
+              group: 'finance',
+              actions: [{ name: 'view', title: 'View' }],
+              dataScopes: {
+                view: [
+                  {
+                    key: 'payslip',
+                    title: 'Payslips',
+                    collection: 'payroll',
+                    fields: [],
+                    recordAccess: ['secretAccess'],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  resourceGroups: [
+    { name: 'shop', title: 'Shop' },
+    { name: 'finance', title: 'Finance' },
+  ],
+  subjectTypes: [
+    { type: 'user', title: 'Users', selection: { type: 'collection' } },
+  ],
+  recordAccess: [
+    { key: 'secretAccess', title: 'Secret', collections: ['payroll'] },
+  ],
+  collections: [{ name: 'payroll', title: 'Payroll', fields: ['salary'] }],
+};
+
+vi.mock('@nocobase/app-plugin-authorization', async (actual) => ({
+  ...(await actual<typeof import('@nocobase/app-plugin-authorization')>()),
+  authorizationOptions: () => Promise.resolve(CATALOGUE),
+}));
+
 const require = createRequire(import.meta.url);
 const BASE_URL = 'http://localhost/api/auth';
 const PASSWORD = 'password-at-least-8';
@@ -49,6 +114,13 @@ const billing = { type: 'settings', id: 'billing' } as const;
 const ordersPage = { type: 'page', id: 'orders' } as const;
 const quotes = { type: 'composite', id: 'shop.quotes' } as const;
 const everyQuote = { type: 'composite', scopes: { quote: { type: 'all' } } };
+const invoices = { type: 'composite', id: 'shop.invoices' } as const;
+/** A parameterized record access a role may give an invoice scope. */
+const ownInvoices = {
+  type: 'recordAccess',
+  key: 'ownedBy',
+  params: { field: 'ownerId' },
+};
 
 /** Grants a test takes away from the person, as `<resource id>/<action>`, and gives back afterwards. */
 const revoked = new Set<string>();
@@ -64,6 +136,7 @@ function personGrants(): AuthorizationGrantService {
     { resource: accounts, action: 'manage' },
     { resource: ordersPage, action: 'access' },
     { resource: quotes, action: 'view', policy: everyQuote },
+    { resource: invoices, action: 'view' },
   ].map((grant) => ({ ...grant, source: { plugin: 'test', id: 'person' } }));
   const grants = () =>
     all.filter((grant) => !revoked.has(`${grant.resource.id}/${grant.action}`));
@@ -191,6 +264,31 @@ describe('API key permissions in the shape of a permission set', () => {
         },
       ],
     });
+    authz.compositeResources.define(
+      defineCompositeResource('shop.invoices', (resource) =>
+        resource.action('view', (action) =>
+          action.grant({
+            build: () => ({
+              // Offers only the parameterized scope by name; every record is core's own selection.
+              dataScopes: [
+                {
+                  key: 'invoice',
+                  title: 'Invoices',
+                  defaultValue: 'ownedBy',
+                  options: ['ownedBy'],
+                },
+              ],
+              grants: [
+                {
+                  resource: { type: 'database.collection', id: 'invoices' },
+                  actions: [{ action: 'read', scopeKey: 'invoice' }],
+                },
+              ],
+            }),
+          }),
+        ),
+      ),
+    );
     authz.compositeResources.define(
       defineCompositeResource('shop.quotes', (resource) =>
         resource.action('view', (action) =>
@@ -846,6 +944,7 @@ describe('API key permissions in the shape of a permission set', () => {
     const template = (id: string) =>
       grantable.templates.find((entry) => entry.id === id);
     expect(template('read-only')?.permissions.grants).toEqual([
+      { resource: invoices, actions: [{ action: 'view' }] },
       { resource: quotes, actions: [{ action: 'view' }] },
       { resource: ordersPage, actions: [{ action: 'access' }] },
       { resource: orders, actions: [{ action: 'read' }] },
@@ -1252,6 +1351,164 @@ describe('API key permissions in the shape of a permission set', () => {
       ).toMatchObject({ permissions: pinned });
     } finally {
       Reflect.deleteProperty(authz, 'permissionSets');
+    }
+  });
+
+  it('pins a scope a role leaves to its declared default, parameters and all, and pins every record as core’s own selection', async () => {
+    const holding = (scopes?: Record<string, unknown>) => ({
+      getEffective: () =>
+        Promise.resolve([
+          {
+            key: 'staff',
+            grants: [
+              {
+                resource: invoices,
+                actions: [
+                  scopes
+                    ? {
+                        action: 'view',
+                        policy: { type: 'composite', scopes },
+                      }
+                    : { action: 'view' },
+                ],
+              },
+            ],
+          },
+        ]),
+    });
+    const viewInvoices = (policy?: unknown): KeyPermissions => ({
+      grants: [
+        {
+          resource: invoices,
+          actions: [
+            policy === undefined
+              ? { action: 'view' }
+              : { action: 'view', policy: policy as { type: string } },
+          ],
+        },
+      ],
+    });
+    // The role names no scope: it holds the action's declared default.
+    Reflect.set(authz, 'permissionSets', holding());
+    try {
+      const byDefault = await keys.create(
+        personId,
+        { name: 'default', expiresInDays: 7, permissions: viewInvoices() },
+        await identity(),
+      );
+      expect(byDefault.key.permissions).toEqual(
+        viewInvoices({ type: 'composite', scopes: { invoice: 'ownedBy' } }),
+      );
+      // The role gives the scope with parameters: a key is pinned to it, parameters and all.
+      Reflect.set(authz, 'permissionSets', holding({ invoice: ownInvoices }));
+      const pinned = await keys.create(
+        personId,
+        { name: 'params', expiresInDays: 7, permissions: viewInvoices() },
+        await identity(),
+      );
+      const asMade = viewInvoices({
+        type: 'composite',
+        scopes: { invoice: ownInvoices },
+      });
+      expect(pinned.key.permissions).toEqual(asMade);
+      // The same record access with other parameters is not what the role gives, whatever its name.
+      await expect(
+        keys.create(
+          personId,
+          {
+            name: 'other params',
+            expiresInDays: 7,
+            permissions: viewInvoices({
+              type: 'composite',
+              scopes: {
+                invoice: { ...ownInvoices, params: { field: 'teamId' } },
+              },
+            }),
+          },
+          await identity(),
+        ),
+      ).rejects.toMatchObject({ status: 403, code: 'KEY_SCOPE_EXCEEDS_YOURS' });
+      // The role widens to every record: the key made before stays as it was made.
+      Reflect.set(
+        authz,
+        'permissionSets',
+        holding({ invoice: { type: 'all' } }),
+      );
+      expect((await keys.get(personId, pinned.key.id)).permissions).toEqual(
+        asMade,
+      );
+      expect((await keys.get(personId, byDefault.key.id)).permissions).toEqual(
+        viewInvoices({ type: 'composite', scopes: { invoice: 'ownedBy' } }),
+      );
+      // A key made now is pinned to every record as core's own selection, which the action accepts though it lists
+      // no `allRecords`.
+      const wide = await keys.create(
+        personId,
+        { name: 'every record', expiresInDays: 7, permissions: viewInvoices() },
+        await identity(),
+      );
+      expect(wide.key.permissions).toEqual(
+        viewInvoices({
+          type: 'composite',
+          scopes: { invoice: { type: 'all' } },
+        }),
+      );
+    } finally {
+      Reflect.deleteProperty(authz, 'permissionSets');
+    }
+  });
+
+  it('serves a key’s catalogue with what its owner holds and the key lost, and nothing about the rest', async () => {
+    const created = await keys.create(
+      personId,
+      { name: 'catalogue', expiresInDays: 7, permissions: ordersReadUpdate },
+      await identity(),
+    );
+    const services = new Map<unknown, unknown>([
+      [authenticationToken, auth],
+      [scopedApiKeysToken, keys],
+      [authorizationToken, authz],
+    ]);
+    const router = await apiRoutes.createRouter({
+      container: {
+        has: (token: unknown) => services.has(token),
+        resolve: (token: unknown) => services.get(token),
+      },
+    } as unknown as AppPluginApplication);
+    revoked.add('orders/update');
+    try {
+      const answer = await router.request(
+        `/apiKeys/${created.key.id}/catalog`,
+        { headers: { cookie, origin: 'http://localhost' } },
+      );
+      expect(answer.status).toBe(200);
+      const { data } = (await answer.json()) as { data: typeof CATALOGUE };
+      // Orders with read, which the person holds, and update, which the key still names after they lost it.
+      expect(
+        data.sections.flatMap((section) =>
+          section.subsections.flatMap((subsection) =>
+            subsection.resources.map((resource) => [
+              resource.id,
+              resource.actions.map((action) => action.name),
+            ]),
+          ),
+        ),
+      ).toEqual([['orders', ['read', 'update']]]);
+      // Nothing of payroll: its group, its record access and its collection stay out, and nobody's subject types.
+      expect(data.resourceGroups).toEqual([{ name: 'shop', title: 'Shop' }]);
+      expect(data.recordAccess).toEqual([]);
+      expect(data.collections).toEqual([]);
+      expect(data.subjectTypes).toEqual([]);
+      // Another person's key, or none, is not found.
+      expect(
+        (
+          await router.request('/apiKeys/missing/catalog', {
+            headers: { cookie, origin: 'http://localhost' },
+          })
+        ).status,
+      ).toBe(404);
+    } finally {
+      revoked.delete('orders/update');
     }
   });
 });

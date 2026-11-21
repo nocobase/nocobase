@@ -20,6 +20,7 @@ const options = {
               type: 'composite',
               id: 'shop.orders',
               title: 'Orders',
+              group: 'sales',
               actions: [
                 { name: 'view', title: 'View' },
                 { name: 'delete', title: 'Delete' },
@@ -40,6 +41,7 @@ const options = {
               type: 'composite',
               id: 'shop.payouts',
               title: 'Payouts',
+              group: 'finance',
               actions: [{ name: 'approve', title: 'Approve' }],
             },
           ],
@@ -50,7 +52,19 @@ const options = {
   subjectTypes: [
     { type: 'user', title: 'Users', selection: { type: 'collection' } },
   ],
-  recordAccess: [],
+  resourceGroups: [
+    { name: 'commerce', title: 'Commerce' },
+    { name: 'sales', title: 'Sales', parent: 'commerce' },
+    { name: 'finance', title: 'Finance' },
+  ],
+  recordAccess: [
+    {
+      key: 'allRecords',
+      title: 'All records',
+      collections: ['orders', 'payouts'],
+    },
+    { key: 'payoutsIApprove', title: 'Mine', collections: ['payouts'] },
+  ],
   collections: [
     { name: 'orders', title: 'Orders', fields: ['id'] },
     { name: 'payouts', title: 'Payouts', fields: ['id'] },
@@ -75,6 +89,14 @@ describe('the catalogue a person may give a credential', () => {
       }),
     ]);
     expect(limited.collections.map((item) => item.name)).toEqual(['orders']);
+    // Nothing about payouts: not its group, not its record access, not its collection under a shared one.
+    expect(limited.resourceGroups?.map((group) => group.name)).toEqual([
+      'commerce',
+      'sales',
+    ]);
+    expect(limited.recordAccess).toEqual([
+      { key: 'allRecords', title: 'All records', collections: ['orders'] },
+    ]);
     expect(limited.subjectTypes).toEqual([]);
   });
 
