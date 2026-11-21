@@ -18,6 +18,24 @@ describe('database helpers', () => {
       });
     });
 
+    it('uses the application zone for a matching fractional MariaDB offset and rejects a mismatch', async () => {
+      vi.stubEnv('DB_DIALECT', 'mariadb');
+      vi.stubEnv('DB_TIMEZONE', '+5:30');
+      vi.stubEnv('TZ', 'Asia/Kolkata');
+      try {
+        const options = await parseDatabaseOptionsFromEnv();
+        expect(options.timezone).toBe('+05:30');
+        expect(options.dialectOptions).toHaveProperty(
+          'timezone',
+          new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kolkata' }).resolvedOptions().timeZone,
+        );
+        vi.stubEnv('TZ', 'UTC');
+        await expect(parseDatabaseOptionsFromEnv()).rejects.toThrow('Set TZ');
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
     it('custom pool options', async () => {
       process.env.DB_POOL_MAX = '10';
       process.env.DB_POOL_MIN = '1';
