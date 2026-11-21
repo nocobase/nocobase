@@ -4,17 +4,8 @@ import {
 } from '@nocobase/app-client/plugins';
 import type { ClientApplication } from '@nocobase/app-client';
 import { ServiceProvider } from '@nocobase/service-provider';
-import type { ReactElement } from 'react';
 
-import {
-  distributedStatusSlotsToken,
-  type DistributedStatusBlockProps,
-} from '../../client/index.js';
-
-function InstancesBlock({ status }: DistributedStatusBlockProps): ReactElement {
-  const data = status.extensions.fixture as { instances: string[] } | undefined;
-  return <p>Running instances: {data?.instances.join(', ')}</p>;
-}
+import { distributedStatusSlotsToken } from '../../client/index.js';
 
 class FixtureSlotsProvider extends ServiceProvider<ClientApplication> {
   public readonly name: string = 'fixture-status-slots';
@@ -25,7 +16,7 @@ class FixtureSlotsProvider extends ServiceProvider<ClientApplication> {
     container.resolve(distributedStatusSlotsToken).register({
       slot: 'idGeneration',
       id: 'fixture:instances',
-      load: async () => ({ default: InstancesBlock }),
+      load: () => import('./instances-block.js'),
     });
   }
 }
