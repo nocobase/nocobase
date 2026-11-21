@@ -9,6 +9,7 @@ import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
+  cliRoute,
   dataResponse,
   describeRoute,
   emptyResponse,
@@ -22,6 +23,9 @@ import type { ScopedApiKeys } from '../scoped-keys.js';
 import { API_KEYS_SETTINGS } from '../scoped-keys.js';
 import type { SystemApiKeys } from '../system-keys.js';
 import { KeyPermissionsSchema } from './schemas.js';
+
+/** Administration stays off the command line, documented only, until an application offers it there. */
+const offCommandLine = cliRoute(false);
 
 type Env = {
   Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
@@ -187,6 +191,7 @@ export function installKeyAdministration(
     '/members',
     access('read'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: "List members' personal keys",
       operationId: 'apiKeysListMemberKeys',
@@ -213,6 +218,7 @@ export function installKeyAdministration(
     '/members/:keyId',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: "Revoke a member's personal key",
       operationId: 'apiKeysRevokeMemberKey',
@@ -236,6 +242,7 @@ export function installKeyAdministration(
     '/rules',
     access('read'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Get the rules for API keys',
       operationId: 'apiKeysGetRules',
@@ -248,6 +255,7 @@ export function installKeyAdministration(
     '/rules',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Save the rules for API keys',
       operationId: 'apiKeysSaveRules',
@@ -271,6 +279,7 @@ export function installSystemKeys(
     '/',
     access('read'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'List system keys',
       operationId: 'apiKeysListSystemKeys',
@@ -291,6 +300,7 @@ export function installSystemKeys(
     '/',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Create a system key',
       operationId: 'apiKeysCreateSystemKey',
@@ -318,6 +328,7 @@ export function installSystemKeys(
     '/:identityId',
     access('read'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Get a system key',
       operationId: 'apiKeysGetSystemKey',
@@ -338,6 +349,7 @@ export function installSystemKeys(
     '/:identityId',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Edit a system key',
       operationId: 'apiKeysUpdateSystemKey',
@@ -363,6 +375,7 @@ export function installSystemKeys(
     '/:identityId/permissions',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: "Replace a system key's permissions",
       operationId: 'apiKeysSetSystemKeyPermissions',
@@ -388,6 +401,7 @@ export function installSystemKeys(
     '/:identityId/rotate',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Rotate a system key',
       operationId: 'apiKeysRotateSystemKey',
@@ -417,6 +431,7 @@ export function installSystemKeys(
       `/:identityId/${path}`,
       access('manage'),
       describeRoute({
+        ...offCommandLine,
         tags,
         summary: `${enabled ? 'Enable' : 'Disable'} a system key`,
         operationId: enabled
@@ -445,6 +460,7 @@ export function installSystemKeys(
     '/:identityId',
     access('manage'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: 'Delete a system key',
       operationId: 'apiKeysDeleteSystemKey',
@@ -468,6 +484,7 @@ export function installSystemKeys(
     '/:identityId/events',
     access('read'),
     describeRoute({
+      ...offCommandLine,
       tags,
       summary: "List a system key's activity",
       operationId: 'apiKeysListSystemKeyEvents',
