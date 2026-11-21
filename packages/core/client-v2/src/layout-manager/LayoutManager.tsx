@@ -11,7 +11,7 @@ import React from 'react';
 import type { BaseApplication } from '../BaseApplication';
 import { LayoutContentRoute } from './LayoutContentRoute';
 import { LayoutRoute } from './LayoutRoute';
-import type { LayoutDefinition, LayoutRegisterOptions } from './types';
+import type { LayoutDefinition, LayoutRegisterOptions, LayoutStorageScopeOptions } from './types';
 import {
   getLayoutPageRouteName,
   getLayoutPageTabRouteName,
@@ -21,6 +21,7 @@ import {
 
 const DEFAULT_ROOT_PAGE_MODEL_CLASS = 'RootPageModel';
 const DEFAULT_CHILD_PAGE_MODEL_CLASS = 'ChildPageModel';
+const STORAGE_SCOPE_TYPES = new Set(['localStorage', 'sessionStorage', 'memory']);
 
 const assertNonEmptyString = (value: unknown, fieldName: string) => {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -44,6 +45,24 @@ const assertOptionalBoolean = (value: unknown, fieldName: string) => {
   if (value !== undefined && typeof value !== 'boolean') {
     throw new Error(`[NocoBase] layoutManager.registerLayout() requires '${fieldName}' to be a boolean.`);
   }
+};
+
+const assertOptionalStorageScope = (value: unknown) => {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!value || typeof value !== 'object') {
+    throw new Error(`[NocoBase] layoutManager.registerLayout() requires 'storageScope' to be an object.`);
+  }
+
+  const storageScope = value as Partial<LayoutStorageScopeOptions>;
+  if (!STORAGE_SCOPE_TYPES.has(String(storageScope.storageType))) {
+    throw new Error(
+      `[NocoBase] layoutManager.registerLayout() requires 'storageScope.storageType' to be one of localStorage, sessionStorage, memory.`,
+    );
+  }
+  assertNonEmptyString(storageScope.prefix, 'storageScope.prefix');
 };
 
 function assertValidRouteName(routeName: string) {
@@ -82,6 +101,7 @@ function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefini
   assertOptionalNonEmptyString(options.rootPageModelClass, 'rootPageModelClass');
   assertOptionalNonEmptyString(options.childPageModelClass, 'childPageModelClass');
   assertOptionalBoolean(options.authCheck, 'authCheck');
+  assertOptionalStorageScope(options.storageScope);
   assertValidRouteName(options.routeName);
 
   const routePath = normalizeLayoutRoutePath(options.routeName, options.routePath);
@@ -95,6 +115,12 @@ function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefini
     rootPageModelClass: options.rootPageModelClass || DEFAULT_ROOT_PAGE_MODEL_CLASS,
     childPageModelClass: options.childPageModelClass || DEFAULT_CHILD_PAGE_MODEL_CLASS,
     authCheck: options.authCheck ?? true,
+    storageScope: options.storageScope
+      ? {
+          storageType: options.storageScope.storageType,
+          prefix: options.storageScope.prefix,
+        }
+      : undefined,
   };
 }
 
