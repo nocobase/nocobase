@@ -11,6 +11,9 @@ const enUS = {
     create: 'Create personal API keys',
     humanOnly: 'Keys never manage keys: only a person may do this.',
   },
+  roles: {
+    personalKeyCreators: 'Personal API key creators',
+  },
   templates: {
     readOnly: 'Read only',
   },

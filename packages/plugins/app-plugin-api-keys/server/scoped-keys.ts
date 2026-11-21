@@ -56,12 +56,6 @@ export interface ApiKeysConfig {
    * key can do everything its owner can, account endpoints included. Keys that exist keep working either way.
    */
   readonly allowSameAsMe?: boolean | null;
-  /**
-   * Whether creating keys of one's own takes `settings:personalApiKeys/create` from a role. Off unless set: everyone
-   * signed in may, as before the permission existed, so no member loses it on upgrade and no role has to carry it. An
-   * application that turns it on grants the permission to the roles that should create keys.
-   */
-  readonly personalKeysByRole?: boolean | null;
 }
 
 /** The settings item whose `create` lets a person create keys of their own, when no application policy is set. */
@@ -168,8 +162,12 @@ interface Ceiling {
 
 /** One data scope of a composite action as the holder's roles give it, each value as its role stores it or defaults. */
 interface HeldScope {
-  /** Some role reaches every record of it: no selection at all, or the native every-record one. */
-  readonly unbounded: boolean;
+  /**
+   * The value of a role that reaches every record, as that role stores it: core's own every-record selection or the
+   * built-in `allRecords`; undefined when no role does. A scope no role names and the action declares no default for
+   * reaches no record, as core resolves it.
+   */
+  readonly unbounded: unknown;
   /** The values, as stored or declared, beside their normalized selections; none for a role giving no records. */
   readonly values: readonly {
     readonly raw: unknown;
@@ -208,7 +206,7 @@ function withinHeld(value: unknown, held: HeldScope): boolean {
   const selection = normalizedSelection(value);
   if (selection === null) return true;
   if (selection === undefined) return false;
-  if (held.unbounded) return true;
+  if (held.unbounded !== undefined) return true;
   return held.values.some((entry) =>
     isDeepStrictEqual(entry.selection, selection),
   );
@@ -220,8 +218,19 @@ function withinHeld(value: unknown, held: HeldScope): boolean {
  * one of the holder's roles gives, kept as it is stored, parameters included, so it is never wider than they are.
  */
 function heldDefault(held: HeldScope): unknown {
-  if (held.unbounded) return { type: 'all' };
+  if (held.unbounded !== undefined) return held.unbounded;
   return held.values.find((entry) => entry.selection !== null)?.raw ?? '';
+}
+
+/** Whether a selection reaches every record: core's own, or the built-in `allRecords` with no parameters. */
+function reachesEveryRecord(selection: unknown): boolean {
+  return (
+    isRecord(selection) &&
+    (selection.type === 'all' ||
+      (selection.type === 'recordAccess' &&
+        selection.key === ALL_RECORDS &&
+        selection.params === undefined))
+  );
 }
 
 /** The policy a key's composite action gets when it names none: the holder's record scopes at the time. */
@@ -326,13 +335,11 @@ export class ScopedApiKeys {
   }
 
   /**
-   * Whether `userId` may create keys of their own: the application's policy when it set one; otherwise, when the
-   * application turned on `personalKeysByRole`, whether their roles hold `settings:personalApiKeys/create`; otherwise
-   * true.
+   * Whether `userId` may create keys of their own: the application's policy when it set one; otherwise whether their
+   * roles hold `settings:personalApiKeys/create`, when that permission is registered; otherwise true.
    */
   async mayCreateOwn(userId: string): Promise<boolean> {
     if (this.ownKeyPolicy) return this.ownKeyPolicy(userId);
-    if (this.options.config?.()?.personalKeysByRole !== true) return true;
     const authz = this.options.authorization?.();
     const resource = { type: 'settings', id: PERSONAL_API_KEYS_SETTINGS };
     if (!authz?.resourceTypes.action(resource, 'create')) return true;
@@ -1244,19 +1251,18 @@ export class ScopedApiKeys {
           const byScope = scopes.get(key) ?? new Map<string, HeldScope>();
           for (const scope of declared.dataScopes) {
             // A scope the role leaves out takes the action's declared default, as core does; none reaches every record.
+            // Neither stored nor declared, core selects nothing for it: the branch reads no record.
             const raw: unknown =
-              isRecord(stored) && scope.key in stored
+              (isRecord(stored) && scope.key in stored
                 ? stored[scope.key]
-                : scope.defaultValue;
+                : scope.defaultValue) ?? '';
             const selection = normalizedSelection(raw);
-            const entry = byScope.get(scope.key) ?? {
-              unbounded: false,
+            const entry: HeldScope = byScope.get(scope.key) ?? {
+              unbounded: undefined,
               values: [],
               keys: new Set<string>(),
             };
-            const unbounded =
-              raw === undefined ||
-              (isRecord(selection) && selection.type === 'all');
+            const unbounded = reachesEveryRecord(selection);
             const named =
               isRecord(selection) &&
               selection.type === 'recordAccess' &&
@@ -1264,9 +1270,9 @@ export class ScopedApiKeys {
                 ? selection.key
                 : undefined;
             byScope.set(scope.key, {
-              unbounded: entry.unbounded || unbounded,
+              unbounded: entry.unbounded ?? (unbounded ? raw : undefined),
               values:
-                raw === undefined || selection === undefined
+                selection === undefined
                   ? entry.values
                   : [...entry.values, { raw, selection }],
               keys: new Set([

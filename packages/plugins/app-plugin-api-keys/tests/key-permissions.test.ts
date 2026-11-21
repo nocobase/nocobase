@@ -124,6 +124,10 @@ const ownInvoices = {
 
 /** Grants a test takes away from the person, as `<resource id>/<action>`, and gives back afterwards. */
 const revoked = new Set<string>();
+/** The record scopes the person's role gives Quotes › View; a test changes it and puts it back. */
+let quoteScopes: Record<string, unknown> | undefined = {
+  quote: { type: 'all' },
+};
 
 /** The person holds orders, accounts and the orders page, never billing. */
 function personGrants(): AuthorizationGrantService {
@@ -135,11 +139,22 @@ function personGrants(): AuthorizationGrantService {
     { resource: accounts, action: 'read' },
     { resource: accounts, action: 'manage' },
     { resource: ordersPage, action: 'access' },
-    { resource: quotes, action: 'view', policy: everyQuote },
     { resource: invoices, action: 'view' },
+    { resource: { type: 'settings', id: 'personalApiKeys' }, action: 'create' },
   ].map((grant) => ({ ...grant, source: { plugin: 'test', id: 'person' } }));
-  const grants = () =>
-    all.filter((grant) => !revoked.has(`${grant.resource.id}/${grant.action}`));
+  const grants = () => [
+    ...all.filter(
+      (grant) => !revoked.has(`${grant.resource.id}/${grant.action}`),
+    ),
+    {
+      resource: quotes,
+      action: 'view',
+      ...(quoteScopes
+        ? { policy: { type: 'composite', scopes: quoteScopes } }
+        : {}),
+      source: { plugin: 'test', id: 'person' },
+    },
+  ];
   return {
     resolveAll: () => Promise.resolve(grants()),
     resolve: (input) =>
@@ -152,6 +167,26 @@ function personGrants(): AuthorizationGrantService {
         ),
       ),
   };
+}
+
+/** The records of every scoped collection here, and those "mine" reaches. */
+const RECORDS = ['r1', 'r2', 'r3'];
+const MINE = ['r1'];
+
+/** The records a selection reaches among RECORDS; none without one. */
+function reach(selection: unknown): string[] {
+  if (!selection || typeof selection !== 'object') return [];
+  const value = selection as { type?: string; key?: string; ids?: string[] };
+  if (value.type === 'all') return RECORDS;
+  if (value.type === 'records')
+    return RECORDS.filter((id) => value.ids?.includes(id));
+  if (value.type === 'recordAccess')
+    return value.key === 'allRecords'
+      ? RECORDS
+      : value.key === 'mine'
+        ? MINE
+        : [];
+  return [];
 }
 
 const orderRecords = [
@@ -254,10 +289,25 @@ describe('API key permissions in the shape of a permission set', () => {
               type: 'database.collection',
               actions: ['read'],
               recordAccess: true,
+              // The records a check reaches: what its grants select, cut by every restriction, as the database
+              // authorizer does; a grant without a selection reads no record.
               async authorize(request, context) {
-                return (await context.grants.resolve(request)).length > 0
-                  ? { effect: 'permit', reasons: [] }
-                  : { effect: 'deny', reasons: [] };
+                const grants = await context.grants.resolve(request);
+                if (!grants.length) return { effect: 'deny', reasons: [] };
+                let ids = new Set(
+                  grants.flatMap((grant) => reach(grant.origin?.selection)),
+                );
+                for (const grant of grants)
+                  for (const constraint of grant.origin?.constraints ?? [])
+                    if (constraint.effect === 'restrict') {
+                      const kept = new Set(reach(constraint.selection));
+                      ids = new Set([...ids].filter((id) => kept.has(id)));
+                    }
+                return {
+                  effect: 'conditional',
+                  conditions: { type: 'ids', ids: [...ids].sort() },
+                  reasons: [],
+                };
               },
             });
           },
@@ -381,9 +431,19 @@ describe('API key permissions in the shape of a permission set', () => {
           resource: { type: 'composite', id: context.req.param('id') },
           action: context.req.param('action'),
         });
+        // The records the composite's one branch reaches.
+        const checks = (
+          decision.conditions as
+            | { checks?: { decision: { conditions?: { ids?: string[] } } }[] }
+            | undefined
+        )?.checks;
         return context.json(
-          { effect: decision.effect, reason: decision.reasons[0]?.code },
-          decision.effect === 'permit' ? 200 : 403,
+          {
+            effect: decision.effect,
+            reason: decision.reasons[0]?.code,
+            records: checks?.[0]?.decision.conditions?.ids ?? [],
+          },
+          decision.effect === 'deny' ? 403 : 200,
         );
       },
     );
@@ -1143,38 +1203,67 @@ describe('API key permissions in the shape of a permission set', () => {
     }
   });
 
-  it('lets everyone create keys of their own unless the application requires settings:personalApiKeys/create from a role', async () => {
+  it('lets a person create keys of their own while a role grants settings:personalApiKeys/create, and no longer once the last grant goes', async () => {
+    // Not registered, as in an application without the permission: everyone may, as before.
+    expect(await keys.mayCreateOwn(personId)).toBe(true);
     settingsItems.add({
       id: 'personalApiKeys',
       title: 'Personal API keys',
       actions: [{ name: 'create', humanOnly: 'Keys never make keys' }],
     });
-    // By default the permission is registered but not required: nobody loses keys on upgrade, no role carries it.
+    // Registered, a role decides: the person's role grants it.
     expect(await keys.mayCreateOwn(personId)).toBe(true);
-    const byRole = new ScopedApiKeys({
-      auth,
-      connection: () => database.connection(),
-      scopes,
-      authorization: () => authz,
-      config: () => ({ allowSameAsMe: true, personalKeysByRole: true }),
-    });
-    // Required, a person whose roles do not grant it may not create or rotate.
-    expect(await byRole.mayCreateOwn(personId)).toBe(false);
-    await expect(byRole.requireOwnCreation(personId)).rejects.toMatchObject({
-      status: 403,
-      code: 'API_KEY_CREATION_FORBIDDEN',
-    });
-    // The person still lists and revokes the keys they have.
-    const listed = await byRole.list(personId);
-    expect(listed.length).toBeGreaterThan(0);
-    await byRole.revoke(personId, listed[0]!.id);
-    // An application's own policy still decides when it sets one.
-    const release = byRole.setOwnKeyPolicy(() => Promise.resolve(true));
+    const services = new Map<unknown, unknown>([
+      [authenticationToken, auth],
+      [scopedApiKeysToken, keys],
+    ]);
+    const router = await apiRoutes.createRouter({
+      container: {
+        has: (token: unknown) => services.has(token),
+        resolve: (token: unknown) => services.get(token),
+      },
+    } as unknown as AppPluginApplication);
+    const call = (path: string, method = 'GET', body?: unknown) =>
+      router.request(`/apiKeys${path}`, {
+        method,
+        headers: {
+          cookie,
+          origin: 'http://localhost',
+          'content-type': 'application/json',
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+    revoked.add('personalApiKeys/create');
     try {
-      expect(await byRole.mayCreateOwn(personId)).toBe(true);
+      // The last grant gone: New key disappears, creating is refused, the keys they have stay theirs to see and revoke.
+      const list = (await (await call('')).json()) as {
+        data: { id: string }[];
+        meta: { mayCreate: boolean };
+      };
+      expect(list.meta.mayCreate).toBe(false);
+      expect(list.data.length).toBeGreaterThan(0);
+      const refused = await call('', 'POST', {
+        name: 'refused',
+        expiresInDays: 7,
+        permissions: ordersReadUpdate,
+      });
+      expect(refused.status).toBe(403);
+      expect(await refused.json()).toMatchObject({
+        error: { reason: 'API_KEY_CREATION_FORBIDDEN' },
+      });
+      expect((await call(`/${list.data[0]!.id}`)).status).toBe(200);
+      expect((await call(`/${list.data[0]!.id}`, 'DELETE')).status).toBe(204);
+      // An application's own policy still decides when it sets one.
+      const release = keys.setOwnKeyPolicy(() => Promise.resolve(true));
+      try {
+        expect(await keys.mayCreateOwn(personId)).toBe(true);
+      } finally {
+        release();
+      }
     } finally {
-      release();
+      revoked.delete('personalApiKeys/create');
     }
+    expect(await keys.mayCreateOwn(personId)).toBe(true);
   });
 
   it('shows the actions a key lost with its owner, and gives them back when the owner holds them again', async () => {
@@ -1509,6 +1598,100 @@ describe('API key permissions in the shape of a permission set', () => {
       ).toBe(404);
     } finally {
       revoked.delete('orders/update');
+    }
+  });
+
+  /** The person's role gives Quotes › View with these record scopes, as the grants and the Permission Sets say. */
+  const roleGivesQuotes = (scopes: Record<string, unknown> | undefined) => {
+    quoteScopes = scopes;
+    Reflect.set(authz, 'permissionSets', {
+      getEffective: () =>
+        Promise.resolve([
+          {
+            key: 'staff',
+            grants: [
+              {
+                resource: quotes,
+                actions: [
+                  scopes
+                    ? { action: 'view', policy: { type: 'composite', scopes } }
+                    : { action: 'view' },
+                ],
+              },
+            ],
+          },
+        ]),
+    });
+  };
+  const records = async (headers: Record<string, string>) => {
+    const answer = await app.request('/composite/shop.quotes/view', {
+      headers,
+    });
+    return ((await answer.json()) as { records: string[] }).records;
+  };
+  const viewQuotes = (quote?: unknown): KeyPermissions => ({
+    grants: [
+      {
+        resource: quotes,
+        actions: [
+          quote === undefined
+            ? { action: 'view' }
+            : {
+                action: 'view',
+                policy: { type: 'composite', scopes: { quote } },
+              },
+        ],
+      },
+    ],
+  });
+
+  it('pins a scope a role names nowhere, and the action declares no default for, to no record, and keeps it there', async () => {
+    try {
+      // The role gives the action without a scope: core selects nothing for it, so the person reads no quote.
+      roleGivesQuotes(undefined);
+      expect(await records(asPerson().headers)).toEqual([]);
+      const created = await keys.create(
+        personId,
+        { name: 'no scope', expiresInDays: 7, permissions: viewQuotes() },
+        await identity(),
+      );
+      expect(created.key.permissions).toEqual(viewQuotes(''));
+      // The role later reaches every quote: the person does, the key made before still reads none.
+      roleGivesQuotes({ quote: { type: 'all' } });
+      expect(await records(asPerson().headers)).toEqual(['r1', 'r2', 'r3']);
+      expect(await records(asKey(created.secret).headers)).toEqual([]);
+    } finally {
+      roleGivesQuotes({ quote: { type: 'all' } });
+      Reflect.deleteProperty(authz, 'permissionSets');
+    }
+  });
+
+  it('reads the built-in allRecords as every record, so a key may be narrowed to what the action offers', async () => {
+    try {
+      roleGivesQuotes({ quote: 'allRecords' });
+      // Narrowed to the person's own quotes: accepted, and the key reads only those.
+      const mine = await keys.create(
+        personId,
+        { name: 'mine', expiresInDays: 7, permissions: viewQuotes('mine') },
+        await identity(),
+      );
+      expect(await records(asPerson().headers)).toEqual(['r1', 'r2', 'r3']);
+      expect(await records(asKey(mine.secret).headers)).toEqual(['r1']);
+      // Left out, the scope is pinned to the role's own value, which reaches every quote.
+      const all = await keys.create(
+        personId,
+        { name: 'all', expiresInDays: 7, permissions: viewQuotes() },
+        await identity(),
+      );
+      expect(all.key.permissions).toEqual(viewQuotes('allRecords'));
+      expect(await records(asKey(all.secret).headers)).toEqual([
+        'r1',
+        'r2',
+        'r3',
+      ]);
+    } finally {
+      roleGivesQuotes({ quote: { type: 'all' } });
+      Reflect.deleteProperty(authz, 'permissionSets');
     }
   });
 });

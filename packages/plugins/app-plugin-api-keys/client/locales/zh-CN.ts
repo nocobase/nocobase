@@ -14,6 +14,9 @@ const zhCN: LocaleResource<typeof enUS> = {
     create: '创建个人 API 密钥',
     humanOnly: '密钥不能管理密钥，只能由人来做。',
   },
+  roles: {
+    personalKeyCreators: '个人 API 密钥创建者',
+  },
   templates: {
     readOnly: '只读',
   },
