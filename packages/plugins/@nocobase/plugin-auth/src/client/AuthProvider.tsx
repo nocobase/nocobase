@@ -18,25 +18,20 @@ export const AuthProvider: React.FC = (props) => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const authenticator = params.get('authenticator');
-    const token = params.get('token');
-
-    if (token) {
-      app.apiClient.auth.setToken(token);
-      app.apiClient.auth.setAuthenticator(authenticator);
-
+    if (app.applyAuthCallback(params)) {
       params.delete('token');
       params.delete('authenticator');
       const newSearch = params.toString();
       navigate(
         {
           pathname: location.pathname,
+          hash: location.hash,
           search: newSearch ? `?${newSearch}` : '',
         },
         { replace: true },
       );
     }
-  }, [location.search, app, navigate, location.pathname]);
+  }, [location.search, location.hash, app, navigate, location.pathname]);
 
   return <>{props.children}</>;
 };

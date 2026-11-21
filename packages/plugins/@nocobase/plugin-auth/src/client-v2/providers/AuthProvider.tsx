@@ -18,15 +18,10 @@ const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const token = searchParams.get('token');
-    const authenticator = searchParams.get('authenticator');
-
-    if (!token) {
+    if (!app.applyAuthCallback(searchParams)) {
       return;
     }
 
-    app.apiClient.auth.setToken(token);
-    app.apiClient.auth.setAuthenticator(authenticator);
     searchParams.delete('token');
     searchParams.delete('authenticator');
 
@@ -34,11 +29,12 @@ const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     navigate(
       {
         pathname: location.pathname,
+        hash: location.hash,
         search: nextSearch ? `?${nextSearch}` : '',
       },
       { replace: true },
     );
-  }, [app, location.pathname, location.search, navigate]);
+  }, [app, location.pathname, location.search, location.hash, navigate]);
 
   return <>{children}</>;
 };
