@@ -5,6 +5,8 @@ import {
   type AccessRef,
   type ApiKeyView,
   type CreateApiKeyRequest,
+  type GrantablePermissions,
+  type KeyPermissions,
   type CreatedApiKey,
   type KeyScopeObject,
   type KeyScopeOptions,
@@ -30,6 +32,44 @@ export const KeyScopeInputSchema: z.ZodType<KeyScopeInput> = z.strictObject({
   groups: z.record(z.string().min(1), KeyScopeGroupGrantSchema),
 });
 
+const KeyResourceSchema = z.object({
+  type: z.string().min(1).describe('The resource type, such as `settings`.'),
+  id: z.string().min(1).describe('The resource id.'),
+});
+
+const KeyPolicySchema = z
+  .looseObject({ type: z.string().min(1) })
+  .describe(
+    'The record scopes of a composite action: `{ type: "composite", scopes: { <scope>: <selection> } }`.',
+  );
+
+/** Format-`2` permissions, as a permission set's grants; what each names is checked by `ScopedApiKeys`. */
+export const KeyPermissionsSchema: z.ZodType<KeyPermissions> = z
+  .object({
+    grants: z.array(
+      z.object({
+        resource: KeyResourceSchema,
+        actions: z.array(
+          z.object({
+            action: z.string().min(1),
+            policy: KeyPolicySchema.optional(),
+          }),
+        ),
+      }),
+    ),
+    objects: z
+      .record(z.string(), z.array(z.string()))
+      .optional()
+      .describe(
+        'The records each business is limited to; every record when left out.',
+      ),
+  })
+  .meta({
+    ref: 'ApiKeysKeyPermissions',
+    description:
+      'What the key may do, as a permission set’s grants; the key never exceeds its holder’s current permissions.',
+  });
+
 /** The body of `POST /apiKeys`. */
 export const CreateApiKeyInput: z.ZodType<CreateApiKeyRequest> = z.strictObject(
   {
@@ -46,9 +86,16 @@ export const CreateApiKeyInput: z.ZodType<CreateApiKeyRequest> = z.strictObject(
       .describe(
         'The number of days until the key expires; null means no expiry.',
       ),
-    scope: KeyScopeInputSchema.nullable().describe(
-      'The permission scope; a key can never exceed its owner’s permissions.',
-    ),
+    scope: KeyScopeInputSchema.nullable().optional().meta({
+      deprecated: true,
+      description:
+        'Deprecated: send `permissions`. The format-1 permission scope; null makes a key that acts as the caller in full.',
+    }),
+    permissions: KeyPermissionsSchema.nullable()
+      .optional()
+      .describe(
+        'What the key may do; null makes a key that acts as the caller in full. Send this or `scope`, not both.',
+      ),
   },
 );
 
@@ -171,10 +218,55 @@ export const ApiKeyViewSchema: z.ZodType<ApiKeyView> = z
     expiresAt: dateTime().nullable(),
     lastUsedAt: dateTime().nullable(),
     scope: KeyScopeResponseSchema.nullable().meta({
+      deprecated: true,
+      description:
+        'Deprecated: read `permissions`. The format-1 groups of the key; null for a key that acts as its owner in full.',
+    }),
+    permissions: KeyPermissionsSchema.nullable().meta({
       description: 'Null for a key that acts as its owner in full.',
     }),
   })
   .meta({ ref: 'ApiKeysKey' });
+
+const GrantableActionSchema = z.object({
+  action: z.string(),
+  title: LocalizedTextSchema.nullable(),
+  humanOnly: LocalizedTextSchema.nullable().meta({
+    description: 'Why no key may hold this action; null when a key may.',
+  }),
+  risk: z.enum(['high', 'sensitive']).nullable(),
+});
+
+export const GrantablePermissionsSchema: z.ZodType<GrantablePermissions> =
+  z.object({
+    unrestricted: z.boolean(),
+    grants: z
+      .array(
+        z.object({
+          resource: KeyResourceSchema,
+          title: LocalizedTextSchema.nullable(),
+          actions: z.array(GrantableActionSchema),
+        }),
+      )
+      .meta({ description: 'The actions the caller holds today.' }),
+    templates: z.array(
+      z.object({
+        id: z.string(),
+        title: LocalizedTextSchema,
+        description: LocalizedTextSchema.nullable(),
+        expiresInDays: z.number().int().nullable(),
+        permissions: KeyPermissionsSchema,
+        pick: z.array(z.string()).meta({
+          description:
+            'The businesses whose records the key is limited to, chosen when it is made.',
+        }),
+      }),
+    ),
+    objectSources: z.array(z.string()),
+    maxScopedKeyDays: z.number().int().nullable(),
+    defaultExpiresInDays: z.number().int(),
+    mayCreate: z.boolean(),
+  });
 
 export const CreatedApiKeySchema: z.ZodType<CreatedApiKey> = z
   .object({

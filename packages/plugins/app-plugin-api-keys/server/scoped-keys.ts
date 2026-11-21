@@ -16,15 +16,24 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { APIError } from 'better-auth/api';
 
 import {
+  decodeKeyPermissions,
   decodeKeyScope,
-  encodeKeyScope,
+  encodeKeyPermissions,
   KEY_SCOPE_LEVELS,
   pickedObjects,
   type ApiKeyView,
   type CreatedApiKey,
+  type GrantableAction,
+  type GrantablePermissions,
+  type GrantableResource,
+  type KeyPermissionGrant,
+  type KeyPermissions,
+  type KeyResourceRef,
   type KeyScopeInput,
   type KeyScopeObject,
   type KeyScopeOptions,
+  type KeyTemplateView,
+  type LocalizedText,
 } from '../shared/scopes.js';
 import { ownKeyPolicySlotOf, type ApiKeysPlugin } from './api-keys.js';
 import { MAX_KEY_NAME } from './constants.js';
@@ -85,9 +94,37 @@ export type OwnKeyPolicy = (userId: string) => Promise<boolean>;
 export interface CheckedApiKey {
   readonly name: string;
   readonly description: string | null;
+  /**
+   * The format-`1` groups the key was asked with; `{ groups: {} }` for one asked with `permissions`; null for a key
+   * that is its owner in full.
+   *
+   * @deprecated Read `permissions`.
+   */
   readonly scope: KeyScopeInput | null;
+  /**
+   * What the key may do; null for its owner in full. Left out by a caller that builds this itself with a format-`1`
+   * `scope`, which is then converted.
+   */
+  readonly permissions?: KeyPermissions | null;
   readonly expiresInDays: number | null;
 }
+
+/** The built-in template: every action that only reads, of what the caller holds. */
+export const READ_ONLY_TEMPLATE_ID = 'read-only';
+
+const READ_ONLY_ACTIONS = new Set(['access', 'read', 'view']);
+
+/** What a user holds today, to bound what they may give a key. */
+interface Ceiling {
+  readonly unrestricted: boolean;
+  readonly held: ReadonlyMap<string, ReadonlySet<string>>;
+}
+
+/** A value of `permissions` the column holds while a key is being made: an unknown format, which grants nothing. */
+const PENDING_PERMISSIONS = { $v: ['pending'] };
+
+const resourceKey = (resource: KeyResourceRef) =>
+  JSON.stringify([resource.type, resource.id]);
 
 const DAY_SECONDS = 24 * 60 * 60;
 const MAX_DESCRIPTION = 500;
@@ -250,7 +287,7 @@ export class ScopedApiKeys {
       .orderBy('createdAt', 'desc')
       .orderBy('id', 'asc')
       .execute();
-    return rows.map((row) => viewOf(row as unknown as KeyRow));
+    return rows.map((row) => this.viewOf(row as unknown as KeyRow));
   }
 
   /**
@@ -281,13 +318,211 @@ export class ScopedApiKeys {
       MAX_DESCRIPTION,
       false,
     );
-    const scope =
-      body.scope === null || body.scope === undefined
-        ? null
-        : this.options.scopes.validate(body.scope);
-    if (scope) await this.checkObjects(scope, identity);
+    if (body.permissions !== undefined && body.scope !== undefined)
+      throw new ApiKeyScopeError(
+        'INVALID_SCOPE',
+        'Send either permissions or the deprecated scope, not both.',
+      );
+    let scope: KeyScopeInput | null = null;
+    let permissions: KeyPermissions | null = null;
+    if (body.permissions !== undefined && body.permissions !== null) {
+      permissions = await this.checkPermissions(body.permissions, identity);
+      scope = { groups: {} };
+    } else if (body.scope !== undefined && body.scope !== null) {
+      scope = this.options.scopes.validate(body.scope);
+      await this.checkObjects(scope, identity);
+      permissions = this.fromLegacy(scope).permissions;
+    }
     const expiresInDays = this.expiryOf(body.expiresInDays, scope !== null);
-    return { name, description, scope, expiresInDays };
+    return { name, description, scope, permissions, expiresInDays };
+  }
+
+  /**
+   * Checks format-`2` permissions `identity` would give a key: well formed, each action registered and one a key may
+   * hold (`KEY_ACTION_HUMAN_ONLY`), each held by `identity` today (`KEY_SCOPE_EXCEEDS_YOURS`), and each record a
+   * business is limited to one `identity` may see. Answers them with each resource listed once.
+   */
+  async checkPermissions(
+    input: unknown,
+    identity: AuthorizationIdentity,
+  ): Promise<KeyPermissions> {
+    const authz = this.options.authorization?.();
+    if (!authz)
+      throw new ApiKeyScopeError(
+        'INVALID_SCOPE',
+        'Permissions need the authorization plugin.',
+      );
+    const shape = permissionsShape(input);
+    const ceiling = await this.ceiling(identity);
+    const merged = new Map<
+      string,
+      Map<string, KeyPermissionGrant['actions'][number]>
+    >();
+    const resources = new Map<string, KeyResourceRef>();
+    for (const grant of shape.grants) {
+      const key = resourceKey(grant.resource);
+      resources.set(key, grant.resource);
+      const actions =
+        merged.get(key) ??
+        new Map<string, KeyPermissionGrant['actions'][number]>();
+      for (const entry of grant.actions) {
+        const label = `${grant.resource.type}:${grant.resource.id}.${entry.action}`;
+        const declared = authz.resourceTypes.action(
+          grant.resource,
+          entry.action,
+        );
+        if (!declared)
+          throw new ApiKeyScopeError(
+            'UNKNOWN_PERMISSION',
+            `${label} is not a permission.`,
+          );
+        if (declared.humanOnly !== undefined)
+          throw new ApiKeyScopeError(
+            'KEY_ACTION_HUMAN_ONLY',
+            `${label} is a person's only: no API key may hold it.`,
+          );
+        if (entry.policy) {
+          const problem =
+            grant.resource.type === 'composite'
+              ? authz.compositeResources.validateGrant({
+                  resource: grant.resource,
+                  action: entry.action,
+                  policy: entry.policy,
+                })
+              : `${grant.resource.type} takes no record scope`;
+          if (problem !== undefined)
+            throw new ApiKeyScopeError(
+              'INVALID_SCOPE',
+              `${label}: ${problem}.`,
+            );
+        }
+        if (!holds(ceiling, grant.resource, entry.action))
+          throw new ApiKeyRequestError(
+            403,
+            'KEY_SCOPE_EXCEEDS_YOURS',
+            `You do not hold ${label}, so you may not give it to a key.`,
+          );
+        actions.set(entry.action, entry);
+      }
+      merged.set(key, actions);
+    }
+    const grants = [...merged].map(([key, actions]) => ({
+      resource: resources.get(key)!,
+      actions: [...actions.values()],
+    }));
+    const objects: Record<string, readonly string[]> = {};
+    for (const [business, ids] of Object.entries(shape.objects)) {
+      const source = this.objectSource(business);
+      if (!source)
+        throw new ApiKeyScopeError(
+          'SCOPE_OBJECTS_NOT_OFFERED',
+          `${business} cannot be limited to some records.`,
+        );
+      const found = new Set(
+        (await source.list({ identity, ids })).map((item) => item.id),
+      );
+      const missing = ids.filter((id) => !found.has(id));
+      if (missing.length > 0)
+        throw new ApiKeyScopeError(
+          'UNKNOWN_SCOPE_OBJECT',
+          `${business} has no record ${missing.join(', ')} you may choose.`,
+        );
+      objects[business] = ids;
+    }
+    return {
+      grants,
+      ...(Object.keys(objects).length > 0 ? { objects } : {}),
+    };
+  }
+
+  /**
+   * What `userId` may give a key of their own today: the actions they hold (those no key may hold marked), the
+   * templates resolved to them, and the businesses a key may be limited to some records of.
+   */
+  async grantable(
+    userId: string,
+    identity?: AuthorizationIdentity,
+  ): Promise<GrantablePermissions> {
+    const who = identity ?? (await this.identityOf(userId));
+    const ceiling = await this.ceiling(who);
+    const grants = this.catalog().flatMap((entry): GrantableResource[] => {
+      const actions = entry.actions.filter((action) =>
+        holds(ceiling, entry.resource, action.action),
+      );
+      return actions.length > 0 ? [{ ...entry, actions }] : [];
+    });
+    return {
+      unrestricted: ceiling.unrestricted,
+      grants,
+      templates: this.templates().map((template) =>
+        this.resolveTemplate(template, ceiling),
+      ),
+      objectSources: this.objectSources(),
+      maxScopedKeyDays: this.maxScopedKeyDays,
+      defaultExpiresInDays: Math.min(
+        DEFAULT_SCOPED_KEY_DAYS,
+        this.maxScopedKeyDays ?? DEFAULT_SCOPED_KEY_DAYS,
+      ),
+      mayCreate: await this.mayCreateOwn(userId),
+    };
+  }
+
+  /**
+   * The permissions a template gives a key `identity` makes: each action of it that `identity` holds, at every level
+   * they hold it, limited to `objects` for the businesses it picks records of (none when left out). For code that
+   * makes keys from a template, such as a CI integration.
+   */
+  async templatePermissions(
+    templateId: string,
+    identity: AuthorizationIdentity,
+    objects: Readonly<Record<string, readonly string[]>> = {},
+  ): Promise<KeyPermissions> {
+    const template = this.templates().find((entry) => entry.id === templateId);
+    if (!template)
+      throw new ApiKeyRequestError(
+        404,
+        'UNKNOWN_TEMPLATE',
+        `${templateId} is not a key template.`,
+      );
+    const view = this.resolveTemplate(template, await this.ceiling(identity));
+    const picked: Record<string, readonly string[]> = {};
+    for (const business of view.pick)
+      picked[business] = objects[business] ?? [];
+    return {
+      grants: view.permissions.grants,
+      ...(view.pick.length > 0 ? { objects: picked } : {}),
+    };
+  }
+
+  /**
+   * Converts every key still stored in format `1` whose groups are all registered now, exactly as it is enforced
+   * today, keeping the groups for the deprecated views. A key naming a group not registered now stays as it is and is
+   * tried again on the next start. Writes only a row still holding the value it read, so it is safe to run twice.
+   * Answers how many keys it converted.
+   */
+  async upgradeLegacyScopes(): Promise<number> {
+    const rows = await this.options
+      .connection()
+      .query.selectFrom('apikey')
+      .select(['id', 'permissions'])
+      .where('permissions', 'is not', null)
+      .execute();
+    let converted = 0;
+    for (const row of rows as unknown as Pick<KeyRow, 'id' | 'permissions'>[]) {
+      const decoded = decodeKeyPermissions(row.permissions);
+      if (decoded?.version !== '1') continue;
+      const { permissions, complete } = this.fromLegacy(decoded.scope);
+      if (!complete) continue;
+      const result = await this.options
+        .connection()
+        .query.updateTable('apikey')
+        .set({ permissions: encodeKeyPermissions(permissions, decoded.scope) })
+        .where('id', '=', row.id)
+        .where('permissions', '=', row.permissions as string)
+        .execute();
+      if ((result.updatedCount ?? 0) > 0) converted += 1;
+    }
+    return converted;
   }
 
   /** Issues a key `check` accepted. */
@@ -297,7 +532,7 @@ export class ScopedApiKeys {
 
   /** One of `userId`'s keys. */
   async get(userId: string, keyId: string): Promise<ApiKeyView> {
-    return viewOf(await this.requireRow(userId, keyId));
+    return this.viewOf(await this.requireRow(userId, keyId));
   }
 
   /**
@@ -358,7 +593,7 @@ export class ScopedApiKeys {
       await this.remove(fresh.id);
     }
     return {
-      key: viewOf(await this.requireRow(userId, keyId)),
+      key: this.viewOf(await this.requireRow(userId, keyId)),
       secret: fresh.key,
     };
   }
@@ -375,7 +610,7 @@ export class ScopedApiKeys {
     identity: AuthorizationIdentity,
   ): Promise<ApiKeyView> {
     const row = await this.requireRow(userId, keyId);
-    if (decodeKeyScope(row.permissions) === null)
+    if (decodeKeyPermissions(row.permissions) === null)
       throw new ApiKeyRequestError(
         400,
         'KEY_NOT_SCOPED',
@@ -386,10 +621,15 @@ export class ScopedApiKeys {
     await this.options
       .connection()
       .query.updateTable('apikey')
-      .set({ permissions: JSON.stringify(encodeKeyScope(scope)) })
+      .set({
+        permissions: encodeKeyPermissions(
+          this.fromLegacy(scope).permissions,
+          scope,
+        ),
+      })
       .where('id', '=', keyId)
       .execute();
-    return viewOf(await this.requireRow(userId, keyId));
+    return this.viewOf(await this.requireRow(userId, keyId));
   }
 
   /** Renames a key or changes its description; a field left out stays. */
@@ -417,7 +657,7 @@ export class ScopedApiKeys {
       })
       .where('id', '=', keyId)
       .execute();
-    return viewOf(await this.requireRow(userId, keyId));
+    return this.viewOf(await this.requireRow(userId, keyId));
   }
 
   async revoke(userId: string, keyId: string): Promise<void> {
@@ -436,8 +676,25 @@ export class ScopedApiKeys {
   }
 
   /**
-   * The scope of the key a request authenticated with: compiled from its stored scope, unbounded for a service
-   * account's unscoped key, and null for a session or a person's unscoped key. Read once per request.
+   * The scope of the credential behind a request, as the authorization identity carries it: `resolve`'s, or for a
+   * person's key without permissions one bounded only by that person — still a credential, so it never takes an action
+   * a person's only. Null for a session.
+   */
+  async credentialScope(
+    session: NonNullable<AuthSession>,
+    request: Request,
+  ): Promise<KeyScope | null> {
+    const scope = await this.resolve(session, request);
+    if (scope) return scope;
+    return isApiKeySession(session, request.headers, [API_KEY_HEADER])
+      ? this.options.scopes.unbounded(session.session.id)
+      : null;
+  }
+
+  /**
+   * The scope of the key a request authenticated with: compiled from its stored permissions, unbounded for a service
+   * account's key without any, and null for a session or a person's key without any. Read once per request.
+   * `auth.required()` refuses a request this answers a scope for unless the route takes scoped keys.
    */
   resolve(
     session: NonNullable<AuthSession>,
@@ -464,8 +721,10 @@ export class ScopedApiKeys {
       .where('id', '=', session.session.id)
       .executeTakeFirst<Pick<KeyRow, 'id' | 'permissions'>>();
     if (!row) return null;
-    const scope = decodeKeyScope(row.permissions);
-    if (scope) return this.options.scopes.compile(row.id, scope);
+    const stored = decodeKeyPermissions(row.permissions);
+    if (stored?.version === '2')
+      return this.options.scopes.compilePermissions(row.id, stored.permissions);
+    if (stored) return this.options.scopes.compile(row.id, stored.scope);
     return isServiceAccount(session.user)
       ? this.options.scopes.unbounded(row.id)
       : null;
@@ -473,13 +732,15 @@ export class ScopedApiKeys {
 
   private async issue(
     userId: string,
-    input: {
-      readonly name: string;
-      readonly description: string | null;
-      readonly scope: KeyScopeInput | null;
-      readonly expiresInDays: number | null;
-    },
+    input: CheckedApiKey,
   ): Promise<CreatedApiKey> {
+    const legacy =
+      input.scope && Object.keys(input.scope.groups).length > 0
+        ? input.scope
+        : null;
+    const permissions =
+      input.permissions ??
+      (input.scope ? this.fromLegacy(input.scope).permissions : null);
     const created = await this.createUpstream({
       body: {
         userId,
@@ -487,20 +748,34 @@ export class ScopedApiKeys {
         ...(input.expiresInDays === null
           ? {}
           : { expiresIn: input.expiresInDays * DAY_SECONDS }),
-        ...(input.scope ? { permissions: encodeKeyScope(input.scope) } : {}),
+        // Made granting nothing, then given its permissions below: Better Auth's `permissions` holds only its own
+        // shape. Its secret is not out until this returns.
+        ...(permissions ? { permissions: PENDING_PERMISSIONS } : {}),
       },
     });
     // Written directly rather than through Better Auth, whose `metadata` stays off (`enableMetadata`) so that a key's
     // holder cannot write to it over HTTP.
-    if (input.description)
-      await this.options
-        .connection()
-        .query.updateTable('apikey')
-        .set({ metadata: JSON.stringify({ description: input.description }) })
-        .where('id', '=', created.id)
-        .execute();
+    try {
+      if (permissions || input.description)
+        await this.options
+          .connection()
+          .query.updateTable('apikey')
+          .set({
+            ...(permissions
+              ? { permissions: encodeKeyPermissions(permissions, legacy) }
+              : {}),
+            ...(input.description
+              ? { metadata: JSON.stringify({ description: input.description }) }
+              : {}),
+          })
+          .where('id', '=', created.id)
+          .execute();
+    } catch (error) {
+      await this.remove(created.id);
+      throw error;
+    }
     const row = await this.requireRow(userId, created.id);
-    return { key: viewOf(row), secret: created.key };
+    return { key: this.viewOf(row), secret: created.key };
   }
 
   private async createUpstream(
@@ -541,6 +816,212 @@ export class ScopedApiKeys {
     if (!row)
       throw new ApiKeyRequestError(404, 'KEY_NOT_FOUND', 'API key not found.');
     return row;
+  }
+
+  /** A format-`1` scope as the format-`2` permissions it is enforced as, without actions a person's only. */
+  private fromLegacy(scope: KeyScopeInput): {
+    permissions: KeyPermissions;
+    complete: boolean;
+  } {
+    const { permissions, complete } = this.options.scopes.convert(scope);
+    const authz = this.options.authorization?.();
+    if (!authz) return { permissions, complete };
+    const grants = permissions.grants.flatMap((grant) => {
+      const actions = grant.actions.filter(
+        ({ action }) => authz.humanOnly(grant.resource, action) === undefined,
+      );
+      return actions.length > 0 ? [{ ...grant, actions }] : [];
+    });
+    return { permissions: { ...permissions, grants }, complete };
+  }
+
+  /** What `identity` holds today, by its own grants: never a credential's scope. */
+  private async ceiling(identity: AuthorizationIdentity): Promise<Ceiling> {
+    const authz = this.options.authorization?.();
+    if (!authz) return { unrestricted: false, held: new Map() };
+    const snapshot = await authz
+      .for({
+        principal: identity.principal,
+        ...(identity.subjects ? { subjects: identity.subjects } : {}),
+      })
+      .snapshot();
+    const held = new Map<string, Set<string>>();
+    for (const permission of snapshot.permissions)
+      held.set(resourceKey(permission.resource), new Set(permission.actions));
+    return { unrestricted: snapshot.unrestricted, held };
+  }
+
+  /** Every catalog resource and its actions, as the editor lists them. */
+  private catalog(): GrantableResource[] {
+    const authz = this.options.authorization?.();
+    if (!authz) return [];
+    return authz.resourceTypes.list().flatMap((type) =>
+      (type.items?.list() ?? []).map((item) => ({
+        resource: { type: type.type, id: item.id },
+        title: item.title,
+        actions: item.actions.map((action): GrantableAction => ({
+          action: action.name,
+          title: action.title ?? null,
+          humanOnly: action.humanOnly ?? null,
+          risk: action.risk ?? null,
+        })),
+      })),
+    );
+  }
+
+  /** The templates on offer: read-only, then the plugins', then the deprecated presets converted. */
+  private templates(): TemplateSource[] {
+    const authz = this.options.authorization?.();
+    const presets = this.options.scopes.presets
+      .list()
+      .map((preset): TemplateSource => {
+        const scope: KeyScopeInput = {
+          groups: Object.fromEntries(
+            Object.entries(preset.groups).map(([id, grant]) => [
+              id,
+              {
+                level: grant.level,
+                ...(grant.objects === 'pick' ? { objects: [] } : {}),
+              },
+            ]),
+          ),
+        };
+        const { permissions } = this.fromLegacy(scope);
+        return {
+          id: preset.id,
+          title: preset.title,
+          description: preset.description ?? null,
+          expiresInDays: preset.expiresInDays ?? null,
+          grants: permissions.grants.map((grant) => ({
+            resource: grant.resource,
+            actions: grant.actions.map(({ action }) => action),
+            ...(permissions.objects?.[grant.resource.id]
+              ? { objects: 'pick' as const }
+              : {}),
+          })),
+          exact: true,
+        };
+      });
+    return [
+      {
+        id: READ_ONLY_TEMPLATE_ID,
+        title: {
+          key: 'templates.readOnly',
+          ns: '@nocobase/app-plugin-api-keys',
+        },
+        description: null,
+        expiresInDays: null,
+        grants: null,
+        exact: false,
+      },
+      ...(authz?.credentials.templates.list() ?? []).map(
+        (template): TemplateSource => ({
+          id: template.id,
+          title: template.title,
+          description: template.description ?? null,
+          expiresInDays: template.expiresInDays ?? null,
+          grants: template.grants,
+          exact: false,
+        }),
+      ),
+      ...presets,
+    ];
+  }
+
+  /** A template as the permissions it gives a key of a user holding `ceiling`. */
+  private resolveTemplate(
+    template: TemplateSource,
+    ceiling: Ceiling,
+  ): KeyTemplateView {
+    const catalog = this.catalog();
+    const pick = new Set<string>();
+    const grants: KeyPermissionGrant[] = [];
+    if (template.grants === null) {
+      // Read-only: of every resource held, the actions that only read.
+      for (const entry of catalog) {
+        const actions = entry.actions.filter(
+          (action) =>
+            READ_ONLY_ACTIONS.has(action.action.split('.')[0]) &&
+            action.humanOnly === null &&
+            holds(ceiling, entry.resource, action.action),
+        );
+        if (actions.length > 0)
+          grants.push({
+            resource: entry.resource,
+            actions: actions.map(({ action }) => ({ action })),
+          });
+      }
+    } else
+      for (const grant of template.grants) {
+        const entry = catalog.find(
+          (candidate) =>
+            resourceKey(candidate.resource) === resourceKey(grant.resource),
+        );
+        const actions = (entry?.actions ?? []).filter(
+          (action) =>
+            grant.actions.some((name) =>
+              template.exact
+                ? action.action === name
+                : action.action === name ||
+                  action.action.startsWith(`${name}.`),
+            ) &&
+            action.humanOnly === null &&
+            holds(ceiling, grant.resource, action.action),
+        );
+        if (actions.length === 0) continue;
+        grants.push({
+          resource: grant.resource,
+          actions: actions.map(({ action }) => ({ action })),
+        });
+        if (grant.objects === 'pick') pick.add(grant.resource.id);
+      }
+    return {
+      id: template.id,
+      title: template.title,
+      description: template.description,
+      expiresInDays: template.expiresInDays,
+      permissions: {
+        grants,
+        ...(pick.size > 0
+          ? { objects: Object.fromEntries([...pick].map((id) => [id, []])) }
+          : {}),
+      },
+      pick: [...pick],
+    };
+  }
+
+  /** The source of records `business` may be limited to: the authorization plugin's, or a deprecated group's. */
+  private objectSource(business: string) {
+    const source = this.options
+      .authorization?.()
+      ?.credentials.objectSources.get(business);
+    if (source) return source;
+    const group = this.options.scopes.groups
+      .list()
+      .find((entry) => entry.objects?.business === business);
+    return group ? this.options.scopes.groups.objects(group.id) : undefined;
+  }
+
+  private objectSources(): string[] {
+    const authz = this.options.authorization?.();
+    const businesses = new Set(authz?.credentials.objectSources.list() ?? []);
+    for (const group of this.options.scopes.groups.list())
+      if (group.objects && this.options.scopes.groups.objects(group.id))
+        businesses.add(group.objects.business);
+    return [...businesses].sort();
+  }
+
+  private viewOf(row: KeyRow): ApiKeyView {
+    const stored = decodeKeyPermissions(row.permissions);
+    return {
+      ...viewOf(row),
+      permissions:
+        stored === null
+          ? null
+          : stored.version === '2'
+            ? stored.permissions
+            : this.fromLegacy(stored.scope).permissions,
+    };
   }
 
   private async checkObjects(
@@ -651,7 +1132,101 @@ function descriptionOf(metadata: unknown): string | null {
   return typeof description === 'string' && description ? description : null;
 }
 
-function viewOf(row: KeyRow): ApiKeyView {
+/** A template as `ScopedApiKeys` offers it: `grants` null for read-only; `exact` for a converted preset's actions. */
+interface TemplateSource {
+  readonly id: string;
+  readonly title: LocalizedText;
+  readonly description: LocalizedText | null;
+  readonly expiresInDays: number | null;
+  readonly grants:
+    | readonly {
+        readonly resource: KeyResourceRef;
+        readonly actions: readonly string[];
+        readonly objects?: 'all' | 'pick';
+      }[]
+    | null;
+  readonly exact: boolean;
+}
+
+function holds(
+  ceiling: Ceiling,
+  resource: KeyResourceRef,
+  action: string,
+): boolean {
+  return (
+    ceiling.unrestricted ||
+    (ceiling.held.get(resourceKey(resource))?.has(action) ?? false)
+  );
+}
+
+/** The shape of format-`2` permissions, untrusted: throws `INVALID_SCOPE` or `EMPTY_SCOPE`. */
+function permissionsShape(input: unknown): {
+  grants: KeyPermissionGrant[];
+  objects: Record<string, string[]>;
+} {
+  const invalid = (message: string) =>
+    new ApiKeyScopeError('INVALID_SCOPE', message);
+  if (!isRecord(input) || !Array.isArray(input.grants))
+    throw invalid('Permissions are { grants: [...], objects?: {...} }.');
+  const grants = (input.grants as unknown[]).map(
+    (grant): KeyPermissionGrant => {
+      if (
+        !isRecord(grant) ||
+        !isRecord(grant.resource) ||
+        typeof grant.resource.type !== 'string' ||
+        !grant.resource.type ||
+        typeof grant.resource.id !== 'string' ||
+        !grant.resource.id ||
+        !Array.isArray(grant.actions) ||
+        grant.actions.length === 0
+      )
+        throw invalid(
+          'Each grant is { resource: { type, id }, actions: [{ action, policy? }] }.',
+        );
+      return {
+        resource: { type: grant.resource.type, id: grant.resource.id },
+        actions: (grant.actions as unknown[]).map((entry) => {
+          if (
+            !isRecord(entry) ||
+            typeof entry.action !== 'string' ||
+            !entry.action ||
+            (entry.policy !== undefined &&
+              (!isRecord(entry.policy) ||
+                typeof entry.policy.type !== 'string'))
+          )
+            throw invalid('Each action is { action, policy? }.');
+          return {
+            action: entry.action,
+            ...(entry.policy === undefined
+              ? {}
+              : { policy: entry.policy as { type: string } }),
+          };
+        }),
+      };
+    },
+  );
+  if (grants.length === 0)
+    throw new ApiKeyScopeError(
+      'EMPTY_SCOPE',
+      'A scoped key needs at least one permission.',
+    );
+  const objects: Record<string, string[]> = {};
+  if (input.objects !== undefined) {
+    if (!isRecord(input.objects))
+      throw invalid('objects is { <business>: [<id>, …] }.');
+    for (const [business, ids] of Object.entries(input.objects)) {
+      if (
+        !Array.isArray(ids) ||
+        ids.some((id) => typeof id !== 'string' || !id.trim())
+      )
+        throw invalid(`objects.${business} must be a list of ids.`);
+      objects[business] = [...new Set(ids as string[])];
+    }
+  }
+  return { grants, objects };
+}
+
+function viewOf(row: KeyRow): Omit<ApiKeyView, 'permissions'> {
   return {
     id: row.id,
     name: row.name,

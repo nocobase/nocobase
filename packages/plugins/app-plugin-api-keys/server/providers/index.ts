@@ -30,6 +30,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-api-keys';
   private readonly releases: (() => void)[] = [];
   private booted = false;
+  private upgrade: Promise<void> | undefined;
 
   public override register(): void {
     const { container } = this.app;
@@ -77,9 +78,17 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     );
     if (container.has(authorizationToken))
       container.resolve(authorizationToken).use(async (request, next) => {
+        // Every plugin has booted by the first request, so every deprecated scope group is registered: keys still in
+        // format 1 convert then, in the background, as they are enforced today.
+        this.upgrade ??= keys.upgradeLegacyScopes().then(
+          () => undefined,
+          // A key left in format 1 still works as before; the next start tries again.
+          () => undefined,
+        );
         const session: unknown = request.http.get('auth' as never);
         if (session && typeof session === 'object' && 'session' in session) {
-          const scope = await keys.resolve(
+          // Any key, with permissions or not, so that no key takes an action a person's only.
+          const scope = await keys.credentialScope(
             session as Parameters<typeof keys.resolve>[0],
             request.http.req.raw,
           );
@@ -89,9 +98,9 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
       });
   }
 
-  public override shutdown(): Promise<void> {
+  public override async shutdown(): Promise<void> {
     for (const release of this.releases.splice(0)) release();
-    return Promise.resolve();
+    await this.upgrade;
   }
 }
 

@@ -1,7 +1,9 @@
 /**
- * The key-scope registry: the permission groups and presets an application assembles from its plugins, how each
- * `AccessRef` maps to an authorization resource and action, and how a stored scope becomes the `KeyScope` the
- * authorization core enforces. Plugins never import this; the application hands their declarations to it.
+ * How a key's stored permissions become the `KeyScope` the authorization core enforces, and the deprecated format-`1`
+ * registry: the permission groups and presets an application assembles from its plugins and how each `AccessRef` maps
+ * to an authorization resource and action. Plugins now declare templates, record sources and human-only actions with
+ * the authorization plugin (`authz.credentials`, `humanOnly`); groups still registered here keep working and convert
+ * to format `2`.
  */
 import type {
   AuthorizationIdentity,
@@ -18,6 +20,9 @@ import {
   levelsUpTo,
   pickedObjects,
   type AccessRef,
+  type KeyPermissionGrant,
+  type KeyPermissionPolicy,
+  type KeyPermissions,
   type KeyScopeGroupDeclaration,
   type KeyScopeGroupGrant,
   type KeyScopeInput,
@@ -26,7 +31,12 @@ import {
   type KeyScopePresetDeclaration,
 } from '../shared/scopes.js';
 
-/** Lists the records a group may be limited to: only those the identity may see in that business. */
+/**
+ * Lists the records a group may be limited to: only those the identity may see in that business.
+ *
+ * @deprecated The shape of `CredentialObjectSource` from `@nocobase/authorization/core`; register one with
+ * `authz.credentials.objectSources.add(business, source)`.
+ */
 export interface KeyScopeObjectSource {
   list(input: {
     readonly identity: AuthorizationIdentity;
@@ -62,7 +72,9 @@ export class ApiKeyScopeError extends Error {
       | 'UNKNOWN_SCOPE_GROUP'
       | 'SCOPE_LEVEL_NOT_OFFERED'
       | 'SCOPE_OBJECTS_NOT_OFFERED'
-      | 'UNKNOWN_SCOPE_OBJECT',
+      | 'UNKNOWN_SCOPE_OBJECT'
+      | 'UNKNOWN_PERMISSION'
+      | 'KEY_ACTION_HUMAN_ONLY',
     message: string,
   ) {
     super(message);
@@ -70,6 +82,7 @@ export class ApiKeyScopeError extends Error {
   }
 }
 
+/** @deprecated The format-`1` registry; see the file's description. Its compiling methods are current. */
 export interface ApiKeyScopes {
   readonly groups: {
     /** Registers a group, with the source of its records when it offers object selection. Returns its removal. */
@@ -103,6 +116,16 @@ export interface ApiKeyScopes {
   compile(keyId: string, scope: KeyScopeInput): KeyScope;
   /** The `KeyScope` of a key bounded only by its owner (a service account's unscoped key): it narrows nothing. */
   unbounded(keyId: string): KeyScope;
+  /**
+   * A format-`1` scope as format-`2` permissions, exactly what `compile` enforces today; `complete` is false when it
+   * names a group not registered now, whose permissions a later start may still know.
+   */
+  convert(scope: KeyScopeInput): {
+    readonly permissions: KeyPermissions;
+    readonly complete: boolean;
+  };
+  /** The `KeyScope` of format-`2` permissions, with the record scopes of its composite actions as its policy. */
+  compilePermissions(keyId: string, permissions: KeyPermissions): KeyScope;
 }
 
 export const apiKeyScopesToken: ServiceToken<ApiKeyScopes> =
@@ -120,6 +143,9 @@ const refKey = (ref: AccessRef) =>
   ref.kind === 'page'
     ? `page:${ref.id}`
     : `${ref.kind}:${ref.id}/${ref.action}`;
+
+const resourceKey = (resource: ResourceRef) =>
+  JSON.stringify([resource.type, resource.id]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -197,9 +223,8 @@ export function createApiKeyScopes(): ApiKeyScopes {
     keyId: string,
     entries: Map<string, Set<string>>,
     objects: ReadonlyMap<string, readonly string[]>,
+    policies?: ReadonlyMap<string, KeyPermissionPolicy>,
   ): KeyScope {
-    const key = (resource: ResourceRef) =>
-      JSON.stringify([resource.type, resource.id]);
     const resources = new Map<string, ResourceRef>();
     for (const [entry] of entries) {
       const [type, id] = JSON.parse(entry) as [string, string];
@@ -208,13 +233,44 @@ export function createApiKeyScopes(): ApiKeyScopes {
     return {
       keyId,
       allows: (resource, action) =>
-        entries.get(key(resource))?.has(action) ?? false,
+        entries.get(resourceKey(resource))?.has(action) ?? false,
       objects: (business) => objects.get(business) ?? 'all',
       permissions: [...entries].map(([entry, actions]) => ({
         resource: resources.get(entry)!,
         actions: [...actions].sort(),
       })),
+      ...(policies && policies.size > 0
+        ? {
+            policy: (resource: ResourceRef, action: string) =>
+              policies.get(
+                JSON.stringify([resource.type, resource.id, action]),
+              ),
+          }
+        : {}),
     };
+  }
+
+  /** The resource actions and picked records a format-`1` scope covers. */
+  function entriesOf(scope: KeyScopeInput) {
+    const entries = new Map<string, Set<string>>();
+    const objects = new Map<string, readonly string[]>();
+    let complete = true;
+    for (const [id, grant] of Object.entries(scope.groups)) {
+      const group = groups.get(id)?.group;
+      if (!group) complete = false;
+      if (!group || !offered(group).includes(grant.level)) continue;
+      const picked = group.objects ? pickedObjects(grant) : undefined;
+      if (picked && group.objects) objects.set(group.objects.business, picked);
+      for (const { resource, actions: mapped } of accessOf(group, grant.level, {
+        allObjects: picked === undefined,
+      })) {
+        const key = resourceKey(resource);
+        const actions = entries.get(key) ?? new Set<string>();
+        for (const action of mapped) actions.add(action);
+        entries.set(key, actions);
+      }
+    }
+    return { entries, objects, complete };
   }
 
   return {
@@ -278,26 +334,50 @@ export function createApiKeyScopes(): ApiKeyScopes {
       return { groups: result };
     },
     compile(keyId, scope) {
-      const entries = new Map<string, Set<string>>();
-      const objects = new Map<string, readonly string[]>();
-      for (const [id, grant] of Object.entries(scope.groups)) {
-        const group = groups.get(id)?.group;
-        if (!group || !offered(group).includes(grant.level)) continue;
-        const picked = group.objects ? pickedObjects(grant) : undefined;
-        if (picked && group.objects)
-          objects.set(group.objects.business, picked);
-        for (const { resource, actions: mapped } of accessOf(
-          group,
-          grant.level,
-          { allObjects: picked === undefined },
-        )) {
-          const key = JSON.stringify([resource.type, resource.id]);
-          const actions = entries.get(key) ?? new Set<string>();
-          for (const action of mapped) actions.add(action);
-          entries.set(key, actions);
-        }
-      }
+      const { entries, objects } = entriesOf(scope);
       return scopeOf(keyId, entries, objects);
+    },
+    convert(scope) {
+      const { entries, objects, complete } = entriesOf(scope);
+      const grants: KeyPermissionGrant[] = [...entries].map(
+        ([entry, actions]) => {
+          const [type, id] = JSON.parse(entry) as [string, string];
+          return {
+            resource: { type, id },
+            actions: [...actions].sort().map((action) => ({ action })),
+          };
+        },
+      );
+      return {
+        permissions: {
+          grants,
+          ...(objects.size > 0 ? { objects: Object.fromEntries(objects) } : {}),
+        },
+        complete,
+      };
+    },
+    compilePermissions(keyId, permissions) {
+      const entries = new Map<string, Set<string>>();
+      const policies = new Map<string, KeyPermissionPolicy>();
+      for (const grant of permissions.grants) {
+        const key = resourceKey(grant.resource);
+        const actions = entries.get(key) ?? new Set<string>();
+        for (const { action, policy } of grant.actions) {
+          actions.add(action);
+          if (policy)
+            policies.set(
+              JSON.stringify([grant.resource.type, grant.resource.id, action]),
+              policy,
+            );
+        }
+        entries.set(key, actions);
+      }
+      return scopeOf(
+        keyId,
+        entries,
+        new Map(Object.entries(permissions.objects ?? {})),
+        policies,
+      );
     },
     unbounded(keyId) {
       return {

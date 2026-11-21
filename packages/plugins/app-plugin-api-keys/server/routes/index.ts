@@ -30,6 +30,7 @@ import {
   ApiKeyViewSchema,
   CreateApiKeyInput,
   CreatedApiKeySchema,
+  GrantablePermissionsSchema,
   KeyScopeObjectSchema,
   KeyScopeOptionsSchema,
   ScopeGroupParams,
@@ -84,13 +85,32 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     };
 
     routes.get(
+      '/grantable',
+      describeRoute({
+        tags,
+        summary: 'List what I may give a key',
+        operationId: 'apiKeysListGrantable',
+        ...cliRoute({ command: 'api-key grantable' }),
+        description: `${signInOnly} The actions the caller holds today, those no key may hold marked with the reason, and the templates resolved to what the caller holds.`,
+        responses: {
+          200: dataResponse(GrantablePermissionsSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      async (context) =>
+        context.json({
+          data: await keys.grantable(userId(context), await identity(context)),
+        }),
+    );
+    routes.get(
       '/scopeOptions',
       describeRoute({
         tags,
         summary: 'List what a scoped key may be limited to',
         operationId: 'apiKeysListScopeOptions',
+        deprecated: true,
         ...cliRoute({ command: 'api-key scope-options' }),
-        description: signInOnly,
+        description: `Deprecated: read \`GET /api/apiKeys/grantable\`. ${signInOnly}`,
         responses: {
           200: dataResponse(KeyScopeOptionsSchema),
           ...apiErrorResponses,
@@ -111,6 +131,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List the records a scope group may be limited to',
         operationId: 'apiKeysListScopeObjects',
+        deprecated: true,
         ...cliRoute({
           command: 'api-key scope-objects',
           columns: ['id', 'title', 'description'],
@@ -182,14 +203,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ],
           bodyFile: 'file',
         }),
-        description: `${signInOnly} The secret is in this response only. \`scope: null\` makes a key that acts as the caller in full.`,
+        description: `${signInOnly} The secret is in this response only. \`permissions: null\` (or the deprecated \`scope: null\`) makes a key that acts as the caller in full.`,
         responses: {
           201: dataResponse(CreatedApiKeySchema, 'The created key.'),
           ...apiErrorResponses,
-          403: creationForbidden,
+          403: apiErrorResponse(
+            403,
+            'The caller may not create keys of their own (`API_KEY_CREATION_FORBIDDEN`), or does not hold a permission they give the key (`KEY_SCOPE_EXCEEDS_YOURS`).',
+          ),
           400: apiErrorResponse(
             400,
-            'The expiry or the scope is not allowed (`EXPIRY_REQUIRED`, `INVALID_EXPIRY`, `INVALID_SCOPE`, `EMPTY_SCOPE`, `UNKNOWN_SCOPE_GROUP`, `SCOPE_LEVEL_NOT_OFFERED`, `SCOPE_OBJECTS_NOT_OFFERED`, `UNKNOWN_SCOPE_OBJECT`).',
+            'The expiry or the permissions are not allowed (`EXPIRY_REQUIRED`, `INVALID_EXPIRY`, `INVALID_SCOPE`, `EMPTY_SCOPE`, `UNKNOWN_PERMISSION`, `KEY_ACTION_HUMAN_ONLY`, `UNKNOWN_SCOPE_GROUP`, `SCOPE_LEVEL_NOT_OFFERED`, `SCOPE_OBJECTS_NOT_OFFERED`, `UNKNOWN_SCOPE_OBJECT`).',
           ),
         },
       }),
