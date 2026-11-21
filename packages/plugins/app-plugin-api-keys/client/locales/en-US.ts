@@ -2,6 +2,9 @@
 const enUS = {
   navigation: {
     personal: 'API keys',
+    system: 'API keys',
+    systemDescription:
+      'System keys, managed keys, members’ personal keys and the rules for keys',
   },
   permissions: {
     apiKeys: 'API keys',
@@ -80,6 +83,154 @@ const enUS = {
     rotateFailed: 'Could not rotate the key.',
     rotated: 'New value for “{{name}}”',
   },
+  system: {
+    title: 'API keys',
+    description:
+      'A system key calls the API as its own service account, not as any member: it keeps working when people leave, and an administrator grants its permissions one by one.',
+    tabs: {
+      system: 'System keys',
+      managed: 'Managed keys',
+      members: 'Members’ personal keys',
+      rules: 'Rules',
+    },
+    newKey: 'New system key',
+    search: 'Search keys',
+    empty: 'No system keys yet.',
+    noManaged: 'No managed keys.',
+    managedHint:
+      'Keys another feature created and manages for someone, such as a repository’s CI. Here you can only view, disable or delete them; their permissions and rotation change where they are managed.',
+    columns: {
+      status: 'Status',
+    },
+    ownedBy: 'Owner: {{name}}',
+    noOwner: 'No owner',
+    managedBy: 'Managed by {{title}}',
+    managedTag: 'Managed · {{title}}',
+    statusEnabled: 'Enabled',
+    enable: 'Enable',
+    disable: 'Disable',
+    enabled: 'Key enabled',
+    disabled: 'Key disabled',
+    delete: 'Delete',
+    deleted: 'Key deleted',
+    failed: 'Could not save the change.',
+    disableTitle: 'Disable “{{name}}”?',
+    disableDescription:
+      'Calls with this key fail at once until it is enabled again. Its permissions and activity stay.',
+    disableManaged:
+      'Calls with this key fail at once, and {{title}} is told it was disabled.',
+    deleteTitle: 'Delete “{{name}}”?',
+    deleteDescription:
+      'The key, its service account and its permissions are removed. Whatever uses it stops working. This cannot be undone.',
+    deleteManaged:
+      'The key, its service account and its permissions are removed, and {{title}} is told. This cannot be undone.',
+    create: {
+      title: 'New system key',
+      breadcrumb: 'New system key',
+      namePlaceholder: 'For example: ERP sync',
+      descriptionPlaceholder: 'Optional: what calls it, and why',
+      owner: 'Owner',
+      ownerHint:
+        'Receives the expiry reminder and notices about the key. The key does not act as them and keeps working if they leave.',
+      expiryHint:
+        'Rotate it before it expires; rotating keeps its identity and permissions.',
+      permissionsHint:
+        'A system key starts with no permissions. Give it only what the integration needs, from what you can do yourself.',
+      dataRules:
+        'Records are all or selected ones: a system key is no member, so “mine” and other records relative to a person do not apply. Restriction rules still apply to it.',
+    },
+    created: {
+      title: 'System key created',
+      identity: 'Its own service account',
+    },
+    detail: {
+      breadcrumb: 'System key',
+      edit: 'Edit',
+      check: 'Permission check',
+      permissions: 'Permissions',
+      activity: 'Activity',
+      save: 'Save',
+      saved: 'Permissions saved',
+      discard: 'Discard changes',
+      saveHint:
+        'Changes apply at once and are recorded in the activity, before and after.',
+      managed:
+        'Managed by {{title}}: its permissions and rotation change there. Here you can view, disable or delete it.',
+      rotateDescription:
+        'The key gets a new value and the old one stops working at once. Its identity, name, permissions and activity stay.',
+    },
+    activity: {
+      create: 'Created',
+      update: 'Edited',
+      permissions: 'Changed permissions',
+      rotate: 'Rotated',
+      disable: 'Disabled',
+      enable: 'Enabled',
+      delete: 'Deleted',
+      adopt: 'Imported',
+      system: 'System',
+      before: 'Before',
+      after: 'After',
+      nothing: 'Nothing',
+    },
+  },
+  members: {
+    hint: 'Every member’s own keys. You see what each can do, never the key itself, and cannot change their permissions; revoke one that is too broad or unused.',
+    search: 'Search keys or members',
+    filter: 'Show',
+    filters: {
+      all: 'All',
+      sameAsMember: 'Same as member',
+      idle: 'Unused for {{count}} days',
+    },
+    columns: {
+      member: 'Member',
+    },
+    empty: 'No keys match.',
+    previous: 'Previous',
+    next: 'Next',
+    revokeTitle: 'Revoke “{{name}}” of {{member}}?',
+    revokeDescription:
+      'Whatever uses this key stops working at once, and {{member}} cannot bring it back. This cannot be undone.',
+    revoked: 'Key revoked',
+  },
+  rules: {
+    newKeysOnly:
+      'These rules apply to keys created or rotated from now on; existing keys keep their expiry. Who may open this page, manage system keys or create personal keys is set on roles.',
+    whoMay: 'Roles and permissions',
+    sameAsMe: {
+      title: 'Personal keys “same as me”',
+      description:
+        'A key with all of its member’s permissions can obtain their sign-in. Off by default.',
+      allow: 'Allow members to create them',
+    },
+    maxDays: {
+      title: 'Longest personal key lifetime',
+      description: 'Personal keys with chosen permissions cannot live longer.',
+    },
+    defaultDays: {
+      title: 'Default lifetime of a new personal key',
+      description: 'What the expiry starts at when a member creates a key.',
+    },
+    idle: {
+      title: 'Disable keys unused for',
+      description:
+        'Applies to personal and system keys. The owner is notified a week before. Idle time counts from when this is turned on.',
+      off: 'Off',
+    },
+    noLimit: 'No limit',
+    readOnly: 'Only someone who manages system keys can change the rules.',
+    saved: 'Rules saved',
+    failed: 'Could not save the rules.',
+  },
+  check: {
+    systemKey: 'System key',
+    personalKey: 'Personal key',
+    systemIdentity: 'System key',
+    search: 'Search',
+    change: 'Change',
+    none: 'Nothing found.',
+  },
   create: {
     title: 'New personal key',
     breadcrumb: 'New key',
@@ -139,6 +290,11 @@ const enUS = {
       INVALID_EXPIRY: 'Choose an expiry your administrator allows.',
       INVALID_NAME: 'Give the key a name of at most 100 characters.',
       EMPTY_SCOPE: 'Choose at least one permission.',
+      SYSTEM_KEY_SCOPE:
+        'A system key acts as no member: give it all records or selected records, not records relative to a person.',
+      INVALID_OWNER: 'Choose an active member as the owner.',
+      SYSTEM_KEY_MANAGED:
+        'This key is managed elsewhere: change its permissions and rotate it there.',
     },
   },
   created: {

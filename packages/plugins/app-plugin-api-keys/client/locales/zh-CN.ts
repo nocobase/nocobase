@@ -5,6 +5,8 @@ import type enUS from './en-US.js';
 const zhCN: LocaleResource<typeof enUS> = {
   navigation: {
     personal: 'API 密钥',
+    system: 'API 密钥',
+    systemDescription: '系统密钥、托管密钥、成员的个人密钥和密钥规则',
   },
   permissions: {
     apiKeys: 'API 密钥',
@@ -79,6 +81,150 @@ const zhCN: LocaleResource<typeof enUS> = {
     rotateFailed: '轮换失败。',
     rotated: '「{{name}}」的新密钥',
   },
+  system: {
+    title: 'API 密钥',
+    description:
+      '系统密钥以自己专属的服务账号调用接口，不属于任何成员：成员离开后照常工作，权限由管理员逐项授予。',
+    tabs: {
+      system: '系统密钥',
+      managed: '托管密钥',
+      members: '成员的个人密钥',
+      rules: '规则',
+    },
+    newKey: '新建系统密钥',
+    search: '搜索密钥',
+    empty: '还没有系统密钥。',
+    noManaged: '没有托管密钥。',
+    managedHint:
+      '由其他功能代用户创建和管理的密钥，例如仓库 CI。这里只能查看、停用和删除；权限和轮换在托管方调整。',
+    columns: {
+      status: '状态',
+    },
+    ownedBy: '负责人：{{name}}',
+    noOwner: '无负责人',
+    managedBy: '由 {{title}} 托管',
+    managedTag: '托管 · {{title}}',
+    statusEnabled: '已启用',
+    enable: '启用',
+    disable: '停用',
+    enabled: '密钥已启用',
+    disabled: '密钥已停用',
+    delete: '删除',
+    deleted: '密钥已删除',
+    failed: '保存失败。',
+    disableTitle: '停用「{{name}}」？',
+    disableDescription:
+      '停用后立即无法调用，重新启用后恢复。权限和活动记录保留。',
+    disableManaged: '停用后立即无法调用，并会通知 {{title}}。',
+    deleteTitle: '删除「{{name}}」？',
+    deleteDescription:
+      '密钥、它的服务账号和权限都会删除，使用它的地方会立即失效，无法恢复。',
+    deleteManaged:
+      '密钥、它的服务账号和权限都会删除，并会通知 {{title}}，无法恢复。',
+    create: {
+      title: '新建系统密钥',
+      breadcrumb: '新建系统密钥',
+      namePlaceholder: '例如：ERP 同步',
+      descriptionPlaceholder: '可选：谁在调用、用途',
+      owner: '负责人',
+      ownerHint:
+        '接收到期提醒和异常通知。密钥不以负责人的身份调用，负责人离开后仍然可用。',
+      expiryHint: '到期前请轮换；轮换不改变身份和权限。',
+      permissionsHint:
+        '系统密钥默认没有任何权限。只授予集成需要的权限，且不能超过你自己的权限。',
+      dataRules:
+        '记录只能是「全部」或「选定记录」：系统密钥不是成员，「我负责的」等按本人计算的范围对它不适用。限制规则照常生效。',
+    },
+    created: {
+      title: '系统密钥已创建',
+      identity: '专属服务账号',
+    },
+    detail: {
+      breadcrumb: '系统密钥',
+      edit: '编辑',
+      check: '权限检查',
+      permissions: '权限',
+      activity: '活动记录',
+      save: '保存',
+      saved: '权限已保存',
+      discard: '放弃修改',
+      saveHint: '修改立即生效，并在活动记录中记下改前改后。',
+      managed:
+        '由 {{title}} 托管：权限和轮换在托管方调整。这里可以查看、停用和删除。',
+      rotateDescription:
+        '密钥会换成新的值，旧值立即失效。身份、名称、权限和活动记录都不变。',
+    },
+    activity: {
+      create: '创建',
+      update: '编辑',
+      permissions: '修改权限',
+      rotate: '轮换',
+      disable: '停用',
+      enable: '启用',
+      delete: '删除',
+      adopt: '导入',
+      system: '系统',
+      before: '修改前',
+      after: '修改后',
+      nothing: '无',
+    },
+  },
+  members: {
+    hint: '所有成员的个人密钥。你能看到每把密钥能做什么，但看不到密钥本身，也不能修改它们的权限；对权限过宽或长期未用的密钥可以撤销。',
+    search: '搜索密钥或成员',
+    filter: '显示',
+    filters: {
+      all: '全部',
+      sameAsMember: '与成员相同',
+      idle: '{{count}} 天未使用',
+    },
+    columns: {
+      member: '成员',
+    },
+    empty: '没有符合条件的密钥。',
+    previous: '上一页',
+    next: '下一页',
+    revokeTitle: '撤销 {{member}} 的「{{name}}」？',
+    revokeDescription:
+      '使用这把密钥的地方会立即失效，{{member}} 也无法恢复它。此操作无法撤回。',
+    revoked: '密钥已撤销',
+  },
+  rules: {
+    newKeysOnly:
+      '这些规则只对之后新建和轮换的密钥生效，已有密钥的有效期不变。谁能进入此页、管理系统密钥或创建个人密钥，在角色上设置。',
+    whoMay: '角色和权限',
+    sameAsMe: {
+      title: '「与我相同」的个人密钥',
+      description: '拥有成员全部权限的密钥可以换出其登录状态。默认不允许。',
+      allow: '允许成员创建',
+    },
+    maxDays: {
+      title: '个人密钥最长有效期',
+      description: '带权限范围的个人密钥不能超过这个期限。',
+    },
+    defaultDays: {
+      title: '新建个人密钥的默认有效期',
+      description: '成员新建密钥时有效期的初始值。',
+    },
+    idle: {
+      title: '闲置多久后自动停用',
+      description:
+        '个人密钥和系统密钥都适用。停用前一周通知所有者或负责人；闲置时间从开启时算起。',
+      off: '关闭',
+    },
+    noLimit: '不限',
+    readOnly: '只有能管理系统密钥的人可以修改规则。',
+    saved: '规则已保存',
+    failed: '规则保存失败。',
+  },
+  check: {
+    systemKey: '系统密钥',
+    personalKey: '个人密钥',
+    systemIdentity: '系统密钥',
+    search: '搜索',
+    change: '更换',
+    none: '没有找到。',
+  },
   create: {
     title: '新建个人密钥',
     breadcrumb: '新建',
@@ -136,6 +282,10 @@ const zhCN: LocaleResource<typeof enUS> = {
       INVALID_EXPIRY: '请选择管理员允许的有效期。',
       INVALID_NAME: '名称不能为空，最多 100 个字符。',
       EMPTY_SCOPE: '请至少选择一项权限。',
+      SYSTEM_KEY_SCOPE:
+        '系统密钥不属于任何成员：记录只能选「全部」或「选定记录」，不能选按本人计算的范围。',
+      INVALID_OWNER: '请选择一位在职成员作为负责人。',
+      SYSTEM_KEY_MANAGED: '这把密钥由托管方管理，请在托管方调整权限和轮换。',
     },
   },
   created: {

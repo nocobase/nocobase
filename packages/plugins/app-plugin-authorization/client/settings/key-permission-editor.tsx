@@ -99,6 +99,11 @@ export interface KeyPermissionEditorProps {
    * Told once the table is built, and again when it changes, which of the actions it offers are high risk: a host's
    * quick settings leave those out, so turning one on always goes through the table's warning.
    */
+  /**
+   * For a system key, which has no person behind it: record scopes are every record or none, never one counted from
+   * "me"; chosen records are picked through `objectExtra`.
+   */
+  readonly systemKey?: boolean;
   readonly onRisky?: (
     actions: readonly {
       readonly resource: { readonly type: string; readonly id: string };
@@ -129,10 +134,15 @@ function grantKeys(
 function narrowSlot(
   slot: PermissionScopeSlot,
   held: readonly string[] | undefined,
+  systemKey = false,
 ): PermissionScopeSlot {
-  if (!held || held.includes(ALL_RECORDS) || !slot.options) return slot;
+  if (!slot.options) return slot;
+  const open = !held || held.includes(ALL_RECORDS);
+  if (open && !systemKey) return slot;
+  // A system key has no person to count records from: every record, when the giver holds every record, or none.
   const allowed = (value: string): boolean =>
-    value === NO_SCOPE || held.includes(value);
+    value === NO_SCOPE ||
+    (systemKey ? value === ALL_RECORDS && open : (held ?? []).includes(value));
   const options = slot.options.map((option) =>
     allowed(option.value) ? option : { ...option, disabled: true },
   );
@@ -153,6 +163,7 @@ function keyWorkspace(
   workspace: PermissionWorkspace,
   options: {
     readonly ceiling: KeyPermissionCeiling | undefined;
+    readonly systemKey: boolean;
     readonly shown: ReadonlySet<string> | undefined;
     readonly lapsed: ReadonlySet<string>;
     readonly text: (value: LocalizedText) => string;
@@ -201,7 +212,7 @@ function keyWorkspace(
           ...(action.scopes
             ? {
                 scopes: action.scopes.map((slot) =>
-                  narrowSlot(slot, entry?.scopes?.[slot.id]),
+                  narrowSlot(slot, entry?.scopes?.[slot.id], options.systemKey),
                 ),
               }
             : {}),
@@ -253,6 +264,7 @@ function KeyPermissionTable({
   objectExtra,
   onRisky,
   catalogPath = 'authorization/permissionSets/grantableOptions',
+  systemKey = false,
   className,
 }: KeyPermissionEditorProps): ReactElement {
   const { t, i18n } = useTranslation();
@@ -296,6 +308,7 @@ function KeyPermissionTable({
       workspace
         ? keyWorkspace(workspace, {
             ceiling,
+            systemKey,
             shown: shownKeys,
             lapsed: lapsedKeys,
             text,
@@ -307,7 +320,16 @@ function KeyPermissionTable({
               }),
           })
         : undefined,
-    [workspace, ceiling, shownKeys, lapsedKeys, text, t, i18n.language],
+    [
+      workspace,
+      ceiling,
+      systemKey,
+      shownKeys,
+      lapsedKeys,
+      text,
+      t,
+      i18n.language,
+    ],
   );
   const shownGrants = useMemo(
     () => (readOnly ? [...value, ...(lapsed ?? [])] : value),

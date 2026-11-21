@@ -14,11 +14,12 @@ import {
 } from '../client/expiry.js';
 import { daysLeft, idleDays, permissionCounts } from '../client/lib/format.js';
 import { API_KEY_ROUTES } from '../client/routes.js';
+import { ApiKeysServiceProvider } from '../client/service-provider.js';
 
 describe('@nocobase/app-plugin-api-keys Client', () => {
   it('registers the personal API keys pages, which an application may leave out', () => {
     const registration = apiKeys();
-    expect(registration.serviceProviders).toEqual([]);
+    expect(registration.serviceProviders).toEqual([ApiKeysServiceProvider]);
     const [contribution] = registration.routes as readonly {
       parent: string;
       routes: readonly {
@@ -48,6 +49,52 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
       '@nocobase/app-plugin-api-keys:apiKeysPersonalCreate',
     );
     expect(apiKeys({ routes: false }).routes).toEqual([]);
+  });
+
+  it('registers System settings › API keys: system keys, managed keys, members’ keys and rules', async () => {
+    const registration = apiKeys();
+    const { routes } = resolveAppClientContributions([
+      { packageName: registration.packageName, routes: registration.routes },
+    ]);
+    const paths = new Map<string, { path?: string; authz?: unknown }>();
+    const walk = (nodes: readonly AppClientRegisteredRoute[]) => {
+      for (const node of nodes) {
+        paths.set(node.id, node as { path?: string; authz?: unknown });
+        walk(node.children ?? []);
+      }
+    };
+    walk(routes);
+    const read = {
+      resource: { type: 'settings', id: 'apiKeys' },
+      action: 'read',
+    };
+    expect(paths.get(API_KEY_ROUTES.system)).toMatchObject({
+      path: '/settings/api-keys',
+      authz: read,
+    });
+    expect(paths.get(API_KEY_ROUTES.systemCreate)).toMatchObject({
+      path: '/settings/api-keys/create',
+      authz: { ...read, action: 'manage' },
+    });
+    for (const [id, path] of [
+      [API_KEY_ROUTES.systemDetail, '/settings/api-keys/:identityId'],
+      [API_KEY_ROUTES.managed, '/settings/api-keys/managed'],
+      [API_KEY_ROUTES.managedDetail, '/settings/api-keys/managed/:identityId'],
+      [API_KEY_ROUTES.members, '/settings/api-keys/members'],
+      [API_KEY_ROUTES.rules, '/settings/api-keys/rules'],
+    ] as const)
+      expect(paths.get(id)).toMatchObject({ path });
+    for (const id of Object.values(API_KEY_ROUTES)) {
+      const loaded = await (
+        paths.get(id) as {
+          componentLoader?: () => Promise<{ default: unknown }>;
+        }
+      ).componentLoader?.();
+      expect({ id, type: typeof loaded?.default }).toEqual({
+        id,
+        type: 'function',
+      });
+    }
   });
 
   it('lets an application replace a page with its own through routeComponentOverrides', async () => {
