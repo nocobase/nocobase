@@ -1440,13 +1440,26 @@ describe('API key permissions in the shape of a permission set', () => {
         keys.create(
           personId,
           {
+            name: 'narrower',
+            expiresInDays: 7,
+            permissions: withQuotes('recordsIOwn'),
+          },
+          await identity(),
+        ),
+      ).resolves.toMatchObject({ key: { name: 'narrower' } });
+      // Chosen records are still checked one by one against the records the maker reaches, which this catalog has none
+      // of to read (tests/system-key-records.test.ts reads real ones).
+      await expect(
+        keys.create(
+          personId,
+          {
             name: 'picked',
             expiresInDays: 7,
             permissions: withQuotes({ type: 'records', ids: ['q1'] }),
           },
           await identity(),
         ),
-      ).resolves.toMatchObject({ key: { name: 'picked' } });
+      ).rejects.toMatchObject({ code: 'KEY_SCOPE_EXCEEDS_YOURS' });
     } finally {
       Reflect.deleteProperty(authz, 'permissionSets');
     }

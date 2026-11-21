@@ -558,14 +558,6 @@ describe('system keys', () => {
           .executeTakeFirst<{ permissions: unknown }>()
       )?.permissions;
     const before = await stored(own.key.id);
-    await expect(
-      systemKeys.adopt({
-        identityId: robot.id,
-        keyId: 'not-its-key',
-        permissions: readOrders,
-      }),
-    ).rejects.toMatchObject({ code: 'NO_KEY' });
-    expect(await systemKeys.isSystemKey(robot.id)).toBe(false);
     const holds = {
       grants: [
         {
@@ -574,6 +566,35 @@ describe('system keys', () => {
         },
       ],
     };
+    // What the application's own set gives the account, as Studio's organization keys hold.
+    await authz.permissionSets.create({
+      key: `api-key-${robot.id}`,
+      grants: holds.grants,
+    });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: robot.id },
+      permissionSet: `api-key-${robot.id}`,
+    });
+    await expect(
+      systemKeys.adopt({ identityId: robot.id, keyId: 'not-its-key' }),
+    ).rejects.toMatchObject({ code: 'NO_KEY' });
+    // Grants the account does not hold are never given.
+    await expect(
+      systemKeys.adopt({
+        identityId: robot.id,
+        keyId: own.key.id,
+        permissions: {
+          grants: [
+            ...holds.grants,
+            {
+              resource: { type: 'settings', id: 'apiKeys' },
+              actions: [{ action: 'read' }],
+            },
+          ],
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'ADOPT_NOT_HELD' });
+    expect(await systemKeys.isSystemKey(robot.id)).toBe(false);
     const history = [
       {
         action: 'create' as const,
@@ -584,29 +605,42 @@ describe('system keys', () => {
     const adopted = await systemKeys.adopt({
       identityId: robot.id,
       keyId: own.key.id,
-      permissions: holds,
       events: history,
     });
     expect(adopted.id).toBe(own.key.id);
-    // The set takes what the account held; the key keeps its narrower scope, so it still only reads.
+    // The set takes what the account holds, read from it; the key keeps its narrower scope, so it still only reads.
+    expect(
+      (await authz.permissionSets.get(systemKeySet(robot.id)))?.grants,
+    ).toEqual(holds.grants);
     expect(await stored(own.key.id)).toEqual(before);
     expect((await asKey(own.secret, '/settings/orders/read')).status).toBe(200);
     expect((await asKey(own.secret, '/settings/orders/update')).status).toBe(
       403,
     );
     expect(await stored(other.key.id)).toEqual(before);
-    // Again, nothing is added twice.
+    // The same import again adds nothing; another key of the account is refused.
     await systemKeys.adopt({
       identityId: robot.id,
       keyId: own.key.id,
-      permissions: holds,
       events: history,
     });
+    await expect(
+      systemKeys.adopt({ identityId: robot.id, keyId: other.key.id }),
+    ).rejects.toMatchObject({ code: 'ALREADY_SYSTEM_KEY' });
     const events = await systemKeys.events(robot.id);
     expect(events.map((event) => event.action).sort()).toEqual([
       'adopt',
       'create',
     ]);
+    // The first change records what the key held before: its own scope, which is in the current format.
+    await systemKeys.setPermissions(robot.id, adminId, { grants: [] });
+    const change = (await systemKeys.events(robot.id)).find(
+      (event) => event.action === 'permissions',
+    );
+    expect(change?.details).toEqual({
+      before: readOrders,
+      after: { grants: [] },
+    });
   });
 
   it('lets a feature manage keys for a person, never past what they hold, and tells it of a revocation', async () => {
@@ -682,11 +716,16 @@ describe('system keys', () => {
       expect(await systemKeys.deliverNotices()).toBe(0);
       expect(revoked).toHaveBeenCalledTimes(2);
       expect(revoked).toHaveBeenLastCalledWith({
+        noticeId: expect.any(String),
         identityId: managed.key.identityId,
         managedBy,
         actorId: adminId,
         how: 'disabled',
       });
+      // The retry carries the same notice as the failed attempt, so the manager can tell a repeat.
+      expect(revoked.mock.calls[0]![0].noticeId).toBe(
+        revoked.mock.calls[1]![0].noticeId,
+      );
       await call(
         `/systemApiKeys/${managed.key.identityId}`,
         adminCookie,

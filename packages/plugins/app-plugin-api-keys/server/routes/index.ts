@@ -47,6 +47,7 @@ import {
   ObjectSourceParams,
   ScopeGroupParams,
   ScopeObjectsQuery,
+  ScopeRecordsMeta,
   ScopeRecordsQuery,
 } from './schemas.js';
 
@@ -223,28 +224,31 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'List the records a key’s data scope may be limited to',
         operationId: 'apiKeysListScopeRecords',
         ...newRouteOffCommandLine,
-        description: `${signInOnly} The records the caller can see through a composite action's data scope, which a key's permissions may limit that scope to (\`{ type: 'records', ids }\`); narrowed by \`q\` or repeated \`id\`; at most 100, not paged.`,
+        description: `${signInOnly} The records the caller can see through a composite action's data scope, which a key's permissions may limit that scope to (\`{ type: 'records', ids }\`); filtered by \`q\` (in the id or title) or repeated \`id\` and paged (\`page\`, 50 a page; \`meta.hasMore\`) by the database.`,
         responses: {
-          200: listResponse(KeyScopeObjectSchema, ApiKeysListMeta),
+          200: listResponse(KeyScopeObjectSchema, ScopeRecordsMeta),
           ...apiErrorResponses,
         },
       }),
       apiValidator('query', ScopeRecordsQuery),
       async (context) => {
-        const { resource, action, scope, q, id } = context.req.valid('query');
-        const search = q?.trim().toLocaleLowerCase();
-        const data = (
-          await keys.scopeRecords(await identity(context), {
+        const { resource, action, scope, q, id, page } =
+          context.req.valid('query');
+        const { records, hasMore } = await keys.scopeRecords(
+          await identity(context),
+          {
             resource,
             action,
             scope,
             ...(id ? { ids: id } : {}),
-          })
-        ).filter(
-          (record) =>
-            !search || record.title.toLocaleLowerCase().includes(search),
+            ...(q ? { search: q } : {}),
+            ...(page ? { page } : {}),
+          },
         );
-        return context.json({ data, meta: { total: data.length } });
+        return context.json({
+          data: records,
+          meta: { total: records.length, hasMore },
+        });
       },
     );
     // A person's own keys: a bounded list, not paged.

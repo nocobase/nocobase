@@ -29,8 +29,11 @@ export function RecordPicker({
   readonly value: readonly string[] | undefined;
   readonly onChange?: (next: readonly string[] | undefined) => void;
   readonly readOnly?: boolean;
-  /** Where the records come from; the business's record source by default. */
-  readonly load?: (search: string | undefined) => Promise<KeyScopeObject[]>;
+  /** Where the records come from, a page at a time; the business's record source, unpaged, by default. */
+  readonly load?: (
+    search: string | undefined,
+    page: number,
+  ) => Promise<{ records: KeyScopeObject[]; hasMore: boolean }>;
   /** Offers "All records"; off where only chosen records may be given. */
   readonly allowAll?: boolean;
 }): ReactElement {
@@ -39,15 +42,26 @@ export function RecordPicker({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [records, setRecords] = useState<readonly KeyScopeObject[]>();
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   useEffect(() => {
     if (!open) return;
     let active = true;
     const timer = setTimeout(() => {
-      (load ?? ((query) => api.objects(business, query)))(
-        search.trim() || undefined,
-      ).then(
+      (
+        load ??
+        (async (query: string | undefined) => ({
+          records: await api.objects(business, query),
+          hasMore: false,
+        }))
+      )(search.trim() || undefined, page).then(
         (found) => {
-          if (active) setRecords(found);
+          if (!active) return;
+          // A later page adds to what is listed; a new search starts over.
+          setRecords((current) =>
+            page > 1 ? [...(current ?? []), ...found.records] : found.records,
+          );
+          setHasMore(found.hasMore);
         },
         () => {
           if (active) setRecords([]);
@@ -58,7 +72,7 @@ export function RecordPicker({
       active = false;
       clearTimeout(timer);
     };
-  }, [api, business, search, open, load]);
+  }, [api, business, search, open, load, page]);
   const label =
     value === undefined
       ? t('create.allRecords')
@@ -104,7 +118,10 @@ export function RecordPicker({
               value={search}
               placeholder={t('create.searchRecords')}
               aria-label={t('create.searchRecords')}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
             <div className='grid max-h-56 gap-1 overflow-y-auto'>
               {records === undefined ? null : records.length === 0 ? (
@@ -144,6 +161,15 @@ export function RecordPicker({
                   );
                 })
               )}
+              {hasMore ? (
+                <button
+                  type='button'
+                  className='justify-self-start text-xs text-primary hover:underline'
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  {t('create.moreRecords')}
+                </button>
+              ) : null}
             </div>
           </PopoverContent>
         </Popover>

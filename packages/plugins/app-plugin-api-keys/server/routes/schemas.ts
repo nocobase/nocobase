@@ -346,6 +346,7 @@ export const ScopeRecordsQuery: z.ZodType<{
   scope: string;
   q?: string | undefined;
   id?: string[] | undefined;
+  page?: number | undefined;
 }> = z.object({
   resource: z
     .string()
@@ -354,7 +355,8 @@ export const ScopeRecordsQuery: z.ZodType<{
     .describe('The composite resource, such as `crm.customers`.'),
   action: z.string().min(1).max(100).describe('Its action, such as `view`.'),
   scope: z.string().min(1).max(100).describe('The data scope of the action.'),
-  q: z.string().max(200).optional().describe('Text the title contains.'),
+  q: z.string().max(200).optional().describe('Text the id or title contains.'),
+  page: z.coerce.number().int().min(1).optional().describe('The page, from 1.'),
   id: z
     .union([z.string().min(1), z.array(z.string().min(1)).max(MAX_PICKED_IDS)])
     .optional()
@@ -363,3 +365,10 @@ export const ScopeRecordsQuery: z.ZodType<{
     )
     .describe('The record identifier.'),
 });
+
+/** `meta` of `GET /api/apiKeys/scopeRecords`: the records on this page, and whether another page follows. */
+export const ScopeRecordsMeta: z.ZodType<{ total: number; hasMore: boolean }> =
+  z.object({
+    total: z.number().int().describe('The records on this page.'),
+    hasMore: z.boolean().describe('Whether another page follows.'),
+  });

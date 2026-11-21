@@ -37,7 +37,8 @@ export interface ApiKeysApi {
     action: string;
     scope: string;
     search?: string;
-  }): Promise<KeyScopeObject[]>;
+    page?: number;
+  }): Promise<{ records: KeyScopeObject[]; hasMore: boolean }>;
   create(input: CreateKeyInput): Promise<CreatedApiKey>;
   rotate(keyId: string): Promise<CreatedApiKey>;
   revoke(keyId: string): Promise<void>;
@@ -63,13 +64,22 @@ export function createApiKeysApi(api: ApiClient): ApiKeysApi {
           ...(search ? { query: { q: search } } : {}),
         })
       ).data,
-    scopeRecords: async ({ resource, action, scope, search }) =>
-      (
-        await api.request<{ data: KeyScopeObject[] }>({
-          path: 'apiKeys/scopeRecords',
-          query: { resource, action, scope, ...(search ? { q: search } : {}) },
-        })
-      ).data,
+    scopeRecords: async ({ resource, action, scope, search, page }) => {
+      const answer = await api.request<{
+        data: KeyScopeObject[];
+        meta: { hasMore: boolean };
+      }>({
+        path: 'apiKeys/scopeRecords',
+        query: {
+          resource,
+          action,
+          scope,
+          ...(search ? { q: search } : {}),
+          ...(page ? { page: String(page) } : {}),
+        },
+      });
+      return { records: answer.data, hasMore: answer.meta.hasMore };
+    },
     create: async (input) =>
       (
         await api.request<{ data: CreatedApiKey }, CreateKeyInput>({

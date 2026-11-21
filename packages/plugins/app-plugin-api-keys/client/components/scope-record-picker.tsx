@@ -12,11 +12,12 @@ export function ScopeRecordPicker(props: KeyScopeRecordsProps): ReactElement {
   const api = useApiKeysApi();
   const { resource, action, scope } = props;
   const load = useCallback(
-    (search: string | undefined) =>
+    (search: string | undefined, page: number) =>
       api.scopeRecords({
         resource: resource.id,
         action,
         scope,
+        page,
         ...(search ? { search } : {}),
       }),
     [api, resource.id, action, scope],

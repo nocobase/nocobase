@@ -9,7 +9,11 @@ import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Skeleton } from '#components/ui/skeleton';
-import { useApiKeysAdminApi, type SystemKey } from '../lib/admin-api.js';
+import {
+  SYSTEM_KEYS_PAGE,
+  useApiKeysAdminApi,
+  type SystemKey,
+} from '../lib/admin-api.js';
 import { API_KEYS_NAMESPACE } from '../namespace.js';
 import {
   ConfirmDialog,
@@ -40,6 +44,8 @@ export function SystemKeyList({
   const { can: mayManage } = useCan({ resource: API_KEYS, action: 'manage' });
   const [search, setSearch] = useState('');
   const [keys, setKeys] = useState<SystemKey[]>();
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<unknown>();
   const [revision, setRevision] = useState(0);
   const [disabling, setDisabling] = useState<SystemKey>();
@@ -53,11 +59,14 @@ export function SystemKeyList({
       admin
         .systemKeys({
           managed,
+          page,
           ...(search.trim() ? { search: search.trim() } : {}),
         })
         .then(
           (found) => {
-            if (active) setKeys(found);
+            if (!active) return;
+            setKeys(found.data);
+            setTotal(found.total);
           },
           (failure: unknown) => {
             if (active) setError(failure);
@@ -68,7 +77,8 @@ export function SystemKeyList({
       active = false;
       clearTimeout(timer);
     };
-  }, [admin, managed, search, revision, location.pathname]);
+  }, [admin, managed, search, page, revision, location.pathname]);
+  const pages = Math.max(1, Math.ceil(total / SYSTEM_KEYS_PAGE));
   const shown = keys ?? [];
   const toggle = async (key: SystemKey, enabled: boolean) => {
     try {
@@ -106,7 +116,10 @@ export function SystemKeyList({
             placeholder={t('system.search')}
             aria-label={t('system.search')}
             className='max-w-60'
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
           />
         </div>
         {error ? (
@@ -220,6 +233,31 @@ export function SystemKeyList({
                 </div>
               </div>
             ))}
+            {pages > 1 ? (
+              <div className='flex items-center justify-end gap-2 border-t px-4 py-3 text-sm'>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  {t('members.previous')}
+                </Button>
+                <span className='text-muted-foreground'>
+                  {page} / {pages}
+                </span>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  disabled={page >= pages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  {t('members.next')}
+                </Button>
+              </div>
+            ) : null}
           </div>
         )}
       </section>

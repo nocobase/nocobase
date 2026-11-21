@@ -271,6 +271,7 @@ const enUS = {
     selectedRecords_other: '{{count}} selected',
     noneSelected: 'None selected yet',
     pickRecords: 'Limit to some records',
+    moreRecords: 'Show more',
     searchRecords: 'Search',
     noRecords: 'No records you can choose.',
     useAll: 'All records',

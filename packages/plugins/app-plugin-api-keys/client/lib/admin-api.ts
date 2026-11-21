@@ -3,6 +3,9 @@ import { useMemo } from 'react';
 
 import type { ApiKeyView, KeyPermissions } from '../../shared/scopes.js';
 
+/** The system keys a list page shows. */
+export const SYSTEM_KEYS_PAGE = 20;
+
 /** A system key as `/api/systemApiKeys` answers it. */
 export interface SystemKey extends ApiKeyView {
   readonly identityId: string;
@@ -62,7 +65,8 @@ export interface ApiKeysAdminApi {
   systemKeys(filter: {
     search?: string;
     managed?: boolean;
-  }): Promise<SystemKey[]>;
+    page?: number;
+  }): Promise<{ data: SystemKey[]; total: number }>;
   systemKey(identityId: string): Promise<SystemKey>;
   createSystemKey(
     input: CreateSystemKeyInput,
@@ -100,17 +104,21 @@ export function createApiKeysAdminApi(api: ApiClient): ApiKeysAdminApi {
   const data = async <T>(promise: Promise<{ data: T }>): Promise<T> =>
     (await promise).data;
   return {
-    systemKeys: ({ search, managed }) =>
-      data(
-        api.request<{ data: SystemKey[] }>({
-          path: 'systemApiKeys',
-          query: {
-            ...(managed === undefined ? {} : { managed: String(managed) }),
-            pageSize: '100',
-            ...(search ? { q: search } : {}),
-          },
-        }),
-      ),
+    systemKeys: async ({ search, managed, page }) => {
+      const answer = await api.request<{
+        data: SystemKey[];
+        meta: { total: number };
+      }>({
+        path: 'systemApiKeys',
+        query: {
+          ...(managed === undefined ? {} : { managed: String(managed) }),
+          pageSize: String(SYSTEM_KEYS_PAGE),
+          ...(page ? { page: String(page) } : {}),
+          ...(search ? { q: search } : {}),
+        },
+      });
+      return { data: answer.data, total: answer.meta.total };
+    },
     systemKey: (identityId) =>
       data(api.request<{ data: SystemKey }>({ path: key(identityId) })),
     createSystemKey: (input) =>

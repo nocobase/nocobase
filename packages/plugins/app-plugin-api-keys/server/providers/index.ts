@@ -164,6 +164,15 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
       registerApiKeySettings(container.resolve(authorizationToken));
       const systemKeys = container.resolve(systemApiKeysToken);
       systemKeys.protectAll();
+      const colliding = await systemKeys.collisions().catch(() => []);
+      if (colliding.length && container.has(loggingToken))
+        container
+          .resolve(loggingToken)
+          .getLogger('api-keys')
+          .warn(
+            { permissionSets: colliding },
+            'Permission sets named in the prefix reserved for system keys are hidden and cannot be edited; rename them',
+          );
       this.releases.push(() => systemKeys.release());
       // The permission inspector checks a key as a request made with it: `{ type: 'apiKey', id: <key id> }`.
       this.releases.push(

@@ -10,6 +10,7 @@
  * told when an administrator disables or deletes one.
  */
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type { UserAdministrationService } from '@nocobase/app-plugin-authentication/server';
@@ -43,6 +44,8 @@ export interface SystemKeyManagedBy {
 /** What a manager of system keys is told: an administrator disabled or deleted one of its keys. */
 export interface SystemKeyManager {
   onRevoked(input: {
+    /** The stored notice: the same on every attempt to deliver it, so a manager can tell a repeat. */
+    readonly noticeId: string;
     readonly identityId: string;
     readonly managedBy: SystemKeyManagedBy;
     readonly actorId: string | null;
@@ -97,8 +100,11 @@ export interface AdoptSystemKeyInput {
   readonly identityId: string;
   /** The key to adopt; it must belong to the service account. */
   readonly keyId: string;
-  /** The grants the account held, which its hidden Permission Set takes as they are. */
-  readonly permissions: KeyPermissions;
+  /**
+   * The grants to give the hidden set; each must be one the account holds now, exactly, record scopes included
+   * (`ADOPT_NOT_HELD` otherwise). Left out, it takes every grant the account holds.
+   */
+  readonly permissions?: KeyPermissions;
   readonly ownerId?: string | null;
   readonly managedBy?: SystemKeyManagedBy | null;
   readonly createdById?: string | null;
@@ -193,6 +199,67 @@ export function assertSystemPermissions(permissions: KeyPermissions): void {
     }
 }
 
+/** The grants of the sets an account holds, each action entry once, leaving out its own hidden set. */
+function heldGrants(
+  sets: readonly {
+    readonly key: string;
+    readonly grants: readonly KeyPermissions['grants'][number][];
+  }[],
+  own: string,
+): KeyPermissions['grants'][number][] {
+  const byResource = new Map<string, KeyPermissions['grants'][number]>();
+  const seen = new Set<string>();
+  for (const set of sets) {
+    if (set.key === own) continue;
+    for (const grant of set.grants) {
+      const key = JSON.stringify([grant.resource.type, grant.resource.id]);
+      const current = byResource.get(key) ?? {
+        resource: { type: grant.resource.type, id: grant.resource.id },
+        actions: [],
+      };
+      const actions = [...current.actions];
+      for (const entry of grant.actions) {
+        const id = JSON.stringify([key, entry.action, entry.policy ?? null]);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        actions.push(entry);
+      }
+      byResource.set(key, { ...current, actions });
+    }
+  }
+  return [...byResource.values()].filter((grant) => grant.actions.length);
+}
+
+/** `permissions` when the account holds every action of it exactly, record scopes included. */
+function onlyHeld(
+  permissions: KeyPermissions,
+  held: readonly KeyPermissions['grants'][number][],
+): KeyPermissions {
+  const holds = (
+    resource: { type: string; id: string },
+    entry: KeyPermissions['grants'][number]['actions'][number],
+  ): boolean =>
+    held.some(
+      (grant) =>
+        grant.resource.type === resource.type &&
+        grant.resource.id === resource.id &&
+        grant.actions.some(
+          (item) =>
+            item.action === entry.action &&
+            isDeepStrictEqual(item.policy ?? null, entry.policy ?? null),
+        ),
+    );
+  for (const grant of permissions.grants)
+    for (const entry of grant.actions)
+      if (!holds(grant.resource, entry))
+        throw new ApiKeyRequestError(
+          400,
+          'ADOPT_NOT_HELD',
+          `The account does not hold ${grant.resource.type}:${grant.resource.id}.${entry.action} as given, so the key cannot get it.`,
+        );
+  return { grants: permissions.grants.map((grant) => ({ ...grant })) };
+}
+
 export class SystemApiKeys {
   private readonly managersByKind = new Map<string, SystemKeyManager>();
   private releaseProtection: (() => void)[] = [];
@@ -246,6 +313,29 @@ export class SystemApiKeys {
         hidden: true,
       }),
     );
+  }
+
+  /**
+   * Permission Sets in the reserved `system-key-` prefix that are no system key's, such as a role an administrator named
+   * so before: the prefix protection hides them and keeps them from being edited, so the application should rename
+   * them. Read at boot.
+   */
+  async collisions(): Promise<string[]> {
+    const authz = this.options.authorization();
+    if (!authz) return [];
+    const listed = new Set(
+      (
+        await this.db.query
+          .selectFrom('apiKeySystemKeys')
+          .select(['identityId'])
+          .execute()
+      ).map((row) => systemKeySet(String(row.identityId))),
+    );
+    return (await authz.permissionSets.list())
+      .map((set) => set.key)
+      .filter(
+        (key) => key.startsWith(SYSTEM_KEY_SET_PREFIX) && !listed.has(key),
+      );
   }
 
   /** Lifts every protection this service added, as at shutdown. */
@@ -318,9 +408,20 @@ export class SystemApiKeys {
       owner: await this.person(row.ownerId),
       managedBy: managedByOf(row.managedBy),
       createdById: row.createdById,
-      permissions:
-        stored?.version === '2' ? stored.permissions : { grants: [] },
+      permissions: await this.permissionsOf(row.identityId, stored),
     };
+  }
+
+  /** What a system key holds: its own permissions, or for a key adopted with a scope in another format, its set's. */
+  private async permissionsOf(
+    identityId: string,
+    stored: ReturnType<typeof decodeKeyPermissions>,
+  ): Promise<KeyPermissions> {
+    if (stored?.version === '2') return stored.permissions;
+    const set = await this.options
+      .authorization()
+      ?.permissionSets.get(systemKeySet(identityId));
+    return { grants: [...(set?.grants ?? [])] };
   }
 
   /**
@@ -394,9 +495,17 @@ export class SystemApiKeys {
         typeof row.name === 'string' ? row.name : '',
       ]),
     );
+    const views = await Promise.all(
+      records.map(async (row) => ({
+        row,
+        permissions: await this.permissionsOf(
+          String(row.systemIdentityId),
+          decodeKeyPermissions(row.permissions),
+        ),
+      })),
+    );
     return {
-      data: records.map((row) => {
-        const stored = decodeKeyPermissions(row.permissions);
+      data: views.map(({ row, permissions }) => {
         const ownerId =
           typeof row.systemOwnerId === 'string' ? row.systemOwnerId : null;
         return {
@@ -410,8 +519,7 @@ export class SystemApiKeys {
             typeof row.systemCreatedById === 'string'
               ? row.systemCreatedById
               : null,
-          permissions:
-            stored?.version === '2' ? stored.permissions : { grants: [] },
+          permissions,
         };
       }),
       total: Number(counted?.total ?? 0),
@@ -719,8 +827,19 @@ export class SystemApiKeys {
             .executeTakeFirst<{ permissions: unknown }>()
         )?.permissions,
       );
+      // A key adopted with a scope of its own in another format is described by its set, which says what it holds.
       const before =
-        stored?.version === '2' ? stored.permissions : { grants: [] };
+        stored?.version === '2'
+          ? stored.permissions
+          : {
+              grants: [
+                ...((
+                  await this.requireAuthorization()
+                    .permissionSets.withTransaction(connection)
+                    .get(systemKeySet(identityId))
+                )?.grants ?? []),
+              ],
+            };
       await this.writePermissions(connection, row, permissions);
       await this.record(
         identityId,
@@ -756,21 +875,22 @@ export class SystemApiKeys {
   }
 
   /**
-   * Tells a managed key's manager that it was disabled or deleted. The notice is stored first and removed once the
-   * manager took it, so one that fails is delivered again by `deliverNotices` (the daily sweep), even after the key is
-   * gone; a manager may get a notice more than once and should treat it as the same event.
+   * Stores the notice that a managed key's manager is to get, in the transaction that revokes the key, so the two
+   * commit together. Answers its id, which `deliverNotices` delivers it by; none for a key nobody manages.
    */
-  private async tell(
+  private async storeNotice(
+    connection: DatabaseConnection,
     row: SystemRow,
     actorId: string | null,
     how: 'disabled' | 'deleted',
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     const managedBy = managedByOf(row.managedBy);
-    if (!managedBy) return;
-    await this.db.query
+    if (!managedBy) return undefined;
+    const id = randomUUID();
+    await connection.query
       .insertInto('apiKeyManagerNotices')
       .values({
-        id: randomUUID(),
+        id,
         identityId: row.identityId,
         managedBy: JSON.stringify(managedBy),
         actorId,
@@ -779,19 +899,21 @@ export class SystemApiKeys {
         createdAt: new Date(),
       })
       .execute();
-    await this.deliverNotices(row.identityId);
+    return id;
   }
 
   /**
-   * Delivers the stored notices to managers, oldest first, every key's or one key's; a notice whose manager is not
-   * added in this process, or fails, stays for the next attempt. Answers how many were delivered.
+   * Delivers stored notices to managers, oldest first: one by its id, or every one. A notice is removed once its
+   * manager took it; one whose manager is not added in this process, or fails, stays for the next attempt (the daily
+   * schedule). The manager gets the notice's id, the same on every attempt, to tell a repeat from another revocation.
+   * Answers how many were delivered.
    */
-  async deliverNotices(identityId?: string): Promise<number> {
+  async deliverNotices(noticeId?: string): Promise<number> {
     let query = this.db.query
       .selectFrom('apiKeyManagerNotices')
       .selectAll()
       .orderBy('createdAt', 'asc');
-    if (identityId) query = query.where('identityId', '=', identityId);
+    if (noticeId) query = query.where('id', '=', noticeId);
     const notices = (await query.execute()) as unknown as {
       id: string;
       identityId: string;
@@ -809,6 +931,7 @@ export class SystemApiKeys {
       if (!managedBy || !manager) continue;
       try {
         await manager.onRevoked({
+          noticeId: String(notice.id),
           identityId: String(notice.identityId),
           managedBy,
           actorId: typeof notice.actorId === 'string' ? notice.actorId : null,
@@ -830,6 +953,11 @@ export class SystemApiKeys {
     return delivered;
   }
 
+  /** Delivers a notice just committed, if any; one that fails stays stored for the next attempt. */
+  private async deliver(noticeId: string | undefined): Promise<void> {
+    if (noticeId) await this.deliverNotices(noticeId);
+  }
+
   private async setEnabled(
     identityId: string,
     actorId: string | null,
@@ -837,18 +965,26 @@ export class SystemApiKeys {
     details: Readonly<Record<string, unknown>> | null = null,
   ): Promise<SystemKeyView> {
     const row = await this.row(identityId);
-    await this.db.query
-      .updateTable('apikey')
-      .set({ enabled, updatedAt: new Date() })
-      .where('id', '=', row.keyId)
-      .execute();
-    await this.record(
-      identityId,
-      enabled ? 'enable' : 'disable',
-      actorId,
-      details,
-    );
-    if (!enabled) await this.tell(row, actorId, 'disabled');
+    // The new state, its activity and the manager's notice commit together.
+    const noticeId = await this.db.transaction(async (connection) => {
+      await connection.query
+        .updateTable('apikey')
+        .set({ enabled, updatedAt: new Date() })
+        .where('id', '=', row.keyId)
+        .execute();
+      await this.record(
+        identityId,
+        enabled ? 'enable' : 'disable',
+        actorId,
+        details,
+        new Date(),
+        connection,
+      );
+      return enabled
+        ? undefined
+        : this.storeNotice(connection, row, actorId, 'disabled');
+    });
+    await this.deliver(noticeId);
     return this.get(identityId);
   }
 
@@ -875,21 +1011,39 @@ export class SystemApiKeys {
     return this.setEnabled(identityId, actorId, true);
   }
 
-  /** Deletes the key, its hidden set and its service account; the activity stays. Its manager, if any, is told. */
+  /**
+   * Deletes the key, its hidden set and its service account; the activity stays. Its manager, if any, is told. The
+   * keys, the set, the listing, the activity and the notice commit together; the account, which the authentication
+   * plugin removes on its own connection, goes after, and a key that is gone already lets that be done again.
+   */
   async remove(identityId: string, actorId: string): Promise<void> {
     const row = await this.row(identityId);
-    const authz = this.requireAuthorization();
-    await this.options.keys.revokeAll(identityId);
-    if (await authz.permissionSets.get(systemKeySet(identityId)))
-      await authz.permissionSets.delete(systemKeySet(identityId));
-    await this.db.query
-      .deleteFrom('apiKeySystemKeys')
-      .where('identityId', '=', identityId)
-      .execute();
+    const sets = this.requireAuthorization().permissionSets;
+    const noticeId = await this.db.transaction(async (connection) => {
+      await connection.query
+        .deleteFrom('apikey')
+        .where('referenceId', '=', identityId)
+        .where('configId', '=', 'default')
+        .execute();
+      const bound = sets.withTransaction(connection);
+      if (await bound.get(systemKeySet(identityId)))
+        await bound.delete(systemKeySet(identityId));
+      await connection.query
+        .deleteFrom('apiKeySystemKeys')
+        .where('identityId', '=', identityId)
+        .execute();
+      await this.record(
+        identityId,
+        'delete',
+        actorId,
+        null,
+        new Date(),
+        connection,
+      );
+      return this.storeNotice(connection, row, actorId, 'deleted');
+    });
     await this.options.users().remove(identityId, actorId);
-    await this.record(identityId, 'delete', actorId);
-    // Stored with what the manager needs, so a failed delivery is tried again although the key is gone.
-    await this.tell(row, actorId, 'deleted');
+    await this.deliver(noticeId);
   }
 
   // Managed keys: another feature creates and adjusts them for a person, who never needs to manage system keys, and
@@ -946,9 +1100,22 @@ export class SystemApiKeys {
    * removes its own set and records afterwards.
    */
   async adopt(input: AdoptSystemKeyInput): Promise<SystemKeyView> {
-    this.requireAuthorization();
-    if (await this.isSystemKey(input.identityId))
+    const authz = this.requireAuthorization();
+    const registered = await this.db.query
+      .selectFrom('apiKeySystemKeys')
+      .select(['keyId'])
+      .where('identityId', '=', input.identityId)
+      .executeTakeFirst<{ keyId: string }>();
+    if (registered) {
+      // Only the same import answers again; another key of the account is a different request.
+      if (String(registered.keyId) !== input.keyId)
+        throw new ApiKeyRequestError(
+          400,
+          'ALREADY_SYSTEM_KEY',
+          'The account is already a system key, with another key.',
+        );
       return this.get(input.identityId);
+    }
     const user = await this.options.users().get(input.identityId);
     if (!user || user.kind !== 'service')
       throw new ApiKeyRequestError(
@@ -956,35 +1123,41 @@ export class SystemApiKeys {
         'NOT_A_SERVICE_ACCOUNT',
         'Only a service account can become a system key.',
       );
-    const key = await this.db.query
-      .selectFrom('apikey')
-      .select(['id'])
-      .where('id', '=', input.keyId)
-      .where('referenceId', '=', input.identityId)
-      .where('configId', '=', 'default')
-      .executeTakeFirst<{ id: string }>();
-    if (!key)
-      throw new ApiKeyRequestError(
-        400,
-        'NO_KEY',
-        'The service account has no such API key to adopt.',
-      );
     if (input.ownerId) await this.requirePerson(input.ownerId);
-    // Read as stored values are: a damaged part grants nothing.
-    const decoded = decodeKeyPermissions(
-      encodeKeyPermissions(input.permissions),
-    );
-    const permissions: KeyPermissions =
-      decoded?.version === '2' ? decoded.permissions : { grants: [] };
+    const identity = await this.options.keys.identityOf(input.identityId);
     const now = new Date();
-    const row: SystemRow = {
-      identityId: input.identityId,
-      keyId: key.id,
-      ownerId: input.ownerId ?? null,
-      managedBy: input.managedBy ? JSON.stringify(input.managedBy) : null,
-      createdById: input.createdById ?? null,
-    };
     await this.db.transaction(async (connection) => {
+      const key = await connection.query
+        .selectFrom('apikey')
+        .select(['id'])
+        .where('id', '=', input.keyId)
+        .where('referenceId', '=', input.identityId)
+        .where('configId', '=', 'default')
+        .executeTakeFirst<{ id: string }>();
+      if (!key)
+        throw new ApiKeyRequestError(
+          400,
+          'NO_KEY',
+          'The service account has no such API key to adopt.',
+        );
+      // What the account holds now, read in this transaction: the set never gets more.
+      const held = heldGrants(
+        await authz.permissionSets.withTransaction(connection).getEffective({
+          principal: identity.principal,
+          ...(identity.subjects ? { subjects: identity.subjects } : {}),
+        }),
+        systemKeySet(input.identityId),
+      );
+      const permissions = input.permissions
+        ? onlyHeld(input.permissions, held)
+        : { grants: held };
+      const row: SystemRow = {
+        identityId: input.identityId,
+        keyId: key.id,
+        ownerId: input.ownerId ?? null,
+        managedBy: input.managedBy ? JSON.stringify(input.managedBy) : null,
+        createdById: input.createdById ?? null,
+      };
       // The key's own scope stays: the set holds the account's grants, and the two intersect as before.
       await this.writePermissions(connection, row, permissions, {
         keyScope: false,

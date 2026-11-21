@@ -343,6 +343,8 @@ function metadataRecord(value: unknown): Record<string, unknown> {
 
 /** The most records a key's data scope may be limited to by choosing them. */
 export const MAX_CHOSEN_RECORDS = 100;
+/** The records `scopeRecords` lists a page. */
+export const SCOPE_RECORDS_PAGE = 50;
 
 /** The ids a data scope value chooses (`{ type: 'records', ids }`); undefined for any other value. */
 function chosenRecords(value: unknown): readonly string[] | undefined {
@@ -358,11 +360,17 @@ interface PolicyRepository {
   withPolicy(policy: unknown): {
     findMany(input: {
       filter?: (f: {
+        and(nodes: readonly unknown[]): unknown;
         or(nodes: readonly unknown[]): unknown;
-        string(field: string): { eq(value: string): unknown };
+        string(field: string): {
+          eq(value: string): unknown;
+          includes(value: string, options?: { mode?: 'insensitive' }): unknown;
+        };
       }) => unknown;
       select?: (s: { fields(...names: string[]): unknown }) => unknown;
+      sort?: (s: { field(name: string): { asc(): unknown } }) => unknown;
       limit?: number;
+      offset?: number;
     }): Promise<readonly Record<string, unknown>[]>;
   };
 }
@@ -681,29 +689,34 @@ export class ScopedApiKeys {
           scopeActionKey(grant.resource, entry.action),
         );
         const values: unknown = entry.policy?.scopes;
-        if (held && isRecord(values))
+        if (isRecord(values))
           for (const [scope, value] of Object.entries(values)) {
-            const scoped = held.get(scope);
-            if (!scoped || withinHeld(value, scoped)) continue;
-            // Chosen records are no wider than the maker's when the maker can see every one of them now.
+            const scoped = held?.get(scope);
+            // Chosen records are checked one by one against what the maker reaches now, restriction rules included,
+            // even under a role that reaches every record.
             const chosen = chosenRecords(value);
-            if (
-              chosen &&
-              (await this.seesAll(
-                identity,
-                grant.resource.id,
-                entry.action,
-                scope,
-                chosen,
-              ))
-            )
-              continue;
+            if (chosen?.length) {
+              if (
+                await this.seesAll(
+                  identity,
+                  grant.resource.id,
+                  entry.action,
+                  scope,
+                  chosen,
+                )
+              )
+                continue;
+              throw new ApiKeyRequestError(
+                403,
+                'KEY_SCOPE_EXCEEDS_YOURS',
+                `${label}: you cannot see every record of ${scope} you chose.`,
+              );
+            }
+            if (!scoped || withinHeld(value, scoped)) continue;
             throw new ApiKeyRequestError(
               403,
               'KEY_SCOPE_EXCEEDS_YOURS',
-              chosen
-                ? `${label}: you cannot see every record of ${scope} you chose.`
-                : `${label}: the records of ${scope} you give a key cannot reach further than yours.`,
+              `${label}: the records of ${scope} you give a key cannot reach further than yours.`,
             );
           }
         // A data scope the key leaves out is pinned to what the maker holds now, so the key does not widen when
@@ -827,23 +840,28 @@ export class ScopedApiKeys {
       readonly action: string;
       readonly scope: string;
       readonly ids?: readonly string[];
+      /** Text the id or the title contains. */
+      readonly search?: string;
+      /** From 1, of `SCOPE_RECORDS_PAGE` records each. */
+      readonly page?: number;
     },
-  ): Promise<{ id: string; title: string }[]> {
+  ): Promise<{ records: { id: string; title: string }[]; hasMore: boolean }> {
+    const none = { records: [], hasMore: false };
     const authz = this.options.authorization?.();
     const declared = authz?.compositeResources.getAction(
       input.resource,
       input.action,
     );
-    if (!authz || !declared) return [];
+    if (!authz || !declared) return none;
     let target: { type: string; id: string };
     try {
       target = dataScopeTarget(declared, input.scope);
     } catch {
-      return [];
+      return none;
     }
-    if (target.type !== 'database.collection') return [];
+    if (target.type !== 'database.collection') return none;
     const ids = input.ids?.slice(0, MAX_CHOSEN_RECORDS);
-    if (ids && !ids.length) return [];
+    if (ids && !ids.length) return none;
     try {
       // The repository policy the composite action composes for its collection, as a composite repository reads it.
       const decision = await authz.for(identity).authorize({
@@ -856,38 +874,59 @@ export class ScopedApiKeys {
       const policy: unknown = isRecord(policies)
         ? policies[target.id]
         : undefined;
-      if (decision.effect === 'deny' || !isRecord(policy)) return [];
+      if (decision.effect === 'deny' || !isRecord(policy)) return none;
       const repository = (
         this.options.connection() as unknown as {
           repository(name: string): PolicyRepository;
         }
       ).repository(target.id);
       const scoped = repository.withPolicy(policy);
+      const search = input.search?.trim();
+      const page = Math.max(input.page ?? 1, 1);
+      // Filtered and paged by the database, so a search reaches records past the first page.
       const read = (fields: readonly string[]) =>
         scoped.findMany({
           select: (select) => select.fields(...fields),
-          ...(ids
-            ? { filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))) }
-            : {}),
-          limit: MAX_CHOSEN_RECORDS,
+          filter: (f) =>
+            f.and([
+              ...(ids ? [f.or(ids.map((id) => f.string('id').eq(id)))] : []),
+              ...(search
+                ? [
+                    f.or(
+                      fields.map((field) =>
+                        f
+                          .string(field)
+                          .includes(search, { mode: 'insensitive' }),
+                      ),
+                    ),
+                  ]
+                : []),
+            ]),
+          sort: (sort) => sort.field('id').asc(),
+          limit: ids ? MAX_CHOSEN_RECORDS : SCOPE_RECORDS_PAGE + 1,
+          offset: ids ? 0 : (page - 1) * SCOPE_RECORDS_PAGE,
         });
       // Named by a title field when the collection has one the maker may read, otherwise by its id.
       const rows =
         (await read(['id', 'title']).catch(() => undefined)) ??
         (await read(['id', 'name']).catch(() => undefined)) ??
         (await read(['id']));
-      return rows.map((row) => ({
-        id: String(row.id),
-        title:
-          typeof row.title === 'string' && row.title
-            ? row.title
-            : typeof row.name === 'string' && row.name
-              ? row.name
-              : String(row.id),
-      }));
+      const hasMore = !ids && rows.length > SCOPE_RECORDS_PAGE;
+      const records = (hasMore ? rows.slice(0, SCOPE_RECORDS_PAGE) : rows).map(
+        (row) => ({
+          id: String(row.id),
+          title:
+            typeof row.title === 'string' && row.title
+              ? row.title
+              : typeof row.name === 'string' && row.name
+                ? row.name
+                : String(row.id),
+        }),
+      );
+      return { records, hasMore };
     } catch {
       // A maker who cannot read the records, or not even their ids, can choose none.
-      return [];
+      return none;
     }
   }
 
@@ -909,7 +948,7 @@ export class ScopedApiKeys {
           scope,
           ids: unique,
         })
-      ).map((record) => record.id),
+      ).records.map((record) => record.id),
     );
     return unique.every((id) => seen.has(id));
   }
@@ -1346,10 +1385,14 @@ export class ScopedApiKeys {
             ? 'expired'
             : 'active',
         expiresAt,
-        objects:
-          stored?.version === '2'
-            ? { ...(stored.permissions.objects ?? {}) }
-            : {},
+        // A key still in format 1 reads its records as converted, as it is enforced.
+        objects: {
+          ...((stored?.version === '2'
+            ? stored.permissions.objects
+            : stored
+              ? this.fromLegacy(stored.scope).permissions.objects
+              : undefined) ?? {}),
+        },
       },
     };
   }

@@ -220,7 +220,7 @@ describe('the records a system key reaches', () => {
         action: 'view',
         scope: 'quote',
       })
-    )
+    ).records
       .map((record) => record.id)
       .sort();
 
@@ -304,5 +304,117 @@ describe('the records a system key reaches', () => {
     } finally {
       restriction = undefined;
     }
+    // Its first change records what it held before, from its set, though its own scope is not in the current format.
+    await systemKeys.setPermissions(
+      robot.id,
+      mariaId,
+      view({ type: 'records', ids: ['q1'] }),
+    );
+    const change = (await systemKeys.events(robot.id)).find(
+      (event) => event.action === 'permissions',
+    );
+    expect(change?.details).toMatchObject({
+      before: view({ type: 'records', ids: ['q2'] }),
+    });
+  });
+
+  it('adopts a key wider than its account as no wider than the account', async () => {
+    const robot = await users.createServiceAccount({ name: 'Narrow robot' });
+    await authz.permissionSets.create({
+      key: `api-key-${robot.id}`,
+      grants: view({ type: 'records', ids: ['q2'] }).grants,
+    });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: robot.id },
+      permissionSet: `api-key-${robot.id}`,
+    });
+    // The key itself names more records than the account holds.
+    const key = await keys.create(
+      robot.id,
+      {
+        name: 'wide',
+        expiresInDays: null,
+        permissions: view({ type: 'records', ids: ['q1', 'q2'] }),
+      },
+      await keys.identityOf(mariaId),
+    );
+    await expect(
+      systemKeys.adopt({
+        identityId: robot.id,
+        keyId: key.key.id,
+        permissions: view({ type: 'records', ids: ['q1', 'q2'] }),
+      }),
+    ).rejects.toMatchObject({ code: 'ADOPT_NOT_HELD' });
+    await systemKeys.adopt({ identityId: robot.id, keyId: key.key.id });
+    // Its application removes its own set afterwards; the system key holds no more than the account did.
+    await authz.permissionSets.delete(`api-key-${robot.id}`);
+    expect(await seen((await keys.inspectKey(key.key.id))!.identity)).toEqual([
+      'q2',
+    ]);
+  });
+
+  it('checks chosen records against what the giver reaches, restriction rules included, under a role of every record', async () => {
+    const olgaId = (
+      await users.create({
+        name: 'Olga',
+        email: 'olga@example.com',
+        password: 'password-at-least-8',
+      })
+    ).id;
+    await authz.permissionSets.create({
+      key: 'all-quotes',
+      grants: view('allRecords').grants,
+    });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: olgaId },
+      permissionSet: 'all-quotes',
+    });
+    const create = (ids: string[]) =>
+      systemKeys.create(olgaId, {
+        name: 'chosen',
+        expiresInDays: 30,
+        permissions: view({ type: 'records', ids }),
+      });
+    restriction = ['q1'];
+    try {
+      await expect(create(['q1', 'q2'])).rejects.toMatchObject({
+        code: 'KEY_SCOPE_EXCEEDS_YOURS',
+      });
+      await expect(create(['q1'])).resolves.toBeDefined();
+    } finally {
+      restriction = undefined;
+    }
+    // The records to choose from are searched and paged by the database.
+    await database
+      .connection()
+      .query.insertInto('quotes')
+      .values(
+        Array.from({ length: 60 }, (_, index) => ({
+          id: `p-${String(index + 1).padStart(3, '0')}`,
+          title: `Page ${String(index + 1).padStart(3, '0')}`,
+          ownerId: null,
+        })),
+      )
+      .execute();
+    const olga = await keys.identityOf(olgaId);
+    const list = (input: { search?: string; page?: number }) =>
+      keys.scopeRecords(olga, {
+        resource: 'shop.quotes',
+        action: 'view',
+        scope: 'quote',
+        ...input,
+      });
+    const first = await list({});
+    expect(first.records).toHaveLength(50);
+    expect(first.hasMore).toBe(true);
+    const second = await list({ page: 2 });
+    expect(second.hasMore).toBe(false);
+    expect(
+      new Set([...first.records, ...second.records].map((record) => record.id))
+        .size,
+    ).toBe(first.records.length + second.records.length);
+    expect((await list({ search: 'page 058' })).records).toEqual([
+      { id: 'p-058', title: 'Page 058' },
+    ]);
   });
 });

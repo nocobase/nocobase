@@ -25,11 +25,13 @@ function Picker({
   const admin = useApiKeysAdminApi();
   const search = useCallback(
     async (query: string) =>
-      (await admin.systemKeys(query ? { search: query } : {})).map((key) => ({
-        id: key.id,
-        title: key.name ?? key.id,
-        description: t('check.systemIdentity'),
-      })),
+      (await admin.systemKeys(query ? { search: query } : {})).data.map(
+        (key) => ({
+          id: key.id,
+          title: key.name ?? key.id,
+          description: t('check.systemIdentity'),
+        }),
+      ),
     [admin, t],
   );
   return (

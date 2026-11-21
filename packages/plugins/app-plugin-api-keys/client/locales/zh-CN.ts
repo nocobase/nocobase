@@ -264,6 +264,7 @@ const zhCN: LocaleResource<typeof enUS> = {
     selectedRecords_other: '选定 {{count}} 条',
     noneSelected: '尚未选择',
     pickRecords: '限定到部分记录',
+    moreRecords: '加载更多',
     searchRecords: '搜索',
     noRecords: '没有可选的记录。',
     useAll: '全部记录',
