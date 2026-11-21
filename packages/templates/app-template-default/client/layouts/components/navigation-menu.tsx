@@ -558,7 +558,7 @@ function NavigationSubItem({
             render={link}
             isActive={isSelected}
             aria-label={counted ?? undefined}
-            className={`${SELECTED} pr-8`}
+            className={`${SELECTED} pr-8!`}
           >
             {content}
           </SidebarMenuSubButton>
