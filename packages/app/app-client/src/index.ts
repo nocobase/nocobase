@@ -103,6 +103,8 @@ export {
   type AppClientLocaleContribution,
   type CreateAppI18nRuntimeOptions,
 } from './i18n.js';
+export { APP_CLIENT_NAMESPACE } from './namespace.js';
+export { default as appClientLocales } from './locales/index.js';
 export {
   applyClientRouteComponentOverrides,
   defineAppRoutes,

@@ -1,5 +1,7 @@
 import {
+  APP_CLIENT_NAMESPACE,
   AppClientProviders,
+  appClientLocales,
   ClientApplication,
   createAppClientConfig,
   defineAppClientRenderConfig,
@@ -162,6 +164,8 @@ export async function renderWithApp(
         ? {}
         : { strict: options.strictTranslations }),
       namespaces: {
+        // As in an application, app-client's own wording (the built-in settings categories) is always there.
+        [APP_CLIENT_NAMESPACE]: appClientLocales,
         ...Object.fromEntries(pluginLocales),
         ...options.namespaces,
       },

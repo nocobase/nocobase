@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAppClientConfig } from '../src/config.js';
 import { createAppI18nRuntime } from '../src/i18n.js';
+import { APP_CLIENT_NAMESPACE } from '../src/namespace.js';
 import { defineClientPlugins, defineClientPlugin } from '../src/plugins.js';
 import { defineAppRuntime, resolveAppRuntime } from '../src/runtime/index.js';
 
@@ -166,5 +167,17 @@ describe('runtime default locale', () => {
     });
     expect(runtime.getLocale()).toBe('zh-CN');
     expect(runtime.getDefaultLocale()).toBe('fr-FR');
+  });
+
+  it('titles the built-in settings categories without any translation from the application', async () => {
+    vi.stubGlobal('localStorage', { getItem: () => null });
+    const runtime = await resolveAppRuntime(definition, { rawConfig: {} });
+    const t = runtime.i18n.getFixedT(APP_CLIENT_NAMESPACE);
+    expect(t('settings.categories.data')).toBe('Data and files');
+    expect(t('settings.personal.categories.preferences')).toBe('Preferences');
+    await runtime.i18n.changeLanguage('zh-CN');
+    expect(
+      runtime.i18n.getFixedT(APP_CLIENT_NAMESPACE)('settings.categories.data'),
+    ).toBe('数据与文件');
   });
 });
