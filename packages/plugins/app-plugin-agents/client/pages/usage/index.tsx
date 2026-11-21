@@ -72,6 +72,7 @@ import {
 } from '../../components/ui/table.js';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
+import { useAgentsMount } from '../../mount.js';
 import { useText, useVocabulary } from '../../hooks/use-vocabulary.js';
 import {
   STACKED_GROUP_BYS,
@@ -436,11 +437,12 @@ function UsageTable({
   const { t } = useTranslation();
   const { locale } = useLocale();
   const { subjects } = useVocabulary();
+  const { agentLink } = useAgentsMount();
   const rowText = useRowText(groupBy);
   const tokens = (value: number) => formatTokens(value, locale);
   const label = (row: UsageRow): ReactElement | string => {
     const text = rowText(row);
-    const link = rowLink(groupBy, row.key, subjects);
+    const link = rowLink(groupBy, row.key, subjects, agentLink);
     return link ? (
       <Link to={link} className='hover:underline'>
         {text}

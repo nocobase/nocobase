@@ -546,5 +546,47 @@ describe('skill pages', () => {
       files: [],
     });
     expect(await screen.findByText('elsewhere')).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/skills/s9');
+  });
+
+  it('creates and links relative to where the library is mounted, such as System settings', async () => {
+    resetApi(
+      {
+        'POST agents/skills': (request) => ({
+          ...current,
+          id: 's9',
+          name: 'release-notes',
+          content: (request.json as SkillInput).content,
+        }),
+      },
+      ['agents.agents/read', 'agents.agents/manage'],
+    );
+    const view = renderRoute(
+      <NewSkillPage />,
+      '/settings/skills/new',
+      '/settings/skills/new',
+    );
+    const source = screen.getByLabelText('skills.content');
+    fireEvent.change(source, {
+      target: {
+        value: (source as HTMLTextAreaElement).value.replace(
+          'new-skill',
+          'release-notes',
+        ),
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'common.create' }));
+    expect(await screen.findByTestId('location')).toHaveTextContent(
+      '/settings/skills/s9',
+    );
+    view.unmount();
+
+    renderRoute(
+      <SkillDetailPage />,
+      '/settings/skills/:skillId',
+      '/settings/skills/s1',
+    );
+    const crumb = await screen.findByRole('link', { name: 'skills.title' });
+    expect(crumb).toHaveAttribute('href', '/settings/skills');
   });
 });
