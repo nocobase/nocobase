@@ -26,7 +26,7 @@ import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { apiKey } from '../server/api-keys.js';
-import { IdleKeys } from '../server/idle.js';
+import { IdleKeys, type IdleReminder } from '../server/idle.js';
 import { MemberKeys } from '../server/member-keys.js';
 import { apiRoutes } from '../server/routes/index.js';
 import { ScopedApiKeys } from '../server/scoped-keys.js';
@@ -192,6 +192,8 @@ describe('system keys', () => {
       users: () => users,
       authorization: () => authz,
     });
+    // As the plugin's provider does at boot, in every process.
+    systemKeys.protectAll();
     auth.addScopedCredentialCheck(
       async (session, request) =>
         (await keys.resolve(session, request)) !== null,
@@ -452,6 +454,161 @@ describe('system keys', () => {
     }
   });
 
+  it('protects a key’s hidden set in another process sharing the database, created after that process started', async () => {
+    // Another instance of the application, booted before the key exists.
+    const other = createAppAuthorization({ connection: database.connection() });
+    const otherKeys = new SystemApiKeys({
+      connection: () => database.connection(),
+      keys,
+      users: () => users,
+      authorization: () => other,
+    });
+    otherKeys.protectAll();
+    const created = await systemKeys.create(adminId, {
+      name: 'elsewhere',
+      expiresInDays: 30,
+      permissions: readOrders,
+    });
+    const set = systemKeySet(created.key.identityId);
+    expect(other.permissionSets.protection(set)).toMatchObject({
+      owner: '@nocobase/app-plugin-api-keys',
+      hidden: true,
+      allow: [],
+    });
+    expect(() => other.permissionSets.assertWritable(set, 'update')).toThrow();
+    expect(() => other.permissionSets.assertWritable(set, 'assign')).toThrow();
+    otherKeys.release();
+  });
+
+  it('takes an owner who is an active member, never a service account', async () => {
+    const robot = await users.createServiceAccount({ name: 'Robot owner' });
+    await expect(
+      systemKeys.create(adminId, {
+        name: 'owned',
+        ownerId: robot.id,
+        expiresInDays: 30,
+        permissions: readOrders,
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_OWNER' });
+    const created = await systemKeys.create(adminId, {
+      name: 'owned',
+      ownerId: memberId,
+      expiresInDays: 30,
+      permissions: readOrders,
+    });
+    expect(created.key.owner?.id).toBe(memberId);
+    expect(
+      (
+        await call(
+          `/systemApiKeys/${created.key.identityId}`,
+          adminCookie,
+          'PATCH',
+          { ownerId: robot.id },
+        )
+      ).status,
+    ).toBe(400);
+  });
+
+  it('changes permissions one at a time, recording each change against the one before', async () => {
+    const created = await systemKeys.create(adminId, {
+      name: 'busy',
+      expiresInDays: 30,
+      permissions: { grants: [] },
+    });
+    const update = {
+      grants: [{ resource: orders, actions: [{ action: 'update' }] }],
+    };
+    await Promise.all([
+      systemKeys.setPermissions(created.key.identityId, adminId, readOrders),
+      systemKeys.setPermissions(created.key.identityId, adminId, update),
+    ]);
+    const changes = (await systemKeys.events(created.key.identityId))
+      .filter((event) => event.action === 'permissions')
+      .reverse()
+      .map((event) => event.details as { before: unknown; after: unknown });
+    expect(changes).toHaveLength(2);
+    // The second change replaced what the first wrote, whichever ran first.
+    expect(changes[0]!.before).toEqual({ grants: [] });
+    expect(changes[1]!.before).toEqual(changes[0]!.after);
+    expect((await systemKeys.get(created.key.identityId)).permissions).toEqual(
+      changes[1]!.after,
+    );
+  });
+
+  it('adopts a service account’s chosen key, keeping its own scope, once', async () => {
+    const robot = await users.createServiceAccount({ name: 'Studio key' });
+    // An application's organization key: its own scope narrower than what the account holds.
+    const own = await keys.create(
+      robot.id,
+      { name: 'org', expiresInDays: null, permissions: readOrders },
+      await keys.identityOf(adminId),
+    );
+    const other = await keys.create(
+      robot.id,
+      { name: 'other', expiresInDays: null, permissions: readOrders },
+      await keys.identityOf(adminId),
+    );
+    const stored = async (id: string) =>
+      (
+        await database
+          .connection()
+          .query.selectFrom('apikey')
+          .select(['permissions'])
+          .where('id', '=', id)
+          .executeTakeFirst<{ permissions: unknown }>()
+      )?.permissions;
+    const before = await stored(own.key.id);
+    await expect(
+      systemKeys.adopt({
+        identityId: robot.id,
+        keyId: 'not-its-key',
+        permissions: readOrders,
+      }),
+    ).rejects.toMatchObject({ code: 'NO_KEY' });
+    expect(await systemKeys.isSystemKey(robot.id)).toBe(false);
+    const holds = {
+      grants: [
+        {
+          resource: orders,
+          actions: [{ action: 'read' }, { action: 'update' }],
+        },
+      ],
+    };
+    const history = [
+      {
+        action: 'create' as const,
+        actorId: adminId,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+    const adopted = await systemKeys.adopt({
+      identityId: robot.id,
+      keyId: own.key.id,
+      permissions: holds,
+      events: history,
+    });
+    expect(adopted.id).toBe(own.key.id);
+    // The set takes what the account held; the key keeps its narrower scope, so it still only reads.
+    expect(await stored(own.key.id)).toEqual(before);
+    expect((await asKey(own.secret, '/settings/orders/read')).status).toBe(200);
+    expect((await asKey(own.secret, '/settings/orders/update')).status).toBe(
+      403,
+    );
+    expect(await stored(other.key.id)).toEqual(before);
+    // Again, nothing is added twice.
+    await systemKeys.adopt({
+      identityId: robot.id,
+      keyId: own.key.id,
+      permissions: holds,
+      events: history,
+    });
+    const events = await systemKeys.events(robot.id);
+    expect(events.map((event) => event.action).sort()).toEqual([
+      'adopt',
+      'create',
+    ]);
+  });
+
   it('lets a feature manage keys for a person, never past what they hold, and tells it of a revocation', async () => {
     const revoked = vi.fn();
     const release = systemKeys.managers.add('repository-ci', {
@@ -493,11 +650,37 @@ describe('system keys', () => {
           )
         ).status,
       ).toBe(400);
+      // Nor edits or re-enables it.
+      expect(
+        (
+          await call(
+            `/systemApiKeys/${managed.key.identityId}`,
+            adminCookie,
+            'PATCH',
+            { name: 'renamed' },
+          )
+        ).status,
+      ).toBe(400);
+      // A manager that fails is told again later.
+      revoked.mockRejectedValueOnce(new Error('manager down'));
       await call(
         `/systemApiKeys/${managed.key.identityId}/disable`,
         adminCookie,
         'POST',
       );
+      expect(revoked).toHaveBeenCalledTimes(1);
+      expect(
+        (
+          await call(
+            `/systemApiKeys/${managed.key.identityId}/enable`,
+            adminCookie,
+            'POST',
+          )
+        ).status,
+      ).toBe(400);
+      expect(await systemKeys.deliverNotices()).toBe(1);
+      expect(await systemKeys.deliverNotices()).toBe(0);
+      expect(revoked).toHaveBeenCalledTimes(2);
       expect(revoked).toHaveBeenLastCalledWith({
         identityId: managed.key.identityId,
         managedBy,
@@ -609,8 +792,8 @@ describe('system keys', () => {
     ).toBe(400);
   });
 
-  it('reminds a week ahead and disables idle keys, counting only from when the rule was turned on', async () => {
-    const reminders: { keyId: string; userId: string }[] = [];
+  it('disables idle keys by the rule each key took when issued or rotated, a week after reminding, and reminds of a system key expiring', async () => {
+    const reminders: IdleReminder[] = [];
     const idle = new IdleKeys({
       connection: () => database.connection(),
       config: () => ({}),
@@ -620,42 +803,75 @@ describe('system keys', () => {
         return Promise.resolve();
       },
     });
-    const old = await keys.create(
+    const rules = (idleDisableDays: number | null) =>
+      keys.setRules(
+        {
+          allowSameAsMe: false,
+          personalMaxDays: 30,
+          personalDefaultDays: 30,
+          idleDisableDays,
+        },
+        adminId,
+      );
+    await rules(null);
+    // Made while the rule is off: the rule turned on later does not reach it.
+    const older = await keys.create(
       memberId,
-      { name: 'old', expiresInDays: 30, permissions: readOrders },
+      { name: 'older', expiresInDays: 30, permissions: readOrders },
       await keys.identityOf(memberId),
     );
-    const turnedOn = new Date('2026-12-01T00:00:00Z');
-    await keys.setRules(
-      {
-        allowSameAsMe: false,
-        personalMaxDays: 30,
-        personalDefaultDays: 30,
-        idleDisableDays: 30,
-      },
-      adminId,
+    await rules(30);
+    const fresh = await keys.create(
+      memberId,
+      { name: 'fresh', expiresInDays: 30, permissions: readOrders },
+      await keys.identityOf(memberId),
     );
-    await database
-      .connection()
-      .query.updateTable('apiKeyRules')
-      .set({ idleSince: turnedOn })
-      .where('id', '=', 'default')
-      .execute();
-    const at = (day: number) => new Date(turnedOn.getTime() + day * DAY);
-    const enabled = async () => (await keys.get(memberId, old.key.id)).enabled;
-    // Idle time before the rule does not count: nothing until day 23.
+    const start = Date.now();
+    const at = (day: number) => new Date(start + day * DAY);
+    const enabled = async (id: string) =>
+      (await keys.get(memberId, id)).enabled;
+    const about = (id: string) =>
+      reminders.filter((entry) => entry.keyId === id && entry.kind === 'idle');
     await idle.sweep(at(22));
-    expect(reminders.filter((entry) => entry.keyId === old.key.id)).toEqual([]);
+    expect(about(fresh.key.id)).toEqual([]);
     await idle.sweep(at(23));
-    expect(
-      reminders.filter((entry) => entry.keyId === old.key.id),
-    ).toHaveLength(1);
-    expect(reminders.at(-1)).toMatchObject({ userId: memberId });
+    expect(about(fresh.key.id)).toHaveLength(1);
+    expect(about(fresh.key.id)[0]).toMatchObject({ userId: memberId });
     // A sweep that did not run for a while does not disable it the day it resumes: a week after the reminder.
     await idle.sweep(at(29));
-    expect(await enabled()).toBe(true);
-    await idle.sweep(at(30));
-    expect(await enabled()).toBe(false);
+    expect(await enabled(fresh.key.id)).toBe(true);
+    // A change of the rule does not reach a key already made.
+    await rules(60);
+    await idle.sweep(at(31));
+    expect(await enabled(fresh.key.id)).toBe(false);
+    expect(await enabled(older.key.id)).toBe(true);
+    expect(about(older.key.id)).toEqual([]);
+    // Rotated, the older key takes the rule in force now (60 days) and is reminded by it, not before.
+    await keys.rotate(memberId, older.key.id);
+    const rotatedAt = Date.now();
+    await idle.sweep(new Date(rotatedAt + 52 * DAY));
+    expect(about(older.key.id)).toEqual([]);
+    await idle.sweep(new Date(rotatedAt + 53 * DAY));
+    expect(about(older.key.id)).toHaveLength(1);
+    // A system key's owner is told once that it expires within a week.
+    await rules(null);
+    const expiring = await systemKeys.create(adminId, {
+      name: 'expiring',
+      ownerId: adminId,
+      expiresInDays: 10,
+      permissions: readOrders,
+    });
+    const expiryOf = () =>
+      reminders.filter(
+        (entry) => entry.kind === 'expiry' && entry.keyId === expiring.key.id,
+      );
+    await idle.sweep(at(2));
+    expect(expiryOf()).toEqual([]);
+    await idle.sweep(at(4));
+    await idle.sweep(at(5));
+    expect(expiryOf()).toEqual([
+      expect.objectContaining({ userId: adminId, system: true }),
+    ]);
   });
 });
 

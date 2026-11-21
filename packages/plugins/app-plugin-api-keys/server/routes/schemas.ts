@@ -338,3 +338,28 @@ export const OwnApiKeysListMeta: z.ZodType<{
       'Whether a key that acts as the caller in full may be created.',
   }),
 });
+
+/** `GET /api/apiKeys/scopeRecords`: the composite action and data scope whose records to list. */
+export const ScopeRecordsQuery: z.ZodType<{
+  resource: string;
+  action: string;
+  scope: string;
+  q?: string | undefined;
+  id?: string[] | undefined;
+}> = z.object({
+  resource: z
+    .string()
+    .min(1)
+    .max(200)
+    .describe('The composite resource, such as `crm.customers`.'),
+  action: z.string().min(1).max(100).describe('Its action, such as `view`.'),
+  scope: z.string().min(1).max(100).describe('The data scope of the action.'),
+  q: z.string().max(200).optional().describe('Text the title contains.'),
+  id: z
+    .union([z.string().min(1), z.array(z.string().min(1)).max(MAX_PICKED_IDS)])
+    .optional()
+    .transform((value) =>
+      value === undefined ? undefined : Array.isArray(value) ? value : [value],
+    )
+    .describe('The record identifier.'),
+});

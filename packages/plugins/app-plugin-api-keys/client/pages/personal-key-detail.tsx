@@ -7,7 +7,8 @@ import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { TriangleAlertIcon } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -65,6 +66,8 @@ export default function PersonalKeyDetailPage(): ReactElement {
     };
   }, [api, keyId, revision]);
 
+  // Permission check reads anyone's permissions, so it opens for an unrestricted role only.
+  const { can: mayCheck } = useCan('unrestricted');
   const lapsedCount = (key?.lapsed ?? []).reduce(
     (total, grant) => total + grant.actions.length,
     0,
@@ -78,6 +81,19 @@ export default function PersonalKeyDetailPage(): ReactElement {
         actions={
           key ? (
             <>
+              {mayCheck ? (
+                <Button
+                  variant='outline'
+                  nativeButton={false}
+                  render={
+                    <Link
+                      to={`/settings/permission-check?as=personalKey&subject=${encodeURIComponent(key.id)}`}
+                    />
+                  }
+                >
+                  {t('system.detail.check')}
+                </Button>
+              ) : null}
               {mayCreate ? (
                 <Button
                   type='button'

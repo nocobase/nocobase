@@ -50,23 +50,26 @@ export function SystemKeyList({
   useEffect(() => {
     let active = true;
     const timer = setTimeout(() => {
-      admin.systemKeys(search.trim() || undefined).then(
-        (found) => {
-          if (active) setKeys(found);
-        },
-        (failure: unknown) => {
-          if (active) setError(failure);
-        },
-      );
+      admin
+        .systemKeys({
+          managed,
+          ...(search.trim() ? { search: search.trim() } : {}),
+        })
+        .then(
+          (found) => {
+            if (active) setKeys(found);
+          },
+          (failure: unknown) => {
+            if (active) setError(failure);
+          },
+        );
     }, 150);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [admin, search, revision, location.pathname]);
-  const shown = (keys ?? []).filter(
-    (key) => (key.managedBy !== null) === managed,
-  );
+  }, [admin, managed, search, revision, location.pathname]);
+  const shown = keys ?? [];
   const toggle = async (key: SystemKey, enabled: boolean) => {
     try {
       await admin.setEnabled(key.identityId, enabled);

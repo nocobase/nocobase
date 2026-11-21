@@ -44,6 +44,7 @@ import {
   RotatedKeyDialog,
 } from '../components/key-parts.js';
 import { PermissionTable } from '../components/permission-table.js';
+import { ScopeRecordPicker } from '../components/scope-record-picker.js';
 import { RecordPicker } from '../components/record-picker.js';
 import type { SystemKeysOutletContext } from '../components/system-key-list.js';
 import {
@@ -66,6 +67,8 @@ export default function SystemKeyDetailPage(): ReactElement {
   const navigate = useNavigate();
   const outlet = useOutletContext<SystemKeysOutletContext | undefined>();
   const { can: mayManage } = useCan({ resource: API_KEYS, action: 'manage' });
+  // Permission check reads anyone's permissions, so it opens for an unrestricted role only.
+  const { can: mayCheck } = useCan('unrestricted');
   const [key, setKey] = useState<SystemKey>();
   const [error, setError] = useState<unknown>();
   const [revision, setRevision] = useState(0);
@@ -147,17 +150,19 @@ export default function SystemKeyDetailPage(): ReactElement {
         actions={
           key ? (
             <>
-              <Button
-                variant='outline'
-                nativeButton={false}
-                render={
-                  <Link
-                    to={`/settings/permission-check?as=systemKey&subject=${encodeURIComponent(key.id)}`}
-                  />
-                }
-              >
-                {t('system.detail.check')}
-              </Button>
+              {mayCheck ? (
+                <Button
+                  variant='outline'
+                  nativeButton={false}
+                  render={
+                    <Link
+                      to={`/settings/permission-check?as=systemKey&subject=${encodeURIComponent(key.id)}`}
+                    />
+                  }
+                >
+                  {t('system.detail.check')}
+                </Button>
+              ) : null}
               {mayManage && !managed ? (
                 <>
                   <Button
@@ -186,7 +191,7 @@ export default function SystemKeyDetailPage(): ReactElement {
                     >
                       {t('system.disable')}
                     </Button>
-                  ) : (
+                  ) : managed ? null : (
                     <Button
                       type='button'
                       variant='outline'
@@ -412,6 +417,7 @@ function Permissions({
       <PermissionTable
         value={grants}
         systemKey
+        scopeRecords={(props) => <ScopeRecordPicker {...props} />}
         readOnly={!editable}
         {...(editable && grantable
           ? { onChange: setGrants, ceiling: grantable }

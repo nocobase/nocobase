@@ -1,9 +1,9 @@
 /**
- * Disabling keys nobody uses, when the rules turn it on (`idleDisableDays`). Run once a day, it works from the data,
- * so a day it does not run is caught up the next:
+ * Disabling keys nobody uses, by the idle rule (`idleDisableDays`) each key took when it was issued or last rotated:
+ * turning the rule on, changing or turning it off acts on keys issued or rotated afterwards only. Run once a day, it
+ * works from the data, so a day it does not run is caught up the next:
  *
- * - A key's idle time counts from the latest of its last use, its creation, and when the rule was turned on or
- *   changed: idleness before the rule does not count.
+ * - A key's idle time counts from the later of its last use and when its current value was issued.
  * - Idle for the rule's days less a week, and not reminded since it was last used, its person is reminded: the owner
  *   of a personal key, the owner of a system key.
  * - Idle for the rule's days and reminded at least a week before, it is disabled. Every key so has a week's notice,
@@ -13,7 +13,6 @@
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { ApiKeysConfig } from './scoped-keys.js';
-import { readRules } from './rules.js';
 import type { SystemApiKeys } from './system-keys.js';
 
 const DAY = 86_400_000;
@@ -22,6 +21,8 @@ export const IDLE_NOTICE_DAYS = 7;
 
 /** A reminder: the key `keyName` of `userId` (its holder or owner) is disabled on `disableAt` unless used. */
 export interface IdleReminder {
+  /** `idle`: disabled on `disableAt` unless used; `expiry`: a system key expires on `disableAt`. */
+  readonly kind: 'idle' | 'expiry';
   readonly userId: string;
   readonly keyId: string;
   readonly keyName: string | null;
@@ -32,6 +33,10 @@ export interface IdleReminder {
 export interface IdleSweepResult {
   readonly reminded: number;
   readonly disabled: number;
+  /** System keys whose owner was told they expire within a week. */
+  readonly expiring: number;
+  /** Notices to managers of managed keys delivered on another try. */
+  readonly notices: number;
 }
 
 interface KeyRow {
@@ -39,6 +44,7 @@ interface KeyRow {
   readonly name: string | null;
   readonly referenceId: string;
   readonly createdAt: unknown;
+  readonly expiresAt: unknown;
   readonly lastRequest: unknown;
   readonly metadata: unknown;
 }
@@ -87,13 +93,12 @@ export class IdleKeys {
     },
   ) {}
 
-  /** Reminds about and disables idle keys as of `now`. */
+  /**
+   * Reminds about and disables idle keys as of `now`, tells system key owners about keys expiring within a week, and
+   * delivers notices to managers that failed before.
+   */
   async sweep(now: Date = new Date()): Promise<IdleSweepResult> {
     const db = this.options.connection();
-    const rules = await readRules(db, this.options.config());
-    const days = rules.idleDisableDays;
-    if (days === null) return { reminded: 0, disabled: 0 };
-    const since = time(rules.idleSince) ?? now.getTime();
     const systemRows = await db.query
       .selectFrom('apiKeySystemKeys')
       .select(['identityId', 'keyId', 'ownerId', 'remindedAt'])
@@ -117,37 +122,37 @@ export class IdleKeys {
           'referenceId',
           'enabled',
           'createdAt',
+          'expiresAt',
           'lastRequest',
           'metadata',
         ])
         .where('configId', '=', 'default')
         .execute()) as unknown as (KeyRow & { enabled: unknown })[]
     ).filter((key) => key.enabled === true || Number(key.enabled) === 1);
-    const services = new Set(
-      (
-        await db.query
-          .selectFrom('user')
-          .select(['id'])
-          .where('kind', '=', 'service')
-          .execute()
-      ).map((row) => String(row.id)),
-    );
     let reminded = 0;
     let disabled = 0;
+    let expiring = 0;
     for (const key of keys) {
       const systemKey = system.get(key.id);
-      // Another service account's key is the application's own, which these rules do not touch.
-      if (!systemKey && services.has(key.referenceId)) continue;
-      const lastUse = time(key.lastRequest);
-      const start = Math.max(lastUse ?? 0, time(key.createdAt) ?? 0, since);
-      const idle = (now.getTime() - start) / DAY;
       const metadata = metadataOf(key.metadata);
+      if (systemKey && (await this.remindExpiry(key, systemKey, metadata, now)))
+        expiring += 1;
+      // A key issued before the rule, or while it was off, carries none and is left alone.
+      const days =
+        typeof metadata.idleDisableDays === 'number' &&
+        metadata.idleDisableDays > 0
+          ? metadata.idleDisableDays
+          : null;
+      if (days === null) continue;
+      const lastUse = time(key.lastRequest);
+      const start = Math.max(lastUse ?? 0, time(key.createdAt) ?? 0);
+      const idle = (now.getTime() - start) / DAY;
       const remindedAt = systemKey
         ? systemKey.remindedAt
         : time(metadata.idleRemindedAt);
-      // A reminder counts until the key is used again.
+      // A reminder counts until the key is used again or gets a new value.
       const reminder =
-        remindedAt !== null && remindedAt > (lastUse ?? 0) ? remindedAt : null;
+        remindedAt !== null && remindedAt > start ? remindedAt : null;
       if (idle >= days && reminder !== null) {
         if (now.getTime() - reminder < IDLE_NOTICE_DAYS * DAY) continue;
         if (systemKey)
@@ -168,6 +173,7 @@ export class IdleKeys {
       const recipient = systemKey ? systemKey.ownerId : key.referenceId;
       if (recipient)
         await this.options.remind?.({
+          kind: 'idle',
           userId: recipient,
           keyId: key.id,
           keyName: key.name,
@@ -198,6 +204,48 @@ export class IdleKeys {
           .execute();
       reminded += 1;
     }
-    return { reminded, disabled };
+    const notices = await this.options.systemKeys.deliverNotices();
+    return { reminded, disabled, expiring, notices };
+  }
+
+  /**
+   * Tells a system key's owner, once per expiry date, that the key expires within a week; a rotation renews the expiry
+   * and so the reminder. Answers whether it told them.
+   */
+  private async remindExpiry(
+    key: KeyRow,
+    systemKey: { readonly ownerId: string | null },
+    metadata: Record<string, unknown>,
+    now: Date,
+  ): Promise<boolean> {
+    const expires = time(key.expiresAt);
+    if (
+      expires === null ||
+      expires <= now.getTime() ||
+      expires - now.getTime() > IDLE_NOTICE_DAYS * DAY ||
+      !systemKey.ownerId
+    )
+      return false;
+    const expiresAt = new Date(expires).toISOString();
+    if (metadata.expiryRemindedFor === expiresAt) return false;
+    // Kept on the caller's copy too, which may write the metadata again.
+    metadata.expiryRemindedFor = expiresAt;
+    await this.options.remind?.({
+      kind: 'expiry',
+      userId: systemKey.ownerId,
+      keyId: key.id,
+      keyName: key.name,
+      system: true,
+      disableAt: new Date(expires),
+    });
+    await this.options
+      .connection()
+      .query.updateTable('apikey')
+      .set({
+        metadata: JSON.stringify(metadata),
+      })
+      .where('id', '=', key.id)
+      .execute();
+    return true;
   }
 }

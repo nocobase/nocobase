@@ -29,8 +29,9 @@ import { ApiKeyScopeError } from './scopes.js';
 /** The owner of every system key's hidden Permission Set; Studio's organization keys use another. */
 export const SYSTEM_KEY_OWNER = '@nocobase/app-plugin-api-keys';
 /** The key of a system key's hidden Permission Set. */
+export const SYSTEM_KEY_SET_PREFIX = 'system-key-';
 export const systemKeySet = (identityId: string): string =>
-  `system-key-${identityId}`;
+  `${SYSTEM_KEY_SET_PREFIX}${identityId}`;
 
 /** Who manages a managed system key, shown as "Managed · <title>". */
 export interface SystemKeyManagedBy {
@@ -88,9 +89,15 @@ export interface CreateSystemKeyInput {
   readonly permissions: unknown;
 }
 
-/** What `adopt` takes: an existing service account and its key, with the grants it held and its history. */
+/**
+ * What `adopt` takes: an existing service account, the key of it to adopt, the grants the account held and its history.
+ * The key keeps its own scope, so what it may do stays the intersection of both, record limits included.
+ */
 export interface AdoptSystemKeyInput {
   readonly identityId: string;
+  /** The key to adopt; it must belong to the service account. */
+  readonly keyId: string;
+  /** The grants the account held, which its hidden Permission Set takes as they are. */
   readonly permissions: KeyPermissions;
   readonly ownerId?: string | null;
   readonly managedBy?: SystemKeyManagedBy | null;
@@ -129,6 +136,14 @@ const json = (value: unknown): unknown => {
   }
   return parsed;
 };
+
+function isDisabled(user: object): boolean {
+  const disabledAt: unknown = Reflect.get(user, 'disabledAt');
+  const status: unknown = Reflect.get(user, 'status');
+  return (
+    (disabledAt !== null && disabledAt !== undefined) || status === 'disabled'
+  );
+}
 
 function managedByOf(value: unknown): SystemKeyManagedBy | null {
   const parsed = json(value);
@@ -214,22 +229,18 @@ export class SystemApiKeys {
     return authz;
   }
 
-  /** Protects the hidden Permission Sets of the system keys there are; call at boot. */
-  async protectExisting(): Promise<void> {
-    const rows = await this.db.query
-      .selectFrom('apiKeySystemKeys')
-      .select(['identityId'])
-      .execute();
-    this.protect(rows.map((row) => String(row.identityId)));
-  }
-
-  private protect(identityIds: readonly string[]): void {
+  /**
+   * Protects every system key's hidden Permission Set, present or created later by any process: hidden from the
+   * management lists, never edited or assigned there, and assignable to a user only. Call at boot in every process.
+   */
+  protectAll(): void {
     const authz = this.options.authorization();
-    if (!authz || !identityIds.length) return;
+    if (!authz || this.releaseProtection.length) return;
     this.releaseProtection.push(
       authz.permissionSets.protect({
         owner: SYSTEM_KEY_OWNER,
-        keys: identityIds.map(systemKeySet),
+        keys: [],
+        prefixes: [SYSTEM_KEY_SET_PREFIX],
         allow: [],
         assignableTo: ['user'],
         hidden: true,
@@ -255,6 +266,31 @@ export class SystemApiKeys {
         'System key not found.',
       );
     return row;
+  }
+
+  /** An owner receives a key's reminders, so it is a person who can act: never a service account or a disabled user. */
+  private async requirePerson(userId: string): Promise<void> {
+    const user = await this.options.users().get(userId);
+    if (!user || user.kind === 'service' || isDisabled(user))
+      throw new ApiKeyRequestError(
+        400,
+        'INVALID_OWNER',
+        'The owner must be an active member, not a service account.',
+      );
+  }
+
+  /** A managed key is only viewed, disabled or deleted outside its manager. */
+  private requireUnmanaged(
+    row: SystemRow,
+    options: { readonly managed?: boolean },
+    what: string,
+  ): void {
+    if (managedByOf(row.managedBy) && !options.managed)
+      throw new ApiKeyRequestError(
+        400,
+        'SYSTEM_KEY_MANAGED',
+        `This key is managed: it ${what}.`,
+      );
   }
 
   private async person(
@@ -287,24 +323,99 @@ export class SystemApiKeys {
     };
   }
 
-  /** Every system key, managed ones included, newest first; `search` matches the name. */
+  /**
+   * System keys newest first, paged: the managed ones or the others when `managed` says, their name matching
+   * `search`. Filtered, joined to their keys and counted by the database, so a page reads one page of keys.
+   */
   async list(
-    input: { readonly search?: string } = {},
-  ): Promise<SystemKeyView[]> {
-    const rows = await this.db.query
-      .selectFrom('apiKeySystemKeys')
-      .selectAll()
-      .orderBy('createdAt', 'desc')
-      .execute();
-    const views = await Promise.all(
-      (rows as unknown as SystemRow[]).map((row) => this.view(row)),
-    );
+    input: {
+      readonly search?: string;
+      readonly managed?: boolean;
+      readonly page?: number;
+      readonly pageSize?: number;
+    } = {},
+  ): Promise<{ data: SystemKeyView[]; total: number }> {
     const search = input.search?.trim().toLocaleLowerCase();
-    return search
-      ? views.filter((view) =>
-          (view.name ?? '').toLocaleLowerCase().includes(search),
-        )
-      : views;
+    const pattern = search ? `%${search.replace(/[%_\\]/gu, '')}%` : undefined;
+    const filtered = () => {
+      let query = this.db.query
+        .selectFrom('apiKeySystemKeys')
+        .innerJoin('apikey', 'apikey.id', 'apiKeySystemKeys.keyId');
+      if (input.managed !== undefined)
+        query = query.where(
+          'apiKeySystemKeys.managedBy',
+          input.managed ? 'is not' : 'is',
+          null,
+        );
+      if (pattern)
+        query = query.where((eb) =>
+          eb(eb.fn.lower('apikey.name'), 'like', pattern),
+        );
+      return query;
+    };
+    const pageSize = Math.min(Math.max(input.pageSize ?? 50, 1), 100);
+    const page = Math.max(input.page ?? 1, 1);
+    const [counted, rows] = await Promise.all([
+      filtered()
+        .select((eb) => [eb.fn.countAll().as('total')])
+        .executeTakeFirst<{ total: unknown }>(),
+      filtered()
+        .selectAll('apikey')
+        .select([
+          'apiKeySystemKeys.identityId as systemIdentityId',
+          'apiKeySystemKeys.ownerId as systemOwnerId',
+          'apiKeySystemKeys.managedBy as systemManagedBy',
+          'apiKeySystemKeys.createdById as systemCreatedById',
+        ])
+        .orderBy('apiKeySystemKeys.createdAt', 'desc')
+        .orderBy('apiKeySystemKeys.identityId', 'desc')
+        .limit(pageSize)
+        .offset((page - 1) * pageSize)
+        .execute(),
+    ]);
+    const records = rows as unknown as Record<string, unknown>[];
+    const ownerIds = [
+      ...new Set(
+        records.flatMap((row) =>
+          typeof row.systemOwnerId === 'string' ? [row.systemOwnerId] : [],
+        ),
+      ),
+    ];
+    const owners = new Map(
+      (ownerIds.length
+        ? await this.db.query
+            .selectFrom('user')
+            .select(['id', 'name'])
+            .where('id', 'in', ownerIds)
+            .execute()
+        : []
+      ).map((row) => [
+        String(row.id),
+        typeof row.name === 'string' ? row.name : '',
+      ]),
+    );
+    return {
+      data: records.map((row) => {
+        const stored = decodeKeyPermissions(row.permissions);
+        const ownerId =
+          typeof row.systemOwnerId === 'string' ? row.systemOwnerId : null;
+        return {
+          ...this.options.keys.viewOfRow(row),
+          identityId: String(row.systemIdentityId),
+          owner: ownerId
+            ? { id: ownerId, name: owners.get(ownerId) ?? '' }
+            : null,
+          managedBy: managedByOf(row.systemManagedBy),
+          createdById:
+            typeof row.systemCreatedById === 'string'
+              ? row.systemCreatedById
+              : null,
+          permissions:
+            stored?.version === '2' ? stored.permissions : { grants: [] },
+        };
+      }),
+      total: Number(counted?.total ?? 0),
+    };
   }
 
   async get(identityId: string): Promise<SystemKeyView> {
@@ -355,11 +466,13 @@ export class SystemApiKeys {
     actorId: string | null,
     details: Readonly<Record<string, unknown>> | null = null,
     at: Date = new Date(),
+    connection: DatabaseConnection = this.db,
+    id: string = randomUUID(),
   ): Promise<void> {
-    await this.db.query
+    await connection.query
       .insertInto('apiKeyEvents')
       .values({
-        id: randomUUID(),
+        id,
         identityId,
         action,
         actorId,
@@ -410,19 +523,13 @@ export class SystemApiKeys {
       input.permissions,
       identity,
     );
-    if (input.ownerId && !(await this.options.users().get(input.ownerId)))
-      throw new ApiKeyRequestError(
-        400,
-        'INVALID_OWNER',
-        'The owner is not a user.',
-      );
+    if (input.ownerId) await this.requirePerson(input.ownerId);
     const account = await this.options.users().createServiceAccount({
       name,
       description: input.description ?? null,
     });
     const set = systemKeySet(account.id);
     try {
-      this.protect([account.id]);
       await authz.permissionSets.create({
         key: set,
         title: name,
@@ -453,6 +560,7 @@ export class SystemApiKeys {
           updatedAt: now,
         })
         .execute();
+      await this.options.keys.applyIdleRule(created.key.id);
       await this.record(account.id, 'create', actorId, {
         expiresInDays: input.expiresInDays,
         permissions,
@@ -487,15 +595,12 @@ export class SystemApiKeys {
       readonly description?: string | null;
       readonly ownerId?: string | null;
     },
+    options: { readonly managed?: boolean } = {},
   ): Promise<SystemKeyView> {
     const row = await this.row(identityId);
+    this.requireUnmanaged(row, options, 'is edited where it is managed');
     const before = await this.view(row);
-    if (input.ownerId && !(await this.options.users().get(input.ownerId)))
-      throw new ApiKeyRequestError(
-        400,
-        'INVALID_OWNER',
-        'The owner is not a user.',
-      );
+    if (input.ownerId) await this.requirePerson(input.ownerId);
     await this.options.keys.update(identityId, row.keyId, {
       ...(input.name === undefined ? {} : { name: input.name }),
       ...(input.description === undefined
@@ -531,40 +636,46 @@ export class SystemApiKeys {
     return after;
   }
 
-  /** Writes a system key's permissions to its hidden set and to its key, which then intersect as before. */
+  /**
+   * Writes a system key's permissions to its hidden set and to its key, which then intersect as before, through
+   * `connection`, which the caller's transaction is.
+   */
   private async writePermissions(
+    connection: DatabaseConnection,
     row: SystemRow,
     permissions: KeyPermissions,
+    options: { readonly keyScope?: boolean } = {},
   ): Promise<void> {
-    const authz = this.requireAuthorization();
+    const sets =
+      this.requireAuthorization().permissionSets.withTransaction(connection);
     const set = systemKeySet(row.identityId);
-    const current = await authz.permissionSets.get(set);
+    const current = await sets.get(set);
     if (current)
-      await authz.permissionSets.update(set, {
+      await sets.update(set, {
         key: set,
         ...(current.title === undefined ? {} : { title: current.title }),
         grants: permissions.grants,
       });
     else {
-      await authz.permissionSets.create({
-        key: set,
-        grants: permissions.grants,
-      });
-      await authz.permissionSets.assign({
+      await sets.create({ key: set, grants: permissions.grants });
+      await sets.assign({
         subject: { type: 'user', id: row.identityId },
         permissionSet: set,
       });
     }
-    await this.db.query
-      .updateTable('apikey')
-      .set({ permissions: encodeKeyPermissions(permissions) })
-      .where('id', '=', row.keyId)
-      .execute();
+    if (options.keyScope !== false)
+      await connection.query
+        .updateTable('apikey')
+        .set({ permissions: encodeKeyPermissions(permissions) })
+        .where('id', '=', row.keyId)
+        .execute();
   }
 
   /**
-   * Replaces a system key's permissions with ones `actorId` may give, at once, recording what they were and are. A
-   * managed key's permissions change only through its manager (`setPermissionsManaged`).
+   * Replaces a system key's permissions with ones `actorId` may give, at once, recording what they were and are. One
+   * change at a time per key: the set, the key's scope and the activity are written in one transaction, after the key's
+   * row is locked, so the recorded before is what the change replaced. A managed key's permissions change only through
+   * its manager (`setPermissionsManaged`).
    */
   async setPermissions(
     identityId: string,
@@ -572,22 +683,53 @@ export class SystemApiKeys {
     input: unknown,
     options: { readonly managed?: boolean } = {},
   ): Promise<SystemKeyView> {
-    const row = await this.row(identityId);
-    if (managedByOf(row.managedBy) && !options.managed)
-      throw new ApiKeyRequestError(
-        400,
-        'SYSTEM_KEY_MANAGED',
-        'This key is managed: its permissions change where it is managed.',
-      );
-    const before = (await this.view(row)).permissions;
+    this.requireUnmanaged(
+      await this.row(identityId),
+      options,
+      'changes its permissions where it is managed',
+    );
     const permissions = await this.checkPermissions(
       input,
       await this.options.keys.identityOf(actorId),
     );
-    await this.writePermissions(row, permissions);
-    await this.record(identityId, 'permissions', actorId, {
-      before,
-      after: permissions,
+    await this.db.transaction(async (connection) => {
+      // Locks the key's row: a second change waits here until this one commits.
+      await connection.query
+        .updateTable('apiKeySystemKeys')
+        .set({ updatedAt: new Date() })
+        .where('identityId', '=', identityId)
+        .execute();
+      const row = await connection.query
+        .selectFrom('apiKeySystemKeys')
+        .selectAll()
+        .where('identityId', '=', identityId)
+        .executeTakeFirst<SystemRow>();
+      if (!row)
+        throw new ApiKeyRequestError(
+          404,
+          'SYSTEM_KEY_NOT_FOUND',
+          'System key not found.',
+        );
+      const stored = decodeKeyPermissions(
+        (
+          await connection.query
+            .selectFrom('apikey')
+            .select(['permissions'])
+            .where('id', '=', row.keyId)
+            .executeTakeFirst<{ permissions: unknown }>()
+        )?.permissions,
+      );
+      const before =
+        stored?.version === '2' ? stored.permissions : { grants: [] };
+      await this.writePermissions(connection, row, permissions);
+      await this.record(
+        identityId,
+        'permissions',
+        actorId,
+        { before, after: permissions },
+        new Date(),
+        connection,
+      );
     });
     return this.get(identityId);
   }
@@ -599,19 +741,25 @@ export class SystemApiKeys {
     options: { readonly managed?: boolean } = {},
   ): Promise<CreatedApiKey & { key: SystemKeyView }> {
     const row = await this.row(identityId);
-    if (managedByOf(row.managedBy) && !options.managed)
-      throw new ApiKeyRequestError(
-        400,
-        'SYSTEM_KEY_MANAGED',
-        'This key is managed: it is rotated where it is managed.',
-      );
+    this.requireUnmanaged(row, options, 'is rotated where it is managed');
     const rotated = await this.options.keys.rotate(identityId, row.keyId);
+    // A new value starts a new idle period: the last one's reminder no longer counts.
+    await this.db.query
+      .updateTable('apiKeySystemKeys')
+      .set({ remindedAt: null, updatedAt: new Date() })
+      .where('identityId', '=', identityId)
+      .execute();
     await this.record(identityId, 'rotate', actorId, {
       start: rotated.key.start,
     });
     return { key: await this.get(identityId), secret: rotated.secret };
   }
 
+  /**
+   * Tells a managed key's manager that it was disabled or deleted. The notice is stored first and removed once the
+   * manager took it, so one that fails is delivered again by `deliverNotices` (the daily sweep), even after the key is
+   * gone; a manager may get a notice more than once and should treat it as the same event.
+   */
   private async tell(
     row: SystemRow,
     actorId: string | null,
@@ -619,9 +767,67 @@ export class SystemApiKeys {
   ): Promise<void> {
     const managedBy = managedByOf(row.managedBy);
     if (!managedBy) return;
-    await this.managersByKind
-      .get(managedBy.kind)
-      ?.onRevoked({ identityId: row.identityId, managedBy, actorId, how });
+    await this.db.query
+      .insertInto('apiKeyManagerNotices')
+      .values({
+        id: randomUUID(),
+        identityId: row.identityId,
+        managedBy: JSON.stringify(managedBy),
+        actorId,
+        how,
+        attempts: 0,
+        createdAt: new Date(),
+      })
+      .execute();
+    await this.deliverNotices(row.identityId);
+  }
+
+  /**
+   * Delivers the stored notices to managers, oldest first, every key's or one key's; a notice whose manager is not
+   * added in this process, or fails, stays for the next attempt. Answers how many were delivered.
+   */
+  async deliverNotices(identityId?: string): Promise<number> {
+    let query = this.db.query
+      .selectFrom('apiKeyManagerNotices')
+      .selectAll()
+      .orderBy('createdAt', 'asc');
+    if (identityId) query = query.where('identityId', '=', identityId);
+    const notices = (await query.execute()) as unknown as {
+      id: string;
+      identityId: string;
+      managedBy: unknown;
+      actorId: string | null;
+      how: string;
+      attempts: unknown;
+    }[];
+    let delivered = 0;
+    for (const notice of notices) {
+      const managedBy = managedByOf(notice.managedBy);
+      const manager = managedBy
+        ? this.managersByKind.get(managedBy.kind)
+        : undefined;
+      if (!managedBy || !manager) continue;
+      try {
+        await manager.onRevoked({
+          identityId: String(notice.identityId),
+          managedBy,
+          actorId: typeof notice.actorId === 'string' ? notice.actorId : null,
+          how: notice.how === 'deleted' ? 'deleted' : 'disabled',
+        });
+        await this.db.query
+          .deleteFrom('apiKeyManagerNotices')
+          .where('id', '=', notice.id)
+          .execute();
+        delivered += 1;
+      } catch {
+        await this.db.query
+          .updateTable('apiKeyManagerNotices')
+          .set({ attempts: Number(notice.attempts ?? 0) + 1 })
+          .where('id', '=', notice.id)
+          .execute();
+      }
+    }
+    return delivered;
   }
 
   private async setEnabled(
@@ -655,7 +861,17 @@ export class SystemApiKeys {
     return this.setEnabled(identityId, actorId, false, details);
   }
 
-  enable(identityId: string, actorId: string): Promise<SystemKeyView> {
+  /** Turns a disabled key on again; a managed one only through its manager (`enableManaged`). */
+  async enable(
+    identityId: string,
+    actorId: string,
+    options: { readonly managed?: boolean } = {},
+  ): Promise<SystemKeyView> {
+    this.requireUnmanaged(
+      await this.row(identityId),
+      options,
+      'is enabled where it is managed',
+    );
     return this.setEnabled(identityId, actorId, true);
   }
 
@@ -672,6 +888,7 @@ export class SystemApiKeys {
       .execute();
     await this.options.users().remove(identityId, actorId);
     await this.record(identityId, 'delete', actorId);
+    // Stored with what the manager needs, so a failed delivery is tried again although the key is gone.
     await this.tell(row, actorId, 'deleted');
   }
 
@@ -698,6 +915,20 @@ export class SystemApiKeys {
     });
   }
 
+  /** Renames a managed key, changes its description or owner, for its manager. */
+  updateManaged(
+    identityId: string,
+    userId: string,
+    input: Parameters<SystemApiKeys['update']>[2],
+  ): Promise<SystemKeyView> {
+    return this.update(identityId, userId, input, { managed: true });
+  }
+
+  /** Turns a managed key on again, for its manager. */
+  enableManaged(identityId: string, userId: string): Promise<SystemKeyView> {
+    return this.enable(identityId, userId, { managed: true });
+  }
+
   /** Rotates a managed key; `actorId` null for its manager's own rotation. */
   rotateManaged(
     identityId: string,
@@ -708,12 +939,16 @@ export class SystemApiKeys {
 
   /**
    * Lists an existing service account and its key as a system key, keeping them as they are: for an application moving
-   * its own organization keys here, such as Studio's. Its permissions go to a hidden set of this plugin's, granted as
-   * given (scopes counted from a person stay as they were: they only narrow), and its history is copied. The
-   * application removes its own set and records afterwards.
+   * its own organization keys here, such as Studio's. The account's grants go to a hidden set of this plugin's as given
+   * (scopes counted from a person stay as they were: they only narrow); the key keeps its own scope, so what it may do
+   * stays the intersection of both, record limits included. Its history is copied. Done in one transaction: a failure
+   * leaves nothing behind and calling again starts over; once adopted, calling again answers the key. The application
+   * removes its own set and records afterwards.
    */
   async adopt(input: AdoptSystemKeyInput): Promise<SystemKeyView> {
     this.requireAuthorization();
+    if (await this.isSystemKey(input.identityId))
+      return this.get(input.identityId);
     const user = await this.options.users().get(input.identityId);
     if (!user || user.kind !== 'service')
       throw new ApiKeyRequestError(
@@ -721,48 +956,67 @@ export class SystemApiKeys {
         'NOT_A_SERVICE_ACCOUNT',
         'Only a service account can become a system key.',
       );
-    if (await this.isSystemKey(input.identityId))
-      return this.get(input.identityId);
     const key = await this.db.query
       .selectFrom('apikey')
       .select(['id'])
+      .where('id', '=', input.keyId)
       .where('referenceId', '=', input.identityId)
-      .orderBy('createdAt', 'desc')
+      .where('configId', '=', 'default')
       .executeTakeFirst<{ id: string }>();
     if (!key)
       throw new ApiKeyRequestError(
         400,
         'NO_KEY',
-        'The service account has no API key to adopt.',
+        'The service account has no such API key to adopt.',
       );
-    const now = new Date();
-    this.protect([input.identityId]);
-    await this.db.query
-      .insertInto('apiKeySystemKeys')
-      .values({
-        identityId: input.identityId,
-        keyId: key.id,
-        ownerId: input.ownerId ?? null,
-        managedBy: input.managedBy ? JSON.stringify(input.managedBy) : null,
-        createdById: input.createdById ?? null,
-        remindedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .execute();
-    await this.writePermissions(
-      await this.row(input.identityId),
-      input.permissions,
+    if (input.ownerId) await this.requirePerson(input.ownerId);
+    // Read as stored values are: a damaged part grants nothing.
+    const decoded = decodeKeyPermissions(
+      encodeKeyPermissions(input.permissions),
     );
-    for (const event of input.events ?? [])
+    const permissions: KeyPermissions =
+      decoded?.version === '2' ? decoded.permissions : { grants: [] };
+    const now = new Date();
+    const row: SystemRow = {
+      identityId: input.identityId,
+      keyId: key.id,
+      ownerId: input.ownerId ?? null,
+      managedBy: input.managedBy ? JSON.stringify(input.managedBy) : null,
+      createdById: input.createdById ?? null,
+    };
+    await this.db.transaction(async (connection) => {
+      // The key's own scope stays: the set holds the account's grants, and the two intersect as before.
+      await this.writePermissions(connection, row, permissions, {
+        keyScope: false,
+      });
+      // One transaction: a failure leaves nothing behind, and calling again starts over.
+      for (const event of input.events ?? [])
+        await this.record(
+          input.identityId,
+          event.action,
+          event.actorId,
+          event.details ?? null,
+          new Date(event.createdAt),
+          connection,
+        );
       await this.record(
         input.identityId,
-        event.action,
-        event.actorId,
-        event.details ?? null,
-        new Date(event.createdAt),
+        'adopt',
+        null,
+        { keyId: key.id },
+        now,
+        connection,
       );
-    await this.record(input.identityId, 'adopt', null);
+      await connection.query
+        .insertInto('apiKeySystemKeys')
+        .values({
+          ...row,
+          remindedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .execute();
+    });
     return this.get(input.identityId);
   }
 }

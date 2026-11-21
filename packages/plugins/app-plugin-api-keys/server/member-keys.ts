@@ -31,12 +31,6 @@ export interface MemberKeysFilter {
   readonly pageSize?: number;
 }
 
-interface MemberRow {
-  readonly id: string;
-  readonly name: string | null;
-  readonly disabledAt: unknown;
-}
-
 export class MemberKeys {
   constructor(
     private readonly options: {
@@ -45,65 +39,82 @@ export class MemberKeys {
     },
   ) {}
 
-  /** The members (people, never service accounts) and their keys, newest first, paged. */
+  /**
+   * The members' keys (people, never service accounts), newest first, paged: filtered, joined to their members and
+   * counted by the database, so a page reads one page of keys.
+   */
   async list(
     filter: MemberKeysFilter = {},
     now: Date = new Date(),
   ): Promise<{ data: MemberKeyView[]; total: number }> {
     const db = this.options.connection();
-    const people = new Map(
-      (
-        (await db.query
-          .selectFrom('user')
-          .select(['id', 'name', 'disabledAt'])
-          .where('kind', '!=', 'service')
-          .where('deletedAt', 'is', null)
-          .execute()) as unknown as MemberRow[]
-      ).map((row) => [String(row.id), row]),
-    );
-    const rows = await db.query
-      .selectFrom('apikey')
-      .selectAll()
-      .where('configId', '=', 'default')
-      .orderBy('createdAt', 'desc')
-      .execute();
     const search = filter.search?.trim().toLocaleLowerCase();
+    const pattern = search ? `%${search.replace(/[%_\\]/gu, '')}%` : undefined;
     const cutoff =
       filter.idleDays === undefined
-        ? null
-        : now.getTime() - filter.idleDays * DAY;
-    const matching = rows.flatMap((row): MemberKeyView[] => {
-      const member = people.get(String(row.referenceId));
-      if (!member) return [];
-      const view = this.options.keys.viewOfRow(row);
-      if (filter.sameAsMember && view.permissions !== null) return [];
-      if (cutoff !== null) {
-        const used = new Date(view.lastUsedAt ?? view.createdAt).getTime();
-        if (used > cutoff) return [];
-      }
-      if (
-        search &&
-        !(view.name ?? '').toLocaleLowerCase().includes(search) &&
-        !(member.name ?? '').toLocaleLowerCase().includes(search)
-      )
-        return [];
-      return [
-        {
-          ...view,
-          member: {
-            id: member.id,
-            name: member.name ?? '',
-            disabled:
-              member.disabledAt !== null && member.disabledAt !== undefined,
-          },
-        },
-      ];
-    });
+        ? undefined
+        : new Date(now.getTime() - filter.idleDays * DAY);
+    const filtered = () => {
+      let query = db.query
+        .selectFrom('apikey')
+        .innerJoin('user', 'user.id', 'apikey.referenceId')
+        .where('apikey.configId', '=', 'default')
+        .where('user.kind', '!=', 'service')
+        .where('user.deletedAt', 'is', null);
+      if (filter.sameAsMember)
+        query = query.where('apikey.permissions', 'is', null);
+      if (cutoff)
+        query = query.where((eb) =>
+          eb.or([
+            eb('apikey.lastRequest', '<', cutoff),
+            eb.and([
+              eb('apikey.lastRequest', 'is', null),
+              eb('apikey.createdAt', '<', cutoff),
+            ]),
+          ]),
+        );
+      if (pattern)
+        query = query.where((eb) =>
+          eb.or([
+            eb(eb.fn.lower('apikey.name'), 'like', pattern),
+            eb(eb.fn.lower('user.name'), 'like', pattern),
+          ]),
+        );
+      return query;
+    };
     const pageSize = Math.min(Math.max(filter.pageSize ?? 20, 1), 100);
     const page = Math.max(filter.page ?? 1, 1);
+    const [counted, rows] = await Promise.all([
+      filtered()
+        .select((eb) => [eb.fn.countAll().as('total')])
+        .executeTakeFirst<{ total: unknown }>(),
+      filtered()
+        .selectAll('apikey')
+        .select([
+          'user.name as memberName',
+          'user.disabledAt as memberDisabledAt',
+        ])
+        .orderBy('apikey.createdAt', 'desc')
+        .orderBy('apikey.id', 'desc')
+        .limit(pageSize)
+        .offset((page - 1) * pageSize)
+        .execute(),
+    ]);
     return {
-      data: matching.slice((page - 1) * pageSize, page * pageSize),
-      total: matching.length,
+      data: (rows as unknown as Record<string, unknown>[]).map((row) => {
+        const view = this.options.keys.viewOfRow(row);
+        return {
+          ...view,
+          member: {
+            id: String(row.referenceId),
+            name: typeof row.memberName === 'string' ? row.memberName : '',
+            disabled:
+              row.memberDisabledAt !== null &&
+              row.memberDisabledAt !== undefined,
+          },
+        };
+      }),
+      total: Number(counted?.total ?? 0),
     };
   }
 

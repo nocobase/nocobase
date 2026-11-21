@@ -22,11 +22,17 @@ export function RecordPicker({
   value,
   onChange,
   readOnly = false,
+  load,
+  allowAll = true,
 }: {
   readonly business: string;
   readonly value: readonly string[] | undefined;
   readonly onChange?: (next: readonly string[] | undefined) => void;
   readonly readOnly?: boolean;
+  /** Where the records come from; the business's record source by default. */
+  readonly load?: (search: string | undefined) => Promise<KeyScopeObject[]>;
+  /** Offers "All records"; off where only chosen records may be given. */
+  readonly allowAll?: boolean;
 }): ReactElement {
   const { t } = useTranslation(API_KEYS_NAMESPACE);
   const api = useApiKeysApi();
@@ -37,7 +43,9 @@ export function RecordPicker({
     if (!open) return;
     let active = true;
     const timer = setTimeout(() => {
-      api.objects(business, search.trim() || undefined).then(
+      (load ?? ((query) => api.objects(business, query)))(
+        search.trim() || undefined,
+      ).then(
         (found) => {
           if (active) setRecords(found);
         },
@@ -50,7 +58,7 @@ export function RecordPicker({
       active = false;
       clearTimeout(timer);
     };
-  }, [api, business, search, open]);
+  }, [api, business, search, open, load]);
   const label =
     value === undefined
       ? t('create.allRecords')
@@ -81,13 +89,17 @@ export function RecordPicker({
             <ChevronDownIcon aria-hidden className='size-3' />
           </PopoverTrigger>
           <PopoverContent align='start' className='grid w-72 gap-2'>
-            <label className='flex items-center gap-2 text-sm'>
-              <Checkbox
-                checked={value === undefined}
-                onCheckedChange={(on: boolean) => onChange(on ? undefined : [])}
-              />
-              {t('create.useAll')}
-            </label>
+            {allowAll ? (
+              <label className='flex items-center gap-2 text-sm'>
+                <Checkbox
+                  checked={value === undefined}
+                  onCheckedChange={(on: boolean) =>
+                    onChange(on ? undefined : [])
+                  }
+                />
+                {t('create.useAll')}
+              </label>
+            ) : null}
             <Input
               value={search}
               placeholder={t('create.searchRecords')}

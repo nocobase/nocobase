@@ -47,6 +47,7 @@ import {
   ObjectSourceParams,
   ScopeGroupParams,
   ScopeObjectsQuery,
+  ScopeRecordsQuery,
 } from './schemas.js';
 
 const tags = ['ApiKeys'];
@@ -211,6 +212,38 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...(q ? { search: q } : {}),
           ...(id ? { ids: id } : {}),
         });
+        return context.json({ data, meta: { total: data.length } });
+      },
+    );
+    // The records a key's data scope may be limited to: the ones the caller sees through that composite action.
+    routes.get(
+      '/scopeRecords',
+      describeRoute({
+        tags,
+        summary: 'List the records a key’s data scope may be limited to',
+        operationId: 'apiKeysListScopeRecords',
+        ...newRouteOffCommandLine,
+        description: `${signInOnly} The records the caller can see through a composite action's data scope, which a key's permissions may limit that scope to (\`{ type: 'records', ids }\`); narrowed by \`q\` or repeated \`id\`; at most 100, not paged.`,
+        responses: {
+          200: listResponse(KeyScopeObjectSchema, ApiKeysListMeta),
+          ...apiErrorResponses,
+        },
+      }),
+      apiValidator('query', ScopeRecordsQuery),
+      async (context) => {
+        const { resource, action, scope, q, id } = context.req.valid('query');
+        const search = q?.trim().toLocaleLowerCase();
+        const data = (
+          await keys.scopeRecords(await identity(context), {
+            resource,
+            action,
+            scope,
+            ...(id ? { ids: id } : {}),
+          })
+        ).filter(
+          (record) =>
+            !search || record.title.toLocaleLowerCase().includes(search),
+        );
         return context.json({ data, meta: { total: data.length } });
       },
     );

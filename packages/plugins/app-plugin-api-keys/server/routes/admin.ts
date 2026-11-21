@@ -150,7 +150,19 @@ const SetPermissionsBody = z.strictObject({
 });
 
 const ListSystemKeysQuery = z.object({
-  q: z.string().max(200).optional(),
+  q: z.string().max(200).optional().describe('Text the key name contains.'),
+  managed: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Only managed keys (`true`) or only the others (`false`).'),
+  page: z.coerce.number().int().min(1).optional().describe('The page, from 1.'),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe('Keys per page; 50 by default.'),
 });
 
 const ListMemberKeysQuery = z.object({
@@ -283,7 +295,7 @@ export function installSystemKeys(
       tags,
       summary: 'List system keys',
       operationId: 'apiKeysListSystemKeys',
-      description: `${readAccess} Every system key, managed ones included, newest first; \`q\` matches the name.`,
+      description: `${readAccess} System keys newest first, paged; \`managed\` keeps the managed ones or the others, \`q\` matches the name.`,
       responses: {
         200: listResponse(SystemKeyViewSchema, TotalMeta),
         ...apiErrorResponses,
@@ -291,9 +303,14 @@ export function installSystemKeys(
     }),
     apiValidator('query', ListSystemKeysQuery),
     async (context) => {
-      const { q } = context.req.valid('query');
-      const data = await systemKeys.list(q ? { search: q } : {});
-      return context.json({ data, meta: { total: data.length } });
+      const { q, managed, page, pageSize } = context.req.valid('query');
+      const { data, total } = await systemKeys.list({
+        ...(q ? { search: q } : {}),
+        ...(managed ? { managed: managed === 'true' } : {}),
+        ...(page ? { page } : {}),
+        ...(pageSize ? { pageSize } : {}),
+      });
+      return context.json({ data, meta: { total } });
     },
   );
   routes.post(
@@ -353,7 +370,7 @@ export function installSystemKeys(
       tags,
       summary: 'Edit a system key',
       operationId: 'apiKeysUpdateSystemKey',
-      description: `${manageAccess} Renames it or changes its description or owner; recorded in its activity.`,
+      description: `${manageAccess} Renames it or changes its description or owner, who must be an active member (\`INVALID_OWNER\`); recorded in its activity. A managed key is edited only where it is managed (\`SYSTEM_KEY_MANAGED\`).`,
       responses: {
         200: dataResponse(SystemKeyViewSchema),
         ...apiErrorResponses,
@@ -438,8 +455,8 @@ export function installSystemKeys(
           ? 'apiKeysEnableSystemKey'
           : 'apiKeysDisableSystemKey',
         description: enabled
-          ? `${manageAccess} The key works again.`
-          : `${manageAccess} The key stops at once; a managed key's manager is told.`,
+          ? `${manageAccess} The key works again. A managed key is enabled only where it is managed (\`SYSTEM_KEY_MANAGED\`).`
+          : `${manageAccess} The key stops at once; a managed key's manager is told, and told again later if that fails.`,
         responses: {
           200: dataResponse(SystemKeyViewSchema),
           ...apiErrorResponses,

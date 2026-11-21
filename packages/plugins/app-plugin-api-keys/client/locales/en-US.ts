@@ -215,7 +215,7 @@ const enUS = {
     idle: {
       title: 'Disable keys unused for',
       description:
-        'Applies to personal and system keys. The owner is notified a week before. Idle time counts from when this is turned on.',
+        'Applies to personal and system keys created or rotated from now on; keys made before keep the rule they had. The owner is notified a week before.',
       off: 'Off',
     },
     noLimit: 'No limit',

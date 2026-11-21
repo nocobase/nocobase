@@ -101,7 +101,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     );
   }
 
-  /** Tells a key's person, in the in-app inbox, that it is disabled soon unless used. */
+  /** Tells a key's person or owner, in the in-app inbox, that it is disabled soon unless used, or expires soon. */
   private async remind(reminder: IdleReminder): Promise<void> {
     const { container } = this.app;
     if (!container.has(notificationServiceToken)) return;
@@ -109,14 +109,21 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
       this.app.config.get<ApiKeysConfig>('apiKeys')?.inboxChannel ??
       DEFAULT_INBOX_CHANNEL;
     const name = reminder.keyName ?? 'API key';
+    const day = reminder.disableAt.toISOString().slice(0, 10);
     await container.resolve(notificationServiceToken).send({
-      idempotencyKey: `api-keys:idle:${reminder.keyId}:${reminder.disableAt.toISOString().slice(0, 10)}`,
+      idempotencyKey: `api-keys:${reminder.kind}:${reminder.keyId}:${day}`,
       source: { type: 'api-keys', referenceId: reminder.keyId },
       messages: {
         [channel]: {
           to: [reminder.userId],
-          title: `The API key “${name}” will be disabled`,
-          body: `“${name}” has not been used for a while. Unless it is used, it is disabled on ${reminder.disableAt.toISOString().slice(0, 10)}.`,
+          title:
+            reminder.kind === 'expiry'
+              ? `The API key “${name}” expires soon`
+              : `The API key “${name}” will be disabled`,
+          body:
+            reminder.kind === 'expiry'
+              ? `“${name}” expires on ${day}. Rotate it before then to keep it working.`
+              : `“${name}” has not been used for a while. Unless it is used, it is disabled on ${day}.`,
           target: {
             type: 'route',
             path: reminder.system
@@ -156,7 +163,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     if (container.has(authorizationToken)) {
       registerApiKeySettings(container.resolve(authorizationToken));
       const systemKeys = container.resolve(systemApiKeysToken);
-      await systemKeys.protectExisting();
+      systemKeys.protectAll();
       this.releases.push(() => systemKeys.release());
       // The permission inspector checks a key as a request made with it: `{ type: 'apiKey', id: <key id> }`.
       this.releases.push(
@@ -170,7 +177,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
       const idle = container.resolve(idleApiKeysToken);
       scheduler.registerTarget({
         type: IDLE_TARGET,
-        title: 'Disable idle API keys',
+        title: 'Disable idle API keys and remind about expiring ones',
         validate: () => ({ valid: true }),
         start: async () => ({
           state: 'completed',
@@ -182,7 +189,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
         key: IDLE_TARGET,
         title: 'Disable idle API keys',
         description:
-          'Reminds about and disables API keys nobody uses, as the API key rules say. Does nothing while the rules leave keys alone.',
+          'Reminds about and disables API keys nobody uses, by the idle rule each key took when issued or rotated; tells system key owners about keys expiring within a week; delivers notices to managers of managed keys that failed before.',
         schedule: { cron: '0 3 * * *' },
         target: { type: IDLE_TARGET, config: {} },
       });

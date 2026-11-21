@@ -25,6 +25,7 @@ import { ErrorAlert } from '../components/key-parts.js';
 import { KeyOptionPicker } from '../components/key-option-picker.js';
 import { KeySecret } from '../components/key-secret.js';
 import { PermissionTable } from '../components/permission-table.js';
+import { ScopeRecordPicker } from '../components/scope-record-picker.js';
 import { RecordPicker } from '../components/record-picker.js';
 import type { SystemKeysOutletContext } from '../components/system-key-list.js';
 import { useApiKeysAdminApi, type SystemKey } from '../lib/admin-api.js';
@@ -276,6 +277,7 @@ function CreateForm({
           onChange={setGrants}
           ceiling={grantable}
           systemKey
+          scopeRecords={(props) => <ScopeRecordPicker {...props} />}
           objectExtra={(resource) =>
             sources.has(resource.id) && granted.has(resource.id) ? (
               <RecordPicker

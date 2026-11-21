@@ -59,7 +59,10 @@ export interface CreateSystemKeyInput {
 
 /** System settings › API keys, over `/api/systemApiKeys` and `/api/apiKeys`. */
 export interface ApiKeysAdminApi {
-  systemKeys(search?: string): Promise<SystemKey[]>;
+  systemKeys(filter: {
+    search?: string;
+    managed?: boolean;
+  }): Promise<SystemKey[]>;
   systemKey(identityId: string): Promise<SystemKey>;
   createSystemKey(
     input: CreateSystemKeyInput,
@@ -97,11 +100,15 @@ export function createApiKeysAdminApi(api: ApiClient): ApiKeysAdminApi {
   const data = async <T>(promise: Promise<{ data: T }>): Promise<T> =>
     (await promise).data;
   return {
-    systemKeys: (search) =>
+    systemKeys: ({ search, managed }) =>
       data(
         api.request<{ data: SystemKey[] }>({
           path: 'systemApiKeys',
-          ...(search ? { query: { q: search } } : {}),
+          query: {
+            ...(managed === undefined ? {} : { managed: String(managed) }),
+            pageSize: '100',
+            ...(search ? { q: search } : {}),
+          },
         }),
       ),
     systemKey: (identityId) =>

@@ -107,3 +107,22 @@ describeMigration('202611210003_api_keys_system_keys', {
       await expectCollection(name).not.toExist();
   },
 });
+
+describeMigration('202611210004_api_keys_manager_notices', {
+  sources,
+  up: async ({ expectCollection }) => {
+    for (const field of [
+      'id',
+      'identityId',
+      'managedBy',
+      'actorId',
+      'how',
+      'attempts',
+      'createdAt',
+    ])
+      await expectCollection('apiKeyManagerNotices').toHaveField(field);
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('apiKeyManagerNotices').not.toExist();
+  },
+});

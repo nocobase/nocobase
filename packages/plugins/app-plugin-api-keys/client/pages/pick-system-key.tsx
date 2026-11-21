@@ -25,7 +25,7 @@ function Picker({
   const admin = useApiKeysAdminApi();
   const search = useCallback(
     async (query: string) =>
-      (await admin.systemKeys(query || undefined)).map((key) => ({
+      (await admin.systemKeys(query ? { search: query } : {})).map((key) => ({
         id: key.id,
         title: key.name ?? key.id,
         description: t('check.systemIdentity'),

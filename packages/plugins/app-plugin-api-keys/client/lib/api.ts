@@ -31,6 +31,13 @@ export interface ApiKeysApi {
   get(keyId: string): Promise<ApiKeyDetailView>;
   grantable(): Promise<GrantablePermissions>;
   objects(business: string, search?: string): Promise<KeyScopeObject[]>;
+  /** The records the caller sees through a composite action's data scope, which a key's scope may be limited to. */
+  scopeRecords(input: {
+    resource: string;
+    action: string;
+    scope: string;
+    search?: string;
+  }): Promise<KeyScopeObject[]>;
   create(input: CreateKeyInput): Promise<CreatedApiKey>;
   rotate(keyId: string): Promise<CreatedApiKey>;
   revoke(keyId: string): Promise<void>;
@@ -54,6 +61,13 @@ export function createApiKeysApi(api: ApiClient): ApiKeysApi {
         await api.request<{ data: KeyScopeObject[] }>({
           path: `apiKeys/objects/${encodeURIComponent(business)}`,
           ...(search ? { query: { q: search } } : {}),
+        })
+      ).data,
+    scopeRecords: async ({ resource, action, scope, search }) =>
+      (
+        await api.request<{ data: KeyScopeObject[] }>({
+          path: 'apiKeys/scopeRecords',
+          query: { resource, action, scope, ...(search ? { q: search } : {}) },
         })
       ).data,
     create: async (input) =>

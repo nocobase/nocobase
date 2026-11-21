@@ -12,7 +12,10 @@ import type {
   AuthorizationIdentity,
   KeyScope,
 } from '@nocobase/authorization/core';
-import { parseRecordSelection } from '@nocobase/authorization/core';
+import {
+  dataScopeTarget,
+  parseRecordSelection,
+} from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -325,6 +328,58 @@ export async function connectOwnKeyPolicy(
   };
 }
 
+/** A key's stored metadata as an object; none when it is missing or damaged. */
+function metadataRecord(value: unknown): Record<string, unknown> {
+  let parsed = value;
+  while (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed) as unknown;
+    } catch {
+      return {};
+    }
+  }
+  return isRecord(parsed) && !Array.isArray(parsed) ? { ...parsed } : {};
+}
+
+/** The most records a key's data scope may be limited to by choosing them. */
+export const MAX_CHOSEN_RECORDS = 100;
+
+/** The ids a data scope value chooses (`{ type: 'records', ids }`); undefined for any other value. */
+function chosenRecords(value: unknown): readonly string[] | undefined {
+  const selection = normalizedSelection(value);
+  return isRecord(selection) &&
+    selection.type === 'records' &&
+    Array.isArray(selection.ids)
+    ? (selection.ids as string[])
+    : undefined;
+}
+
+interface PolicyRepository {
+  withPolicy(policy: unknown): {
+    findMany(input: {
+      filter?: (f: {
+        or(nodes: readonly unknown[]): unknown;
+        string(field: string): { eq(value: string): unknown };
+      }) => unknown;
+      select?: (s: { fields(...names: string[]): unknown }) => unknown;
+      limit?: number;
+    }): Promise<readonly Record<string, unknown>[]>;
+  };
+}
+
+/** The same scope, marked as acting as no person. */
+function personless(scope: KeyScope): KeyScope {
+  const policy = scope.policy?.bind(scope);
+  return {
+    keyId: scope.keyId,
+    allows: (resource, action) => scope.allows(resource, action),
+    objects: (business) => scope.objects(business),
+    permissions: scope.permissions,
+    ...(policy ? { policy } : {}),
+    personless: true,
+  };
+}
+
 export class ScopedApiKeys {
   private readonly resolved = new WeakMap<Request, Promise<KeyScope | null>>();
   private ownKeyPolicy: OwnKeyPolicy | null = null;
@@ -629,12 +684,27 @@ export class ScopedApiKeys {
         if (held && isRecord(values))
           for (const [scope, value] of Object.entries(values)) {
             const scoped = held.get(scope);
-            if (scoped && !withinHeld(value, scoped))
-              throw new ApiKeyRequestError(
-                403,
-                'KEY_SCOPE_EXCEEDS_YOURS',
-                `${label}: the records of ${scope} you give a key cannot reach further than yours.`,
-              );
+            if (!scoped || withinHeld(value, scoped)) continue;
+            // Chosen records are no wider than the maker's when the maker can see every one of them now.
+            const chosen = chosenRecords(value);
+            if (
+              chosen &&
+              (await this.seesAll(
+                identity,
+                grant.resource.id,
+                entry.action,
+                scope,
+                chosen,
+              ))
+            )
+              continue;
+            throw new ApiKeyRequestError(
+              403,
+              'KEY_SCOPE_EXCEEDS_YOURS',
+              chosen
+                ? `${label}: you cannot see every record of ${scope} you chose.`
+                : `${label}: the records of ${scope} you give a key cannot reach further than yours.`,
+            );
           }
         // A data scope the key leaves out is pinned to what the maker holds now, so the key does not widen when
         // the maker's roles do later.
@@ -697,6 +767,151 @@ export class ScopedApiKeys {
       grants,
       ...(Object.keys(objects).length > 0 ? { objects } : {}),
     };
+  }
+
+  /** Gives a key the idle rule in force now, for a system key, which is issued before it is listed as one. */
+  async applyIdleRule(keyId: string): Promise<void> {
+    const days = (await this.rules()).idleDisableDays;
+    if (days === null) return;
+    const connection = this.options.connection();
+    const row = await connection.query
+      .selectFrom('apikey')
+      .select(['metadata'])
+      .where('id', '=', keyId)
+      .executeTakeFirst<{ metadata: unknown }>();
+    if (!row) return;
+    await connection.query
+      .updateTable('apikey')
+      .set({
+        metadata: JSON.stringify({
+          ...metadataRecord(row.metadata),
+          idleDisableDays: days,
+        }),
+      })
+      .where('id', '=', keyId)
+      .execute();
+  }
+
+  /**
+   * The idle rule a key issued or rotated now takes, for the keys the rule covers: a person's own and system keys, never
+   * an application's other service accounts. Undefined while the rule is off.
+   */
+  private async idleTerms(
+    userId: string,
+  ): Promise<{ idleDisableDays: number } | undefined> {
+    const days = (await this.rules()).idleDisableDays;
+    if (days === null) return undefined;
+    if (
+      (await this.isServiceAccountId(userId)) &&
+      !(await this.options
+        .connection()
+        .query.selectFrom('apiKeySystemKeys')
+        .select(['identityId'])
+        .where('identityId', '=', userId)
+        .executeTakeFirst())
+    )
+      return undefined;
+    return { idleDisableDays: days };
+  }
+
+  /**
+   * The records `identity` can see through a composite action's data scope, as its repository policy for that action
+   * reads them: among `ids` when given, otherwise the first ones. For choosing the records a key's data scope is
+   * limited to. A record is named by its `id` (the collection's key), with its `title` or `name` when the collection
+   * has one the policy lets `identity` read.
+   */
+  async scopeRecords(
+    identity: AuthorizationIdentity,
+    input: {
+      readonly resource: string;
+      readonly action: string;
+      readonly scope: string;
+      readonly ids?: readonly string[];
+    },
+  ): Promise<{ id: string; title: string }[]> {
+    const authz = this.options.authorization?.();
+    const declared = authz?.compositeResources.getAction(
+      input.resource,
+      input.action,
+    );
+    if (!authz || !declared) return [];
+    let target: { type: string; id: string };
+    try {
+      target = dataScopeTarget(declared, input.scope);
+    } catch {
+      return [];
+    }
+    if (target.type !== 'database.collection') return [];
+    const ids = input.ids?.slice(0, MAX_CHOSEN_RECORDS);
+    if (ids && !ids.length) return [];
+    try {
+      // The repository policy the composite action composes for its collection, as a composite repository reads it.
+      const decision = await authz.for(identity).authorize({
+        resource: { type: 'composite', id: input.resource },
+        action: input.action,
+      });
+      const policies: unknown = isRecord(decision.conditions)
+        ? decision.conditions.database
+        : undefined;
+      const policy: unknown = isRecord(policies)
+        ? policies[target.id]
+        : undefined;
+      if (decision.effect === 'deny' || !isRecord(policy)) return [];
+      const repository = (
+        this.options.connection() as unknown as {
+          repository(name: string): PolicyRepository;
+        }
+      ).repository(target.id);
+      const scoped = repository.withPolicy(policy);
+      const read = (fields: readonly string[]) =>
+        scoped.findMany({
+          select: (select) => select.fields(...fields),
+          ...(ids
+            ? { filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))) }
+            : {}),
+          limit: MAX_CHOSEN_RECORDS,
+        });
+      // Named by a title field when the collection has one the maker may read, otherwise by its id.
+      const rows =
+        (await read(['id', 'title']).catch(() => undefined)) ??
+        (await read(['id', 'name']).catch(() => undefined)) ??
+        (await read(['id']));
+      return rows.map((row) => ({
+        id: String(row.id),
+        title:
+          typeof row.title === 'string' && row.title
+            ? row.title
+            : typeof row.name === 'string' && row.name
+              ? row.name
+              : String(row.id),
+      }));
+    } catch {
+      // A maker who cannot read the records, or not even their ids, can choose none.
+      return [];
+    }
+  }
+
+  /** Whether `identity` can see every one of `ids` through the data scope; none chosen is not a choice. */
+  private async seesAll(
+    identity: AuthorizationIdentity,
+    resource: string,
+    action: string,
+    scope: string,
+    ids: readonly string[],
+  ): Promise<boolean> {
+    const unique = [...new Set(ids)];
+    if (!unique.length || unique.length > MAX_CHOSEN_RECORDS) return false;
+    const seen = new Set(
+      (
+        await this.scopeRecords(identity, {
+          resource,
+          action,
+          scope,
+          ids: unique,
+        })
+      ).map((record) => record.id),
+    );
+    return unique.every((id) => seen.has(id));
   }
 
   /**
@@ -953,6 +1168,13 @@ export class ScopedApiKeys {
       if (!value) throw new Error('The rotated key was not stored.');
       // Stored as Better Auth stored them for the new value, so its own reads see the same encoding. `createdAt` is
       // when the current value was issued, which the renewed lifetime counts from.
+      // A new value takes the idle rule in force now, and the last value's reminder no longer counts.
+      const {
+        idleRemindedAt: _reminded,
+        idleDisableDays: _days,
+        ...metadata
+      } = metadataRecord(row.metadata);
+      const idle = await this.idleTerms(userId);
       await this.options
         .connection()
         .query.updateTable('apikey')
@@ -963,6 +1185,7 @@ export class ScopedApiKeys {
           expiresAt: value.expiresAt,
           createdAt: value.createdAt,
           updatedAt: value.updatedAt,
+          metadata: JSON.stringify({ ...metadata, ...idle }),
         })
         .where('id', '=', keyId)
         .execute();
@@ -1077,27 +1300,57 @@ export class ScopedApiKeys {
     | {
         readonly identity: AuthorizationIdentity;
         readonly holder: { readonly type: 'user'; readonly id: string };
+        readonly credential: {
+          readonly state: 'active' | 'disabled' | 'expired';
+          readonly expiresAt: string | null;
+          readonly objects: Readonly<Record<string, readonly string[]>>;
+        };
       }
     | undefined
   > {
     const row = await this.options
       .connection()
       .query.selectFrom('apikey')
-      .select(['id', 'referenceId', 'permissions'])
+      .select(['id', 'referenceId', 'permissions', 'enabled', 'expiresAt'])
       .where('id', '=', keyId)
       .where('configId', '=', 'default')
-      .executeTakeFirst<Pick<KeyRow, 'id' | 'referenceId' | 'permissions'>>();
+      .executeTakeFirst<
+        Pick<KeyRow, 'id' | 'referenceId' | 'permissions'> & {
+          enabled: unknown;
+          expiresAt: unknown;
+        }
+      >();
     if (!row) return undefined;
     const stored = decodeKeyPermissions(row.permissions);
-    const keyScope =
+    const compiled =
       stored?.version === '2'
         ? this.options.scopes.compilePermissions(row.id, stored.permissions)
         : stored
           ? this.options.scopes.compile(row.id, stored.scope)
           : this.options.scopes.unbounded(row.id);
+    const holder = await this.identityOf(row.referenceId);
+    // Only a system key's service account is listed, so a person's key stays as compiled.
+    const keyScope = await this.withPerson(compiled, row.referenceId);
+    const expiresAt =
+      row.expiresAt === null || row.expiresAt === undefined
+        ? null
+        : new Date(row.expiresAt as string).toISOString();
+    const enabled = row.enabled === true || Number(row.enabled) === 1;
     return {
-      identity: { ...(await this.identityOf(row.referenceId)), keyScope },
+      identity: { ...holder, keyScope },
       holder: { type: 'user', id: row.referenceId },
+      credential: {
+        state: !enabled
+          ? 'disabled'
+          : expiresAt !== null && Date.parse(expiresAt) <= Date.now()
+            ? 'expired'
+            : 'active',
+        expiresAt,
+        objects:
+          stored?.version === '2'
+            ? { ...(stored.permissions.objects ?? {}) }
+            : {},
+      },
     };
   }
 
@@ -1132,12 +1385,31 @@ export class ScopedApiKeys {
       .executeTakeFirst<Pick<KeyRow, 'id' | 'permissions'>>();
     if (!row) return null;
     const stored = decodeKeyPermissions(row.permissions);
-    if (stored?.version === '2')
-      return this.options.scopes.compilePermissions(row.id, stored.permissions);
-    if (stored) return this.options.scopes.compile(row.id, stored.scope);
-    return isServiceAccount(session.user)
-      ? this.options.scopes.unbounded(row.id)
-      : null;
+    const scope =
+      stored?.version === '2'
+        ? this.options.scopes.compilePermissions(row.id, stored.permissions)
+        : stored
+          ? this.options.scopes.compile(row.id, stored.scope)
+          : isServiceAccount(session.user)
+            ? this.options.scopes.unbounded(row.id)
+            : null;
+    return scope && isServiceAccount(session.user)
+      ? this.withPerson(scope, session.user.id)
+      : scope;
+  }
+
+  /**
+   * A system key's scope says it acts as no person, so rules adding records counted from "me" add none for it. Only a
+   * service account's key is looked up, so a person's request reads nothing more.
+   */
+  private async withPerson(scope: KeyScope, userId: string): Promise<KeyScope> {
+    const listed = await this.options
+      .connection()
+      .query.selectFrom('apiKeySystemKeys')
+      .select(['identityId'])
+      .where('identityId', '=', userId)
+      .executeTakeFirst();
+    return listed ? personless(scope) : scope;
   }
 
   private async issue(
@@ -1166,8 +1438,10 @@ export class ScopedApiKeys {
     });
     // Written directly rather than through Better Auth, whose `metadata` stays off (`enableMetadata`) so that a key's
     // holder cannot write to it over HTTP.
+    // The idle rule in force now is the key's own: changing the rule later does not reach it until it is rotated.
+    const idle = await this.idleTerms(userId);
     try {
-      if (permissions || input.description)
+      if (permissions || input.description || idle)
         await this.options
           .connection()
           .query.updateTable('apikey')
@@ -1175,8 +1449,15 @@ export class ScopedApiKeys {
             ...(permissions
               ? { permissions: encodeKeyPermissions(permissions, legacy) }
               : {}),
-            ...(input.description
-              ? { metadata: JSON.stringify({ description: input.description }) }
+            ...(input.description || idle
+              ? {
+                  metadata: JSON.stringify({
+                    ...(input.description
+                      ? { description: input.description }
+                      : {}),
+                    ...idle,
+                  }),
+                }
               : {}),
           })
           .where('id', '=', created.id)
