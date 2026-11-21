@@ -108,6 +108,14 @@ const deDE: LocaleResource<typeof enUS> = {
         environments: 'Umgebungen bereitstellen',
       },
     },
+    humanOnly: {
+      deployProtected:
+        'Für die Bereitstellung in einer geschützten Umgebung muss eine Person zustimmen; ein Schlüssel kann sie nur anfordern.',
+      delete:
+        'Das Löschen einer App entfernt ihre Daten; nur eine Person darf das tun.',
+      configure:
+        'Das Konfigurieren einer App ändert ihre Einstellungen und Geheimnisse; nur eine Person darf das tun.',
+    },
     keyScopes: {
       apps: {
         title: 'Apps und Bereitstellungen',

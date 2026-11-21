@@ -87,6 +87,11 @@ const accessZhCN: typeof accessEnUS = {
     settings: {
       rel: { environments: '部署环境' },
     },
+    humanOnly: {
+      deployProtected: '部署到受保护环境需要有人审批，密钥只能发起部署请求。',
+      delete: '删除应用会删除其数据，只能由人操作。',
+      configure: '配置应用会修改其设置和密钥，只能由人操作。',
+    },
     keyScopes: {
       apps: {
         title: '应用与部署',

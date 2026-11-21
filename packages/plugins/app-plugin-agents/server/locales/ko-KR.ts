@@ -35,6 +35,10 @@ const koKR: LocaleResource<typeof enUS> = {
       read: '보기',
       manage: '관리',
     },
+    humanOnly: {
+      servicesManage:
+        '모델 서비스 관리는 공급자 키를 기록합니다. 사람만 할 수 있습니다.',
+    },
     keyScopes: {
       agents: {
         title: 'Agent',

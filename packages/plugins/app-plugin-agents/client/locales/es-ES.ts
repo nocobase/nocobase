@@ -1522,6 +1522,10 @@ const esES: LocaleResource<typeof enUS> = {
       read: 'Ver',
       manage: 'Administrar',
     },
+    humanOnly: {
+      servicesManage:
+        'Gestionar los servicios de modelos escribe claves de proveedores; solo una persona puede hacerlo.',
+    },
     keyScopes: {
       agents: {
         title: 'Agentes',

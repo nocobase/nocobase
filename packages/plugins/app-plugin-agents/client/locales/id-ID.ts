@@ -1479,6 +1479,10 @@ const idID: LocaleResource<typeof enUS> = {
       read: 'Lihat',
       manage: 'Kelola',
     },
+    humanOnly: {
+      servicesManage:
+        'Mengelola layanan model menulis kunci penyedia; hanya orang yang boleh melakukannya.',
+    },
     keyScopes: {
       agents: {
         title: 'Agen',

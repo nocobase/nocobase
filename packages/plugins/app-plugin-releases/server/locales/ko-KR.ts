@@ -96,6 +96,13 @@ const koKR: LocaleResource<typeof enUS> = {
         environments: '배포 환경',
       },
     },
+    humanOnly: {
+      deployProtected:
+        '보호된 환경에 배포하려면 사람의 승인이 필요합니다. 키는 요청만 할 수 있습니다.',
+      delete: '앱을 삭제하면 데이터도 삭제됩니다. 사람만 할 수 있습니다.',
+      configure:
+        '앱을 구성하면 설정과 시크릿이 바뀝니다. 사람만 할 수 있습니다.',
+    },
     keyScopes: {
       apps: {
         title: '앱 및 배포',
