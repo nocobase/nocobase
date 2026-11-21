@@ -9,7 +9,9 @@ import type {
   CacheProviderConfig,
   CacheProviderDriver,
   CacheProviderRuntimeOptions,
+  CachingBackendDescription,
   CachingConfig,
+  CachingDescription,
   Counter,
   GetCacheOptions,
   GetCapabilityOptions,
@@ -25,6 +27,8 @@ export class Caching {
   private readonly drivers = new Map<string, CacheProviderDriver>([
     [memoryCacheProviderDriver.name, memoryCacheProviderDriver],
   ]);
+  /** Namespaces that named a provider explicitly, for {@link Caching.describe}. */
+  private readonly selections = new Map<string, string>();
 
   constructor(
     private readonly config: CachingConfig = createDefaultCachingConfig(),
@@ -47,10 +51,49 @@ export class Caching {
     if (this.drivers.has(name)) {
       throw new Error(`Cache provider driver "${name}" is already registered.`);
     }
+    if (
+      driver.sharing !== undefined &&
+      driver.sharing !== 'local' &&
+      driver.sharing !== 'shared'
+    ) {
+      throw new Error(
+        `Cache provider driver "${name}" declares an unknown sharing "${String(driver.sharing)}".`,
+      );
+    }
     this.drivers.set(name, {
       name,
+      ...(driver.sharing ? { sharing: driver.sharing } : {}),
       createProvider: driver.createProvider.bind(driver),
     });
+  }
+
+  /**
+   * Reports the configured providers by name and driver. Options are never copied: a provider's configuration may
+   * carry connection addresses and credentials.
+   */
+  describe(): CachingDescription {
+    const backends = Object.entries(this.config.providers).map(
+      ([name, definition]): CachingBackendDescription => {
+        const driver = this.drivers.get(definition.driver);
+        return {
+          name,
+          adapter: definition.driver,
+          sharing: driver?.sharing ?? 'unknown',
+          registered: driver !== undefined,
+        };
+      },
+    );
+    const selected = backends.find(({ name }) => name === this.config.default)!;
+    return {
+      default: selected.name,
+      adapter: selected.adapter,
+      sharing: selected.sharing,
+      registered: selected.registered,
+      backends,
+      selections: [...this.selections]
+        .filter(([, backend]) => backend !== this.config.default)
+        .map(([consumer, backend]) => ({ consumer, backend })),
+    };
   }
 
   getCache(options: GetCacheOptions): Cache {
@@ -61,7 +104,9 @@ export class Caching {
       ...runtimeOptions
     } = options;
     assertNamespace(namespace);
-    return this.getOrCreateProvider(providerName, runtimeOptions).createCache({
+    const provider = this.getOrCreateProvider(providerName, runtimeOptions);
+    this.recordSelection(namespace, providerName);
+    return provider.createCache({
       namespace,
       defaultTtl: resolveTtlConfig(
         defaultTtl,
@@ -73,18 +118,17 @@ export class Caching {
   getCounter(options: GetCapabilityOptions): Counter {
     const { provider: providerName, namespace, ...runtimeOptions } = options;
     assertNamespace(namespace);
-    return this.getOrCreateProvider(providerName, runtimeOptions).createCounter(
-      { namespace },
-    );
+    const provider = this.getOrCreateProvider(providerName, runtimeOptions);
+    this.recordSelection(namespace, providerName);
+    return provider.createCounter({ namespace });
   }
 
   getBloomFilter(options: GetCapabilityOptions): BloomFilter {
     const { provider: providerName, namespace, ...runtimeOptions } = options;
     assertNamespace(namespace);
-    return this.getOrCreateProvider(
-      providerName,
-      runtimeOptions,
-    ).createBloomFilter({ namespace });
+    const provider = this.getOrCreateProvider(providerName, runtimeOptions);
+    this.recordSelection(namespace, providerName);
+    return provider.createBloomFilter({ namespace });
   }
 
   async dispose(): Promise<void> {
@@ -93,6 +137,13 @@ export class Caching {
     ];
     this.providers.clear();
     await Promise.all(providers.map((provider) => provider.dispose()));
+  }
+
+  private recordSelection(
+    namespace: string,
+    provider: string | undefined,
+  ): void {
+    if (provider !== undefined) this.selections.set(namespace, provider);
   }
 
   private getOrCreateProvider(

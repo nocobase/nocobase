@@ -225,6 +225,12 @@ export class AppConfig {
     };
   }
 
+  /** Whether the application's own sources set `path`; see {@link AppConfigAccessor.isUserProvided}. */
+  public isUserProvided(path: string): boolean {
+    this.requireCurrent();
+    return this.overrides.has(path);
+  }
+
   public subscribe<TValue>(
     namespace: string,
     listener: AppConfigChangeListener<TValue>,

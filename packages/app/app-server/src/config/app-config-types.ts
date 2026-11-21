@@ -41,6 +41,11 @@ export interface AppConfigAccessor {
   publicValues?(): ConfigMap;
   /** Every published path in full, such as `auth.emailAndPassword.disableSignUp`. */
   publicPaths?(): readonly string[];
+  /**
+   * Whether the application's own sources — configuration files and the environment — set `path`, such as
+   * `queue.default`, rather than leaving it to the code defaults. An accessor without layers may omit it.
+   */
+  isUserProvided?(path: string): boolean;
   subscribe<TValue>(
     namespace: string,
     listener: AppConfigChangeListener<TValue>,
