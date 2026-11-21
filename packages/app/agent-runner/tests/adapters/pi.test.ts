@@ -775,19 +775,20 @@ describe('failures and stop', () => {
 
   it('kills a pi that ignores the shutdown within five seconds', async () => {
     const abort = new AbortController();
+    const promptStarted = Promise.withResolvers<void>();
     const { spawn, processes } = fakeSpawn(
       (pi) => {
-        void pi
-          .next('prompt')
-          .then((prompt) => pi.respond(prompt, { disposition: 'started' }));
+        void pi.next('prompt').then((prompt) => {
+          pi.respond(prompt, { disposition: 'started' });
+          promptStarted.resolve();
+        });
       },
       { exitOnStdinEnd: false },
     );
     const handle = (await adapterWith(spawn)).start(
       session({ abort: abort.signal }),
     );
-    await processes.length;
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await promptStarted.promise;
     const started = Date.now();
     abort.abort();
     const result = await handle.result;
