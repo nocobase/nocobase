@@ -1,4 +1,8 @@
-import { defineSeed, type SeedDefinition } from '@nocobase/db';
+import {
+  defineSeed,
+  type SeedContext,
+  type SeedDefinition,
+} from '@nocobase/db';
 
 /** The role that lets a person create API keys of their own, and nothing else. */
 const ROLE = 'personal-api-key-creators';
@@ -16,28 +20,48 @@ const MAX_KEYS = 20;
 const ownId = (key: string) => `api-keys.seed:${key}`;
 
 /**
- * Whether an error says the table does not exist, in any supported dialect: the authorization plugin is not installed.
- * Every other failure, such as a lost connection, is not this.
+ * Whether the authorization plugin's roles exist here: their Collection is registered, as its migrations register it.
+ * Only the Collection being unknown means they do not; any failure to find out, such as a lost connection or a missing
+ * privilege, is thrown.
  */
-function isMissingTable(error: unknown): boolean {
-  for (let current = error; current;) {
-    if (typeof current !== 'object') return false;
-    const code: unknown = Reflect.get(current, 'code');
-    const errno: unknown = Reflect.get(current, 'errno');
-    const number: unknown = Reflect.get(current, 'number');
-    const message: unknown = Reflect.get(current, 'message');
+async function hasRoles(context: SeedContext): Promise<boolean> {
+  try {
+    await context.repository('authorizationPermissionSets').count();
+    return true;
+  } catch (error) {
     if (
-      code === '42P01' || // PostgreSQL: undefined_table
-      code === 'ER_NO_SUCH_TABLE' || // MySQL and MariaDB
-      errno === 1146 ||
-      number === 208 || // SQL Server: invalid object name
-      Reflect.get(current, 'errorNum') === 942 || // Oracle: ORA-00942
-      (typeof message === 'string' && /no such table|ORA-00942/u.test(message)) // SQLite, Oracle
+      typeof error === 'object' &&
+      error !== null &&
+      Reflect.get(error, 'code') === 'COLLECTION_NOT_FOUND'
     )
-      return true;
-    current = Reflect.get(current, 'cause');
+      return false;
+    throw error;
   }
-  return false;
+}
+
+/** Whether stored grants are exactly `GRANTS`, whatever the order of their keys and actions. */
+function onlyCreate(stored: unknown): boolean {
+  if (!Array.isArray(stored) || stored.length !== 1) return false;
+  const [grant] = stored as unknown[];
+  if (typeof grant !== 'object' || grant === null) return false;
+  const resource: unknown = Reflect.get(grant, 'resource');
+  const actions: unknown = Reflect.get(grant, 'actions');
+  if (
+    typeof resource !== 'object' ||
+    resource === null ||
+    Reflect.get(resource, 'type') !== GRANTS[0].resource.type ||
+    Reflect.get(resource, 'id') !== GRANTS[0].resource.id ||
+    !Array.isArray(actions) ||
+    actions.length !== 1
+  )
+    return false;
+  const [entry] = actions as unknown[];
+  return (
+    typeof entry === 'object' &&
+    entry !== null &&
+    Reflect.get(entry, 'action') === 'create' &&
+    Reflect.get(entry, 'policy') === undefined
+  );
 }
 
 const parse = (value: unknown): unknown => {
@@ -54,14 +78,16 @@ const parse = (value: unknown): unknown => {
  *
  * Only a role this seed created, still holding exactly that permission, is assigned: a role of the application's that
  * happens to have the same key is left as it is, with its assignments, and the seed uses the next free key. Without the
- * authorization plugin's tables there are no roles, and nothing to do; any other failure is thrown, so the upgrade is
+ * authorization plugin's roles, whose Collection is then unknown, there is nothing to do; any other failure is thrown, so the upgrade is
  * not recorded as done and runs again. A run that stopped half way finishes on the next one, adding only what is missing.
  */
 const seed: SeedDefinition = defineSeed({
   name: '202611210002_api_keys_personal_key_creators',
   transaction: false,
 
-  async run({ query }) {
+  async run(context) {
+    if (!(await hasRoles(context))) return;
+    const { query } = context;
     const find = (key: string) =>
       query
         .selectFrom('authorizationPermissionSets')
@@ -71,13 +97,7 @@ const seed: SeedDefinition = defineSeed({
     let role: string | undefined;
     for (let index = 0; index < MAX_KEYS && !role; index += 1) {
       const key = index === 0 ? ROLE : `${ROLE}-${index + 1}`;
-      let existing: { id: unknown; grants: unknown } | undefined;
-      try {
-        existing = await find(key);
-      } catch (error) {
-        if (isMissingTable(error)) return;
-        throw error;
-      }
+      const existing = await find(key);
       if (!existing) {
         const now = new Date();
         await query
@@ -98,7 +118,7 @@ const seed: SeedDefinition = defineSeed({
         role = key;
       } else if (
         existing.id === ownId(key) &&
-        JSON.stringify(parse(existing.grants)) === JSON.stringify(GRANTS)
+        onlyCreate(parse(existing.grants))
       )
         // Made by an earlier run that stopped before it assigned everyone.
         role = key;

@@ -93,7 +93,10 @@ describe('the seed keeping every person able to create keys of their own', () =>
         .orderBy('subjectId')
         .execute()
     ).map((row) => String(row.subjectId));
-  const run = (on: Query = query) => seed.run({ query: on } as never);
+  const repository = (name: string) =>
+    testDatabase.database.connection().repository(name);
+  const run = (on: Query = query, repo = repository) =>
+    seed.run({ query: on, repository: repo } as never);
 
   beforeEach(async () => {
     await testDatabase?.destroy();
@@ -172,24 +175,75 @@ describe('the seed keeping every person able to create keys of their own', () =>
     expect(await holders('personal-api-key-creators')).toEqual(['ada', 'bob']);
   });
 
-  it('throws a failed read, so the upgrade is not recorded as done', async () => {
+  it('recognizes its own role by what it grants, whatever the order of the stored keys', async () => {
+    await query
+      .insertInto('authorizationPermissionSets')
+      .values({
+        id: 'api-keys.seed:personal-api-key-creators',
+        key: 'personal-api-key-creators',
+        title: 'Made by an earlier run',
+        grants: JSON.stringify([
+          {
+            actions: [{ action: 'create' }],
+            resource: { id: 'personalApiKeys', type: 'settings' },
+          },
+        ]),
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+    await run();
+    expect(await holders('personal-api-key-creators')).toEqual(['ada', 'bob']);
+    // No second role was made for it.
+    expect(
+      await query
+        .selectFrom('authorizationPermissionSets')
+        .select('key')
+        .where('key', '=', 'personal-api-key-creators-2')
+        .executeTakeFirst(),
+    ).toBeUndefined();
+  });
+
+  it('throws any read failure, even one a dialect reports like a missing table, so the upgrade is not recorded as done', async () => {
+    // Oracle and SQL Server answer a missing privilege as they answer a missing table.
+    const denied = Object.assign(
+      new Error('ORA-00942: table or view does not exist'),
+      {
+        errorNum: 942,
+      },
+    );
     const failing = new Proxy(query, {
       get(target, property, receiver) {
         if (property === 'selectFrom')
           return () => {
-            throw new Error('permission denied for table');
+            throw denied;
           };
         return Reflect.get(target, property, receiver) as unknown;
       },
     });
-    await expect(run(failing)).rejects.toThrow('permission denied');
+    await expect(run(failing)).rejects.toBe(denied);
+    // Nor is finding out whether the roles exist taken as their absence.
+    const lost = new Error('connection lost');
+    await expect(
+      run(
+        query,
+        () =>
+          Object.assign(Object.create(null) as object, {
+            count: () => Promise.reject(lost),
+          }) as never,
+      ),
+    ).rejects.toBe(lost);
   });
 
-  it('does nothing without the authorization plugin’s tables', async () => {
+  it('does nothing where the authorization plugin’s roles do not exist', async () => {
     const bare = await database(false);
     try {
+      const connection = bare.database.connection();
       await expect(
-        seed.run({ query: bare.database.connection().query } as never),
+        seed.run({
+          query: connection.query,
+          repository: (name: string) => connection.repository(name),
+        } as never),
       ).resolves.toBeUndefined();
     } finally {
       await bare.destroy();
