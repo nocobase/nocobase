@@ -105,7 +105,7 @@ describe('user permission configuration', () => {
         words.revokeSessions,
       ];
       for (const label of labels) {
-        const toggle = await screen.findByRole('switch', { name: label });
+        const toggle = await screen.findByRole('checkbox', { name: label });
         await waitFor(() => expect(toggle).not.toBeDisabled());
         expect(toggle).not.toBeChecked();
         await user.click(toggle);
@@ -121,10 +121,10 @@ describe('user permission configuration', () => {
         words.assignRole,
       ];
       for (const name of permissionNames)
-        expect(screen.getByRole('switch', { name })).toBeVisible();
+        expect(screen.getByRole('checkbox', { name })).toBeVisible();
       expect(
         // Inviting is not an operation the Users pages implement, so it is never offered.
-        screen.queryByRole('switch', {
+        screen.queryByRole('checkbox', {
           name: locale === 'zh-CN' ? '邀请用户' : 'Invite users',
         }),
       ).not.toBeInTheDocument();
@@ -159,9 +159,11 @@ describe('user permission configuration', () => {
       await openUsers();
       for (const label of labels)
         expect(
-          await screen.findByRole('switch', { name: label }),
+          await screen.findByRole('checkbox', { name: label }),
         ).toBeChecked();
-      await user.click(screen.getByRole('switch', { name: words.updateUsers }));
+      await user.click(
+        screen.getByRole('checkbox', { name: words.updateUsers }),
+      );
       await user.click(
         screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
       );

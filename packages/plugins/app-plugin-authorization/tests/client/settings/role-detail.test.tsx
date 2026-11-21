@@ -301,16 +301,14 @@ it('reviews every change before saving and marks high-risk permissions', async (
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.settingsTab) }),
   );
-  // A settings page folds its operations away until they are set one by one.
-  expect(
-    screen.queryByRole('switch', { name: 'Change roles' }),
-  ).not.toBeInTheDocument();
+  // A high-risk setting is turned on only after confirming it.
+  await user.click(screen.getByRole('checkbox', { name: 'Change roles' }));
   await user.click(
-    within(
-      screen.getByRole('region', { name: words.permissionManagement }),
-    ).getByRole('button', { name: editor.settingsDetails }),
+    within(await screen.findByRole('alertdialog')).getByRole('button', {
+      name: editor.confirmRiskyAction,
+    }),
   );
-  await user.click(screen.getByRole('switch', { name: 'Change roles' }));
+  expect(screen.getByRole('checkbox', { name: 'Change roles' })).toBeChecked();
   expect(
     screen.getByText(words.unsavedCountRisky_other.replace('{{count}}', '4')),
   ).toBeVisible();

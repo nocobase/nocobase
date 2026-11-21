@@ -26,6 +26,16 @@ import {
 } from 'react';
 import { cn } from 'cn';
 import { Button } from '#components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#components/ui/alert-dialog';
 import { Checkbox } from '#components/ui/checkbox';
 import {
   Popover,
@@ -59,7 +69,6 @@ import {
   menuActionCount,
   menuLeaves,
   pageAccessGaps,
-  setSettingsLevel,
   settingsLevel,
   configurationLocked,
   dependentsOf,
@@ -174,6 +183,11 @@ export interface PermissionEditorLabels {
     dependents: readonly string[],
   ) => string;
   readonly confirm: string;
+  readonly confirmDisableTitle: string;
+  /** Before turning on a high-risk action; its warning follows. */
+  readonly confirmRisky: (action: string) => string;
+  readonly confirmRiskyTitle: string;
+  readonly confirmRiskyAction: string;
   readonly cancel: string;
   readonly dismiss: string;
   readonly notice: (notice: PermissionNotice) => string;
@@ -190,19 +204,16 @@ export interface PermissionEditorLabels {
   readonly missingPage: (pages: readonly string[]) => string;
   readonly sensitive: string;
   readonly highRisk: string;
-  readonly settingsLevel: (page: string) => string;
-  readonly settingsNone: string;
-  readonly settingsView: string;
-  readonly settingsManage: string;
-  /** A settings page set action by action: how many of its actions are on. */
-  readonly settingsCustom: (enabled: number, total: number) => string;
-  readonly settingsDetails: string;
-  readonly settingsCollapse: string;
+  /** The column titles of the System settings table. */
+  readonly settingsPageColumn: string;
+  readonly settingsEntryColumn: string;
+  readonly settingsActionsColumn: string;
+  readonly searchSettings: string;
+  /** Beside a settings group: how many of its pages this role sees. */
+  readonly settingsGroupEnabled: (enabled: number, total: number) => string;
   /** Above the settings pages: the ones this role sees in System settings. */
   readonly settingsVisible: (pages: readonly string[]) => string;
   readonly settingsNoneVisible: string;
-  /** Beside a settings page with a high-risk operation. */
-  readonly containsHighRisk: string;
   /** Beside a public page, which has no checkbox. */
   readonly publicPage: string;
   readonly searchPages: string;
@@ -311,6 +322,10 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   confirmDisable: (actions, dependents) =>
     `Turning off ${list(actions)} also turns off ${list(dependents)}, which ${dependents.length === 1 ? 'needs' : 'need'} it.`,
   confirm: 'Turn off',
+  confirmDisableTitle: 'Turn these off too?',
+  confirmRisky: (action) => `“${action}” is a high-risk operation.`,
+  confirmRiskyTitle: 'Turn on a high-risk operation?',
+  confirmRiskyAction: 'Turn on',
   cancel: 'Cancel',
   dismiss: 'Dismiss',
   operationCount: (enabled, total) => `${enabled}/${total} operations`,
@@ -324,17 +339,14 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
     `This role cannot open ${list(pages.map((page) => `“${page}”`))}: these operations work only through other pages or the API.`,
   sensitive: 'Sensitive',
   highRisk: 'High risk',
-  settingsLevel: (page) => `Access to ${page}`,
-  settingsNone: 'None',
-  settingsView: 'View',
-  settingsManage: 'Manage',
-  settingsCustom: (enabled, total) => `Custom ${enabled}/${total}`,
-  settingsDetails: 'Set one by one',
-  settingsCollapse: 'Hide',
+  settingsPageColumn: 'Settings page',
+  settingsEntryColumn: 'Open page',
+  settingsActionsColumn: 'Manage',
+  searchSettings: 'Search settings pages or operations',
+  settingsGroupEnabled: (enabled, total) => `${enabled} of ${total} pages open`,
   settingsVisible: (pages) =>
     `This role sees in System settings: ${list(pages)}.`,
   settingsNoneVisible: 'This role sees no System settings pages.',
-  containsHighRisk: 'Includes high risk',
   publicPage: 'Everyone',
   searchPages: 'Search pages',
   onlyChecked: 'Only checked',
@@ -736,6 +748,7 @@ function OperationItem({
   labels,
   controlId,
   dimmed,
+  scoped = true,
   onToggle,
   onScope,
 }: {
@@ -747,6 +760,8 @@ function OperationItem({
   readonly labels: PermissionEditorLabels;
   readonly controlId: string;
   readonly dimmed: boolean;
+  /** Settings have no data scope: their actions show only the checkbox, whatever scopes they carry. */
+  readonly scoped?: boolean;
   readonly onToggle: (action: PermissionAction, enabled: boolean) => void;
   readonly onScope: (
     action: PermissionAction,
@@ -805,7 +820,7 @@ function OperationItem({
           {action.risk === 'high' ? labels.highRisk : labels.sensitive}
         </span>
       )}
-      {enabled && (
+      {enabled && scoped && (
         <ScopeTag
           object={object}
           objects={objects}
@@ -822,172 +837,6 @@ function OperationItem({
         </p>
       )}
     </div>
-  );
-}
-
-function ActionRow({
-  object,
-  objects,
-  action,
-  grants,
-  readOnly,
-  labels,
-  controlId,
-  onToggle,
-  onScope,
-  scoped = true,
-}: {
-  readonly object: PermissionObject;
-  readonly objects: readonly PermissionObject[];
-  readonly action: PermissionAction;
-  readonly grants: PermissionGrants;
-  readonly readOnly: boolean;
-  readonly labels: PermissionEditorLabels;
-  readonly controlId: string;
-  readonly onToggle: (action: PermissionAction, enabled: boolean) => void;
-  readonly onScope: (
-    action: PermissionAction,
-    slotId: string,
-    value: string | undefined,
-  ) => void;
-  /** Settings have no data scope: their rows show only the switch, whatever scopes an action carries. */
-  readonly scoped?: boolean;
-}): ReactElement {
-  const enabled = Boolean(grants[action.id]);
-  const slots = scoped ? (action.scopes ?? []) : [];
-  // One unnamed scope sits beside the title; named or several scopes get their own row.
-  const inline = slots.length === 1 && !slots[0]?.label ? slots[0] : undefined;
-  const stacked = inline ? [] : slots;
-  const disabled = readOnly || !enabled || Boolean(action.managed);
-  const description = action.description ?? undefined;
-  return (
-    <li
-      data-slot='permission-action'
-      data-enabled={enabled ? '' : undefined}
-      className={cn(
-        'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5',
-        // Settings rows have no scope column and sit in a grid of cards.
-        scoped
-          ? '@min-[44rem]/permissions:grid-cols-[auto_minmax(0,1fr)_minmax(14rem,16rem)] @min-[44rem]/permissions:px-4'
-          : 'rounded-md border bg-card',
-        action.view && 'bg-muted/30',
-      )}
-    >
-      <Switch
-        id={controlId}
-        checked={enabled}
-        disabled={readOnly || Boolean(action.managed)}
-        aria-labelledby={`${controlId}-label`}
-        aria-describedby={description ? `${controlId}-description` : undefined}
-        onCheckedChange={(on: boolean) => onToggle(action, on)}
-      />
-      <div className='grid min-w-0 gap-0.5'>
-        {/* The risk badge sits beside the label, so the switch keeps the action's name. */}
-        <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
-          <label
-            id={`${controlId}-label`}
-            htmlFor={controlId}
-            className={cn(
-              'cursor-pointer text-sm leading-5 font-medium break-words',
-              !enabled && 'text-muted-foreground',
-            )}
-          >
-            {action.label}
-          </label>
-          {action.risk && (
-            <span
-              data-slot='permission-risk'
-              className={cn(
-                'inline-flex rounded px-1.5 text-xs leading-5 font-normal',
-                action.risk === 'high'
-                  ? 'bg-destructive/10 text-destructive'
-                  : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
-              )}
-            >
-              {action.risk === 'high' ? labels.highRisk : labels.sensitive}
-            </span>
-          )}
-        </div>
-        {enabled && action.warning && (
-          <p className='text-xs leading-5 text-destructive'>{action.warning}</p>
-        )}
-        {(description || action.managed) && (
-          <p
-            id={`${controlId}-description`}
-            className='text-xs leading-5 break-words text-muted-foreground'
-          >
-            {[description, action.managed ? labels.managed : undefined]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        )}
-      </div>
-      {/* An operation that is off has no data scope to choose, so its scope stays hidden until it is on. */}
-      {inline && enabled && (
-        <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-3 @min-[44rem]/permissions:row-start-1'>
-          <ScopeControl
-            object={object}
-            objects={objects}
-            action={action}
-            slot={inline}
-            grants={grants}
-            disabled={disabled}
-            labels={labels}
-            onScope={(slotId, value) => onScope(action, slotId, value)}
-          />
-        </div>
-      )}
-      {stacked.length > 0 && enabled && (
-        <div
-          data-slot='permission-scopes'
-          className='col-span-full col-start-2 flex min-w-0 flex-col gap-2'
-        >
-          {stacked.map((slot) => (
-            <div
-              key={slot.id}
-              data-slot='permission-scope'
-              className='grid min-w-0 gap-1 @min-[44rem]/permissions:flex @min-[44rem]/permissions:items-center @min-[44rem]/permissions:gap-2'
-            >
-              {slot.label && (
-                <span className='text-xs text-muted-foreground'>
-                  {slot.label}
-                </span>
-              )}
-              {/* One scope per line; the select grows with its text and wraps only at the row's width. */}
-              <div className='w-full min-w-0 @min-[44rem]/permissions:w-fit @min-[44rem]/permissions:max-w-full @min-[44rem]/permissions:min-w-60'>
-                <ScopeControl
-                  object={object}
-                  objects={objects}
-                  action={action}
-                  slot={slot}
-                  grants={grants}
-                  disabled={disabled}
-                  labels={labels}
-                  onScope={(slotId, value) => onScope(action, slotId, value)}
-                />
-              </div>
-              {enabled && slot.configuration && (
-                <SlotConfiguration
-                  locked={
-                    disabled || configurationLocked(object, slot, objects)
-                  }
-                >
-                  {slot.configuration}
-                </SlotConfiguration>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {inline && enabled && inline.configuration && (
-        <SlotConfiguration
-          locked={disabled || configurationLocked(object, inline, objects)}
-          className='col-span-full col-start-2'
-        >
-          {inline.configuration}
-        </SlotConfiguration>
-      )}
-    </li>
   );
 }
 
@@ -1261,64 +1110,12 @@ function TabBadge({
   );
 }
 
-function SettingsLevelControl({
-  page,
-  level,
-  readOnly,
-  labels,
-  onLevel,
-}: {
-  readonly page: PermissionSettingsPage;
-  readonly level: ReturnType<typeof settingsLevel>;
-  readonly readOnly: boolean;
-  readonly labels: PermissionEditorLabels;
-  readonly onLevel: (level: 'none' | 'view' | 'manage') => void;
-}): ReactElement {
-  const several = page.objects.some((object) => object.actions.length > 1);
-  const risky = page.objects.some((object) =>
-    object.actions.some((action) => action.risk === 'high'),
-  );
-  const levels: ['none' | 'view' | 'manage', string][] = [
-    ['none', labels.settingsNone],
-    ['view', labels.settingsView],
-    ...(several
-      ? [['manage', labels.settingsManage] as ['manage', string]]
-      : []),
-  ];
-  return (
-    <div
-      role='group'
-      aria-label={labels.settingsLevel(page.label)}
-      data-slot='permission-settings-level'
-      className='inline-flex shrink-0 overflow-hidden rounded-md border'
-    >
-      {levels.map(([item, label]) => (
-        <button
-          key={item}
-          type='button'
-          aria-pressed={level === item}
-          disabled={readOnly}
-          className={cn(
-            'min-w-12 border-l px-3 py-1.5 text-sm first:border-l-0 hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
-            level === item &&
-              (item === 'none'
-                ? 'bg-muted font-medium'
-                : // Managing a page with high-risk operations reads as the risk it is.
-                  item === 'manage' && risky
-                  ? 'bg-destructive font-medium text-white hover:bg-destructive/90'
-                  : 'bg-primary font-medium text-primary-foreground hover:bg-primary/90'),
-          )}
-          onClick={() => onLevel(item)}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 interface PendingDisable {
+  /** Turning on a high-risk action, rather than turning off what others need. */
+  readonly risky?: boolean | undefined;
   readonly message: string;
+  /** More about the risk, such as the notice of the action's object. */
+  readonly detail?: ReactNode;
   readonly apply: (value: PermissionValue) => {
     readonly value: PermissionValue;
     readonly notices: readonly PermissionNotice[];
@@ -1353,9 +1150,8 @@ export function PermissionEditor({
   const [query, setQuery] = useState('');
   const [onlyEnabled, setOnlyEnabled] = useState(false);
   const [notices, setNotices] = useState<readonly PermissionNotice[]>([]);
-  const [settingsOpen, setSettingsOpen] = useState<
-    Readonly<Record<string, boolean>>
-  >({});
+  const [settingsQuery, setSettingsQuery] = useState('');
+  const [settingsOnlyEnabled, setSettingsOnlyEnabled] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
   const [onlyChecked, setOnlyChecked] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
@@ -1437,13 +1233,41 @@ export function PermissionEditor({
   };
   const commit = (change: PermissionChange): void =>
     commitValue({ menus: value.menus, grants: change.grants }, change.notices);
-  const ask = (message: string, apply: PendingDisable['apply']): void => {
+  const ask = (
+    message: string,
+    apply: PendingDisable['apply'],
+    risky?: boolean,
+    detail?: ReactNode,
+  ): void => {
     setNotices([]);
-    setPending({ message, apply });
+    setPending({ message, apply, risky, detail });
   };
   const toggle = (action: PermissionAction, enabled: boolean): void => {
     if (readOnly) return;
     if (enabled) {
+      // A high-risk action is turned on only after reading what it lets a person do.
+      if (action.risk === 'high') {
+        ask(
+          [words.confirmRisky(action.label), action.warning]
+            .filter(Boolean)
+            .join(' '),
+          (draft) => {
+            const change = setActionEnabled(
+              allObjects,
+              draft.grants,
+              action.id,
+              true,
+            );
+            return {
+              value: { menus: draft.menus, grants: change.grants },
+              notices: change.notices,
+            };
+          },
+          true,
+          findAction(allObjects, action.id)?.object.notice,
+        );
+        return;
+      }
       commit(setActionEnabled(allObjects, value.grants, action.id, true));
       return;
     }
@@ -1658,34 +1482,41 @@ export function PermissionEditor({
 
   const messages = (
     <>
-      {pending && (
-        <div
-          role='alert'
-          className='flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm'
-        >
-          <span className='min-w-0 flex-1 basis-60'>{pending.message}</span>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => setPending(undefined)}
-          >
-            {words.cancel}
-          </Button>
-          <Button
-            type='button'
-            variant='destructive'
-            size='sm'
-            onClick={() => {
-              if (readOnly) return;
-              const change = pending.apply(value);
-              commitValue(change.value, change.notices);
-            }}
-          >
-            {words.confirm}
-          </Button>
-        </div>
-      )}
+      <AlertDialog
+        open={Boolean(pending)}
+        onOpenChange={(open: boolean) => {
+          if (!open) setPending(undefined);
+        }}
+      >
+        <AlertDialogContent size='sm'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pending?.risky
+                ? words.confirmRiskyTitle
+                : words.confirmDisableTitle}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{pending?.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          {pending?.detail && (
+            <div className='rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'>
+              {pending.detail}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{words.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              variant='destructive'
+              onClick={() => {
+                if (readOnly || !pending) return;
+                const change = pending.apply(value);
+                commitValue(change.value, change.notices);
+              }}
+            >
+              {pending?.risky ? words.confirmRiskyAction : words.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {notices.length > 0 && (
         <div
           role='status'
@@ -1973,10 +1804,187 @@ export function PermissionEditor({
     );
   };
 
-  const settingsGroups = [...new Set(settings.map((page) => page.group ?? ''))];
+  const settingsSearch = settingsQuery.trim().toLocaleLowerCase();
+  const shownSettings = settings.filter(
+    (page) =>
+      (!settingsSearch ||
+        page.label.toLocaleLowerCase().includes(settingsSearch) ||
+        page.objects.some((object) =>
+          object.actions.some((action) =>
+            action.label.toLocaleLowerCase().includes(settingsSearch),
+          ),
+        )) &&
+      (!settingsOnlyEnabled || settingsLevel(page, value.grants) !== 'none'),
+  );
+  const settingsGroups = [
+    ...new Set(shownSettings.map((page) => page.group ?? '')),
+  ];
+  const settingsGrouped =
+    new Set(settings.map((page) => page.group ?? '')).size > 1;
   const visibleSettings = settings.filter(
     (page) => settingsLevel(page, value.grants) !== 'none',
   );
+  /** The action that opens a settings page: its first object's View, or that object's first action. */
+  const entryOf = (
+    page: PermissionSettingsPage,
+  ): PermissionAction | undefined => {
+    const first = page.objects[0];
+    return first ? (viewActionOf(first) ?? first.actions[0]) : undefined;
+  };
+  const settingsItem = (
+    object: PermissionObject,
+    action: PermissionAction,
+    dimmed: boolean,
+  ): ReactElement => (
+    <OperationItem
+      key={action.id}
+      object={object}
+      objects={allObjects}
+      action={action}
+      grants={value.grants}
+      readOnly={readOnly}
+      labels={words}
+      controlId={`${id}-${action.id}`}
+      dimmed={dimmed}
+      scoped={false}
+      onToggle={toggle}
+      onScope={() => undefined}
+    />
+  );
+  // A settings object's notice explains what its actions allow: it shows once any of them is on, and before turning on
+  // a high-risk one.
+  const noticeShown = (object: PermissionObject): boolean =>
+    object.actions.some((action) => value.grants[action.id]);
+  const settingsRow = (page: PermissionSettingsPage): ReactElement => {
+    const titleId = `${id}-settings-${page.id}`;
+    const entry = entryOf(page);
+    const entryObject = page.objects[0];
+    const entryOn = Boolean(entry && value.grants[entry.id]);
+    const status = objectStatus(settingsPageObject(page), value.grants);
+    const selection = quickSelection(page.objects, value.grants);
+    const settable = page.objects.some((object) =>
+      object.actions.some((action) => !action.risk && !action.managed),
+    );
+    // The page's other actions, object by object; an object's label shows when the page holds several.
+    const lines = page.objects
+      .map((object) => ({
+        object,
+        actions: [
+          ...orderedActions(object).basic,
+          ...orderedActions(object).business,
+        ].filter((action) => action.id !== entry?.id),
+      }))
+      .filter((line) => line.actions.length > 0);
+    return (
+      <section
+        key={page.id}
+        aria-labelledby={titleId}
+        data-slot='permission-settings-page'
+        data-state={status.state}
+        className={cn(OBJECT_ROW, 'border-t py-2.5')}
+      >
+        <div className='flex justify-center pt-0.5'>
+          <Checkbox
+            aria-label={words.selectObject(page.label)}
+            title={words.quickAllHint}
+            checked={selection === 'all'}
+            indeterminate={selection === 'some'}
+            disabled={readOnly || !settable}
+            className={SELECT_BOX}
+            onCheckedChange={() =>
+              quickMany(
+                page.objects,
+                selection === 'all' ? 'none' : 'all',
+                page.label,
+              )
+            }
+          />
+        </div>
+        <div className='grid min-w-0 content-start gap-0.5'>
+          <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
+            <h3
+              id={titleId}
+              title={page.description}
+              className='text-sm font-semibold'
+            >
+              {page.label}
+            </h3>
+            <span
+              className={cn(
+                'rounded px-1.5 text-xs leading-5 tabular-nums',
+                status.enabled
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              <span aria-hidden>
+                {status.enabled}/{status.total}
+              </span>
+              <span className='sr-only'>
+                {status.enabled
+                  ? words.objectEnabled(status.enabled, status.total)
+                  : words.objectOff}
+              </span>
+            </span>
+          </div>
+        </div>
+        <div className='col-start-2 min-w-0 @min-[44rem]/permissions:col-start-auto'>
+          {entry && entryObject && settingsItem(entryObject, entry, false)}
+        </div>
+        <div className='col-start-2 grid min-w-0 gap-2 @min-[44rem]/permissions:col-start-auto'>
+          {lines.length ? (
+            lines.map(({ object, actions }) => (
+              <div
+                key={object.id}
+                className='flex min-w-0 flex-wrap items-start gap-x-5 gap-y-2'
+              >
+                {page.objects.length > 1 && (
+                  <span className='w-full text-xs leading-5 text-muted-foreground @min-[44rem]/permissions:w-24 @min-[44rem]/permissions:shrink-0'>
+                    {object.label}
+                  </span>
+                )}
+                <ul
+                  data-slot='permission-actions'
+                  className='flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-2'
+                >
+                  {actions.map((action) => (
+                    <li key={action.id} className='min-w-0'>
+                      {settingsItem(
+                        object,
+                        action,
+                        object === entryObject && !entryOn,
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : (
+            <span
+              aria-hidden
+              className='hidden text-muted-foreground/50 @min-[44rem]/permissions:inline'
+            >
+              —
+            </span>
+          )}
+        </div>
+        {page.objects.map(
+          (object) =>
+            noticeShown(object) &&
+            object.notice && (
+              <div
+                key={object.id}
+                data-slot='permission-object-notice'
+                className='col-span-full col-start-2 flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
+              >
+                <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
+                <div className='min-w-0'>{object.notice}</div>
+              </div>
+            ),
+        )}
+      </section>
+    );
+  };
   const settingsPanel = (
     <div className='grid min-w-0 gap-3 p-4'>
       {readOnly && (
@@ -1984,159 +1992,126 @@ export function PermissionEditor({
       )}
       <p
         data-slot='permission-settings-summary'
-        className='text-sm text-muted-foreground'
+        className='rounded-lg bg-muted/50 px-3 py-2 text-sm'
       >
         {visibleSettings.length
           ? words.settingsVisible(visibleSettings.map((page) => page.label))
           : words.settingsNoneVisible}
       </p>
-      {messages}
-      {settingsGroups.map((group) => (
-        <div key={group} className='grid min-w-0 gap-2'>
-          {group && (
-            <h3 className='text-xs font-medium text-muted-foreground'>
-              {group}
-            </h3>
-          )}
-          {settings
-            .filter((page) => (page.group ?? '') === group)
-            .map((page) => {
-              const status = objectStatus(
-                settingsPageObject(page),
-                value.grants,
-              );
-              const level = settingsLevel(page, value.grants);
-              // A page set action by action opens with its actions shown; the others fold them away until asked.
-              const expanded = settingsOpen[page.id] ?? level === 'partial';
-              const risky = page.objects.some((object) =>
-                object.actions.some((action) => action.risk === 'high'),
-              );
-              const titleId = `${id}-settings-${page.id}`;
-              const detailsId = `${titleId}-details`;
-              return (
-                <section
-                  key={page.id}
-                  aria-labelledby={titleId}
-                  data-slot='permission-settings-page'
-                  className='grid min-w-0 gap-2 rounded-lg border p-3'
+      <div className='flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2'>
+        <div className='w-full @min-[44rem]/permissions:w-72'>
+          <InputGroup>
+            <InputGroupAddon>
+              <SearchIcon aria-hidden />
+            </InputGroupAddon>
+            <InputGroupInput
+              value={settingsQuery}
+              aria-label={words.searchSettings}
+              placeholder={words.searchSettings}
+              onChange={(event) => setSettingsQuery(event.target.value)}
+            />
+            {settingsQuery && (
+              <InputGroupAddon align='inline-end'>
+                <InputGroupButton
+                  type='button'
+                  size='icon-xs'
+                  aria-label={words.clearSearch}
+                  onClick={() => setSettingsQuery('')}
                 >
-                  <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2'>
-                    <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
-                      <h2 id={titleId} className='text-sm font-semibold'>
-                        {page.label}
-                      </h2>
-                      {risky && (
-                        <span
-                          data-slot='permission-risk'
-                          className='rounded bg-destructive/10 px-1.5 text-xs leading-5 text-destructive'
-                        >
-                          {words.containsHighRisk}
-                        </span>
-                      )}
-                      {level === 'partial' && (
-                        <span className='rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 tabular-nums dark:text-amber-300'>
-                          {words.settingsCustom(status.enabled, status.total)}
-                        </span>
-                      )}
-                    </div>
-                    <div className='flex flex-wrap items-center gap-2'>
-                      <SettingsLevelControl
-                        page={page}
-                        level={level}
-                        readOnly={readOnly}
-                        labels={words}
-                        onLevel={(next) =>
-                          commit(
-                            setSettingsLevel(
-                              allObjects,
-                              value.grants,
-                              page,
-                              next,
-                            ),
+                  <XIcon aria-hidden />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+        </div>
+        <label className='inline-flex cursor-pointer items-center gap-2 text-sm'>
+          <Switch
+            size='sm'
+            checked={settingsOnlyEnabled}
+            onCheckedChange={(on: boolean) => setSettingsOnlyEnabled(on)}
+          />
+          {words.onlyEnabled}
+        </label>
+      </div>
+      {messages}
+      {shownSettings.length ? (
+        <div
+          data-slot='permission-settings-table'
+          className='min-w-0 overflow-hidden rounded-lg border'
+        >
+          <div
+            aria-hidden
+            className={cn(
+              OBJECT_ROW,
+              'hidden bg-muted/40 py-2 text-xs font-medium text-muted-foreground @min-[44rem]/permissions:grid',
+            )}
+          >
+            <span />
+            <span>{words.settingsPageColumn}</span>
+            <span>{words.settingsEntryColumn}</span>
+            <span>{words.settingsActionsColumn}</span>
+          </div>
+          {settingsGroups.map((group) => {
+            const members = settings.filter(
+              (page) => (page.group ?? '') === group,
+            );
+            const targets = members.flatMap((page) => page.objects);
+            const selection = quickSelection(targets, value.grants);
+            const opened = members.filter(
+              (page) => settingsLevel(page, value.grants) !== 'none',
+            ).length;
+            return (
+              <div
+                key={group}
+                role='group'
+                aria-label={group || undefined}
+                data-slot='permission-settings-group'
+                className='min-w-0'
+              >
+                {settingsGrouped && group && (
+                  <div
+                    className={cn(
+                      OBJECT_ROW,
+                      'items-center border-t bg-muted/60 py-2',
+                    )}
+                  >
+                    <div className='flex justify-center'>
+                      <Checkbox
+                        aria-label={words.selectGroup(group)}
+                        title={words.quickAllHint}
+                        checked={selection === 'all'}
+                        indeterminate={selection === 'some'}
+                        disabled={readOnly}
+                        className={SELECT_BOX}
+                        onCheckedChange={() =>
+                          quickMany(
+                            targets,
+                            selection === 'all' ? 'none' : 'all',
+                            group,
                           )
                         }
                       />
-                      <Button
-                        type='button'
-                        variant='ghost'
-                        size='sm'
-                        aria-expanded={expanded}
-                        aria-controls={detailsId}
-                        onClick={() =>
-                          setSettingsOpen((open) => ({
-                            ...open,
-                            [page.id]: !expanded,
-                          }))
-                        }
-                      >
-                        {expanded
-                          ? words.settingsCollapse
-                          : words.settingsDetails}
-                        <ChevronDownIcon
-                          aria-hidden
-                          className={cn(
-                            'transition-transform',
-                            expanded && 'rotate-180',
-                          )}
-                        />
-                      </Button>
+                    </div>
+                    <div className='col-span-full col-start-2 flex min-w-0 flex-wrap items-baseline gap-x-2'>
+                      <h2 className='text-sm font-semibold'>{group}</h2>
+                      <span className='text-xs text-muted-foreground tabular-nums'>
+                        {words.settingsGroupEnabled(opened, members.length)}
+                      </span>
                     </div>
                   </div>
-                  {page.description && (
-                    <p className='text-xs text-muted-foreground'>
-                      {page.description}
-                    </p>
-                  )}
-                  {expanded && (
-                    <div id={detailsId} className='grid min-w-0 gap-2'>
-                      {page.objects.map((object) => (
-                        <div key={object.id} className='grid min-w-0 gap-1.5'>
-                          {page.objects.length > 1 && (
-                            <h4 className='text-xs font-medium text-muted-foreground'>
-                              {object.label}
-                            </h4>
-                          )}
-                          <ul className='grid min-w-0 gap-2 @min-[44rem]/permissions:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]'>
-                            {[
-                              ...orderedActions(object).basic,
-                              ...orderedActions(object).business,
-                            ].map((action) => (
-                              <ActionRow
-                                key={action.id}
-                                object={object}
-                                objects={allObjects}
-                                action={action}
-                                grants={value.grants}
-                                readOnly={readOnly}
-                                labels={words}
-                                controlId={`${id}-${action.id}`}
-                                onToggle={toggle}
-                                onScope={() => undefined}
-                                scoped={false}
-                              />
-                            ))}
-                          </ul>
-                          {object.notice && (
-                            <div
-                              data-slot='permission-object-notice'
-                              className='flex min-w-0 items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
-                            >
-                              <InfoIcon
-                                aria-hidden
-                                className='mt-0.5 size-4 shrink-0'
-                              />
-                              <div className='min-w-0'>{object.notice}</div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
+                )}
+                {shownSettings
+                  .filter((page) => (page.group ?? '') === group)
+                  .map(settingsRow)}
+              </div>
+            );
+          })}
         </div>
-      ))}
+      ) : (
+        <p role='status' className='px-2 py-3 text-sm text-muted-foreground'>
+          {words.noResults}
+        </p>
+      )}
     </div>
   );
 

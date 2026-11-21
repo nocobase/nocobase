@@ -145,7 +145,7 @@ it('lists the roles beside the editor, opens the first one and keeps the system 
   expect(within(list).getByText(words.protected)).toBeVisible();
   // The first role opens at once: the system administrator, which has nothing to set.
   expect(await screen.findByText(editor.unrestrictedTitle)).toBeVisible();
-  expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: words.reviewAndSave, exact: true }),
   ).not.toBeInTheDocument();
@@ -198,14 +198,16 @@ it('saves menu access apart from the actions, explains escalation and asks befor
     name: words.permissionManagement,
   });
   expect(permissionSets).toBeVisible();
+  await user.click(screen.getByRole('checkbox', { name: 'Change roles' }));
+  const confirm = await screen.findByRole('alertdialog');
+  expect(within(confirm).getByText(words.escalation.roles)).toBeVisible();
   await user.click(
-    within(permissionSets).getByRole('button', {
-      name: words.permissionEditor.settingsDetails,
+    within(confirm).getByRole('button', {
+      name: words.permissionEditor.confirmRiskyAction,
     }),
   );
   expect(screen.getByText(words.escalation.roles)).toBeVisible();
-  await user.click(screen.getByRole('switch', { name: 'Change roles' }));
-  expect(screen.getByRole('switch', { name: 'Read roles' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Read roles' })).toBeChecked();
   await user.click(
     screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
   );
@@ -231,7 +233,7 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   await waitFor(() =>
     expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument(),
   );
-  expect(screen.getByRole('switch', { name: 'Change roles' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Change roles' })).toBeChecked();
   // The settings page shows with reading roles; it is not a menu to check.
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.menusTab) }),
