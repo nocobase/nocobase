@@ -1,7 +1,10 @@
 import { DriveManager } from 'flydrive';
 import { FSDriver } from 'flydrive/drivers/fs';
 import { S3Driver } from 'flydrive/drivers/s3';
-import { describe, expect, it } from 'vitest';
+import { once } from 'node:events';
+import { createServer, type IncomingHttpHeaders } from 'node:http';
+import { Readable } from 'node:stream';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   assertDefaultDisk,
@@ -40,6 +43,8 @@ describe('createDriveManager', () => {
         secretAccessKey: 'secret-key',
       },
       visibility: 'private',
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   });
 
@@ -62,6 +67,65 @@ describe('createDriveManager', () => {
     const s3Driver = manager.use('s3').driver as S3Driver;
 
     expect(s3Driver.options).not.toHaveProperty('credentials');
+  });
+
+  it('uploads a stream of unknown length without optional checksum framing', async () => {
+    vi.stubEnv('AWS_REQUEST_CHECKSUM_CALCULATION', 'WHEN_SUPPORTED');
+    vi.stubEnv('AWS_RESPONSE_CHECKSUM_VALIDATION', 'WHEN_SUPPORTED');
+
+    let headers: IncomingHttpHeaders | undefined;
+    let method: string | undefined;
+    let url: string | undefined;
+    const chunks: Buffer[] = [];
+    const server = createServer((request, response) => {
+      headers = request.headers;
+      method = request.method;
+      url = request.url;
+      request.on('data', (chunk: Buffer) => chunks.push(chunk));
+      request.on('end', () => {
+        response.writeHead(200, { ETag: '"test-etag"' });
+        response.end();
+      });
+    });
+
+    try {
+      server.listen(0, '127.0.0.1');
+      await once(server, 'listening');
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        throw new Error('Expected a TCP server address.');
+      }
+      const config = createConfig();
+      const disk = config.disks.s3;
+      if (disk.driver !== 's3') {
+        throw new Error('Expected an S3 disk.');
+      }
+      disk.endpoint = `http://127.0.0.1:${address.port}`;
+      const manager = createDriveManager(config);
+      const stream = Readable.from(
+        (async function* () {
+          yield Buffer.from('streamed ');
+          yield Buffer.from('upload');
+        })(),
+        { objectMode: false },
+      );
+
+      await manager.use('s3').putStream('uploads/stream.txt', stream);
+
+      expect(method).toBe('PUT');
+      expect(url).toMatch(/^\/portal-assets\/uploads\/stream.txt(?:\?|$)/);
+      expect(Buffer.concat(chunks).toString()).toBe('streamed upload');
+      expect(headers).not.toHaveProperty('content-length');
+      expect(headers).not.toHaveProperty('x-amz-decoded-content-length');
+      expect(headers).not.toHaveProperty('x-amz-trailer');
+      expect(headers?.['content-encoding']).not.toBe('aws-chunked');
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+      vi.unstubAllEnvs();
+    }
   });
 
   it('throws when the default disk is missing', () => {
