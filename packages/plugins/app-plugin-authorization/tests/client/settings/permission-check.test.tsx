@@ -48,6 +48,12 @@ const permit = {
       message: 'permission-sets:sales allows projects.view',
       details: { source: { plugin: 'permission-sets', id: 'sales' } },
     },
+    // The same role matching through a second grant is still one source.
+    {
+      code: 'GRANT_MATCHED',
+      message: 'permission-sets:sales allows the projects page',
+      details: { source: { plugin: 'permission-sets', id: 'sales' } },
+    },
   ],
 };
 const deny = {
@@ -171,13 +177,20 @@ it('checks one operation step by step, linking the rules that take part', async 
     fetch: fetch(writes),
   });
   const verdict = await screen.findByRole('status');
-  await waitFor(() => expect(verdict).toHaveTextContent('Can view Projects'));
+  await waitFor(() =>
+    expect(verdict).toHaveTextContent('Can “view” on Projects'),
+  );
   expect(verdict).toHaveAttribute('data-effect', 'permit');
   const steps = screen
     .getAllByRole('listitem')
     .filter((item) => item.matches('[data-slot=permission-step]'));
   expect(steps).toHaveLength(4);
   expect(steps[0]).toHaveTextContent('Allowed by Sales');
+  // Each role is named once and opens in Roles.
+  expect(within(steps[0]!).getAllByRole('link')).toHaveLength(1);
+  expect(
+    within(steps[0]!).getByRole('link', { name: 'Sales' }),
+  ).toHaveAttribute('href', '/roles/sales/edit');
   await waitFor(() => expect(steps[1]).toHaveTextContent(words.notInstalled));
   const link = await within(steps[2]!).findByRole('link', {
     name: sharing.title,
@@ -192,7 +205,7 @@ it('checks one operation step by step, linking the rules that take part', async 
   await user.click(await screen.findByRole('option', { name: 'delete' }));
   await waitFor(() =>
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Cannot delete Projects',
+      'Cannot “delete” on Projects',
     ),
   );
   expect(writes).toEqual([]);

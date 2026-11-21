@@ -148,11 +148,12 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     chooseObject: '选择对象',
     action: '操作',
     chooseAction: '选择操作',
-    can: '可以{{action}}{{object}}',
-    canWithin: '可以{{action}}{{object}}，限数据范围',
-    cannot: '不能{{action}}{{object}}',
+    can: '可以对「{{object}}」执行「{{action}}」',
+    canWithin: '可以对「{{object}}」执行「{{action}}」，但限数据范围',
+    cannot: '不能对「{{object}}」执行「{{action}}」',
     stepRole: '角色',
-    stepRoleFound: '由 {{roles}} 允许',
+    stepRoleBy: '由这些角色允许：',
+    openRole: '打开这个角色',
     stepRoleNone: '这个用户的角色都不允许这项操作。',
     step: {
       defaultAccess: '默认访问＋',
@@ -164,6 +165,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     reasons: '技术细节',
   },
   ruleSubjects: {
+    appliesTo: '适用于',
     preview: '预览',
     addSubject: '添加',
     removeSubject: '移除 {{name}}',
@@ -300,6 +302,8 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     confirm: '确认保存',
   },
   members: {
+    otherRoles: '其他角色',
+    checkPermissions: '查看权限',
     tab: '成员',
     tabCount: '成员 {{count}}',
     description_one: '{{count}} 位成员拥有这个角色。',

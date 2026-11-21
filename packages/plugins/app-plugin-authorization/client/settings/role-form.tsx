@@ -280,6 +280,12 @@ function RoleEditor(): ReactElement {
     [options.data],
   );
   const roleTabs = useAllowedRoleTabs();
+  // Permission check sits beside Roles, with the member's user picked.
+  const checkHref = useCallback(
+    (userId: string) =>
+      `${parent.base.slice(0, parent.base.lastIndexOf('/'))}/permission-check?${new URLSearchParams({ user: userId })}`,
+    [parent.base],
+  );
   const onMemberCount = useCallback(
     (count: number) => setMemberCount(count),
     [],
@@ -313,6 +319,7 @@ function RoleEditor(): ReactElement {
             types={memberTypes}
             editable={canAssign}
             onCount={onMemberCount}
+            checkHref={checkHref}
           />
         ),
       },
@@ -343,6 +350,7 @@ function RoleEditor(): ReactElement {
     memberTypes,
     canAssign,
     onMemberCount,
+    checkHref,
     roleTabs,
     allowed,
     t,

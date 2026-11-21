@@ -153,11 +153,12 @@ const settings = {
     chooseObject: 'Choose an object',
     action: 'Operation',
     chooseAction: 'Choose an operation',
-    can: 'Can {{action}} {{object}}',
-    canWithin: 'Can {{action}} {{object}}, within a data scope',
-    cannot: 'Cannot {{action}} {{object}}',
+    can: 'Can “{{action}}” on {{object}}',
+    canWithin: 'Can “{{action}}” on {{object}}, within a data scope',
+    cannot: 'Cannot “{{action}}” on {{object}}',
     stepRole: 'Roles',
-    stepRoleFound: 'Allowed by {{roles}}',
+    stepRoleBy: 'Allowed by',
+    openRole: 'Open this role',
     stepRoleNone: 'No role of this user allows it.',
     step: {
       defaultAccess: 'Default access adds',
@@ -169,6 +170,7 @@ const settings = {
     reasons: 'Technical details',
   },
   ruleSubjects: {
+    appliesTo: 'Applies to',
     preview: 'Preview',
     addSubject: 'Add',
     removeSubject: 'Remove {{name}}',
@@ -314,6 +316,8 @@ const settings = {
     confirm: 'Confirm and save',
   },
   members: {
+    otherRoles: 'Other roles',
+    checkPermissions: 'Check permissions',
     tab: 'Members',
     tabCount: 'Members {{count}}',
     description_one: '{{count}} member holds this role.',

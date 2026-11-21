@@ -69,19 +69,25 @@ export function checkResources(
   return resources;
 }
 
-/** The sources of the grants a decision matched: `{ plugin: 'permission-sets', id }` names a role. */
+/**
+ * The sources of the grants a decision matched, each once: `{ plugin: 'permission-sets', id }` names a role. A role
+ * that matches through several grants, such as a page and an action, is still one source.
+ */
 export function matchedSources(
   decision: AuthorizationDecision,
 ): readonly { readonly plugin: string; readonly id: string }[] {
+  const seen = new Set<string>();
   return decision.reasons.flatMap((reason) => {
     if (reason.code !== 'GRANT_MATCHED') return [];
     const source: unknown = reason.details?.source;
     if (!source || typeof source !== 'object') return [];
     const plugin: unknown = Reflect.get(source, 'plugin');
     const id: unknown = Reflect.get(source, 'id');
-    return typeof plugin === 'string' && typeof id === 'string'
-      ? [{ plugin, id }]
-      : [];
+    if (typeof plugin !== 'string' || typeof id !== 'string') return [];
+    const key = `${plugin}:${id}`;
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [{ plugin, id }];
   });
 }
 

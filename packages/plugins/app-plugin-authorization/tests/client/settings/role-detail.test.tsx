@@ -356,6 +356,13 @@ it('adds and removes members at once and keeps the last one', async () => {
     await screen.findByRole('tab', { name: new RegExp(words.members.tab) }),
   );
   expect(await screen.findByRole('cell', { name: /Alice/ })).toBeVisible();
+  // A user member's permissions open in Permission check with the user picked.
+  expect(
+    screen.getByRole('link', { name: words.members.checkPermissions }),
+  ).toHaveAttribute(
+    'href',
+    expect.stringMatching(/permission-check\?user=u1$/),
+  );
 
   await user.click(screen.getByRole('button', { name: words.members.add }));
   const dialog = await screen.findByRole('dialog', {

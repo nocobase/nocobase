@@ -205,6 +205,32 @@ export function DataRuleList({
         </div>
       ),
     },
+    ...(kind.subjects
+      ? [
+          {
+            id: 'subjects',
+            header: t('settings.ruleSubjects.appliesTo'),
+            enableSorting: false,
+            cell: ({ row }) => {
+              const subjects = row.original.subjects ?? [];
+              return subjects.length ? (
+                <span className='flex max-w-72 flex-wrap gap-1'>
+                  {subjects.map((subject) => (
+                    <span
+                      key={subjectKey(subject)}
+                      className='rounded bg-muted px-1.5 text-xs leading-5'
+                    >
+                      {subjectTitles.get(subjectKey(subject)) ?? subject.id}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className='text-muted-foreground'>{k('nobody')}</span>
+              );
+            },
+          } satisfies ColumnDef<DataRule>,
+        ]
+      : []),
     {
       accessorKey: 'key',
       header: t('settings.key'),

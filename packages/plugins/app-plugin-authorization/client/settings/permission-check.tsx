@@ -675,6 +675,7 @@ function Verdict({
     (source) => source.plugin === 'permission-sets',
   );
   const names = { action: actionTitle, object: text(resource.title) };
+  const rolesPath = useResolvedPath('../roles').pathname;
   return (
     <div className='flex flex-col gap-4'>
       <div
@@ -700,11 +701,27 @@ function Verdict({
       </div>
       <ol className='flex flex-col gap-3'>
         <Step index={1} title={t('settings.permissionCheck.stepRole')}>
-          {roles.length
-            ? t('settings.permissionCheck.stepRoleFound', {
-                roles: roles.map((source) => roleTitle(source.id)).join(', '),
-              })
-            : t('settings.permissionCheck.stepRoleNone')}
+          {roles.length ? (
+            // Each role opens in Roles, where the permission it gives can be read and changed.
+            <span className='flex flex-wrap items-center gap-1.5'>
+              {t('settings.permissionCheck.stepRoleBy')}{' '}
+              {roles.map((source) => (
+                <Link
+                  key={source.id}
+                  data-slot='permission-step-role'
+                  className='rounded bg-muted px-1.5 text-xs leading-5 text-foreground underline-offset-4 hover:underline'
+                  title={t('settings.permissionCheck.openRole')}
+                  to={{
+                    pathname: `${rolesPath}/${encodeURIComponent(source.id)}/edit`,
+                  }}
+                >
+                  {roleTitle(source.id)}
+                </Link>
+              ))}
+            </span>
+          ) : (
+            t('settings.permissionCheck.stepRoleNone')
+          )}
         </Step>
         {RULE_KINDS.map((kind, index) => (
           <RuleStep

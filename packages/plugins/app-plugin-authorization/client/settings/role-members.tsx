@@ -1,6 +1,7 @@
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { PlusIcon } from 'lucide-react';
+import { Link } from 'react-router';
 import {
   useCallback,
   useEffect,
@@ -63,6 +64,7 @@ export function RoleMembers({
   types,
   editable,
   onCount,
+  checkHref,
 }: {
   readonly permissionSet: string;
   readonly types: readonly RoleMemberType[];
@@ -70,6 +72,8 @@ export function RoleMembers({
   readonly editable: boolean;
   /** Reports how many members the role has, for the tab's badge. */
   readonly onCount?: (count: number) => void;
+  /** Where a user's permissions are checked, such as Permission check with the user picked. */
+  readonly checkHref?: ((userId: string) => string) | undefined;
 }): ReactElement {
   const { t } = useTranslation();
   const authz = useAuthorizationClient();
@@ -152,6 +156,39 @@ export function RoleMembers({
     if (members) onCount?.(members.length);
   }, [members, onCount]);
 
+  // The other roles each member holds, so a member's permissions read as the sum of their roles. Best effort: a role
+  // whose members cannot be read is left out.
+  const [otherRoles, setOtherRoles] =
+    useState<ReadonlyMap<string, readonly string[]>>();
+  useEffect(() => {
+    if (!members?.length) return;
+    let active = true;
+    void (async () => {
+      const sets = await authz.listPermissionSets().catch(() => []);
+      const byMember = new Map<string, string[]>();
+      await Promise.all(
+        sets
+          .filter((set) => set.key !== permissionSet)
+          .map(async (set) => {
+            const assignments = await authz
+              .listAssignments(set.key)
+              .catch(() => []);
+            for (const assignment of assignments) {
+              const key = subjectKey(assignment.subject);
+              byMember.set(key, [
+                ...(byMember.get(key) ?? []),
+                text(set.title ?? set.key),
+              ]);
+            }
+          }),
+      );
+      if (active) setOtherRoles(byMember);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [authz, members, permissionSet, text]);
+
   const reload = (): void => setAttempt((value) => value + 1);
 
   const remove = async (member: Member): Promise<void> => {
@@ -211,7 +248,8 @@ export function RoleMembers({
             <TableRow>
               <TableHead>{t('settings.members.member')}</TableHead>
               <TableHead>{t('settings.members.type')}</TableHead>
-              {editable && (
+              <TableHead>{t('settings.members.otherRoles')}</TableHead>
+              {(editable || checkHref) && (
                 <TableHead className='w-24 text-right'>
                   <span className='sr-only'>{t('settings.actions')}</span>
                 </TableHead>
@@ -232,20 +270,51 @@ export function RoleMembers({
                 <TableCell className='text-muted-foreground'>
                   {typeTitle(member.assignment.subject.type)}
                 </TableCell>
-                {editable && (
-                  <TableCell className='text-right'>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      disabled={removing !== undefined}
-                      aria-label={t('settings.members.removeMember', {
-                        name: member.title,
-                      })}
-                      onClick={() => void remove(member)}
-                    >
-                      {t('settings.members.remove')}
-                    </Button>
+                <TableCell>
+                  {otherRoles?.get(subjectKey(member.assignment.subject))
+                    ?.length ? (
+                    <span className='flex flex-wrap gap-1'>
+                      {otherRoles
+                        .get(subjectKey(member.assignment.subject))
+                        ?.map((role) => (
+                          <span
+                            key={role}
+                            className='rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'
+                          >
+                            {role}
+                          </span>
+                        ))}
+                    </span>
+                  ) : (
+                    <span className='text-muted-foreground'>
+                      {otherRoles ? '—' : ''}
+                    </span>
+                  )}
+                </TableCell>
+                {(editable || checkHref) && (
+                  <TableCell className='text-right whitespace-nowrap'>
+                    {checkHref && member.assignment.subject.type === 'user' && (
+                      <Link
+                        className='me-2 text-sm text-primary underline-offset-4 hover:underline'
+                        to={checkHref(member.assignment.subject.id)}
+                      >
+                        {t('settings.members.checkPermissions')}
+                      </Link>
+                    )}
+                    {editable && (
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        disabled={removing !== undefined}
+                        aria-label={t('settings.members.removeMember', {
+                          name: member.title,
+                        })}
+                        onClick={() => void remove(member)}
+                      >
+                        {t('settings.members.remove')}
+                      </Button>
+                    )}
                   </TableCell>
                 )}
               </TableRow>
