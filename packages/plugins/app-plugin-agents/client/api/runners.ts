@@ -85,6 +85,12 @@ export class RunnersApi {
     return this.send(id(runnerId), 'PATCH', patch);
   }
 
+  public refreshRunnerStatus(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
+    return this.send(`${id(runnerId)}/refreshStatus`, 'POST');
+  }
+
   public revokeRunner(
     runnerId: string,
   ): Promise<Omit<Runner, 'quotaRevision'>> {

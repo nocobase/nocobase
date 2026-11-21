@@ -63,6 +63,9 @@ const zhCN: AgentsResource = {
     title: '放弃未提交的内容？',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED: '请重启 runner 以刷新状态。',
+    RUNNER_REFRESH_UNAVAILABLE: '此运行环境已撤销。',
+
     boundRunnerIncompatible:
       '当前运行环境无法运行所选 Agent。请更换运行环境后继续。',
     CONFLICT: '它已被修改，请刷新后重试。',
