@@ -8,6 +8,7 @@ import {
   ToolInfoSchema,
   ReportedToolInfoSchema,
   PROTOCOL_VERSION,
+  TOOL_MODEL_SUGGESTIONS,
   isProtocolSupported,
 } from '../src/index.js';
 
@@ -20,6 +21,16 @@ const capabilities = {
   modelsDetectedAt: '2026-10-09T10:00:00.000Z',
   modelsDetectionStatus: 'detected',
 };
+
+it('suggests the current OpenAI models for Codex, OpenCode and Pi', () => {
+  const models = ['gpt-6.2-sol', 'gpt-6.2-astra', 'gpt-6-luna'];
+  expect(TOOL_MODEL_SUGGESTIONS.codex).toEqual(models);
+  for (const tool of ['opencode', 'pi'] as const) {
+    expect(
+      TOOL_MODEL_SUGGESTIONS[tool]?.filter((id) => id.startsWith('openai/')),
+    ).toEqual(models.map((id) => `openai/${id}`));
+  }
+});
 
 describe('tool capabilities within protocol 7', () => {
   it('accepts versioned model identifiers in both outgoing and reported capabilities', () => {
