@@ -2,6 +2,8 @@
 
 Use this reference when multiple routes or Providers share domain behavior, another plugin consumes a capability, an implementation must be replaceable in tests, or a resource needs lifecycle management. Keep a private helper or pure function outside the container when none of those conditions applies.
 
+Services, Tokens, `singleton()`/`instance()` and the Provider lifecycle work as [Services and background jobs](../../nocobase-app-development/references/services-and-jobs.md) in the application Skill describes; read it first. This page covers what changes when the capability is owned by a plugin: a public Token other packages import, peer dependencies that keep one Token identity, Provider naming and aggregation, and cleanup in a host the plugin does not own.
+
 For typed examples of class, object, function, value, role-specific, dependency-aware, and test-replacement bindings, plus a complete timer-backed Provider and lifecycle test, read [ServiceToken and Provider examples](service-examples.md).
 
 ```text
@@ -40,7 +42,7 @@ Plugins must declare identity-sensitive NocoBase runtimes they plug into as peer
 
 ## Implement domain behavior
 
-A Service implements reusable behavior. It does not read Hono context, select HTTP status codes, define paths, or decide queue retry policy. Keep only the contract and cross-plugin types public; the default implementation can stay internal.
+Keep the layers apart as the application Skill describes: a Service does not read Hono context, choose HTTP statuses or decide retry policy. Keep only the contract and cross-plugin types public; the default implementation can stay internal.
 
 ```ts
 import type { AuditLogService, AuditRecord } from '../tokens.js';
@@ -67,26 +69,7 @@ The examples below assume a plugin-owned `createAuditLogStore(database)` adapter
 
 ## Register with the container
 
-`ServiceContainer` has two binding forms:
-
-| Need                                                   | API                                   |
-| ------------------------------------------------------ | ------------------------------------- |
-| Register an already-created object, function, or value | `container.instance(token, value)`    |
-| Create one value lazily on first use                   | `container.singleton(token, factory)` |
-
-A singleton factory is synchronous and receives a `ServiceResolver`, which is the correct place to resolve dependencies:
-
-```ts
-this.app.container.singleton(
-  auditLogServiceToken,
-  (resolver) =>
-    new DefaultAuditLogService(
-      createAuditLogStore(resolver.resolve(databaseManagerToken)),
-    ),
-);
-```
-
-`resolve()` fails for missing bindings and detects circular creation. `instance()` and `singleton()` reject duplicate Tokens. `has()` reports whether a binding exists. `resolveIfCreated()` returns an instance only after creation and never triggers a lazy factory. A singleton factory failure is retained, so later `resolve()` calls throw the same failure rather than rerunning the factory. There are no transient, scoped, string-keyed, automatic constructor-injection, or override bindings.
+Bind with `container.instance(token, value)` or the synchronous lazy `container.singleton(token, factory)`, resolving dependencies through the factory's `ServiceResolver` as the Provider below does. `resolve()` fails for missing bindings and detects circular creation. `instance()` and `singleton()` reject duplicate Tokens. `has()` reports whether a binding exists. `resolveIfCreated()` returns an instance only after creation and never triggers a lazy factory. A singleton factory failure is retained, so later `resolve()` calls throw the same failure rather than rerunning the factory. There are no transient, scoped, string-keyed, automatic constructor-injection, or override bindings.
 
 ## Register and own lifecycle through a Provider
 
@@ -171,7 +154,7 @@ Read configuration through definitions already owned by the App or capability an
 
 Resolve database access through the owner-exported `databaseManagerToken`. Use `manager.repository(collection)` for logical Collection-aware operations and `manager.query(connectionName?)` for lower-level database queries that do not apply Collection metadata or table-prefix resolution. Structural changes belong in migrations, never Provider startup.
 
-A `JobExecutor` job never resolves the container: the Provider that owns the executor creates the job class with a factory that closes over the Services it needs, then registers that class. A queue handler is likewise a closure the Provider registers in `boot()`; await its unregister function in `shutdown()` before releasing those Services. Do not store a global container for either.
+Jobs and queue handlers follow [the application Skill's background work guidance](../../nocobase-app-development/references/services-and-jobs.md#choose-where-background-work-runs). In a plugin, the Provider that owns the executor or queue registers a job class or handler that closes over the Services it needs, and awaits the handler's unregister function in `shutdown()` before releasing them. Never store a global container.
 
 ## Test the contract and lifecycle
 

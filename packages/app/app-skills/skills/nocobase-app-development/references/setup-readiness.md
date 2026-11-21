@@ -1,6 +1,6 @@
 # Show missing prerequisites where they matter
 
-As a feature is developed, connect its actual initialization prerequisites automatically, even when the user does not ask for a setup checklist. Declare checks when implementing the business feature, using the owning service's real authorized reads. The template does not infer arbitrary roles or manager relationships at runtime. An installed plugin or a Foundation capability marked registered is not evidence that a business process is ready. Reuse Foundation for capability evidence; do not build another plugin inventory or amend Foundation's status from guessed business requirements.
+Build a prerequisite hint when the user asks for one. Otherwise name the feature's missing prerequisites (a business role without members, an employee without a direct manager) in the delivery report. When you build checks, declare them with the business feature and use the owning service's real authorized reads. The template does not infer arbitrary roles or manager relationships at runtime. An installed plugin or a Foundation capability marked registered is not evidence that a business process is ready. Reuse Foundation for capability evidence; do not build another plugin inventory or amend Foundation's status from guessed business requirements.
 
 ## What belongs in a check
 

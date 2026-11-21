@@ -1,162 +1,98 @@
-# Frontend development workflow
+# Frontend workflow
 
-This is the entry point for the application's frontend work. For a new application or a feature spanning frontend and backend, read it during initial planning, before implementing either side; for frontend-only work, read it before changing `client/`. Consider pages, interactions, data, endpoint contracts and permissions together. It decides which of three workflows a change takes and what counts as done:
+The entry point for frontend work. Read it while planning a feature, before writing frontend or backend code, and before any change to `client/`. Pages, data, endpoint contracts and permissions are planned together; nothing waits for the user's approval unless a material business or scope question needs their decision.
 
-- **Quick change**: edit directly, then run the static checks and the related tests and verify the changed element and affected interactions in the browser.
-- **Theme change**: change tokens or presets as [`references/theme.md`](references/theme.md) describes and verify with its theme tests and browser check.
-- **Full workflow**: a design file reviewed once, development, then one independent acceptance review in the browser.
+There are exactly two workflows. Say in one sentence of your reply which one you follow:
 
-What the interface should look like is in [`ui-guidelines.md`](ui-guidelines.md); how to write the code is in [`frontend-dev.md`](frontend-dev.md). Every workflow designs and verifies the phone layout of each page it creates or changes as part of the work, following [the phone experience](mobile.md); the user does not need to ask for it, and a page is not done while its phone checks fail. Paths in this document are relative to its own directory: [`ui-guidelines.md`](ui-guidelines.md) and [`frontend-dev.md`](frontend-dev.md) sit beside it, the topic references are under `references/`, the record templates and reviewer prompts are under `templates/`, and the screenshot tool is under `scripts/`.
+- [Change an existing page](#change-an-existing-page): implement, verify at 1440 and 390, report.
+- [New page or module](#new-page-or-module): page plan, start from the runnable example, implement, verify, independent acceptance, report.
 
-Every workflow first reads [the shared design contract](design-contract.md), the relevant application-owned design records and original UI references. Reference scope and authorized visual exceptions apply to quick and theme changes too, without adding a design approval round. Plugin authors reuse the design and review stages through their Skill's `references/ui-design.md`; implementation, ownership and commands remain those of the plugin Skill.
+Every page works on a phone by default; checking it at 390 px is part of every page change, following [the phone experience](mobile.md). Browser APIs follow [browser API compatibility](frontend-dev.md#browser-api-compatibility).
 
-Every workflow follows [browser API compatibility](frontend-dev.md#browser-api-compatibility): explain unavailable HTTPS-only capabilities to users, and verify that UUID generation and copy actions work on ordinary HTTP through the shared `@nocobase/app-client` utilities.
+**Theme changes** (primary color, fonts, density, radius, shadows, presets) follow [`references/theme.md`](references/theme.md): change tokens or presets as its sections 3 and 4 describe, verify with its section 7, and report as a page change does. No page plan.
 
-## Choosing a workflow
+## Change an existing page
 
-Decide before you start, and say in one sentence in your reply which workflow you are following and why.
+1. Read the documents the change touches, found through ["Look up by task"](frontend-dev.md#look-up-by-task), and the relevant parts of [`ui-guidelines.md`](ui-guidelines.md). When the change adds a component, follow the selection order in [`design-contract.md`](design-contract.md).
+2. Implement in the style of the surrounding code and copy. New or changed behavior, and a reproducible bug, get a component test; copy-only or styling-only changes need none ([`references/testing.md`](references/testing.md)).
+3. Run the [self-check](frontend-dev.md#self-check-before-finishing), including the component checker.
+4. [Verify in the browser](#verify-in-the-browser) the changed element and the interactions it affects, at 1440 and 390. A bug fix reproduces the original steps.
+5. [Report](#report).
 
-| Workflow      | When it applies                                                                                                                                                                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full workflow | Complex interactions or cross-module changes that need new design decisions: for example, a multi-step operation with dependent states, a specialized editor, or a redesign of shared navigation and return paths; the user explicitly asks to see the design first              |
-| Theme change  | The change is to theme tokens or presets: the primary color, fonts, density, radius or shadows of the whole application, or adding, changing or removing a preset. Follow ["Theme change"](#theme-change) below. No design file unless the user asks                             |
-| Quick change  | Routine work using established page and interaction patterns, including a new CRUD list, detail page, form or settings page; extending existing pages; copy, styling, UI fixes and refactors. New routes, data loading, forms or overlays alone do not require the full workflow |
+If the change needs a new module or a redesigned journey, switch to the new-page workflow.
 
-Choose by unresolved design complexity, not page count or whether the backend exists. A collection of routine CRUD pages can use the quick workflow; review a complex journey together rather than creating a separate approval for each page. When unsure, use the requirements and existing patterns to select the workflow; ask only when a material business or scope decision needs user input. A quick change follows its section below; a theme change follows [`references/theme.md`](references/theme.md).
+## New page or module
 
-## Theme change
+There is no shorter path for a new CRUD page: plan, start from the example, implement, accept.
 
-- To change a preset: [section 4 of `theme.md`](references/theme.md#4-change-or-remove-a-preset), keeping the ["Constraints from the token test"](references/theme.md#constraints-from-the-token-test) of section 2.
-- To add a preset: [section 3 of `theme.md`](references/theme.md#3-add-a-preset).
-- Verify with [section 7 of `theme.md`](references/theme.md#7-verify): the theme tests, then the browser check it scales to the change.
-- Report what changed, the checks you ran and what you looked at, as a quick change does.
+**Required reading** for a new CRUD page: [`../../SKILL.md`](../../SKILL.md), this file, [`ui-guidelines.md`](ui-guidelines.md), [`design-contract.md`](design-contract.md), [`mobile.md`](mobile.md), [`references/page.md`](references/page.md), [`references/table.md`](references/table.md), [`references/form.md`](references/form.md), [`references/overlay.md`](references/overlay.md), [`references/api.md`](references/api.md) and [`references/executable-list-edit.md`](references/executable-list-edit.md).
 
-## Quick change
+Open these only when the page needs them: [`references/child-routes.md`](references/child-routes.md) (tabs, covering child pages, nested routes), [`references/data-changes.md`](references/data-changes.md) (refresh across views after a write), [`references/styling.md`](references/styling.md) (tokens, buttons, icons, charts), [`references/theme.md`](references/theme.md) (tokens and presets), [`references/i18n.md`](references/i18n.md) (copy keys, dates and numbers), [`references/testing.md`](references/testing.md) (the test harness) and [`references/ui-library.md`](references/ui-library.md) (registry components that are not installed yet).
 
-1. Read [`frontend-dev.md`](frontend-dev.md) and the references under `references/` related to the change; when the change adds or uses a primitive the page has not used before, also [`references/shadcn.md`](references/shadcn.md). When the change affects how the interface looks or behaves, also read the relevant guidelines in [`ui-guidelines.md`](ui-guidelines.md), and at minimum check the relevant items of the "Review checklist" at its end.
-2. Before writing the page, decide its phone layout as ["Decide the phone layout while designing the page" in `mobile.md`](mobile.md#decide-the-phone-layout-while-designing-the-page) describes, and state it in one line per page in your report (for example: "Orders: cards with number, status, customer and total, ending with the row menu (Edit, Cancel order); status and date filters in a Filters sheet; detail fields stacked"). Then follow the confirmed reference and system/page decisions, then the surrounding components, spacing and copy style. Update the durable page record when an authorized exception changes; a quick change does not require a new record when it changes no design decision.
-3. Run the checks in ["Self-check before finishing" in `frontend-dev.md`](frontend-dev.md#self-check-before-finishing): type checking, lint and formatting of the changed files, and the existing tests that cover them.
-4. A change that adds or alters behavior (a page, column, filter, button or field) extends the component test of that page, or adds one when there is none; a new App page also updates the route test ([section 12 of `references/page.md`](references/page.md#12-update-the-route-test)). A bug fix a component test can reproduce adds that test; a copy-only or styling-only change needs none (see [`references/testing.md`](references/testing.md)).
-5. When the change is visible at runtime — copy, styling, a new column, filter or button, a UI bug fix — start or reuse the application and sign in as item 1 of [step 4.1](#41-run-check-main-agent) describes (the printed `Local:` URL, the same host, no password entered by you), open the page and verify the changed element and affected interactions: copy in both languages, styling in light and dark, at 375×667, at a 390–412px phone width and at a desktop width, with the applicable items of [the phone checklist](mobile.md#checklist) (a new page walks its main task on the phone width), and, when spacing, type, radius or shadow changed, in both presets (in the browser, or with two or three shots of the screenshot tool, [`scripts/capture.md`](scripts/capture.md)), a bug fix by reproducing the original steps. If no browser or sign-in session is available, say so in the report instead of claiming it works. For asynchronous behavior, follow [transition verification](references/testing.md#asynchronous-transitions), scoped to the affected interaction.
-6. Apply the relevant [acceptance checks](ui-acceptance.md), including reference comparison and browser geometry for an overlay/footer change. Report what you changed, which checks and tests you ran with their results, and what you looked at in the browser. If you saved a sign-in session for the check, delete `storage/ui-workflow/auth.json` (and `auth-limited.json`) first: they hold live sign-in cookies.
+### 1. Write the page plan
 
-A routine new page verifies its complete user operation in the browser against the real backend: loading data, applicable create/edit/delete actions, persistence and refresh, page and endpoint permissions, and reachable empty/error states. For explicitly UI-only work, verify the requested UI behavior and report backend integration as outside scope. A rendering check alone is insufficient; report unavailable checks as Not verified.
+Write a page plan of 1–2 KB to `docs/ui/pages/<feature>.md` in the application (or the project's existing design-documentation location), and keep it: it records the decisions later changes must respect. It is a short list, not a form to fill in:
 
-A quick change writes no temporary design file or run record and starts no reviewer subagent. If implementation reveals complex design decisions beyond established patterns, explain why and switch the affected work to the full workflow, reusing the existing plan and implementation. Switching workflows does not itself require user confirmation.
+- **Users and tasks**: who uses the page and what they come to do; the scope asked for.
+- **Route tree**: the page path, its child routes (`new`, `:id`, `:id/edit`, `:id/details`, tabs) and its menu entry and icon.
+- **List, detail and form**: which page template from [`ui-guidelines.md`](ui-guidelines.md) each view uses, whether the detail is a drawer or a page, and that forms open in a `RouteDialog`.
+- **Primary row actions**: the menu items, and at most two actions shown outside the menu, if any.
+- **Data and scopes**: fields, endpoints (existing ones linked, new ones specified so the backend is built to them), permissions, and the `scopes` the views declare and the writes announce.
+- **Components**: what each region reuses, in the order of [`design-contract.md`](design-contract.md) (existing business component, installed primitive, registry addition, justified custom composition), and any primitive to add.
+- **Phone layout**: the first screen at 390 px, cards, where filters go, what moves into a menu or sheet.
 
-## Full workflow
+Check the plan against the review checklist of [`ui-guidelines.md`](ui-guidelines.md) and the application's existing design decisions before coding; this is the design review. Mention the plan's path in your progress update and continue.
 
-Five steps: design → design review → development → acceptance review → report. The design review and the acceptance review each happen once; there is no loop. Both are internal quality checks. Resolve their findings and continue implementation within the authorized scope; a review verdict is not a request for user approval.
+### 2. Start from the runnable example
 
-### Roles
+Copy the tested list/detail/create/edit example as [`references/executable-list-edit.md`](references/executable-list-edit.md) describes (the Examples template's `client/pages/skill-projects/`) and adapt it to the plan. Its names, fields, columns, filters, copy keys and widths are placeholders; remove what the plan does not ask for.
 
-- **Main agent**: writes the design, writes the code, fixes issues.
-- **Reviewer**: a new subagent (with its own context) for the design review, and another for the acceptance review. Give it the original task and subsequent user decisions, original references, reference modes, application-owned design records, authorized exceptions, guidelines, design file, screenshots, run record and changed files — not your reasoning. The reviewer only reports issues and does not modify files. If the environment does not support subagents, re-read everything from the files and do the review yourself as a separate pass, and mark the record "Non-independent review".
-- **User**: sets requirements and may request design review before implementation. Design presentation does not require a reply before work continues.
+### 3. Implement
 
-### Artifacts
+Implement the plan, frontend and backend together (backend: [`../server-routes.md`](../server-routes.md), [`../migrations.md`](../migrations.md), [`../database-and-data.md`](../database-and-data.md)). Cover the page's key behavior with component tests in `tests/client/` and add a new App page to the route test ([`references/page.md`](references/page.md)). Run the [self-check](frontend-dev.md#self-check-before-finishing), including the component checker, before verifying.
 
-Temporary task records go in `storage/ui-workflow/<feature>/` (`storage/` is ignored by git). `<feature>` is kebab-case and matches the route name:
+### 4. Verify, then hand over to acceptance
 
-| File                           | Contents                                                                                         | Template                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| `design.md`                    | Design file                                                                                      | [`templates/design.md`](templates/design.md) |
-| `review-design.md`             | Design review record (written by the reviewer)                                                   | [`templates/review.md`](templates/review.md) |
-| `run.md`                       | Run record (written by the main agent)                                                           | [`templates/run.md`](templates/run.md)       |
-| `acceptance.md`                | Acceptance record (the reviewer writes the issues; the main agent writes the fixes and rechecks) | [`templates/review.md`](templates/review.md) |
-| `capture.json`, `screenshots/` | Screenshot configuration and acceptance screenshots                                              | [`scripts/capture.md`](scripts/capture.md)   |
+[Verify in the browser](#verify-in-the-browser) the whole user task against the real backend: loading, create, edit, delete, saved results and refresh, page and endpoint permissions, and the empty and failure states. Then start the [independent acceptance](#independent-acceptance) and fix what it finds.
 
-The reviewer and main agent hand work over through these temporary records. Before cleanup, retain confirmed reference mappings, page exceptions, durable acceptance criteria and non-obvious reasons in the application-owned design records described in [the design contract](design-contract.md). Code remains the authority for implementation; the durable records preserve intent. Do not delete user references or existing design documents. Keep `screenshots/` (with its `capture-log.json`) for the user to inspect.
+## Verify in the browser
 
-### Step 1: Design
+1. Reuse the running application or start it with `pnpm dev`, and open the `Local:` URL it prints (for example `http://127.0.0.1:13000/main/`) with the page path appended. Sign in and capture on exactly that host: sessions for `127.0.0.1` and `localhost` are not interchangeable. Never enter a password for the user; ask them to sign in.
+2. Take screenshots with the [screenshot tool](scripts/capture.md), from the application root:
 
-1. Read [the design contract](design-contract.md), the original references and existing system/page decisions, then all of [`ui-guidelines.md`](ui-guidelines.md), [`mobile.md`](mobile.md) and [`templates/design.md`](templates/design.md). Then, from ["Look up by task" in `frontend-dev.md`](frontend-dev.md#look-up-by-task), read the sections of the rows the page needs, and ["Error handling" in `api.md`](references/api.md#error-handling): enough to confirm that its routes, permissions, overlays and data updates can be implemented. The complete files in [`references/example.md`](references/example.md) are for step 3.
-2. Work out the data:
-   - The endpoint exists: read and link its contract, and record the fields, parameters, response shape or error behavior that the feature needs to change.
-   - The endpoint does not exist: specify the endpoint you need in the design; the backend is implemented to that contract.
-   - The backend is already implemented: compare its contracts with the required interactions, preserve working behavior and plan only the missing changes. Do not restart completed design decisions or defer all frontend work until another approval round.
-3. Follow [component selection and source review](component-selection.md), recording actual imports, underlying primitives and custom gaps in the component list. Take stock of the available components: `client/components/ui/` (primitives) and `client/components/` (compositions). The design uses existing components, components the configured shadcn registry can add, and explicitly planned application-owned compositions; list every primitive it needs that is not installed yet, so development starts with one `yes n | pnpm exec shadcn add` run ([`references/shadcn.md`](references/shadcn.md)), and say so when it needs a new component of its own. Open the source to confirm any component behavior the design depends on (default width, footer button alignment, how tables paginate and sort, overlay nesting); the file name alone is not enough.
-4. Write a concise `design.md` using the applicable sections of the template: record each reference mode and required detail (V1, V2, …), choose a suitable page template or documented replacement, sketch non-obvious structure, and specify components, states, interactions and copy decisions. Link existing contracts and shared patterns rather than copying them; omit irrelevant sections. Include affected business journeys and plugin-host boundaries, and each page's phone layout in the template's "Phone layout" section. Record departures and their authorization before development; do not silently substitute the default layout for the reference.
-5. Write the acceptance criteria, numbered D1, D2, …, mapping required reference details and exceptions to checkable actions or screenshots; step 4 checks them one by one. When the design changes later, keep existing numbers unchanged, append new criteria at the end, and mark removed ones "Deleted", so that references in the review records still match.
+   ```bash
+   node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs login --base http://127.0.0.1:13000/main/
+   node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs shoot --spec storage/ui-workflow/<feature>/capture.json
+   ```
 
-When done, set the status in `design.md` to "Pending review".
+   Give each changed view a shot at 1440×900 and one at 390×844 with `"isMobile": true`, plus dark mode and the other language where copy or colors changed.
 
-### Step 2: Design review (once)
+3. Note console errors on a baseline page (such as the home page) first; those come from the shell. `/.vite/deps/` 404 or 504 responses after a new dependency vanish on reload.
+4. Walk the task, not just the screenshot: type character by character and with Chinese IME composition (the tool's `type` and `ime` steps), simulate failures with `block` (network, retryable) and `fulfill` with 403, 404 and 500, and use Playwright assertions for focus, disabled buttons and request counts. Check permission-dependent states as [`references/page.md`](references/page.md) describes, and asynchronous transitions as [`references/testing.md`](references/testing.md) describes.
+5. Report what you cannot check (no browser, session or device) as Not verified, with the reason.
+6. Delete the records you created, or list them in the report. Delete `storage/ui-workflow/auth.json` (and any other saved session) at the end: it holds live sign-in cookies. Keep the screenshots.
 
-1. Start a new subagent and review with the ["Design review prompt" in `templates/prompts.md`](templates/prompts.md#design-review-prompt); the record goes in `review-design.md`. Issues are classified as blocking or suggestion and cite guideline IDs.
-2. If there are blocking issues: revise the design, and record how each issue was handled in the design's "Review responses" section (give a reason for each suggestion you do not adopt). There is no second review.
-3. Present the design as a progress update: summarize the page structure, main interactions and material review findings with their resolutions, and include the path to `design.md`. Once blocking review findings are resolved, set its status to "Ready for implementation" and continue directly to development. Wait only if the user explicitly requested review before implementation, a material business or scope question requires their decision, or an action exceeds the authorized scope; record the pending decision and pause only dependent work. Reuse prior user answers; a completed internal review does not require confirmation.
+## Independent acceptance
 
-The reviewed design is the basis for development and the acceptance review.
+For a new page or module, start a new subagent and give it the task, not your reasoning. Without subagents, do the pass yourself from the files and say so in the report.
 
-### Step 3: Development
+```text
+You are a UI acceptance reviewer. Do not modify the application.
+Task and later user decisions: <task text>
+Page plan: docs/ui/pages/<feature>.md
+Changed files: <list>
+Screenshots: storage/ui-workflow/<feature>/screenshots/ (look at each one)
+Application URL and session: <Local URL>, storage/ui-workflow/auth.json
+Check the pages as .agents/skills/nocobase-app-development/references/frontend/ui-acceptance.md describes, using its screenshot tool or a read-only Playwright script for anything the screenshots do not show. Report as that file describes.
+```
 
-1. Read the documents the task table of [`references/example.md`](references/example.md) names, then write the feature's files from `design.md`. Copy a file unchanged only where a document says it is shared infrastructure, as `session-expired-alert.tsx` and `use-url-search.ts` are. Return to the topic references read in step 1 only for a rule the design did not need.
-2. Implement according to `design.md`: every item in the component list, every state, every interaction and every piece of copy must have a matching implementation.
-3. When new backend endpoints are needed, implement them to the endpoint contract in the design (for backend code, see [`../server-routes.md`](../server-routes.md), [`../migrations.md`](../migrations.md) and [`../database-and-data.md`](../database-and-data.md)).
-4. When the design contains decisions that the code does not show by itself but that anyone changing this page later needs to know (for example, why an approach was not used, or what limits an endpoint has), retain them in the application-owned design record, with a code comment where it helps maintain the implementation. The temporary `design.md` can then be deleted without losing the decision.
-5. Cover the page's key behavior (state changes, submission, error handling) with component tests in `tests/client/`, written as [`references/testing.md`](references/testing.md) describes, and add a new App page to the route test ([section 12 of `references/page.md`](references/page.md#12-update-the-route-test)).
-6. Move on to step 4 only after every check in ["Self-check before finishing" in `frontend-dev.md`](frontend-dev.md#self-check-before-finishing) passes.
+Fix every problem it reports, recheck each fix with the flows it touches and retake those screenshots. There is no second review; what you cannot fix is reported as outstanding.
 
-If you find during development that the design is not feasible, follow "Design changes".
+## Report
 
-### Step 4: Acceptance review (once)
+Keep the final report short:
 
-#### 4.1 Run check (main agent)
-
-1. If the application is running, reuse it; if not, start it with `pnpm dev` and open the `Local:` URL it prints, which ends with the deployment base path and a slash (for example `http://127.0.0.1:13000/main/`), with the page's path appended without its leading slash (`…/main/projects`). Sign in and take screenshots on exactly that host: sessions for `127.0.0.1` and `localhost` are not interchangeable. If the page requires sign-in and there is no sign-in session, ask the user to sign in themselves; do not enter a password for the user. The screenshot tool's `login` opens a visible browser window; in an environment without a display, ask the user to run it where a window can open and hand over `storage/ui-workflow/auth.json`, or record the browser checks as "Not verified" with that reason.
-2. Prepare data: take a screenshot of the "empty" state first, then create enough test data through the UI or the endpoints (covering the different statuses, empty fields, long text and pagination). When the checks change data, note how you prepared it and how to clean it up. When the checks are done, delete the records you created, or list them in the report so the user can.
-3. First capture a baseline on an existing page (for example, the homepage): console errors already present in the baseline come from the application shell; record them as "Already in baseline" — they are not issues of this feature. When a new page pulls in a dependency for the first time, Vite re-runs dependency pre-bundling, and a few 404 or 504 ("Outdated Optimize Dep") responses for `/.vite/deps/` may appear; they disappear after a reload and are not page issues either.
-4. Following the interactions in `design.md` one by one, walk through the core flow (for example, create → appears in the list → edit → delete), and cover every state: loading, empty, no results, failure. Compare the original references under their declared modes and authorized exceptions, using [the shared acceptance checks](ui-acceptance.md). Exercise the affected cross-module journey or plugin-host integration when applicable. Compare the design's declared structure with the code as well — routes, navigation entries and their icons, permissions — not only the numbered criteria.
-   - Type text character by character, and edit in the middle of existing text; for search boxes and form text fields, also simulate Chinese IME composition. Use the `type` and `ime` steps of the screenshot tool ([`scripts/capture.md`](scripts/capture.md)), or the same calls in your own script: `page.keyboard.type`, and a CDP session sending `Input.imeSetComposition` for each intermediate pinyin state and `Input.insertText` for the chosen characters. Filling in a value in one go (`fill`) cannot reveal an input falling out of sync with its state.
-   - For states that depend on permissions (a hidden page, a denied tab, a read-only card), follow ["Checking permission states in the browser" in `references/page.md`](references/page.md#checking-permission-states-in-the-browser).
-   - For results a screenshot cannot show, such as where focus goes, whether a button is disabled, or how many requests are sent, write Playwright script assertions (put them under `storage/ui-workflow/<feature>/`).
-   - Simulate failure states per status: `block` for a network failure (the retryable state), `fulfill` with `status: 403` or `404` for the states that offer no "Retry", `500` for a server error. `offline` also cuts Vite's hot update connection, and the page does a full reload when the network comes back.
-   - Repeat the core flow at a phone width ([M10 in `mobile.md`](mobile.md#m10-verifying-the-phone-experience)): 375×667 and 390–412px, with Playwright's `isMobile` and `hasTouch`, checking the first screen, page overflow, cards, filters, tabs, forms with validation errors and overlays at the short height. Record soft keyboard, dynamic toolbar and safe-area behavior as verified on a device or simulator, or as "Not verified" with the reason.
-   - Record any state you cannot simulate as "Not verified" and give the reason.
-5. Record console errors, failed endpoint requests (4xx, 5xx, except those the check caused on purpose) and page errors.
-6. Screenshots: one per key state, saved to `screenshots/`, with file names matching those referenced in the acceptance criteria. The screenshot tool ([`scripts/capture.md`](scripts/capture.md)) takes them in batch, in both color modes, both presets and at narrow widths, and collects console errors and failed requests at the same time. Verify affected asynchronous interactions with [transition verification](references/testing.md#asynchronous-transitions); screenshots alone do not establish continuity.
-7. Write the run record `run.md` from [`templates/run.md`](templates/run.md).
-
-#### 4.2 Independent review (new subagent)
-
-Use the ["Acceptance review prompt" in `templates/prompts.md`](templates/prompts.md#acceptance-review-prompt); the record goes in `acceptance.md`. The reviewer sorts issues into four types:
-
-| Type                  | Meaning                                                                                                                                                                                                                                                                                                                       |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B Blocking            | Unusable: a blank screen or an error, the core flow cannot be completed, data is not saved or is saved wrongly, an action gives no feedback, console errors, access beyond permissions (seeing or changing data that should not be visible)                                                                                   |
-| D Design mismatch     | The whole design file is compared with the code: the acceptance criteria (D1…Dn) one by one, and the routes, navigation entries (including their icons), permissions, component list and states it declares; any item that does not match, and anything carried over from the worked example that the design does not ask for |
-| G Guideline violation | Violates a usability/integration requirement or a Must default without an authorized replacement under [the design contract](design-contract.md)                                                                                                                                                                              |
-| S Suggestion          | Anything else that could be improved                                                                                                                                                                                                                                                                                          |
-
-#### 4.3 Fixes and rechecks (main agent)
-
-- Only S issues, or no issues, and all required checks verified: the acceptance review passes. You may fix S issues along the way; list the ones you do not fix in the report. Missing required reference, browser or host evidence makes the verdict Incomplete; report the limitation rather than claiming a pass or waiting indefinitely for unavailable access.
-- B, D or G issues: fix all of them, then recheck them yourself; do not start a second reviewer:
-  1. Rerun the self-checks from step 3.
-  2. Exercise each fix again, one at a time, along with the flows related to it: a fix can introduce new issues — for example, if you changed the save logic, walk through create, edit and delete again.
-  3. Retake the screenshots whose view has changed.
-  4. In the "Fixes and rechecks" section at the end of `acceptance.md`, record for each issue how you fixed it, how you rechecked it, and the result.
-- Issues you cannot fix, or that need a design change: follow "Design changes", or list them in the report as outstanding, with the reason.
-
-### Step 5: Report
-
-The final report includes:
-
-- **What was done**: completed user operations, pages, routes and changed files. For full application or feature requests, include evidence that the UI, endpoints, persistence and permissions work together; backend tests and design records alone do not establish completion. Respect explicitly limited deliverables such as API-only work.
-- **Design**: the implemented approach, reference modes, reference-fidelity results, authorized exceptions, design changes and unresolved decisions; paths to the retained system/page decisions.
-- **Acceptance review**: which issues the review found; the results of the fixes and rechecks.
-- **Screenshots**: attach or display the key screenshots when the client can show images; otherwise give their paths.
-- **Outstanding**: unresolved issues, and what was not verified and why.
-
-Cleanup: first retain the confirmed decisions as described under Artifacts. Delete only the temporary task copies of `design.md`, `review-design.md`, `run.md`, `acceptance.md` and `capture.json`, and the sign-in sessions `storage/ui-workflow/auth.json` (and `auth-limited.json`, if you made one), which hold live sign-in cookies. Keep `storage/ui-workflow/<feature>/screenshots/` so the user can look at them, and end the report with the command that removes it (`rm -r storage/ui-workflow/<feature>`). Keep temporary design and review records when the user asks; authentication state is still removed. Never remove original references or application-owned design records.
-
-### Design changes
-
-When development or the acceptance review shows that the design is not feasible (endpoint limits, something a component cannot do, conflicting interactions), or that it needs adjusting:
-
-1. Identify the affected parts and whether the change can be resolved within the requested scope.
-2. In the "Change log" of `design.md`, record what changed, why, which reference requirements and acceptance criteria it affects, and which durable record needs updating.
-3. Explain material changes to the page structure or main interactions and continue when they remain within the requested scope. Ask only when a blocking decision needs user input, the change exceeds the authorized scope, or the user explicitly requested review first; pause only the dependent work. Include the changes in the final report.
-
-Do not implement a design you know is flawed just to "match the design", and do not deviate from the design without leaving a record.
+- **Workflow and what was done**: user tasks, routes, changed files, the page plan's path.
+- **Checks**: the commands run and their results; what was checked in the browser at 1440 and 390, with the key screenshots (shown, or their paths).
+- **Acceptance**: the problems found and how each was fixed (new pages only).
+- **Outstanding**: anything not verified and why, test data left behind, and the command to remove the screenshots (`rm -r storage/ui-workflow/<feature>`).

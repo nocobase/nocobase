@@ -2,19 +2,21 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
-Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, atomic creation snapshots and version-specific configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+When the user asks for administrators to adjust a policy such as approval departments, reviewer choices or thresholds, declare it as a business parameter they can change without editing workflow structure; otherwise keep the requested values in the definition. For declarations, atomic creation snapshots and version-specific configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
 
 ## Approval requests: check the Pro plugin first
 
 When requirements include an approval process, first check whether `@nocobase/app-plugin-approval` is installed and registered, and read its synchronized Skill when available. Multi-stage approvals, countersigning/all-or-any decisions, added reviewers, reassignment and approval task management should use this commercial Pro plugin. Simple single-person confirmation or rejection can remain lifecycle transitions.
 
-If the plugin is missing, follow [commercial package access](plugins.md#commercial-package-access) to probe pkg-v3 automatically and install/register a compatible authorized version without prompting. Read the synchronized approval Skill before integrating its APIs. When access is unavailable, leave a brief conversation notice and continue independent work without waiting for the user; keep approval integration explicitly pending. Do not invent plugin APIs or silently replace it with a homegrown approval engine. An explicit request for a simple confirmation or a custom implementation takes precedence; state its supported scope without claiming full approval-plugin behavior.
+If the plugin is missing, follow [commercial package access](plugins.md#commercial-package-access): probe access, tell the user what is needed and install it after they agree. Read the synchronized approval Skill before integrating its APIs. Until it is installed, continue independent work and keep approval integration explicitly pending. Do not invent plugin APIs or silently replace it with a homegrown approval engine. An explicit request for a simple confirmation or a custom implementation takes precedence; state its supported scope without claiming full approval-plugin behavior.
 
 The lifecycle examples below illustrate state transitions, guards and effects, not a replacement for the approval plugin. Keep business record progression and post-approval execution distinct from approval decisions, and follow the plugin's integration contract for connecting them. Do not assume that an approved request means payment or another external effect succeeded.
 
-## Deliver workflow management by default
+## Workflow management entry
 
-Whenever application requirements include a process to develop, include workflow management pages alongside its business operations; users do not need to request a console separately. Reuse or extend existing management pages with the UI Library `workflow-management` block and follow [Lifecycle UI](lifecycle-ui.md) for the default layout and organization based on the workflow example. Deliver one Workflow management card in System settings with in-page Definitions and Executions tabs, definition details with diagrams and declared parameter settings, and execution details with history and effects. The tab views have URL-backed child routes without sidebar `navigation`. Follow the scope exceptions in [system administration](system-administration.md#default-delivery). Keep workflow structure in source; management pages do not imply a visual designer.
+A process gets its minimal management entry alongside its business operations: one Workflow management card in System settings, built with the UI Library `workflow-management` block, with in-page Definitions and Executions tabs (URL-backed child routes without sidebar `navigation`), definition details with the standard `@nocobase/lifecycle-diagram` read-only and execution details with history and effects. Parameter forms and diagram configuration controls are built only when the user asks for adjustable policy. Follow [Lifecycle UI](lifecycle-ui.md) for the layout and the [scope policy](system-administration.md#default-delivery) for exclusions. Workflow structure stays in source; management pages do not imply a visual designer.
+
+The business record's page may show a diagram, state/actions/history, or a compact summary according to the task. This choice does not remove its administration entry. Preserve record-level permissions and source-owned structure; a definition diagram never fires a transition. Follow [diagram integration](#draw-an-interactive-lifecycle-diagram) and the [frontend workflow](frontend/ui-workflow.md).
 
 ## Choose it or something else
 
@@ -28,12 +30,6 @@ Whenever application requirements include a process to develop, include workflow
 | Work that runs once in the background, or on a schedule, with no record state                     | [services and jobs](services-and-jobs.md)                                                                                                              |
 
 A parent and its children can each have a lifecycle and point at each other by foreign key, such as a document and the tasks it distributes; a child's last transition can move the parent on in the same transaction.
-
-## Include process administration automatically
-
-Implement [the system settings delivery contract](system-settings.md) with every lifecycle: a directory of the application's real definitions, a definition diagram, supported parameter configuration and authorized execution history. Do not ask the user whether to include these administration surfaces. Use `@nocobase/lifecycle-diagram` for definitions and actual record progress, with the standard `@nocobase/flow-diagram` canvas beneath it. Respect an explicit request to omit the interface.
-
-The business record's page may show a diagram, state/actions/history, or a compact summary according to the task. This choice does not remove its administration entry. Preserve record-level permissions and source-owned structure; a definition diagram never fires a transition. Follow [diagram integration](#draw-an-interactive-lifecycle-diagram) and the [frontend workflow](frontend/ui-workflow.md).
 
 ## Rules that are never broken
 
@@ -212,10 +208,10 @@ The record table needs, besides its business fields:
 
 The two log tables, created once for every lifecycle in the application:
 
-- `lifecycleTransitions`: `id` (`bigInt`, primary key, `autoIncrement`: the store lets the database number entries and reads history in that order, so a string key fails the first time a record is created, on SQLite with `NOT NULL constraint failed: lifecycle_transitions.id`), `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
+- `lifecycleTransitions`: `id` (`bigInt`, primary key, `autoIncrement`), `lifecycle`, `recordId` (string), `transition`, `from` (nullable), `to`, `actorId`, `input` (json), `at` (`datetimeTz`), `version` (integer), `requestId` (nullable), `requestKey` (not null); unique indexes on `(lifecycle, recordId, version)` and `(lifecycle, recordId, requestKey)`, and an index on `(lifecycle, recordId, id)`.
 - `lifecycleEffectRuns`: `id` (`bigInt`, primary key, `autoIncrement`), `transitionId` (`bigInt`, not null, the id of the transition that queued it), `lifecycle`, `recordId` (string), `effect`, `stayBound` (boolean not null), `status`, `attempts` (default 0), `maxAttempts` (default 1), `result` (json), `error` (text), `createdAt`, `updatedAt`, `claimedAt`, `runAfter`, `continuation` (json, nullable), `continuationDueAt` and `continuationAbandonedAt` (`datetimeTz`, nullable); indexes on `(status, id)`, `(lifecycle, recordId, id)`, `continuationDueAt` and `continuationAbandonedAt`.
 
-Different log table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`.
+Use `table.bigInt('id').primary().autoIncrement().notNull()` for both log IDs: the database assigns them and the store reads entries in that order, even when the business record has a UUID. Different log table names are passed to `createRepositoryLifecycleStore(db, { collections: { transitions, effectRuns } })`.
 
 When any caller uses `runtime.create(name, values, { actor, requestId })`, including an importer or a sample seed, add the creation-request table before calling it. The Runtime uses `lifecycleCreationRequests` by default. A custom name is set with the Runtime's `creationRequestsCollection` option. Add this to the self-contained migration's `up`, and drop the same table in its `down`:
 
@@ -233,6 +229,8 @@ await builder.createCollection('lifecycleCreationRequests', (table) => {
 ```
 
 The primary key backs the unique claim for creation retries. Check this table and the two log tables using `describeMigration()` as [testing](testing.md) describes. Retry the same creation with the same request ID and normalized inputs, and verify that only one record and one creation entry exist. Creation without a Runtime request ID, such as creation already deduplicated by the application's operation receipt, uses the two log tables. Transition request IDs are stored on `lifecycleTransitions`.
+
+As soon as the migration, provider and create route exist, before building the page, run one route test against a started application on a real database: create a record, fire its first manual transition, then read back the new state, the two `lifecycleTransitions` entries (`$create` and the transition) and any effect run. This catches a wrong log schema, and a runtime API the installed `@nocobase/lifecycle` does not export (check its `dist/*.d.ts`, not only its version number), while they are still one-line fixes.
 
 ## 3. The provider
 
@@ -484,20 +482,21 @@ States, transition, lifecycle and effect names are stored in the database. Never
 
 ## Troubleshooting
 
-| Symptom                                        | Cause and fix                                                                                                                                                                                         |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A request or transition hangs on SQLite        | A guard or hook reads through the database manager, or calls `runtime.fire()` without `tx`. Use a services factory and `tx`                                                                           |
-| A trigger never fires                          | The record was not created through `runtime.create()`, nothing sweeps, a self-transition restarted the wait, or the guard refuses `SYSTEM_ACTOR`; `can(name, id, transition, SYSTEM_ACTOR)` shows why |
-| An effect run stays `queued`                   | Its effect was renamed and no process registers the old name, or `runAfter` has not come                                                                                                              |
-| An effect succeeded but the record never moved | Its continuation was refused, often because a parent is not ready; it waits on the run and the sweep retries it, or `continueRun(id)` once the cause is fixed                                         |
-| Frequent `CONFLICT`                            | Expected for stale pages; reload and let the person decide again. If triggers or continuations conflict with people, check they do not compete for the same state                                     |
-| `INVALID_SET` on create                        | `values` set the state, timestamp or version; pass `{ state }` to `create()` to start in another initial state                                                                                        |
+| Symptom                                            | Cause and fix                                                                                                                                                                                         |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A request or transition hangs on SQLite            | A guard or hook reads through the database manager, or calls `runtime.fire()` without `tx`. Use a services factory and `tx`                                                                           |
+| A trigger never fires                              | The record was not created through `runtime.create()`, nothing sweeps, a self-transition restarted the wait, or the guard refuses `SYSTEM_ACTOR`; `can(name, id, transition, SYSTEM_ACTOR)` shows why |
+| An effect run stays `queued`                       | Its effect was renamed and no process registers the old name, or `runAfter` has not come                                                                                                              |
+| An effect succeeded but the record never moved     | Its continuation was refused, often because a parent is not ready; it waits on the run and the sweep retries it, or `continueRun(id)` once the cause is fixed                                         |
+| Frequent `CONFLICT`                                | Expected for stale pages; reload and let the person decide again. If triggers or continuations conflict with people, check they do not compete for the same state                                     |
+| Create fails with a not-null error on the log `id` | The log tables declare a `string` id with no generator; use the auto-increment `bigInt` id from [the migration](#2-the-migration)                                                                     |
+| `INVALID_SET` on create                            | `values` set the state, timestamp or version; pass `{ state }` to `create()` to start in another initial state                                                                                        |
 
 The installed package's README lists its entries; the full guide, design notes and 28 worked recipes are in `packages/libs/lifecycle/docs/` of the NocoBase repository, and `packages/examples/app-plugin-lifecycle-example` and `packages/examples/app-plugin-office-flows-example` are complete working code.
 
 ## Draw an interactive lifecycle diagram
 
-For workflow management lists, definition and execution details, diagram sizing and parameter form placement, read [Lifecycle UI](lifecycle-ui.md). Prefer a visible parameter form beside the diagram on management pages; provide contextual configuration for declared, authorized bindings by default through `LifecycleDiagram.configuration`, opening the same editor. Use the same editor and save contract for both. Read [configurable lifecycle parameters](lifecycle-parameters.md#management-pages-and-contextual-editors) for authorization, CAS conflicts and current-versus-historical values.
+For workflow management lists, definition and execution details, diagram sizing and parameter form placement, read [Lifecycle UI](lifecycle-ui.md). When the user asked for adjustable parameters, prefer a visible parameter form beside the diagram on management pages; contextual configuration through `LifecycleDiagram.configuration` is added when asked and opens the same editor with the same save contract. Read [configurable lifecycle parameters](lifecycle-parameters.md#administration-and-instance-details) for authorization, CAS conflicts and current-versus-historical values.
 
 When a page needs a lifecycle diagram, first reuse the template's preinstalled `#components/lifecycle-diagram`; otherwise install the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
 

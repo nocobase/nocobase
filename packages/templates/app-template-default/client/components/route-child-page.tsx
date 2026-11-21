@@ -173,7 +173,7 @@ function RouteChildPageLayer({
         ref={scrollerRef}
       >
         <EnclosingLayerContext.Provider value={scrollerRef}>
-          {/* A create or edit page asks before discarding its form's input, as a route dialog does (mobile.md M7.4):
+          {/* A create or edit page asks before discarding its form's input, as a route dialog does (ui-guidelines.md T3.9):
               leaving by the back button, a breadcrumb, a link or browser back asks "Discard changes?", and a reload
               gets the browser's warning. */}
           <DiscardScope containerRef={layerRef}>{children}</DiscardScope>

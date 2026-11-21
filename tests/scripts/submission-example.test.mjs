@@ -27,6 +27,7 @@ function example(form, write) {
   const errors = [];
   const submit = new Function(
     'useSubmission',
+    'useRef',
     'userId',
     'formId',
     'form',
@@ -38,6 +39,7 @@ function example(form, write) {
     `${source}\nreturn submit;`,
   )(
     () => controller,
+    (current) => ({ current }),
     'user',
     'order-form',
     form,
@@ -73,7 +75,7 @@ test('the published submission example clears a corrected field after an invalid
   assert.deepEqual(errors, []);
 });
 
-test('the published example acquires its lock before async validation', async () => {
+test('the published example ignores a repeated submit while validating, without taking the save lock', async () => {
   let release;
   const validation = new Promise((resolve) => {
     release = resolve;
@@ -92,13 +94,42 @@ test('the published example acquires its lock before async validation', async ()
     writes++;
     return { record: { name: 'Order' } };
   });
+  // While validation runs nothing is saving, so leaving the form still asks before discarding its input.
   const first = submit();
-  assert.equal(controller.getSnapshot(), true);
-  await submit();
-  assert.equal(validations, 1);
-  assert.equal(writes, 0);
+  const second = submit();
+  assert.equal(controller.getSnapshot(), false);
   release();
+  await Promise.all([first, second]);
+  assert.equal(validations, 1);
+  assert.equal(writes, 1);
+  assert.equal(controller.getSnapshot(), false);
+  assert.deepEqual(errors, []);
+});
+
+test('the published example writes once when a repeated submit finishes validating after the first save', async () => {
+  const gates = [];
+  const form = createFormControl({ defaultValues: { name: 'Order' } });
+  form.register('name', {
+    validate: () =>
+      new Promise((resolve) => {
+        gates.push(() => resolve(true));
+      }),
+  });
+  let writes = 0;
+  const { submit, controller, errors } = example(form, async () => {
+    writes++;
+    return { record: { name: 'Order' } };
+  });
+  const first = submit();
+  const second = submit();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(controller.getSnapshot(), false);
+  gates.shift()();
   await first;
+  assert.equal(writes, 1);
+  // The repeated submit's own validation, if it started one, ends only after the first save is done.
+  for (const release of gates.splice(0)) release();
+  await second;
   assert.equal(writes, 1);
   assert.equal(controller.getSnapshot(), false);
   assert.deepEqual(errors, []);

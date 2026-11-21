@@ -34,6 +34,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '#components/ui/alert-dialog';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import { useListLocation } from '#hooks/use-list-location';
 import { useTableUrlState } from '#hooks/use-table-url-state';
@@ -41,6 +42,7 @@ import { RelationPicker } from './relation-picker.js';
 import { WriteFeedback, StatusChoice } from './shared.js';
 import {
   base,
+  customersScope,
   useCrmAction,
   useWriteLock,
   type Customer,
@@ -50,13 +52,7 @@ import {
 export interface CustomerListContext {
   selected: string[];
   selectedCustomers: Pick<Customer, 'id' | 'name'>[];
-  reload: () => void;
   clearSelection: () => void;
-  onBatchSaved: (
-    ids: string[],
-    values: { status?: string; ownerId?: string },
-  ) => void;
-  onSaved: (row: Customer) => void;
 }
 
 export default function CustomerContactsPage() {
@@ -90,9 +86,11 @@ function CustomerContactsContent() {
     ...(owner ? { ownerId: owner } : {}),
   });
   const path = `${base}/customers?${query}`;
+  // Writes elsewhere (the batch dialog, a customer's page and its dialogs) announce their scopes; this list reads again.
   const request = useListData<List<Customer>>(path, {
     active,
     keepPreviousData: true,
+    scopes: [customersScope],
   });
   const selectionKey = `${path}/${request.revision}/${authRevision}`;
   const [selection, setSelection] = useState<{ key: string; ids: string[] }>({
@@ -176,7 +174,12 @@ function CustomerContactsContent() {
       accessorKey: 'name',
       header: t('customerContacts.customer'),
       cell: ({ row }) => (
-        <RecordLink to={{ pathname: row.original.id, search: location.search }}>
+        <RecordLink
+          to={{
+            pathname: `${row.original.id}/details`,
+            search: location.search,
+          }}
+        >
           {row.original.name}
         </RecordLink>
       ),
@@ -207,35 +210,13 @@ function CustomerContactsContent() {
     rows.length,
     Boolean(search || status !== 'all' || owner),
   );
-  const reload = () => {
-    setSelection({ key: '', ids: [] });
-    request.reload();
-  };
+  // The batch dialog reads what is selected; refreshing after its write goes through `announceDataChange`.
   const context: CustomerListContext = {
     selected,
     selectedCustomers: rows
       .filter((row) => selected.includes(row.id))
       .map(({ id, name }) => ({ id, name })),
-    reload,
     clearSelection: () => setSelection({ key: '', ids: [] }),
-    onBatchSaved: (ids, values) => {
-      if (request.data)
-        request.replaceData({
-          ...request.data,
-          data: request.data.data.map((row) =>
-            ids.includes(row.id) ? ({ ...row, ...values } as Customer) : row,
-          ),
-        });
-    },
-    onSaved: (row) => {
-      if (request.data)
-        request.replaceData({
-          ...request.data,
-          data: request.data.data.map((current) =>
-            current.id === row.id ? row : current,
-          ),
-        });
-    },
   };
   return (
     <PageContainer>
@@ -277,7 +258,7 @@ function CustomerContactsContent() {
         listState={state}
         loading={active && request.loading}
         loadingIdentity={path}
-        onRetry={reload}
+        onRetry={request.reload}
         // One row on every width (mobile.md M4.1): DataTable puts the search box first, then the filters inline from
         // md up or, on a phone, an icon Filters button named and badged with the applied count that opens them in a
         // bottom sheet; Clear filters joins while something is applied (M4.2).
@@ -389,7 +370,8 @@ function CustomerContactsContent() {
                     });
                     setConfirmReset(false);
                     setResetError(undefined);
-                    reload();
+                    // The reset replaces every customer and contact.
+                    announceDataChange({ scopes: [base] });
                     toaster.show({
                       type: 'success',
                       title: t('customerContacts.resetDone'),
@@ -417,7 +399,7 @@ function CustomerContactsContent() {
  * One customer on a phone (mobile.md M3): the selection checkbox when batch actions exist, the name link and status
  * first, then the owner. The table's columns stay for wider screens. Like the rows, the card has no action menu: this
  * list changes customers through selection and the batch action, and a customer's own edit belongs with its contacts
- * on the customer's page (case (c) of M3.1).
+ * on the customer's page.
  */
 function CustomerCard({
   customer,
@@ -447,7 +429,7 @@ function CustomerCard({
       <div className='flex min-w-0 flex-1 flex-col gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           <RecordLink
-            to={{ pathname: customer.id, search }}
+            to={{ pathname: `${customer.id}/details`, search }}
             className='min-w-0 break-words'
           >
             {customer.name}

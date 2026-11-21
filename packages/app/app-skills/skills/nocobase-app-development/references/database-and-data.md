@@ -1,6 +1,6 @@
 # Database and data access
 
-This page is how an application reaches the database and where that code belongs. The API itself — Repository, QueryAdapter, transactions, naming, and the criterion for choosing between the two layers — belongs to the package that owns it: read `.agents/skills/nocobase-db/SKILL.md` sections 4 and 5, and run `pnpm nocobase skills sync` if that file is missing. Schema changes are migrations; see [migrations and seeds](migrations.md).
+This page is how an application reaches the database and where that code belongs. The API itself — Repository, QueryAdapter, transactions, naming, and the criterion for choosing between the two layers — belongs to the [nocobase-db Skill](../../nocobase-db/SKILL.md#4-repository-and-query); run `pnpm nocobase skills sync` if it is missing from `.agents/skills/`. Schema changes are migrations; see [migrations and seeds](migrations.md).
 
 ## Resolving the database
 
@@ -14,9 +14,9 @@ const database = app.container.resolve(databaseManagerToken);
 
 In a route factory, resolve it once in the factory rather than inside each handler. In a service, take it as a constructor dependency — see [services and jobs](services-and-jobs.md).
 
-From there, `database.repository(collection)` is the default for a collection's records and their relations, `database.query()` is for a result set that is not any collection's records, and `database.transaction(fn)` groups writes that must succeed or fail together. Each takes an optional connection name and uses the default connection when omitted.
+Choose between `repository`, `query` and `transaction` as the [nocobase-db Skill](../../nocobase-db/SKILL.md#4-repository-and-query) describes; each takes an optional connection name and uses the default connection when omitted.
 
-Keep `@nocobase/db` in `dependencies`, not `devDependencies`. The deployed server resolves it at runtime, and TypeScript also reads that declaration to infer the database configuration through the public package name; declaring it only as a development dependency can cause TS2883 in an installed application even while a source workspace builds successfully.
+Keep `@nocobase/db` in `dependencies`, not `devDependencies` ([why](../../nocobase-db/SKILL.md#1-configuration)); declaring it only as a development dependency can cause TS2883 in an installed application even while a source workspace builds successfully.
 
 ## Where data access belongs
 

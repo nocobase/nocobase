@@ -42,7 +42,7 @@ For worked implementations and tests, read the matching [Server Route examples](
 
 ## Rules that apply before implementation
 
-For UI work, first read [the shared UI design entry](references/ui-design.md): it locates the same design contract, reference modes, authorized exceptions and acceptance rules used by application development. Read the host's design decisions before choosing a layout, retain approved decisions outside synchronized Skills, and verify the rendered plugin in the host. Package ownership and implementation remain governed by this Skill.
+For UI work, first read [the shared UI design entry](references/ui-design.md): it links the design contract, guidelines and acceptance rules shared with application development. Follow the host's design before choosing a layout and verify the rendered plugin in the host. Package ownership and implementation remain governed by this Skill.
 
 When creating a page or writing a page component, refer to [Pages, routes, and menus](references/client-pages-and-routes.md) for page component structure and route declarations. For nested pages, page-level navigation Tabs, route dialogs/drawers, or navigation groups, also read [Child routes, Tabs, overlays, navigation groups, and Outlet](references/client-child-routes.md). Before using the page and overlay examples, [copy the required component source into the plugin](references/client-components.md#copy-page-and-route-components-into-the-plugin). The examples import these plugin-owned copies through relative `.js` paths; the host's private breadcrumb component is excluded. For route overlay component availability and hook context boundaries, read [route dialogs and drawers](references/client-routing.md#route-dialogs-and-drawers).
 

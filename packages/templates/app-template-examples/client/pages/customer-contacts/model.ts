@@ -35,6 +35,14 @@ export interface BatchResult {
   failed: number;
 }
 export const base = 'customerContacts';
+/**
+ * What each view reads, for `useListData(..., { scopes })` and `announceDataChange`. A write to a customer or to its
+ * contacts overlaps the customer list, the customer and its contacts, so each of them reads again or takes the result.
+ */
+export const customersScope = `${base}/customers`;
+export const customerScope = (id: string) => `${customersScope}/${id}`;
+export const contactsScope = (customerId: string) =>
+  `${customerScope(customerId)}/contacts`;
 export function useCrmAction(resource: string, action: string) {
   return useCan({
     resource: { type: 'composite', id: `example.crm.${resource}` },

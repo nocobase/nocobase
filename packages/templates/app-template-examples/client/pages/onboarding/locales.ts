@@ -70,7 +70,6 @@ export const enUS = {
   employee: 'Employee created',
   employeeId: 'Employee ID',
   none: 'Not provided',
-  back: 'Back to onboarding',
   newDescription:
     'Four steps. Save a private draft at any time; only you can open it.',
   stepOf: 'Step {{current}} of {{total}}',
@@ -103,11 +102,6 @@ export const enUS = {
   saved: 'Draft saved',
   notSaved: 'Not saved yet',
   restored: 'Draft restored',
-  discard: 'Discard unsaved changes?',
-  discardDescription:
-    'Your changes have not been saved. Keep editing or discard them to leave this page.',
-  keepEditing: 'Keep editing',
-  discardAction: 'Discard changes',
   restoredDescription:
     'Continuing from {{step}}, the first step that still needs information.',
 };
@@ -177,7 +171,6 @@ export const zhCN: Record<keyof typeof enUS, string> = {
   employee: '已生成员工记录',
   employeeId: '员工编号',
   none: '未填写',
-  back: '返回入职列表',
   newDescription: '共四步，可随时保存私有草稿，只有你本人能打开。',
   stepOf: '第 {{current}} 步，共 {{total}} 步',
   basicSummary: '姓名、邮箱和国籍',
@@ -207,10 +200,5 @@ export const zhCN: Record<keyof typeof enUS, string> = {
   saved: '草稿已保存',
   notSaved: '尚未保存',
   restored: '已恢复草稿',
-  discard: '放弃未保存的修改？',
-  discardDescription:
-    '你的修改尚未保存，可以继续编辑，或放弃修改后离开此页面。',
-  keepEditing: '继续编辑',
-  discardAction: '放弃修改',
   restoredDescription: '已从“{{step}}”继续，这是第一个还需补充信息的步骤。',
 };

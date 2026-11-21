@@ -1,12 +1,7 @@
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useId, useRef, useState } from 'react';
-import {
-  useLocation,
-  useNavigate,
-  useOutletContext,
-  useParams,
-} from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
@@ -15,6 +10,7 @@ import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Textarea } from '#components/ui/textarea';
 import { Label } from '#components/ui/label';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import { RelationPicker } from './relation-picker.js';
 import {
@@ -26,12 +22,13 @@ import {
 } from './shared.js';
 import {
   base,
+  contactsScope,
+  customerScope,
   useCrmAction,
   useWriteLock,
   type Customer,
   type Contact,
 } from './model.js';
-import type { CustomerDetailContext } from './detail.js';
 
 export default function CustomerEditorPage() {
   const { customerId = '', contactId } = useParams();
@@ -72,7 +69,6 @@ function Editor({
   const toaster = useToaster();
   const navigate = useNavigate();
   const location = useLocation();
-  const parent = useOutletContext<CustomerDetailContext>();
   const edit = useCrmAction('customers', 'edit');
   const assign = useCrmAction('customers', 'assign');
   const maintain = useCrmAction('contacts', 'edit');
@@ -88,7 +84,7 @@ function Editor({
   const initialContact =
     kind === 'contact' ? (row as Contact | undefined) : undefined;
   // What is saved: the record as the form shows it, or the blank values of a new one. The dialog compares the form
-  // with it before every way out and asks "Discard changes?" when they differ (mobile.md M7.4).
+  // with it before every way out and asks "Discard changes?" when they differ (ui-guidelines.md T3.9).
   const savedValues = {
     name: row?.name ?? '',
     notes: initialCustomer?.notes ?? '',
@@ -157,8 +153,22 @@ function Editor({
         method: row ? 'PATCH' : 'POST',
         json,
       });
-      if (kind === 'customer') parent.onCustomerSaved(saved.data as Customer);
-      parent.reload();
+      if (kind === 'customer') {
+        // The customer's page takes the saved record as is; the list reads again.
+        const scope = customerScope(saved.data.id);
+        announceDataChange({ scopes: [scope], results: { [scope]: saved } });
+      } else {
+        // A contact moved to another customer leaves one list and joins another.
+        const moved = (saved.data as Contact).customerId;
+        announceDataChange({
+          scopes: [
+            ...new Set([
+              contactsScope(initialContact?.customerId ?? customerId),
+              contactsScope(moved),
+            ]),
+          ],
+        });
+      }
       toaster.show({
         type: 'success',
         title: t('customerContacts.saved', { name: saved.data.name }),

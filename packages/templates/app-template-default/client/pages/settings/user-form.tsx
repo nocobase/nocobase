@@ -27,10 +27,11 @@ import {
 import {
   useLocation,
   useNavigate,
-  useOutletContext,
   useParams,
   useResolvedPath,
 } from 'react-router';
+import { announceDataChange } from '#hooks/use-data-changes';
+import { userChange } from './user-scopes.js';
 import { RouteDialog } from '#components/route-dialog';
 import { RouteDrawer } from '#components/route-drawer';
 import { Button } from '#components/ui/button';
@@ -196,9 +197,6 @@ function UserEditor(): ReactElement {
   const client = useMemo(() => new UsersClient(api), [api]);
   const navigate = useNavigate();
   const location = useLocation();
-  const parent = useOutletContext<{
-    reload: (updated?: ManagedUser) => void;
-  }>();
   const data = useSettingsData<{ data: ManagedUser }>(
     userId ? `users/${encodeURIComponent(userId)}` : 'users/options',
   );
@@ -210,9 +208,10 @@ function UserEditor(): ReactElement {
       missingRef.current !== data.error
     ) {
       missingRef.current = data.error;
-      parent.reload();
+      // The list drops or re-reads the missing user through its scope.
+      if (userId) announceDataChange(userChange(userId));
     }
-  }, [data.error, parent]);
+  }, [data.error, userId]);
   const options = useSettingsData<{ data: UsersOptions }>('users/options');
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role', userId ?? '*');
@@ -375,7 +374,7 @@ function UserEditor(): ReactElement {
       );
       if (!updated) return;
       setDirty(false);
-      parent.reload(updated);
+      announceDataChange(userChange(updated.id, updated));
       toaster.show({
         type: 'success',
         title: t(creating ? 'settings.created' : 'settings.saved', {

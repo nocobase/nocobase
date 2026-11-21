@@ -9,7 +9,7 @@ A restriction rule intersects the records an action reaches with the rule's sele
 
 Read the installed `nocobase-app-plugin-authorization` Skill first for composite resources, data scopes, fields, server policy enforcement and inherited subjects. The package README at `node_modules/@nocobase/app-plugin-authz-restriction-rules/README.md` is the complete reference for the service, the HTTP routes and the exports; this Skill covers how to use them.
 
-For a restriction assigned to a department, or to the root department for the whole company, read the application development Skill's `references/organization/permission-design.md` first. Its core works with permission sets alone and says how to keep excluded records out without this plugin; its optional restriction section covers this one.
+For a restriction assigned to a department, or to the root department for the whole company, read [organisation permission design](../nocobase-app-plugin-authorization/references/organization/permission-design.md) in the authorization plugin Skill first. Its core works with permission sets alone and says how to keep excluded records out without this plugin; its optional restriction section covers this one.
 
 ## Development workflow
 

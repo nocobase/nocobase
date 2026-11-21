@@ -1,442 +1,169 @@
 # Forms and validation
 
-Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` family from `#components/ui/field` for structure, and the input components in `#components/ui/` for controls. The template ships `input`, `label` and `select`; add `field` and every other control before using it (`yes n | pnpm exec shadcn add field textarea checkbox`, then format the created files, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes). The layout rules for these components are in the skill's [`rules/forms.md`](../shadcn/rules/forms.md); this document covers binding them to react-hook-form and zod.
+How to build a create or edit form with the template's components. The visual and interaction rules are T3 (forms) and T4 (settings) in [`../ui-guidelines.md`](../ui-guidelines.md); the dialog around the form, closing and the discard question are in [`overlay.md`](overlay.md); refreshing other views after a save is [`data-changes.md`](data-changes.md). The runnable reference is `client/pages/skill-projects/edit.tsx` of the [executable list and edit example](executable-list-edit.md).
 
-- A form component handles only fields, validation and submission; the title, the button area, and opening and closing belong to the container (`RouteDialog`, a page, a settings card). Creating and editing share one form component.
-- Put the form component in the feature folder (`client/pages/<feature>/<feature>-form.tsx`); move it to `client/components/` only when several features use it.
-- `client/components/ui/` does not have shadcn's old `form` component (`FormField`, `FormItem`, `FormMessage`). Do not add it; use the `Field` family throughout.
-
-## Shared submission lock and retry identity
-
-All submission entries use one `useSubmission` controller before async validation. Pass its key to the standard Repository mutation or a custom action that explicitly implements the transaction receipt adapter. Keep uncertain operations across retries and distinguish a deliberate new operation after success. Follow [submission protection](../../submission.md) for the complete protocol and upgrade boundary; button disabling and `isSubmitting` alone do not provide this contract.
-
-## Shared failure feedback
-
-Use `FeedbackForm` from `#components/feedback-form` in place of a native `<form>`. Both templates preinstall this UI Library source and merge its English/Chinese resources. When installing it in another application, add the translation keys listed in the registry item’s docs and component README to the application locale resources; standalone device-approval includes them in its locale exports. It preserves the caller's input and upload state, renders safe field and form errors, and scrolls/focuses the first editable error in actual layout order. Native controls declare the exact submitted `name`; custom triggers declare `data-field-path`. Keep the editor mounted on failure. Return asynchronous submission promises to the boundary, or pass the caught request error through its `error` prop. Preserve trusted application error copy/actions through `errorContent` and remove the former separate submission alert, so assistive technology hears one form-level message for an unmapped failure. Never pass raw server content to that prop or render an `Error.message`, server violation description or stack as user copy.
-
-With React Hook Form, set `shouldFocusError: false`, pass `submitting={form.formState.isSubmitting}` and `validationErrors={form.formState.errors}` and keep the existing resolver, `Controller`, validation messages and default values. This replaces registration-order focus without replacing RHF state. `formFeedbackErrors()` adapts nested errors for a custom headless consumer. Keep field refs on the real focusable control. Existing business error mappings may continue to set trusted field errors; structured request failures can be thrown to `FeedbackForm` or passed through `error`. `fieldMessage(violation, error)` maps known `reason`/`domain` to trusted translated copy; unknown violations use safe generic copy.
-
-For unmounted tabs, nested collapses, virtualized/repeated rows and extension components, create one `FormFeedback` controller per mounted form and pass it as `feedback`. Register descriptors from an always-mounted layout owner, outside conditionally mounted editors. A descriptor supplies a stable `id`, current submitted `path()`, `value()`, persistent layout `anchor()`, real focusable `control()`, optional trusted `label()`, `accessible()` and `editable()`. `accessible` expresses current permission/business visibility, independently of collapsed layout. `reveal()` opens enclosing regions from outside in and resolves only after the editor mounts. The controller then checks access again and focuses once. A field with no usable focus target falls back to the keyboard-accessible safe form message.
-
-```tsx
-const [feedback] = useState(() => new FormFeedback({ messages }));
-// Register from the layout owner; refs/getters read the latest committed row and access.
-useEffect(
-  () =>
-    feedback.register({
-      id: rowKey,
-      path: () =>
-        `items.${rowsRef.current.findIndex((row) => row.key === rowKey)}.name`,
-      value: () => rowsRef.current.find((row) => row.key === rowKey)?.name,
-      label: () => t('equipment.name'),
-      anchor: () => rowAnchor.current,
-      control: () => nameInput.current,
-      accessible: () =>
-        accessRef.current.canEditEquipment && !visibilityRef.current.hidden,
-      editable: () => !pendingRef.current,
-      reveal: async () => {
-        await openTab();
-        await openSectionAndWaitForMount();
-      },
-    }),
-  [feedback, rowKey, t],
-);
-```
-
-Keep descriptors stable while requests are pending; getters read live data. Use a stable row key, never the current array index as identity. `FeedbackForm` automatically captures a submission attempt. A headless form instead calls `begin()` immediately before validation/request and passes that attempt to `invalid()` or `failure()`, then `focus(messageRef.current)`. Bracket/dot paths are normalized and mapped through the submitted snapshot, so reordering does not move an error to another row. Deleted rows, replaced descriptors, changed values and superseded responses cannot receive old field errors. Call `clear(fieldId)` on custom value changes, or let bubbled input/change events clear the registered control; call `clear()` after success if the form stays open. The controller never resets values, uploads, navigation or business rules.
-
-Do not register permission-hidden fields as accessible. Use explicit descriptors for collapsed/unmounted editors; native discovery excludes permission/business-hidden DOM and does not guess which tab or permission to open. No new request, persistence or server protocol is needed. The error state exists only while the form is mounted. Existing applications must follow the [source upgrade checklist](../../../../nocobase-app-upgrade/references/form-feedback-upgrade.md); dependency updates do not rewrite their copied forms.
-
-Show mapped errors only beside their field or group entry, without a top instruction or navigation list. Give group entries an accessible name using `aria-labelledby`. Keep validator copy actionable and map server reasons through `fieldMessage` or an explicitly associated application error node. Unknown and inaccessible paths keep safe form-level copy. If no editable error can accept focus, show a focusable safe fallback; headless consumers can use the optional third `focus` callback to mount that message.
-
-## Complete example: one form for creating and editing
-
-`client/pages/projects/project-form.tsx` is the form create and edit share: name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). It renders no buttons: the container puts the submit button outside the `<form>` and links it through `formId`. Its complete code and props table are [`example/project-form.md`](example/project-form.md); the key points below explain what it does and why.
-
-### Inside a RouteDialog
-
-Create (`/projects/new`) and edit (`/projects/edit/:projectId` from a row's menu, `/projects/:projectId/edit` from the drawer) are child routes whose pages wrap `ProjectForm` in a `RouteDialog`. Their complete code is `new.tsx` and `detail/edit.tsx` ([`example/create-dialog.md`](example/create-dialog.md) and [`example/edit-dialog.md`](example/edit-dialog.md)), and [section 2.5 of `overlay.md`](overlay.md#25-beforeclose-checks-before-closing) explains the close guard. What the form contributes to that wiring:
-
-1. **The submit button lives in the dialog's `footer`**, outside the `<form>`, so it sets `type='submit' form={formId}`. Each dialog passes its own `formId` (`project-new-form`, `project-edit-form`), which keeps field ids unique when the edit dialog stacks on the detail drawer. Enter in an input still submits; while the button is disabled, it does not.
-2. **`onSubmittingChange` reports the submitting state** to the page, which disables both buttons, shows a `Spinner` on the submit button and blocks closing (guideline T3.5). On success the form reports `false` before calling `onSubmitted`, so the page can call `close()` straight from `onSubmitted`.
-3. **`onSubmitted(record)` hands over the saved record**: create refreshes the list and closes; edit first updates the drawer with the record, then closes (guideline R2).
-4. **Edit renders the form only after the latest record arrives** (guidelines T3.8 and R1), and `onNotFound` lets the page replace the form with a "does not exist" notice (guideline R3).
-
-## Key points
-
-### Schema inside the component
-
-Validation messages must be translated, and `t` is only available inside a component, so create the schema with `useMemo(() => z.object({ ... }), [t])`. When the language changes, the schema is rebuilt and the messages change with it. Do not put the schema at module top level, and do not hard-code Chinese or English text in it.
-
-### Do not pass generics to useForm
-
-- Write `useForm({ resolver: zodResolver(schema), defaultValues: { ... } })`; the types are inferred from the resolver and the default values.
-- When the schema uses `default()`, `transform()`, `coerce` or similar, the input and output types differ and `useForm<z.infer<typeof schema>>` fails to compile; code that compiles today breaks as soon as one `default()` is added. When you really need explicit types, write `useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>`.
-- The `values` the `handleSubmit` callback receives have the output type (already trimmed, defaults filled in, transformed).
-- Default values take part in inference too. An array literal is inferred as `string[]`, which does not match `z.array(z.enum(...))` and causes an error; use `satisfies` to keep the literal type: `['email'] satisfies NotifyChannel[]` (see the demo form below).
-- Default values must match the schema's input type. The input type of `z.literal(true)` is `true`, so a default of `false` is an error; write "must be checked" as `z.boolean().refine((value) => value, t('...'))`.
-
-### Field structure
-
-Every field has the same structure:
-
-- `Controller` wraps the field; `render` receives `field` (`value`, `onChange`, `onBlur`, `ref`, `name`) and `fieldState` (`invalid`, `error`).
-- `Field` gets `data-invalid={fieldState.invalid}` (the label turns the destructive color), and the control gets `aria-invalid={fieldState.invalid}` (the border changes color, and screen readers recognize it).
-- `FieldLabel`'s `htmlFor` matches the control's `id`; ids are prefixed with `formId` (`${formId}-name`).
-- For a required field, add `<span aria-hidden='true' className='text-destructive'>*</span>` after the label and `aria-required='true'` on the control; optional fields get no mark (guideline T3.2).
-- Help text uses `FieldDescription`, placed below the control.
-- `<FieldError errors={[fieldState.error]} />` shows the error. With no error it renders nothing, so no condition is needed; it has `role='alert'`, so screen readers announce it when it appears.
-- `field.ref` must go to a focusable element: `Input` and `Textarea` already get it when you spread `{...field}`; `SelectTrigger`, `Checkbox` and `Switch` need an explicit `ref={field.ref}`. When validation fails on submit, focus moves to the first field with an error (guideline T3.3).
-
-### Select
-
-- Pass `items` (`{ value, label }[]`) so that `SelectValue` shows the selected item's label rather than the raw value, and render the `SelectItem`s inside a `SelectGroup` (the skill's composition rules).
-- `onValueChange` can pass `null`; check before calling `field.onChange`.
-- `ref`, `onBlur`, `id` and `aria-invalid` all go on `SelectTrigger`. The trigger is `w-fit` by default; in a form, add `className='w-full'`.
-
-### Optional text
-
-Use `z.string().trim()` in the schema and an empty string as the default (`project?.owner ?? ''`), not `undefined` or `null`; otherwise the input switches between controlled and uncontrolled. On submit, convert the empty string to `null` (`values.owner || null`) to stay consistent with the backend's convention.
-
-### Submitting
-
-- `form.handleSubmit(async (values) => { ... })` validates every field first and calls the callback only if they pass; if they do not, FeedbackForm shows the errors and moves focus in layout order.
-- `<form noValidate onSubmit={(event) => void onSubmit(event)}>`: `noValidate` turns off the browser's built-in validation bubbles; `void` means the returned Promise is not awaited (ESLint requires it).
-- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use the shared controller's `submitting` state (see the members card in "Array fields").
-- Label the submit button with the specific action: "Create", "Save", not "OK" or "Submit" (guideline T3.4).
-
-### Server errors
-
-- Map business errors defined by the backend to the specific field: `form.setError('name', { message })` shows the error below the field and moves focus there. Once the user changes that field and it passes validation again, the error disappears automatically.
-- A 404 while editing means the record has been deleted. Call `onNotFound`; the container explains what happened, keeps only "Close" and refreshes the list, so the user does not submit again (guideline R3).
-- Pass other caught request errors through `FeedbackForm.error`. Put trusted status-specific copy and a session-expired sign-in action in `errorContent`, following ["Handling each kind of error" in `api.md`](api.md#handling-each-kind-of-error); keep a single form-level message for an unmapped failure and retain the input. Clear the caller-owned error on the next submission.
-- On failure, do not close the dialog, and keep what the user has entered (guideline T3.6).
-
-### Success
-
-The form reports the result with a `success` toast, including the record name (`t('projects.create.success', { name })`, guidelines T3.7 and C6), then passes the record the endpoint returned to `onSubmitted`. The container uses that record to update the current view immediately, then refreshes the list and closes the dialog (guideline R2). Do not just refresh the list and leave the detail view showing old values.
-
-### Default values are read only on mount
-
-`defaultValues` is read only when the form first renders; if the props change later, the form does not follow.
-
-- Render an edit form only after the latest data arrives (see item 4 of "Inside a RouteDialog"); do not render with empty values first and call `reset` when the data arrives.
-- When the same spot has to switch to another record, give the form `key={project.id}` so it remounts; do not call `reset` in an effect.
-- When `RouteDialog` closes, the whole child route unmounts, and the next time it opens the form is brand new, so no manual reset is needed.
-
-## Field types
-
-| Control                        | Schema and default                                       | Binding                                                                                    | `aria-invalid` goes on | Structure                                                                                              |
-| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------ |
-| `Input`                        | `z.string()…`, `''`                                      | Spread `{...field}`                                                                        | `Input`                | `Field`                                                                                                |
-| `Textarea`                     | `z.string()…`, `''`                                      | Spread `{...field}`                                                                        | `Textarea`             | `Field`                                                                                                |
-| `Select`                       | `z.enum(OPTIONS)`, one of the options                    | `items`, `value`, `onValueChange` (check for `null`); `ref` and `onBlur` on the trigger    | `SelectTrigger`        | `Field`                                                                                                |
-| Single `Checkbox`              | `z.boolean()`, `false`                                   | `checked`, `onCheckedChange`, `ref`, `onBlur`                                              | `Checkbox`             | `Field orientation='horizontal'`, control before the label                                             |
-| `Checkbox` group               | `z.array(z.enum(OPTIONS)).min(1, …)`, an array           | Each item `checked={field.value.includes(item)}`; `onCheckedChange` computes the new array | Each `Checkbox`        | `FieldSet` + `FieldLegend variant='label'` + `FieldGroup data-slot='checkbox-group'`                   |
-| `RadioGroup`                   | `z.enum(OPTIONS)`, one of the options                    | `value`, `onValueChange`, `onBlur` on `RadioGroup`                                         | Each `RadioGroupItem`  | `FieldSet` + `FieldLegend variant='label'`                                                             |
-| `Switch`                       | `z.boolean()`, `false`                                   | `checked`, `onCheckedChange`, `ref`, `onBlur`                                              | `Switch`               | `Field orientation='horizontal'`; `FieldContent` holds the label and description, control on the right |
-| Number (`Input type='number'`) | `z.string().trim()` with a `refine` that parses it, `''` | Spread `{...field}`; convert with `Number(…)` on submit                                    | `Input`                | `Field`; see "Numbers"                                                                                 |
-| Related record (`Combobox`)    | `z.string()`, the id as a string, `''`                   | `value`, `onChange`, `onBlur` passed to a picker component                                 | The picker's input     | `Field`; see "Choosing a related record"                                                               |
-| Files (`FileUploadField`)      | uploaded `FileRecord[]`, `[]`                            | `repository`, `value`, `onChange`; upload state through `onStatusChange`                   | None                   | `Field`; see "File uploads and attachments"                                                            |
-
-The demo form `client/pages/projects/project-settings-form.tsx` ([`example/settings-form.md`](example/settings-form.md)) uses every control in the table except `Input` and `Select`, grouped with `FieldSet`. For calling the endpoint, the submitting state and server errors, follow `ProjectForm`. The subsections below explain each control.
-
-### Input and Textarea
-
-- Spread `{...field}`, then add `id` and `aria-invalid`; write input attributes as usual, for example `type='email'` and `autoComplete='off'`.
-- Put a character-count hint in `FieldDescription`, computed from `field.value.length`.
-- For prefixes or suffixes (icons, units, buttons), use `InputGroup`, `InputGroupInput`, `InputGroupTextarea` and `InputGroupAddon` from `#components/ui/input-group`; the control spreads `{...field}` the same way.
-
-### Checkbox and Switch
-
-- They are built on Base UI: the controlled prop is `checked`, not `value`, and the callback is `onCheckedChange(checked: boolean, eventDetails)`. Write `(checked) => field.onChange(checked)` to take only the first argument.
-- They render a `span` with `role='checkbox'` (or `role='switch'`) plus a hidden `input`, and the `id` lands on the hidden `input`, so `FieldLabel htmlFor` works as usual and clicking the label toggles the control.
-- `ref={field.ref}` goes on the component, so a failed submission can move focus to it; `onBlur={field.onBlur}` marks the field touched.
-- For a boolean submitted with the form, either `Checkbox` or `Switch` works. A switch on a settings page that "takes effect as soon as it is toggled" (guideline T4.3) is not part of a form: call the endpoint directly in `onCheckedChange`, without going through react-hook-form. `project-public-switch.tsx` ([`example/public-switch.md`](example/public-switch.md)) does this: the switch shows the value being saved and is disabled while the request runs, a success toast confirms the change, and on failure an error toast explains it and the switch returns to the saved value.
-
-### Checkbox group
-
-- The value is an array. Each option's `onCheckedChange` rebuilds the array in option order (`NOTIFY_CHANNELS.filter(...)`), so there are no duplicates and no reordering.
-- Give `FieldGroup` `data-slot='checkbox-group'` to tighten the spacing between options; the `FieldLegend` of the outer `FieldSet` is the label for the whole group.
-- The error belongs to the whole group: `data-invalid` goes on every `Field`, `aria-invalid` on every `Checkbox`, and `FieldError` below the group.
-- Give `field.ref` only to the first option; focus moves there on error.
-
-### RadioGroup
-
-- `value` and `onValueChange` go on `RadioGroup`, not on the options; each `RadioGroupItem` gets `value` and `id`, and the `FieldLabel` beside it links to it with `htmlFor`.
-- `RadioGroup`'s value type is `any`, and `onValueChange` receives the selected item's `value`. The options come from an `as const` constant array, so the value is always in the enum and `field.onChange` can be passed directly.
-- Provide a default option, and the user never runs into a "nothing selected" error.
-
-### Numbers
-
-Keep the form value a string, exactly what the input holds, and convert on submit. `z.coerce.number()` turns an empty input into `0`, and a `number` form value cannot hold the half-typed text of an input.
-
-- Schema: `z.string().trim().refine((value) => value === '' || Number.isFinite(Number(value)), t('projects.form.budgetInvalid'))` for an optional number; add `.min(1, t('…'))` before the `refine` for a required one, and further `refine` calls for a range.
-- Default: `project?.budget == null ? '' : String(project.budget)`.
-- Control: `<Input {...field} type='number' inputMode='decimal' step='0.01' />`, with `id` and `aria-invalid` as for any `Input`.
-- Submit: `budget: values.budget === '' ? null : Number(values.budget)`.
-- Show numbers in lists and details with `Intl.NumberFormat` (`AmountText` in [`i18n.md`](i18n.md)), right-aligned in table columns ([section 8 of `table.md`](table.md#8-column-definitions-and-row-actions)).
-
-### Choosing a related record
-
-A field that points at another record, such as the project's customer, stores the record's id and shows its name. `CustomerPicker` (`client/pages/projects/customer-picker.tsx`, [`example/customer-picker.md`](example/customer-picker.md)) is the pattern:
-
-- It loads the options itself with the pattern in ["Loading data in a component" of `api.md`](api.md#loading-data-in-a-component), and maps them to `{ value: id, label: name }` items.
-- It binds the id, not the item: `Combobox` receives the item the id names, and `onValueChange` hands `item?.value ?? ''` back to the form. `itemToStringLabel` shows the name in the input; `isItemEqualToValue` compares by id.
-- While the options load, the input is disabled with a loading placeholder, so an edit form never shows an id without its name; a failed load replaces the control with an inline error and "Retry" (none for 403).
-- In the form: schema `z.string().min(1, t('projects.form.customerRequired'))` for a required relation (plain `z.string()` for an optional one), default `project?.customerId ?? ''`, `<CustomerPicker id={…} value={field.value} onChange={field.onChange} onBlur={field.onBlur} invalid={fieldState.invalid} />` inside `Controller`, and `customerId: values.customerId === '' ? null : values.customerId` on submit; ids are strings, so the value needs no conversion.
-- It loads one page of at most 100 records (`pageSize: 100`, the endpoint's cap) and filters them in the browser. When the related collection is larger, send the typed text to the endpoint instead: keep the input text in state, debounce it by about 300ms as the list search does ([section 5 of `table.md`](table.md#5-writing-search-and-filters-to-the-url)), request with it, and keep the currently selected record in the items so an edit form still shows its name.
-- A small fixed set (fewer than about 15 records) can use `Select` with the same loaded `items` instead.
-
-### File uploads and attachments
-
-A file field is the preinstalled `file-component-ui` block under `client/extensions/nocobase-file-component-ui/`, not a native `<input type='file'>` and not a control composed by hand. [`ui-library.md`](ui-library.md) lists the block and the alternatives (`attachment-list` when a record or message shows files outside a form). `FileUploadField` already handles choosing, dropping, progress, retry, cancel, remove and the file-type and size limits; `FileList`, `FilePreviewField`, `FilePreviewDialog` and `FileThumbnail` show the stored files in a detail view and in forms. Read [`styling.md` section 4](styling.md#4-customize-template-and-registry-components) before changing any of them.
-
-- The block uploads through a `ClientFileRepository`: `const fileManager = useService(clientFileRepositoryManagerToken)`, importing `useService` from `@nocobase/app-client` and the token from `@nocobase/app-plugin-file/client`, then `useMemo(() => fileManager.repository('<resource>'), [fileManager])`, where `<resource>` is the business endpoint that exposes `uploadOne` (for example `expenseAttachments` for `/api/expenseAttachments/uploadOne`). The application registers the file plugin in `client/plugins.ts`; a test that renders this field passes it too: `plugins: [file()]`.
-- Keep the uploaded records in form state and submit their ids: `<FileUploadField repository={repository} value={files} onChange={setFiles} multiple maxFiles={10} maxSize={10 * 1024 * 1024} accept={['application/pdf', 'image/png', 'image/jpeg']} />`. `accept` takes MIME types or extensions. Follow the server's own limits rather than inventing them.
-- Uploads happen before form submission. Use `onStatusChange={(status) => setUploadBlocked(status !== 'idle')}` and disable submission with `pending || uploadBlocked` until uploads finish and failed items are retried successfully or removed. The block reports `error` when any item fails, even while others are uploading. Keep upload busy state separate from form dirty state: uploading or removing an attachment changes the unsaved form; clear its dirty guard only after the business form saves successfully or the user confirms discarding changes.
-- Pass the server-returned `contentUrl` to preview components; a raw storage key is not a URL. If a detail endpoint omits it, populate it in the data access layer using the file exposure's configured `accessPath`, encoded record id and optional extension, and application base path. Do not assume the default `/uploads/<collection>/` path. The file plugin's content route is public to anyone holding the URL and is not protected by the resource Policy; applications requiring authenticated content access must provide a route that enforces it. Without `contentUrl`, the item cannot preview.
-- Errors from uploads and previews arrive through `onError`; show them as the form's own localized message instead of the block's. The block's own words come from `labels` and the locale resources the template merges.
-
-### Grouping and layout
-
-`FieldGroup` spaces the fields and can be nested, `FieldSet` with `FieldLegend variant='label'` groups related controls and labels a Checkbox group or RadioGroup, `FieldSeparator` divides groups, `FieldContent` stacks the label, description and error beside a horizontal control, and `FieldTitle` is title text tied to no control. The skill's [`rules/forms.md`](../shadcn/rules/forms.md) and `pnpm exec shadcn docs field` show each of them.
-
-Labels go above inputs (guideline T3.2): ordinary fields use the default `vertical` orientation on every page, settings pages included, whatever the skill suggests for those; only Checkbox, Switch and radio options use `horizontal`.
-
-### Other controls
-
-- The registry also has `NativeSelect`, `Slider`, `InputOTP`, `ToggleGroup` and more (for `Combobox`, see "Choosing a related record"); the skill's forms rules say when each fits, for example `ToggleGroup` for two to seven options. Before wiring a component into `Controller`, confirm the controlled prop and the callback arguments with `pnpm exec shadcn docs <name>` and the source the CLI wrote: Base UI components often use different prop names from the Radix versions.
-- For dates, follow [Dates](#dates) below: the application's own `DatePicker` from `#components/date-picker`, never a native date input.
-
-- When a component you need is not in `client/components/ui/`, add it as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes; do not write it by hand.
-
-### Dates
-
-A date field is the application's own `DatePicker`. shadcn has no `DatePicker` component to install: its [Date Picker](https://ui.shadcn.com/docs/components/base/date-picker) is a `Popover` opened by a `Button` and holding a `Calendar`, and the application composes that once. A native `<input type='date'>` and the shadcn `<Input type='date'>` both open the browser's own calendar, so neither is a date picker; `check-ui-components.mjs` reports both. Every date field goes through these four steps:
-
-1. **Read the matching official example first.** Look for `client/components/date-picker.tsx` and read it if it exists. Then read the installed `calendar`, `popover` and `button` sources and run `pnpm exec shadcn docs calendar popover button`, which prints each component's documentation and API for the project's base (`style` in `components.json`: `base-*` is Base UI, otherwise Radix). Read the Date Picker page for the same base — [Base UI](https://ui.shadcn.com/docs/components/base/date-picker) or [Radix](https://ui.shadcn.com/docs/components/radix/date-picker); `pnpm exec shadcn docs date-picker` reports "not found" because it is a composition, not a registry component. Base UI opens the popover with `<PopoverTrigger render={<Button … />}>`; Radix uses `<PopoverTrigger asChild>`. Do not mix the two, and do not write from memory.
-2. **Reuse or compose it once.** If `client/components/date-picker.tsx` exists, review that it really composes `Calendar` in a `Popover` (a component named `DatePicker` is not evidence) and reuse it. Otherwise add only the missing primitives (`yes n | pnpm exec shadcn add calendar popover button`) and compose it there from the official example, adapting only import paths, the interface language, the controlled value and what the business needs, such as clearing. The [tested composition from the Examples application](../../../assets/date-picker-example/client/components/date-picker.tsx) is the reference: copy it into `client/components/date-picker.tsx` and check its imports against the installed primitives. Never hand-write a calendar grid or popover positioning, never import another package's private date picker (a plugin's `client/components/date-picker.tsx` is not public), and never fall back to a native date input.
-3. **Reuse it on every page.** A page renders `<DatePicker id value onChange />` and converts at its boundary; it never composes `Calendar` and `Popover` again. In the Examples application, the holiday dates of the office workflow parameters (`client/pages/workflows/office-parameters.tsx`) are the reference field.
-4. **Check and verify.** Run the [component checker](../component-selection.md#run-the-targeted-check) on the changed files and test the field's behavior as the [reference tests](../../../assets/date-picker-example/tests/client/date-picker.test.tsx) do: picking, showing a loaded value, clearing, disabled, both interface languages, keyboard and focus return, and the submitted value in a time zone west and east of UTC. In the delivery report, record the official page used, the date picker's source location and the pages that call it.
-
-The reference `DatePicker` takes `value: Date | undefined`, `onChange(date)`, `id` for the label, `disabled`, `clearable` (a Clear action under the calendar) and an optional `date-fns` `locale`, which defaults to the interface language for both the trigger text and the calendar; extend its language mapping when you add a language. It accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. The registry's `CalendarDayButton` does not attach its focus ref, so the composition passes a day button that does; without it, the arrow keys move the highlighted day while focus stays behind. A wrapper that fixes a field's placeholder or locale stays thin:
-
-```tsx
-// client/pages/projects/project-due-date-picker.tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
-
-import { DatePicker } from '#components/date-picker';
-
-export interface ProjectDueDatePickerProps {
-  readonly id: string;
-  readonly value: Date | undefined;
-  readonly onChange: (date: Date | undefined) => void;
-}
-
-export function ProjectDueDatePicker({
-  id,
-  value,
-  onChange,
-}: ProjectDueDatePickerProps): ReactElement {
-  const { t } = useTranslation();
-  return (
-    <DatePicker
-      id={id}
-      value={value}
-      onChange={onChange}
-      placeholder={t('projects.form.dueDatePlaceholder')}
-    />
-  );
-}
-```
-
-In the form, render it inside `Controller` with `value={field.value}` and `onChange={field.onChange}`, and give the schema `z.date(t('…'))` for a required date or `z.date().optional()` with an `undefined` default for an optional one.
-
-How a date travels to and from the endpoint depends on what it is:
-
-- **A calendar date** (a due date, a birthday) travels as `'yyyy-MM-dd'`. Submit `format(date, 'yyyy-MM-dd')` and turn a loaded value into the default with `parseISO(value)`, both from `date-fns` (the reference's [`client/lib/date-only.ts`](../../../assets/date-picker-example/client/lib/date-only.ts) wraps them as `formatDateOnly` and `parseDateOnly`, which also read an empty or invalid value as no date): `parseISO` reads a date-only string as local midnight. `new Date('2026-01-02')` reads it as UTC midnight, which shows as January 1 west of UTC, and `toISOString()` turns local midnight into the previous day east of UTC.
-- **A point in time** (`updatedAt`, a meeting start) travels as an ISO 8601 string with its offset: send `date.toISOString()`, parse with `new Date(value)`, and display with `Intl.DateTimeFormat` in the current locale ("Dates and numbers" in [`i18n.md`](i18n.md#dates-and-numbers)).
-
-A date and time (a meeting start) keeps its time: put the `DatePicker` beside a shadcn `<Input type='time'>`, as the Date Picker page's Time Picker example does, and combine both into one value in the field's component. Do not replace it with a date-only picker, and keep a genuine time input (`<Input type='time'>`); a month or week has no single-day picker to replace it with.
-
-## Validation timing, array fields, dependent fields and resetting
-
-### Validation timing
-
-`useForm`'s `mode` decides when fields are validated before the first submission:
-
-| `mode`        | When it validates                                                                       |
-| ------------- | --------------------------------------------------------------------------------------- |
-| `'onTouched'` | When a field first loses focus, then on every change                                    |
-| `'onBlur'`    | Every time a field loses focus                                                          |
-| `'onChange'`  | On every change; an error can appear at the first character typed, so it is rarely used |
-| `'onSubmit'`  | Only on submit (the default, guideline T3.3)                                            |
-| `'all'`       | Both on blur and on change                                                              |
-
-- Submitting always validates every field. After the first submission, a field is revalidated on every change (`reValidateMode` defaults to `'onChange'`), so the error disappears as soon as the value is corrected.
-- Leave `mode` out of `useForm`: the default `'onSubmit'` is what guideline T3.3 asks for. `'onTouched'`, `'onBlur'` and `'all'` validate a field as it loses focus, and closing a dialog takes the focus off its field, so an error flashes while the dialog closes; `'onChange'` shows an error before the user has finished typing.
-
-### Array fields
-
-`client/pages/settings/projects/members-card.tsx` ([`example/members-card.md`](example/members-card.md)) is a card on the settings page that edits the list of project member emails, with adding and removing, and saves on its own (guidelines T4.1 and T4.2). The caller does the saving (calls the endpoint) and throws an error on failure. What it does:
-
-- `useFieldArray({ control: form.control, name: 'members' })` returns `fields`, `append`, `remove` and other methods. It only manages **arrays of objects**: wrap a string array as `{ email }` items and convert back on submit.
-- When mapping over `fields`, use `item.id` as the `key`, not `index`; otherwise, after an item in the middle is removed, the contents and errors of the inputs after it shift out of place.
-- Each item has its own `Controller`, with `name` written as `` `members.${index}.email` ``; each item's error is in its own `fieldState`.
-- The inputs have no visible label, so `aria-label` says which item each one is ("Member 1 email").
-- `append({ email: '' })` adds an item and by default moves focus to the new input; disable the "Add" button at the limit, which the card's description states, so it needs no tooltip (guideline I7). `remove(index)` removes an item; when only one item is left, the remove button is not shown. The remove button is an icon button, so it needs an `aria-label` and a tooltip (guideline A1).
-- Rules on the whole array (count, no duplicates) go on `z.array(...)`; the error is in `form.formState.errors.members?.root` and is shown below the list.
-
-### Dependent fields and steps
-
-- **A field that depends on another**: read the other value with `useWatch({ control: form.control, name })`, which re-renders the component when it changes, and render the dependent field only while it applies. Put the condition in the schema too, as a `refine` on the whole object with `path` naming the dependent field, so the rule and its error sit on the field the user sees. A hidden field keeps its value in the form; drop it on submit when it does not apply.
-- **Steps** (a form in a separate page, guideline T3.1): keep one `useForm` for every step, so Back loses nothing; render only the current step's fields, and before moving on validate just those with `await form.trigger(['name', 'owner'])`, which focuses the first invalid field. Submit once, from the last step.
-
-A reminder email that is required only while reminders are on:
-
-```tsx
-// client/pages/projects/project-reminder-form.tsx
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useMemo } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
-
-import { Checkbox } from '#components/ui/checkbox';
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '#components/ui/field';
-import { Input } from '#components/ui/input';
-
-export interface ProjectReminderFormProps {
-  readonly formId: string;
-  readonly onSubmit: (values: {
-    readonly reminderEmail: string | null;
-  }) => void;
-}
-
-export function ProjectReminderForm({
-  formId,
-  onSubmit,
-}: ProjectReminderFormProps): ReactElement {
-  const { t } = useTranslation();
-  const schema = useMemo(
-    () =>
-      z
-        .object({ remind: z.boolean(), email: z.string().trim() })
-        // Required only while reminders are on; the error shows on the email field.
-        .refine(
-          (values) =>
-            !values.remind || z.email().safeParse(values.email).success,
-          { error: t('projects.reminder.emailInvalid'), path: ['email'] },
-        ),
-    [t],
-  );
-  const form = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: { remind: false, email: '' },
-  });
-  const remind = useWatch({ control: form.control, name: 'remind' });
-
-  return (
-    <form
-      id={formId}
-      noValidate
-      onSubmit={(event) =>
-        void form.handleSubmit((values) => {
-          // The hidden email keeps its value; send it only when it applies.
-          onSubmit({ reminderEmail: values.remind ? values.email : null });
-        })(event)
-      }
-    >
-      <FieldGroup>
-        <Controller
-          control={form.control}
-          name='remind'
-          render={({ field }) => (
-            <Field orientation='horizontal'>
-              <Checkbox
-                ref={field.ref}
-                id={`${formId}-remind`}
-                checked={field.value}
-                onCheckedChange={(checked) => field.onChange(checked)}
-                onBlur={field.onBlur}
-              />
-              <FieldLabel htmlFor={`${formId}-remind`}>
-                {t('projects.reminder.remind')}
-              </FieldLabel>
-            </Field>
-          )}
-        />
-        {remind ? (
-          <Controller
-            control={form.control}
-            name='email'
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={`${formId}-email`}>
-                  {t('projects.reminder.email')}
-                </FieldLabel>
-                <Input
-                  {...field}
-                  id={`${formId}-email`}
-                  type='email'
-                  aria-invalid={fieldState.invalid}
-                />
-                <FieldError errors={[fieldState.error]} />
-              </Field>
-            )}
-          />
-        ) : null}
-      </FieldGroup>
-    </form>
-  );
-}
-```
-
-### Resetting the form
-
-- `form.reset()`: returns to the default values and clears the errors and the dirty state. The members card's "Discard changes" is exactly this, disabled when there are no changes (`formState.isDirty` is `false`).
-- `form.reset(values)`: makes the given values the new defaults. Use it when the form stays on the page after saving (settings cards, standalone pages): `isDirty` goes back to `false`, and "Discard changes" returns to the values just saved.
-- A dialog that closes after saving needs no reset: when `RouteDialog` closes, the form unmounts with the child route.
-- Do not call `reset` in an effect based on props; to switch records, remount with `key` (see "Default values are read only on mount").
-
-## Common zod 4 patterns
-
-| Need                       | Code                                                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Required text              | `z.string().trim().min(1, t('...'))`                                                                                                        |
-| Maximum length             | `.max(100, t('...', { max: 100 }))`                                                                                                         |
-| Optional text              | `z.string().trim()`, default `''`, `value \|\| null` on submit                                                                              |
-| Format                     | `z.string().regex(/^1\d{10}$/u, t('...'))`                                                                                                  |
-| Required email             | `z.email(t('...'))`                                                                                                                         |
-| Optional email             | `z.email(t('...')).or(z.literal(''))`                                                                                                       |
-| Enum (Select, radio)       | `z.enum(STATUSES)`, with `STATUSES` declared `as const`                                                                                     |
-| Optional number            | `z.string().trim().refine((v) => v === '' \|\| Number.isFinite(Number(v)), t('...'))`, default `''`, `Number(v)` on submit                  |
-| Boolean (Checkbox, Switch) | `z.boolean()`                                                                                                                               |
-| Must be checked            | `z.boolean().refine((value) => value, t('...'))`; do not use `z.literal(true)` (a `false` default is a type error)                          |
-| Multi-select, at least one | `z.array(z.enum(OPTIONS)).min(1, t('...'))`                                                                                                 |
-| Array of objects           | `z.array(z.object({ email: z.email(t('...')) })).max(10, t('...', { max: 10 }))`                                                            |
-| Rule on the whole array    | `z.array(...).refine((list) => ..., t('...'))`; the error is in `errors.<field>.root`                                                       |
-| Comparing two fields       | `z.object({ ... }).refine((v) => v.password === v.confirm, { error: t('...'), path: ['confirm'] })`; the error shows on the `confirm` field |
-
-- Pass the message directly as the argument (a string), or put it in `error` in the params object.
-- Do not use v3 patterns: `required_error` and `invalid_type_error` have been removed; `z.string().email()` is deprecated in favor of `z.email()`; `message` in the params object is deprecated in favor of `error`.
-- Do not use `z.coerce.number()` for a number input: the empty string is coerced to `0`, and the required check stops working. Use the string pattern in "Numbers".
+Stack: react-hook-form, zod 4 with `@hookform/resolvers/zod`, `FeedbackForm` from `#components/feedback-form`, the `Field` family from `#components/ui/field` and controls from `#components/ui/`. The templates ship `input`, `label` and `select`; add the rest first (`yes n | pnpm exec shadcn add field textarea checkbox`, then format the created files, [`shadcn.md`](shadcn.md)). Do not add shadcn's old `form` component (`FormField`, `FormItem`).
 
 ## Where forms go
 
-- Create and edit forms with **no more than 8 fields and no complex interdependencies**: put them in a `RouteDialog` as a child route (guidelines T3.1 and I1); see "Inside a RouteDialog" and [`overlay.md`](overlay.md). Do not drive create or edit dialogs with open state held inside a component.
-- **More fields, or grouping or steps needed**: a separate page (guideline T3.1). `create.tsx`, [`example/create-page.md`](example/create-page.md), is the frame to follow:
-  - a covering child page (`RouteChildPage`, [section 5 of `child-routes.md`](child-routes.md#5-covering-child-pages-routechildpage)) when the user opens it from a page and returns there, a list or a dashboard; otherwise a standalone page ([`page.md`](page.md)) on a top-level route. A form page declared as a child route and returned without `RouteChildPage` renders below the parent's content;
-  - a form page opened from several pages — "New article" on a dashboard as well as on the list — is declared under each of them through one function that takes an owner, as ["The same detail page over another page"](child-routes.md#the-same-detail-page-over-another-page) does for a record's page, and create and edit share the component, which returns `RouteChildPage` under every one of them;
-  - `PageContainer` and `PageHeader`, the form in a `max-w-2xl` column (guideline L4), fields grouped with `FieldSet`;
-  - the buttons right-aligned below the form, linked with `form={formId}` when the form component renders none;
-  - on success, refresh the list underneath through the outlet context's `reload()` (guideline R2; a covering page keeps the list mounted with its old rows), then `navigate(…, { replace: true })` back to the list or on to the record; Cancel navigates back with `replace` too, as closing an overlay does;
-  - unsaved changes (T3.9): the application's router is a declarative `BrowserRouter`, so React Router's `useBlocker` is not available; register the leave decision with `useNavigationGuard` from `@nocobase/app-client` (provided by `AppClientProviders`); it may answer synchronously or with a Promise that resolves after an in-page confirmation. Keep a separate `beforeunload` listener only while dirty or submitting. The host preserves the mounted page during rejected history navigation. A form in a `RouteDialog` or `RouteDrawer` uses the same guard: closing the overlay is navigation, so ×, Esc, the backdrop, Cancel and browser back all reach it; `beforeClose` only blocks closing while submitting ([section 2.5 of `overlay.md`](overlay.md#25-beforeclose-checks-before-closing)).
-- **Settings page**: each Card is an independent form, with its buttons at the bottom right of the Card (guidelines T4.1 and T4.2); see the members card.
+- Create and edit forms always open in a `RouteDialog` child route: create at `new`, edit at `:id/edit` (T3.1, I6). A long form scrolls inside the dialog, which already fits a phone; a form with steps keeps its steps inside the dialog. No create or edit forms in drawers, covering pages or component-state dialogs. Route declaration is in [`page.md`](page.md) and [`child-routes.md`](child-routes.md).
+- A settings page is the exception: each `Card` is its own form with its save button at its bottom right (T4.1, T4.2). A toggle that applies at once is not a form (T4.3, [Checkbox and Switch](#checkbox-and-switch)).
+- One form component serves create and edit. It owns fields, validation and submission; the title, footer buttons and closing belong to the dialog. Keep it in the feature folder (`client/pages/<feature>/<feature>-form.tsx`).
+
+## Shared submission lock and retry identity
+
+Every submit path goes through one `useSubmission({ scope })` controller from `@nocobase/app-client`, started once validation passes, and sends its key as `Idempotency-Key` (or the Repository `idempotencyKey`). `submission.submitting` drives the buttons and the close lock; `submission.pending` (unknown outcome, same key kept for retry) never locks anything. The protocol is [submission protection](../../submission.md).
+
+## Shared failure feedback
+
+`FeedbackForm` replaces the native `<form>`. It keeps the caller's input, shows field errors beside their fields and one safe form-level message for anything unmapped, and focuses the first error in layout order.
+
+- `values={form.getValues}` and `savedValues` (the stored record, or blank create values) drive the overlay's discard question ([overlay §2.5](overlay.md#25-beforeclose-checks-before-closing)).
+- `validationErrors={form.formState.errors}` (with `useForm({ shouldFocusError: false })`) and `submitting={submission.submitting}`.
+- `error` takes the caught request error and `errorContent` trusted translated copy or actions for it; never raw server text, `Error.message` or stacks.
+- `fieldMessage` maps known `reason`/`domain` violations to field copy; `feedback` takes a `FormFeedback` controller.
+
+Native controls carry the submitted `name`; custom triggers carry `data-field-path`. For editors that are not always mounted, create one `new FormFeedback({ messages })` per form and `register` descriptors (`id`, `path()`, `value()`, `anchor()`, `control()`, `label()`, `accessible()`, `editable()`, `reveal()`) from the always-mounted layout owner, using a stable row key, never the array index. Never register a permission-hidden field as accessible. Existing applications adopt this through the [form feedback upgrade](../../../../nocobase-app-upgrade/references/form-feedback-upgrade.md).
+
+## Inside a RouteDialog
+
+The shape, following `skill-projects/edit.tsx`:
+
+```tsx
+const formId = useId();
+const submission = useSubmission({
+  scope: `${userId}:projects:${project?.id ?? 'new'}`,
+});
+const [saved] = useState(() => toFormValues(project)); // stored values, or blank for create
+const form = useForm({
+  resolver: zodResolver(schema),
+  defaultValues: saved,
+  shouldFocusError: false,
+});
+
+<RouteDialog
+  title={t(project ? 'projects.edit.title' : 'projects.create.title')}
+  className='sm:max-w-md'
+  beforeClose={() => !submission.submitting}
+  footer={
+    <>
+      <CancelButton disabled={submission.submitting} />
+      <Button type='submit' form={formId} disabled={submission.submitting}>
+        {t(project ? 'actions.save' : 'actions.create')}
+      </Button>
+    </>
+  }
+>
+  <FeedbackForm
+    id={formId}
+    noValidate
+    values={form.getValues}
+    savedValues={saved}
+    validationErrors={form.formState.errors}
+    submitting={submission.submitting}
+    error={error}
+    onSubmit={async (event) => {
+      event.preventDefault();
+      await submit(); // validate, request, announce, toast, navigate — all inside onSubmit
+    }}
+  >
+    <FieldGroup>{/* fields */}</FieldGroup>
+  </FeedbackForm>
+</RouteDialog>;
+```
+
+1. The submit button sits in the dialog's `footer`, outside the form, so it is `type='submit' form={formId}`; Enter in a field submits too. Use `useId()` or a per-dialog id so field ids stay unique when dialogs stack.
+2. `CancelButton` is a small component inside the dialog that calls `useRouteOverlay().close()` ([overlay §2.4](overlay.md#24-close-with-userouteoverlay)).
+3. While submitting, both buttons are disabled, the save button shows progress (`PendingButton` or a `Spinner`) and `beforeClose` blocks closing (T3.5).
+4. On success: `announceDataChange` with the response ([`data-changes.md`](data-changes.md)), a success toast naming the record (T3.7, C6), then navigate to `..` with `location.search`, still inside `onSubmit`, so leaving does not ask.
+5. Edit renders the form only after the latest record loads (T3.8, R1); while loading or on a load error the dialog shows a skeleton or the error with Cancel.
+
+## Schema and useForm
+
+- Build the schema inside the component, `useMemo(() => z.object({ … }), [t])`, so messages are translated and follow the language. No hard-coded text.
+- Do not pass generics to `useForm`; types come from the resolver and `defaultValues`. When `default()`, `transform()` or `coerce` make input and output differ, write `useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>`.
+- Keep literal types in defaults with `satisfies` (`['email'] satisfies NotifyChannel[]`). A "must be checked" box is `z.boolean().refine((v) => v, t('…'))`, not `z.literal(true)`.
+- Leave `mode` at its default `'onSubmit'` (T3.3); after the first submit fields revalidate on change.
+- Optional text: `z.string().trim()`, default `''` (never `undefined`/`null`, which flips controlled inputs), and `value || null` on submit.
+
+## Field structure
+
+- `Controller` wraps each field; `Field` gets `data-invalid={fieldState.invalid}` and the control `aria-invalid={fieldState.invalid}`.
+- `FieldLabel htmlFor` matches the control's `id` (`${formId}-name`). Required fields get `<span aria-hidden='true' className='text-destructive'>*</span>` after the label and `aria-required='true'` (T3.2); optional fields get no mark.
+- Help text is `FieldDescription` below the control; `<FieldError errors={[fieldState.error]} />` renders nothing without an error.
+- `field.ref` reaches a focusable element: spreading `{...field}` does it for `Input`/`Textarea`; `SelectTrigger`, `Checkbox` and `Switch` take `ref={field.ref}`.
+- Labels go above inputs on every page; only Checkbox, Switch and radio options use `orientation='horizontal'`. Group with `FieldGroup`, `FieldSet` + `FieldLegend variant='label'`, `FieldSeparator`; see `pnpm exec shadcn docs field`.
+
+## Field types
+
+- `Input`, `Textarea`: `z.string()…`, default `''`, spread `{...field}`; `InputGroup` for prefixes and suffixes.
+- `Select`: `z.enum(OPTIONS)`; pass `items`, `value`, `onValueChange` (may pass `null`); `ref`, `onBlur`, `id`, `aria-invalid` and `className='w-full'` on `SelectTrigger`.
+- `Checkbox`, `Switch`: `z.boolean()`, `false`; `checked`, `onCheckedChange={(checked) => field.onChange(checked)}`, `ref`, `onBlur`.
+- Checkbox group: `z.array(z.enum(OPTIONS)).min(1, …)`; `checked={field.value.includes(item)}`, rebuilding the array in option order.
+- `RadioGroup`: `z.enum(OPTIONS)` with a default; `value`, `onValueChange`, `onBlur` on the group, `value` and `id` on each item.
+- Number, related record, date and files: the sections below.
+
+### Checkbox and Switch
+
+They are Base UI: `checked`/`onCheckedChange`, with the `id` on a hidden input so `FieldLabel` works. A checkbox group puts `data-slot='checkbox-group'` on its `FieldGroup`, its error below the group and `field.ref` on the first option. A Switch that applies at once on a settings page (T4.3) is not in a form: it calls the endpoint in `onCheckedChange`, is disabled while saving, toasts on success and returns to the saved value on failure.
+
+### Numbers
+
+Keep the form value a string (`z.coerce.number()` turns an empty input into `0`). Optional: `z.string().trim().refine((v) => v === '' || Number.isFinite(Number(v)), t('…'))`; required: add `.min(1, t('…'))` first. Default `value == null ? '' : String(value)`; submit `v === '' ? null : Number(v)`. Display with `Intl.NumberFormat`.
+
+### Choosing a related record
+
+A related record stores its id and shows its name, through a picker component built on `Combobox` (see the relation picker in [`executable-relation-batch.md`](executable-relation-batch.md)):
+
+- It loads its options with `useListData` and maps them to `{ value: id, label: name }`; `onValueChange` returns `item?.value ?? ''`, `itemToStringLabel` shows the name, `isItemEqualToValue` compares ids.
+- While options load the input is disabled with a loading placeholder; a failed load shows an inline error with Retry (none for 403).
+- It loads one page of up to 100 and filters in the browser; a larger collection sends the typed text to the endpoint, debounced about 300 ms, and keeps the selected record in the items. Under about 15 fixed options, a `Select` will do.
+
+### File uploads and attachments
+
+Use the preinstalled block in `client/extensions/nocobase-file-component-ui/` (`FileUploadField`, `FileList`, `FilePreviewField`, `FilePreviewDialog`, `FileThumbnail`), never `<input type='file'>` ([`ui-library.md`](ui-library.md)).
+
+- Get the repository with `useService(clientFileRepositoryManagerToken)` (`@nocobase/app-client`, token from `@nocobase/app-plugin-file/client`) and `useMemo(() => fileManager.repository('<resource>'), [fileManager])`, where the resource exposes `uploadOne`. Register the file plugin in `client/plugins.ts` (and `plugins: [file()]` in tests).
+- `<FileUploadField repository={repository} value={files} onChange={setFiles} multiple maxFiles={10} maxSize={10 * 1024 * 1024} accept={['application/pdf', 'image/png']} />`, following the server's limits. Submit the records' ids.
+- Uploads finish before the form submits: `onStatusChange={(status) => setUploadBlocked(status !== 'idle')}` and disable save while blocked. An upload or removal is an unsaved change.
+- Preview with the server's `contentUrl`, never a raw storage key. The content route is public to whoever holds the URL; protect it with your own route when that matters. Show `onError` errors as the form's own translated message.
+
+### Dates
+
+A date field is the application's `DatePicker` from `client/components/date-picker.tsx`, a `Calendar` in a `Popover` (I10). Never `<input type='date'>` or `<Input type='date'>`, never a hand-written calendar, never another package's private picker.
+
+1. If `client/components/date-picker.tsx` is missing, add the primitives (`yes n | pnpm exec shadcn add calendar popover button`) and copy the [tested composition](../../../assets/date-picker-example/client/components/date-picker.tsx), checking its imports against the installed primitives (`pnpm exec shadcn docs calendar popover`; Base UI uses `render={<Button />}`, Radix `asChild`).
+2. Pages render `<DatePicker id value onChange />` (also `disabled`, `clearable`, `placeholder`, `locale`); it takes no `ref` or `aria-invalid`, so `FieldError` carries the error.
+3. A calendar date travels as `'yyyy-MM-dd'`: submit `format(date, 'yyyy-MM-dd')`, load with `parseISO(value)` (or `formatDateOnly`/`parseDateOnly` from the reference's [`date-only.ts`](../../../assets/date-picker-example/client/lib/date-only.ts)). Never `new Date('2026-01-02')` or `toISOString()` for a date-only value; both shift the day across time zones.
+4. A point in time travels as ISO 8601 with offset (`toISOString()`, `new Date(value)`) and displays with `Intl.DateTimeFormat`. A date and time pairs `DatePicker` with `<Input type='time'>`.
+5. Run the component checker ([`../design-contract.md`](../design-contract.md)) and test picking, loading, clearing, keyboard focus and a time zone west and east of UTC.
+
+## Server errors
+
+- A business error tied to a field: `form.setError('name', { message })`; it shows below the field and clears once the value is valid again.
+- A 404 on edit means the record is gone: show it through `errorContent`, disable save, keep only Cancel, and announce the scope so other views show it missing (R3).
+- Other failures go to `FeedbackForm`'s `error` with trusted copy in `errorContent` ([`api.md`](api.md)); clear the caller's error on the next submit. Never close the dialog or drop input on failure (T3.6).
+- An unknown outcome (network, timeout, 5xx) keeps the input and the operation key, shows the "may have been saved" copy and announces the scopes without results; never resubmit automatically.
+
+## Default values are read only on mount
+
+`defaultValues` is read on the first render only. Render an edit form after its record arrives, never empty-then-`reset`. To switch records in place, remount with `key={record.id}`. A dialog unmounts its form on close, so no reset is needed. On a settings card that stays open after saving, `form.reset(savedValues)` makes the saved values the new baseline and pass them as `savedValues`; "Discard changes" is `form.reset()`.
+
+## Array fields
+
+`useFieldArray({ control: form.control, name: 'members' })` manages arrays of objects only (wrap strings as `{ email }`). Use `item.id` as the key, never the index. Each item has its own `Controller` named `` `members.${index}.email` `` and an `aria-label` naming its position. "Add" (`append`) is disabled at the stated limit; the icon remove button has an `aria-label` and tooltip (A1) and is hidden for the last item. Rules on the whole array go on `z.array(…)` and show from `errors.members?.root`.
+
+## Dependent fields and steps
+
+- Read another field with `useWatch({ control: form.control, name })` and render the dependent field only while it applies. Put the rule in the schema as an object `refine` with `path: ['dependent']`, and drop the hidden value on submit.
+- Steps inside the dialog keep one `useForm`; render only the current step and validate it with `await form.trigger(['name', 'owner'])` before moving on; submit once from the last step.
+
+## Common zod 4 patterns
+
+- Required text: `z.string().trim().min(1, t('…'))`, plus `.max(100, t('…', { max: 100 }))`.
+- Email: `z.email(t('…'))`; optional: `z.email(t('…')).or(z.literal(''))`.
+- Enum: `z.enum(STATUSES)` with `STATUSES` declared `as const`.
+- Two fields: `.refine((v) => v.password === v.confirm, { error: t('…'), path: ['confirm'] })`.
+- A rule on an array: `z.array(…).refine((list) => …, t('…'))`, shown from `errors.<field>.root`.
+
+Zod 4 removed `required_error` and `invalid_type_error`; use `z.email()` instead of `z.string().email()` and `error` instead of `message`.

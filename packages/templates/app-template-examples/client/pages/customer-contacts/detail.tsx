@@ -5,13 +5,7 @@ import {
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useOutletContext,
-  useParams,
-} from 'react-router';
+import { Link, Outlet, useLocation, useParams } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { RouteChildPage } from '#components/route-child-page';
 import { BackButton } from '#components/back-button';
@@ -34,40 +28,38 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '#components/ui/alert-dialog';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import { useListLocation } from '#hooks/use-list-location';
 import { ReadFeedback, WriteFeedback } from './shared.js';
 import {
   base,
+  contactsScope,
+  customerScope,
   useCrmAction,
   useWriteLock,
   type Customer,
   type Contact,
   type List,
 } from './model.js';
-import { OwnerName, type CustomerListContext } from './index.js';
+import { OwnerName } from './index.js';
 
-export interface CustomerDetailContext {
-  customer: Customer | undefined;
-  reload: () => void;
-  onCustomerSaved: (row: Customer) => void;
-}
 export default function CustomerDetailPage() {
   const { customerId = '' } = useParams();
-  const parent = useOutletContext<CustomerListContext>();
   const { t } = useTranslation();
   const api = useApiClient();
   const toaster = useToaster();
   const location = useLocation();
   const { active } = useListLocation();
+  // Its dialogs announce what they saved: the customer's own result replaces this read, a contact write re-reads.
   const request = useListData<{ data: Customer }>(
     `${base}/customers/${encodeURIComponent(customerId)}`,
-    { active },
+    { active, scopes: [customerScope(customerId)] },
   );
   const [page, setPage] = useState(0);
   const contacts = useListData<List<Contact>>(
     `${base}/customers/${encodeURIComponent(customerId)}/contacts?page=${page + 1}&pageSize=10`,
-    { active },
+    { active, scopes: [contactsScope(customerId)] },
   );
   const edit = useCrmAction('customers', 'edit');
   const assign = useCrmAction('customers', 'assign');
@@ -90,20 +82,6 @@ export default function CustomerDetailPage() {
     contacts.data?.data.length ?? 0,
   );
   const writable = customer && customer.status !== 'closed';
-  const reload = () => {
-    request.reload();
-    contacts.reload();
-    parent.reload();
-  };
-  const context: CustomerDetailContext = {
-    customer,
-    reload,
-    onCustomerSaved: (row) => {
-      request.replaceData({ data: row });
-      parent.onSaved(row);
-      parent.reload();
-    },
-  };
   // A contact's actions: the table row's "⋮" menu, which DataTable also hands to the contact's phone card.
   const contactMenu = (contact: Contact) => (
     <RowActions
@@ -332,7 +310,7 @@ export default function CustomerDetailPage() {
                         </a>
                       ) : null}
                     </div>
-                    {/* The row's menu, at a phone tap size (M3.1, M8.1). */}
+                    {/* The row's menu (M3.1). */}
                     {card.actions}
                   </div>
                 )}
@@ -380,7 +358,9 @@ export default function CustomerDetailPage() {
                         }),
                       });
                       setDeleting(undefined);
-                      reload();
+                      announceDataChange({
+                        scopes: [contactsScope(deleting.customerId)],
+                      });
                       headingRef.current?.focus();
                     } catch (failure) {
                       setError(failure);
@@ -397,7 +377,7 @@ export default function CustomerDetailPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        <Outlet context={context} />
+        <Outlet />
       </PageContainer>
     </RouteChildPage>
   );

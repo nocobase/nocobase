@@ -2,7 +2,7 @@
 
 This page is the application side: where the directories live, how `pnpm nocobase db apply` runs them, how additional connections configure their tasks, and what to do about checksum drift and compiled manifests.
 
-How to write the files themselves — the migration and seed shape, the immutability and self-containment rules, the Collection Builder, and which of `builder`, `query` and `repository` a task context should reach for — belongs to the package that owns them. Read `.agents/skills/nocobase-db/SKILL.md` sections 2 and 3 before writing one, and run `pnpm nocobase skills sync` if that file is missing.
+How to write the files themselves — the migration and seed shape, the immutability and self-containment rules, the Collection Builder, and which of `builder`, `query` and `repository` a task context should reach for — belongs to the package that owns them. Read the [nocobase-db Skill](../../nocobase-db/SKILL.md#2-migrations-and-seeds) sections 2 and 3 before writing one, and run `pnpm nocobase skills sync` if it is missing from `.agents/skills/`.
 
 Migrations under `database/main/migrations/` are the application's schema history. Seeds under `database/main/seeds/` insert records the application requires to run. Migrations create structure. Seeds never do.
 
@@ -16,7 +16,7 @@ pnpm nocobase db apply
 
 This applies pending migrations and then pending seeds for `database.default`, including registered plugins, ordered by name across all sources. Both halves run only what is pending, so on an already-migrated database it applies seeds alone. The template defaults to `main`. Plugin migrations, seeds and runtime default reads/writes always use this same connection; changing `database.default` changes the application system database.
 
-Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited. To create a record only when it is missing, check `exists({ filter })` and then `createOne`; never write `upsertOne({ ..., update: {} })`, because an empty `update` is rejected and the failed seed stops startup.
+Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and idempotent as the [nocobase-db Skill](../../nocobase-db/SKILL.md#2-migrations-and-seeds) describes; a failed seed stops startup.
 
 ## Sample data and demo systems
 
@@ -24,7 +24,7 @@ Sample data is optional example content for exploring or developing an applicati
 
 Use `@nocobase/app-plugin-demo-mode` when the requirement is a dedicated demo system with a separate database and storage, repeatable data lifecycle, visitor write policies and optional Agent or external-call simulation. Follow that installed plugin's Skill for its application-owned dataset and full-business cleanup contract. A request for a few example records does not require this plugin. Both mechanisms can use the same fictional story or application fixture helpers, but keep their execution and cleanup lifecycles separate; do not register the same data-generation routine in both paths and run it twice.
 
-Put sample data in the same `seeds` directory as `defineSeed({ name, sample: true, run })`, or, when it has to go through plugins' services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`; `.agents/skills/nocobase-db/SKILL.md` section 2 has the details. Both load only while the run installs the connection — it held no migration or seed history, or `db reset` rebuilt it — with `app.sampleData` set (`APP_SAMPLE_DATA=true`); otherwise they are recorded as skipped. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it. `db reset` and `db apply` never start the application, so a `sampleDataToken` registration (accounts, anything through plugin services) is not built by them even with `app.sampleData` set; it appears only after `pnpm nocobase db sample`. The sequence that rebuilds a development database with its demo data is `pnpm nocobase db reset --force`, then `pnpm nocobase db sample`.
+Declare sample data as a sample seed or on `sampleDataToken`, as the [nocobase-db Skill](../../nocobase-db/SKILL.md#2-migrations-and-seeds) describes; it runs only on a fresh install with `APP_SAMPLE_DATA=true`. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it. To rebuild a disposable development database with its demo data, run `pnpm nocobase db reset --force` followed by `pnpm nocobase db sample`. The second command runs the provider hooks skipped by reset or apply; see the database Skill above.
 
 ## Multiple connections
 
@@ -74,11 +74,9 @@ Each internal table has a command that maintains it, and none of them should be 
 
 ## Migrations change incrementally
 
-A migration that has been merged is history. Every installation that already ran it recorded it as executed and will never run it again, so editing it splits installations in two: those that ran the old version keep the schema it produced, and fresh ones get the schema the new version produces. Nothing reconciles the two, and the only symptom is a checksum warning that `pnpm nocobase db repair` silences without changing the schema.
+A merged migration is immutable ([nocobase-db Skill](../../nocobase-db/SKILL.md#2-migrations-and-seeds)): editing it splits installations, and `pnpm nocobase db repair` only silences the checksum warning. Every schema change after a merge, including a fix, is a new migration:
 
-So every schema change after a merge is a new migration, including a fix to a migration that turned out wrong:
-
-- Leave the merged file untouched: not its operations, its `down`, its name, its filename, its formatting or its comments. Even a reformat changes the checksum every installation recorded and warns each of them.
+- Leave the merged file untouched, formatting and comments included.
 - Name the new migration so it sorts after the one it corrects. Migrations run in name order across the application and every plugin.
 - Write it to take an installation from what the earlier migrations left behind to the target, so it holds both on an installation that ran the earlier migrations long ago and on a fresh one that runs everything in order.
 - Spell out the change explicitly with `builder.alterCollection`, field, index or constraint operations, and move existing rows with set-based `query` statements where the change needs it.
@@ -98,11 +96,7 @@ pnpm nocobase db unlock
 
 It reports who holds each lock and releases the ones that have stopped beating. A lock that is still beating is reported rather than released: a run is working behind it, and `--force` releases it anyway, which lets a second run start beside the first. Both the migration and the seed lock are covered, for the selected connections.
 
-`migrate --fresh` was the earlier form and is gone. It reset the schema without reseeding, so it left the seed history cleared but no seed executed; the default connection recovered on the next startup and a connection with `autoRun: false` did not.
-
-`schemaManagement: external` describes ownership, not read-only credentials. Startup and `--all` skip external connections; explicitly targeting one for migrations or seeds is an error. The application resolves a metadata store for runtime access, reading the hand-written `database/<connectionName>/metadata/<name>.json` documents when neither a connection-level nor shared store is configured; `database/<connectionName>/collections/` is the generated cache, not a metadata source. See [database connections](database-connections.md#add-managed-or-external-connections). Seeds also use history and lock tables, so they are not a workaround for external schema ownership.
-
-Use one managed connection per physical database/schema. Identical configured targets are rejected before execution, even when only one is selected. Hostname aliases, symlinks and driver-specific routing can hide a shared target; do not configure these as independent managed databases. Distinct history or lock table names alone do not isolate collection metadata and schema ownership.
+Startup and `--all` skip external connections, and seeds are not a workaround for external schema ownership; see [database connections](database-connections.md#add-managed-or-external-connections) for external metadata and the one-managed-connection-per-target rule.
 
 ## Existing applications
 

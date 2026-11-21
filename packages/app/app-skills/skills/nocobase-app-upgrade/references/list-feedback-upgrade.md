@@ -4,7 +4,7 @@ Upgrade existing applications by reconciling source, not by replacing the applic
 
 ## Before merging
 
-- Read `nocobase.templatePackage` and `defaultTemplateVersion`; obtain BASE and TARGET from that same template. For older known baselines inspect the entire BASE → TARGET delta, including intermediate compatibility notes when the endpoints do not explain a change. NocoBase 2, unknown ancestry and discontinued Hub applications have no automatic migration through this checklist.
+- Read `nocobase.templatePackage` and `defaultTemplateVersion`; obtain BASE and TARGET from that same template. For older known baselines inspect the entire BASE → TARGET delta, including intermediate compatibility notes when the endpoints do not explain a change. NocoBase 2 and unknown ancestry have no automatic migration through this checklist.
 - Commit application source and record a database/storage backup and a tested restore procedure before starting the upgraded application. Keep executed migration and seed sources. This feature adds no tables, migration, seed or protocol change, but other changes across the selected version range may do so.
 - Record business pages, fields, validations, permissions, lifecycle transitions, theme and custom empty content, plus representative retained records. Compare BASE → TARGET with BASE → PROJECT. Treat copied Registry components as application-owned source too.
 

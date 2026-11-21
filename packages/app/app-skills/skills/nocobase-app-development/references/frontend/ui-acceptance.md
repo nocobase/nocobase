@@ -1,61 +1,26 @@
-# Shared UI acceptance checks
+# UI acceptance
 
-Use these checks with the existing [review checklist](ui-guidelines.md#review-checklist), not as another review round. Applications and plugins share the same outcomes; the owning development Skill supplies test commands and the host used for integration. Read the [design contract](design-contract.md) before classifying a default-pattern difference as a failure.
+What the independent acceptance agent of [the new-page workflow](ui-workflow.md#independent-acceptance) checks, and how it reports. A page change checks the items that its change touches. The rules themselves live in [`ui-guidelines.md`](ui-guidelines.md) (cited by ID) and [`mobile.md`](mobile.md); this file does not restate them.
 
-## Component reuse and source evidence
+Check the running application in a browser at 1440 px and at 390 px with phone emulation (`isMobile`, `hasTouch`), using the [screenshot tool](scripts/capture.md) or a read-only Playwright script under `storage/ui-workflow/<feature>/`. Do not create, change or delete data beyond what the check needs, and never print cookies.
 
-Apply [component selection and source review](component-selection.md). Compare the planned components with actual imports and wrapper implementations; include each changed interaction. Record the checker command, scope and result, then review every exception and any interaction outside its detection scope. An unexplained hand-built duplicate is a guideline violation; a successful scan alone does not prove reuse. For a quick change, put this evidence in the delivery report.
+## What to check
 
-## Reference fidelity
+- **The user task works end to end.** Against the real backend: the list loads, create, edit and delete save and the views that show the record refresh, page and endpoint permissions hold (also for a user without them), and empty, no-results, failure and expired-session states appear. Console errors (beyond the baseline) and unexpected 4xx/5xx requests are problems.
+- **The page plan is implemented.** Routes, menu entry and icon, list/detail/form choices, primary row actions, data scopes and phone layout match `docs/ui/pages/<feature>.md`. Anything left over from the runnable example that the plan does not ask for (`skill-projects` names, fields, copy keys, columns, widths) is a problem.
+- **Components are reused.** Imports and local wrappers follow the selection order in [`design-contract.md`](design-contract.md); review the component checker's output and every printed exception. A hand-built duplicate of an existing component is a problem even when it looks right.
+- **Page templates and overlays** follow the T and I rules of [`ui-guidelines.md`](ui-guidelines.md): forms in a `RouteDialog`, detail as drawer or page by record size, row actions in the `RowActions` menu (T1.5).
+- **Unsaved input (T3.9).** Type into the create and the edit form, then try Cancel, ×, Esc, the backdrop, browser back and a reload: each asks "Discard changes?". Changing only a select, date or upload field asks too. Changing a value back, or saving successfully, leaves without asking; "Keep editing" keeps the input. While a save is in flight the primary button shows its pending label and is disabled.
+- **Phone at 390 px**, as [`mobile.md`](mobile.md) describes: main content on the first screen, cards instead of a sideways-scrolling list, filters and sort reachable, no page overflow (`document.documentElement.scrollWidth <= innerWidth`) with long Chinese and English text, forms and overlays usable at a short height, the main task completed by touch.
+- **Overlay geometry**: with long content and long labels, the body scrolls, the footer buttons stay visible and clickable, and validation errors and pending states do not push them out. Closing returns to the view the overlay opened from, with its search, filters and page intact.
+- **Input and states**: typing character by character and with Chinese IME keeps the input in sync; focus is visible and returns after an overlay closes; every control has an accessible name; dark mode and both languages read correctly.
 
-- Open the original reference, not only the written summary. Compare the declared `V` requirements and `D` criteria at the recorded viewport and state. Check grouping, hierarchy, density, action location, overlay choice and the visual qualities selected by the reference mode.
-- Record each result as Pass, Fail or Not verified, with a reference ID, screenshot or behavioral assertion. Name accepted differences and their authorization. A reference-guided design is not rejected merely for an approved departure from a default pattern.
-- When no reference exists, compare with the application's current design contract and NocoBase defaults. When a reference cannot be opened, verify the remaining criteria and report the missing evidence.
+## How to report
 
-## Overlay and action layout
+Return a verdict and a list:
 
-For an overlay or footer change, use the actual installed components in a browser. A DOM test cannot prove that buttons are visible or unobscured.
+- **Pass**: every check above that applies was verified and nothing failed.
+- **Problems**: one line each, giving the page (route), the width (1440 or 390), the rule (guideline ID such as T1.5, the `mobile.md` section, or "plan" or "task"), what happens, and the screenshot file or code location that shows it.
+- **Not verified**: each check that could not be made, with the reason (no session, no device for the soft keyboard, an endpoint unavailable). A check without evidence is never reported as a pass.
 
-- Exercise normal and long content at desktop and 375px widths, plus a short viewport height. Check content scrolling, button order and spacing, complete labels, and footer reachability. Use the approved responsive design, not an assumed desktop row everywhere.
-- Exercise long translated labels, validation errors, pending buttons with spinners and the largest action set the view supports. Check that feedback does not overlap, push actions outside the panel or obscure the focused control.
-- For a fixed-footer design, assert that scrolling moves the body while the footer stays in place. Check button bounds against the panel and viewport, and use hit testing or a real click to ensure another layer does not cover them. Record the tested viewport dimensions.
-- Check the intended close behavior, keyboard focus, nested overlays and return destination. Keep Cancel separate from Submit; prevent duplicate submissions and preserve input after failure.
-- Keep a focused browser regression test when fixing a reproducible layout bug or changing a shared overlay. Cover the relevant long-content, narrow and pending cases rather than taking a static class-name snapshot. A copy-only change needs a visual check, not a new test suite.
-
-## Phone experience
-
-Check [the phone checklist](mobile.md#checklist) for every page the change creates or alters, at 375×667, a 390–412px width and a desktop width, with phone emulation (`isMobile`, `hasTouch`).
-
-- Look at the first screen without scrolling: main content is visible (M1.1). On a list, measure at 375×667 the height between the page header and the first card (at most 150px) and the first card's top (at most 300px); a list's primary action, view tabs, search, Filters and Sort on rows of their own fail M1.1 and M4.1. On a page that keeps several header buttons, they may sit on one row under the title, counted toward those limits; check that the title is not squeezed and nothing overflows at 375px in both languages. Measure page overflow with `document.documentElement.scrollWidth <= innerWidth` in every checked state, including long Chinese and English content and the largest action set (M1.2).
-- Walk the page's main task on the phone width: find, filter and sort, open a record, edit with a validation error, save, cancel, confirm a destructive action, and return to the same filtered list and scroll position (M2–M7). Check the desktop width afterwards for regressions, at 1280px and with a content area near 1000px: a list's search box and its filters share one row, each filter compact rather than the full width, and the search box has no separate search button beside it (M4.1, M4.2).
-- Reach the list context the other ways too (M10): a direct URL with `page=2` and a filter, a reload of it, and saving an edit opened by its URL from page 2 each leave the list on page 2. For a record page, also reload its edit URL reached from page 2 of a filtered, sorted list, save, click the header's parent arrow and compare the resulting list URL with the starting one exactly.
-- Type into the create form and the edit form, whether they are dialogs, drawers or full pages (`RouteChildPage`), then try Cancel, ×, Esc, the backdrop (on a page: the back button and a breadcrumb), browser back and a reload: each asks "Discard changes?" before discarding, also when the page keeps a draft and also while validation disables Save. Also change only a Select, date, relation or upload field and try Cancel and browser back, and reopen a form that restored a draft and close it without typing: both ask. Change a value and change it back: closing does not ask; "Keep editing" keeps the input and the URL, and a successful save leaves without asking (M7.4); with the write request held, the primary button shows its pending label and is disabled, and Cancel cannot close.
-- Open the phone "Sort" menu in each language and tap every item: each shows a translated column name (never a column id), and each changes the URL's `sort`/`order`, the checked item and the card order. An item that changes nothing offers a column the list does not accept (M4.4).
-- Find every control by role and accessible name at each width, the sheet's filters included; a check that falls back to positions or CSS selectors has found a naming defect (M4.2, M8.5).
-- For overlays and forms near the bottom of the screen, check the short height and landscape, focus a field near the footer and submit with an error; the focused field, its error and the footer stay visible. Soft keyboard, dynamic toolbar and safe areas need a real device or simulator; without one they are Not verified.
-- Count the controls on a card: at 375px and at desktop width, open the row's "…" menu and the card's, and compare: the card has the row's menu with the same items, or the list's recorded M3.1 case explains why rows and cards have none; a selectable list shows "Select all on this page" with its partly selected state, and the accessibility tree names that checkbox exactly once (`checkbox "Select all on this page" [checked=mixed]`, not the text twice). With filters applied and results listed, "Clear filters" is on the list's row without reopening the filter sheet (M4.2). For a detail drawer with an edit dialog, walk drawer → edit → discard or delete confirmation at 375×667: only the top layer responds and each way back returns one layer (M7.2).
-- A wrapping desktop toolbar or a sideways-scrolling ordinary list is a G issue against A4 and M3/M4, not a pass. An exception needs its recorded reason (M3.4, M5.4).
-
-## Loading transitions
-
-For affected data views, distinguish the first load, an active refresh with retained data, and a paused or covered parent. Follow [I4](ui-guidelines.md) and the [list loading pattern](references/table.md#6-loading-the-list).
-
-- Exercise opening and closing the overlay, cancelling an unchanged form, saving, and browser back/forward. A covered parent shows no refresh feedback; returning preserves the list context and verifies fresh data.
-- Cover both fast and held responses. Fast refreshes finish without flashing an indicator; slow ones show delayed feedback while keeping rows. Finishing, failing, covering or unmounting the view cancels pending feedback. Errors and permission changes still take effect promptly.
-- Use deferred responses and fake timers for component assertions, including completion before the indicator delay and repeated transitions. In the browser, check the transition and table position at desktop and narrow widths; a settled screenshot alone cannot detect a flash or layout shift.
-
-## General usability
-
-For the elements affected by the change, check semantic controls and accessible names, visible focus, keyboard operation, focus restoration, labels and inline errors, pending feedback, and reduced-motion preferences when adding motion. Fixed headers and footers must not cover the focused element. Essential text must remain readable under wrapping, zoom and the supported languages. Verify contrast when introducing theme colors; a token name does not prove its value meets the required contrast in a custom theme.
-
-Do not use this checklist to impose a new aesthetic on a reference. It checks whether the selected design works for its users.
-
-## Business journeys and plugin integration
-
-For a change that crosses modules, exercise the affected journey as representative authorized and limited users. Check that a record opened from a filtered list, dashboard or non-default tab returns to that same context, and a successful write updates the views that display it. Check server permissions independently of whether the UI hides the action. Include realistic empty, missing, failed and stale-data states that the change can encounter.
-
-For plugin UI, render the plugin in the intended host or a representative supported fixture. Check the host's supported themes and density, plugin translations, styling outside the plugin before and after mounting, and overlay stacking with host UI. Use the plugin's public imports and registration. Test another host configuration when the changed contract claims compatibility with it; do not claim universal compatibility from one fixture. Missing host access is a reported validation limit.
-
-## Evidence and scope
-
-Quick changes inspect the affected element and relevant checks once. Full changes map every declared criterion to evidence. Theme changes inspect the affected tokens and component states in the theme workflow. Mark unrelated checks Not applicable with a reason. Passing static checks, synchronization or a package build is not proof of reference fidelity, geometry or host integration.
+Report only; do not fix. The main agent fixes the problems and rechecks them.

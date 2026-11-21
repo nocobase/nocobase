@@ -6,28 +6,33 @@ For a complete runnable form and list, use the [executable list and edit example
 
 ## One form, one operation
 
-Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points call its `run(snapshot, execute)` before asynchronous validation. `submitting` drives buttons, spinners and close guards; `pending` never does. An unknown outcome is not a lock (see [overlay leaving](frontend/references/overlay.md#25-beforeclose-checks-before-closing)): after a lost response, a 5xx or a timeout, `submission.pending` stays true for the same-key retry, but only `submitting` blocks leaving. Cancel stays enabled, `beforeClose` and any guard of your own read only the save in flight (never `submission.pending`), and the `FeedbackForm`'s `values` and `savedValues` make every way out ask "Discard changes?" as before the save; "Keep editing" keeps the input for the retry, and "Discard" really leaves, with the key left in session storage so reopening offers the same retry. A guard that blocks leaving while `submitting` is not an unsaved-changes question: the form still gives its `FeedbackForm` `values` and `savedValues` (`values={() => values}` for `useState` state) so its overlay or covering page asks before discarding input, and a kept draft never replaces that question ([M7.4](frontend/mobile.md)). Run `form.handleSubmit` inside `execute`; return without sending if invalid. Unlike `trigger()`, `handleSubmit` records a submission attempt, so React Hook Form revalidates corrected fields on change after a failed submission. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
+Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points validate first and then call its `run(snapshot, execute)`, so only the request is the save: an invalid submit starts nothing and leaving still asks. A ref of the form's own guards the whole submit, validation included, so a repeated submit whose validation ends after the first save cannot write again under a new key; it is not `submitting` and never blocks leaving. `submitting` drives buttons, spinners and close guards; `pending` never does. An unknown outcome is not a lock (see [overlay leaving](frontend/references/overlay.md#25-beforeclose-checks-before-closing)): after a lost response, a 5xx or a timeout, `submission.pending` stays true for the same-key retry, but only `submitting` blocks leaving. Cancel stays enabled, `beforeClose` and any guard of your own read only the save in flight (never `submission.pending`), and the `FeedbackForm`'s `values` and `savedValues` make every way out ask "Discard changes?" as before the save; "Keep editing" keeps the input for the retry, and "Discard" really leaves, with the key left in session storage so reopening offers the same retry. A guard that blocks leaving while `submitting` is not an unsaved-changes question: the form still gives its `FeedbackForm` `values` and `savedValues` (`values={() => values}` for `useState` state) so its overlay or covering page asks before discarding input, and a kept draft never replaces that question ([M7.4](frontend/mobile.md)). Run `form.handleSubmit` before `run`; return without calling `run` if invalid. Unlike `trigger()`, `handleSubmit` records a submission attempt, so React Hook Form revalidates corrected fields on change after a failed submission. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
 
 ```tsx
 const submission = useSubmission({ scope: `${userId}:orders:${formId}` });
+const entered = useRef(false); // One submit at a time, validation included.
 const submit = async () => {
-  const snapshot = { name: form.getValues('name'), id: order?.id };
+  if (entered.current) return;
+  entered.current = true;
   try {
+    let valid = false;
+    await form.handleSubmit(() => { valid = true; })();
+    if (!valid) return; // Nothing started: leaving still asks "Discard changes?".
+    const snapshot = { name: form.getValues('name'), id: order?.id };
     const saved = await submission.run(snapshot, async (key, signal, input) => {
-      let valid = false;
-      await form.handleSubmit(() => { valid = true; })();
-      if (!valid) return;
       const values = { name: input.name.trim() };
       return input.id
         ? api.repository('orders').updateOne({ filter: { id: input.id }, values, idempotencyKey: key, signal })
         : api.repository('orders').createOne({ values, idempotencyKey: key, signal });
     });
-    if (!saved) return; // Another entry owns the lock, or validation failed.
+    if (!saved) return; // Another entry owns the lock.
     showSuccess(saved.record);
     // Refetch or navigation errors are handled separately after the confirmed write.
     onSaved(saved.record);
   } catch (error) {
     showSubmissionError(error); // Translate a reason; never display raw server errors.
+  } finally {
+    entered.current = false;
   }
 };
 // Enter and the footer button both submit this same form.
