@@ -982,7 +982,11 @@ function ScopeRecords({
       ? chosen.filter((id): id is string => typeof id === 'string')
       : undefined;
   }, [value]);
-  const [reached, setReached] = useState<readonly string[]>();
+  const [reached, setReached] = useState<{
+    readonly ids: readonly string[];
+    readonly value?: readonly string[];
+    readonly failed?: boolean;
+  }>();
   useEffect(() => {
     if (!ids?.length) return;
     let active = true;
@@ -995,10 +999,11 @@ function ScopeRecords({
       })
       .then(
         (answer) => {
-          if (active) setReached(answer.reached);
+          if (active) setReached({ ids, value: answer.reached });
         },
+        // A failed read is not a refusal: it says so rather than listing every record as left out.
         () => {
-          if (active) setReached([]);
+          if (active) setReached({ ids, failed: true });
         },
       );
     return () => {
@@ -1018,19 +1023,26 @@ function ScopeRecords({
         })}
       </span>
       {ids?.length ? (
-        reached === undefined ? (
+        // Only the answer for these records counts: another object's answer is never shown here.
+        reached?.ids !== ids ? (
           <span>…</span>
+        ) : reached.failed || !reached.value ? (
+          <span role='alert' className='text-destructive'>
+            {t('settings.permissionCheck.key.recordsFailed')}
+          </span>
         ) : (
           <>
             <span data-slot='credential-reached'>
               {t('settings.permissionCheck.key.reached', {
-                records: list(reached),
+                records: list(reached.value),
               })}
             </span>
-            {ids.some((id) => !reached.includes(id)) ? (
+            {ids.some((id) => !reached.value!.includes(id)) ? (
               <span data-slot='credential-left-out'>
                 {t('settings.permissionCheck.key.leftOut', {
-                  records: list(ids.filter((id) => !reached.includes(id))),
+                  records: list(
+                    ids.filter((id) => !reached.value!.includes(id)),
+                  ),
                 })}
               </span>
             ) : null}

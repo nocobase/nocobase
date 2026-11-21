@@ -643,6 +643,130 @@ describe('system keys', () => {
     });
   });
 
+  it('refuses to import over a role already named for the account, until it is renamed with its members', async () => {
+    const robot = await users.createServiceAccount({ name: 'Taken' });
+    const own = await keys.create(
+      robot.id,
+      { name: 'org', expiresInDays: null, permissions: readOrders },
+      await keys.identityOf(adminId),
+    );
+    await authz.permissionSets.create({
+      key: `api-key-${robot.id}`,
+      grants: readOrders.grants,
+    });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: robot.id },
+      permissionSet: `api-key-${robot.id}`,
+    });
+    // An application's role that happens to carry the reserved name, held by a member.
+    const taken = systemKeySet(robot.id);
+    await authz.permissionSets.create({ key: taken, grants: [] });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: memberId },
+      permissionSet: taken,
+    });
+    await expect(
+      systemKeys.adopt({ identityId: robot.id, keyId: own.key.id }),
+    ).rejects.toMatchObject({ code: 'SYSTEM_KEY_SET_TAKEN' });
+    // Nothing changed: the role keeps no grants and its member.
+    expect((await authz.permissionSets.get(taken))?.grants).toEqual([]);
+    expect(await systemKeys.collisions()).toContain(taken);
+    const renamed = await systemKeys.releaseReserved(taken);
+    expect(renamed).toBe(`role-${taken}`);
+    expect(
+      (await authz.permissionSets.listAssignments(renamed)).map(
+        (assignment) => assignment.subject.id,
+      ),
+    ).toEqual([memberId]);
+    expect(await systemKeys.collisions()).not.toContain(taken);
+    await systemKeys.adopt({ identityId: robot.id, keyId: own.key.id });
+    expect(await systemKeys.isSystemKey(robot.id)).toBe(true);
+    // The renamed role was left alone by the import.
+    expect((await authz.permissionSets.get(renamed))?.grants).toEqual([]);
+  });
+
+  it('answers a repeated import only when it asks for the same grants, in any order', async () => {
+    const robot = await users.createServiceAccount({ name: 'Replayed' });
+    const own = await keys.create(
+      robot.id,
+      { name: 'org', expiresInDays: null, permissions: readOrders },
+      await keys.identityOf(adminId),
+    );
+    const both = {
+      grants: [
+        {
+          resource: orders,
+          actions: [{ action: 'read' }, { action: 'update' }],
+        },
+      ],
+    };
+    await authz.permissionSets.create({
+      key: `api-key-${robot.id}`,
+      grants: both.grants,
+    });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: robot.id },
+      permissionSet: `api-key-${robot.id}`,
+    });
+    await systemKeys.adopt({
+      identityId: robot.id,
+      keyId: own.key.id,
+      permissions: both,
+    });
+    // The same grants written in another order are the same import.
+    await expect(
+      systemKeys.adopt({
+        identityId: robot.id,
+        keyId: own.key.id,
+        permissions: {
+          grants: [
+            {
+              resource: orders,
+              actions: [{ action: 'update' }, { action: 'read' }],
+            },
+          ],
+        },
+      }),
+    ).resolves.toMatchObject({ identityId: robot.id });
+    // Other grants, or none given, are another request.
+    for (const permissions of [readOrders, undefined])
+      await expect(
+        systemKeys.adopt({
+          identityId: robot.id,
+          keyId: own.key.id,
+          ...(permissions ? { permissions } : {}),
+        }),
+      ).rejects.toMatchObject({ code: 'ALREADY_SYSTEM_KEY' });
+  });
+
+  it('finishes deleting a key whose account could not be removed, when deleted again', async () => {
+    const created = await systemKeys.create(adminId, {
+      name: 'half deleted',
+      expiresInDays: 30,
+      permissions: readOrders,
+    });
+    const identityId = created.key.identityId;
+    const remove = vi
+      .spyOn(users, 'remove')
+      .mockRejectedValueOnce(new Error('authentication store down'));
+    try {
+      await expect(systemKeys.remove(identityId, adminId)).rejects.toThrow(
+        'authentication store down',
+      );
+      // The key is gone, its account not yet.
+      expect(await systemKeys.isSystemKey(identityId)).toBe(false);
+      expect(await users.get(identityId)).toBeTruthy();
+      await systemKeys.remove(identityId, adminId);
+      expect(await users.get(identityId)).toBeFalsy();
+      // Once done, there is nothing to delete.
+      await expect(
+        systemKeys.remove(identityId, adminId),
+      ).rejects.toMatchObject({ code: 'SYSTEM_KEY_NOT_FOUND' });
+    } finally {
+      remove.mockRestore();
+    }
+  });
+
   it('lets a feature manage keys for a person, never past what they hold, and tells it of a revocation', async () => {
     const revoked = vi.fn();
     const release = systemKeys.managers.add('repository-ci', {

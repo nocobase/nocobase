@@ -230,6 +230,38 @@ function heldGrants(
   return [...byResource.values()].filter((grant) => grant.actions.length);
 }
 
+/**
+ * A value with object keys sorted and record ids in order, so the same grants compare equal however they were written:
+ * `{ type: 'records', ids }` lists the same records in any order.
+ */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (!value || typeof value !== 'object') return value;
+  const entries = Object.keys(value)
+    .sort()
+    .map((key): [string, unknown] => [key, canonical(Reflect.get(value, key))]);
+  const result = Object.fromEntries(entries) as Record<string, unknown>;
+  if (result.type === 'records' && Array.isArray(result.ids))
+    result.ids = [...(result.ids as unknown[])].map(String).sort();
+  return result;
+}
+
+/** A digest of what an import asked for: its grants in canonical order, or that it took what the account held. */
+function importRequest(permissions: KeyPermissions | undefined): string {
+  if (!permissions) return 'held';
+  const grants = permissions.grants
+    .map((grant) => ({
+      resource: { type: grant.resource.type, id: grant.resource.id },
+      actions: grant.actions
+        .map((entry) => canonical(entry))
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    }))
+    .sort((a, b) =>
+      JSON.stringify(a.resource).localeCompare(JSON.stringify(b.resource)),
+    );
+  return JSON.stringify(canonical({ grants }));
+}
+
 /** `permissions` when the account holds every action of it exactly, record scopes included. */
 function onlyHeld(
   permissions: KeyPermissions,
@@ -246,7 +278,10 @@ function onlyHeld(
         grant.actions.some(
           (item) =>
             item.action === entry.action &&
-            isDeepStrictEqual(item.policy ?? null, entry.policy ?? null),
+            isDeepStrictEqual(
+              canonical(item.policy ?? null),
+              canonical(entry.policy ?? null),
+            ),
         ),
     );
   for (const grant of permissions.grants)
@@ -258,6 +293,47 @@ function onlyHeld(
           `The account does not hold ${grant.resource.type}:${grant.resource.id}.${entry.action} as given, so the key cannot get it.`,
         );
   return { grants: permissions.grants.map((grant) => ({ ...grant })) };
+}
+
+/**
+ * Renames a Permission Set in its tables, its assignments along: an assignment's id names its set, so it is renamed
+ * too. Refuses a name already taken.
+ */
+export async function renameSet(
+  connection: DatabaseConnection,
+  key: string,
+  newKey: string,
+): Promise<void> {
+  const taken = await connection.query
+    .selectFrom('authorizationPermissionSets')
+    .select(['key'])
+    .where('key', '=', newKey)
+    .executeTakeFirst();
+  if (taken)
+    throw new ApiKeyRequestError(
+      400,
+      'NOT_RESERVED',
+      `A Permission Set named ${newKey} exists already.`,
+    );
+  await connection.query
+    .updateTable('authorizationPermissionSets')
+    .set({ key: newKey, updatedAt: new Date() })
+    .where('key', '=', key)
+    .execute();
+  const assignments = await connection.query
+    .selectFrom('authorizationPermissionSetAssignments')
+    .select(['id', 'subjectType', 'subjectId'])
+    .where('permissionSetKey', '=', key)
+    .execute();
+  for (const assignment of assignments)
+    await connection.query
+      .updateTable('authorizationPermissionSetAssignments')
+      .set({
+        id: `${String(assignment.subjectType)}:${String(assignment.subjectId)}:${newKey}`,
+        permissionSetKey: newKey,
+      })
+      .where('id', '=', assignment.id as string)
+      .execute();
 }
 
 export class SystemApiKeys {
@@ -1017,7 +1093,25 @@ export class SystemApiKeys {
    * plugin removes on its own connection, goes after, and a key that is gone already lets that be done again.
    */
   async remove(identityId: string, actorId: string): Promise<void> {
-    const row = await this.row(identityId);
+    const registered = await this.db.query
+      .selectFrom('apiKeySystemKeys')
+      .selectAll()
+      .where('identityId', '=', identityId)
+      .executeTakeFirst<SystemRow>();
+    if (!registered) {
+      // Deleted already, the account's removal failing after: removing again finishes it.
+      if (await this.deletedLeavingAccount(identityId)) {
+        await this.options.users().remove(identityId, actorId);
+        await this.deliverPending(identityId);
+        return;
+      }
+      throw new ApiKeyRequestError(
+        404,
+        'SYSTEM_KEY_NOT_FOUND',
+        'System key not found.',
+      );
+    }
+    const row = registered;
     const sets = this.requireAuthorization().permissionSets;
     const noticeId = await this.db.transaction(async (connection) => {
       await connection.query
@@ -1044,6 +1138,64 @@ export class SystemApiKeys {
     });
     await this.options.users().remove(identityId, actorId);
     await this.deliver(noticeId);
+  }
+
+  /** Whether a system key's deletion committed but its service account is still there. */
+  private async deletedLeavingAccount(identityId: string): Promise<boolean> {
+    const deleted = await this.db.query
+      .selectFrom('apiKeyEvents')
+      .select(['id'])
+      .where('identityId', '=', identityId)
+      .where('action', '=', 'delete')
+      .executeTakeFirst();
+    if (!deleted) return false;
+    const user = await this.options.users().get(identityId);
+    return Boolean(user && user.kind === 'service');
+  }
+
+  /** Delivers the notices still stored for one key. */
+  private async deliverPending(identityId: string): Promise<void> {
+    const pending = await this.db.query
+      .selectFrom('apiKeyManagerNotices')
+      .select(['id'])
+      .where('identityId', '=', identityId)
+      .execute();
+    for (const notice of pending) await this.deliverNotices(String(notice.id));
+  }
+
+  /**
+   * Renames a Permission Set in the prefix reserved for system keys that is no system key's, such as a role an
+   * application had named so before, moving its assignments with it, so it is no longer hidden or locked. Answers the
+   * new key: `newKey`, or the old one prefixed with `role-`.
+   */
+  async releaseReserved(key: string, newKey = `role-${key}`): Promise<string> {
+    if (!key.startsWith(SYSTEM_KEY_SET_PREFIX))
+      throw new ApiKeyRequestError(
+        400,
+        'NOT_RESERVED',
+        `${key} is not in the prefix reserved for system keys.`,
+      );
+    if (newKey.startsWith(SYSTEM_KEY_SET_PREFIX))
+      throw new ApiKeyRequestError(
+        400,
+        'NOT_RESERVED',
+        'Rename it out of the reserved prefix.',
+      );
+    await this.db.transaction(async (connection) => {
+      const listed = await connection.query
+        .selectFrom('apiKeySystemKeys')
+        .select(['identityId'])
+        .where('identityId', '=', key.slice(SYSTEM_KEY_SET_PREFIX.length))
+        .executeTakeFirst();
+      if (listed)
+        throw new ApiKeyRequestError(
+          400,
+          'NOT_RESERVED',
+          `${key} is a system key's set.`,
+        );
+      await renameSet(connection, key, newKey);
+    });
+    return newKey;
   }
 
   // Managed keys: another feature creates and adjusts them for a person, who never needs to manage system keys, and
@@ -1107,12 +1259,26 @@ export class SystemApiKeys {
       .where('identityId', '=', input.identityId)
       .executeTakeFirst<{ keyId: string }>();
     if (registered) {
-      // Only the same import answers again; another key of the account is a different request.
-      if (String(registered.keyId) !== input.keyId)
+      // Only the same import answers again: the same key, asking for the same grants as the import that was made.
+      const made = await this.db.query
+        .selectFrom('apiKeyEvents')
+        .select(['details'])
+        .where('identityId', '=', input.identityId)
+        .where('action', '=', 'adopt')
+        .executeTakeFirst<{ details: unknown }>();
+      const details = json(made?.details);
+      const request: unknown =
+        details && typeof details === 'object'
+          ? Reflect.get(details, 'request')
+          : undefined;
+      if (
+        String(registered.keyId) !== input.keyId ||
+        request !== importRequest(input.permissions)
+      )
         throw new ApiKeyRequestError(
           400,
           'ALREADY_SYSTEM_KEY',
-          'The account is already a system key, with another key.',
+          'The account is already a system key, imported with another key or other grants.',
         );
       return this.get(input.identityId);
     }
@@ -1139,6 +1305,17 @@ export class SystemApiKeys {
           400,
           'NO_KEY',
           'The service account has no such API key to adopt.',
+        );
+      // The set's name must be free: a role an application already has under it keeps its grants and members.
+      if (
+        await authz.permissionSets
+          .withTransaction(connection)
+          .get(systemKeySet(input.identityId))
+      )
+        throw new ApiKeyRequestError(
+          400,
+          'SYSTEM_KEY_SET_TAKEN',
+          `A Permission Set named ${systemKeySet(input.identityId)} exists already; rename it with releaseReserved, then import again.`,
         );
       // What the account holds now, read in this transaction: the set never gets more.
       const held = heldGrants(
@@ -1176,7 +1353,7 @@ export class SystemApiKeys {
         input.identityId,
         'adopt',
         null,
-        { keyId: key.id },
+        { keyId: key.id, request: importRequest(input.permissions) },
         now,
         connection,
       );

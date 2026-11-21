@@ -140,6 +140,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
       stepCovers: '密钥包含这项操作。',
       configured: '{{scope}} 的配置范围：{{records}}。',
       reached: '当前实际可访问：{{records}}。',
+      recordsFailed: '无法读取这些记录当前是否可访问，请重试。',
       leftOut: '被下方角色和数据规则排除：{{records}}。',
       intersection:
         '最终能访问的记录 = 密钥保留的记录 ∩ 角色和下方数据规则允许的记录。',

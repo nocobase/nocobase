@@ -145,6 +145,8 @@ const settings = {
       stepCovers: 'The key includes this operation.',
       configured: 'Configured for {{scope}}: {{records}}.',
       reached: 'Reached now: {{records}}.',
+      recordsFailed:
+        'Could not read which of these records it reaches now. Try again.',
       leftOut: 'Left out by the roles and data rules below: {{records}}.',
       intersection:
         'The records it reaches are those the key keeps that the roles and data rules below also reach.',

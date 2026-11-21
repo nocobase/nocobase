@@ -406,8 +406,13 @@ async function reachedRecords(
         limit: input.ids.length,
       });
     return rows.map((row) => String(row.id));
-  } catch {
-    // A subject that cannot read the records, not even their ids, reaches none it can be shown.
-    return [];
+  } catch (error) {
+    // A policy that lets no record or not even its id be read reaches none; any other failure is an error to show.
+    const code: unknown =
+      error && typeof error === 'object'
+        ? Reflect.get(error, 'code')
+        : undefined;
+    if (code === 'READ_FORBIDDEN' || code === 'FIELD_READ_FORBIDDEN') return [];
+    throw error;
   }
 }

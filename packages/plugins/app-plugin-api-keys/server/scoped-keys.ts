@@ -924,9 +924,12 @@ export class ScopedApiKeys {
         }),
       );
       return { records, hasMore };
-    } catch {
-      // A maker who cannot read the records, or not even their ids, can choose none.
-      return none;
+    } catch (error) {
+      // A maker whose policy lets no record or not even its id be read can choose none; any other failure is thrown.
+      const code: unknown = isRecord(error) ? error.code : undefined;
+      if (code === 'READ_FORBIDDEN' || code === 'FIELD_READ_FORBIDDEN')
+        return none;
+      throw error;
     }
   }
 

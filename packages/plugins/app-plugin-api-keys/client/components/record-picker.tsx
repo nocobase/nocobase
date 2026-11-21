@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronDownIcon } from 'lucide-react';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import { Checkbox } from '#components/ui/checkbox';
 import { Input } from '#components/ui/input';
@@ -41,30 +41,52 @@ export function RecordPicker({
   const api = useApiKeysApi();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [records, setRecords] = useState<readonly KeyScopeObject[]>();
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  // The pages loaded for one search: a page is added only once it arrives, so none is skipped or added twice. Opened
+  // again or searched anew, the listing starts over from the first page.
+  const [opened, setOpened] = useState(0);
+  const query = `${String(opened)}:${search.trim()}`;
+  const [listing, setListing] = useState<{
+    readonly query: string;
+    readonly records: readonly KeyScopeObject[];
+    readonly pages: number;
+    readonly hasMore: boolean;
+  }>();
+  const [loadingQuery, setLoadingQuery] = useState<string>();
+  const current = listing?.query === query ? listing : undefined;
+  const records = current?.records;
+  const hasMore = current?.hasMore ?? false;
+  const loading = loadingQuery === query;
+  const fetchPage = useCallback(
+    (text: string | undefined, page: number) =>
+      (
+        load ??
+        (async (value: string | undefined) => ({
+          records: await api.objects(business, value),
+          hasMore: false,
+        }))
+      )(text, page),
+    [api, business, load],
+  );
   useEffect(() => {
     if (!open) return;
     let active = true;
     const timer = setTimeout(() => {
-      (
-        load ??
-        (async (query: string | undefined) => ({
-          records: await api.objects(business, query),
-          hasMore: false,
-        }))
-      )(search.trim() || undefined, page).then(
+      setLoadingQuery(query);
+      fetchPage(search.trim() || undefined, 1).then(
         (found) => {
           if (!active) return;
-          // A later page adds to what is listed; a new search starts over.
-          setRecords((current) =>
-            page > 1 ? [...(current ?? []), ...found.records] : found.records,
-          );
-          setHasMore(found.hasMore);
+          setListing({
+            query,
+            records: found.records,
+            pages: 1,
+            hasMore: found.hasMore,
+          });
+          setLoadingQuery(undefined);
         },
         () => {
-          if (active) setRecords([]);
+          if (!active) return;
+          setListing({ query, records: [], pages: 0, hasMore: false });
+          setLoadingQuery(undefined);
         },
       );
     }, 200);
@@ -72,7 +94,28 @@ export function RecordPicker({
       active = false;
       clearTimeout(timer);
     };
-  }, [api, business, search, open, load, page]);
+  }, [fetchPage, search, open, query]);
+  const more = (): void => {
+    if (loading || !current?.hasMore) return;
+    const asked = current;
+    setLoadingQuery(query);
+    fetchPage(search.trim() || undefined, asked.pages + 1).then(
+      (found) => {
+        setListing((latest) =>
+          latest?.query === asked.query && latest.pages === asked.pages
+            ? {
+                query: asked.query,
+                records: [...asked.records, ...found.records],
+                pages: asked.pages + 1,
+                hasMore: found.hasMore,
+              }
+            : latest,
+        );
+        setLoadingQuery(undefined);
+      },
+      () => setLoadingQuery(undefined),
+    );
+  };
   const label =
     value === undefined
       ? t('create.allRecords')
@@ -97,7 +140,14 @@ export function RecordPicker({
       {readOnly || !onChange ? (
         trigger
       ) : (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover
+          open={open}
+          onOpenChange={(next: boolean) => {
+            // Each opening lists from the first page again.
+            if (next) setOpened((count) => count + 1);
+            setOpen(next);
+          }}
+        >
           <PopoverTrigger className='inline-flex items-center gap-0.5 rounded-full border bg-background px-2 leading-5 hover:border-primary'>
             {trigger}
             <ChevronDownIcon aria-hidden className='size-3' />
@@ -118,10 +168,7 @@ export function RecordPicker({
               value={search}
               placeholder={t('create.searchRecords')}
               aria-label={t('create.searchRecords')}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => setSearch(event.target.value)}
             />
             <div className='grid max-h-56 gap-1 overflow-y-auto'>
               {records === undefined ? null : records.length === 0 ? (
@@ -164,8 +211,9 @@ export function RecordPicker({
               {hasMore ? (
                 <button
                   type='button'
-                  className='justify-self-start text-xs text-primary hover:underline'
-                  onClick={() => setPage((current) => current + 1)}
+                  disabled={loading}
+                  className='justify-self-start text-xs text-primary hover:underline disabled:opacity-50'
+                  onClick={more}
                 >
                   {t('create.moreRecords')}
                 </button>
