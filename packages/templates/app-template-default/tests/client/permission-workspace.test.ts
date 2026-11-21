@@ -231,15 +231,15 @@ const selection: PermissionWorkspaceSelection = {
 
 async function workspace(chosen: PermissionWorkspaceSelection = selection) {
   const appRoutes = createApplicationRoutes();
-  const hasUserManagement = appRoutes.some((contribution) =>
-    contribution.routes.some((route) => route.name === 'settingsUsers'),
+  const hasPermissionManagement = appRoutes.some((contribution) =>
+    contribution.routes.some((route) => route.name === 'permissionManagement'),
   );
   const { routes } = await resolveAppRuntime(
     defineAppRuntime({
       ...appRuntime,
       routes: () => [
         ...appRoutes,
-        ...(hasUserManagement ? [] : [settingsRoutes]),
+        ...(hasPermissionManagement ? [] : [settingsRoutes]),
         business,
       ],
     }),
@@ -425,7 +425,10 @@ describe('role permission workspace', () => {
       ),
     ).toMatchObject({ risk: 'high' });
     expect(sets.notice).toBe(enUS.settings.escalation.roles);
-    const users = page(enUS.settings.users)!.objects[0]!;
+    // User management comes from `@nocobase/app-plugin-users`, so its page is found by the object it guards.
+    const users = ws.settings
+      .find((item) => item.objects.some((object) => object.id === 'user:*'))!
+      .objects.find((object) => object.id === 'user:*')!;
     expect(users.actions[0]).toMatchObject({
       label: enUS.settings.readUsers,
       view: true,

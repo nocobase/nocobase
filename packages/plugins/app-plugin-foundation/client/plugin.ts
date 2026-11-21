@@ -1,11 +1,17 @@
 import {
+  defineAppRoutes,
   defineClientPlugin,
+  SYSTEM_SETTINGS_ROUTE_PATH,
   type AppClientPluginFactory,
 } from '@nocobase/app-client/plugins';
+
+import { createElement } from 'react';
+import { Navigate, useLocation } from 'react-router';
 
 import locales from './locales/index.js';
 import {
   createFoundationRoutes,
+  foundationDefinition,
   type FoundationRouteOptions,
 } from './routes.js';
 
@@ -20,8 +26,36 @@ const foundation: AppClientPluginFactory<FoundationClientOptions> =
   defineClientPlugin<FoundationClientOptions>({
     packageName: '@nocobase/app-plugin-foundation',
     locales,
-    routes: (options) =>
-      options.routes === false ? [] : createFoundationRoutes(options),
+    routes: (options) => {
+      if (options.routes === false) return [];
+      const { path, auth, authz } = foundationDefinition(options);
+      const settings = createFoundationRoutes(options);
+      if (path.startsWith(SYSTEM_SETTINGS_ROUTE_PATH + '/')) return settings;
+      return [
+        settings,
+        defineAppRoutes([
+          {
+            name: 'legacyFoundation',
+            path,
+            auth,
+            authz,
+            componentLoader: async () => ({
+              default: function LegacyFoundationRedirect() {
+                const { search, hash } = useLocation();
+                return createElement(Navigate, {
+                  replace: true,
+                  to: {
+                    pathname: SYSTEM_SETTINGS_ROUTE_PATH + path,
+                    search,
+                    hash,
+                  },
+                });
+              },
+            }),
+          },
+        ]),
+      ];
+    },
   });
 
 export default foundation;

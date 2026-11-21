@@ -17,7 +17,7 @@ import {
   within,
 } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
+import { Link, MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
@@ -35,19 +35,31 @@ vi.mock('@nocobase/app-plugin-i18n/client', () => ({
 }));
 
 vi.mock('../../client/theme/index.js', () => ({ ThemeSettings: () => null }));
+vi.mock('@nocobase/app-plugin-authentication/client', () => ({
+  useAuthentication: () => ({
+    session: {
+      user: { id: 'u1', name: 'Ada Lovelace', email: 'ada@example.com' },
+    },
+  }),
+}));
 vi.mock('../../client/layouts/components/user-menu.js', () => ({
   UserMenu: () => null,
 }));
-vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('../../client/routing/route-navigation.js')
-  >()),
-  useRouteNavigation: (routes: readonly AppClientRegisteredRoute[]) => ({
-    items: routes.map((route) => ({ route, children: [] })),
-    loading: false,
-    denied: new Set<string>(),
-  }),
-}));
+vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../../client/routing/route-navigation.js')
+    >();
+  return {
+    ...actual,
+    // Everything allowed, without an authorization client.
+    useRouteNavigation: (routes: readonly AppClientRegisteredRoute[]) => ({
+      items: actual.buildRouteNavigation(routes, new Set()),
+      loading: false,
+      denied: new Set<string>(),
+    }),
+  };
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -127,69 +139,212 @@ describe('shell translations', () => {
   });
 });
 
-it('translates the settings navigation without a separate resources footer', async () => {
-  const settings: AppClientRegisteredRoute = {
-    ...overview,
-    id: 'settings',
-    name: 'settings',
-    path: '/settings',
+/** A business page and a Settings area holding one category with one page. */
+function settingsFixture(): AppClientRegisteredRoute[] {
+  const page = async () => ({ default: () => null });
+  const settings = (
+    route: Omit<
+      AppClientRegisteredRoute,
+      'packageName' | 'source' | 'surface' | 'auth' | 'authz'
+    >,
+  ): AppClientRegisteredRoute => ({
     packageName: 'test',
     source: 'application',
+    surface: 'systemSettings',
     auth: 'required',
     authz: 'skip',
-    navigation: { title: 'settings.title' },
-  };
-  const runtime = await setup(<AppLayout routes={[overview, settings]} />);
+    ...route,
+  });
+  return [
+    {
+      ...overview,
+      id: 'test:projects',
+      name: 'projects',
+      path: '/projects',
+      navigation: { title: 'Projects' },
+    },
+    settings({
+      id: 'test:settingsHome',
+      name: 'settingsHome',
+      path: '/settings',
+      componentLoader: page,
+    }),
+    settings({
+      id: 'test:settingsAccount',
+      name: 'settingsAccount',
+      path: '/settings',
+      navigation: { title: 'settings.categories.account' },
+      children: [
+        settings({
+          id: 'test:settingsUsers',
+          name: 'settingsUsers',
+          path: '/settings/users',
+          navigation: { title: 'settings.users' },
+          componentLoader: page,
+        }),
+      ],
+    }),
+  ];
+}
+
+it('opens the settings navigation from the Settings entry and leads back', async () => {
+  const routes = settingsFixture();
+  const runtime = await setup(<AppLayout routes={routes} />);
   const navigation = screen.getByRole('navigation', {
     name: 'Application navigation',
   });
-  const link = within(navigation).getByRole('link', {
-    name: 'System settings',
-  });
-  expect(link).toHaveAttribute('href', '/settings');
-  expect(link.closest('[data-slot="sidebar-content"]')).not.toBeNull();
+  fireEvent.click(within(navigation).getByRole('link', { name: 'Projects' }));
+  await waitFor(() =>
+    expect(
+      within(navigation).getByRole('link', { name: 'Projects' }),
+    ).toHaveAttribute('aria-current', 'page'),
+  );
+  // The Settings entry stands apart from the application's menu, at its end.
+  const entries = within(
+    screen.getByRole('complementary', { name: 'Application navigation' }),
+  ).getAllByRole('link');
+  const entry = entries.find((link) => link.textContent === 'System settings');
+  expect(entry).toHaveAttribute('href', '/settings');
+  expect(entry?.closest('[data-slot="sidebar-content"]')).not.toBeNull();
+  expect(within(navigation).queryByText('System settings')).toBeNull();
   expect(
     screen.queryByRole('navigation', { name: 'Resources' }),
   ).not.toBeInTheDocument();
-  fireEvent.click(link);
+
+  fireEvent.click(entry!);
+  const menu = await screen.findByRole('navigation', {
+    name: 'Settings navigation',
+  });
+  // Categories head their modules; the application's own menu is gone.
+  expect(within(menu).getByText('Accounts and permissions')).toBeVisible();
+  const users = within(menu).getByRole('link', { name: 'Users' });
+  expect(users).toHaveAttribute('href', '/settings/users');
+  expect(screen.queryByRole('link', { name: 'Projects' })).toBeNull();
+  const back = screen.getByRole('link', { name: 'Back' });
+  expect(back).toHaveAttribute('href', '/projects');
+
+  fireEvent.click(users);
   await waitFor(() =>
     expect(
-      within(navigation).getByRole('link', { name: 'System settings' }),
+      within(
+        screen.getByRole('navigation', { name: 'Settings navigation' }),
+      ).getByRole('link', { name: 'Users' }),
     ).toHaveAttribute('aria-current', 'page'),
   );
   await act(() => runtime.changeLanguage('zh-CN'));
   expect(
-    within(screen.getByRole('navigation', { name: '应用导航' })).getByRole(
+    within(screen.getByRole('navigation', { name: '设置导航' })).getByRole(
       'link',
-      { name: '系统设置' },
+      { name: '用户管理' },
     ),
-  ).toHaveAttribute('href', '/settings');
+  ).toHaveAttribute('href', '/settings/users');
+  fireEvent.click(screen.getByRole('link', { name: '返回' }));
+  expect(
+    await screen.findByRole('navigation', { name: '应用导航' }),
+  ).toBeVisible();
 });
 
-it('closes the mobile sidebar after opening System settings', async () => {
+it('shows the settings navigation in the mobile drawer', async () => {
   vi.stubGlobal('innerWidth', 375);
-  const settings: AppClientRegisteredRoute = {
-    ...overview,
-    id: 'settings',
-    name: 'settings',
-    path: '/settings',
+  await setup(<AppLayout routes={settingsFixture()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+  const drawer = await screen.findByRole('dialog');
+  fireEvent.click(
+    within(drawer).getByRole('link', { name: 'System settings' }),
+  );
+  // Opening a page closes the drawer; opened again, it holds the settings menu.
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+  const menu = await screen.findByRole('navigation', {
+    name: 'Settings navigation',
+  });
+  expect(within(menu).getByRole('link', { name: 'Users' })).toHaveAttribute(
+    'href',
+    '/settings/users',
+  );
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/',
+  );
+});
+
+/** The Settings fixture plus a personal settings area holding one category with one page. */
+function personalSettingsFixture(): AppClientRegisteredRoute[] {
+  const page = async () => ({ default: () => null });
+  const personal = (
+    route: Omit<
+      AppClientRegisteredRoute,
+      'packageName' | 'source' | 'surface' | 'auth' | 'authz'
+    >,
+  ): AppClientRegisteredRoute => ({
     packageName: 'test',
     source: 'application',
+    surface: 'personalSettings',
     auth: 'required',
     authz: 'skip',
-    navigation: { title: 'settings.title' },
-  };
-  await setup(<AppLayout routes={[overview, settings]} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
-  const navigation = await screen.findByRole('navigation', {
+    ...route,
+  });
+  return [
+    ...settingsFixture(),
+    personal({
+      id: 'test:personalPreferences',
+      name: 'personalPreferences',
+      path: '/me',
+      navigation: { title: 'settings.personal.categories.preferences' },
+      children: [
+        personal({
+          id: 'test:personalAppearance',
+          name: 'personalAppearance',
+          path: '/me/preferences',
+          navigation: { title: 'settings.personal.appearance.title' },
+          componentLoader: page,
+        }),
+      ],
+    }),
+  ];
+}
+
+it('shows personal settings in their own navigation and keeps the way back across both settings areas', async () => {
+  await setup(
+    <>
+      <AppLayout routes={personalSettingsFixture()} />
+      <Link to='/me/preferences'>Open personal settings</Link>
+      <Link to='/settings/users'>Open system settings</Link>
+    </>,
+  );
+  const navigation = screen.getByRole('navigation', {
     name: 'Application navigation',
   });
-  fireEvent.click(
-    within(navigation).getByRole('link', { name: 'System settings' }),
-  );
+  // Personal settings never join the application's menu; they open from the account menu.
+  expect(within(navigation).queryByText('Personal settings')).toBeNull();
+  fireEvent.click(within(navigation).getByRole('link', { name: 'Projects' }));
   await waitFor(() =>
     expect(
-      screen.queryByRole('navigation', { name: 'Application navigation' }),
-    ).not.toBeInTheDocument(),
+      within(navigation).getByRole('link', { name: 'Projects' }),
+    ).toHaveAttribute('aria-current', 'page'),
+  );
+
+  fireEvent.click(screen.getByRole('link', { name: 'Open personal settings' }));
+  const menu = await screen.findByRole('navigation', {
+    name: 'Personal settings navigation',
+  });
+  expect(within(menu).getByText('Preferences')).toBeVisible();
+  expect(
+    within(menu).getByRole('link', { name: 'Language and appearance' }),
+  ).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByText('Ada Lovelace')).toBeVisible();
+  expect(screen.queryByRole('link', { name: 'System settings' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/projects',
+  );
+
+  // Moving on to system settings still leads back to the page left before either.
+  fireEvent.click(screen.getByRole('link', { name: 'Open system settings' }));
+  await screen.findByRole('navigation', { name: 'Settings navigation' });
+  expect(screen.queryByText('Ada Lovelace')).toBeNull();
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/projects',
   );
 });

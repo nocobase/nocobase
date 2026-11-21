@@ -110,8 +110,8 @@ export default function DefinitionPage(): ReactElement {
     void navigate(
       {
         pathname: location.pathname.replace(
-          `/workflows/definitions/${workflowId}`,
-          `/workflows/definitions/${canonicalId}`,
+          `/settings/workflows/definitions/${workflowId}`,
+          `/settings/workflows/definitions/${canonicalId}`,
         ),
         search: params.toString(),
       },
@@ -154,7 +154,7 @@ export default function DefinitionPage(): ReactElement {
               />
             )}
             <Link
-              to={`/workflows/executions?${executionsSearch}`}
+              to={`/settings/workflows/executions?${executionsSearch}`}
               className='text-sm font-normal tracking-normal text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring'
             >
               {/* The version select beside it already names the version. */}
@@ -180,7 +180,10 @@ export default function DefinitionPage(): ReactElement {
         ) : undefined
       }
       listTitle={t('workflows.definitions')}
-      closeTo={{ pathname: '/workflows/definitions', search: location.search }}
+      closeTo={{
+        pathname: '/settings/workflows/definitions',
+        search: location.search,
+      }}
     >
       {loaded && <DataState {...categories} retry={categories.reload} />}
       <DataState {...request} retry={request.reload} />

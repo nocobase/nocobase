@@ -20,30 +20,70 @@ import {
 import { NavigationMenu } from './components/navigation-menu.js';
 import { HeaderActions } from './components/header-actions.js';
 import { AppSidebarFooter } from './components/sidebar-footer.js';
+import { SettingsBack } from './components/settings-back.js';
+import { PersonalSettingsIdentity } from './components/personal-settings-identity.js';
 import {
+  buildPersonalSettingsNavigation,
+  buildSettingsNavigation,
   useRouteNavigation,
   selectedNavigationId,
 } from '../routing/route-navigation.js';
+import { SETTINGS_HOME } from '#lib/navigation-transform';
+import {
+  isPersonalSettingsPath,
+  isSettingsPath,
+  useRememberSettingsReturn,
+  withSettingsShell,
+} from '../routing/settings-shell.js';
 
 export interface AppLayoutProps {
   readonly routes: readonly AppClientRegisteredRoute[];
 }
 
-export function AppLayout({ routes }: AppLayoutProps): ReactElement {
+export function AppLayout({
+  routes: registered,
+}: AppLayoutProps): ReactElement {
   // The browser decides what it renders; this tells the server the same language so its messages match.
   useSyncServerLocale();
 
   const { t } = useTranslation();
-  const { items: menuItems, denied, loading } = useRouteNavigation(routes);
+  const { pathname } = useLocation();
+  // The router already gathers settings pages under the Settings group; a layout given the registered routes does too.
+  const routes = useMemo(() => withSettingsShell(registered), [registered]);
+  const { items, denied, loading } = useRouteNavigation(routes);
   const access = useMemo(() => ({ denied, loading }), [denied, loading]);
+  useRememberSettingsReturn();
+  // System and personal settings pages replace the application's menu with their own, the way back first; elsewhere
+  // the single System settings entry stands apart at the bottom of the menu, and personal settings open from the
+  // account menu.
+  const inPersonalSettings = isPersonalSettingsPath(pathname);
+  const inSettings = isSettingsPath(pathname) || inPersonalSettings;
+  const settingsItems = useMemo(
+    () =>
+      !inSettings || loading
+        ? []
+        : inPersonalSettings
+          ? buildPersonalSettingsNavigation(routes, denied)
+          : buildSettingsNavigation(routes, denied),
+    [inSettings, inPersonalSettings, loading, routes, denied],
+  );
+  const settingsEntry = items.filter(
+    (item) => item.route.name === SETTINGS_HOME,
+  );
+  const menuItems = inSettings
+    ? settingsItems
+    : items.filter((item) => item.route.name !== SETTINGS_HOME);
   const selectedKey = selectedNavigationId(
     routes,
-    useLocation().pathname,
+    pathname,
     denied,
+    inSettings ? settingsItems : undefined,
   );
-  const navigationLabel = t('navigation.label', {
-    defaultValue: 'Application navigation',
-  });
+  const navigationLabel = inPersonalSettings
+    ? t('settings.personal.navigation')
+    : inSettings
+      ? t('settings.navigation', { defaultValue: 'Settings navigation' })
+      : t('navigation.label', { defaultValue: 'Application navigation' });
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
@@ -51,11 +91,22 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
       <PageBreadcrumbProvider>
         <AppSidebarProvider>
           <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
+            {inSettings ? <SettingsBack /> : null}
+            {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
             <NavigationMenu
               items={menuItems}
               label={navigationLabel}
               selectedKey={selectedKey}
             />
+            {!inSettings && settingsEntry.length ? (
+              <div className='mt-auto'>
+                <NavigationMenu
+                  items={settingsEntry}
+                  label={t('settings.title')}
+                  selectedKey={undefined}
+                />
+              </div>
+            ) : null}
           </AppSidebar>
           <div className='flex min-w-0 flex-1 flex-col'>
             <LayoutHeader className='sticky top-0 z-40 justify-between'>

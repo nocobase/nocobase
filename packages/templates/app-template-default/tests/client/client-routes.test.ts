@@ -5,33 +5,22 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
-import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import applicationRoutes, {
   createApplicationRoutes,
 } from '../../client/routes.ts';
 import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
-import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import {
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
 
 describe('app client routes', () => {
   it('joins the settings system category across contributions without moving the log URL', () => {
-    const shell = defineAppRoutes([
-      {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
-        children: [
-          {
-            name: 'settingsSystem',
-            navigation: { title: 'System' },
-            children: [],
-          },
-        ],
-      },
-    ]);
-    const logs = defineAppRoutes([
+    const logs = defineSystemSettingsRoutes([
       {
         name: 'notificationManagement',
-        parent: 'settingsSystem',
+        kind: 'module',
+        parent: SYSTEM_SETTINGS_CATEGORIES.messages,
         navigation: { title: 'Notifications' },
         children: [
           {
@@ -48,7 +37,7 @@ describe('app client routes', () => {
         ],
       },
     ]);
-    const routes = includeNotificationTemplateRoutes([shell, logs], true);
+    const routes = includeNotificationTemplateRoutes([logs], true);
     const built = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-template-default',
@@ -61,13 +50,15 @@ describe('app client routes', () => {
       '/settings/notifications/templates',
       '/settings/notifications/templates/:templateId',
     ]);
-    expect(built.routes[0].children[0].children).toHaveLength(1);
-    const created = includeNotificationTemplateRoutes([shell], true);
+    expect(
+      findRoute(built.routes, 'notificationManagement')?.children,
+    ).toHaveLength(2);
+    const created = includeNotificationTemplateRoutes([], true);
     expect(
       created
         .flatMap((part) => part.routes)
         .find((route) => route.name === 'notificationManagement')?.parent,
-    ).toBe('settingsSystem');
+    ).toBe(SYSTEM_SETTINGS_CATEGORIES.messages);
   });
 
   it('exposes configured invitation templates through the real application route factory', async () => {
@@ -94,28 +85,23 @@ describe('app client routes', () => {
   });
 
   it('reuses the notification module and preserves its logs and existing grants', () => {
-    const existing = defineAppRoutes([
+    const existing = defineSystemSettingsRoutes([
       {
-        name: 'settings',
-        path: '/settings',
-        navigation: { title: 'Settings' },
+        name: 'notificationManagement',
+        kind: 'module',
+        parent: SYSTEM_SETTINGS_CATEGORIES.messages,
+        navigation: { title: 'Notifications' },
         children: [
           {
-            name: 'notificationManagement',
-            navigation: { title: 'Notifications' },
-            children: [
-              {
-                name: 'notificationLogs',
-                path: '/notification-logs',
-                auth: 'required',
-                authz: {
-                  resource: { type: 'page', id: 'existing.notification.logs' },
-                  action: 'access',
-                },
-                componentLoader: () =>
-                  import('../../client/pages/settings/notification-templates.js'),
-              },
-            ],
+            name: 'notificationLogs',
+            path: '/notification-logs',
+            auth: 'required',
+            authz: {
+              resource: { type: 'page', id: 'existing.notification.logs' },
+              action: 'access',
+            },
+            componentLoader: () =>
+              import('../../client/pages/settings/notification-templates.js'),
           },
         ],
       },
@@ -140,7 +126,9 @@ describe('app client routes', () => {
       // A template's own address keeps the list page's grant.
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
     ]);
-    expect(built.routes[0].children).toHaveLength(1);
+    expect(
+      findRoute(built.routes, 'notificationManagement')?.children,
+    ).toHaveLength(2);
   });
 
   it('keeps the landing page and the authentication pages', () => {
@@ -178,42 +166,18 @@ describe('app client routes', () => {
     }
   });
 
-  it('preserves the template page authorization as the app adds routes', () => {
+  it('pins the page authorization of every signed-in page', () => {
+    // A stored page grant records the page's `authz` resource id (`authorizedAs`), not its route `name`: changing an
+    // id is a data change that has to migrate the grants that reference it, not a refactor — so changing this list
+    // deliberately is the point. A new page that requires sign-in adds an entry here, because a page that checks
+    // access is a new grant somebody has to be given.
     const resolved = resolveRoutes();
 
     // The landing page and the inbox opted out of page authorization, so they are reachable by every signed-in user.
-    const expected = [
+    expect(pageAuthorizations(resolved.routes)).toEqual([
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ];
-    expect(pageAuthorizations(resolved.routes)).toEqual(
-      expect.arrayContaining(expected),
-    );
-  });
-
-  it('includes database browsing and supports business settings registration', async () => {
-    const hasUserManagement = applicationRoutes.some((contribution) =>
-      contribution.routes.some((route) => route.name === 'settingsUsers'),
-    );
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        routes: hasUserManagement
-          ? applicationRoutes
-          : [...applicationRoutes, systemSettingsRoutes],
-        source: 'application',
-      },
-    ]);
-    expect(pagePaths(built.routes)).toEqual(
-      expect.arrayContaining(['/settings', '/settings/database-explorer']),
-    );
-    const expected = [
-      { name: 'settingsUsers', authorizedAs: 'user:*' },
-      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
-      { name: 'settingsUser', authorizedAs: 'user:*' },
-      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
       {
         name: 'settingsRoles',
         authorizedAs: 'settings:authorization.permission-sets',
@@ -234,11 +198,29 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
-    ];
-    expect(pageAuthorizations(built.routes)).toEqual(
-      expect.arrayContaining(expected),
-    );
-    for (const loader of componentLoadersIn(built.routes))
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
+      // Personal settings belong to whoever is signed in, so they stay out of page authorization.
+      { name: 'personalSettingsHome', authorizedAs: null },
+      { name: 'personalAppearance', authorizedAs: null },
+    ]);
+  });
+
+  it('registers Roles and permissions and database browsing in System settings', async () => {
+    expect(
+      pagePaths(resolveRoutes().routes).filter((path) =>
+        path.startsWith('/settings'),
+      ),
+    ).toEqual([
+      '/settings',
+      '/settings/roles',
+      '/settings/roles/create',
+      '/settings/roles/:key/edit',
+      '/settings/default-access',
+      '/settings/default-access/create',
+      '/settings/default-access/:key/edit',
+      '/settings/database-explorer',
+    ]);
+    for (const loader of componentLoadersIn(resolveRoutes().routes))
       await expect(loader()).resolves.toMatchObject({
         default: expect.any(Function),
       });
@@ -306,4 +288,16 @@ function pageAuthorizations(
       : []),
     ...pageAuthorizations(route.children ?? []),
   ]);
+}
+
+function findRoute(
+  routes: readonly AppClientRegisteredRoute[],
+  name: string,
+): AppClientRegisteredRoute | undefined {
+  for (const route of routes) {
+    if (route.name === name) return route;
+    const found = findRoute(route.children ?? [], name);
+    if (found) return found;
+  }
+  return undefined;
 }

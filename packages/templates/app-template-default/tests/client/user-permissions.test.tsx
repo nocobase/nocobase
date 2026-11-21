@@ -6,11 +6,11 @@ import {
   authorizationClientToken,
   type PermissionGrant,
 } from '@nocobase/app-plugin-authorization/client';
-import { defineClientPlugin } from '@nocobase/app-client/plugins';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
+import users from '@nocobase/app-plugin-users/client';
 import RoleForm from '../../client/pages/settings/role-form.js';
 import RolesPage from '../../client/pages/settings/roles.js';
 import settingsShellRoutes from '../../client/pages/settings/shell-routes.js';
@@ -18,7 +18,7 @@ import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
-const namespace = '@nocobase/user-permissions-test';
+const namespace = '@nocobase/app-testing';
 const namespaces = {
   [namespace]: {
     'en-US': async () => ({ default: enUS }),
@@ -91,12 +91,10 @@ describe('user permission configuration', () => {
             namespace,
             namespaces,
             locale,
-            plugins: [
-              defineClientPlugin({
-                packageName: namespace,
-                routes: [settingsShellRoutes, systemSettingsRoutes],
-              })(),
-            ],
+            routes: [settingsShellRoutes, systemSettingsRoutes],
+            // User management, whose permissions this edits, is the plugin's settings page. Only its routes and
+            // translations take part: the helper stands in for authentication, which the plugin's locale provider follows.
+            plugins: [{ ...users(), reactProviders: [] }],
             services: (app: ClientApplication) =>
               app.container.instance(
                 authorizationClientToken,

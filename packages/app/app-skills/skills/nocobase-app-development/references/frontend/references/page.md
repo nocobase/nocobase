@@ -218,8 +218,9 @@ There is one kind of client route, `defineAppRoutes()`, and plugins contribute n
 ```ts
 // Appended to the routes in client/routes.ts, beside the template's settings shell.
 {
-  // A card in the Business configuration category of the System settings home.
-  parent: 'settingsBusiness',
+  // A card in the application's own Business category, which its settings routes declare once as
+  // `{ name: 'business', category: true, navigation: { title: 'settings.categories.business', order: 150 }, children: [] }`.
+  parent: 'business',
   // Opens for identities granted read on the project-settings item; the endpoints check the same item.
   authz: {
     resource: { type: 'settings', id: 'project-settings' },
@@ -454,6 +455,8 @@ export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDe
 
 export default routeComponentOverrides;
 ```
+
+A plugin that expects its pages to be replaced exports their route ids, such as `USERS_ROUTE_ID` from `@nocobase/app-plugin-users/client`; use the constant rather than writing the id.
 
 Then explicitly import it in the existing `client/runtime.ts` and add it to the existing declaration, keeping all other runtime options:
 

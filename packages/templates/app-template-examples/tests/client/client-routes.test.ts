@@ -6,6 +6,8 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
+import { settingsRoutes as routesExampleSettings } from '@nocobase/app-plugin-routes-example/client/routes';
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.ts';
 import {
   buildRouteNavigation,
@@ -13,6 +15,10 @@ import {
   routeKey,
   selectedNavigationId,
 } from '../../client/routing/route-navigation.ts';
+import {
+  SETTINGS_REDIRECTS,
+  settingsRedirectTarget,
+} from '../../client/lib/settings-redirects.ts';
 
 describe('app client routes', () => {
   it('keeps procurement and customer relations as separate protected route trees', () => {
@@ -195,48 +201,39 @@ describe('app client routes', () => {
       true,
     );
     const catalog = buildSettingsCatalog(routes, new Set());
-    const expectedSettings = new Map([
-      ['settingsAccount', ['settingsUsers', 'permissionManagement']],
-      ['settingsBusiness', ['workflows']],
-      ['settingsAi', ['knowledgeIndexing']],
-      ['settingsSystem', ['notificationManagement', 'databaseExplorer']],
-    ]);
     expect(
-      catalog
-        .filter(({ route }) => expectedSettings.has(route.name))
-        .map(({ route, modules }) => [
-          route.name,
-          modules
-            .filter((entry) =>
-              expectedSettings.get(route.name)?.includes(entry.route.name),
-            )
-            .map(({ route, target }) => [route.name, target.path]),
-        ]),
+      catalog.map((category) => [
+        category.route.name,
+        category.modules.map(({ route, target }) => [route.name, target.path]),
+      ]),
     ).toEqual([
       [
-        'settingsAccount',
+        'systemSettings.account',
         [
-          ['settingsUsers', '/users'],
-          ['permissionManagement', '/roles'],
+          ['settingsUsers', '/settings/users'],
+          ['permissionManagement', '/settings/roles'],
         ],
       ],
-      ['settingsBusiness', [['workflows', '/workflows']]],
-      ['settingsAi', [['knowledgeIndexing', '/knowledge/indexing']]],
+      ['systemSettings.automation', [['workflows', '/settings/workflows']]],
       [
-        'settingsSystem',
-        [
-          ['notificationManagement', '/settings/notifications/templates'],
-          ['databaseExplorer', '/settings/database-explorer'],
-        ],
+        'systemSettings.messages',
+        [['notificationManagement', '/settings/notifications/templates']],
+      ],
+      [
+        'systemSettings.ai',
+        [['knowledgeIndexing', '/settings/knowledge/indexing']],
+      ],
+      [
+        'systemSettings.data',
+        [['databaseExplorer', '/settings/database-explorer']],
+      ],
+      [
+        'systemSettings.system',
+        [['exampleSettings', '/settings/routes-example']],
       ],
     ]);
-    expect(
-      catalog
-        .find(({ route }) => route.name === 'settingsAi')
-        ?.modules.find(({ route }) => route.name === 'knowledgeIndexing')
-        ?.route,
-    ).toMatchObject({
-      path: '/knowledge/indexing',
+    expect(catalog[3].modules[0].route).toMatchObject({
+      path: '/settings/knowledge/indexing',
       navigation: {
         title: 'knowledge.indexing',
         description: 'knowledge.indexingDescription',
@@ -248,21 +245,61 @@ describe('app client routes', () => {
     });
     for (const path of [
       '/settings',
-      '/users',
-      '/roles',
-      '/default-access',
-      '/workflows/definitions',
-      '/knowledge/indexing',
+      '/settings/users',
+      '/settings/roles',
+      '/settings/default-access',
+      '/settings/workflows/definitions',
+      '/settings/knowledge/indexing',
     ])
       expect(selectedNavigationId(routes, path)).toBe(
         routeKey(settings[0].route),
       );
   });
 
-  it('preserves the template page authorization as the app adds routes', () => {
+  it('declares the CRM settings category ahead of the built-in ones, hidden while it holds no page', () => {
+    const routes = resolveRoutes().routes;
+    const crm = routes.find((route) => route.name === 'crm');
+    expect(crm).toMatchObject({
+      packageName: '@nocobase/app-template-examples',
+      navigation: { title: 'settings.categories.crm', order: 50 },
+    });
+    const account = routes.find(
+      (route) => route.name === 'systemSettings.account',
+    );
+    expect(routes.indexOf(crm!)).toBeLessThan(routes.indexOf(account!));
+    expect(
+      buildSettingsCatalog(routes, new Set()).some(
+        (category) => category.route.name === 'crm',
+      ),
+    ).toBe(false);
+  });
+
+  it('redirects every former settings URL to its page under /settings', () => {
+    const paths = new Set(pagePaths(resolveRoutes().routes));
+    for (const [from, to] of SETTINGS_REDIRECTS) {
+      expect(
+        paths.has(to) || [...paths].some((path) => path.startsWith(`${to}/`)),
+      ).toBe(true);
+      expect(settingsRedirectTarget(from)).toBe(to);
+    }
+    expect(
+      settingsRedirectTarget('/workflows/definitions/lifecycle.expenses'),
+    ).toBe('/settings/workflows/definitions/lifecycle.expenses');
+    expect(settingsRedirectTarget('/users/7/edit')).toBe(
+      '/settings/users/7/edit',
+    );
+    expect(settingsRedirectTarget('/usersettings')).toBeUndefined();
+    expect(settingsRedirectTarget('/knowledge')).toBeUndefined();
+  });
+
+  it('pins the page authorization of every signed-in page', () => {
+    // A stored page grant records the page's `authz` resource id (`authorizedAs`), not its route `name`: changing an
+    // id is a data change that has to migrate the grants that reference it, not a refactor — so changing this list
+    // deliberately is the point. A new page that requires sign-in adds an entry here, because a page that checks
+    // access is a new grant somebody has to be given.
     const resolved = resolveRoutes();
 
-    const expected = [
+    expect(pageAuthorizations(resolved.routes)).toEqual([
       // A shared conversation opts out of page authorization: the agents API checks ownership or a snapshot grant.
       { name: 'conversation', authorizedAs: null },
       ...['onboarding', 'onboarding-new', 'onboarding-detail'].map((name) => ({
@@ -360,20 +397,16 @@ describe('app client routes', () => {
         name: 'workflowExecution',
         authorizedAs: 'settings:workflow-management',
       },
+      { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
+      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
-      {
-        name: 'notificationTemplates',
-        authorizedAs: 'notification.templates',
-      },
-      {
-        name: 'notificationTemplate',
-        authorizedAs: 'notification.templates',
-      },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
-    ];
-    expect(pageAuthorizations(resolved.routes)).toEqual(
-      expect.arrayContaining(expected),
-    );
+      // A plugin's settings page without its own `authz` admits unrestricted administrators only.
+      { name: 'exampleSettings', authorizedAs: 'unrestricted' },
+      // Personal settings belong to whoever is signed in, so they stay out of page authorization.
+      { name: 'personalSettingsHome', authorizedAs: null },
+      { name: 'personalAppearance', authorizedAs: null },
+    ]);
   });
 });
 
@@ -385,6 +418,12 @@ function resolveRoutes() {
       routes: applicationRoutes,
       source: 'application',
     },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      routes: usersRoutes,
+      source: 'plugin',
+    },
     {
       packageName: '@nocobase/app-plugin-lifecycle-example',
       routes: lifecycleRoutes.map((contribution) => ({
@@ -394,6 +433,11 @@ function resolveRoutes() {
           children: [],
         })),
       })),
+    },
+    // A plugin's own settings page, declared with `defineSystemSettingsRoutes()`.
+    {
+      packageName: '@nocobase/app-plugin-routes-example',
+      routes: routesExampleSettings,
     },
   ]);
 }

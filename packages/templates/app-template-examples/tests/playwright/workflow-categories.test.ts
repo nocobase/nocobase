@@ -70,7 +70,7 @@ test('workflow categories persist through reload and search filters restore', as
   await page.waitForURL((url) => !url.pathname.endsWith('/login'));
 
   try {
-    await page.goto(`${app}/workflows/definitions`);
+    await page.goto(`${app}/settings/workflows/definitions`);
     const baseline = await readDefinitions(page, app);
     const matches = await readDefinitions(page, app, 'Expense');
     const noMatches = await readDefinitions(

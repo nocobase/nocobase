@@ -5,6 +5,7 @@ import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
 import {
   defineClientPlugins,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
@@ -38,7 +39,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   mail(),
   // The manifest is what the capability guide lists: every plugin this application declares.
   foundation({
-    settingsGroup: true,
+    settingsGroup: SYSTEM_SETTINGS_CATEGORIES.system,
     manifest: applicationManifest,
     guideSettingsPath: '/settings',
     navigation: false,

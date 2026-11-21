@@ -4,6 +4,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
@@ -20,15 +21,22 @@ function resolve() {
       source: 'application',
       routes: applicationRoutes,
     },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      source: 'plugin',
+      routes: usersRoutes,
+    },
   ]).routes;
 }
 
-const systemModules = (
+const categoryModules = (
+  category: string,
   routes: readonly AppClientRegisteredRoute[],
   denied = new Set<string>(),
 ) =>
   buildSettingsCatalog(routes, denied)
-    .find(({ route }) => route.name === 'settingsSystem')
+    .find(({ route }) => route.name === `systemSettings.${category}`)
     ?.modules.map(({ route, target }) => [route.name, target.path]) ?? [];
 
 function expectSettingsEntry(routes: readonly AppClientRegisteredRoute[]) {
@@ -50,22 +58,22 @@ describe('System settings navigation with application menus', () => {
   it('keeps user management and permission management in Settings alongside business navigation', () => {
     const routes = resolve();
     const account = buildSettingsCatalog(routes, new Set()).find(
-      ({ route }) => route.name === 'settingsAccount',
+      ({ route }) => route.name === 'systemSettings.account',
     );
     expect(account?.modules.map(({ target }) => target.path)).toEqual(
-      expect.arrayContaining(['/users', '/roles']),
+      expect.arrayContaining(['/settings/users', '/settings/roles']),
     );
     expectSettingsEntry(routes);
   });
 
-  it('opens Notifications and Database Explorer from the System category', () => {
+  it('opens Notifications from Messages and Database Explorer from Data and files', () => {
     const routes = resolve();
-    expect(systemModules(routes)).toContainEqual([
+    expect(categoryModules('messages', routes)).toContainEqual([
       'notificationManagement',
       '/settings/notifications/templates',
     ]);
     const explorer = ['databaseExplorer', '/settings/database-explorer'];
-    expect(systemModules(routes)).toContainEqual(explorer);
+    expect(categoryModules('data', routes)).toContainEqual(explorer);
     const page = buildSettingsCatalog(routes, new Set())
       .flatMap(({ modules }) => modules)
       .find(({ route }) => route.name === 'databaseExplorer')?.route;
@@ -78,7 +86,7 @@ describe('System settings navigation with application menus', () => {
       },
     });
     expect(
-      systemModules(routes, new Set([routeKey(page!)])),
+      categoryModules('data', routes, new Set([routeKey(page!)])),
     ).not.toContainEqual(explorer);
   });
 });

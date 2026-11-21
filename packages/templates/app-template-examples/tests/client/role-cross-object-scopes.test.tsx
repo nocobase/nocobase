@@ -1,9 +1,6 @@
 import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
-import {
-  defineAppRoutes,
-  defineClientPlugin,
-} from '@nocobase/app-client/plugins';
+import { defineSystemSettingsRoutes } from '@nocobase/app-client/plugins';
 import {
   AuthorizationClient,
   authorizationClientToken,
@@ -64,7 +61,7 @@ vi.mock(
   },
 );
 
-const settingsNamespace = '@nocobase/role-cross-object-test';
+const settingsNamespace = '@nocobase/app-testing';
 const words = enUS.settings;
 const editor = words.permissionEditor;
 const services = (app: ClientApplication) =>
@@ -78,34 +75,15 @@ const namespaces = {
     'zh-CN': async () => ({ default: zhCN }),
   },
 };
-const plugins = [
-  defineClientPlugin({
-    packageName: settingsNamespace,
-    routes: [
-      defineAppRoutes([
-        {
-          name: 'systemManagement',
-          navigation: { title: 'settings.title' },
-          children: [
-            {
-              name: 'settingsHome',
-              path: '/settings',
-              auth: 'required',
-              authz: 'skip',
-              componentLoader: async () => ({ default: () => null }),
-            },
-            {
-              name: 'settingsAccount',
-              navigation: { title: 'settings.categories.account', order: 10 },
-              children: [],
-            },
-          ],
-        },
-      ]),
-      systemSettingsRoutes,
-    ],
-  })(),
-];
+const settingsShellRoutes = defineSystemSettingsRoutes([
+  {
+    name: 'settingsHome',
+    path: '/',
+    authz: 'skip',
+    componentLoader: async () => ({ default: () => null }),
+  },
+]);
+const routes = [settingsShellRoutes, systemSettingsRoutes];
 const scope = (key: string, collection: string) => ({
   key,
   collection,
@@ -259,7 +237,7 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
       route: '/settings/roles/dispatcher/edit',
       namespace: settingsNamespace,
       namespaces,
-      plugins,
+      routes,
       services,
       fetch: answerApi(calls),
     },
@@ -374,7 +352,7 @@ it('keeps a role’s own custom filters when View’s stored condition is applie
       route: '/settings/roles/pricing/edit',
       namespace: settingsNamespace,
       namespaces,
-      plugins,
+      routes,
       services,
       fetch: answerApi(calls),
     },

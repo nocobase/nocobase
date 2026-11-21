@@ -111,10 +111,23 @@ export {
   defineClientReactProviders,
   defineClientRouteComponentOverrides,
   defineClientSourceExtension,
+  definePersonalSettingsRoutes,
+  defineSettingsCategories,
+  defineSystemSettingsRoutes,
+  isPersonalSettingsRoute,
+  isSystemSettingsRoute,
+  PERSONAL_SETTINGS_CATEGORIES,
+  PERSONAL_SETTINGS_ROUTE_PATH,
   resolveAppClientContributions,
+  SYSTEM_SETTINGS_CATEGORIES,
+  SYSTEM_SETTINGS_ROUTE_PATH,
 } from './plugins.js';
 export type {
   AppClientAppRoutesContribution,
+  AppClientPersonalSettingsRoutesContribution,
+  AppClientSystemSettingsRoutesContribution,
+  AppClientRouteSurface,
+  AppClientSettingsRouteSurface,
   AppClientContribution,
   AppClientContributions,
   AppClientContributionSource,
@@ -148,6 +161,10 @@ export type {
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
+  AppClientSettingsCategoryOverride,
+  AppClientSettingsCategoryOverrides,
+  PersonalSettingsCategory,
+  SystemSettingsCategory,
 } from './plugins.js';
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
