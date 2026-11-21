@@ -280,6 +280,7 @@ describe('API key permissions in the shape of a permission set', () => {
             });
             const pages = new ResourceItems();
             pages.add({ id: 'orders', title: 'Orders', actions: ['access'] });
+            pages.add({ id: 'reports', title: 'Reports', actions: ['access'] });
             setup.resourceTypes.add({
               type: 'page',
               items: pages,
@@ -444,6 +445,24 @@ describe('API key permissions in the shape of a permission set', () => {
             records: checks?.[0]?.decision.conditions?.ids ?? [],
           },
           decision.effect === 'deny' ? 403 : 200,
+        );
+      },
+    );
+    routes.get(
+      '/resource/:type/:id/:action',
+      auth.required({ scopedKeys: true }),
+      authz.middleware(),
+      async (context) => {
+        const decision = await context.get('authz').authorize({
+          resource: {
+            type: context.req.param('type'),
+            id: context.req.param('id'),
+          },
+          action: context.req.param('action'),
+        });
+        return context.json(
+          { effect: decision.effect },
+          decision.effect === 'permit' ? 200 : 403,
         );
       },
     );
@@ -983,6 +1002,66 @@ describe('API key permissions in the shape of a permission set', () => {
           )
         ).status,
       ).toBe(403);
+    }
+  });
+
+  it('takes the permissions of a type another plugin’s tab edits, only those its maker holds, and enforces them', async () => {
+    // `page` stands for a resource type a plugin registers and edits in its own role tab, declared for keys too.
+    const reportsPage = { type: 'page', id: 'reports' } as const;
+    const grantable = await keys.grantable(personId);
+    const pages = grantable.grants.filter(
+      (grant) => grant.resource.type === 'page',
+    );
+    expect(pages.map((grant) => grant.resource.id)).toEqual(['orders']);
+    await expect(
+      keys.create(
+        personId,
+        {
+          name: 'reports',
+          expiresInDays: 7,
+          permissions: {
+            grants: [
+              { resource: reportsPage, actions: [{ action: 'access' }] },
+            ],
+          },
+        },
+        await identity(),
+      ),
+    ).rejects.toMatchObject({ status: 403, code: 'KEY_SCOPE_EXCEEDS_YOURS' });
+    const created = await keys.create(
+      personId,
+      {
+        name: 'pages',
+        expiresInDays: 7,
+        permissions: {
+          grants: [{ resource: ordersPage, actions: [{ action: 'access' }] }],
+        },
+      },
+      await identity(),
+    );
+    for (const [path, status] of [
+      ['/resource/page/orders/access', 200],
+      ['/resource/page/reports/access', 403],
+      // Nothing outside the tab's grants: the key holds no settings.
+      ['/resource/settings/orders/read', 403],
+    ] as const)
+      expect({
+        path,
+        status: (await app.request(path, asKey(created.secret))).status,
+      }).toEqual({ path, status });
+    // Taking the page from its maker takes it from the key at once.
+    revoked.add('orders/access');
+    try {
+      expect(
+        (
+          await app.request(
+            '/resource/page/orders/access',
+            asKey(created.secret),
+          )
+        ).status,
+      ).toBe(403);
+    } finally {
+      revoked.delete('orders/access');
     }
   });
 

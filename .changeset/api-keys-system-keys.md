@@ -1,0 +1,8 @@
+---
+'@nocobase/app-plugin-api-keys': minor
+'@nocobase/app-plugin-authorization': minor
+---
+
+The API keys plugin now has system keys: each acts as a service account of its own, not as any member, with a hidden protected permission set whose grants an administrator gives one by one from what they hold, changes at any time and sees recorded with who changed what, before and after. System keys take records as all or selected ones only. Managed keys are system keys another feature creates, adjusts and rotates for a person through `createManaged`, `setPermissionsManaged` and `rotateManaged`, never beyond that person, and its manager is told when an administrator disables or deletes one; `adopt` lists an application's own service-account key as a system key without changing its secret. System settings › API keys shows system keys, managed keys, members' personal keys (filtered and revoked without seeing the key) and rules: whether "same as me" keys are allowed, the longest and default lifetime of a personal key, and disabling keys unused for a number of days, with a reminder a week before; opening it takes `settings:apiKeys/read` and changing anything `manage`. Roles and permissions › Permission check can check a system key or a member's personal key.
+
+The authorization plugin's role tabs declare `targets` (`'role'`, `'apiKey'`) and the `resourceTypes` they edit, so a tab declared for keys appears in a key's permission table too, receiving the value, a change callback, whether it is editable and, for a key, the ceiling of what its maker holds. Permission check takes other kinds of subject (`checkSubjects` on the client, `inspector.identities.add` on the server), and `KeyPermissionEditor` takes `systemKey` to offer only all or selected records.

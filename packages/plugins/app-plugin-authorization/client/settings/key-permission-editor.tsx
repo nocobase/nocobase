@@ -99,17 +99,17 @@ export interface KeyPermissionEditorProps {
    * Told once the table is built, and again when it changes, which of the actions it offers are high risk: a host's
    * quick settings leave those out, so turning one on always goes through the table's warning.
    */
-  /**
-   * For a system key, which has no person behind it: record scopes are every record or none, never one counted from
-   * "me"; chosen records are picked through `objectExtra`.
-   */
-  readonly systemKey?: boolean;
   readonly onRisky?: (
     actions: readonly {
       readonly resource: { readonly type: string; readonly id: string };
       readonly action: string;
     }[],
   ) => void;
+  /**
+   * For a system key, which has no person behind it: record scopes are every record or none, never one counted from
+   * "me"; chosen records are picked through `objectExtra`.
+   */
+  readonly systemKey?: boolean;
   readonly className?: string;
 }
 
