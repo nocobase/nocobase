@@ -13,6 +13,7 @@ import {
 } from '../checkout.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import { GIT_LOW_SPEED_CONFIG } from '../git-retry.ts';
+import { gitSshFailureOf, type GitInvocationOptions } from '../git.ts';
 import { JobFailure } from './types.ts';
 
 const failed = (error: unknown): string =>
@@ -45,18 +46,36 @@ export async function resolveCommit(
 async function fetchInto(
   cache: string,
   refspecs: readonly string[],
-  auth: GitAuth | undefined,
+  repo: FetchRepository,
 ): Promise<boolean> {
   const lock = await lockCache(cache);
   try {
-    return await gitOk(
-      [...GIT_LOW_SPEED_CONFIG, 'fetch', '--quiet', 'origin', ...refspecs],
-      cache,
-      gitAuthEnv(auth),
-    );
+    const args = [
+      ...GIT_LOW_SPEED_CONFIG,
+      'fetch',
+      '--quiet',
+      repo.ssh ? repo.url : 'origin',
+      ...refspecs,
+    ];
+    const env = { ...gitAuthEnv(repo.auth), ...repo.ssh };
+    if (!repo.ssh) return await gitOk(args, cache, env);
+    try {
+      await git(args, cache, env, repo.retry);
+      return true;
+    } catch (error) {
+      if (gitSshFailureOf(error) !== undefined) throw error;
+      return false;
+    }
   } finally {
     await lock.release();
   }
+}
+
+interface FetchRepository {
+  readonly url: string;
+  readonly auth?: GitAuth;
+  readonly ssh?: Readonly<Record<string, string>>;
+  readonly retry?: GitInvocationOptions;
 }
 
 /**
@@ -65,37 +84,36 @@ async function fetchInto(
  */
 export async function fetchRepo(
   paths: RunnerPaths,
-  repo: { readonly url: string; readonly auth?: GitAuth },
+  repo: FetchRepository,
   wanted: readonly string[] = [],
 ): Promise<string> {
   let cache: string;
   try {
-    cache = await updateCache(
-      paths,
-      repo.url,
-      repo.auth ? { auth: repo.auth } : {},
-    );
+    cache = await updateCache(paths, repo.url, {
+      ...(repo.auth ? { auth: repo.auth } : {}),
+      ...(repo.ssh ? { ssh: repo.ssh } : {}),
+      ...(repo.retry ? { retry: repo.retry } : {}),
+    });
   } catch (error) {
     throw new JobFailure(
       'checkoutFailed',
       `Could not fetch ${repo.url}: ${failed(error)}`,
+      { cause: error },
     );
   }
   const missing: string[] = [];
   for (const sha of wanted)
     if (!(await hasCommit(cache, sha))) missing.push(sha);
-  if (missing.length > 0) await fetchInto(cache, missing, repo.auth);
+  if (missing.length > 0) await fetchInto(cache, missing, repo);
   return cache;
 }
 
 /** The commit a job builds: `sha` when given (it must exist), else the head of the branch or tag `ref`. */
 export async function targetCommit(
   cache: string,
-  repo: {
-    readonly url: string;
+  repo: FetchRepository & {
     readonly ref?: string;
     readonly sha?: string;
-    readonly auth?: GitAuth;
   },
 ): Promise<string> {
   if (repo.sha !== undefined) {
@@ -116,9 +134,7 @@ export async function targetCommit(
   const name = ref.replace(/^refs\/(heads|tags)\//u, '');
   const branch = await resolveCommit(cache, `refs/remotes/origin/${name}`);
   if (branch !== undefined && !ref.startsWith('refs/tags/')) return branch;
-  if (
-    await fetchInto(cache, [`+refs/tags/${name}:refs/tags/${name}`], repo.auth)
-  ) {
+  if (await fetchInto(cache, [`+refs/tags/${name}:refs/tags/${name}`], repo)) {
     const tag = await resolveCommit(cache, `refs/tags/${name}`);
     if (tag !== undefined) return tag;
   }

@@ -1618,6 +1618,27 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
   });
 
+  it('waits for the folder selection before automatic or push synchronization', async () => {
+    executor = await InlineJobExecutor.ready();
+    runtime = createMailRuntime({
+      store,
+      adapters: resolver(baseAdapter()),
+      executor,
+      syncBatchSize: 37,
+    });
+    await store.updateAccountSyncFolders(ACCOUNT_ID, []);
+
+    await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(0);
+    await expect(runtime.schedulePushSync(ACCOUNT_ID)).resolves.toBe(false);
+    await expect(store.findActiveSyncRun(ACCOUNT_ID)).resolves.toBeUndefined();
+
+    await store.updateAccountSyncFolders(ACCOUNT_ID, ['INBOX']);
+    await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(1);
+    await expect(store.findActiveSyncRun(ACCOUNT_ID)).resolves.toMatchObject({
+      policy: { batchSize: 37, syncFolderIds: ['INBOX'] },
+    });
+  });
+
   it.each([
     'recoverSyncRuns',
     'cleanupExpiredAttachments',

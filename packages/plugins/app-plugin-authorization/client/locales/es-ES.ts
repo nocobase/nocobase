@@ -21,7 +21,6 @@ const esES: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Administrar asignaciones',
       configure: 'Configurar',
-      inspect: 'Inspeccionar permisos',
       read: 'Leer',
       create: 'Crear',
       update: 'Actualizar',
@@ -37,7 +36,6 @@ const esES: LocaleResource<typeof enUS> = {
         'Permitir el acceso a todas las páginas, incluidas las páginas agregadas posteriormente.',
     },
     settings: {
-      inspector: 'Inspector de permisos',
       'permission-sets': 'Conjuntos de permisos',
     },
     subjectTypes: {

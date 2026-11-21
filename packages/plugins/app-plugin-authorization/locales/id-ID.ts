@@ -15,7 +15,6 @@ const idID: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Kelola tugas',
       configure: 'Konfigurasi',
-      inspect: 'Periksa izin',
       read: 'Baca',
       create: 'Buat',
       update: 'Perbarui',
@@ -31,7 +30,6 @@ const idID: LocaleResource<typeof enUS> = {
         'Izinkan akses ke setiap halaman, termasuk halaman yang ditambahkan nanti.',
     },
     settings: {
-      inspector: 'Inspektur izin',
       'permission-sets': 'Kumpulan izin',
     },
     subjectTypes: {

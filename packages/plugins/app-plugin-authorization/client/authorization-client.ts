@@ -132,7 +132,12 @@ export interface AuthorizationOptionsResponse {
     description?: LocalizedText;
     collections: readonly string[];
   }[];
-  readonly collections: readonly { name: string; fields: readonly string[] }[];
+  /** The registered collections; `title` is the one given to `authz.database.collections.add`. */
+  readonly collections: readonly {
+    name: string;
+    title?: LocalizedText;
+    fields: readonly string[];
+  }[];
 }
 
 export interface SelectOption {

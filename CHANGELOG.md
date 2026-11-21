@@ -2,6 +2,23 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `nocobase-v3/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 New Features
+
+- **[Agents]** Choose how hard an online agent thinks (default, off, or minimal to extra high) beside the model in the chat, for any online model, with a notice in the conversation when the model does not support the level. ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent runner]** Runners can check out, push and build SSH repositories with deployment keys and verified host fingerprints. ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[Plugin lifecycle]** Administrators can suspend, resume, reset, or restart a lifecycle instance and review the changes in the ticket example. ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 Improvements
+
+- **[Agents]** Show OpenCode and Pi models with their provider, and show what the coding tool said when a run fails. ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 Bug Fixes
+
+- **[CLI]** Fixed CLI and runner installation behind gateways that redirect requests to the same origin ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent runner]** Read-only runs can fetch over managed SSH, and the runner rejects pushes through that connection. ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
 ## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
 
 ### 🎉 New Features

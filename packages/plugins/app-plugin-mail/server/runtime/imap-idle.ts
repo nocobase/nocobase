@@ -46,7 +46,13 @@ export class MailImapIdle {
 
   public update(account: MailAccount): void {
     if (this.closed) return;
-    if (account.status !== 'active' || account.provider.type !== 'imap-smtp') {
+    if (
+      account.status !== 'active' ||
+      account.provider.type !== 'imap-smtp' ||
+      // INBOX IDLE only wakes synchronization of a selected INBOX.
+      (account.syncFolderIds !== undefined &&
+        !account.syncFolderIds.includes('INBOX'))
+    ) {
       this.stop(account.id);
       return;
     }

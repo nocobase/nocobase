@@ -6,8 +6,10 @@ import {
   MAIL_LABEL_COLORS,
   MAIL_PROVIDER_CAPABILITIES,
   type MailAccountView,
+  type MailUpdatedAccountView,
   type MailAuthorizationStartResult,
   type MailFolder,
+  type MailSyncFolderPreview,
   type MailIdentity,
   type MailLabel,
   type MailManagedAccountView,
@@ -31,6 +33,7 @@ const MAX_MAIL_ADDRESS_LENGTH = 320;
 const MAX_MAIL_NAME_LENGTH = 255;
 const MAX_MAIL_DRAFT_KEY_LENGTH = 100;
 const MAX_MAIL_ARRAY_ITEMS = 100;
+const MAX_MAIL_SYNC_FOLDERS = 1000;
 const MAX_MAIL_ATTACHMENT_IDS = 100;
 const MAX_MAIL_DRAFT_REVISION = 2147483647;
 const MAX_PAGE_SIZE = 100;
@@ -346,6 +349,26 @@ export const ConversationMessagesQuery: z.ZodObject<
   z.core.$strip
 > = CursorQuery;
 
+export const ListFoldersQuery: z.ZodObject<
+  {
+    includeUnsynced: z.ZodOptional<
+      z.ZodPipe<
+        z.ZodEnum<{
+          true: 'true';
+          false: 'false';
+        }>,
+        z.ZodTransform<boolean, 'true' | 'false'>
+      >
+    >;
+  },
+  z.core.$strip
+> = z.object({
+  includeUnsynced: queryBoolean.meta({
+    description:
+      'Also list the folders the account does not synchronize, each with `synced`, for choosing the synchronized folders.',
+  }),
+});
+
 export const DeleteMessageQuery: z.ZodObject<
   {
     sourceProviderFolderId: z.ZodOptional<z.ZodString>;
@@ -368,6 +391,26 @@ export const DeleteMessageQuery: z.ZodObject<
 // ---------------------------------------------------------------------------------------------------------------------
 // Bodies
 
+function syncFolderSelection(): z.ZodNullable<z.ZodArray<z.ZodString>> {
+  return z
+    .array(requiredText())
+    .min(1)
+    .max(MAX_MAIL_SYNC_FOLDERS)
+    .nullable()
+    .meta({
+      description:
+        'The `providerFolderId`s of the folders to synchronize, or `null` for every folder, including folders created later.',
+    });
+}
+
+/** Connecting with an empty list leaves the folders to be chosen after the account is connected. */
+const connectSyncFolders: z.ZodOptional<
+  z.ZodNullable<z.ZodArray<z.ZodString>>
+> = z.array(z.string()).max(0).nullable().optional().meta({
+  description:
+    'Send `[]` to choose the folders after connecting: the first synchronization then only lists the folders, and no messages are imported until `mailUpdateAccount` saves a selection. Omitted or `null` synchronizes every folder.',
+});
+
 export const UpdateAccountInput: z.ZodObject<
   {
     status: z.ZodOptional<
@@ -376,10 +419,22 @@ export const UpdateAccountInput: z.ZodObject<
         suspended: 'suspended';
       }>
     >;
+    syncFolderIds: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString>>>;
   },
   z.core.$strict
 > = z.strictObject({
   status: z.enum(['active', 'suspended']).optional(),
+  syncFolderIds: syncFolderSelection().optional(),
+});
+
+/** Ask what saving a folder selection would delete locally. */
+export const PreviewSyncFoldersInput: z.ZodObject<
+  {
+    syncFolderIds: z.ZodNullable<z.ZodArray<z.ZodString>>;
+  },
+  z.core.$strict
+> = z.strictObject({
+  syncFolderIds: syncFolderSelection(),
 });
 
 export const SaveTemplateInput: z.ZodObject<
@@ -414,6 +469,7 @@ export const StartAuthorizationInput: z.ZodObject<
     name: z.ZodString;
     scopes: z.ZodOptional<z.ZodArray<z.ZodString>>;
     initialSyncReceivedAfter: z.ZodISODateTime;
+    syncFolderIds: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString>>>;
   },
   z.core.$strict
 > = z.strictObject({
@@ -421,6 +477,7 @@ export const StartAuthorizationInput: z.ZodObject<
   name: requiredText(MAX_MAIL_NAME_LENGTH),
   scopes: idList().optional(),
   initialSyncReceivedAfter: dateTime,
+  syncFolderIds: connectSyncFolders,
 });
 export type StartAuthorizationInput = z.infer<typeof StartAuthorizationInput>;
 
@@ -433,6 +490,7 @@ export const ConnectAccountInput: z.ZodObject<
     username: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
     initialSyncReceivedAfter: z.ZodISODateTime;
+    syncFolderIds: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString>>>;
   },
   z.core.$strict
 > = z.strictObject({
@@ -443,6 +501,7 @@ export const ConnectAccountInput: z.ZodObject<
   username: optionalText(),
   password: requiredText(),
   initialSyncReceivedAfter: dateTime,
+  syncFolderIds: connectSyncFolders,
 });
 
 export const UpdateIdentityInput: z.ZodObject<
@@ -938,6 +997,10 @@ const accountFields = {
       'The earliest received time the first synchronization imported.',
   }),
   automaticSyncIntervalMinutes: z.number().optional(),
+  syncFolderIds: z.array(z.string()).optional().meta({
+    description:
+      'The `providerFolderId`s the account synchronizes. Absent for every folder; empty while the folders are still to be chosen after connecting.',
+  }),
 };
 
 export const MailAccountSchema: z.ZodType<MailAccountView> = z
@@ -1010,8 +1073,21 @@ export const MailFolderSchema: z.ZodType<MailFolder> = z
     kind: z.enum(['folder', 'label']).meta({
       description: 'Gmail labels and Outlook folders share this model.',
     }),
+    synced: z.boolean().optional().meta({
+      description:
+        'Whether the account synchronizes this folder; only reported with `includeUnsynced=true`.',
+    }),
   })
   .meta({ ref: 'MailFolder' });
+
+export const MailSyncFolderPreviewSchema: z.ZodType<MailSyncFolderPreview> = z
+  .object({
+    removedMessageCount: z.number().meta({
+      description:
+        'Local messages that saving the selection would delete because they belong to no selected folder. Messages on the mail server are not affected.',
+    }),
+  })
+  .meta({ ref: 'MailSyncFolderPreview' });
 
 export const MailSyncRunSchema: z.ZodType<MailSyncRunView> = z
   .object({
@@ -1036,6 +1112,10 @@ export const MailSyncRunSchema: z.ZodType<MailSyncRunView> = z
         .optional()
         .meta({ description: 'Deprecated and ignored.' }),
       batchSize: z.number(),
+      syncFolderIds: z.array(z.string()).optional().meta({
+        description:
+          'The folders the run synchronizes, copied from the account when it was created; absent for every folder.',
+      }),
     }),
     processedMessages: z.number(),
     processedPages: z.number(),
@@ -1049,6 +1129,16 @@ export const MailSyncRunSchema: z.ZodType<MailSyncRunView> = z
       .meta({ description: 'Whether the caller may retry or cancel the run.' }),
   })
   .meta({ ref: 'MailSyncRun' });
+
+export const MailUpdatedAccountSchema: z.ZodType<MailUpdatedAccountView> = z
+  .object({
+    ...accountFields,
+    syncRun: MailSyncRunSchema.optional().meta({
+      description:
+        'The initial run that replaced the active one because `syncFolderIds` changed, to follow with `mailGetSyncRun`; absent when the folders did not change.',
+    }),
+  })
+  .meta({ ref: 'MailUpdatedAccount' });
 
 export const MailTemplateSchema: z.ZodType<MailTemplate> = z
   .object({
@@ -1284,6 +1374,30 @@ export const MailUnreadCountSchema: z.ZodType<number> = z
 export const MailBoundedListMeta: z.ZodType<{ total: number }> = z
   .object({ total: z.number().int() })
   .meta({ ref: 'MailBoundedListMeta' });
+
+/** `meta` of an account's folder list. */
+export const MailFolderListMeta: z.ZodType<{
+  total: number;
+  complete?: boolean;
+  failed?: boolean;
+  initialSyncCompleted?: boolean;
+}> = z
+  .object({
+    total: z.number().int(),
+    complete: z.boolean().optional().meta({
+      description:
+        'With `includeUnsynced`: false until a synchronization run has read the whole folder list, so a folder selection waits for it.',
+    }),
+    failed: z.boolean().optional().meta({
+      description:
+        'With `includeUnsynced`: true when no folder listing completed and none is running; start a synchronization with `mailSyncAccount` to list the folders again.',
+    }),
+    initialSyncCompleted: z.boolean().optional().meta({
+      description:
+        'With `includeUnsynced`: true once an initial synchronization completed, so `mailSyncAccount` without a folder change runs incrementally; false means it imports from the initial sync date.',
+    }),
+  })
+  .meta({ ref: 'MailFolderListMeta' });
 
 /** `meta` of a cursor-paged message feed. */
 export const MailCursorListMeta: z.ZodType<{

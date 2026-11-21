@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import { simpleParser } from 'mailparser';
+import { originalMime } from '../fixtures/original-message.js';
 import {
   expect,
   test as base,
@@ -46,6 +49,53 @@ test.beforeEach(() => {
 
 const pane = (page: Page, name: string): Locator =>
   page.locator(`[data-slot="mail-${name}-pane"]`);
+
+test('downloads the original from an individual message in a two-message conversation', async ({
+  page,
+  mailApi,
+}, info) => {
+  mailApi.includeOriginalInConversation();
+  await open(page);
+  await select(page, 0);
+  const conversation = pane(page, 'conversation');
+  await expect(
+    conversation.getByRole('button', { name: 'More actions' }),
+  ).toHaveCount(2);
+  const selectedMessage = conversation.locator('article').filter({
+    has: page.getByText('Original message sender', { exact: true }),
+  });
+  await selectedMessage.getByRole('button', { name: 'Expand message' }).click();
+  await expect(
+    selectedMessage.getByRole('button', { name: 'Download sample.bin' }),
+  ).toBeVisible();
+  await selectedMessage
+    .getByRole('button', { name: 'More actions', exact: true })
+    .click();
+  const originalAction = page.getByRole('menuitem', {
+    name: 'Download original',
+    exact: true,
+  });
+  await expect(originalAction).toBeVisible();
+  await screenshot(page, info, 'mail-download-original.png');
+  const downloading = page.waitForEvent('download');
+  await originalAction.click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe('Selected original.eml');
+  expect(await download.failure()).toBeNull();
+  const bytes = await readFile(await download.path());
+  expect(bytes).toEqual(originalMime);
+  const message = await simpleParser(bytes);
+  expect(message.headers.get('x-original-header')).toBe('preserve me');
+  expect(message.attachments[0]).toMatchObject({
+    filename: 'sample.bin',
+    content: Buffer.from([0, 255, 128, 66]),
+  });
+  expect(
+    mailApi.requests
+      .filter(({ path }) => path.endsWith('/original'))
+      .map(({ path }) => path),
+  ).toEqual(['mail/accounts/alpha/messages/message-100/original']);
+});
 
 test('recipient fields reject invalid input and send parsed display names', async ({
   page,

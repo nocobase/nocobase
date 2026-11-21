@@ -86,6 +86,7 @@ export type {
   MailAuthorizedAccount,
   MailAuthorizedIdentity,
   MailCredentialVault,
+  MailOriginalMessageContent,
   MailProviderAdapter,
   MailProviderAttachmentInput,
   MailProviderAuthorization,

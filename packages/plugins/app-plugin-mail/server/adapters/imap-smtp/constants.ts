@@ -12,6 +12,12 @@ export const IMAP_SMTP_CAPABILITIES: MailProviderDefinition['capabilities'] = {
   aliases: false,
 };
 
+export const IMAP_SMTP_LOCATION_CAPABILITIES: MailProviderDefinition['capabilities'] =
+  {
+    ...IMAP_SMTP_CAPABILITIES,
+    downloadOriginal: true,
+  };
+
 export const CONNECTION_TIMEOUT_MS: number = 30 * 1_000;
 export const SOCKET_TIMEOUT_MS: number = 60 * 1_000;
 

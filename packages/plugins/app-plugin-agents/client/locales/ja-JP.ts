@@ -189,6 +189,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '{{name}}を編集',
       enabled: '有効',
       done: '{{name}} が保存されました',
+      model: 'モデル',
     },
     available: {
       open: 'Agentを追加',
@@ -261,10 +262,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     save: 'スキルを保存',
     descriptionOnline:
       'サーバー上の読み取り専用サンドボックスで、タスクがその説明に一致したときにAgentが読むマニュアル。',
-    onlineScripts:
-      'オンライン Agentsに対してスクリプトは実行されません。Agentはスクリプトを読み取ることができますが、実行することはできません。',
-    skippedScripts: ': {{paths}}',
-    pathSeparator: ', ',
   },
   brief: {
     preview: 'プロンプト全体をプレビューする',
@@ -1305,8 +1302,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     binaryFile: 'バイナリ ファイル、{{size}}。ここでは編集できません。',
     executable: '実行可能ファイル',
     scriptBadge: 'スクリプト',
-    scriptsNote:
-      'スクリプトがあります: オンライン Agentsはスクリプトを読み取ることはできますが、実行することはできません',
     compatibility: '互換性: {{value}}',
     fileContent: '{{path}}の内容',
     export: '輸出',
@@ -1339,8 +1334,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       name: '名前',
       renameTitle: '「{{name}}」の名前を変更',
       conventional: {
-        scripts:
-          'コードAgentsを実行できます。オンライン Agentsは読むだけです。',
+        scripts: 'Agent が実行できるコードです。',
         references: '文書Agentsは必要なときに読みます。',
         assets: 'テンプレート、画像、その他のリソース。',
       },

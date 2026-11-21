@@ -406,6 +406,37 @@ function FilterDraft({
     </div>
   );
 }
+/**
+ * A one-line reading of stored conditions, such as "Amount Less than 50", so a filter that cannot be opened still
+ * says what it limits. Undefined without conditions; the advanced notice for conditions the form cannot read.
+ */
+function permissionFilterSummary(
+  value: unknown,
+  fields: PermissionFilterProps['fields'],
+  labels: PermissionFilterLabels,
+): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const parsed = read(value);
+  if (!parsed) return labels.advanced;
+  const rows = parsed.rows.map((row) =>
+    [
+      fields.find((field) => field.value === row.field)?.label ?? row.field,
+      labels.operators[row.operator] ?? row.operator,
+      ...(unary(row.operator)
+        ? []
+        : [
+            row.type === 'boolean'
+              ? row.value === 'true'
+                ? labels.true
+                : labels.false
+              : row.value,
+          ]),
+    ].join(' '),
+  );
+  return rows.length > 1
+    ? `${parsed.logic === 'or' ? labels.any : labels.all}: ${rows.join('; ')}`
+    : rows[0];
+}
 /** Native filter input; Apply edits the containing role draft, never a server directly. */
 export function PermissionFilter({
   open,
@@ -416,40 +447,52 @@ export function PermissionFilter({
   disabled = false,
   onApply,
 }: PermissionFilterProps): ReactElement {
+  // Shown beside the button, even when it is disabled; the open form shows the conditions itself.
+  const summary = permissionFilterSummary(value, fields, labels);
   return (
-    <Popover open={open && !disabled} onOpenChange={onOpenChange}>
-      <PopoverTrigger
-        render={
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            className='h-6 px-2 text-xs'
-            disabled={disabled}
-          />
-        }
-      >
-        {labels.configure}
-      </PopoverTrigger>
-      <PopoverContent
-        align='start'
-        className='flex max-h-[min(36rem,var(--available-height))] w-xl max-w-(--available-width) flex-col gap-3 p-4'
-      >
-        <PopoverTitle>{labels.title}</PopoverTitle>
-        <PopoverDescription>{labels.description}</PopoverDescription>
-        {open && !disabled && (
-          <FilterDraft
-            value={value}
-            fields={fields}
-            labels={labels}
-            onCancel={() => onOpenChange(false)}
-            onApply={(filter) => {
-              onApply(filter);
-              onOpenChange(false);
-            }}
-          />
-        )}
-      </PopoverContent>
-    </Popover>
+    <span className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
+      <Popover open={open && !disabled} onOpenChange={onOpenChange}>
+        <PopoverTrigger
+          render={
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-6 px-2 text-xs'
+              disabled={disabled}
+            />
+          }
+        >
+          {labels.configure}
+        </PopoverTrigger>
+        <PopoverContent
+          align='start'
+          className='flex max-h-[min(36rem,var(--available-height))] w-xl max-w-(--available-width) flex-col gap-3 p-4'
+        >
+          <PopoverTitle>{labels.title}</PopoverTitle>
+          <PopoverDescription>{labels.description}</PopoverDescription>
+          {open && !disabled && (
+            <FilterDraft
+              value={value}
+              fields={fields}
+              labels={labels}
+              onCancel={() => onOpenChange(false)}
+              onApply={(filter) => {
+                onApply(filter);
+                onOpenChange(false);
+              }}
+            />
+          )}
+        </PopoverContent>
+      </Popover>
+      {summary && !(open && !disabled) && (
+        <span
+          data-slot='permission-filter-summary'
+          className='min-w-0 text-xs break-words text-muted-foreground'
+        >
+          {summary}
+        </span>
+      )}
+    </span>
   );
 }

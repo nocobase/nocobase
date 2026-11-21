@@ -4,6 +4,9 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound: 'Pesan asli tidak lagi tersedia di penyedia email.',
+    originalTooLarge: 'Pesan asli melebihi batas unduhan 40 MiB.',
+    operationUnsupported: 'Operasi email ini tidak tersedia.',
     connectionAuthenticationFailed:
       'Autentikasi {{protocol}} gagal. Periksa nama login dan kata sandi atau kata sandi aplikasi.',
     connectionHostNotFound:

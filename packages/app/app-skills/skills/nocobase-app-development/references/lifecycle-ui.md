@@ -4,6 +4,8 @@ Use this reference for management pages built around `@nocobase/lifecycle`. Read
 
 ## Default management structure
 
+When an execution detail needs administrator controls for a running instance, follow [administrator controls for lifecycle instances](lifecycle-management.md) for authorization, command availability, and execution history.
+
 For approval-specific requests, tasks and decisions, first follow [approval plugin prerequisites](lifecycle.md#approval-requests-check-the-pro-plugin-first) and the installed `@nocobase/app-plugin-approval` Skill. The generic workflow management block does not itself implement an approval subsystem.
 
 Use the UI Library `workflow-management` block as the default starting point; it extracts the existing workflow example's layout and interactions. Adapt its business labels, data sources and supported operations to the application; do not require its example plugins as production dependencies. The sidebar has one clickable entry, System management → Workflow management. Its landing page has one Workflow management header and in-page Definitions and Executions tabs; these are two views of the same management page, not separate sidebar entries or a sidebar submenu. Definitions lead to full detail pages with a process diagram and visible parameter settings beside it; executions lead to full detail pages with a diagram, transition history, effect status and recorded parameter information. Include implemented workflows even when there is only one. Show an explicit empty state for definitions without adjustable parameters and for workflows without executions; add category management when classification is useful.

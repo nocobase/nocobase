@@ -1,5 +1,16 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.99
+
+### Patch Changes
+
+- Updated dependencies [51453de]
+- Updated dependencies [2c66475]
+- Updated dependencies [39f8245]
+- Updated dependencies [188e419]
+  - @nocobase/lifecycle@0.1.0-beta.6
+  - @nocobase/app-plugin-agents@2.0.0-beta.18
+
 ## 1.0.0-beta.98
 
 ### Patch Changes

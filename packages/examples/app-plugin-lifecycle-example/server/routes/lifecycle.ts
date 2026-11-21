@@ -1,3 +1,4 @@
+import type { LifecycleActor } from '@nocobase/lifecycle';
 import type { AuthEnv } from '@nocobase/app-plugin-authentication';
 import {
   ApiError,
@@ -31,6 +32,9 @@ import {
 } from './schemas.js';
 
 export interface LifecycleRoutesSpec {
+  readonly managementActor?: (
+    context: Context<AuthEnv>,
+  ) => Promise<LifecycleActor | undefined>;
   /** Where the plugin's routes start, such as `/lifecycleExample`. */
   readonly basePath: string;
   /**
@@ -182,14 +186,24 @@ export function lifecycleRoutes(
     async (context) => {
       const { recordId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
-      return context.json({
-        data: outwardView(
-          await runtime.view(
-            await definitionOf(recordId),
-            recordId,
-            actorOf(context, actAs),
-          ),
+      const view = outwardView(
+        await runtime.view(
+          await definitionOf(recordId),
+          recordId,
+          actorOf(context, actAs),
         ),
+      );
+      const manager = await spec.managementActor?.(context);
+      const management = manager
+        ? await runtime.managementDetails(
+            lifecycle,
+            recordId,
+            manager,
+            () => true,
+          )
+        : undefined;
+      return context.json({
+        data: { ...view, ...(management ? { management } : {}) },
       });
     },
   );

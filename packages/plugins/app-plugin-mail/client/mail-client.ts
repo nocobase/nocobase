@@ -1,11 +1,13 @@
 import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import type {
   MailAccountView,
+  MailUpdatedAccountView,
   MailAuthorizationStartResult,
   MailConnectAccountInput,
   MailComposeInput,
   MailBulkComposeInput,
   MailFolder,
+  MailFolderChoices,
   MailLabel,
   MailLabelColor,
   MailIdentity,
@@ -28,6 +30,7 @@ import type {
   MailSubmissionView,
   MailSyncRunView,
   MailUpdateAccountInput,
+  MailSyncFolderPreview,
   MailUpdateIdentityInput,
   MailUpdateLabelInput,
   MailOutboundAttachmentView,
@@ -46,6 +49,7 @@ export type {
   MailComposeInput,
   MailBulkComposeInput,
   MailFolder,
+  MailFolderChoices,
   MailFolderType,
   KnownMailFolderType,
   MailLabel,
@@ -82,6 +86,8 @@ export type {
   MailSyncRunStatus,
   KnownMailSyncRunStatus,
   MailSyncRunView,
+  MailSyncFolderPreview,
+  MailUpdateAccountInput,
   MailOutboundAttachmentView,
   MailTemplate,
   MailSaveTemplateInput,
@@ -137,6 +143,8 @@ export interface MailAuthorizationRequest {
   readonly name: string;
   readonly scopes?: readonly string[];
   readonly initialSyncReceivedAfter: string;
+  /** Send `[]` to choose the synchronized folders after connecting; omitted or `null` synchronizes every folder. */
+  readonly syncFolderIds?: readonly [] | null;
 }
 
 export type MailConnectAccountRequest = Omit<
@@ -189,17 +197,29 @@ export class MailClient {
       .then((response) => response.data);
   }
 
+  /** Update an account; a changed folder selection answers the initial run it scheduled as `syncRun`. */
   public updateAccount(
     input: MailUpdateAccountInput,
-  ): Promise<MailAccountView> {
+  ): Promise<MailUpdatedAccountView> {
     const { accountId, ...json } = input;
     return this.client
-      .request<DataResponse<MailAccountView>>({
+      .request<DataResponse<MailUpdatedAccountView>>({
         path: `mail/accounts/${encodeURIComponent(accountId)}`,
         method: 'PATCH',
         json,
       })
       .then((response) => response.data);
+  }
+
+  /** Count the local messages saving this folder selection with {@link updateAccount} would delete. */
+  public previewSyncFolders(
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<MailSyncFolderPreview> {
+    return this.post<MailSyncFolderPreview>(
+      `mail/accounts/${encodeURIComponent(accountId)}/previewSyncFolders`,
+      { syncFolderIds },
+    );
   }
 
   /**
@@ -339,12 +359,52 @@ export class MailClient {
     });
   }
 
-  public listFolders(accountId: string): Promise<readonly MailFolder[]> {
+  /**
+   * The account's synchronized folders. `includeUnsynced` also lists the folders it does not synchronize, each with
+   * `synced`, for choosing the synchronized folders.
+   */
+  public listFolders(
+    accountId: string,
+    options: { readonly includeUnsynced?: boolean } = {},
+  ): Promise<readonly MailFolder[]> {
     return this.client
       .request<DataResponse<readonly MailFolder[]>>({
         path: `mail/accounts/${encodeURIComponent(accountId)}/folders`,
+        ...(options.includeUnsynced
+          ? { query: { includeUnsynced: 'true' } }
+          : {}),
       })
       .then((response) => response.data);
+  }
+
+  /**
+   * Every folder of the account for choosing its synchronized folders, each with `synced`. `complete` is false until a
+   * synchronization run has read the whole folder list; a selection waits for it. `failed` means that listing stopped
+   * and has to be started again with {@link startSync}. `initialSyncCompleted` tells whether a sync that keeps the
+   * selection runs incrementally.
+   */
+  public listFolderChoices(accountId: string): Promise<MailFolderChoices> {
+    return this.client
+      .request<
+        ListResponse<
+          MailFolder,
+          {
+            readonly total: number;
+            readonly complete?: boolean;
+            readonly failed?: boolean;
+            readonly initialSyncCompleted?: boolean;
+          }
+        >
+      >({
+        path: `mail/accounts/${encodeURIComponent(accountId)}/folders`,
+        query: { includeUnsynced: 'true' },
+      })
+      .then((response) => ({
+        folders: response.data,
+        complete: response.meta?.complete !== false,
+        failed: response.meta?.failed === true,
+        initialSyncCompleted: response.meta?.initialSyncCompleted === true,
+      }));
   }
 
   public listLabels(): Promise<readonly MailLabel[]> {
@@ -521,6 +581,17 @@ export class MailClient {
         path: `mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}`,
       })
       .then((response) => response.data);
+  }
+
+  public downloadOriginalMessage(
+    accountId: string,
+    messageId: string,
+    signal?: AbortSignal,
+  ): Promise<ReadableStream<Uint8Array>> {
+    return this.client.stream({
+      path: `mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/original`,
+      signal,
+    });
   }
 
   public downloadAttachment(

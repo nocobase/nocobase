@@ -49,6 +49,7 @@ const mail = vi.hoisted(() => ({
   getSyncRun: vi.fn(),
   listAccounts: vi.fn(),
   listFolders: vi.fn(),
+  listFolderChoices: vi.fn(),
   listLabels: vi.fn(),
   listIdentities: vi.fn(),
   listProviders: vi.fn(),
@@ -65,6 +66,7 @@ const mail = vi.hoisted(() => ({
   startAuthorization: vi.fn(),
   startSync: vi.fn(),
   updateAccount: vi.fn(),
+  previewSyncFolders: vi.fn(),
 }));
 
 vi.mock('../../client/runtime.js', () => ({ useMailClient: () => mail }));
@@ -95,6 +97,12 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
     mail.listFolders.mockResolvedValue([]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: true,
+    });
     mail.listLabels.mockResolvedValue([]);
     mail.listSignatures.mockResolvedValue([]);
     mail.listTemplates.mockResolvedValue([]);
@@ -140,16 +148,17 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     const app = await renderPage(<MailAccountsPage />);
     const sync = await screen.findByRole('button', { name: 'Sync' });
+    await confirmSync(sync);
     vi.useFakeTimers();
     try {
-      fireEvent.click(sync);
       await act(async () => {});
       act(() => {
         for (const subscription of subscriptions) subscription.onReady?.();
       });
       await act(async () => vi.advanceTimersByTimeAsync(30_000));
       expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
-      expect(sync).toBeDisabled();
+      // The run still counts as active, so account actions other than the scope dialog wait for it.
+      expect(screen.getByRole('button', { name: 'Deactivate' })).toBeDisabled();
       expect(screen.getByText('Temporary status outage')).toBeVisible();
 
       mail.getSyncRun.mockResolvedValue({ ...run, status: 'completed' });
@@ -167,7 +176,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
       await act(async () => vi.advanceTimersByTimeAsync(1_000));
-      expect(screen.getByRole('button', { name: 'Sync' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Deactivate' })).toBeEnabled();
       expect(screen.queryByText('Temporary status outage')).toBeNull();
       expect(mail.startSync).toHaveBeenCalledTimes(1);
     } finally {
@@ -544,7 +553,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(syncButton.className).toBe(
       screen.getByRole('button', { name: 'Signatures' }).className,
     );
-    fireEvent.click(syncButton);
+    await confirmSync(syncButton);
     await waitFor(() =>
       expect(mail.startSync).toHaveBeenCalledWith({
         accountId: 'account-1',
@@ -682,6 +691,895 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     );
   });
 
+  it('confirms the scope of a newly connected account before its first import', async () => {
+    const pending = {
+      ...(await mail.listAccounts())[0],
+      initialSyncReceivedAfter: '2026-01-15T00:00:00.000Z',
+      syncFolderIds: [],
+    };
+    mail.listAccounts.mockResolvedValue([pending]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...pending,
+      syncFolderIds: input.syncFolderIds ?? undefined,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    expect(
+      screen.queryByRole('button', { name: 'Folders' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Choose folders to start syncing',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      within(dialog).getByText(
+        'The account is connected. Confirm the scope to start the first sync.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByText('Syncs messages received since 2026-01-15.'),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(mail.listFolderChoices).toHaveBeenCalledWith('account-1'),
+    );
+    expect(
+      within(dialog).getByRole('radio', { name: /^Entire mailbox/ }),
+    ).toBeChecked();
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(dialog).getByRole('radio', { name: /^Selected folders/ }),
+    );
+    expect(within(dialog).getByText('3 of 3 folders selected')).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Deselect all' }),
+    );
+    expect(within(dialog).getByText('0 of 3 folders selected')).toBeVisible();
+    expect(
+      within(dialog).getByText('Select at least one folder.'),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    ).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Select all' }));
+    expect(within(dialog).getByText('3 of 3 folders selected')).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Deselect all' }),
+    ).toBeVisible();
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sent' }));
+    expect(
+      within(dialog).getByText(/your own replies may be missing/),
+    ).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Archive'],
+      }),
+    );
+    // Nothing is stored yet, so a new account is never asked to confirm deletions; saving schedules its import.
+    expect(mail.previewSyncFolders).not.toHaveBeenCalled();
+    expect(mail.startSync).not.toHaveBeenCalled();
+  });
+
+  it('starts an incremental sync when an existing account keeps its scope', async () => {
+    mail.startSync.mockResolvedValue({
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'pending',
+      phase: 'incremental',
+      processedMessages: 0,
+      processedPages: 0,
+    });
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      within(dialog).getByText(
+        'Confirm the folders to sync. Automatic syncs will use the same scope.',
+      ),
+    ).toBeVisible();
+    expect(
+      await within(dialog).findByText(
+        'Syncs new and changed messages since the last sync.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('radio', { name: /^Entire mailbox/ }),
+    ).toBeChecked();
+    expect(mail.startSync).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+
+    await waitFor(() => expect(mail.startSync).toHaveBeenCalledTimes(1));
+    expect(mail.startSync.mock.calls[0][0]).toMatchObject({
+      accountId: 'account-1',
+    });
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.previewSyncFolders).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    // The scope stays reachable while the run is active.
+    expect(screen.getByRole('button', { name: 'Sync' })).toBeEnabled();
+  });
+
+  it('follows the active run for an unchanged scope and replaces it once for a changed one', async () => {
+    const run = {
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'running',
+      phase: 'history',
+      processedMessages: 10,
+      processedPages: 1,
+    };
+    // The scheduler answers with the run already in progress.
+    mail.startSync.mockResolvedValue(run);
+    mail.getSyncRun.mockResolvedValue(run);
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    await confirmSync(await screen.findByRole('button', { name: 'Sync' }));
+    const sync = screen.getByRole('button', { name: 'Sync' });
+    expect(sync).toBeEnabled();
+    await confirmSync(sync);
+    expect(mail.startSync).toHaveBeenCalledTimes(2);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent'],
+      }),
+    );
+    // Saving the scope replaces the active run on the server; no further sync request follows.
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+    expect(mail.startSync).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['completed', 'failed'] as const)(
+    'follows the initial run a changed scope scheduled from the first confirmation until it is %s',
+    async (outcome) => {
+      const initial = {
+        id: 'run-initial',
+        accountId: 'account-1',
+        mode: 'initial',
+        status: 'pending',
+        phase: 'preparing',
+        processedMessages: 0,
+        processedPages: 0,
+      };
+      mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+      mail.updateAccount.mockImplementation(async (input) => ({
+        ...(await mail.listAccounts())[0],
+        syncFolderIds: input.syncFolderIds,
+        syncRun: initial,
+      }));
+      mail.getSyncRun.mockResolvedValue({
+        ...initial,
+        status: 'running',
+        phase: 'history',
+        processedMessages: 4,
+        processedPages: 1,
+      });
+      await renderPage(<MailAccountsPage />);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Confirm sync scope',
+      });
+      fireEvent.click(
+        await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+      );
+      fireEvent.click(
+        within(dialog).getByRole('checkbox', { name: 'Archive' }),
+      );
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+
+      // The first confirmation already shows the run the server scheduled.
+      expect(screen.getByText('0 messages in 0 batches')).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Deactivate' })).toBeDisabled();
+
+      notifyMailChanged();
+      expect(await screen.findByText('4 messages in 1 batches')).toBeVisible();
+
+      mail.getSyncRun.mockResolvedValue({
+        ...initial,
+        status: outcome,
+        phase: outcome === 'completed' ? 'completed' : 'history',
+        processedMessages: 7,
+        processedPages: 2,
+      });
+      notifyMailChanged();
+      expect(await screen.findByText('7 messages in 2 batches')).toBeVisible();
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Deactivate' }),
+        ).toBeEnabled(),
+      );
+      expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+      expect(mail.startSync).not.toHaveBeenCalled();
+      expect(
+        mail.getSyncRun.mock.calls.every(([id]) => id === 'run-initial'),
+      ).toBe(true);
+    },
+  );
+
+  it('stops following a run that a changed scope replaced, also when its status arrives late', async () => {
+    const previous = {
+      id: 'run-previous',
+      accountId: 'account-1',
+      mode: 'incremental',
+      status: 'running',
+      phase: 'incremental',
+      processedMessages: 3,
+      processedPages: 1,
+    };
+    const initial = {
+      id: 'run-initial',
+      accountId: 'account-1',
+      mode: 'initial',
+      status: 'pending',
+      phase: 'preparing',
+      processedMessages: 0,
+      processedPages: 0,
+    };
+    mail.startSync.mockResolvedValue(previous);
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+      syncRun: initial,
+    }));
+    // The status of the previous run is still on its way when the scope changes.
+    let answerPrevious: (run: unknown) => void = () => {};
+    mail.getSyncRun.mockImplementation(
+      (id: string) =>
+        new Promise((resolve) => {
+          if (id === 'run-previous') answerPrevious = resolve;
+          else resolve({ ...initial, status: 'running', processedMessages: 5 });
+        }),
+    );
+    await renderPage(<MailAccountsPage />);
+
+    await confirmSync(await screen.findByRole('button', { name: 'Sync' }));
+    expect(screen.getByText('3 messages in 1 batches')).toBeVisible();
+    notifyMailChanged();
+    await waitFor(() =>
+      expect(mail.getSyncRun).toHaveBeenCalledWith('run-previous'),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    expect(await screen.findByText('0 messages in 0 batches')).toBeVisible();
+
+    // The server cancelled the previous run in favour of the initial one; its late answer changes nothing.
+    await act(async () => answerPrevious({ ...previous, status: 'cancelled' }));
+    expect(screen.getByText('0 messages in 0 batches')).toBeVisible();
+    expect(screen.queryByText('Cancelled')).toBeNull();
+
+    mail.getSyncRun.mockClear();
+    notifyMailChanged();
+    expect(await screen.findByText('5 messages in 0 batches')).toBeVisible();
+    expect(mail.getSyncRun.mock.calls).toEqual([['run-initial']]);
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+    expect(mail.startSync).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no error of a replaced run whose status request fails late', async () => {
+    const previous = {
+      id: 'run-previous',
+      accountId: 'account-1',
+      mode: 'incremental',
+      status: 'running',
+      phase: 'incremental',
+      processedMessages: 3,
+      processedPages: 1,
+    };
+    const initial = {
+      id: 'run-initial',
+      accountId: 'account-1',
+      mode: 'initial',
+      status: 'pending',
+      phase: 'preparing',
+      processedMessages: 0,
+      processedPages: 0,
+    };
+    mail.startSync.mockResolvedValue(previous);
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+      syncRun: initial,
+    }));
+    let failPrevious: (cause: unknown) => void = () => {};
+    mail.getSyncRun.mockImplementation(
+      (id: string) =>
+        new Promise((resolve, reject) => {
+          if (id === 'run-previous') failPrevious = reject;
+          else resolve({ ...initial, status: 'running', processedMessages: 5 });
+        }),
+    );
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await renderPage(<MailAccountsPage />);
+      await confirmSync(await screen.findByRole('button', { name: 'Sync' }));
+      notifyMailChanged();
+      await waitFor(() =>
+        expect(mail.getSyncRun).toHaveBeenCalledWith('run-previous'),
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Confirm sync scope',
+      });
+      fireEvent.click(
+        await within(dialog).findByRole('radio', {
+          name: /^Selected folders/,
+        }),
+      );
+      fireEvent.click(
+        within(dialog).getByRole('checkbox', { name: 'Archive' }),
+      );
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+      );
+      expect(await screen.findByText('0 messages in 0 batches')).toBeVisible();
+
+      // The cancelled run's request fails only now; nothing of it reaches the page or is retried.
+      await act(async () =>
+        failPrevious(new Error('Status of the replaced run failed')),
+      );
+      mail.getSyncRun.mockClear();
+      notifyMailChanged();
+      expect(await screen.findByText('5 messages in 0 batches')).toBeVisible();
+      expect(
+        screen.queryByText('Status of the replaced run failed'),
+      ).toBeNull();
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(mail.getSyncRun.mock.calls).toEqual([['run-initial']]);
+      expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+      expect(mail.startSync).toHaveBeenCalledTimes(1);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it('keeps a saved scope whose folder was deleted on the server when the owner changes nothing', async () => {
+    mail.listAccounts.mockResolvedValue([
+      {
+        ...(await mail.listAccounts())[0],
+        syncFolderIds: ['INBOX', 'Archive'],
+      },
+    ]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders().filter(
+        (folder) => folder.providerFolderId !== 'Archive',
+      ),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: true,
+    });
+    mail.startSync.mockResolvedValue({
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'pending',
+      phase: 'incremental',
+      processedMessages: 0,
+      processedPages: 0,
+    });
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      await within(dialog).findByText(
+        'Syncs new and changed messages since the last sync.',
+      ),
+    ).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(mail.startSync).toHaveBeenCalledTimes(1));
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.previewSyncFolders).not.toHaveBeenCalled();
+  });
+
+  it('ignores a deletion count that arrives after the dialog was closed, also once it is reopened', async () => {
+    const answers: ((value: { removedMessageCount: number }) => void)[] = [];
+    mail.previewSyncFolders.mockImplementation(
+      () =>
+        new Promise<{ removedMessageCount: number }>((resolve) =>
+          answers.push(resolve),
+        ),
+    );
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    let dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(answers).toHaveLength(1));
+    // The choice changes and the dialog closes before the count arrives.
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sent' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    // Reopened, the owner narrows again; the first opening's count arrives meanwhile and is ignored.
+    fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+    dialog = await screen.findByRole('dialog', { name: 'Confirm sync scope' });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await act(async () => answers[0]({ removedMessageCount: 0 }));
+    expect(mail.previewSyncFolders).toHaveBeenCalledTimes(2);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.startSync).not.toHaveBeenCalled();
+
+    // The current opening still gets its own count.
+    await act(async () => answers[1]({ removedMessageCount: 5 }));
+    expect(
+      await within(dialog).findByText(/^This change deletes 5 local messages/),
+    ).toBeVisible();
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+  });
+
+  it('starts no sync when the scope is switched back during a preview and the dialog is closed', async () => {
+    let answer!: (value: { removedMessageCount: number }) => void;
+    mail.previewSyncFolders.mockImplementation(
+      () =>
+        new Promise<{ removedMessageCount: number }>(
+          (resolve) => (answer = resolve),
+        ),
+    );
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() => expect(mail.previewSyncFolders).toHaveBeenCalled());
+    // Back to the saved scope, which would start an ordinary sync, then closed.
+    fireEvent.click(
+      within(dialog).getByRole('radio', { name: /^Entire mailbox/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await act(async () => answer({ removedMessageCount: 0 }));
+
+    expect(mail.previewSyncFolders).toHaveBeenCalledTimes(1);
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.startSync).not.toHaveBeenCalled();
+  });
+
+  it('previews again when the choice changes while a deletion count is on its way', async () => {
+    let answer!: (value: { removedMessageCount: number }) => void;
+    mail.previewSyncFolders
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ removedMessageCount: number }>(
+            (resolve) => (answer = resolve),
+          ),
+      )
+      .mockResolvedValueOnce({ removedMessageCount: 20 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.previewSyncFolders).toHaveBeenCalledWith('account-1', [
+        'INBOX',
+        'Sent',
+      ]),
+    );
+    // Sent is unchecked before the count for Archive alone arrives.
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sent' }));
+    act(() => answer({ removedMessageCount: 12 }));
+
+    expect(
+      await within(dialog).findByText(/^This change deletes 20 local messages/),
+    ).toBeVisible();
+    expect(mail.previewSyncFolders).toHaveBeenLastCalledWith('account-1', [
+      'INBOX',
+    ]);
+    expect(within(dialog).queryByText(/deletes 12 local/)).toBeNull();
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'Delete local messages and sync',
+      }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX'],
+      }),
+    );
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it('imports from the saved date when the first sync of an unchanged scope has not completed', async () => {
+    const account = {
+      ...(await mail.listAccounts())[0],
+      initialSyncReceivedAfter: '2026-01-15T00:00:00.000Z',
+      syncFolderIds: ['INBOX'],
+    };
+    mail.listAccounts.mockResolvedValue([account]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    mail.startSync.mockResolvedValue({
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'pending',
+      phase: 'preparing',
+      processedMessages: 0,
+      processedPages: 0,
+    });
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      within(dialog).getByRole('radio', { name: /^Selected folders/ }),
+    ).toBeChecked();
+    expect(
+      await within(dialog).findByText('1 of 3 folders selected'),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByText('Syncs messages received since 2026-01-15.'),
+    ).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.startSync).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        receivedAfter: '2026-01-15T00:00:00.000Z',
+      }),
+    );
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+  });
+
+  it('treats every current folder as a different scope from the entire mailbox', async () => {
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 0 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    expect(within(dialog).getByText('3 of 3 folders selected')).toBeVisible();
+    expect(
+      within(dialog).getByText(
+        'Syncs again with the new scope; existing messages are not added twice.',
+      ),
+    ).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent', 'Archive'],
+      }),
+    );
+    // Saving the new scope schedules its initial sync; no second request follows.
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+    expect(mail.startSync).not.toHaveBeenCalled();
+  });
+
+  it('offers to list the folders again when the listing stopped', async () => {
+    const pending = {
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: [],
+    };
+    mail.listAccounts.mockResolvedValue([pending]);
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders().slice(0, 1),
+      complete: false,
+      failed: true,
+      initialSyncCompleted: false,
+    });
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Choose folders to start syncing',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      await within(dialog).findByText(
+        'The folder list could not be read from the mail server.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    ).toBeDisabled();
+
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    mail.startSync.mockResolvedValue({ id: 'run-2', status: 'pending' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    await waitFor(() =>
+      expect(mail.startSync).toHaveBeenCalledWith({ accountId: 'account-1' }),
+    );
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+      ).toBeEnabled(),
+    );
+    expect(
+      within(dialog).getByRole('radio', { name: /^Entire mailbox/ }),
+    ).toBeChecked();
+  });
+
+  it('waits for every page of the folder list before a connected account can start', async () => {
+    const pending = {
+      ...(await mail.listAccounts())[0],
+      provider: { type: 'microsoft', name: 'microsoft' },
+      syncFolderIds: [],
+    };
+    mail.listAccounts.mockResolvedValue([pending]);
+    // The first page and its child folders arrived; the run is still reading the next page.
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders().slice(0, 2),
+      complete: false,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...pending,
+      syncFolderIds: input.syncFolderIds ?? undefined,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Choose folders to start syncing',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    expect(
+      await within(dialog).findByText(
+        'Getting the folder list from the mail server…',
+      ),
+    ).toBeVisible();
+    fireEvent.click(
+      within(dialog).getByRole('radio', { name: /^Selected folders/ }),
+    );
+    expect(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    ).toBeDisabled();
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
+
+    mail.listFolderChoices.mockResolvedValue({
+      folders: folders(),
+      complete: true,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    act(() => {
+      for (const subscription of subscriptions)
+        subscription.onEvent?.({
+          type: 'event',
+          topic: 'mail',
+          payload: { kind: 'mail.changed' },
+          publishedAt: new Date().toISOString(),
+        });
+    });
+    expect(
+      await within(dialog).findByText('3 of 3 folders selected'),
+    ).toBeVisible();
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent'],
+      }),
+    );
+  });
+
+  it('continues with the account an OAuth Provider connected, not another waiting one', async () => {
+    const base = (await mail.listAccounts())[0];
+    // Account A was connected earlier and left waiting; it sorts before B.
+    mail.listAccounts.mockResolvedValue([
+      { ...base, id: 'account-a', address: 'a@example.com', syncFolderIds: [] },
+      { ...base, id: 'account-b', address: 'b@example.com', syncFolderIds: [] },
+    ]);
+    const previous = window.location.href;
+    window.history.replaceState(
+      null,
+      '',
+      '/?mailAuthorization=success&mailAccountId=account-b',
+    );
+    try {
+      await renderPage(<MailAccountsPage />);
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Confirm sync scope',
+      });
+      expect(within(dialog).getByText('b@example.com')).toBeVisible();
+      await waitFor(() =>
+        expect(mail.listFolderChoices).toHaveBeenCalledWith('account-b'),
+      );
+      expect(mail.listFolderChoices).not.toHaveBeenCalledWith('account-a');
+    } finally {
+      window.history.replaceState(null, '', previous);
+    }
+  });
+
+  it('confirms how many local messages a narrower scope deletes and saves nothing when cancelled', async () => {
+    mail.previewSyncFolders.mockResolvedValue({ removedMessageCount: 12 });
+    mail.updateAccount.mockImplementation(async (input) => ({
+      ...(await mail.listAccounts())[0],
+      syncFolderIds: input.syncFolderIds,
+    }));
+    await renderPage(<MailAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync' }));
+    let dialog = await screen.findByRole('dialog', {
+      name: 'Confirm sync scope',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+
+    expect(
+      await within(dialog).findByText(
+        'This change deletes 12 local messages and their local data. Messages on the mail server are not deleted, and messages still in a selected folder are kept.',
+      ),
+    ).toBeVisible();
+    expect(mail.previewSyncFolders).toHaveBeenCalledWith('account-1', [
+      'INBOX',
+      'Sent',
+    ]);
+    // Going back and cancelling keeps the saved scope and starts nothing.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(mail.updateAccount).not.toHaveBeenCalled();
+    expect(mail.startSync).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sync' }));
+    dialog = await screen.findByRole('dialog', { name: 'Confirm sync scope' });
+    fireEvent.click(
+      await within(dialog).findByRole('radio', { name: /^Selected folders/ }),
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Archive' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm and sync' }),
+    );
+    fireEvent.click(
+      await within(dialog).findByRole('button', {
+        name: 'Delete local messages and sync',
+      }),
+    );
+    await waitFor(() =>
+      expect(mail.updateAccount).toHaveBeenCalledWith({
+        accountId: 'account-1',
+        syncFolderIds: ['INBOX', 'Sent'],
+      }),
+    );
+    expect(mail.updateAccount).toHaveBeenCalledTimes(1);
+    expect(mail.startSync).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+
   it('requires confirmation before removing an account', async () => {
     await renderPage(<MailAccountsPage />);
 
@@ -719,6 +1617,50 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     );
   });
 });
+
+/** Open the sync scope dialog from an account's Sync button and confirm it without changing the scope. */
+function notifyMailChanged(): void {
+  act(() => {
+    for (const subscription of subscriptions)
+      subscription.onEvent?.({
+        type: 'event',
+        topic: 'mail',
+        payload: { kind: 'mail.changed' },
+        publishedAt: new Date().toISOString(),
+      });
+  });
+}
+
+async function confirmSync(button: HTMLElement): Promise<void> {
+  fireEvent.click(button);
+  const dialog = await screen.findByRole('dialog', {
+    name: 'Confirm sync scope',
+  });
+  const submit = within(dialog).getByRole('button', {
+    name: 'Confirm and sync',
+  });
+  await waitFor(() => expect(submit).toBeEnabled());
+  fireEvent.click(submit);
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+}
+
+function folders() {
+  return [
+    ['INBOX', 'Inbox', 'inbox'],
+    ['Sent', 'Sent', 'sent'],
+    ['Archive', 'Archive', 'archive'],
+  ].map(([providerFolderId, name, type]) => ({
+    id: `folder-${providerFolderId}`,
+    accountId: 'account-1',
+    providerFolderId,
+    name,
+    type,
+    kind: 'folder',
+    synced: true,
+  }));
+}
 
 async function renderPage(ui: ReactElement): Promise<RenderedApp> {
   return renderWithApp(ui, {

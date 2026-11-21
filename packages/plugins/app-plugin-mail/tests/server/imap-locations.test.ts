@@ -1,3 +1,4 @@
+import { originalMime } from '../fixtures/original-message.js';
 import { ImapSmtpAdapter } from '../../server/adapters/imap-smtp/adapter.js';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
@@ -41,6 +42,7 @@ const server = vi.hoisted(() => {
     onFetchAll: undefined as (() => void) | undefined,
     failFlags: new Set<string>(),
     logouts: 0,
+    closes: 0,
     locks: 0,
     expunges: [] as string[],
     transfers: [] as string[],
@@ -79,6 +81,7 @@ const server = vi.hoisted(() => {
       this.onFetchAll = undefined;
       this.failFlags.clear();
       this.logouts = 0;
+      this.closes = 0;
       this.locks = 0;
       this.expunges.length = 0;
       this.transfers.length = 0;
@@ -170,7 +173,9 @@ vi.mock('imapflow', () => {
     public async logout(): Promise<void> {
       server.logouts += 1;
     }
-    public close(): void {}
+    public close(): void {
+      server.closes += 1;
+    }
     public async status(path: string): Promise<unknown> {
       await this.exec('STATUS', []);
       server.statuses += 1;
@@ -650,6 +655,105 @@ async function sync(
   });
   return run.id;
 }
+
+describe('IMAP original message download', () => {
+  it('reads complete MIME from a verified read-only copy and never changes flags', async () => {
+    expect(definition.capabilities.downloadOriginal).toBe(true);
+    folder('INBOX');
+    const uid = deliver('INBOX', { raw: originalMime });
+    await sync();
+    const [message] = await messages();
+    server.selectionModes.length = 0;
+    server.sourceReads.length = 0;
+    const previousCloses = server.closes;
+    const original = await service().getOriginalMessage(
+      owner,
+      accountId,
+      message.id,
+    );
+    expect(original.size).toBe(originalMime.length);
+    expect(server.locks).toBe(1);
+    expect(
+      Buffer.from(await new Response(original.stream).arrayBuffer()),
+    ).toEqual(originalMime);
+    expect(server.selectionModes).toEqual([true]);
+    expect(server.sourceReads).toEqual([`INBOX:${uid}`, `INBOX:${uid}`]);
+    expect(server.locks).toBe(0);
+    expect(server.closes).toBe(previousCloses + 1);
+    expect(server.folders.get('INBOX')!.messages.get(uid)!.flags.size).toBe(0);
+    expect(server.stores).toEqual([]);
+  });
+
+  it.each([
+    'wrong generation',
+    'missing UID',
+    'wrong identity',
+    'deleted UID',
+  ] as const)(
+    'does not download the bytes of a stale copy (%s)',
+    async (reason) => {
+      server.capabilities.add('OBJECTID');
+      folder('INBOX');
+      const uid = deliver('INBOX', { raw: originalMime, emailId: 'ORIGINAL' });
+      await sync();
+      const [message] = await messages();
+      const inbox = server.folders.get('INBOX')!;
+      const remote = inbox.messages.get(uid)!;
+      if (reason === 'wrong generation') inbox.uidValidity = 2n;
+      if (reason === 'missing UID') inbox.messages.delete(uid);
+      if (reason === 'wrong identity')
+        inbox.messages.set(uid, { ...remote, emailId: 'OTHER' });
+      if (reason === 'deleted UID') remote.flags.add('\\Deleted');
+      server.sourceReads.length = 0;
+      await expect(
+        service().getOriginalMessage(owner, accountId, message.id),
+      ).rejects.toMatchObject({ reason: 'MAIL_ORIGINAL_NOT_FOUND' });
+      expect(server.sourceReads).toEqual([]);
+      expect(server.locks).toBe(0);
+      expect(server.stores).toEqual([]);
+    },
+  );
+
+  it('holds the final window until EOF is verified and releases the lock on cancellation', async () => {
+    folder('INBOX');
+    const largeRaw = Buffer.concat([
+      originalMime,
+      Buffer.alloc(1024 * 1024, 0x61),
+    ]);
+    const uid = deliver('INBOX', { raw: largeRaw });
+    await sync();
+    const [message] = await messages();
+    const remote = server.folders.get('INBOX')!.messages.get(uid)!;
+    const original = await service().getOriginalMessage(
+      owner,
+      accountId,
+      message.id,
+    );
+    const reader = original.stream.getReader();
+    expect((await reader.read()).value?.byteLength).toBe(1024 * 1024);
+    remote.raw = Buffer.concat([
+      largeRaw,
+      Buffer.from('extra byte past announced size'),
+    ]);
+    await expect(reader.read()).rejects.toThrow(
+      'Original message download was interrupted',
+    );
+    expect(server.locks).toBe(0);
+
+    const abort = new AbortController();
+    const cancelled = await service().getOriginalMessage(
+      { ...owner, signal: abort.signal },
+      accountId,
+      message.id,
+    );
+    expect(server.locks).toBe(1);
+    abort.abort();
+    await expect(new Response(cancelled.stream).arrayBuffer()).rejects.toThrow(
+      'Original message download was interrupted',
+    );
+    expect(server.locks).toBe(0);
+  });
+});
 
 async function messages(): Promise<
   {
@@ -5154,4 +5258,200 @@ describe('IMAP shared top-page commit budget', () => {
       }
     },
   );
+});
+
+describe('IMAP synchronized folders', () => {
+  async function folderIds(): Promise<string[]> {
+    return (await store.listFolders(accountId))
+      .map((item) => item.providerFolderId)
+      .sort();
+  }
+  async function settle(): Promise<void> {
+    for (let index = 0; index < 50 && (await step()); index += 1);
+  }
+  async function choose(syncFolderIds: readonly string[] | null) {
+    await service().updateAccount(owner, { accountId, syncFolderIds });
+    await settle();
+    const run = await store.findActiveSyncRun(accountId);
+    expect(run).toBeUndefined();
+  }
+
+  it('lists folders before the first import, then imports only the chosen folders', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    folder('Spam');
+    deliver('INBOX', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    deliver('Spam', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    deliver('Spam', { raw: raw('<two@example.com>'), emailId: 'M2' });
+    deliver('Archive', { raw: raw('<three@example.com>'), emailId: 'M3' });
+    await store.updateAccountSyncFolders(accountId, []);
+
+    // A newly connected account waiting for its selection only lists folders.
+    await sync();
+    expect(await folderIds()).toEqual(['Archive', 'INBOX', 'Spam']);
+    expect(await messages()).toEqual([]);
+
+    await choose(['INBOX', 'Archive']);
+    expect(await messages()).toMatchObject([
+      {
+        providerMessageId: 'M1',
+        folders: ['INBOX'],
+        locations: [{ folder: 'INBOX', status: 'valid' }],
+      },
+      { providerMessageId: 'M3', folders: ['Archive'] },
+    ]);
+    // Unselected folders stay in the catalog so they can be chosen again.
+    expect(await folderIds()).toEqual(['Archive', 'INBOX', 'Spam']);
+    expect(
+      (await service().listFolders(owner, accountId)).map(
+        (item) => item.providerFolderId,
+      ),
+    ).not.toContain('Spam');
+
+    // Incremental runs import new mail only from the chosen folders.
+    deliver('Spam', { raw: raw('<four@example.com>'), emailId: 'M4' });
+    deliver('INBOX', { raw: raw('<five@example.com>'), emailId: 'M5' });
+    await sync();
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'M1',
+      'M3',
+      'M5',
+    ]);
+  });
+
+  it('deletes local mail of a removed folder, keeps mail still in a chosen folder and widens without duplicates', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    folder('Spam');
+    deliver('INBOX', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    deliver('Archive', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    deliver('Archive', { raw: raw('<two@example.com>'), emailId: 'M2' });
+    deliver('Spam', { raw: raw('<three@example.com>'), emailId: 'M3' });
+    await sync();
+    const before = await messages();
+    expect(before.map((item) => item.providerMessageId)).toEqual([
+      'M1',
+      'M2',
+      'M3',
+    ]);
+
+    expect(
+      await service().previewSyncFolders(owner, accountId, ['INBOX']),
+    ).toEqual({ removedMessageCount: 2 });
+    await choose(['INBOX']);
+    expect(await messages()).toMatchObject([
+      {
+        id: before[0].id,
+        providerMessageId: 'M1',
+        folders: ['INBOX'],
+        locations: [{ folder: 'INBOX', status: 'valid' }],
+      },
+    ]);
+    expect(await folderIds()).toEqual(['Archive', 'INBOX', 'Spam']);
+    // The mail server keeps every message.
+    expect(server.folders.get('Archive')!.messages.size).toBe(2);
+    expect(server.folders.get('Spam')!.messages.size).toBe(1);
+
+    await choose(['INBOX', 'Archive']);
+    const widened = await messages();
+    expect(widened).toMatchObject([
+      {
+        id: before[0].id,
+        providerMessageId: 'M1',
+        folders: ['Archive', 'INBOX'],
+      },
+      { providerMessageId: 'M2', folders: ['Archive'] },
+    ]);
+
+    // Every folder again: the previously unselected folder is imported as well.
+    expect(await service().previewSyncFolders(owner, accountId, null)).toEqual({
+      removedMessageCount: 0,
+    });
+    await choose(null);
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'M1',
+      'M2',
+      'M3',
+    ]);
+    expect((await store.getAccount(accountId))?.syncFolderIds).toBeUndefined();
+  });
+
+  it('removes a message after it moves from a chosen folder into an unselected one', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    deliver('INBOX', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    deliver('INBOX', { raw: raw('<two@example.com>'), emailId: 'M2' });
+    await store.updateAccountSyncFolders(accountId, ['INBOX']);
+    await sync();
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'M1',
+      'M2',
+    ]);
+
+    server.folders.get('INBOX')!.messages.delete(1);
+    deliver('Archive', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    await sync();
+    await sync();
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'M2',
+    ]);
+  });
+
+  it('keeps scheduled drafts and pending moves when their folder is no longer chosen', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    deliver('INBOX', { raw: raw('<one@example.com>'), emailId: 'M1' });
+    deliver('Archive', { raw: raw('<two@example.com>'), emailId: 'M2' });
+    deliver('Archive', { raw: raw('<three@example.com>'), emailId: 'M3' });
+    await sync();
+    const [, two, three] = await messages();
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ scheduledSubmissionId: randomUUID() })
+      .where('id', '=', two.id)
+      .execute();
+    await database
+      .query()
+      .updateTable('mailMessageImapLocations')
+      .set({
+        status: 'pending',
+        invalidationReason: `move-source:${randomUUID()}`,
+      })
+      .where('messageId', '=', three.id)
+      .execute();
+
+    const protectedBefore = (await messages()).filter((item) =>
+      ['M2', 'M3'].includes(item.providerMessageId),
+    );
+    expect(protectedBefore).toMatchObject([
+      { folders: ['Archive'], locations: [{ folder: 'Archive' }] },
+      { folders: ['Archive'], locations: [{ folder: 'Archive' }] },
+    ]);
+
+    expect(
+      await service().previewSyncFolders(owner, accountId, ['INBOX']),
+    ).toEqual({ removedMessageCount: 0 });
+    await service().updateAccount(owner, {
+      accountId,
+      syncFolderIds: ['INBOX'],
+    });
+    // Only the preparing step matters: it prunes before importing.
+    await step();
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'M1',
+      'M2',
+      'M3',
+    ]);
+    // The scheduled draft and the message being moved keep their folder links and IMAP copies, not just their rows.
+    expect(
+      (await messages()).filter((item) =>
+        ['M2', 'M3'].includes(item.providerMessageId),
+      ),
+    ).toEqual(protectedBefore);
+  });
 });

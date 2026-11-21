@@ -1,3 +1,4 @@
+import { originalMime } from '../original-message.js';
 import type { Page } from '@playwright/test';
 import type {
   MailAccountView,
@@ -37,6 +38,7 @@ const providers: readonly MailProviderView[] = [
       incrementalSync: true,
       moveMessage: true,
       labels: true,
+      downloadOriginal: true,
     },
   },
 ];
@@ -101,6 +103,7 @@ export function message(index: number, accountId = 'alpha'): MailMessage {
 export async function installMailApi(page: Page): Promise<{
   requests: FixtureRequest[];
   unexpected: string[];
+  includeOriginalInConversation: () => void;
   delayConversation: (index: number) => {
     started: Promise<void>;
     release: () => Promise<void>;
@@ -108,6 +111,7 @@ export async function installMailApi(page: Page): Promise<{
 }> {
   const requests: FixtureRequest[] = [];
   const unexpected: string[] = [];
+  let includeOriginal = false;
   const patches = new Map<string, Partial<MailMessage>>();
   const delays = new Map<
     number,
@@ -206,6 +210,15 @@ export async function installMailApi(page: Page): Promise<{
         },
       });
     }
+    if (
+      includeOriginal &&
+      endpoint === 'mail/accounts/alpha/messages/message-100/original'
+    )
+      return route.fulfill({
+        status: 200,
+        contentType: 'message/rfc822',
+        body: originalMime,
+      });
     const conversation =
       /^mail\/accounts\/([^/]+)\/conversations\/conversation-(\d+)\/messages$/.exec(
         endpoint,
@@ -215,14 +228,40 @@ export async function installMailApi(page: Page): Promise<{
       const delay = delays.get(index);
       delay?.started();
       if (delay) await delay.wait;
-      await json({
-        data: [
-          {
-            ...detail(index, conversation[1]),
-            ...(delay ? { read: false } : {}),
+      const data = [
+        {
+          ...detail(index, conversation[1]),
+          ...(delay ? { read: false } : {}),
+        },
+      ];
+      if (includeOriginal && index === 0) {
+        data.push({
+          ...detail(100, conversation[1]),
+          conversationId: 'conversation-0',
+          from: {
+            address: 'sender@example.test',
+            name: 'Original message sender',
           },
-        ],
-        meta: { total: 1 },
+          subject: 'Selected original',
+          receivedAt: '2026-01-01T11:00:00Z',
+          text: 'Résumé of the selected message.',
+          hasAttachments: true,
+          attachments: [
+            {
+              id: 'original-file',
+              messageId: 'message-100',
+              providerAttachmentId: 'original-provider-file',
+              fileName: 'sample.bin',
+              contentType: 'application/octet-stream',
+              size: 4,
+              inline: false,
+            },
+          ],
+        });
+      }
+      await json({
+        data,
+        meta: { total: data.length },
       });
       delay?.delivered();
       return;
@@ -281,6 +320,9 @@ export async function installMailApi(page: Page): Promise<{
   return {
     requests,
     unexpected,
+    includeOriginalInConversation: () => {
+      includeOriginal = true;
+    },
     delayConversation: (index) => {
       let start!: () => void;
       let release!: () => void;

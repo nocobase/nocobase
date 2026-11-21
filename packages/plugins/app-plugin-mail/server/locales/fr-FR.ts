@@ -4,6 +4,11 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   errors: {
+    originalNotFound:
+      'Le message original n’est plus disponible chez le fournisseur de messagerie.',
+    originalTooLarge:
+      'Le message original dépasse la limite de téléchargement de 40 Mio.',
+    operationUnsupported: 'Cette opération de messagerie est indisponible.',
     connectionAuthenticationFailed:
       'Échec de l’authentification {{protocol}}. Vérifiez l’identifiant et le mot de passe ou mot de passe d’application.',
     connectionHostNotFound:

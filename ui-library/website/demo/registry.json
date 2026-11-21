@@ -233,9 +233,14 @@
       "name": "permission-editor-demo",
       "type": "registry:example",
       "title": "Permission Editor Demo",
-      "description": "Usage example of @nocobase/permission-editor. Original category navigation with compact action cards, visible descriptions, independently named scopes and explicit draft Save.",
+      "description": "Usage example of @nocobase/permission-editor: a CRM Sales Manager whose Menus tab flags a checked page it cannot view and whose Business objects tab sets customers, deals and multi-scope contract approval once for every menu, an IT Administrator and an unrestricted Administrator, with a role switch, unsaved-change prompt and explicit Save.",
       "categories": ["authorization"],
-      "registryDependencies": ["button", "@nocobase/permission-editor"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "button",
+        "select",
+        "@nocobase/permission-editor"
+      ],
       "files": [
         {
           "path": "authorization/permission-editor.tsx",

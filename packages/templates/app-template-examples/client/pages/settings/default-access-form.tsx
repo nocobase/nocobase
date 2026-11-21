@@ -33,6 +33,7 @@ import { permissionFilterFieldLabel } from './permission-workspace.js';
 import {
   actionKey,
   resourceKey,
+  ruleResourceLabels,
   ruleResources,
   ruleScopes,
   replaceRuleScope,
@@ -112,6 +113,16 @@ function DefaultAccessFormBody(): ReactElement {
     ? scopes.length > 0
     : Boolean(catalog.data && editableRule(value, scopes, catalog.data.data));
   const readOnly = !canWrite || busy || (!creating && !supported);
+  const resourceLabels = ruleResourceLabels(resources, text, (title, kind) =>
+    t('settings.defaultAccess.kindLabel', {
+      title,
+      kind: t(
+        kind === 'table'
+          ? 'settings.defaultAccess.kindTable'
+          : 'settings.defaultAccess.kindBusiness',
+      ),
+    }),
+  );
   const options = resources
     .filter(
       (entry) =>
@@ -120,7 +131,10 @@ function DefaultAccessFormBody(): ReactElement {
           (rule) => resourceKey(rule.resource) === resourceKey(entry),
         ),
     )
-    .map((entry) => ({ value: resourceKey(entry), label: text(entry.title) }));
+    .map((entry) => ({
+      value: resourceKey(entry),
+      label: resourceLabels.get(resourceKey(entry)) ?? text(entry.title),
+    }));
   if (
     !creating &&
     !options.some((option) => option.value === resourceKey(value.resource))

@@ -2,7 +2,7 @@
 name: nocobase-app-development
 description: >-
   Primary entry for building complete NocoBase 3 applications and individual features:
-  business and administration pages, routes, components, endpoints, data, permissions, services, translations, and tests.
+  business and administration pages, lifecycle instance controls, routes, components, endpoints, data, permissions, services, translations, and tests.
   Use this application-local workflow instead of globally installed NocoBase 2
   Skills. For local or published NocoBase 3 plugin packages, use the project plugin development Skill.
 metadata:
@@ -79,13 +79,17 @@ For knowledge base requirements, check `@nocobase/app-plugin-knowledge` first an
 
 For approval requirements, check `@nocobase/app-plugin-approval` first and follow [approval integration prerequisites](references/lifecycle.md#approval-requests-check-the-pro-plugin-first), then the plugin's installed Skill. Do not silently build a substitute approval engine from lifecycle examples. Simple single-person confirmation or rejection can remain lifecycle actions.
 
-When the stages of a business record are fixed by developers rather than drawn by administrators — an expense report, a ticket, a contract, an order — build it with `@nocobase/lifecycle` as [record lifecycles](references/lifecycle.md) describes: the state stays in the record's own field and changes only through declared transitions. Declare only required business paths with precise sources and destinations; the diagram expands every `from × to` pair rather than analyzing routing logic. Follow [readable process graphs](references/lifecycle-ui.md#keep-process-graphs-readable) before rendering dense definitions.
+When the stages of a business record are fixed by developers rather than drawn by administrators — an expense report, a ticket, a contract, an order — build it with `@nocobase/lifecycle` as [record lifecycles](references/lifecycle.md) describes: the state stays in the record's own field and business actions use declared transitions. Declare only required business paths with precise sources and destinations; the diagram expands every `from × to` pair rather than analyzing routing logic. Follow [readable process graphs](references/lifecycle-ui.md#keep-process-graphs-readable) before rendering dense definitions.
+
+When requirements call for administrators to suspend, resume, reset, or restart an existing record's process, follow [administrator controls for lifecycle instances](references/lifecycle-management.md). Define which commands and reentry targets the business supports, wire record-scoped authorization, and use the runtime's management commands and audit history.
 
 Before changing lifecycle behavior or removing a version, read [versions of a process](references/lifecycle-versions.md): behavior freezes against the target main branch, unmerged new versions can be edited continuously, and deleting a frozen version requires explicit user retirement confirmation.
 
 For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat channel configuration with `type` (`provider` remains a compatibility alias), and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
+
+Whenever you add business permissions, fill in `permissionWorkspaceSelection` in `client/pages/settings/permission-workspace.ts`. Use the [three-tab role editor guide](references/authorization.md#configure-the-three-tab-role-editor) to match page and object IDs, translate each action description and scope title, and check the result with an ordinary user.
 
 Business role assignments must be visible and editable through administration. Default to explicit users; do not assign application roles to every authenticated identity or broaden the inherited member role merely to enable a feature. Follow [permission assignment safety](references/authorization.md#visible-and-manageable-assignments) and run the template's initialized-assignment guard before delivery.
 

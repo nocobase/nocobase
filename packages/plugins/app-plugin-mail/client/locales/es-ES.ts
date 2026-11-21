@@ -156,6 +156,8 @@ const esES: LocaleResource<typeof enUS> = {
     permanentlyDeleteConfirm:
       '¿Eliminar permanentemente este mensaje? Esta acción no se puede deshacer.',
     download: 'Descargar',
+    downloadOriginal: 'Descargar original',
+    downloadOriginalFailed: 'No se pudo descargar el mensaje original.',
     downloadFailed: 'No se puede descargar el archivo adjunto.',
     markRead: 'Marcos leído',
     markUnread: 'Marcar como no leído',
@@ -330,7 +332,7 @@ const esES: LocaleResource<typeof enUS> = {
     eyebrow: 'Comunicación',
     loading: 'Cargando configuración de correo…',
     authorizationSuccess:
-      'Cuenta conectada exitosamente. Los buzones de correo recién conectados se sincronizan automáticamente en segundo plano. La sincronización inicial puede tardar algún tiempo. Ver el progreso en los registros de sincronización; no es necesario iniciar otra sincronización.',
+      'Cuenta conectada. Elija las carpetas que se sincronizan para empezar a importar mensajes. La sincronización inicial puede tardar; consulte el progreso en los registros de sincronización.',
     authorizationFailure:
       'No se pudo conectar la cuenta de correo. Intentar otra vez.',
     initialSync: {
@@ -340,10 +342,49 @@ const esES: LocaleResource<typeof enUS> = {
       receivedAfter: 'Importar mensajes recibidos después',
       pickDate: 'Elige una fecha',
     },
+    syncFolders: {
+      title: 'Confirmar el alcance de la sincronización',
+      descriptionFirst:
+        'La cuenta está conectada. Confirma el alcance para iniciar la primera sincronización.',
+      description:
+        'Confirma las carpetas que se sincronizan. Las sincronizaciones automáticas usarán el mismo alcance.',
+      scope: 'Alcance de la sincronización',
+      allFolders: 'Todo el buzón',
+      allFoldersHint:
+        'Sincroniza todas las carpetas, incluidas las que se creen más adelante.',
+      someFolders: 'Carpetas seleccionadas',
+      someFoldersHint:
+        'Solo sincroniza las carpetas marcadas; las nuevas se añaden manualmente.',
+      loading: 'Cargando carpetas…',
+      listingFailed:
+        'No se pudo leer la lista de carpetas del servidor de correo.',
+      retry: 'Reintentar',
+      waiting: 'Obteniendo la lista de carpetas del servidor de correo…',
+      selectedCount: '{{count}} de {{total}} carpetas seleccionadas',
+      selectAll: 'Seleccionar todo',
+      clearAll: 'Deseleccionar todo',
+      emptySelection: 'Selecciona al menos una carpeta.',
+      sentHint:
+        'Enviados no está seleccionado, por lo que es posible que sus propias respuestas no aparezcan en las conversaciones. El envío de correo sigue funcionando.',
+      removeTitle: '¿Eliminar los mensajes locales fuera del alcance?',
+      removeDescription:
+        'Este cambio elimina {{count}} mensajes locales y sus datos locales. Los mensajes del servidor de correo no se eliminan y se conservan los que siguen en una carpeta seleccionada.',
+      back: 'Atrás',
+      confirm: 'Eliminar mensajes locales y sincronizar',
+      saving: 'Guardando…',
+      cancel: 'Cancelar',
+      submit: 'Confirmar y sincronizar',
+      outcomeInitial: 'Sincroniza los mensajes desde el {{date}}.',
+      outcomeIncremental:
+        'Sincroniza los mensajes nuevos y modificados desde la última sincronización.',
+      outcomeRescan:
+        'Vuelve a sincronizar con el nuevo alcance; los mensajes existentes no se duplican.',
+      pending: 'Elija las carpetas para empezar a sincronizar',
+    },
     providers: {
       title: 'Añadir cuenta de correo',
       description:
-        'Elija un tipo de cuenta, luego autorícela o ingrese las credenciales de su buzón. Los buzones de correo recién conectados comienzan a sincronizarse automáticamente. La sincronización inicial puede tardar algún tiempo, según la cantidad de mensajes y las condiciones de la red. Verifique el progreso en los registros de sincronización; no es necesario iniciar otra sincronización.',
+        'Elija un tipo de cuenta y, a continuación, autorícela o introduzca las credenciales del buzón. Después de conectar, elija las carpetas que se sincronizan; los mensajes se importan desde la fecha de sincronización inicial. La sincronización inicial puede tardar según el número de mensajes y la red. Consulte el progreso en los registros de sincronización.',
       accountType: 'Tipo de cuenta de correo',
       chooseAccountType: 'Seleccione un tipo de cuenta',
       emptyTitle: 'No hay proveedores de correo configurados',

@@ -17,6 +17,12 @@ import type {
   MailSyncCursor,
 } from '../../shared/mail.js';
 
+/** The complete provider MIME, with its exact decoded byte length when available. */
+export interface MailOriginalMessageContent {
+  readonly stream: ReadableStream<Uint8Array>;
+  readonly size?: number;
+}
+
 /** Server-only account context passed to a registered Provider adapter. */
 export interface MailProviderAccount {
   readonly id: string;
@@ -314,6 +320,11 @@ export interface MailProviderAdapter {
     providerMessageId: string,
     signal?: AbortSignal,
   ): Promise<MailProviderResult<NormalizedMailMessage>>;
+  /** Requires downloadOriginal capability. Honor signal through streaming, and release resources on stream cancellation. */
+  getOriginalMessage?(
+    providerMessageId: string,
+    signal: AbortSignal,
+  ): Promise<MailProviderResult<MailOriginalMessageContent>>;
   getAttachment?(
     providerMessageId: string,
     providerAttachmentId: string,

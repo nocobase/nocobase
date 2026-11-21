@@ -43,7 +43,7 @@ describe('Mail OAuth callback route', () => {
     );
     expect(completed.status).toBe(302);
     expect(completed.headers.get('location')).toBe(
-      '/test?mailAuthorization=success',
+      '/test?mailAuthorization=success&mailAccountId=account-1',
     );
     expect(completeAuthorization).toHaveBeenCalledWith({
       state: 'state-1',
@@ -90,7 +90,7 @@ describe('Mail OAuth callback route', () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get('location')).toBe(
-      '/test/mail/accounts?source=oauth&mailAuthorization=success',
+      '/test/mail/accounts?source=oauth&mailAuthorization=success&mailAccountId=account-1',
     );
   });
 
@@ -152,7 +152,7 @@ describe('Mail OAuth callback route', () => {
       );
       expect(response.status).toBe(302);
       expect(response.headers.get('location')).toBe(
-        `${publicBasePath}/mail/accounts?source=connect&mailAuthorization=${result}`,
+        `${publicBasePath}/mail/accounts?source=connect&mailAuthorization=${result}${result === 'success' ? '&mailAccountId=authorized-account' : ''}`,
       );
       expect(response.headers.get('location')).not.toContain('private-');
       expect(completeAuthorization).toHaveBeenCalledOnce();

@@ -1,4 +1,8 @@
-import { JobPayloadSchema, type RunnerFeature } from '@nocobase/agent-protocol';
+import {
+  JobPayloadSchema,
+  REDACTED,
+  type RunnerFeature,
+} from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Job } from '../../shared/jobs.js';
@@ -109,6 +113,60 @@ describe('jobs', () => {
       runnerKey: runner.key,
       body,
     });
+
+  it('gates SSH builds and opens the key only during claim', async () => {
+    await setUp();
+    const repo = { ...buildSpec.repo, url: 'git@example.test:team/repo.git' };
+    const ssh = {
+      privateKey: 'synthetic deployment material for a build job',
+      knownHosts: 'example.test ssh-ed25519 public-key',
+    };
+    const prepare = vi.fn(async () => ({
+      ...buildSpec,
+      repo: { ...repo, ssh },
+    }));
+    h.services.jobs.register('ssh-build', { executor: 'build', prepare });
+    await expect(
+      enqueue({
+        kind: 'ssh-build',
+        spec: { ...buildSpec, repo: { ...repo, ssh } },
+        requires: ['gitSsh'],
+      }),
+    ).rejects.toThrow('Build SSH credentials must be provided at claim time.');
+    const job = await enqueue({
+      kind: 'ssh-build',
+      spec: { ...buildSpec, repo },
+      requires: ['gitSsh'],
+    });
+    const old = await jobRunner();
+    expect(await claimJobs(old)).toEqual([]);
+    expect(prepare).not.toHaveBeenCalled();
+    const runner = await jobRunner({ features: [...JOB_FEATURES, 'gitSsh'] });
+    const [payload] = await claimJobs(runner);
+    expect(JobPayloadSchema.parse(payload).job.spec.repo.ssh).toEqual(ssh);
+    const record = await h.database
+      .connection()
+      .repository<{ spec: unknown }>('agJobs')
+      .findOne({ filter: { id: job.id } });
+    expect(JSON.stringify(record?.spec)).not.toContain(ssh.privateKey);
+    expect((await post(runner, job.id, 'start')).status).toBe(200);
+    expect(
+      (
+        await post(runner, job.id, 'events', {
+          events: [
+            {
+              seq: 1,
+              at: h.clock.now().toISOString(),
+              type: 'log',
+              stream: 'runner',
+              content: ssh.privateKey,
+            },
+          ],
+        })
+      ).status,
+    ).toBe(200);
+    expect((await h.services.jobs.events(job.id))[0]?.content).toBe(REDACTED);
+  });
 
   it('pauses new build jobs on low disk while a held job can still renew its lease, then resumes', async () => {
     await setUp();

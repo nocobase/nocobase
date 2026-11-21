@@ -153,6 +153,8 @@ const enUS = {
     permanentlyDeleteConfirm:
       'Permanently delete this message? This action cannot be undone.',
     download: 'Download',
+    downloadOriginal: 'Download original',
+    downloadOriginalFailed: 'Unable to download the original message.',
     downloadFailed: 'Unable to download attachment.',
     markRead: 'Mark read',
     markUnread: 'Mark unread',
@@ -327,7 +329,7 @@ const enUS = {
     eyebrow: 'Communication',
     loading: 'Loading mail configuration…',
     authorizationSuccess:
-      'Account connected successfully. Newly connected mailboxes sync automatically in the background. Initial synchronization may take some time. View progress in Sync logs; there is no need to start another sync.',
+      'Account connected. Choose the folders to sync to start importing messages. Initial synchronization may take some time; view progress in Sync logs.',
     authorizationFailure: 'The mail account could not be connected. Try again.',
     initialSync: {
       title: 'Initial sync date',
@@ -336,10 +338,46 @@ const enUS = {
       receivedAfter: 'Import messages received after',
       pickDate: 'Pick a date',
     },
+    syncFolders: {
+      title: 'Confirm sync scope',
+      descriptionFirst:
+        'The account is connected. Confirm the scope to start the first sync.',
+      description:
+        'Confirm the folders to sync. Automatic syncs will use the same scope.',
+      scope: 'Sync scope',
+      allFolders: 'Entire mailbox',
+      allFoldersHint: 'Syncs every folder, including folders created later.',
+      someFolders: 'Selected folders',
+      someFoldersHint:
+        'Syncs only the checked folders; add new folders yourself.',
+      loading: 'Loading folders…',
+      listingFailed: 'The folder list could not be read from the mail server.',
+      retry: 'Try again',
+      waiting: 'Getting the folder list from the mail server…',
+      selectedCount: '{{count}} of {{total}} folders selected',
+      selectAll: 'Select all',
+      clearAll: 'Deselect all',
+      emptySelection: 'Select at least one folder.',
+      sentHint:
+        'Sent is not selected, so your own replies may be missing from conversations. Sending mail still works.',
+      removeTitle: 'Delete local messages outside the scope?',
+      removeDescription:
+        'This change deletes {{count}} local messages and their local data. Messages on the mail server are not deleted, and messages still in a selected folder are kept.',
+      back: 'Back',
+      confirm: 'Delete local messages and sync',
+      saving: 'Saving…',
+      cancel: 'Cancel',
+      submit: 'Confirm and sync',
+      outcomeInitial: 'Syncs messages received since {{date}}.',
+      outcomeIncremental: 'Syncs new and changed messages since the last sync.',
+      outcomeRescan:
+        'Syncs again with the new scope; existing messages are not added twice.',
+      pending: 'Choose folders to start syncing',
+    },
     providers: {
       title: 'Add mail account',
       description:
-        'Choose an account type, then authorize it or enter its mailbox credentials. Newly connected mailboxes start syncing automatically. Initial sync may take some time, depending on the number of messages and network conditions. Check progress in Sync logs; there is no need to start another sync.',
+        'Choose an account type, then authorize it or enter its mailbox credentials. After connecting, choose the folders to sync; messages are imported from the initial sync date. Initial sync may take some time, depending on the number of messages and network conditions. Check progress in Sync logs.',
       accountType: 'Mail account type',
       chooseAccountType: 'Select an account type',
       emptyTitle: 'No mail providers configured',

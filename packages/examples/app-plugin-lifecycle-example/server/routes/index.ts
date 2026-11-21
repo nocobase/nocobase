@@ -1,3 +1,9 @@
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
+import { signedInUser } from './api.js';
+import {
+  ticketAdministrator,
+  ticketManagementRoutes,
+} from './ticket-management.js';
 import { z } from 'zod';
 import { configurationRoutes } from './parameter-configuration.js';
 import { parameterConfigurationServiceToken } from '../tokens.js';
@@ -232,6 +238,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const service = container.resolve(lifecycleExampleServiceToken);
     const flows = container.resolve(durableFlowServiceToken);
+    const authorization = container.has(authorizationToken)
+      ? container.resolve(authorizationToken)
+      : undefined;
 
     router.use(`${BASE}/*`, authentication.required());
     router.onError((error, context) =>
@@ -260,6 +269,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     configurationRoutes(router, BASE, configuration);
     listRoutes(router, service);
     durableFlowRoutes(router, BASE, flows);
+    ticketManagementRoutes(router, BASE, service.runtime, authorization);
 
     // Each record's routes — its lifecycle, view, transitions and effect
     // runs — follow the paths `@nocobase/lifecycle/react` calls.
@@ -277,6 +287,16 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         basePath: BASE,
         lifecycle,
         noun,
+        ...(lifecycle === 'tickets'
+          ? {
+              managementActor: async (context) => {
+                const id = signedInUser(context);
+                return (await ticketAdministrator(authorization, id))
+                  ? { id }
+                  : undefined;
+              },
+            }
+          : {}),
         ...(['tickets', 'expenses'].includes(lifecycle)
           ? {
               // Every version's groups: a record of any of them is served here.

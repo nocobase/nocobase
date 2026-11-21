@@ -1,5 +1,14 @@
 # @nocobase/app-cli-distribution
 
+## 0.1.0-beta.2
+
+### Patch Changes
+
+- 88bb385: Follow same-origin redirects when resolving and downloading CLI and runner packages with an installation token.
+- Updated dependencies [188e419]
+  - @nocobase/agent-protocol@0.1.0-beta.22
+  - @nocobase/app-cli-client@0.1.0-beta.25
+
 ## 0.1.0-beta.1
 
 ### Patch Changes

@@ -868,7 +868,9 @@ it.each(['awaitingCustomer', 'closed'])(
       });
       const parameters = new WorkflowParameterStore(store);
       const runtime = new LifecycleRuntime({ store });
-      runtime.register(ticketLifecycle, {
+      // This fixture stops before the later ticket management migration.
+      const { management: _management, ...releasedTicket } = ticketLifecycle;
+      runtime.register(releasedTicket, {
         services: createExampleServices({ info: () => {} }),
         parameterConfiguration: { store: parameters, scope: () => 'demo' },
       });

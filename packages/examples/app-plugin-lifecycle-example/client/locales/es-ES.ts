@@ -1,8 +1,8 @@
+import enUS from './en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
-
 const esES: LocaleResource<typeof enUS> = {
+  ticketManagement: enUS.ticketManagement,
   navigation: {
     parameters: 'Parámetros de tiempo de ejecución',
     group: 'Flujo de trabajo',

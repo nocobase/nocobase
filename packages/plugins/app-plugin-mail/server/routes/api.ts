@@ -18,6 +18,7 @@ import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
+  cliRoute,
   dataResponse,
   defineApiRoutes,
   describeRoute,
@@ -53,6 +54,9 @@ import {
   AccountParams,
   AttachmentParams,
   ConnectAccountInput,
+  ListFoldersQuery,
+  MailSyncFolderPreviewSchema,
+  PreviewSyncFoldersInput,
   ConversationMessagesQuery,
   DeleteMessageQuery,
   IdentityParams,
@@ -85,8 +89,10 @@ import {
   UpdateSignatureInput,
   UpdateTemplateInput,
   MailAccountSchema,
+  MailUpdatedAccountSchema,
   MailAuthorizationSchema,
   MailBoundedListMeta,
+  MailFolderListMeta,
   MailCursorListMeta,
   MailFolderSchema,
   MailIdentitySchema,
@@ -134,6 +140,7 @@ interface MailRouteOptions {
    */
   readonly errors?: Partial<Record<ApiErrorResponseCode, true | string>>;
   readonly requestBody?: DescribeRouteOptions['requestBody'];
+  readonly cli?: false;
 }
 
 /** The API document entry of one Mail route. */
@@ -153,6 +160,7 @@ function mailRoute(
   }
   return describeRoute({
     tags: ['Mail'],
+    ...(options.cli === false ? cliRoute(false) : {}),
     operationId,
     summary,
     ...(options.description ? { description: options.description } : {}),
@@ -314,6 +322,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
               username: input.username ?? input.address,
               password: input.password,
               initialSyncReceivedAfter: input.initialSyncReceivedAfter,
+              ...connectSyncFolders(input.syncFolderIds),
             }),
           },
           201,
@@ -324,11 +333,13 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       '/accounts/:accountId',
       mailRoute(
         'mailUpdateAccount',
-        'Suspend or resume an account',
-        { '200': dataResponse(MailAccountSchema) },
+        'Update an account',
+        { '200': dataResponse(MailUpdatedAccountSchema) },
         {
+          description:
+            'Suspends or resumes an account, or changes the folders it synchronizes. A changed `syncFolderIds` restarts the initial synchronization under the new selection and answers that run as `syncRun`: newly selected folders are imported from the account start date, and local messages left in no selected folder are deleted, with their folder links, participants, attachments and IMAP copies. Messages on the mail server are not affected. Use `mailPreviewSyncFolders` to show the count first.',
           errors: {
-            400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`), or must be reauthorized before it can be resumed (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`).',
+            400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`), must be reauthorized before it can be resumed (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), is not active when changing its folders (`MAIL_ACCOUNT_INACTIVE`), or a selected folder is not a folder of the account (`INVALID_MAIL_REQUEST`).',
             404: true,
             413: true,
           },
@@ -341,7 +352,38 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           data: await mail.updateAccount(operationContext(context), {
             accountId: context.req.valid('param').accountId,
             status: context.req.valid('json').status,
+            ...(context.req.valid('json').syncFolderIds !== undefined
+              ? { syncFolderIds: context.req.valid('json').syncFolderIds }
+              : {}),
           }),
+        }),
+    );
+    // Previewing changes nothing, but the selection can name many long folder IDs, so it is a custom method with a body.
+    routes.post(
+      '/accounts/:accountId/previewSyncFolders',
+      mailRoute(
+        'mailPreviewSyncFolders',
+        'Preview a change of synchronized folders',
+        { '200': dataResponse(MailSyncFolderPreviewSchema) },
+        {
+          description:
+            'Counts the local messages that saving this folder selection with `mailUpdateAccount` would delete, without changing anything.',
+          errors: {
+            400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`) or is not active (`MAIL_ACCOUNT_INACTIVE`), or a selected folder is not a folder of the account (`INVALID_MAIL_REQUEST`).',
+            404: true,
+            413: true,
+          },
+        },
+      ),
+      apiValidator('param', AccountParams),
+      apiValidator('json', PreviewSyncFoldersInput),
+      async (context) =>
+        context.json({
+          data: await mail.previewSyncFolders(
+            operationContext(context),
+            context.req.valid('param').accountId,
+            context.req.valid('json').syncFolderIds,
+          ),
         }),
     );
     // Removal is durable and asynchronous: the account is marked for removal and a background task deletes its
@@ -411,6 +453,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
               ).toString(),
               ...(input.scopes !== undefined ? { scopes: input.scopes } : {}),
               initialSyncReceivedAfter: input.initialSyncReceivedAfter,
+              ...connectSyncFolders(input.syncFolderIds),
             }),
           },
           201,
@@ -581,7 +624,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       mailRoute(
         'mailListFolders',
         "List an account's folders",
-        { '200': listResponse(MailFolderSchema, MailBoundedListMeta) },
+        { '200': listResponse(MailFolderSchema, MailFolderListMeta) },
         {
           errors: {
             400: 'The account is being removed (`MAIL_ACCOUNT_REMOVING`).',
@@ -590,15 +633,27 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       ),
       apiValidator('param', AccountParams),
-      async (context) =>
-        context.json(
-          boundedList(
-            await mail.listFolders(
-              operationContext(context),
-              context.req.valid('param').accountId,
+      apiValidator('query', ListFoldersQuery),
+      async (context) => {
+        const { accountId } = context.req.valid('param');
+        if (!context.req.valid('query').includeUnsynced)
+          return context.json(
+            boundedList(
+              await mail.listFolders(operationContext(context), accountId),
             ),
-          ),
-        ),
+          );
+        const { folders, complete, failed, initialSyncCompleted } =
+          await mail.listFolderChoices(operationContext(context), accountId);
+        return context.json({
+          data: folders,
+          meta: {
+            total: folders.length,
+            complete,
+            failed,
+            initialSyncCompleted,
+          },
+        });
+      },
     );
     routes.post(
       '/accounts/:accountId/sync',
@@ -1158,6 +1213,48 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
     routes.get(
+      '/accounts/:accountId/messages/:messageId/original',
+      mailRoute(
+        'mailDownloadOriginalMessage',
+        'Download the original MIME of one message',
+        {
+          '200': {
+            description:
+              'The complete provider-supplied MIME, with an attachment disposition naming the .eml file.',
+            content: {
+              'message/rfc822': {
+                schema: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+        },
+        {
+          cli: false,
+          description:
+            'Requires access to the Mail workspace (page / mail.workspace / access) and ownership of the message and account. The MIME may be at most 40 MiB. A failure after streaming begins interrupts the download.',
+          errors: {
+            400: 'The account is inactive (`MAIL_ACCOUNT_INACTIVE`), requires reauthorization (`MAIL_ACCOUNT_REAUTHORIZATION_REQUIRED`), or the original is unsupported (`MAIL_PROVIDER_OPERATION_UNSUPPORTED`) or too large (`MAIL_ORIGINAL_TOO_LARGE`).',
+            404: 'The account or message could not be found, or the original is no longer available at the provider (`MAIL_ORIGINAL_NOT_FOUND`).',
+            429: providerRateLimited,
+            503: providerUnavailable,
+          },
+        },
+      ),
+      apiValidator('param', AccountMessageParams),
+      async (context) => {
+        const { accountId, messageId } = context.req.valid('param');
+        const response = attachmentResponse(
+          await mail.getOriginalMessage(
+            operationContext(context),
+            accountId,
+            messageId,
+          ),
+        );
+        response.headers.set('cache-control', 'private, no-store');
+        return response;
+      },
+    );
+    routes.get(
       '/accounts/:accountId/messages/:messageId/attachments/:attachmentId',
       mailRoute(
         'mailDownloadMessageAttachment',
@@ -1697,6 +1794,14 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     return router;
   });
 
+/** Connecting accepts only an empty selection, meaning the folders are chosen after connecting. */
+function connectSyncFolders(
+  syncFolderIds: readonly string[] | null | undefined,
+): { readonly syncFolderIds?: readonly [] | null } {
+  if (syncFolderIds === undefined) return {};
+  return { syncFolderIds: syncFolderIds === null ? null : [] };
+}
+
 function operationContext(context: {
   get(
     key: 'auth',
@@ -1872,7 +1977,8 @@ function toMailApiError(error: unknown, context: Context): unknown {
       message: error.message,
       ...localized(
         context,
-        imapMoveLocale(error.reason) ??
+        originalMessageLocale(error.reason) ??
+          imapMoveLocale(error.reason) ??
           (error.reason === 'MAIL_MESSAGE_NOT_FOUND'
             ? 'errors.messageNotFound'
             : error.reason === 'MAIL_SYNC_RUN_NOT_FOUND'
@@ -1998,6 +2104,19 @@ function safeContentType(value: string): string {
   return /^[\w!#$&^_.+-]+\/[\w!#$&^_.+-]+(?:\s*;[^\r\n]*)?$/u.test(value)
     ? value
     : 'application/octet-stream';
+}
+
+function originalMessageLocale(reason: string): string | undefined {
+  switch (reason) {
+    case 'MAIL_ORIGINAL_NOT_FOUND':
+      return 'errors.originalNotFound';
+    case 'MAIL_ORIGINAL_TOO_LARGE':
+      return 'errors.originalTooLarge';
+    case 'MAIL_PROVIDER_OPERATION_UNSUPPORTED':
+      return 'errors.operationUnsupported';
+    default:
+      return undefined;
+  }
 }
 
 function imapMoveLocale(reason: string): string | undefined {
