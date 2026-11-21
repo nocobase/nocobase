@@ -14,7 +14,7 @@ import {
 const settingsShellRoutes: AppClientRouteContribution =
   defineSystemSettingsRoutes([
     {
-      // Lists only modules the viewer may open, so it needs no grant of its own.
+      // Opens the first page the viewer may open, so it needs no grant of its own.
       name: 'settingsHome',
       path: '/',
       auth: 'required',

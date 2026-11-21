@@ -7,11 +7,18 @@
  * Each page stands behind its own page grant (`shared/access.ts` `PAGES`, named like the route), which only opens it:
  * what a page lists and changes is decided by the API on the settings items (`agents.agents`, `agents.runners`), and
  * on the runtimes page by who added each runtime.
+ *
+ * `agentsSettingsRoutes` offers the same pages ready-made as System settings pages in the built-in AI category, which
+ * an application mounts with `agents({ settingsRoutes: true })`.
  */
-import type {
-  AppClientRouteComponentLoader,
-  AppClientRoutePageDefinition,
+import {
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+  type AppClientRouteComponentLoader,
+  type AppClientRoutePageDefinition,
+  type AppClientSystemSettingsRoutesContribution,
 } from '@nocobase/app-client/plugins';
+import { Bot, BrainCircuit, ChartColumn, Server, Sparkles } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 import type { Page } from '../shared/access.js';
@@ -110,3 +117,31 @@ export const modelsRoute: AppClientRoutePageDefinition = {
   },
   componentLoader: withPlugin(() => import('./pages/models/index.js')),
 };
+
+/**
+ * The agent management pages as System settings pages in the built-in AI category: `/settings/agents`,
+ * `/settings/runtimes`, `/settings/skills`, `/settings/models` and `/settings/usage`, titled in this plugin's
+ * namespace. The plugin registers them when the application asks with `agents({ settingsRoutes: true })`; an
+ * application that keeps the pages elsewhere routes the definitions above itself instead.
+ */
+export const agentsSettingsRoutes: AppClientSystemSettingsRoutesContribution =
+  defineSystemSettingsRoutes([
+    settingsPage(agentsRoute, 'agents.title', Bot),
+    settingsPage(runtimesRoute, 'runtimes.title', Server),
+    settingsPage(skillsRoute, 'skills.title', Sparkles),
+    settingsPage(modelsRoute, 'models.title', BrainCircuit),
+    settingsPage(usageRoute, 'usage.title', ChartColumn),
+  ]);
+
+function settingsPage(
+  route: AppClientRoutePageDefinition,
+  title: string,
+  icon: typeof Bot,
+): AppClientRoutePageDefinition {
+  return {
+    ...route,
+    parent: SYSTEM_SETTINGS_CATEGORIES.ai,
+    navigation: { title, icon },
+    breadcrumb: { title },
+  };
+}

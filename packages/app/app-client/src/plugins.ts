@@ -921,17 +921,11 @@ function assembleRoutes(
         throw new Error(
           `app route "${definition.name}" from "${input.packageName}" cannot declare category or kind; they belong to settings routes.`,
         );
-      if (
-        declaresCategory &&
-        (definition).category !== true
-      )
+      if (declaresCategory && definition.category !== true)
         throw new Error(
           `Settings route "${definition.name}" from "${input.packageName}" must declare category: true or leave it out.`,
         );
-      if (
-        declaresKind &&
-        (definition).kind !== 'module'
-      )
+      if (declaresKind && definition.kind !== 'module')
         throw new Error(
           `Settings route "${definition.name}" from "${input.packageName}" must declare kind: 'module' or leave it out.`,
         );

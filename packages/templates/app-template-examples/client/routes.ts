@@ -451,12 +451,20 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 // one of the categories `@nocobase/app-client` builds in with `parent`; its path is relative to `/settings`.
 const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
   {
-    // Lists only modules the viewer may open, so it needs no grant of its own.
+    // Opens the first page the viewer may open, so it needs no grant of its own.
     name: 'settingsHome',
     path: '/',
     auth: 'required',
     authz: 'skip',
     componentLoader: () => import('./pages/settings/settings-home.js'),
+  },
+  {
+    // The application's own business settings, a category ahead of the built-in ones. Its pages join it with
+    // `parent: 'crm'`; like every category, it stays hidden until it holds a page the viewer may open.
+    name: 'crm',
+    category: true,
+    navigation: { title: 'settings.categories.crm', order: 50 },
+    children: [],
   },
   {
     name: 'knowledgeIndexing',

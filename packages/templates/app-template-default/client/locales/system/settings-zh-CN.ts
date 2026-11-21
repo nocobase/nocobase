@@ -125,7 +125,6 @@ const settings = {
     },
   },
   home: {
-    description: '账号、权限、业务配置和系统能力都在这里。',
     empty: '暂时没有你可以管理的设置。',
   },
   categories: {

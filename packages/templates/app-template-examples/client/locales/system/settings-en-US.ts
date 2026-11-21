@@ -136,11 +136,10 @@ const settings = {
     },
   },
   home: {
-    description:
-      'Accounts, permissions, business configuration and system capabilities are all here.',
     empty: 'No settings are available to you yet.',
   },
   categories: {
+    crm: 'CRM',
     account: 'Accounts and permissions',
     automation: 'Workflows and automation',
     messages: 'Messages',
