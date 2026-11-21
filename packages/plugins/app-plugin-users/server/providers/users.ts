@@ -137,6 +137,8 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       'user',
       {
         filterActive: (ids, connection) => this.enabledUserIds(ids, connection),
+        // A sharing rule names people: a service account, such as a system key's, acts as no person.
+        filterShareable: (ids, connection) => this.personIds(ids, connection),
         administration: {
           title: {
             key: 'options.subjectTypes.user',
@@ -241,6 +243,24 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
    * Asks this plugin's own user administration which of these accounts are
    * still enabled, one page per batch rather than one query per account.
    */
+  private async personIds(
+    ids: readonly string[],
+    connection?: DatabaseConnection,
+  ): Promise<readonly string[]> {
+    const service = this.app.container.resolve(userAdministrationServiceToken);
+    const users = connection ? service.withConnection(connection) : service;
+    const people: string[] = [];
+    for (let start = 0; start < ids.length; start += ACCOUNT_PAGE_SIZE) {
+      const page = await users.list({
+        userIds: ids.slice(start, start + ACCOUNT_PAGE_SIZE),
+        kind: 'person',
+        pageSize: ACCOUNT_PAGE_SIZE,
+      });
+      people.push(...page.items.map((user) => user.id));
+    }
+    return people;
+  }
+
   private async enabledUserIds(
     ids: readonly string[],
     connection?: DatabaseConnection,

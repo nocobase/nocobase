@@ -13,9 +13,20 @@ export type InspectorIdentityResolver = (id: string) => Promise<
       readonly identity: AuthorizationIdentity;
       /** Whose roles the identity holds, such as the key's person or service account. */
       readonly holder: AuthorizationSubject;
+      /** For a credential, such as an API key: whether it can be used now, and the records it is limited to. */
+      readonly credential?: InspectedCredential;
     }
   | undefined
 >;
+
+/** What the inspector shows of a credential besides its scope, which the identity's `keyScope` carries. */
+export interface InspectedCredential {
+  /** A credential that is disabled or expired allows nothing, whatever its scope says. */
+  readonly state: 'active' | 'disabled' | 'expired';
+  readonly expiresAt?: string | null;
+  /** The records a business is limited to, by business; a business left out is not limited. */
+  readonly objects?: Readonly<Record<string, readonly string[]>>;
+}
 
 /** `authz.inspector`: kinds of subject the permission inspector checks besides users. */
 export interface InspectorApi {

@@ -81,11 +81,34 @@ export function createInspectorHandler(
       });
     return found;
   };
+  // A credential that cannot be used now is decided as denying everything, with the reason.
+  const blocked = (
+    found: Awaited<ReturnType<typeof resolved>>,
+  ): AuthorizationDecision | undefined => {
+    const state = found?.credential?.state;
+    if (!state || state === 'active') return undefined;
+    return {
+      effect: 'deny',
+      reasons: [
+        state === 'disabled'
+          ? { code: 'KEY_DISABLED', message: 'The key is disabled.' }
+          : { code: 'KEY_EXPIRED', message: 'The key has expired.' },
+      ],
+    };
+  };
   const contextFor = async (
     subject: AuthorizationSubject,
   ): Promise<AuthorizationContext> => {
     const found = await resolved(subject);
-    if (found) return host.for(found.identity);
+    if (found) {
+      const denial = blocked(found);
+      const inspected = host.for(found.identity);
+      if (!denial) return inspected;
+      return {
+        ...inspected,
+        authorize: () => Promise.resolve(denial),
+      } as unknown as AuthorizationContext;
+    }
     return host.for({
       principal: subject,
       subjects: await subjectsOf(subject),
@@ -197,7 +220,9 @@ export function createInspectorHandler(
         id: query.subjectId,
       };
       // A key's roles are those of the identity it acts as.
-      const subject = (await resolved(asked))?.holder ?? asked;
+      const found = await resolved(asked);
+      const subject = found?.holder ?? asked;
+      const keyScope = found?.identity.keyScope;
       const subjects = await subjectsOf(subject);
       const [sets, assignments] = await Promise.all([
         permissionSets.getEffective({ principal: subject, subjects }),
@@ -226,6 +251,26 @@ export function createInspectorHandler(
           identity: {
             subjects: subjects.map(({ type, id }) => ({ type, id })),
           },
+          // What a credential adds on top of the roles: its state, what it covers and the records it keeps.
+          ...(found && keyScope
+            ? {
+                credential: {
+                  keyId: keyScope.keyId,
+                  state: found.credential?.state ?? 'active',
+                  expiresAt: found.credential?.expiresAt ?? null,
+                  personless: keyScope.personless === true,
+                  permissions:
+                    keyScope.permissions?.map(({ resource, actions }) => ({
+                      resource,
+                      actions: actions.map((action) => {
+                        const policy = keyScope.policy?.(resource, action);
+                        return policy ? { action, policy } : { action };
+                      }),
+                    })) ?? null,
+                  objects: found.credential?.objects ?? {},
+                },
+              }
+            : {}),
           // Which assignment of the principal or its subjects brings each set.
           sets: sets.map((set) => ({
             key: set.key,

@@ -1,4 +1,5 @@
 import { databasePlugin } from '../../../server/database/plugin.js';
+import { createInspectorApi } from '../../../server/inspector-identities.js';
 import { createAuthorization } from '../../helpers/authorization-fixture.js';
 import { permissionSetsPlugin } from '@nocobase/authorization';
 import type {
@@ -147,6 +148,80 @@ describe('the permission inspector endpoint', () => {
         subjects: [{ type: 'authenticated', id: '*' }],
       },
     ]);
+  });
+
+  it('decides a disabled credential as refusing everything, and says what a credential adds', async () => {
+    const authz = await authorization({ unrestricted: true });
+    let state: 'active' | 'disabled' = 'disabled';
+    Object.assign(authz, { inspector: createInspectorApi() });
+    authz.inspector.identities.add('apiKey', (id) =>
+      Promise.resolve(
+        id === 'k1'
+          ? {
+              identity: {
+                principal: { type: 'user', id: 'robot' },
+                keyScope: {
+                  keyId: 'k1',
+                  allows: () => true,
+                  objects: () => 'all',
+                  permissions: [
+                    {
+                      resource: { type: 'test.resource', id: 'permitted' },
+                      actions: ['read'],
+                    },
+                  ],
+                  personless: true,
+                },
+              },
+              holder: { type: 'user', id: 'robot' },
+              credential: {
+                state,
+                expiresAt: null,
+                objects: { 'rel.apps': ['a1'] },
+              },
+            }
+          : undefined,
+      ),
+    );
+    const router = await mountedRouter(authz);
+    const decide = async () =>
+      (
+        (await (
+          await router.request('/api/authorization/inspector/decide', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              subject: { type: 'apiKey', id: 'k1' },
+              resource: { type: 'test.resource', id: 'permitted' },
+              action: 'read',
+            }),
+          })
+        ).json()) as { data: AuthorizationDecision }
+      ).data;
+    expect(await decide()).toMatchObject({
+      effect: 'deny',
+      reasons: [{ code: 'KEY_DISABLED' }],
+    });
+    const configured = (await (
+      await router.request(
+        '/api/authorization/inspector/configuredAccess?subjectType=apiKey&subjectId=k1',
+      )
+    ).json()) as { data: { credential: unknown } };
+    expect(configured.data.credential).toEqual({
+      keyId: 'k1',
+      state: 'disabled',
+      expiresAt: null,
+      personless: true,
+      permissions: [
+        {
+          resource: { type: 'test.resource', id: 'permitted' },
+          actions: [{ action: 'read' }],
+        },
+      ],
+      objects: { 'rel.apps': ['a1'] },
+    });
+    state = 'active';
+    expect((await decide()).effect).toBe('permit');
   });
 
   it('summarizes configured types including policy grants and enforces settings access', async () => {

@@ -49,6 +49,7 @@ export type {
   KeyPermissionCeiling,
   KeyPermissionCeilingAction,
   KeyPermissionEditorProps,
+  KeyScopeRecordsProps,
 } from './key-permission-editor.js';
 
 /** The permission table of a credential such as an API key, loaded when a page shows it. */

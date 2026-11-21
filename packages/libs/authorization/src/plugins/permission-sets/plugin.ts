@@ -103,6 +103,12 @@ export interface PermissionSetProtection {
   /** Who registers the protection, usually a plugin package name. */
   owner: string;
   keys: readonly string[];
+  /**
+   * Every set whose key starts with one of these, present or created later, by any process: for an owner that creates
+   * its sets at run time, such as one per API key. Such a protection cannot be unrestricted or require an active
+   * assignment.
+   */
+  prefixes?: readonly string[];
   /** Operations the generic management surface may still perform. */
   allow?: readonly PermissionSetWriteOperation[];
   /**
@@ -281,6 +287,8 @@ export function permissionSetsPlugin<TTransaction = unknown>(
 /** What every service derived from one plugin instance shares. */
 interface PermissionSetSharedState {
   readonly protections: Map<string, PermissionSetProtectionInfo>;
+  /** Protections by key prefix. */
+  prefixes?: Map<string, PermissionSetProtectionInfo>;
   readonly subscribers: Set<AuthorizationGrantsChangedListener>;
   subjects?: AuthorizationSubjectRegistry;
 }
@@ -328,43 +336,69 @@ class PermissionSetService<
 
   protect(protection: PermissionSetProtection): () => void {
     const allow = [...new Set(protection.allow ?? [])];
+    const info: PermissionSetProtectionInfo = {
+      owner: protection.owner,
+      allow,
+      ...(protection.requireActiveAssignment
+        ? { requireActiveAssignment: true }
+        : {}),
+      ...(protection.unrestricted ? { unrestricted: true } : {}),
+      ...(protection.assignableTo
+        ? { assignableTo: [...protection.assignableTo] }
+        : {}),
+      ...(protection.hidden ? { hidden: true } : {}),
+    };
+    const prefixes = protection.prefixes ?? [];
+    if (
+      prefixes.length &&
+      (protection.unrestricted || protection.requireActiveAssignment)
+    )
+      throw new Error(
+        'A protection by key prefix cannot be unrestricted or require an active assignment.',
+      );
+    const byPrefix: Map<string, PermissionSetProtectionInfo> =
+      (this.shared.prefixes ??= new Map<string, PermissionSetProtectionInfo>());
+    for (const prefix of prefixes) {
+      const existing = byPrefix.get(prefix);
+      if (!prefix || (existing && existing.owner !== protection.owner))
+        throw new Error(
+          `Permission Sets starting with "${prefix}" are already protected by ${existing?.owner ?? 'another owner'}`,
+        );
+    }
     const registered: string[] = [];
     for (const key of protection.keys) {
-      const existing = this.protections.get(key);
+      const existing = this.protection(key);
       if (existing && existing.owner !== protection.owner) {
         throw new Error(
           `Permission Set "${key}" is already protected by ${existing.owner}`,
         );
       }
-      this.protections.set(key, {
-        owner: protection.owner,
-        allow,
-        ...(protection.requireActiveAssignment
-          ? { requireActiveAssignment: true }
-          : {}),
-        ...(protection.unrestricted ? { unrestricted: true } : {}),
-        ...(protection.assignableTo
-          ? { assignableTo: [...protection.assignableTo] }
-          : {}),
-        ...(protection.hidden ? { hidden: true } : {}),
-      });
+      this.protections.set(key, info);
       registered.push(key);
     }
+    for (const prefix of prefixes) byPrefix.set(prefix, info);
     return (): void => {
       for (const key of registered) {
         if (this.protections.get(key)?.owner === protection.owner) {
           this.protections.delete(key);
         }
       }
+      for (const prefix of prefixes)
+        if (byPrefix.get(prefix)?.owner === protection.owner)
+          byPrefix.delete(prefix);
     };
   }
 
   protection(key: string): PermissionSetProtectionInfo | undefined {
-    return this.protections.get(key);
+    const exact = this.protections.get(key);
+    if (exact) return exact;
+    for (const [prefix, info] of this.shared.prefixes ?? [])
+      if (key.startsWith(prefix)) return info;
+    return undefined;
   }
 
   assertWritable(key: string, operation: PermissionSetWriteOperation): void {
-    const protection = this.protections.get(key);
+    const protection = this.protection(key);
     if (!protection || protection.allow.includes(operation)) return;
     throw new PermissionSetProtectedError(key, protection.owner, operation);
   }
@@ -698,7 +732,7 @@ class PermissionSetService<
    * assigns through the api is held to the same restriction.
    */
   private assertAssignableTo(key: string, subject: PermissionSetSubject): void {
-    const assignableTo = this.protections.get(key)?.assignableTo;
+    const assignableTo = this.protection(key)?.assignableTo;
     if (!assignableTo || assignableTo.includes(subject.type)) return;
     throw new PermissionSetSubjectNotAllowedError(key, subject.type);
   }

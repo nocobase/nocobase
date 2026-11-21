@@ -129,6 +129,31 @@ const settings = {
     duplicate: 'This key is already in use. Use a different key.',
   },
   permissionCheck: {
+    key: {
+      title: 'API key',
+      step: 'The key',
+      disabled: 'This key is disabled: every request made with it is refused.',
+      expired: 'This key has expired: every request made with it is refused.',
+      unbounded: 'The key does whatever its holder’s roles allow.',
+      bounded_one:
+        'The key allows {{count}} operation, and only as far as its holder’s roles and the data rules also allow.',
+      bounded_other:
+        'The key allows {{count}} operations, and only as far as its holder’s roles and the data rules also allow.',
+      personless:
+        'It acts as no person: default access and sharing rules that add records counted from “me” add none for it. Restriction rules still apply.',
+      objects_one: '{{business}}: limited to {{count}} chosen record.',
+      objects_other: '{{business}}: limited to {{count}} chosen records.',
+      stepUnbounded: 'The key narrows nothing: its holder’s roles decide.',
+      stepMissing: 'The key does not include this operation, so it is refused.',
+      stepCovers: 'The key includes this operation.',
+      stepRecords: '{{scope}}: the key keeps {{records}}.',
+      intersection:
+        'The records it reaches are those the key keeps that the roles and data rules below also reach.',
+      allRecords: 'every record',
+      noRecords: 'no records',
+      chosen_one: '{{count}} chosen record ({{ids}})',
+      chosen_other: '{{count}} chosen records ({{ids}})',
+    },
     subjectKind: 'Who',
     member: 'A member',
     title: 'Permission check',
@@ -364,6 +389,9 @@ const settings = {
     missing: "You don't have: {{actions}}",
     settingsVisible: 'The key opens in System settings: {{pages}}.',
     settingsNoneVisible: 'The key opens no System settings pages.',
+    selectedRecords: 'Selected records',
+    recordsChosen_one: '{{count}} record chosen',
+    recordsChosen_other: '{{count}} records chosen',
   },
   permissionEditor: {
     menusTab: 'Page access',

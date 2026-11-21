@@ -812,3 +812,56 @@ describe('batched effective permission sets', () => {
     expect(getMany).not.toHaveBeenCalled();
   });
 });
+
+describe('protecting Permission Sets by key prefix', () => {
+  it('protects every set whose key starts with the prefix, including sets created afterwards', async () => {
+    const authorization = authorizationWith({}, []);
+    const release = authorization.permissionSets.protect({
+      owner: '@nocobase/test',
+      keys: [],
+      prefixes: ['system-key-'],
+      allow: [],
+      assignableTo: ['user'],
+      hidden: true,
+    });
+    // Created after the protection, as another process would.
+    await authorization.permissionSets.create({
+      key: 'system-key-42',
+      grants: [],
+    });
+    expect(authorization.permissionSets.protection('system-key-42')).toEqual({
+      owner: '@nocobase/test',
+      allow: [],
+      assignableTo: ['user'],
+      hidden: true,
+    });
+    expect(authorization.permissionSets.protection('other')).toBeUndefined();
+    expect(() =>
+      authorization.permissionSets.assertWritable('system-key-42', 'update'),
+    ).toThrow(PermissionSetProtectedError);
+    await expect(
+      authorization.permissionSets.assign({
+        subject: { type: 'authenticated', id: '*' },
+        permissionSet: 'system-key-42',
+      }),
+    ).rejects.toBeInstanceOf(PermissionSetSubjectNotAllowedError);
+    expect(() =>
+      authorization.permissionSets.protect({
+        owner: '@nocobase/other',
+        keys: ['system-key-7'],
+      }),
+    ).toThrow(/already protected/u);
+    expect(() =>
+      authorization.permissionSets.protect({
+        owner: '@nocobase/test',
+        keys: [],
+        prefixes: ['admin-'],
+        unrestricted: true,
+      }),
+    ).toThrow(/prefix/u);
+    release();
+    expect(
+      authorization.permissionSets.protection('system-key-42'),
+    ).toBeUndefined();
+  });
+});

@@ -58,6 +58,12 @@ export interface KeyScope {
     resource: ResourceRef,
     action: string,
   ): AuthorizationPolicyRef | undefined;
+  /**
+   * The credential acts as no person, such as a system key's service account: default access and sharing rules that
+   * add records counted from the principal (a record access declared `personal`) add none for it. Restrictions still
+   * apply.
+   */
+  readonly personless?: boolean;
 }
 
 /** A data policy as a grant stores it (`AuthorizationPolicy`), kept structural so this file imports nothing. */

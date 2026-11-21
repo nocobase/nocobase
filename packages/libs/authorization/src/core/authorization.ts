@@ -234,6 +234,7 @@ export class Authorization {
     const constraints = keyScopeConstraints(
       this.constraints.for(identity),
       identity.keyScope,
+      this.recordAccess,
     );
     const grants = composedGrants(
       this.provider.for?.(identity) ?? this.provider,
@@ -682,13 +683,22 @@ function humanOnlyDenial(
 function keyScopeConstraints(
   base: AccessConstraintService,
   scope: KeyScope | undefined,
+  recordAccess: Pick<RecordAccessRegistry, 'get'>,
 ): AccessConstraintService {
   const policyOf = scope?.policy?.bind(scope);
-  if (!scope || !policyOf) return base;
+  if (!scope || (!policyOf && !scope.personless)) return base;
+  // A credential that acts as no person gets no records a rule adds by counting from the principal.
+  const counted = (constraint: AccessConstraint): boolean =>
+    constraint.effect === 'expand' &&
+    constraint.selection.type === 'recordAccess' &&
+    recordAccess.get(constraint.selection.key)?.personal === true;
   return {
     resolve: async (input) => {
-      const own = await base.resolve(input);
-      if (input.scopeKey === undefined) return own;
+      const resolved = await base.resolve(input);
+      const own = scope.personless
+        ? resolved.filter((constraint) => !counted(constraint))
+        : resolved;
+      if (input.scopeKey === undefined || !policyOf) return own;
       const selection = keyScopeSelection(
         policyOf(input.resource, input.action),
         input.scopeKey,

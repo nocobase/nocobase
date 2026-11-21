@@ -271,6 +271,30 @@ export interface ConfiguredAccess {
   identity?: { subjects: readonly AuthorizationSubject[] };
   /** Each effective set with the assignments that bring it; none for a default set. */
   sets?: readonly ConfiguredPermissionSet[];
+  /** For a credential subject, such as an API key: what it adds on top of its holder's roles. */
+  credential?: ConfiguredCredential;
+}
+
+/** What a credential, such as an API key, adds on top of the roles of the identity it acts as. */
+export interface ConfiguredCredential {
+  keyId: string;
+  /** A disabled or expired credential allows nothing. */
+  state: 'active' | 'disabled' | 'expired';
+  expiresAt: string | null;
+  /** It acts as no person: rules adding records counted from "me" add none for it. */
+  personless: boolean;
+  /** What it covers, with the record scopes it keeps; null when it narrows no action. */
+  permissions:
+    | readonly {
+        resource: { type: string; id: string };
+        actions: readonly {
+          action: string;
+          policy?: Readonly<Record<string, unknown>>;
+        }[];
+      }[]
+    | null;
+  /** The records a business is limited to. */
+  objects: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface ConfiguredPermissionSet {

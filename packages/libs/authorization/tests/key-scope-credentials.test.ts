@@ -3,6 +3,7 @@ import {
   createAuthorization,
   CredentialCatalog,
   defineCompositeResource,
+  defineRecordAccess,
   grantBacked,
   permissionSetsPlugin,
   ResourceItems,
@@ -453,5 +454,77 @@ describe('record scopes of an unrestricted holder’s credential', () => {
       .authorize(view);
     expect(decision.effect).toBe('permit');
     expect(reached(decision)).toBe('all');
+  });
+});
+
+describe('a credential that acts as no person', () => {
+  it('gets no records a default-access or sharing rule adds by counting from the principal, and keeps every restriction', async () => {
+    const received: AccessConstraint[][] = [];
+    const rules: AccessConstraint[] = [
+      {
+        source: { plugin: 'default-access', id: 'mine' },
+        effect: 'expand',
+        selection: { type: 'recordAccess', key: 'mine' },
+      },
+      {
+        source: { plugin: 'sharing-rules', id: 'region' },
+        effect: 'expand',
+        selection: { type: 'recordAccess', key: 'region' },
+      },
+      {
+        source: { plugin: 'restriction-rules', id: 'own-only' },
+        effect: 'restrict',
+        selection: { type: 'recordAccess', key: 'mine' },
+      },
+    ];
+    const authorization = createAuthorization({
+      plugins: [
+        catalog(received),
+        permissionSetsPlugin({
+          store: new MockPermissionSetStore({
+            permissionSets: [{ key: 'staff', grants: staff }],
+            assignments: [
+              { id: 'alice-staff', subject: alice, permissionSet: 'staff' },
+            ],
+          }),
+        }),
+        {
+          id: 'rules',
+          setup(authz) {
+            authz.recordAccess.define(
+              defineRecordAccess('mine', (access) =>
+                access
+                  .collections('*')
+                  .personal()
+                  .resolver(() => true),
+              ),
+            );
+            authz.recordAccess.define(
+              defineRecordAccess('region', (access) =>
+                access.collections('*').resolver(() => true),
+              ),
+            );
+            authz.constraints.add({
+              id: 'rules',
+              resolve: () => Promise.resolve(rules),
+            });
+          },
+        },
+      ],
+    });
+    const quotes = { type: 'composite', id: 'sales.quotes' } as const;
+    authorization.compositeResources.define(
+      defineCompositeResource('sales.quotes', (resource) =>
+        resource.action('view', (action) => action.grant(quotesContribution)),
+      ),
+    );
+    await authorization
+      .for({ principal: alice, keyScope: { ...unbounded, personless: true } })
+      .authorize({ resource: quotes, action: 'view' });
+    expect(received.at(-1)).toEqual([rules[1], rules[2]]);
+    await authorization
+      .for({ principal: alice, keyScope: unbounded })
+      .authorize({ resource: quotes, action: 'view' });
+    expect(received.at(-1)).toEqual(rules);
   });
 });

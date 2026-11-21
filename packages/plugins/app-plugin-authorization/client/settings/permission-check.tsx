@@ -35,6 +35,7 @@ import type {
   AuthorizationOptionsResponse,
   AuthorizationSubject,
   ConfiguredAccess,
+  ConfiguredCredential,
   SubjectOption,
 } from '../authorization-client.js';
 import { useAuthorizationClient } from '../use-authorization-client.js';
@@ -432,6 +433,9 @@ function UserAccess({
           </p>
         )}
       </section>
+      {configured.credential ? (
+        <CredentialSummary credential={configured.credential} />
+      ) : null}
       {mode === 'all' ? (
         <AllPermissions
           subject={subject}
@@ -725,6 +729,7 @@ function CheckOne({
             actionTitle={text(actionEntry.title)}
             roleTitle={roleTitle}
             holders={holders}
+            credential={configured.credential}
           />
         ) : error ? null : (
           <SettingsLoading />
@@ -741,6 +746,7 @@ function Verdict({
   actionTitle,
   roleTitle,
   holders,
+  credential,
 }: {
   readonly decision: AuthorizationDecision;
   readonly resource: CheckResource;
@@ -748,10 +754,13 @@ function Verdict({
   readonly actionTitle: string;
   readonly roleTitle: (key: string) => string;
   readonly holders: readonly AuthorizationSubject[];
+  readonly credential?: ConfiguredCredential | undefined;
 }): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const text = useLocalizedText();
   const allowed = decision.effect !== 'deny';
+  // A credential's own step comes first: it narrows whatever the roles and rules then give.
+  const first = credential ? 2 : 1;
   const roles = matchedSources(decision).filter(
     (source) => source.plugin === 'permission-sets',
   );
@@ -781,7 +790,16 @@ function Verdict({
             : t('settings.permissionCheck.cannot', names)}
       </div>
       <ol className='flex flex-col gap-3'>
-        <Step index={1} title={t('settings.permissionCheck.stepRole')}>
+        {credential ? (
+          <Step index={1} title={t('settings.permissionCheck.key.step')}>
+            <CredentialStep
+              credential={credential}
+              resource={resource}
+              action={action}
+            />
+          </Step>
+        ) : null}
+        <Step index={first} title={t('settings.permissionCheck.stepRole')}>
           {roles.length ? (
             // Each role opens in Roles, where the permission it gives can be read and changed.
             <span className='flex flex-wrap items-center gap-1.5'>
@@ -807,7 +825,7 @@ function Verdict({
         {RULE_KINDS.map((kind, index) => (
           <RuleStep
             key={kind.key}
-            index={index + 2}
+            index={index + first + 1}
             kind={kind}
             resource={resource}
             action={action}
@@ -829,6 +847,135 @@ function Verdict({
       </details>
     </div>
   );
+}
+
+/** What a credential subject, such as an API key, adds on top of its holder's roles. */
+function CredentialSummary({
+  credential,
+}: {
+  readonly credential: ConfiguredCredential;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  const actions = (credential.permissions ?? []).reduce(
+    (total, grant) => total + grant.actions.length,
+    0,
+  );
+  const limits = Object.entries(credential.objects);
+  return (
+    <section
+      className='flex flex-col gap-2 text-sm'
+      data-slot='checked-credential'
+    >
+      <h3 className='font-medium'>{t('settings.permissionCheck.key.title')}</h3>
+      {credential.state !== 'active' ? (
+        <p
+          role='alert'
+          className='rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive'
+        >
+          {t(`settings.permissionCheck.key.${credential.state}`)}
+        </p>
+      ) : null}
+      <p className='text-muted-foreground'>
+        {credential.permissions === null
+          ? t('settings.permissionCheck.key.unbounded')
+          : t('settings.permissionCheck.key.bounded', { count: actions })}
+      </p>
+      {credential.personless ? (
+        <p className='text-muted-foreground'>
+          {t('settings.permissionCheck.key.personless')}
+        </p>
+      ) : null}
+      {limits.length ? (
+        <ul className='text-muted-foreground'>
+          {limits.map(([business, ids]) => (
+            <li key={business}>
+              {t('settings.permissionCheck.key.objects', {
+                business,
+                count: ids.length,
+              })}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+/** A credential's part in one decision: whether it covers the operation, and the records it keeps. */
+function CredentialStep({
+  credential,
+  resource,
+  action,
+}: {
+  readonly credential: ConfiguredCredential;
+  readonly resource: CheckResource;
+  readonly action: string;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  if (credential.state !== 'active')
+    return <>{t(`settings.permissionCheck.key.${credential.state}`)}</>;
+  if (credential.permissions === null)
+    return <>{t('settings.permissionCheck.key.stepUnbounded')}</>;
+  const entry = credential.permissions
+    .find(
+      (grant) =>
+        grant.resource.type === resource.type &&
+        grant.resource.id === resource.id,
+    )
+    ?.actions.find((item) => item.action === action);
+  if (!entry) return <>{t('settings.permissionCheck.key.stepMissing')}</>;
+  const scopes: unknown = entry.policy?.scopes;
+  const records =
+    scopes && typeof scopes === 'object'
+      ? Object.entries(scopes as Record<string, unknown>).map(
+          ([scope, value]) => ({ scope, label: scopeLabel(value, t) }),
+        )
+      : [];
+  return (
+    <span className='flex flex-col gap-0.5'>
+      <span>{t('settings.permissionCheck.key.stepCovers')}</span>
+      {records.map((record) => (
+        <span key={record.scope} data-slot='credential-records'>
+          {t('settings.permissionCheck.key.stepRecords', {
+            scope: record.scope,
+            records: record.label,
+          })}
+        </span>
+      ))}
+      {records.length ? (
+        <span>{t('settings.permissionCheck.key.intersection')}</span>
+      ) : null}
+    </span>
+  );
+}
+
+/** How a key's data scope value reads: every record, the records chosen, a named record access, or none. */
+function scopeLabel(
+  value: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (value === '' || value === null || value === undefined)
+    return t('settings.permissionCheck.key.noRecords');
+  if (typeof value === 'string')
+    return value === 'allRecords'
+      ? t('settings.permissionCheck.key.allRecords')
+      : value;
+  if (typeof value === 'object') {
+    const type: unknown = Reflect.get(value, 'type');
+    const ids: unknown = Reflect.get(value, 'ids');
+    if (type === 'all') return t('settings.permissionCheck.key.allRecords');
+    if (type === 'records' && Array.isArray(ids))
+      return t('settings.permissionCheck.key.chosen', {
+        count: ids.length,
+        ids: ids.slice(0, 5).join(', '),
+      });
+    const key: unknown = Reflect.get(value, 'key');
+    if (type === 'recordAccess' && typeof key === 'string')
+      return key === 'allRecords'
+        ? t('settings.permissionCheck.key.allRecords')
+        : key;
+  }
+  return t('settings.permissionCheck.key.noRecords');
 }
 
 function Step({

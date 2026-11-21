@@ -237,6 +237,44 @@ export const ConfiguredAccessSchema: z.ZodType = z
         }),
       }),
     ),
+    credential: z
+      .object({
+        keyId: z.string(),
+        state: z.enum(['active', 'disabled', 'expired']).meta({
+          description:
+            'A disabled or expired credential allows nothing: every decision for it is a denial with that reason.',
+        }),
+        expiresAt: z.string().nullable(),
+        personless: z.boolean().meta({
+          description:
+            'The credential acts as no person: rules adding records counted from the principal add none for it.',
+        }),
+        permissions: z
+          .array(
+            z.object({
+              resource: ReferenceSchema,
+              actions: z.array(
+                z.object({
+                  action: z.string(),
+                  policy: z.record(z.string(), z.unknown()).optional(),
+                }),
+              ),
+            }),
+          )
+          .nullable()
+          .meta({
+            description:
+              'What the credential covers, with the record scopes it keeps; null when it narrows no action.',
+          }),
+        objects: z
+          .record(z.string(), z.array(z.string()))
+          .meta({ description: 'The records a business is limited to.' }),
+      })
+      .optional()
+      .meta({
+        description:
+          'For a credential subject, such as an API key: what it adds on top of the roles of its holder.',
+      }),
   })
   .meta({ ref: 'AuthorizationConfiguredAccess' });
 
