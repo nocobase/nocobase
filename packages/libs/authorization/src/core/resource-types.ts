@@ -60,6 +60,13 @@ const itemEntries = new WeakMap<
 /** The items of one catalog resource type. */
 export class ResourceItems {
   private readonly entries = new Map<string, ResourceItemDefinition>();
+  /** Each item's resolved actions by name, built on first lookup; dropped when an item is added or the type binds. */
+  private index:
+    | {
+        readonly binding: ItemBinding | undefined;
+        readonly actions: Map<string, ReadonlyMap<string, ResourceItemAction>>;
+      }
+    | undefined;
 
   constructor() {
     itemEntries.set(this, this.entries);
@@ -72,6 +79,33 @@ export class ResourceItems {
     const binding = itemBindings.get(this);
     if (binding) validateItem(item, binding);
     this.entries.set(item.id, item);
+    this.index = undefined;
+  }
+
+  /** What an item's action declares, from a cached index: a lookup on every keyed check copies nothing. */
+  action(id: string, name: string): ResourceItemAction | undefined {
+    const binding = itemBindings.get(this);
+    const index =
+      this.index && this.index.binding === binding
+        ? this.index
+        : {
+            binding,
+            actions: new Map<string, ReadonlyMap<string, ResourceItemAction>>(),
+          };
+    this.index = index;
+    let actions = index.actions.get(id);
+    if (!actions) {
+      const item = this.entries.get(id);
+      if (!item) return undefined;
+      actions = new Map(
+        resolveItem(item, binding).actions.map((action) => [
+          action.name,
+          action,
+        ]),
+      );
+      index.actions.set(id, actions);
+    }
+    return actions.get(name);
   }
 
   has(id: string): boolean {
@@ -441,10 +475,7 @@ export class ResourceTypeRegistry {
   ): ResourceItemAction | undefined {
     const registered = this.registered.get(resource.type);
     if (!registered) return undefined;
-    if (registered.items)
-      return registered.items
-        .get(resource.id)
-        ?.actions.find((entry) => entry.name === action);
+    if (registered.items) return registered.items.action(resource.id, action);
     return registered.actions.find((entry) => entry.name === action);
   }
 

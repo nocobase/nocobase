@@ -273,3 +273,160 @@ describe('credential catalog', () => {
     ).resolves.toEqual([]);
   });
 });
+
+describe('record scopes of an unrestricted holder’s credential', () => {
+  const RECORDS = ['q1', 'q2', 'q3'];
+  const MINE = ['q1', 'q2'];
+
+  /** The records a selection reaches among RECORDS. */
+  const reach = (selection: {
+    type: string;
+    ids?: readonly string[];
+    key?: string;
+  }): string[] =>
+    selection.type === 'all'
+      ? RECORDS
+      : selection.type === 'records'
+        ? RECORDS.filter((id) => selection.ids?.includes(id))
+        : selection.key === 'mine'
+          ? MINE
+          : [];
+
+  /** A record type answering the ids a check reaches: its grants' selections, cut by every restriction. */
+  const records: AuthorizationPlugin = {
+    id: 'records',
+    setup(authz) {
+      authz.resourceTypes.add({
+        type: 'database.collection',
+        actions: ['read'],
+        recordAccess: true,
+        async authorize(request, context) {
+          const grants = await context.grants.resolve(request);
+          if (grants.length === 0) return { effect: 'deny', reasons: [] };
+          let ids = new Set(
+            grants.flatMap((grant) =>
+              reach(grant.origin?.selection ?? { type: 'all' }),
+            ),
+          );
+          for (const grant of grants)
+            for (const constraint of grant.origin?.constraints ?? [])
+              if (constraint.effect === 'restrict') {
+                const kept = new Set(reach(constraint.selection));
+                ids = new Set([...ids].filter((id) => kept.has(id)));
+              }
+          return {
+            effect: 'conditional',
+            conditions: { type: 'ids', ids: [...ids].sort() },
+            reasons: [],
+          };
+        },
+      });
+    },
+  };
+
+  function reached(
+    decision: Awaited<
+      ReturnType<
+        ReturnType<ReturnType<typeof createAuthorization>['for']>['authorize']
+      >
+    >,
+  ): string[] | 'all' {
+    const check = (
+      decision.conditions as
+        | { checks?: { decision: { conditions?: { ids?: string[] } } }[] }
+        | undefined
+    )?.checks?.[0];
+    return check?.decision.conditions?.ids ?? 'all';
+  }
+
+  function setupWith(superuser: boolean) {
+    const authorization = createAuthorization({
+      plugins: [
+        records,
+        permissionSetsPlugin({
+          store: new MockPermissionSetStore({
+            permissionSets: [
+              {
+                key: 'staff',
+                grants: [
+                  {
+                    resource: { type: 'composite', id: 'sales.quotes' },
+                    actions: [
+                      {
+                        action: 'view',
+                        policy: {
+                          type: 'composite',
+                          scopes: { quote: { type: 'all' } },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+              { key: 'superuser', grants: [] },
+            ],
+            assignments: [
+              {
+                id: 'alice',
+                subject: alice,
+                permissionSet: superuser ? 'superuser' : 'staff',
+              },
+            ],
+          }),
+        }),
+      ],
+    });
+    if (superuser)
+      authorization.permissionSets.protect({
+        owner: '@nocobase/test',
+        keys: ['superuser'],
+        unrestricted: true,
+      });
+    authorization.compositeResources.define(
+      defineCompositeResource('sales.quotes', (resource) =>
+        resource.action('view', (action) => action.grant(quotesContribution)),
+      ),
+    );
+    return authorization;
+  }
+
+  const keyWith = (quote: unknown): KeyScope => ({
+    ...unbounded,
+    policy: () => ({ type: 'composite', scopes: { quote } }),
+  });
+  const view = {
+    resource: { type: 'composite', id: 'sales.quotes' },
+    action: 'view',
+  } as const;
+
+  it.each([
+    ['an unrestricted holder', true],
+    ['a holder of every record', false],
+  ])(
+    'keeps the key of %s to the records it selects',
+    async (_label, superuser) => {
+      const authorization = setupWith(superuser);
+      const picked = await authorization
+        .for({
+          principal: alice,
+          keyScope: keyWith({ type: 'records', ids: ['q1'] }),
+        })
+        .authorize(view);
+      expect(picked.effect).not.toBe('deny');
+      expect(reached(picked)).toEqual(['q1']);
+      const mine = await authorization
+        .for({ principal: alice, keyScope: keyWith('mine') })
+        .authorize(view);
+      expect(reached(mine)).toEqual(MINE);
+    },
+  );
+
+  it('leaves an unrestricted holder’s key without record scopes unrestricted', async () => {
+    const authorization = setupWith(true);
+    const decision = await authorization
+      .for({ principal: alice, keyScope: unbounded })
+      .authorize(view);
+    expect(decision.effect).toBe('permit');
+    expect(reached(decision)).toBe('all');
+  });
+});
