@@ -69,6 +69,12 @@ type Env = {
 };
 
 /**
+ * The routes added with key permissions in format 2 stay off the command line for now, documented only, so an
+ * application's command line, and the tests that pin it, stay as they were until it offers them.
+ */
+const newRouteOffCommandLine = cliRoute(false);
+
+/**
  * `/api/apiKeys`: a person's own keys, with or without a scope. Self-service: every endpoint acts on the caller's
  * keys only, and only from a sign-in: a request made with any API key is refused (`requireSignInSession`).
  */
@@ -109,7 +115,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List what I may give a key',
         operationId: 'apiKeysListGrantable',
-        ...cliRoute({ command: 'api-key grantable' }),
+        ...newRouteOffCommandLine,
         description: `${signInOnly} The actions the caller holds today, those no key may hold marked with the reason, and the templates resolved to what the caller holds.`,
         responses: {
           200: dataResponse(GrantablePermissionsSchema),
@@ -185,11 +191,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List the records a key may be limited to',
         operationId: 'apiKeysListObjects',
-        ...cliRoute({
-          command: 'api-key objects',
-          columns: ['id', 'title', 'description'],
-          examples: ['api-key objects rel.apps --q web'],
-        }),
+        ...newRouteOffCommandLine,
         description: `${signInOnly} The records of a business a key's permissions may be limited to (\`permissions.objects\`), bounded by what the caller can see and narrowed by \`q\` or repeated \`id\`; not paged.`,
         responses: {
           200: listResponse(KeyScopeObjectSchema, ApiKeysListMeta),
@@ -254,10 +256,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Get an API key',
         operationId: 'apiKeysGetKey',
-        ...cliRoute({
-          command: 'api-key get',
-          flags: { keyId: { name: 'key' } },
-        }),
+        ...newRouteOffCommandLine,
         description: `${signInOnly} One of the caller's keys, never its secret, with the actions it lost because the caller no longer holds them (\`lapsed\`).`,
         responses: {
           200: dataResponse(ApiKeyDetailSchema),
@@ -326,6 +325,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List the permission catalogue of my key',
         operationId: 'apiKeysGetKeyCatalog',
+        ...newRouteOffCommandLine,
         description: `${signInOnly} The authorization catalogue limited to what the caller holds today, plus the actions of this key the caller no longer holds, so its detail can show them as lapsed. Answers 404 without the authorization plugin.`,
         responses: {
           200: dataResponse(AuthorizationOptionsSchema),
