@@ -42,6 +42,12 @@ import {
 import { ownKeyPolicySlotOf, type ApiKeysPlugin } from './api-keys.js';
 import { MAX_KEY_NAME } from './constants.js';
 import { API_KEY_HEADER, isApiKeySession } from './key-sessions.js';
+import {
+  readRules,
+  writeRules,
+  type ApiKeyRules,
+  type ApiKeyRulesInput,
+} from './rules.js';
 import { ApiKeyScopeError, type ApiKeyScopes } from './scopes.js';
 
 /** The expiry the editor proposes for a scoped key. */
@@ -348,9 +354,30 @@ export class ScopedApiKeys {
       .can({ resource, action: 'create' });
   }
 
-  /** Whether a person may create a key that is them in full; see `ApiKeysConfig.allowSameAsMe`. */
-  get allowSameAsMe(): boolean {
-    return this.options.config?.()?.allowSameAsMe === true;
+  /** The rules for keys now: those an administrator saved, or the application's configuration. */
+  rules(): Promise<ApiKeyRules> {
+    return readRules(this.options.connection(), this.options.config?.());
+  }
+
+  /** Saves the rules for keys; they act on keys made or rotated afterwards. */
+  setRules(input: ApiKeyRulesInput, actorId: string): Promise<ApiKeyRules> {
+    return writeRules(
+      this.options.connection(),
+      this.options.config?.(),
+      input,
+      actorId,
+    );
+  }
+
+  /** Whether `userId` is a service account, whose keys the rules for personal keys do not bound. */
+  private async isServiceAccountId(userId: string): Promise<boolean> {
+    const user = await this.options
+      .connection()
+      .query.selectFrom('user')
+      .select(['kind'])
+      .where('id', '=', userId)
+      .executeTakeFirst<{ kind: unknown }>();
+    return isServiceAccount(user);
   }
 
   /**
@@ -358,14 +385,8 @@ export class ScopedApiKeys {
    * account's key is bounded by the account's own permissions, so it is not one.
    */
   async requireSameAsMeAllowed(userId: string): Promise<void> {
-    if (this.allowSameAsMe) return;
-    const user = await this.options
-      .connection()
-      .query.selectFrom('user')
-      .select(['kind'])
-      .where('id', '=', userId)
-      .executeTakeFirst<{ kind: unknown }>();
-    if (isServiceAccount(user)) return;
+    if ((await this.rules()).allowSameAsMe) return;
+    if (await this.isServiceAccountId(userId)) return;
     throw new ApiKeyRequestError(
       403,
       'SAME_AS_ME_DISABLED',
@@ -383,13 +404,6 @@ export class ScopedApiKeys {
       );
   }
 
-  private get maxScopedKeyDays(): number | null {
-    const value = this.options.config?.()?.maxScopedKeyDays;
-    return typeof value === 'number' && Number.isInteger(value) && value > 0
-      ? value
-      : null;
-  }
-
   /** The identity a request of `userId` would carry, as the authorization plugin's middleware builds it. */
   async identityOf(userId: string): Promise<AuthorizationIdentity> {
     const principal = { type: 'user', id: userId };
@@ -405,6 +419,7 @@ export class ScopedApiKeys {
 
   /** What the editor offers for keys of `userId`, with what that user holds today. */
   async scopeOptions(userId: string): Promise<KeyScopeOptions> {
+    const rules = await this.rules();
     const authz = this.options.authorization?.();
     const context = authz ? authz.for(await this.identityOf(userId)) : null;
     const groups = await Promise.all(
@@ -455,11 +470,8 @@ export class ScopedApiKeys {
         groups: preset.groups,
         expiresInDays: preset.expiresInDays ?? null,
       })),
-      maxScopedKeyDays: this.maxScopedKeyDays,
-      defaultExpiresInDays: Math.min(
-        DEFAULT_SCOPED_KEY_DAYS,
-        this.maxScopedKeyDays ?? DEFAULT_SCOPED_KEY_DAYS,
-      ),
+      maxScopedKeyDays: rules.personalMaxDays,
+      defaultExpiresInDays: rules.personalDefaultDays,
     };
   }
 
@@ -536,7 +548,10 @@ export class ScopedApiKeys {
       await this.checkObjects(scope, identity);
       permissions = this.fromLegacy(scope).permissions;
     }
-    const expiresInDays = this.expiryOf(body.expiresInDays, scope !== null);
+    const expiresInDays = this.expiryOf(
+      body.expiresInDays,
+      scope !== null ? (await this.rules()).personalMaxDays : null,
+    );
     return { name, description, scope, permissions, expiresInDays };
   }
 
@@ -690,6 +705,7 @@ export class ScopedApiKeys {
     userId: string,
     identity?: AuthorizationIdentity,
   ): Promise<GrantablePermissions> {
+    const rules = await this.rules();
     const who = identity ?? (await this.identityOf(userId));
     const ceiling = await this.ceiling(who);
     const grants = this.catalog().flatMap((entry): GrantableResource[] => {
@@ -746,13 +762,10 @@ export class ScopedApiKeys {
         this.resolveTemplate(template, ceiling),
       ),
       objectSources: this.objectSources(),
-      maxScopedKeyDays: this.maxScopedKeyDays,
-      defaultExpiresInDays: Math.min(
-        DEFAULT_SCOPED_KEY_DAYS,
-        this.maxScopedKeyDays ?? DEFAULT_SCOPED_KEY_DAYS,
-      ),
+      maxScopedKeyDays: rules.personalMaxDays,
+      defaultExpiresInDays: rules.personalDefaultDays,
       mayCreate: await this.mayCreateOwn(userId),
-      allowSameAsMe: this.allowSameAsMe,
+      allowSameAsMe: rules.allowSameAsMe,
     };
   }
 
@@ -875,13 +888,20 @@ export class ScopedApiKeys {
     const row = await this.requireRow(userId, keyId);
     const created = parseDate(row.createdAt);
     const expires = row.expiresAt == null ? null : parseDate(row.expiresAt);
-    const lifetime =
+    const kept =
       created && expires
         ? Math.max(
             1,
             Math.round((expires.getTime() - created.getTime()) / 86_400_000),
           )
         : null;
+    // A person's key with permissions renews for no longer than the rules allow now.
+    const max =
+      decodeKeyPermissions(row.permissions) !== null &&
+      !(await this.isServiceAccountId(userId))
+        ? (await this.rules()).personalMaxDays
+        : null;
+    const lifetime = max === null ? kept : Math.min(kept ?? max, max);
     // Better Auth generates and hashes the new value, as for any key (its prefix, length and hashing options apply);
     // the value moves onto the existing row and the row Better Auth made for it goes.
     const fresh = await this.createUpstream({
@@ -1507,8 +1527,8 @@ export class ScopedApiKeys {
     }
   }
 
-  private expiryOf(value: unknown, scoped: boolean): number | null {
-    const max = scoped ? this.maxScopedKeyDays : null;
+  /** An expiry in days, bounded by `max` (null for none) for a key with permissions. */
+  private expiryOf(value: unknown, max: number | null): number | null {
     if (value === null || value === undefined) {
       if (max !== null)
         throw new ApiKeyRequestError(

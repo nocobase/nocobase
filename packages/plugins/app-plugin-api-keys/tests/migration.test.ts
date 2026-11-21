@@ -66,3 +66,44 @@ describeMigration('202609150001_create_api_key_table', {
     await expectCollection(API_KEY_TABLE_NAME).not.toExist();
   },
 });
+
+describeMigration('202611210003_api_keys_system_keys', {
+  sources,
+  up: async ({ connection, expectCollection }) => {
+    for (const [name, fields] of [
+      [
+        'apiKeySystemKeys',
+        ['identityId', 'keyId', 'ownerId', 'managedBy', 'createdById'],
+      ],
+      ['apiKeyEvents', ['id', 'identityId', 'action', 'actorId', 'details']],
+      [
+        'apiKeyRules',
+        ['allowSameAsMe', 'personalMaxDays', 'idleDisableDays', 'idleSince'],
+      ],
+    ] as const)
+      for (const field of fields)
+        await expectCollection(name).toHaveField(field);
+    const now = new Date();
+    await connection.query
+      .insertInto('apiKeyEvents')
+      .values({
+        id: 'event-1',
+        identityId: 'service-1',
+        action: 'permissions',
+        actorId: null,
+        details: JSON.stringify({ before: [], after: [] }),
+        createdAt: now,
+      })
+      .execute();
+    expect(
+      await connection.query
+        .selectFrom('apiKeyEvents')
+        .select(['action'])
+        .execute(),
+    ).toEqual([{ action: 'permissions' }]);
+  },
+  down: async ({ expectCollection }) => {
+    for (const name of ['apiKeySystemKeys', 'apiKeyEvents', 'apiKeyRules'])
+      await expectCollection(name).not.toExist();
+  },
+});

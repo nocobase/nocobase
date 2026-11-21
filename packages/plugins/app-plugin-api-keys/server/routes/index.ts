@@ -231,7 +231,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           meta: {
             total: data.length,
             mayCreate: await keys.mayCreateOwn(userId(context)),
-            allowSameAsMe: keys.allowSameAsMe,
+            allowSameAsMe: (await keys.rules()).allowSameAsMe,
           },
         });
       },
