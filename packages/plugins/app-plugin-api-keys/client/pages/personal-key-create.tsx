@@ -109,6 +109,12 @@ export default function PersonalKeyCreatePage(): ReactElement {
         <ErrorAlert error={loadError} />
       ) : !grantable ? (
         <Skeleton className='h-96 w-full' />
+      ) : !grantable.mayCreate && !created ? (
+        <Alert variant='destructive'>
+          <AlertDescription>
+            {t('create.errors.API_KEY_CREATION_FORBIDDEN')}
+          </AlertDescription>
+        </Alert>
       ) : created ? (
         <CreatedKey created={created} onDone={close} />
       ) : (

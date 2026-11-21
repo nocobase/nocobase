@@ -22,11 +22,10 @@ export const API_KEY_ROUTES: {
   personalDetail: '@nocobase/app-plugin-api-keys:apiKeysPersonalDetail',
 };
 
-const PERSONAL_API_KEYS = { type: 'settings', id: 'personalApiKeys' } as const;
-
 /**
- * Personal settings › API keys: everyone signed in lists, opens and revokes their own keys; creating one takes
- * `settings:personalApiKeys/create`, as the server requires. The create and detail pages cover the list.
+ * Personal settings › API keys: everyone signed in lists, opens and revokes their own keys. Who may create one is the
+ * server's to say (`mayCreate`), since an application decides whether it takes a role permission; the create page asks
+ * it. The create and detail pages cover the list.
  */
 export const personalRoutes: AppClientRouteContribution =
   definePersonalSettingsRoutes([
@@ -41,7 +40,6 @@ export const personalRoutes: AppClientRouteContribution =
         {
           name: NAMES.personalCreate,
           path: 'create',
-          authz: { resource: PERSONAL_API_KEYS, action: 'create' },
           breadcrumb: { title: 'create.breadcrumb' },
           presentation: { kind: 'child-page' },
           componentLoader: () => import('./pages/personal-key-create.js'),

@@ -38,11 +38,6 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
       expect.objectContaining({
         name: 'apiKeysPersonalCreate',
         path: 'create',
-        // Only a person whose role lets them create keys opens New key, as the server requires.
-        authz: {
-          resource: { type: 'settings', id: 'personalApiKeys' },
-          action: 'create',
-        },
       }),
       expect.objectContaining({
         name: 'apiKeysPersonalDetail',

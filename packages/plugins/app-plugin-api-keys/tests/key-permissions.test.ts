@@ -1044,27 +1044,35 @@ describe('API key permissions in the shape of a permission set', () => {
     }
   });
 
-  it('lets a person create keys of their own only while a role grants settings:personalApiKeys/create', async () => {
-    // Not registered: everyone may, as before.
-    expect(await keys.mayCreateOwn(personId)).toBe(true);
+  it('lets everyone create keys of their own unless the application requires settings:personalApiKeys/create from a role', async () => {
     settingsItems.add({
       id: 'personalApiKeys',
       title: 'Personal API keys',
       actions: [{ name: 'create', humanOnly: 'Keys never make keys' }],
     });
-    expect(await keys.mayCreateOwn(personId)).toBe(false);
-    await expect(keys.requireOwnCreation(personId)).rejects.toMatchObject({
+    // By default the permission is registered but not required: nobody loses keys on upgrade, no role carries it.
+    expect(await keys.mayCreateOwn(personId)).toBe(true);
+    const byRole = new ScopedApiKeys({
+      auth,
+      connection: () => database.connection(),
+      scopes,
+      authorization: () => authz,
+      config: () => ({ allowSameAsMe: true, personalKeysByRole: true }),
+    });
+    // Required, a person whose roles do not grant it may not create or rotate.
+    expect(await byRole.mayCreateOwn(personId)).toBe(false);
+    await expect(byRole.requireOwnCreation(personId)).rejects.toMatchObject({
       status: 403,
       code: 'API_KEY_CREATION_FORBIDDEN',
     });
     // The person still lists and revokes the keys they have.
-    const listed = await keys.list(personId);
+    const listed = await byRole.list(personId);
     expect(listed.length).toBeGreaterThan(0);
-    await keys.revoke(personId, listed[0]!.id);
+    await byRole.revoke(personId, listed[0]!.id);
     // An application's own policy still decides when it sets one.
-    const release = keys.setOwnKeyPolicy(() => Promise.resolve(true));
+    const release = byRole.setOwnKeyPolicy(() => Promise.resolve(true));
     try {
-      expect(await keys.mayCreateOwn(personId)).toBe(true);
+      expect(await byRole.mayCreateOwn(personId)).toBe(true);
     } finally {
       release();
     }

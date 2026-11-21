@@ -60,6 +60,9 @@
         "import": "./dist/shared/scopes.js"
       },
       "./package.json": "./package.json"
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js"
     }
   },
   "scripts": {

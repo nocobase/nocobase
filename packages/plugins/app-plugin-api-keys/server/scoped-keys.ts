@@ -55,6 +55,12 @@ export interface ApiKeysConfig {
    * key can do everything its owner can, account endpoints included. Keys that exist keep working either way.
    */
   readonly allowSameAsMe?: boolean | null;
+  /**
+   * Whether creating keys of one's own takes `settings:personalApiKeys/create` from a role. Off unless set: everyone
+   * signed in may, as before the permission existed, so no member loses it on upgrade and no role has to carry it. An
+   * application that turns it on grants the permission to the roles that should create keys.
+   */
+  readonly personalKeysByRole?: boolean | null;
 }
 
 /** The settings item whose `create` lets a person create keys of their own, when no application policy is set. */
@@ -317,11 +323,13 @@ export class ScopedApiKeys {
   }
 
   /**
-   * Whether `userId` may create keys of their own: the application's policy when it set one; otherwise whether their
-   * roles hold `settings:personalApiKeys/create`, when that permission is registered; otherwise true.
+   * Whether `userId` may create keys of their own: the application's policy when it set one; otherwise, when the
+   * application turned on `personalKeysByRole`, whether their roles hold `settings:personalApiKeys/create`; otherwise
+   * true.
    */
   async mayCreateOwn(userId: string): Promise<boolean> {
     if (this.ownKeyPolicy) return this.ownKeyPolicy(userId);
+    if (this.options.config?.()?.personalKeysByRole !== true) return true;
     const authz = this.options.authorization?.();
     const resource = { type: 'settings', id: PERSONAL_API_KEYS_SETTINGS };
     if (!authz?.resourceTypes.action(resource, 'create')) return true;
