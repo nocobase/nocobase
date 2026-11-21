@@ -60,6 +60,7 @@ export {
   type ApiKeysConfig,
   type CheckedApiKey,
   type OwnKeyPolicy,
+  type LegacyUpgradeSummary,
   type ScopedApiKeysOptions,
 } from './scoped-keys.js';
 export { apiKeyScopesToken, scopedApiKeysToken } from './tokens.js';

@@ -25,7 +25,7 @@ import {
 } from '@nocobase/authorization/core';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
 import { Hono } from 'hono';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { apiKey } from '../server/api-keys.js';
 import { apiRoutes } from '../server/routes/index.js';
@@ -85,6 +85,7 @@ describe('API key permissions in the shape of a permission set', () => {
   let scopes: ApiKeyScopes;
   let keys: ScopedApiKeys;
   let personId = '';
+  let users: ReturnType<typeof createUserAdministrationService>;
   let cookie = '';
   let app: Hono;
 
@@ -116,11 +117,16 @@ describe('API key permissions in the shape of a permission set', () => {
       emailAndPassword: { enabled: true },
       session: { storeSessionInDatabase: true },
     });
+    users = createUserAdministrationService({
+      auth,
+      connection: database.connection(),
+    });
     personId = (
-      await createUserAdministrationService({
-        auth,
-        connection: database.connection(),
-      }).create({ name: 'Ada', email: 'ada@example.com', password: PASSWORD })
+      await users.create({
+        name: 'Ada',
+        email: 'ada@example.com',
+        password: PASSWORD,
+      })
     ).id;
 
     authz = createAuthorization({
@@ -371,31 +377,36 @@ describe('API key permissions in the shape of a permission set', () => {
     expect(limited.key.permissions?.objects).toEqual({ orders: ['o-2'] });
   });
 
-  it('lets a session take a human-only action and denies it to every key', async () => {
-    expect(
-      (await app.request('/settings/accounts/manage', asPerson())).status,
-    ).toBe(200);
-
-    // A key without permissions acts as its holder, but never takes a human-only action.
+  it('lets a session take a human-only action and refuses it to every kind of key with KEY_HUMAN_ONLY', async () => {
+    const who = await identity();
+    // Every key below may read accounts; none may manage them.
+    const custom = await keys.create(
+      personId,
+      {
+        name: 'custom',
+        expiresInDays: 7,
+        permissions: {
+          grants: [
+            { resource: accounts, actions: [{ action: 'read' }] },
+            { resource: orders, actions: [{ action: 'update' }] },
+          ],
+        },
+      },
+      who,
+    );
     const full = await keys.create(
       personId,
       { name: 'full', expiresInDays: 7, scope: null },
-      await identity(),
+      who,
     );
     expect(full.key.permissions).toBeNull();
-    const fullManage = await app.request(
-      '/settings/accounts/manage',
-      asKey(full.secret),
+    const robot = await users.createServiceAccount({ name: 'Robot' });
+    const service = await keys.create(
+      robot.id,
+      { name: 'robot', expiresInDays: null, scope: null },
+      who,
     );
-    expect(fullManage.status).toBe(403);
-    expect(await fullManage.json()).toMatchObject({ reason: 'KEY_HUMAN_ONLY' });
-    expect(
-      (await app.request('/settings/accounts/read', asKey(full.secret))).status,
-    ).toBe(200);
-    // Routes that do not take scoped keys still take it, as before.
-    expect((await app.request('/plain', asKey(full.secret))).status).toBe(200);
-
-    // A key made with permissions cannot be given it, and one converted from a deprecated group that covered it lost it.
+    // A deprecated group that maps to the human-only action loses it on conversion.
     const legacy = await keys.create(
       personId,
       {
@@ -403,20 +414,35 @@ describe('API key permissions in the shape of a permission set', () => {
         expiresInDays: 7,
         scope: { groups: { 'shop.orders': { level: 'write' } } },
       },
-      await identity(),
+      who,
     );
     expect(legacy.key.permissions?.grants).not.toContainEqual(
       expect.objectContaining({ resource: accounts }),
     );
-    const legacyManage = await app.request(
-      '/settings/accounts/manage',
-      asKey(legacy.secret),
-    );
-    expect(legacyManage.status).toBe(403);
-    expect(
-      (await app.request('/settings/orders/update', asKey(legacy.secret)))
-        .status,
-    ).toBe(200);
+
+    const manage = (init: RequestInit) =>
+      app.request('/settings/accounts/manage', init);
+    const session = await manage(asPerson());
+    expect(session.status).toBe(200);
+    for (const [label, secret, readsAccounts] of [
+      ['a key with permissions', custom.secret, true],
+      ['a key without permissions', full.secret, true],
+      ['a service account’s key', service.secret, true],
+      ['a key converted from a group', legacy.secret, false],
+    ] as const) {
+      const refused = await manage(asKey(secret));
+      expect([label, refused.status, await refused.json()]).toEqual([
+        label,
+        403,
+        { effect: 'deny', reason: 'KEY_HUMAN_ONLY' },
+      ]);
+      expect([
+        label,
+        (await app.request('/settings/accounts/read', asKey(secret))).status,
+      ]).toEqual([label, readsAccounts ? 200 : 403]);
+    }
+    // Routes that do not take scoped keys still take a person's key without permissions, as before.
+    expect((await app.request('/plain', asKey(full.secret))).status).toBe(200);
   });
 
   it('stores a deprecated scope converted, and answers it unchanged', async () => {
@@ -490,7 +516,11 @@ describe('API key permissions in the shape of a permission set', () => {
         .status,
     ).toBe(200);
 
-    expect(await keys.upgradeLegacyScopes()).toBeGreaterThanOrEqual(1);
+    // One key a batch: every batch is read, however many there are.
+    const first = await keys.upgradeLegacyScopes({ batchSize: 1 });
+    expect(first).toMatchObject({ failed: 0, failedKeyIds: [] });
+    expect(first.converted).toBeGreaterThanOrEqual(1);
+    expect(first.kept).toBeGreaterThanOrEqual(1);
     expect(decodeKeyPermissions(await storedPermissions(known.key.id))).toEqual(
       {
         version: '2',
@@ -508,7 +538,10 @@ describe('API key permissions in the shape of a permission set', () => {
       },
     );
     expect(await storedPermissions(unknown.key.id)).toBe(unknownBefore);
-    expect(await keys.upgradeLegacyScopes()).toBe(0);
+    expect(await keys.upgradeLegacyScopes()).toMatchObject({
+      converted: 0,
+      failed: 0,
+    });
 
     // Same answers after converting; the human-only action the group covered stays denied.
     for (const [path, status] of [
@@ -522,6 +555,40 @@ describe('API key permissions in the shape of a permission set', () => {
     expect((await keys.get(personId, known.key.id)).scope).toEqual({
       groups: { 'shop.orders': { level: 'write' } },
     });
+  });
+
+  it('leaves a key that fails to convert in format 1, reporting its id only', async () => {
+    const created = await keys.create(
+      personId,
+      { name: 'v1-failing', expiresInDays: 7, scope: null },
+      await identity(),
+    );
+    const v1 = JSON.stringify(
+      encodeKeyScope({ groups: { 'shop.orders': { level: 'read' } } }),
+    );
+    await database
+      .connection()
+      .query.updateTable('apikey')
+      .set({ permissions: v1 })
+      .where('id', '=', created.key.id)
+      .execute();
+    const convert = vi.spyOn(scopes, 'convert').mockImplementation(() => {
+      throw new Error('secret detail');
+    });
+    try {
+      const summary = await keys.upgradeLegacyScopes();
+      expect(summary).toMatchObject({ converted: 0 });
+      expect(summary.failedKeyIds).toContain(created.key.id);
+      expect(JSON.stringify(summary)).not.toContain('secret detail');
+    } finally {
+      convert.mockRestore();
+    }
+    expect(await storedPermissions(created.key.id)).toBe(v1);
+    expect(
+      (await app.request('/settings/orders/read', asKey(created.secret)))
+        .status,
+    ).toBe(200);
+    expect(await keys.upgradeLegacyScopes()).toMatchObject({ failed: 0 });
   });
 
   it('reads a damaged or unknown value as granting nothing', () => {
@@ -547,6 +614,84 @@ describe('API key permissions in the shape of a permission set', () => {
       },
       legacy: null,
     });
+  });
+
+  it('never reads a damaged policy or record limit as a missing one', () => {
+    const nothing = {
+      version: '2',
+      permissions: { grants: [] },
+      legacy: null,
+    };
+    const read = { resource: orders, actions: [{ action: 'read' }] };
+    // An action whose policy is damaged is refused, not kept without its record scopes.
+    expect(
+      decodeKeyPermissions({
+        $v: '2',
+        grants: [
+          {
+            resource: orders,
+            actions: [
+              { action: 'read', policy: 'recordsIOwn' },
+              { action: 'update', policy: { scopes: {} } },
+              { action: 'create' },
+            ],
+          },
+        ],
+      }),
+    ).toEqual({
+      ...nothing,
+      permissions: {
+        grants: [{ resource: orders, actions: [{ action: 'create' }] }],
+      },
+    });
+    // Record limits damaged as a whole: which businesses were limited is lost, so nothing is granted.
+    for (const objects of ['o-1', ['o-1'], null, 7])
+      expect(
+        decodeKeyPermissions({ $v: '2', grants: [read], objects }),
+      ).toEqual(nothing);
+    expect(decodeKeyPermissions({ $v: '2', grants: { read } })).toEqual(
+      nothing,
+    );
+    // One business's damaged list reaches none of its records; a damaged id is left out.
+    expect(
+      decodeKeyPermissions({
+        $v: '2',
+        grants: [read],
+        objects: { orders: 'o-1', apps: ['a-1', 7, ''] },
+      }),
+    ).toEqual({
+      ...nothing,
+      permissions: { grants: [read], objects: { orders: [], apps: ['a-1'] } },
+    });
+    // Left out, each means none.
+    expect(decodeKeyPermissions({ $v: '2', grants: [read] })).toEqual({
+      ...nothing,
+      permissions: { grants: [read] },
+    });
+  });
+
+  it('enforces a damaged record limit as reaching no record', async () => {
+    const created = await keys.create(
+      personId,
+      { name: 'damaged', expiresInDays: 7, permissions: ordersReadUpdate },
+      await identity(),
+    );
+    await database
+      .connection()
+      .query.updateTable('apikey')
+      .set({
+        permissions: JSON.stringify({
+          $v: '2',
+          grants: ordersReadUpdate.grants,
+          objects: 'orders',
+        }),
+      })
+      .where('id', '=', created.key.id)
+      .execute();
+    expect(
+      (await app.request('/settings/orders/read', asKey(created.secret)))
+        .status,
+    ).toBe(403);
   });
 
   it('offers what the person holds, human-only actions marked, and the templates resolved to it', async () => {

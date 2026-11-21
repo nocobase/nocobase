@@ -4,6 +4,7 @@ import type {
   AppPluginApplication,
   AppPluginProviderConstructor,
 } from '@nocobase/app-server/plugins';
+import { loggingToken } from '@nocobase/app-server/logging';
 import { apiDocsToken } from '@nocobase/app-server/router';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
@@ -80,11 +81,7 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
       container.resolve(authorizationToken).use(async (request, next) => {
         // Every plugin has booted by the first request, so every deprecated scope group is registered: keys still in
         // format 1 convert then, in the background, as they are enforced today.
-        this.upgrade ??= keys.upgradeLegacyScopes().then(
-          () => undefined,
-          // A key left in format 1 still works as before; the next start tries again.
-          () => undefined,
-        );
+        this.upgrade ??= this.upgradeLegacyScopes(keys);
         const session: unknown = request.http.get('auth' as never);
         if (session && typeof session === 'object' && 'session' in session) {
           // Any key, with permissions or not, so that no key takes an action a person's only.
@@ -96,6 +93,35 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
         }
         await next();
       });
+  }
+
+  /**
+   * Converts the keys still in format 1, logging a summary when any is left behind: counts and key ids only, never
+   * permissions or secrets. A key left in format 1 still works as before; the next start tries again.
+   */
+  private async upgradeLegacyScopes(keys: ScopedApiKeys): Promise<void> {
+    const { container } = this.app;
+    const logger = container.has(loggingToken)
+      ? container.resolve(loggingToken).getLogger('api-keys')
+      : undefined;
+    try {
+      const summary = await keys.upgradeLegacyScopes();
+      if (summary.failed > 0 || summary.kept > 0)
+        logger?.warn(
+          { ...summary },
+          'Some API keys stay in the deprecated permission format; they keep working and are tried again on the next start',
+        );
+      else if (summary.converted > 0)
+        logger?.info(
+          { converted: summary.converted },
+          'Converted API keys to the current permission format',
+        );
+    } catch (error) {
+      logger?.warn(
+        { error: error instanceof Error ? error.name : 'unknown' },
+        'Converting API keys to the current permission format failed; they keep working and are tried again on the next start',
+      );
+    }
   }
 
   public override async shutdown(): Promise<void> {

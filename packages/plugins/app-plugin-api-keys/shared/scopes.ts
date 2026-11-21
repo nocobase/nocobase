@@ -244,13 +244,17 @@ export function decodeKeyPermissions(
   if (Array.isArray(record.$v) && record.$v[0] === KEY_SCOPE_FORMAT_VERSION)
     return { version: '1', scope: decodeKeyScope(record) ?? { groups: {} } };
   if (record.$v !== KEY_PERMISSIONS_FORMAT_VERSION) return NOTHING;
+  // A field left out means none; a field present but damaged is never read as left out, because a missing policy or
+  // record limit reaches more than a damaged one meant to. Damage to `grants` or `objects` as a whole grants nothing.
+  if (record.grants !== undefined && !Array.isArray(record.grants))
+    return NOTHING;
+  if (record.objects !== undefined && !isObject(record.objects)) return NOTHING;
+  const objects = objectsOf(record.objects);
   return {
     version: '2',
     permissions: {
       grants: grantsOf(record.grants),
-      ...(objectsOf(record.objects)
-        ? { objects: objectsOf(record.objects)! }
-        : {}),
+      ...(objects ? { objects } : {}),
     },
     legacy: legacyOf(record.legacy),
   };
@@ -260,7 +264,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** The well-formed grants of a stored value; anything else is left out, so damage only narrows. */
+/**
+ * The well-formed grants of a stored value. A damaged grant or action is left out — an action whose policy is present
+ * but damaged too, rather than kept without its record scopes — so damage only narrows.
+ */
 function grantsOf(value: unknown): KeyPermissionGrant[] {
   if (!Array.isArray(value)) return [];
   const grants: KeyPermissionGrant[] = [];
@@ -269,25 +276,26 @@ function grantsOf(value: unknown): KeyPermissionGrant[] {
     const { type, id } = entry.resource;
     if (typeof type !== 'string' || typeof id !== 'string') continue;
     const actions = Array.isArray(entry.actions)
-      ? (entry.actions as unknown[]).flatMap((action) =>
-          isObject(action) && typeof action.action === 'string'
+      ? (entry.actions as unknown[]).flatMap((action) => {
+          if (!isObject(action) || typeof action.action !== 'string') return [];
+          if (action.policy === undefined) return [{ action: action.action }];
+          return isObject(action.policy) &&
+            typeof action.policy.type === 'string'
             ? [
                 {
                   action: action.action,
-                  ...(isObject(action.policy) &&
-                  typeof action.policy.type === 'string'
-                    ? { policy: action.policy as KeyPermissionPolicy }
-                    : {}),
+                  policy: action.policy as KeyPermissionPolicy,
                 },
               ]
-            : [],
-        )
+            : [];
+        })
       : [];
     if (actions.length > 0) grants.push({ resource: { type, id }, actions });
   }
   return grants;
 }
 
+/** Each business's records; a damaged list reaches none of them, and a damaged id is left out. */
 function objectsOf(
   value: unknown,
 ): Readonly<Record<string, readonly string[]>> | undefined {
@@ -295,7 +303,9 @@ function objectsOf(
   const objects: Record<string, string[]> = {};
   for (const [business, ids] of Object.entries(value))
     objects[business] = Array.isArray(ids)
-      ? (ids as unknown[]).filter((id): id is string => typeof id === 'string')
+      ? (ids as unknown[]).filter(
+          (id): id is string => typeof id === 'string' && id !== '',
+        )
       : [];
   return Object.keys(objects).length > 0 ? objects : undefined;
 }

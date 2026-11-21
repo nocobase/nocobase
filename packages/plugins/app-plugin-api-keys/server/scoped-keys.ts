@@ -109,6 +109,18 @@ export interface CheckedApiKey {
   readonly expiresInDays: number | null;
 }
 
+/** What `ScopedApiKeys.upgradeLegacyScopes` did: counts, and the ids of the first keys that failed to convert. */
+export interface LegacyUpgradeSummary {
+  readonly converted: number;
+  /** Keys naming a group not registered now, left in format `1`. */
+  readonly kept: number;
+  readonly failed: number;
+  readonly failedKeyIds: readonly string[];
+}
+
+const UPGRADE_BATCH_SIZE = 200;
+const MAX_REPORTED_FAILURES = 10;
+
 /** The built-in template: every action that only reads, of what the caller holds. */
 export const READ_ONLY_TEMPLATE_ID = 'read-only';
 
@@ -496,33 +508,62 @@ export class ScopedApiKeys {
 
   /**
    * Converts every key still stored in format `1` whose groups are all registered now, exactly as it is enforced
-   * today, keeping the groups for the deprecated views. A key naming a group not registered now stays as it is and is
-   * tried again on the next start. Writes only a row still holding the value it read, so it is safe to run twice.
-   * Answers how many keys it converted.
+   * today, keeping the groups for the deprecated views. A key naming a group not registered now stays as it is
+   * (`kept`) and is tried again on the next start. Reads `batchSize` keys at a time and writes only a row still holding
+   * the value it read, so it is safe to run twice. A key that fails to convert stays in format `1`, which still works;
+   * the summary names it by id only, never its permissions or secret.
    */
-  async upgradeLegacyScopes(): Promise<number> {
-    const rows = await this.options
-      .connection()
-      .query.selectFrom('apikey')
-      .select(['id', 'permissions'])
-      .where('permissions', 'is not', null)
-      .execute();
-    let converted = 0;
-    for (const row of rows as unknown as Pick<KeyRow, 'id' | 'permissions'>[]) {
-      const decoded = decodeKeyPermissions(row.permissions);
-      if (decoded?.version !== '1') continue;
-      const { permissions, complete } = this.fromLegacy(decoded.scope);
-      if (!complete) continue;
-      const result = await this.options
+  async upgradeLegacyScopes(
+    options: { readonly batchSize?: number } = {},
+  ): Promise<LegacyUpgradeSummary> {
+    const batchSize = options.batchSize ?? UPGRADE_BATCH_SIZE;
+    const summary = {
+      converted: 0,
+      kept: 0,
+      failed: 0,
+      failedKeyIds: [] as string[],
+    };
+    let after: string | null = null;
+    for (;;) {
+      let query = this.options
         .connection()
-        .query.updateTable('apikey')
-        .set({ permissions: encodeKeyPermissions(permissions, decoded.scope) })
-        .where('id', '=', row.id)
-        .where('permissions', '=', row.permissions as string)
-        .execute();
-      if ((result.updatedCount ?? 0) > 0) converted += 1;
+        .query.selectFrom('apikey')
+        .select(['id', 'permissions'])
+        .where('permissions', 'is not', null);
+      if (after !== null) query = query.where('id', '>', after);
+      const rows = (await query
+        .orderBy('id', 'asc')
+        .limit(batchSize)
+        .execute()) as unknown as Pick<KeyRow, 'id' | 'permissions'>[];
+      for (const row of rows) {
+        const decoded = decodeKeyPermissions(row.permissions);
+        if (decoded?.version !== '1') continue;
+        try {
+          const { permissions, complete } = this.fromLegacy(decoded.scope);
+          if (!complete) {
+            summary.kept += 1;
+            continue;
+          }
+          const result = await this.options
+            .connection()
+            .query.updateTable('apikey')
+            .set({
+              permissions: encodeKeyPermissions(permissions, decoded.scope),
+            })
+            .where('id', '=', row.id)
+            .where('permissions', '=', row.permissions as string)
+            .execute();
+          if ((result.updatedCount ?? 0) > 0) summary.converted += 1;
+        } catch {
+          summary.failed += 1;
+          if (summary.failedKeyIds.length < MAX_REPORTED_FAILURES)
+            summary.failedKeyIds.push(row.id);
+        }
+      }
+      if (rows.length < batchSize) break;
+      after = rows.at(-1)!.id;
     }
-    return converted;
+    return summary;
   }
 
   /** Issues a key `check` accepted. */
