@@ -8,6 +8,7 @@
  */
 
 import Database, { createMockDatabase, DataTypes } from '@nocobase/database';
+import type { Model } from 'sequelize';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
 
 const skipSqlite = process.env.DB_DIALECT == 'sqlite' ? it.skip : it;
@@ -24,6 +25,107 @@ describe('Eager loading tree', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('loads ordered attachments on every occurrence of a shared many-to-many target', async () => {
+    const relation = (name: string, target: string, through: string) => ({
+      type: 'belongsToMany',
+      name,
+      target,
+      through,
+      foreignKey: 'sourceId',
+      otherKey: 'targetId',
+    });
+    const files = db.collection({ name: 'files' }).repository;
+    const items = db.collection({ name: 'items', fields: [relation('files', 'files', 'itemFiles')] }).repository;
+    const groups = db.collection({ name: 'groups', fields: [relation('items', 'items', 'groupItems')] }).repository;
+    const pages = db.collection({ name: 'pages', fields: [relation('groups', 'groups', 'pageGroups')] }).repository;
+    await db.sync();
+    const first = await files.create({ values: {} });
+    const second = await files.create({ values: {} });
+    const shared = await items.create({ values: { files: [second.id, first.id] } });
+    const empty = await items.create({ values: {} });
+    const a = await groups.create({ values: { items: [shared.id, empty.id] } });
+    const b = await groups.create({ values: { items: [shared.id] } });
+    const page = await pages.create({ values: { groups: [a.id, b.id] } });
+    const result = await pages.findOne({ filterByTk: page.id, appends: ['groups.items.files'] });
+    expect(result.groups.map((group) => group.items.map((item) => item.files.map((file) => file.id)))).toEqual([
+      [[first.id, second.id], []],
+      [[first.id, second.id]],
+    ]);
+    expect(result.groups.map((group) => group.items[0].groupItems.sourceId)).toEqual([a.id, b.id]);
+  });
+
+  it('keeps a null source key separate from the literal string "null"', async () => {
+    const children = db.collection({
+      name: 'children',
+      fields: [{ name: 'parentCode', type: 'string' }],
+    }).repository;
+    const parents = db.collection({
+      name: 'parents',
+      fields: [
+        { name: 'code', type: 'string', unique: true, allowNull: true },
+        { name: 'children', type: 'hasMany', target: 'children', sourceKey: 'code', foreignKey: 'parentCode' },
+        { name: 'child', type: 'hasOne', target: 'children', sourceKey: 'code', foreignKey: 'parentCode' },
+        {
+          name: 'links',
+          type: 'belongsToMany',
+          target: 'children',
+          through: 'parentLinks',
+          sourceKey: 'code',
+          foreignKey: 'parentCode',
+          otherKey: 'childId',
+        },
+      ],
+    }).repository;
+    await db.sync();
+    await parents.create({ values: { code: null } });
+    await parents.create({ values: { code: 'null' } });
+    await parents.create({ values: { code: 'other' } });
+    const child = await children.create({ values: { parentCode: 'null' } });
+    await db.getRepository('parentLinks').create({ values: { parentCode: 'null', childId: child.id } });
+
+    const rows = await parents.find({ appends: ['children', 'child', 'links'], sort: ['id'] });
+    expect(
+      rows.map((p) => [p.code, p.children.map((c) => c.id), p.child?.id ?? null, p.links.map((c) => c.id)]),
+    ).toEqual([
+      [null, [], null, []],
+      ['null', [child.id], child.id, [child.id]],
+      ['other', [], null, []],
+    ]);
+  });
+
+  skipSqlite('matches BIGINT keys across string and number representations without rounding large IDs', async () => {
+    const children = db.collection({
+      name: 'children',
+      fields: [{ name: 'parentCode', type: 'bigInt' }],
+    }).repository;
+    const parents = db.collection({
+      name: 'parents',
+      fields: [
+        {
+          name: 'code',
+          type: 'bigInt',
+          unique: true,
+          get(this: Model) {
+            return String(this.getDataValue('code'));
+          },
+        },
+        { name: 'children', type: 'hasMany', target: 'children', sourceKey: 'code', foreignKey: 'parentCode' },
+      ],
+    }).repository;
+    await db.sync();
+    const codes = ['42', '9007199254740992', '9007199254740993'];
+    for (const code of codes) {
+      await parents.create({ values: { code } });
+      await children.create({ values: { parentCode: code } });
+    }
+    const rows = await parents.find({ appends: ['children'], sort: ['id'] });
+    expect(rows.map((p) => [p.code, p.children.map((c) => c.parentCode)])).toEqual([
+      ['42', [42]],
+      [codes[1], [codes[1]]],
+      [codes[2], [codes[2]]],
+    ]);
   });
 
   it('should sort has many default by primary key', async () => {
