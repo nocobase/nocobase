@@ -14,6 +14,8 @@ export type PermissionRisk = 'sensitive' | 'high';
 export interface PermissionScopeOption {
   readonly value: string;
   readonly label: string;
+  /** Listed but not selectable, such as a scope wider than what the person giving it holds. */
+  readonly disabled?: boolean | undefined;
 }
 
 export interface PermissionScopeSlot {
@@ -58,6 +60,13 @@ export interface PermissionAction {
   readonly risk?: PermissionRisk | undefined;
   /** Managed by the application: shown but not editable. */
   readonly managed?: boolean | undefined;
+  /**
+   * Why only a person may take this action, for an editor of what a credential such as an API key may do. Set with
+   * `managed`, which keeps it off: it shows greyed out, tagged as a person's only, with this reason.
+   */
+  readonly humanOnly?: string | undefined;
+  /** No longer in effect, such as a key's action its owner has lost: shown struck through in a read-only editor. */
+  readonly lapsed?: boolean | undefined;
   /** A short warning shown while the action is on, such as what a high-risk setting lets a person do. */
   readonly warning?: string | undefined;
 }
@@ -72,6 +81,8 @@ export interface PermissionObject {
   readonly actions: readonly PermissionAction[];
   /** A notice under the action list, such as a warning about granting access to others. */
   readonly notice?: ReactNode;
+  /** A line always shown under the actions, such as the ones the person giving a key does not hold. */
+  readonly footnote?: ReactNode;
   /** The titles of the pages its actions are used on; an empty list says it is used on none. Absent: not known. */
   readonly usedOn?: readonly string[] | undefined;
 }

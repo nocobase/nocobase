@@ -340,6 +340,9 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     restriction: '− 限制规则',
     restrictionDescription: '去掉任何角色都不能触及的记录，无论之前是否允许。',
   },
+  keyPermissions: {
+    missing: "你没有：{{actions}}",
+  },
   permissionEditor: {
     menusTab: '页面访问',
     objectsTab: '操作权限',
@@ -436,6 +439,8 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     pageClosed: '这个角色不能进入这个页面',
     tabChanges_one: '{{count}} 处未保存的修改',
     tabChanges_other: '{{count}} 处未保存的修改',
+    humanOnly: '仅限人',
+    lapsed: '已失效',
     quoted: '「{{text}}」',
     otherOperations: '其他操作',
   },

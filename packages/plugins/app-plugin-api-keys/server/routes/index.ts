@@ -35,6 +35,7 @@ import {
   GrantablePermissionsSchema,
   KeyScopeObjectSchema,
   KeyScopeOptionsSchema,
+  ObjectSourceParams,
   ScopeGroupParams,
   ScopeObjectsQuery,
 } from './schemas.js';
@@ -155,6 +156,40 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const { group } = context.req.valid('param');
         const { q, id } = context.req.valid('query');
         const data = await keys.scopeObjects(group, await identity(context), {
+          ...(q ? { search: q } : {}),
+          ...(id ? { ids: id } : {}),
+        });
+        return context.json({ data, meta: { total: data.length } });
+      },
+    );
+    // The records a key may be limited to for a business: bounded by what the caller sees, narrowed by `q` or `id`.
+    routes.get(
+      '/objects/:business',
+      describeRoute({
+        tags,
+        summary: 'List the records a key may be limited to',
+        operationId: 'apiKeysListObjects',
+        ...cliRoute({
+          command: 'api-key objects',
+          columns: ['id', 'title', 'description'],
+          examples: ['api-key objects rel.apps --q web'],
+        }),
+        description: `${signInOnly} The records of a business a key's permissions may be limited to (\`permissions.objects\`), bounded by what the caller can see and narrowed by \`q\` or repeated \`id\`; not paged.`,
+        responses: {
+          200: listResponse(KeyScopeObjectSchema, ApiKeysListMeta),
+          ...apiErrorResponses,
+          404: apiErrorResponse(
+            404,
+            'No record source is registered for the business (`UNKNOWN_OBJECT_SOURCE`).',
+          ),
+        },
+      }),
+      apiValidator('param', ObjectSourceParams),
+      apiValidator('query', ScopeObjectsQuery),
+      async (context) => {
+        const { business } = context.req.valid('param');
+        const { q, id } = context.req.valid('query');
+        const data = await keys.objects(business, await identity(context), {
           ...(q ? { search: q } : {}),
           ...(id ? { ids: id } : {}),
         });

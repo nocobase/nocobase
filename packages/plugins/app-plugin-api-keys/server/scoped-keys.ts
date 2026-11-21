@@ -610,6 +610,29 @@ export class ScopedApiKeys {
         });
       return actions.length > 0 ? [{ ...entry, actions }] : [];
     });
+    // Resources of a type without items, such as pages, which the client lists from its routes: the ones held.
+    const listed = new Set(grants.map((grant) => resourceKey(grant.resource)));
+    const authz = this.options.authorization?.();
+    for (const [key, actions] of ceiling.held) {
+      if (listed.has(key) || !authz) continue;
+      const [type, id] = JSON.parse(key) as [string, string];
+      const resource = { type, id };
+      const held = [...actions].flatMap((action): GrantableAction[] => {
+        const declared = authz.resourceTypes.action(resource, action);
+        return declared
+          ? [
+              {
+                action,
+                title: declared.title ?? null,
+                humanOnly: declared.humanOnly ?? null,
+                risk: declared.risk ?? null,
+              },
+            ]
+          : [];
+      });
+      if (held.length > 0)
+        grants.push({ resource, title: null, actions: held });
+    }
     return {
       unrestricted: ceiling.unrestricted,
       grants,
@@ -1037,6 +1060,25 @@ export class ScopedApiKeys {
       return actions.length > 0 ? [{ ...grant, actions }] : [];
     });
     return { permissions: { ...permissions, grants }, complete };
+  }
+
+  /**
+   * The records `identity` may limit a key to for `business` (an object source the authorization plugin registers,
+   * whose id is its grants' resource id), narrowed by `search` or looked up by `ids`.
+   */
+  async objects(
+    business: string,
+    identity: AuthorizationIdentity,
+    filter: { readonly search?: string; readonly ids?: readonly string[] } = {},
+  ): Promise<readonly KeyScopeObject[]> {
+    const source = this.objectSource(business);
+    if (!source)
+      throw new ApiKeyRequestError(
+        404,
+        'UNKNOWN_OBJECT_SOURCE',
+        `${business} cannot be limited to some records.`,
+      );
+    return source.list({ identity, ...filter });
   }
 
   /** What `identity` holds today, by its own grants: never a credential's scope. */

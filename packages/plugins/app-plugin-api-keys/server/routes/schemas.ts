@@ -108,6 +108,16 @@ export const ScopeGroupParams: z.ZodObject<{ group: z.ZodString }> = z.object({
   group: z.string().min(1).describe('The API key scope group.'),
 });
 
+export const ObjectSourceParams: z.ZodObject<{ business: z.ZodString }> =
+  z.object({
+    business: z
+      .string()
+      .min(1)
+      .describe(
+        'A business whose records a key may be limited to, such as `rel.apps`; its grants name it as their resource id.',
+      ),
+  });
+
 const MAX_PICKED_IDS = 100;
 
 /** The query of `GET /apiKeys/scopeObjects/:group`: a search, or the records to look up by id (`id` repeated). */

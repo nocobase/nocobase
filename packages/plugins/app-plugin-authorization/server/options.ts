@@ -348,3 +348,70 @@ function compositeDataScopes(
   }
   return result;
 }
+
+/**
+ * The workspace catalogue limited to what a caller holds today (`snapshot`), for an editor of what a credential of
+ * theirs, such as an API key, may do: only resources with an action they hold, with only those actions, and only the
+ * collections those resources read. Who may be assigned anything is not theirs to see, so subject types are left out.
+ */
+export function grantableAuthorizationOptions(
+  options: AuthorizationOptions,
+  snapshot: {
+    readonly unrestricted: boolean;
+    readonly permissions: readonly {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly actions: readonly string[];
+    }[];
+  },
+  /** Resources listed whole whatever is held, as `<type>:<id>`, such as those a key lost with its holder. */
+  include: readonly string[] = [],
+): AuthorizationOptions {
+  if (snapshot.unrestricted) return { ...options, subjectTypes: [] };
+  const included = new Set(include);
+  const held = new Map(
+    snapshot.permissions.map((permission) => [
+      JSON.stringify([permission.resource.type, permission.resource.id]),
+      new Set(permission.actions),
+    ]),
+  );
+  const read = new Set<string>();
+  const sections = options.sections.flatMap((section) => {
+    const subsections = section.subsections.flatMap((subsection) => {
+      if (subsection.recordType) return [subsection];
+      const resources = subsection.resources.flatMap((resource) => {
+        const actions = held.get(JSON.stringify([resource.type, resource.id]));
+        const whole = included.has(`${resource.type}:${resource.id}`);
+        const kept = resource.actions.filter(
+          (action) => whole || actions?.has(action.name),
+        );
+        if (!kept.length) return [];
+        const dataScopes = resource.dataScopes
+          ? Object.fromEntries(
+              Object.entries(resource.dataScopes).filter(([action]) =>
+                kept.some((entry) => entry.name === action),
+              ),
+            )
+          : undefined;
+        for (const scopes of Object.values(dataScopes ?? {}))
+          for (const scope of scopes) read.add(scope.collection);
+        return [
+          {
+            ...resource,
+            actions: kept,
+            ...(dataScopes ? { dataScopes } : {}),
+          },
+        ];
+      });
+      return resources.length ? [{ ...subsection, resources }] : [];
+    });
+    return subsections.length ? [{ ...section, subsections }] : [];
+  });
+  return {
+    ...options,
+    sections,
+    subjectTypes: [],
+    collections: options.collections.filter((collection) =>
+      read.has(collection.name),
+    ),
+  };
+}

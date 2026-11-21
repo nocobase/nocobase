@@ -358,6 +358,9 @@ const settings = {
     restrictionDescription:
       'Takes away records no role may touch, whatever was allowed before.',
   },
+  keyPermissions: {
+    missing: "You don't have: {{actions}}",
+  },
   permissionEditor: {
     menusTab: 'Page access',
     objectsTab: 'Operations',
@@ -456,6 +459,8 @@ const settings = {
     pageClosed: 'This role cannot open this page',
     tabChanges_one: '{{count}} unsaved change',
     tabChanges_other: '{{count}} unsaved changes',
+    humanOnly: 'People only',
+    lapsed: 'Lapsed',
     quoted: '“{{text}}”',
     otherOperations: 'Other operations',
   },

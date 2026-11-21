@@ -48,7 +48,10 @@ import {
   createSubjectRoutes,
 } from '../extension/options.js';
 import type { AuthorizationExtensionHost } from '../host.js';
-import { authorizationOptions } from '../options.js';
+import {
+  authorizationOptions,
+  grantableAuthorizationOptions,
+} from '../options.js';
 import {
   AssignmentParams,
   AssignPermissionSetBody,
@@ -59,6 +62,21 @@ import {
   PermissionSetSchema,
   UpdatePermissionSetBody,
 } from './schemas.js';
+
+/** `GET /permissionSets/grantableOptions`: resources to list whole, `include` repeated. */
+const GrantableOptionsQuery: z.ZodType<{ include?: string[] | undefined }> =
+  z.object({
+    include: z
+      .union([
+        z.string().min(1).max(300),
+        z.array(z.string().min(1).max(300)).max(100),
+      ])
+      .optional()
+      .transform((value) =>
+        value === undefined ? undefined : Array.isArray(value) ? value : [value],
+      )
+      .describe('A resource to list whole, as `<type>:<id>`; repeat it.'),
+  });
 
 const protectedDescription =
   'Answers `400 FAILED_PRECONDITION` with reason `PROTECTED_PERMISSION_SET` when the set’s protection forbids the change.';
@@ -105,6 +123,32 @@ export function createPermissionSetHandler(
       },
     }),
     async (context) => context.json({ data: await authorizationOptions(host) }),
+  );
+  // What the caller may give a credential of their own, such as an API key: every signed-in person reads it.
+  routes.get(
+    '/permissionSets/grantableOptions',
+    describeRoute({
+      tags,
+      summary: 'List what I may give a credential',
+      operationId: 'authorizationListGrantableOptions',
+      description:
+        'The workspace catalogue limited to what the caller holds today: only resources with an action the caller holds, with only those actions and the collections they read, and no subject types. `include` lists resources (`<type>:<id>`) to list whole anyway, such as those a key lost when its holder did. An editor of what the caller’s API key may do builds its tables from it. Any signed-in person may read it.',
+      responses: {
+        200: dataResponse(AuthorizationOptionsSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', GrantableOptionsQuery),
+    async (context) => {
+      const { include } = context.req.valid('query');
+      const [options, snapshot] = await Promise.all([
+        authorizationOptions(host),
+        context.env.authorization.snapshot(),
+      ]);
+      return context.json({
+        data: grantableAuthorizationOptions(options, snapshot, include ?? []),
+      });
+    },
   );
   routes.route(
     '/',
