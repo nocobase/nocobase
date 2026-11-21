@@ -33,6 +33,7 @@ import type {
   ModelConnectionRequest,
   ModelKind,
   ModelRef,
+  ModelProviderOption,
   ModelServiceView,
   ProviderModels,
   UpdateModelServiceRequest,
@@ -138,6 +139,11 @@ export class AgentsApi {
 
   public services(): Promise<ModelServiceView[]> {
     return this.list('services');
+  }
+
+  /** The providers a service can use: the built-in ones, then those other plugins registered. */
+  public modelProviders(): Promise<ModelProviderOption[]> {
+    return this.list('modelProviders');
   }
 
   public createService(

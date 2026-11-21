@@ -2,14 +2,14 @@ import {
   providerOf,
   type ModelCapabilities,
   type ModelKind,
-  type ModelProviderName,
+  type BuiltinModelProviderName,
   type ProviderCapabilitiesDefinition,
 } from '../../../shared/models.js';
 import type { ModelConnection } from '../providers.js';
 
 /** Admission is code-owned, never a user-editable service setting or a model-name heuristic. */
 const definitions: Partial<
-  Record<ModelProviderName, ProviderCapabilitiesDefinition>
+  Record<BuiltinModelProviderName, ProviderCapabilitiesDefinition>
 > = {
   alibaba: {
     defaults: { webSearch: true },
@@ -105,7 +105,9 @@ export function resolveModelCapabilities(
   model: string,
   kind: ModelKind = 'chat',
 ): ModelCapabilities {
-  const definition = definitions[connection.provider];
+  const definition = Object.hasOwn(definitions, connection.provider)
+    ? definitions[connection.provider as BuiltinModelProviderName]
+    : undefined;
   if (kind !== 'chat' || !definition || !officialSearchEndpoint(connection)) {
     return { webSearch: false };
   }

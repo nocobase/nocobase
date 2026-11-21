@@ -8,6 +8,12 @@ export {
 
 export { NativeFileInputs } from './online/files/service.js';
 export type {
+  ModelProviderClient,
+  ModelProviderConnection,
+  ModelProviderRegistration,
+  ModelProviderRegistry,
+} from './online/provider-registry.js';
+export type {
   FileInputsConfig,
   FileInputProfile,
   ModelInputProtocol,
