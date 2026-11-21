@@ -61,6 +61,7 @@ When creating a page or writing a page component, refer to [Pages, routes, and m
 - Register Client, Server, and CLI exports explicitly in the corresponding target App composition roots. Installation, registration, Skills synchronization, and runtime behavior are separate facts; legacy manifest metadata is not runtime discovery.
 - Plugin integration knowledge is authored in `<plugin>/skills/`; the target App's `.agents/skills/` is generated output. Editable UI is maintained in the UI Library; source installed into an App belongs to that App. This development Skill is maintained in `@nocobase/app-skills`, distinct from a plugin's own integration Skills.
 - Follow the target project’s dependency rules: shared runtimes and client value imports are peers, ordinary server runtime imports are dependencies, and development-only imports are devDependencies. A type reference retained in published declarations needs a consumer-resolvable contract.
+- In an App, when the plugin seems to need editing `node_modules`, patching an official `@nocobase/*` package, importing its internal paths or calling undocumented interfaces, stop and follow `.agents/skills/nocobase-app-development/references/official-package-issues.md`: use a supported application-level solution when one exists, and submit nothing to GitHub without the user's explicit confirmation.
 
 ## Implementation workflow
 
