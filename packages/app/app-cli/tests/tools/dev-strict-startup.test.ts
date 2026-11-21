@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { runInNewContext } from 'node:vm';
@@ -50,18 +51,20 @@ it.each([true, false])(
   },
 );
 
-it('preserves startup failure and delegates descendant cleanup to the supervisor', () => {
+it('preserves startup failure and delegates descendant cleanup to the supervisor', async () => {
   const processMock = { exitCode: 0, exit: vi.fn() };
   const close = vi.fn();
   const closeDependencyWatcher = vi.fn();
   const release = vi.fn();
-  runInNewContext(
+  await runInNewContext(
     source.slice(
       source.indexOf('const shutdown ='),
       source.indexOf("process.on('SIGINT'"),
-    ) + '\nshutdown(1);',
+    ) + '\nshutdown(1); shutdown(0); shutdownPromise;',
     {
       shuttingDown: false,
+      children: new Set(),
+      shutdownPromise: undefined,
       envRestartTimer: undefined,
       envWatcher: { close },
       dependencyRestartTimer: undefined,
@@ -77,4 +80,39 @@ it('preserves startup failure and delegates descendant cleanup to the supervisor
   // Releasing the instance lock is what lets the next run start.
   expect(release).toHaveBeenCalledOnce();
   expect(processMock.exit).toHaveBeenCalledWith(1);
+});
+
+it('waits for direct commands and the proxy before releasing the instance lock', async () => {
+  const child = Object.assign(new EventEmitter(), { kill: vi.fn() });
+  const proxy = Promise.withResolvers<void>();
+  const release = vi.fn();
+  const exit = vi.fn();
+  const shutdown = runInNewContext(
+    source.slice(
+      source.indexOf('const shutdown ='),
+      source.indexOf("process.on('SIGINT'"),
+    ) + '\nshutdown(0); shutdown(0); shutdownPromise;',
+    {
+      children: new Set([child]),
+      shuttingDown: false,
+      shutdownPromise: undefined,
+      envRestartTimer: undefined,
+      envWatcher: undefined,
+      dependencyRestartTimer: undefined,
+      dependencyWatchers: [],
+      instanceLock: { release },
+      connectionProxy: { close: () => proxy.promise },
+      process: { exitCode: 0, exit },
+      console,
+    },
+  );
+  expect(child.kill).toHaveBeenCalledExactlyOnceWith('SIGTERM');
+  expect(release).not.toHaveBeenCalled();
+  child.emit('close', 0);
+  await Promise.resolve();
+  expect(exit).not.toHaveBeenCalled();
+  proxy.resolve();
+  await shutdown;
+  expect(release).toHaveBeenCalledOnce();
+  expect(exit).toHaveBeenCalledExactlyOnceWith(0);
 });
