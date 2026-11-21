@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
@@ -44,9 +45,9 @@ const deDE: LocaleResource<typeof enUS> = {
       'Diese Anfrage kam von einer anderen Website und wurde abgelehnt. Laden Sie die Seite neu und versuchen Sie es erneut.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'de-DE'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'de-DE'),
 };
 
 export default deDE;

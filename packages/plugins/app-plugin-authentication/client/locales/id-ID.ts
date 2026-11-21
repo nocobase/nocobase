@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
@@ -40,9 +41,9 @@ const idID: LocaleResource<typeof enUS> = {
       'Permintaan ini datang dari situs lain dan ditolak. Muat ulang halaman dan coba lagi.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'id-ID'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'id-ID'),
 };
 
 export default idID;

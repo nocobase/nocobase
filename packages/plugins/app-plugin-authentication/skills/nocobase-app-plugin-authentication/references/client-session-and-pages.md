@@ -206,4 +206,3 @@ authentication({
 or pass `routeComponentOverrides` to the runtime with `AUTHENTICATION_SETTINGS_ROUTE_ID`, `AUTHENTICATION_SSO_GUIDE_ROUTE_ID` or `ACCOUNT_SECURITY_ROUTE_ID` from `@nocobase/app-plugin-authentication/client`. A replacement reads the same routes; it must not show any value the settings route does not return.
 
 Another plugin adds a row to the sign-in methods list on the server with `signInMethodsToken` (see the plugin's SKILL.md); the page needs no change.
-

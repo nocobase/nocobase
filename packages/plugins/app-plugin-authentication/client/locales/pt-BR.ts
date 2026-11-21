@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
@@ -41,9 +42,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Este pedido veio de outro site e foi recusado. Atualize a página e tente novamente.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'pt-BR'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'pt-BR'),
 };
 
 export default ptBR;

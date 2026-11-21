@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
@@ -39,9 +40,9 @@ const ruRU: LocaleResource<typeof enUS> = {
       'Запрос пришёл с другого сайта и был отклонён. Перезагрузите страницу и повторите попытку.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'ru-RU'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'ru-RU'),
 };
 
 export default ruRU;

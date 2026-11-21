@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
@@ -43,9 +44,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       'このリクエストは別のサイトから来たもので拒否されました。ページをリロードして、もう一度お試しください。',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'ja-JP'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'ja-JP'),
 };
 
 export default jaJP;

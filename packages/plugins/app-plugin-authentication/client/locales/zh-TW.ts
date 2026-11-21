@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
@@ -34,9 +35,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     INVALID_CSRF_ORIGIN: '此請求來自另一個站點，但被拒絕。重新載入頁面並重試。',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'zh-TW'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'zh-TW'),
 };
 
 export default zhTW;

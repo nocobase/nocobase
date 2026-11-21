@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
@@ -41,9 +42,9 @@ const esES: LocaleResource<typeof enUS> = {
       'Esta solicitud provino de otro sitio y fue rechazada. Vuelve a cargar la página e inténtalo de nuevo.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'es-ES'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'es-ES'),
 };
 
 export default esES;

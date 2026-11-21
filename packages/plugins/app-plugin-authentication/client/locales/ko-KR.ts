@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
@@ -39,9 +40,9 @@ const koKR: LocaleResource<typeof enUS> = {
       '다른 사이트에서 온 요청이라 거부되었습니다. 페이지를 새로 고친 후 다시 시도하세요.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'ko-KR'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'ko-KR'),
 };
 
 export default koKR;

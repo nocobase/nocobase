@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import { withPluralForms } from '../plural-forms.js';
 import enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
@@ -41,9 +42,9 @@ const viVN: LocaleResource<typeof enUS> = {
       'Yêu cầu này đến từ một trang web khác và đã bị từ chối. Tải lại trang và thử lại.',
   },
   // The settings pages are not translated into this language yet; English is shown.
-  settings: enUS.settings,
+  settings: withPluralForms(enUS.settings, 'vi-VN'),
   sso: enUS.sso,
-  account: enUS.account,
+  account: withPluralForms(enUS.account, 'vi-VN'),
 };
 
 export default viVN;
