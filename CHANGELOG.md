@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.50](https://github.com/nocobase/nocobase/compare/v2.2.49...v2.2.50) - 2026-11-21
+
+### 🚀 Improvements
+
+- **[AI employees]** Server logs now include nested stack frames to help diagnose range errors in AI employee conversations. ([#11640](https://github.com/nocobase/nocobase/pull/11640))
+
+### 🐛 Bug Fixes
+
+- **[Data source: REST API]**
+  - Fixed a TypeScript error that blocked release builds of the REST API data source plugin.
+
+  - Fixed an issue where REST API collection fields could fail to save after clearing and re-extracting them, or lose edits to their display names.
+
+- **[Data source: External SQL Server]** The external SQL Server data source now lists only tables and views in the dbo schema.
+
 ## [v2.2.49](https://github.com/nocobase/nocobase/compare/v2.2.48...v2.2.49) - 2026-11-19
 
 ### 🚀 Improvements
