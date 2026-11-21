@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { Loading } from '#components/loading';
-import { Button, buttonVariants } from '#components/ui/button';
+import { Loading } from '../components/loading.js';
+import { Button } from '../components/ui/button.js';
+import { buttonVariants } from '../components/ui/button-variants.js';
 import { canRetry, type Failure } from './read.js';
 
 export type Notice =
@@ -34,7 +35,7 @@ const notices: Record<Notice, readonly [LucideIcon, boolean]> = {
 
 /** One short status line with its icon; failures are announced as alerts, empty states as statuses. */
 export function StatusLine({ notice }: { notice: Notice }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   const [Icon, isError] = notices[notice];
   return (
     <div
@@ -56,10 +57,11 @@ export function LoadingLine({
   label?: string;
   identity?: unknown;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   return (
     <Loading
       identity={identity}
+      longWaitLabel={t('databaseExplorer.longWait')}
       label={label ?? t('databaseExplorer.loading')}
       className='min-h-24 px-4 py-4'
     />
@@ -74,7 +76,7 @@ export function Recovery({
   failure: Failure;
   onRetry: () => void;
 }): ReactElement | null {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   if (failure === 'unauthenticated')
     return (
       <Link to='/login' className={buttonVariants({ variant: 'outline' })}>

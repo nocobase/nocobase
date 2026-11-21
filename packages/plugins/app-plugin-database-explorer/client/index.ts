@@ -1,6 +1,6 @@
 // The plugin's public client surface. The default export is the registration factory an application lists in
 // its client/plugins.ts.
-export { default } from './plugin.js';
+export { default, type DatabaseExplorerOptions } from './plugin.js';
 export { DATABASE_EXPLORER_ACCESS } from './access.js';
 export {
   DatabaseExplorerClient,

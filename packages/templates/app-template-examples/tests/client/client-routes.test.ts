@@ -1,3 +1,4 @@
+import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
@@ -13,6 +14,11 @@ import {
   routeKey,
   selectedNavigationId,
 } from '../../client/routing/route-navigation.ts';
+
+const explorer = databaseExplorer({
+  parent: '@nocobase/app-template-examples:settingsSystem',
+  path: '/settings/database-explorer',
+});
 
 describe('app client routes', () => {
   it('keeps procurement and customer relations as separate protected route trees', () => {
@@ -380,6 +386,11 @@ describe('app client routes', () => {
 /** This application's own contribution, registered the way the client runtime registers it. */
 function resolveRoutes() {
   return resolveAppClientContributions([
+    {
+      packageName: explorer.packageName,
+      source: 'plugin',
+      routes: explorer.routes,
+    },
     {
       packageName: '@nocobase/app-template-examples',
       routes: applicationRoutes,

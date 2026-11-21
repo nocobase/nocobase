@@ -9,17 +9,17 @@ const databaseExplorerOverview = {
   },
   actions: {
     interface: {
-      title: 'Add or improve the browser interface',
+      title: 'Use the built-in database browser',
       description:
-        'Provide an entry for browsing connections, collections and fields, with physical structure details when needed.',
+        'Open the built-in page from System settings and customize its placement if needed.',
       prompt:
-        'Add or improve the Database Explorer interface in this application. Read the installed nocobase-app-plugin-database-explorer Skill and inspect the existing routes and page before creating anything. Reuse the existing page if present. Provide navigation from System settings → System, a connection list, paginated collection browsing, field details and resolution warnings, and on-demand physical columns, indexes and constraints. Use DatabaseExplorerClient and keep the page route and APIs under the same DATABASE_EXPLORER_ACCESS permission. Handle loading, empty results, missing resources, unavailable connections and denied access. Do not add connection editing, schema changes or business-record editing. Do not expose credentials or sensitive connection details. Do not grant access to additional users without confirmation.',
+        'Inspect the registered Database Explorer plugin and its System settings entry. Use the built-in page to browse connections, collections, fields and physical schema. Keep any existing customized page and its access grant when adjusting the route.',
       inspect:
-        'Check the installed plugin, authentication and authorization prerequisites, registration and existing application-owned explorer route. Reuse the existing interface when available.',
+        'Check Authentication, Authorization, Database Explorer and any existing custom route.',
       configure:
-        'Build on DatabaseExplorerClient with the application API client. Declare a protected application route using DATABASE_EXPLORER_ACCESS and add its navigation under System settings → System.',
+        'Mount the plugin page under System settings → System. An application that owns its own page can select routes: false.',
       complete:
-        'Implement connection selection, paginated collections and field details; fetch physical structure on demand. Include loading, empty, unavailable and denied states without adding write operations.',
+        'Verify that an authorized user can browse a table and that a user without access cannot open the page or read its API.',
     },
     access: {
       title: 'Adjust who can access the browser',

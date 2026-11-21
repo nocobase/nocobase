@@ -2,7 +2,7 @@ import type {
   CollectionDetail,
   CollectionListResult,
   DatabaseExplorerClient,
-} from '@nocobase/app-plugin-database-explorer/client';
+} from '../database-explorer-client.js';
 
 type CollectionEntry = CollectionListResult['items'][number];
 

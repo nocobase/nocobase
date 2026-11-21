@@ -26,7 +26,11 @@ Success is `{ data }`; the connection list is `{ data, meta: { total } }` and th
 
 The running application documents these routes under the `DatabaseExplorer` tag at `/api/swagger/docs` (JSON at `/api/swagger`, signed in); their operationIds are `databaseExplorerListConnections`, `databaseExplorerListCollections`, `databaseExplorerGetCollection` and `databaseExplorerGetPhysicalSchema`.
 
-The client entry exports `DatabaseExplorerClient`, a typed client for these endpoints, and `DATABASE_EXPLORER_ACCESS`, the grant they check. The plugin contributes no pages; an application that wants one builds it on the client and declares it among its own routes with that grant. The server entry also exports the read functions (`listConnections`, `listCollections`, `readCollection`, `readPhysicalCollection`), the `DATABASE_EXPLORER_PAGE` constant, and the response types.
+The client entry exports `DatabaseExplorerClient`, a typed client for these endpoints, and `DATABASE_EXPLORER_ACCESS`, the grant they check. The client registration includes a page at `/database-explorer`. Default and Examples mount it under **System settings → System** at `/settings/database-explorer`. To mount it in another route group, pass the qualified `parent` route ID and a `path` relative to that parent.
+
+When upgrading an application with a template-owned explorer, keep its custom page with `databaseExplorer({ routes: false })`. To adopt the built-in page, remove the old route contribution and mount the plugin at its previous path. The page grant and deep-link query parameters carry over.
+
+The server entry also exports the read functions (`listConnections`, `listCollections`, `readCollection`, `readPhysicalCollection`), the `DATABASE_EXPLORER_PAGE` constant, and the response types.
 
 ## Prerequisites
 
@@ -58,7 +62,7 @@ An application page built on the endpoints declares its route with the same gran
 
 ## Ownership
 
-The plugin owns the access resource, its endpoints and their response shapes, and the rule about what a connection may reveal. Applications own whether the plugin is registered, any page built on it, and who is granted access.
+The plugin owns the access resource, its endpoints and their response shapes, and the rule about what a connection may reveal. The plugin owns its built-in page. Applications choose where to mount it, whether to provide a custom page, and who receives access.
 
 Connection responses never carry a password, user name, host, port, socket path, SQLite filename, TLS material, driver options, or pool settings. That list is enforced as an allow-list in `server/connection-summary.ts`, so a field a new dialect adds stays inside by default. Do not turn it into a deny-list, and do not add a locator to it because a screen looks sparse. The same restraint applies to logs: a driver error is recorded by classification only, never by message or cause.
 

@@ -2,7 +2,7 @@ import type {
   CollectionDetail,
   CollectionListResult,
   DatabaseExplorerClient,
-} from '@nocobase/app-plugin-database-explorer/client';
+} from '../database-explorer-client.js';
 
 type CollectionEntry = CollectionListResult['items'][number];
 import { useTranslation } from '@nocobase/i18n/client';
@@ -17,27 +17,27 @@ import {
 import { cn } from 'cn';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { Badge } from '#components/ui/badge';
-import { buttonVariants } from '#components/ui/button';
+import { Badge } from '../components/ui/badge.js';
+import { buttonVariants } from '../components/ui/button-variants.js';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '#components/ui/collapsible';
+} from '../components/ui/collapsible.js';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from '#components/ui/input-group';
-import { Skeleton } from '#components/ui/skeleton';
+} from '../components/ui/input-group.js';
+import { Skeleton } from '../components/ui/skeleton.js';
 import {
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '#components/ui/table';
+} from '../components/ui/table.js';
 import { Recovery, StatusLine } from './feedback.js';
 import {
   fieldMatches,
@@ -78,7 +78,7 @@ export function FieldsPanel({
   backLink,
   tableLink,
 }: FieldsPanelProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   const wide = useMediaQuery(WIDE_QUERY);
   // The panel is keyed by connection and table, so this read belongs to one table for its whole life.
   const detail = useRead<CollectionDetail>(`${connection}\n${table}`, () =>
@@ -304,7 +304,7 @@ interface FieldCellProps {
 }
 
 function FieldName({ row }: FieldCellProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   return (
     <>
       <div className='flex flex-wrap items-center gap-x-2 gap-y-1'>
@@ -345,7 +345,7 @@ function FieldType({ row }: FieldCellProps): ReactElement {
 
 /** Yes or No only when the definition says so; otherwise that it was not reported, never a guess. */
 function FieldNullable({ row }: FieldCellProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   if (row.relation)
     return (
       <span
@@ -369,7 +369,7 @@ function FieldReferences({
   knownTables,
   tableLink,
 }: FieldCellProps): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   if (!row.references.length)
     return (
       <span className='text-muted-foreground'>
@@ -414,7 +414,7 @@ function FieldReferences({
 
 /** Rows shaped like the fields that are loading, so switching tables keeps the panel's size instead of collapsing it. */
 function FieldsPlaceholder(): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   return (
     <div
       role='status'
@@ -438,7 +438,7 @@ function FieldTable({
   table: string;
   rows: readonly FieldRow[];
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   // A plain table rather than the Table primitive, whose own horizontal scroll
   // container would keep the column headings from sticking to the scrolling panel.
   return (
@@ -487,7 +487,7 @@ function FieldTable({
 
 /** A narrow-screen field's nullability as one short tag; relation fields have none to show. */
 function NullableTag({ row }: { row: FieldRow }): ReactElement | null {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   if (row.relation) return null;
   const state =
     row.nullable === undefined ? 'unknown' : row.nullable ? 'yes' : 'no';
@@ -510,7 +510,7 @@ function FieldList({
   table: string;
   rows: readonly FieldRow[];
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   return (
     <ul
       aria-label={t('databaseExplorer.fieldsOf', { table })}

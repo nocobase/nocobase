@@ -1,6 +1,6 @@
 # @nocobase/app-plugin-database-explorer
 
-Read-only endpoints for browsing an application's database connections, the collections on each one, and their fields, with a typed client (`DatabaseExplorerClient`) for an application that builds its own page on them. The plugin contributes no pages, owns no tables, contributes no migrations, and exposes no endpoint that writes anything.
+Browse database connections, tables, fields and physical schemas in the plugin’s read-only page. Applications can also use the typed `DatabaseExplorerClient` to build custom views.
 
 ## Register the plugin
 
@@ -12,7 +12,11 @@ databaseExplorer;
 databaseExplorer();
 ```
 
-Register Authentication and Authorization before it on both runtimes; the routes resolve both.
+Register Authentication and Authorization before it on both runtimes.
+
+The client registration includes a page at `/database-explorer`. Default and Examples mount it under **System settings → System** at `/settings/database-explorer`. To mount it in another route group, pass the qualified `parent` route ID and a `path` relative to that parent.
+
+When upgrading an application with a template-owned explorer, keep its custom page with `databaseExplorer({ routes: false })`. To adopt the built-in page, remove the old route contribution and mount the plugin at its previous path. The page grant and deep-link query parameters carry over.
 
 ## Access
 

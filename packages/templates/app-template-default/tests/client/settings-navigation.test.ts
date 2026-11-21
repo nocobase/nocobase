@@ -1,3 +1,4 @@
+import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import {
   defineAppRoutes,
   resolveAppClientContributions,
@@ -15,6 +16,10 @@ import {
   selectedNavigationId,
   routeKey,
 } from '../../client/routing/route-navigation.js';
+
+const explorer = databaseExplorer({
+  parent: '@nocobase/app-template-default:settingsSystem',
+});
 
 const componentLoader = async () => ({ default: () => null });
 const app = '@nocobase/app-template-default';
@@ -237,6 +242,11 @@ describe('System settings navigation', () => {
           notificationTemplates: { invitationConfigured: true },
         }),
       },
+      {
+        packageName: explorer.packageName,
+        source: 'plugin',
+        routes: explorer.routes,
+      },
     ]).routes;
     expect(systemModules(routes)).toContainEqual([
       'notificationManagement',
@@ -256,6 +266,11 @@ it('places database browsing in System and hides its card when access is denied'
       packageName: app,
       source: 'application',
       routes: createApplicationRoutes({}),
+    },
+    {
+      packageName: explorer.packageName,
+      source: 'plugin',
+      routes: explorer.routes,
     },
   ]).routes;
   const page = find(routes, 'databaseExplorer');

@@ -354,7 +354,7 @@ const enUS: GuideContent = {
       reference: [
         'Register Authentication, Authorization and this plugin on Client and Server.',
         'Grant page:database-explorer/access to the intended administrators.',
-        'Build the application view with DatabaseExplorerClient; this package supplies no standalone page.',
+        'Open the built-in Database explorer page under System settings in Default and Examples.',
       ],
     },
     'app-plugin-file': {

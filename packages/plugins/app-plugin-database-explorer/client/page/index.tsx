@@ -2,14 +2,14 @@ import { useApiClient, usePageBreadcrumb } from '@nocobase/app-client';
 import {
   DatabaseExplorerClient,
   type ConnectionListResult,
-} from '@nocobase/app-plugin-database-explorer/client';
+} from '../database-explorer-client.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { TableProperties } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
+import { PageContainer } from '../components/page-container.js';
+import { PageHeader } from '../components/page-header.js';
 import { LoadingLine, Recovery, StatusLine } from './feedback.js';
 import { FieldsPanel } from './fields.js';
 import { PARAM, readTables, type TableListing } from './model.js';
@@ -26,7 +26,7 @@ function isDesktop(): boolean {
 }
 
 export default function DatabaseExplorerPage(): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   const api = useApiClient();
   const client = useMemo(() => new DatabaseExplorerClient(api), [api]);
   const connections = useRead('connections', () => client.connections());
@@ -80,7 +80,7 @@ function Explorer({
   client: DatabaseExplorerClient;
   connections: ConnectionListResult;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/app-plugin-database-explorer');
   const [params, setParams] = useSearchParams();
   const connection =
     params.get(PARAM.connection) ??
@@ -118,10 +118,9 @@ function Explorer({
   usePageBreadcrumb(
     table && showsFields
       ? [
-          {
-            label: t('settings.title', { defaultValue: 'System settings' }),
-            to: pathname.replace(/\/[^/]+\/?$/u, '') || '/',
-          },
+          ...(pathname.startsWith('/settings/')
+            ? [{ label: t('settings.title'), to: '/settings' }]
+            : []),
           {
             label: t('databaseExplorer.title'),
             to: {

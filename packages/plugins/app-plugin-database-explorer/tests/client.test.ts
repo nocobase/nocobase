@@ -6,8 +6,21 @@ import plugin from '../client/plugin.js';
 import { DATABASE_EXPLORER_PAGE } from '../server/routes/index.js';
 
 describe('@nocobase/app-plugin-database-explorer Client', () => {
-  it('contributes no pages', () => {
-    expect(plugin().routes).toEqual([]);
+  it('contributes the protected database browser by default', () => {
+    expect(plugin().routes.flatMap((group) => group.routes)).toMatchObject([
+      {
+        name: 'databaseExplorer',
+        path: '/database-explorer',
+        auth: 'required',
+        authz: DATABASE_EXPLORER_ACCESS,
+      },
+    ]);
+  });
+
+  it('lets applications keep a custom page', () => {
+    expect(
+      plugin({ routes: false }).routes.flatMap((group) => group.routes),
+    ).toEqual([]);
   });
 
   it('names the resource the server checks', () => {

@@ -1,3 +1,4 @@
+import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
@@ -12,9 +13,19 @@ import applicationRoutes from '../../client/routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
 
+const explorer = databaseExplorer({
+  parent: '@nocobase/app-template-examples:settingsSystem',
+  path: '/settings/database-explorer',
+});
+
 const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 const { routes } = resolveAppClientContributions([
+  {
+    packageName: explorer.packageName,
+    source: 'plugin',
+    routes: explorer.routes,
+  },
   {
     packageName: packageMetadata.name,
     source: 'application',
