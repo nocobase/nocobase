@@ -7,13 +7,74 @@ import {
   formatKeyHint,
   isExpired,
 } from '../client/expiry.js';
+import { daysLeft, idleDays, permissionCounts } from '../client/lib/format.js';
+import { API_KEY_ROUTES } from '../client/routes.js';
 
 describe('@nocobase/app-plugin-api-keys Client', () => {
-  it('contributes no pages', () => {
+  it('registers the personal API keys pages, which an application may leave out', () => {
     const registration = apiKeys();
-
     expect(registration.serviceProviders).toEqual([]);
-    expect(registration.routes).toEqual([]);
+    const [contribution] = registration.routes as readonly {
+      parent: string;
+      routes: readonly {
+        name: string;
+        path: string;
+        children?: readonly {
+          name: string;
+          path: string;
+          authz?: unknown;
+        }[];
+      }[];
+    }[];
+    expect(contribution?.parent).toBe('personalSettings');
+    const [list] = contribution?.routes ?? [];
+    expect(list).toMatchObject({ name: 'apiKeysPersonal', path: '/api-keys' });
+    expect(list?.children).toEqual([
+      expect.objectContaining({
+        name: 'apiKeysPersonalCreate',
+        path: 'create',
+        // Only a person whose role lets them create keys opens New key, as the server requires.
+        authz: {
+          resource: { type: 'settings', id: 'personalApiKeys' },
+          action: 'create',
+        },
+      }),
+      expect.objectContaining({
+        name: 'apiKeysPersonalDetail',
+        path: ':keyId',
+      }),
+    ]);
+    expect(API_KEY_ROUTES.personalCreate).toBe(
+      '@nocobase/app-plugin-api-keys:apiKeysPersonalCreate',
+    );
+    expect(apiKeys({ routes: false }).routes).toEqual([]);
+  });
+
+  it('counts days left, idle days and permissions for the list', () => {
+    const now = new Date('2026-11-21T00:00:00Z');
+    expect(daysLeft(null, now)).toBeNull();
+    expect(daysLeft('2026-11-22T12:00:00Z', now)).toBe(2);
+    expect(daysLeft('2026-11-20T00:00:00Z', now)).toBeLessThanOrEqual(0);
+    expect(
+      idleDays(
+        {
+          createdAt: '2026-05-01T00:00:00Z',
+          lastUsedAt: null,
+        } as Parameters<typeof idleDays>[0],
+        now,
+      ),
+    ).toBe(204);
+    expect(
+      permissionCounts({
+        grants: [
+          {
+            resource: { type: 'rel', id: 'rel.apps' },
+            actions: [{ action: 'view' }, { action: 'deploy' }],
+          },
+        ],
+        objects: { 'rel.apps': ['a', 'b'] },
+      }),
+    ).toEqual({ actions: 2, resources: 1, records: 2 });
   });
 
   it('offers only lifetimes Better Auth accepts', () => {

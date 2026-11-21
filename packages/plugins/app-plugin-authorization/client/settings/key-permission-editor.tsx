@@ -7,7 +7,13 @@
  */
 import { useClientApplication } from '@nocobase/app-client';
 import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
-import { useMemo, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import {
   PermissionEditor,
@@ -70,6 +76,16 @@ export interface KeyPermissionEditorProps {
     readonly type: string;
     readonly id: string;
   }) => ReactNode;
+  /**
+   * Told once the table is built, and again when it changes, which of the actions it offers are high risk: a host's
+   * quick settings leave those out, so turning one on always goes through the table's warning.
+   */
+  readonly onRisky?: (
+    actions: readonly {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly action: string;
+    }[],
+  ) => void;
   readonly className?: string;
 }
 
@@ -211,6 +227,7 @@ function KeyPermissionTable({
   lapsed,
   header,
   objectExtra,
+  onRisky,
   className,
 }: KeyPermissionEditorProps): ReactElement {
   const { t } = useTranslation();
@@ -310,6 +327,31 @@ function KeyPermissionTable({
     [limited, objectExtra, workspace],
   );
 
+  const risky = useMemo(() => {
+    if (!limited || !workspace) return [];
+    return [
+      ...limited.objects,
+      ...limited.settings.flatMap((page) => page.objects),
+    ]
+      .flatMap((object) => object.actions)
+      .filter((action) => action.risk === 'high' && !action.humanOnly)
+      .flatMap((action) => {
+        const binding = workspace.bindings.get(action.id);
+        return binding
+          ? [{ resource: binding.resource, action: binding.action }]
+          : [];
+      });
+  }, [limited, workspace]);
+  const riskyKey = JSON.stringify(risky);
+  const reportRef = useRef(onRisky);
+  useEffect(() => {
+    reportRef.current = onRisky;
+  });
+  // Told again only when what is risky changes, not on every new callback.
+  useEffect(() => {
+    if (workspace) reportRef.current?.(JSON.parse(riskyKey) as typeof risky);
+  }, [riskyKey, workspace]);
+
   if (options.error) return <SettingsError error={options.error} />;
   if (!workspace || !limited || !draft || !objects) return <SettingsLoading />;
 
@@ -327,9 +369,21 @@ function KeyPermissionTable({
       onChange={change}
       readOnly={readOnly}
       builtInTabs={['objects', 'settings']}
-      defaultTab='objects'
+      // An application without business objects opens on what it has.
+      defaultTab={
+        !objects.length && limited.settings.length ? 'settings' : 'objects'
+      }
       header={header}
-      labels={labels}
+      labels={{
+        ...labels,
+        settingsVisible: (pages) =>
+          t('settings.keyPermissions.settingsVisible', {
+            pages: new Intl.ListFormat(undefined, {
+              type: 'conjunction',
+            }).format(pages),
+          }),
+        settingsNoneVisible: t('settings.keyPermissions.settingsNoneVisible'),
+      }}
       {...(className ? { className } : {})}
     />
   );

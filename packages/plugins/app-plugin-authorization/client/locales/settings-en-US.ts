@@ -360,6 +360,8 @@ const settings = {
   },
   keyPermissions: {
     missing: "You don't have: {{actions}}",
+    settingsVisible: 'The key opens in System settings: {{pages}}.',
+    settingsNoneVisible: 'The key opens no System settings pages.',
   },
   permissionEditor: {
     menusTab: 'Page access',

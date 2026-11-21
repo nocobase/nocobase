@@ -342,6 +342,8 @@ const settings: LocaleResource<typeof settingsEnUS> = {
   },
   keyPermissions: {
     missing: '你没有：{{actions}}',
+    settingsVisible: '这把密钥能进入的系统设置页面：{{pages}}。',
+    settingsNoneVisible: '这把密钥不能进入任何系统设置页面。',
   },
   permissionEditor: {
     menusTab: '页面访问',

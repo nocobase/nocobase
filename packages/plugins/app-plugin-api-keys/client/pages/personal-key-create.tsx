@@ -46,11 +46,23 @@ const NEVER = 'never' as const;
 
 type Mode = 'custom' | 'sameAsMe';
 
-/** Everything the person may give a key, without high-risk actions, which are turned on one by one after a warning. */
-function everything(grantable: GrantablePermissions): KeyPermissionGrant[] {
+/**
+ * Everything the person may give a key, without high-risk actions — those the server marks and those the table marks
+ * (`risky`, as `<type>:<id>/<action>`) — which are turned on one by one after a warning.
+ */
+function everything(
+  grantable: GrantablePermissions,
+  risky: ReadonlySet<string> = new Set(),
+): KeyPermissionGrant[] {
   return grantable.grants.flatMap((grant) => {
+    const key = `${grant.resource.type}:${grant.resource.id}`;
     const actions = grant.actions
-      .filter((action) => action.humanOnly === null && action.risk !== 'high')
+      .filter(
+        (action) =>
+          action.humanOnly === null &&
+          action.risk !== 'high' &&
+          !risky.has(`${key}/${action.action}`),
+      )
       .map((action) => ({ action: action.action }));
     return actions.length ? [{ resource: grant.resource, actions }] : [];
   });
@@ -176,6 +188,9 @@ function CreateForm({
     Readonly<Record<string, readonly string[]>>
   >({});
   const [template, setTemplate] = useState<string>('');
+  // High-risk actions as the table marks them; until the person changes anything, the default leaves them out too.
+  const [risky, setRisky] = useState<ReadonlySet<string>>(() => new Set());
+  const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
 
@@ -202,6 +217,7 @@ function CreateForm({
     const found = grantable.templates.find((entry) => entry.id === id);
     if (!found) return;
     setTemplate(id);
+    setTouched(true);
     setGrants(found.permissions.grants);
     setObjects(found.permissions.objects ?? {});
     if (found.expiresInDays !== null)
@@ -296,7 +312,8 @@ function CreateForm({
         variant='outline'
         onClick={() => {
           setTemplate('');
-          setGrants(everything(grantable));
+          setTouched(true);
+          setGrants(everything(grantable, risky));
           setObjects({});
         }}
       >
@@ -318,6 +335,7 @@ function CreateForm({
         variant='outline'
         onClick={() => {
           setTemplate('');
+          setTouched(true);
           setGrants([]);
           setObjects({});
         }}
@@ -423,7 +441,18 @@ function CreateForm({
             value={grants}
             onChange={(next) => {
               setTemplate('');
+              setTouched(true);
               setGrants(next);
+            }}
+            onRisky={(actions) => {
+              const next = new Set(
+                actions.map(
+                  (entry) =>
+                    `${entry.resource.type}:${entry.resource.id}/${entry.action}`,
+                ),
+              );
+              setRisky(next);
+              if (!touched) setGrants(everything(grantable, next));
             }}
             ceiling={grantable}
             header={quick}
