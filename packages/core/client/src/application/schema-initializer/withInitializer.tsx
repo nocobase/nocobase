@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { ISchema, observer } from '@formily/react';
 import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
@@ -27,6 +28,7 @@ const useWrapDefault = (wrap = defaultWrap) => wrap;
 export function withInitializer<T>(C: ComponentType<T>) {
   const WithInitializer = observer(
     (props: SchemaInitializerOptions<T>) => {
+      const placement = useDirectionalPlacement('bottomLeft');
       const { designable, insertAdjacent } = useDesignable();
       const { isInSubTable } = useFlag() || {};
       const {
@@ -120,7 +122,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
               ) : (
                 <Popover
                   zIndex={9999}
-                  placement={'bottomLeft'}
+                  placement={placement}
                   {...popoverProps}
                   arrow={false}
                   overlayClassName={overlayClassName}
