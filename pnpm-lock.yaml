@@ -4688,6 +4688,9 @@ importers:
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/authorization':
+        specifier: workspace:^
+        version: link:../../libs/authorization
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db

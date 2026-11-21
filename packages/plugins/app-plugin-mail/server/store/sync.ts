@@ -5,11 +5,17 @@ import {
 import { mailFailedPrecondition } from '../services/errors.js';
 import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
+import {
+  accountIdsOfMember,
+  applyManagedLogFilter,
+  FINISHED_SYNC_RUN_STATUSES,
+} from './log-filter.js';
 import { type DatabaseManager, type QueryAdapter } from '@nocobase/db';
 import { randomUUID, randomBytes } from 'node:crypto';
 import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
   type MailFolderChoices,
+  type MailManagedLogFilter,
   type MailOffsetPage,
   type MailProviderError,
   type MailSyncCursor,
@@ -112,6 +118,19 @@ export class MailSyncStore {
       .where('accountId', '=', accountId)
       .executeTakeFirst<Pick<SyncStateRow, 'lastSyncedAt'>>();
     return row?.lastSyncedAt;
+  }
+
+  public async listLastSyncedAt(): Promise<ReadonlyMap<string, string>> {
+    const rows = await this.database
+      .query()
+      .selectFrom<SyncStateRow>('mailSyncStates')
+      .select(['accountId', 'lastSyncedAt'])
+      .execute<Pick<SyncStateRow, 'accountId' | 'lastSyncedAt'>>();
+    return new Map(
+      rows.flatMap((row) =>
+        row.lastSyncedAt ? [[row.accountId, row.lastSyncedAt] as const] : [],
+      ),
+    );
   }
 
   public async clearSyncCursor(accountId: string): Promise<void> {
@@ -337,28 +356,67 @@ export class MailSyncStore {
   public async listAllSyncRuns(
     offset: number,
     limit: number,
+    filter: MailManagedLogFilter = {},
   ): Promise<MailOffsetPage<MailSyncRun>> {
     validateLogPagination(offset, limit);
+    const memberAccountIds = await accountIdsOfMember(this.accounts, filter);
+    if (memberAccountIds?.length === 0) return { items: [], total: 0 };
     const [rows, count] = await Promise.all([
-      this.database
-        .query()
-        .selectFrom<SyncRunRow>('mailSyncRuns')
-        .selectAll()
+      applyManagedLogFilter(
+        this.database
+          .query()
+          .selectFrom<SyncRunRow>('mailSyncRuns')
+          .selectAll(),
+        filter,
+        memberAccountIds,
+      )
         .orderBy('createdAt', 'desc')
         .orderBy('id', 'desc')
         .offset(offset)
         .limit(limit)
         .execute<SyncRunRow>(),
-      this.database
-        .query()
-        .selectFrom<SyncRunRow>('mailSyncRuns')
-        .select(({ fn }) => [fn.countAll().as('count')])
-        .executeTakeFirst<{ readonly count: number | string }>(),
+      applyManagedLogFilter(
+        this.database
+          .query()
+          .selectFrom<SyncRunRow>('mailSyncRuns')
+          .select(({ fn }) => [fn.countAll().as('count')]),
+        filter,
+        memberAccountIds,
+      ).executeTakeFirst<{ readonly count: number | string }>(),
     ]);
     return {
       items: rows.map(fromSyncRunRow),
       total: Number(count?.count ?? 0),
     };
+  }
+
+  public async deleteFinishedSyncRunsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    const ids = await this.database
+      .query()
+      .selectFrom<SyncRunRow>('mailSyncRuns')
+      .select('id')
+      .where('createdAt', '<', before)
+      .where('status', 'in', [...FINISHED_SYNC_RUN_STATUSES])
+      .orderBy('createdAt', 'asc')
+      .orderBy('id', 'asc')
+      .limit(limit)
+      .pluck<string>('id');
+    if (ids.length === 0) return 0;
+    return this.database.transaction(async ({ query }) => {
+      await query
+        .deleteFrom('mailSyncTombstones')
+        .where('runId', 'in', ids)
+        .execute();
+      const result = await query
+        .deleteFrom<SyncRunRow>('mailSyncRuns')
+        .where('id', 'in', ids)
+        .where('status', 'in', [...FINISHED_SYNC_RUN_STATUSES])
+        .execute();
+      return result.deletedCount ?? 0;
+    });
   }
 
   /** Recreate lost queue deliveries from durable checkpoints, fenced by revision and lease. */

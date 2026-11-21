@@ -5,10 +5,16 @@ import type { NormalizedMailMessage } from '../contracts/provider.js';
 import type { MessageRow } from './rows.js';
 import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
+import {
+  accountIdsOfMember,
+  applyManagedLogFilter,
+  FINISHED_SUBMISSION_STATUSES,
+} from './log-filter.js';
 import { type DatabaseManager } from '@nocobase/db';
 import { randomUUID } from 'node:crypto';
 import {
   type MailComposeInput,
+  type MailManagedLogFilter,
   type MailOffsetPage,
   type MailProviderError,
   type MailSubmission,
@@ -142,28 +148,62 @@ export class MailSubmissionsStore {
   public async listAllSubmissions(
     offset: number,
     limit: number,
+    filter: MailManagedLogFilter = {},
   ): Promise<MailOffsetPage<MailStoredSubmission>> {
     validateLogPagination(offset, limit);
+    const memberAccountIds = await accountIdsOfMember(this.accounts, filter);
+    if (memberAccountIds?.length === 0) return { items: [], total: 0 };
     const [rows, count] = await Promise.all([
-      this.database
-        .query()
-        .selectFrom<SubmissionRow>('mailSubmissions')
-        .selectAll()
+      applyManagedLogFilter(
+        this.database
+          .query()
+          .selectFrom<SubmissionRow>('mailSubmissions')
+          .selectAll(),
+        filter,
+        memberAccountIds,
+      )
         .orderBy('createdAt', 'desc')
         .orderBy('id', 'desc')
         .offset(offset)
         .limit(limit)
         .execute<SubmissionRow>(),
-      this.database
-        .query()
-        .selectFrom<SubmissionRow>('mailSubmissions')
-        .select(({ fn }) => [fn.countAll().as('count')])
-        .executeTakeFirst<{ readonly count: number | string }>(),
+      applyManagedLogFilter(
+        this.database
+          .query()
+          .selectFrom<SubmissionRow>('mailSubmissions')
+          .select(({ fn }) => [fn.countAll().as('count')]),
+        filter,
+        memberAccountIds,
+      ).executeTakeFirst<{ readonly count: number | string }>(),
     ]);
     return {
       items: rows.map(fromSubmissionRow),
       total: Number(count?.count ?? 0),
     };
+  }
+
+  public async deleteFinishedSubmissionsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    const ids = await this.database
+      .query()
+      .selectFrom<SubmissionRow>('mailSubmissions')
+      .select('id')
+      .where('createdAt', '<', before)
+      .where('status', 'in', [...FINISHED_SUBMISSION_STATUSES])
+      .orderBy('createdAt', 'asc')
+      .orderBy('id', 'asc')
+      .limit(limit)
+      .pluck<string>('id');
+    if (ids.length === 0) return 0;
+    const result = await this.database
+      .query()
+      .deleteFrom<SubmissionRow>('mailSubmissions')
+      .where('id', 'in', ids)
+      .where('status', 'in', [...FINISHED_SUBMISSION_STATUSES])
+      .execute();
+    return result.deletedCount ?? 0;
   }
 
   public async createSubmission(

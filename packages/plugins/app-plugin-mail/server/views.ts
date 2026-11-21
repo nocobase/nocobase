@@ -2,6 +2,7 @@ import { toPublicError } from './services/errors.js';
 import {
   type MailAccount,
   type MailAccountView,
+  type MailManagedSubmissionView,
   type MailSubmission,
   type MailSubmissionLogView,
   type MailSubmissionView,
@@ -60,6 +61,44 @@ export function toSubmissionLogView(
     canRetry:
       submission.status === 'failed' && submission.hasComposeInput === true,
     canCancel:
+      ['pending', 'failed'].includes(submission.status) &&
+      submission.hasComposeInput === true,
+    createdAt: submission.createdAt,
+    updatedAt: submission.updatedAt,
+  };
+}
+
+/**
+ * A submission as the Mail settings page shows it, built field by field so nothing of the message itself (subject,
+ * body, addresses, attachments) can reach it. `canManage` is whether the caller may retry or cancel it at all; the
+ * status decides whether it can be now.
+ */
+export function toManagedSubmissionView(
+  submission: import('./contracts/persistence.js').MailStoredSubmission,
+  canManage: boolean,
+): MailManagedSubmissionView {
+  return {
+    id: submission.id,
+    accountId: submission.accountId,
+    status: submission.status,
+    recipientCount:
+      (submission.recipients?.length ?? 0) +
+      (submission.cc?.length ?? 0) +
+      (submission.bcc?.length ?? 0),
+    ...(submission.bulk !== undefined ? { bulk: submission.bulk } : {}),
+    ...(submission.batchId !== undefined
+      ? { batchId: submission.batchId }
+      : {}),
+    ...(submission.scheduledAt !== undefined
+      ? { scheduledAt: submission.scheduledAt }
+      : {}),
+    ...(submission.error ? { error: toPublicError(submission.error) } : {}),
+    canRetry:
+      canManage &&
+      submission.status === 'failed' &&
+      submission.hasComposeInput === true,
+    canCancel:
+      canManage &&
       ['pending', 'failed'].includes(submission.status) &&
       submission.hasComposeInput === true,
     createdAt: submission.createdAt,

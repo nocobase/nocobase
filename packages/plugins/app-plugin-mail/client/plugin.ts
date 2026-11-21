@@ -4,16 +4,20 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
+import { mailRoutes, type MailRouteOptions } from './routes.js';
 import serviceProviders from './service-provider.js';
 
 export interface MailClientOptions {
-  readonly placeholder?: never;
+  /** Where the Mail and Team mail pages appear in the navigation, or `false` to leave one out of it. */
+  readonly routes?: MailRouteOptions;
 }
 
-const mail: AppClientPluginFactory<MailClientOptions> = defineClientPlugin({
+const mail: AppClientPluginFactory<MailClientOptions> =
+  defineClientPlugin<MailClientOptions>({
   packageName: '@nocobase/app-plugin-mail',
   locales,
   serviceProviders,
+  routes: (options) => mailRoutes(options?.routes),
 });
 
 export default mail;

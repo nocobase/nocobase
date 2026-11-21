@@ -41,6 +41,8 @@ export interface MailboxSidebarLabels {
   readonly folders: string;
   readonly accounts: string;
   readonly labels: string;
+  /** Appended to an account that must be reconnected, such as "needs reauthorization". */
+  readonly needsReauthorization?: string;
   readonly folderNames: MailDefaultFolderNames;
   readonly systemFolderNames: MailSystemFolderNames;
 }
@@ -158,6 +160,11 @@ export function MailboxSidebar({
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.address}
+              {labels.needsReauthorization &&
+              (account.status === 'reauthorizationRequired' ||
+                account.status === 'revoked')
+                ? ` — ${labels.needsReauthorization}`
+                : ''}
             </option>
           ))}
         </NativeSelect>
