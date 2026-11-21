@@ -272,6 +272,41 @@ describe('entry counts', () => {
     ).toBeNull();
   });
 
+  it('shows the count a route declares, nothing at zero or none, and lets the layout replace it', () => {
+    const declared = (
+      name: string,
+      badge: { count: number; tone?: 'attention' } | undefined,
+    ): RouteNavigationItem => ({
+      route: {
+        ...page(name),
+        navigation: { title: name, badge: () => badge },
+      },
+      children: [],
+    });
+    const items = [
+      declared('mail', { count: 3, tone: 'attention' }),
+      declared('tasks', { count: 0 }),
+      declared('drafts', undefined),
+      declared('alerts', { count: 7 }),
+    ];
+    const badgeOf = (name: string) =>
+      screen
+        .getByRole('link', { name })
+        .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]');
+    const { unmount } = render(shell(items), { wrapper: I18n });
+    expect(badgeOf('mail · 3')).toHaveTextContent('3');
+    expect(badgeOf('mail · 3')).toHaveClass('bg-primary');
+    expect(badgeOf('tasks')).toBeNull();
+    expect(badgeOf('drafts')).toBeNull();
+    expect(badgeOf('alerts · 7')).not.toHaveClass('bg-primary');
+    unmount();
+    render(shell(items, undefined, true, { alerts: 2, mail: 0 }), {
+      wrapper: I18n,
+    });
+    expect(badgeOf('alerts · 2')).toHaveTextContent('2');
+    expect(badgeOf('mail')).toBeNull();
+  });
+
   it('names work under way by its hint', () => {
     render(shell(entries, undefined, true, badges), { wrapper: I18n });
     const runs = screen.getByRole('link', { name: 'runs · 2 running' });

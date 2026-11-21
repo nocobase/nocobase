@@ -1,3 +1,4 @@
+import { badgeCount, type AppClientBadge } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -46,9 +47,9 @@ const SELECTED =
   'data-active:bg-sidebar-primary data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground';
 
 /**
- * A count beside a menu entry. A number is what waits on the viewer, such as unread messages or requests to decide;
- * `live` is work under way, such as runs in progress, with `hint` as its words for the tooltip and screen readers. Zero
- * shows nothing.
+ * A count the layout passes for a menu entry, in place of the one its route declares (`navigation.badge`). A number is
+ * what waits on the viewer, such as unread messages or requests to decide; `live` is work under way, such as runs in
+ * progress, with `hint` as its words for the tooltip and screen readers. Zero shows nothing.
  */
 export type NavigationBadge =
   | number
@@ -59,16 +60,35 @@ export type NavigationBadges = Readonly<Record<string, NavigationBadge>>;
 
 const NavigationBadgesContext = createContext<NavigationBadges>({});
 
+const noBadge = (): AppClientBadge | undefined => undefined;
+
+/**
+ * The entry's count: the one the layout passes for it, else the one its route declares. The declared hook is called on
+ * every render either way, so the hooks of an entry stay the same while the layout's counts come and go.
+ */
 function useNavigationBadge(item: RouteNavigationItem): {
   readonly count: number;
   readonly live: boolean;
+  readonly attention: boolean;
   readonly text: string;
 } {
+  const useDeclaredBadge = item.route.navigation?.badge ?? noBadge;
+  const declared = useDeclaredBadge();
   const badge = useContext(NavigationBadgesContext)[item.route.name];
   if (typeof badge === 'object')
-    return { count: badge.count, live: true, text: badge.hint };
-  const count = badge ?? 0;
-  return { count, live: false, text: String(count) };
+    return {
+      count: badge.count,
+      live: true,
+      attention: false,
+      text: badge.hint,
+    };
+  const count = badge ?? badgeCount(declared);
+  return {
+    count,
+    live: false,
+    attention: badge === undefined && declared?.tone === 'attention',
+    text: String(count),
+  };
 }
 
 /**
@@ -91,7 +111,7 @@ export function NavigationMenu({
   readonly sections?: boolean;
   /**
    * Counts beside entries, keyed by route name, for a page entry that is not a sub-menu's: a top-level entry or a
-   * section's. They change while the page is open, so the layout passes them rather than the route declaring them.
+   * section's. A route usually declares its own (`navigation.badge`); a count given here replaces it.
    */
   readonly badges?: NavigationBadges;
 }): ReactElement {
@@ -362,11 +382,14 @@ function NavigationItem({
 function EntryBadge({
   count,
   live,
+  attention,
   text,
   dot,
 }: {
   readonly count: number;
   readonly live: boolean;
+  /** A declared badge's `attention` tone: the count on the primary color. */
+  readonly attention: boolean;
   readonly text: string;
   readonly dot: boolean;
 }): ReactElement {
@@ -379,7 +402,9 @@ function EntryBadge({
         className={
           live
             ? 'gap-1 rounded-full bg-primary/10 px-1.5 text-primary dark:bg-primary/20'
-            : 'rounded-full bg-foreground/8 px-1.5 dark:bg-foreground/15'
+            : attention
+              ? 'rounded-full bg-primary px-1.5 text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground'
+              : 'rounded-full bg-foreground/8 px-1.5 dark:bg-foreground/15'
         }
       >
         {live && (
