@@ -1,4 +1,6 @@
 import type { Application } from '@nocobase/app-server';
+import { enterRunningApplication } from '@nocobase/app-server/backup/runtime-guard';
+import { BackupError } from '@nocobase/backup/errors';
 import {
   databaseManagerToken,
   isTaskLockBusyError,
@@ -158,7 +160,7 @@ export async function runDatabaseApplyCommand(
     // is safe while another run is going.
     const preview = await executeWithApplication(
       command,
-      { ...flags, collections: false },
+      { ...flags, dryRun: true, collections: false },
       context,
       (app) =>
         runAppDatabaseTasks(app.config.get<AppDatabaseConfig>('database')!, {
@@ -612,14 +614,16 @@ function planOptions(
  */
 async function executeWithApplication(
   command: DatabaseCommandOutput,
-  flags: DatabaseSelectionFlags,
+  flags: DatabaseSelectionFlags & { dryRun?: boolean },
   context: Pick<AppCommandContext, 'loadRuntime' | 'createApp'>,
   run: (app: Application) => Promise<AppDatabaseTasksResult>,
 ): Promise<DatabaseRun> {
+  let release: (() => void) | undefined;
   try {
     return await withAppInstance(
       context,
       async (app): Promise<DatabaseRun> => {
+        if (!flags.dryRun) release = await enterRunningApplication(app.paths);
         app.registerProviders();
         const result = await run(app);
         if (!flags.collections) return result;
@@ -647,6 +651,8 @@ async function executeWithApplication(
         : { ...error.result, failure: error };
     }
     throw toDatabaseCommandError(error, flags.connection);
+  } finally {
+    release?.();
   }
 }
 
@@ -660,6 +666,12 @@ export function toDatabaseCommandError(
   connection: string | undefined,
 ): Error {
   if (isCommandError(error)) return error;
+  if (error instanceof BackupError)
+    return new CommandError(error.message, {
+      code: error.code,
+      details: error.details,
+      cause: error,
+    });
   // A failure whose cleanup also failed: `describeCommandError` reports the cause's code.
   if (error instanceof AggregateError && isCommandError(error.cause))
     return error;

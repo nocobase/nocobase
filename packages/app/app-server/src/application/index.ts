@@ -1,3 +1,5 @@
+import { enterRunningApplication } from '../backup/runtime-guard.js';
+import type { ReleaseStorageLock } from '@nocobase/drive';
 import { MailSenderFactoryProvider } from '../mailers/index.js';
 import type { AppRuntimeLogging } from '../logging/config.js';
 import { loggingToken } from '../logging/token.js';
@@ -82,6 +84,7 @@ export interface ApplicationOptions<
   /** The application's resolved NODE_ENV, not the hosting process's environment. */
   readonly nodeEnv?: string;
   readonly paths: AppPaths;
+  readonly configurationFile?: string;
   readonly websocket?: ApplicationWebSocketFactory;
   readonly runtimeLogging?: AppRuntimeLogging;
   /** Where console log records go; see `AppScope.consoleLogStream`. */
@@ -128,6 +131,7 @@ export class Application<
   public readonly mode: 'standalone' | 'embedded';
   public readonly nodeEnv: string | undefined;
   public readonly paths: AppPaths;
+  public readonly configurationFile: string | undefined;
   public readonly container: ServiceContainer;
   public readonly fetch: ApplicationFetchHandler = async (
     request,
@@ -152,7 +156,9 @@ export class Application<
     readonly contribution: AppRouteContribution<Application<TConfig>>;
     readonly owner: string | undefined;
   }[] = [];
+  private releaseStorage: ReleaseStorageLock | undefined;
   private startPromise: Promise<void> | undefined;
+  private shutdownPromise: Promise<void> | undefined;
   private websocketHandler: AppWebSocketHandler | undefined;
   private appPackageName: string | undefined;
   private registeredServerPluginsValue: readonly AppServerPluginSnapshot[] = [];
@@ -178,6 +184,7 @@ export class Application<
     this.mode = options.mode ?? 'embedded';
     this.nodeEnv = options.nodeEnv;
     this.paths = options.paths;
+    this.configurationFile = options.configurationFile;
     this.container = new ServiceContainer();
     this.usesDefaultWebSocket = options.websocket === undefined;
     this.websocketFactory = options.websocket ?? createRealtimeWebSocketHandler;
@@ -347,7 +354,18 @@ export class Application<
   }
 
   public shutdown(): Promise<void> {
-    return this.providerRegistry.shutdown();
+    this.shutdownPromise ??= this.shutdownProviders();
+    return this.shutdownPromise;
+  }
+
+  private async shutdownProviders(): Promise<void> {
+    await this.startPromise?.catch(() => undefined);
+    try {
+      await this.providerRegistry.shutdown();
+    } finally {
+      this.releaseStorage?.();
+      this.releaseStorage = undefined;
+    }
   }
 
   private getWebSocketHandler(): AppWebSocketHandler {
@@ -357,6 +375,9 @@ export class Application<
 
   private async startServiceProviders(): Promise<void> {
     await this.validateConfig();
+    if (this.config.get('drive') || this.config.get('database')) {
+      this.releaseStorage = await enterRunningApplication(this.paths);
+    }
     this.registerProviders();
     this.reportQueueJobPlugins();
     await this.registerLocales();

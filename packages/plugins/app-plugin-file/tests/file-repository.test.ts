@@ -866,9 +866,12 @@ describe('server repository and Client API', () => {
       const key = put.mock.calls[0]![0];
       expect(remove).toHaveBeenCalledWith(key);
       expect(await disk.exists(key)).toBe(false);
-      expect(
-        await readdir(storagePrefix ? path.join(root, storagePrefix) : root),
-      ).toEqual([]);
+      const directory = path.join(root, storagePrefix);
+      const entries = await readdir(directory, { withFileTypes: true });
+      expect(entries.map((entry) => entry.name)).toEqual(
+        storagePrefix ? [] : ['.nocobase-backup'],
+      );
+      if (!storagePrefix) expect(entries[0]?.isDirectory()).toBe(true);
       expect(await files.count()).toBe(0);
     },
   );
