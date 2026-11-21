@@ -394,6 +394,14 @@ describe('scoped API keys', () => {
     expect(decodeKeyScope(null)).toBeNull();
     // An unknown format grants nothing rather than everything.
     expect(decodeKeyScope({ 'shop.orders': ['read'] })).toEqual({ groups: {} });
+    // A damaged record limit reaches no record rather than every one.
+    expect(
+      decodeKeyScope({
+        $v: ['1'],
+        'shop.orders': ['read'],
+        'shop.orders@': 'o-1',
+      }),
+    ).toEqual({ groups: { 'shop.orders': { level: 'read', objects: [] } } });
   });
 
   it('refuses a scope it cannot honour', async () => {

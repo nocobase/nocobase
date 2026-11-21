@@ -146,19 +146,23 @@ export function decodeKeyScope(permissions: unknown): KeyScopeInput | null {
       .reverse()
       .find((candidate) => levels.includes(candidate));
     if (!level) continue;
-    const objects = record[`${id}@`];
-    groups[id] = {
-      level,
-      ...(Array.isArray(objects)
-        ? {
-            objects: objects.filter(
-              (item): item is string => typeof item === 'string',
-            ),
-          }
-        : {}),
-    };
+    groups[id] = { level, ...storedObjects(record[`${id}@`]) };
   }
   return { groups };
+}
+
+/**
+ * The records a stored format-`1` group is limited to: none set when left out, and none reached when present but not
+ * a list, so a damaged limit never reads as every record.
+ */
+function storedObjects(value: unknown): { objects?: string[] } {
+  if (value === undefined) return {};
+  if (!Array.isArray(value)) return { objects: [] };
+  return {
+    objects: (value as unknown[]).filter(
+      (item): item is string => typeof item === 'string',
+    ),
+  };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -279,8 +283,7 @@ function grantsOf(value: unknown): KeyPermissionGrant[] {
       ? (entry.actions as unknown[]).flatMap((action) => {
           if (!isObject(action) || typeof action.action !== 'string') return [];
           if (action.policy === undefined) return [{ action: action.action }];
-          return isObject(action.policy) &&
-            typeof action.policy.type === 'string'
+          return wellFormedPolicy(type, action.policy)
             ? [
                 {
                   action: action.action,
@@ -293,6 +296,19 @@ function grantsOf(value: unknown): KeyPermissionGrant[] {
     if (actions.length > 0) grants.push({ resource: { type, id }, actions });
   }
   return grants;
+}
+
+/**
+ * Whether a stored policy can still be read: only a composite action takes one, as `{ type: 'composite', scopes }`
+ * with its record scopes an object. Anything else would let the action reach the holder's own records.
+ */
+function wellFormedPolicy(resourceType: string, policy: unknown): boolean {
+  return (
+    resourceType === 'composite' &&
+    isObject(policy) &&
+    policy.type === 'composite' &&
+    isObject(policy.scopes)
+  );
 }
 
 /** Each business's records; a damaged list reaches none of them, and a damaged id is left out. */
@@ -319,16 +335,9 @@ function legacyOf(value: unknown): KeyScopeInput | null {
       !KEY_SCOPE_LEVELS.includes(grant.level as KeyScopeLevel)
     )
       continue;
-    const objects = grant.objects;
     groups[id] = {
       level: grant.level as KeyScopeLevel,
-      ...(Array.isArray(objects)
-        ? {
-            objects: (objects as unknown[]).filter(
-              (item): item is string => typeof item === 'string',
-            ),
-          }
-        : {}),
+      ...storedObjects(grant.objects),
     };
   }
   return { groups };

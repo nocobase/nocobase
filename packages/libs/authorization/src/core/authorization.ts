@@ -208,6 +208,28 @@ export class Authorization {
     return this.resourceTypes.action(resource, action)?.humanOnly;
   }
 
+  /**
+   * Whether a credential's scope covers `action` on `resource`. A composite action whose record scopes the scope sets
+   * in a policy that does not expand is not covered: a damaged policy never falls back to the identity's own scopes.
+   */
+  private keyScopeAllows(
+    scope: KeyScope,
+    resource: ResourceRef,
+    action: string,
+  ): boolean {
+    if (!scope.allows(resource, action)) return false;
+    if (resource.type !== COMPOSITE_RESOURCE_TYPE || !scope.policy) return true;
+    const policy = scope.policy(resource, action);
+    return (
+      policy === undefined ||
+      this.compositeResourceRegistry.validateGrant({
+        resource,
+        action,
+        policy,
+      }) === undefined
+    );
+  }
+
   for(identity: AuthorizationIdentity): AuthorizationContext {
     const constraints = keyScopeConstraints(
       this.constraints.for(identity),
@@ -238,7 +260,7 @@ export class Authorization {
       const reason = this.humanOnly(input.resource, input.action);
       if (reason !== undefined)
         return humanOnlyDenial(scope, input.resource, input.action, reason);
-      return scope.allows(input.resource, input.action)
+      return this.keyScopeAllows(scope, input.resource, input.action)
         ? undefined
         : keyScopeDenial(scope, input.resource, input.action);
     };
@@ -307,7 +329,7 @@ export class Authorization {
             resource: permission.resource,
             actions: permission.actions.filter(
               (action) =>
-                scope.allows(permission.resource, action) &&
+                this.keyScopeAllows(scope, permission.resource, action) &&
                 this.humanOnly(permission.resource, action) === undefined,
             ),
           }))
@@ -320,7 +342,7 @@ export class Authorization {
         actions: (
           await Promise.all(
             permission.actions.map(async (action) =>
-              scope.allows(permission.resource, action) &&
+              this.keyScopeAllows(scope, permission.resource, action) &&
               this.humanOnly(permission.resource, action) === undefined &&
               (
                 await this.authorizeWithGrants<undefined>(

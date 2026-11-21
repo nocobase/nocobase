@@ -17,6 +17,7 @@ import {
 } from '@nocobase/app-testing/server';
 import {
   createAuthorization,
+  defineCompositeResource,
   grantBacked,
   ResourceItems,
   type Authorization,
@@ -46,6 +47,8 @@ const orders = { type: 'settings', id: 'orders' } as const;
 const accounts = { type: 'settings', id: 'accounts' } as const;
 const billing = { type: 'settings', id: 'billing' } as const;
 const ordersPage = { type: 'page', id: 'orders' } as const;
+const quotes = { type: 'composite', id: 'shop.quotes' } as const;
+const everyQuote = { type: 'composite', scopes: { quote: { type: 'all' } } };
 
 /** The person holds orders, accounts and the orders page, never billing. */
 function personGrants(): AuthorizationGrantService {
@@ -57,6 +60,7 @@ function personGrants(): AuthorizationGrantService {
     { resource: accounts, action: 'read' },
     { resource: accounts, action: 'manage' },
     { resource: ordersPage, action: 'access' },
+    { resource: quotes, action: 'view', policy: everyQuote },
   ].map((grant) => ({ ...grant, source: { plugin: 'test', id: 'person' } }));
   return {
     resolveAll: () => Promise.resolve(grants),
@@ -166,10 +170,37 @@ describe('API key permissions in the shape of a permission set', () => {
               items: pages,
               authorize: grantBacked(),
             });
+            setup.resourceTypes.add({
+              type: 'database.collection',
+              actions: ['read'],
+              recordAccess: true,
+              async authorize(request, context) {
+                return (await context.grants.resolve(request)).length > 0
+                  ? { effect: 'permit', reasons: [] }
+                  : { effect: 'deny', reasons: [] };
+              },
+            });
           },
         },
       ],
     });
+    authz.compositeResources.define(
+      defineCompositeResource('shop.quotes', (resource) =>
+        resource.action('view', (action) =>
+          action.grant({
+            build: () => ({
+              dataScopes: [{ key: 'quote', title: 'Quotes' }],
+              grants: [
+                {
+                  resource: { type: 'database.collection', id: 'quotes' },
+                  actions: [{ action: 'read', scopeKey: 'quote' }],
+                },
+              ],
+            }),
+          }),
+        ),
+      ),
+    );
     const records = {
       list: ({ ids }: { ids?: readonly string[] }) =>
         Promise.resolve(
@@ -234,6 +265,21 @@ describe('API key permissions in the shape of a permission set', () => {
     }>();
     routes.get('/plain', auth.required(), (context) =>
       context.json({ ok: true }),
+    );
+    routes.get(
+      '/composite/:id/:action',
+      auth.required({ scopedKeys: true }),
+      authz.middleware(),
+      async (context) => {
+        const decision = await context.get('authz').authorize({
+          resource: { type: 'composite', id: context.req.param('id') },
+          action: context.req.param('action'),
+        });
+        return context.json(
+          { effect: decision.effect, reason: decision.reasons[0]?.code },
+          decision.effect === 'permit' ? 200 : 403,
+        );
+      },
     );
     routes.get(
       '/settings/:id/:action',
@@ -644,6 +690,37 @@ describe('API key permissions in the shape of a permission set', () => {
         grants: [{ resource: orders, actions: [{ action: 'create' }] }],
       },
     });
+    // A composite policy whose record scopes are damaged is refused too, and so is a policy on anything else.
+    for (const policy of [
+      { type: 'composite', scopes: null },
+      { type: 'composite', scopes: [] },
+      { type: 'composite' },
+      { type: 'recordsIOwn', scopes: {} },
+    ])
+      expect(
+        decodeKeyPermissions({
+          $v: '2',
+          grants: [
+            { resource: quotes, actions: [{ action: 'view', policy }] },
+            read,
+          ],
+        }),
+      ).toEqual({ ...nothing, permissions: { grants: [read] } });
+    expect(
+      decodeKeyPermissions({
+        $v: '2',
+        grants: [
+          {
+            resource: quotes,
+            actions: [{ action: 'view', policy: everyQuote }],
+          },
+        ],
+      }).permissions,
+    ).toEqual({
+      grants: [
+        { resource: quotes, actions: [{ action: 'view', policy: everyQuote }] },
+      ],
+    });
     // Record limits damaged as a whole: which businesses were limited is lost, so nothing is granted.
     for (const objects of ['o-1', ['o-1'], null, 7])
       expect(
@@ -694,6 +771,55 @@ describe('API key permissions in the shape of a permission set', () => {
     ).toBe(403);
   });
 
+  it('refuses a composite action whose stored record scopes are damaged', async () => {
+    const created = await keys.create(
+      personId,
+      {
+        name: 'quotes',
+        expiresInDays: 7,
+        permissions: {
+          grants: [
+            {
+              resource: quotes,
+              actions: [{ action: 'view', policy: everyQuote }],
+            },
+          ],
+        },
+      },
+      await identity(),
+    );
+    expect(
+      (await app.request('/composite/shop.quotes/view', asKey(created.secret)))
+        .status,
+    ).toBe(200);
+    for (const policy of [
+      { type: 'composite', scopes: null },
+      { type: 'other', scopes: { quote: { type: 'all' } } },
+    ]) {
+      await database
+        .connection()
+        .query.updateTable('apikey')
+        .set({
+          permissions: JSON.stringify({
+            $v: '2',
+            grants: [
+              { resource: quotes, actions: [{ action: 'view', policy }] },
+            ],
+          }),
+        })
+        .where('id', '=', created.key.id)
+        .execute();
+      expect(
+        (
+          await app.request(
+            '/composite/shop.quotes/view',
+            asKey(created.secret),
+          )
+        ).status,
+      ).toBe(403);
+    }
+  });
+
   it('offers what the person holds, human-only actions marked, and the templates resolved to it', async () => {
     const grantable = await keys.grantable(personId);
     expect(grantable.unrestricted).toBe(false);
@@ -712,6 +838,7 @@ describe('API key permissions in the shape of a permission set', () => {
     const template = (id: string) =>
       grantable.templates.find((entry) => entry.id === id);
     expect(template('read-only')?.permissions.grants).toEqual([
+      { resource: quotes, actions: [{ action: 'view' }] },
       { resource: ordersPage, actions: [{ action: 'access' }] },
       { resource: orders, actions: [{ action: 'read' }] },
       { resource: accounts, actions: [{ action: 'read' }] },

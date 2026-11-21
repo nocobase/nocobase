@@ -219,20 +219,21 @@ describe('record scopes of a credential', () => {
     expect(received.at(-1)).toEqual([]);
   });
 
-  it('reaches no record through a damaged record scope', async () => {
+  it('refuses an action through a damaged record scope', async () => {
     const { authorization, received } = setup(staff);
     const scoped: KeyScope = {
       ...unbounded,
       policy: () => ({ type: 'composite', scopes: { quote: { type: 'x' } } }),
     };
-    await authorization.for({ principal: alice, keyScope: scoped }).authorize({
-      resource: { type: 'composite', id: 'sales.quotes' },
-      action: 'view',
-    });
-    expect(received.at(-1)?.[0]?.selection).toEqual({
-      type: 'records',
-      ids: [],
-    });
+    const decision = await authorization
+      .for({ principal: alice, keyScope: scoped })
+      .authorize({
+        resource: { type: 'composite', id: 'sales.quotes' },
+        action: 'view',
+      });
+    expect(decision.effect).toBe('deny');
+    expect(decision.reasons[0]?.code).toBe('KEY_SCOPE');
+    expect(received).toEqual([]);
   });
 });
 
@@ -418,6 +419,30 @@ describe('record scopes of an unrestricted holder’s credential', () => {
         .for({ principal: alice, keyScope: keyWith('mine') })
         .authorize(view);
       expect(reached(mine)).toEqual(MINE);
+    },
+  );
+
+  it.each([
+    ['an unrestricted holder', true],
+    ['a holder of every record', false],
+  ])(
+    'denies the key of %s an action whose record scopes are damaged',
+    async (_label, superuser) => {
+      const authorization = setupWith(superuser);
+      for (const policy of [
+        { type: 'composite', scopes: null },
+        { type: 'composite', scopes: 'all' },
+        { type: 'other', scopes: { quote: { type: 'all' } } },
+      ]) {
+        const context = authorization.for({
+          principal: alice,
+          keyScope: { ...unbounded, policy: () => policy },
+        });
+        const decision = await context.authorize(view);
+        expect(decision.effect).toBe('deny');
+        expect(decision.reasons[0]?.code).toBe('KEY_SCOPE');
+        expect(await context.can(view)).toBe(false);
+      }
     },
   );
 
