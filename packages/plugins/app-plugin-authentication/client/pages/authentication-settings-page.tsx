@@ -483,7 +483,13 @@ function PasswordTab({
               />
             </ul>
           )}
-          <p className='rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'>
+          <p
+            className={
+              reset.available
+                ? 'rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-200'
+                : 'rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
+            }
+          >
             {reset.available
               ? t('settings.reset.availableNote')
               : t('settings.reset.unavailableNote')}

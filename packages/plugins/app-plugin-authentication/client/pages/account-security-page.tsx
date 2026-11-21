@@ -130,6 +130,9 @@ export default function AccountSecurityPage(): ReactElement {
         readonly name?: string;
       }
     | undefined;
+  // Changing the password with "Sign out of other devices" replaces this device's session.
+  const [renewedToken, setRenewedToken] = useState<string>();
+  const currentToken = renewedToken ?? session?.session.token;
   const credential = accounts.items?.find(
     (account) => account.providerId === 'credential',
   );
@@ -162,16 +165,19 @@ export default function AccountSecurityPage(): ReactElement {
         changedAt={credential?.updatedAt}
         otherDevices={
           sessions.items
-            ? sessions.items.filter(
-                (item) => item.token !== session?.session.token,
-              ).length
+            ? sessions.items.filter((item) => item.token !== currentToken)
+                .length
             : undefined
         }
-        onChanged={sessions.reload}
+        onChanged={(token) => {
+          if (token) setRenewedToken(token);
+          sessions.reload();
+          accounts.reload();
+        }}
       />
       <DevicesPanel
         client={client}
-        currentToken={session?.session.token}
+        currentToken={currentToken}
         sessions={sessions}
       />
       <LinkedAccountsPanel client={client} accounts={accounts} />
@@ -199,7 +205,7 @@ function PasswordPanel({
   readonly hasPassword: boolean;
   readonly changedAt?: Date | string;
   readonly otherDevices?: number;
-  readonly onChanged: () => void;
+  readonly onChanged: (token?: string) => void;
 }): ReactElement {
   const { t } = useAuthenticationTranslation();
   const format = useDateTime();
@@ -247,7 +253,7 @@ function ChangePasswordDialog({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly otherDevices?: number;
-  readonly onChanged: () => void;
+  readonly onChanged: (token?: string) => void;
 }): ReactElement {
   const { t } = useAuthenticationTranslation();
   const resolveError = useAuthenticationErrorResolver();
@@ -277,7 +283,7 @@ function ChangePasswordDialog({
     setPending(true);
     setError(undefined);
     try {
-      await unwrap(
+      const result = await unwrap(
         client.changePassword({
           currentPassword: current,
           newPassword: next,
@@ -287,7 +293,8 @@ function ChangePasswordDialog({
       toaster.show({ type: 'success', title: t('account.password.changed') });
       onOpenChange(false);
       reset();
-      onChanged();
+      // Signing out the other devices gives this one a new session.
+      onChanged(result?.token ?? undefined);
     } catch (failure) {
       setError(resolveError(failure)?.message);
     } finally {
