@@ -5754,6 +5754,9 @@ importers:
       '@nocobase/app-plugin-database-explorer':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-database-explorer
+      '@nocobase/app-plugin-distributed':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-distributed
       '@nocobase/app-plugin-file':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-file
@@ -6112,6 +6115,9 @@ importers:
       '@nocobase/app-plugin-database-explorer':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-database-explorer
+      '@nocobase/app-plugin-distributed':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-distributed
       '@nocobase/app-plugin-file':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-file

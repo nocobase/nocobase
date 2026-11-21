@@ -132,6 +132,11 @@ const viVN: DistributedResource = {
           'Mỗi phiên bản giữ trạng thái riêng. Hãy cài {{plugin}} và đặt {{configPath}} thành một backend Redis.',
         fix: 'Cài {{plugin}}, đăng ký plugin phía máy chủ của nó, rồi chọn nó:',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'Bộ điều hợp “{{adapter}}” không khai báo có được chia sẻ giữa các phiên bản hay không. Hãy xác nhận với plugin cung cấp nó.',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

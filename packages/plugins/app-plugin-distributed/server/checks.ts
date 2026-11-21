@@ -249,6 +249,16 @@ function serviceChecks(
       });
       continue;
     }
+    if (service.sharing === 'unknown') {
+      results.push({
+        id: 'service.undeclared',
+        level: 'recommended',
+        title: SERVICE_NAMES[service.key],
+        detail: `The adapter "${service.adapter}" does not declare whether it is shared between instances. Confirm it with the plugin that provides it.`,
+        params,
+      });
+      continue;
+    }
     if (mode === 'multi' && service.sharing !== 'shared') {
       results.push({
         id: 'service.local',
@@ -283,7 +293,7 @@ function serviceChecks(
   }
   if (mode === 'single') {
     const local = present.filter(
-      (service) => service.registered && service.sharing !== 'shared',
+      (service) => service.registered && service.sharing === 'local',
     );
     if (local.length > 0)
       results.push({

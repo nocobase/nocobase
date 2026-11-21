@@ -133,6 +133,11 @@ const esES: DistributedResource = {
           'Cada instancia guarda su propio estado. Instala {{plugin}} y configura {{configPath}} con un backend de Redis.',
         fix: 'Instala {{plugin}}, registra su plugin de servidor y selecciónalo:',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'El adaptador «{{adapter}}» no declara si se comparte entre instancias. Confírmalo con el plugin que lo proporciona.',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

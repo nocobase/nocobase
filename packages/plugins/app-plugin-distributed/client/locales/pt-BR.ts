@@ -133,6 +133,11 @@ const ptBR: DistributedResource = {
           'Cada instância mantém seu próprio estado. Instale {{plugin}} e defina {{configPath}} com um backend Redis.',
         fix: 'Instale {{plugin}}, registre o plugin de servidor dele e selecione-o:',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'O adaptador “{{adapter}}” não declara se é compartilhado entre instâncias. Confirme com o plugin que o fornece.',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

@@ -157,6 +157,26 @@ describe('GET /api/distributed/status', () => {
     );
   });
 
+  it('asks to confirm an adapter that does not declare its sharing', async () => {
+    const result = await status({
+      services: {
+        caching: { default: 'acme', adapter: 'acme', sharing: 'unknown' },
+      },
+    });
+    expect(result.services[0]?.sharing).toBe('unknown');
+    expect(result.mode).toBe('single');
+    expect(result.checks).toContainEqual(
+      expect.objectContaining({
+        id: 'service.undeclared',
+        level: 'recommended',
+        params: expect.objectContaining({
+          service: 'caching',
+          adapter: 'acme',
+        }),
+      }),
+    );
+  });
+
   it('names the file collections stored on a local disk', async () => {
     const result = await status({
       localDiskUsage: {

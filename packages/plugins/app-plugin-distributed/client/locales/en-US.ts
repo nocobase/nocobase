@@ -128,6 +128,11 @@ const enUS = {
           'Each instance keeps its own state. Install {{plugin}} and set {{configPath}} to a Redis backend.',
         fix: 'Install {{plugin}}, register its server plugin, and select it:',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'The adapter “{{adapter}}” does not declare whether it is shared between instances. Confirm it with the plugin that provides it.',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

@@ -124,6 +124,11 @@ const zhTW: DistributedResource = {
           '每個執行個體各自保存狀態。請安裝 {{plugin}}，並將 {{configPath}} 設定為 Redis 後端。',
         fix: '安裝 {{plugin}}，註冊其伺服器端外掛，然後選用它：',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          '適配器「{{adapter}}」沒有聲明是否在實例間共享，請向提供它的外掛確認。',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

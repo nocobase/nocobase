@@ -136,6 +136,11 @@ const deDE: DistributedResource = {
           'Jede Instanz hält ihren eigenen Zustand. Installieren Sie {{plugin}} und setzen Sie {{configPath}} auf ein Redis-Backend.',
         fix: 'Installieren Sie {{plugin}}, registrieren Sie dessen Server-Plugin und wählen Sie es aus:',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'Der Adapter „{{adapter}}“ gibt nicht an, ob er zwischen Instanzen geteilt wird. Klären Sie das mit dem Plugin, das ihn bereitstellt.',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

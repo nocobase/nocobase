@@ -12,6 +12,7 @@ import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
+import distributed from '@nocobase/app-plugin-distributed/client';
 import users from '@nocobase/app-plugin-users/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
@@ -35,6 +36,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   notificationInApp(),
   notification(),
   file(),
+  distributed(),
   scheduler(),
   mail(),
   // The manifest is what the capability guide lists: every plugin this application declares.

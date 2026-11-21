@@ -133,6 +133,11 @@ const jaJP: DistributedResource = {
           '各インスタンスが個別に状態を保持します。{{plugin}} をインストールし、{{configPath}} を Redis バックエンドに設定してください。',
         fix: '{{plugin}} をインストールし、そのサーバープラグインを登録してから選択します：',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'アダプター「{{adapter}}」はインスタンス間で共有されるかを宣言していません。提供しているプラグインで確認してください。',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:

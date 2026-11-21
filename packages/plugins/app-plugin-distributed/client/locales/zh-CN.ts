@@ -120,6 +120,11 @@ const zhCN: DistributedResource = {
           '每个实例各自保存状态。请安装 {{plugin}}，并将 {{configPath}} 设置为 Redis 后端。',
         fix: '安装 {{plugin}}，注册其服务端插件，然后选用它：',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          '适配器“{{adapter}}”没有声明是否在实例间共享，请向提供它的插件确认。',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail: '{{consumer}} 明确使用了后端“{{backend}}”，它仅限本实例。',

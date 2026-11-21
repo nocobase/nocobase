@@ -11,9 +11,7 @@ import {
   type DistributedStatusBlockProps,
 } from '../../client/index.js';
 
-function InstancesBlock({
-  status,
-}: DistributedStatusBlockProps): ReactElement {
+function InstancesBlock({ status }: DistributedStatusBlockProps): ReactElement {
   const data = status.extensions.fixture as { instances: string[] } | undefined;
   return <p>Running instances: {data?.instances.join(', ')}</p>;
 }

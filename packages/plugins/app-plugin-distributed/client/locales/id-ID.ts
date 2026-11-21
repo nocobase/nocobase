@@ -131,6 +131,11 @@ const idID: DistributedResource = {
           'Setiap instans menyimpan statusnya sendiri. Instal {{plugin}} dan atur {{configPath}} ke backend Redis.',
         fix: 'Instal {{plugin}}, daftarkan plugin servernya, lalu pilih:',
       },
+      undeclared: {
+        title: '{{service}}',
+        detail:
+          'Adaptor “{{adapter}}” tidak menyatakan apakah dibagikan antar-instans. Pastikan dengan plugin yang menyediakannya.',
+      },
       selectionLocal: {
         title: '{{service}}',
         detail:
