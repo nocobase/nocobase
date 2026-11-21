@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyQuickSetMany,
   enableDefaults,
+  quickSetLevel,
+  quickSetManyRemovals,
   permissionChanges,
   setSettingsLevel,
   settingsLevel,
@@ -60,6 +63,46 @@ describe('permission editor rules', () => {
     expect(change.added).toEqual(['customers.view']);
     // No chosen scope: the action uses its slot's default.
     expect(change.grants).toEqual({ 'customers.view': {} });
+  });
+
+  it('sets several objects at once with one quick setting and reads which setting each matches', () => {
+    const notes: PermissionObject = {
+      id: 'notes',
+      label: 'Notes',
+      actions: [
+        { id: 'notes.view', label: 'View', view: true },
+        { id: 'notes.edit', label: 'Edit', requires: ['customers.view'] },
+      ],
+    };
+    const objects = [customers, notes];
+    expect(quickSetLevel(customers, {})).toBe('none');
+    // All leaves risky operations off, so a sensitive Export does not stop the object reading as All.
+    const everything = applyQuickSetMany(objects, {}, objects, 'all').grants;
+    expect(Object.keys(everything).sort()).toEqual([
+      'customers.view',
+      'notes.edit',
+      'notes.view',
+    ]);
+    expect(quickSetLevel(customers, everything)).toBe('view');
+    expect(quickSetLevel(notes, everything)).toBe('all');
+    expect(
+      quickSetLevel(notes, { 'notes.edit': {}, 'customers.view': {} }),
+    ).toBe('custom');
+    // Turning Customers off also turns off Notes' Edit, which needs it: the caller asks first.
+    expect(
+      quickSetManyRemovals(objects, everything, [customers], 'none').map(
+        (action) => action.id,
+      ),
+    ).toEqual(['notes.edit']);
+    expect(quickSetManyRemovals(objects, everything, objects, 'none')).toEqual(
+      [],
+    );
+    expect(
+      applyQuickSetMany(objects, everything, objects, 'view').grants,
+    ).toEqual({
+      'customers.view': {},
+      'notes.view': {},
+    });
   });
 
   it('sets a settings page to none, view or manage, risky actions included in manage', () => {

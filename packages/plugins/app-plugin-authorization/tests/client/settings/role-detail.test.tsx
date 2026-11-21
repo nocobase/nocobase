@@ -255,9 +255,18 @@ it('turns on the operations a page declares when it is checked and lists where e
   expect(within(usedOn!).getByText(editor.pageOpens)).toBeInTheDocument();
   // Reports are used on no page, so they are listed last, under Other operations.
   expect(screen.getByText(editor.otherOperations)).toBeVisible();
+  // Checking the page left Customers at View only, set in one tap from the list.
+  const customers = screen.getByRole('group', {
+    name: editor.quickLevel.replace('{{object}}', 'Customers'),
+  });
+  expect(
+    within(customers).getByRole('button', { name: editor.quickView }),
+  ).toHaveAttribute('aria-pressed', 'true');
 
   // With View off the checked page opens empty.
-  await user.click(screen.getByRole('switch', { name: 'View customers' }));
+  await user.click(
+    within(customers).getByRole('button', { name: editor.quickNone }),
+  );
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.menusTab) }),
   );
@@ -267,6 +276,12 @@ it('turns on the operations a page declares when it is checked and lists where e
   await user.click(screen.getByRole('checkbox', { name: crmTitle }));
   await user.click(
     screen.getByRole('tab', { name: new RegExp(editor.objectsTab) }),
+  );
+  // An object opens to set its operations one by one.
+  await user.click(
+    screen.getByRole('button', {
+      name: `${editor.expandObject} Customers`,
+    }),
   );
   await user.click(screen.getByRole('switch', { name: 'View customers' }));
   expect(

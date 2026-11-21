@@ -695,6 +695,63 @@ export function quickSetRemovals(
   };
 }
 
+/**
+ * Which quick setting an object's actions match: none on, only View, every action Enable all turns on (risky and
+ * managed ones are left as they are), or a custom mix.
+ */
+export function quickSetLevel(
+  object: PermissionObject,
+  grants: PermissionGrants,
+): PermissionQuickSet | 'custom' {
+  const on = object.actions.filter((action) => grants[action.id]);
+  if (!on.length) return 'none';
+  const view = viewActionOf(object);
+  if (view && on.length === 1 && on[0] === view) return 'view';
+  const all = object.actions.filter(
+    (action) => !action.risk && !action.managed,
+  );
+  if (all.length && all.every((action) => grants[action.id])) return 'all';
+  return 'custom';
+}
+
+/** One quick setting applied to several objects in turn, such as a whole group. */
+export function applyQuickSetMany(
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+  targets: readonly PermissionObject[],
+  mode: PermissionQuickSet,
+): PermissionChange {
+  let current = grants;
+  const notices: PermissionNotice[] = [];
+  for (const target of targets) {
+    const change = applyQuickSet(objects, current, target, mode);
+    current = change.grants;
+    for (const notice of change.notices)
+      if (
+        !notices.some((item) => JSON.stringify(item) === JSON.stringify(notice))
+      )
+        notices.push(notice);
+  }
+  return { grants: current, notices };
+}
+
+/** The actions outside the targets that a quick setting on them turns off, because they need what it removes. */
+export function quickSetManyRemovals(
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+  targets: readonly PermissionObject[],
+  mode: PermissionQuickSet,
+): readonly PermissionAction[] {
+  const inTargets = new Set(
+    targets.flatMap((target) => target.actions.map((action) => action.id)),
+  );
+  const found = new Map<string, PermissionAction>();
+  for (const target of targets)
+    for (const action of quickSetRemovals(objects, grants, target, mode).others)
+      if (!inTargets.has(action.id)) found.set(action.id, action);
+  return [...found.values()];
+}
+
 /** Enable all (risky ones excepted), View only, or Disable all for one object. */
 export function applyQuickSet(
   objects: readonly PermissionObject[],

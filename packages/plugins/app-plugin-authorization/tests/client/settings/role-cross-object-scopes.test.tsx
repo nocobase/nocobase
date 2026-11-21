@@ -201,8 +201,10 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
   await user.click(
     await screen.findByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  const list = screen.getByRole('navigation', { name: editor.objects });
-  await user.click(within(list).getByRole('button', { name: /^Shipments/ }));
+  // Shipments opens to show its operations one by one.
+  await user.click(
+    screen.getByRole('button', { name: `${editor.expandObject} Shipments` }),
+  );
   // Each scope shows what is stored, read-only, beside what it needs.
   for (const [label, shown, needs] of [
     ['Create: Stations', 'My stations', 'Stations'],
@@ -325,8 +327,10 @@ it('keeps a role’s own custom filters when View’s stored condition is applie
   await user.click(
     await screen.findByRole('tab', { name: new RegExp(editor.objectsTab) }),
   );
-  const list = screen.getByRole('navigation', { name: editor.objects });
-  await user.click(within(list).getByRole('button', { name: /^Shipments/ }));
+  // Shipments opens to show its operations one by one.
+  await user.click(
+    screen.getByRole('button', { name: `${editor.expandObject} Shipments` }),
+  );
   // Every filter reads its conditions; the locked one on Stations names its scope rather than its key.
   for (const amount of [100, 50, 20])
     expect(screen.getByText(new RegExp(`Less than ${amount}$`))).toBeVisible();
