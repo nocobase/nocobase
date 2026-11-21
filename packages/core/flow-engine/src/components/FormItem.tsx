@@ -14,6 +14,7 @@ import type { FormItemProps, TooltipProps } from 'antd';
 type ChildExtraProps = Record<string, any>;
 
 interface ExtendedFormItemProps extends FormItemProps {
+  itemMarginBottom?: number;
   labelWidth?: number | string;
   labelWrap?: boolean;
   showLabel?: boolean;
@@ -60,6 +61,7 @@ export const FormItem = ({
   children,
   showLabel = true,
   labelWidth,
+  itemMarginBottom = formItemStyle.marginBottom,
   ...rest
 }: ExtendedFormItemProps & ChildExtraProps) => {
   const forwardedRest = Object.fromEntries(
@@ -128,7 +130,7 @@ export const FormItem = ({
   return (
     <Form.Item
       {...forwardedRest}
-      style={{ ...formItemStyle, ...forwardedRest.style }}
+      style={{ marginBottom: itemMarginBottom, ...forwardedRest.style }}
       labelCol={{ style: labelColStyle }}
       layout={layout}
       label={renderLabel()}
