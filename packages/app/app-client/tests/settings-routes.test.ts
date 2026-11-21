@@ -675,6 +675,10 @@ describe('definePersonalSettingsRoutes', () => {
         'settings.personal.categories.preferences',
       ],
       [
+        '@nocobase/app-client:personalSettings.messages',
+        'settings.personal.categories.messages',
+      ],
+      [
         '@nocobase/app-client:personalSettings.other',
         'settings.personal.categories.other',
       ],
