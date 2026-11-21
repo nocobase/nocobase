@@ -1,6 +1,6 @@
 # OnlineAgent example
 
-This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner or custom Agent, using the native bash/skill defaults; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope. It does not add a plugin API or modify the Default template.
+This template uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner or custom Agent, using the native bash/skill defaults; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope.
 
 ## Knowledge chat
 
@@ -26,7 +26,7 @@ Choosing a level saves it to an existing conversation; new conversations carry t
 
 1. Start this application's own configuration and database as described in [Getting started](README.MD#getting-started). Open the `Local:` URL printed by `pnpm dev`, including its application base path.
 2. Sign in with an administrator or another account allowed to manage `settings:agents.services`.
-3. Open **Agents → Models** (`/models`, relative to the application mount path). Create a service using its provider, base URL and API key. Use **OpenAI-compatible** for a Chat Completions-compatible endpoint.
+3. Open **System settings → AI → Models** (`/settings/models`, relative to the application mount path). Create a service using its provider, base URL and API key. Use **OpenAI-compatible** for a Chat Completions-compatible endpoint.
 4. Discover models or add a model manually, mark it as a chat model and enable it. Check the connection through the Models page.
 5. Open chat from the header button, Cmd/Ctrl+J or the homepage Online Agent card. If the panel was already open, close and reopen it or return focus to the window to refresh the available models.
 
@@ -42,7 +42,7 @@ Keep API keys in Models. `agents.fileInputs.profiles` remains a deployment-polic
 
 ## Configure agents and runtimes
 
-The same **Agents** menu also exposes the plugin's **Agents** (`/agents`) and **Runtimes** (`/runtimes`) pages. Open Runtimes and choose **Add runtime** (`/runtimes/connect`) to configure allowed coding tools and concurrency, then follow the plugin's installation and registration instructions on the execution machine. Use Agents to manage the runner-discovered agents after connection. These pages configure Runner execution; switch the panel to Runner agents with the switch in its header, then select an available Agent in a new chat to use it through the same panel.
+**System settings → AI** also exposes the plugin's **Agents** (`/settings/agents`) and **Runtimes** (`/settings/runtimes`) pages. Open Runtimes and choose **Add runtime** (`/settings/runtimes/connect`) to configure allowed coding tools and concurrency, then follow the plugin's installation and registration instructions on the execution machine. Use Agents to manage the runner-discovered agents after connection. These pages configure Runner execution; switch the panel to Runner agents with the switch in its header, then select an available Agent in a new chat to use it through the same panel.
 
 The pages retain the plugin's `page:agents` and `page:runtimes` access grants. Agent management requires `settings:agents.agents` management access; team-runtime management requires `settings:agents.runners` management access. Personal-runtime operations remain subject to the plugin's ownership checks. Adding these menu entries does not grant permissions, register a runtime or start a local process.
 

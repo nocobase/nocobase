@@ -18,6 +18,7 @@ import enUS from '../../client/locales/en-US.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   useRouteNavigation,
+  buildSettingsNavigation,
   routeKey,
 } from '../../client/routing/route-navigation';
 import { NavigationMenu } from '../../client/layouts/components/navigation-menu';
@@ -58,11 +59,15 @@ function Menu({
 }: {
   readonly entries?: readonly AppClientRegisteredRoute[];
 }) {
-  const { items, loading } = useRouteNavigation(entries);
+  const { items, loading, denied } = useRouteNavigation(entries);
   return (
     <section aria-label='Permission status' aria-busy={loading}>
       <NavigationMenu
-        items={items}
+        items={
+          entries === agentsRoutes
+            ? buildSettingsNavigation(entries, denied)
+            : items
+        }
         label='Navigation'
         selectedKey={routeKey(visible)}
       />
@@ -166,16 +171,11 @@ const agentsRoutes = resolveAppClientContributions([
   {
     packageName: packageMetadata.name,
     source: 'application',
-    routes: [
-      {
-        ...applicationRoutes[0],
-        routes: applicationRoutes[0].routes.filter(
-          (route) => route.name === 'agentsNavigation',
-        ),
-      },
-    ],
+    routes: applicationRoutes,
   },
-]).routes;
+]).routes.filter((route) =>
+  ['settingsHome', 'settingsAi'].includes(route.name),
+);
 
 it.each(['agents', 'runtimes', 'agents.services', null])(
   'shows only the permitted Agents settings entry for %s',
@@ -225,10 +225,10 @@ it.each(['agents', 'runtimes', 'agents.services', null])(
             name as keyof typeof enUS.onlineAgent
           ] as string,
         }),
-      ).toHaveAttribute('href', `/example/${name}`);
+      ).toHaveAttribute('href', `/example/settings/${name}`);
     }
     await waitFor(() => {
-      expect(screen.queryAllByRole('link')).toHaveLength(allowed ? 4 : 3);
+      expect(screen.queryAllByRole('link')).toHaveLength(allowed ? 1 : 0);
     });
     for (const name of ['agents', 'runtimes', 'models']) {
       const resource = name === 'models' ? 'agents.services' : name;
@@ -240,20 +240,6 @@ it.each(['agents', 'runtimes', 'agents.services', null])(
             ] as string,
           }),
         ).not.toBeInTheDocument();
-    }
-    expect(screen.getByLabelText(enUS.onlineAgent.group)).toBeInTheDocument();
-    for (const name of [
-      'structuredExtraction',
-      'aiTranslation',
-      'aiFormFill',
-    ]) {
-      expect(
-        screen.getByRole('link', {
-          name: enUS[
-            name as 'structuredExtraction' | 'aiTranslation' | 'aiFormFill'
-          ].title,
-        }),
-      ).toBeInTheDocument();
     }
   },
 );

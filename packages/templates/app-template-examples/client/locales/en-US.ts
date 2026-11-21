@@ -403,6 +403,22 @@ const enUS = {
   ...systemEnUS,
   ...agentChatEnUS,
   onlineAgent: {
+    preferenceFailed: 'Could not save your runner preference.',
+    runner: {
+      title: 'Preferred runtime',
+      auto: 'Automatic',
+      personal: 'Personal runtimes first',
+      team: 'Shared runtimes first',
+    },
+    teamDefault: 'Team default agent',
+    teamDescription:
+      'Used for new conversations when a person has no default agent.',
+    noDefault: 'No default',
+    personal: 'Agent preferences',
+    retry: 'Retry loading agents',
+    saveFailed: 'Could not save the default agent.',
+
+    usage: 'Usage and pricing',
     group: 'Agents',
     agents: 'Agents',
     runtimes: 'Runtimes',

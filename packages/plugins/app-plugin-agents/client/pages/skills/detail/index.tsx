@@ -10,7 +10,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DownloadIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useContext, useState, type ReactElement } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useResolvedPath, useNavigate, useParams } from 'react-router';
 
 import type { SkillDetail } from '../../../../shared/skills.js';
 import { agentsKeys } from '../../../api/keys.js';
@@ -64,8 +64,9 @@ function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
     queryKey: agentsKeys.skill(skillId),
     queryFn: () => api.skill(skillId),
   });
+  const listPath = useResolvedPath('..', { relative: 'path' }).pathname;
   const levels = [
-    { label: t('skills.title'), to: '/skills' },
+    { label: t('skills.title'), to: listPath },
     { label: detail.data?.name ?? t('skills.breadcrumb') },
   ];
   // The header's trail (the shell renders it): the list, then this skill.
@@ -82,7 +83,7 @@ function SkillView({ skillId }: { readonly skillId: string }): ReactElement {
           variant='outline'
           size='sm'
           nativeButton={false}
-          render={<Link to='/skills' />}
+          render={<Link to={listPath} />}
         >
           {t('skills.backToList')}
         </Button>
@@ -119,6 +120,7 @@ function SkillBody({
   const api = useAgentsApi();
   const notify = useNotify();
   const navigate = useNavigate();
+  const listPath = useResolvedPath('..', { relative: 'path' }).pathname;
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -128,7 +130,7 @@ function SkillBody({
       notify.success(t('skills.deleted', { name: skill.name }));
       void queryClient.invalidateQueries({ queryKey: agentsKeys.skills });
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-      void navigate('/skills');
+      void navigate(listPath);
     },
     onError: (error) => notify.error(error),
   });

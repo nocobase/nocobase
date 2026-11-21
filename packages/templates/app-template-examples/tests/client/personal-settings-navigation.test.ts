@@ -33,7 +33,7 @@ describe('Personal settings navigation', () => {
         route.name,
         children.map((child) => child.route.path),
       ]),
-    ).toEqual([['personalPreferences', ['/me/preferences']]]);
+    ).toEqual([['personalPreferences', ['/me/preferences', '/me/agents']]]);
     expect(firstNavigationPage(menu)?.path).toBe('/me/preferences');
   });
 });

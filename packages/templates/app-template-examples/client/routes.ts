@@ -1,21 +1,12 @@
+import agentSettingsRoutes from './pages/settings/agent-routes.js';
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import personalSettingsRoutes from './pages/me/routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
-  agentsRoute,
-  modelsRoute,
-  runtimesRoute,
-  skillsRoute,
-} from '@nocobase/app-plugin-agents/client/routes';
-import {
   ShoppingCart,
-  BrainCircuit,
   BotMessageSquare,
-  Bot,
-  Server,
-  Sparkles,
   ScanText,
   FileText,
   FilePenLine,
@@ -358,26 +349,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
     children: [
       {
-        ...agentsRoute,
-        navigation: { title: 'onlineAgent.agents', icon: Bot },
-        breadcrumb: { title: 'onlineAgent.agents' },
-      },
-      {
-        ...runtimesRoute,
-        navigation: { title: 'onlineAgent.runtimes', icon: Server },
-        breadcrumb: { title: 'onlineAgent.runtimes' },
-      },
-      {
-        ...skillsRoute,
-        navigation: { title: 'onlineAgent.skills', icon: Sparkles },
-        breadcrumb: { title: 'onlineAgent.skills' },
-      },
-      {
-        ...modelsRoute,
-        navigation: { title: 'onlineAgent.models', icon: BrainCircuit },
-        breadcrumb: { title: 'onlineAgent.models' },
-      },
-      {
         name: 'ai-translation',
         path: '/ai-translation',
         authz: 'skip',
@@ -567,6 +538,7 @@ const routes: readonly AppClientRouteContribution[] =
       personalSettingsRoutes,
       systemSettingsRoutes,
       databaseExplorerRoutes,
+      agentSettingsRoutes,
     ],
     true,
   );

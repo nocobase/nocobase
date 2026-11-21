@@ -269,6 +269,17 @@ describe('System settings navigation', () => {
         ],
       ],
       [
+        'settingsAi',
+        [
+          ['agents', '/settings/agents'],
+          ['runtimes', '/settings/runtimes'],
+          ['skills', '/settings/skills'],
+          ['models', '/settings/models'],
+          ['agentChatSettings', '/settings/agent-chat'],
+          ['usage', '/settings/usage'],
+        ],
+      ],
+      [
         'settingsSystem',
         [
           ['notificationManagement', '/settings/notifications/templates'],
@@ -306,8 +317,32 @@ it('places database browsing in System and hides its card when access is denied'
   ];
   expect(catalog(routes)).toEqual([
     account,
+    [
+      'settingsAi',
+      [
+        ['agents', '/settings/agents'],
+        ['runtimes', '/settings/runtimes'],
+        ['skills', '/settings/skills'],
+        ['models', '/settings/models'],
+        ['agentChatSettings', '/settings/agent-chat'],
+        ['usage', '/settings/usage'],
+      ],
+    ],
     ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
   ]);
   // The empty System category is hidden; Accounts and permissions stays.
-  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([account]);
+  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([
+    account,
+    [
+      'settingsAi',
+      [
+        ['agents', '/settings/agents'],
+        ['runtimes', '/settings/runtimes'],
+        ['skills', '/settings/skills'],
+        ['models', '/settings/models'],
+        ['agentChatSettings', '/settings/agent-chat'],
+        ['usage', '/settings/usage'],
+      ],
+    ],
+  ]);
 });

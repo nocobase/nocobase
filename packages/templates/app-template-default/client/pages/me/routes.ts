@@ -38,6 +38,13 @@ const personalSettingsRoutes: AppClientRouteContribution =
           breadcrumb: { title: 'settings.personal.appearance.title' },
           componentLoader: () => import('./appearance.js'),
         },
+        {
+          name: 'personalAgentPreferences',
+          path: '/agents',
+          navigation: { title: 'onlineAgent.personal' },
+          breadcrumb: { title: 'onlineAgent.personal' },
+          componentLoader: () => import('./agent-preferences.js'),
+        },
       ],
     },
     {

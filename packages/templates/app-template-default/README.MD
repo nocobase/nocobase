@@ -18,6 +18,12 @@ Existing Default installations retain their data when example plugins are unregi
 
 Business lists reuse the template's standard `DataTable` and companions from `#components/data-table`. The template declares the compatible TanStack Table v8 dependency and provides controlled server pagination/sorting; application agents should not generate an independent table engine. See the [table guide](.agents/skills/nocobase-app-development/references/frontend/references/table.md).
 
+## Agent conversations
+
+Open the chat icon next to the account menu to start a conversation or return to its history. System settings groups Agents, Runtimes, Skills, Models, the team default agent, and Usage under AI. Open Personal settings → Agent preferences from the account menu to choose a personal default agent and preferred runtime. Online chat requires an enabled chat model and a configured model service; runner conversations require an enabled agent and a compatible connected runtime.
+
+To serve the application CLI and runner to new runtimes, run `pnpm nocobase cli build --universal` and `pnpm nocobase cli build --runner --universal` in the application directory, then follow the connection instructions under System settings → AI → Runtimes. The universal packages use Node.js 24 or newer on the runner machine.
+
 ## Getting started
 
 Configure the application, then start the development server:

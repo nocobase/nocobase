@@ -164,6 +164,21 @@ const zhCN: AppResource = {
     },
   },
   onlineAgent: {
+    preferenceFailed: '无法保存运行环境偏好。',
+    runner: {
+      title: '首选运行环境',
+      auto: '自动',
+      personal: '优先个人运行环境',
+      team: '优先共享运行环境',
+    },
+    teamDefault: '团队默认 Agent',
+    teamDescription: '用户未选择个人默认 Agent 时，新会话使用此设置。',
+    noDefault: '无默认 Agent',
+    personal: 'Agent 偏好设置',
+    retry: '重新加载 Agent',
+    saveFailed: '无法保存默认 Agent。',
+
+    usage: '用量和价格',
     group: 'Agents',
     agents: 'Agent 管理',
     runtimes: '执行机',

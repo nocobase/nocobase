@@ -62,6 +62,12 @@ describe('Personal settings navigation', () => {
       auth: 'required',
       authz: 'skip',
     });
+    expect(find(routes, 'personalAgentPreferences')).toMatchObject({
+      path: '/me/agents',
+      surface: 'personalSettings',
+      auth: 'required',
+      authz: 'skip',
+    });
     expect(find(routes, 'personalAppearance')).toMatchObject({
       path: '/me/preferences',
       authz: 'skip',
@@ -77,7 +83,7 @@ describe('Personal settings navigation', () => {
     const routes = resolve();
     const menu = buildPersonalSettingsNavigation(routes, new Set());
     expect(outline(menu)).toEqual([
-      ['personalPreferences', ['/me/preferences']],
+      ['personalPreferences', ['/me/preferences', '/me/agents']],
     ]);
     expect(firstNavigationPage(menu)?.path).toBe('/me/preferences');
     expect(
@@ -100,7 +106,7 @@ describe('Personal settings navigation', () => {
     const menu = buildPersonalSettingsNavigation(routes, new Set());
     expect(outline(menu)).toEqual([
       ['personalAccount', ['/me/api-keys']],
-      ['personalPreferences', ['/me/preferences']],
+      ['personalPreferences', ['/me/preferences', '/me/agents']],
     ]);
     expect(firstNavigationPage(menu)?.path).toBe('/me/api-keys');
   });
