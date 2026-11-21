@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-users
-description: Integrate the Users plugin into a NocoBase App, build a user management page on its API and configure its permissions, or add an application-owned role scope through the public Server contracts.
+description: Integrate the Users plugin into a NocoBase App, use or replace its User management pages under System settings, configure their permissions, or add an application-owned role scope through the public Server contracts.
 metadata:
   short-description: Integrate reusable user administration
 ---
@@ -15,8 +15,18 @@ user, account, or Session storage.
 ## Public surfaces
 
 - Client registration factory and `UsersClientOptions`:
-  `@nocobase/app-plugin-users/client`. It contributes only the public
-  invitation page at `/invite/:token`; there is no user management page.
+  `@nocobase/app-plugin-users/client`. It contributes the User management
+  pages under System settings and the public invitation page at
+  `/invite/:token`.
+- Route ids of the User management pages, from
+  `@nocobase/app-plugin-users/client`: `USERS_ROUTE_ID` (the list at
+  `/settings/users`), `USER_CREATE_ROUTE_ID` (the New user dialog at
+  `/settings/users/create`) and `USER_EDIT_ROUTE_ID` (the Edit user drawer at
+  `/settings/users/:userId/edit`).
+- `UserForm`, the page component behind both the New user dialog and the Edit
+  user drawer, and `RoleSelection`, its searchable role picker, from
+  `@nocobase/app-plugin-users/client`, for a replacement page that keeps the
+  plugin's validation and role selection.
 - Typed API client: `UsersClient` and its types from
   `@nocobase/app-plugin-users/client/user-client`.
 - Server contracts: `userManagementServiceToken`,
@@ -35,7 +45,35 @@ Every HTTP route requires Authentication and Authorization. Routes check the `us
    and Server plugin arrays. The Client factory takes no placement options:
    `users()`.
 2. Grant only the `user` actions those roles need, on `{ type: 'user', id: '*' }` because `user` is a record type. The plugin creates no roles and grants no access by itself.
-3. For a user management page, build it in the App on `UsersClient` and declare it among the App's own routes with the page access it needs; the plugin ships none.
+3. User management is ready once the plugin is registered: `users()` adds it to the Accounts and permissions category of System settings at `/settings/users`, with its page access (`read` on `user`, and `create` for the New user dialog). Do not declare another `/settings/users` route in the App; a duplicate path is a conflict.
+
+## Replace a User management page
+
+Replace a page, not the route: pass `routeComponentOverrides` to `defineAppRuntime()` in the App's `client/runtime.ts`, keyed by the exported route ids, as section 10 of the `nocobase-app-development` Skill's pages and routes reference (`references/frontend/references/page.md`) describes. The path, page access, navigation, dialog or drawer presentation and breadcrumb stay the plugin's, and the pages that are not replaced stay the plugin's own; replacing only the list keeps the plugin's New user dialog and Edit user drawer.
+
+```ts
+// client/route-overrides.ts
+import { USERS_ROUTE_ID } from '@nocobase/app-plugin-users/client';
+import {
+  defineClientRouteComponentOverrides,
+  type AppClientRouteComponentOverrideDefinition,
+} from '@nocobase/app-client/plugins';
+
+const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
+  defineClientRouteComponentOverrides([
+    {
+      routeId: USERS_ROUTE_ID,
+      componentEntry: './client/pages/members/index',
+      componentLoader: () => import('./pages/members/index.js'),
+    },
+  ]);
+
+export default routeComponentOverrides;
+```
+
+Import it in `client/runtime.ts` and add `routeComponentOverrides` to the existing `defineAppRuntime({ … })`, keeping every other option. Add `USER_CREATE_ROUTE_ID` or `USER_EDIT_ROUTE_ID` entries to replace those pages as well.
+
+Build a replacement on `UsersClient`; a replacement form can render `UserForm` or `RoleSelection` rather than repeating the validation and role picker. A replaced list keeps linking to `create` and `:userId/edit` under its own path so the plugin's dialog and drawer open over it. To change wording only, override the plugin's translations instead of replacing a page.
 
 The invitation page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console.
 
@@ -82,10 +120,11 @@ New accounts register directly from the invitation link with a name and password
 - Authentication owns user identity, credentials, account state, password
   hashing, and Sessions.
 - Authorization owns Permission Sets, grants, and assignments.
-- Users owns the management API, the invitation page, orchestration transaction,
-  `user` authorization handler, and role-scope registry.
+- Users owns the management API, the User management pages, the invitation
+  page, orchestration transaction, `user` authorization handler, and
+  role-scope registry.
 - The App or business plugin owns role definitions, role grants, assignments,
-  the user management page, and role-specific invariants.
+  any replacement of a User management page, and role-specific invariants.
 - The plugin's `skills/` source is authoritative. `.agents/skills/` is a
   synchronized copy and must not be edited.
 
