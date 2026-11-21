@@ -158,7 +158,7 @@ function systemScope(value: unknown): boolean {
 }
 
 /** Refuses permissions a system key may not hold: a scope counted from a person, or a level relative to one. */
-function assertSystemPermissions(permissions: KeyPermissions): void {
+export function assertSystemPermissions(permissions: KeyPermissions): void {
   for (const grant of permissions.grants)
     for (const entry of grant.actions) {
       const label = `${grant.resource.type}:${grant.resource.id}.${entry.action}`;
