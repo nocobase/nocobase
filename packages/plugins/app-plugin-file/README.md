@@ -76,7 +76,7 @@ Two grants govern it, both granted to roles in the permission workspace: the pag
 
 | Route                               | Grant                                            | Answer                                                                          |
 | ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `GET /api/file/storage`             | `page:file-storage/access`                       | `{ defaultDisk, canCheck, disks, usages }`                                                |
+| `GET /api/file/storage`             | `page:file-storage/access`                       | `{ defaultDisk, canCheck, disks, usages }`                                      |
 | `POST /api/file/disks/{disk}/check` | the page grant and `settings:file-storage/check` | `{ disk, ok, checkedAt, steps: [{ step, status, detail, reason, errorName }] }` |
 
 Responses are built field by field: they never contain credentials, secrets, endpoint user information or an absolute path on the server; a local directory is shown relative to the application directory, and one outside it is only flagged. A failed step reports a fixed `reason` (`CONFIG_INCOMPLETE`, `WRITE_FAILED`, `READ_FAILED`, `CONTENT_MISMATCH`, `URL_FAILED`, `DELETE_FAILED`, `DISK_UNAVAILABLE`) and the error's own name or code, never its message; the raw error goes to the server log. A disk whose configuration is incomplete, such as the template's `s3` disk without a bucket, is not contacted. The latest check of each disk is kept in memory on the instance that ran it and is forgotten on restart; with several instances only the instance that answered is checked.
