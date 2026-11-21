@@ -124,11 +124,6 @@ const settings = {
     title: 'Personal settings',
     navigation: 'Personal settings navigation',
     empty: 'There are no personal settings yet.',
-    categories: {
-      account: 'Account',
-      preferences: 'Preferences',
-      other: 'Other',
-    },
     appearance: {
       title: 'Language and appearance',
       description:
@@ -140,13 +135,6 @@ const settings = {
   },
   categories: {
     crm: 'CRM',
-    account: 'Accounts and permissions',
-    automation: 'Workflows and automation',
-    messages: 'Messages',
-    ai: 'AI',
-    data: 'Data and files',
-    system: 'System',
-    other: 'Other',
   },
   permissionManagementDescription:
     'Set what each role can open and do, and the data it can see.',

@@ -113,11 +113,6 @@ const settings = {
     title: '个人设置',
     navigation: '个人设置导航',
     empty: '暂时没有个人设置。',
-    categories: {
-      account: '账号',
-      preferences: '偏好',
-      other: '其他',
-    },
     appearance: {
       title: '语言与外观',
       description:
@@ -126,15 +121,6 @@ const settings = {
   },
   home: {
     empty: '暂时没有你可以管理的设置。',
-  },
-  categories: {
-    account: '账号与权限',
-    automation: '流程与自动化',
-    messages: '消息',
-    ai: 'AI',
-    data: '数据与文件',
-    system: '系统',
-    other: '其他',
   },
   permissionManagementDescription:
     '设置每个角色能打开的页面、能做的操作和能看到的数据。',

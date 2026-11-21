@@ -1,12 +1,13 @@
 import foundation from '@nocobase/app-plugin-foundation/client/plugin';
 import {
+  APP_CLIENT_NAMESPACE,
   ClientApplicationContext,
+  createAppI18nRuntime,
   NavigationGuardProvider,
   type ClientApplication,
   createAppClientConfig,
 } from '@nocobase/app-client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
 import {
   act,
@@ -17,11 +18,12 @@ import {
   within,
 } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { Link, MemoryRouter } from 'react-router';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
+import { inApplication } from '../../client/routing/settings-shell.js';
 import {
   createAppSidebarPreferenceStore,
   SidebarPreferenceProvider,
@@ -57,7 +59,10 @@ vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => {
   };
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
+});
 
 /** The page the shell opens on: the header names it. */
 const overview: AppClientRegisteredRoute = {
@@ -71,24 +76,26 @@ const overview: AppClientRegisteredRoute = {
   componentLoader: async () => ({ default: () => null }),
 };
 
-async function setup(children: ReactNode) {
+async function setup(children: ReactNode, initialEntry = '/') {
   const sidebarPreference = createAppSidebarPreferenceStore('/test-app');
   vi.stubGlobal('matchMedia', () => ({
     matches: true,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   }));
-  const runtime = new I18nRuntime({
+  // As an application starts: app-client's own namespace, which titles the built-in settings categories, comes along.
+  const runtime = await createAppI18nRuntime({
     defaultLocale: 'en-US',
-    locales: ['en-US', 'zh-CN'],
-    applicationNamespace: 'test-app',
+    initialLocale: 'en-US',
+    contributions: [
+      { packageName: 'test-app', source: 'application', locales },
+      {
+        packageName: '@nocobase/app-plugin-foundation',
+        source: 'plugin',
+        locales: foundation().locales!,
+      },
+    ],
   });
-  runtime.registerApplicationNamespace('test-app', locales);
-  runtime.registerNamespace(
-    '@nocobase/app-plugin-foundation',
-    foundation().locales!,
-  );
-  await runtime.init('en-US');
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
     runtime: {},
@@ -97,7 +104,7 @@ async function setup(children: ReactNode) {
     <I18nProvider runtime={runtime}>
       <ClientApplicationContext.Provider value={app}>
         <SidebarPreferenceProvider value={sidebarPreference}>
-          <MemoryRouter initialEntries={['/']}>
+          <MemoryRouter initialEntries={[initialEntry]}>
             <NavigationGuardProvider>{children}</NavigationGuardProvider>
           </MemoryRouter>
         </SidebarPreferenceProvider>
@@ -144,7 +151,7 @@ function settingsFixture(): AppClientRegisteredRoute[] {
     route: Omit<
       AppClientRegisteredRoute,
       'packageName' | 'source' | 'surface' | 'auth' | 'authz'
-    >,
+    > & { readonly packageName?: string },
   ): AppClientRegisteredRoute => ({
     packageName: 'test',
     source: 'application',
@@ -168,8 +175,11 @@ function settingsFixture(): AppClientRegisteredRoute[] {
       componentLoader: page,
     }),
     settings({
-      id: 'test:settingsAccount',
-      name: 'settingsAccount',
+      id: `${APP_CLIENT_NAMESPACE}:systemSettings.account`,
+      name: 'systemSettings.account',
+      packageName: APP_CLIENT_NAMESPACE,
+      kind: 'category',
+      category: 'account',
       path: '/settings',
       navigation: { title: 'settings.categories.account' },
       children: [
@@ -274,7 +284,7 @@ function personalSettingsFixture(): AppClientRegisteredRoute[] {
     route: Omit<
       AppClientRegisteredRoute,
       'packageName' | 'source' | 'surface' | 'auth' | 'authz'
-    >,
+    > & { readonly packageName?: string },
   ): AppClientRegisteredRoute => ({
     packageName: 'test',
     source: 'application',
@@ -286,8 +296,17 @@ function personalSettingsFixture(): AppClientRegisteredRoute[] {
   return [
     ...settingsFixture(),
     personal({
-      id: 'test:personalPreferences',
-      name: 'personalPreferences',
+      id: 'test:personalSettingsHome',
+      name: 'personalSettingsHome',
+      path: '/me',
+      componentLoader: page,
+    }),
+    personal({
+      id: `${APP_CLIENT_NAMESPACE}:personalSettings.preferences`,
+      name: 'personalSettings.preferences',
+      packageName: APP_CLIENT_NAMESPACE,
+      kind: 'category',
+      category: 'preferences',
       path: '/me',
       navigation: { title: 'settings.personal.categories.preferences' },
       children: [
@@ -346,4 +365,56 @@ it('shows personal settings in their own navigation and keeps the way back acros
     'href',
     '/projects',
   );
+});
+
+it('links the first breadcrumb level of personal settings back to /me', async () => {
+  await setup(
+    <AppLayout routes={personalSettingsFixture()} />,
+    '/me/preferences',
+  );
+  const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+  expect(
+    within(trail).getByRole('link', { name: 'Personal settings' }),
+  ).toHaveAttribute('href', '/me');
+  expect(trail).toHaveTextContent('Language and appearance');
+  expect(trail).not.toHaveTextContent('Preferences');
+});
+
+it('leads back home from a settings page opened directly in a tab that showed application pages before', async () => {
+  // An earlier visit in this tab remembered a business page; this document starts on a settings page.
+  sessionStorage.setItem('nocobase:settings-return-to', '/projects');
+  await setup(<AppLayout routes={settingsFixture()} />, '/settings/users');
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/',
+  );
+});
+
+it('returns only to paths inside the application', () => {
+  expect(inApplication('/projects?tab=open#top')).toBe(
+    '/projects?tab=open#top',
+  );
+  expect(inApplication('//evil.example/x')).toBeUndefined();
+  expect(inApplication('/\\evil.example/x')).toBeUndefined();
+  expect(inApplication('https://evil.example/x')).toBeUndefined();
+  expect(inApplication('javascript:alert(1)')).toBeUndefined();
+  expect(inApplication(null)).toBeUndefined();
+});
+
+it('keeps every personal settings page, a plugin one included, at most 860px wide', async () => {
+  const routes = personalSettingsFixture();
+  await setup(
+    <Routes>
+      <Route element={<AppLayout routes={routes} />}>
+        <Route path='/me/plugin' element={<p>Plugin page</p>} />
+        <Route path='/projects' element={<p>Business page</p>} />
+      </Route>
+    </Routes>,
+    '/me/plugin',
+  );
+  expect(
+    screen
+      .getByText('Plugin page')
+      .closest('[data-testid="personal-settings-content"]'),
+  ).toHaveClass('max-w-[860px]');
 });

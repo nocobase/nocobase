@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import { settingsHomeRoute } from '#lib/navigation-transform';
+import { settingsAreaHomeRoute } from '#lib/navigation-transform';
 import { cn } from 'cn';
 
 import {
@@ -73,8 +73,8 @@ export function Breadcrumbs({
     trail.flatMap((entry): PageBreadcrumbLevel[] => {
       const title = routeLevelTitle(entry);
       if (title === undefined || denied?.has(routeKey(entry.route))) return [];
-      // The settings group links to its home page, the way back from any settings module.
-      const home = settingsHomeRoute(entry.route);
+      // A settings group, system or personal, links to its home page, the way back from any of its pages.
+      const home = settingsAreaHomeRoute(entry.route);
       if (home)
         return [
           {
