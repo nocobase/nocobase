@@ -27,6 +27,7 @@ import { useNotify } from '../../../hooks/use-notify.js';
 import {
   AGENT_TOOLS,
   exactPrice,
+  mergePriceCatalogs,
   onlineKey,
   onlinePairs,
   withPrice,
@@ -45,8 +46,17 @@ export function PricesSection({
   const { t } = useTranslation();
   const api = useAgentsApi();
   const models = useQuery({
-    queryKey: agentsKeys.models,
-    queryFn: () => api.models(),
+    // Keep all priced kinds separate from chat pickers while sharing service-change invalidation.
+    queryKey: [...agentsKeys.models, 'prices'],
+    queryFn: async () => ({
+      services: mergePriceCatalogs(
+        await Promise.all([
+          api.models(),
+          api.models('embedding'),
+          api.models('rerank'),
+        ]),
+      ),
+    }),
   });
   const services = models.data?.services ?? [];
   return (
