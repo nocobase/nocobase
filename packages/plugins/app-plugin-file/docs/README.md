@@ -301,3 +301,40 @@ A failed upload tries to clean up the objects it wrote; when the database commit
 - stream supports full-file downloads only; Range/206, resumable downloads, ETag, and conditional requests are not implemented.
 - `deleteOne` deletes metadata only; there is no physical file deletion policy, orphan scan, automatic reconciliation, resumable upload, or idempotent retry.
 - MIME comes from the upload declaration and storage metadata; content sniffing, malicious file detection, business type allowlists, and migration of consumers of the old `app-plugin-file` are not implemented.
+
+## File storage settings and file usages
+
+The plugin adds **System settings › System › File storage** at `/settings/file-storage`. It shows the disks the application's `drive` configuration declares (type, a location summary, visibility, max file size, whether it is the default, whether its configuration is complete, and where each setting comes from), the features that store files with how many files each holds, and a check that writes, reads, links and deletes a temporary file under the disk's `nocobase-check/` directory. The page is read-only apart from the check: storage is configured in `drive` and takes effect after redeploying, existing files are never moved, and there is no global file browser. The tab and the open disk live in the query string (`?tab=usages`, `?disk=local`), so an application replaces the whole page with one `routeComponentOverrides` entry for the `fileStorage` route.
+
+Two grants govern it, both granted to roles in the permission workspace: the page `file-storage` (`access`) opens the page and reads the storage, and the settings item `file-storage` (`check`) runs a check. Without the authentication and authorization plugins the routes are not registered.
+
+| Route                               | Grant                                            | Answer                                                                          |
+| ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `GET /api/file/storage`             | `page:file-storage/access`                       | `{ defaultDisk, disks, usages }`                                                |
+| `POST /api/file/disks/{disk}/check` | the page grant and `settings:file-storage/check` | `{ disk, ok, checkedAt, steps: [{ step, status, detail, reason, errorName }] }` |
+
+Responses are built field by field: they never contain credentials, secrets, endpoint user information or an absolute path on the server; a local directory is shown relative to the application directory, and one outside it is only flagged. A failed step reports a fixed `reason` (`CONFIG_INCOMPLETE`, `WRITE_FAILED`, `READ_FAILED`, `CONTENT_MISMATCH`, `URL_FAILED`, `DELETE_FAILED`, `DISK_UNAVAILABLE`) and the error's own name or code, never its message; the raw error goes to the server log. A disk whose configuration is incomplete, such as the template's `s3` disk without a bucket, is not contacted. The latest check of each disk is kept in memory on the instance that ran it and is forgotten on restart; with several instances only the instance that answered is checked.
+
+A plugin or application declares each feature that stores files from a service provider's `boot()`:
+
+```ts
+import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
+
+if (this.app.container.has(serverFileRepositoryManagerToken))
+  this.app.container.resolve(serverFileRepositoryManagerToken).registerUsage({
+    id: 'invoices.files', // unique across the application
+    title: {
+      key: 'fileUsage',
+      ns: '@acme/app-plugin-invoices',
+      defaultValue: 'Invoice files',
+    },
+    plugin: '@acme/app-plugin-invoices',
+    collection: 'invoiceFiles',
+    disk: { default: true }, // or { name: 'archive' }, or { config: 'invoices.disk' }
+    download: 'authenticated', // or 'public'
+  });
+```
+
+`disk` is the disk new files go to: a fixed name, the default disk (`drive.default`), or the disk a configuration key names, falling back to the default disk when the key is empty. It is resolved on every read, so changing `drive.default` and restarting moves the features that follow it. `download` is `authenticated` when files are served only through the plugin's own routes that check permission, and `public` when anyone holding the URL can download them. Every exposure of `defineFileRepositoryApiRoutes()` registers itself, named after the exposure, with its fixed disk and `download: 'public'`. Registering an id again for the same Collection replaces it; an id already registered for another Collection throws. The page counts each feature's records and sums their `size` with one aggregate query per feature, in parallel; a feature whose count fails shows no figures without affecting the others.
+
+`manager.describeUsages()` returns every registered feature with its resolved disk, for checks such as a cluster readiness check looking for features that keep files on a local disk; when it returns none, new files go to `drive.default`.
