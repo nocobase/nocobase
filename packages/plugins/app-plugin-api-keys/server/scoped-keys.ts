@@ -47,6 +47,25 @@ export const DEFAULT_SCOPED_KEY_DAYS = 90;
 export interface ApiKeysConfig {
   /** The longest a scoped key may live, in days. Unset allows "never expires". */
   readonly maxScopedKeyDays?: number | null;
+  /**
+   * Whether a person may create a key that is them in full ("same as me": `permissions: null`). Off unless set: such a
+   * key can do everything its owner can, account endpoints included. Keys that exist keep working either way.
+   */
+  readonly allowSameAsMe?: boolean | null;
+}
+
+/** The settings item whose `create` lets a person create keys of their own, when no application policy is set. */
+export const PERSONAL_API_KEYS_SETTINGS = 'personalApiKeys';
+/** The settings item of the system settings' API keys page: `read` opens it, `manage` manages system keys. */
+export const API_KEYS_SETTINGS = 'apiKeys';
+
+/** A key as its detail shows it: what it may do, and the part of that its owner no longer holds. */
+export interface ApiKeyDetail extends ApiKeyView {
+  /**
+   * The actions of `permissions` the owner no longer holds, which the key lost with them; they come back when the
+   * owner holds them again. Empty for a key that is its owner in full.
+   */
+  readonly lapsed: readonly KeyPermissionGrant[];
 }
 
 /** A refused key operation: a status and a stable code. */
@@ -130,6 +149,59 @@ const READ_ONLY_ACTIONS = new Set(['access', 'read', 'view']);
 interface Ceiling {
   readonly unrestricted: boolean;
   readonly held: ReadonlyMap<string, ReadonlySet<string>>;
+  /**
+   * For composite actions, by `scopeActionKey`, the record access keys each data scope is held at, from the roles
+   * that give the action. Absent for an action held with no record scope known here: every scope is then open.
+   */
+  readonly scopes: ReadonlyMap<string, ReadonlyMap<string, ReadonlySet<string>>>;
+}
+
+/** The record access key that reaches every record. */
+const ALL_RECORDS = 'allRecords';
+
+const scopeActionKey = (resource: KeyResourceRef, action: string) =>
+  JSON.stringify([resource.type, resource.id, action]);
+
+/**
+ * The record access key a stored data scope value selects: `''` for none, a key, or null for a value no key names,
+ * such as some records by id or a custom filter, which only a holder of every record may give.
+ */
+function scopeKeyOf(value: unknown): string | null {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value === 'string') return value;
+  if (isRecord(value)) {
+    if (value.type === 'all') return ALL_RECORDS;
+    if (
+      value.type === 'recordAccess' &&
+      typeof value.key === 'string' &&
+      value.key !== 'customFilter'
+    )
+      return value.key;
+  }
+  return null;
+}
+
+/** Whether a data scope value is no wider than what is held of it: none, a held key, or anything under every record. */
+function withinHeld(value: unknown, held: ReadonlySet<string>): boolean {
+  if (held.has(ALL_RECORDS)) return true;
+  const key = scopeKeyOf(value);
+  return key === '' || (key !== null && held.has(key));
+}
+
+/** The slice of a Permission Sets API this service reads, when the application has one. */
+interface PermissionSetsReader {
+  list(): Promise<
+    readonly {
+      readonly key: string;
+      readonly grants: readonly KeyPermissionGrant[];
+    }[]
+  >;
+  listAssignments(): Promise<
+    readonly {
+      readonly subject: { readonly type: string; readonly id: string };
+      readonly permissionSet: string;
+    }[]
+  >;
 }
 
 /** A value of `permissions` the column holds while a key is being made: an unknown format, which grants nothing. */
@@ -147,16 +219,31 @@ const MAX_DESCRIPTION = 500;
  */
 export async function connectOwnKeyPolicy(
   auth: Pick<Auth, 'administrationContext'>,
-  keys: Pick<ScopedApiKeys, 'mayCreateOwn'>,
+  keys: Pick<ScopedApiKeys, 'mayCreateOwn' | 'requireSameAsMeAllowed'>,
 ): Promise<() => void> {
   const context = await auth.administrationContext();
   const slots = (context.options.plugins ?? [])
     .map((plugin) => ownKeyPolicySlotOf(plugin))
     .filter((slot) => slot !== undefined);
   const check = (userId: string) => keys.mayCreateOwn(userId);
-  for (const slot of slots) slot.current = check;
+  const sameAsMe = async (userId: string) => {
+    try {
+      await keys.requireSameAsMeAllowed(userId);
+      return true;
+    } catch (error) {
+      if (error instanceof ApiKeyRequestError) return false;
+      throw error;
+    }
+  };
+  for (const slot of slots) {
+    slot.current = check;
+    slot.sameAsMe = sameAsMe;
+  }
   return () => {
-    for (const slot of slots) if (slot.current === check) slot.current = null;
+    for (const slot of slots) {
+      if (slot.current === check) slot.current = null;
+      if (slot.sameAsMe === sameAsMe) slot.sameAsMe = null;
+    }
   };
 }
 
@@ -177,9 +264,43 @@ export class ScopedApiKeys {
     };
   }
 
-  /** Whether `userId` may create keys of their own; true unless the application set a policy that says otherwise. */
+  /**
+   * Whether `userId` may create keys of their own: the application's policy when it set one; otherwise whether their
+   * roles hold `settings:personalApiKeys/create`, when that permission is registered; otherwise true.
+   */
   async mayCreateOwn(userId: string): Promise<boolean> {
-    return this.ownKeyPolicy ? this.ownKeyPolicy(userId) : true;
+    if (this.ownKeyPolicy) return this.ownKeyPolicy(userId);
+    const authz = this.options.authorization?.();
+    const resource = { type: 'settings', id: PERSONAL_API_KEYS_SETTINGS };
+    if (!authz?.resourceTypes.action(resource, 'create')) return true;
+    return authz
+      .for(await this.identityOf(userId))
+      .can({ resource, action: 'create' });
+  }
+
+  /** Whether a person may create a key that is them in full; see `ApiKeysConfig.allowSameAsMe`. */
+  get allowSameAsMe(): boolean {
+    return this.options.config?.()?.allowSameAsMe === true;
+  }
+
+  /**
+   * Refuses with 403 `SAME_AS_ME_DISABLED` a key that would be `userId` in full while such keys are off. A service
+   * account's key is bounded by the account's own permissions, so it is not one.
+   */
+  async requireSameAsMeAllowed(userId: string): Promise<void> {
+    if (this.allowSameAsMe) return;
+    const user = await this.options
+      .connection()
+      .query.selectFrom('user')
+      .select(['kind'])
+      .where('id', '=', userId)
+      .executeTakeFirst<{ kind: unknown }>();
+    if (isServiceAccount(user)) return;
+    throw new ApiKeyRequestError(
+      403,
+      'SAME_AS_ME_DISABLED',
+      'Keys with the same permissions as their owner are turned off: choose what the key may do.',
+    );
   }
 
   /** Refuses with 403 `API_KEY_CREATION_FORBIDDEN` unless `userId` may create keys of their own. */
@@ -414,6 +535,20 @@ export class ScopedApiKeys {
             'KEY_SCOPE_EXCEEDS_YOURS',
             `You do not hold ${label}, so you may not give it to a key.`,
           );
+        const held = ceiling.scopes.get(
+          scopeActionKey(grant.resource, entry.action),
+        );
+        const values: unknown = entry.policy?.scopes;
+        if (held && isRecord(values))
+          for (const [scope, value] of Object.entries(values)) {
+            const keys = held.get(scope);
+            if (keys && !withinHeld(value, keys))
+              throw new ApiKeyRequestError(
+                403,
+                'KEY_SCOPE_EXCEEDS_YOURS',
+                `${label}: the records of ${scope} you give a key cannot reach further than yours.`,
+              );
+          }
         actions.set(entry.action, entry);
       }
       merged.set(key, actions);
@@ -458,9 +593,21 @@ export class ScopedApiKeys {
     const who = identity ?? (await this.identityOf(userId));
     const ceiling = await this.ceiling(who);
     const grants = this.catalog().flatMap((entry): GrantableResource[] => {
-      const actions = entry.actions.filter((action) =>
-        holds(ceiling, entry.resource, action.action),
-      );
+      const actions = entry.actions
+        .filter((action) => holds(ceiling, entry.resource, action.action))
+        .map((action): GrantableAction => {
+          const scopes = ceiling.scopes.get(
+            scopeActionKey(entry.resource, action.action),
+          );
+          return scopes
+            ? {
+                ...action,
+                scopes: Object.fromEntries(
+                  [...scopes].map(([scope, keys]) => [scope, [...keys].sort()]),
+                ),
+              }
+            : action;
+        });
       return actions.length > 0 ? [{ ...entry, actions }] : [];
     });
     return {
@@ -476,6 +623,7 @@ export class ScopedApiKeys {
         this.maxScopedKeyDays ?? DEFAULT_SCOPED_KEY_DAYS,
       ),
       mayCreate: await this.mayCreateOwn(userId),
+      allowSameAsMe: this.allowSameAsMe,
     };
   }
 
@@ -574,6 +722,20 @@ export class ScopedApiKeys {
   /** One of `userId`'s keys. */
   async get(userId: string, keyId: string): Promise<ApiKeyView> {
     return this.viewOf(await this.requireRow(userId, keyId));
+  }
+
+  /** One of `userId`'s keys with the actions it lost with its owner (`ApiKeyDetail.lapsed`). */
+  async detail(userId: string, keyId: string): Promise<ApiKeyDetail> {
+    const view = this.viewOf(await this.requireRow(userId, keyId));
+    if (!view.permissions) return { ...view, lapsed: [] };
+    const ceiling = await this.ceiling(await this.identityOf(userId));
+    const lapsed = view.permissions.grants.flatMap((grant) => {
+      const actions = grant.actions.filter(
+        ({ action }) => !holds(ceiling, grant.resource, action),
+      );
+      return actions.length > 0 ? [{ resource: grant.resource, actions }] : [];
+    });
+    return { ...view, lapsed };
   }
 
   /**
@@ -782,6 +944,7 @@ export class ScopedApiKeys {
     const permissions =
       input.permissions ??
       (input.scope ? this.fromLegacy(input.scope).permissions : null);
+    if (!permissions) await this.requireSameAsMeAllowed(userId);
     const created = await this.createUpstream({
       body: {
         userId,
@@ -879,7 +1042,8 @@ export class ScopedApiKeys {
   /** What `identity` holds today, by its own grants: never a credential's scope. */
   private async ceiling(identity: AuthorizationIdentity): Promise<Ceiling> {
     const authz = this.options.authorization?.();
-    if (!authz) return { unrestricted: false, held: new Map() };
+    if (!authz)
+      return { unrestricted: false, held: new Map(), scopes: new Map() };
     const snapshot = await authz
       .for({
         principal: identity.principal,
@@ -889,7 +1053,67 @@ export class ScopedApiKeys {
     const held = new Map<string, Set<string>>();
     for (const permission of snapshot.permissions)
       held.set(resourceKey(permission.resource), new Set(permission.actions));
-    return { unrestricted: snapshot.unrestricted, held };
+    return {
+      unrestricted: snapshot.unrestricted,
+      held,
+      scopes: snapshot.unrestricted
+        ? new Map()
+        : await this.heldScopes(authz, identity),
+    };
+  }
+
+  /**
+   * The record scopes `identity` holds composite actions at, from the Permission Sets assigned to it, when the
+   * application's authorization has them. Read only when a key's permissions are offered or checked, never per call.
+   */
+  private async heldScopes(
+    authz: Authorization,
+    identity: AuthorizationIdentity,
+  ): Promise<Map<string, Map<string, Set<string>>>> {
+    const scopes = new Map<string, Map<string, Set<string>>>();
+    const sets: unknown = Reflect.get(authz, 'permissionSets');
+    if (
+      !isRecord(sets) ||
+      typeof sets.list !== 'function' ||
+      typeof sets.listAssignments !== 'function'
+    )
+      return scopes;
+    const reader = sets as unknown as PermissionSetsReader;
+    const subjects = new Set(
+      [identity.principal, ...(identity.subjects ?? [])].map((subject) =>
+        JSON.stringify([subject.type, subject.id]),
+      ),
+    );
+    const assigned = new Set(
+      (await reader.listAssignments())
+        .filter((assignment) =>
+          subjects.has(
+            JSON.stringify([assignment.subject.type, assignment.subject.id]),
+          ),
+        )
+        .map((assignment) => assignment.permissionSet),
+    );
+    for (const set of await reader.list()) {
+      if (!assigned.has(set.key)) continue;
+      for (const grant of set.grants) {
+        if (grant.resource.type !== 'composite') continue;
+        for (const { action, policy } of grant.actions) {
+          const values: unknown = policy?.scopes;
+          if (!isRecord(values)) continue;
+          const key = scopeActionKey(grant.resource, action);
+          const byScope = scopes.get(key) ?? new Map<string, Set<string>>();
+          for (const [scope, value] of Object.entries(values)) {
+            const selected = scopeKeyOf(value);
+            const keys = byScope.get(scope) ?? new Set<string>();
+            // A value no key names (some records, a custom filter) gives nothing a key could name.
+            if (selected) keys.add(selected);
+            byScope.set(scope, keys);
+          }
+          scopes.set(key, byScope);
+        }
+      }
+    }
+    return scopes;
   }
 
   /** Every catalog resource and its actions, as the editor lists them. */

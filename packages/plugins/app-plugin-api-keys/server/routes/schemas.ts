@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   KEY_SCOPE_LEVELS,
   type AccessRef,
+  type ApiKeyDetailView,
   type ApiKeyView,
   type CreateApiKeyRequest,
   type GrantablePermissions,
@@ -43,20 +44,20 @@ const KeyPolicySchema = z
     'The record scopes of a composite action: `{ type: "composite", scopes: { <scope>: <selection> } }`.',
   );
 
+const KeyPermissionGrantSchema = z.object({
+  resource: KeyResourceSchema,
+  actions: z.array(
+    z.object({
+      action: z.string().min(1),
+      policy: KeyPolicySchema.optional(),
+    }),
+  ),
+});
+
 /** Format-`2` permissions, as a permission set's grants; what each names is checked by `ScopedApiKeys`. */
 export const KeyPermissionsSchema: z.ZodType<KeyPermissions> = z
   .object({
-    grants: z.array(
-      z.object({
-        resource: KeyResourceSchema,
-        actions: z.array(
-          z.object({
-            action: z.string().min(1),
-            policy: KeyPolicySchema.optional(),
-          }),
-        ),
-      }),
-    ),
+    grants: z.array(KeyPermissionGrantSchema),
     objects: z
       .record(z.string(), z.array(z.string()))
       .optional()
@@ -235,6 +236,13 @@ const GrantableActionSchema = z.object({
     description: 'Why no key may hold this action; null when a key may.',
   }),
   risk: z.enum(['high', 'sensitive']).nullable(),
+  scopes: z
+    .record(z.string(), z.array(z.string()))
+    .optional()
+    .meta({
+      description:
+        'For a composite action, the record access keys the caller holds each data scope at; a key may be given these or narrower ones. Absent when every scope is open to the caller.',
+    }),
 });
 
 export const GrantablePermissionsSchema: z.ZodType<GrantablePermissions> =
@@ -266,7 +274,30 @@ export const GrantablePermissionsSchema: z.ZodType<GrantablePermissions> =
     maxScopedKeyDays: z.number().int().nullable(),
     defaultExpiresInDays: z.number().int(),
     mayCreate: z.boolean(),
+    allowSameAsMe: z.boolean().meta({
+      description:
+        'Whether a key that acts as the caller in full (`permissions: null`) may be created.',
+    }),
   });
+
+export const ApiKeyDetailSchema: z.ZodType<ApiKeyDetailView> = z
+  .object({
+    id: z.string(),
+    name: z.string().nullable(),
+    description: z.string().nullable(),
+    start: z.string().nullable(),
+    enabled: z.boolean(),
+    createdAt: dateTime(),
+    expiresAt: dateTime().nullable(),
+    lastUsedAt: dateTime().nullable(),
+    scope: KeyScopeResponseSchema.nullable().meta({ deprecated: true }),
+    permissions: KeyPermissionsSchema.nullable(),
+    lapsed: z.array(KeyPermissionGrantSchema).meta({
+      description:
+        'The actions of `permissions` the owner no longer holds: the key lost them too, and gets them back when the owner does.',
+    }),
+  })
+  .meta({ ref: 'ApiKeysKeyDetail' });
 
 export const CreatedApiKeySchema: z.ZodType<CreatedApiKey> = z
   .object({
@@ -279,4 +310,20 @@ export const CreatedApiKeySchema: z.ZodType<CreatedApiKey> = z
 
 export const ApiKeysListMeta: z.ZodType<{ total: number }> = z.object({
   total: z.number().int(),
+});
+
+/** `GET /api/apiKeys`'s meta: what the caller may create, so a list shows or hides New key without another request. */
+export const OwnApiKeysListMeta: z.ZodType<{
+  total: number;
+  mayCreate: boolean;
+  allowSameAsMe: boolean;
+}> = z.object({
+  total: z.number().int(),
+  mayCreate: z.boolean().meta({
+    description: 'Whether the caller may create keys of their own.',
+  }),
+  allowSameAsMe: z.boolean().meta({
+    description:
+      'Whether a key that acts as the caller in full may be created.',
+  }),
 });

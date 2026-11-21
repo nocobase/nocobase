@@ -452,6 +452,12 @@ export interface GrantableAction {
   /** Why no key may hold it; present means the editor shows it greyed out, "people only". */
   readonly humanOnly: LocalizedText | null;
   readonly risk: 'high' | 'sensitive' | null;
+  /**
+   * For a composite action, the record scopes the caller holds of each data scope, by its key: the record access keys
+   * (such as `allRecords`, `recordsIOwn`) any of their roles gives it. A key may be given these or narrower ones, never
+   * a wider one. Absent when every scope is open to the caller, as for an unrestricted one.
+   */
+  readonly scopes?: Readonly<Record<string, readonly string[]>>;
 }
 
 /** A resource the caller holds actions of, and so may give a key. */
@@ -483,6 +489,13 @@ export interface GrantablePermissions {
   readonly maxScopedKeyDays: number | null;
   readonly defaultExpiresInDays: number;
   readonly mayCreate: boolean;
+  /** Whether a key that is the caller in full ("same as me") may be created. */
+  readonly allowSameAsMe: boolean;
+}
+
+/** `GET /api/apiKeys/:keyId`: a key with the actions it lost with its owner, which come back when the owner holds them. */
+export interface ApiKeyDetailView extends ApiKeyView {
+  readonly lapsed: readonly KeyPermissionGrant[];
 }
 
 /** A key just created or rotated: its secret, shown once. */

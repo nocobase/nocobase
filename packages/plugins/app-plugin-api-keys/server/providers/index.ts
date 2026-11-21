@@ -18,6 +18,7 @@ import {
   ScopedApiKeys,
   type ApiKeysConfig,
 } from '../scoped-keys.js';
+import { registerApiKeySettings } from '../settings.js';
 import { apiKeyScopesToken, createApiKeyScopes } from '../scopes.js';
 import { scopedApiKeysToken } from '../tokens.js';
 
@@ -77,6 +78,8 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
           (await keys.resolve(session, request)) !== null,
       ),
     );
+    if (container.has(authorizationToken))
+      registerApiKeySettings(container.resolve(authorizationToken));
     if (container.has(authorizationToken))
       container.resolve(authorizationToken).use(async (request, next) => {
         // Every plugin has booted by the first request, so every deprecated scope group is registered: keys still in

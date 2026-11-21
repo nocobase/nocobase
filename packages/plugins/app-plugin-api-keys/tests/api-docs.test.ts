@@ -108,6 +108,8 @@ describe('API documentation access with an API key', () => {
         },
       },
       snowflake: { workerId: 0 },
+      // The test signs in and makes a key that acts as the person in full.
+      apiKeys: { allowSameAsMe: true },
     };
     const config: AppConfigAccessor = {
       get: <TValue>(key: string): TValue => values[key] as TValue,

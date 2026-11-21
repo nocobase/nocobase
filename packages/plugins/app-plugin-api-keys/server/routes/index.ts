@@ -25,8 +25,10 @@ import { requireSignInSession } from '../key-sessions.js';
 import { scopedApiKeysToken } from '../tokens.js';
 import { toApiKeysApiError } from './errors.js';
 import {
+  ApiKeyDetailSchema,
   ApiKeyParams,
   ApiKeysListMeta,
+  OwnApiKeysListMeta,
   ApiKeyViewSchema,
   CreateApiKeyInput,
   CreatedApiKeySchema,
@@ -177,16 +179,49 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             'lastUsedAt',
           ],
         }),
-        description: `${signInOnly} Never returns a key's secret.`,
+        description: `${signInOnly} Never returns a key's secret. \`meta\` says whether the caller may create keys, and keys that act as them in full.`,
         responses: {
-          200: listResponse(ApiKeyViewSchema, ApiKeysListMeta),
+          200: listResponse(ApiKeyViewSchema, OwnApiKeysListMeta),
           ...apiErrorResponses,
         },
       }),
       async (context) => {
         const data = await keys.list(userId(context));
-        return context.json({ data, meta: { total: data.length } });
+        return context.json({
+          data,
+          meta: {
+            total: data.length,
+            mayCreate: await keys.mayCreateOwn(userId(context)),
+            allowSameAsMe: keys.allowSameAsMe,
+          },
+        });
       },
+    );
+    routes.get(
+      '/:keyId',
+      describeRoute({
+        tags,
+        summary: 'Get an API key',
+        operationId: 'apiKeysGetKey',
+        ...cliRoute({
+          command: 'api-key get',
+          flags: { keyId: { name: 'key' } },
+        }),
+        description: `${signInOnly} One of the caller's keys, never its secret, with the actions it lost because the caller no longer holds them (\`lapsed\`).`,
+        responses: {
+          200: dataResponse(ApiKeyDetailSchema),
+          ...apiErrorResponses,
+          404: keyNotFound,
+        },
+      }),
+      apiValidator('param', ApiKeyParams),
+      async (context) =>
+        context.json({
+          data: await keys.detail(
+            userId(context),
+            context.req.valid('param').keyId,
+          ),
+        }),
     );
     routes.post(
       '/',
@@ -209,7 +244,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           403: apiErrorResponse(
             403,
-            'The caller may not create keys of their own (`API_KEY_CREATION_FORBIDDEN`), or does not hold a permission they give the key (`KEY_SCOPE_EXCEEDS_YOURS`).',
+            'The caller may not create keys of their own (`API_KEY_CREATION_FORBIDDEN`), does not hold a permission they give the key (`KEY_SCOPE_EXCEEDS_YOURS`), or asked for a key that acts as them in full while such keys are off (`SAME_AS_ME_DISABLED`).',
           ),
           400: apiErrorResponse(
             400,

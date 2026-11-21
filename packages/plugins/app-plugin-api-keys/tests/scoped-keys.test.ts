@@ -197,7 +197,8 @@ describe('scoped API keys', () => {
       connection: () => database.connection(),
       scopes,
       authorization: () => authz,
-      config: () => ({}),
+      // These keys include ones that act as their owner in full, as an application that turned them on makes.
+      config: () => ({ allowSameAsMe: true }),
     });
     // What the plugin's provider wires at boot.
     auth.addScopedCredentialCheck(
@@ -280,6 +281,7 @@ describe('scoped API keys', () => {
       auth: limitedAuth,
       connection: () => database.connection(),
       scopes,
+      config: () => ({ allowSameAsMe: true }),
     });
     const identity = await keys.identityOf(personId);
     await expect(
@@ -722,7 +724,7 @@ describe('scoped API keys', () => {
       connection: () => database.connection(),
       scopes,
       authorization: () => authz,
-      config: () => ({ maxScopedKeyDays: 30 }),
+      config: () => ({ maxScopedKeyDays: 30, allowSameAsMe: true }),
     });
     const identity = await strict.identityOf(personId);
     const scope = { groups: { 'shop.billing': { level: 'read' } } };

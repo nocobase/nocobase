@@ -30,7 +30,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { apiKey } from '../server/api-keys.js';
 import { apiRoutes } from '../server/routes/index.js';
-import { ScopedApiKeys } from '../server/scoped-keys.js';
+import { connectOwnKeyPolicy, ScopedApiKeys } from '../server/scoped-keys.js';
 import { createApiKeyScopes, type ApiKeyScopes } from '../server/scopes.js';
 import { scopedApiKeysToken } from '../server/tokens.js';
 import {
@@ -50,9 +50,12 @@ const ordersPage = { type: 'page', id: 'orders' } as const;
 const quotes = { type: 'composite', id: 'shop.quotes' } as const;
 const everyQuote = { type: 'composite', scopes: { quote: { type: 'all' } } };
 
+/** Grants a test takes away from the person, as `<resource id>/<action>`, and gives back afterwards. */
+const revoked = new Set<string>();
+
 /** The person holds orders, accounts and the orders page, never billing. */
 function personGrants(): AuthorizationGrantService {
-  const grants = [
+  const all = [
     ...['read', 'update', 'create'].map((action) => ({
       resource: orders,
       action,
@@ -62,11 +65,15 @@ function personGrants(): AuthorizationGrantService {
     { resource: ordersPage, action: 'access' },
     { resource: quotes, action: 'view', policy: everyQuote },
   ].map((grant) => ({ ...grant, source: { plugin: 'test', id: 'person' } }));
+  const grants = () =>
+    all.filter(
+      (grant) => !revoked.has(`${grant.resource.id}/${grant.action}`),
+    );
   return {
-    resolveAll: () => Promise.resolve(grants),
+    resolveAll: () => Promise.resolve(grants()),
     resolve: (input) =>
       Promise.resolve(
-        grants.filter(
+        grants().filter(
           (grant) =>
             grant.resource.type === input.resource.type &&
             grant.resource.id === input.resource.id &&
@@ -92,6 +99,7 @@ describe('API key permissions in the shape of a permission set', () => {
   let users: ReturnType<typeof createUserAdministrationService>;
   let cookie = '';
   let app: Hono;
+  let settingsItems: ResourceItems;
 
   beforeAll(async () => {
     testDatabase = await createTestDatabase();
@@ -140,6 +148,7 @@ describe('API key permissions in the shape of a permission set', () => {
           grants: personGrants(),
           setup(setup) {
             const settings = new ResourceItems();
+            settingsItems = settings;
             settings.add({
               id: 'orders',
               title: 'Orders',
@@ -243,7 +252,8 @@ describe('API key permissions in the shape of a permission set', () => {
       connection: () => database.connection(),
       scopes,
       authorization: () => authz,
-      config: () => ({}),
+      // These keys include ones that act as their owner in full, as an application that turned them on makes.
+      config: () => ({ allowSameAsMe: true }),
     });
     // What the plugin's provider wires at boot.
     auth.addScopedCredentialCheck(
@@ -957,5 +967,211 @@ describe('API key permissions in the shape of a permission set', () => {
     });
     expect(old.status).toBe(201);
     expect((await call('/scopeOptions')).status).toBe(200);
+  });
+
+  /** Signs the person in and calls Better Auth's own `/api-key/create`, which makes a key that is them in full. */
+  const createThroughBetterAuth = () =>
+    auth.handler(
+      new Request(`${BASE_URL}/api-key/create`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+          cookie,
+        },
+        body: JSON.stringify({ name: 'direct' }),
+      }),
+    );
+
+  it('refuses a key that is its owner in full unless the application turns such keys on', async () => {
+    const strict = new ScopedApiKeys({
+      auth,
+      connection: () => database.connection(),
+      scopes,
+      authorization: () => authz,
+      config: () => ({}),
+    });
+    // One made while they were on keeps working once they are off.
+    const before = await keys.create(
+      personId,
+      { name: 'same as me', expiresInDays: 7, permissions: null },
+      await identity(),
+    );
+    expect(strict.allowSameAsMe).toBe(false);
+    for (const input of [
+      { name: 'new', expiresInDays: 7, permissions: null },
+      // The deprecated shape is refused the same way.
+      { name: 'old', expiresInDays: 7, scope: null },
+      { name: 'neither', expiresInDays: 7 },
+    ])
+      await expect(
+        strict.create(personId, input, await identity()),
+      ).rejects.toMatchObject({ status: 403, code: 'SAME_AS_ME_DISABLED' });
+    // A key with permissions is made as before.
+    await expect(
+      strict.create(
+        personId,
+        { name: 'scoped', expiresInDays: 7, permissions: ordersReadUpdate },
+        await identity(),
+      ),
+    ).resolves.toMatchObject({ key: { permissions: ordersReadUpdate } });
+    expect(
+      (await app.request('/settings/orders/read', asKey(before.secret))).status,
+    ).toBe(200);
+    expect((await strict.grantable(personId)).allowSameAsMe).toBe(false);
+
+    // Better Auth's own endpoint, from a sign-in, is refused too while they are off, and works once they are on.
+    let disconnect = await connectOwnKeyPolicy(auth, strict);
+    try {
+      const refused = await createThroughBetterAuth();
+      expect(refused.status).toBe(403);
+      expect(await refused.json()).toMatchObject({
+        code: 'SAME_AS_ME_DISABLED',
+      });
+    } finally {
+      disconnect();
+    }
+    disconnect = await connectOwnKeyPolicy(auth, keys);
+    try {
+      expect((await createThroughBetterAuth()).status).toBe(200);
+      await expect(
+        keys.create(
+          personId,
+          { name: 'old', expiresInDays: 7, scope: null },
+          await identity(),
+        ),
+      ).resolves.toMatchObject({ key: { scope: null, permissions: null } });
+    } finally {
+      disconnect();
+    }
+  });
+
+  it('lets a person create keys of their own only while a role grants settings:personalApiKeys/create', async () => {
+    // Not registered: everyone may, as before.
+    expect(await keys.mayCreateOwn(personId)).toBe(true);
+    settingsItems.add({
+      id: 'personalApiKeys',
+      title: 'Personal API keys',
+      actions: [{ name: 'create', humanOnly: 'Keys never make keys' }],
+    });
+    expect(await keys.mayCreateOwn(personId)).toBe(false);
+    await expect(keys.requireOwnCreation(personId)).rejects.toMatchObject({
+      status: 403,
+      code: 'API_KEY_CREATION_FORBIDDEN',
+    });
+    // The person still lists and revokes the keys they have.
+    const listed = await keys.list(personId);
+    expect(listed.length).toBeGreaterThan(0);
+    await keys.revoke(personId, listed[0]!.id);
+    // An application's own policy still decides when it sets one.
+    const release = keys.setOwnKeyPolicy(() => Promise.resolve(true));
+    try {
+      expect(await keys.mayCreateOwn(personId)).toBe(true);
+    } finally {
+      release();
+    }
+  });
+
+  it('shows the actions a key lost with its owner, and gives them back when the owner holds them again', async () => {
+    const created = await keys.create(
+      personId,
+      { name: 'lapsing', expiresInDays: 7, permissions: ordersReadUpdate },
+      await identity(),
+    );
+    expect(await keys.detail(personId, created.key.id)).toMatchObject({
+      lapsed: [],
+    });
+    revoked.add('orders/update');
+    try {
+      expect((await keys.detail(personId, created.key.id)).lapsed).toEqual([
+        { resource: orders, actions: [{ action: 'update' }] },
+      ]);
+      expect(
+        (await app.request('/settings/orders/update', asKey(created.secret)))
+          .status,
+      ).toBe(403);
+    } finally {
+      revoked.delete('orders/update');
+    }
+    expect((await keys.detail(personId, created.key.id)).lapsed).toEqual([]);
+    expect(
+      (await app.request('/settings/orders/update', asKey(created.secret)))
+        .status,
+    ).toBe(200);
+  });
+
+  it('never lets a key reach more records of a composite action than its owner’s roles do', async () => {
+    const sets = (scope: unknown) => ({
+      list: () =>
+        Promise.resolve([
+          {
+            key: 'staff',
+            grants: [
+              {
+                resource: quotes,
+                actions: [
+                  {
+                    action: 'view',
+                    policy: { type: 'composite', scopes: { quote: scope } },
+                  },
+                ],
+              },
+            ],
+          },
+          { key: 'other', grants: [] },
+        ]),
+      listAssignments: () =>
+        Promise.resolve([
+          { subject: { type: 'user', id: personId }, permissionSet: 'staff' },
+        ]),
+    });
+    const withQuotes = (quote: unknown): KeyPermissions => ({
+      grants: [
+        {
+          resource: quotes,
+          actions: [
+            {
+              action: 'view',
+              policy: { type: 'composite', scopes: { quote } },
+            },
+          ],
+        },
+      ],
+    });
+    Reflect.set(authz, 'permissionSets', sets('recordsIOwn'));
+    try {
+      const grantable = await keys.grantable(personId);
+      expect(
+        grantable.grants
+          .find((grant) => grant.resource.id === quotes.id)
+          ?.actions.find((action) => action.action === 'view'),
+      ).toMatchObject({ scopes: { quote: ['recordsIOwn'] } });
+      for (const quote of [{ type: 'all' }, { type: 'records', ids: ['q1'] }])
+        await expect(
+          keys.create(
+            personId,
+            { name: 'wide', expiresInDays: 7, permissions: withQuotes(quote) },
+            await identity(),
+          ),
+        ).rejects.toMatchObject({
+          status: 403,
+          code: 'KEY_SCOPE_EXCEEDS_YOURS',
+        });
+      // Holding every record, any narrower scope may be given.
+      Reflect.set(authz, 'permissionSets', sets({ type: 'all' }));
+      await expect(
+        keys.create(
+          personId,
+          {
+            name: 'picked',
+            expiresInDays: 7,
+            permissions: withQuotes({ type: 'records', ids: ['q1'] }),
+          },
+          await identity(),
+        ),
+      ).resolves.toMatchObject({ key: { name: 'picked' } });
+    } finally {
+      Reflect.deleteProperty(authz, 'permissionSets');
+    }
   });
 });
