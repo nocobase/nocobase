@@ -81,6 +81,20 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBe('sub2-2');
   });
 
+  it('preserves the first persisted object slot when a second editor saves a different model', async () => {
+    const parent = await repository.insertModel({ uid: 'tab', use: 'PageTabModel' });
+    const values = { uid: 'first-grid', use: 'GridModel', parentId: parent.uid, subKey: 'grid', subType: 'object' };
+    const save = (uid: string) =>
+      app
+        .agent()
+        .resource('flowModels')
+        .save({ ensureObjectSlot: true, values: { ...values, uid } });
+    expect((await save('first-grid')).status).toBe(200);
+    expect((await save('second-grid')).status).toBe(409);
+    expect((await repository.findModelByParentId(parent.uid, { subKey: 'grid' })).uid).toBe('first-grid');
+    expect(await repository.findModelById('second-grid')).toBeNull();
+  });
+
   it('should use row uid and tree parent when stored options are polluted', async () => {
     await repository.insertModel({
       uid: 'read-parent',

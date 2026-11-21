@@ -1858,6 +1858,32 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return uid ? this.findModelById(uid, options) : null;
   }
 
+  // The editor can create the same object slot in two tabs before either tab has persisted it.
+  @transaction()
+  async saveToObjectSlot(
+    model: { uid?: string; parentId?: string; subKey?: string; subType?: string; [key: string]: unknown },
+    options?: Transactionable,
+  ) {
+    if (model.parentId && model.subType === 'object') {
+      const parent = await this.database.getRepository('flowModelTreePath').model.findOne({
+        attributes: ['ancestor'],
+        where: { descendant: model.parentId, ancestor: model.parentId, depth: 0 },
+        transaction: options?.transaction,
+        lock: true,
+      });
+      if (!parent) {
+        throw Object.assign(new Error(`Invalid flow model parent '${model.parentId}'`), { status: 400 });
+      }
+      const existing = await this.findModelUidByParentId(model.parentId, { ...options, subKey: model.subKey });
+      if (existing && existing !== model.uid) {
+        throw Object.assign(new Error(`Flow model '${model.parentId}' already has a '${model.subKey}' child`), {
+          status: 409,
+        });
+      }
+    }
+    return this.upsertModel(model, options);
+  }
+
   @transaction()
   async attach(uid: string, attachOptions: FlowModelAttachOptions, options?: Transactionable) {
     const { transaction } = options || {};
