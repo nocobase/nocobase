@@ -7,7 +7,7 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Routes, Route, useLocation } from 'react-router';
+import { Outlet, Routes, Route, useLocation } from 'react-router';
 import { expect, it, vi } from 'vitest';
 import UsersPage from '../client/pages/users/users.js';
 import UserDetail from '../client/pages/users/user-detail.js';
@@ -588,3 +588,82 @@ it('uses Member only as a creation default and respects explicitly cleared selec
     ),
   );
 });
+
+// An application that replaces only the list keeps the plugin's editor under its own `<Outlet />`, with whatever
+// context it passes there, or none.
+it.each([
+  ['no context', undefined],
+  ['a context without reload', { filter: 'active' }],
+  ['a reload callback', 'reload'],
+] as const)(
+  'saves and closes the plugin editor under a replaced list with %s',
+  async (_, context) => {
+    const reload = vi.fn();
+    let current = { ...original };
+    const calls = vi.fn(
+      ({
+        path,
+        method,
+        json,
+      }: {
+        path: string;
+        method: string;
+        json?: object;
+      }) => {
+        if (path === 'authorization/permissions')
+          return { data: { unrestricted: true, permissions: [] } };
+        if (path === 'users/options') return { data: { roleScopes: [] } };
+        if (path === 'users/alice' && method === 'PATCH')
+          current = { ...current, ...json };
+        return { data: current };
+      },
+    );
+    function MembersPage() {
+      return (
+        <>
+          <h1>Members</h1>
+          <Outlet context={context === 'reload' ? { reload } : context} />
+        </>
+      );
+    }
+    const view = await renderWithApp(
+      <>
+        <Routes>
+          <Route path='/settings/users' element={<MembersPage />}>
+            <Route path=':userId/edit' element={<UserForm />} />
+          </Route>
+        </Routes>
+        <Location />
+      </>,
+      {
+        route: '/settings/users/alice/edit',
+        namespace,
+        namespaces,
+        services,
+        fetch: answerApi(calls),
+      },
+    );
+    const name = await screen.findByRole('textbox', { name: 'Name *' });
+    await waitFor(() => expect(name).toHaveValue('Alice'));
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Alice updated');
+    fireEvent.submit(name.closest('form')!);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(view.toasts()).toMatchObject([
+      {
+        type: 'success',
+        title: enUS.management.saved.replace('{{name}}', 'Alice updated'),
+      },
+    ]);
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/settings\/users$/u,
+    );
+    expect(screen.getByRole('heading', { name: 'Members' })).toBeVisible();
+    if (context === 'reload')
+      expect(reload).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Alice updated' }),
+      );
+  },
+);

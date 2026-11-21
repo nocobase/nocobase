@@ -204,8 +204,15 @@ function UserEditor(): ReactElement {
   const client = useMemo(() => new UsersClient(api), [api]);
   const navigate = useNavigate();
   const location = useLocation();
-  // The list's `<Outlet context={{ reload }} />`; a replacement list that passes none still gets a working form.
-  const parent = useOutletContext<UserFormOutletContext | undefined>();
+  // The list's `<Outlet context={{ reload }} />`. A replacement list may pass no context, or a context of its own
+  // without `reload`; the form then saves and closes without refreshing it.
+  const outlet: unknown = useOutletContext();
+  const reloadParent =
+    outlet &&
+    typeof outlet === 'object' &&
+    typeof (outlet as Partial<UserFormOutletContext>).reload === 'function'
+      ? (outlet as UserFormOutletContext).reload
+      : undefined;
   const data = useSettingsData<{ data: ManagedUser }>(
     userId ? `users/${encodeURIComponent(userId)}` : 'users/options',
   );
@@ -217,9 +224,9 @@ function UserEditor(): ReactElement {
       missingRef.current !== data.error
     ) {
       missingRef.current = data.error;
-      parent?.reload();
+      reloadParent?.();
     }
-  }, [data.error, parent]);
+  }, [data.error, reloadParent]);
   const options = useSettingsData<{ data: UsersOptions }>('users/options');
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role', userId ?? '*');
@@ -382,7 +389,7 @@ function UserEditor(): ReactElement {
       );
       if (!updated) return;
       setDirty(false);
-      parent?.reload(updated);
+      reloadParent?.(updated);
       toaster.show({
         type: 'success',
         title: t(creating ? 'management.created' : 'management.saved', {
