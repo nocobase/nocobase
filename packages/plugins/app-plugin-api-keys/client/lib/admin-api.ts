@@ -65,6 +65,7 @@ export interface ApiKeysAdminApi {
   systemKeys(filter: {
     search?: string;
     managed?: boolean;
+    keyId?: string;
     page?: number;
   }): Promise<{ data: SystemKey[]; total: number }>;
   systemKey(identityId: string): Promise<SystemKey>;
@@ -91,6 +92,7 @@ export interface ApiKeysAdminApi {
     search?: string;
     sameAsMember?: boolean;
     idleDays?: number;
+    keyId?: string;
     page?: number;
   }): Promise<{ data: MemberKey[]; total: number }>;
   revokeMemberKey(keyId: string): Promise<void>;
@@ -104,7 +106,7 @@ export function createApiKeysAdminApi(api: ApiClient): ApiKeysAdminApi {
   const data = async <T>(promise: Promise<{ data: T }>): Promise<T> =>
     (await promise).data;
   return {
-    systemKeys: async ({ search, managed, page }) => {
+    systemKeys: async ({ search, managed, keyId, page }) => {
       const answer = await api.request<{
         data: SystemKey[];
         meta: { total: number };
@@ -115,6 +117,7 @@ export function createApiKeysAdminApi(api: ApiClient): ApiKeysAdminApi {
           pageSize: String(SYSTEM_KEYS_PAGE),
           ...(page ? { page: String(page) } : {}),
           ...(search ? { q: search } : {}),
+          ...(keyId ? { keyId } : {}),
         },
       });
       return { data: answer.data, total: answer.meta.total };
@@ -178,6 +181,7 @@ export function createApiKeysAdminApi(api: ApiClient): ApiKeysAdminApi {
           ...(filter.search ? { q: filter.search } : {}),
           ...(filter.sameAsMember ? { sameAsMember: 'true' } : {}),
           ...(filter.idleDays ? { idleDays: String(filter.idleDays) } : {}),
+          ...(filter.keyId ? { keyId: filter.keyId } : {}),
           ...(filter.page ? { page: String(filter.page) } : {}),
         },
       });

@@ -27,6 +27,8 @@ export interface MemberKeysFilter {
   readonly sameAsMember?: boolean;
   /** Only keys unused (or never used) for at least this many days. */
   readonly idleDays?: number;
+  /** Only this key. */
+  readonly keyId?: string;
   readonly page?: number;
   readonly pageSize?: number;
 }
@@ -63,6 +65,7 @@ export class MemberKeys {
         .where('user.deletedAt', 'is', null);
       if (filter.sameAsMember)
         query = query.where('apikey.permissions', 'is', null);
+      if (filter.keyId) query = query.where('apikey.id', '=', filter.keyId);
       if (cutoff)
         query = query.where((eb) =>
           eb.or([

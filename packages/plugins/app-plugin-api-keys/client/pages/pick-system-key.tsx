@@ -34,11 +34,25 @@ function Picker({
       ),
     [admin, t],
   );
+  const resolve = useCallback(
+    async (keyId: string) => {
+      const [key] = (await admin.systemKeys({ keyId })).data;
+      return key
+        ? {
+            id: key.id,
+            title: key.name ?? key.id,
+            description: t('check.systemIdentity'),
+          }
+        : undefined;
+    },
+    [admin, t],
+  );
   return (
     <KeyOptionPicker
       value={value}
       onChange={onChange}
       search={search}
+      resolve={resolve}
       label={t('check.systemKey')}
     />
   );

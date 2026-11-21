@@ -508,6 +508,8 @@ export class SystemApiKeys {
     input: {
       readonly search?: string;
       readonly managed?: boolean;
+      /** Only the system key whose API key this is. */
+      readonly keyId?: string;
       readonly page?: number;
       readonly pageSize?: number;
     } = {},
@@ -528,6 +530,7 @@ export class SystemApiKeys {
         query = query.where((eb) =>
           eb(eb.fn.lower('apikey.name'), 'like', pattern),
         );
+      if (input.keyId) query = query.where('apikey.id', '=', input.keyId);
       return query;
     };
     const pageSize = Math.min(Math.max(input.pageSize ?? 50, 1), 100);

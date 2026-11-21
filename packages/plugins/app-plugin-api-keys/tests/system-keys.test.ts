@@ -902,6 +902,15 @@ describe('system keys', () => {
       await call('/apiKeys/members?sameAsMember=true', adminCookie)
     ).json()) as { data: { id: string }[] };
     expect(sameAsMember.data.map((key) => key.id)).toEqual([full.key.id]);
+    // One key by its id, as a picker names the key it was opened with.
+    const byId = (await (
+      await call(`/apiKeys/members?keyId=${own.key.id}`, adminCookie)
+    ).json()) as { data: { id: string }[] };
+    expect(byId.data.map((key) => key.id)).toEqual([own.key.id]);
+    const system = (await systemKeys.list({ search: 'system' })).data[0]!;
+    expect(
+      (await systemKeys.list({ keyId: system.id })).data.map((key) => key.id),
+    ).toEqual([system.id]);
     expect(
       (await call(`/apiKeys/members/${full.key.id}`, adminCookie, 'DELETE'))
         .status,

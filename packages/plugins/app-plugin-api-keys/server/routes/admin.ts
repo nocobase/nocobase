@@ -155,6 +155,7 @@ const ListSystemKeysQuery = z.object({
     .enum(['true', 'false'])
     .optional()
     .describe('Only managed keys (`true`) or only the others (`false`).'),
+  keyId: z.string().max(64).optional().describe('Only the key with this id.'),
   page: z.coerce.number().int().min(1).optional().describe('The page, from 1.'),
   pageSize: z.coerce
     .number()
@@ -172,6 +173,7 @@ const ListMemberKeysQuery = z.object({
     .optional()
     .transform((value) => value === 'true'),
   idleDays: z.coerce.number().int().min(1).max(3650).optional(),
+  keyId: z.string().max(64).optional().describe('Only the key with this id.'),
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).optional(),
 });
@@ -220,6 +222,7 @@ export function installKeyAdministration(
         ...(query.q ? { search: query.q } : {}),
         sameAsMember: query.sameAsMember,
         ...(query.idleDays ? { idleDays: query.idleDays } : {}),
+        ...(query.keyId ? { keyId: query.keyId } : {}),
         ...(query.page ? { page: query.page } : {}),
         ...(query.pageSize ? { pageSize: query.pageSize } : {}),
       });
@@ -303,9 +306,10 @@ export function installSystemKeys(
     }),
     apiValidator('query', ListSystemKeysQuery),
     async (context) => {
-      const { q, managed, page, pageSize } = context.req.valid('query');
+      const { q, managed, keyId, page, pageSize } = context.req.valid('query');
       const { data, total } = await systemKeys.list({
         ...(q ? { search: q } : {}),
+        ...(keyId ? { keyId } : {}),
         ...(managed ? { managed: managed === 'true' } : {}),
         ...(page ? { page } : {}),
         ...(pageSize ? { pageSize } : {}),

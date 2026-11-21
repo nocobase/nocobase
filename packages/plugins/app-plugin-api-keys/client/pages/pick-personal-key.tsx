@@ -34,11 +34,25 @@ function Picker({
       })),
     [admin],
   );
+  const resolve = useCallback(
+    async (keyId: string) => {
+      const [key] = (await admin.memberKeys({ keyId })).data;
+      return key
+        ? {
+            id: key.id,
+            title: key.name ?? key.id,
+            description: key.member.name,
+          }
+        : undefined;
+    },
+    [admin],
+  );
   return (
     <KeyOptionPicker
       value={value}
       onChange={onChange}
       search={search}
+      resolve={resolve}
       label={t('check.personalKey')}
     />
   );

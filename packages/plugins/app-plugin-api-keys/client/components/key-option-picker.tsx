@@ -16,11 +16,14 @@ export function KeyOptionPicker({
   value,
   onChange,
   search,
+  resolve,
   label,
 }: {
   readonly value: string;
   readonly onChange: (id: string | undefined) => void;
   readonly search: (query: string) => Promise<readonly KeyOption[]>;
+  /** The option chosen, by its id, however far down the list it is. */
+  readonly resolve?: (id: string) => Promise<KeyOption | undefined>;
   readonly label: string;
 }): ReactElement {
   const { t } = useTranslation(API_KEYS_NAMESPACE);
@@ -47,6 +50,20 @@ export function KeyOptionPicker({
       clearTimeout(timer);
     };
   }, [query, search, value]);
+  // The option chosen is named even when no search lists it, such as one opened from a link.
+  useEffect(() => {
+    if (!value || !resolve) return;
+    let active = true;
+    resolve(value).then(
+      (found) => {
+        if (active && found) setChosen(found);
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [value, resolve]);
   if (value)
     return (
       <div className='flex flex-wrap items-center gap-2 text-sm'>
