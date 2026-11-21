@@ -1,0 +1,15 @@
+# Measuring source scan performance
+
+Measure the complete `collectModuleSources()` call against one frozen application source snapshot. Build both plugin versions with the same TypeScript compiler and dependency installation, then run each compiled `dist/server/module-sources.js` with plain Node in a fresh process. Keep the application files, runtime-provider inputs, compiler options, Node version and dependency lock identical. Do not compare a TypeScript loader run with a compiled JavaScript run.
+
+Run scans sequentially without profiling, instrumentation, forced garbage collection or heap limits. Record collector wall time with `performance.now()` and process peak RSS with `process.resourceUsage().maxRSS`; retain `/usr/bin/time -v` output for process wall time and CPU usage. Node reports peak RSS in KiB on Linux; multiply by 1024 / 1,000,000,000 for decimal GB. Record CPU, available memory, kernel, concurrent load, source commit, application commit and SHA-256 hashes of the dependency lock, application files and built plugin files. Report missing deployment locks explicitly.
+
+Save the entire result of `collectModuleSources()`, including route order, providers, API evidence, collections and completeness. Compare parsed results item by item, retaining the original JSON and hashes. In separate correctness runs, create a `SourceGraph`, call `overrides()`, `entry()`, `walk(entry, false)`, `prepare(entry)` and `apiDependencies()`, then save every endpoint in order. Compare all endpoint fields, including dependencies, conditions, continuation and uncertainty. Keep these correctness runs separate from the complete scan timings. Measurement and comparison scripts belong with the external evidence archive, outside this repository.
+
+## Discarding unsafe evidence
+
+API dependency collection discards both providers and collections when a contextual slice reports either an unsafe capability escape or an unsafe value escape. Only this caller opts into stopping subsequent visits after that verdict. Traversal limits, unresolved calls and incomplete evidence alone do not enable early stopping. Default contextual diagnostics and noncontextual page discovery continue traversing, since their callers may observe the remaining nodes and references. Safety flags and traversal state belong to each collection call; a rejected endpoint must not suppress later endpoints.
+
+The optimization adds a short-circuit check per syntax-node visit. It adds no queries, writes, locks, network requests or per-endpoint result caches. The source graph's existing input, write, authorization and unknown-effect checks continue to determine the safety verdict.
+
+Run the foundation package's lint, typecheck, tests and build, including safe and unsafe traversal regressions. Run relevant template integration tests and the frozen application's boundary probes before interpreting a performance improvement as a valid result. Repeat final measurements on a fixed version containing all accepted recognition changes; an earlier correctness baseline remains specific to its recorded version.

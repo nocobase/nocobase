@@ -465,6 +465,7 @@ export class SourceGraph {
     file: string,
     roots?: readonly ts.Node[],
     contextualCalls = false,
+    discardUnsafe = false,
   ): {
     sources: (Source & { nodes: ReadonlySet<ts.Node> })[];
     providers: Set<string>;
@@ -473,7 +474,12 @@ export class SourceGraph {
     unsafeCapability: boolean;
     unsafeValue: boolean;
   } {
-    const slice = this.analysis?.collect(file, roots, contextualCalls);
+    const slice = this.analysis?.collect(
+      file,
+      roots,
+      contextualCalls,
+      discardUnsafe,
+    );
     const providers = new Set<string>();
     for (const reference of slice?.references ?? [])
       addProvider(providers, reference);
@@ -555,7 +561,8 @@ export class SourceGraph {
       (await this.walk(source.file, false)).sources,
       this.analysis,
       (file, nodes) => {
-        const evidence = this.evidence(file, nodes, true);
+        // This caller observes no evidence from unsafe slices.
+        const evidence = this.evidence(file, nodes, true, true);
         return evidence.unsafeCapability || evidence.unsafeValue
           ? { providers: [], collections: [] }
           : {

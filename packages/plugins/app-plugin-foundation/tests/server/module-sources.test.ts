@@ -9,7 +9,7 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import ts from 'typescript';
 
 import { businessModules } from '../../client/business-modules.js';
@@ -56,6 +56,54 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it('keeps endpoint and page outputs identical when unsafe evidence is discarded early', async () => {
+    const { SourceEvidence } = await import('../../server/source-evidence.js');
+    const { SourceGraph } = await import('../../server/module-sources.js');
+    const root = await fixture({
+      'client/routes.ts': `const componentLoader=()=>import('./page.js'); export default [{name:'unsafe',componentLoader},{name:'write',componentLoader},{name:'safe',componentLoader}];`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; import {send} from '@nocobase/app-plugin-notification/client'; export default ()=>{const api=useApiClient(); send(); api.request({path:'unsafe'}); api.request({path:'write'}); return api.request({path:'safe'});};`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read,databaseManagerToken} from '@nocobase/db'; const router=new Hono(); router.get('/unsafe',()=>{external(container); read();}); router.get('/write',()=>{const db=container.resolve(databaseManagerToken); db.extra=1; read();}); router.get('/safe',()=>read()); export default ()=>new Hono().route('/',router);`,
+    });
+    const endpoints = async () => {
+      const graph = await SourceGraph.create(root);
+      const entry = await graph.entry();
+      expect(entry).toBeDefined();
+      await graph.prepare(entry!);
+      return graph.apiDependencies();
+    };
+    const optimized = await collectModuleSources(root);
+    const optimizedEndpoints = await endpoints();
+    const collect = SourceEvidence.prototype.collect;
+    const fullTraversal = vi
+      .spyOn(SourceEvidence.prototype, 'collect')
+      .mockImplementation(function (
+        this: InstanceType<typeof SourceEvidence>,
+        file,
+        roots,
+        contextualCalls,
+      ) {
+        return collect.call(this, file, roots, contextualCalls);
+      });
+    try {
+      expect(await collectModuleSources(root)).toEqual(optimized);
+      expect(await endpoints()).toEqual(optimizedEndpoints);
+    } finally {
+      fullTraversal.mockRestore();
+    }
+    expect(
+      optimizedEndpoints.map(({ path, providers }) => ({ path, providers })),
+    ).toEqual([
+      { path: '/unsafe', providers: [] },
+      { path: '/write', providers: [] },
+      { path: '/safe', providers: ['@nocobase/db'] },
+    ]);
+    expect(optimized.routes).toHaveLength(3);
+    expect(optimized.routes[0]).toMatchObject({
+      providers: ['@nocobase/app-client', '@nocobase/app-plugin-notification'],
+      apiProviders: ['@nocobase/db'],
+    });
+  });
+
   it.each(['local', 'property', 'parameter', 'nested', 'imported'])(
     'resolves %s child route references with invocation-local bindings',
     async (kind) => {
