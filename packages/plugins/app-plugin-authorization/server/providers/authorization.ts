@@ -26,7 +26,7 @@ import {
   documentAuthorizationRoutes,
   requireSettings,
 } from '../extension/http.js';
-import type { Context } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 import type { AuthorizationEnv } from '@nocobase/authorization/core';
 import { authorizationToken } from '../tokens.js';
 import { reportAuthorizationUi } from '../ui.js';
@@ -62,15 +62,16 @@ export class AuthorizationProvider<
       authenticationSettingsAccessToken,
       (container) => {
         const identity = container.resolve(authorizationToken).middleware();
-        return (context, next) =>
+        const check: MiddlewareHandler<AuthorizationEnv> = (context, next) =>
           identity(context, async () => {
             await requireSettings(
-              (context as Context<AuthorizationEnv>).var.authz,
+              context.var.authz,
               AUTHENTICATION_SETTINGS_ID,
               'read',
             );
             await next();
           });
+        return check;
       },
     );
   }
