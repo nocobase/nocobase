@@ -168,4 +168,18 @@ describe('application manifest identity', () => {
       apiInfo: { title: identity.name, version: '0.0.0' },
     });
   });
+
+  it.each([null, { displayName: 42, version: false }])(
+    'keeps the defaults for an existing root manifest with invalid identity: %j',
+    async (value) => {
+      const root = createRoot();
+      writeManifest(root, 'package.json', value);
+      writeManifest(root, 'dist/package.json', identity);
+
+      expect(await readIdentity(await createApp(root, 'embedded'))).toEqual({
+        publicApp: undefined,
+        apiInfo: { title: 'main', version: '0.0.0' },
+      });
+    },
+  );
 });
