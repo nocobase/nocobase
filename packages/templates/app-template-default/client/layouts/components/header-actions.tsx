@@ -53,13 +53,9 @@ export function HeaderActionBar({
   readonly actions: readonly AppClientRegisteredHeaderAction[];
   readonly children?: ReactNode;
 }): ReactElement {
-  const { t } = useTranslation();
-  const isMobile = useIsMobile();
   // Each action's badge hook runs once, in an always-mounted probe, so an action in the closed More popover still
   // counts and its hook is never called twice.
-  const [badges, setBadges] = useState<
-    Readonly<Record<string, AppClientBadge | undefined>>
-  >({});
+  const [badges, setBadges] = useState<Badges>({});
   const report = useCallback(
     (name: string, badge: AppClientBadge | undefined) =>
       setBadges((current) =>
@@ -68,20 +64,6 @@ export function HeaderActionBar({
           : { ...current, [name]: badge },
       ),
     [],
-  );
-  const inline =
-    isMobile && actions.length > PHONE_INLINE_ACTIONS
-      ? actions.slice(0, PHONE_INLINE_ACTIONS - 1)
-      : actions;
-  const overflow = actions.slice(inline.length);
-  const overflowCount = overflow.reduce(
-    (sum, action) => sum + badgeCount(badges[action.name]),
-    0,
-  );
-  const overflowAttention = overflow.some(
-    (action) =>
-      badgeCount(badges[action.name]) > 0 &&
-      badges[action.name]?.tone === 'attention',
   );
   return (
     <TooltipProvider>
@@ -99,52 +81,105 @@ export function HeaderActionBar({
             />
           ) : null,
         )}
-        {inline.map((action) => (
-          <HeaderActionSlot
-            key={action.name}
-            action={action}
-            badge={badges[action.name]}
-          />
-        ))}
-        {overflow.length ? (
-          <Popover>
-            <PopoverTrigger
-              render={
-                <Button
-                  variant='outline'
-                  size='icon'
-                  className='relative size-10 rounded-xl border-border bg-background/60 text-foreground dark:border-border'
-                  aria-label={t('navigation.moreActions')}
-                  data-testid='header-actions-more'
-                />
-              }
-            >
-              <Ellipsis />
-              {overflowCount > 0 ? (
-                <CornerBadge
-                  count={overflowCount}
-                  attention={overflowAttention}
-                />
-              ) : null}
-            </PopoverTrigger>
-            <PopoverContent
-              align='end'
-              className='w-auto flex-row flex-wrap items-center gap-2 p-2'
-              aria-label={t('navigation.moreActions')}
-            >
-              {overflow.map((action) => (
-                <HeaderActionSlot
-                  key={action.name}
-                  action={action}
-                  badge={badges[action.name]}
-                />
-              ))}
-            </PopoverContent>
-          </Popover>
-        ) : null}
+        {actions.length > PHONE_INLINE_ACTIONS ? (
+          <ResponsiveActionSlots actions={actions} badges={badges} />
+        ) : (
+          <ActionSlots inline={actions} overflow={[]} badges={badges} />
+        )}
         {children}
       </div>
     </TooltipProvider>
+  );
+}
+
+type Badges = Readonly<Record<string, AppClientBadge | undefined>>;
+
+/** More actions than a phone's header holds: on a phone the first stays and the rest go into More. */
+function ResponsiveActionSlots({
+  actions,
+  badges,
+}: {
+  readonly actions: readonly AppClientRegisteredHeaderAction[];
+  readonly badges: Badges;
+}): ReactElement {
+  const isMobile = useIsMobile();
+  const inline = isMobile
+    ? actions.slice(0, PHONE_INLINE_ACTIONS - 1)
+    : actions;
+  return (
+    <ActionSlots
+      inline={inline}
+      overflow={actions.slice(inline.length)}
+      badges={badges}
+    />
+  );
+}
+
+function ActionSlots({
+  inline,
+  overflow,
+  badges,
+}: {
+  readonly inline: readonly AppClientRegisteredHeaderAction[];
+  readonly overflow: readonly AppClientRegisteredHeaderAction[];
+  readonly badges: Badges;
+}): ReactElement {
+  const { t } = useTranslation();
+  const overflowCount = overflow.reduce(
+    (sum, action) => sum + badgeCount(badges[action.name]),
+    0,
+  );
+  const overflowAttention = overflow.some(
+    (action) =>
+      badgeCount(badges[action.name]) > 0 &&
+      badges[action.name]?.tone === 'attention',
+  );
+  return (
+    <>
+      {inline.map((action) => (
+        <HeaderActionSlot
+          key={action.name}
+          action={action}
+          badge={badges[action.name]}
+        />
+      ))}
+      {overflow.length ? (
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                variant='outline'
+                size='icon'
+                className='relative size-10 rounded-xl border-border bg-background/60 text-foreground dark:border-border'
+                aria-label={t('navigation.moreActions')}
+                data-testid='header-actions-more'
+              />
+            }
+          >
+            <Ellipsis />
+            {overflowCount > 0 ? (
+              <CornerBadge
+                count={overflowCount}
+                attention={overflowAttention}
+              />
+            ) : null}
+          </PopoverTrigger>
+          <PopoverContent
+            align='end'
+            className='w-auto flex-row flex-wrap items-center gap-2 p-2'
+            aria-label={t('navigation.moreActions')}
+          >
+            {overflow.map((action) => (
+              <HeaderActionSlot
+                key={action.name}
+                action={action}
+                badge={badges[action.name]}
+              />
+            ))}
+          </PopoverContent>
+        </Popover>
+      ) : null}
+    </>
   );
 }
 

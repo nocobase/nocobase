@@ -158,3 +158,15 @@ describe('header actions', () => {
     expect(screen.queryByRole('button', { name: 'More actions' })).toBeNull();
   });
 });
+
+it('registers the Agent chat button in the header, next to the account menu', async () => {
+  const [{ headerActions, headerActionOverrides }, { ChatHeaderButton }] =
+    await Promise.all([
+      import('../../client/header-actions.js'),
+      import('../../client/extensions/nocobase-agent-chat/launchers.js'),
+    ]);
+  expect(headerActions).toEqual([
+    { name: 'agent-chat', order: 900, component: ChatHeaderButton },
+  ]);
+  expect(headerActionOverrides).toEqual([]);
+});

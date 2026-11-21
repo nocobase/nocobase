@@ -158,3 +158,10 @@ describe('header actions', () => {
     expect(screen.queryByRole('button', { name: 'More actions' })).toBeNull();
   });
 });
+
+it('registers no header action of its own, so the header shows only the account menu', async () => {
+  const { headerActions, headerActionOverrides } =
+    await import('../../client/header-actions.js');
+  expect(headerActions).toEqual([]);
+  expect(headerActionOverrides).toEqual([]);
+});
