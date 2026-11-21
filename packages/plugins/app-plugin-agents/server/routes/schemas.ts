@@ -53,6 +53,7 @@ import {
   AGENT_UNUSABLE_REASONS,
   MODEL_AVAILABILITY_STATUSES,
   type Agent,
+  type ChatRole,
   type AgentActionOption,
   type AgentChange,
   type AgentName,
@@ -93,11 +94,10 @@ import type { I18nText } from '../../shared/i18n.js';
 import {
   MODEL_KINDS,
   type DefaultModels,
-  MODEL_PROVIDER_NAMES,
   type ModelCheck,
   type ModelKind,
-  type ModelProviderName,
   type ModelService,
+  type ModelProviderOption,
   type ModelServiceView,
   type ProviderModels,
 } from '../../shared/models.js';
@@ -688,6 +688,13 @@ const agentObject = z.object({
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
+  chatRoles: z
+    .array(z.string())
+    .nullable()
+    .meta({
+      description:
+        'Who may chat with it: null for every signed-in person, else the keys of the permission sets (roles) whose members may.',
+    }),
   lastReportedAt: dateTime.nullable().meta({
     description: 'When a runner last reported its tool and model.',
   }),
@@ -698,6 +705,16 @@ const agentObject = z.object({
   createdAt: dateTime,
   updatedAt: dateTime,
 });
+
+export const ChatRoleSchema: z.ZodType<ChatRole> = z
+  .object({
+    key: z.string().meta({ description: 'The permission set key.' }),
+    title: z
+      .union([z.string(), I18nTextSchema])
+      .nullable()
+      .meta({ description: 'Its title, or an i18n reference; null for none.' }),
+  })
+  .meta({ ref: 'AgentsChatRole' });
 
 export const AgentSchema: z.ZodType<Agent> = agentObject.meta({
   ref: 'AgentsAgent',
@@ -1561,13 +1578,33 @@ export const DefaultModelsSchema: z.ZodType<DefaultModels> = z
   })
   .meta({ ref: 'AgentsDefaultModels' });
 
+export const ModelProviderSchema: z.ZodType<ModelProviderOption> = z
+  .object({
+    name: z.string().meta({
+      description: 'Its type, stored on each service that uses it.',
+    }),
+    title: z.string(),
+    defaultBaseUrl: z.string().nullable().meta({
+      description:
+        'The base URL it calls when a service sets none; null when a service must set one.',
+    }),
+    keyRequired: z
+      .boolean()
+      .meta({ description: 'Whether it answers nothing without an API key.' }),
+    kinds: z
+      .array(z.enum(['chat', 'embedding', 'rerank']))
+      .meta({ description: 'The kinds of model it serves.' }),
+  })
+  .meta({ ref: 'AgentsModelProvider' });
+
 export const ModelServiceViewSchema: z.ZodType<ModelServiceView> = z
   .object({
     name: z.string(),
     title: z.string(),
-    provider: z.enum(
-      MODEL_PROVIDER_NAMES as [ModelProviderName, ...ModelProviderName[]],
-    ),
+    provider: z.string().meta({
+      description:
+        'The provider type: a built-in one or one another plugin registered (`GET /api/agents/modelProviders`).',
+    }),
     baseUrl: z.string().nullable(),
     apiKeySet: z.boolean().meta({
       description: 'Whether a key is stored; the key itself is never answered.',

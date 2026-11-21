@@ -120,6 +120,7 @@ async function fixture() {
       userId: id,
       can: async () => false,
       scope: async () => 'none',
+      chatAudience: async () => 'all' as const,
       onlineContext: {
         user: { id },
         authorization: {

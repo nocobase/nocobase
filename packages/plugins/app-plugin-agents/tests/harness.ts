@@ -472,6 +472,17 @@ export async function createHarness(
           (level === 'related' ? { users: [user] } : level) as Scope,
         );
       },
+      // `x-test-roles`: the caller's permission sets; managers of agents chat with every agent.
+      chatAudience: () =>
+        Promise.resolve(
+          grants.includes('agents.agents/manage')
+            ? ('all' as const)
+            : new Set(
+                (context.req.header('x-test-roles') ?? '')
+                  .split(',')
+                  .filter(Boolean),
+              ),
+        ),
     });
     await next();
   };
@@ -484,6 +495,7 @@ export async function createHarness(
       userId: run.actorUserId,
       can: () => Promise.resolve(false),
       scope: () => Promise.resolve('none' as Scope),
+      chatAudience: () => Promise.resolve(new Set<string>()),
       run: {
         id: run.id,
         subjectKind: run.subjectKind,

@@ -183,6 +183,7 @@ async function fixture(
       userId: user,
       can: async () => false,
       scope: async () => 'none',
+      chatAudience: async () => 'all' as const,
       onlineContext: actor(user),
     });
     await next();

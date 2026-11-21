@@ -35,6 +35,7 @@ const guard: MiddlewareHandler<AdminEnv> = async (context, next) => {
     userId: id,
     can: async () => false,
     scope: async () => 'none',
+    chatAudience: async () => 'all' as const,
     onlineContext: actor(id),
   });
   await next();

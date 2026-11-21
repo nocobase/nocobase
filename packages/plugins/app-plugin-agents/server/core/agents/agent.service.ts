@@ -21,6 +21,7 @@ import { z } from 'zod';
 
 import {
   effortsFor,
+  normalizeChatRoles,
   MAX_MODEL_ENTRIES,
   type Agent,
   type AgentChange,
@@ -77,6 +78,15 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
     .boolean()
     .optional()
     .meta({ description: 'Offer it work, or stop offering it.' }),
+  chatRoles: z
+    .array(z.string().trim().min(1).max(255))
+    .max(100)
+    .nullable()
+    .optional()
+    .meta({
+      description:
+        'Who may chat with it: null or an empty list for every signed-in person, else the keys of the permission sets (roles) whose members may. Managers of agents always may.',
+    }),
   expectedRevision: z
     .number()
     .int()
@@ -454,6 +464,9 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
                   : null,
               status,
               modelEntries: modelEntries.slice(0, MAX_MODEL_ENTRIES),
+              ...(patch.chatRoles === undefined
+                ? {}
+                : { chatRoles: normalizeChatRoles(patch.chatRoles) }),
               updatedAt: now,
             }))
           )

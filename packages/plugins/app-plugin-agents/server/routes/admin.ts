@@ -57,6 +57,7 @@ import {
 } from '../../shared/access.js';
 import { SKILL_UPLOAD_MAX_BYTES, type SkillView } from '../../shared/skills.js';
 import { CONVERSATION_SUBJECT } from '../../shared/conversations.js';
+import type { ChatAudience } from '../../shared/agents.js';
 import type { Run } from '../../shared/runs.js';
 import type { VariableScope } from '../../shared/variables.js';
 import type { AgentsVocabulary } from '../../shared/vocabulary.js';
@@ -194,6 +195,8 @@ export interface AdminCaller {
   readonly keyScope?: KeyScope;
   can(item: SettingsItem, action: SettingsAction): Promise<boolean>;
   scope(key: BusinessKey): Promise<Scope>;
+  /** Who the caller is to an agent that limits who may chat with it (`mayChat`), read once per request. */
+  chatAudience(): Promise<ChatAudience>;
   /** Set when a run's token authenticated the request: the subject the run works on. */
   readonly run?: {
     readonly id: string;

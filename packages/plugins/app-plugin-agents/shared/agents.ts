@@ -97,6 +97,11 @@ export interface Agent {
   readonly maxAttempts: number;
   /** Overrides of the default tool policy (`DEFAULT_TOOL_POLICY`). */
   readonly toolPolicy: Partial<ToolPolicy> | null;
+  /**
+   * Who may chat with it (`mayChat`): null for every signed-in person, else the keys of the permission sets (roles)
+   * whose members may. Managers of agents always may. Work given to it otherwise (assignments, delegation) ignores it.
+   */
+  readonly chatRoles: readonly string[] | null;
   /** When a runner last reported its tool and model; null for the application's own. */
   readonly lastReportedAt: string | null;
   /**
@@ -192,6 +197,8 @@ export interface AgentPatch {
   readonly description?: string | null;
   readonly effort?: string | null;
   readonly enabled?: boolean;
+  /** Who may chat with it: null (or an empty list) for everyone, else permission set keys. */
+  readonly chatRoles?: readonly string[] | null;
   readonly expectedRevision: number;
 }
 
@@ -330,6 +337,7 @@ export const AGENT_HISTORY_FIELDS = [
   'modelEntries',
   'instructions',
   'actions',
+  'chatRoles',
 ] as const;
 
 export type AgentHistoryField = (typeof AGENT_HISTORY_FIELDS)[number];
@@ -408,3 +416,32 @@ export const DEFAULT_TOOL_POLICY: ToolPolicy = {
   ],
   idleTimeoutMs: 30 * 60_000,
 };
+
+/** Who is asking to chat: every agent for a manager of agents (`all`), else the keys of their permission sets. */
+export type ChatAudience = 'all' | ReadonlySet<string>;
+
+/** Whether `audience` may chat with `agent`: an agent open to everyone, or one of the roles it names. */
+export function mayChat(
+  agent: Pick<Agent, 'chatRoles'>,
+  audience: ChatAudience,
+): boolean {
+  if (!agent.chatRoles?.length || audience === 'all') return true;
+  return agent.chatRoles.some((role) => audience.has(role));
+}
+
+/** The stored form of a list of roles: trimmed, unique and sorted, or null for everyone. */
+export function normalizeChatRoles(
+  roles: readonly string[] | null | undefined,
+): readonly string[] | null {
+  const unique = [
+    ...new Set((roles ?? []).map((role) => role.trim()).filter(Boolean)),
+  ].sort();
+  return unique.length ? unique : null;
+}
+
+/** A role an agent's chat may be limited to (`GET /api/agents/chatRoles`): a permission set's key and title. */
+export interface ChatRole {
+  readonly key: string;
+  /** Its title as written, or an i18n reference; null when it has none (show the key). */
+  readonly title: string | I18nText | null;
+}

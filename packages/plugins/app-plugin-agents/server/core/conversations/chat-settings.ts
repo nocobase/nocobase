@@ -127,6 +127,12 @@ export function createChatSettingsService(deps: {
             throw invalid('defaultAgentId names no enabled agent.', {
               field: 'defaultAgentId',
             });
+          // Everyone's default: an agent only some roles may chat with cannot be it.
+          if (agent.chatRoles?.length)
+            throw invalid(
+              'The team default agent must be one everyone may chat with.',
+              { field: 'defaultAgentId', reason: 'AGENT_CHAT_LIMITED' },
+            );
         }
         const now = clock.now().toISOString();
         const values = {
