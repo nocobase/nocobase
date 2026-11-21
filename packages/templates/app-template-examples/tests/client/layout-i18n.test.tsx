@@ -199,13 +199,14 @@ it('opens the settings navigation from the Settings entry and leads back', async
       within(navigation).getByRole('link', { name: 'Projects' }),
     ).toHaveAttribute('aria-current', 'page'),
   );
-  // The Settings entry stands apart from the application's menu, at its end.
+  // The Settings entry stands apart from the application's menu, pinned below it outside the scrolling content.
   const entries = within(
     screen.getByRole('complementary', { name: 'Application navigation' }),
   ).getAllByRole('link');
   const entry = entries.find((link) => link.textContent === 'System settings');
   expect(entry).toHaveAttribute('href', '/settings');
-  expect(entry?.closest('[data-slot="sidebar-content"]')).not.toBeNull();
+  expect(entry?.closest('[data-slot="sidebar-content"]')).toBeNull();
+  expect(entry?.closest('[data-sidebar="sidebar"]')).not.toBeNull();
   expect(within(navigation).queryByText('System settings')).toBeNull();
   expect(
     screen.queryByRole('navigation', { name: 'Resources' }),
