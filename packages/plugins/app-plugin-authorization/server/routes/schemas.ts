@@ -254,6 +254,10 @@ export const ConfiguredAccessSchema: z.ZodType = z
     credential: z
       .object({
         keyId: z.string(),
+        holder: ReferenceSchema.meta({
+          description:
+            'The subject the credential acts as, whose roles and data rules apply.',
+        }),
         state: z.enum(['active', 'disabled', 'expired']).meta({
           description:
             'A disabled or expired credential allows nothing: every decision for it is a denial with that reason.',

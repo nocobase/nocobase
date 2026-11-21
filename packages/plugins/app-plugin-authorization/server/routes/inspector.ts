@@ -290,6 +290,7 @@ export function createInspectorHandler(
             ? {
                 credential: {
                   keyId: keyScope.keyId,
+                  holder: { type: subject.type, id: subject.id },
                   state: found.credential?.state ?? 'active',
                   expiresAt: found.credential?.expiresAt ?? null,
                   personless: keyScope.personless === true,

@@ -209,6 +209,7 @@ describe('the permission inspector endpoint', () => {
     ).json()) as { data: { credential: unknown } };
     expect(configured.data.credential).toEqual({
       keyId: 'k1',
+      holder: { type: 'user', id: 'robot' },
       state: 'disabled',
       expiresAt: null,
       personless: true,

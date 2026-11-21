@@ -278,6 +278,8 @@ export interface ConfiguredAccess {
 /** What a credential, such as an API key, adds on top of the roles of the identity it acts as. */
 export interface ConfiguredCredential {
   keyId: string;
+  /** The subject it acts as, whose roles and data rules apply. */
+  holder: AuthorizationSubject;
   /** A disabled or expired credential allows nothing. */
   state: 'active' | 'disabled' | 'expired';
   expiresAt: string | null;

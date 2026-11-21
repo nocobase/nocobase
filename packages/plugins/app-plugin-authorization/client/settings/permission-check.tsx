@@ -655,7 +655,11 @@ function CheckOne({
     label: text(entry.title),
   }));
   const current = decision?.key === key ? decision.value : undefined;
-  const holders = [subject, ...(configured.identity?.subjects ?? [])];
+  // A credential's data rules are the ones of the subject it acts as.
+  const holders = [
+    configured.credential?.holder ?? subject,
+    ...(configured.identity?.subjects ?? []),
+  ];
   return (
     <section className='flex flex-col gap-4'>
       <div className='grid gap-3 sm:grid-cols-2'>
