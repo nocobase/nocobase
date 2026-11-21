@@ -18,10 +18,30 @@ export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginAppl
           container.resolve(databaseManagerToken),
           container.resolve(driveManagerToken),
           this.app.config?.get<FileDriveConfig>('drive'),
+          configuredConnections(
+            this.app.config?.get<{
+              default?: unknown;
+              connections?: Record<string, unknown>;
+            }>('database'),
+          ),
         ),
     );
   }
 }
+/** The configured connection names, the default first, so every connection's file Collections are checked. */
+function configuredConnections(
+  database:
+    { default?: unknown; connections?: Record<string, unknown> } | undefined,
+): string[] | undefined {
+  const names = Object.keys(database?.connections ?? {});
+  if (names.length === 0) return undefined;
+  const first =
+    typeof database?.default === 'string' ? database.default : undefined;
+  return first && names.includes(first)
+    ? [first, ...names.filter((name) => name !== first)]
+    : names;
+}
+
 const serviceProviders: readonly (typeof FileRepositoryServiceProvider)[] = [
   FileRepositoryServiceProvider,
 ];

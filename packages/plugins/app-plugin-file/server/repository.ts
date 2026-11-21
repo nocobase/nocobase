@@ -148,12 +148,21 @@ export function normalizeStoragePrefix(value: string = 'objects'): string {
   return segments.join('/');
 }
 
+/** A file Collection holding at least one record on a local (`fs`) disk. */
+export interface LocalDiskCollection {
+  /** The database connection that holds the Collection. */
+  readonly connection: string;
+  readonly collection: string;
+}
+
 /** Which file Collections keep objects on a disk only this host can read. */
 export interface LocalDiskUsage {
   /** The Drive's default disk stores objects on this host's file system. */
   readonly defaultDiskIsLocal: boolean;
-  /** File Collections of the default connection holding at least one record on a local (`fs`) disk. */
-  readonly collections: readonly string[];
+  /** File Collections, on every checked connection, holding at least one record on a local disk. */
+  readonly collections: readonly LocalDiskCollection[];
+  /** Connections whose Collections could not be read, so their files are of unknown location. */
+  readonly uncheckedConnections: readonly string[];
 }
 
 /** The part of the Drive configuration {@link ServerFileRepositoryManager.localDiskUsage} reads. */
@@ -167,12 +176,15 @@ export class ServerFileRepositoryManager {
     private readonly database: DatabaseManager,
     private readonly drive: AppDriveManager,
     private readonly driveConfig: FileDriveConfig | undefined = undefined,
+    /** The configured connection names, the default first; only the default connection when absent. */
+    private readonly connectionNames: readonly string[] | undefined = undefined,
   ) {}
 
   /**
    * Reports which file Collections keep objects on a local file-system disk, which other instances of the application
-   * cannot read. Read-only: one schema scan of the default connection and one existence query per file Collection.
-   * Disks are identified by name and driver only; their locations and credentials are never read.
+   * cannot read. Read-only: one schema scan per configured connection and one existence query per file Collection.
+   * Disks are identified by name and driver only; their locations and credentials are never read. A connection that
+   * cannot be read is listed in `uncheckedConnections` instead of failing the whole report.
    */
   async localDiskUsage(): Promise<LocalDiskUsage> {
     const disks = this.driveConfig?.disks ?? {};
@@ -187,20 +199,43 @@ export class ServerFileRepositoryManager {
     const defaultDiskIsLocal =
       this.driveConfig !== undefined &&
       local.includes(this.driveConfig.default);
-    if (local.length === 0) return { defaultDiskIsLocal, collections: [] };
-    const connection = this.database.connection();
-    const collections: string[] = [];
-    for await (const definition of connection.collections.scan()) {
-      const name = definition.name;
-      if (!name || (definition.kind ?? 'table') !== 'table') continue;
-      const fields = new Set((definition.fields ?? []).map(({ name }) => name));
-      if (!FILE_COLUMNS.every((column) => fields.has(column))) continue;
-      const used = await connection.repository<FileRecord>(name).exists({
-        filter: (f) => f.or(local.map((disk) => f.string('disk').eq(disk))),
-      });
-      if (used) collections.push(name);
+    const collections: LocalDiskCollection[] = [];
+    const uncheckedConnections: string[] = [];
+    if (local.length === 0)
+      return { defaultDiskIsLocal, collections, uncheckedConnections };
+    const names = this.connectionNames?.length
+      ? [...new Set(this.connectionNames)]
+      : [undefined];
+    for (const name of names) {
+      let connection: DatabaseConnection | undefined;
+      try {
+        connection = this.database.connection(name);
+        for await (const definition of connection.collections.scan()) {
+          const collection = definition.name;
+          if (!collection || (definition.kind ?? 'table') !== 'table') continue;
+          const fields = new Set(
+            (definition.fields ?? []).map(({ name }) => name),
+          );
+          if (!FILE_COLUMNS.every((column) => fields.has(column))) continue;
+          const used = await connection
+            .repository<FileRecord>(collection)
+            .exists({
+              filter: (f) =>
+                f.or(local.map((disk) => f.string('disk').eq(disk))),
+            });
+          if (used)
+            collections.push({ connection: connection.name, collection });
+        }
+      } catch {
+        uncheckedConnections.push(connection?.name ?? name ?? 'default');
+      }
     }
-    return { defaultDiskIsLocal, collections: collections.sort() };
+    collections.sort(
+      (a, b) =>
+        a.connection.localeCompare(b.connection) ||
+        a.collection.localeCompare(b.collection),
+    );
+    return { defaultDiskIsLocal, collections, uncheckedConnections };
   }
 
   repository(
