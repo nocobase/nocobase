@@ -1,6 +1,8 @@
 import {
-  defineAppRoutes,
-  type AppClientAppRoutesContribution,
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+  SYSTEM_SETTINGS_ROUTE_PATH,
+  type AppClientSystemSettingsRoutesContribution,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 import { Layers, Settings } from 'lucide-react';
@@ -16,9 +18,12 @@ import {
 } from '../shared/capability-guide/index.js';
 
 export interface FoundationRouteOptions {
-  /** Wrap the entry in a settings group for a bare application. */
-  readonly settingsGroup?: boolean;
-  /** App-relative path of the page. Defaults to `/foundation`. */
+  /**
+   * The settings category to join, such as `SYSTEM_SETTINGS_CATEGORIES.system`, or true to declare a standalone Foundation
+   * category. Defaults to the built-in System category.
+   */
+  readonly settingsGroup?: boolean | string;
+  /** Overview path, optionally including the settings prefix. Defaults to `/foundation`. */
   readonly path?: string;
   /** `false` keeps the page out of the menu, for an application that links to it from elsewhere. Defaults to `true`. */
   readonly navigation?: boolean;
@@ -135,7 +140,7 @@ export function capabilityGuideDefinitions(
 
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
-): AppClientAppRoutesContribution {
+): AppClientSystemSettingsRoutesContribution {
   // Without the application's manifest there is nothing to list: an application that has not opted in keeps exactly
   // the App usage page it had.
   const guide = options.manifest
@@ -145,17 +150,31 @@ export function createFoundationRoutes(
         entryLoaders: options.guideEntryLoaders,
       })
     : [];
-  return defineAppRoutes(
-    options.settingsGroup
+  const standalone = options.settingsGroup === true;
+  const parent =
+    typeof options.settingsGroup === 'string'
+      ? options.settingsGroup
+      : standalone
+        ? undefined
+        : SYSTEM_SETTINGS_CATEGORIES.system;
+  const pages = [foundationDefinition(options), ...guide].map((route) => ({
+    ...route,
+    parent,
+    path: route.path.startsWith(SYSTEM_SETTINGS_ROUTE_PATH + '/')
+      ? route.path.slice(SYSTEM_SETTINGS_ROUTE_PATH.length)
+      : route.path,
+  }));
+  return defineSystemSettingsRoutes(
+    standalone
       ? [
           {
             name: 'foundationSettings',
+            category: true,
             navigation: { title: 'nav.settings', icon: Settings, order: 100 },
-            children: [foundationDefinition(options)],
+            children: pages,
           },
-          ...guide,
         ]
-      : [foundationDefinition(options), ...guide],
+      : pages,
   );
 }
 
@@ -166,6 +185,7 @@ function normalizePath(value: string): string {
   return `/${trimmed}`;
 }
 
-const routes: AppClientAppRoutesContribution = createFoundationRoutes();
+const routes: AppClientSystemSettingsRoutesContribution =
+  createFoundationRoutes();
 
 export default routes;

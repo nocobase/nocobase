@@ -21,8 +21,8 @@ export function WorkflowDetailPage({
 }) {
   const { t } = useTranslation();
   usePageBreadcrumb([
-    { label: t('workflows.systemManagement') },
-    { label: t('workflows.title'), to: '/workflows' },
+    { label: t('settings.title'), to: '/settings' },
+    { label: t('workflows.title'), to: '/settings/workflows' },
     { label: listTitle, to: closeTo },
     { label: title },
   ]);

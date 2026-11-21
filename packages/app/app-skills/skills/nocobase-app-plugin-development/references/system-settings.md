@@ -1,6 +1,6 @@
 # Design and develop system settings
 
-Use this reference for persistent configuration and administration of a plugin: permission management, service configuration, policy editors or account administration. A plugin's administration is a server capability, registered as a settings item, and the API that reads and changes it. The plugin contributes no settings page: there is no settings surface in the application, and whether a page for it exists, and where, is the application's decision.
+Use this reference for persistent configuration and administration of a plugin: permission management, service configuration, policy editors or account administration. A plugin's administration is a server capability, registered as a settings item, and the API that reads and changes it. A page over it is a settings page declared with `defineSystemSettingsRoutes()`, mounted under `/settings` in a category the application declares ([client routes](client-routing.md#settings-pages)); its `authz` names the same grant the API checks.
 
 ## Decide ownership and operations
 

@@ -1,5 +1,5 @@
 export default {
-  title: 'Database explorer',
+  title: 'Database',
   description:
     'Browse the application’s database connections, tables and fields.',
   connection: 'Connection',

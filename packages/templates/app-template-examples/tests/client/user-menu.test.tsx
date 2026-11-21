@@ -1,6 +1,8 @@
 import { AppThemeProvider } from '../../client/theme/index.js';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
+import { useLocation } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 
 import { UserMenu } from '../../client/layouts/components/user-menu.js';
@@ -62,4 +64,25 @@ it('uses CJK name endings in the avatar while retaining the full account name an
     'https://example.test/avatar.png',
   );
   expect(trigger).not.toHaveTextContent('周');
+});
+
+function Location(): ReactElement {
+  return <output aria-label='Location'>{useLocation().pathname}</output>;
+}
+
+it('opens personal settings from the first account menu entry', async () => {
+  await renderAuthenticatedClient(
+    <AppThemeProvider>
+      <UserMenu />
+      <Location />
+    </AppThemeProvider>,
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: 'Open account menu' }));
+  const [first] = within(screen.getByRole('menu')).getAllByRole('menuitem');
+  expect(first).toHaveTextContent('Personal settings');
+  await user.click(first!);
+  expect(screen.getByRole('status', { name: 'Location' })).toHaveTextContent(
+    '/me',
+  );
 });

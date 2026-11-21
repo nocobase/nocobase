@@ -1,6 +1,8 @@
-import { Bell, FileText, Settings } from 'lucide-react';
+import { Bell, FileText } from 'lucide-react';
 import {
   defineAppRoutes,
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
   type AppClientRouteDefinition,
 } from '@nocobase/app-client/plugins';
@@ -8,7 +10,8 @@ import {
 /** Enable once notification business scenarios are used. Reuse this module for logs and other real views. */
 export const notificationTemplateRoute = {
   name: 'notificationTemplates',
-  path: '/settings/notifications/templates',
+  // Relative to `/settings`, like every settings page.
+  path: '/notifications/templates',
   auth: 'required' as const,
   authz: {
     resource: { type: 'page', id: 'notification.templates' },
@@ -33,7 +36,10 @@ export function includeNotificationTemplateRoutes(
   contributions: readonly AppClientRouteContribution[],
   invitationConfigured: boolean,
 ): readonly AppClientRouteContribution[] {
-  const roots = contributions.flatMap((contribution) => contribution.routes);
+  // Only settings pages are considered: their paths are relative to `/settings`.
+  const roots = contributions.flatMap((contribution) =>
+    contribution.parent === 'systemSettings' ? contribution.routes : [],
+  );
   const nodes = new Map<
     string,
     { route: AppClientRouteDefinition; parent?: string }
@@ -82,37 +88,27 @@ export function includeNotificationTemplateRoutes(
             : {}),
       }));
     return contributions.map((contribution) =>
-      defineAppRoutes(add(contribution.routes)),
+      contribution.parent === 'systemSettings'
+        ? defineSystemSettingsRoutes(add(contribution.routes))
+        : defineAppRoutes(add(contribution.routes)),
     );
   }
   if (!invitationConfigured) return contributions;
-  const parent = nodes.has('settingsSystem') ? 'settingsSystem' : 'settings';
+  const parent = SYSTEM_SETTINGS_CATEGORIES.messages;
   const module = {
     name: 'notificationManagement',
+    kind: 'module' as const,
     navigation: {
       title: 'settings.notificationManagement',
       description: 'settings.notificationManagementDescription',
       icon: Bell,
     },
     breadcrumb: { title: 'settings.notificationManagement' },
-    children: [templateUnder(pathOf(parent))],
+    children: [templateUnder('')],
   };
-  if (nodes.has(parent))
-    return [
-      ...contributions.slice(0, 1),
-      defineAppRoutes([{ ...module, parent }]),
-      ...contributions.slice(1),
-    ];
   // A configured built-in invitation is business use even before other settings pages are enabled.
   return [
     ...contributions,
-    defineAppRoutes([
-      {
-        name: 'settings',
-        navigation: { title: 'settings.title', icon: Settings, order: 100 },
-        breadcrumb: { title: 'settings.title' },
-        children: [module],
-      },
-    ]),
+    defineSystemSettingsRoutes([{ ...module, parent }]),
   ];
 }

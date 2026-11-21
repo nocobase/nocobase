@@ -1,10 +1,39 @@
 # Client Routes, Navigation, and Overrides
 
-Use Client Routes for navigable browser pages. A plugin contributes its pages through its single `routes` field with `defineAppRoutes()`, the only Client route API, and keeps each page behind a lazy `componentLoader()`.
+Use Client Routes for navigable browser pages. A plugin contributes its pages through its single `routes` field — business pages with `defineAppRoutes()`, system settings pages with `defineSystemSettingsRoutes()`, personal settings pages with `definePersonalSettingsRoutes()` — and keeps each page behind a lazy `componentLoader()`.
 
-## Plugins contribute no settings pages
+## Settings pages
 
-There is no settings or dev surface: no `/settings` or `/dev` prefix, no settings layout, and no settings entry in the application header. A plugin does not contribute administration or settings pages. It exposes its administration through server APIs and, where an administrator grants it, settings items ([system settings](system-settings.md)); whether an application offers a page for it, and where, is the application's decision, made with ordinary App routes in its own `client/routes.ts`. Do not ship development-only tool pages as routes either.
+A plugin's administration page is declared with `defineSystemSettingsRoutes()` and mounted under `/settings`, in the application's System settings ([System settings navigation](../../nocobase-app-development/references/settings-navigation.md)). The definition is the same as an App route's; its `path` is relative to `/settings`, a top-level page names a built-in category with `parent` through `SYSTEM_SETTINGS_CATEGORIES` (`account`, `automation`, `messages`, `ai`, `data`, `system` or `other`), a top-level group declares `kind: 'module'`, and without its own `authz` it admits only unrestricted administrators. A plugin with business configuration may add its own category with a root group declaring `category: true`; a page naming an unknown category is shown under `other` ([categories](../../nocobase-app-development/references/settings-navigation.md#categories)). Pass several contributions as an array:
+
+```ts
+import {
+  defineAppRoutes,
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
+
+const routes = [
+  defineAppRoutes([/* business pages */]),
+  defineSystemSettingsRoutes([
+    {
+      parent: SYSTEM_SETTINGS_CATEGORIES.system,
+      name: 'storageSettings',
+      path: '/storage', // /settings/storage
+      authz: { resource: { type: 'settings', id: 'storage' }, action: 'read' },
+      navigation: {
+        title: 'settings.title',
+        description: 'settings.description',
+      },
+      componentLoader: () => import('./pages/storage-settings.js'),
+    },
+  ]),
+];
+```
+
+The page still sits on a server capability: the settings item and API that read and change the configuration ([system settings](system-settings.md)) check the same grant as the page's `authz`. There is no dev surface; do not ship development-only tool pages as routes. `@nocobase/app-plugin-routes-example` shows one settings page beside its App route.
+
+A page where each signed-in person configures their own account, such as their own API keys or mail accounts, is a personal settings page declared with `definePersonalSettingsRoutes()` and mounted under `/me`, opened from the account menu ([personal settings](../../nocobase-app-development/references/settings-navigation.md#personal-settings)). Its `path` is relative to `/me`, a top-level page names a personal category with `parent` through `PERSONAL_SETTINGS_CATEGORIES` (`account`, `preferences` or `other`), and without its own `authz` it admits every signed-in person and stays out of page permissions; its API reads and writes only the current person's data, taken from the session. A plugin with both an application-wide and a personal side declares one page on each surface.
 
 Paths are internal application paths. Do not include `/main` or another deployment base path.
 

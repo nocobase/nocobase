@@ -6,10 +6,7 @@ import {
   authorizationClientToken,
   type PermissionGrant,
 } from '@nocobase/app-plugin-authorization/client';
-import {
-  defineAppRoutes,
-  defineClientPlugin,
-} from '@nocobase/app-client/plugins';
+import { defineSystemSettingsRoutes } from '@nocobase/app-client/plugins';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
@@ -20,29 +17,15 @@ import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
-// The System settings group of this application's routes, without its business pages.
-const settingsShellRoutes = defineAppRoutes([
+const settingsShellRoutes = defineSystemSettingsRoutes([
   {
-    name: 'systemManagement',
-    navigation: { title: 'settings.title' },
-    children: [
-      {
-        name: 'settingsHome',
-        path: '/settings',
-        auth: 'required',
-        authz: 'skip',
-        componentLoader: async () => ({ default: () => null }),
-      },
-      {
-        name: 'settingsAccount',
-        navigation: { title: 'settings.categories.account', order: 10 },
-        children: [],
-      },
-    ],
+    name: 'settingsHome',
+    path: '/',
+    authz: 'skip',
+    componentLoader: async () => ({ default: () => null }),
   },
 ]);
-
-const namespace = '@nocobase/user-permissions-test';
+const namespace = '@nocobase/app-testing';
 const namespaces = {
   [namespace]: {
     'en-US': async () => ({ default: enUS }),
@@ -115,12 +98,7 @@ describe('user permission configuration', () => {
             namespace,
             namespaces,
             locale,
-            plugins: [
-              defineClientPlugin({
-                packageName: namespace,
-                routes: [settingsShellRoutes, systemSettingsRoutes],
-              })(),
-            ],
+            routes: [settingsShellRoutes, systemSettingsRoutes],
             services: (app: ClientApplication) =>
               app.container.instance(
                 authorizationClientToken,
