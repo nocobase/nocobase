@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import type {
   AuthorizationRequirement,
   LocalizedText,
+  PermissionGrant,
   PermissionSet,
 } from '../authorization-client.js';
 import {
@@ -32,10 +33,23 @@ export interface AuthorizationPageTab extends RegisteredTab {
   readonly authz: AuthorizationRequirement;
 }
 
+/** What a permission tab edits: a role's permissions, or what an API key may do. */
+export type AuthorizationTabTarget = 'role' | 'apiKey';
+
 /** A tab rendered inside another page, loaded only while it is open. */
 export interface AuthorizationContentTab<TProps> extends RegisteredTab {
   /** What the person needs to see the tab. Without one the tab shows wherever its page does. */
   readonly authz?: AuthorizationRequirement;
+  /**
+   * Role tabs only: what the tab shows for, roles unless it says otherwise. A tab for `apiKey` too shows in the
+   * permission table of a key, and declares `resourceTypes`.
+   */
+  readonly targets?: readonly AuthorizationTabTarget[];
+  /**
+   * Role tabs only: the resource types whose grants the tab edits. It receives them as `value` and gives back their
+   * new grants through `onChange`; a role saves them with the rest of its draft, a key holds them like any other.
+   */
+  readonly resourceTypes?: readonly string[];
   readonly component: () => Promise<{
     readonly default: ComponentType<TProps>;
   }>;
@@ -83,11 +97,22 @@ export class AuthorizationTabRegistry<TTab extends RegisteredTab> {
 /** What a data rule tab receives; it renders one kind of rule, such as sharing rules. */
 export type AuthorizationRuleTabProps = Record<string, never>;
 
-/** What a role tab receives: the role being edited. */
+/**
+ * What a role tab receives. Every tab gets whether it may edit and, when it declares `resourceTypes`, their grants
+ * (`value`) and a way to change them (`onChange`): for a role they join its draft and are saved with it; for an API key
+ * they are part of what it may do, bounded by `ceiling`, what the person giving the key holds of those types.
+ */
 export interface AuthorizationRoleTabProps {
-  readonly permissionSet: PermissionSet;
-  /** Whether the person may change this role. */
+  readonly target: AuthorizationTabTarget;
+  /** The role being edited; only for a role. */
+  readonly permissionSet?: PermissionSet;
+  /** Whether the person may change it. */
   readonly editable: boolean;
+  /** The grants of the tab's `resourceTypes`. */
+  readonly value: readonly PermissionGrant[];
+  readonly onChange: (next: readonly PermissionGrant[]) => void;
+  /** For an API key, what the person giving it holds of the tab's types: the tab lists no more. Null for a role. */
+  readonly ceiling: readonly PermissionGrant[] | null;
 }
 
 export interface AuthorizationSettingsOptions {

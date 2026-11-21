@@ -1046,6 +1046,39 @@ export class ScopedApiKeys {
   }
 
   /**
+   * What a request made with the key `keyId` would carry, for the permission inspector: its holder's identity with the
+   * key's scope (one that narrows no action for a key without permissions, which still takes no action a person's
+   * only). Undefined for no such key.
+   */
+  async inspectKey(keyId: string): Promise<
+    | {
+        readonly identity: AuthorizationIdentity;
+        readonly holder: { readonly type: 'user'; readonly id: string };
+      }
+    | undefined
+  > {
+    const row = await this.options
+      .connection()
+      .query.selectFrom('apikey')
+      .select(['id', 'referenceId', 'permissions'])
+      .where('id', '=', keyId)
+      .where('configId', '=', 'default')
+      .executeTakeFirst<Pick<KeyRow, 'id' | 'referenceId' | 'permissions'>>();
+    if (!row) return undefined;
+    const stored = decodeKeyPermissions(row.permissions);
+    const keyScope =
+      stored?.version === '2'
+        ? this.options.scopes.compilePermissions(row.id, stored.permissions)
+        : stored
+          ? this.options.scopes.compile(row.id, stored.scope)
+          : this.options.scopes.unbounded(row.id);
+    return {
+      identity: { ...(await this.identityOf(row.referenceId)), keyScope },
+      holder: { type: 'user', id: row.referenceId },
+    };
+  }
+
+  /**
    * The scope of the key a request authenticated with: compiled from its stored permissions, unbounded for a service
    * account's key without any, and null for a session or a person's key without any. Read once per request.
    * `auth.required()` refuses a request this answers a scope for unless the route takes scoped keys.

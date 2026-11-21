@@ -8,6 +8,7 @@ import type {
 } from '@nocobase/authorization/core';
 import type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
 import {
+  ApiError,
   apiErrorResponses,
   apiValidator,
   dataResponse,
@@ -15,10 +16,12 @@ import {
 } from '@nocobase/app-server/router';
 import { z } from 'zod';
 import {
+  AUTHORIZATION_ERROR_DOMAIN,
   createRouteHandler,
   createSettingsRouter,
   unrestrictedAccess,
 } from '../extension/http.js';
+import type { InspectorApi } from '../inspector-identities.js';
 import {
   AUTHORIZATION_API_TAGS as tags,
   createSubjectRoutes,
@@ -63,10 +66,31 @@ export function createInspectorHandler(
     ...(subject.type === 'user' ? [{ type: 'authenticated', id: '*' }] : []),
     ...(await host.subjects.resolveFor(subject)),
   ];
+  const inspector = (host as { readonly inspector?: InspectorApi }).inspector;
+  // A kind of subject another plugin adds, such as an API key: its holder's identity with the credential's scope.
+  const resolved = async (subject: AuthorizationSubject) => {
+    const resolve = inspector?.identities.get(subject.type);
+    if (!resolve) return undefined;
+    const found = await resolve(subject.id);
+    if (!found)
+      throw new ApiError({
+        status: 'NOT_FOUND',
+        reason: 'INSPECTOR_SUBJECT_NOT_FOUND',
+        domain: AUTHORIZATION_ERROR_DOMAIN,
+        message: `No ${subject.type} ${subject.id} to inspect.`,
+      });
+    return found;
+  };
   const contextFor = async (
     subject: AuthorizationSubject,
-  ): Promise<AuthorizationContext> =>
-    host.for({ principal: subject, subjects: await subjectsOf(subject) });
+  ): Promise<AuthorizationContext> => {
+    const found = await resolved(subject);
+    if (found) return host.for(found.identity);
+    return host.for({
+      principal: subject,
+      subjects: await subjectsOf(subject),
+    });
+  };
 
   routes.get(
     '/inspector/options',
@@ -168,10 +192,12 @@ export function createInspectorHandler(
     apiValidator('query', ConfiguredAccessQuery),
     async (context) => {
       const query = context.req.valid('query');
-      const subject: AuthorizationSubject = {
+      const asked: AuthorizationSubject = {
         type: query.subjectType,
         id: query.subjectId,
       };
+      // A key's roles are those of the identity it acts as.
+      const subject = (await resolved(asked))?.holder ?? asked;
       const subjects = await subjectsOf(subject);
       const [sets, assignments] = await Promise.all([
         permissionSets.getEffective({ principal: subject, subjects }),

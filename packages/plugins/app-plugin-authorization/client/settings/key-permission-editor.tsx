@@ -8,9 +8,14 @@
 import { useClientApplication } from '@nocobase/app-client';
 import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
 import {
+  createElement,
+  Suspense,
+  use,
   useEffect,
   useMemo,
   useRef,
+  useSyncExternalStore,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -18,6 +23,7 @@ import {
 import { higherRisk } from '#components/permission-editor-model';
 import {
   PermissionEditor,
+  type PermissionEditorExtraTab,
   type PermissionAction,
   type PermissionObject,
   type PermissionScopeSlot,
@@ -30,7 +36,12 @@ import type {
   LocalizedText,
   PermissionGrant,
 } from '../authorization-client.js';
+import type {
+  AuthorizationContentTab,
+  AuthorizationRoleTabProps,
+} from './extensions.js';
 import { useSettingsData } from './hooks.js';
+import { grantsOfTypes, tabsFor, withTabGrants } from './tab-grants.js';
 import { usePermissionEditorLabels } from './permission-editor-labels.js';
 import { permissionWorkspace } from './permission-workspace.js';
 import {
@@ -357,6 +368,47 @@ function KeyPermissionTable({
     if (workspace) reportRef.current?.(JSON.parse(riskyKey) as typeof risky);
   }, [riskyKey, workspace]);
 
+  const keyTabs = useKeyTabs();
+  // The giver's holdings as grants, for a tab to list no more than they hold.
+  const ceilingGrants = useMemo<readonly PermissionGrant[]>(
+    () =>
+      (ceiling?.grants ?? []).flatMap((grant) => {
+        const actions = grant.actions
+          .filter((entry) => !entry.humanOnly)
+          .map((entry) => ({ action: entry.action }));
+        return actions.length ? [{ resource: grant.resource, actions }] : [];
+      }),
+    [ceiling],
+  );
+  const extraTabs = useMemo<readonly PermissionEditorExtraTab[]>(
+    () =>
+      keyTabs.map((tab) => ({
+        value: `extension:${tab.key}`,
+        label: text(tab.title),
+        content: (
+          <Suspense fallback={<SettingsLoading />}>
+            <KeyTabContent
+              tab={tab}
+              props={{
+                target: 'apiKey',
+                editable: !readOnly && Boolean(onChange),
+                value: grantsOfTypes(
+                  readOnly ? [...value, ...(lapsed ?? [])] : value,
+                  tab.resourceTypes,
+                ),
+                onChange: (next) =>
+                  onChange?.(withTabGrants(value, tab.resourceTypes, next)),
+                ceiling: ceiling?.unrestricted
+                  ? null
+                  : grantsOfTypes(ceilingGrants, tab.resourceTypes),
+              }}
+            />
+          </Suspense>
+        ),
+      })),
+    [keyTabs, text, readOnly, onChange, value, lapsed, ceiling, ceilingGrants],
+  );
+
   if (options.error) return <SettingsError error={options.error} />;
   if (!workspace || !limited || !draft || !objects) return <SettingsLoading />;
 
@@ -374,6 +426,7 @@ function KeyPermissionTable({
       onChange={change}
       readOnly={readOnly}
       builtInTabs={['objects', 'settings']}
+      tabs={extraTabs}
       // An application without business objects opens on what it has.
       defaultTab={
         !objects.length && limited.settings.length ? 'settings' : 'objects'
@@ -392,6 +445,38 @@ function KeyPermissionTable({
       {...(className ? { className } : {})}
     />
   );
+}
+
+type KeyTab = AuthorizationContentTab<AuthorizationRoleTabProps>;
+
+const keyTabModules = new WeakMap<
+  KeyTab['component'],
+  Promise<{ readonly default: ComponentType<AuthorizationRoleTabProps> }>
+>();
+
+function KeyTabContent({
+  tab,
+  props,
+}: {
+  readonly tab: KeyTab;
+  readonly props: AuthorizationRoleTabProps;
+}): ReactElement {
+  let module = keyTabModules.get(tab.component);
+  if (!module) {
+    module = tab.component();
+    keyTabModules.set(tab.component, module);
+  }
+  return createElement(use(module).default, props);
+}
+
+/** The registered permission tabs that declare they apply to API keys too. */
+function useKeyTabs(): readonly KeyTab[] {
+  const settings = useAuthorizationSettings();
+  const tabs = useSyncExternalStore(
+    settings.roleTabs.subscribe,
+    settings.roleTabs.list,
+  );
+  return useMemo(() => tabsFor(tabs, 'apiKey'), [tabs]);
 }
 
 export default KeyPermissionEditor;

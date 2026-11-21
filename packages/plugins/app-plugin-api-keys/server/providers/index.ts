@@ -158,6 +158,12 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
       const systemKeys = container.resolve(systemApiKeysToken);
       await systemKeys.protectExisting();
       this.releases.push(() => systemKeys.release());
+      // The permission inspector checks a key as a request made with it: `{ type: 'apiKey', id: <key id> }`.
+      this.releases.push(
+        container
+          .resolve(authorizationToken)
+          .inspector.identities.add('apiKey', (id) => keys.inspectKey(id)),
+      );
     }
     if (container.has(schedulerServiceToken)) {
       const scheduler = container.resolve(schedulerServiceToken);

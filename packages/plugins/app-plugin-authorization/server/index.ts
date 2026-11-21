@@ -95,3 +95,8 @@ export {
   type AuthorizationOptions,
 } from './options.js';
 export { AuthorizationOptionsSchema } from './extension/schemas.js';
+export {
+  createInspectorApi,
+  type InspectorApi,
+  type InspectorIdentityResolver,
+} from './inspector-identities.js';

@@ -1,3 +1,7 @@
+import {
+  createInspectorApi,
+  type InspectorApi,
+} from './inspector-identities.js';
 import './subjects.js';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 import {
@@ -52,7 +56,10 @@ export type AppAuthorization = Authorization &
   DatabaseAuthorizationApi &
   PagesAuthorizationApi &
   SettingsAuthorizationApi &
-  UiAuthorizationApi;
+  UiAuthorizationApi & {
+    /** Kinds of subject the permission inspector checks besides users, such as API keys. */
+    readonly inspector: InspectorApi;
+  };
 
 const DEFAULT_ROOT_SET = 'root';
 const MEMBER_SET = 'member';
@@ -67,7 +74,7 @@ export function createAppAuthorization(
     'Permission Sets',
     options.connection,
   );
-  const authz: AppAuthorization = createAuthorization({
+  const created = createAuthorization({
     connection: options.connection,
     onInvalidGrant: (grant) => options.onInvalidGrant?.(grant),
     plugins: [
@@ -87,6 +94,9 @@ export function createAppAuthorization(
       uiPlugin(),
       ...(options.config?.plugins ?? []),
     ],
+  });
+  const authz: AppAuthorization = Object.assign(created, {
+    inspector: createInspectorApi(),
   });
   if ((sets?.rootSet ?? DEFAULT_ROOT_SET) === MEMBER_SET) {
     throw new Error(

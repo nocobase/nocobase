@@ -11,6 +11,7 @@ import { useAuthorizationClient } from '../use-authorization-client.js';
 import {
   type AuthorizationOptionsResponse,
   type LocalizedText,
+  type PermissionGrant,
   type PermissionSet,
 } from '../authorization-client.js';
 import {
@@ -79,6 +80,7 @@ import {
 } from './permissions-model.js';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
 import { usePermissionEditorLabels } from './permission-editor-labels.js';
+import { grantsOfTypes, tabsFor, withTabGrants } from './tab-grants.js';
 
 const EMPTY_VALUE: PermissionValue = { menus: [], grants: {} };
 
@@ -190,13 +192,21 @@ function RoleEditor(): ReactElement {
     () => filters ?? loaded?.filters ?? {},
     [filters, loaded],
   );
-  const grants = useMemo(
-    () =>
-      workspace
-        ? grantsFromDraft(value, currentFilters, originalGrants, workspace)
-        : originalGrants,
-    [workspace, value, currentFilters, originalGrants],
-  );
+  // What role tabs declaring resource types changed, by tab key: saved with the rest of the draft.
+  const [tabDrafts, setTabDrafts] = useState<
+    ReadonlyMap<
+      string,
+      { types: readonly string[]; grants: readonly PermissionGrant[] }
+    >
+  >(() => new Map());
+  const grants = useMemo(() => {
+    let next = workspace
+      ? grantsFromDraft(value, currentFilters, originalGrants, workspace)
+      : originalGrants;
+    for (const tab of tabDrafts.values())
+      next = withTabGrants(next, tab.types, tab.grants);
+    return next;
+  }, [workspace, value, currentFilters, originalGrants, tabDrafts]);
   const sourceName = source ? text(source.title ?? source.key) : '';
   const defaultName = copyFrom
     ? sourceName
@@ -209,6 +219,7 @@ function RoleEditor(): ReactElement {
   const dirty =
     nameDraft !== undefined ||
     keyDraft !== undefined ||
+    tabDrafts.size > 0 ||
     (creating
       ? Boolean(copyFrom) ||
         value.menus.length > 0 ||
@@ -336,7 +347,20 @@ function RoleEditor(): ReactElement {
           <Suspense fallback={<Skeleton className='h-48 w-full' />}>
             <RoleTabContent
               tab={tab}
-              props={{ permissionSet: initial, editable: allowed }}
+              props={{
+                target: 'role',
+                permissionSet: initial,
+                editable: allowed,
+                ceiling: null,
+                value: grantsOfTypes(grants, tab.resourceTypes),
+                onChange: (next) => {
+                  if (!tab.resourceTypes?.length) return;
+                  const types = tab.resourceTypes;
+                  setTabDrafts((current) =>
+                    new Map(current).set(tab.key, { types, grants: next }),
+                  );
+                },
+              }}
             />
           </Suspense>
         ),
@@ -353,6 +377,7 @@ function RoleEditor(): ReactElement {
     checkHref,
     roleTabs,
     allowed,
+    grants,
     t,
   ]);
 
@@ -361,6 +386,7 @@ function RoleEditor(): ReactElement {
     setKeyDraft(undefined);
     setDraft(undefined);
     setFilters(undefined);
+    setTabDrafts(new Map());
     setEditingFilter(undefined);
     setSubmitted(false);
     setError(undefined);
@@ -802,6 +828,7 @@ function useAllowedRoleTabs(): readonly RoleTab[] {
     settings.roleTabs.subscribe,
     settings.roleTabs.list,
   );
+  const roleOnly = useMemo(() => tabsFor(tabs, 'role'), [tabs]);
   const [allowed, setAllowed] = useState<{
     readonly tabs: readonly RoleTab[];
     readonly revision: number;
@@ -810,7 +837,7 @@ function useAllowedRoleTabs(): readonly RoleTab[] {
   useEffect(() => {
     let active = true;
     void Promise.all(
-      tabs.map((tab) =>
+      roleOnly.map((tab) =>
         tab.authz === undefined
           ? Promise.resolve(true)
           : client.can(tab.authz).then(
@@ -821,16 +848,16 @@ function useAllowedRoleTabs(): readonly RoleTab[] {
     ).then((answers) => {
       if (active)
         setAllowed({
-          tabs,
+          tabs: roleOnly,
           revision,
-          list: tabs.filter((_, index) => answers[index]),
+          list: roleOnly.filter((_, index) => answers[index]),
         });
     });
     return () => {
       active = false;
     };
-  }, [client, revision, tabs]);
-  return allowed?.tabs === tabs && allowed.revision === revision
+  }, [client, revision, roleOnly]);
+  return allowed?.tabs === roleOnly && allowed.revision === revision
     ? allowed.list
     : NO_ROLE_TABS;
 }
