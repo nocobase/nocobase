@@ -90,22 +90,67 @@ A rejected key — expired, revoked, or wrong — is answered by a guarded `/api
 
 ## Scoped keys
 
-A key may carry a scope, as a GitHub fine-grained token does. Its effective permission is its owner's current permission intersected with the scope: the scope never grants anything, and an owner who loses a permission takes it from every key at once. A key without a scope behaves exactly as described above.
+A key may carry permissions, as a GitHub fine-grained token does. Its effective permission is its holder's current permission intersected with them: they never grant anything, and a holder who loses a permission takes it from every key at once. A key without permissions acts as its holder, as described above, except that no key ever takes an action a person's only (below).
 
-The scope is a set of permission groups, each at a level — read, write, or admin, each including the ones before it — and, where a group offers it, limited to some records of a business ("only selected Apps"). Plugins declare their groups as plain data (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration` from `@nocobase/app-plugin-api-keys/shared/scopes`, written as literals so the plugin does not depend on this package); the application assembles them, because only it knows every plugin:
+### Permissions in the shape of a permission set
 
-```ts
-const scopes = container.resolve(apiKeyScopesToken);
-scopes.mapAccess((ref) => /* page, settings or business access → { resource, action } */);
-scopes.groups.add(RELEASES_KEY_SCOPE_GROUPS[0], releasesKeyScopeObjects(services));
-scopes.presets.add(CI_DEPLOY_PRESET);
+A key's permissions are the grants of a permission set — the same resources and actions (pages, settings items and their actions, business actions, composite actions and the tabs plugins add), with the record scopes of a composite action as its policy — and the records a business is limited to:
+
+```json
+{
+  "grants": [
+    {
+      "resource": { "type": "page", "id": "rel-apps" },
+      "actions": [{ "action": "access" }]
+    },
+    {
+      "resource": { "type": "rel", "id": "rel.apps" },
+      "actions": [{ "action": "deploy.all" }]
+    },
+    {
+      "resource": { "type": "composite", "id": "sales.quotes" },
+      "actions": [
+        {
+          "action": "view",
+          "policy": {
+            "type": "composite",
+            "scopes": { "quote": "recordsIOwn" }
+          }
+        }
+      ]
+    }
+  ],
+  "objects": { "rel.apps": ["app-1"] }
+}
 ```
 
-A scope is stored in Better Auth's `permissions` column, which Better Auth refuses to take from a client on create or update (`SERVER_ONLY_PROPERTY`), so a key's holder cannot widen it: `{ "$v": ["1"], "releases.apps": ["read", "write"], "releases.apps@": ["app-1"] }`. `/api/apiKeys` offers no way to change a person's key's scope; create another. An application that manages keys of its own (an organization's keys, say) may change one with `ScopedApiKeys.setScope`, deciding itself who may and what they may give. A group the application no longer registers grants nothing, so removing one only narrows the keys that named it.
+`POST /api/apiKeys` takes them as `permissions` (null for the caller in full) and every key answers them as `permissions`. They are checked when the key is made: each action must be registered (`UNKNOWN_PERMISSION`), one a key may hold (`KEY_ACTION_HUMAN_ONLY`) and one the maker holds today (403 `KEY_SCOPE_EXCEEDS_YOURS`); each record must be one the maker may see (`UNKNOWN_SCOPE_OBJECT`), of a business that offers record selection (`SCOPE_OBJECTS_NOT_OFFERED`). `GET /api/apiKeys/grantable` lists what the caller may give: the actions they hold, those no key may hold marked with the reason, the templates resolved to what they hold, and the businesses offering record selection.
+
+They are stored in Better Auth's `permissions` column as format `2` — `{ "$v": "2", "grants": [...], "objects": {...} }` — which Better Auth refuses to take from a client (`SERVER_ONLY_PROPERTY`), so a key's holder cannot widen them. A value in an unknown or damaged format grants nothing.
+
+Plugins declare what keys are offered with the authorization plugin, next to the actions they register, without depending on this package:
+
+- **Actions no key may hold:** `humanOnly: <reason>` on an action (`authz.settings.add`, `ResourceItems`, a resource type's actions, or `.humanOnly(reason)` on a composite action). A request made with any key — with permissions, without, or a service account's — is denied the action with `KEY_HUMAN_ONLY`, whatever its holder's grants say; a person signed in takes it as their role allows. `risk: 'high'` marks an action the permission editor asks about before turning it on.
+- **Templates:** `authz.credentials.templates.add({ id, title, description?, expiresInDays?, grants: [{ resource, actions, objects?: 'pick' }] })`. An action name stands for each of its levels (`deploy` for `deploy.related` and `deploy.all`); a key gets the levels its maker holds. `ScopedApiKeys.templatePermissions(templateId, identity, objects?)` makes the same permissions in code, for an integration that creates keys from a template. A built-in `read-only` template takes every `access`, `read` and `view` action the maker holds.
+- **Record sources:** `authz.credentials.objectSources.add(business, source)`, where `business` is what `keyScope.objects(business)` takes and the resource id of its grants (`rel.apps`), and `source.list({ identity, search?, ids? })` answers only what `identity` may see.
+
+### Format 1, deprecated
+
+Before format `2`, a scope was a set of permission groups at a read, write or admin level, which plugins declared as data (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration`) and the application assembled through `apiKeyScopesToken` (`groups.add`, `presets.add`, `mapAccess`). All of it is deprecated and still works for one more minor release, then removed:
+
+- `POST /api/apiKeys` still takes `scope`, and `GET /scopeOptions` and `GET /scopeObjects/:group` still answer (marked `deprecated` in the API document). A key answers `scope` as the groups it was made or converted from — none for a key made with `permissions` — next to `permissions`.
+- `ScopedApiKeys.scopeOptions`, `scopeObjects`, `check`, `issueChecked`, `setScope` and `identityOf` take and answer the groups as before; a scope is checked against the registered groups as before, then stored converted to format `2` with the groups kept alongside (`legacy`). An action a group maps to that no key may hold is dropped from the converted permissions.
+- `encodeKeyScope` and `decodeKeyScope` read and write format `1`; `decodeKeyScope` answers a format-`2` value's groups. Use `encodeKeyPermissions` and `decodeKeyPermissions`.
+- A key still stored in format `1` (`{ "$v": ["1"], "releases.apps": ["read", "write"], "releases.apps@": ["app-1"] }`) keeps working as before. After an upgrade, the first request the application serves converts every such key in the background, exactly as it is enforced at that moment, so no key widens; a key naming a group no longer registered stays in format `1` and is tried again on the next start. Nothing has to be regenerated.
+- The `KEY_SCOPE_GROUPS` and `KEY_SCOPE_PRESETS` of the projects, releases and agents plugins are still exported; those plugins now declare templates, record sources and human-only actions as above.
+
+To migrate an application: stop registering groups and presets, register templates and record sources with `authz.credentials`, mark the actions no key may hold `humanOnly`, and send `permissions` instead of `scope`.
+
+`/api/apiKeys` offers no way to change a person's key's permissions; create another. An application that manages keys of its own (an organization's keys, say) may change one with `ScopedApiKeys.setScope`, deciding itself who may and what they may give.
 
 What enforces a scope on each request:
 
-- Better Auth turns the key into its owner's session, as for any key. This plugin's provider then recognizes the key behind the session (its id and token), reads its scope once per request, and adds it to the authorization identity as `keyScope` (`authz.use`). `authz.can`, `require`, `authorize` and the permissions snapshot deny anything outside it with `KEY_SCOPE`.
+- Better Auth turns the key into its owner's session, as for any key. This plugin's provider then recognizes the key behind the session (its id and token), reads its permissions once per request (one query), and adds them to the authorization identity as `keyScope` (`authz.use`). `authz.can`, `require`, `authorize` and the permissions snapshot deny anything outside them with `KEY_SCOPE`, and any action a person's only with `KEY_HUMAN_ONLY`. A composite action's record scopes restrict the records it reaches the way a restriction rule does (`keyScope.policy`). A key without permissions carries a `keyScope` that narrows no action (`permissions: null`), so it too is denied what a person only may do.
 - `auth.required()` refuses a scoped key with 403 `SCOPED_KEY_FORBIDDEN` unless the route opts in with `auth.required({ scopedKeys: true })`. Opt in only where every operation is authorized through `authz`, or where the code narrows by `identity.keyScope` itself; anything that derives permissions on its own (from `permissionSets.getEffective`, say) must intersect with `keyScope` or it widens the key back to its owner.
 - A scoped key reaches no Better Auth account endpoint but `/get-session`: it cannot mint or list keys, change the profile, list sessions or sign out.
 - Record selections are enforced only by the plugin that owns the records, through `keyScope.objects(business)`. An empty selection reaches none of them: the key holds the group's actions, so the commands and routes that need them are offered, while every record the plugin checks is refused.
@@ -116,12 +161,12 @@ A service account's key is treated as scoped even without a scope: `required()` 
 
 ### Server API
 
-| Export                             | What it is                                                                                                                                                                             |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apiKeyScopesToken`                | The registry: `groups.add`, `presets.add`, `mapAccess`, `validate`, `compile`                                                                                                          |
-| `scopedApiKeysToken`               | `ScopedApiKeys`: `scopeOptions`, `scopeObjects`, `list`, `get`, `check`, `create`, `issueChecked`, `setScope`, `update`, `rotate`, `revoke`, `revokeAll`, `resolve`, `setOwnKeyPolicy` |
-| `ApiKeyScopeError`                 | A refused scope, 400 with a stable code                                                                                                                                                |
-| `encodeKeyScope`, `decodeKeyScope` | The storage format                                                                                                                                                                     |
+| Export                                         | What it is                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKeyScopesToken`                            | The deprecated format-`1` registry: `groups.add`, `presets.add`, `mapAccess`, `validate`, `compile`; and `compilePermissions`, `convert`                                                                                                                                                            |
+| `scopedApiKeysToken`                           | `ScopedApiKeys`: `grantable`, `checkPermissions`, `templatePermissions`, `list`, `get`, `check`, `create`, `issueChecked`, `update`, `rotate`, `revoke`, `revokeAll`, `resolve`, `credentialScope`, `upgradeLegacyScopes`, `setOwnKeyPolicy`; deprecated `scopeOptions`, `scopeObjects`, `setScope` |
+| `ApiKeyScopeError`                             | Refused permissions, 400 with a stable code                                                                                                                                                                                                                                                         |
+| `encodeKeyPermissions`, `decodeKeyPermissions` | The storage format; `encodeKeyScope`, `decodeKeyScope` read and write the deprecated format `1`                                                                                                                                                                                                     |
 
 `ScopedApiKeys` acts on whichever user it is told; the caller decides who may manage whose keys. An application builds its own key pages and a service account's keys on it.
 
@@ -134,14 +179,15 @@ A service account's key is treated as scoped even without a scope: `required()` 
 
 `/api/apiKeys`, for the signed-in person's own keys (a scoped key or a service account is refused with 403 `SCOPED_KEY_FORBIDDEN`, any other key with 403 `API_KEY_SESSION_FORBIDDEN`). Failures answer in the standard error body with domain `apiKeys` and the codes above as `reason`; an invalid body is 400 `INVALID_INPUT` naming the field, and an unknown field is rejected.
 
-| Request                                                 | Answer                                                                                                   |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `GET /scopeOptions`                                     | `{ data }`, `KeyScopeOptions`: the groups with what the caller holds today, presets, expiry, `mayCreate` |
-| `GET /scopeObjects/:group?q=&id=`                       | `{ data, meta: { total } }`: the records the caller may choose for a group; `id` may repeat              |
-| `GET /`                                                 | `{ data, meta: { total } }`: the caller's keys, with scope and last use, never a secret                  |
-| `POST /` `{ name, description?, expiresInDays, scope }` | 201 `{ data: { key, secret } }`, the secret shown once                                                   |
-| `POST /:keyId/rotate`                                   | `{ data: { key, secret } }`: same id, name, scope and lifetime; the old secret stops at once             |
-| `DELETE /:keyId`                                        | 204                                                                                                      |
+| Request                                                                               | Answer                                                                                                      |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /grantable`                                                                      | `{ data }`, `GrantablePermissions`: what the caller holds, human-only marks, templates, expiry, `mayCreate` |
+| `GET /scopeOptions` (deprecated)                                                      | `{ data }`, `KeyScopeOptions`: the groups with what the caller holds today, presets, expiry, `mayCreate`    |
+| `GET /scopeObjects/:group?q=&id=` (deprecated)                                        | `{ data, meta: { total } }`: the records the caller may choose for a group; `id` may repeat                 |
+| `GET /`                                                                               | `{ data, meta: { total } }`: the caller's keys, with scope and last use, never a secret                     |
+| `POST /` `{ name, description?, expiresInDays, permissions }` (or deprecated `scope`) | 201 `{ data: { key, secret } }`, the secret shown once                                                      |
+| `POST /:keyId/rotate`                                                                 | `{ data: { key, secret } }`: same id, name, scope and lifetime; the old secret stops at once                |
+| `DELETE /:keyId`                                                                      | 204                                                                                                         |
 
 `toApiKeysApiError(error)` turns `ApiKeyScopeError` and `ApiKeyRequestError` into that body's `ApiError`, for an application's own key routes: `router.onError((error, context) => apiErrorHandler(toApiKeysApiError(error), context))`.
 

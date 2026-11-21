@@ -55,6 +55,7 @@ export {
   ApiKeyRequestError,
   connectOwnKeyPolicy,
   DEFAULT_SCOPED_KEY_DAYS,
+  READ_ONLY_TEMPLATE_ID,
   ScopedApiKeys,
   type ApiKeysConfig,
   type CheckedApiKey,
