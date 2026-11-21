@@ -1,5 +1,6 @@
 import {
   defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   SYSTEM_SETTINGS_ROUTE_PATH,
   type AppClientSystemSettingsRoutesContribution,
   type AppClientRoutePageDefinition,
@@ -17,7 +18,10 @@ import {
 } from '../shared/capability-guide/index.js';
 
 export interface FoundationRouteOptions {
-  /** Name of the host settings category, or true to declare a standalone Foundation category. */
+  /**
+   * The settings category to join, such as `SYSTEM_SETTINGS_CATEGORIES.system`, or true to declare a standalone Foundation
+   * category. Defaults to the built-in System category.
+   */
   readonly settingsGroup?: boolean | string;
   /** Overview path, optionally including the settings prefix. Defaults to `/foundation`. */
   readonly path?: string;
@@ -150,7 +154,9 @@ export function createFoundationRoutes(
   const parent =
     typeof options.settingsGroup === 'string'
       ? options.settingsGroup
-      : undefined;
+      : standalone
+        ? undefined
+        : SYSTEM_SETTINGS_CATEGORIES.system;
   const pages = [foundationDefinition(options), ...guide].map((route) => ({
     ...route,
     parent,
@@ -163,6 +169,7 @@ export function createFoundationRoutes(
       ? [
           {
             name: 'foundationSettings',
+            category: true,
             navigation: { title: 'nav.settings', icon: Settings, order: 100 },
             children: pages,
           },

@@ -2,6 +2,7 @@ import { Bell, FileText } from 'lucide-react';
 import {
   defineAppRoutes,
   defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
   type AppClientRouteDefinition,
 } from '@nocobase/app-client/plugins';
@@ -93,23 +94,21 @@ export function includeNotificationTemplateRoutes(
     );
   }
   if (!invitationConfigured) return contributions;
-  const parent = 'settingsSystem';
+  const parent = SYSTEM_SETTINGS_CATEGORIES.messages;
   const module = {
     name: 'notificationManagement',
+    kind: 'module' as const,
     navigation: {
       title: 'settings.notificationManagement',
       description: 'settings.notificationManagementDescription',
       icon: Bell,
     },
     breadcrumb: { title: 'settings.notificationManagement' },
-    children: [templateUnder(pathOf(parent))],
+    children: [templateUnder('')],
   };
-  // A configured built-in invitation is business use even before other settings pages are enabled. Without the
-  // System category the module stands as a category of its own.
+  // A configured built-in invitation is business use even before other settings pages are enabled.
   return [
     ...contributions,
-    defineSystemSettingsRoutes([
-      nodes.has(parent) ? { ...module, parent } : module,
-    ]),
+    defineSystemSettingsRoutes([{ ...module, parent }]),
   ];
 }

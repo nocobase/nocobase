@@ -34,7 +34,7 @@ describe('Examples Foundation integration', () => {
   it('provides Features and extensions in System settings with its existing route', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const category = buildSettingsCatalog(runtime.routes, new Set()).find(
-      ({ route }) => route.name === 'settingsSystem',
+      ({ route }) => route.name === 'systemSettings.system',
     );
     const guide = category?.modules.find(
       ({ route }) => route.name === 'capabilityGuide',
@@ -54,7 +54,7 @@ describe('Examples Foundation integration', () => {
     const runtime = await resolveAppRuntime(appRuntime);
     expect(
       runtime.routes
-        .find((route) => route.name === 'settingsSystem')
+        .find((route) => route.name === 'systemSettings.system')
         ?.children?.find((route) => route.name === 'capabilityGuide'),
     ).toMatchObject({
       path: '/settings/capabilities',
@@ -100,15 +100,15 @@ describe('Examples Foundation integration', () => {
       catalog
         .find(({ route }) => route.name === name)
         ?.modules.map(({ route, target }) => [route.name, target.path]);
-    expect(modules('settingsAccount')).toContainEqual([
+    expect(modules('systemSettings.account')).toContainEqual([
       'settingsUsers',
       '/settings/users',
     ]);
-    expect(modules('settingsAccount')).toContainEqual([
+    expect(modules('systemSettings.account')).toContainEqual([
       'permissionManagement',
       '/settings/roles',
     ]);
-    expect(modules('settingsSystem')).toContainEqual([
+    expect(modules('systemSettings.system')).toContainEqual([
       'capabilityGuide',
       '/settings/capabilities',
     ]);
@@ -206,7 +206,7 @@ it('offers one Features and extensions page on the System settings tab', async (
   ).toBe(false);
   expect(
     routes
-      .find(({ name }) => name === 'settingsSystem')
+      .find(({ name }) => name === 'systemSettings.system')
       ?.children?.find(({ name }) => name === 'capabilityGuideEntry'),
   ).toMatchObject({
     path: '/settings/capabilities/:entryId',

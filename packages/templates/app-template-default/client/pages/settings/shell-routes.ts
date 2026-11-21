@@ -4,11 +4,12 @@ import {
 } from '@nocobase/app-client/plugins';
 
 /**
- * The System settings categories and home. Every page declared with `defineSystemSettingsRoutes()`, by the application or a
- * plugin, is mounted under `/settings`; a page joins a category with `parent` naming it, such as
- * `parent: 'settingsAccount'`. The category names are shared by every package, so plugins can rely on them: keep them,
- * and rename or reorder a category through its title and `order`. A module with several views is a group whose pages
- * become its tabs (`SettingsModulePage`). A category the viewer can open nothing in is not shown.
+ * The System settings home. Every page declared with `defineSystemSettingsRoutes()`, by the application or a plugin,
+ * is mounted under `/settings` and joins one of the categories `@nocobase/app-client` builds in with `parent`, such as
+ * `parent: SYSTEM_SETTINGS_CATEGORIES.account`. Their titles are `settings.categories.<id>` in this application's
+ * locales; rename, reorder or hide one with `defineSettingsCategories()` rather than declaring it again. A module with
+ * several views is a `kind: 'module'` group whose pages become its tabs (`SettingsModulePage`). A category the viewer
+ * can open nothing in is not shown.
  */
 const settingsShellRoutes: AppClientRouteContribution =
   defineSystemSettingsRoutes([
@@ -19,26 +20,6 @@ const settingsShellRoutes: AppClientRouteContribution =
       auth: 'required',
       authz: 'skip',
       componentLoader: () => import('./settings-home.js'),
-    },
-    {
-      name: 'settingsAccount',
-      navigation: { title: 'settings.categories.account', order: 10 },
-      children: [],
-    },
-    {
-      name: 'settingsBusiness',
-      navigation: { title: 'settings.categories.business', order: 20 },
-      children: [],
-    },
-    {
-      name: 'settingsAi',
-      navigation: { title: 'settings.categories.ai', order: 30 },
-      children: [],
-    },
-    {
-      name: 'settingsSystem',
-      navigation: { title: 'settings.categories.system', order: 40 },
-      children: [],
     },
   ]);
 

@@ -37,11 +37,6 @@ const namespaces = {
 };
 const settingsShellRoutes = defineSystemSettingsRoutes([
   {
-    name: 'settingsAccount',
-    navigation: { title: 'settings.categories.account' },
-    children: [],
-  },
-  {
     name: 'settingsHome',
     path: '/',
     authz: 'skip',

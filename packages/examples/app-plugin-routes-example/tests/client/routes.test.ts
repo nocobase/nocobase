@@ -27,7 +27,7 @@ describe('client settings routes', () => {
     expect(settingsRoutes.parent).toBe('systemSettings');
     const [page] = settingsRoutes.routes;
     expect(page).toMatchObject({
-      parent: 'settingsSystem',
+      parent: 'system',
       name: 'exampleSettings',
       path: '/routes-example',
       navigation: { title: 'settingsTitle' },

@@ -1,6 +1,7 @@
 import { Users, ShieldCheck, KeyRound, ListFilter } from 'lucide-react';
 import {
   defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
@@ -11,7 +12,7 @@ import {
 const systemSettingsRoutes: AppClientRouteContribution =
   defineSystemSettingsRoutes([
     {
-      parent: 'settingsAccount',
+      parent: SYSTEM_SETTINGS_CATEGORIES.account,
       name: 'settingsUsers',
       path: '/users',
       auth: 'required',
@@ -49,8 +50,9 @@ const systemSettingsRoutes: AppClientRouteContribution =
       ],
     },
     {
-      parent: 'settingsAccount',
+      parent: SYSTEM_SETTINGS_CATEGORIES.account,
       name: 'permissionManagement',
+      kind: 'module',
       navigation: {
         title: 'settings.permissionManagement',
         description: 'settings.permissionManagementDescription',

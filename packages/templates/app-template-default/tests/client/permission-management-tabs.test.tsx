@@ -91,9 +91,9 @@ it.each(['/settings'])(
   async (prefix) => {
     const user = userEvent.setup();
     await mount(prefix);
-    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    await screen.findByRole('tab', { name: 'Roles' });
     expect(
-      screen.getByRole('heading', { name: 'Permission management' }),
+      screen.getByRole('heading', { name: 'Roles and permissions' }),
     ).toBeVisible();
     expect(screen.getAllByRole('tab')).toHaveLength(2);
     await user.click(screen.getByRole('tab', { name: 'Default data scopes' }));
@@ -114,25 +114,22 @@ it.each(['/settings'])(
       ).toHaveFocus(),
     );
     await user.keyboard('{ArrowLeft}');
-    expect(
-      screen.getByRole('tab', { name: 'Roles and permissions' }),
-    ).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'Roles' })).toHaveFocus();
     await user.keyboard('{Enter}');
     await waitFor(() =>
-      expect(
-        screen.getByRole('tab', { name: 'Roles and permissions' }),
-      ).toHaveAttribute('aria-selected', 'true'),
+      expect(screen.getByRole('tab', { name: 'Roles' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
     );
     await waitFor(() =>
-      expect(
-        screen.getByRole('tab', { name: 'Roles and permissions' }),
-      ).toHaveFocus(),
+      expect(screen.getByRole('tab', { name: 'Roles' })).toHaveFocus(),
     );
   },
 );
 it('shows a readable view without a single-tab bar and keeps direct navigation on it', async () => {
   await mount('/settings', 'default-access', false);
-  await screen.findByRole('heading', { name: 'Permission management' });
+  await screen.findByRole('heading', { name: 'Roles and permissions' });
   // The module has one view this viewer may open, so it shows that view without a tab bar.
   await waitFor(() =>
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument(),
@@ -144,9 +141,9 @@ it('shows a readable view without a single-tab bar and keeps direct navigation o
 });
 it('uses the agreed Chinese menu and tab names', async () => {
   await mount('/settings', 'roles', true, 'zh-CN');
-  await screen.findByRole('tab', { name: '角色与权限' });
-  expect(screen.getByRole('heading', { name: '权限管理' })).toBeVisible();
-  expect(screen.getByRole('tab', { name: '角色与权限' })).toBeVisible();
+  await screen.findByRole('tab', { name: '角色' });
+  expect(screen.getByRole('heading', { name: '角色和权限' })).toBeVisible();
+  expect(screen.getByRole('tab', { name: '角色' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '默认数据范围' })).toBeVisible();
 });
 
@@ -216,7 +213,7 @@ it.each([false, true])(
         },
       },
     );
-    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    await screen.findByRole('tab', { name: 'Roles' });
     const draft = screen.getByRole('textbox', { name: 'Draft' });
     await userEvent.type(draft, 'Keep this unsaved value');
     try {
@@ -242,7 +239,7 @@ it.each([false, true])(
       hold = false;
       release();
     }
-    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    await screen.findByRole('tab', { name: 'Roles' });
     expect(screen.getByRole('textbox', { name: 'Draft' })).toBe(draft);
     expect(draft).toHaveValue('Keep this unsaved value');
   },

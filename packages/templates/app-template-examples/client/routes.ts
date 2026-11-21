@@ -32,6 +32,7 @@ import {
 import {
   defineAppRoutes,
   defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
@@ -446,8 +447,8 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-// System settings, mounted under `/settings`: the home, the categories every package shares, and the application's own
-// administration modules. A module joins a category with `parent`; its path is relative to `/settings`.
+// System settings, mounted under `/settings`: the home and the application's own administration modules. A module joins
+// one of the categories `@nocobase/app-client` builds in with `parent`; its path is relative to `/settings`.
 const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
   {
     // Lists only modules the viewer may open, so it needs no grant of its own.
@@ -458,28 +459,8 @@ const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
     componentLoader: () => import('./pages/settings/settings-home.js'),
   },
   {
-    name: 'settingsAccount',
-    navigation: { title: 'settings.categories.account', order: 10 },
-    children: [],
-  },
-  {
-    name: 'settingsBusiness',
-    navigation: { title: 'settings.categories.business', order: 20 },
-    children: [],
-  },
-  {
-    name: 'settingsAi',
-    navigation: { title: 'settings.categories.ai', order: 30 },
-    children: [],
-  },
-  {
-    name: 'settingsSystem',
-    navigation: { title: 'settings.categories.system', order: 40 },
-    children: [],
-  },
-  {
     name: 'knowledgeIndexing',
-    parent: 'settingsAi',
+    parent: SYSTEM_SETTINGS_CATEGORIES.ai,
     path: '/knowledge/indexing',
     auth: 'required',
     authz: {
@@ -496,7 +477,7 @@ const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
   },
   {
     name: 'workflows',
-    parent: 'settingsBusiness',
+    parent: SYSTEM_SETTINGS_CATEGORIES.automation,
     path: '/workflows',
     auth: 'required',
     authz: {

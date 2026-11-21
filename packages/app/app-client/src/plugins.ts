@@ -52,6 +52,83 @@ export const SYSTEM_SETTINGS_ROUTE_PATH = '/settings';
 /** The path every personal settings page is mounted under. */
 export const PERSONAL_SETTINGS_ROUTE_PATH = '/me';
 
+/**
+ * The system settings categories every application has. A page joins one with `parent`, such as
+ * `parent: SYSTEM_SETTINGS_CATEGORIES.ai`. The ids are a contract between plugins and applications and never change;
+ * an application renames, reorders or hides a category with `defineSettingsCategories()`, and a plugin that needs
+ * another declares its own with `category: true`. `other` comes last and also holds every page whose category does
+ * not exist or is hidden.
+ */
+export const SYSTEM_SETTINGS_CATEGORIES: {
+  readonly account: 'account';
+  readonly automation: 'automation';
+  readonly messages: 'messages';
+  readonly ai: 'ai';
+  readonly data: 'data';
+  readonly system: 'system';
+  readonly other: 'other';
+} = Object.freeze({
+  /** Who can sign in and what they may do: users, authentication, roles and permissions, API keys. */
+  account: 'account',
+  /** What runs without anyone clicking: workflows, approvals, scheduled jobs. */
+  automation: 'automation',
+  /** Messages sent and received: notifications, mailboxes. */
+  messages: 'messages',
+  /** Agents and what they use: agents, runners, skills, models, usage, knowledge. */
+  ai: 'ai',
+  /** What the application stores: databases, files. */
+  data: 'data',
+  /** The application's own configuration and runtime: plugins, languages, configuration, cluster, logs, deployment. */
+  system: 'system',
+  /** Pages that fit no other category. */
+  other: 'other',
+} as const);
+
+/** The personal settings categories every application has, used like `SYSTEM_SETTINGS_CATEGORIES`. */
+export const PERSONAL_SETTINGS_CATEGORIES: {
+  readonly account: 'account';
+  readonly preferences: 'preferences';
+  readonly other: 'other';
+} = Object.freeze({
+  /** The person's profile, password and sign-in methods. */
+  account: 'account',
+  /** Language, appearance and other personal habits. */
+  preferences: 'preferences',
+  /** Pages that fit no other category. */
+  other: 'other',
+} as const);
+
+export type SystemSettingsCategory =
+  (typeof SYSTEM_SETTINGS_CATEGORIES)[keyof typeof SYSTEM_SETTINGS_CATEGORIES];
+export type PersonalSettingsCategory =
+  (typeof PERSONAL_SETTINGS_CATEGORIES)[keyof typeof PERSONAL_SETTINGS_CATEGORIES];
+
+/** The category that holds pages whose category does not exist or is hidden, in both settings surfaces. */
+const FALLBACK_SETTINGS_CATEGORY = 'other';
+
+/** Built-in categories in menu order; orders are 100 apart so a plugin category fits between two. */
+const BUILT_IN_SETTINGS_CATEGORIES: Readonly<
+  Record<
+    'systemSettings' | 'personalSettings',
+    readonly (readonly [string, number])[]
+  >
+> = Object.freeze({
+  systemSettings: Object.freeze([
+    [SYSTEM_SETTINGS_CATEGORIES.account, 100],
+    [SYSTEM_SETTINGS_CATEGORIES.automation, 200],
+    [SYSTEM_SETTINGS_CATEGORIES.messages, 300],
+    [SYSTEM_SETTINGS_CATEGORIES.ai, 400],
+    [SYSTEM_SETTINGS_CATEGORIES.data, 500],
+    [SYSTEM_SETTINGS_CATEGORIES.system, 600],
+    [SYSTEM_SETTINGS_CATEGORIES.other, 900],
+  ] as const),
+  personalSettings: Object.freeze([
+    [PERSONAL_SETTINGS_CATEGORIES.account, 100],
+    [PERSONAL_SETTINGS_CATEGORIES.preferences, 200],
+    [PERSONAL_SETTINGS_CATEGORIES.other, 900],
+  ] as const),
+});
+
 interface SettingsSurfaceSpec {
   readonly path: string;
   readonly define: string;
@@ -61,6 +138,11 @@ interface SettingsSurfaceSpec {
    * package-scoped groups, whose ids start with a package name, and from the other surface's categories.
    */
   readonly categoryPrefix: string;
+  /**
+   * Where a built-in category's title lives: `<titlePrefix><id>` in the application's own locale namespace, so an
+   * application words it like any of its strings. Its route is named `<surface>.<id>`.
+   */
+  readonly titlePrefix: string;
 }
 
 const SETTINGS_SURFACES: Readonly<
@@ -71,12 +153,14 @@ const SETTINGS_SURFACES: Readonly<
     define: 'defineSystemSettingsRoutes()',
     label: 'system settings',
     categoryPrefix: 'system-settings:',
+    titlePrefix: 'settings.categories.',
   }),
   personalSettings: Object.freeze({
     path: PERSONAL_SETTINGS_ROUTE_PATH,
     define: 'definePersonalSettingsRoutes()',
     label: 'personal settings',
     categoryPrefix: 'personal-settings:',
+    titlePrefix: 'settings.personal.categories.',
   }),
 });
 
@@ -161,6 +245,16 @@ export interface AppClientRouteGroupDefinition {
   readonly children: readonly AppClientRouteDefinition[];
   readonly componentLoader?: never;
   readonly presentation?: never;
+  /**
+   * Settings contributions only: declares a new settings category, at the root and without `parent`. Its name is the
+   * category id pages name in `parent`; it must not repeat a built-in or another package's category.
+   */
+  readonly category?: true;
+  /**
+   * Settings contributions only: a module, one menu entry whose pages are its tabs. Every settings group that is not a
+   * category declares it.
+   */
+  readonly kind?: 'module';
 }
 
 export type AppClientRouteDefinition =
@@ -181,6 +275,10 @@ export interface AppClientRegisteredRoute {
   readonly source: AppClientContributionSource;
   /** The settings surface of every route declared with a settings define function; omitted on application routes. */
   readonly surface?: AppClientRouteSurface;
+  /** A settings group's role: a `category` of the settings menu, or a `module` whose pages are tabs. */
+  readonly kind?: 'category' | 'module';
+  /** The id of a settings category, set on category groups: the name pages give in `parent`. */
+  readonly category?: string;
 }
 
 /**
@@ -237,12 +335,29 @@ export interface AppClientAppRoutesContribution {
 export interface AppClientSystemSettingsRoutesContribution {
   readonly parent: 'systemSettings';
   readonly routes: readonly AppClientRouteDefinition[];
+  /** Set by `defineSettingsCategories()`: how the application shows existing categories. */
+  readonly categories?: AppClientSettingsCategoryOverrides;
 }
 
 export interface AppClientPersonalSettingsRoutesContribution {
   readonly parent: 'personalSettings';
   readonly routes: readonly AppClientRouteDefinition[];
+  /** Set by `defineSettingsCategories()`: how the application shows existing categories. */
+  readonly categories?: AppClientSettingsCategoryOverrides;
 }
+
+/** How an application shows one existing settings category; the category keeps its id. */
+export interface AppClientSettingsCategoryOverride {
+  /** A translation key replacing the category's title, read where the category's own title is: the application's namespace for a built-in category. */
+  readonly title?: string;
+  readonly order?: number;
+  /** Leaves the category out of the menu; its pages move to `other`, which cannot be hidden. */
+  readonly hidden?: boolean;
+}
+
+export type AppClientSettingsCategoryOverrides = Readonly<
+  Record<string, AppClientSettingsCategoryOverride>
+>;
 
 export type AppClientRouteContribution =
   | AppClientAppRoutesContribution
@@ -497,6 +612,48 @@ export function definePersonalSettingsRoutes(
   });
 }
 
+/**
+ * Changes how the application shows existing settings categories, built-in or declared by a plugin: their title,
+ * their order, or whether they are shown at all. A hidden category's pages move to `other`. Ids never change and
+ * categories are never removed, so plugins can rely on them. Only the application may register it; an override naming
+ * a category nobody declares is ignored with a development warning.
+ */
+export function defineSettingsCategories(
+  surface: 'systemSettings',
+  categories: AppClientSettingsCategoryOverrides,
+): AppClientSystemSettingsRoutesContribution;
+export function defineSettingsCategories(
+  surface: 'personalSettings',
+  categories: AppClientSettingsCategoryOverrides,
+): AppClientPersonalSettingsRoutesContribution;
+export function defineSettingsCategories(
+  surface: AppClientSettingsRouteSurface,
+  categories: AppClientSettingsCategoryOverrides,
+):
+  | AppClientSystemSettingsRoutesContribution
+  | AppClientPersonalSettingsRoutesContribution {
+  if (!isSettingsSurface(surface))
+    throw new Error(
+      `defineSettingsCategories() takes "systemSettings" or "personalSettings", not "${String(surface)}".`,
+    );
+  const frozen = Object.freeze(
+    Object.fromEntries(
+      Object.entries(categories).map(([id, override]) => {
+        if (id === FALLBACK_SETTINGS_CATEGORY && override.hidden)
+          throw new Error(
+            `The ${SETTINGS_SURFACES[surface].label} category "${FALLBACK_SETTINGS_CATEGORY}" cannot be hidden.`,
+          );
+        return [id, Object.freeze({ ...override })];
+      }),
+    ),
+  );
+  return Object.freeze({
+    parent: surface,
+    routes: Object.freeze([]),
+    categories: frozen,
+  });
+}
+
 /** Whether a registered route belongs to the system settings surface. */
 export function isSystemSettingsRoute(
   route: Pick<AppClientRegisteredRoute, 'surface'>,
@@ -619,11 +776,20 @@ export function resolveAppClientContributions(
           `Plugin "${packageName}" contributed routes to unsupported parent "${String(surface)}"; declare them with defineAppRoutes(), defineSystemSettingsRoutes() or definePersonalSettingsRoutes().`,
         );
       }
+      const categories =
+        'categories' in routeContribution
+          ? routeContribution.categories
+          : undefined;
+      if (categories && source !== 'application')
+        throw new Error(
+          `Plugin "${packageName}" cannot change settings categories; only the application registers defineSettingsCategories().`,
+        );
       inputs.push({
         definitions: routeContribution.routes,
         packageName,
         source,
         surface,
+        ...(categories ? { categories } : {}),
       });
     }
 
@@ -644,7 +810,11 @@ export function resolveAppClientContributions(
     }
   }
 
-  const roots = assembleRoutes(inputs);
+  const roots = assembleRoutes(
+    inputs,
+    inputs.find((input) => input.source === 'application')?.packageName ??
+      '@nocobase/app-client',
+  );
   const routes = Object.freeze([
     ...resolveRouteTree(
       roots.filter((node) => node.surface === 'app'),
@@ -674,6 +844,7 @@ interface RouteInput {
   packageName: string;
   source: AppClientContributionSource;
   surface: AppClientRouteSurface;
+  categories?: AppClientSettingsCategoryOverrides;
 }
 
 interface RouteNode {
@@ -682,16 +853,57 @@ interface RouteNode {
   source: AppClientContributionSource;
   surface: AppClientRouteSurface;
   children?: RouteNode[];
+  /** The category id of a settings category group. */
+  category?: string;
+  builtIn?: boolean;
+  hidden?: boolean;
 }
 
-function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
+function assembleRoutes(
+  inputs: readonly RouteInput[],
+  applicationPackage: string,
+): RouteNode[] {
   const roots: RouteNode[] = [];
   const groups = new Map<string, RouteNode>();
   const pending: { node: RouteNode; parent: string; category?: string }[] = [];
   const all: RouteNode[] = [];
   const groupId = (name: string, packageName: string): string =>
     `${packageName}:${normalizeContributionName(name, packageName, 'route')}`;
+  const categoryKey = (
+    surface: AppClientSettingsRouteSurface,
+    id: string,
+  ): string => `${SETTINGS_SURFACES[surface].categoryPrefix}${id}`;
+  // Every settings surface something contributes to starts with its built-in categories, titled in the application's
+  // namespace so the application words them like its own strings.
+  for (const surface of ['systemSettings', 'personalSettings'] as const) {
+    if (!inputs.some((input) => input.surface === surface)) continue;
+    for (const [id, order] of BUILT_IN_SETTINGS_CATEGORIES[surface]) {
+      const node: RouteNode = {
+        definition: Object.freeze({
+          name: `${surface}.${id}`,
+          navigation: Object.freeze({
+            title: `${SETTINGS_SURFACES[surface].titlePrefix}${id}`,
+            order,
+          }),
+          children: Object.freeze([]),
+          category: true,
+        }),
+        packageName: applicationPackage,
+        source: 'application',
+        surface,
+        children: [],
+        category: id,
+        builtIn: true,
+      };
+      groups.set(categoryKey(surface, id), node);
+      roots.push(node);
+      all.push(node);
+    }
+  }
   for (const input of inputs) {
+    const settings = isSettingsSurface(input.surface)
+      ? input.surface
+      : undefined;
     const copy = (
       definition: AppClientRouteDefinition,
       nested: boolean,
@@ -699,6 +911,43 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
       if (nested && definition.parent !== undefined)
         throw new Error(
           `app route "${definition.name}" cannot declare parent inside children.`,
+        );
+      const isGroup = !definition.componentLoader;
+      const declaresCategory =
+        'category' in definition && definition.category !== undefined;
+      const declaresKind =
+        'kind' in definition && definition.kind !== undefined;
+      if (!settings && (declaresCategory || declaresKind))
+        throw new Error(
+          `app route "${definition.name}" from "${input.packageName}" cannot declare category or kind; they belong to settings routes.`,
+        );
+      if (
+        declaresCategory &&
+        (definition).category !== true
+      )
+        throw new Error(
+          `Settings route "${definition.name}" from "${input.packageName}" must declare category: true or leave it out.`,
+        );
+      if (
+        declaresKind &&
+        (definition).kind !== 'module'
+      )
+        throw new Error(
+          `Settings route "${definition.name}" from "${input.packageName}" must declare kind: 'module' or leave it out.`,
+        );
+      const isCategory = declaresCategory;
+      if (settings && isCategory) {
+        if (!isGroup || nested || definition.parent !== undefined)
+          throw new Error(
+            `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from "${input.packageName}" must be a group declared at the root, without parent.`,
+          );
+        if (declaresKind)
+          throw new Error(
+            `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from "${input.packageName}" cannot also be a module.`,
+          );
+      } else if (settings && isGroup && !declaresKind)
+        throw new Error(
+          `${capitalize(SETTINGS_SURFACES[settings].label)} group "${definition.name}" from "${input.packageName}" must declare category: true at the root to add a category, or kind: 'module' to show its pages as tabs.`,
         );
       const node: RouteNode = {
         definition,
@@ -710,52 +959,111 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
           : {}),
       };
       all.push(node);
-      if (!definition.componentLoader) {
-        const category =
-          isSettingsSurface(input.surface) &&
-          !nested &&
-          definition.parent === undefined;
-        const id = category
-          ? `${SETTINGS_SURFACES[input.surface as AppClientSettingsRouteSurface].categoryPrefix}${normalizeContributionName(definition.name, input.packageName, 'route')}`
-          : groupId(definition.name, input.packageName);
+      if (isGroup) {
+        const id =
+          settings && isCategory
+            ? categoryKey(
+                settings,
+                normalizeContributionName(
+                  definition.name,
+                  input.packageName,
+                  'route',
+                ),
+              )
+            : groupId(definition.name, input.packageName);
         const previous = groups.get(id);
         if (previous)
           throw new Error(
-            category
-              ? `${capitalize(SETTINGS_SURFACES[input.surface as AppClientSettingsRouteSurface].label)} category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
+            settings && isCategory
+              ? previous.builtIn
+                ? `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from plugin "${input.packageName}" is built in; join it with parent instead, or change how it shows with defineSettingsCategories().`
+                : `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
               : `Client route group "${id}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`,
           );
+        if (settings && isCategory) node.category = definition.name.trim();
         groups.set(id, node);
       }
       return node;
     };
     for (const definition of input.definitions) {
       const node = copy(definition, false);
-      if (definition.parent === undefined) roots.push(node);
-      else {
+      if (definition.parent === undefined) {
+        if (settings && !node.category && !definition.componentLoader)
+          throw new Error(
+            `${capitalize(SETTINGS_SURFACES[settings].label)} module "${definition.name}" from "${input.packageName}" must name its category with parent.`,
+          );
+        roots.push(node);
+      } else {
         const parent = definition.parent.trim();
         pending.push({
           node,
           parent: parent.includes(':')
             ? parent
-            : isSettingsSurface(input.surface)
-              ? `${SETTINGS_SURFACES[input.surface].categoryPrefix}${parent}`
+            : settings
+              ? categoryKey(settings, parent)
               : groupId(parent, input.packageName),
-          category:
-            !parent.includes(':') && isSettingsSurface(input.surface)
-              ? parent
-              : undefined,
+          category: !parent.includes(':') && settings ? parent : undefined,
         });
       }
     }
   }
+  // The application's overrides: a category keeps its id and stays registered, only how it shows changes.
+  for (const input of inputs) {
+    if (!input.categories || !isSettingsSurface(input.surface)) continue;
+    for (const [id, override] of Object.entries(input.categories)) {
+      const node = groups.get(categoryKey(input.surface, id));
+      if (!node) {
+        if (isDevelopment())
+          console.warn(
+            `defineSettingsCategories() names ${SETTINGS_SURFACES[input.surface].label} category "${id}", which nobody declares; ignoring it.`,
+          );
+        continue;
+      }
+      const navigation = node.definition.navigation!;
+      node.definition = Object.freeze({
+        ...node.definition,
+        navigation: Object.freeze({
+          ...navigation,
+          ...(override.title !== undefined ? { title: override.title } : {}),
+          ...(override.order !== undefined ? { order: override.order } : {}),
+        }),
+      });
+      if (override.hidden) node.hidden = true;
+    }
+  }
+  const fallback = (
+    surface: AppClientSettingsRouteSurface,
+    route: string,
+    packageName: string,
+    reason: string,
+  ): RouteNode => {
+    if (isDevelopment())
+      console.warn(
+        `${capitalize(SETTINGS_SURFACES[surface].label)} route "${route}" from "${packageName}" ${reason}; showing it under "${FALLBACK_SETTINGS_CATEGORY}".`,
+      );
+    return groups.get(categoryKey(surface, FALLBACK_SETTINGS_CATEGORY))!;
+  };
   for (const { node, parent, category } of pending) {
-    const target = groups.get(parent);
+    let target = groups.get(parent);
+    if (category !== undefined && isSettingsSurface(node.surface)) {
+      if (!target)
+        target = fallback(
+          node.surface,
+          node.definition.name,
+          node.packageName,
+          `references unknown category "${category}"`,
+        );
+      else if (target.hidden)
+        target = fallback(
+          node.surface,
+          node.definition.name,
+          node.packageName,
+          `is in category "${category}", which the application hides`,
+        );
+    }
     if (!target)
       throw new Error(
-        category !== undefined && isSettingsSurface(node.surface)
-          ? `${SETTINGS_SURFACES[node.surface].label} route "${node.definition.name}" from "${node.packageName}" references missing ${SETTINGS_SURFACES[node.surface].label} category "${category}"; the application declares its categories with ${SETTINGS_SURFACES[node.surface].define}.`
-          : `${node.surface} route "${node.definition.name}" from "${node.packageName}" references missing group "${parent}" (the target must be a group, not a page).`,
+        `${node.surface} route "${node.definition.name}" from "${node.packageName}" references missing group "${parent}" (the target must be a group, not a page).`,
       );
     if (target.surface !== node.surface)
       throw new Error(
@@ -764,6 +1072,15 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
     if (!target.children)
       throw new Error(`app group "${parent}" must declare children.`);
     target.children.push(node);
+  }
+  // A hidden category leaves the menu; what it declared inline moves to the fallback with the rest.
+  for (const node of [...roots]) {
+    if (!node.hidden || !isSettingsSurface(node.surface)) continue;
+    roots.splice(roots.indexOf(node), 1);
+    if (node.children?.length)
+      groups
+        .get(categoryKey(node.surface, FALLBACK_SETTINGS_CATEGORY))!
+        .children!.push(...node.children);
   }
   const visiting = new Set<RouteNode>();
   const visited = new Set<RouteNode>();
@@ -1114,6 +1431,11 @@ function resolveRouteTree(
       packageName,
       source,
       ...(context.surface !== 'app' ? { surface: context.surface } : {}),
+      ...(node.category !== undefined
+        ? { kind: 'category' as const, category: node.category }
+        : 'kind' in route && route.kind === 'module'
+          ? { kind: 'module' as const }
+          : {}),
       ...(breadcrumb ? { breadcrumb } : {}),
       ...(navigation ? { navigation } : {}),
       ...(presentation ? { presentation } : {}),

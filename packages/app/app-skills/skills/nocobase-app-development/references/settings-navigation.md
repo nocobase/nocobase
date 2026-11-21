@@ -7,15 +7,18 @@ Every administration surface of an application lives under `/settings`, behind o
 A settings page is declared with `defineSystemSettingsRoutes()` from `@nocobase/app-client/plugins`, by the application or by a plugin. Its definition is the same as an application page's (`name`, `path`, `auth`, `authz`, `navigation`, `breadcrumb`, `presentation`, `componentLoader`, `children`), and it joins the same route tree, guards, breadcrumbs and lazy loading; only three things differ:
 
 - Its `path` is relative to `/settings`: `path: '/users'` opens at `/settings/users`, and `path: '/'` at `/settings` itself. The category never appears in the URL.
-- A top-level page names its category with `parent`, such as `parent: 'settingsAccount'`. A category that no package registered is a registration error naming it.
+- A top-level page names its category with `parent`, such as `parent: SYSTEM_SETTINGS_CATEGORIES.account` (the id `'account'`). A page naming a category nobody declares, or one the application hides, is shown under `other`, with a warning in development. A top-level group must declare `kind: 'module'`, or `category: true` to add a category, as [categories](#categories) describes.
 - Without an `authz` of its own, a settings page admits only unrestricted administrators (`authz: 'unrestricted'`); `auth` defaults to `required`. Declare `authz` with the grant the module's API checks to open it to other roles.
 
 ```ts
-import { defineSystemSettingsRoutes } from '@nocobase/app-client/plugins';
+import {
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
 
 export default defineSystemSettingsRoutes([
   {
-    parent: 'settingsSystem',
+    parent: SYSTEM_SETTINGS_CATEGORIES.data,
     name: 'storage',
     path: '/storage', // /settings/storage
     authz: { resource: { type: 'settings', id: 'storage' }, action: 'read' },
@@ -30,24 +33,44 @@ export default defineSystemSettingsRoutes([
 ]);
 ```
 
-A plugin contributes its settings pages the same way, from its client entry, and only references a category; it never declares one. `defineAppRoutes()` stays for business pages: an application page cannot join a settings category, and a settings page cannot join an application group.
+A plugin contributes its settings pages the same way, from its client entry. `defineAppRoutes()` stays for business pages: an application page cannot join a settings category, and a settings page cannot join an application group.
 
 ## The structure is the route tree
 
-| Level    | Declared by                                                                                                                                                                                                       | Shown as                                                                                                |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Settings | the application's `settings` group, which `withSettingsShell` (`client/routing/settings-shell.ts`) wraps around every settings page                                                                               | the Settings entry at the bottom of the sidebar; its title and icon are the application's               |
-| Home     | `settingsHome` at `path: '/'`                                                                                                                                                                                     | the `/settings` page of cards                                                                           |
-| Category | a root group in the application's `defineSystemSettingsRoutes()`: `settingsAccount`, `settingsBusiness`, `settingsAi`, `settingsSystem` (Default: `pages/settings/shell-routes.ts`; Examples: `client/routes.ts`) | a heading on the home page and in the settings menu, hidden while the viewer can open nothing in it     |
-| Module   | a page or a group inside a category                                                                                                                                                                               | one card (icon, `navigation.title`, `navigation.description`, arrow) and one entry in the settings menu |
-| Tab      | a page with `navigation` inside a module group                                                                                                                                                                    | a URL-backed tab in `SettingsModulePage`                                                                |
+| Level    | Declared by                                                                                                                         | Shown as                                                                                                |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Settings | the application's `settings` group, which `withSettingsShell` (`client/routing/settings-shell.ts`) wraps around every settings page | the Settings entry at the bottom of the sidebar; its title and icon are the application's               |
+| Home     | `settingsHome` at `path: '/'`                                                                                                       | the `/settings` page of cards                                                                           |
+| Category | a built-in category (`systemSettings.<id>`, see [categories](#categories)), or a root group with `category: true` from any package  | a heading on the home page and in the settings menu, hidden while the viewer can open nothing in it     |
+| Module   | a page, or a group with `kind: 'module'`, inside a category                                                                         | one card (icon, `navigation.title`, `navigation.description`, arrow) and one entry in the settings menu |
+| Tab      | a page with `navigation` inside a module group                                                                                      | a URL-backed tab in `SettingsModulePage`                                                                |
 
 - Give every module `navigation.title`, `navigation.description` (one sentence on what it is for, translated like the title) and an icon. A card without a description is incomplete.
 - A module with one view is a page; it renders its content directly, with no single tab. A module with several views is a group with `breadcrumb` whose pages each declare `navigation` and `authz`; wrap each view in `SettingsModulePage` from `client/pages/settings/settings-module-page.tsx`, which derives the tabs, hides the ones the viewer may not open and drops the tab bar when only one remains. The card and the menu entry open the first tab the viewer may open, and the menu entry stays selected on every view and child page of the module. A module whose page already has its own tabs, such as workflow management's definitions and executions layout, stays a page. The menu has at most two levels, category and module; deeper levels are tabs, child pages or drawers.
-- Category names are shared by every package, so keep them; rename or reorder a category through its title and `navigation.order`, and add an application-specific one in the same `defineSystemSettingsRoutes()`. A plugin page the transform moves into settings (App Foundation) is shown in `settingsSystem`.
 - Back returns to the business page the viewer left for settings, kept in session storage; opened directly, it leads to `/`. On a phone the same settings menu is the sidebar drawer.
 - Never add another sidebar entry for administration, a second settings layout or a hand-written card list. Never register a placeholder card for a capability the application does not use, and never put a dead link or a page that only says "coming soon" in a category.
 - The home page (`settingsHome`) is `authz: 'skip'`: it grants nothing and lists only what the viewer may open. Hiding a card or a menu entry is presentation; every module keeps its own `authz` and its server checks.
+
+## Categories
+
+The categories are built in, so every application and plugin shares the same ones. `@nocobase/app-client` adds them to each settings surface something contributes to, titled with keys in the application's namespace (`settings.categories.<id>`, `settings.personal.categories.<id>`), which the templates translate in `client/locales/system/settings-*.ts`. Name one with `SYSTEM_SETTINGS_CATEGORIES` or `PERSONAL_SETTINGS_CATEGORIES` from `@nocobase/app-client/plugins`.
+
+| System settings id | Title                    | Order | Holds                                                                        |
+| ------------------ | ------------------------ | ----- | ---------------------------------------------------------------------------- |
+| `account`          | Accounts and permissions | 100   | users, authentication, roles and permissions, API keys                       |
+| `automation`       | Workflows and automation | 200   | workflows, approvals, scheduled jobs                                         |
+| `messages`         | Messages                 | 300   | notifications, mailboxes                                                     |
+| `ai`               | AI                       | 400   | agents, runners, skills, models, usage, knowledge indexing                   |
+| `data`             | Data and files           | 500   | databases, files                                                             |
+| `system`           | System                   | 600   | plugins, languages, configuration, cluster, logs, deployment, App Foundation |
+| `other`            | Other                    | 900   | pages that fit no other category; cannot be hidden                           |
+
+Personal settings have `account` (100, profile, password, sign-in methods), `preferences` (200, language and appearance) and `other` (900).
+
+- There is no built-in business category. An application or plugin with business configuration adds its own: a root group with `category: true` and a `navigation.order` between the built-in ones, such as `{ name: 'crm', category: true, navigation: { title: 'crm.settings', order: 150 } }`. Its id is its name, and other packages join it with `parent: 'crm'`. Declaring an id twice, or redeclaring a built-in one, is a registration error.
+- The application changes how a category shows, never its id: `defineSettingsCategories('systemSettings', { ai: { title: 'settings.assistants', order: 250 }, automation: { hidden: true } })` in its own route contributions. A hidden category's pages move to `other`; `other` cannot be hidden. Only the application may pass category overrides.
+- Every other top-level group is a module and declares `kind: 'module'`; a group with neither is a registration error, so a former category declaration cannot silently become a module.
+- Registered routes carry `kind: 'category'` or `kind: 'module'` and, on a category, `category: '<id>'`; the route name is `<surface>.<id>`, such as `systemSettings.account`.
 
 ## URLs, breadcrumbs and permissions
 
@@ -55,19 +78,22 @@ Each module and tab keeps a URL of its own under `/settings`, so refresh, bookma
 
 ## Personal settings
 
-Pages where each signed-in person configures their own account — their profile, their own API keys, their mail accounts, language and appearance — are personal settings, declared with `definePersonalSettingsRoutes()` and mounted under `/me`. They follow the same rules as system settings (definitions, categories named by a bare `parent`, a URL that never contains the category, at most two menu levels) with these differences:
+Pages where each signed-in person configures their own account — their profile, their own API keys, their mail accounts, language and appearance — are personal settings, declared with `definePersonalSettingsRoutes()` and mounted under `/me`. They follow the same rules as system settings (definitions, built-in categories named by `parent`, a URL that never contains the category, at most two menu levels) with these differences:
 
 - The entry is the first item of the account (avatar) menu, opening `/me`, which leads to the first personal page; Language and Theme stay in that menu as shortcuts to the same preferences. Personal settings never appear in the business menu or the System settings menu.
 - Without an `authz` of its own, a personal page admits every signed-in person (`authz: 'skip'`, `auth: 'required'`) and stays out of page permissions. Its server reads and writes only the current person's data, taken from the session, never a user id from the request.
-- The categories are `personalAccount`, `personalPreferences` and `personalConnections` (`client/pages/me/routes.ts`); the templates ship Language and appearance (`personalAppearance`, `/me/preferences`). While on `/me/*`, the sidebar shows Back, the person's identity and the personal settings menu, and the trail reads Personal settings → page. Back returns to the business page the viewer left, also after moving between system and personal settings.
+- The categories are the built-in `account`, `preferences` and `other`; the templates ship Language and appearance (`personalAppearance`, `/me/preferences`). While on `/me/*`, the sidebar shows Back, the person's identity and the personal settings menu, and the trail reads Personal settings → page. Back returns to the business page the viewer left, also after moving between system and personal settings.
 - A feature that has both an application-wide and a personal side, such as API keys, declares one page on each surface; routes of one surface cannot join a group of the other.
 
 ```ts
-import { definePersonalSettingsRoutes } from '@nocobase/app-client/plugins';
+import {
+  definePersonalSettingsRoutes,
+  PERSONAL_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
 
 export default definePersonalSettingsRoutes([
   {
-    parent: 'personalConnections',
+    parent: PERSONAL_SETTINGS_CATEGORIES.account,
     name: 'myMailAccounts',
     path: '/mail-accounts', // /me/mail-accounts
     navigation: { title: 'me.mailAccounts' },
@@ -79,21 +105,22 @@ export default definePersonalSettingsRoutes([
 
 ## Standard modules
 
-| Module                | Route                                                                            | Views                                                                                                                                                                                                                |
-| --------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Users                 | `settingsUsers` in `settingsAccount` (`client/pages/settings/routes.ts`)         | one page                                                                                                                                                                                                             |
-| Permission management | `permissionManagement` group in `settingsAccount`                                | Roles and permissions (`settingsRoles`), Default data scopes (`settingsDefaultAccess`)                                                                                                                               |
-| Workflow management   | `workflows` page in `settingsBusiness`                                           | its own definitions and executions tabs                                                                                                                                                                              |
-| Notifications         | `notificationManagement` group in `settingsSystem`, path prefix `/notifications` | the views the application actually has: Delivery logs (`notificationLogs`, the UI Library `notification-logs-ui` page); Notification templates (`notificationTemplates`) when the application provides the catalogue |
-| App Foundation        | the Foundation plugin's `foundation` page, shown in `settingsSystem`             | one page                                                                                                                                                                                                             |
+| Module                | Route                                                                       | Views                                                                                                                                                                                                                |
+| --------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Users                 | `settingsUsers` in `account` (`client/pages/settings/routes.ts`)            | one page                                                                                                                                                                                                             |
+| Roles and permissions | `permissionManagement` module in `account`                                  | Roles (`settingsRoles`), Default data scopes (`settingsDefaultAccess`)                                                                                                                                               |
+| Workflow management   | `workflows` page in `automation`                                            | its own definitions and executions tabs                                                                                                                                                                              |
+| Notifications         | `notificationManagement` module in `messages`, path prefix `/notifications` | the views the application actually has: Delivery logs (`notificationLogs`, the UI Library `notification-logs-ui` page); Notification templates (`notificationTemplates`) when the application provides the catalogue |
+| App Foundation        | the Foundation plugin's `foundation` page, in `system`                      | one page                                                                                                                                                                                                             |
 
-The templates' `includeNotificationTemplateRoutes` (`client/pages/settings/notification-routes.ts`) adds the Notification templates view (`/settings/notifications/templates`, `page:notification.templates`) to an existing `notificationManagement` group exactly once, or creates the group in `settingsSystem` when notification business is in use. Register Delivery logs and any later notification view in the same group rather than as another card, adding its title key to the application's locales:
+The templates' `includeNotificationTemplateRoutes` (`client/pages/settings/notification-routes.ts`) adds the Notification templates view (`/settings/notifications/templates`, `page:notification.templates`) to an existing `notificationManagement` group exactly once, or creates the module in `messages` when notification business is in use. Register Delivery logs and any later notification view in the same group rather than as another card, adding its title key to the application's locales:
 
 ```ts
 defineSystemSettingsRoutes([
   {
-    parent: 'settingsSystem',
+    parent: SYSTEM_SETTINGS_CATEGORIES.messages,
     name: 'notificationManagement',
+    kind: 'module',
     navigation: {
       title: 'settings.notificationManagement',
       description: 'settings.notificationManagementDescription',

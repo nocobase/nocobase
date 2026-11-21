@@ -1,6 +1,7 @@
 import {
   defineAppRoutes,
   defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
@@ -15,14 +16,14 @@ const routes: AppClientRouteContribution = defineAppRoutes([
 ]);
 
 /**
- * A settings page contributed by the plugin. It names the application's System category with `parent`; its path is
+ * A settings page contributed by the plugin. It joins the built-in System category with `parent`; its path is
  * relative to `/settings`, so it opens at `/settings/routes-example`. Without an `authz` of its own a settings page
  * admits only unrestricted administrators.
  */
 export const settingsRoutes: AppClientRouteContribution =
   defineSystemSettingsRoutes([
     {
-      parent: 'settingsSystem',
+      parent: SYSTEM_SETTINGS_CATEGORIES.system,
       name: 'exampleSettings',
       path: '/routes-example',
       navigation: {

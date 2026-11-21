@@ -207,24 +207,31 @@ describe('app client routes', () => {
       ]),
     ).toEqual([
       [
-        'settingsAccount',
+        'systemSettings.account',
         [
           ['settingsUsers', '/settings/users'],
           ['permissionManagement', '/settings/roles'],
         ],
       ],
-      ['settingsBusiness', [['workflows', '/settings/workflows']]],
-      ['settingsAi', [['knowledgeIndexing', '/settings/knowledge/indexing']]],
+      ['systemSettings.automation', [['workflows', '/settings/workflows']]],
       [
-        'settingsSystem',
-        [
-          ['notificationManagement', '/settings/notifications/templates'],
-          ['exampleSettings', '/settings/routes-example'],
-          ['databaseExplorer', '/settings/database-explorer'],
-        ],
+        'systemSettings.messages',
+        [['notificationManagement', '/settings/notifications/templates']],
+      ],
+      [
+        'systemSettings.ai',
+        [['knowledgeIndexing', '/settings/knowledge/indexing']],
+      ],
+      [
+        'systemSettings.data',
+        [['databaseExplorer', '/settings/database-explorer']],
+      ],
+      [
+        'systemSettings.system',
+        [['exampleSettings', '/settings/routes-example']],
       ],
     ]);
-    expect(catalog[2].modules[0].route).toMatchObject({
+    expect(catalog[3].modules[0].route).toMatchObject({
       path: '/settings/knowledge/indexing',
       navigation: {
         title: 'knowledge.indexing',
@@ -371,12 +378,12 @@ describe('app client routes', () => {
         name: 'workflowExecution',
         authorizedAs: 'settings:workflow-management',
       },
-      { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
+      { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // A plugin's settings page without its own `authz` admits unrestricted administrators only.
       { name: 'exampleSettings', authorizedAs: 'unrestricted' },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // Personal settings belong to whoever is signed in, so they stay out of page authorization.
       { name: 'personalSettingsHome', authorizedAs: null },
       { name: 'personalAppearance', authorizedAs: null },

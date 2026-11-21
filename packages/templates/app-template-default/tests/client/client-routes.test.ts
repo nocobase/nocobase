@@ -9,21 +9,18 @@ import applicationRoutes, {
   createApplicationRoutes,
 } from '../../client/routes.ts';
 import { includeNotificationTemplateRoutes } from '../../client/pages/settings/notification-routes.js';
-import { defineSystemSettingsRoutes } from '@nocobase/app-client/plugins';
+import {
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
 
 describe('app client routes', () => {
   it('joins the settings system category across contributions without moving the log URL', () => {
-    const shell = defineSystemSettingsRoutes([
-      {
-        name: 'settingsSystem',
-        navigation: { title: 'System' },
-        children: [],
-      },
-    ]);
     const logs = defineSystemSettingsRoutes([
       {
         name: 'notificationManagement',
-        parent: 'settingsSystem',
+        kind: 'module',
+        parent: SYSTEM_SETTINGS_CATEGORIES.messages,
         navigation: { title: 'Notifications' },
         children: [
           {
@@ -40,7 +37,7 @@ describe('app client routes', () => {
         ],
       },
     ]);
-    const routes = includeNotificationTemplateRoutes([shell, logs], true);
+    const routes = includeNotificationTemplateRoutes([logs], true);
     const built = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-template-default',
@@ -53,13 +50,15 @@ describe('app client routes', () => {
       '/settings/notifications/templates',
       '/settings/notifications/templates/:templateId',
     ]);
-    expect(built.routes[0].children[0].children).toHaveLength(2);
-    const created = includeNotificationTemplateRoutes([shell], true);
+    expect(
+      findRoute(built.routes, 'notificationManagement')?.children,
+    ).toHaveLength(2);
+    const created = includeNotificationTemplateRoutes([], true);
     expect(
       created
         .flatMap((part) => part.routes)
         .find((route) => route.name === 'notificationManagement')?.parent,
-    ).toBe('settingsSystem');
+    ).toBe(SYSTEM_SETTINGS_CATEGORIES.messages);
   });
 
   it('exposes configured invitation templates through the real application route factory', async () => {
@@ -88,25 +87,21 @@ describe('app client routes', () => {
   it('reuses the notification module and preserves its logs and existing grants', () => {
     const existing = defineSystemSettingsRoutes([
       {
-        name: 'settingsSystem',
-        navigation: { title: 'System' },
+        name: 'notificationManagement',
+        kind: 'module',
+        parent: SYSTEM_SETTINGS_CATEGORIES.messages,
+        navigation: { title: 'Notifications' },
         children: [
           {
-            name: 'notificationManagement',
-            navigation: { title: 'Notifications' },
-            children: [
-              {
-                name: 'notificationLogs',
-                path: '/notification-logs',
-                auth: 'required',
-                authz: {
-                  resource: { type: 'page', id: 'existing.notification.logs' },
-                  action: 'access',
-                },
-                componentLoader: () =>
-                  import('../../client/pages/settings/notification-templates.js'),
-              },
-            ],
+            name: 'notificationLogs',
+            path: '/notification-logs',
+            auth: 'required',
+            authz: {
+              resource: { type: 'page', id: 'existing.notification.logs' },
+              action: 'access',
+            },
+            componentLoader: () =>
+              import('../../client/pages/settings/notification-templates.js'),
           },
         ],
       },
@@ -131,7 +126,9 @@ describe('app client routes', () => {
       // A template's own address keeps the list page's grant.
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
     ]);
-    expect(built.routes[0].children?.[0].children).toHaveLength(2);
+    expect(
+      findRoute(built.routes, 'notificationManagement')?.children,
+    ).toHaveLength(2);
   });
 
   it('keeps the landing page and the authentication pages', () => {
@@ -212,7 +209,7 @@ describe('app client routes', () => {
     ]);
   });
 
-  it('registers Users, Permission management and database browsing in System settings', async () => {
+  it('registers Users, Roles and permissions and database browsing in System settings', async () => {
     expect(
       pagePaths(resolveRoutes().routes).filter((path) =>
         path.startsWith('/settings'),
@@ -299,4 +296,16 @@ function pageAuthorizations(
       : []),
     ...pageAuthorizations(route.children ?? []),
   ]);
+}
+
+function findRoute(
+  routes: readonly AppClientRegisteredRoute[],
+  name: string,
+): AppClientRegisteredRoute | undefined {
+  for (const route of routes) {
+    if (route.name === name) return route;
+    const found = findRoute(route.children ?? [], name);
+    if (found) return found;
+  }
+  return undefined;
 }

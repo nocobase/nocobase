@@ -124,7 +124,7 @@ describe('System settings navigation', () => {
       ]),
     ).toEqual([
       [
-        'settingsAccount',
+        'systemSettings.account',
         [
           ['/settings/users', 'settings.users'],
           // A module of several views opens its first view and carries the module's title.
@@ -156,7 +156,7 @@ describe('System settings navigation', () => {
     const routes = resolve();
     expect(catalog(routes)).toEqual([
       [
-        'settingsAccount',
+        'systemSettings.account',
         [
           ['settingsUsers', '/settings/users'],
           ['permissionManagement', '/settings/roles'],
@@ -166,7 +166,7 @@ describe('System settings navigation', () => {
     const roles = find(routes, 'settingsRoles');
     expect(catalog(routes, new Set([routeKey(roles)]))).toEqual([
       [
-        'settingsAccount',
+        'systemSettings.account',
         [
           ['settingsUsers', '/settings/users'],
           ['permissionManagement', '/settings/default-access'],
@@ -187,8 +187,9 @@ describe('System settings navigation', () => {
     const routes = resolve(
       defineSystemSettingsRoutes([
         {
-          parent: 'settingsSystem',
+          parent: 'messages',
           name: 'notificationManagement',
+          kind: 'module',
           navigation: {
             title: 'Notifications',
             description: 'Channels and delivery records.',
@@ -213,7 +214,7 @@ describe('System settings navigation', () => {
       '/settings/notifications/logs',
     );
     expect(catalog(routes).at(-1)).toEqual([
-      'settingsSystem',
+      'systemSettings.messages',
       [['notificationManagement', '/settings/notifications/logs']],
     ]);
     expect(buildRouteNavigation(routes, new Set())).toHaveLength(1);
@@ -222,7 +223,7 @@ describe('System settings navigation', () => {
     );
   });
 
-  it('places a plugin module registered outside the categories under System', () => {
+  it('places a plugin module in its built-in System category', () => {
     const routes = resolveAppClientContributions([
       { packageName: app, source: 'application', routes: [shell] },
       {
@@ -235,7 +236,7 @@ describe('System settings navigation', () => {
     const menu = buildRouteNavigation(routes, new Set());
     expect(menu.map(({ route }) => route.name)).toEqual(['settingsHome']);
     expect(catalog(routes)).toEqual([
-      ['settingsSystem', [['foundation', '/settings/foundation']]],
+      ['systemSettings.system', [['foundation', '/settings/foundation']]],
     ]);
     // The signed-in shell receives the tree filtered to its pages; empty categories keep their titles there.
     const signedIn = filterRouteTree(
@@ -243,14 +244,14 @@ describe('System settings navigation', () => {
       (route) => route.auth === 'required',
     );
     expect(catalog(signedIn)).toEqual([
-      ['settingsSystem', [['foundation', '/settings/foundation']]],
+      ['systemSettings.system', [['foundation', '/settings/foundation']]],
     ]);
     const page = find(routes, 'foundation');
     expect(page.navigation?.description).toBe('nav.foundationDescription');
     expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
   });
 
-  it('shows the notification template view as a System card once an invitation mailer is configured', () => {
+  it('shows the notification template view as a Messages card once an invitation mailer is configured', () => {
     const routes = resolveAppClientContributions([
       {
         packageName: app,
@@ -262,18 +263,19 @@ describe('System settings navigation', () => {
     ]).routes;
     expect(catalog(routes)).toEqual([
       [
-        'settingsAccount',
+        'systemSettings.account',
         [
           ['settingsUsers', '/settings/users'],
           ['permissionManagement', '/settings/roles'],
         ],
       ],
       [
-        'settingsSystem',
-        [
-          ['notificationManagement', '/settings/notifications/templates'],
-          ['databaseExplorer', '/settings/database-explorer'],
-        ],
+        'systemSettings.messages',
+        [['notificationManagement', '/settings/notifications/templates']],
+      ],
+      [
+        'systemSettings.data',
+        [['databaseExplorer', '/settings/database-explorer']],
       ],
     ]);
     expect(
@@ -282,7 +284,7 @@ describe('System settings navigation', () => {
   });
 });
 
-it('places database browsing in System and hides its card when access is denied', () => {
+it('places database browsing in Data and files and hides its card when access is denied', () => {
   const routes = resolveAppClientContributions([
     {
       packageName: app,
@@ -298,7 +300,7 @@ it('places database browsing in System and hides its card when access is denied'
     action: 'access',
   });
   const account = [
-    'settingsAccount',
+    'systemSettings.account',
     [
       ['settingsUsers', '/settings/users'],
       ['permissionManagement', '/settings/roles'],
@@ -306,8 +308,11 @@ it('places database browsing in System and hides its card when access is denied'
   ];
   expect(catalog(routes)).toEqual([
     account,
-    ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
+    [
+      'systemSettings.data',
+      [['databaseExplorer', '/settings/database-explorer']],
+    ],
   ]);
-  // The empty System category is hidden; Accounts and permissions stays.
+  // The empty Data and files category is hidden; Accounts and permissions stays.
   expect(catalog(routes, new Set([routeKey(page)]))).toEqual([account]);
 });

@@ -112,7 +112,7 @@ Static module tracing recognizes `useService(apiClientToken)` as well as `useApi
 
 ## Sidebar grouping
 
-Foundation registers its overview, capability guide and guide details through `defineSystemSettingsRoutes()`. The templates pass `foundation({ settingsGroup: 'settingsSystem', ... })` to join the System category. A host can supply its own settings category name, omit the option to register pages directly under settings, or use `true` for a standalone category. The application's settings navigation uses its usual permission checks for these routes.
+Foundation registers its overview, capability guide and guide details through `defineSystemSettingsRoutes()`. Without `settingsGroup` the pages join the built-in System category (`SYSTEM_SETTINGS_CATEGORIES.system`), as the templates do. A host can name another category id, such as one a plugin declares with `category: true`, or use `true` for a standalone Foundation category. The application's settings navigation uses its usual permission checks for these routes.
 
 The overview lives at `/settings/foundation`. The plugin redirects its former overview URL and preserves query parameters and fragments. The capability guide keeps `/settings/capabilities` and its entry links.
 

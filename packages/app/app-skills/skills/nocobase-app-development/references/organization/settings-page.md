@@ -96,7 +96,7 @@ Declare one settings page in `client/routes.ts` with `defineSystemSettingsRoutes
 defineSystemSettingsRoutes([
   {
     // A card in the Accounts and permissions category, at /settings/departments.
-    parent: 'settingsAccount',
+    parent: SYSTEM_SETTINGS_CATEGORIES.account,
     name: 'departments',
     path: '/departments',
     navigation: {

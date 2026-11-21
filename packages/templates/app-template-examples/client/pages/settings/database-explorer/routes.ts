@@ -1,10 +1,13 @@
-import { defineSystemSettingsRoutes } from '@nocobase/app-client/plugins';
+import {
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+} from '@nocobase/app-client/plugins';
 import { DATABASE_EXPLORER_ACCESS } from '@nocobase/app-plugin-database-explorer/client';
 import { Database } from 'lucide-react';
 
 export default defineSystemSettingsRoutes([
   {
-    parent: 'settingsSystem',
+    parent: SYSTEM_SETTINGS_CATEGORIES.data,
     name: 'databaseExplorer',
     path: '/database-explorer',
     auth: 'required',

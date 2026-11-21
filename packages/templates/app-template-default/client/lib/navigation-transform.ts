@@ -8,8 +8,8 @@ import type { RouteNavigationItem } from '../routing/route-navigation.js';
 export const SETTINGS_GROUP = 'settings';
 /** The settings home page, a navigation-less child of the settings group. */
 export const SETTINGS_HOME = 'settingsHome';
-/** The category a module registered directly under the settings group is shown in. */
-export const SETTINGS_FALLBACK_CATEGORY = 'settingsSystem';
+/** The category a module registered directly under the settings group is shown in: the built-in `other` category's route. */
+export const SETTINGS_FALLBACK_CATEGORY = 'systemSettings.other';
 
 /**
  * The application's navigation as the sidebar shows it, from the routes the viewer may open. The shared router calls

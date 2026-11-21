@@ -61,7 +61,7 @@ it('groups the modules an administrator may open into categories of cards that o
   const cards = within(account).getAllByRole('link');
   expect(cards.map((card) => card.textContent)).toEqual([
     'UsersManage accounts, access and active sessions.',
-    'Permission managementSet what each role can open and do, and the data it can see.',
+    'Roles and permissionsSet what each role can open and do, and the data it can see.',
   ]);
   expect(cards[0]).toHaveAttribute('href', '/main/settings/users');
   expect(cards[1]).toHaveAttribute('href', '/main/settings/roles');

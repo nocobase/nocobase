@@ -2,7 +2,7 @@ const settings = {
   notificationManagementDescription:
     'View registered notification templates and synthetic content previews.',
   notificationTemplates: 'Notification templates',
-  notificationManagement: 'Notification management',
+  notificationManagement: 'Notifications',
   listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',
@@ -25,7 +25,7 @@ const settings = {
   roleFilter: 'Filter by role',
   allRoles: 'All roles',
 
-  permissionManagement: 'Permission management',
+  permissionManagement: 'Roles and permissions',
   defaultAccess: {
     kindBusiness: 'business operations',
     kindTable: 'data table',
@@ -127,7 +127,7 @@ const settings = {
     categories: {
       account: 'Account',
       preferences: 'Preferences',
-      connections: 'Connections',
+      other: 'Other',
     },
     appearance: {
       title: 'Language and appearance',
@@ -142,14 +142,17 @@ const settings = {
   },
   categories: {
     account: 'Accounts and permissions',
-    business: 'Business configuration',
+    automation: 'Workflows and automation',
+    messages: 'Messages',
     ai: 'AI',
+    data: 'Data and files',
     system: 'System',
+    other: 'Other',
   },
   permissionManagementDescription:
     'Set what each role can open and do, and the data it can see.',
   users: 'Users',
-  roles: 'Roles and permissions',
+  roles: 'Roles',
   usersDescription: 'Manage accounts, access and active sessions.',
   rolesDescription:
     'Set the menus each role sees and what it may do with each kind of business data.',

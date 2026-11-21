@@ -1,7 +1,7 @@
 const settings = {
   notificationManagementDescription: '查看已登记的通知模板和合成内容预览。',
   notificationTemplates: '通知模板',
-  notificationManagement: '通知管理',
+  notificationManagement: '通知',
   listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',
@@ -21,7 +21,7 @@ const settings = {
   roleFilter: '按角色筛选',
   allRoles: '全部角色',
 
-  permissionManagement: '权限管理',
+  permissionManagement: '角色和权限',
   defaultAccess: {
     kindBusiness: '业务操作',
     kindTable: '数据表',
@@ -116,7 +116,7 @@ const settings = {
     categories: {
       account: '账号',
       preferences: '偏好',
-      connections: '连接',
+      other: '其他',
     },
     appearance: {
       title: '语言与外观',
@@ -130,14 +130,17 @@ const settings = {
   },
   categories: {
     account: '账号与权限',
-    business: '业务配置',
+    automation: '流程与自动化',
+    messages: '消息',
     ai: 'AI',
+    data: '数据与文件',
     system: '系统',
+    other: '其他',
   },
   permissionManagementDescription:
     '设置每个角色能打开的页面、能做的操作和能看到的数据。',
   users: '用户管理',
-  roles: '角色与权限',
+  roles: '角色',
   usersDescription: '管理用户账户、角色及登录会话。',
   rolesDescription: '设置每个角色能看到的菜单，以及对每类业务数据能做什么。',
   userSearch: '搜索姓名、用户名或邮箱',
