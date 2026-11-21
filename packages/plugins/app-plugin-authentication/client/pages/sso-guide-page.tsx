@@ -9,6 +9,7 @@ import { Label } from '../components/ui/label.js';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group.js';
 import { Spinner } from '../components/ui/spinner.js';
 import { useAuthenticationSettings } from '../settings/data.js';
+import { ssoConfig, variablePrefix } from './sso-config.js';
 import { SettingsPage } from './shared.js';
 import { useAuthenticationTranslation } from './i18n.js';
 
@@ -42,11 +43,6 @@ const SOCIAL_PRESETS: readonly Preset[] = [
   { id: 'microsoft', name: 'Microsoft' },
 ];
 
-/** `feishu` → `AUTH_FEISHU`, the prefix of the environment variables that hold its client id and secret. */
-function variablePrefix(id: string): string {
-  return `AUTH_${id.toUpperCase().replace(/[^A-Z0-9]+/gu, '_')}`;
-}
-
 /**
  * The guide to turning on single sign-on (OIDC) or a social provider. It builds the callback URL from
  * `app.publicOrigin` and the configuration snippet to deploy; it saves nothing, and the client secret is never typed in.
@@ -76,31 +72,12 @@ export default function SsoGuidePage(): ReactElement {
       ? `${authBase}/callback/${id}`
       : `${authBase}/oauth2/callback/${id}`;
   const prefix = variablePrefix(id);
-  const config =
-    type === 'social'
-      ? [
-          '// server/config/auth.ts → defaults',
-          'socialProviders: {',
-          `  ${JSON.stringify(id).slice(1, -1)}: {`,
-          `    clientId: process.env.${prefix}_CLIENT_ID!,`,
-          `    clientSecret: process.env.${prefix}_CLIENT_SECRET!,`,
-          `    disableImplicitSignUp: ${signUp === 'existing'},`,
-          '  },',
-          '},',
-        ].join('\n')
-      : [
-          "// server/config/auth.ts → plugins (import { genericOAuth } from 'better-auth/plugins')",
-          'genericOAuth({ config: [{',
-          `  providerId: '${id}',`,
-          `  discoveryUrl: '${preset.discoveryUrl ?? 'https://<issuer>/.well-known/openid-configuration'}',`,
-          `  clientId: process.env.${prefix}_CLIENT_ID!,`,
-          `  clientSecret: process.env.${prefix}_CLIENT_SECRET!,`,
-          `  disableSignUp: ${signUp === 'existing'},`,
-          '}] })',
-          '',
-          "// client/config/auth.ts → plugins (import { genericOAuthClient } from 'better-auth/client/plugins')",
-          'genericOAuthClient()',
-        ].join('\n');
+  const config = ssoConfig({
+    type,
+    id,
+    discoveryUrl: preset.discoveryUrl,
+    signUp,
+  });
   const copy = (text: string): void => {
     void copyText(text).then((copied) => {
       if (copied) toaster.show({ type: 'success', title: t('sso.copied') });

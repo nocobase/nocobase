@@ -127,6 +127,7 @@ const zhCN: AuthenticationResource = {
       forgotPassword: '忘记密码',
       providers: '使用 {{names}} 登录',
       noProviders: '第三方登录按钮',
+      noButton: '已配置，登录页没有按钮',
       hidden: '不显示',
     },
     registration: {
@@ -258,7 +259,7 @@ const zhCN: AuthenticationResource = {
       'Client ID 和 Client Secret 放在部署环境变量里（{{prefix}}_CLIENT_ID、{{prefix}}_CLIENT_SECRET），不要写进代码仓库。不需要数据库迁移。',
     after: '4. 部署后',
     afterDescription:
-      '重新部署，回到「登录方式」看到状态变为「已开启」，登录页出现对应的登录按钮。',
+      '重新部署，回到「登录方式」看到状态变为「已开启」。要在登录页显示按钮，把提供方加到登录页的 providers，并写进 authentication({ signInButtons })。',
     back: '返回',
     copyAll: '复制全部配置',
   },

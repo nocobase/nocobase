@@ -76,7 +76,6 @@ export const AuthenticationSettingsSchema: z.ZodType<AuthenticationSettings> = z
       password: z.boolean(),
       signUp: z.boolean(),
       forgotPassword: z.boolean(),
-      providers: z.array(z.string()),
     }),
     registration: z.object({
       selfSignUp: setting(z.boolean()),

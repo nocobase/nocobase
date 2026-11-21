@@ -140,6 +140,7 @@ const enUS = {
       forgotPassword: 'Forgot password',
       providers: 'Sign in with {{names}}',
       noProviders: 'Third-party sign-in buttons',
+      noButton: 'configured, no button on the sign-in page',
       hidden: 'not shown',
     },
     registration: {
@@ -276,7 +277,7 @@ const enUS = {
       'Keep the client id and secret in the deployment environment ({{prefix}}_CLIENT_ID, {{prefix}}_CLIENT_SECRET), never in the repository. No database migration is needed.',
     after: '4. After deployment',
     afterDescription:
-      'Redeploy, then check that the method shows as On under Sign-in methods and that the sign-in page shows its button.',
+      'Redeploy, then check that the method shows as On under Sign-in methods. For a button on the sign-in page, add the provider to the sign-in page’s providers and to authentication({ signInButtons }).',
     back: 'Back',
     copyAll: 'Copy all',
   },

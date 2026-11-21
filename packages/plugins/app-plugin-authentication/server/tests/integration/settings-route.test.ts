@@ -247,9 +247,11 @@ describe('GET /api/authentication/settings and /api/authentication/providers', (
     expect(methods.twoFactor?.status).toBe('notConfigured');
     // Only the API keys plugin adds its row; this application does not register it.
     expect(methods['api-key']).toBeUndefined();
-    expect(data.signInPage).toMatchObject({
+    // Which providers get a button is the application's sign-in page's business, not the server's.
+    expect(data.signInPage).toEqual({
+      password: true,
+      signUp: true,
       forgotPassword: false,
-      providers: ['acme-sso', 'github'],
     });
   });
 
@@ -286,8 +288,8 @@ describe('GET /api/authentication/settings and /api/authentication/providers', (
       expect(text).not.toContain(sentinel);
     expect(JSON.parse(text)).toEqual({
       data: [
-        { id: 'acme-sso', name: 'acme-sso', type: 'oidc' },
-        { id: 'github', name: 'GitHub', type: 'social' },
+        { id: 'acme-sso', name: 'acme-sso' },
+        { id: 'github', name: 'GitHub' },
       ],
       meta: { total: 2 },
     });

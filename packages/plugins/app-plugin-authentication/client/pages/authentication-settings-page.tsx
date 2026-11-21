@@ -2,7 +2,11 @@ import { TriangleAlertIcon, CheckIcon, XIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
+import { useService } from '@nocobase/app-client';
+
 import { Button } from '../components/ui/button.js';
+import { authenticationClientSettingsToken } from '../tokens.js';
+import { providerEntries } from './sign-in-entries.js';
 import { Spinner } from '../components/ui/spinner.js';
 import {
   Tabs,
@@ -168,6 +172,10 @@ function MethodsTab({
 }): ReactElement {
   const { t } = useAuthenticationTranslation();
   const page = settings.signInPage;
+  const providers = providerEntries(
+    settings.methods,
+    useService(authenticationClientSettingsToken).signInButtons,
+  );
   return (
     <>
       <Panel>
@@ -252,13 +260,23 @@ function MethodsTab({
           <Entry on={page.forgotPassword}>
             {t('settings.signInPage.forgotPassword')}
           </Entry>
-          <Entry on={page.providers.length > 0}>
-            {page.providers.length
-              ? t('settings.signInPage.providers', {
-                  names: page.providers.join(', '),
-                })
-              : t('settings.signInPage.noProviders')}
-          </Entry>
+          {providers.shown.length ? (
+            <Entry on>
+              {t('settings.signInPage.providers', {
+                names: providers.shown.join(', '),
+              })}
+            </Entry>
+          ) : null}
+          {providers.withoutButton.length ? (
+            <Entry on={false} note={t('settings.signInPage.noButton')}>
+              {t('settings.signInPage.providers', {
+                names: providers.withoutButton.join(', '),
+              })}
+            </Entry>
+          ) : null}
+          {providers.shown.length || providers.withoutButton.length ? null : (
+            <Entry on={false}>{t('settings.signInPage.noProviders')}</Entry>
+          )}
         </div>
       </Panel>
       <ul className='list-disc space-y-1 pl-5 text-sm text-muted-foreground'>
@@ -271,9 +289,12 @@ function MethodsTab({
 
 function Entry({
   on,
+  note,
   children,
 }: {
   readonly on: boolean;
+  /** Why it is not shown; defaults to "not shown". */
+  readonly note?: string;
   readonly children: ReactNode;
 }): ReactElement {
   const { t } = useAuthenticationTranslation();
@@ -286,7 +307,7 @@ function Entry({
       }
     >
       {children}
-      {on ? null : ` (${t('settings.signInPage.hidden')})`}
+      {on ? null : ` (${note ?? t('settings.signInPage.hidden')})`}
     </span>
   );
 }

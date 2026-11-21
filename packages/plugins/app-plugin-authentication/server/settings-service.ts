@@ -22,7 +22,6 @@ import type { SignInMethodRegistry } from './sign-in-methods.js';
 export interface AuthenticationProviderSummary {
   readonly id: string;
   readonly name: string;
-  readonly type: 'oidc' | 'social';
 }
 
 /** What `GET /api/authentication/settings` and `GET /api/authentication/providers` answer. */
@@ -68,8 +67,11 @@ export function createAuthenticationSettingsService(
         secretsReady: options.secretsReady(),
       });
     },
-    providers() {
-      return configuredProviders(options.authentication());
+    async providers() {
+      // Id and name only: how a provider is linked is the client's concern.
+      return (await configuredProviders(options.authentication())).map(
+        ({ id, name }) => ({ id, name }),
+      );
     },
   };
 }

@@ -61,7 +61,6 @@ export interface AuthenticationSettings {
     readonly password: boolean;
     readonly signUp: boolean;
     readonly forgotPassword: boolean;
-    readonly providers: readonly string[];
   };
   readonly registration: {
     readonly selfSignUp: SettingValue<boolean>;
@@ -410,7 +409,6 @@ export async function collectAuthenticationSettings(
       signUp:
         passwordSignIn && options.emailAndPassword?.disableSignUp !== true,
       forgotPassword: diagnosis.available,
-      providers: [...oidcProviders, ...socialProviders],
     },
     registration: {
       selfSignUp: value(
