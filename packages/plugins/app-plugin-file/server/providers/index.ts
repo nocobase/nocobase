@@ -17,7 +17,7 @@ export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginAppl
         new ServerFileRepositoryManager(
           container.resolve(databaseManagerToken),
           container.resolve(driveManagerToken),
-          this.app.config.get<FileDriveConfig>('drive'),
+          this.app.config?.get<FileDriveConfig>('drive'),
         ),
     );
   }
