@@ -1,3 +1,8 @@
+import {
+  applyClientRouteComponentOverrides,
+  resolveAppClientContributions,
+  type AppClientRegisteredRoute,
+} from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
 import apiKeys from '../client/plugin.js';
@@ -48,6 +53,40 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
       '@nocobase/app-plugin-api-keys:apiKeysPersonalCreate',
     );
     expect(apiKeys({ routes: false }).routes).toEqual([]);
+  });
+
+  it('lets an application replace a page with its own through routeComponentOverrides', async () => {
+    const registration = apiKeys();
+    const { routes } = resolveAppClientContributions([
+      {
+        packageName: registration.packageName,
+        routes: registration.routes,
+      },
+    ]);
+    const OwnPage = () => null;
+    const own = () => Promise.resolve({ default: OwnPage });
+    const replaced = applyClientRouteComponentOverrides(routes, [
+      { routeId: API_KEY_ROUTES.personal, componentLoader: own },
+    ]);
+    const find = (
+      nodes: readonly AppClientRegisteredRoute[],
+      id: string,
+    ): AppClientRegisteredRoute | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        const found = find(node.children ?? [], id);
+        if (found) return found;
+      }
+      return undefined;
+    };
+    const loaded = await find(
+      replaced,
+      API_KEY_ROUTES.personal,
+    )?.componentLoader?.();
+    expect(loaded?.default).toBe(OwnPage);
+    expect(find(replaced, API_KEY_ROUTES.personalDetail)).toMatchObject({
+      path: '/me/api-keys/:keyId',
+    });
   });
 
   it('counts days left, idle days and permissions for the list', () => {

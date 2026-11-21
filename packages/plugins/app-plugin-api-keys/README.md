@@ -4,7 +4,19 @@ API key authentication for NocoBase applications, built on Better Auth.
 
 A key authenticates as the user who created it. `Auth.getSession()` resolves the `x-api-key` header the same way it resolves a session cookie, so `auth.required()`, the route guards, and `@nocobase/app-plugin-authorization` all see the owning user and exactly the roles that user holds. Nothing in an application has to know a request arrived by key rather than by cookie.
 
-Keys are self-service: each signed-in user creates and revokes their own. The plugin ships no page for that; an application builds one on `authClient.apiKey.*` or the scoped key API below and declares it among its own routes.
+Keys are self-service: each signed-in user creates and revokes their own, in Personal settings › API keys, which this plugin's client registers (see [Pages](#pages)).
+
+## Pages
+
+The client plugin (`@nocobase/app-plugin-api-keys/client`) registers Personal settings › API keys at `/me/api-keys`: the person's keys with what each can do, its expiry and last use, rotate and revoke; New key (`/me/api-keys/create`), where a key gets its permissions from the authorization plugin's permission table limited to what the person holds, a template or quick settings, and its secret is shown once with a copy button and a `curl` example; and a key's read-only detail (`/me/api-keys/:keyId`), where permissions the person has lost show struck through as lapsed. New key shows only to a person whose role grants `settings:personalApiKeys/create`; everyone can list, open and revoke their own keys. The pages need the authorization plugin's client registered, whose `KeyPermissionEditor` they use, and an application lists the plugin in `client/plugins.ts` with nothing else to write.
+
+An application replaces a page with its own through `routeComponentOverrides` on its runtime definition, naming the page by the ids in `API_KEY_ROUTES` (`@nocobase/app-plugin-api-keys:apiKeysPersonal`, `…:apiKeysPersonalCreate`, `…:apiKeysPersonalDetail`), or leaves every page out with `apiKeys({ routes: false })` and builds its own on `authClient.apiKey.*` or the HTTP API below.
+
+## Who may create keys
+
+`settings:personalApiKeys` `create` lets a person create (and rotate) keys of their own, and `settings:apiKeys` `read` and `manage` are the permissions of the system settings' API keys page; all three are settings items no key may hold. Without an application policy (`ScopedApiKeys.setOwnKeyPolicy`), `/api/apiKeys` and Better Auth's `/api-key/create` require `personalApiKeys/create` once it is registered, and a seed gives it to the built-in `member` Permission Set once, so no member loses the ability on upgrade; an administrator may take it away afterwards.
+
+A key that acts as its owner in full ("Same as me", `permissions: null` or the deprecated `scope: null`) is refused with 403 `SAME_AS_ME_DISABLED` unless the application sets `apiKeys.allowSameAsMe: true`, on new and upgraded installations alike. Keys that exist keep working and can be rotated either way. A service account's key is bounded by the account's own permissions and is not one of these. An application whose callers still create such keys, through `/api/apiKeys` or Better Auth's `/api-key/create`, turns the option on.
 
 ## What this package is
 
@@ -184,7 +196,9 @@ A service account's key is treated as scoped even without a scope: `required()` 
 | `GET /grantable`                                                                      | `{ data }`, `GrantablePermissions`: what the caller holds, human-only marks, templates, expiry, `mayCreate` |
 | `GET /scopeOptions` (deprecated)                                                      | `{ data }`, `KeyScopeOptions`: the groups with what the caller holds today, presets, expiry, `mayCreate`    |
 | `GET /scopeObjects/:group?q=&id=` (deprecated)                                        | `{ data, meta: { total } }`: the records the caller may choose for a group; `id` may repeat                 |
-| `GET /`                                                                               | `{ data, meta: { total } }`: the caller's keys, with scope and last use, never a secret                     |
+| `GET /objects/:business?q=&id=`                                                       | `{ data, meta: { total } }`: the records the caller may limit a key to for a business; `id` may repeat      |
+| `GET /`                                                                               | `{ data, meta: { total, mayCreate, allowSameAsMe } }`: the caller's keys, never a secret                    |
+| `GET /:keyId`                                                                         | `{ data }`: one key with `lapsed`, the actions it lost because the caller no longer holds them              |
 | `POST /` `{ name, description?, expiresInDays, permissions }` (or deprecated `scope`) | 201 `{ data: { key, secret } }`, the secret shown once                                                      |
 | `POST /:keyId/rotate`                                                                 | `{ data: { key, secret } }`: same id, name, scope and lifetime; the old secret stops at once                |
 | `DELETE /:keyId`                                                                      | 204                                                                                                         |

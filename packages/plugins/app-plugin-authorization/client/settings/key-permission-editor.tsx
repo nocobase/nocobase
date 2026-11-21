@@ -230,7 +230,7 @@ function KeyPermissionTable({
   onRisky,
   className,
 }: KeyPermissionEditorProps): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const app = useClientApplication();
   const settings = useAuthorizationSettings();
   const labels = usePermissionEditorLabels();
@@ -285,13 +285,13 @@ function KeyPermissionTable({
             text,
             missing: (actions) =>
               t('settings.keyPermissions.missing', {
-                actions: new Intl.ListFormat(undefined, {
+                actions: new Intl.ListFormat(i18n.language, {
                   type: 'conjunction',
                 }).format(actions),
               }),
           })
         : undefined,
-    [workspace, ceiling, shownKeys, lapsedKeys, text, t],
+    [workspace, ceiling, shownKeys, lapsedKeys, text, t, i18n.language],
   );
   const shownGrants = useMemo(
     () => (readOnly ? [...value, ...(lapsed ?? [])] : value),
@@ -378,7 +378,7 @@ function KeyPermissionTable({
         ...labels,
         settingsVisible: (pages) =>
           t('settings.keyPermissions.settingsVisible', {
-            pages: new Intl.ListFormat(undefined, {
+            pages: new Intl.ListFormat(i18n.language, {
               type: 'conjunction',
             }).format(pages),
           }),

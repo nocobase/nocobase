@@ -33,4 +33,10 @@ export function registerApiKeySettings(authz: AppAuthorization): void {
     title: text('permissions.personalApiKeys'),
     actions: [{ name: 'create', title: text('permissions.create'), humanOnly }],
   });
+  // Beside roles and permissions: who may hold keys, and of what kind, is a question of access.
+  for (const id of [API_KEYS_SETTINGS, PERSONAL_API_KEYS_SETTINGS])
+    authz.ui.place({ type: 'settings', id }, { section: ACCESS_SECTION });
 }
+
+/** The authorization plugin's subsection of administration that holds Roles and permissions. */
+const ACCESS_SECTION = 'authorization';
