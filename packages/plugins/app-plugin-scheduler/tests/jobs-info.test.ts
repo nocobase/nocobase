@@ -5,7 +5,11 @@ import { describeSchedulerJobs } from '../server/jobs-info.js';
 
 type Map = Record<string, unknown>;
 
-function accessor(defaults: Map, overrides: Map): AppConfigAccessor {
+function accessor(
+  defaults: Map,
+  overrides: Map,
+  loaded: readonly string[] = [],
+): AppConfigAccessor {
   const merged = { ...defaults, ...overrides };
   return {
     get: (key: string) => merged[key],
@@ -13,6 +17,7 @@ function accessor(defaults: Map, overrides: Map): AppConfigAccessor {
     environmentVariableMappings: () => ({
       SCHEDULER_JOBS: { path: 'scheduler.jobs' },
     }),
+    loadedEnvironmentVariables: () => loaded,
   } as unknown as AppConfigAccessor;
 }
 
@@ -28,7 +33,6 @@ describe('describeSchedulerJobs', () => {
       describeSchedulerJobs({
         ...options,
         config: accessor({}, {}),
-        environment: {},
       }),
     ).toEqual({
       configuration: null,
@@ -57,7 +61,6 @@ describe('describeSchedulerJobs', () => {
       describeSchedulerJobs({
         ...options,
         config: accessor({ jobs }, {}),
-        environment: {},
       }),
     ).toMatchObject({
       configuration: 'memory',
@@ -88,8 +91,9 @@ describe('describeSchedulerJobs', () => {
     };
     const described = describeSchedulerJobs({
       ...options,
-      config: accessor({}, { jobs, scheduler: { jobs: 'schedules' } }),
-      environment: { SCHEDULER_JOBS: 'schedules' },
+      config: accessor({}, { jobs, scheduler: { jobs: 'schedules' } }, [
+        'SCHEDULER_JOBS',
+      ]),
     });
     expect(described).toEqual({
       configuration: 'schedules',
@@ -130,7 +134,6 @@ describe('describeSchedulerJobs', () => {
           },
         },
       ),
-      environment: {},
     });
     expect(described).toMatchObject({
       connection: 'redis://cache:6380/2',
@@ -138,5 +141,37 @@ describe('describeSchedulerJobs', () => {
       sources: { configuration: 'config', namespace: 'default' },
     });
     expect(JSON.stringify(described)).not.toContain('top-secret');
+  });
+
+  it("reads the application's own environment, not the host process's", () => {
+    const jobs = {
+      backends: {
+        memory: { adapter: 'memory' },
+        schedules: { adapter: 'memory', concurrency: 3 },
+      },
+    };
+    const previous = process.env.SCHEDULER_JOBS;
+    // The host process has the variable, but the application was loaded without it: config.yml chose the backend.
+    process.env.SCHEDULER_JOBS = 'memory';
+    try {
+      expect(
+        describeSchedulerJobs({
+          ...options,
+          config: accessor({}, { jobs, scheduler: { jobs: 'schedules' } }),
+        }).sources.configuration,
+      ).toBe('config');
+    } finally {
+      if (previous === undefined) delete process.env.SCHEDULER_JOBS;
+      else process.env.SCHEDULER_JOBS = previous;
+    }
+    // The host gave this application the variable through its scope.env; the host process has none.
+    expect(
+      describeSchedulerJobs({
+        ...options,
+        config: accessor({}, { jobs, scheduler: { jobs: 'schedules' } }, [
+          'SCHEDULER_JOBS',
+        ]),
+      }).sources.configuration,
+    ).toBe('environment');
   });
 });

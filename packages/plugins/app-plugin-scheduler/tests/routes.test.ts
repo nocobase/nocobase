@@ -165,7 +165,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
     ).json()) as { data: { id: string }[]; meta: { nextPageToken?: string } };
     expect(listAllOccurrences).toHaveBeenLastCalledWith({
       statuses: ['failed'],
-      after: { startedAt: '2026-09-02T00:00:08.000Z', id: 'occurrence-2' },
+      after: { scheduledAt: '2026-09-02T00:00:08.000Z', id: 'occurrence-2' },
       limit: 3,
     });
     expect(second.data.map(({ id }) => id)).toEqual(['occurrence-3']);
@@ -223,7 +223,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
   });
 
   it('pages the schedule list by number and caps the page size', async () => {
-    const { router } = await createRouter({
+    const { router, list } = await createRouter({
       authenticated: true,
       allowed: true,
     });
@@ -232,6 +232,8 @@ describe('@nocobase/app-plugin-scheduler', () => {
       data: [],
       meta: expect.objectContaining({ page: 2, pageSize: 20, total: 1 }),
     });
+    // The page is read by the query, not cut from every Schedule.
+    expect(list).toHaveBeenLastCalledWith({ offset: 20, limit: 20 });
     const tooLarge = await router.request('/scheduler/schedules?pageSize=101');
     expect(tooLarge.status).toBe(400);
     expect(await errorOf(tooLarge)).toMatchObject({
@@ -437,7 +439,9 @@ async function createRouter(options: {
       scheduleId: 'schedule-1',
       status: 'triggered',
       executionCount: 1,
-      startedAt: `2026-09-02T00:00:0${9 - index}.000Z`,
+      // Each firing started a minute after it was planned; the cursor follows the planned time.
+      scheduledAt: `2026-09-02T00:00:0${9 - index}.000Z`,
+      startedAt: `2026-09-02T00:01:0${9 - index}.000Z`,
       targetReceipt: { eventKey: 'controlled' },
     }),
   );
@@ -452,7 +456,7 @@ async function createRouter(options: {
   const listAllOccurrences = vi.fn(
     async (query: {
       limit: number;
-      after?: { startedAt: string; id: string };
+      after?: { scheduledAt: string; id: string };
     }) => {
       const start = query.after
         ? history.findIndex(({ id }) => id === query.after?.id) + 1
@@ -487,12 +491,19 @@ async function createRouter(options: {
     if (id !== schedule.id) throw new ScheduleNotFoundError(id);
     return { ...schedule, enabled };
   });
+  const list = vi.fn(async (query: { offset?: number; limit?: number }) =>
+    [schedule].slice(
+      query.offset ?? 0,
+      (query.offset ?? 0) + (query.limit ?? Infinity),
+    ),
+  );
   container.instance(schedulerServiceToken, {
-    list: async () => [schedule],
+    list,
+    count: async () => 1,
     get,
     detail,
     jobs: () => jobs,
-    removedFromCode: () => [],
+    removedFromCode: async () => [],
     listAllOccurrences,
     listOccurrences,
     setEnabled,
@@ -509,6 +520,7 @@ async function createRouter(options: {
   return {
     router,
     can,
+    list,
     get,
     detail,
     listOccurrences,

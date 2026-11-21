@@ -33,9 +33,20 @@ export interface ScheduleOccurrenceRange {
   readonly limit?: number;
 }
 
-/** Where a page of the application-wide history resumes: after this row, in `(startedAt, id)` descending order. */
+/**
+ * Which Schedules of this application to read, ordered by title then id. `removedFromCode` keeps the active
+ * code-defined Schedules whose ids it does not list: those removed from code, given the ids this instance defines.
+ */
+export interface ScheduleListQuery {
+  readonly id?: string;
+  readonly removedFromCode?: readonly string[];
+  readonly offset?: number;
+  readonly limit?: number;
+}
+
+/** Where a page of the application-wide history resumes: after this row, in `(scheduledAt, id)` descending order. */
 export interface ScheduleOccurrenceCursor {
-  readonly startedAt: string;
+  readonly scheduledAt: string;
   readonly id: string;
 }
 
@@ -43,9 +54,9 @@ export interface ScheduleOccurrenceCursor {
 export interface ScheduleOccurrenceQuery {
   readonly scheduleId?: string;
   readonly statuses?: readonly ScheduleOccurrenceStatus[];
-  /** Inclusive lower bound on `startedAt`. */
+  /** Inclusive lower bound on `scheduledAt`. */
   readonly from?: Date;
-  /** Exclusive upper bound on `startedAt`. */
+  /** Exclusive upper bound on `scheduledAt`. */
   readonly to?: Date;
   readonly after?: ScheduleOccurrenceCursor;
   readonly limit: number;
@@ -314,14 +325,30 @@ export class ScheduleStore {
     );
   }
 
-  public async list(): Promise<readonly ScheduleRecord[]> {
-    const definitions = await this.database
+  /**
+   * The Schedules `query` selects, each with its completed-run count and latest outcome. Only the selected rows are
+   * read and summed, so a page costs the page, not the whole application.
+   */
+  public async list(
+    query: ScheduleListQuery = {},
+  ): Promise<readonly ScheduleRecord[]> {
+    let selected = this.database
       .query()
       .selectFrom<DefinitionRow>('schedule_definitions')
       .selectAll()
-      .where('appName', '=', this.appName)
-      .orderBy('title', 'asc')
-      .execute<DefinitionRow>();
+      .where('appName', '=', this.appName);
+    if (query.id !== undefined) selected = selected.where('id', '=', query.id);
+    if (query.removedFromCode) {
+      selected = selected
+        .where('sourceType', '=', 'code')
+        .where('lifecycleState', '=', 'active');
+      if (query.removedFromCode.length > 0)
+        selected = selected.where('id', 'not in', [...query.removedFromCode]);
+    }
+    selected = selected.orderBy('title', 'asc').orderBy('id', 'asc');
+    if (query.limit !== undefined) selected = selected.limit(query.limit);
+    if (query.offset) selected = selected.offset(query.offset);
+    const definitions = await selected.execute<DefinitionRow>();
     const [completedByScheduleId, lastRuns] = await Promise.all([
       this.countCompleted(definitions.map((definition) => definition.id)),
       this.lastRuns(
@@ -456,13 +483,29 @@ export class ScheduleStore {
     return completed;
   }
 
-  public async listTargets(): Promise<readonly ScheduleTargetProjection[]> {
-    const rows = await this.database
+  /** How many Schedules this application has. */
+  public async count(): Promise<number> {
+    const row = await this.database
+      .query()
+      .selectFrom<DefinitionRow>('schedule_definitions')
+      .select(({ fn }) => [fn.countAll().as('total')])
+      .where('appName', '=', this.appName)
+      .executeTakeFirst<Row>();
+    return Number(row?.total ?? 0);
+  }
+
+  /** The stored targets of this application's Schedules; of those in `ids` only, when given. */
+  public async listTargets(
+    ids?: readonly string[],
+  ): Promise<readonly ScheduleTargetProjection[]> {
+    if (ids?.length === 0) return [];
+    let selected = this.database
       .query()
       .selectFrom<DefinitionRow>('schedule_definitions')
       .selectAll()
-      .where('appName', '=', this.appName)
-      .execute<DefinitionRow>();
+      .where('appName', '=', this.appName);
+    if (ids) selected = selected.where('id', 'in', [...ids]);
+    const rows = await selected.execute<DefinitionRow>();
     return rows.map((row) => ({
       id: row.id,
       type: row.targetType,
@@ -487,7 +530,7 @@ export class ScheduleStore {
       .selectFrom('schedule_occurrences')
       .selectAll()
       .where('scheduleId', '=', scheduleId)
-      .orderBy('startedAt', 'desc')
+      .orderBy('scheduledAt', 'desc')
       .orderBy('id', 'desc')
       .limit(range.limit ?? 100)
       .offset(range.offset ?? 0)
@@ -497,7 +540,7 @@ export class ScheduleStore {
 
   /**
    * The history of every Schedule of this application, newest first, narrowed by `query`. Pages by keyset on
-   * `(startedAt, id)`, so a firing recorded while someone pages neither repeats nor hides a row. Occurrences of
+   * `(scheduledAt, id)`, the time a firing was planned for and the time the page shows, so a firing recorded while someone pages neither repeats nor hides a row, and a firing that started late stays where it was planned. Occurrences of
    * Schedules removed from code stay listed: their definitions remain, inactive.
    */
   public async listAllOccurrences(
@@ -524,20 +567,23 @@ export class ScheduleStore {
     if (query.statuses && query.statuses.length > 0)
       occurrences = occurrences.where('status', 'in', [...query.statuses]);
     if (query.from)
-      occurrences = occurrences.where('startedAt', '>=', query.from);
-    if (query.to) occurrences = occurrences.where('startedAt', '<', query.to);
+      occurrences = occurrences.where('scheduledAt', '>=', query.from);
+    if (query.to) occurrences = occurrences.where('scheduledAt', '<', query.to);
     const after = query.after;
     if (after) {
-      const startedAt = new Date(after.startedAt);
+      const scheduledAt = new Date(after.scheduledAt);
       occurrences = occurrences.where((eb) =>
         eb.or([
-          eb('startedAt', '<', startedAt),
-          eb.and([eb('startedAt', '=', startedAt), eb('id', '<', after.id)]),
+          eb('scheduledAt', '<', scheduledAt),
+          eb.and([
+            eb('scheduledAt', '=', scheduledAt),
+            eb('id', '<', after.id),
+          ]),
         ]),
       );
     }
     const rows = await occurrences
-      .orderBy('startedAt', 'desc')
+      .orderBy('scheduledAt', 'desc')
       .orderBy('id', 'desc')
       .limit(query.limit)
       .execute();

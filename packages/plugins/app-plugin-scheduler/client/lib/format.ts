@@ -15,16 +15,73 @@ function weekdayName(day: number, locale: string): string {
   }).format(new Date(Date.UTC(2023, 0, 1 + (day % 7))));
 }
 
+/** The part of cronstrue's localized build the page uses: `cronstrue/i18n`'s default export. */
+export interface CronDescriber {
+  toString(
+    expression: string,
+    options: {
+      readonly locale: string;
+      readonly use24HourTimeFormat: boolean;
+      readonly throwExceptionOnParseError: boolean;
+    },
+  ): string;
+}
+
+const CRONSTRUE_REGIONAL = new Set(['zh_CN', 'zh_TW', 'pt_BR', 'pt_PT']);
+
+/** cronstrue's name for a locale: `zh_CN`, `zh_TW` and `pt_BR` keep their region, the rest is the language alone. */
+export function cronstrueLocale(locale: string): string {
+  const [language = 'en', region] = (locale || 'en').split(/[-_]/u);
+  const regional = region ? `${language}_${region.toUpperCase()}` : '';
+  return CRONSTRUE_REGIONAL.has(regional) ? regional : language;
+}
+
 /**
- * A short sentence for a cron rule, such as “Every 5 minutes”, for the common shapes: every minute, every n minutes,
- * hourly, every n hours, daily, on weekdays, weekly and monthly. Any other rule is shown as it is; the page shows the
- * expression beside the sentence anyway.
+ * A short sentence for a cron rule, such as “Every 5 minutes”. The common shapes — every minute, every n minutes,
+ * hourly, every n hours, daily, on weekdays, weekly and monthly — are worded by the page's own translations; any other
+ * rule, such as `0 9,17 * * 1-5`, by cronstrue in the reader's language once `describer` is loaded. Until then, and for
+ * a rule cronstrue cannot read, the expression is returned as it is; the page shows it beside the sentence anyway.
  */
 export function describeCron(
   cron: string,
   t: Translate,
   locale: string,
+  describer?: CronDescriber,
 ): string {
+  return (
+    describeCommonCron(cron, t, locale) ??
+    describeAnyCron(cron, locale, describer) ??
+    cron
+  );
+}
+
+/** Whether the page words `cron` itself, so cronstrue need not be loaded for it. */
+export function isCommonCron(cron: string): boolean {
+  return describeCommonCron(cron, (key) => key, 'en-US') !== undefined;
+}
+
+function describeAnyCron(
+  cron: string,
+  locale: string,
+  describer: CronDescriber | undefined,
+): string | undefined {
+  if (!describer) return undefined;
+  try {
+    return describer.toString(cron, {
+      locale: cronstrueLocale(locale),
+      use24HourTimeFormat: true,
+      throwExceptionOnParseError: true,
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+function describeCommonCron(
+  cron: string,
+  t: Translate,
+  locale: string,
+): string | undefined {
   const fields = cron.trim().split(/\s+/u);
   if (fields.length === 5) {
     const [minute = '', hour = '', day = '', month = '', weekday = ''] = fields;
@@ -55,7 +112,7 @@ export function describeCron(
         return t('cron.monthly', { day: Number(day), time });
     }
   }
-  return cron;
+  return undefined;
 }
 
 function sameDay(left: Date, right: Date): boolean {

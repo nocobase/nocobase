@@ -29,7 +29,13 @@ import {
   TableRow,
 } from '../../components/ui/table.js';
 import type { Schedule } from '../../lib/api.js';
-import { describeCron, formatFullTime, formatTime } from '../../lib/format.js';
+import { useCronDescriber } from '../../lib/cron.js';
+import {
+  describeCron,
+  formatFullTime,
+  formatTime,
+  isCommonCron,
+} from '../../lib/format.js';
 import {
   attentionOf,
   scheduleState,
@@ -314,7 +320,8 @@ export function Rule({
 }): ReactElement {
   const { t } = useSchedulerTranslation();
   const { locale } = useLocale();
-  const sentence = describeCron(schedule.cron, t, locale);
+  const describer = useCronDescriber(!isCommonCron(schedule.cron));
+  const sentence = describeCron(schedule.cron, t, locale, describer);
   return (
     <div className='min-w-0'>
       {sentence === schedule.cron ? null : <div>{sentence}</div>}

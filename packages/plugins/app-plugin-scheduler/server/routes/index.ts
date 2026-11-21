@@ -122,7 +122,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List the occurrences of every Schedule',
         operationId: 'schedulerListAllOccurrences',
-        description: `The firings of every Schedule of the application, including those removed from code, newest first by start time. Filters by \`scheduleId\`, \`status\` and a \`from\`/\`to\` range; pages by \`pageToken\`: pass \`meta.nextPageToken\` back unchanged, with the same filters; it is absent on the last page. A firing recorded while paging never repeats or hides a row. ${readDescription}`,
+        description: `The firings of every Schedule of the application, including those removed from code, newest first by the time each was planned for (\`scheduledAt\`), so a firing that started late stays in its planned place. Filters by \`scheduleId\`, \`status\` and a \`from\`/\`to\` range; pages by \`pageToken\`: pass \`meta.nextPageToken\` back unchanged, with the same filters; it is absent on the last page. A firing recorded while paging never repeats or hides a row. ${readDescription}`,
         responses: {
           200: listResponse(ScheduleOccurrenceSchema, HistoryPageMeta),
           ...apiErrorResponses,
@@ -149,7 +149,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             rows.length > pageSize && last
               ? {
                   nextPageToken: encodeHistoryPageToken(
-                    last.startedAt,
+                    last.scheduledAt ?? last.startedAt,
                     last.id,
                   ),
                 }
@@ -173,23 +173,21 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('query', ScheduleListQuery),
       async (context) => {
         const { page, pageSize } = context.req.valid('query');
-        const items = await scheduler.list();
-        const start = (page - 1) * pageSize;
         const jobs = scheduler.jobs();
+        // The page, the count and the Schedules removed from code are each read on their own: a page costs its rows,
+        // not the whole application.
+        const [items, total, removedFromCode] = await Promise.all([
+          scheduler.list({ offset: (page - 1) * pageSize, limit: pageSize }),
+          scheduler.count(),
+          jobs ? scheduler.removedFromCode() : Promise.resolve([]),
+        ]);
         return context.json({
-          data: items.slice(start, start + pageSize),
+          data: items,
           meta: {
             page,
             pageSize,
-            total: items.length,
-            ...(jobs
-              ? {
-                  jobs: {
-                    ...jobs,
-                    removedFromCode: scheduler.removedFromCode(items),
-                  },
-                }
-              : {}),
+            total,
+            ...(jobs ? { jobs: { ...jobs, removedFromCode } } : {}),
           },
         });
       },

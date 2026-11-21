@@ -49,6 +49,11 @@ export interface AppConfigAccessor {
   layers?(): AppConfigLayers;
   /** Every environment variable the sections declare, with the absolute path it sets; an accessor without declared rules may omit it. */
   environmentVariableMappings?(): Readonly<Record<string, EnvironmentMapping>>;
+  /**
+   * The declared section variables that were set in the environment the configuration was loaded from — the
+   * application's own, not the host process's; an accessor without declared rules may omit it.
+   */
+  loadedEnvironmentVariables?(): readonly string[];
   subscribe<TValue>(
     namespace: string,
     listener: AppConfigChangeListener<TValue>,

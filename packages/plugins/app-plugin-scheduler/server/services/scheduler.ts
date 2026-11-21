@@ -21,6 +21,7 @@ import {
   ScheduleNotFoundError,
   type ScheduleManifestEntry,
   type ScheduleOccurrenceQuery,
+  type ScheduleListQuery,
   type ScheduleOccurrenceRange,
   type ScheduleOccurrenceRecord,
   type ScheduleStore,
@@ -178,11 +179,14 @@ export class DefaultSchedulerService implements SchedulerService {
     };
   }
 
-  public async list(): Promise<readonly ScheduleListItem[]> {
-    const [records, targets] = await Promise.all([
-      this.store.list(),
-      this.store.listTargets(),
-    ]);
+  /** The Schedules `query` selects, with their targets described; only those are read. */
+  public async list(
+    query: ScheduleListQuery = {},
+  ): Promise<readonly ScheduleListItem[]> {
+    const records = await this.store.list(query);
+    const targets = await this.store.listTargets(
+      records.map((record) => record.id),
+    );
     const byId = new Map(targets.map((target) => [target.id, target]));
     return Promise.all(
       records.map(async (record): Promise<ScheduleListItem> => {
@@ -199,9 +203,14 @@ export class DefaultSchedulerService implements SchedulerService {
     );
   }
 
+  /** How many Schedules this application has. */
+  public count(): Promise<number> {
+    return this.store.count();
+  }
+
   /** One schedule with the same projection as `list()`, or `undefined` when this application has no such schedule. */
   public async get(id: string): Promise<ScheduleListItem | undefined> {
-    return (await this.list()).find((entry) => entry.id === id);
+    return (await this.list({ id }))[0];
   }
 
   /** One Schedule with its next firings, or `undefined` when this application has no such schedule. */
@@ -219,28 +228,21 @@ export class DefaultSchedulerService implements SchedulerService {
 
   /**
    * Schedules the database holds as active and defined in code that no definition this instance loaded declares:
-   * what `scheduler sync --finalize` would deactivate. Firing, they only log a warning.
+   * what `scheduler sync --finalize` would deactivate. Firing, they only log a warning. Read by one query that keeps
+   * only those rows.
    */
-  public removedFromCode(
-    items: readonly ScheduleListItem[],
-  ): readonly ScheduleRemovedFromCode[] {
-    const defined = new Set(
-      this.manifest.map((entry) => this.store.idOf(entry.definition.key)),
+  public async removedFromCode(): Promise<readonly ScheduleRemovedFromCode[]> {
+    const defined = this.manifest.map((entry) =>
+      this.store.idOf(entry.definition.key),
     );
-    return items
-      .filter(
-        (item) =>
-          item.sourceType === 'code' &&
-          item.lifecycleState === 'active' &&
-          !defined.has(item.id),
-      )
-      .map((item) => ({
-        id: item.id,
-        key: item.key,
-        title: item.title,
-        ...(item.lastRunAt ? { lastRunAt: item.lastRunAt } : {}),
-        ...(item.lastRun ? { lastRun: item.lastRun } : {}),
-      }));
+    const removed = await this.store.list({ removedFromCode: defined });
+    return removed.map((item) => ({
+      id: item.id,
+      key: item.key,
+      title: item.title,
+      ...(item.lastRunAt ? { lastRunAt: item.lastRunAt } : {}),
+      ...(item.lastRun ? { lastRun: item.lastRun } : {}),
+    }));
   }
 
   public async listOccurrences(

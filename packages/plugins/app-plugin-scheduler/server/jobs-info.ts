@@ -43,7 +43,6 @@ export interface DescribeSchedulerJobsOptions {
   readonly rootDir: string;
   /** The memory adapter's default state directory, `storage/jobs`. */
   readonly storagePath: string;
-  readonly environment?: Readonly<Record<string, string | undefined>>;
 }
 
 type Settings = Readonly<Record<string, unknown>>;
@@ -57,9 +56,8 @@ export function describeSchedulerJobs({
   appName,
   rootDir,
   storagePath,
-  environment = process.env,
 }: DescribeSchedulerJobsOptions): SchedulerJobsDescription {
-  const sourceOf = createSourceResolver(config, environment);
+  const sourceOf = createSourceResolver(config);
   const jobs = asSettings(config.get('jobs'));
   const backends = asSettings(jobs?.backends);
   const named = asSettings(config.get('scheduler'))?.jobs;
@@ -126,24 +124,24 @@ export function describeSchedulerJobs({
 }
 
 /**
- * Tells where the value at a configuration path came from. An environment variable a section maps to the path wins
- * when it is set; otherwise the file and environment overrides, then the code defaults. An accessor that keeps no
- * layers reports everything as a default.
+ * Tells where the value at a configuration path came from. A section variable mapped to the path wins when the
+ * environment the configuration was loaded from set it — the application's own environment, which a host may give each
+ * application separately, never the host process's; otherwise the file and environment overrides, then the code
+ * defaults. An accessor that keeps no layers reports everything as a default.
  */
 function createSourceResolver(
   config: AppConfigAccessor,
-  environment: Readonly<Record<string, string | undefined>>,
 ): (configPath: string) => SchedulerConfigSource {
   const layers = config.layers?.();
+  const loaded = new Set(config.loadedEnvironmentVariables?.() ?? []);
   const variables = Object.entries(
     config.environmentVariableMappings?.() ?? {},
-  );
+  ).filter(([variable]) => loaded.has(variable));
   return (configPath) => {
     const fromEnvironment = variables.some(
-      ([variable, mapping]) =>
-        (mapping.path === configPath ||
-          configPath.startsWith(`${mapping.path}.`)) &&
-        (environment[variable] ?? '') !== '',
+      ([, mapping]) =>
+        mapping.path === configPath ||
+        configPath.startsWith(`${mapping.path}.`),
     );
     if (fromEnvironment) return 'environment';
     if (layers && valueAt(layers.overrides, configPath) !== undefined)

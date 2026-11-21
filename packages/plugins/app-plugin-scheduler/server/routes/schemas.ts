@@ -83,16 +83,19 @@ const OCCURRENCE_STATUSES = [
 const occurrenceStatus = z.enum(OCCURRENCE_STATUSES);
 
 /** Where the next page of the application-wide history starts: after the last row of this one. */
-export function encodeHistoryPageToken(startedAt: string, id: string): string {
+export function encodeHistoryPageToken(
+  scheduledAt: string,
+  id: string,
+): string {
   return Buffer.from(
-    JSON.stringify(['history', startedAt, id]),
+    JSON.stringify(['history', scheduledAt, id]),
     'utf8',
   ).toString('base64url');
 }
 
 function decodeHistoryPageToken(
   token: string,
-): { readonly startedAt: string; readonly id: string } | undefined {
+): { readonly scheduledAt: string; readonly id: string } | undefined {
   try {
     const value: unknown = JSON.parse(
       Buffer.from(token, 'base64url').toString('utf8'),
@@ -105,7 +108,7 @@ function decodeHistoryPageToken(
       typeof value[2] === 'string' &&
       !Number.isNaN(Date.parse(value[1]))
     )
-      return { startedAt: value[1], id: value[2] };
+      return { scheduledAt: value[1], id: value[2] };
   } catch {
     // Falls through to the validation issue below.
   }
@@ -114,7 +117,7 @@ function decodeHistoryPageToken(
 
 /**
  * The history of every Schedule, filtered and paged by cursor. A repeated `status` keeps occurrences in any of them;
- * `from` and `to` bound `startedAt`, `from` inclusive and `to` exclusive.
+ * `from` and `to` bound the planned time `scheduledAt`, `from` inclusive and `to` exclusive.
  */
 export interface HistoryListQueryValue {
   readonly scheduleId?: string;
@@ -122,7 +125,7 @@ export interface HistoryListQueryValue {
   readonly from?: string;
   readonly to?: string;
   readonly pageSize: number;
-  readonly pageToken?: { readonly startedAt: string; readonly id: string };
+  readonly pageToken?: { readonly scheduledAt: string; readonly id: string };
 }
 
 export const HistoryListQuery: z.ZodType<
@@ -143,10 +146,10 @@ export const HistoryListQuery: z.ZodType<
         'Only occurrences in one of these states; repeat the parameter for several.',
     }),
   from: z.iso.datetime({ offset: true }).optional().meta({
-    description: 'Only occurrences started at or after this time.',
+    description: 'Only occurrences planned for this time or later.',
   }),
   to: z.iso.datetime({ offset: true }).optional().meta({
-    description: 'Only occurrences started before this time.',
+    description: 'Only occurrences planned for before this time.',
   }),
   pageSize: PageSize,
   pageToken: z
@@ -338,7 +341,7 @@ export const ScheduleOccurrenceSchema: z.ZodType = z
     startedAt: z.iso.datetime(),
     scheduledAt: z.iso.datetime().optional().meta({
       description:
-        'The firing time the occurrence was planned for; absent on older records.',
+        'The firing time the occurrence was planned for, by which the history is sorted and filtered. Records written before planned times were kept carry their start time.',
     }),
     acceptedAt: z.iso.datetime().optional(),
     finishedAt: z.iso.datetime().optional(),

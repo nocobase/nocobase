@@ -444,6 +444,35 @@ describe('ScheduleStore', () => {
     expect((await other.list())[0]?.completedCount).toBe(1);
   });
 
+  it('reads one page of Schedules by title, counts them, and finds those removed from code', async () => {
+    await start(store, [
+      entry(baseDefinition({ key: 'c', title: 'Charlie' })),
+      entry(baseDefinition({ key: 'a', title: 'Alpha' })),
+      entry(baseDefinition({ key: 'b', title: 'Bravo' })),
+    ]);
+    const other = createStore(database, executor, 'other').store;
+    await other.reconcile([entry(baseDefinition())]);
+    await insertOccurrences(scheduleId('main', 'b'), ['succeeded']);
+
+    await expect(store.count()).resolves.toBe(3);
+    const page = await store.list({ offset: 1, limit: 1 });
+    expect(
+      page.map(({ key, completedCount }) => [key, completedCount]),
+    ).toEqual([['b', 1]]);
+    await expect(
+      store
+        .list({ id: scheduleId('main', 'c') })
+        .then((rows) => rows.map(({ key }) => key)),
+    ).resolves.toEqual(['c']);
+    await expect(
+      store
+        .list({
+          removedFromCode: [scheduleId('main', 'a'), scheduleId('main', 'c')],
+        })
+        .then((rows) => rows.map(({ key }) => key)),
+    ).resolves.toEqual(['b']);
+  });
+
   it('lists the window, the limit and the outcome of the latest firing', async () => {
     await start(store, [
       entry(
@@ -483,7 +512,7 @@ describe('ScheduleStore', () => {
     const other = createStore(database, executor, 'other').store;
     await other.reconcile([entry(baseDefinition())]);
     const WEEKLY = scheduleId('main', 'weekly');
-    // Two occurrences share each start time, so the id breaks every tie.
+    // Two occurrences share each planned time, so the id breaks every tie.
     const instants = [0, 0, 1, 1, 2, 2, 3, 3].map(
       (hour) => new Date(Date.UTC(2026, 2, 7, hour)),
     );
@@ -502,19 +531,7 @@ describe('ScheduleStore', () => {
     async function all(
       query: Omit<Parameters<ScheduleStore['listAllOccurrences']>[0], 'limit'>,
     ): Promise<string[]> {
-      const ids: string[] = [];
-      let after: { startedAt: string; id: string } | undefined;
-      for (;;) {
-        const page = await store.listAllOccurrences({
-          ...query,
-          ...(after ? { after } : {}),
-          limit: 3,
-        });
-        ids.push(...page.map(({ id }) => id));
-        const last = page.at(-1);
-        if (page.length < 3 || !last) return ids;
-        after = { startedAt: last.startedAt, id: last.id };
-      }
+      return pageAll(query, 3);
     }
 
     const everything = await all({});
@@ -545,6 +562,68 @@ describe('ScheduleStore', () => {
     const [first] = await store.listAllOccurrences({ limit: 1 });
     expect(JSON.stringify(first)).not.toContain('reportKey');
   });
+
+  it('sorts, filters and pages the history by planned time, not by when a late firing started', async () => {
+    await start(store, [
+      entry(baseDefinition()),
+      entry(baseDefinition({ key: 'weekly', title: 'Weekly' })),
+    ]);
+    const WEEKLY = scheduleId('main', 'weekly');
+    const at = (minute: number) => new Date(Date.UTC(2026, 2, 7, 9, minute));
+    // Planned for 09:00, queued behind a slow firing until 09:12.
+    await insertOccurrences(DAILY, ['succeeded'], [at(0)], [at(12)]);
+    await insertOccurrences(WEEKLY, ['succeeded'], [at(10)]);
+
+    await expect(pageAll({}, 10)).resolves.toEqual([
+      `${WEEKLY}-occurrence-0`,
+      `${DAILY}-occurrence-0`,
+    ]);
+    await expect(pageAll({ from: at(5) }, 10)).resolves.toEqual([
+      `${WEEKLY}-occurrence-0`,
+    ]);
+    await expect(pageAll({ to: at(5) }, 10)).resolves.toEqual([
+      `${DAILY}-occurrence-0`,
+    ]);
+    await expect(
+      store.listOccurrences(DAILY).then((page) => page.map(({ id }) => id)),
+    ).resolves.toEqual([`${DAILY}-occurrence-0`]);
+  });
+
+  it('pages every occurrence that shares one planned time without repeating or skipping any', async () => {
+    await start(store, [entry(baseDefinition())]);
+    const planned = new Date(Date.UTC(2026, 2, 7, 9));
+    await insertOccurrences(
+      DAILY,
+      ['succeeded', 'failed', 'skipped', 'succeeded', 'waiting'],
+      Array.from({ length: 5 }, () => planned),
+      [1, 2, 3, 4, 5].map(
+        (minute) => new Date(planned.getTime() + minute * 60_000),
+      ),
+    );
+
+    const ids = await pageAll({}, 2);
+    expect(ids).toHaveLength(5);
+    expect(new Set(ids).size).toBe(5);
+  });
+
+  async function pageAll(
+    query: Omit<Parameters<ScheduleStore['listAllOccurrences']>[0], 'limit'>,
+    size: number,
+  ): Promise<string[]> {
+    const ids: string[] = [];
+    let after: { scheduledAt: string; id: string } | undefined;
+    for (;;) {
+      const page = await store.listAllOccurrences({
+        ...query,
+        ...(after ? { after } : {}),
+        limit: size,
+      });
+      ids.push(...page.map(({ id }) => id));
+      const last = page.at(-1);
+      if (page.length < size || !last) return ids;
+      after = { scheduledAt: last.scheduledAt ?? last.startedAt, id: last.id };
+    }
+  }
 
   it('records a retryable synchronization failure', async () => {
     const failing = createStore(database, {
@@ -611,10 +690,13 @@ describe('ScheduleStore', () => {
   async function insertOccurrences(
     schedule: string,
     statuses: readonly string[],
+    scheduledAt: readonly Date[] = [],
     startedAt: readonly Date[] = [],
   ): Promise<void> {
     for (const [index, status] of statuses.entries()) {
-      const started = startedAt[index] ?? new Date('2026-03-08T00:00:00.000Z');
+      const planned =
+        scheduledAt[index] ?? new Date('2026-03-08T00:00:00.000Z');
+      const started = startedAt[index] ?? planned;
       // Through the Repository so the instants are encoded the way each dialect stores them.
       await testDatabase.connection
         .repository('scheduleOccurrences')
@@ -626,6 +708,7 @@ describe('ScheduleStore', () => {
             status,
             targetType: 'report',
             executionCount: 1,
+            scheduledAt: planned,
             startedAt: started,
             lastStartedAt: started,
             createdAt: new Date('2026-03-08T00:00:00.000Z'),

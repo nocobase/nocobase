@@ -1,9 +1,12 @@
+import cronstrue from 'cronstrue/i18n.js';
 import { describe, expect, it } from 'vitest';
 
 import type { Schedule } from '../client/lib/api.js';
 import {
+  cronstrueLocale,
   describeCron,
   formatDuration,
+  isCommonCron,
   utcOffset,
 } from '../client/lib/format.js';
 import {
@@ -38,6 +41,29 @@ describe('describeCron', () => {
       'cron.monthly {"day":1,"time":"09:00"}',
     );
     expect(describeCron('0 9 1 1,7 *', t, 'en-US')).toBe('0 9 1 1,7 *');
+    expect(isCommonCron('*/5 * * * *')).toBe(true);
+    expect(isCommonCron('0 9,17 * * 1-5')).toBe(false);
+  });
+
+  it("words any other rule through cronstrue in the reader's language", () => {
+    expect(describeCron('0 9,17 * * 1-5', t, 'zh-CN', cronstrue)).toBe(
+      '在 09:00 和 17:00, 星期一至星期五',
+    );
+    expect(describeCron('0 9,17 * * 1-5', t, 'en-US', cronstrue)).toBe(
+      'At 09:00 and 17:00, Monday through Friday',
+    );
+    // The page's own wording still wins for a common shape.
+    expect(describeCron('*/5 * * * *', t, 'zh-CN', cronstrue)).toBe(
+      'cron.everyMinutes {"count":5}',
+    );
+    expect(describeCron('not a rule', t, 'zh-CN', cronstrue)).toBe(
+      'not a rule',
+    );
+    expect(cronstrueLocale('zh-CN')).toBe('zh_CN');
+    expect(cronstrueLocale('zh-TW')).toBe('zh_TW');
+    expect(cronstrueLocale('pt-BR')).toBe('pt_BR');
+    expect(cronstrueLocale('ja-JP')).toBe('ja');
+    expect(cronstrueLocale('de-DE')).toBe('de');
   });
 });
 

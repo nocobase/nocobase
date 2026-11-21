@@ -120,7 +120,7 @@ describe('DefaultSchedulerService.defineSchedule', () => {
       baseDefinition({ key: 'weekly', title: 'Weekly' }),
     );
     await scheduler.sync();
-    expect(scheduler.removedFromCode(await scheduler.list())).toEqual([]);
+    await expect(scheduler.removedFromCode()).resolves.toEqual([]);
 
     // The next deployment no longer defines `weekly`.
     const { store, occurrences, targets } = createStore(
@@ -136,13 +136,13 @@ describe('DefaultSchedulerService.defineSchedule', () => {
     const next = new DefaultSchedulerService(store, occurrences, targets);
     next.defineSchedule(baseDefinition());
     await next.sync();
-    expect(next.removedFromCode(await next.list())).toEqual([
+    await expect(next.removedFromCode()).resolves.toEqual([
       { id: scheduleId('main', 'weekly'), key: 'weekly', title: 'Weekly' },
     ]);
 
     await next.sync(true);
+    await expect(next.removedFromCode()).resolves.toEqual([]);
     const items = await next.list();
-    expect(next.removedFromCode(items)).toEqual([]);
     expect(items.find((item) => item.key === 'weekly')).toMatchObject({
       lifecycleState: 'inactive',
       inactiveReason: 'definition_removed',
