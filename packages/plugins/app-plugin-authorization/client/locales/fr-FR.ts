@@ -21,7 +21,6 @@ const frFR: LocaleResource<typeof enUS> = {
     actions: {
       assign: 'Gérer les affectations',
       configure: 'Configurer',
-      inspect: 'Inspecter les autorisations',
       read: 'Lire',
       create: 'Créer',
       update: 'Mettre à jour',
@@ -37,7 +36,6 @@ const frFR: LocaleResource<typeof enUS> = {
         "Autoriser l'accès à chaque page, y compris les pages ajoutées ultérieurement.",
     },
     settings: {
-      inspector: 'Inspecteur des autorisations',
       'permission-sets': 'Ensembles de permissions',
     },
     subjectTypes: {

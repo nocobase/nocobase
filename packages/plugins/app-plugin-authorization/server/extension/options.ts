@@ -8,7 +8,7 @@ import {
   describeRoute,
   listResponse,
 } from '@nocobase/app-server/router';
-import type { Hono } from 'hono';
+import type { Hono, MiddlewareHandler } from 'hono';
 import { createAuthorizationAdministration } from '../administration.js';
 import { databaseHost } from '../database/api.js';
 import type { AuthorizationExtensionHost } from '../host.js';
@@ -48,18 +48,40 @@ function labelOf(name: string): string {
   return name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
 }
 
+/** Who may call a group of routes: the middleware that checks it, and how the API document states it. */
+export interface RouteAccess {
+  readonly guard: MiddlewareHandler<SettingsRouterEnv>;
+  /** Completes "Requires …", such as `` `settings:authorization.sharing-rules` `read` ``. */
+  readonly requirement: string;
+}
+
+/** Access by a settings item's action. */
+export function settingsRouteAccess(
+  settings: string,
+  action: string,
+): RouteAccess {
+  return {
+    guard: settingsAccess(settings, action),
+    requirement: `\`settings:${settings}\` \`${action}\``,
+  };
+}
+
 /**
  * `GET <prefix>/subjects/:type` and `POST <prefix>/subjects/:type/resolve`,
- * gated by `settings:<settings>` `<action>`. `name` makes their operation ids unique, such as
+ * gated by `settings:<settings>` `<action>`, or by `access`. `name` makes their operation ids unique, such as
  * `authorizationListSharingRuleSubjects`.
  */
 export function createSubjectRoutes(
   authz: Pick<AuthorizationExtensionHost, 'subjects'>,
   prefix: string,
-  settings: string,
-  action: string,
+  settings: string | RouteAccess,
+  action = '',
   name: string = operationNameOf(prefix),
 ): Hono<SettingsRouterEnv> {
+  const access =
+    typeof settings === 'string'
+      ? settingsRouteAccess(settings, action)
+      : settings;
   const routes = createSettingsRouter();
   const selectionOf = (type: string) => {
     const selection = authz.subjects.get(type)?.administration?.selection;
@@ -73,12 +95,12 @@ export function createSubjectRoutes(
   };
   routes.get(
     `${prefix}/subjects/:type`,
-    settingsAccess(settings, action),
+    access.guard,
     describeRoute({
       tags: AUTHORIZATION_API_TAGS,
       summary: `List the subjects of one type for ${labelOf(name)} settings`,
       operationId: `authorizationList${name}Subjects`,
-      description: `A page of the subjects of \`type\` an administrator can pick, such as users. \`q\` searches them. Requires \`settings:${settings}\` \`${action}\`.`,
+      description: `A page of the subjects of \`type\` an administrator can pick, such as users. \`q\` searches them. Requires ${access.requirement}.`,
       responses: {
         200: listResponse(SubjectOptionSchema, PageMetaSchema),
         ...apiErrorResponses,
@@ -105,12 +127,12 @@ export function createSubjectRoutes(
   );
   routes.post(
     `${prefix}/subjects/:type/resolve`,
-    settingsAccess(settings, action),
+    access.guard,
     describeRoute({
       tags: AUTHORIZATION_API_TAGS,
       summary: `Resolve subjects by id for ${labelOf(name)} settings`,
       operationId: `authorizationResolve${name}Subjects`,
-      description: `The titles of up to 100 subjects of \`type\`, for displaying stored assignments or rules. An id that names no subject is left out. Requires \`settings:${settings}\` \`${action}\`.`,
+      description: `The titles of up to 100 subjects of \`type\`, for displaying stored assignments or rules. An id that names no subject is left out. Requires ${access.requirement}.`,
       responses: {
         200: dataResponse(z.array(SubjectOptionSchema)),
         ...apiErrorResponses,

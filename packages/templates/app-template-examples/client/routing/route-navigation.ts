@@ -8,12 +8,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 
 import { EMPTY_ARRAY } from '#lib/constants';
-import { withSettingsShell } from './settings-shell.js';
+import {
+  isPersonalSettingsShell,
+  withSettingsShell,
+} from './settings-shell.js';
 import {
   organizeNavigation,
   settingsCatalog,
   settingsNavigation,
   type SettingsCategory,
+  type SettingsModule,
 } from '#lib/navigation-transform';
 
 export interface RouteNavigationItem {
@@ -35,7 +39,12 @@ export function buildRouteNavigation(
   denied: ReadonlySet<string>,
 ): RouteNavigationItem[] {
   const routes = withSettingsShell(registered);
-  return organizeNavigation(visibleRouteNavigation(routes, denied));
+  // Personal settings open from the account menu, never from the application's menu.
+  return organizeNavigation(
+    visibleRouteNavigation(routes, denied).filter(
+      (item) => !isPersonalSettingsShell(item.route),
+    ),
+  );
 }
 
 /** The settings home's categories and modules the viewer may open (`settingsCatalog`). */
@@ -54,6 +63,55 @@ export function buildSettingsNavigation(
 ): RouteNavigationItem[] {
   const routes = withSettingsShell(registered);
   return settingsNavigation(buildSettingsCatalog(routes, denied), routes);
+}
+
+/**
+ * The personal settings navigation the viewer may open: each category under the application's personal settings group a
+ * headed section, each page or module one entry, laid out like the system settings navigation.
+ */
+export function buildPersonalSettingsNavigation(
+  registered: readonly AppClientRegisteredRoute[],
+  denied: ReadonlySet<string>,
+): RouteNavigationItem[] {
+  const routes = withSettingsShell(registered);
+  const personal = visibleRouteNavigation(routes, denied).find((item) =>
+    isPersonalSettingsShell(item.route),
+  );
+  if (!personal) return [];
+  const catalog: SettingsCategory[] = [];
+  const loose: SettingsModule[] = [];
+  for (const child of personal.children) {
+    if (child.route.componentLoader) loose.push(...toModules(child));
+    else
+      catalog.push({
+        route: child.route,
+        modules: child.children.flatMap(toModules),
+      });
+  }
+  if (loose.length) catalog.push({ route: personal.route, modules: loose });
+  return settingsNavigation(
+    catalog.filter((category) => category.modules.length > 0),
+    routes,
+  );
+}
+
+function toModules(item: RouteNavigationItem): SettingsModule[] {
+  if (item.route.componentLoader)
+    return [{ route: item.route, target: item.route }];
+  const target = firstNavigationPage(item.children);
+  return target ? [{ route: item.route, target }] : [];
+}
+
+/** The first page in a navigation, such as where a settings area's root leads. */
+export function firstNavigationPage(
+  items: readonly RouteNavigationItem[],
+): AppClientRegisteredRoute | undefined {
+  for (const item of items) {
+    if (item.route.componentLoader) return item.route;
+    const nested = firstNavigationPage(item.children);
+    if (nested) return nested;
+  }
+  return undefined;
 }
 
 function visibleRouteNavigation(

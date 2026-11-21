@@ -70,6 +70,7 @@ export function toAccountRow(
     automaticSyncIntervalMinutes:
       account.automaticSyncIntervalMinutes ??
       DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MINUTES,
+    syncFolderIds: jsonOrNull(account.syncFolderIds),
     createdAt: createdAt ?? updatedAt,
     updatedAt,
   };
@@ -91,7 +92,23 @@ export function fromAccountRow(row: AccountRow): MailAccount {
     automaticSyncIntervalMinutes:
       row.automaticSyncIntervalMinutes ??
       DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MINUTES,
+    ...syncFolderIdsField(row.syncFolderIds),
   };
+}
+
+/** Read a stored folder selection; `null` (every folder) leaves the field out. */
+export function syncFolderIdsField(
+  value: readonly string[] | string | null | undefined,
+): { readonly syncFolderIds?: readonly string[] } {
+  if (value === null || value === undefined) return {};
+  const parsed = parseJson<unknown>(value, 'sync folders');
+  return Array.isArray(parsed)
+    ? {
+        syncFolderIds: parsed.filter(
+          (item): item is string => typeof item === 'string',
+        ),
+      }
+    : {};
 }
 
 export function toIdentityRow(identity: MailIdentity): IdentityRow {

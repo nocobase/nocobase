@@ -1,5 +1,5 @@
 import {
-  defineSettingsRoutes,
+  defineSystemSettingsRoutes,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 import {
@@ -31,7 +31,7 @@ function settingsPage(
   };
 }
 
-export default defineSettingsRoutes([
+export default defineSystemSettingsRoutes([
   settingsPage(agentsRoute, 'onlineAgent.agents', Bot),
   settingsPage(runtimesRoute, 'onlineAgent.runtimes', Server),
   settingsPage(skillsRoute, 'onlineAgent.skills', Sparkles),

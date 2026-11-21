@@ -22,6 +22,7 @@ import {
   type MailCompleteAuthorizationInput,
   type MailConnectAccountInput,
   type MailFolder,
+  type MailFolderChoices,
   type MailLabel,
   type MailListConversationMessagesInput,
   type MailListMessagesInput,
@@ -76,7 +77,7 @@ export class DefaultMailService implements MailService {
       this.sync,
       defaultAutomaticSyncIntervalMinutes,
     );
-    this.accounts = new MailAccountsService(dependencies);
+    this.accounts = new MailAccountsService(dependencies, this.sync);
     this.preferences = new MailPreferencesService(dependencies);
     this.messages = new MailMessagesService(dependencies);
     this.drafts = new MailDraftsService(dependencies, sendMail);
@@ -118,7 +119,7 @@ export class DefaultMailService implements MailService {
   public async updateAccount(
     context: MailOperationContext,
     input: import('../shared/mail.js').MailUpdateAccountInput,
-  ): Promise<MailAccountView> {
+  ): Promise<import('../shared/mail.js').MailUpdatedAccountView> {
     return this.accounts.updateAccount(context, input);
   }
 
@@ -127,6 +128,14 @@ export class DefaultMailService implements MailService {
     accountId: string,
   ): Promise<MailAccountView | undefined> {
     return this.accounts.removeAccount(context, accountId);
+  }
+
+  public previewSyncFolders(
+    context: MailOperationContext,
+    accountId: string,
+    syncFolderIds: readonly string[] | null,
+  ): Promise<import('../shared/mail.js').MailSyncFolderPreview> {
+    return this.accounts.previewSyncFolders(context, accountId, syncFolderIds);
   }
 
   public async listManagedAccounts(
@@ -199,8 +208,16 @@ export class DefaultMailService implements MailService {
   public async listFolders(
     context: MailOperationContext,
     accountId: string,
+    options?: { readonly includeUnsynced?: boolean },
   ): Promise<readonly MailFolder[]> {
-    return this.messages.listFolders(context, accountId);
+    return this.messages.listFolders(context, accountId, options);
+  }
+
+  public listFolderChoices(
+    context: MailOperationContext,
+    accountId: string,
+  ): Promise<MailFolderChoices> {
+    return this.messages.listFolderChoices(context, accountId);
   }
 
   public listLabels(
@@ -397,6 +414,14 @@ export class DefaultMailService implements MailService {
     messageId: string,
   ): Promise<MailMessage> {
     return this.messages.retryMessageContent(context, accountId, messageId);
+  }
+
+  public getOriginalMessage(
+    context: MailOperationContext,
+    accountId: string,
+    messageId: string,
+  ): Promise<MailAttachmentContent> {
+    return this.messages.getOriginalMessage(context, accountId, messageId);
   }
 
   public getMessage(

@@ -67,7 +67,7 @@ Keep framework files aligned with Default: the `package.json` scripts that call 
 
 ## Agent conversations
 
-Open the chat icon next to the account menu to start a conversation or return to its history. System settings groups Agents, Runtimes, Skills, Models, the team default agent, and Usage under AI. Open Agent preferences in the account menu to choose a personal default agent and preferred runtime. Online chat requires an enabled chat model and a configured model service; runner conversations require an enabled agent and a compatible connected runtime.
+Open the chat icon next to the account menu to start a conversation or return to its history. System settings groups Agents, Runtimes, Skills, Models, the team default agent, and Usage under AI. Open Personal settings → Agent preferences from the account menu to choose a personal default agent and preferred runtime. Online chat requires an enabled chat model and a configured model service; runner conversations require an enabled agent and a compatible connected runtime.
 
 To serve the application CLI and runner to new runtimes, run `pnpm nocobase cli build --universal` and `pnpm nocobase cli build --runner --universal` in the application directory, then follow the connection instructions under System settings → AI → Runtimes. The universal packages use Node.js 24 or newer on the runner machine.
 

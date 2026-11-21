@@ -1,7 +1,7 @@
 import {
-  defineSettingsRoutes,
-  SETTINGS_ROUTE_PATH,
-  type AppClientSettingsRoutesContribution,
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_ROUTE_PATH,
+  type AppClientSystemSettingsRoutesContribution,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 import { Layers, Settings } from 'lucide-react';
@@ -136,7 +136,7 @@ export function capabilityGuideDefinitions(
 
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
-): AppClientSettingsRoutesContribution {
+): AppClientSystemSettingsRoutesContribution {
   // Without the application's manifest there is nothing to list: an application that has not opted in keeps exactly
   // the App usage page it had.
   const guide = options.manifest
@@ -154,11 +154,11 @@ export function createFoundationRoutes(
   const pages = [foundationDefinition(options), ...guide].map((route) => ({
     ...route,
     parent,
-    path: route.path.startsWith(SETTINGS_ROUTE_PATH + '/')
-      ? route.path.slice(SETTINGS_ROUTE_PATH.length)
+    path: route.path.startsWith(SYSTEM_SETTINGS_ROUTE_PATH + '/')
+      ? route.path.slice(SYSTEM_SETTINGS_ROUTE_PATH.length)
       : route.path,
   }));
-  return defineSettingsRoutes(
+  return defineSystemSettingsRoutes(
     standalone
       ? [
           {
@@ -178,6 +178,7 @@ function normalizePath(value: string): string {
   return `/${trimmed}`;
 }
 
-const routes: AppClientSettingsRoutesContribution = createFoundationRoutes();
+const routes: AppClientSystemSettingsRoutesContribution =
+  createFoundationRoutes();
 
 export default routes;

@@ -181,6 +181,51 @@ describe('MailClient', () => {
         displayName: 'User',
       },
     });
+    await client.previewSyncFolders('account/1', ['INBOX']);
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/previewSyncFolders',
+      method: 'POST',
+      json: { syncFolderIds: ['INBOX'] },
+    });
+    await client.listFolders('account/1', { includeUnsynced: true });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+      query: { includeUnsynced: 'true' },
+    });
+    await client.listFolders('account/1');
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+    });
+    request.mockResolvedValueOnce({
+      data: [{ providerFolderId: 'INBOX', synced: true }],
+      meta: { total: 1, complete: false, initialSyncCompleted: true },
+    });
+    await expect(client.listFolderChoices('account/1')).resolves.toEqual({
+      folders: [{ providerFolderId: 'INBOX', synced: true }],
+      complete: false,
+      failed: false,
+      initialSyncCompleted: true,
+    });
+    // An older server reports no flag; its list is taken as complete and a sync as importing from the start date.
+    request.mockResolvedValueOnce({ data: [], meta: { total: 0 } });
+    await expect(client.listFolderChoices('account/1')).resolves.toEqual({
+      folders: [],
+      complete: true,
+      failed: false,
+      initialSyncCompleted: false,
+    });
+    request.mockResolvedValueOnce({
+      data: [],
+      meta: { total: 0, complete: false, failed: true },
+    });
+    await expect(client.listFolderChoices('account/1')).resolves.toMatchObject({
+      complete: false,
+      failed: true,
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/accounts/account%2F1/folders',
+      query: { includeUnsynced: 'true' },
+    });
   });
 
   it('requests page-numbered log pages and reads the total from meta', async () => {

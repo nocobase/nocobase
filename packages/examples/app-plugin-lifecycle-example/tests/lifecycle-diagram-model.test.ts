@@ -1,7 +1,12 @@
-import { describeLifecycle } from '@nocobase/lifecycle';
+import { describeLifecycle, type TransitionEntry } from '@nocobase/lifecycle';
 import { describe, expect, it } from 'vitest';
 
 import { lifecycleDiagramGraph } from '../client/components/lifecycle-diagram-model.js';
+import {
+  currentRoundTransitions,
+  visitedStates,
+} from '../client/lib/diagram.js';
+import { ticketLifecycle } from '../server/lifecycles/ticket.js';
 import { orderLifecycle } from '../server/lifecycles/order.js';
 
 const description = describeLifecycle(orderLifecycle);
@@ -118,5 +123,48 @@ describe('execution highlights', () => {
         (node) => node.visited || node.highlighted,
       ),
     ).toBe(false);
+  });
+  it('draws only current-round ticket progress and leaves the previous conversation in the retained log', () => {
+    function reply(id: number, version: number, from: string): TransitionEntry {
+      return {
+        id: String(id),
+        lifecycle: 'tickets',
+        recordId: '1',
+        transition: 'reply',
+        from,
+        to: 'awaitingCustomer',
+        actorId: 'agent-zhou',
+        input: { message: 'Reply to the customer' },
+        at: '2026-11-19T00:00:00Z',
+        version,
+        requestId: null,
+      };
+    }
+    const previous = reply(1, 2, 'new');
+    const audit = { transitions: [previous], effectRuns: [] };
+    const reset = currentRoundTransitions({
+      history: audit,
+      roundStartedVersion: 3,
+    });
+    const graph = lifecycleDiagramGraph(describeLifecycle(ticketLifecycle), {
+      currentState: 'new',
+      history: reset,
+      visitedStates: visitedStates(reset),
+    });
+    expect(graph.nodes.find(({ id }) => id === 'new')).toMatchObject({
+      highlighted: true,
+    });
+    expect(
+      graph.nodes.find(({ id }) => id === 'awaitingCustomer'),
+    ).toMatchObject({ visited: false, highlighted: false });
+    expect(graph.edges.every(({ visited }) => !visited)).toBe(true);
+    expect(audit.transitions).toEqual([previous]);
+
+    const fresh = reply(2, 4, 'open');
+    const current = currentRoundTransitions({
+      history: { ...audit, transitions: [previous, fresh] },
+      roundStartedVersion: 3,
+    });
+    expect(current).toEqual([fresh]);
   });
 });

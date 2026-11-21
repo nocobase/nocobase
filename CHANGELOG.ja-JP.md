@@ -2,6 +2,23 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`nocobase-v3/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-20.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-20.1)
+
+### 🎉 新機能
+
+- **[Agent]** オンライン Agent のチャットで、どのオンラインモデルでもモデルの横から思考レベル（デフォルト、オフ、または最小から超高まで）を選べます。モデルがそのレベルに対応していない場合は会話に通知が表示されます。 ([#11555](https://github.com/nocobase/nocobase/pull/11555))
+- **[Agent ランナー]** ランナーは、デプロイキーと確認済みのホスト鍵フィンガープリントを使って、SSH でリポジトリのチェックアウト、プッシュ、ビルドを実行できます。 ([#11614](https://github.com/nocobase/nocobase/pull/11614))
+- **[プラグインライフサイクル]** 管理者はライフサイクルインスタンスを一時停止、再開、リセット、再始動し、チケットのサンプルで操作履歴を確認できます。 ([#11628](https://github.com/nocobase/nocobase/pull/11628))
+
+### 🚀 改善
+
+- **[Agent]** OpenCode と Pi のモデルをプロバイダー付きで表示し、実行が失敗したときにコーディングツールのメッセージを表示します。 ([#11622](https://github.com/nocobase/nocobase/pull/11622))
+
+### 🐛 不具合修正
+
+- **[CLI]** ゲートウェイが同一オリジンにリダイレクトする環境で CLI とランナーのインストールに失敗する問題を修正 ([#11616](https://github.com/nocobase/nocobase/pull/11616))
+- **[Agent ランナー]** 読み取り専用の実行では管理対象の SSH 接続で取得でき、プッシュはランナーによって拒否されます。 ([#11627](https://github.com/nocobase/nocobase/pull/11627))
+
 ## [nocobase-v3-beta/2026-11-19.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-19.1)
 
 ### 🎉 新機能

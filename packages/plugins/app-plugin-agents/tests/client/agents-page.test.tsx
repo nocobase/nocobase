@@ -221,6 +221,74 @@ describe('the Agent page', () => {
     );
   });
 
+  it('shows every agent’s whole model id below its name and in its dialog, a Claude catalog model included', async () => {
+    renderPage(<AgentsPage />);
+    const row = await screen.findByTestId('agent-kimi');
+    expect(within(row).getByTestId('agent-model').textContent).toBe(
+      'moonshotai/kimi-k2',
+    );
+    expect(
+      within(await screen.findByTestId('agent-sonnet')).getByTestId(
+        'agent-model',
+      ).textContent,
+    ).toBe('claude-sonnet-5');
+    fireEvent.click(screen.getByTestId('agent-edit-kimi'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).getByTestId('agent-dialog-model').textContent).toBe(
+      'moonshotai/kimi-k2',
+    );
+  });
+
+  it('shows the whole id of a model the catalog does not know, whatever the agent is called', async () => {
+    agents = agents.map((item) =>
+      item.id === 'kimi' ? { ...item, name: 'OpenCode · Kimi K2' } : item,
+    );
+    renderPage(<AgentsPage />);
+    const row = await screen.findByTestId('agent-kimi');
+    expect(row).toHaveTextContent('OpenCode · Kimi K2');
+    expect(within(row).getByTestId('agent-model').textContent).toBe(
+      'moonshotai/kimi-k2',
+    );
+  });
+
+  it('shows a Claude agent’s whole model id when editing it', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).getByTestId('agent-dialog-model').textContent).toBe(
+      'claude-sonnet-5',
+    );
+  });
+
+  it('shows each agent by its saved name with its whole model id below', async () => {
+    const qwen = (id: string, name: string, model: string) => ({
+      ...agents[1]!,
+      id,
+      name,
+      model,
+      modelEntries: [{ tool: 'opencode' as const, model, effort: null }],
+    });
+    agents = [
+      ...agents,
+      qwen('lan', 'OpenCode · Qwen3.8 Flash', 'example-provider/qwen3.8-flash'),
+      qwen(
+        'console',
+        'OpenCode · Qwen3.8 Flash (opencode)',
+        'opencode/qwen3.8-flash',
+      ),
+    ];
+    renderPage(<AgentsPage />);
+    const lan = await screen.findByTestId('agent-lan');
+    expect(lan).toHaveTextContent('OpenCode · Qwen3.8 Flash');
+    expect(lan).not.toHaveTextContent('Flash (');
+    expect(within(lan).getByTestId('agent-model').textContent).toBe(
+      'example-provider/qwen3.8-flash',
+    );
+    expect(screen.getByTestId('agent-console')).toHaveTextContent(
+      'OpenCode · Qwen3.8 Flash (opencode)',
+    );
+  });
+
   it('reopens the saved description and revision before the list refresh completes', async () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },

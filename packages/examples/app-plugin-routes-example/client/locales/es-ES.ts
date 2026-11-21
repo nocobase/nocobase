@@ -17,9 +17,9 @@ const esES: LocaleResource<typeof enUS> = {
   message: 'Mensaje',
   settingsTitle: 'Ajustes del ejemplo de rutas',
   settingsDescription:
-    'Declarado por el plugin de ejemplo de rutas con defineSettingsRoutes().',
+    'Declarado por el plugin de ejemplo de rutas con defineSystemSettingsRoutes().',
   settingsBody:
-    'Esta página de ajustes procede de un plugin. Se declara con defineSettingsRoutes(), se une a la categoría Sistema y se monta bajo /settings.',
+    'Esta página de ajustes procede de un plugin. Se declara con defineSystemSettingsRoutes(), se une a la categoría Sistema y se monta bajo /settings.',
 };
 
 export default esES;

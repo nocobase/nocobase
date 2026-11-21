@@ -325,6 +325,8 @@ export function resolveMailOAuthReturnUrl(
   origin: string,
   publicBasePath: string,
   result: 'success' | 'failure',
+  /** The connected account, so the page continues with that account's folder selection. */
+  accountId?: string,
 ): string {
   const value = configuredUrl?.trim() || DEFAULT_MAIL_OAUTH_RETURN_PATH;
   const absolute = parseAbsoluteMailUrl(value, 'Mail OAuth return URL');
@@ -336,6 +338,7 @@ export function resolveMailOAuthReturnUrl(
     new URL(joinBasePath(publicBasePath, relative!.pathname), origin);
   if (relative) resolved.search = relative.search;
   resolved.searchParams.set('mailAuthorization', result);
+  if (accountId) resolved.searchParams.set('mailAccountId', accountId);
   return absolute
     ? resolved.toString()
     : `${resolved.pathname}${resolved.search}`;

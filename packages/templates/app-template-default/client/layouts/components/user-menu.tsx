@@ -1,16 +1,11 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '#components/ui/dialog';
-import { Spinner } from '#components/ui/spinner';
 import { useAuthenticationErrorResolver } from '@nocobase/app-plugin-authentication/client/actions';
 import { getAvatarInitials, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { LogOut, UserRound } from 'lucide-react';
-import { lazy, Suspense, useState, type ReactElement } from 'react';
+import { PERSONAL_SETTINGS_ROUTE_PATH } from '@nocobase/app-client/plugins';
+import { LogOut, UserCog, UserRound } from 'lucide-react';
+import { useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
   DropdownMenu,
@@ -22,10 +17,6 @@ import {
 
 import { ThemeSettings } from '../../theme/index.js';
 import { LanguageSwitcher } from './language-switcher.js';
-
-const AgentPreference = lazy(
-  () => import('#components/online-agent/preferences'),
-);
 
 export function UserMenu(): ReactElement {
   const {
@@ -42,11 +33,11 @@ export function UserMenu(): ReactElement {
         avatar: session.user.image ?? undefined,
       }
     : null;
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { t } = useTranslation();
   const toaster = useToaster();
   const resolveError = useAuthenticationErrorResolver();
+  const navigate = useNavigate();
 
   const name =
     identity?.fullName ||
@@ -57,99 +48,92 @@ export function UserMenu(): ReactElement {
   });
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          openOnHover
-          delay={0}
-          aria-label={t('account.openMenu', {
-            defaultValue: 'Open account menu',
-          })}
-          className='flex size-10 cursor-pointer items-center justify-center rounded-full border border-border bg-background/60 text-left text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50'
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        openOnHover
+        delay={0}
+        aria-label={t('account.openMenu', {
+          defaultValue: 'Open account menu',
+        })}
+        className='flex size-10 cursor-pointer items-center justify-center rounded-full border border-border bg-background/60 text-left text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50'
+      >
+        {identity?.avatar ? (
+          <img
+            src={identity.avatar}
+            alt=''
+            className='size-full rounded-full object-cover'
+          />
+        ) : (
+          <span className='grid size-full place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground'>
+            {isLoading ? <UserRound className='size-4' /> : initials}
+          </span>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-64'>
+        <div className='px-2 py-1.5'>
+          <p className='truncate text-sm font-medium'>{name}</p>
+          {identity?.email ? (
+            <p className='truncate text-xs text-muted-foreground'>
+              {identity.email}
+            </p>
+          ) : null}
+        </div>
+        <DropdownMenuSeparator />
+        {/* Personal settings come first; Language and Theme stay below as shortcuts to the same preferences. */}
+        <DropdownMenuItem
+          className='gap-2'
+          onClick={() => {
+            void navigate(PERSONAL_SETTINGS_ROUTE_PATH);
+          }}
         >
-          {identity?.avatar ? (
-            <img
-              src={identity.avatar}
-              alt=''
-              className='size-full rounded-full object-cover'
-            />
-          ) : (
-            <span className='grid size-full place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground'>
-              {isLoading ? <UserRound className='size-4' /> : initials}
-            </span>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-64'>
-          <div className='px-2 py-1.5'>
-            <p className='truncate text-sm font-medium'>{name}</p>
-            {identity?.email ? (
-              <p className='truncate text-xs text-muted-foreground'>
-                {identity.email}
-              </p>
-            ) : null}
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setPreferencesOpen(true)}>
-            {t('onlineAgent.personal')}
-          </DropdownMenuItem>
-          <LanguageSwitcher />
-          <ThemeSettings />
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            disabled={isLoggingOut}
-            onClick={() => {
-              void (async () => {
-                setIsLoggingOut(true);
-                try {
-                  // Better Auth returns API failures as data rather than throwing.
-                  const result = await client.signOut();
-                  if (result.error) {
-                    toaster.show({
-                      type: 'error',
-                      title:
-                        resolveError(result.error)?.message ??
-                        t('account.signOutFailed', {
-                          defaultValue: 'Unable to sign out. Please try again.',
-                        }),
-                    });
-                    return;
-                  }
-                  await refresh();
-                } catch (error) {
+          <UserCog className='size-4' />
+          {t('settings.personal.title')}
+        </DropdownMenuItem>
+        <LanguageSwitcher />
+        <ThemeSettings />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={isLoggingOut}
+          onClick={() => {
+            void (async () => {
+              setIsLoggingOut(true);
+              try {
+                // Better Auth returns API failures as data rather than throwing.
+                const result = await client.signOut();
+                if (result.error) {
                   toaster.show({
                     type: 'error',
                     title:
-                      resolveError(error)?.message ??
+                      resolveError(result.error)?.message ??
                       t('account.signOutFailed', {
                         defaultValue: 'Unable to sign out. Please try again.',
                       }),
                   });
-                } finally {
-                  setIsLoggingOut(false);
+                  return;
                 }
-              })();
-            }}
-            className='gap-2'
-          >
-            <LogOut className='size-4' />
-            {isLoggingOut
-              ? t('account.signingOut', { defaultValue: 'Signing out…' })
-              : t('account.signOut', { defaultValue: 'Sign out' })}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('onlineAgent.personal')}</DialogTitle>
-          </DialogHeader>
-          {preferencesOpen ? (
-            <Suspense fallback={<Spinner />}>
-              <AgentPreference />
-            </Suspense>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-    </>
+                await refresh();
+              } catch (error) {
+                toaster.show({
+                  type: 'error',
+                  title:
+                    resolveError(error)?.message ??
+                    t('account.signOutFailed', {
+                      defaultValue: 'Unable to sign out. Please try again.',
+                    }),
+                });
+              } finally {
+                setIsLoggingOut(false);
+              }
+            })();
+          }}
+          className='gap-2'
+        >
+          <LogOut className='size-4' />
+          {isLoggingOut
+            ? t('account.signingOut', { defaultValue: 'Signing out…' })
+            : t('account.signOut', { defaultValue: 'Sign out' })}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

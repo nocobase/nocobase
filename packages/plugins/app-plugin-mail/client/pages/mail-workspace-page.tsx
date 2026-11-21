@@ -1,3 +1,8 @@
+import {
+  canHaveOriginalMessage,
+  MAIL_ORIGINAL_MAX_BYTES,
+  originalMessageFileName,
+} from '../../shared/original-message.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { prepareMailReply } from '../prepare-mail-reply.js';
@@ -1284,6 +1289,27 @@ export default function MailWorkspacePage({
                         delete: (message) => deleteWorkspaceMessage(message),
                         canDelete: (message) => !deleteDisabledReason(message),
                         deleteDisabledReason,
+                        canDownloadOriginal: (message) => {
+                          const account = accounts.find(
+                            ({ id }) => id === message.accountId,
+                          );
+                          return (
+                            account?.status === 'active' &&
+                            canHaveOriginalMessage(message.providerMessageId) &&
+                            findProviderCapabilities(account, providers)
+                              ?.downloadOriginal === true
+                          );
+                        },
+                        downloadOriginal: (message) => {
+                          void downloadOriginal(mail, message).catch((cause) =>
+                            setError(
+                              mailErrorMessage(
+                                cause,
+                                t('workspace.downloadOriginalFailed'),
+                              ),
+                            ),
+                          );
+                        },
                         downloadAttachment: (message, attachment) => {
                           void downloadAttachment(
                             mail,
@@ -1641,6 +1667,38 @@ function forwardSubject(subject: string): string {
   return /^fwd?:/iu.test(subject.trim()) ? subject : `Fwd: ${subject}`;
 }
 
+async function downloadOriginal(
+  mail: MailClient,
+  message: MailMessage,
+): Promise<void> {
+  const stream = await mail.downloadOriginalMessage(
+    message.accountId,
+    message.id,
+    AbortSignal.timeout(65_000),
+  );
+  let total = 0;
+  const bounded = stream.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        total += chunk.byteLength;
+        if (total > MAIL_ORIGINAL_MAX_BYTES)
+          throw new Error(
+            'The original message exceeds the download size limit.',
+          );
+        controller.enqueue(chunk);
+      },
+      flush() {
+        if (total === 0) throw new Error('The original message is empty.');
+      },
+    }),
+  );
+  await saveDownload(
+    bounded,
+    'message/rfc822',
+    originalMessageFileName(message.subject),
+  );
+}
+
 async function downloadAttachment(
   mail: MailClient,
   message: MailMessage,
@@ -1651,13 +1709,21 @@ async function downloadAttachment(
     message.id,
     attachment.id,
   );
+  await saveDownload(stream, attachment.contentType, attachment.fileName);
+}
+
+async function saveDownload(
+  stream: ReadableStream<Uint8Array>,
+  contentType: string,
+  fileName: string,
+): Promise<void> {
   const blob = await new Response(stream, {
-    headers: { 'content-type': attachment.contentType },
+    headers: { 'content-type': contentType },
   }).blob();
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = attachment.fileName;
+  anchor.download = fileName;
   anchor.click();
   URL.revokeObjectURL(url);
 }

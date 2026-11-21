@@ -1,91 +1,90 @@
-import type { PermissionEditorSection } from '#components/permission-editor';
+import type {
+  PermissionGrants,
+  PermissionObject,
+} from '#components/permission-editor';
+import { configurationLocked } from '#components/permission-editor-model';
 import {
   PermissionFilter,
   type PermissionFilterLabels,
 } from '#components/permission-filter';
-import type {
-  PermissionGrant,
-  AuthorizationOptionsResponse,
-} from '@nocobase/app-plugin-authorization/client';
-import { getScopeSelection } from './permissions-model.js';
+import {
+  CUSTOM_FILTER,
+  filterKey,
+  type PermissionFilters,
+  type PermissionWorkspace,
+} from './permissions-model.js';
 import { permissionFilterFieldLabel } from './permission-workspace.js';
 
-export function configurePermissionScopes(
-  sections: readonly PermissionEditorSection[],
-  catalog: AuthorizationOptionsResponse,
-  grants: readonly PermissionGrant[],
+/** Attach the custom-filter editor to every enabled scope set to a custom filter. */
+export function withPermissionFilters(
+  objects: readonly PermissionObject[],
+  workspace: PermissionWorkspace,
+  draft: PermissionGrants,
+  filters: PermissionFilters,
   text: (key: string, fallback?: string) => string,
   editing: string | undefined,
-  setEditing: (id: string | undefined) => void,
-  onApply: (id: string, value: unknown) => void,
+  setEditing: (key: string | undefined) => void,
+  onApply: (actionId: string, slotId: string, filter: unknown) => void,
   disabled: boolean,
-): readonly PermissionEditorSection[] {
+): readonly PermissionObject[] {
   const labels = permissionFilterLabels(text);
-  const resources = catalog.sections.flatMap((section) =>
-    section.subsections.flatMap((sub) => sub.resources),
-  );
-  return sections.map((section) => ({
-    ...section,
-    groups: section.groups.map((group) => ({
-      ...group,
-      rows: group.rows.map((row) => ({
-        ...row,
-        scopes:
-          row.scopes?.map((scope) => {
-            if (scope.level !== 'customFilter' && editing !== scope.id)
-              return scope;
-            const [type, resourceId, action, key] = JSON.parse(
-              scope.id,
-            ) as string[];
-            const definition = resources
-              .find(
-                (resource) =>
-                  resource.type === type &&
-                  resource.id === resourceId &&
-                  resource.actions.some((item) => item.name === action),
-              )
-              ?.dataScopes?.[action ?? '']?.find((item) => item.key === key);
-            const value = getScopeSelection(grants, scope.id);
-            const params: unknown =
-              value && typeof value === 'object'
-                ? Reflect.get(value, 'params')
-                : undefined;
-            const filter: unknown =
-              params && typeof params === 'object'
-                ? Reflect.get(params, 'filter')
-                : undefined;
-            return {
-              ...scope,
-              configuration: (
-                <PermissionFilter
-                  open={editing === scope.id}
-                  onOpenChange={(open) =>
-                    setEditing(open ? scope.id : undefined)
-                  }
-                  value={filter}
-                  fields={(definition?.fields ?? []).map((field) => ({
-                    value: field,
-                    label: permissionFilterFieldLabel(
-                      definition?.collection ?? '',
-                      field,
-                      text,
-                    ),
-                  }))}
-                  labels={labels}
-                  disabled={disabled}
-                  onApply={(filter) =>
-                    onApply(scope.id, {
-                      type: 'recordAccess',
-                      key: 'customFilter',
-                      params: { filter },
-                    })
-                  }
-                />
-              ),
-            };
-          }) ?? [],
-      })),
-    })),
+  // The name a View's options give a custom filter, for a follower that lists none, such as one stored by a seed.
+  const customLabel = objects
+    .flatMap((object) => object.actions)
+    .flatMap((action) => action.scopes ?? [])
+    .flatMap((slot) => slot.options ?? [])
+    .find((option) => option.value === CUSTOM_FILTER)?.label;
+  return objects.map((object) => ({
+    ...object,
+    actions: object.actions.map((action) => {
+      const binding = workspace.bindings.get(action.id);
+      if (!action.scopes || !binding) return action;
+      return {
+        ...action,
+        scopes: action.scopes.map((slot) => {
+          if (draft[action.id]?.scopes?.[slot.id] !== CUSTOM_FILTER)
+            return slot;
+          const key = filterKey(action.id, slot.id);
+          const scope = binding.scopes.find((item) => item.key === slot.id);
+          return {
+            ...slot,
+            // A slot holding a custom filter its options do not list, such as a follower whose View is off, reads it
+            // by name rather than by its key.
+            ...(slot.options?.length &&
+            customLabel &&
+            !slot.options.some((option) => option.value === CUSTOM_FILTER)
+              ? {
+                  options: [
+                    ...slot.options,
+                    { value: CUSTOM_FILTER, label: customLabel },
+                  ],
+                }
+              : {}),
+            configuration: (
+              <PermissionFilter
+                open={editing === key}
+                onOpenChange={(open) => setEditing(open ? key : undefined)}
+                value={filters[key]}
+                fields={(scope?.fields ?? []).map((field) => ({
+                  value: field,
+                  label: permissionFilterFieldLabel(
+                    scope?.collection ?? '',
+                    field,
+                    text,
+                  ),
+                }))}
+                labels={labels}
+                // A follower's stored filter shows its summary; its scope is set by picking from its options.
+                disabled={
+                  disabled || configurationLocked(object, slot, objects)
+                }
+                onApply={(filter) => onApply(action.id, slot.id, filter)}
+              />
+            ),
+          };
+        }),
+      };
+    }),
   }));
 }
 

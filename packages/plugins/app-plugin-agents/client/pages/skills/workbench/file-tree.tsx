@@ -1,7 +1,7 @@
 /**
  * The skill's files as a tree, `SKILL.md` first. Selecting an entry opens it in the pane beside. While editing, a folder
  * row and the root take new files and folders and uploads (by its menu, or by dropping files onto it), and every entry
- * but `SKILL.md` can be renamed and deleted. A script carries a badge.
+ * but `SKILL.md` can be renamed and deleted. The top-level `scripts` folder carries a muted terminal icon.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -14,11 +14,11 @@ import {
   FolderOpenIcon,
   FolderPlusIcon,
   MoreHorizontalIcon,
+  TerminalIcon,
   UploadIcon,
 } from 'lucide-react';
 import { useState, type DragEvent, type ReactElement } from 'react';
 
-import { Badge } from '../../../components/ui/badge.js';
 import { Button } from '../../../components/ui/button.js';
 import {
   DropdownMenu,
@@ -35,7 +35,6 @@ import {
 } from '../../../components/ui/tooltip.js';
 import { cn } from 'cn';
 import {
-  isScript,
   SKILL_MD,
   treeOf,
   type FileDraft,
@@ -318,6 +317,24 @@ function Node({
           onClick={() => onToggle(node.path)}
           icon={open ? <FolderOpenIcon /> : <FolderIcon />}
           label={node.name}
+          trailing={
+            node.path === 'scripts' ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span
+                      className='flex shrink-0 px-1 text-muted-foreground/70'
+                      aria-label={t('skills.scriptBadge')}
+                      data-testid='skill-scripts-folder-icon'
+                    />
+                  }
+                >
+                  <TerminalIcon className='size-3.5' aria-hidden='true' />
+                </TooltipTrigger>
+                <TooltipContent>{t('skills.scriptBadge')}</TooltipContent>
+              </Tooltip>
+            ) : null
+          }
           menu={
             actions ? (
               <DropdownMenu>
@@ -391,13 +408,6 @@ function Node({
         onClick={() => onSelect(node.path)}
         icon={file.kind === 'text' ? <FileTextIcon /> : <FileIcon />}
         label={node.name}
-        trailing={
-          isScript(file) ? (
-            <Badge variant='secondary' data-testid='skill-script-badge'>
-              {t('skills.scriptBadge')}
-            </Badge>
-          ) : null
-        }
         menu={
           actions ? (
             <DropdownMenu>

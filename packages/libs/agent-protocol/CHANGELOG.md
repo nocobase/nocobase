@@ -1,5 +1,13 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.22
+
+### Minor Changes
+
+- 188e419: Support SSH repository checkouts, pushes and build jobs on capable runners with deployment keys and verified host fingerprints.
+
+  Keep existing work and use the new origin when a task switches between HTTPS and SSH. Include classified SSH checkout and push failures in the run result.
+
 ## 0.1.0-beta.21
 
 ### Minor Changes

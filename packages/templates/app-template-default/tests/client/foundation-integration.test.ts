@@ -1,8 +1,5 @@
 import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
-import {
-  pagePermissionResources,
-  permissionNavigationSections,
-} from '../../client/pages/settings/page-permissions.js';
+import { permissionWorkspace } from '../../client/pages/settings/permission-workspace.js';
 import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
 import { describe, expect, it } from 'vitest';
 import {
@@ -12,16 +9,22 @@ import {
   type DependencyManifest,
 } from '@nocobase/app-plugin-foundation/capability-guide';
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { resolveAppRuntime } from '@nocobase/app-client/runtime';
-import { defineAppRuntime } from '@nocobase/app-client/runtime';
+import {
+  defineAppRuntime,
+  resolveAppRuntime,
+} from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
-import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
 import {
   routeKey,
   buildRouteNavigation,
   buildSettingsCatalog,
 } from '../../client/routing/route-navigation.js';
+
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
+import databaseExplorerRoutes from '../../client/pages/settings/database-explorer/routes.js';
+import settingsRoutes from '../../client/pages/settings/routes.js';
+import shellRoutes from '../../client/pages/settings/shell-routes.js';
 
 describe('default Foundation integration', () => {
   it('registers the Foundation deployment evidence build hook', () => {
@@ -37,7 +40,7 @@ describe('default Foundation integration', () => {
     expect(
       system?.children?.find((route) => route.name === 'configInspector'),
     ).toMatchObject({
-      surface: 'settings',
+      surface: 'systemSettings',
       path: '/settings/config-inspector',
       auth: 'required',
       authz: {
@@ -56,7 +59,6 @@ describe('default Foundation integration', () => {
       ({ route }) => route.name === 'capabilityGuide',
     );
     expect(guide?.target.path).toBe('/settings/capabilities');
-    expect(guide?.route.surface).toBe('settings');
     expect(guide?.route.auth).toBe('required');
     expect(guide?.route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
     expect(
@@ -66,49 +68,61 @@ describe('default Foundation integration', () => {
     ).toBe(false);
   });
 
-  it('keeps Foundation beside business settings without changing its protected URL', async () => {
-    const runtime = await resolveAppRuntime(
+  it('keeps Features and extensions in System when business and account routes are registered', async () => {
+    const orders = defineAppRoutes([
+      {
+        name: 'fixtureOrders',
+        path: '/fixture-orders',
+        auth: 'required',
+        authz: {
+          resource: { type: 'page', id: 'fixture-orders' },
+          action: 'access',
+        },
+        navigation: { title: 'Orders' },
+        componentLoader: async () => ({ default: () => null }),
+      },
+    ]);
+    const { routes } = await resolveAppRuntime(
       defineAppRuntime({
         ...appRuntime,
-        routes: () => createApplicationRoutes(),
+        routes: () => [
+          shellRoutes,
+          settingsRoutes,
+          databaseExplorerRoutes,
+          orders,
+        ],
       }),
     );
-    const menu = buildRouteNavigation(runtime.routes, new Set());
-    expect(menu.some(({ route }) => route.name === 'foundationSettings')).toBe(
-      false,
-    );
+    const catalog = buildSettingsCatalog(routes, new Set());
+    const modules = (name: string) =>
+      catalog
+        .find(({ route }) => route.name === name)
+        ?.modules.map(({ route, target }) => [route.name, target.path]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'settingsUsers',
+      '/settings/users',
+    ]);
+    expect(modules('settingsAccount')).toContainEqual([
+      'permissionManagement',
+      '/settings/roles',
+    ]);
+    expect(modules('settingsSystem')).toContainEqual([
+      'capabilityGuide',
+      '/settings/capabilities',
+    ]);
+    expect(modules('settingsSystem')).toContainEqual([
+      'configInspector',
+      '/settings/config-inspector',
+    ]);
+    const menu = buildRouteNavigation(routes, new Set());
+    const menuNames = menu.map(({ route }) => route.name);
+    expect(menuNames).toContain('fixtureOrders');
+    expect(menuNames).not.toContain('foundationSettings');
+    expect(menuNames).not.toContain('capabilityGuide');
     expect(
-      buildSettingsCatalog(runtime.routes, new Set()).map((category) => [
-        category.route.name,
-        category.modules.map(({ route, target }) => [route.name, target.path]),
-      ]),
-    ).toEqual([
-      [
-        'settingsAccount',
-        [
-          ['settingsUsers', '/settings/users'],
-          ['permissionManagement', '/settings/roles'],
-        ],
-      ],
-      [
-        'settingsAi',
-        [
-          ['agents', '/settings/agents'],
-          ['runtimes', '/settings/runtimes'],
-          ['skills', '/settings/skills'],
-          ['models', '/settings/models'],
-          ['agentChatSettings', '/settings/agent-chat'],
-          ['usage', '/settings/usage'],
-        ],
-      ],
-      [
-        'settingsSystem',
-        [
-          ['configInspector', '/settings/config-inspector'],
-          ['databaseExplorer', '/settings/database-explorer'],
-          ['capabilityGuide', '/settings/capabilities'],
-        ],
-      ],
+      menu.filter(({ route }) => route.path.startsWith('/settings')),
+    ).toMatchObject([
+      { route: { name: 'settingsHome', path: '/settings' }, children: [] },
     ]);
   });
 
@@ -165,42 +179,37 @@ describe('default Foundation integration', () => {
   });
 });
 
-it('offers one Features and extensions access control under system configuration', async () => {
+it('offers one Features and extensions page on the System settings tab', async () => {
   const { routes } = await resolveAppRuntime(appRuntime);
-  const pages = pagePermissionResources(routes, {}, (path) => path);
-  const controls = pages.filter(
-    ({ id }) => id === CAPABILITY_GUIDE_ACCESS.resource.id,
-  );
-  expect(controls).toHaveLength(1);
-  expect(controls[0]).toMatchObject({
-    title: {
-      key: 'nav.capabilityGuide',
-      ns: '@nocobase/app-plugin-foundation',
-    },
-    actions: [{ name: 'access' }],
-  });
-  const row = {
-    id: permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access'),
-    label: 'Access',
-    enabled: false,
-  };
-  const sections = permissionNavigationSections(
-    [{ id: 'pages', title: 'Pages', groups: [{ id: 'guide', rows: [row] }] }],
+  const workspace = permissionWorkspace(
+    { sections: [], recordAccess: [], subjectTypes: [], collections: [] },
     routes,
     {},
-    (path) => path,
-    (value) => (typeof value === 'string' ? value : value.key),
+    {
+      text: (value) => (typeof value === 'string' ? value : value.key),
+      t: (key) => key,
+    },
   );
-  expect(sections).toHaveLength(1);
-  expect(sections[0]?.id).toBe('configuration');
-  expect(sections[0]?.groups.flatMap(({ rows }) => rows)).toEqual([row]);
+  const open = permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access');
+  const owners = workspace.settings.filter((page) =>
+    page.objects.some((object) =>
+      object.actions.some((action) => action.id === open),
+    ),
+  );
+  expect(owners.map((page) => page.label)).toEqual(['nav.capabilityGuide']);
+  // It is not a business menu.
+  expect(
+    [...workspace.menuPages.values()].some((pages) =>
+      pages.includes(CAPABILITY_GUIDE_ACCESS.resource.id),
+    ),
+  ).toBe(false);
   expect(
     routes
       .find(({ name }) => name === 'settingsSystem')
       ?.children?.find(({ name }) => name === 'capabilityGuideEntry'),
   ).toMatchObject({
     path: '/settings/capabilities/:entryId',
-    surface: 'settings',
+    surface: 'systemSettings',
     authz: CAPABILITY_GUIDE_ACCESS,
   });
 });

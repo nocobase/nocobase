@@ -1,14 +1,13 @@
 /**
  * Route `/skills`: the skill library, reusable SKILL.md instructions with supporting files that agents read when a
- * task matches, each named and described by its front matter, with whether it holds scripts (which online agents read
- * but never run) and its compatibility. A row opens `/skills/:skillId`, "New skill" opens `new`, "Import" takes a zip
+ * task matches, each named and described by its front matter, with its compatibility. A row opens `/skills/:skillId`, "New skill" opens `new`, "Import" takes a zip
  * in the Agent Skills layout.
  *
  * Mirrors NocoProject's skills page (`nocoproject/client/pages/np/skills/index.tsx`), with each skill's version.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon, PuzzleIcon, TerminalIcon } from 'lucide-react';
+import { PlusIcon, PuzzleIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router';
 
@@ -20,7 +19,6 @@ import {
 } from '../../components/ag-states.js';
 import { PageContainer } from '../../components/page-container.js';
 import { PageHeader } from '../../components/page-header.js';
-import { Badge } from '../../components/ui/badge.js';
 import { Button } from '../../components/ui/button.js';
 import {
   Table,
@@ -114,15 +112,6 @@ export default function SkillsPage(): ReactElement {
                     >
                       {skill.name}
                     </Link>
-                    {skill.scriptCount > 0 ? (
-                      <Badge
-                        variant='secondary'
-                        data-testid={`skill-${skill.id}-scripts`}
-                      >
-                        <TerminalIcon data-icon='inline-start' />
-                        {t('skills.scriptsNote')}
-                      </Badge>
-                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell className='max-w-md'>

@@ -258,7 +258,12 @@ describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
       }
     });
 
-    const enqueue = (turn: string, credential = ssh, initial = true) =>
+    const enqueue = (
+      turn: string,
+      credential = ssh,
+      initial = true,
+      readOnly = false,
+    ) =>
       app.enqueue({
         run: { requires: ['checkout', 'gitSsh'] },
         workspace: {
@@ -274,6 +279,7 @@ describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
           ],
           env: [],
           git: { ssh: [credential] },
+          ...(readOnly ? { readOnly: true } : {}),
         },
         prompt: { system: 'System rules.', turn, session: 'fresh' },
       });
@@ -317,6 +323,78 @@ describe.runIf(process.env.NOCOBASE_TEST_OPENSSH === '1')(
         readdirSync(scratch).filter((file) => file.startsWith('ssh-')),
       ).toEqual([]);
     });
+
+    it('lets a read-only agent fetch and reserves SSH pushes for writable runs', async () => {
+      const seed = path.join(scratch, 'seed');
+      git(['clone', '--quiet', bare, seed]);
+      git(
+        [
+          '-c',
+          'user.name=Test',
+          '-c',
+          'user.email=test@example.com',
+          '-c',
+          'commit.gpgsign=false',
+          'commit',
+          '--allow-empty',
+          '-qm',
+          'seed',
+        ],
+        seed,
+      );
+      git(['push', 'origin', 'HEAD:refs/heads/main'], seed);
+      const sha = git(['rev-parse', 'HEAD'], seed);
+      const remoteRef = 'refs/heads/agent/test';
+      const readOnly = enqueue(
+        [
+          'bash git fetch origin refs/heads/main',
+          'bash git rev-parse FETCH_HEAD',
+          `bash git push origin HEAD:${remoteRef}`,
+          'say done',
+        ].join('\n'),
+        ssh,
+        false,
+        true,
+      );
+
+      daemon = startDaemon(env);
+      await waitFor(
+        () => readOnly.status === 'completed' || readOnly.status === 'failed',
+        20_000,
+        'the read-only SSH run',
+      );
+      expect(readOnly.fail).toBeUndefined();
+      expect(
+        [...readOnly.events.values()].map((event) => event.output?.trim()),
+      ).toEqual(
+        expect.arrayContaining([
+          sha,
+          expect.stringContaining(
+            'This read-only run permits only Git fetch over SSH.',
+          ),
+        ]),
+      );
+      expect(
+        git(['for-each-ref', '--format=%(refname)', remoteRef], bare),
+      ).toBe('');
+
+      const writable = app.enqueue({
+        run: { requires: readOnly.payload.run.requires },
+        subject: readOnly.payload.subject,
+        workspace: { ...readOnly.payload.workspace, readOnly: false },
+        prompt: {
+          ...readOnly.payload.prompt,
+          turn: `bash git push origin HEAD:${remoteRef}\nsay done`,
+        },
+      });
+      await waitFor(
+        () => writable.status === 'completed' || writable.status === 'failed',
+        20_000,
+        'the writable SSH run',
+      );
+      expect(writable.fail).toBeUndefined();
+      expect(git(['rev-parse', remoteRef], bare)).toBe(sha);
+    }, 60_000);
 
     it('initializes, rechecks, pushes, and builds through managed SSH', async () => {
       expect([...app.runners.values()][0]?.register.features).toContain(

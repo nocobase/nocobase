@@ -12,7 +12,7 @@ export default function RoutesExampleSettingsPage(): ReactElement {
       <p className='max-w-2xl text-sm leading-6 text-muted-foreground'>
         {t('settingsBody', {
           defaultValue:
-            'This settings page comes from a plugin. It is declared with defineSettingsRoutes(), joins the System category and is mounted under /settings.',
+            'This settings page comes from a plugin. It is declared with defineSystemSettingsRoutes(), joins the System category and is mounted under /settings.',
         })}
       </p>
     </section>

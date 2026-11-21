@@ -94,4 +94,8 @@ Pure local drafts, non-IMAP accounts and SMTP-accepted RFC Message-ID records wi
 
 Use the maintenance window described above: stop application writes and all Mail workers, back up the database, run the application's `nocobase db apply`, verify sources, positions and representative existing-message operations, then restart. This is an offline upgrade. Historical migration checksums and existing key/subscription lengths remain unchanged, and this upgrade requires no checksum repair. Rollback refuses when mail business data exists because dropping locations or reverting the expanded header field would be destructive; this rollback restriction does not prevent populated upgrades.
 
+## Synchronized folders upgrade
+
+Migration `202611180001_mail_account_sync_folders` adds a nullable `syncFolderIds` column to accounts and pending authorizations. Existing accounts keep `null` and synchronize every folder exactly as before; nothing is deleted until an owner narrows the selection. The upgrade runs online. Its rollback refuses while any account owns folders, messages or other account data, because SQLite drops a column by rebuilding the accounts table and that would cascade into the account's data.
+
 User-facing and application-integration documentation is maintained in the NocoBase documentation site rather than duplicated in this package README.

@@ -17,7 +17,7 @@ import {
   within,
 } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
+import { Link, MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
@@ -35,6 +35,13 @@ vi.mock('@nocobase/app-plugin-i18n/client', () => ({
 }));
 
 vi.mock('../../client/theme/index.js', () => ({ ThemeSettings: () => null }));
+vi.mock('@nocobase/app-plugin-authentication/client', () => ({
+  useAuthentication: () => ({
+    session: {
+      user: { id: 'u1', name: 'Ada Lovelace', email: 'ada@example.com' },
+    },
+  }),
+}));
 vi.mock('../../client/layouts/components/user-menu.js', () => ({
   UserMenu: () => null,
 }));
@@ -145,7 +152,7 @@ function settingsFixture(): AppClientRegisteredRoute[] {
   ): AppClientRegisteredRoute => ({
     packageName: 'test',
     source: 'application',
-    surface: 'settings',
+    surface: 'systemSettings',
     auth: 'required',
     authz: 'skip',
     ...route,
@@ -260,5 +267,86 @@ it('shows the settings navigation in the mobile drawer', async () => {
   expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
     'href',
     '/',
+  );
+});
+
+/** The Settings fixture plus a personal settings area holding one category with one page. */
+function personalSettingsFixture(): AppClientRegisteredRoute[] {
+  const page = async () => ({ default: () => null });
+  const personal = (
+    route: Omit<
+      AppClientRegisteredRoute,
+      'packageName' | 'source' | 'surface' | 'auth' | 'authz'
+    >,
+  ): AppClientRegisteredRoute => ({
+    packageName: 'test',
+    source: 'application',
+    surface: 'personalSettings',
+    auth: 'required',
+    authz: 'skip',
+    ...route,
+  });
+  return [
+    ...settingsFixture(),
+    personal({
+      id: 'test:personalPreferences',
+      name: 'personalPreferences',
+      path: '/me',
+      navigation: { title: 'settings.personal.categories.preferences' },
+      children: [
+        personal({
+          id: 'test:personalAppearance',
+          name: 'personalAppearance',
+          path: '/me/preferences',
+          navigation: { title: 'settings.personal.appearance.title' },
+          componentLoader: page,
+        }),
+      ],
+    }),
+  ];
+}
+
+it('shows personal settings in their own navigation and keeps the way back across both settings areas', async () => {
+  await setup(
+    <>
+      <AppLayout routes={personalSettingsFixture()} />
+      <Link to='/me/preferences'>Open personal settings</Link>
+      <Link to='/settings/users'>Open system settings</Link>
+    </>,
+  );
+  const navigation = screen.getByRole('navigation', {
+    name: 'Application navigation',
+  });
+  // Personal settings never join the application's menu; they open from the account menu.
+  expect(within(navigation).queryByText('Personal settings')).toBeNull();
+  fireEvent.click(within(navigation).getByRole('link', { name: 'Projects' }));
+  await waitFor(() =>
+    expect(
+      within(navigation).getByRole('link', { name: 'Projects' }),
+    ).toHaveAttribute('aria-current', 'page'),
+  );
+
+  fireEvent.click(screen.getByRole('link', { name: 'Open personal settings' }));
+  const menu = await screen.findByRole('navigation', {
+    name: 'Personal settings navigation',
+  });
+  expect(within(menu).getByText('Preferences')).toBeVisible();
+  expect(
+    within(menu).getByRole('link', { name: 'Language and appearance' }),
+  ).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByText('Ada Lovelace')).toBeVisible();
+  expect(screen.queryByRole('link', { name: 'System settings' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/projects',
+  );
+
+  // Moving on to system settings still leads back to the page left before either.
+  fireEvent.click(screen.getByRole('link', { name: 'Open system settings' }));
+  await screen.findByRole('navigation', { name: 'Settings navigation' });
+  expect(screen.queryByText('Ada Lovelace')).toBeNull();
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/projects',
   );
 });

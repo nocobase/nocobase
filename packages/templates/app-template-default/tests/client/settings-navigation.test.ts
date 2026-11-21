@@ -1,5 +1,5 @@
 import {
-  defineSettingsRoutes,
+  defineSystemSettingsRoutes,
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
   type AppClientRouteContribution,
@@ -185,7 +185,7 @@ describe('System settings navigation', () => {
 
   it('adds a later module with several views to its category without another sidebar entry', () => {
     const routes = resolve(
-      defineSettingsRoutes([
+      defineSystemSettingsRoutes([
         {
           parent: 'settingsSystem',
           name: 'notificationManagement',

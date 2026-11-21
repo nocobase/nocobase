@@ -1,6 +1,7 @@
 import { notifyMailMessageChange } from '../realtime.js';
 import { MailSyncScheduler } from '../operations/schedule-sync.js';
 import {
+  type MailAccount,
   type MailOperationContext,
   type MailOffsetPage,
   type MailStartSyncInput,
@@ -24,7 +25,8 @@ export class MailSyncService {
       | 'getAccount'
       | 'getSyncCursor'
       | 'getSyncRun'
-      | 'listSyncRuns',
+      | 'listSyncRuns'
+      | 'replaceSyncFolders',
       'outbox' | 'messageChangeNotifier' | 'logger'
     >,
     syncBatchSize: number,
@@ -53,6 +55,35 @@ export class MailSyncService {
       this.dependencies.logger,
     );
     return toSyncRunView(run);
+  }
+
+  /**
+   * Save the account's folder selection and, in the same transaction, replace its active run with an initial one under
+   * it, which imports newly selected folders and removes local data outside the selection. Undefined when the account
+   * is not active.
+   */
+  public async replaceSyncFolders(
+    context: MailOperationContext,
+    account: MailAccount,
+    syncFolderIds: readonly string[] | undefined,
+  ): Promise<MailSyncRun | undefined> {
+    const receivedAfter =
+      validDateOrUndefined(account.initialSyncReceivedAfter) ??
+      new Date(`${mailSyncDateMonthsAgo(1)}T00:00:00Z`).toISOString();
+    const run = await this.scheduler.replaceSyncFolders(
+      account,
+      context.actorId,
+      syncFolderIds,
+      receivedAfter,
+    );
+    if (!run) return undefined;
+    this.dependencies.outbox.kick();
+    notifyMailMessageChange(
+      this.dependencies.messageChangeNotifier,
+      account.userId,
+      this.dependencies.logger,
+    );
+    return run;
   }
 
   public async getSyncRun(
