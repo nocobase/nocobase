@@ -33,7 +33,7 @@ import type {
   KeyPermissions,
   LocalizedText,
 } from '../../shared/scopes.js';
-import { ErrorAlert } from '../components/key-parts.js';
+import { ConfirmDialog, ErrorAlert } from '../components/key-parts.js';
 import { KeySecret } from '../components/key-secret.js';
 import { PermissionTable } from '../components/permission-table.js';
 import { RecordPicker } from '../components/record-picker.js';
@@ -63,7 +63,12 @@ function everything(
           action.risk !== 'high' &&
           !risky.has(`${key}/${action.action}`),
       )
-      .map((action) => ({ action: action.action }));
+      // A composite action keeps the records the person holds now, so the key does not widen with their roles later.
+      .map((action) =>
+        action.policy
+          ? { action: action.action, policy: action.policy }
+          : { action: action.action },
+      );
     return actions.length ? [{ resource: grant.resource, actions }] : [];
   });
 }
@@ -165,7 +170,7 @@ function CreateForm({
   readonly onCreated: (created: CreatedApiKey) => void;
   readonly onCancel: () => void;
 }): ReactElement {
-  const { t } = useTranslation(API_KEYS_NAMESPACE);
+  const { t, i18n } = useTranslation(API_KEYS_NAMESPACE);
   const api = useApiKeysApi();
   const text = (value: LocalizedText): string =>
     typeof value === 'string'
@@ -212,6 +217,43 @@ function CreateForm({
   const readOnlyTemplate = grantable.templates.find(
     (entry) => entry.id === 'read-only',
   );
+
+  // A template's high-risk actions, by the server's marks and the table's; applying one asks first.
+  const riskyIn = (id: string): string[] => {
+    const found = grantable.templates.find((entry) => entry.id === id);
+    if (!found) return [];
+    return found.permissions.grants.flatMap((grant) => {
+      const key = `${grant.resource.type}:${grant.resource.id}`;
+      const offered = grantable.grants.find(
+        (entry) =>
+          entry.resource.type === grant.resource.type &&
+          entry.resource.id === grant.resource.id,
+      );
+      return grant.actions
+        .filter(
+          ({ action }) =>
+            risky.has(`${key}/${action}`) ||
+            offered?.actions.some(
+              (entry) => entry.action === action && entry.risk === 'high',
+            ),
+        )
+        .map(({ action }) => {
+          const title = offered?.actions.find(
+            (entry) => entry.action === action,
+          )?.title;
+          return title ? text(title) : action;
+        });
+    });
+  };
+  const [confirming, setConfirming] = useState<{
+    readonly id: string;
+    readonly actions: readonly string[];
+  }>();
+  const chooseTemplate = (id: string): void => {
+    const actions = riskyIn(id);
+    if (actions.length) setConfirming({ id, actions });
+    else applyTemplate(id);
+  };
 
   const applyTemplate = (id: string): void => {
     const found = grantable.templates.find((entry) => entry.id === id);
@@ -283,7 +325,7 @@ function CreateForm({
         }))}
         value={template || null}
         onValueChange={(next: string | null) => {
-          if (next) applyTemplate(next);
+          if (next) chooseTemplate(next);
         }}
       >
         <SelectTrigger
@@ -324,7 +366,7 @@ function CreateForm({
           type='button'
           size='sm'
           variant='outline'
-          onClick={() => applyTemplate(readOnlyTemplate.id)}
+          onClick={() => chooseTemplate(readOnlyTemplate.id)}
         >
           {t('create.readOnly')}
         </Button>
@@ -346,157 +388,176 @@ function CreateForm({
   );
 
   return (
-    <form
-      noValidate
-      className='grid min-w-0 gap-6 rounded-xl border bg-card p-4 text-card-foreground sm:p-6'
-      onSubmit={(event) => {
-        event.preventDefault();
-        void submit();
-      }}
-    >
-      <Field label={t('create.name')} htmlFor='api-key-name'>
-        <Input
-          id='api-key-name'
-          value={name}
-          maxLength={100}
-          placeholder={t('create.namePlaceholder')}
-          className='max-w-md'
-          onChange={(event) => setName(event.target.value)}
-        />
-      </Field>
-      <Field label={t('create.description')} htmlFor='api-key-description'>
-        <Textarea
-          id='api-key-description'
-          value={description}
-          maxLength={500}
-          rows={2}
-          placeholder={t('create.descriptionPlaceholder')}
-          className='max-w-md'
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </Field>
-      <Field label={t('create.scope')}>
-        <div
-          role='radiogroup'
-          aria-label={t('create.scope')}
-          className='grid max-w-2xl gap-2'
-        >
-          <Choice
-            checked={mode === 'custom'}
-            title={t('create.custom')}
-            hint={t('create.customHint')}
-            onSelect={() => setMode('custom')}
+    <>
+      <ConfirmDialog
+        open={confirming !== undefined}
+        title={t('create.riskyTemplateTitle')}
+        description={t('create.riskyTemplate', {
+          actions: new Intl.ListFormat(i18n.language, {
+            type: 'conjunction',
+          }).format(confirming?.actions ?? []),
+        })}
+        action={t('create.riskyTemplateApply')}
+        destructive
+        onCancel={() => setConfirming(undefined)}
+        onConfirm={() => {
+          if (confirming) applyTemplate(confirming.id);
+          setConfirming(undefined);
+          return Promise.resolve();
+        }}
+      />
+      <form
+        noValidate
+        className='grid min-w-0 gap-6 rounded-xl border bg-card p-4 text-card-foreground sm:p-6'
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <Field label={t('create.name')} htmlFor='api-key-name'>
+          <Input
+            id='api-key-name'
+            value={name}
+            maxLength={100}
+            placeholder={t('create.namePlaceholder')}
+            className='max-w-md'
+            onChange={(event) => setName(event.target.value)}
           />
-          <Choice
-            checked={mode === 'sameAsMe'}
-            disabled={!grantable.allowSameAsMe}
-            title={t('create.sameAsMe')}
-            hint={
-              grantable.allowSameAsMe
-                ? t('create.sameAsMeHint')
-                : t('create.sameAsMeOff')
-            }
-            onSelect={() => setMode('sameAsMe')}
+        </Field>
+        <Field label={t('create.description')} htmlFor='api-key-description'>
+          <Textarea
+            id='api-key-description'
+            value={description}
+            maxLength={500}
+            rows={2}
+            placeholder={t('create.descriptionPlaceholder')}
+            className='max-w-md'
+            onChange={(event) => setDescription(event.target.value)}
           />
-        </div>
-      </Field>
-      <Field label={t('create.expiry')}>
-        <div className='grid gap-1.5'>
+        </Field>
+        <Field label={t('create.scope')}>
           <div
             role='radiogroup'
-            aria-label={t('create.expiry')}
-            className='inline-flex w-fit flex-wrap overflow-hidden rounded-lg border'
+            aria-label={t('create.scope')}
+            className='grid max-w-2xl gap-2'
           >
-            {[...choices, NEVER].map((choice: number | typeof NEVER) => {
-              const disabled = choice === NEVER && !neverAllowed;
-              const checked = shownExpiry === choice;
-              return (
-                <button
-                  key={choice}
-                  type='button'
-                  role='radio'
-                  aria-checked={checked}
-                  disabled={disabled}
-                  onClick={() => setExpiry(choice)}
-                  className={`border-l px-3 py-1.5 text-sm first:border-l-0 disabled:cursor-not-allowed disabled:opacity-40 ${checked ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                >
-                  {choice === NEVER
-                    ? t('create.never')
-                    : t('create.days', { count: choice })}
-                </button>
-              );
-            })}
+            <Choice
+              checked={mode === 'custom'}
+              title={t('create.custom')}
+              hint={t('create.customHint')}
+              onSelect={() => setMode('custom')}
+            />
+            <Choice
+              checked={mode === 'sameAsMe'}
+              disabled={!grantable.allowSameAsMe}
+              title={t('create.sameAsMe')}
+              hint={
+                grantable.allowSameAsMe
+                  ? t('create.sameAsMeHint')
+                  : t('create.sameAsMeOff')
+              }
+              onSelect={() => setMode('sameAsMe')}
+            />
           </div>
-          <p className='text-xs text-muted-foreground'>
-            {scoped && max !== null
-              ? t('create.maxDays', { count: max })
-              : t('create.neverDiscouraged')}
+        </Field>
+        <Field label={t('create.expiry')}>
+          <div className='grid gap-1.5'>
+            <div
+              role='radiogroup'
+              aria-label={t('create.expiry')}
+              className='inline-flex w-fit flex-wrap overflow-hidden rounded-lg border'
+            >
+              {[...choices, NEVER].map((choice: number | typeof NEVER) => {
+                const disabled = choice === NEVER && !neverAllowed;
+                const checked = shownExpiry === choice;
+                return (
+                  <button
+                    key={choice}
+                    type='button'
+                    role='radio'
+                    aria-checked={checked}
+                    disabled={disabled}
+                    onClick={() => setExpiry(choice)}
+                    className={`border-l px-3 py-1.5 text-sm first:border-l-0 disabled:cursor-not-allowed disabled:opacity-40 ${checked ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                  >
+                    {choice === NEVER
+                      ? t('create.never')
+                      : t('create.days', { count: choice })}
+                  </button>
+                );
+              })}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              {scoped && max !== null
+                ? t('create.maxDays', { count: max })
+                : t('create.neverDiscouraged')}
+            </p>
+          </div>
+        </Field>
+        {scoped ? (
+          <div className='grid min-w-0 gap-2'>
+            <span className='text-sm font-medium'>{t('detail.what')}</span>
+            <PermissionTable
+              value={grants}
+              onChange={(next) => {
+                setTemplate('');
+                setTouched(true);
+                setGrants(next);
+              }}
+              onRisky={(actions) => {
+                const next = new Set(
+                  actions.map(
+                    (entry) =>
+                      `${entry.resource.type}:${entry.resource.id}/${entry.action}`,
+                  ),
+                );
+                setRisky(next);
+                if (!touched) setGrants(everything(grantable, next));
+              }}
+              ceiling={grantable}
+              header={quick}
+              objectExtra={(resource) =>
+                sources.has(resource.id) && granted.has(resource.id) ? (
+                  <RecordPicker
+                    business={resource.id}
+                    value={objects[resource.id]}
+                    onChange={(next) =>
+                      setObjects((current) => {
+                        const { [resource.id]: _removed, ...rest } = current;
+                        return next === undefined
+                          ? rest
+                          : { ...rest, [resource.id]: next };
+                      })
+                    }
+                  />
+                ) : undefined
+              }
+            />
+            <p className='text-xs text-muted-foreground'>
+              {t('create.dataRules')}
+            </p>
+          </div>
+        ) : (
+          <Alert variant='destructive'>
+            <TriangleAlertIcon aria-hidden />
+            <AlertDescription>{t('create.sameAsMeWarning')}</AlertDescription>
+          </Alert>
+        )}
+        {error ? (
+          <p role='alert' className='text-sm text-destructive'>
+            {error}
           </p>
+        ) : null}
+        <div className='flex flex-wrap justify-end gap-2 border-t pt-4'>
+          <Button type='button' variant='outline' onClick={onCancel}>
+            {t('common.cancel')}
+          </Button>
+          <Button type='submit' disabled={submitting}>
+            {submitting ? t('create.submitting') : t('create.submit')}
+          </Button>
         </div>
-      </Field>
-      {scoped ? (
-        <div className='grid min-w-0 gap-2'>
-          <span className='text-sm font-medium'>{t('detail.what')}</span>
-          <PermissionTable
-            value={grants}
-            onChange={(next) => {
-              setTemplate('');
-              setTouched(true);
-              setGrants(next);
-            }}
-            onRisky={(actions) => {
-              const next = new Set(
-                actions.map(
-                  (entry) =>
-                    `${entry.resource.type}:${entry.resource.id}/${entry.action}`,
-                ),
-              );
-              setRisky(next);
-              if (!touched) setGrants(everything(grantable, next));
-            }}
-            ceiling={grantable}
-            header={quick}
-            objectExtra={(resource) =>
-              sources.has(resource.id) && granted.has(resource.id) ? (
-                <RecordPicker
-                  business={resource.id}
-                  value={objects[resource.id]}
-                  onChange={(next) =>
-                    setObjects((current) => {
-                      const { [resource.id]: _removed, ...rest } = current;
-                      return next === undefined
-                        ? rest
-                        : { ...rest, [resource.id]: next };
-                    })
-                  }
-                />
-              ) : undefined
-            }
-          />
-          <p className='text-xs text-muted-foreground'>
-            {t('create.dataRules')}
-          </p>
-        </div>
-      ) : (
-        <Alert variant='destructive'>
-          <TriangleAlertIcon aria-hidden />
-          <AlertDescription>{t('create.sameAsMeWarning')}</AlertDescription>
-        </Alert>
-      )}
-      {error ? (
-        <p role='alert' className='text-sm text-destructive'>
-          {error}
-        </p>
-      ) : null}
-      <div className='flex flex-wrap justify-end gap-2 border-t pt-4'>
-        <Button type='button' variant='outline' onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-        <Button type='submit' disabled={submitting}>
-          {submitting ? t('create.submitting') : t('create.submit')}
-        </Button>
-      </div>
-    </form>
+      </form>
+    </>
   );
 }
 

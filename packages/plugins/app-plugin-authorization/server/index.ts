@@ -87,3 +87,11 @@ export type {
   AuthorizationPlugin,
 } from '@nocobase/authorization/core';
 export type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
+// The workspace catalogue, whole or limited to what a caller holds, for a plugin serving an editor of its own, such as
+// the API keys plugin's for one key.
+export {
+  authorizationOptions,
+  grantableAuthorizationOptions,
+  type AuthorizationOptions,
+} from './options.js';
+export { AuthorizationOptionsSchema } from './extension/schemas.js';

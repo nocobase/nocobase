@@ -47,6 +47,8 @@ export interface KeyPermissionCeilingAction {
   readonly action: string;
   /** Why no key may hold it; set, the action shows greyed out as a person's only. */
   readonly humanOnly: LocalizedText | null;
+  /** How risky the server says the action is; a high-risk one is turned on only after a confirmation. */
+  readonly risk?: 'high' | 'sensitive' | null;
   /** The record access keys each data scope is held at; absent when every scope is open. */
   readonly scopes?: Readonly<Record<string, readonly string[]>>;
 }
@@ -69,6 +71,11 @@ export interface KeyPermissionEditorProps {
   readonly readOnly?: boolean;
   /** The key's grants its holder no longer holds: shown struck through. */
   readonly lapsed?: readonly PermissionGrant[];
+  /**
+   * Where the catalogue comes from: the caller's own, limited to what they hold, unless the host serves one that also
+   * names what it shows read-only, such as the actions a key kept after its holder lost them.
+   */
+  readonly catalogPath?: string;
   /** Shown above the tabs, such as templates and quick settings. */
   readonly header?: ReactNode;
   /** A control under a business object's actions, such as the records a key is limited to, by its resource. */
@@ -173,15 +180,19 @@ function keyWorkspace(
             humanOnly: options.text(entry.humanOnly),
           },
         ];
+      const risk = action.risk ?? entry?.risk ?? undefined;
       return [
-        action.scopes
-          ? {
-              ...action,
-              scopes: action.scopes.map((slot) =>
-                narrowSlot(slot, entry?.scopes?.[slot.id]),
-              ),
-            }
-          : action,
+        {
+          ...action,
+          ...(risk ? { risk } : {}),
+          ...(action.scopes
+            ? {
+                scopes: action.scopes.map((slot) =>
+                  narrowSlot(slot, entry?.scopes?.[slot.id]),
+                ),
+              }
+            : {}),
+        },
       ];
     });
     if (!actions.length) return undefined;
@@ -228,23 +239,15 @@ function KeyPermissionTable({
   header,
   objectExtra,
   onRisky,
+  catalogPath = 'authorization/permissionSets/grantableOptions',
   className,
 }: KeyPermissionEditorProps): ReactElement {
   const { t, i18n } = useTranslation();
   const app = useClientApplication();
   const settings = useAuthorizationSettings();
   const labels = usePermissionEditorLabels();
-  const include = useMemo(
-    () => [
-      ...new Set((lapsed ?? []).map((grant) => resourceKey(grant.resource))),
-    ],
-    [lapsed],
-  );
-  const query = include.length
-    ? `?${include.map((key) => `include=${encodeURIComponent(key)}`).join('&')}`
-    : '';
   const options = useSettingsData<{ data: AuthorizationOptionsResponse }>(
-    `authorization/permissionSets/grantableOptions${query}`,
+    catalogPath,
   );
   const text = useMemo(
     () =>

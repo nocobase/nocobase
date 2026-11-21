@@ -3,6 +3,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts:
+      'Hanya manusia yang dapat mengelola akun: kunci API tidak boleh.',
+  },
   page: {
     loading: 'Memuat',
   },

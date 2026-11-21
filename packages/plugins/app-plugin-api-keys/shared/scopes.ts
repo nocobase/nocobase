@@ -458,6 +458,11 @@ export interface GrantableAction {
    * a wider one. Absent when every scope is open to the caller, as for an unrestricted one.
    */
   readonly scopes?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * For a composite action the caller holds with record scopes, the policy a key gets by default: those scopes as the
+   * caller holds them now, so the key does not widen when the caller's roles do later.
+   */
+  readonly policy?: KeyPermissionPolicy;
 }
 
 /** A resource the caller holds actions of, and so may give a key. */

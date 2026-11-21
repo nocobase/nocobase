@@ -98,6 +98,10 @@ const zhCN: LocaleResource<typeof enUS> = {
     never: '永不过期',
     neverDiscouraged: '不建议永不过期。',
     maxDays: '管理员要求最长 {{count}} 天。',
+    riskyTemplateTitle: '开启高危权限？',
+    riskyTemplate:
+      '这个模板会开启高危操作：{{actions}}。密钥泄露后，别人能以你的名义执行这些操作。',
+    riskyTemplateApply: '应用模板',
     template: '从模板开始…',
     quick: '快速设置',
     everything: '全部我能做的',

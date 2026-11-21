@@ -250,6 +250,10 @@ const GrantableActionSchema = z.object({
     description:
       'For a composite action, the record access keys the caller holds each data scope at; a key may be given these or narrower ones. Absent when every scope is open to the caller.',
   }),
+  policy: KeyPolicySchema.optional().meta({
+    description:
+      'For a composite action held with record scopes, the policy a key gets by default: those scopes as the caller holds them now. A key that leaves a scope out gets it pinned the same way.',
+  }),
 });
 
 export const GrantablePermissionsSchema: z.ZodType<GrantablePermissions> =

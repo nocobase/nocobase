@@ -136,6 +136,7 @@ export default function PersonalKeyDetailPage(): ReactElement {
           {key.permissions ? (
             <PermissionTable
               readOnly
+              catalogPath={`apiKeys/${encodeURIComponent(keyId)}/catalog`}
               value={key.permissions.grants.flatMap((grant) => {
                 const lost = key.lapsed.find(
                   (entry) =>

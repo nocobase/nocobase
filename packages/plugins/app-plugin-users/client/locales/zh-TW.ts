@@ -3,6 +3,9 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts: '帳號只能由人來管理，不能交給 API 金鑰。',
+  },
   page: {
     loading: '載入中',
   },

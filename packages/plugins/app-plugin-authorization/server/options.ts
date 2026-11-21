@@ -363,11 +363,21 @@ export function grantableAuthorizationOptions(
       readonly actions: readonly string[];
     }[];
   },
-  /** Resources listed whole whatever is held, as `<type>:<id>`, such as those a key lost with its holder. */
-  include: readonly string[] = [],
+  /**
+   * Actions listed as well whatever is held, which the server derives itself, such as those a key of the caller still
+   * names after the caller lost them. Never taken from a request.
+   */
+  also: readonly {
+    readonly resource: { readonly type: string; readonly id: string };
+    readonly actions: readonly string[];
+  }[] = [],
 ): AuthorizationOptions {
   if (snapshot.unrestricted) return { ...options, subjectTypes: [] };
-  const included = new Set(include);
+  const extra = new Map<string, Set<string>>();
+  for (const entry of also) {
+    const key = JSON.stringify([entry.resource.type, entry.resource.id]);
+    extra.set(key, new Set([...(extra.get(key) ?? []), ...entry.actions]));
+  }
   const held = new Map(
     snapshot.permissions.map((permission) => [
       JSON.stringify([permission.resource.type, permission.resource.id]),
@@ -379,10 +389,11 @@ export function grantableAuthorizationOptions(
     const subsections = section.subsections.flatMap((subsection) => {
       if (subsection.recordType) return [subsection];
       const resources = subsection.resources.flatMap((resource) => {
-        const actions = held.get(JSON.stringify([resource.type, resource.id]));
-        const whole = included.has(`${resource.type}:${resource.id}`);
+        const key = JSON.stringify([resource.type, resource.id]);
+        const actions = held.get(key);
+        const named = extra.get(key);
         const kept = resource.actions.filter(
-          (action) => whole || actions?.has(action.name),
+          (action) => actions?.has(action.name) || named?.has(action.name),
         );
         if (!kept.length) return [];
         const dataScopes = resource.dataScopes

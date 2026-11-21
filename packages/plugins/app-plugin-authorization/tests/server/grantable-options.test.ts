@@ -78,15 +78,23 @@ describe('the catalogue a person may give a credential', () => {
     expect(limited.subjectTypes).toEqual([]);
   });
 
-  it('lists a resource the caller names whole, such as one a key lost', () => {
+  it('adds only the actions the server names, such as those a key still holds after its holder lost them', () => {
     const limited = grantableAuthorizationOptions(
       options,
       { unrestricted: false, permissions: [] },
-      ['composite:shop.payouts'],
+      [
+        {
+          resource: { type: 'composite', id: 'shop.orders' },
+          actions: ['delete'],
+        },
+      ],
     );
-    expect(
-      limited.sections[0]?.subsections[0]?.resources.map((item) => item.id),
-    ).toEqual(['shop.payouts']);
+    expect(limited.sections[0]?.subsections[0]?.resources).toEqual([
+      expect.objectContaining({
+        id: 'shop.orders',
+        actions: [{ name: 'delete', title: 'Delete' }],
+      }),
+    ]);
   });
 
   it('keeps everything for an unrestricted caller but who may be assigned', () => {

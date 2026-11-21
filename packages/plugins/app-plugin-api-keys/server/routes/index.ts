@@ -1,6 +1,9 @@
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
+  authorizationOptions,
+  AuthorizationOptionsSchema,
   authorizationToken,
+  grantableAuthorizationOptions,
   type AuthorizationEnv,
 } from '@nocobase/app-plugin-authorization';
 import type { AuthEnv } from '@nocobase/app-plugin-authentication/server';
@@ -22,6 +25,7 @@ import {
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import { requireSignInSession } from '../key-sessions.js';
+import { ApiKeyRequestError } from '../scoped-keys.js';
 import { scopedApiKeysToken } from '../tokens.js';
 import { toApiKeysApiError } from './errors.js';
 import {
@@ -300,6 +304,50 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           },
           201,
         );
+      },
+    );
+    // The permission catalogue a key's detail shows: what the caller holds, plus the actions this key still names after
+    // the caller lost them, which the server reads from the key itself.
+    routes.get(
+      '/:keyId/catalog',
+      describeRoute({
+        tags,
+        summary: 'List the permission catalogue of my key',
+        operationId: 'apiKeysGetKeyCatalog',
+        description: `${signInOnly} The authorization catalogue limited to what the caller holds today, plus the actions of this key the caller no longer holds, so its detail can show them as lapsed. Answers 404 without the authorization plugin.`,
+        responses: {
+          200: dataResponse(AuthorizationOptionsSchema),
+          ...apiErrorResponses,
+          404: keyNotFound,
+        },
+      }),
+      apiValidator('param', ApiKeyParams),
+      async (context) => {
+        const detail = await keys.detail(
+          userId(context),
+          context.req.valid('param').keyId,
+        );
+        if (!container.has(authorizationToken))
+          throw new ApiKeyRequestError(
+            404,
+            'KEY_NOT_FOUND',
+            'Key permissions need the authorization plugin.',
+          );
+        const authz = container.resolve(authorizationToken);
+        const [options, snapshot] = await Promise.all([
+          authorizationOptions(authz),
+          authz.for(await keys.identityOf(userId(context))).snapshot(),
+        ]);
+        return context.json({
+          data: grantableAuthorizationOptions(
+            options,
+            snapshot,
+            detail.lapsed.map((grant) => ({
+              resource: grant.resource,
+              actions: grant.actions.map(({ action }) => action),
+            })),
+          ),
+        });
       },
     );
     routes.post(

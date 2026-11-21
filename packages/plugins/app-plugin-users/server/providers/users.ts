@@ -186,9 +186,14 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       : undefined;
     // A record type: the id is a user, and `delete` exists only while a role
     // scope can clean a deleted user up.
+    // Managing accounts is a person's only: no API key, scoped or not, may take any of these actions.
+    const humanOnly = {
+      key: 'humanOnly.manageAccounts',
+      ns: '@nocobase/app-plugin-users',
+    };
     authorization.resourceTypes.add({
       type: 'user',
-      actions: [...USER_ACTIONS],
+      actions: [...USER_ACTIONS].map((name) => ({ name, humanOnly })),
       authorize: grantBacked({
         also: async (request) =>
           request.action !== 'delete' ||

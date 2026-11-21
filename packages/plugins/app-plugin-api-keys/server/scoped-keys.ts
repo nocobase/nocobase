@@ -13,6 +13,8 @@ import type {
   KeyScope,
 } from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
+import { isDeepStrictEqual } from 'node:util';
+
 import { APIError } from 'better-auth/api';
 
 import {
@@ -27,6 +29,7 @@ import {
   type GrantablePermissions,
   type GrantableResource,
   type KeyPermissionGrant,
+  type KeyPermissionPolicy,
   type KeyPermissions,
   type KeyResourceRef,
   type KeyScopeInput,
@@ -153,10 +156,15 @@ interface Ceiling {
    * For composite actions, by `scopeActionKey`, the record access keys each data scope is held at, from the roles
    * that give the action. Absent for an action held with no record scope known here: every scope is then open.
    */
-  readonly scopes: ReadonlyMap<
-    string,
-    ReadonlyMap<string, ReadonlySet<string>>
-  >;
+  readonly scopes: ReadonlyMap<string, ReadonlyMap<string, HeldScope>>;
+}
+
+/** One data scope of a composite action as the holder's roles give it. */
+interface HeldScope {
+  /** The record access keys the values name. */
+  readonly keys: ReadonlySet<string>;
+  /** The values as stored, including those no key names, such as a custom filter. */
+  readonly values: readonly unknown[];
 }
 
 /** The record access key that reaches every record. */
@@ -184,25 +192,66 @@ function scopeKeyOf(value: unknown): string | null {
   return null;
 }
 
-/** Whether a data scope value is no wider than what is held of it: none, a held key, or anything under every record. */
-function withinHeld(value: unknown, held: ReadonlySet<string>): boolean {
-  if (held.has(ALL_RECORDS)) return true;
+/**
+ * Whether a data scope value is no wider than what is held of it: none, a held key, a value one of the holder's roles
+ * stores exactly, or anything under every record.
+ */
+function withinHeld(value: unknown, held: HeldScope): boolean {
+  if (held.keys.has(ALL_RECORDS)) return true;
   const key = scopeKeyOf(value);
-  return key === '' || (key !== null && held.has(key));
+  if (key === '' || (key !== null && held.keys.has(key))) return true;
+  return held.values.some((stored) => isDeepStrictEqual(stored, value));
+}
+
+/**
+ * The value a key gets for a data scope it leaves out: what the holder holds at the time, pinned so the key never
+ * follows the holder's roles wider later. Every record when held; otherwise the first named key, or the first stored
+ * value, which is one of the holder's own and so never wider than they are.
+ */
+function heldDefault(held: HeldScope): unknown {
+  if (held.keys.has(ALL_RECORDS)) return ALL_RECORDS;
+  const [first] = [...held.keys].filter(Boolean).sort();
+  if (first !== undefined) return first;
+  return held.values.find((value) => scopeKeyOf(value) !== '') ?? '';
+}
+
+/** The policy a key's composite action gets when it names none: the holder's record scopes at the time. */
+function heldPolicy(
+  held: ReadonlyMap<string, HeldScope> | undefined,
+): KeyPermissionPolicy | undefined {
+  if (!held?.size) return undefined;
+  return {
+    type: 'composite',
+    scopes: Object.fromEntries(
+      [...held].map(([scope, entry]) => [scope, heldDefault(entry)]),
+    ),
+  };
+}
+
+/** An action a template gives, with the record scopes the holder has of it now when it has any. */
+function pinnedAction(
+  ceiling: Ceiling,
+  resource: KeyResourceRef,
+  action: string,
+): KeyPermissionGrant['actions'][number] {
+  const policy = heldPolicy(
+    ceiling.scopes.get(scopeActionKey(resource, action)),
+  );
+  return policy ? { action, policy } : { action };
 }
 
 /** The slice of a Permission Sets API this service reads, when the application has one. */
 interface PermissionSetsReader {
-  list(): Promise<
+  getEffective(input: {
+    readonly principal: { readonly type: string; readonly id: string };
+    readonly subjects?: readonly {
+      readonly type: string;
+      readonly id: string;
+    }[];
+  }): Promise<
     readonly {
       readonly key: string;
       readonly grants: readonly KeyPermissionGrant[];
-    }[]
-  >;
-  listAssignments(): Promise<
-    readonly {
-      readonly subject: { readonly type: string; readonly id: string };
-      readonly permissionSet: string;
     }[]
   >;
 }
@@ -544,15 +593,45 @@ export class ScopedApiKeys {
         const values: unknown = entry.policy?.scopes;
         if (held && isRecord(values))
           for (const [scope, value] of Object.entries(values)) {
-            const keys = held.get(scope);
-            if (keys && !withinHeld(value, keys))
+            const scoped = held.get(scope);
+            if (scoped && !withinHeld(value, scoped))
               throw new ApiKeyRequestError(
                 403,
                 'KEY_SCOPE_EXCEEDS_YOURS',
                 `${label}: the records of ${scope} you give a key cannot reach further than yours.`,
               );
           }
-        actions.set(entry.action, entry);
+        // A data scope the key leaves out is pinned to what the maker holds now, so the key does not widen when
+        // the maker's roles do later.
+        const pinned = heldPolicy(held);
+        const filled =
+          pinned && isRecord(pinned.scopes)
+            ? {
+                ...entry,
+                policy: {
+                  ...pinned,
+                  ...entry.policy,
+                  type: 'composite',
+                  scopes: {
+                    ...pinned.scopes,
+                    ...(isRecord(values) ? values : {}),
+                  },
+                },
+              }
+            : entry;
+        if (filled !== entry) {
+          const problem = authz.compositeResources.validateGrant({
+            resource: grant.resource,
+            action: entry.action,
+            policy: filled.policy,
+          });
+          if (problem !== undefined)
+            throw new ApiKeyScopeError(
+              'INVALID_SCOPE',
+              `${label}: choose its records (${problem}).`,
+            );
+        }
+        actions.set(entry.action, filled);
       }
       merged.set(key, actions);
     }
@@ -602,12 +681,17 @@ export class ScopedApiKeys {
           const scopes = ceiling.scopes.get(
             scopeActionKey(entry.resource, action.action),
           );
+          const policy = heldPolicy(scopes);
           return scopes
             ? {
                 ...action,
                 scopes: Object.fromEntries(
-                  [...scopes].map(([scope, keys]) => [scope, [...keys].sort()]),
+                  [...scopes].map(([scope, held]) => [
+                    scope,
+                    [...held.keys].sort(),
+                  ]),
                 ),
+                ...(policy ? { policy } : {}),
               }
             : action;
         });
@@ -1125,50 +1209,35 @@ export class ScopedApiKeys {
   private async heldScopes(
     authz: Authorization,
     identity: AuthorizationIdentity,
-  ): Promise<Map<string, Map<string, Set<string>>>> {
-    const scopes = new Map<string, Map<string, Set<string>>>();
+  ): Promise<Map<string, Map<string, HeldScope>>> {
+    const scopes = new Map<string, Map<string, HeldScope>>();
     const sets: unknown = Reflect.get(authz, 'permissionSets');
-    if (
-      !isRecord(sets) ||
-      typeof sets.list !== 'function' ||
-      typeof sets.listAssignments !== 'function'
-    )
+    if (!isRecord(sets) || typeof sets.getEffective !== 'function')
       return scopes;
-    const reader = sets as unknown as PermissionSetsReader;
-    const subjects = new Set(
-      [identity.principal, ...(identity.subjects ?? [])].map((subject) =>
-        JSON.stringify([subject.type, subject.id]),
-      ),
-    );
-    const assigned = new Set(
-      (await reader.listAssignments())
-        .filter((assignment) =>
-          subjects.has(
-            JSON.stringify([assignment.subject.type, assignment.subject.id]),
-          ),
-        )
-        .map((assignment) => assignment.permissionSet),
-    );
-    for (const set of await reader.list()) {
-      if (!assigned.has(set.key)) continue;
+    // Only the sets this identity holds, read for it alone.
+    const held = await (sets as unknown as PermissionSetsReader).getEffective({
+      principal: identity.principal,
+      ...(identity.subjects ? { subjects: identity.subjects } : {}),
+    });
+    for (const set of held)
       for (const grant of set.grants) {
         if (grant.resource.type !== 'composite') continue;
         for (const { action, policy } of grant.actions) {
           const values: unknown = policy?.scopes;
           if (!isRecord(values)) continue;
           const key = scopeActionKey(grant.resource, action);
-          const byScope = scopes.get(key) ?? new Map<string, Set<string>>();
+          const byScope = scopes.get(key) ?? new Map<string, HeldScope>();
           for (const [scope, value] of Object.entries(values)) {
+            const entry = byScope.get(scope) ?? { keys: new Set(), values: [] };
             const selected = scopeKeyOf(value);
-            const keys = byScope.get(scope) ?? new Set<string>();
-            // A value no key names (some records, a custom filter) gives nothing a key could name.
-            if (selected) keys.add(selected);
-            byScope.set(scope, keys);
+            byScope.set(scope, {
+              keys: selected ? new Set([...entry.keys, selected]) : entry.keys,
+              values: [...entry.values, value],
+            });
           }
           scopes.set(key, byScope);
         }
       }
-    }
     return scopes;
   }
 
@@ -1269,7 +1338,9 @@ export class ScopedApiKeys {
         if (actions.length > 0)
           grants.push({
             resource: entry.resource,
-            actions: actions.map(({ action }) => ({ action })),
+            actions: actions.map(({ action }) =>
+              pinnedAction(ceiling, entry.resource, action),
+            ),
           });
       }
       // And of resources of a type without items, such as users, the ones held.
@@ -1312,7 +1383,9 @@ export class ScopedApiKeys {
         if (actions.length === 0) continue;
         grants.push({
           resource: grant.resource,
-          actions: actions.map(({ action }) => ({ action })),
+          actions: actions.map(({ action }) =>
+            pinnedAction(ceiling, grant.resource, action),
+          ),
         });
         if (grant.objects === 'pick') pick.add(grant.resource.id);
       }

@@ -100,6 +100,10 @@ const enUS = {
     never: 'Never',
     neverDiscouraged: 'Never expiring is not recommended.',
     maxDays: 'Your administrator allows at most {{count}} days.',
+    riskyTemplateTitle: 'Turn on high-risk permissions?',
+    riskyTemplate:
+      'This template turns on {{actions}}, which are high risk. A key that leaks can do them in your name.',
+    riskyTemplateApply: 'Apply template',
     template: 'Start from a template…',
     quick: 'Quick settings',
     everything: 'Everything I can do',

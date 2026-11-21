@@ -1099,9 +1099,12 @@ describe('API key permissions in the shape of a permission set', () => {
   });
 
   it('never lets a key reach more records of a composite action than its owner’s roles do', async () => {
+    const asked: unknown[] = [];
     const sets = (scope: unknown) => ({
-      list: () =>
-        Promise.resolve([
+      // Only the sets the person holds, asked for them alone.
+      getEffective: (input: unknown) => {
+        asked.push(input);
+        return Promise.resolve([
           {
             key: 'staff',
             grants: [
@@ -1116,12 +1119,8 @@ describe('API key permissions in the shape of a permission set', () => {
               },
             ],
           },
-          { key: 'other', grants: [] },
-        ]),
-      listAssignments: () =>
-        Promise.resolve([
-          { subject: { type: 'user', id: personId }, permissionSet: 'staff' },
-        ]),
+        ]);
+      },
     });
     const withQuotes = (quote: unknown): KeyPermissions => ({
       grants: [
@@ -1144,6 +1143,11 @@ describe('API key permissions in the shape of a permission set', () => {
           .find((grant) => grant.resource.id === quotes.id)
           ?.actions.find((action) => action.action === 'view'),
       ).toMatchObject({ scopes: { quote: ['recordsIOwn'] } });
+      expect(asked).toContainEqual(
+        expect.objectContaining({
+          principal: { type: 'user', id: personId },
+        }),
+      );
       for (const quote of [{ type: 'all' }, { type: 'records', ids: ['q1'] }])
         await expect(
           keys.create(
@@ -1168,6 +1172,76 @@ describe('API key permissions in the shape of a permission set', () => {
           await identity(),
         ),
       ).resolves.toMatchObject({ key: { name: 'picked' } });
+    } finally {
+      Reflect.deleteProperty(authz, 'permissionSets');
+    }
+  });
+
+  it('pins a key to the records its maker holds when it is made, so it does not widen with their roles later', async () => {
+    const holding = (quote: unknown) => ({
+      getEffective: () =>
+        Promise.resolve([
+          {
+            key: 'staff',
+            grants: [
+              {
+                resource: quotes,
+                actions: [
+                  {
+                    action: 'view',
+                    policy: { type: 'composite', scopes: { quote } },
+                  },
+                ],
+              },
+            ],
+          },
+        ]),
+    });
+    const some = { type: 'records', ids: ['q1'] };
+    Reflect.set(authz, 'permissionSets', holding(some));
+    try {
+      // The default a key starts with names the records the maker holds now.
+      const offered = (await keys.grantable(personId)).grants
+        .find((grant) => grant.resource.id === quotes.id)
+        ?.actions.find((action) => action.action === 'view');
+      expect(offered?.policy).toEqual({
+        type: 'composite',
+        scopes: { quote: some },
+      });
+      // A key that names no records gets the maker's pinned, not "whatever the maker holds".
+      const created = await keys.create(
+        personId,
+        {
+          name: 'pinned',
+          expiresInDays: 7,
+          permissions: {
+            grants: [{ resource: quotes, actions: [{ action: 'view' }] }],
+          },
+        },
+        await identity(),
+      );
+      const pinned = {
+        grants: [
+          {
+            resource: quotes,
+            actions: [
+              {
+                action: 'view',
+                policy: { type: 'composite', scopes: { quote: some } },
+              },
+            ],
+          },
+        ],
+      };
+      expect(created.key.permissions).toEqual(pinned);
+      // The maker's role widens to every record; the key stays as it was made.
+      Reflect.set(authz, 'permissionSets', holding({ type: 'all' }));
+      expect((await keys.get(personId, created.key.id)).permissions).toEqual(
+        pinned,
+      );
+      expect(
+        decodeKeyPermissions(await storedPermissions(created.key.id)),
+      ).toMatchObject({ permissions: pinned });
     } finally {
       Reflect.deleteProperty(authz, 'permissionSets');
     }
