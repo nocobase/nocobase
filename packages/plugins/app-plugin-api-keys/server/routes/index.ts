@@ -90,8 +90,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const identity = async (context: Context<Env>) =>
       context.get('authz')?.identity ??
       (await keys.identityOf(userId(context)));
-    // Members' keys and the rules: administration, registered before `/:keyId`, which would otherwise match them.
-    if (container.has(authorizationToken))
+    // Members' keys and the rules: administration, registered before `/:keyId`, which would otherwise match them. A
+    // host that composes these routes without the plugin's provider, as an application's own tests may, goes without.
+    if (container.has(authorizationToken) && container.has(memberApiKeysToken))
       installKeyAdministration(routes, {
         keys,
         members: container.resolve(memberApiKeysToken),
@@ -418,7 +419,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
 
     router.route('/apiKeys', routes);
-    if (container.has(authorizationToken)) {
+    if (
+      container.has(authorizationToken) &&
+      container.has(systemApiKeysToken)
+    ) {
       const system = new Hono<Env>();
       system.onError((error, context) =>
         apiErrorHandler(toApiKeysApiError(error), context),
