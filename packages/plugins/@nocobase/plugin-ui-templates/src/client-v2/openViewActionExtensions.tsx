@@ -983,6 +983,13 @@ const persistCurrentOpenViewParams = (ctx: FlowSettingsContext, params: any) => 
   ctx.model?.setStepParams?.(flowKey, { [stepKey]: params });
 };
 
+const POPUP_SUB_TABLE_INTERNAL_OPEN_VIEW_MODELS = new Set(['PopupSubTableFieldModel', 'PopupSubTableEditActionModel']);
+
+const isPopupSubTableInternalOpenViewModel = (model: any) => {
+  const useKey = normalizeStr(model?.use) || normalizeStr(model?.constructor?.name);
+  return POPUP_SUB_TABLE_INTERNAL_OPEN_VIEW_MODELS.has(useKey);
+};
+
 const hasOwnParam = (params: any, key: string) => {
   return !!params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, key);
 };
@@ -996,17 +1003,23 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
 
   const enhanced: ActionDefinition = {
     ...(base as any),
-    uiSchema: {
-      ...(mode ? { mode } : {}),
-      ...(size ? { size } : {}),
-      popupTemplateUid: {
-        type: 'string',
-        title: `{{t("Popup template", { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`,
-        'x-decorator': 'FormItem',
-        'x-component': PopupTemplateSelect,
-      },
-      ...(uid ? { uid } : {}),
-      ...rest,
+    uiSchema(ctx: FlowSettingsContext) {
+      return {
+        ...(mode ? { mode } : {}),
+        ...(size ? { size } : {}),
+        ...(isPopupSubTableInternalOpenViewModel(ctx?.model)
+          ? {}
+          : {
+              popupTemplateUid: {
+                type: 'string',
+                title: `{{t("Popup template", { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`,
+                'x-decorator': 'FormItem',
+                'x-component': PopupTemplateSelect,
+              },
+            }),
+        ...(uid ? { uid } : {}),
+        ...rest,
+      };
     },
 
     async beforeParamsSave(ctx: FlowSettingsContext, params: any, previousParams: any) {
