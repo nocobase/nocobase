@@ -51,10 +51,12 @@ function mount(
 }
 
 it('opens the first system settings page an administrator may open', async () => {
+  // These are the application's own settings pages; User management, which comes first in a running application, is
+  // `@nocobase/app-plugin-users`'s (see settings-navigation.test.ts).
   await mount();
   await waitFor(() =>
     expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-      '/settings/users',
+      '/settings/roles',
     ),
   );
 });

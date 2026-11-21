@@ -4,11 +4,10 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Routes, Route } from 'react-router';
-import UsersPage from '../../client/pages/settings/users.js';
 import RolesPage from '../../client/pages/settings/roles.js';
 import { ListRecoveryError } from '../../client/hooks/use-table-url-state.js';
 import { SettingsError } from '../../client/pages/settings/shared.js';
@@ -27,28 +26,18 @@ const services = (app: ClientApplication) =>
     authorizationClientToken,
     new AuthorizationClient(app.container.resolve(apiClientToken)),
   );
-const userRow = {
-  id: 'alice',
-  name: 'Alice',
-  email: 'alice@example.test',
-  disabledAt: null as string | null,
-  roleScopes: {},
-};
 const options = { data: { roleScopes: [] } };
 
 describe.each([
   ['en-US', enUS],
   ['zh-CN', zhCN],
 ] as const)('%s', (language, copy) => {
-  it.each(['users', 'roles'] as const)(
+  it.each(['roles'] as const)(
     'keeps the compact empty status and hides creation for a read-only %s list',
     async (kind) => {
       await renderWithApp(
         <Routes>
-          <Route
-            path={`/settings/${kind}`}
-            element={kind === 'users' ? <UsersPage /> : <RolesPage />}
-          />
+          <Route path={`/settings/${kind}`} element={<RolesPage />} />
         </Routes>,
         {
           route: `/settings/${kind}`,
@@ -69,8 +58,7 @@ describe.each([
       );
       expect(
         screen.queryByRole('button', {
-          name:
-            kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
+          name: copy.settings.newRole,
         }),
       ).not.toBeInTheDocument();
       expect(
@@ -79,15 +67,12 @@ describe.each([
     },
   );
 
-  it.each(['users', 'roles'] as const)(
+  it.each(['roles'] as const)(
     'keeps a single creation entry for an authorized empty %s list',
     async (kind) => {
       await renderWithApp(
         <Routes>
-          <Route
-            path={`/settings/${kind}`}
-            element={kind === 'users' ? <UsersPage /> : <RolesPage />}
-          />
+          <Route path={`/settings/${kind}`} element={<RolesPage />} />
         </Routes>,
         {
           route: `/settings/${kind}`,
@@ -105,14 +90,12 @@ describe.each([
       );
       expect(
         await screen.findByRole('button', {
-          name:
-            kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
+          name: copy.settings.newRole,
         }),
       ).toHaveAttribute('href', `/settings/${kind}/create`);
       expect(
         screen.getAllByRole('button', {
-          name:
-            kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
+          name: copy.settings.newRole,
         }),
       ).toHaveLength(1);
       expect(screen.getByRole('status').textContent).toBe(
@@ -200,135 +183,4 @@ describe.each([
       screen.queryByRole('button', { name: copy.settings.retry }),
     ).not.toBeInTheDocument();
   });
-});
-
-it.each(['disable', 'enable', 'revokeSessions'] as const)(
-  'reports a completed %s action only after the server succeeds',
-  async (action) => {
-    let complete!: (value: unknown) => void;
-    const response = new Promise((resolve) => {
-      complete = resolve;
-    });
-    const endpoint = action;
-    const calls = vi.fn(({ path }: { path: string }) => {
-      if (path === 'authorization/permissions')
-        return { data: { unrestricted: true, permissions: [] } };
-      if (path === 'users/options') return options;
-      if (path === `users/alice/${endpoint}`) return response;
-      return {
-        data: [
-          {
-            ...userRow,
-            disabledAt: action === 'enable' ? '2026-10-21T00:00:00Z' : null,
-          },
-        ],
-        meta: { total: 1 },
-      };
-    });
-    const view = await renderWithApp(<UsersPage />, {
-      route: '/settings/users',
-      namespace,
-      namespaces,
-      services,
-      fetch: answerApi(calls),
-    });
-    // Account actions sit in the row's "⋮" menu (T1.5).
-    await userEvent.click(
-      await screen.findByRole('button', {
-        name: 'Actions for Alice',
-        expanded: false,
-      }),
-    );
-    await userEvent.click(
-      await screen.findByRole('menuitem', {
-        name: enUS.settings[action],
-        exact: true,
-      }),
-    );
-    const dialog = await screen.findByRole('alertdialog');
-    await userEvent.click(
-      within(dialog).getByRole('button', {
-        name: enUS.settings[action],
-        exact: true,
-      }),
-    );
-    await waitFor(() =>
-      expect(calls).toHaveBeenCalledWith(
-        expect.objectContaining({ path: `users/alice/${endpoint}` }),
-      ),
-    );
-    expect(view.toasts()).toHaveLength(0);
-    expect(
-      within(dialog).getByRole('button', { name: enUS.settings.saving }),
-    ).toBeDisabled();
-    expect(
-      within(dialog).getByRole('button', { name: enUS.settings.cancel }),
-    ).toBeDisabled();
-    complete(
-      action === 'revokeSessions'
-        ? { data: null }
-        : {
-            data: {
-              ...userRow,
-              disabledAt: action === 'disable' ? '2026-10-21T00:00:00Z' : null,
-            },
-          },
-    );
-    await waitFor(() =>
-      expect(view.toasts()).toMatchObject([
-        {
-          type: 'success',
-          title: enUS.settings.userActionSaved[action].replace(
-            '{{name}}',
-            'Alice',
-          ),
-        },
-      ]),
-    );
-    await waitFor(() =>
-      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
-    );
-    expect(
-      calls.mock.calls.filter(
-        ([call]) => call.path === `users/alice/${endpoint}`,
-      ),
-    ).toHaveLength(1);
-  },
-);
-
-it('keeps a failed account action in its dialog with no success toast', async () => {
-  const view = await renderWithApp(<UsersPage />, {
-    route: '/settings/users',
-    namespace,
-    namespaces,
-    services,
-    fetch: answerApi(({ path }) => {
-      if (path === 'authorization/permissions')
-        return { data: { unrestricted: true, permissions: [] } };
-      if (path === 'users/options') return options;
-      if (path === 'users/alice/disable')
-        return Response.json(
-          { error: { code: 'FORBIDDEN', message: 'internal details' } },
-          { status: 403 },
-        );
-      return { data: [userRow], meta: { total: 1 } };
-    }),
-  });
-  await userEvent.click(
-    await screen.findByRole('button', {
-      name: 'Actions for Alice',
-      expanded: false,
-    }),
-  );
-  await userEvent.click(
-    await screen.findByRole('menuitem', { name: 'Disable', exact: true }),
-  );
-  const dialog = await screen.findByRole('alertdialog');
-  await userEvent.click(
-    within(dialog).getByRole('button', { name: 'Disable', exact: true }),
-  );
-  expect(await within(dialog).findByText(enUS.settings.denied)).toBeVisible();
-  expect(view.toasts()).toHaveLength(0);
-  expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeEnabled();
-  expect(screen.queryByText('internal details')).not.toBeInTheDocument();
 });

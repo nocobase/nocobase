@@ -41,6 +41,9 @@ const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
     auth: 'required',
     authz: { resource: { type: 'user', id: '*' }, action: 'read' },
     navigation: {
+      // Leads Accounts and permissions, as it did as an application page: application routes register before plugin
+      // routes, so the default order would put it after the application's own pages in the category.
+      order: -100,
       title: 'management.users',
       description: 'management.usersDescription',
       icon: Users,

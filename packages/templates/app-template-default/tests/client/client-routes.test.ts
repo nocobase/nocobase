@@ -178,10 +178,6 @@ describe('app client routes', () => {
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'settingsHome', authorizedAs: null },
-      { name: 'settingsUsers', authorizedAs: 'user:*' },
-      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
-      { name: 'settingsUser', authorizedAs: 'user:*' },
-      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
       {
         name: 'settingsRoles',
         authorizedAs: 'settings:authorization.permission-sets',
@@ -209,17 +205,13 @@ describe('app client routes', () => {
     ]);
   });
 
-  it('registers Users, Roles and permissions and database browsing in System settings', async () => {
+  it('registers Roles and permissions and database browsing in System settings', async () => {
     expect(
       pagePaths(resolveRoutes().routes).filter((path) =>
         path.startsWith('/settings'),
       ),
     ).toEqual([
       '/settings',
-      '/settings/users',
-      '/settings/users/create',
-      '/settings/users/:userId',
-      '/settings/users/:userId/edit',
       '/settings/roles',
       '/settings/roles/create',
       '/settings/roles/:key/edit',
