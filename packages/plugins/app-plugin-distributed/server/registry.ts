@@ -1,5 +1,4 @@
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { z } from 'zod';
 import {
   createServiceToken,
   type ServiceToken,
@@ -19,6 +18,10 @@ export interface DistributedStatusContext {
   readonly container: ServiceResolver;
 }
 
+/**
+ * A check another plugin adds. Its results are sent with their authored `title`, `detail` and `fix`; `params` are
+ * dropped, because only the built-in checks' translations interpolate them.
+ */
 export interface DistributedCheck {
   /** Unique among registered checks. */
   readonly id: string;
@@ -30,14 +33,76 @@ export interface DistributedCheck {
 }
 
 /**
- * Data a plugin adds under `extensions[key]`. `read()` may return a runtime object; only what `schema` declares
- * reaches the response, so declare public fields only, with `z.object` (which drops undeclared keys) rather than
- * `z.looseObject`, `z.record` or `z.unknown`. A value that does not match is left out and logged.
+ * The public fields of extension data, declared field by field: `'string'`, `'number'` or `'boolean'` for a value, an
+ * object of declarations for a nested object, and a one-element array for a list of the declared element. There is no
+ * open record or unknown value, so nothing reaches the response that a field here does not name.
+ */
+export type DistributedDataFields =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | { readonly [field: string]: DistributedDataFields }
+  | readonly [DistributedDataFields];
+
+/**
+ * Data a plugin adds under `extensions[key]`. `read()` may return a runtime object; the server copies only what
+ * `fields` declares, value by value, and drops a value whose type does not match.
  */
 export interface DistributedData {
-  readonly schema: z.ZodType;
-  /** May return a promise; the resolved value is parsed through `schema`. */
+  readonly fields: { readonly [field: string]: DistributedDataFields };
+  /** May return a promise; the resolved value is projected onto `fields`. */
   read(context: DistributedStatusContext): unknown;
+}
+
+/** Copies `value` onto `fields`: declared keys only, at every depth; `undefined` where the type does not match. */
+export function projectDistributedData(
+  fields: DistributedDataFields,
+  value: unknown,
+): unknown {
+  if (fields === 'string' || fields === 'number' || fields === 'boolean')
+    return typeof value === fields &&
+      (fields !== 'number' || Number.isFinite(value))
+      ? value
+      : undefined;
+  if (Array.isArray(fields)) {
+    if (!Array.isArray(value)) return undefined;
+    const element = (fields as readonly [DistributedDataFields])[0];
+    return value
+      .map((item) => projectDistributedData(element, item))
+      .filter((item) => item !== undefined);
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return undefined;
+  const projected: Record<string, unknown> = {};
+  for (const [field, declaration] of Object.entries(
+    fields as Readonly<Record<string, DistributedDataFields>>,
+  )) {
+    if (!Object.hasOwn(value, field)) continue;
+    const item = projectDistributedData(
+      declaration,
+      (value as Record<string, unknown>)[field],
+    );
+    if (item !== undefined) projected[field] = item;
+  }
+  return projected;
+}
+
+function assertFields(key: string, fields: unknown, path = 'fields'): void {
+  const fail = (): never => {
+    throw new TypeError(
+      `Distributed status data "${key}" declares an invalid ${path}: use 'string', 'number', 'boolean', an object or a one-element array.`,
+    );
+  };
+  if (fields === 'string' || fields === 'number' || fields === 'boolean')
+    return;
+  if (Array.isArray(fields)) {
+    if (fields.length !== 1) fail();
+    assertFields(key, fields[0], `${path}[0]`);
+    return;
+  }
+  if (typeof fields !== 'object' || fields === null) fail();
+  for (const [field, declaration] of Object.entries(fields as object))
+    assertFields(key, declaration, `${path}.${field}`);
 }
 
 /**
@@ -49,7 +114,7 @@ export interface DistributedStatusRegistry {
   addCheck(check: DistributedCheck): () => void;
   /**
    * Adds data under `extensions[key]` of the status, for a client block to render; returns a remover. Only the fields
-   * `data.schema` declares are sent.
+   * `data.fields` declares are sent.
    */
   addData(key: string, data: DistributedData): () => void;
   checks(): readonly DistributedCheck[];
@@ -83,10 +148,15 @@ export function createDistributedStatusRegistry(): DistributedStatusRegistry {
       assertId('data key', key);
       if (typeof entry?.read !== 'function')
         throw new TypeError(`Distributed status data "${key}" needs read().`);
-      if (typeof entry.schema?.safeParse !== 'function')
+      if (
+        typeof entry.fields !== 'object' ||
+        entry.fields === null ||
+        Array.isArray(entry.fields)
+      )
         throw new TypeError(
-          `Distributed status data "${key}" needs a zod schema of its public fields.`,
+          `Distributed status data "${key}" needs an object of the public fields it sends.`,
         );
+      assertFields(key, entry.fields);
       if (data.has(key))
         throw new Error(
           `Distributed status data "${key}" is already registered.`,

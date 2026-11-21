@@ -8,8 +8,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { apiRoutes } from '../../server/routes/index.js';
 import { DISTRIBUTED_STATUS_ACCESS } from '../../shared/types.js';
 import type { DistributedStatus } from '../../shared/types.js';
-import { z } from 'zod';
-
 import {
   createDistributedStatusRegistry,
   distributedStatusToken,
@@ -310,6 +308,29 @@ describe('GET /api/distributed/status', () => {
     );
   });
 
+  it('still checks the backends callers select when the default adapter is undeclared', async () => {
+    const result = await status({
+      services: {
+        ...SHARED,
+        caching: {
+          default: 'acme',
+          adapter: 'acme',
+          sharing: 'unknown',
+          backends: [{ name: 'memory', adapter: 'memory', sharing: 'local' }],
+          selections: [{ consumer: 'local-only', backend: 'memory' }],
+        },
+      },
+    });
+    expect(result.mode).toBe('multi');
+    const caching = result.checks
+      .filter(({ params }) => params?.service === 'caching')
+      .map(({ id, params }) => [id, params?.backend ?? null]);
+    expect(caching).toEqual([
+      ['service.undeclared', null],
+      ['service.selectionLocal', 'memory'],
+    ]);
+  });
+
   it('tells a local selection from an undeclared one under a shared default', async () => {
     const result = await status({
       services: {
@@ -381,11 +402,11 @@ describe('GET /api/distributed/status', () => {
       },
     });
     registry.addData('fixture', {
-      schema: z.object({ instances: z.number() }),
+      fields: { instances: 'number' },
       read: () => ({ instances: 2 }),
     });
     registry.addData('mismatch', {
-      schema: z.object({ instances: z.number() }),
+      fields: { instances: 'number' },
       read: () => ({ instances: 'two' }),
     });
 
@@ -403,7 +424,10 @@ describe('GET /api/distributed/status', () => {
         params: { check: 'broken' },
       }),
     );
-    expect(result.extensions).toEqual({ fixture: { instances: 2 } });
+    expect(result.extensions).toEqual({
+      fixture: { instances: 2 },
+      mismatch: {},
+    });
   });
 
   it('lets an external plugin add a check and data from its provider', async () => {
@@ -427,12 +451,13 @@ describe('GET /api/distributed/status', () => {
     const app = application();
     await new FixtureStatusExtension(app).boot();
     app.container.resolve(distributedStatusToken).addData('nested', {
-      schema: z.object({ pool: z.object({ size: z.number() }) }),
+      fields: { pool: { size: 'number' }, nodes: [{ name: 'string' }] },
       read: () => ({
         pool: {
           size: 2,
           options: { url: 'redis://user:hunter2@redis.internal' },
         },
+        nodes: [{ name: 'node-a', connection: { password: 'hunter2' } }],
         token: 'tok_live_123',
       }),
     });
@@ -443,18 +468,83 @@ describe('GET /api/distributed/status', () => {
 
     expect(result.extensions).toEqual({
       fixture: { instances: ['node-a', 'node-b'] },
-      nested: { pool: { size: 2 } },
+      nested: { pool: { size: 2 }, nodes: [{ name: 'node-a' }] },
     });
     for (const secret of ['redis.internal', 'hunter2', 'tok_live_123'])
       expect(body).not.toContain(secret);
   });
 
-  it('rejects data registered without a schema', () => {
+  it('rejects data without a closed declaration of its fields', () => {
+    const registry = createDistributedStatusRegistry();
     expect(() =>
-      createDistributedStatusRegistry().addData('bare', {
-        read: () => ({}),
-      } as never),
-    ).toThrow('zod schema');
+      registry.addData('bare', { read: () => ({}) } as never),
+    ).toThrow('public fields');
+    // An open sub-object or an unknown value cannot be declared.
+    for (const fields of [
+      { connection: 'object' },
+      { connection: 'unknown' },
+      { list: [] },
+      { pair: ['string', 'number'] },
+      { nested: { options: null } },
+    ])
+      expect(() =>
+        registry.addData('open', { fields, read: () => ({}) } as never),
+      ).toThrow('invalid');
+  });
+
+  it('never sends what a value declared as text holds when it is an object', async () => {
+    const registry = createDistributedStatusRegistry();
+    registry.addData('open', {
+      // A runtime object where the declaration expects a string: nothing of it is sent.
+      fields: { connection: 'string', size: 'number' },
+      read: () => ({
+        connection: { host: 'redis.internal', password: 'hunter2' },
+        size: 3,
+      }),
+    });
+    const router = await apiRoutes.createRouter(application({ registry }));
+
+    const body = await (await router.request(PATH)).text();
+
+    expect(
+      (JSON.parse(body) as { data: DistributedStatus }).data.extensions,
+    ).toEqual({ open: { size: 3 } });
+    for (const secret of ['redis.internal', 'hunter2'])
+      expect(body).not.toContain(secret);
+  });
+
+  it('drops the params of a check another plugin registers', async () => {
+    const registry = createDistributedStatusRegistry();
+    const connection = { host: 'redis.internal', password: 'hunter2' };
+    registry.addCheck({
+      id: 'leaky',
+      run: () => [
+        {
+          id: 'files.local',
+          level: 'recommended',
+          title: 'Workers',
+          detail: 'Two workers are running.',
+          params: connection as never,
+          fix: { text: 'Nothing to do.' },
+        },
+      ],
+    });
+    const router = await apiRoutes.createRouter(application({ registry }));
+
+    const body = await (await router.request(PATH)).text();
+    const check = (
+      JSON.parse(body) as { data: DistributedStatus }
+    ).data.checks.find(({ title }) => title === 'Workers');
+
+    expect(check).toEqual({
+      id: 'files.local',
+      level: 'recommended',
+      title: 'Workers',
+      detail: 'Two workers are running.',
+      fix: { text: 'Nothing to do.' },
+    });
+    for (const secret of ['redis.internal', 'hunter2'])
+      expect(body).not.toContain(secret);
   });
 
   it('declares itself in the API document', async () => {

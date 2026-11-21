@@ -4,6 +4,7 @@ export {
   distributedStatusToken,
   type DistributedCheck,
   type DistributedData,
+  type DistributedDataFields,
   type DistributedStatusContext,
   type DistributedStatusRegistry,
 } from './registry.js';

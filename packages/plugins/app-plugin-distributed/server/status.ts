@@ -15,6 +15,7 @@ import type {
 } from '../shared/types.js';
 import { builtInChecks } from './checks.js';
 import {
+  projectDistributedData,
   distributedStatusToken,
   type DistributedStatusContext,
 } from './registry.js';
@@ -49,18 +50,42 @@ export const SERVICE_CONFIG_PATHS: Readonly<
 };
 
 /**
+ * Imports an optional peer: `undefined` when the package itself is not installed, so the service shows as not running.
+ * Any other failure — a broken dependency of the package, an error while its module initializes — is thrown, for the
+ * caller to log.
+ */
+export async function importOptional<T>(
+  load: () => Promise<T>,
+  packageName: string,
+): Promise<T | undefined> {
+  try {
+    return await load();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error as { code?: unknown }).code === 'ERR_MODULE_NOT_FOUND' &&
+      // Node names the missing package in quotes: "Cannot find package '<name>' imported from …". A dependency the
+      // package itself is missing names that dependency instead, and is reported.
+      (error.message.includes(`'${packageName}'`) ||
+        error.message.includes(`'${packageName}/`))
+    )
+      return undefined;
+    throw error;
+  }
+}
+
+/**
  * The concurrency service, when its optional plugin is installed. Imported lazily so an application without
  * `@nocobase/app-plugin-concurrency` still loads this plugin and shows the other services.
  */
 async function describeConcurrency(
   container: AppPluginApplication['container'],
 ): Promise<ServiceDescription | undefined> {
-  let entry: typeof import('@nocobase/app-plugin-concurrency/server');
-  try {
-    entry = await import('@nocobase/app-plugin-concurrency/server');
-  } catch {
-    return undefined;
-  }
+  const entry = await importOptional(
+    () => import('@nocobase/app-plugin-concurrency/server'),
+    '@nocobase/app-plugin-concurrency',
+  );
+  if (!entry) return undefined;
   return container.has(entry.concurrencyServiceToken)
     ? container.resolve(entry.concurrencyServiceToken).describe?.()
     : undefined;
@@ -177,6 +202,7 @@ export async function collectDistributedStatus(
     ? container.resolve(distributedStatusToken)
     : undefined;
   const checks: DistributedCheckResult[] = [];
+  const extensionChecks = new Set(registry?.checks() ?? []);
   for (const check of [
     ...builtInChecks({
       config,
@@ -188,7 +214,12 @@ export async function collectDistributedStatus(
     ...(registry?.checks() ?? []),
   ]) {
     try {
-      checks.push(...(await check.run(context)));
+      const results = await check.run(context);
+      checks.push(
+        ...(extensionChecks.has(check)
+          ? results.map(({ params: _params, ...result }) => result)
+          : results),
+      );
     } catch (error) {
       // One failing check never costs the page; it shows as unchecked.
       logger?.warn(
@@ -210,14 +241,9 @@ export async function collectDistributedStatus(
   const extensions: Record<string, unknown> = {};
   for (const [key, entry] of registry?.data() ?? []) {
     try {
-      // The registered schema is the allow-list: `z.object` drops every key it does not declare, at any depth.
-      const parsed = entry.schema.safeParse(await entry.read(context));
-      if (parsed.success) extensions[key] = parsed.data;
-      else
-        logger?.warn(
-          { data: key },
-          'Distributed status data did not match its declared schema.',
-        );
+      // The declared fields are the allow-list: values are copied one by one, never an object as a whole.
+      extensions[key] =
+        projectDistributedData(entry.fields, await entry.read(context)) ?? {};
     } catch (error) {
       logger?.warn(
         { data: key, error: error instanceof Error ? error.name : 'Error' },

@@ -307,9 +307,8 @@ function serviceChecks(
         detail: `The adapter "${service.adapter}" does not declare whether it is shared between instances. Confirm it with the plugin that provides it.`,
         params,
       });
-      continue;
-    }
-    if (mode === 'multi' && service.sharing !== 'shared') {
+      // The backends callers select by name are checked below all the same.
+    } else if (mode === 'multi' && service.sharing !== 'shared') {
       results.push({
         id: 'service.local',
         level: 'required',

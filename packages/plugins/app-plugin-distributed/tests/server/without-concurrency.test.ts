@@ -1,16 +1,19 @@
 import { cachingToken } from '@nocobase/app-server/caching';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { collectDistributedStatus } from '../../server/status.js';
+import {
+  collectDistributedStatus,
+  importOptional,
+} from '../../server/status.js';
 
-// An application that does not install the optional concurrency plugin: importing it fails.
+// The concurrency package is present but fails while its module initializes.
 vi.mock('@nocobase/app-plugin-concurrency/server', () => {
-  throw new Error("Cannot find package '@nocobase/app-plugin-concurrency'");
+  throw new Error('concurrency failed to initialize');
 });
 
-it('serves the status without the optional concurrency plugin', async () => {
+function application(): AppPluginApplication {
   const container = new ServiceContainer();
   container.singleton(cachingToken as never, () => ({
     describe: () => ({
@@ -20,17 +23,53 @@ it('serves the status without the optional concurrency plugin', async () => {
       registered: true,
     }),
   }));
-  const app = {
+  return {
     container,
     config: { get: () => undefined },
   } as unknown as AppPluginApplication;
+}
 
-  const status = await collectDistributedStatus(app);
+function missing(name: string): Error {
+  return Object.assign(
+    new Error(`Cannot find package '${name}' imported from /app/server.js`),
+    { code: 'ERR_MODULE_NOT_FOUND' },
+  );
+}
 
-  expect(
-    status.services.filter(({ available }) => available).map(({ key }) => key),
-  ).toEqual(['caching']);
-  expect(
-    status.services.find(({ key }) => key === 'concurrency'),
-  ).toMatchObject({ available: false });
+describe('the optional concurrency plugin', () => {
+  it('logs a failure to load it and still serves the other services', async () => {
+    const warn = vi.fn();
+
+    const status = await collectDistributedStatus(application(), { warn });
+
+    expect(
+      status.services
+        .filter(({ available }) => available)
+        .map(({ key }) => key),
+    ).toEqual(['caching']);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ service: 'concurrency' }),
+      'A service could not describe its backends.',
+    );
+  });
+
+  it('is silent only when the package itself is not installed', async () => {
+    const name = '@nocobase/app-plugin-concurrency';
+    await expect(
+      importOptional(() => Promise.reject(missing(name)), name),
+    ).resolves.toBeUndefined();
+    await expect(
+      importOptional(() => Promise.reject(missing(`${name}/server`)), name),
+    ).resolves.toBeUndefined();
+    // A dependency the package lacks, or an error while it initializes, is reported.
+    await expect(
+      importOptional(() => Promise.reject(missing('ioredis')), name),
+    ).rejects.toThrow("'ioredis'");
+    await expect(
+      importOptional(() => Promise.reject(new Error('boom')), name),
+    ).rejects.toThrow('boom');
+    await expect(
+      importOptional(() => Promise.resolve({ ok: true }), name),
+    ).resolves.toEqual({ ok: true });
+  });
 });

@@ -47,12 +47,12 @@ status.addCheck({
   ],
 });
 status.addData('acme', {
-  schema: z.object({ workers: z.number() }),
+  fields: { workers: 'number', nodes: [{ name: 'string' }] },
   read: () => workerPool.stats(),
 });
 ```
 
-A check that throws shows as one recommended `checkFailed` entry instead of failing the page. Extension data passes through its `schema`: only the fields a `z.object` declares are sent, so `read()` may return a runtime object without leaking its connection settings; data that does not match the schema is left out and logged. Keep check `title`, `detail` and `params` free of addresses and credentials, because they are sent as written.
+A check that throws shows as one recommended `checkFailed` entry instead of failing the page. Extension data declares its public `fields`: `'string'`, `'number'` or `'boolean'` for a value, an object of declarations for a nested object, and a one-element array for a list. The server copies only declared values of the declared type, at every depth; there is no open record or unknown value, so `read()` may return a runtime object without leaking its connection settings. The `params` of a check another plugin registers are dropped, since only built-in checks interpolate them; its `title`, `detail` and `fix` are sent as written, so keep them free of addresses and credentials.
 
 On the client, resolve `distributedStatusSlotsToken` from `@nocobase/app-plugin-distributed/client` and register a block in one of the slots `overview`, `services`, `idGeneration` or `checklist`:
 
