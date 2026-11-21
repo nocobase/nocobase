@@ -114,6 +114,64 @@ describe('DefaultSchedulerService.defineSchedule', () => {
     expect(rows).toHaveLength(2);
   });
 
+  it('lists a Schedule removed from code until a finalizing sync deactivates it', async () => {
+    scheduler.defineSchedule(baseDefinition());
+    scheduler.defineSchedule(
+      baseDefinition({ key: 'weekly', title: 'Weekly' }),
+    );
+    await scheduler.sync();
+    expect(scheduler.removedFromCode(await scheduler.list())).toEqual([]);
+
+    // The next deployment no longer defines `weekly`.
+    const { store, occurrences, targets } = createStore(
+      database,
+      harness.executor(),
+    );
+    targets.register({
+      type: 'report',
+      title: 'Report',
+      validate: () => ({ valid: true }),
+      start: async () => ({ state: 'completed', outcome: 'succeeded' }),
+    });
+    const next = new DefaultSchedulerService(store, occurrences, targets);
+    next.defineSchedule(baseDefinition());
+    await next.sync();
+    expect(next.removedFromCode(await next.list())).toEqual([
+      { id: scheduleId('main', 'weekly'), key: 'weekly', title: 'Weekly' },
+    ]);
+
+    await next.sync(true);
+    const items = await next.list();
+    expect(next.removedFromCode(items)).toEqual([]);
+    expect(items.find((item) => item.key === 'weekly')).toMatchObject({
+      lifecycleState: 'inactive',
+      inactiveReason: 'definition_removed',
+    });
+  });
+
+  it('plans the next three firings of an active Schedule only', async () => {
+    scheduler.defineSchedule(
+      baseDefinition({
+        schedule: { cron: '*/5 * * * *', timezone: 'Asia/Singapore' },
+      }),
+    );
+    await scheduler.sync();
+    await harness.executor().setup({ consume: false });
+    await scheduler.activate();
+    const id = scheduleId('main', 'daily');
+    const detail = await scheduler.detail(id);
+    expect(detail?.upcomingRuns).toHaveLength(3);
+    const [first, second] = (detail?.upcomingRuns ?? []).map((run) =>
+      Date.parse(run),
+    );
+    expect((second ?? 0) - (first ?? 0)).toBe(5 * 60_000);
+    expect(JSON.stringify(detail)).not.toContain('reportKey');
+
+    await scheduler.setEnabled(id, false);
+    expect((await scheduler.detail(id))?.upcomingRuns).toEqual([]);
+    await expect(scheduler.detail('missing')).resolves.toBeUndefined();
+  });
+
   it('rejects a duplicate key at sync time', async () => {
     scheduler.defineSchedule(baseDefinition());
     scheduler.defineSchedule(baseDefinition());

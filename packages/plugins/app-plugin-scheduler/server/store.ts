@@ -33,6 +33,31 @@ export interface ScheduleOccurrenceRange {
   readonly limit?: number;
 }
 
+/** Where a page of the application-wide history resumes: after this row, in `(startedAt, id)` descending order. */
+export interface ScheduleOccurrenceCursor {
+  readonly startedAt: string;
+  readonly id: string;
+}
+
+/** What the application-wide history is narrowed to, newest first. */
+export interface ScheduleOccurrenceQuery {
+  readonly scheduleId?: string;
+  readonly statuses?: readonly ScheduleOccurrenceStatus[];
+  /** Inclusive lower bound on `startedAt`. */
+  readonly from?: Date;
+  /** Exclusive upper bound on `startedAt`. */
+  readonly to?: Date;
+  readonly after?: ScheduleOccurrenceCursor;
+  readonly limit: number;
+}
+
+/** The outcome of a Schedule's latest firing, as far as it is known. */
+export interface ScheduleLastRun {
+  readonly status: ScheduleOccurrenceStatus;
+  readonly reason?: string;
+  readonly finishedAt?: string;
+}
+
 export interface ScheduleManifestEntry {
   readonly definition: NormalizedScheduleDefinition;
 }
@@ -41,10 +66,18 @@ export interface ScheduleRecord {
   readonly id: string;
   readonly appName: string;
   readonly key: string;
+  /** Where the definition comes from; `code` for every Schedule `defineSchedule` declares. */
+  readonly sourceType: string;
   readonly title: string;
   readonly description?: string;
   readonly cron: string;
   readonly timezone: string;
+  /** The first moment the Schedule may fire. */
+  readonly from?: string;
+  /** The moment after which it no longer fires. */
+  readonly to?: string;
+  /** How many firings it has in all. */
+  readonly limit?: number;
   readonly enabled: boolean;
   readonly targetType: string;
   readonly lifecycleState: 'active' | 'inactive';
@@ -54,6 +87,8 @@ export interface ScheduleRecord {
   readonly completedCount: number;
   readonly nextRunAt?: string;
   readonly lastRunAt?: string;
+  /** The latest firing's outcome; absent until one is recorded. */
+  readonly lastRun?: ScheduleLastRun;
   readonly scheduleStatus: 'active' | 'paused';
 }
 
@@ -70,6 +105,8 @@ export interface ScheduleOccurrenceRecord {
   readonly reason?: string;
   readonly executionCount: number;
   readonly startedAt: string;
+  /** The planned firing time; absent on occurrences recorded before it was kept. */
+  readonly scheduledAt?: string;
   readonly acceptedAt?: string;
   readonly finishedAt?: string;
   readonly targetReceipt?: JsonObject;
@@ -152,6 +189,11 @@ export class ScheduleStore {
     private readonly createJob: ScheduleJobFactory,
     private readonly now: () => Date = () => new Date(),
   ) {}
+
+  /** The id the Schedule defined with `key` has in this application. */
+  public idOf(key: string): string {
+    return scheduleId(this.appName, key);
+  }
 
   public async reconcile(
     manifest: readonly ScheduleManifestEntry[],
@@ -280,21 +322,36 @@ export class ScheduleStore {
       .where('appName', '=', this.appName)
       .orderBy('title', 'asc')
       .execute<DefinitionRow>();
-    const completedByScheduleId = await this.countCompleted(
-      definitions.map((definition) => definition.id),
-    );
+    const [completedByScheduleId, lastRuns] = await Promise.all([
+      this.countCompleted(definitions.map((definition) => definition.id)),
+      this.lastRuns(
+        definitions.flatMap((definition) =>
+          definition.lastOccurrenceId ? [definition.lastOccurrenceId] : [],
+        ),
+      ),
+    ]);
     return definitions.map((definition) => {
       const enabled = Boolean(definition.enabled);
+      const from = dateValue(definition.fromDate);
+      const to = dateValue(definition.toDate);
+      const limit = nullableNumber(definition.runLimit);
+      const lastRun = definition.lastOccurrenceId
+        ? lastRuns.get(definition.lastOccurrenceId)
+        : undefined;
       return {
         id: definition.id,
         appName: definition.appName,
         key: definition.key,
+        sourceType: definition.sourceType,
         title: definition.title,
         ...(definition.description
           ? { description: definition.description }
           : {}),
         cron: definition.cron,
         timezone: definition.timezone,
+        ...(from ? { from } : {}),
+        ...(to ? { to } : {}),
+        ...(limit !== null ? { limit } : {}),
         enabled,
         targetType: definition.targetType,
         lifecycleState: definition.lifecycleState,
@@ -310,12 +367,39 @@ export class ScheduleStore {
         ...(definition.lastRunAt
           ? { lastRunAt: dateValue(definition.lastRunAt) }
           : {}),
+        ...(lastRun ? { lastRun } : {}),
         scheduleStatus:
           enabled && definition.lifecycleState === 'active'
             ? 'active'
             : 'paused',
       };
     });
+  }
+
+  /**
+   * The outcome of each latest firing, by occurrence id. A firing this instance could not run (no definition, no
+   * handler) records a start on the definition without an occurrence, so an id may have no row.
+   */
+  private async lastRuns(
+    occurrenceIds: readonly string[],
+  ): Promise<Map<string, ScheduleLastRun>> {
+    const lastRuns = new Map<string, ScheduleLastRun>();
+    if (occurrenceIds.length === 0) return lastRuns;
+    const rows = await this.database
+      .query()
+      .selectFrom('schedule_occurrences')
+      .select(['id', 'status', 'reason', 'finishedAt'])
+      .where('id', 'in', [...occurrenceIds])
+      .execute<Row>();
+    for (const row of rows) {
+      const finishedAt = dateValue(row.finishedAt as Date | string | null);
+      lastRuns.set(String(row.id), {
+        status: row.status as ScheduleOccurrenceStatus,
+        ...(typeof row.reason === 'string' ? { reason: row.reason } : {}),
+        ...(finishedAt ? { finishedAt } : {}),
+      });
+    }
+    return lastRuns;
   }
 
   public async setEnabled(id: string, enabled: boolean): Promise<void> {
@@ -408,46 +492,56 @@ export class ScheduleStore {
       .limit(range.limit ?? 100)
       .offset(range.offset ?? 0)
       .execute();
-    return rows.map((row) => ({
-      id: String(row.id),
-      scheduleId: String(row.scheduleId),
-      status: row.status as ScheduleOccurrenceStatus,
-      ...(typeof row.reason === 'string' ? { reason: row.reason } : {}),
-      executionCount: Number(row.executionCount),
-      startedAt: dateValue(row.startedAt as Date | string) ?? '',
-      ...(row.acceptedAt
-        ? { acceptedAt: dateValue(row.acceptedAt as Date | string) }
-        : {}),
-      ...(row.finishedAt
-        ? { finishedAt: dateValue(row.finishedAt as Date | string) }
-        : {}),
-      ...(row.targetReceipt
-        ? {
-            targetReceipt: jsonObject(
-              row.targetReceipt as string | Record<string, unknown>,
-            ),
-          }
-        : {}),
-      ...(row.resultSummary
-        ? {
-            resultSummary: jsonObject(
-              row.resultSummary as string | Record<string, unknown>,
-            ),
-          }
-        : {}),
-      target: {
-        type: String(row.targetType),
-        ...(typeof row.targetReferenceType === 'string' &&
-        typeof row.targetReferenceId === 'string'
-          ? {
-              reference: {
-                type: row.targetReferenceType,
-                id: row.targetReferenceId,
-              },
-            }
-          : {}),
-      },
-    }));
+    return rows.map(occurrenceOfRow);
+  }
+
+  /**
+   * The history of every Schedule of this application, newest first, narrowed by `query`. Pages by keyset on
+   * `(startedAt, id)`, so a firing recorded while someone pages neither repeats nor hides a row. Occurrences of
+   * Schedules removed from code stay listed: their definitions remain, inactive.
+   */
+  public async listAllOccurrences(
+    query: ScheduleOccurrenceQuery,
+  ): Promise<readonly ScheduleOccurrenceRecord[]> {
+    let definitions = this.database
+      .query()
+      .selectFrom<DefinitionRow>('schedule_definitions')
+      .select('id')
+      .where('appName', '=', this.appName);
+    if (query.scheduleId !== undefined)
+      definitions = definitions.where('id', '=', query.scheduleId);
+    const owned = await definitions.execute<Pick<DefinitionRow, 'id'>>();
+    if (owned.length === 0) return [];
+    let occurrences = this.database
+      .query()
+      .selectFrom('schedule_occurrences')
+      .selectAll()
+      .where(
+        'scheduleId',
+        'in',
+        owned.map((row) => row.id),
+      );
+    if (query.statuses && query.statuses.length > 0)
+      occurrences = occurrences.where('status', 'in', [...query.statuses]);
+    if (query.from)
+      occurrences = occurrences.where('startedAt', '>=', query.from);
+    if (query.to) occurrences = occurrences.where('startedAt', '<', query.to);
+    const after = query.after;
+    if (after) {
+      const startedAt = new Date(after.startedAt);
+      occurrences = occurrences.where((eb) =>
+        eb.or([
+          eb('startedAt', '<', startedAt),
+          eb.and([eb('startedAt', '=', startedAt), eb('id', '<', after.id)]),
+        ]),
+      );
+    }
+    const rows = await occurrences
+      .orderBy('startedAt', 'desc')
+      .orderBy('id', 'desc')
+      .limit(query.limit)
+      .execute();
+    return rows.map(occurrenceOfRow);
   }
 
   private async upsertDefinition(
@@ -706,6 +800,52 @@ export class ScheduleStore {
       update: { updatedAt: now },
     });
   }
+}
+
+function occurrenceOfRow(row: Row): ScheduleOccurrenceRecord {
+  return {
+    id: String(row.id),
+    scheduleId: String(row.scheduleId),
+    status: row.status as ScheduleOccurrenceStatus,
+    ...(typeof row.reason === 'string' ? { reason: row.reason } : {}),
+    executionCount: Number(row.executionCount),
+    startedAt: dateValue(row.startedAt as Date | string) ?? '',
+    ...(row.scheduledAt
+      ? { scheduledAt: dateValue(row.scheduledAt as Date | string) }
+      : {}),
+    ...(row.acceptedAt
+      ? { acceptedAt: dateValue(row.acceptedAt as Date | string) }
+      : {}),
+    ...(row.finishedAt
+      ? { finishedAt: dateValue(row.finishedAt as Date | string) }
+      : {}),
+    ...(row.targetReceipt
+      ? {
+          targetReceipt: jsonObject(
+            row.targetReceipt as string | Record<string, unknown>,
+          ),
+        }
+      : {}),
+    ...(row.resultSummary
+      ? {
+          resultSummary: jsonObject(
+            row.resultSummary as string | Record<string, unknown>,
+          ),
+        }
+      : {}),
+    target: {
+      type: String(row.targetType),
+      ...(typeof row.targetReferenceType === 'string' &&
+      typeof row.targetReferenceId === 'string'
+        ? {
+            reference: {
+              type: row.targetReferenceType,
+              id: row.targetReferenceId,
+            },
+          }
+        : {}),
+    },
+  };
 }
 
 export function scheduleId(appName: string, key: string): string {

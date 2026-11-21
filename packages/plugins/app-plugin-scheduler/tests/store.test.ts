@@ -444,6 +444,108 @@ describe('ScheduleStore', () => {
     expect((await other.list())[0]?.completedCount).toBe(1);
   });
 
+  it('lists the window, the limit and the outcome of the latest firing', async () => {
+    await start(store, [
+      entry(
+        baseDefinition({
+          schedule: {
+            cron: '0 0 * * *',
+            timezone: 'UTC',
+            from: new Date('2026-03-01T00:00:00.000Z'),
+            to: new Date('2026-04-01T00:00:00.000Z'),
+            limit: 10,
+          },
+        }),
+      ),
+    ]);
+    expect((await store.list())[0]).not.toHaveProperty('lastRun');
+    await insertOccurrences(DAILY, ['failed']);
+    await database
+      .query()
+      .updateTable('schedule_definitions')
+      .set({ lastOccurrenceId: `${DAILY}-occurrence-0` })
+      .where('id', '=', DAILY)
+      .execute();
+    expect((await store.list())[0]).toMatchObject({
+      sourceType: 'code',
+      from: '2026-03-01T00:00:00.000Z',
+      to: '2026-04-01T00:00:00.000Z',
+      limit: 10,
+      lastRun: { status: 'failed' },
+    });
+  });
+
+  it('pages the history of every Schedule by keyset, filtered, without repeating or skipping a row', async () => {
+    await start(store, [
+      entry(baseDefinition()),
+      entry(baseDefinition({ key: 'weekly', title: 'Weekly' })),
+    ]);
+    const other = createStore(database, executor, 'other').store;
+    await other.reconcile([entry(baseDefinition())]);
+    const WEEKLY = scheduleId('main', 'weekly');
+    // Two occurrences share each start time, so the id breaks every tie.
+    const instants = [0, 0, 1, 1, 2, 2, 3, 3].map(
+      (hour) => new Date(Date.UTC(2026, 2, 7, hour)),
+    );
+    await insertOccurrences(
+      DAILY,
+      ['succeeded', 'failed', 'skipped', 'failed'],
+      instants.slice(0, 4),
+    );
+    await insertOccurrences(
+      WEEKLY,
+      ['timed_out', 'succeeded', 'failed', 'waiting'],
+      instants.slice(4),
+    );
+    await insertOccurrences(scheduleId('other', 'daily'), ['failed']);
+
+    async function all(
+      query: Omit<Parameters<ScheduleStore['listAllOccurrences']>[0], 'limit'>,
+    ): Promise<string[]> {
+      const ids: string[] = [];
+      let after: { startedAt: string; id: string } | undefined;
+      for (;;) {
+        const page = await store.listAllOccurrences({
+          ...query,
+          ...(after ? { after } : {}),
+          limit: 3,
+        });
+        ids.push(...page.map(({ id }) => id));
+        const last = page.at(-1);
+        if (page.length < 3 || !last) return ids;
+        after = { startedAt: last.startedAt, id: last.id };
+      }
+    }
+
+    const everything = await all({});
+    expect(everything).toHaveLength(8);
+    expect(new Set(everything).size).toBe(8);
+    expect(everything.slice(0, 2)).toEqual([
+      `${WEEKLY}-occurrence-3`,
+      `${WEEKLY}-occurrence-2`,
+    ]);
+    await expect(all({ statuses: ['failed', 'timed_out'] })).resolves.toEqual([
+      `${WEEKLY}-occurrence-2`,
+      `${WEEKLY}-occurrence-0`,
+      `${DAILY}-occurrence-3`,
+      `${DAILY}-occurrence-1`,
+    ]);
+    await expect(
+      all({ scheduleId: DAILY, statuses: ['failed'] }),
+    ).resolves.toEqual([`${DAILY}-occurrence-3`, `${DAILY}-occurrence-1`]);
+    await expect(
+      all({
+        from: new Date(Date.UTC(2026, 2, 7, 1)),
+        to: new Date(Date.UTC(2026, 2, 7, 2)),
+      }),
+    ).resolves.toEqual([`${DAILY}-occurrence-3`, `${DAILY}-occurrence-2`]);
+    await expect(
+      all({ scheduleId: scheduleId('other', 'daily') }),
+    ).resolves.toEqual([]);
+    const [first] = await store.listAllOccurrences({ limit: 1 });
+    expect(JSON.stringify(first)).not.toContain('reportKey');
+  });
+
   it('records a retryable synchronization failure', async () => {
     const failing = createStore(database, {
       ...executor,
@@ -509,8 +611,10 @@ describe('ScheduleStore', () => {
   async function insertOccurrences(
     schedule: string,
     statuses: readonly string[],
+    startedAt: readonly Date[] = [],
   ): Promise<void> {
     for (const [index, status] of statuses.entries()) {
+      const started = startedAt[index] ?? new Date('2026-03-08T00:00:00.000Z');
       // Through the Repository so the instants are encoded the way each dialect stores them.
       await testDatabase.connection
         .repository('scheduleOccurrences')
@@ -522,8 +626,8 @@ describe('ScheduleStore', () => {
             status,
             targetType: 'report',
             executionCount: 1,
-            startedAt: new Date('2026-03-08T00:00:00.000Z'),
-            lastStartedAt: new Date('2026-03-08T00:00:00.000Z'),
+            startedAt: started,
+            lastStartedAt: started,
             createdAt: new Date('2026-03-08T00:00:00.000Z'),
             updatedAt: new Date('2026-03-08T00:00:00.000Z'),
           },

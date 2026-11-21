@@ -17,20 +17,27 @@ import {
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import { createMiddleware } from 'hono/factory';
 
+import {
+  SCHEDULER_SETTINGS_ID,
+  type SchedulerAction,
+} from '../authorization.js';
 import { schedulerServiceToken } from '../services/scheduler.js';
 import { ScheduleNotFoundError } from '../store.js';
 import {
+  encodeHistoryPageToken,
   encodeOccurrencePageToken,
+  HistoryListQuery,
+  HistoryPageMeta,
   OccurrenceListQuery,
+  ScheduleDetailSchema,
   ScheduleListQuery,
   ScheduleOccurrenceSchema,
   SchedulePageMeta,
   ScheduleParams,
   ScheduleSchema,
 } from './schemas.js';
-
-export const SCHEDULER_ACCESS_RESOURCE: string = 'scheduler.schedules';
 
 /** The URL namespace of this plugin, and the `domain` of every error it reports. */
 export const SCHEDULER_ERROR_DOMAIN: string = 'scheduler';
@@ -40,8 +47,40 @@ const scheduleNotFoundResponse = apiErrorResponse(
   404,
   'No Schedule with this id exists in the application (`SCHEDULE_NOT_FOUND`).',
 );
-const accessDescription =
-  'Requires the `page:scheduler.schedules/access` grant; without it every route answers 403 `SCHEDULE_ACCESS_REQUIRED` before any Schedule is looked up.';
+const readDescription =
+  'Requires `read` on the `scheduler.schedules` settings item; without it the route answers 403 `SCHEDULE_ACCESS_REQUIRED` before any Schedule is looked up.';
+const manageDescription =
+  'Requires `manage` on the `scheduler.schedules` settings item; without it the route answers 403 `SCHEDULE_MANAGE_REQUIRED` before any Schedule is looked up.';
+
+const deniedReasons: Readonly<Record<SchedulerAction, string>> = {
+  read: 'SCHEDULE_ACCESS_REQUIRED',
+  manage: 'SCHEDULE_MANAGE_REQUIRED',
+};
+
+/**
+ * Checks one action of the `scheduler.schedules` settings item. It runs before validation and before any Schedule is
+ * looked up, so a caller without it cannot probe which ids exist. `read` and `manage` are separate grants: neither
+ * implies the other.
+ */
+function requireSettings(action: SchedulerAction) {
+  return createMiddleware<AuthorizationEnv>(async (context, next) => {
+    const allowed = await context.get('authz').can({
+      resource: { type: 'settings', id: SCHEDULER_SETTINGS_ID },
+      action,
+    });
+    if (!allowed)
+      throw new ApiError({
+        status: 'PERMISSION_DENIED',
+        reason: deniedReasons[action],
+        domain: SCHEDULER_ERROR_DOMAIN,
+        message:
+          action === 'read'
+            ? 'Schedule access is required.'
+            : 'Permission to manage Schedules is required.',
+      });
+    await next();
+  });
+}
 
 function scheduleNotFound(scheduleId: string): ApiError {
   return new ApiError({
@@ -73,29 +112,59 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
 
     schedules.use('*', authentication.required(), authorization.middleware());
-    // Permission is checked before any schedule is looked up, so a caller without access cannot probe which ids exist.
-    schedules.use('*', async (context, next) => {
-      const allowed = await context.get('authz').can({
-        resource: { type: 'page', id: SCHEDULER_ACCESS_RESOURCE },
-        action: 'access',
-      });
-      if (!allowed)
-        throw new ApiError({
-          status: 'PERMISSION_DENIED',
-          reason: 'SCHEDULE_ACCESS_REQUIRED',
-          domain: SCHEDULER_ERROR_DOMAIN,
-          message: 'Schedule access is required.',
-        });
-      await next();
-    });
+    const read = requireSettings('read');
+    const manage = requireSettings('manage');
 
     schedules.get(
+      '/occurrences',
+      read,
+      describeRoute({
+        tags,
+        summary: 'List the occurrences of every Schedule',
+        operationId: 'schedulerListAllOccurrences',
+        description: `The firings of every Schedule of the application, including those removed from code, newest first by start time. Filters by \`scheduleId\`, \`status\` and a \`from\`/\`to\` range; pages by \`pageToken\`: pass \`meta.nextPageToken\` back unchanged, with the same filters; it is absent on the last page. A firing recorded while paging never repeats or hides a row. ${readDescription}`,
+        responses: {
+          200: listResponse(ScheduleOccurrenceSchema, HistoryPageMeta),
+          ...apiErrorResponses,
+        },
+      }),
+      apiValidator('query', HistoryListQuery),
+      async (context) => {
+        const { scheduleId, status, from, to, pageSize, pageToken } =
+          context.req.valid('query');
+        // One row past the page tells whether another page follows without counting the whole history.
+        const rows = await scheduler.listAllOccurrences({
+          ...(scheduleId ? { scheduleId } : {}),
+          ...(status ? { statuses: status } : {}),
+          ...(from ? { from: new Date(from) } : {}),
+          ...(to ? { to: new Date(to) } : {}),
+          ...(pageToken ? { after: pageToken } : {}),
+          limit: pageSize + 1,
+        });
+        const page = rows.slice(0, pageSize);
+        const last = page.at(-1);
+        return context.json({
+          data: page,
+          meta:
+            rows.length > pageSize && last
+              ? {
+                  nextPageToken: encodeHistoryPageToken(
+                    last.startedAt,
+                    last.id,
+                  ),
+                }
+              : {},
+        });
+      },
+    );
+    schedules.get(
       '/schedules',
+      read,
       describeRoute({
         tags,
         summary: 'List Schedules',
         operationId: 'schedulerListSchedules',
-        description: `Pages by \`page\` and \`pageSize\`, ordered by title. ${accessDescription}`,
+        description: `Pages by \`page\` and \`pageSize\`, ordered by title. \`meta.jobs\` describes the jobs configuration the Schedules run on, without credentials, and the Schedules removed from code that still await \`scheduler sync --finalize\`. ${readDescription}`,
         responses: {
           200: listResponse(ScheduleSchema, SchedulePageMeta),
           ...apiErrorResponses,
@@ -106,21 +175,35 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const { page, pageSize } = context.req.valid('query');
         const items = await scheduler.list();
         const start = (page - 1) * pageSize;
+        const jobs = scheduler.jobs();
         return context.json({
           data: items.slice(start, start + pageSize),
-          meta: { page, pageSize, total: items.length },
+          meta: {
+            page,
+            pageSize,
+            total: items.length,
+            ...(jobs
+              ? {
+                  jobs: {
+                    ...jobs,
+                    removedFromCode: scheduler.removedFromCode(items),
+                  },
+                }
+              : {}),
+          },
         });
       },
     );
     schedules.get(
       '/schedules/:scheduleId',
+      read,
       describeRoute({
         tags,
         summary: 'Get a Schedule',
         operationId: 'schedulerGetSchedule',
-        description: accessDescription,
+        description: `The Schedule with its next firings in \`upcomingRuns\`. ${readDescription}`,
         responses: {
-          200: dataResponse(ScheduleSchema),
+          200: dataResponse(ScheduleDetailSchema),
           ...apiErrorResponses,
           404: scheduleNotFoundResponse,
         },
@@ -128,18 +211,19 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       scheduleParams,
       async (context) => {
         const { scheduleId } = context.req.valid('param');
-        const item = await scheduler.get(scheduleId);
+        const item = await scheduler.detail(scheduleId);
         if (!item) throw scheduleNotFound(scheduleId);
         return context.json({ data: item });
       },
     );
     schedules.get(
       '/schedules/:scheduleId/occurrences',
+      read,
       describeRoute({
         tags,
         summary: 'List the occurrences of a Schedule',
         operationId: 'schedulerListOccurrences',
-        description: `The firings of a Schedule, newest first. Pages by \`pageToken\`: pass \`meta.nextPageToken\` back unchanged; it is absent on the last page. ${accessDescription}`,
+        description: `The firings of a Schedule, newest first. Pages by \`pageToken\`: pass \`meta.nextPageToken\` back unchanged; it is absent on the last page. ${readDescription}`,
         responses: {
           200: listResponse(ScheduleOccurrenceSchema),
           ...apiErrorResponses,
@@ -169,11 +253,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     schedules.post(
       '/schedules/:scheduleId/enable',
+      manage,
       describeRoute({
         tags,
         summary: 'Enable a Schedule',
         operationId: 'schedulerEnableSchedule',
-        description: `Switches the Schedule on and plans its next firing when its lifecycle is active. ${accessDescription}`,
+        description: `Switches the Schedule on and plans its next firing when its lifecycle is active. ${manageDescription}`,
         responses: {
           200: dataResponse(ScheduleSchema, 'The Schedule after the change.'),
           ...apiErrorResponses,
@@ -190,11 +275,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     schedules.post(
       '/schedules/:scheduleId/disable',
+      manage,
       describeRoute({
         tags,
         summary: 'Disable a Schedule',
         operationId: 'schedulerDisableSchedule',
-        description: `Switches the Schedule off and removes its planned firing; the definition stays. ${accessDescription}`,
+        description: `Switches the Schedule off and removes its planned firing; the definition stays. ${manageDescription}`,
         responses: {
           200: dataResponse(ScheduleSchema, 'The Schedule after the change.'),
           ...apiErrorResponses,
