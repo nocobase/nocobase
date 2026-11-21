@@ -14,12 +14,10 @@ export const DiskParams: z.ZodObject<{ disk: z.ZodString }> = z.object({
     .meta({ description: 'The disk name, a key of `drive.disks`.' }),
 });
 
-const source = z
-  .enum(['code', 'config', 'default'])
-  .meta({
-    description:
-      "Where the current value comes from: the application's code (`code`), its configuration files or environment (`config`), or Drive's own default (`default`).",
-  });
+const source = z.enum(['code', 'config', 'default']).meta({
+  description:
+    "Where the current value comes from: the application's code (`code`), its configuration files or environment (`config`), or Drive's own default (`default`).",
+});
 
 const text = z.union([
   z.string(),

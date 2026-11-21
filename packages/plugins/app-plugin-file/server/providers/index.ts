@@ -21,7 +21,6 @@ export class FileRepositoryServiceProvider extends ServiceProvider<AppPluginAppl
   }
 }
 const serviceProviders: readonly (
-  | typeof FileRepositoryServiceProvider
-  | typeof FileStorageAuthorizationProvider
+  typeof FileRepositoryServiceProvider | typeof FileStorageAuthorizationProvider
 )[] = [FileRepositoryServiceProvider, FileStorageAuthorizationProvider];
 export default serviceProviders;

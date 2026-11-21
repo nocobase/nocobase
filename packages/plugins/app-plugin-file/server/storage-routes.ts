@@ -171,7 +171,7 @@ export const storageRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Check a disk',
         operationId: 'fileCheckDisk',
-        description: `Writes a temporary file under the disk's \`.nocobase-check/\` directory, reads it back and compares it, asks for its URL, and deletes it, reporting each step. No other file is touched, and only this application instance is checked. A disk whose configuration is incomplete is not contacted: its first step fails with \`CONFIG_INCOMPLETE\`. A failure names a fixed reason and the error's own name, never its message. ${accessDescription} The check also requires the \`settings:file-storage/check\` grant, else 403 \`FILE_STORAGE_CHECK_REQUIRED\`.`,
+        description: `Writes a temporary file under the disk's \`nocobase-check/\` directory, reads it back and compares it, asks for its URL, and deletes it, reporting each step. No other file is touched, and only this application instance is checked. A disk whose configuration is incomplete is not contacted: its first step fails with \`CONFIG_INCOMPLETE\`. A failure names a fixed reason and the error's own name, never its message. ${accessDescription} The check also requires the \`settings:file-storage/check\` grant, else 403 \`FILE_STORAGE_CHECK_REQUIRED\`.`,
         responses: {
           200: dataResponse(CheckResultSchema, 'The steps of the check.'),
           ...apiErrorResponses,

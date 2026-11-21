@@ -101,8 +101,8 @@ export interface DescribeDisksInput {
 
 const DEFAULT_MAX_FILE_SIZE_MB = 20;
 
-/** The directory the check writes in, on every disk. */
-export const CHECK_DIRECTORY = '.nocobase-check';
+/** The directory the check writes in, on every disk. Drive strips a leading dot from keys, so it cannot be hidden. */
+export const CHECK_DIRECTORY = 'nocobase-check';
 const CHECK_CONTENT = 'nocobase-ok\n';
 
 export function describeDisks(input: DescribeDisksInput): DiskDescription[] {
@@ -121,9 +121,13 @@ function describeDisk(
   const sourceOf = (...keys: string[]): SettingSource => {
     if (!input.layers) return 'config';
     const paths = keys.map((key) => ['drive', 'disks', name, key]);
-    if (paths.some((item) => valueAt(input.layers!.overrides, item) !== undefined))
+    if (
+      paths.some((item) => valueAt(input.layers!.overrides, item) !== undefined)
+    )
       return 'config';
-    if (paths.some((item) => valueAt(input.layers!.defaults, item) !== undefined))
+    if (
+      paths.some((item) => valueAt(input.layers!.defaults, item) !== undefined)
+    )
       return 'code';
     return 'default';
   };
@@ -156,7 +160,7 @@ function describeDisk(
     };
   }
   const problems: DiskProblem[] = [];
-  let location = emptyLocation;
+  let location: DiskLocation;
   const visibility: DiskVisibility | null =
     definition.visibility === 'public' || definition.visibility === 'private'
       ? definition.visibility
@@ -165,8 +169,14 @@ function describeDisk(
   if (definition.driver === 'fs') {
     const configured = nonEmpty(definition.location);
     if (!configured) problems.push('LOCATION_MISSING');
-    location = { ...emptyLocation, ...relativeLocation(configured, input.rootDir) };
-    urls = visibility === 'public' && nonEmpty(definition.url) ? 'public' : 'application';
+    location = {
+      ...emptyLocation,
+      ...relativeLocation(configured, input.rootDir),
+    };
+    urls =
+      visibility === 'public' && nonEmpty(definition.url)
+        ? 'public'
+        : 'application';
   } else {
     const bucket = nonEmpty(definition.bucket);
     const region = nonEmpty(definition.region);
@@ -178,7 +188,10 @@ function describeDisk(
       if (
         !credentials ||
         (!credentials.provider &&
-          !(nonEmpty(credentials.accessKeyId) && nonEmpty(credentials.accessKeySecret)))
+          !(
+            nonEmpty(credentials.accessKeyId) &&
+            nonEmpty(credentials.accessKeySecret)
+          ))
       )
         problems.push('CREDENTIALS_MISSING');
     }
@@ -195,9 +208,12 @@ function describeDisk(
     problems.push('NOT_LOADED');
   return {
     name,
-    driver: definition.driver === 'fs' || definition.driver === 's3' || definition.driver === 'oss'
-      ? definition.driver
-      : 'custom',
+    driver:
+      definition.driver === 'fs' ||
+      definition.driver === 's3' ||
+      definition.driver === 'oss'
+        ? definition.driver
+        : 'custom',
     location,
     visibility,
     maxFileSizeMb,
@@ -223,7 +239,7 @@ export interface RunCheckInput {
 }
 
 /**
- * Writes a temporary file under `.nocobase-check/`, reads it back and compares it, asks for its URL, and deletes it.
+ * Writes a temporary file under `nocobase-check/`, reads it back and compares it, asks for its URL, and deletes it.
  * Only that file is touched. A disk whose configuration is incomplete is not contacted.
  */
 export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
@@ -245,7 +261,10 @@ export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
       errorName: error === undefined ? null : errorNameOf(error),
     });
     if (error !== undefined)
-      input.log?.(`File storage check of disk "${disk.name}" failed at ${name}.`, error);
+      input.log?.(
+        `File storage check of disk "${disk.name}" failed at ${name}.`,
+        error,
+      );
   };
   const finish = (): CheckResult => ({
     disk: disk.name,
@@ -255,7 +274,8 @@ export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
   });
   if (!disk.complete) {
     step('write', 'failed', disk.problems.join(','), 'CONFIG_INCOMPLETE');
-    for (const name of ['read', 'url', 'delete'] as const) step(name, 'skipped');
+    for (const name of ['read', 'url', 'delete'] as const)
+      step(name, 'skipped');
     return finish();
   }
   const key = `${CHECK_DIRECTORY}/${randomUUID()}.txt`;
@@ -264,7 +284,8 @@ export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
     driver = input.drive.use(disk.name);
   } catch (error) {
     step('write', 'failed', null, 'DISK_UNAVAILABLE', error);
-    for (const name of ['read', 'url', 'delete'] as const) step(name, 'skipped');
+    for (const name of ['read', 'url', 'delete'] as const)
+      step(name, 'skipped');
     return finish();
   }
   let written = false;
@@ -312,12 +333,19 @@ export async function runCheck(input: RunCheckInput): Promise<CheckResult> {
 }
 
 /** A storage SDK's error class or code, such as `AccessDenied` or `ENOENT`, never its message. */
-function errorNameOf(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null;
+function errorNameOf(error: unknown, depth = 0): string | null {
+  if (!error || typeof error !== 'object' || depth > 3) return null;
+  // Drive wraps a driver's error (`E_CANNOT_WRITE_FILE`); the storage's own reason, such as `AccessDenied`, is its cause.
+  const cause = errorNameOf((error as { cause?: unknown }).cause, depth + 1);
+  if (cause) return cause;
   const identifier = /^[A-Za-z][A-Za-z0-9_.]{0,63}$/;
   for (const key of ['code', 'Code', 'name'] as const) {
     const value = (error as Record<string, unknown>)[key];
-    if (typeof value === 'string' && identifier.test(value) && value !== 'Error')
+    if (
+      typeof value === 'string' &&
+      identifier.test(value) &&
+      value !== 'Error'
+    )
       return value;
   }
   return null;
