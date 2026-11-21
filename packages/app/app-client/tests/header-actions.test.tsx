@@ -145,10 +145,16 @@ describe('header actions', () => {
     ).toThrow('Header action "inbox" badge must be a hook function.');
   });
 
-  it('gives a layout the runtime actions, only optional ones to a signed-out visitor, and none outside an application', async () => {
+  it('gives a layout the runtime actions, only optional ones without badges to a signed-out visitor, and none outside an application', async () => {
     const runtime = await runtimeWith({
       headerActions: [
-        { name: 'help', order: 5, component: Assistant, auth: 'optional' },
+        {
+          name: 'help',
+          order: 5,
+          component: Assistant,
+          auth: 'optional',
+          badge: useUnread,
+        },
       ],
     });
     const Names = ({ signedIn }: { signedIn: boolean }): ReactElement =>
@@ -156,7 +162,8 @@ describe('header actions', () => {
         'output',
         null,
         useHeaderActions({ signedIn })
-          .map((action) => action.name)
+          // `*` marks an action that keeps its badge.
+          .map((action) => `${action.name}${action.badge ? '*' : ''}`)
           .join(',') || 'none',
       );
     const { unmount } = render(createElement(Names, { signedIn: true }));
@@ -169,7 +176,7 @@ describe('header actions', () => {
         createElement(Names, { signedIn }),
       );
     const { rerender } = render(inApplication(true));
-    expect(screen.getByRole('status').textContent).toBe('help,inbox');
+    expect(screen.getByRole('status').textContent).toBe('help*,inbox*');
     rerender(inApplication(false));
     expect(screen.getByRole('status').textContent).toBe('help');
   });

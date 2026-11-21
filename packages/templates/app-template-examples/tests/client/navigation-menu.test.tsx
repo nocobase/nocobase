@@ -374,6 +374,76 @@ describe('entry counts', () => {
       expect(subBadgeOf('flagged · 2')).toHaveTextContent('2');
     });
 
+    // A page that also has a sub-menu: Inbox at the top level, holding Threads, itself a page with its own entries.
+    const parentPages: RouteNavigationItem = {
+      route: {
+        ...page('Inbox'),
+        navigation: { title: 'Inbox', badge: () => ({ count: 5 }) },
+      },
+      children: [
+        {
+          route: {
+            ...page('Threads'),
+            navigation: {
+              title: 'Threads',
+              badge: () => ({ count: 3, tone: 'attention' }),
+            },
+          },
+          children: [counted('mentions', 1)],
+        },
+      ],
+    };
+
+    it('shows the count of a page that has a sub-menu, at the top level and nested', async () => {
+      const user = userEvent.setup();
+      render(shell([parentPages], undefined, false), { wrapper: I18n });
+      const inbox = screen.getByRole('link', { name: 'Inbox · 5' });
+      expect(inbox).toHaveAttribute('href', '/Inbox');
+      expect(
+        inbox.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('5');
+      await user.click(screen.getByRole('button', { name: 'Inbox' }));
+      const threads = screen.getByRole('link', { name: 'Threads · 3' });
+      expect(threads).toHaveAttribute('href', '/Threads');
+      expect(subBadgeOf('Threads · 3')).toHaveTextContent('3');
+      await user.click(screen.getByRole('button', { name: 'Threads' }));
+      expect(subBadgeOf('mentions · 1')).toHaveTextContent('1');
+    });
+
+    it('lets the layout hide a parent page count with 0', async () => {
+      const user = userEvent.setup();
+      render(shell([parentPages], undefined, false, { Inbox: 0, Threads: 0 }), {
+        wrapper: I18n,
+      });
+      const inbox = screen.getByRole('link', { name: 'Inbox' });
+      expect(
+        inbox.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Inbox' }));
+      expect(subBadgeOf('Threads')).toBeNull();
+    });
+
+    it('marks a parent page with a dot and names it with its count in the collapsed sidebar', async () => {
+      setCollapsed(true);
+      const user = userEvent.setup();
+      render(shell([parentPages], undefined, false), { wrapper: I18n });
+      const inbox = screen.getByRole('link', { name: 'Inbox · 5' });
+      expect(
+        inbox.parentElement?.querySelector(
+          '[data-slot="navigation-badge-dot"]',
+        ),
+      ).not.toBeNull();
+      fireEvent.mouseEnter(inbox);
+      const popup = screen.getByRole('dialog', { name: 'Inbox' });
+      fireEvent.mouseLeave(inbox, { relatedTarget: popup });
+      await user.hover(popup);
+      expect(
+        within(popup)
+          .getByRole('link', { name: 'Threads · 3' })
+          .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+      ).toHaveTextContent('3');
+    });
+
     it('shows the counts in the collapsed sidebar popup, nested ones included', async () => {
       setCollapsed(true);
       const user = userEvent.setup();

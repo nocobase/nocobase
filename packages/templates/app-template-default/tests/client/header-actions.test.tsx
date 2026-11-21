@@ -255,6 +255,60 @@ describe('header actions', () => {
     expect(mounts).toBe(1);
   });
 
+  it('hands focus to More when the focused action moves into it', async () => {
+    setWidth(390);
+    let reveal = () => {};
+    function Later() {
+      const [ready, setReady] = useState(false);
+      useEffect(() => {
+        reveal = () => setReady(true);
+      }, []);
+      return ready ? <button type='button'>later</button> : null;
+    }
+    render(
+      <HeaderActionBar
+        actions={[
+          action('assistant'),
+          action('inbox'),
+          action('later', undefined, Later),
+        ]}
+      />,
+      { wrapper: I18n },
+    );
+    screen.getByRole('button', { name: 'inbox' }).focus();
+    expect(screen.getByRole('button', { name: 'inbox' })).toHaveFocus();
+    act(() => reveal());
+    // The bar learns that the action renders from a mutation observer, so the move lands after the reveal.
+    const more = await screen.findByRole('button', { name: 'More actions' });
+    expect(more).toHaveFocus();
+  });
+
+  it('leaves focus alone when an action that does not hold it moves into More', async () => {
+    setWidth(390);
+    let reveal = () => {};
+    function Later() {
+      const [ready, setReady] = useState(false);
+      useEffect(() => {
+        reveal = () => setReady(true);
+      }, []);
+      return ready ? <button type='button'>later</button> : null;
+    }
+    render(
+      <HeaderActionBar
+        actions={[
+          action('assistant'),
+          action('inbox'),
+          action('later', undefined, Later),
+        ]}
+      />,
+      { wrapper: I18n },
+    );
+    screen.getByRole('button', { name: 'assistant' }).focus();
+    act(() => reveal());
+    await screen.findByRole('button', { name: 'More actions' });
+    expect(screen.getByRole('button', { name: 'assistant' })).toHaveFocus();
+  });
+
   it('shows two actions on a phone without a More button', () => {
     setWidth(390);
     render(
@@ -293,26 +347,32 @@ describe('signed-in state', () => {
     return { requiredBadge, optionalBadge };
   }
 
-  it('shows a signed-out visitor only the optional actions, never calling a required badge hook', () => {
+  it('shows a signed-out visitor only the optional actions, calling no badge hook', () => {
     setWidth(1440);
     const { requiredBadge, optionalBadge } = renderHeader();
     expect(screen.getByRole('button', { name: 'help' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'inbox' })).toBeNull();
     expect(requiredBadge).not.toHaveBeenCalled();
-    expect(optionalBadge).toHaveBeenCalled();
+    expect(optionalBadge).not.toHaveBeenCalled();
+    expect(
+      screen
+        .getByTestId('header-actions')
+        .querySelector('[data-slot="header-action-badge"]'),
+    ).toBeNull();
     expect(screen.getByRole('button', { name: 'Account' })).toBeVisible();
   });
 
   it('shows a signed-in person every action with its badge', () => {
     setWidth(1440);
     authentication.session = { user: { id: '1' } };
-    const { requiredBadge } = renderHeader();
+    const { requiredBadge, optionalBadge } = renderHeader();
     expect(
       within(screen.getByTestId('header-actions'))
         .getAllByRole('button')
         .map((button) => button.textContent),
     ).toEqual(['inbox', 'help', 'Account']);
     expect(requiredBadge).toHaveBeenCalled();
+    expect(optionalBadge).toHaveBeenCalled();
     expect(
       slotOf('inbox').querySelector('[data-slot="header-action-badge"]'),
     ).toHaveTextContent('4');

@@ -17,6 +17,7 @@ import {
   type ReactElement,
   type ReactNode,
   type ReactPortal,
+  type RefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from 'cn';
@@ -99,6 +100,18 @@ export function HeaderActionBar({
       ),
     [],
   );
+  // An action that held focus when it moved into the closed More popover hands focus to More, so keyboard focus is not
+  // dropped on the page.
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const focusLostRef = useRef(false);
+  const onFocusedDetach = useCallback(() => {
+    focusLostRef.current = true;
+  }, []);
+  useLayoutEffect(() => {
+    if (!focusLostRef.current) return;
+    focusLostRef.current = false;
+    moreRef.current?.focus();
+  });
   const shown = actions.filter((action) => rendered[action.name]);
   const inlineCount =
     isMobile && shown.length > PHONE_INLINE_ACTIONS
@@ -136,10 +149,16 @@ export function HeaderActionBar({
             name={action.name}
             host={hostOf(action.name)}
             badge={badges[action.name]}
+            onFocusedDetach={onFocusedDetach}
           />
         ))}
         {overflow.length ? (
-          <MoreActions actions={overflow} hostOf={hostOf} badges={badges} />
+          <MoreActions
+            actions={overflow}
+            hostOf={hostOf}
+            badges={badges}
+            triggerRef={moreRef}
+          />
         ) : null}
         {children}
       </div>
@@ -154,10 +173,12 @@ function MoreActions({
   actions,
   hostOf,
   badges,
+  triggerRef,
 }: {
   readonly actions: readonly AppClientRegisteredHeaderAction[];
   readonly hostOf: (name: string) => HTMLElement;
   readonly badges: Badges;
+  readonly triggerRef: RefObject<HTMLButtonElement | null>;
 }): ReactElement {
   const { t } = useTranslation();
   const count = actions.reduce(
@@ -174,6 +195,7 @@ function MoreActions({
       <PopoverTrigger
         render={
           <Button
+            ref={triggerRef}
             variant='outline'
             size='icon'
             className='relative size-10 rounded-xl border-border bg-background/60 text-foreground dark:border-border'
@@ -252,10 +274,13 @@ function HeaderActionSlot({
   name,
   host,
   badge,
+  onFocusedDetach,
 }: {
   readonly name: string;
   readonly host: HTMLElement;
   readonly badge: AppClientBadge | undefined;
+  /** Called when the slot goes away while its action holds focus. */
+  readonly onFocusedDetach?: () => void;
 }): ReactElement {
   const anchorRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -263,9 +288,11 @@ function HeaderActionSlot({
     if (!target) return;
     target.append(host);
     return () => {
-      if (host.parentNode === target) target.removeChild(host);
+      if (host.parentNode !== target) return;
+      if (host.contains(document.activeElement)) onFocusedDetach?.();
+      target.removeChild(host);
     };
-  }, [host]);
+  }, [host, onFocusedDetach]);
   const count = badgeCount(badge);
   return (
     <div className='relative flex shrink-0' data-header-action={name}>

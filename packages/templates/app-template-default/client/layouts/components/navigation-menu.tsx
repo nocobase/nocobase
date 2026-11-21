@@ -286,8 +286,10 @@ function NavigationItem({
         <NavigationPopover
           item={item}
           label={label}
+          name={counted ?? label}
           selectedKey={selectedKey}
         />
+        {badge.count > 0 && <EntryBadge {...badge} dot />}
       </SidebarMenuItem>
     );
 
@@ -337,12 +339,21 @@ function NavigationItem({
           <SidebarMenuButton
             render={link}
             isActive={isSelected}
-            tooltip={tooltip}
-            className={SELECTED}
+            aria-label={counted ?? undefined}
+            tooltip={
+              tooltip && counted ? { ...tooltip, children: counted } : tooltip
+            }
+            // Room for the count left of the disclosure arrow.
+            className={
+              counted
+                ? `${SELECTED} group-has-data-[sidebar=menu-action]/menu-item:pr-16`
+                : SELECTED
+            }
           >
             {Icon ? <Icon /> : null}
             <span>{label}</span>
           </SidebarMenuButton>
+          {counted ? <EntryBadge {...badge} dot={false} beside /> : null}
           <SidebarMenuAction
             render={<CollapsibleTrigger />}
             aria-label={label}
@@ -385,6 +396,7 @@ function EntryBadge({
   attention,
   text,
   dot,
+  beside = false,
 }: {
   readonly count: number;
   readonly live: boolean;
@@ -392,13 +404,15 @@ function EntryBadge({
   readonly attention: boolean;
   readonly text: string;
   readonly dot: boolean;
+  /** The row also has a disclosure arrow at its end, so the count sits left of it. */
+  readonly beside?: boolean;
 }): ReactElement {
   return (
     <>
       <SidebarMenuBadge
         aria-hidden
         title={live ? text : undefined}
-        className={badgeTone({ live, attention })}
+        className={`${badgeTone({ live, attention })}${beside ? ' right-8' : ''}`}
       >
         <BadgeCount count={count} live={live} />
       </SidebarMenuBadge>
@@ -501,10 +515,19 @@ function NavigationSubItem({
       aria-current={isSelected ? 'page' : undefined}
     />
   ) : undefined;
+  // A page entry, with or without a sub-menu of its own, carries its count at the end of the link.
+  const counted = link && badge.count > 0 ? `${label} · ${badge.text}` : null;
   const content = (
     <>
       {Icon ? <Icon /> : null}
-      <span>{label}</span>
+      {counted ? (
+        <>
+          <span className='min-w-0 truncate'>{label}</span>
+          <SubEntryBadge {...badge} />
+        </>
+      ) : (
+        <span>{label}</span>
+      )}
     </>
   );
 
@@ -515,18 +538,10 @@ function NavigationSubItem({
           render={link}
           isActive={isSelected}
           // A counted entry is named with its count, as a top-level entry is.
-          aria-label={badge.count > 0 ? `${label} · ${badge.text}` : undefined}
+          aria-label={counted ?? undefined}
           className={SELECTED}
         >
-          {Icon ? <Icon /> : null}
-          {badge.count > 0 ? (
-            <>
-              <span className='min-w-0 truncate'>{label}</span>
-              <SubEntryBadge {...badge} />
-            </>
-          ) : (
-            <span>{label}</span>
-          )}
+          {content}
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
     );
@@ -542,6 +557,7 @@ function NavigationSubItem({
           <SidebarMenuSubButton
             render={link}
             isActive={isSelected}
+            aria-label={counted ?? undefined}
             className={`${SELECTED} pr-8`}
           >
             {content}
@@ -619,10 +635,13 @@ function containsSelection(
 function NavigationPopover({
   item,
   label,
+  name,
   selectedKey,
 }: {
   readonly item: RouteNavigationItem;
   readonly label: string;
+  /** The entry's accessible name: its label, with its count when it has one. */
+  readonly name: string;
   readonly selectedKey: string | undefined;
 }): ReactElement {
   const [open, setOpen] = useState(false);
@@ -671,7 +690,7 @@ function NavigationPopover({
             }
           />
         }
-        aria-label={label}
+        aria-label={name}
       >
         {Icon ? <Icon /> : <span>{label}</span>}
       </SidebarMenuButton>
