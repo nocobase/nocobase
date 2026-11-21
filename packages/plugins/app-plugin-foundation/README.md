@@ -112,7 +112,7 @@ Static module tracing recognizes `useService(apiClientToken)` as well as `useApi
 
 ## Sidebar grouping
 
-Use `foundation({ settingsGroup: true })` in a bare application to wrap the protected page in a localized System settings group. The default template enables this on initial creation. The group disappears when its page is denied; the navigation helper merges it into the application settings group when that group becomes available.
+Use `foundation({ settingsGroup: true })` in a bare application to wrap the protected page in a localized System settings group. Both application templates instead use `foundation({ usagePage: false, manifest })` to omit the usage page and its group while retaining Features and extensions. `routes: false` disables both pages. The group disappears when its page is denied; the navigation helper merges it into the application settings group when that group becomes available.
 
 The host can call `groupFoundationNavigation(items)` from `@nocobase/app-plugin-foundation/client` in its existing `client/lib/navigation-transform.ts` hook, after permission filtering. The helper places an already-visible Foundation entry last in the existing `settings` navigation group, avoiding a separate sidebar group gap. Pass the host’s group name as the second argument when different. It preserves route identity, `/foundation`, authorization and other navigation metadata, never creates a hidden entry and leaves Foundation standalone if no settings group exists. The App needs only the hook call; grouping logic stays in this plugin and does not change Core or the sidebar renderer.
 
