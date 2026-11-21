@@ -176,6 +176,20 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override boot(): Promise<void> {
+    // Listed on the file storage settings page, with the disk its files go to and how many it holds.
+    if (this.app.container.has(serverFileRepositoryManagerToken))
+      this.app.container.resolve(serverFileRepositoryManagerToken).registerUsage({
+        id: 'knowledge.files',
+        title: {
+          key: 'fileUsage',
+          ns: '@nocobase/app-plugin-knowledge',
+          defaultValue: 'Knowledge base files',
+        },
+        plugin: '@nocobase/app-plugin-knowledge',
+        collection: 'kbFiles',
+        disk: { config: 'knowledge.disk' },
+        download: 'authenticated',
+      });
     const { container } = this.app;
     this.startCleanup();
     if (this.release || !container.has(realtimeServiceToken))
