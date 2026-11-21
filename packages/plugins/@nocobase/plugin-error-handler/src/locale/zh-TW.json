@@ -1,6 +1,7 @@
 {
-  "Validation error": "{{field}} validation error",
-  "notNull Violation": "{{field}} cannot be null",
-  "notNull violation": "{{field}} cannot be null",
-  "unique violation": "{{field}} already exists"
+  "The filter query parameter must be valid JSON.": "filter 查詢參數必須是有效的 JSON。",
+  "Validation error": "{{field}} 欄位規則驗證失敗",
+  "notNull Violation": "{{field}} 不能為空值",
+  "notNull violation": "{{field}} 欄位不能為空",
+  "unique violation": "{{field}} 欄位值已存在"
 }
