@@ -59,6 +59,8 @@ export interface PermissionWorkspace {
   readonly bindings: ReadonlyMap<string, PermissionBinding>;
   /** The pages each menu's checkbox opens: stored as page access, independently of every object's actions. */
   readonly menuPages: ReadonlyMap<string, readonly string[]>;
+  /** The operations each menu turns on when it is checked, from the actions' `defaultFor`, by menu id. */
+  readonly menuDefaults: Readonly<Record<string, readonly string[]>>;
 }
 
 /** Custom filters by `filterKey(action, scope)`, the part of a scope value a select cannot carry. */

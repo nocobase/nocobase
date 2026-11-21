@@ -13,7 +13,19 @@ import {
   type LocalizedText,
   type PermissionSet,
 } from '../authorization-client.js';
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import {
+  createElement,
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+  type ReactElement,
+} from 'react';
 import {
   Link,
   useLocation,
@@ -25,8 +37,18 @@ import {
 import { CopyIcon } from 'lucide-react';
 import {
   PermissionEditor,
+  type PermissionEditorExtraTab,
   type PermissionValue,
 } from '#components/permission-editor';
+import { permissionChanges } from '#components/permission-editor-model';
+import { Skeleton } from '#components/ui/skeleton';
+import type {
+  AuthorizationContentTab,
+  AuthorizationRoleTabProps,
+} from './extensions.js';
+import { useAuthorizationRevision } from '../use-authorization-revision.js';
+import { RoleMembers, type RoleMemberType } from './role-members.js';
+import { RoleReview } from './role-review.js';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
@@ -206,6 +228,102 @@ function RoleEditor(): ReactElement {
       (!initial?.protection || initial.protection.allow.includes('update'));
   const readOnly = !allowed || busy;
   const originalRevisionRef = useRef<string | undefined>(undefined);
+  const canAssign = useRolePermission('assign');
+  const [reviewing, setReviewing] = useState(false);
+  const [memberCount, setMemberCount] = useState<number>();
+  const changes = useMemo(
+    () =>
+      workspace
+        ? permissionChanges(
+            creating ? EMPTY_VALUE : (loaded?.draft ?? EMPTY_VALUE),
+            value,
+            workspace.menus,
+            workspace.objects,
+            workspace.settings,
+          )
+        : [],
+    [workspace, creating, loaded, value],
+  );
+  const notes = useMemo(() => {
+    const list: string[] = [];
+    if (creating) return list;
+    if (nameDraft !== undefined && name.trim() !== defaultName)
+      list.push(t('settings.review.renamed', { name: name.trim() }));
+    // Record filters are edited inside a scope and are not listed one by one.
+    if (dirty && !changes.length && !list.length)
+      list.push(t('settings.review.other'));
+    return list;
+  }, [creating, nameDraft, name, defaultName, dirty, changes, t]);
+  const tabBadges = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const change of changes)
+      counts[change.tab] = (counts[change.tab] ?? 0) + 1;
+    return counts;
+  }, [changes]);
+  const highRisk = changes.some((change) => change.risk === 'high');
+  const memberTypes = useMemo<readonly RoleMemberType[]>(
+    () =>
+      (options.data?.data.subjectTypes ?? []).map((type) => ({
+        type: type.type,
+        title: type.title,
+        directory: type.selection.type === 'collection',
+      })),
+    [options.data],
+  );
+  const roleTabs = useAllowedRoleTabs();
+  const onMemberCount = useCallback(
+    (count: number) => setMemberCount(count),
+    [],
+  );
+  const extraTabs = useMemo<readonly PermissionEditorExtraTab[]>(() => {
+    if (creating || !key || !initial) return [];
+    return [
+      {
+        value: 'members',
+        label:
+          memberCount === undefined
+            ? t('settings.members.tab')
+            : t('settings.members.tabCount', { count: memberCount }),
+        content: (
+          <RoleMembers
+            permissionSet={key}
+            types={memberTypes}
+            editable={canAssign}
+            onCount={onMemberCount}
+          />
+        ),
+      },
+      ...roleTabs.map((tab) => ({
+        value: `extension:${tab.key}`,
+        label:
+          typeof tab.title === 'string'
+            ? tab.title
+            : t(tab.title.key, {
+                ns: tab.title.ns,
+                defaultValue: tab.title.defaultValue ?? tab.title.key,
+              }),
+        content: (
+          <Suspense fallback={<Skeleton className='h-48 w-full' />}>
+            <RoleTabContent
+              tab={tab}
+              props={{ permissionSet: initial, editable: allowed }}
+            />
+          </Suspense>
+        ),
+      })),
+    ];
+  }, [
+    creating,
+    key,
+    initial,
+    memberCount,
+    memberTypes,
+    canAssign,
+    onMemberCount,
+    roleTabs,
+    allowed,
+    t,
+  ]);
 
   const reset = (): void => {
     setNameDraft(undefined);
@@ -215,6 +333,7 @@ function RoleEditor(): ReactElement {
     setEditingFilter(undefined);
     setSubmitted(false);
     setError(undefined);
+    setReviewing(false);
   };
   if (
     savedFrom !== undefined &&
@@ -241,6 +360,12 @@ function RoleEditor(): ReactElement {
       return;
     }
     setEditingFilter(undefined);
+    // Every save is reviewed first; the review's confirmation saves.
+    setReviewing(true);
+  };
+
+  const persist = async (): Promise<void> => {
+    if (!workspace) return;
     setRequestBusy(true);
     setError(undefined);
     setKeyConflict(false);
@@ -265,6 +390,7 @@ function RoleEditor(): ReactElement {
             : authz.updatePermissionSet(key, input, idempotencyKey),
       );
       if (!saved) return;
+      setReviewing(false);
       parent.reload();
       toaster.show({ type: 'success', title: t('settings.saved', { name }) });
       if (creating) {
@@ -289,9 +415,13 @@ function RoleEditor(): ReactElement {
         'status' in next &&
         next.status === 409
       ) {
+        setReviewing(false);
         setKeyConflict(true);
         document.getElementById('role-key')?.focus();
-      } else setError(next);
+      } else {
+        setReviewing(false);
+        setError(next);
+      }
     } finally {
       setRequestBusy(false);
     }
@@ -417,7 +547,7 @@ function RoleEditor(): ReactElement {
       )}
       {allowed && (
         <Button type='submit' disabled={busy || !dirty}>
-          {t(busy ? 'settings.saving' : 'settings.save')}
+          {t(busy ? 'settings.saving' : 'settings.reviewAndSave')}
         </Button>
       )}
     </>
@@ -461,10 +591,34 @@ function RoleEditor(): ReactElement {
               dirty={dirty}
               header={header}
               footer={footer}
-              labels={labels}
+              labels={
+                dirty
+                  ? {
+                      ...labels,
+                      unsaved: t(
+                        highRisk
+                          ? 'settings.unsavedCountRisky'
+                          : 'settings.unsavedCount',
+                        { count: changes.length + notes.length },
+                      ),
+                    }
+                  : labels
+              }
+              menuDefaults={workspace?.menuDefaults}
+              tabs={extraTabs}
+              tabBadges={tabBadges}
             />
           </FeedbackForm>
         )
+      )}
+      {reviewing && (
+        <RoleReview
+          changes={changes}
+          notes={notes}
+          busy={busy}
+          onCancel={() => setReviewing(false)}
+          onConfirm={() => void persist()}
+        />
       )}
       {leave.dialog}
       <ConfirmAction
@@ -482,6 +636,73 @@ function RoleEditor(): ReactElement {
     </div>
   );
 }
+
+type RoleTab = AuthorizationContentTab<AuthorizationRoleTabProps>;
+
+// One load per registered loader, so switching back to a tab does not load it again.
+const roleTabModules = new WeakMap<
+  RoleTab['component'],
+  Promise<{ readonly default: ComponentType<AuthorizationRoleTabProps> }>
+>();
+
+function RoleTabContent({
+  tab,
+  props,
+}: {
+  readonly tab: RoleTab;
+  readonly props: AuthorizationRoleTabProps;
+}): ReactElement {
+  let module = roleTabModules.get(tab.component);
+  if (!module) {
+    module = tab.component();
+    roleTabModules.set(tab.component, module);
+  }
+  return createElement(use(module).default, props);
+}
+
+/** The registered role tabs the person may open. A tab without `authz` shows wherever the role does. */
+function useAllowedRoleTabs(): readonly RoleTab[] {
+  const settings = useAuthorizationSettings();
+  const client = useAuthorizationClient();
+  const revision = useAuthorizationRevision();
+  const tabs = useSyncExternalStore(
+    settings.roleTabs.subscribe,
+    settings.roleTabs.list,
+  );
+  const [allowed, setAllowed] = useState<{
+    readonly tabs: readonly RoleTab[];
+    readonly revision: number;
+    readonly list: readonly RoleTab[];
+  }>();
+  useEffect(() => {
+    let active = true;
+    void Promise.all(
+      tabs.map((tab) =>
+        tab.authz === undefined
+          ? Promise.resolve(true)
+          : client.can(tab.authz).then(
+              (can) => can,
+              () => false,
+            ),
+      ),
+    ).then((answers) => {
+      if (active)
+        setAllowed({
+          tabs,
+          revision,
+          list: tabs.filter((_, index) => answers[index]),
+        });
+    });
+    return () => {
+      active = false;
+    };
+  }, [client, revision, tabs]);
+  return allowed?.tabs === tabs && allowed.revision === revision
+    ? allowed.list
+    : NO_ROLE_TABS;
+}
+
+const NO_ROLE_TABS: readonly RoleTab[] = [];
 
 export default function RoleForm(): ReactElement {
   const { key } = useParams();

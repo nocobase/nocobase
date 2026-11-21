@@ -79,6 +79,8 @@ interface OptionsActionResponse {
   name: string;
   title: LocalizedText;
   description?: LocalizedText;
+  /** Composites only: page ids whose access the role editor turns this action on with. */
+  defaultFor?: readonly string[];
 }
 
 /** What every `options` route answers. */
@@ -98,6 +100,8 @@ export interface AuthorizationOptionsResponse {
         title: LocalizedText;
         description?: LocalizedText;
         group?: string;
+        /** Composites only: page ids the actions are used on. */
+        usedOn?: readonly string[];
         actions: readonly OptionsActionResponse[];
         dataScopes?: Readonly<
           Record<

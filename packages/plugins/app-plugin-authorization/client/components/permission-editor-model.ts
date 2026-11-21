@@ -58,6 +58,8 @@ export interface PermissionAction {
   readonly risk?: PermissionRisk | undefined;
   /** Managed by the application: shown but not editable. */
   readonly managed?: boolean | undefined;
+  /** A short warning shown while the action is on, such as what a high-risk setting lets a person do. */
+  readonly warning?: string | undefined;
 }
 
 /** A business object, such as Customers: the one place its actions and data scope are set. */
@@ -70,6 +72,8 @@ export interface PermissionObject {
   readonly actions: readonly PermissionAction[];
   /** A notice under the action list, such as a warning about granting access to others. */
   readonly notice?: ReactNode;
+  /** The titles of the pages its actions are used on; an empty list says it is used on none. Absent: not known. */
+  readonly usedOn?: readonly string[] | undefined;
 }
 
 /**
@@ -1029,4 +1033,223 @@ export function settingsCount(
     ).length,
     total: pages.length,
   };
+}
+
+// Pages and the actions used on them
+
+/** The actions of the objects a menu lists, primary ones or else related ones, for its "x / y operations". */
+export function menuActionCount(
+  menu: PermissionMenuNode,
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+):
+  | {
+      readonly enabled: number;
+      readonly total: number;
+      readonly object: PermissionObject;
+    }
+  | undefined {
+  const ids = menu.uses?.primary?.length
+    ? menu.uses.primary
+    : (menu.uses?.related ?? []);
+  const listed = ids.flatMap((id) => {
+    const object = objects.find((item) => item.id === id);
+    return object ? [object] : [];
+  });
+  const first = listed[0];
+  if (!first) return undefined;
+  const actions = listed.flatMap((object) => object.actions);
+  return {
+    enabled: actions.filter((action) => grants[action.id]).length,
+    total: actions.length,
+    object: first,
+  };
+}
+
+/** An object the role may act on although it can open none of the pages that use it. */
+export interface PermissionPageGap {
+  readonly object: PermissionObject;
+  readonly menus: readonly PermissionMenuNode[];
+}
+
+/** Objects with an action on whose every page is closed to the role: advice, as the API still allows the actions. */
+export function pageAccessGaps(
+  nodes: readonly PermissionMenuNode[],
+  objects: readonly PermissionObject[],
+  value: PermissionValue,
+): readonly PermissionPageGap[] {
+  return objects.flatMap((object) => {
+    if (!object.actions.some((action) => value.grants[action.id])) return [];
+    const menus = menusUsing(nodes, object.id).filter((menu) => !menu.public);
+    if (!menus.length || menus.some((menu) => isMenuChecked(menu, value)))
+      return [];
+    return [{ object, menus }];
+  });
+}
+
+/**
+ * Turn on the actions a page opens with by default, with their requirements and default scopes. Actions already on,
+ * risky ones and managed ones stay as they are; `added` lists the ones turned on, requirements included.
+ */
+export function enableDefaults(
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+  ids: readonly string[],
+): PermissionChange & { readonly added: readonly string[] } {
+  let next = grants;
+  const notices: PermissionNotice[] = [];
+  for (const id of ids) {
+    const action = findAction(objects, id)?.action;
+    if (!action || action.risk || action.managed || next[id]) continue;
+    const change = setActionEnabled(objects, next, id, true);
+    next = change.grants;
+    notices.push(
+      ...change.notices.filter((notice) => notice.kind !== 'auto-enabled'),
+    );
+  }
+  const added = Object.keys(next).filter((id) => !grants[id]);
+  return { grants: next, notices, added };
+}
+
+export type PermissionSettingsLevel = 'none' | 'view' | 'manage' | 'partial';
+
+/** None, only what opens the page (View), every action (Manage), or another mix. */
+export function settingsLevel(
+  page: PermissionSettingsPage,
+  grants: PermissionGrants,
+): PermissionSettingsLevel {
+  const actions = page.objects.flatMap((object) => object.actions);
+  const on = actions.filter((action) => grants[action.id]);
+  if (!on.length) return 'none';
+  if (on.length === actions.length)
+    return actions.length > 1 ? 'manage' : 'view';
+  const views = page.objects.flatMap((object) => {
+    const view = viewActionOf(object);
+    return view ? [view] : [];
+  });
+  return on.length === views.length && views.every((view) => grants[view.id])
+    ? 'view'
+    : 'partial';
+}
+
+/** Set a settings page to None, View or Manage; Manage turns on every action the page holds, risky ones included. */
+export function setSettingsLevel(
+  objects: readonly PermissionObject[],
+  grants: PermissionGrants,
+  page: PermissionSettingsPage,
+  level: 'none' | 'view' | 'manage',
+): PermissionChange {
+  const actions = page.objects.flatMap((object) => object.actions);
+  const views = new Set(
+    page.objects.flatMap((object) => {
+      const view = viewActionOf(object) ?? object.actions[0];
+      return view ? [view.id] : [];
+    }),
+  );
+  const wanted = (action: PermissionAction): boolean =>
+    level === 'manage' || (level === 'view' && views.has(action.id));
+  let next = grants;
+  const notices: PermissionNotice[] = [];
+  // Turn off first, so nothing left on still requires what goes; then turn on what the level holds.
+  for (const action of actions)
+    if (!wanted(action) && next[action.id] && !action.managed) {
+      const change = setActionEnabled(objects, next, action.id, false);
+      next = change.grants;
+      notices.push(...change.notices);
+    }
+  for (const action of actions)
+    if (wanted(action) && !next[action.id] && !action.managed) {
+      const change = enableWithRequirements(objects, next, [action.id]);
+      next = change.grants;
+    }
+  return { grants: next, notices };
+}
+
+// Review
+
+export type PermissionChangeTab = 'menus' | 'objects' | 'settings';
+
+/** One difference between two drafts, as the review before saving lists it. */
+export interface PermissionDraftChange {
+  readonly tab: PermissionChangeTab;
+  readonly kind: 'added' | 'removed' | 'scope';
+  /** The page or the action's label. */
+  readonly label: string;
+  /** The object or settings page an action belongs to. */
+  readonly owner?: string | undefined;
+  readonly risk?: PermissionRisk | undefined;
+}
+
+/** Every difference from `before` to `after`: pages opened or closed, actions turned on or off, and scopes changed. */
+export function permissionChanges(
+  before: PermissionValue,
+  after: PermissionValue,
+  menus: readonly PermissionMenuNode[],
+  objects: readonly PermissionObject[],
+  settings: readonly PermissionSettingsPage[],
+): readonly PermissionDraftChange[] {
+  const changes: PermissionDraftChange[] = [];
+  const was = new Set(before.menus);
+  const is = new Set(after.menus);
+  for (const leaf of menuLeaves(menus)) {
+    if (is.has(leaf.id) && !was.has(leaf.id))
+      changes.push({ tab: 'menus', kind: 'added', label: leaf.label });
+    else if (was.has(leaf.id) && !is.has(leaf.id))
+      changes.push({ tab: 'menus', kind: 'removed', label: leaf.label });
+  }
+  const owners: {
+    tab: PermissionChangeTab;
+    owner: string;
+    object: PermissionObject;
+  }[] = [
+    ...objects.map((object) => ({
+      tab: 'objects' as const,
+      owner: object.label,
+      object,
+    })),
+    ...settings.flatMap((page) =>
+      page.objects.map((object) => ({
+        tab: 'settings' as const,
+        owner: page.label,
+        object,
+      })),
+    ),
+  ];
+  for (const { tab, owner, object } of owners)
+    for (const action of object.actions) {
+      const old = before.grants[action.id];
+      const next = after.grants[action.id];
+      const kind = next
+        ? old
+          ? sameScopes(old.scopes, next.scopes)
+            ? undefined
+            : 'scope'
+          : 'added'
+        : old
+          ? 'removed'
+          : undefined;
+      if (kind)
+        changes.push({
+          tab,
+          kind,
+          label: action.label,
+          owner,
+          // Taking a risky action away is never itself a risk.
+          ...(action.risk && kind !== 'removed' ? { risk: action.risk } : {}),
+        });
+    }
+  return changes;
+}
+
+function sameScopes(
+  left: PermissionGrant['scopes'],
+  right: PermissionGrant['scopes'],
+): boolean {
+  const a = left ?? {};
+  const b = right ?? {};
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every((key) => a[key] === b[key])
+  );
 }

@@ -549,6 +549,15 @@ export function permissionWorkspace(
   };
   collectTitles(routes);
 
+  /** Listed objects whose composite declares `usedOn` with this page id. */
+  const usedOnPage = (page: string): string[] =>
+    selection.business.flatMap((entry) => {
+      const key = resourceKey(entry);
+      return objectIds.has(key) && catalog.get(key)?.usedOn?.includes(page)
+        ? [key]
+        : [];
+    });
+
   const businessIds = (ids: readonly string[] | undefined): string[] =>
     (ids ?? []).flatMap((id) => {
       const entry = selection.business.find((item) => item.id === id);
@@ -580,6 +589,8 @@ export function permissionWorkspace(
       businessIds(
         declared ? declared.primary : infer ? [page] : undefined,
       ).forEach((id) => primary.add(id));
+      // Objects the server declares as used on this page, unless the application maps the page itself.
+      if (!declared && infer) usedOnPage(page).forEach((id) => primary.add(id));
       businessIds(declared?.related).forEach((id) => related.add(id));
     }
     for (const id of primary) related.delete(id);
@@ -742,5 +753,51 @@ export function permissionWorkspace(
       label: t('settings.pagesOutsideNavigation'),
       children: outside,
     });
-  return { menus, objects, settings, bindings, menuPages };
+
+  // Where each object is used, by the pages that list it, and which pages turn its actions on.
+  const leaves = (nodes: readonly PermissionMenuNode[]): PermissionMenuNode[] =>
+    nodes.flatMap((node) => (node.children ? leaves(node.children) : [node]));
+  const pageMenus = leaves(menus);
+  const placed = objects.map((object): PermissionObject => {
+    const usedOn = pageMenus
+      .filter(
+        (menu) =>
+          menu.uses?.primary?.includes(object.id) ||
+          menu.uses?.related?.includes(object.id),
+      )
+      .map((menu) => menu.label);
+    return {
+      ...object,
+      usedOn,
+      // An object no page uses serves integrations, automations and scheduled tasks.
+      ...(usedOn.length
+        ? {}
+        : { group: t('settings.permissionEditor.otherOperations') }),
+    };
+  });
+  // Objects used on pages come first, in their groups; the rest are listed last under Other operations.
+  const ordered = [
+    ...placed.filter((object) => object.usedOn?.length),
+    ...placed.filter((object) => !object.usedOn?.length),
+  ];
+  const menuDefaults: Record<string, string[]> = {};
+  for (const [menu, pages] of menuPages)
+    for (const [id, binding] of bindings) {
+      const action = catalog
+        .get(resourceKey(binding.resource))
+        ?.actions.find((item) => item.name === binding.action);
+      if (
+        action?.defaultFor?.some((page) => pages.includes(page)) &&
+        ordered.some((object) => object.actions.some((item) => item.id === id))
+      )
+        (menuDefaults[menu] ??= []).push(id);
+    }
+  return {
+    menus,
+    objects: ordered,
+    settings,
+    bindings,
+    menuPages,
+    menuDefaults,
+  };
 }

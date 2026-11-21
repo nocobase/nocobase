@@ -160,23 +160,95 @@ const settings = {
     users:
       'Assigning roles gives users everything those roles allow, including administrator roles. Grant it only to trusted administrators.',
   },
+  reviewAndSave: 'Review and save',
+  unsavedCount_one: '{{count}} unsaved change',
+  unsavedCount_other: '{{count}} unsaved changes',
+  unsavedCountRisky_one:
+    '{{count}} unsaved change · includes high-risk permissions',
+  unsavedCountRisky_other:
+    '{{count}} unsaved changes · includes high-risk permissions',
+  review: {
+    title: 'Review changes',
+    description_one:
+      'Check this change before saving it. Members are not listed: adding or removing one takes effect at once.',
+    description_other:
+      'Check these {{count}} changes before saving them. Members are not listed: adding or removing one takes effect at once.',
+    highRisk_one:
+      '{{count}} change gives high-risk permissions. Make sure everyone in this role should have it.',
+    highRisk_other:
+      '{{count}} changes give high-risk permissions. Make sure everyone in this role should have them.',
+    role: 'Role',
+    renamed: 'Renamed to “{{name}}”',
+    other: 'Record filters changed',
+    tabs: {
+      menus: 'Page access',
+      objects: 'Operations',
+      settings: 'System settings',
+    },
+    added: 'Allowed',
+    removed: 'Removed',
+    scope: 'Scope changed',
+    ownerAction: '{{owner}} · {{action}}',
+    back: 'Back to editing',
+    confirm: 'Confirm and save',
+  },
+  members: {
+    tab: 'Members',
+    tabCount: 'Members {{count}}',
+    description_one: '{{count}} member holds this role.',
+    description_other: '{{count}} members hold this role.',
+    empty: 'Nobody holds this role yet.',
+    member: 'Member',
+    type: 'Type',
+    add: 'Add members',
+    addTitle: 'Add members',
+    addDescription: 'Each person you add holds this role at once.',
+    search: 'Search by name',
+    noMatches: 'No matches',
+    alreadyMember: 'Already a member',
+    addOne: 'Add',
+    addMember: 'Add {{name}}',
+    added: 'Added {{name}}',
+    remove: 'Remove',
+    removeMember: 'Remove {{name}}',
+    removed: 'Removed {{name}}',
+    keepOne: 'This role must keep at least one member.',
+    immediate:
+      'Adding and removing members takes effect at once, without saving.',
+    more: 'Showing {{shown}} of {{total}}. Search to narrow the list.',
+  },
+  howItWorks: {
+    title: 'How permissions are worked out',
+    role: 'Roles',
+    roleDescription:
+      'Each role a person holds gives the pages, operations and settings it allows.',
+    defaultAccess: '+ Default access',
+    defaultAccessDescription:
+      'Adds the records everyone with an operation can reach by default.',
+    sharing: '+ Sharing rules',
+    sharingDescription: 'Shares more records with chosen people or roles.',
+    restriction: '− Restriction rules',
+    restrictionDescription:
+      'Takes away records no role may touch, whatever was allowed before.',
+  },
   permissionEditor: {
-    menusTab: 'Menus',
-    objectsTab: 'Business objects',
+    menusTab: 'Page access',
+    objectsTab: 'Operations',
     settingsTab: 'System settings',
     tabCount: '{{count}} / {{total}}',
-    noMenus: 'No menus',
+    noMenus: 'No pages',
     emptyPage:
-      '“{{menu}}” is checked, but this role cannot view {{object}} yet, so the page opens empty.',
+      '“{{menu}}” is open to this role, but it cannot view {{object}} yet, so the page opens empty.',
     openView: 'Turn on “{{action}}”',
     opensWith: 'Shown with “{{action}}”',
-    attention_one: '{{count}} menu needs attention',
-    attention_other: '{{count}} menus need attention',
-    objects: 'Business objects',
-    search: 'Search objects or actions',
+    attention_one: '{{count}} page needs attention',
+    attention_other: '{{count}} pages need attention',
+    objects: 'Operations',
+    search: 'Search objects or operations',
     clearSearch: 'Clear search',
-    noResults: 'No matching objects or actions',
-    empty: 'No business objects to configure',
+    noResults: 'No matching objects or operations',
+    empty:
+      'This application declares no operations yet. Operations such as “View customers” are declared when a business feature is built, and then show here to be turned on with a data scope.',
     objectEnabled: '{{enabled}} of {{total}} on',
     objectOff: 'Off',
     enableAll: 'Enable all',
@@ -190,7 +262,7 @@ const settings = {
     managed: 'Managed by the application',
     unrestrictedTitle: 'All permissions (unrestricted)',
     unrestrictedDescription:
-      'This role can open every menu and perform every action on all data. There is nothing to set.',
+      'This role opens every page and performs every operation on all data, including pages and operations added later. There is nothing to set.',
     confirmDisable_one:
       'Turning off {{actions}} also turns off {{dependents}}, which needs it.',
     confirmDisable_other:
@@ -215,6 +287,25 @@ const settings = {
       'Nothing was turned off: {{actions}} is managed by the application and needs it.',
     noticeManagedDependent_other:
       'Nothing was turned off: {{actions}} are managed by the application and need it.',
+    operationCount: '{{enabled}}/{{total}} operations',
+    opensEmpty: 'Opens empty',
+    defaultsAdded: 'Also allowed {{actions}} with the default scope.',
+    adjustOperations: 'Adjust in Operations',
+    usedOn: 'Used on: {{pages}}',
+    notOnPage: 'Not used on any page',
+    missingPage:
+      'This role cannot open {{pages}}: these operations work only through other pages or the API.',
+    sensitive: 'Sensitive',
+    highRisk: 'High risk',
+    settingsLevel: 'Access to {{page}}',
+    settingsNone: 'None',
+    settingsView: 'View',
+    settingsManage: 'Manage',
+    settingsPartial: 'Partial',
+    tabChanges_one: '{{count}} unsaved change',
+    tabChanges_other: '{{count}} unsaved changes',
+    quoted: '“{{text}}”',
+    otherOperations: 'Other operations',
   },
 };
 

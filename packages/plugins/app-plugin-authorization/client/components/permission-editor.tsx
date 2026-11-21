@@ -1,8 +1,10 @@
 /**
- * A controlled permission editor with two tabs. Menus: a tree of checkboxes that only decides what a role sees in the
- * sidebar, with the objects each page uses as reference tags. Business objects: a list of objects beside the selected
- * object's actions, where each action and its data scope is set once for every menu that uses the object.
- * The host owns the catalog, loading, Save and persistence; this component only edits the draft it is given.
+ * A controlled role editor. Page access: a tree of checkboxes that decides which pages a role opens, with the number
+ * of operations each page's objects allow and the operations a page turns on by default. Operations: a list of
+ * objects beside the selected object's actions, where each action and its data scope is set once for every page that
+ * uses the object. System settings: None, View or Manage per settings page, or action by action. Hosts add tabs of
+ * their own, such as Members. The host owns the catalog, loading, Save and persistence; this component only edits the
+ * draft it is given.
  */
 import {
   InfoIcon,
@@ -43,6 +45,12 @@ import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
   canViewObject,
+  enableDefaults,
+  menuActionCount,
+  menuLeaves,
+  pageAccessGaps,
+  setSettingsLevel,
+  settingsLevel,
   configurationLocked,
   dependentsOf,
   effectiveScopeValue,
@@ -76,6 +84,7 @@ import {
   type PermissionMenuWarning,
   type PermissionNotice,
   type PermissionObject,
+  type PermissionPageGap,
   type PermissionQuickSet,
   type PermissionScopeSlot,
   type PermissionSettingsPage,
@@ -98,6 +107,13 @@ export type {
 } from './permission-editor-model.js';
 
 export type PermissionEditorTab = 'menus' | 'objects' | 'settings';
+
+/** A host tab after the built-in ones, such as a role's members. */
+export interface PermissionEditorExtraTab {
+  readonly value: string;
+  readonly label: ReactNode;
+  readonly content: ReactNode;
+}
 
 export interface PermissionEditorLabels {
   readonly menusTab: string;
@@ -139,6 +155,26 @@ export interface PermissionEditorLabels {
   readonly cancel: string;
   readonly dismiss: string;
   readonly notice: (notice: PermissionNotice) => string;
+  /** A page's "x / y operations", opening its object in the Operations tab. */
+  readonly operationCount: (enabled: number, total: number) => string;
+  /** Beside a checked page none of whose listed objects can be viewed. */
+  readonly opensEmpty: string;
+  /** Under a page just checked: the operations it turned on. */
+  readonly defaultsAdded: (actions: readonly string[]) => string;
+  readonly adjustOperations: string;
+  readonly usedOn: (pages: readonly string[]) => string;
+  readonly notOnPage: string;
+  /** An object with operations on whose pages the role cannot open. */
+  readonly missingPage: (pages: readonly string[]) => string;
+  readonly sensitive: string;
+  readonly highRisk: string;
+  readonly settingsLevel: (page: string) => string;
+  readonly settingsNone: string;
+  readonly settingsView: string;
+  readonly settingsManage: string;
+  readonly settingsPartial: string;
+  /** Unsaved changes on a tab, as its badge's accessible name. */
+  readonly tabChanges: (count: number) => string;
 }
 
 export interface PermissionEditorProps {
@@ -163,6 +199,16 @@ export interface PermissionEditorProps {
   /** The draft differs from what is saved. */
   readonly dirty?: boolean | undefined;
   readonly defaultTab?: PermissionEditorTab | undefined;
+  /** Tabs after the built-in ones. */
+  readonly tabs?: readonly PermissionEditorExtraTab[] | undefined;
+  /** Unsaved changes by tab value, shown as a badge on the tab. */
+  readonly tabBadges?: Readonly<Record<string, number>> | undefined;
+  /**
+   * The actions each page turns on when it is checked, by menu id, at their default scopes. Risky and managed actions
+   * are never turned on this way.
+   */
+  readonly menuDefaults?:
+    Readonly<Record<string, readonly string[]>> | undefined;
   /** The object opened first; defaults to the first one. */
   readonly defaultObjectId?: string | undefined;
   readonly labels?: Partial<PermissionEditorLabels> | undefined;
@@ -170,6 +216,7 @@ export interface PermissionEditorProps {
 }
 
 const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
+const NO_TABS: readonly PermissionEditorExtraTab[] = [];
 
 const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
@@ -178,8 +225,8 @@ const TAB_TRIGGER =
   'min-w-0 flex-col gap-0 px-1 py-1 text-center leading-tight whitespace-normal @max-[44rem]/permissions:!h-auto @min-[44rem]/permissions:flex-none @min-[44rem]/permissions:flex-row @min-[44rem]/permissions:gap-1.5 @min-[44rem]/permissions:py-0.5 @min-[44rem]/permissions:whitespace-nowrap';
 
 const DEFAULT_LABELS: PermissionEditorLabels = {
-  menusTab: 'Menus',
-  objectsTab: 'Business objects',
+  menusTab: 'Page access',
+  objectsTab: 'Operations',
   settingsTab: 'System settings',
   tabCount: (count, total) => `${count} / ${total}`,
   noMenus: 'No menus',
@@ -215,6 +262,24 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   confirm: 'Turn off',
   cancel: 'Cancel',
   dismiss: 'Dismiss',
+  operationCount: (enabled, total) => `${enabled}/${total} operations`,
+  opensEmpty: 'Opens empty',
+  defaultsAdded: (actions) =>
+    `Also allowed ${list(actions.map((action) => `“${action}”`))} with the default scope.`,
+  adjustOperations: 'Adjust in Operations',
+  usedOn: (pages) => `Used on: ${list(pages)}`,
+  notOnPage: 'Not used on any page',
+  missingPage: (pages) =>
+    `This role cannot open ${list(pages.map((page) => `“${page}”`))}: these operations work only through other pages or the API.`,
+  sensitive: 'Sensitive',
+  highRisk: 'High risk',
+  settingsLevel: (page) => `Access to ${page}`,
+  settingsNone: 'None',
+  settingsView: 'View',
+  settingsManage: 'Manage',
+  settingsPartial: 'Partial',
+  tabChanges: (count) =>
+    `${count} unsaved ${count === 1 ? 'change' : 'changes'}`,
   notice: (notice) =>
     notice.kind === 'scope-reset'
       ? `${list(notice.actions)} now ${notice.actions.length === 1 ? 'follows' : 'follow'} the view scope (${notice.view}) again.`
@@ -474,16 +539,35 @@ function ActionRow({
         onCheckedChange={(on: boolean) => onToggle(action, on)}
       />
       <div className='grid min-w-0 gap-0.5'>
-        <label
-          id={`${controlId}-label`}
-          htmlFor={controlId}
-          className={cn(
-            'cursor-pointer text-sm leading-5 font-medium break-words',
-            !enabled && 'text-muted-foreground',
+        {/* The risk badge sits beside the label, so the switch keeps the action's name. */}
+        <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
+          <label
+            id={`${controlId}-label`}
+            htmlFor={controlId}
+            className={cn(
+              'cursor-pointer text-sm leading-5 font-medium break-words',
+              !enabled && 'text-muted-foreground',
+            )}
+          >
+            {action.label}
+          </label>
+          {action.risk && (
+            <span
+              data-slot='permission-risk'
+              className={cn(
+                'inline-flex rounded px-1.5 text-xs leading-5 font-normal',
+                action.risk === 'high'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
+              )}
+            >
+              {action.risk === 'high' ? labels.highRisk : labels.sensitive}
+            </span>
           )}
-        >
-          {action.label}
-        </label>
+        </div>
+        {enabled && action.warning && (
+          <p className='text-xs leading-5 text-destructive'>{action.warning}</p>
+        )}
         {(description || action.managed) && (
           <p
             id={`${controlId}-description`}
@@ -604,6 +688,14 @@ function ObjectTags({
   );
 }
 
+/** The operations a page just turned on, shown under it until the next change. */
+interface MenuFlash {
+  readonly menu: string;
+  readonly actions: readonly string[];
+  /** The object to open from the notice. */
+  readonly object: string;
+}
+
 function MenuRows({
   nodes,
   depth,
@@ -612,8 +704,11 @@ function MenuRows({
   readOnly,
   labels,
   idPrefix,
+  empty,
+  flash,
   onCheck,
   onOpenAction,
+  onOpenObject,
 }: {
   readonly nodes: readonly PermissionMenuNode[];
   readonly depth: number;
@@ -622,8 +717,12 @@ function MenuRows({
   readonly readOnly: boolean;
   readonly labels: PermissionEditorLabels;
   readonly idPrefix: string;
+  /** Checked menus that would open empty. */
+  readonly empty: ReadonlySet<string>;
+  readonly flash: MenuFlash | undefined;
   readonly onCheck: (node: PermissionMenuNode, checked: boolean) => void;
   readonly onOpenAction: (actionId: string) => void;
+  readonly onOpenObject: (objectId: string) => void;
 }): ReactElement {
   return (
     <>
@@ -637,6 +736,9 @@ function MenuRows({
             (id) => !node.uses?.primary?.includes(id),
           ),
         ];
+        const count = group
+          ? undefined
+          : menuActionCount(node, objects, value.grants);
         return (
           <Fragment key={node.id}>
             <li
@@ -668,6 +770,33 @@ function MenuRows({
               >
                 {node.label}
               </label>
+              {(count || empty.has(node.id)) && (
+                <span
+                  className='col-start-2 flex min-w-0 flex-wrap items-center gap-1.5'
+                  style={{ marginInlineStart: `${depth * 1.25}rem` }}
+                >
+                  {count && (
+                    <Button
+                      type='button'
+                      variant='link'
+                      size='xs'
+                      data-slot='permission-menu-operations'
+                      className='h-auto p-0 text-xs tabular-nums'
+                      onClick={() => onOpenObject(count.object.id)}
+                    >
+                      {labels.operationCount(count.enabled, count.total)}
+                    </Button>
+                  )}
+                  {empty.has(node.id) && (
+                    <span
+                      data-slot='permission-menu-empty'
+                      className='rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 dark:text-amber-300'
+                    >
+                      {labels.opensEmpty}
+                    </span>
+                  )}
+                </span>
+              )}
               {!group && node.opensWith && (
                 <Button
                   type='button'
@@ -694,6 +823,27 @@ function MenuRows({
                 </div>
               )}
             </li>
+            {flash?.menu === node.id && (
+              <li
+                role='status'
+                data-slot='permission-menu-defaults'
+                className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-t bg-emerald-500/5 px-3 py-1.5 text-xs text-emerald-900 dark:text-emerald-200'
+                style={{ paddingInlineStart: `${2.25 + depth * 1.25}rem` }}
+              >
+                <span className='min-w-0'>
+                  {labels.defaultsAdded(flash.actions)}
+                </span>
+                <Button
+                  type='button'
+                  variant='link'
+                  size='xs'
+                  className='h-auto p-0 text-xs'
+                  onClick={() => onOpenObject(flash.object)}
+                >
+                  {labels.adjustOperations}
+                </Button>
+              </li>
+            )}
             {group && (
               <MenuRows
                 nodes={node.children ?? []}
@@ -703,8 +853,11 @@ function MenuRows({
                 readOnly={readOnly}
                 labels={labels}
                 idPrefix={idPrefix}
+                empty={empty}
+                flash={flash}
                 onCheck={onCheck}
                 onOpenAction={onOpenAction}
+                onOpenObject={onOpenObject}
               />
             )}
           </Fragment>
@@ -720,6 +873,7 @@ function ObjectList({
   grants,
   selected,
   labels,
+  gaps,
   onSelect,
 }: {
   readonly objects: readonly PermissionObject[];
@@ -727,6 +881,8 @@ function ObjectList({
   readonly grants: PermissionGrants;
   readonly selected: string | undefined;
   readonly labels: PermissionEditorLabels;
+  /** Objects the role acts on without opening any page that uses them. */
+  readonly gaps: ReadonlySet<string>;
   readonly onSelect: (id: string) => void;
 }): ReactElement {
   return (
@@ -774,13 +930,103 @@ function ObjectList({
                       ? labels.objectEnabled(status.enabled, status.total)
                       : labels.objectOff}
                   </span>
+                  {object.usedOn && (
+                    <span className='truncate text-xs text-muted-foreground'>
+                      {object.usedOn.length
+                        ? labels.usedOn(object.usedOn)
+                        : labels.notOnPage}
+                    </span>
+                  )}
                 </span>
+                {gaps.has(object.id) && (
+                  <TriangleAlertIcon
+                    aria-hidden
+                    data-slot='permission-object-gap'
+                    className='size-3.5 shrink-0 text-amber-600'
+                  />
+                )}
               </button>
             </li>
           </Fragment>
         );
       })}
     </ul>
+  );
+}
+
+function TabBadge({
+  count,
+  labels,
+}: {
+  readonly count: number | undefined;
+  readonly labels: PermissionEditorLabels;
+}): ReactElement | null {
+  if (!count) return null;
+  return (
+    <span
+      data-slot='permission-tab-changes'
+      aria-label={labels.tabChanges(count)}
+      className='rounded-full bg-amber-500/15 px-1.5 text-xs leading-5 font-normal text-amber-800 tabular-nums dark:text-amber-300'
+    >
+      {count}
+    </span>
+  );
+}
+
+function SettingsLevelControl({
+  page,
+  level,
+  readOnly,
+  labels,
+  onLevel,
+}: {
+  readonly page: PermissionSettingsPage;
+  readonly level: ReturnType<typeof settingsLevel>;
+  readonly readOnly: boolean;
+  readonly labels: PermissionEditorLabels;
+  readonly onLevel: (level: 'none' | 'view' | 'manage') => void;
+}): ReactElement {
+  const several = page.objects.some((object) => object.actions.length > 1);
+  const levels: ['none' | 'view' | 'manage', string][] = [
+    ['none', labels.settingsNone],
+    ['view', labels.settingsView],
+    ...(several
+      ? [['manage', labels.settingsManage] as ['manage', string]]
+      : []),
+  ];
+  return (
+    <div className='flex flex-wrap items-center gap-2 @min-[44rem]/permissions:ml-auto'>
+      {level === 'partial' && (
+        <span className='rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'>
+          {labels.settingsPartial}
+        </span>
+      )}
+      <div
+        role='group'
+        aria-label={labels.settingsLevel(page.label)}
+        data-slot='permission-settings-level'
+        className='inline-flex overflow-hidden rounded-md border'
+      >
+        {levels.map(([item, label]) => (
+          <button
+            key={item}
+            type='button'
+            aria-pressed={level === item}
+            disabled={readOnly}
+            className={cn(
+              'border-l px-2.5 py-1 text-xs first:border-l-0 hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+              level === item &&
+                (item === 'none'
+                  ? 'bg-muted font-medium'
+                  : 'bg-primary font-medium text-primary-foreground hover:bg-primary/90'),
+            )}
+            onClick={() => onLevel(item)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -808,12 +1054,16 @@ export function PermissionEditor({
   defaultObjectId,
   labels,
   className,
+  tabs: extraTabs = NO_TABS,
+  tabBadges,
+  menuDefaults,
 }: PermissionEditorProps): ReactElement {
   const words: PermissionEditorLabels = { ...DEFAULT_LABELS, ...labels };
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [tab, setTab] = useState<PermissionEditorTab>(defaultTab);
+  const [tab, setTab] = useState<string>(defaultTab);
+  const [flash, setFlash] = useState<MenuFlash | undefined>();
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(
     defaultObjectId ?? objects[0]?.id,
@@ -836,6 +1086,7 @@ export function PermissionEditor({
     ) {
       setNotices([]);
       setPending(undefined);
+      setFlash(undefined);
     }
   }
   // Requirements may cross between business and settings objects, so the rules see them all.
@@ -849,6 +1100,9 @@ export function PermissionEditor({
   // Group titles only tell groups apart, so a single group shows none.
   const grouped = new Set(objects.map((object) => object.group ?? '')).size > 1;
   const warnings = menuWarnings(menus, objects, value);
+  const emptyMenus = new Set(warnings.map((warning) => warning.menu.id));
+  const gaps = pageAccessGaps(menus, objects, value);
+  const gapIds = new Set(gaps.map((gap) => gap.object.id));
   const menuTotals = menuCount(menus, value);
   const objectTotals = objectCount(objects, value.grants);
   const settingsTotals = settingsCount(settings, value.grants);
@@ -873,6 +1127,7 @@ export function PermissionEditor({
     setShown({ value, expected: next });
     setNotices(changeNotices);
     setPending(undefined);
+    setFlash(undefined);
     onChange(next);
   };
   const commit = (change: PermissionChange): void =>
@@ -941,13 +1196,42 @@ export function PermissionEditor({
       },
     );
   };
-  const quickPage = (
-    page: PermissionSettingsPage,
-    mode: 'all' | 'none',
-  ): void => quick(settingsPageObject(page), mode);
   const check = (node: PermissionMenuNode, checked: boolean): void => {
     if (readOnly || node.public || !isMenuToggleable(node)) return;
-    commitValue(setMenuChecked(menus, value, node.id, checked), []);
+    const next = setMenuChecked(menus, value, node.id, checked);
+    // Checking a page turns on the operations it opens with, so it does not open empty.
+    const opened = checked
+      ? menuLeaves([node]).filter(
+          (leaf) =>
+            next.menus.includes(leaf.id) && !value.menus.includes(leaf.id),
+        )
+      : [];
+    const defaults = opened.flatMap((leaf) => menuDefaults?.[leaf.id] ?? []);
+    const change = defaults.length
+      ? enableDefaults(allObjects, next.grants, defaults)
+      : undefined;
+    commitValue(
+      change ? { menus: next.menus, grants: change.grants } : next,
+      change?.notices ?? [],
+    );
+    const first = change?.added[0];
+    if (change && first) {
+      const owner = findAction(allObjects, first);
+      setFlash({
+        menu: opened.length === 1 && opened[0] ? opened[0].id : node.id,
+        actions: change.added.map(
+          (id) => findAction(allObjects, id)?.action.label ?? id,
+        ),
+        object: owner?.object.id ?? '',
+      });
+    }
+  };
+  const openObject = (objectId: string): void => {
+    if (!objects.some((object) => object.id === objectId)) return;
+    select(objectId);
+    setTab('objects');
+    setFlash(undefined);
+    requestAnimationFrame(() => titleRef.current?.focus());
   };
   const openAction = (actionId: string): void => {
     const found = findAction(allObjects, actionId);
@@ -1019,6 +1303,19 @@ export function PermissionEditor({
             </p>
           </div>
         </div>
+        {/* Host tabs such as members still apply to a role that has every permission. */}
+        {extraTabs.map((extra) => (
+          <section
+            key={extra.value}
+            aria-label={
+              typeof extra.label === 'string' ? extra.label : undefined
+            }
+            className='flex min-w-0 flex-col gap-3 border-t px-4 py-4'
+          >
+            <h3 className='text-sm font-semibold'>{extra.label}</h3>
+            {extra.content}
+          </section>
+        ))}
         {footer && footerBar}
       </div>
     );
@@ -1116,8 +1413,11 @@ export function PermissionEditor({
               readOnly={readOnly}
               labels={words}
               idPrefix={`${id}-menu`}
+              empty={emptyMenus}
+              flash={flash}
               onCheck={check}
               onOpenAction={openAction}
+              onOpenObject={openObject}
             />
           </ul>
         </div>
@@ -1198,6 +1498,34 @@ export function PermissionEditor({
         {object.description && (
           <p className='text-sm text-muted-foreground'>{object.description}</p>
         )}
+        {object.usedOn && (
+          <p
+            data-slot='permission-object-used-on'
+            className='text-xs text-muted-foreground'
+          >
+            {object.usedOn.length
+              ? words.usedOn(object.usedOn)
+              : words.notOnPage}
+          </p>
+        )}
+        {gaps
+          .filter((gap: PermissionPageGap) => gap.object.id === object.id)
+          .map((gap) => (
+            <div
+              key={gap.object.id}
+              role='note'
+              data-slot='permission-object-page-gap'
+              className='flex min-w-0 items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200'
+            >
+              <TriangleAlertIcon
+                aria-hidden
+                className='mt-0.5 size-4 shrink-0'
+              />
+              <span className='min-w-0'>
+                {words.missingPage(gap.menus.map((menu) => menu.label))}
+              </span>
+            </div>
+          ))}
         {readOnly && (
           <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
         )}
@@ -1267,28 +1595,22 @@ export function PermissionEditor({
                         ? words.objectEnabled(status.enabled, status.total)
                         : words.objectOff}
                     </span>
-                    {!readOnly && (
-                      <div className='flex flex-wrap gap-1.5 @min-[44rem]/permissions:ml-auto'>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          aria-label={`${words.enableAll} · ${page.label}`}
-                          onClick={() => quickPage(page, 'all')}
-                        >
-                          {words.enableAll}
-                        </Button>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          aria-label={`${words.disableAll} · ${page.label}`}
-                          onClick={() => quickPage(page, 'none')}
-                        >
-                          {words.disableAll}
-                        </Button>
-                      </div>
-                    )}
+                    <SettingsLevelControl
+                      page={page}
+                      level={settingsLevel(page, value.grants)}
+                      readOnly={readOnly}
+                      labels={words}
+                      onLevel={(level) =>
+                        commit(
+                          setSettingsLevel(
+                            allObjects,
+                            value.grants,
+                            page,
+                            level,
+                          ),
+                        )
+                      }
+                    />
                   </div>
                   {page.description && (
                     <p className='text-xs text-muted-foreground'>
@@ -1438,6 +1760,7 @@ export function PermissionEditor({
               grants={value.grants}
               selected={current?.id}
               labels={words}
+              gaps={gapIds}
               onSelect={select}
             />
           )}
@@ -1467,10 +1790,11 @@ export function PermissionEditor({
       {header && <div className='px-4 pt-3 pb-1'>{header}</div>}
       <Tabs
         value={tab}
-        onValueChange={(next: PermissionEditorTab) => {
+        onValueChange={(next: string) => {
           setTab(next);
           setNotices([]);
           setPending(undefined);
+          setFlash(undefined);
         }}
       >
         <div className='border-b px-4'>
@@ -1480,33 +1804,52 @@ export function PermissionEditor({
             className='grid w-full auto-cols-fr grid-flow-col gap-1 pt-2 pb-1 group-data-horizontal/tabs:h-auto @min-[44rem]/permissions:flex @min-[44rem]/permissions:w-fit @min-[44rem]/permissions:gap-3 @min-[44rem]/permissions:py-0 @min-[44rem]/permissions:group-data-horizontal/tabs:h-10'
           >
             <TabsTrigger value='menus' className={TAB_TRIGGER}>
-              {`① ${words.menusTab}`}
+              {words.menusTab}
               <span className='text-xs font-normal text-muted-foreground tabular-nums'>
                 {words.tabCount(menuTotals.checked, menuTotals.total)}
               </span>
+              <TabBadge count={tabBadges?.menus} labels={words} />
             </TabsTrigger>
             <TabsTrigger value='objects' className={TAB_TRIGGER}>
-              {`② ${words.objectsTab}`}
+              {words.objectsTab}
               <span className='text-xs font-normal text-muted-foreground tabular-nums'>
                 {words.tabCount(objectTotals.enabled, objectTotals.total)}
               </span>
+              <TabBadge count={tabBadges?.objects} labels={words} />
             </TabsTrigger>
             {settings.length > 0 && (
               <TabsTrigger value='settings' className={TAB_TRIGGER}>
-                {`③ ${words.settingsTab}`}
+                {words.settingsTab}
                 <span className='text-xs font-normal text-muted-foreground tabular-nums'>
                   {words.tabCount(settingsTotals.enabled, settingsTotals.total)}
                 </span>
+                <TabBadge count={tabBadges?.settings} labels={words} />
               </TabsTrigger>
             )}
+            {extraTabs.map((extra) => (
+              <TabsTrigger
+                key={extra.value}
+                value={extra.value}
+                className={TAB_TRIGGER}
+              >
+                {extra.label}
+                <TabBadge count={tabBadges?.[extra.value]} labels={words} />
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
       </Tabs>
-      {tab === 'menus'
-        ? menusPanel
-        : tab === 'settings' && settings.length
-          ? settingsPanel
-          : objectsPanel}
+      {extraTabs.some((extra) => extra.value === tab) ? (
+        <div className='min-w-0 px-4 py-4'>
+          {extraTabs.find((extra) => extra.value === tab)?.content}
+        </div>
+      ) : tab === 'menus' ? (
+        menusPanel
+      ) : tab === 'settings' && settings.length ? (
+        settingsPanel
+      ) : (
+        objectsPanel
+      )}
       {footerBar}
     </div>
   );

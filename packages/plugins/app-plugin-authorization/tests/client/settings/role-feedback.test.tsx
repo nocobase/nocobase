@@ -92,7 +92,7 @@ it('shows failed role options with retry and prevents incomplete saves', async (
   );
   expect((await screen.findAllByText(enUS.settings.failed))[0]).toBeVisible();
   expect(
-    screen.queryByRole('button', { name: 'Save', exact: true }),
+    screen.queryByRole('button', { name: 'Review and save', exact: true }),
   ).not.toBeInTheDocument();
   expect(
     screen.getAllByRole('button', { name: 'Retry' }).length,
@@ -188,7 +188,12 @@ it('preserves the role draft on a conditional save conflict and submits the orig
     expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
   );
   await user.click(toggle);
-  await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
+  await user.click(
+    screen.getByRole('button', { name: 'Review and save', exact: true }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: 'Confirm and save' }),
+  );
   expect(await screen.findByText(enUS.settings.conflict)).toBeVisible();
   expect(screen.getByRole('checkbox', { name: home })).toBeChecked();
   expect(calls).toHaveBeenCalledWith(

@@ -52,6 +52,28 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
       confirm: k('confirm'),
       cancel: t('settings.cancel'),
       dismiss: k('dismiss'),
+      operationCount: (enabled, total) =>
+        k('operationCount', { enabled, total }),
+      opensEmpty: k('opensEmpty'),
+      defaultsAdded: (actions) =>
+        k('defaultsAdded', {
+          actions: list(actions.map((text) => k('quoted', { text }))),
+        }),
+      adjustOperations: k('adjustOperations'),
+      usedOn: (pages) => k('usedOn', { pages: list(pages) }),
+      notOnPage: k('notOnPage'),
+      missingPage: (pages) =>
+        k('missingPage', {
+          pages: list(pages.map((text) => k('quoted', { text }))),
+        }),
+      sensitive: k('sensitive'),
+      highRisk: k('highRisk'),
+      settingsLevel: (page) => k('settingsLevel', { page }),
+      settingsNone: k('settingsNone'),
+      settingsView: k('settingsView'),
+      settingsManage: k('settingsManage'),
+      settingsPartial: k('settingsPartial'),
+      tabChanges: (count) => k('tabChanges', { count }),
       notice: (notice) => {
         switch (notice.kind) {
           case 'scope-reset':

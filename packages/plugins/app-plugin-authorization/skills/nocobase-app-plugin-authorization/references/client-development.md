@@ -138,13 +138,29 @@ Request bodies for an App-owned `POST sales/orders/:id/relations` endpoint look 
 
 These are sample ids; fetch actual options from the endpoint. Never expose protected foreign keys or internal join fields as a shortcut around a denied relation operation. A rejected nested mutation must leave the whole write rolled back.
 
-## Configure the three-tab role editor
+## Configure the role editor
 
 The role editor is part of this plugin's Roles and permissions page, which the client plugin registers in the System settings' Account and permissions category; an application never copies it. The application passes what only it knows through the plugin's options in `client/plugins.ts`: `pageCatalog`, `workspace` (`permissionWorkspaceSelection`) and `pageTitles`. When you add an application feature with business permissions, update `client/pages/settings/permission-workspace.ts` in the same change: edit `permissionWorkspaceSelection` to expose the app's implemented business operations and connect its pages to the objects they use. To add to the page itself, see [Extend the Roles and permissions page](#extend-the-roles-and-permissions-page).
 
-- **Menus** uses the application's registered navigation. A business route declares `authz: { resource: { type: 'page', id }, action: 'access' }`. The menu checkbox controls the page grant. Object tags are references, and checking a menu whose primary object lacks View triggers the empty-page warning. Give home pages that require sign-in only `authz: 'skip'` to keep their visible-for-everyone state.
-- **Business objects** has one `business` entry per server-registered composite resource. List the exact registered action IDs the app actually implements. Name the read action `view` or `read`, or designate it with `view`. Declare its data scope on its own collection. Other operations on that collection follow View, and an additional scope on a different selected object's collection follows that object's View. Followers can use the View scope or a provably narrower scope.
-- **System settings** comes from real settings routes and the catalog actions they use. Opening a settings page requires its opening action. Settings switches have no data scope controls.
+A role's detail has the tabs **Page access**, **Operations**, **System settings** and **Members**, followed by any `roleTabs` another package registers. Saving opens a review that lists every page, operation and setting that changed and marks high-risk grants; members are added and removed at once, apart from the draft.
+
+- **Page access** uses the application's registered navigation. A business route declares `authz: { resource: { type: 'page', id }, action: 'access' }`. The page checkbox controls the page grant. Each page shows how many of its objects' operations are on, and a checked page whose primary object lacks View is marked as opening empty. Give home pages that require sign-in only `authz: 'skip'` to keep their visible-for-everyone state.
+- **Operations** has one `business` entry per server-registered composite resource. List the exact registered action IDs the app actually implements. Name the read action `view` or `read`, or designate it with `view`. Declare its data scope on its own collection. Other operations on that collection follow View, and an additional scope on a different selected object's collection follows that object's View. Followers can use the View scope or a provably narrower scope.
+- **System settings** comes from real settings routes and the catalog actions they use. Opening a settings page requires its opening action. Each page offers None, View and Manage, with the individual switches below; settings switches have no data scope controls.
+- **Members** lists who holds the role through the `permissionSets` subject directory and adds or removes them at once; the server keeps the last member of a role the application must keep in use.
+
+**Declare the pages an operation is used on.** On the server, a composite names the page permission IDs it is used on with `usedOn(...pages)`, and an action names the pages that turn it on with `defaultFor(...pages)`, usually only View. Neither grants anything. The editor lists each object under “Used on” those pages, groups objects used on no page under Other operations, warns when an operation is on but none of its pages is open, and, when an administrator checks a page, turns its `defaultFor` actions on at their default scope and says so. Risky and managed actions are never turned on this way. A page the application maps in `pages` keeps its mapping; `usedOn` only fills in pages it does not map.
+
+```ts
+defineCompositeResource('example.crm.customers', (r) =>
+  r
+    .title('Customers')
+    .usedOn('customer-contacts')
+    .action('view', (a) =>
+      a.title('View').defaultFor('customer-contacts').grant('customers', data),
+    ),
+);
+```
 
 **Preset roles that read related objects.** When an operation such as create or dispatch has a scope on another object's records, a seeded or API-created role grants that object's View too, with the narrowest scope the job needs, and gives the operation's slot the same record access key or one declared narrower in `scopeSubsets`. For example, a dispatcher whose `create` reads stations, carriers and vehicles and whose `dispatch` reads drivers also gets `view` on each of those four objects: stations limited to `tms.myStations`, the others to `tms.activeRecords`, with the same keys on the operation slots. The editor then shows these slots as following that View. A role stored without it keeps working as the server checks each slot, and the editor shows the stored value read-only with “Needs X view” and saves it unchanged, including when only the role name changes; it changes only after an administrator turns that View on, which caps any wider slot to the View's scope and says so. Do not grant a View on save or rename to fix an older role, and do not rely on the editor to repair a seed: write the View into the seed. Menu page grants stay separate, and system settings are granted for what the job administers.
 
@@ -469,7 +485,7 @@ Another package extends the page from its client service provider through `autho
 
 - `pageTabs`: a top tab of the page. Each one is a System settings page of its own that its package registers with `defineSystemSettingsRoutes` under the `permissionManagement` module, rendered inside `AuthorizationPage` so a link, Back and a reload keep the tab. The entry names its `path` and the page's own `authz`; the tab shows only to those it admits, and the tab bar hides when only one tab is open to the person.
 - `ruleTabs`: one kind of data rule under the Data rules tab, loaded lazily through `component` and shown to those who pass its `authz`.
-- `roleTabs`: a tab of a role's detail, which receives the role and whether the person may change it.
+- `roleTabs`: a tab of a role's detail after Members, loaded lazily through `component` and shown to those who pass its `authz`. It receives `permissionSet`, the saved role, and `editable`, whether the person may change it.
 
 ```ts
 this.app.container.resolve(authorizationSettingsToken).ruleTabs.add({

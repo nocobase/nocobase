@@ -147,7 +147,7 @@ it('lists the roles beside the editor, opens the first one and keeps the system 
   expect(await screen.findByText(editor.unrestrictedTitle)).toBeVisible();
   expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   expect(
-    screen.queryByRole('button', { name: words.save, exact: true }),
+    screen.queryByRole('button', { name: words.reviewAndSave, exact: true }),
   ).not.toBeInTheDocument();
   await user.type(
     within(list).getByRole('textbox', { name: words.roleSearch }),
@@ -186,7 +186,9 @@ it('saves menu access apart from the actions, explains escalation and asks befor
       name: new RegExp(`${editor.menusTab}\\s*1 / \\d+`),
     }),
   ).toBeVisible();
-  expect(screen.getByText(words.unsaved)).toBeVisible();
+  expect(
+    screen.getByText(words.unsavedCount_one.replace('{{count}}', '1')),
+  ).toBeVisible();
 
   // System settings: changing roles needs reading them and is explained as an escalation.
   await user.click(
@@ -199,7 +201,10 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   await user.click(screen.getByRole('switch', { name: 'Change roles' }));
   expect(screen.getByRole('switch', { name: 'Read roles' })).toBeChecked();
   await user.click(
-    screen.getByRole('button', { name: words.save, exact: true }),
+    screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: words.review.confirm }),
   );
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
@@ -218,7 +223,7 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   ]);
   // After saving, the editor stays on the tab it was showing.
   await waitFor(() =>
-    expect(screen.queryByText(words.unsaved)).not.toBeInTheDocument(),
+    expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument(),
   );
   expect(screen.getByRole('switch', { name: 'Change roles' })).toBeChecked();
   // The settings page shows with reading roles; it is not a menu to check.

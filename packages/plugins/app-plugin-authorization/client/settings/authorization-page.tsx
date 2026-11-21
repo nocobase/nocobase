@@ -47,6 +47,7 @@ export function AuthorizationPage({
   return (
     <PageContainer>
       <PageHeader title={heading} description={description} actions={actions} />
+      <HowItWorks />
       <Tabs
         className='gap-6'
         value={tab}
@@ -116,4 +117,41 @@ function useOpenTabs(
       ? allowed.keys
       : undefined;
   return tabs.filter((tab) => tab.key === current || keys?.has(tab.key));
+}
+
+const STEPS = ['role', 'defaultAccess', 'sharing', 'restriction'] as const;
+
+/** How a person's permissions are worked out, folded away until asked for. */
+function HowItWorks(): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  return (
+    <details
+      data-slot='authorization-how-it-works'
+      className='group rounded-lg border bg-muted/30 px-4 py-2 text-sm'
+    >
+      <summary className='cursor-pointer py-1 font-medium select-none'>
+        {t('settings.howItWorks.title')}
+      </summary>
+      <ol className='grid gap-2 py-2 sm:grid-cols-2 lg:grid-cols-4'>
+        {STEPS.map((step, index) => (
+          <li key={step} className='flex min-w-0 gap-2'>
+            <span
+              aria-hidden
+              className='flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary'
+            >
+              {index + 1}
+            </span>
+            <div className='grid min-w-0 gap-0.5'>
+              <span className='font-medium'>
+                {t(`settings.howItWorks.${step}`)}
+              </span>
+              <span className='text-xs text-muted-foreground'>
+                {t(`settings.howItWorks.${step}Description`)}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
 }

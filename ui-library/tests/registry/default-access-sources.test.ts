@@ -6,16 +6,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
 // The Roles and permissions pages moved from the templates into the authorization plugin, which renders the same
-// editors the Registry installs into an application that builds its own.
+// filter and Default access editors the Registry installs into an application that builds its own. The role editor is
+// the plugin's own: its page access, operations, members and review follow the plugin's role detail, so the Registry
+// keeps the general-purpose permission editor.
 it('keeps the Registry authorization editors and the authorization plugin’s copies synchronized', () => {
   const read = (file: string): string =>
     readFileSync(new URL(file, import.meta.url), 'utf8');
-  for (const file of [
-    'default-access-editor.tsx',
-    'permission-editor.tsx',
-    'permission-editor-model.ts',
-    'permission-filter.tsx',
-  ])
+  for (const file of ['default-access-editor.tsx', 'permission-filter.tsx'])
     expect(
       read(
         `../../../packages/plugins/app-plugin-authorization/client/components/${file}`,

@@ -130,7 +130,10 @@ describe('user permission configuration', () => {
       ).not.toBeInTheDocument();
       expect(screen.getByText(words.escalation.users)).toBeVisible();
       await user.click(
-        screen.getByRole('button', { name: words.save, exact: true }),
+        screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
+      );
+      await user.click(
+        await screen.findByRole('button', { name: words.review.confirm }),
       );
       await waitFor(() =>
         expect(calls).toHaveBeenCalledWith(
@@ -160,7 +163,10 @@ describe('user permission configuration', () => {
         ).toBeChecked();
       await user.click(screen.getByRole('switch', { name: words.updateUsers }));
       await user.click(
-        screen.getByRole('button', { name: words.save, exact: true }),
+        screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
+      );
+      await user.click(
+        await screen.findByRole('button', { name: words.review.confirm }),
       );
       await waitFor(() =>
         expect(role.grants[0]?.actions.map((action) => action.action)).toEqual(
