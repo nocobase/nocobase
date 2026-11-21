@@ -100,7 +100,24 @@ function AuthenticatedLayout({
     <RouteTreeProvider routes={routes} access={access}>
       <PageBreadcrumbProvider>
         <AppSidebarProvider>
-          <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
+          <AppSidebar
+            label={navigationLabel}
+            footer={
+              <>
+                {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
+                {!inSettings && settingsEntry.length ? (
+                  <div className='shrink-0 border-t border-sidebar-border'>
+                    <NavigationMenu
+                      items={settingsEntry}
+                      label={t('settings.title')}
+                      selectedKey={undefined}
+                    />
+                  </div>
+                ) : null}
+                <AppSidebarFooter />
+              </>
+            }
+          >
             {inSettings ? <SettingsBack /> : null}
             {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
             <NavigationMenu
@@ -108,15 +125,6 @@ function AuthenticatedLayout({
               label={navigationLabel}
               selectedKey={selectedKey}
             />
-            {!inSettings && settingsEntry.length ? (
-              <div className='mt-auto'>
-                <NavigationMenu
-                  items={settingsEntry}
-                  label={t('settings.title')}
-                  selectedKey={undefined}
-                />
-              </div>
-            ) : null}
           </AppSidebar>
           <div className='flex min-w-0 flex-1 flex-col'>
             <LayoutHeader className='sticky top-0 z-40 justify-between'>
@@ -136,7 +144,17 @@ function AuthenticatedLayout({
             moved by the page's scrolling nor stretched by its height. */}
                 <div className='h-full overflow-y-auto'>
                   <RouteLeaveBoundary hidden={loading}>
-                    <Outlet />
+                    {/* Personal settings pages, the built-in ones and every plugin's, read at most 860px wide. */}
+                    {inPersonalSettings ? (
+                      <div
+                        data-testid='personal-settings-content'
+                        className='mx-auto w-full max-w-[860px]'
+                      >
+                        <Outlet />
+                      </div>
+                    ) : (
+                      <Outlet />
+                    )}
                   </RouteLeaveBoundary>
                 </div>
               </main>

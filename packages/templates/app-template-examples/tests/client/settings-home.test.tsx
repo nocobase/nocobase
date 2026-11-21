@@ -3,7 +3,6 @@ import packageMetadata from '../../package.json' with { type: 'json' };
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
@@ -53,53 +52,16 @@ function mount(
   );
 }
 
-it('groups the modules an administrator may open into categories of cards that open by keyboard', async () => {
-  const user = userEvent.setup();
+it('opens the first system settings page an administrator may open', async () => {
   await mount();
-  const account = await screen.findByRole('region', {
-    name: 'Accounts and permissions',
-  });
-  const cards = within(account).getAllByRole('link');
-  expect(cards.map((card) => card.textContent)).toEqual([
-    'UsersManage accounts, access and active sessions.',
-    'Roles and permissionsSet what each role can open and do, and the data it can see.',
-  ]);
-  expect(cards[0]).toHaveAttribute('href', '/main/settings/users');
-  expect(cards[1]).toHaveAttribute('href', '/main/settings/roles');
-  expect(
-    screen
-      .getAllByRole('region')
-      .map((region) => region.getAttribute('aria-label')),
-  ).toEqual([
-    'Accounts and permissions',
-    'Workflows and automation',
-    'Messages',
-    'AI',
-    'Data and files',
-  ]);
-  // Examples configures the built-in invitation mailer, so Notifications shows in Messages.
-  const messages = screen.getByRole('region', { name: 'Messages' });
-  expect(
-    within(messages)
-      .getAllByRole('link')
-      .map((card) => card.getAttribute('href')),
-  ).toEqual(['/main/settings/notifications/templates']);
-  const data = screen.getByRole('region', { name: 'Data and files' });
-  expect(
-    within(data)
-      .getAllByRole('link')
-      .map((card) => card.getAttribute('href')),
-  ).toEqual(['/main/settings/database-explorer']);
-  cards[1].focus();
-  await user.keyboard('{Enter}');
   await waitFor(() =>
     expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-      '/settings/roles',
+      '/settings/users',
     ),
   );
 });
 
-it('shows a restricted viewer only what they may open, opening a tabbed module on its readable view', async () => {
+it('opens a restricted viewer on the first page they may open', async () => {
   await mount({
     member: true,
     grants: [
@@ -109,20 +71,17 @@ it('shows a restricted viewer only what they may open, opening a tabbed module o
       },
     ],
   });
-  const account = await screen.findByRole('region', {
-    name: 'Accounts and permissions',
-  });
-  // Categories without a module this viewer may open are not shown.
-  expect(screen.getAllByRole('region')).toHaveLength(1);
-  const cards = within(account).getAllByRole('link');
-  expect(cards).toHaveLength(1);
-  expect(cards[0]).toHaveAttribute('href', '/main/settings/default-access');
+  await waitFor(() =>
+    expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+      '/settings/default-access',
+    ),
+  );
 });
 
 it('explains when there is nothing to manage', async () => {
   await mount({ member: true, locale: 'zh-CN' });
   expect(await screen.findByText('暂时没有你可以管理的设置。')).toBeVisible();
-  expect(screen.getByRole('heading', { name: '系统设置' })).toBeVisible();
+  expect(screen.queryByRole('status', { name: 'Route' })).toBeNull();
 });
 
 it('links the System settings breadcrumb back to the home from a module view', async () => {

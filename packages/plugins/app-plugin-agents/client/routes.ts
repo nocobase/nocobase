@@ -7,14 +7,28 @@
  * Each page stands behind its own page grant (`shared/access.ts` `PAGES`, named like the route), which only opens it:
  * what a page lists and changes is decided by the API on the settings items (`agents.agents`, `agents.runners`), and
  * on the runtimes page by who added each runtime.
+ *
+ * `agentsSettingsRoutes` offers the same pages ready-made as System settings pages in the built-in AI category, which
+ * an application mounts with `agents({ settingsRoutes: true })`.
  */
-import type {
-  AppClientRouteComponentLoader,
-  AppClientRoutePageDefinition,
+import {
+  defineSystemSettingsRoutes,
+  SYSTEM_SETTINGS_CATEGORIES,
+  SYSTEM_SETTINGS_ROUTE_PATH,
+  type AppClientRouteComponentLoader,
+  type AppClientRouteDefinition,
+  type AppClientRoutePageDefinition,
+  type AppClientSystemSettingsRoutesContribution,
 } from '@nocobase/app-client/plugins';
-import type { ComponentType } from 'react';
+import { Bot, BrainCircuit, ChartColumn, Server, Sparkles } from 'lucide-react';
+import { createElement, type ComponentType } from 'react';
 
 import type { Page } from '../shared/access.js';
+import {
+  AgentsMountContext,
+  settingsMount,
+  type AgentsMount,
+} from './mount.js';
 
 const page = (id: Page) =>
   ({ resource: { type: 'page', id }, action: 'access' }) as const;
@@ -29,6 +43,24 @@ function withPlugin(
       import('./query.js'),
     ]);
     return { default: withAgents(Page) };
+  };
+}
+
+/** `loader` with the pages told where they are mounted (`client/mount.ts`), for their links to one another. */
+function mountedAt(
+  mount: AgentsMount,
+  loader: AppClientRouteComponentLoader,
+): AppClientRouteComponentLoader {
+  return async () => {
+    const { default: Page } = await loader();
+    function Mounted(): ReturnType<typeof createElement> {
+      return createElement(
+        AgentsMountContext.Provider,
+        { value: mount },
+        createElement(Page),
+      );
+    }
+    return { default: Mounted };
   };
 }
 
@@ -110,3 +142,45 @@ export const modelsRoute: AppClientRoutePageDefinition = {
   },
   componentLoader: withPlugin(() => import('./pages/models/index.js')),
 };
+
+/** Where the settings pages link an agent: the agents page beside them, which has no page per agent. */
+const SETTINGS_MOUNT = settingsMount(`${SYSTEM_SETTINGS_ROUTE_PATH}/agents`);
+
+/**
+ * The agent management pages as System settings pages in the built-in AI category: `/settings/agents`,
+ * `/settings/runtimes`, `/settings/skills`, `/settings/models` and `/settings/usage`, titled in this plugin's
+ * namespace. The plugin registers them when the application asks with `agents({ settingsRoutes: true })`; an
+ * application that keeps the pages elsewhere routes the definitions above itself instead.
+ */
+export const agentsSettingsRoutes: AppClientSystemSettingsRoutesContribution =
+  defineSystemSettingsRoutes([
+    settingsPage(agentsRoute, 'agents.title', Bot),
+    settingsPage(runtimesRoute, 'runtimes.title', Server),
+    settingsPage(skillsRoute, 'skills.title', Sparkles),
+    settingsPage(modelsRoute, 'models.title', BrainCircuit),
+    settingsPage(usageRoute, 'usage.title', ChartColumn),
+  ]);
+
+function settingsPage(
+  route: AppClientRoutePageDefinition,
+  title: string,
+  icon: typeof Bot,
+): AppClientRoutePageDefinition {
+  return {
+    ...mounted(route),
+    parent: SYSTEM_SETTINGS_CATEGORIES.ai,
+    navigation: { title, icon },
+    breadcrumb: { title },
+  };
+}
+
+/** `route` and its children, each page given the settings mount. */
+function mounted<T extends AppClientRouteDefinition>(route: T): T {
+  const children = route.children?.map(mounted);
+  if (!route.componentLoader) return children ? { ...route, children } : route;
+  return {
+    ...route,
+    componentLoader: mountedAt(SETTINGS_MOUNT, route.componentLoader),
+    ...(children ? { children } : {}),
+  };
+}
