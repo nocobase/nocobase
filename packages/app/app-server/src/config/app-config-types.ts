@@ -5,6 +5,7 @@ import type {
   ConfigParser,
   ConfigProvider,
 } from '@nocobase/config';
+import type { EnvironmentMapping } from '@nocobase/config/providers/env';
 import type { FileProviderOptions } from '@nocobase/config/providers/file';
 import type { ConfigIssue } from './validation.js';
 
@@ -41,6 +42,18 @@ export interface AppConfigAccessor {
   publicValues?(): ConfigMap;
   /** Every published path in full, such as `auth.emailAndPassword.disableSignUp`. */
   publicPaths?(): readonly string[];
+  /**
+   * The code defaults and the file and environment overrides the merged configuration came from, for telling where a
+   * value was set; an accessor without separate layers may omit it.
+   */
+  layers?(): AppConfigLayers;
+  /** Every environment variable the sections declare, with the absolute path it sets; an accessor without declared rules may omit it. */
+  environmentVariableMappings?(): Readonly<Record<string, EnvironmentMapping>>;
+  /**
+   * The declared section variables that were set in the environment the configuration was loaded from — the
+   * application's own, not the host process's; an accessor without declared rules may omit it.
+   */
+  loadedEnvironmentVariables?(): readonly string[];
   /**
    * Whether the application's own sources — configuration files and the environment — set `path`, such as
    * `queue.default`, rather than leaving it to the code defaults. An accessor without layers may omit it.

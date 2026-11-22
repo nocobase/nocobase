@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Knowledge base",
+      "zh-CN": "知识库"
+    },
+    "description": {
+      "en-US": "Document spaces, search and review",
+      "zh-CN": "文档空间、搜索和审阅"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

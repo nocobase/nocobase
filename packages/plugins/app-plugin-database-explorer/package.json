@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Database",
+      "zh-CN": "数据库"
+    },
+    "description": {
+      "en-US": "Browse data tables and their records",
+      "zh-CN": "查看数据表和数据"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

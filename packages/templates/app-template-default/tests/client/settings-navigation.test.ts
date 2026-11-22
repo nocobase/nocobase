@@ -1,3 +1,4 @@
+import { authorizationPages } from '../helpers/plugin-routes.js';
 import {
   defineSystemSettingsRoutes,
   resolveAppClientContributions,
@@ -28,6 +29,7 @@ function resolve(...extra: AppClientRouteContribution[]) {
       source: 'application',
       routes: [shell, settings, ...extra],
     },
+    authorizationPages(),
   ]).routes;
 }
 
@@ -174,9 +176,14 @@ describe('System settings navigation', () => {
       ],
     ]);
     const denied = new Set(
-      ['settingsUsers', 'settingsRoles', 'settingsDefaultAccess'].map((name) =>
-        routeKey(find(routes, name)),
-      ),
+      [
+        'settingsUsers',
+        'settingsRoles',
+        'settingsDefaultAccess',
+        'settingsSharingRules',
+        'settingsRestrictionRules',
+        'settingsPermissionCheck',
+      ].map((name) => routeKey(find(routes, name))),
     );
     expect(catalog(routes, denied)).toEqual([]);
     // Without a module to open, the sidebar entry disappears too.
@@ -232,11 +239,11 @@ describe('System settings navigation', () => {
         routes: foundation,
       },
     ]).routes;
-    // The bare shell: only App Foundation, which only an unrestricted administrator may open.
+    // The bare shell: only the plugins page; the old App Foundation addresses lead to it and stay out of the menu.
     const menu = buildRouteNavigation(routes, new Set());
     expect(menu.map(({ route }) => route.name)).toEqual(['settingsHome']);
     expect(catalog(routes)).toEqual([
-      ['systemSettings.system', [['foundation', '/settings/foundation']]],
+      ['systemSettings.system', [['plugins', '/settings/plugins']]],
     ]);
     // The signed-in shell receives the tree filtered to its pages; empty categories keep their titles there.
     const signedIn = filterRouteTree(
@@ -244,10 +251,10 @@ describe('System settings navigation', () => {
       (route) => route.auth === 'required',
     );
     expect(catalog(signedIn)).toEqual([
-      ['systemSettings.system', [['foundation', '/settings/foundation']]],
+      ['systemSettings.system', [['plugins', '/settings/plugins']]],
     ]);
-    const page = find(routes, 'foundation');
-    expect(page.navigation?.description).toBe('nav.foundationDescription');
+    const page = find(routes, 'plugins');
+    expect(page.navigation?.description).toBe('nav.pluginsDescription');
     expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
   });
 
@@ -260,6 +267,7 @@ describe('System settings navigation', () => {
           notificationTemplates: { invitationConfigured: true },
         }),
       },
+      authorizationPages(),
     ]).routes;
     expect(catalog(routes)).toEqual([
       [
@@ -291,6 +299,7 @@ it('places database browsing in Data and files and hides its card when access is
       source: 'application',
       routes: createApplicationRoutes({}),
     },
+    authorizationPages(),
   ]).routes;
   const page = find(routes, 'databaseExplorer');
   expect(page.path).toBe('/settings/database-explorer');

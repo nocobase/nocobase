@@ -44,6 +44,7 @@ export class AppConfig {
   private reloadPromise: Promise<AppConfigReloadResult> | undefined;
   private logger?: Pick<Logger, 'debug'>;
   private loadDurationMs?: number;
+  private loadedVariables: readonly string[] = [];
 
   /** Attach diagnostics after the logging configuration has been resolved. */
   public setLogger(logger: Pick<Logger, 'debug'>): void {
@@ -153,6 +154,9 @@ export class AppConfig {
       }
     }
     if (Object.keys(mappings).length === 0) return;
+    this.loadedVariables = Object.keys(mappings).filter(
+      (variable) => environment[variable] !== undefined,
+    );
     this.sources.push({
       provider: environmentProvider(environment, {
         name: 'section-environment',
@@ -160,6 +164,14 @@ export class AppConfig {
       }),
     });
     this.current = await this.loadConfig();
+  }
+
+  /**
+   * The declared section variables that were set in the environment the configuration was loaded from, which is the
+   * application's own environment (its `scope.env`) rather than the host process's.
+   */
+  public loadedEnvironmentVariables(): readonly string[] {
+    return this.loadedVariables;
   }
 
   /** Every environment variable the sections declare, with the absolute path it sets, such as `{ AUTH_SECRET: 'auth.secret' }`. */
