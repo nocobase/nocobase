@@ -31,6 +31,7 @@ import {
   type AppCommandOutput,
   type AppCommandRunner,
   type AppDefinition,
+  type BackupArchiveLocation,
   type HostBackendCapabilities,
   type HostDeploymentStatus,
   type HostScopeCheck,
@@ -485,6 +486,7 @@ export class DockerBackend implements ServiceBackend {
     };
     return {
       backupsDir: config.backupsPath,
+      location: { backend: this.name, scope: service.scope, image },
       run: async (args) => {
         const output = await run(['node', 'dist/cli/index.js', ...args]);
         if (
@@ -498,18 +500,77 @@ export class DockerBackend implements ServiceBackend {
         return output;
       },
       removeBackupFile: async (name) => {
-        const output = await run([
-          'node',
-          '-e',
-          'require("node:fs").rmSync(process.argv[1], { force: true })',
-          path.posix.join(config.backupsPath, path.posix.basename(name)),
-        ]);
+        const output = await run(removeCommand(config, name));
         if (output.exitCode !== 0)
           throw new Error(
             `Could not remove backup ${name}: ${output.stderr.trim().slice(-500)}`,
           );
       },
     };
+  }
+
+  /**
+   * Removes an archive from an App's backup volume in a one-off container of the image that wrote it, with only that
+   * volume mounted and no network: what deletes a backup once the App was removed with its data kept. A volume that
+   * is gone took the archive with it.
+   */
+  async removeBackupArchive(
+    location: BackupArchiveLocation,
+    appId: string,
+    name: string,
+  ): Promise<void> {
+    assertAppId(appId);
+    const { scope: scopeId, image } = location as {
+      scope?: unknown;
+      image?: unknown;
+    };
+    if (typeof scopeId !== 'string' || typeof image !== 'string')
+      throw new Error(
+        `Backup ${name} of App "${appId}" has no Docker location`,
+      );
+    const { docker, names } = this.scope(scopeId);
+    const config = this.settings;
+    const volume = names.backupVolume(appId);
+    if (!(await docker.volumeExists(volume))) return;
+    if (!(await docker.imageExists(image)))
+      throw new HostManagementError(
+        `Backup ${name} of App "${appId}" cannot be removed: image ${image} that wrote it is no longer on this Docker host`,
+        'BACKEND_UNAVAILABLE',
+      );
+    const id = await docker.createContainer(
+      names.commandContainer(appId, randomUUID().slice(0, 8)),
+      {
+        Image: image,
+        Cmd: removeCommand(config, name),
+        Labels: names.labels('command', { [LABEL.app]: appId }),
+        HostConfig: {
+          Mounts: [
+            { Type: 'volume', Source: volume, Target: config.backupsPath },
+          ],
+          NetworkMode: 'none',
+          Init: true,
+          CapDrop: ['ALL'],
+          SecurityOpt: ['no-new-privileges'],
+        },
+      },
+      config.image.platform,
+    );
+    try {
+      await docker.startContainer(id);
+      const exitCode = await docker.waitContainer(id);
+      if (exitCode !== 0) {
+        const lines = await docker.logs(id, {});
+        throw new Error(
+          `Could not remove backup ${name} of App "${appId}": ${lines
+            .map((line) => line.text)
+            .join('\n')
+            .trim()
+            .slice(-500)}`,
+        );
+      }
+    } finally {
+      await docker.removeContainer(id).catch(() => undefined);
+    }
   }
 
   // ---- containers -----------------------------------------------------------------------------------------------
@@ -955,6 +1016,16 @@ export class DockerBackend implements ServiceBackend {
       if (this.locks.get(appId) === settled) this.locks.delete(appId);
     }
   }
+}
+
+/** Removes one archive of the backups directory by name; an absent one is fine. */
+function removeCommand(config: DockerSettings, name: string): string[] {
+  return [
+    'node',
+    '-e',
+    'require("node:fs").rmSync(process.argv[1], { force: true })',
+    path.posix.join(config.backupsPath, path.posix.basename(name)),
+  ];
 }
 
 function imageTargetOf(definition: AppDefinition): ImageTarget {

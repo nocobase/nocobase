@@ -15,11 +15,15 @@ import path from 'node:path';
 
 import type { AppRuntimeRegistry } from '../app-registry.ts';
 import type { AppDefinition } from '../app-types.ts';
-import { isServiceBackend, type AppCommandRunner } from '../service-backend.ts';
+import {
+  isServiceBackend,
+  type AppCommandRunner,
+  type BackupArchiveLocation,
+} from '../service-backend.ts';
 import { InProcessCommandRunner } from './app-command.ts';
 import type { ManagedReconciler } from './managed-reconciler.ts';
 import { assertOperationId } from './operation-log.ts';
-import { HostManagementError } from './scopes.ts';
+import { HostManagementError, type OperationCheckpoint } from './scopes.ts';
 import type {
   HostBackup,
   HostDeploymentSpec,
@@ -37,6 +41,14 @@ export interface HostBackupsOptions {
   /** `<appVolumesDir>`: where in-process archives and every backup record live. */
   readonly volumesDir: string;
   readonly now?: () => number;
+}
+
+/** The step after which a restore is not repeated (`OperationCheckpoint`). */
+const RESTORED = 'restored';
+
+/** What the Host keeps of a backup: the answer, and where a service backend wrote its archive. */
+interface BackupRecord extends HostBackup {
+  readonly location?: BackupArchiveLocation;
 }
 
 export class HostBackups {
@@ -66,8 +78,11 @@ export class HostBackups {
           `App "${appId}" is not deployed on this Host`,
           'APP_NOT_FOUND',
         );
+      // The configuration the App runs with now: one published since it was deployed must not be overwritten.
       const runner = await this.runnerFor(
-        await this.options.reconciler.commandDefinition(spec),
+        await this.options.reconciler.commandDefinition(spec, {
+          current: true,
+        }),
       );
       const name = archiveName(backupId);
       const archive = `${runner.backupsDir}/${name}`;
@@ -114,12 +129,9 @@ export class HostBackups {
           complete: isComplete(manifest),
           manifest,
           version: spec.artifact?.version ?? null,
-          artifact:
-            spec.backend === 'in-process'
-              ? (spec.artifact?.checksum ?? null)
-              : (spec.images?.[0]?.digest ?? spec.artifact?.checksum ?? null),
+          artifact: artifactOf(spec),
         };
-        await this.writeRecord(backup);
+        await this.writeRecord({ ...backup, location: runner.location });
         return backup;
       } catch (error) {
         await runner.removeBackupFile(name).catch(() => undefined);
@@ -129,8 +141,13 @@ export class HostBackups {
   }
 
   /**
-   * Restores a backup: stops the App, runs `backup restore` with the deployment's release, configuration and
-   * environment, and deploys it. A failed restore leaves the App stopped with the command's report in the error.
+   * Restores a backup: checks that it is complete, that the deployment runs the release it was taken with, and that
+   * its archive verifies with that release, all while the App still runs; then stops the App, runs `backup restore`
+   * with the deployment's release, configuration and environment, and deploys it. A refused restore leaves the App as
+   * it was; a failed one leaves it stopped with the command's report in the error.
+   *
+   * Once the data is back the step is recorded (`checkpoint`), so a retry after the Host stopped only deploys the App
+   * again and never puts the backup over what the App wrote after it came back.
    */
   restore(
     appId: string,
@@ -138,6 +155,7 @@ export class HostBackups {
       readonly backupId: string;
       readonly sha256?: string;
       readonly deployment: HostDeploymentSpec;
+      readonly checkpoint?: OperationCheckpoint;
       /** Deploys the App once its data is restored. */
       readonly deploy: (spec: HostDeploymentSpec) => Promise<HostStatus>;
     },
@@ -149,24 +167,12 @@ export class HostBackups {
         `The deployment to restore must be one of App "${appId}"`,
       );
     return this.locked(appId, async () => {
-      const backup = await this.read(appId, options.backupId);
-      if (!backup)
-        throw new HostManagementError(
-          `App "${appId}" has no backup "${options.backupId}" on this Host`,
-          'BACKUP_NOT_FOUND',
-        );
-      await this.options.reconciler.stopForRestore(appId);
-      const runner = await this.runnerFor(
-        await this.options.reconciler.commandDefinition(options.deployment),
-      );
-      const restore = (await runCommand(runner, [
-        'backup',
-        'restore',
-        `${runner.backupsDir}/${archiveName(backup.backupId)}`,
-        '--sha256',
-        options.sha256 ?? backup.sha256,
-        '--json',
-      ])) as Record<string, unknown>;
+      const previous = options.checkpoint?.previous;
+      const restore =
+        previous?.name === RESTORED
+          ? ((previous.result as { restore?: Record<string, unknown> } | null)
+              ?.restore ?? {})
+          : await this.restoreData(appId, options);
       const status = await options.deploy(options.deployment);
       const deployed = status.deployments.find(
         (deployment) => deployment.appId === appId,
@@ -181,23 +187,93 @@ export class HostBackups {
     });
   }
 
-  /** Removes a backup's archive and record; false when there was none. */
+  private async restoreData(
+    appId: string,
+    options: {
+      readonly backupId: string;
+      readonly sha256?: string;
+      readonly deployment: HostDeploymentSpec;
+      readonly checkpoint?: OperationCheckpoint;
+    },
+  ): Promise<Record<string, unknown>> {
+    const backup = await this.read(appId, options.backupId);
+    if (!backup)
+      throw new HostManagementError(
+        `App "${appId}" has no backup "${options.backupId}" on this Host`,
+        'BACKUP_NOT_FOUND',
+      );
+    if (!backup.complete)
+      throw new HostManagementError(
+        `Backup "${backup.backupId}" does not restore everything by itself (${describeGaps(backup.manifest)}); it cannot be restored automatically`,
+        'BACKUP_INCOMPLETE',
+        { limitations: backup.manifest.limitations ?? [] },
+      );
+    const target = artifactOf(options.deployment);
+    if (backup.artifact !== null && target !== backup.artifact)
+      throw new HostManagementError(
+        `Backup "${backup.backupId}" was taken with release ${backup.version ?? '?'} (${backup.artifact}); restore it with the deployment of that release, not ${options.deployment.artifact?.version ?? '?'} (${target ?? 'none'})`,
+        'BACKUP_ARTIFACT_MISMATCH',
+        { backup: backup.artifact, deployment: target },
+      );
+    const runner = await this.runnerFor(
+      await this.options.reconciler.commandDefinition(options.deployment),
+    );
+    const archive = `${runner.backupsDir}/${archiveName(backup.backupId)}`;
+    const sha256 = options.sha256 ?? backup.sha256;
+    // Refused here, the App keeps running: the archive is missing, damaged or not this release's.
+    await runCommand(runner, [
+      'backup',
+      'verify',
+      archive,
+      '--sha256',
+      sha256,
+      '--json',
+    ]);
+    await this.options.reconciler.stopForRestore(appId);
+    const restore = (await runCommand(runner, [
+      'backup',
+      'restore',
+      archive,
+      '--sha256',
+      sha256,
+      '--json',
+    ])) as Record<string, unknown>;
+    await options.checkpoint?.save(RESTORED, { restore });
+    return restore;
+  }
+
+  /**
+   * Removes a backup's archive, then its record; false when there was none. The archive is found where it was
+   * written, also once its App was removed with its data kept; when it cannot be removed the record stays, so the
+   * delete can be asked again.
+   */
   delete(appId: string, backupId: string): Promise<boolean> {
     assertAppId(appId);
     assertOperationId(backupId);
     return this.locked(appId, async () => {
-      const backup = await this.read(appId, backupId);
-      if (!backup) return false;
-      const spec = this.options.reconciler.specOf(appId);
-      if (spec) {
-        const runner = await this.runnerFor(
-          await this.options.reconciler.commandDefinition(spec),
-        );
-        await runner.removeBackupFile(archiveName(backupId));
-      } else
-        await rm(path.join(this.backupsDir(appId), archiveName(backupId)), {
-          force: true,
-        });
+      const record = await this.readRecord(appId, backupId);
+      if (!record) return false;
+      const name = archiveName(backupId);
+      if (record.location) {
+        const location = record.location;
+        const backend = this.options.registry
+          .listBackends()
+          .find(
+            (candidate) =>
+              isServiceBackend(candidate) &&
+              candidate.name === location.backend,
+          );
+        if (
+          !backend ||
+          !isServiceBackend(backend) ||
+          !backend.removeBackupArchive
+        )
+          throw new HostManagementError(
+            `The "${location.backend}" backend that keeps backup "${backupId}" is not available on this Host`,
+            'BACKEND_UNAVAILABLE',
+          );
+        await backend.removeBackupArchive(location, appId, name);
+      } else await rm(path.join(this.backupsDir(appId), name), { force: true });
       await rm(this.recordPath(appId, backupId), { force: true });
       return true;
     });
@@ -205,10 +281,20 @@ export class HostBackups {
 
   /** The recorded backup, or null. */
   async read(appId: string, backupId: string): Promise<HostBackup | null> {
+    const record = await this.readRecord(appId, backupId);
+    if (!record) return null;
+    const { location: _location, ...backup } = record;
+    return backup;
+  }
+
+  private async readRecord(
+    appId: string,
+    backupId: string,
+  ): Promise<BackupRecord | null> {
     try {
       const value = JSON.parse(
         await readFile(this.recordPath(appId, backupId), 'utf8'),
-      ) as HostBackup;
+      ) as BackupRecord;
       return value?.backupId === backupId && value.appId === appId
         ? value
         : null;
@@ -244,7 +330,7 @@ export class HostBackups {
     return path.join(this.backupsDir(appId), `${backupId}.json`);
   }
 
-  private async writeRecord(backup: HostBackup): Promise<void> {
+  private async writeRecord(backup: BackupRecord): Promise<void> {
     const target = this.recordPath(backup.appId, backup.backupId);
     await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
     const temporary = `${target}.${randomUUID()}.tmp`;
@@ -353,6 +439,23 @@ function parseEnvelope(stdout: string): Envelope | null {
     }
   }
   return null;
+}
+
+/** The release a spec runs: its archive's checksum, or for an external service the image it runs. */
+function artifactOf(spec: HostDeploymentSpec): string | null {
+  return spec.backend === 'in-process'
+    ? (spec.artifact?.checksum ?? null)
+    : (spec.images?.[0]?.digest ?? spec.artifact?.checksum ?? null);
+}
+
+/** What an incomplete manifest leaves out, for the error that refuses it. */
+function describeGaps(manifest: Record<string, unknown>): string {
+  const limitations = Array.isArray(manifest.limitations)
+    ? manifest.limitations.filter((item) => typeof item === 'string')
+    : [];
+  return limitations.length
+    ? limitations.join('; ')
+    : 'a database or disk is not in the archive';
 }
 
 function archiveName(backupId: string): string {

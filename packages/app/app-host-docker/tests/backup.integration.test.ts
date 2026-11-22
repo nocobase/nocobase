@@ -117,6 +117,36 @@ async function follow(
 }
 
 /** Runs `script` with Node in a container of the image on the App's storage volume; answers its output. */
+/** The archives in the App's backup volume, read by a probe container of the image under test. */
+async function inBackups(): Promise<string[]> {
+  const container = await docker.createContainer({
+    name: `${PREFIX}probe-${randomUUID().slice(0, 8)}`,
+    Image: IMAGE!,
+    Cmd: [
+      'node',
+      '-e',
+      `console.log(JSON.stringify(require('node:fs').readdirSync(${JSON.stringify(DOCKER_DEFAULT_SETTINGS.backupsPath)}).filter((name) => name.endsWith('.tar.gz')).sort()))`,
+    ],
+    HostConfig: {
+      Mounts: [
+        {
+          Type: 'volume',
+          Source: `${PREFIX}shop-backups`,
+          Target: DOCKER_DEFAULT_SETTINGS.backupsPath,
+        },
+      ],
+    },
+  });
+  try {
+    await container.start();
+    await container.wait();
+    const frames = await container.logs({ stdout: true });
+    return JSON.parse(frames.subarray(8).toString('utf8').trim()) as string[];
+  } finally {
+    await container.remove({ force: true });
+  }
+}
+
 async function inStorage(script: string): Promise<string> {
   const [app] = await docker.listContainers({
     all: true,
@@ -349,7 +379,7 @@ describe.runIf(IMAGE)(
         uploads: ['before.txt'],
       });
 
-      // A wrong checksum fails the restore with the command's own code, and the App is left stopped.
+      // A wrong checksum is refused by verify with the command's own code before the App is stopped.
       const failed = await service.restoreBackup!('shop', {
         operationId: 'r-2',
         scope: scope(),
@@ -365,6 +395,10 @@ describe.runIf(IMAGE)(
         state: 'failed',
         errorCode: 'BACKUP_DIGEST_MISMATCH',
       });
+      const status = await service.getStatus({ scope: SCOPE_ID });
+      expect(status.deployments).toMatchObject([
+        { appId: 'shop', observedState: 'running' },
+      ]);
 
       await expect(
         service.deleteBackup!('shop', 'b-1', { scope: scope() }),
@@ -372,6 +406,18 @@ describe.runIf(IMAGE)(
       await expect(
         service.deleteBackup!('shop', 'b-1', { scope: scope() }),
       ).resolves.toEqual({ deleted: false });
+
+      // Removed with its data kept, the App's backup is still deleted from the backup volume.
+      await service.createBackup!('shop', {
+        operationId: 'b-2',
+        scope: scope(),
+      });
+      expect(await inBackups()).toEqual(['b-2.tar.gz']);
+      await service.removeDeployment('shop', { purgeData: false });
+      await expect(
+        service.deleteBackup!('shop', 'b-2', { scope: scope() }),
+      ).resolves.toEqual({ deleted: true });
+      expect(await inBackups()).toEqual([]);
     }, 900_000);
   },
 );

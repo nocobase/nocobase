@@ -213,8 +213,16 @@ export interface HostOperation {
   state: HostOperationState;
   /** The App once the deployment finished. */
   status: HostDeploymentStatus | null;
-  /** What a succeeded backup or restore answered (`HostBackup`, `HostRestoreResult`). */
+  /**
+   * What a succeeded backup or restore answered (`HostBackup`, `HostRestoreResult`); while one runs, what its last
+   * `checkpoint` recorded.
+   */
   result?: unknown;
+  /**
+   * The last step a running backup or restore finished, kept when the Host stops so that a retry does not repeat it:
+   * `restored` once a restore's data is back, so a retry only deploys the App again.
+   */
+  checkpoint?: string;
   error: string | null;
   /** The stable code of a failed backup or restore, such as `BACKUP_COMMAND_UNAVAILABLE`. */
   errorCode?: string;

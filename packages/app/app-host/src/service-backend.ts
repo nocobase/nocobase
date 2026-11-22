@@ -59,6 +59,16 @@ export interface ServiceBackend extends AppActivationBackend {
    * configuration and environment: what backups and restores run on.
    */
   commandRunner?(definition: AppDefinition): Promise<AppCommandRunner>;
+  /**
+   * Removes an archive a command runner of this backend wrote, found by the runner's `location` alone: the App may
+   * have been removed (keeping its data) since, so neither its definition nor its configuration is at hand. An
+   * archive that is already gone is fine; one that could not be removed fails.
+   */
+  removeBackupArchive?(
+    location: BackupArchiveLocation,
+    appId: string,
+    name: string,
+  ): Promise<void>;
   /** Runs before a deployment replaces the App, such as a backup; failing fails the deployment first. */
   beforeDeploy?(definition: AppDefinition): Promise<void>;
   /** Lets every connection go when the Host stops; services keep running. */
@@ -83,6 +93,18 @@ export interface AppCommandRunner {
   run(args: readonly string[]): Promise<AppCommandOutput>;
   /** Removes a file of `backupsDir` by name; an absent one is ignored. */
   removeBackupFile(name: string): Promise<void>;
+  /**
+   * Where a service backend keeps the archives, recorded with each backup so that it can be deleted without the App
+   * (`ServiceBackend.removeBackupArchive`); absent for an in-process App, whose archives are files of the Host.
+   */
+  readonly location?: BackupArchiveLocation;
+}
+
+/** A service backend's own description of where an App's archives are, as JSON. */
+export interface BackupArchiveLocation {
+  /** The backend's name, as the registry knows it. */
+  readonly backend: string;
+  readonly [key: string]: unknown;
 }
 
 export function isServiceBackend(

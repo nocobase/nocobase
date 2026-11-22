@@ -34,6 +34,18 @@ export class AppVolumeManager {
     return storageDir;
   }
 
+  /** Where `writeConfig` keeps an App's configuration of one revision. */
+  managedConfigPath(appId: string, revision: string): string {
+    this.assertAppId(appId);
+    this.assertAppId(revision);
+    return path.join(
+      this.volumesDir,
+      appId,
+      'configs',
+      `config.${revision}.yml`,
+    );
+  }
+
   async writeConfig(
     appId: string,
     revision: string,

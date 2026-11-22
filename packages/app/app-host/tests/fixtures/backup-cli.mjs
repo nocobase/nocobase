@@ -1,6 +1,8 @@
 // A stand-in for an application's `dist/cli/index.js`: the four `backup` commands with their `--json` documents,
-// backing up `data.txt` of the App's storage. It records each command in `$BACKUP_CLI_LOG`, writes its process ID to
-// `$BACKUP_CLI_PID` and, with `$BACKUP_CLI_HOLD`, waits until that file disappears before it writes anything.
+// backing up `data.txt` of the App's storage. It records each command in `$BACKUP_CLI_LOG` with the first line of
+// its configuration file, writes its process ID to `$BACKUP_CLI_PID` and, with `$BACKUP_CLI_HOLD`, waits until that
+// file disappears before it writes anything. `$BACKUP_CLI_FAIL_RESTORE` makes `restore` fail after it checked the
+// archive.
 import { createHash } from 'node:crypto';
 import {
   appendFileSync,
@@ -40,7 +42,7 @@ if (process.env.BACKUP_CLI_PID)
 if (process.env.BACKUP_CLI_LOG)
   appendFileSync(
     process.env.BACKUP_CLI_LOG,
-    `${name} ${process.env.APP_CONFIG_FILE ? 'config' : 'no-config'}\n`,
+    `${name} ${process.env.APP_CONFIG_FILE ? readFileSync(process.env.APP_CONFIG_FILE, 'utf8').split('\n')[0] : 'no-config'}\n`,
   );
 const hold = process.env.BACKUP_CLI_HOLD;
 while (hold && existsSync(hold))
@@ -83,6 +85,8 @@ switch (command) {
   }
   case 'verify': {
     const file = rest[0];
+    if (!existsSync(file))
+      fail('BACKUP_ARCHIVE_NOT_FOUND', `${file} does not exist.`);
     if (flag('--sha256') !== sha256(file))
       fail('BACKUP_DIGEST_MISMATCH', 'The archive checksum does not match.');
     succeed({ ok: true, sha256: sha256(file), manifest });
@@ -96,6 +100,10 @@ switch (command) {
     if (flag('--sha256') !== sha256(file))
       fail('BACKUP_DIGEST_MISMATCH', 'The archive checksum does not match.', {
         connections: [{ name: 'main', status: 'not-started' }],
+      });
+    if (process.env.BACKUP_CLI_FAIL_RESTORE)
+      fail('RESTORE_IMPORT_FAILED', 'The database import failed.', {
+        connections: [{ name: 'main', status: 'rolled-back' }],
       });
     writeFileSync(
       path.join(storage, 'data.txt'),

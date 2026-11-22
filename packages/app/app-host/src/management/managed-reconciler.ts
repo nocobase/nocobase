@@ -34,6 +34,7 @@ import { fullErrorMessage } from '../errors.ts';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
+  access,
   mkdir,
   readFile,
   readdir,
@@ -647,10 +648,21 @@ export class ManagedReconciler {
    * directory; an external service's definition as its backend runs it. Queued behind deployments, so a release is
    * never pruned or replaced while it is prepared.
    */
-  commandDefinition(spec: HostDeploymentSpec): Promise<AppDefinition> {
+  commandDefinition(
+    spec: HostDeploymentSpec,
+    options: {
+      /**
+       * Run with the configuration the App has now rather than writing the spec's: what it was deployed with, or
+       * published since (`publishAppConfig`), which a backup has to read its databases from.
+       */
+      readonly current?: boolean;
+    } = {},
+  ): Promise<AppDefinition> {
     return this.enqueue(async () => {
       validateDeploymentSet({ revision: 1, deployments: [spec] });
-      const configPath = await this.prepareConfig(spec);
+      const configPath =
+        (options.current ? await this.currentConfig(spec) : undefined) ??
+        (await this.prepareConfig(spec));
       if (spec.backend !== 'in-process')
         return this.serviceDefinition(spec, configPath);
       const artifact = await this.artifactResolver
@@ -667,6 +679,25 @@ export class ManagedReconciler {
         env: spec.env ? { ...spec.env } : undefined,
       };
     });
+  }
+
+  /** The configuration file an App runs with now, when the Host keeps one: published content survives here. */
+  private async currentConfig(
+    spec: HostDeploymentSpec,
+  ): Promise<string | undefined> {
+    const registered = this.registry.definition(spec.appId)?.configPath;
+    if (registered) return registered;
+    if (spec.config?.content === undefined) return undefined;
+    const written = this.volumes.managedConfigPath(
+      spec.appId,
+      spec.config.revision ?? spec.id,
+    );
+    return (await access(written).then(
+      () => true,
+      () => false,
+    ))
+      ? written
+      : undefined;
   }
 
   /** Stops an App before its data is restored; an App this Host does not run is left alone. */
