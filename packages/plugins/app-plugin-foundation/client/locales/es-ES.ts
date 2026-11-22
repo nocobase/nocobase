@@ -85,6 +85,8 @@ const esES: LocaleResource<typeof enUS> = {
       'Plugins habilitados que dependen de él: {{names}}. Deshabilítelos junto con él.',
     noDependents:
       'Ningún plugin habilitado depende de él, así que puede deshabilitarse por sí solo.',
+    optionalDependents:
+      'Plugins habilitados que lo usan de forma opcional: {{names}}. Siguen funcionando sin él, pero pierden las funciones que lo necesitan.',
   },
   enable: {
     title: 'Habilitar {{title}}',

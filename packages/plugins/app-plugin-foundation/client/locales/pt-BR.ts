@@ -86,6 +86,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Plugins ativados que dependem dele: {{names}}. Desative-os junto com ele.',
     noDependents:
       'Nenhum plugin ativado depende dele, então ele pode ser desativado sozinho.',
+    optionalDependents:
+      'Plugins ativados que o usam de forma opcional: {{names}}. Continuam funcionando sem ele, mas perdem os recursos que precisam dele.',
   },
   enable: {
     title: 'Ativar {{title}}',

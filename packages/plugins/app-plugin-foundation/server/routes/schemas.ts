@@ -81,6 +81,10 @@ export const PluginSchema: z.ZodType<FoundationPluginView> = z
     requires: z.array(z.string()).meta({
       description: 'Application plugins this one builds on.',
     }),
+    optionalRequires: z.array(z.string()).meta({
+      description:
+        'Those of `requires` its manifest marks optional: it starts without them and loses only the features that need them.',
+    }),
     missingRequires: z.array(z.string()).meta({
       description:
         'Those of `requires` the application has not enabled; for an enabled plugin, only those it cannot work without.',

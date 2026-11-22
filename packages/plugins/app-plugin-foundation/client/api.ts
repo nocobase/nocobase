@@ -3,7 +3,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { FOUNDATION_NAMESPACE } from '../shared/access.js';
 import {
-  PLUGIN_PACKAGE_PATTERN,
+  isPluginPackageName,
   type FoundationPluginView,
   type FoundationPluginsMeta,
 } from '../shared/plugins.js';
@@ -22,7 +22,7 @@ export function usePlugins(): UseQueryResult<FoundationPlugins> {
   const { runtime } = useClientApplication();
   const client = (runtime.registeredPlugins ?? [])
     .map(({ packageName }) => packageName)
-    .filter((packageName) => PLUGIN_PACKAGE_PATTERN.test(packageName));
+    .filter(isPluginPackageName);
   return useQuery({
     queryKey: ['foundation', 'plugins', client],
     queryFn: () =>

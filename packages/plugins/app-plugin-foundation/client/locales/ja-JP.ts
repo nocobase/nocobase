@@ -87,6 +87,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       'これに依存する有効なプラグイン：{{names}}。一緒に無効にしてください。',
     noDependents:
       'これに依存する有効なプラグインはないため、単独で無効にできます。',
+    optionalDependents:
+      'これを任意で使う有効なプラグイン：{{names}}。無効にしても動作しますが、これを必要とする機能は使えなくなります。',
   },
   enable: {
     title: '{{title}} を有効にする',

@@ -88,6 +88,8 @@ const frFR: LocaleResource<typeof enUS> = {
       'Plugins activés qui en dépendent : {{names}}. Désactivez-les en même temps.',
     noDependents:
       'Aucun plugin activé n’en dépend : il peut être désactivé seul.',
+    optionalDependents:
+      'Plugins activés qui l’utilisent de façon facultative : {{names}}. Ils continuent de fonctionner sans lui, mais perdent les fonctions qui en ont besoin.',
   },
   enable: {
     title: 'Activer {{title}}',

@@ -22,6 +22,7 @@ function view(
     skillsOnly: false,
     issues: [],
     requires: [],
+    optionalRequires: [],
     missingRequires: [],
     ...overrides,
   };
@@ -208,6 +209,65 @@ describe('plugins page', () => {
     ).toBeInTheDocument();
     expect(dialog).toHaveTextContent(
       'Enabled plugins that depend on it: Mail. Disable them together with it.',
+    );
+  });
+
+  it('separates the plugins that only use one optionally from those that need it', async () => {
+    await renderPage({
+      plugins: [
+        view('agents', { title: 'Agents' }),
+        view('knowledge', {
+          title: 'Knowledge',
+          requires: ['@nocobase/app-plugin-agents'],
+          optionalRequires: ['@nocobase/app-plugin-agents'],
+        }),
+        view('agent-sessions', {
+          title: 'Sessions',
+          requires: ['@nocobase/app-plugin-agents'],
+        }),
+      ],
+    });
+
+    fireEvent.click(
+      within(rowOf('Agents')).getByRole('button', {
+        name: 'Commands for Agents',
+      }),
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(
+      'Enabled plugins that depend on it: Sessions. Disable them together with it.',
+    );
+    expect(dialog).toHaveTextContent(
+      'Enabled plugins that use it optionally: Knowledge. They keep working without it but lose the features that need it.',
+    );
+    expect(dialog).not.toHaveTextContent(/depend on it: [^.]*Knowledge/);
+  });
+
+  it('does not ask to disable a plugin that only uses one optionally', async () => {
+    await renderPage({
+      plugins: [
+        view('agents', { title: 'Agents' }),
+        view('knowledge', {
+          title: 'Knowledge',
+          requires: ['@nocobase/app-plugin-agents'],
+          optionalRequires: ['@nocobase/app-plugin-agents'],
+        }),
+      ],
+    });
+
+    fireEvent.click(
+      within(rowOf('Agents')).getByRole('button', {
+        name: 'Commands for Agents',
+      }),
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(
+      'No enabled plugin depends on it, so it can be disabled on its own.',
+    );
+    expect(dialog).toHaveTextContent(
+      'Enabled plugins that use it optionally: Knowledge.',
     );
   });
 

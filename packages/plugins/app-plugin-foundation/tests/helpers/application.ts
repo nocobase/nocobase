@@ -20,6 +20,11 @@ export async function createApplicationFixture(options: {
   readonly devDependencies?: readonly string[];
   readonly installed: readonly FixturePlugin[];
   readonly builtAt?: string;
+  /** The CLI composition root to write, `cli/plugins.ts` as a source checkout has it or `cli/plugins.js` as a build does. */
+  readonly cli?: {
+    readonly file: 'plugins.ts' | 'plugins.js';
+    readonly plugins: readonly string[];
+  };
 }): Promise<{
   readonly rootDir: string;
   readonly cleanup: () => Promise<void>;
@@ -36,6 +41,21 @@ export async function createApplicationFixture(options: {
       devDependencies: ranges(options.devDependencies),
     }),
   );
+  if (options.cli) {
+    const locals = options.cli.plugins.map((_, index) => `plugin${index}`);
+    await mkdir(path.join(rootDir, 'cli'), { recursive: true });
+    await writeFile(
+      path.join(rootDir, 'cli', options.cli.file),
+      [
+        "import { defineCliPlugins } from '@nocobase/app-cli';",
+        ...options.cli.plugins.map(
+          (name, index) => `import ${locals[index]} from '${name}/cli';`,
+        ),
+        `export default defineCliPlugins([${locals.join(', ')}]);`,
+        '',
+      ].join('\n'),
+    );
+  }
   for (const plugin of options.installed) {
     const directory = path.join(rootDir, 'node_modules', plugin.name);
     await mkdir(directory, { recursive: true });

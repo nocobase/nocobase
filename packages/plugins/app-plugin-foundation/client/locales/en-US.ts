@@ -75,6 +75,8 @@ const enUS = {
       'Enabled plugins that depend on it: {{names}}. Disable them together with it.',
     noDependents:
       'No enabled plugin depends on it, so it can be disabled on its own.',
+    optionalDependents:
+      'Enabled plugins that use it optionally: {{names}}. They keep working without it but lose the features that need it.',
   },
   enable: {
     title: 'Enable {{title}}',

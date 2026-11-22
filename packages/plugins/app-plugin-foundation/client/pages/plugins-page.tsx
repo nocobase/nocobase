@@ -362,24 +362,38 @@ function CommandDialog({
         note: t('commands.unregister'),
       },
     ];
+    const names = (items: readonly PluginRow[]) =>
+      items.map((item) => item.title).join(', ');
     body = (
-      <p
-        className={cn(
-          'flex items-start gap-2 rounded-lg px-3 py-2 text-xs',
-          dependents.length > 0
-            ? 'bg-amber-500/10 text-amber-900 dark:text-amber-200'
-            : 'bg-muted text-muted-foreground',
-        )}
-      >
-        <Info className='mt-px size-3.5 shrink-0' />
-        <span>
-          {dependents.length > 0
-            ? t('commands.dependents', {
-                names: dependents.map((item) => item.title).join(', '),
-              })
-            : t('commands.noDependents')}
-        </span>
-      </p>
+      <>
+        <p
+          className={cn(
+            'flex items-start gap-2 rounded-lg px-3 py-2 text-xs',
+            dependents.required.length > 0
+              ? 'bg-amber-500/10 text-amber-900 dark:text-amber-200'
+              : 'bg-muted text-muted-foreground',
+          )}
+        >
+          <Info className='mt-px size-3.5 shrink-0' />
+          <span>
+            {dependents.required.length > 0
+              ? t('commands.dependents', {
+                  names: names(dependents.required),
+                })
+              : t('commands.noDependents')}
+          </span>
+        </p>
+        {dependents.optional.length > 0 ? (
+          <p className='flex items-start gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground'>
+            <Info className='mt-px size-3.5 shrink-0' />
+            <span>
+              {t('commands.optionalDependents', {
+                names: names(dependents.optional),
+              })}
+            </span>
+          </p>
+        ) : null}
+      </>
     );
   } else if (row) {
     const order = registrationOrder(row, rows);

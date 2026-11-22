@@ -86,6 +86,8 @@ const deDE: LocaleResource<typeof enUS> = {
       'Aktivierte Plugins, die davon abhängen: {{names}}. Deaktivieren Sie sie zusammen damit.',
     noDependents:
       'Kein aktiviertes Plugin hängt davon ab, es kann also allein deaktiviert werden.',
+    optionalDependents:
+      'Aktivierte Plugins, die es optional nutzen: {{names}}. Sie funktionieren weiter ohne es, verlieren aber die Funktionen, die es brauchen.',
   },
   enable: {
     title: '{{title}} aktivieren',

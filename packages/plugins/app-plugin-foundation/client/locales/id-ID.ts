@@ -86,6 +86,8 @@ const idID: LocaleResource<typeof enUS> = {
       'Plugin aktif yang bergantung padanya: {{names}}. Nonaktifkan bersama-sama.',
     noDependents:
       'Tidak ada plugin aktif yang bergantung padanya, jadi bisa dinonaktifkan sendiri.',
+    optionalDependents:
+      'Plugin aktif yang menggunakannya secara opsional: {{names}}. Plugin itu tetap berjalan tanpanya, tetapi kehilangan fitur yang memerlukannya.',
   },
   enable: {
     title: 'Aktifkan {{title}}',

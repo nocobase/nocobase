@@ -79,6 +79,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     unregister: '停用，資料保留',
     dependents: '依賴它的已啟用外掛：{{names}}。需要一起停用。',
     noDependents: '依賴它的已啟用外掛：無，可以直接停用。',
+    optionalDependents:
+      '選用它的已啟用外掛：{{names}}。停用後它們仍能使用，只是少了依賴它的功能。',
   },
   enable: {
     title: '啟用 {{title}}',

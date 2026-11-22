@@ -9,6 +9,7 @@ import {
 
 const both = { client: true, server: true, cli: false };
 const none = { client: false, server: false, cli: false };
+const cliOnly = { client: false, server: false, cli: true };
 
 const facts = (
   overrides: Partial<PluginRegistrationFacts>,
@@ -28,6 +29,18 @@ describe('classifyPluginRegistration', () => {
       'preinstalled',
       facts({ dependencyField: 'devDependencies', registered: none }),
       'preinstalled',
+      [],
+    ],
+    [
+      'a CLI-only plugin its CLI root registers',
+      facts({ entries: cliOnly, registered: cliOnly }),
+      'registered',
+      [],
+    ],
+    [
+      'a CLI-only plugin nothing registers',
+      facts({ entries: cliOnly, registered: none }),
+      'unregistered',
       [],
     ],
     [

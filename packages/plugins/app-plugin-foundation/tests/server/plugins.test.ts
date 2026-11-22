@@ -186,6 +186,67 @@ describe('FoundationPluginCatalog', () => {
     expect(data.map(({ packageName }) => packageName)).toEqual([MAIL]);
   });
 
+  it('only answers for the plugins the application declares or registers, whatever the browser names', async () => {
+    const stray = '@acme/app-plugin-stray';
+    const plugins = await catalog(
+      {
+        dependencies: [MAIL],
+        // Installed but not declared: only a request names it.
+        installed: [{ name: MAIL }, { name: stray }],
+      },
+      [MAIL],
+    );
+    const installed = Reflect.get(plugins, 'installed') as Map<string, unknown>;
+
+    const { data } = await plugins.list([
+      MAIL,
+      stray,
+      '@acme/app-plugin-never-installed',
+      '../../etc/app-plugin-x',
+      'not a package',
+    ]);
+
+    expect(data.map(({ packageName }) => packageName)).toEqual([MAIL]);
+    // Nothing the request named beyond the application's own plugins was looked up or cached.
+    expect([...installed.keys()]).toEqual([MAIL]);
+    await plugins.list(
+      Array.from({ length: 50 }, (_, index) => `@acme/app-plugin-p${index}`),
+    );
+    expect([...installed.keys()]).toEqual([MAIL]);
+  });
+
+  it.each(['plugins.ts', 'plugins.js'] as const)(
+    'takes a plugin with only a CLI entry as registered exactly when cli/%s registers it',
+    async (file) => {
+      const cliOnly = '@acme/app-plugin-tools';
+      const fixture = {
+        dependencies: [cliOnly],
+        installed: [{ name: cliOnly, entries: ['cli'] as const }],
+      };
+
+      const registered = await catalog(
+        { ...fixture, cli: { file, plugins: [cliOnly] } },
+        [],
+      );
+      expect((await registered.list([])).data).toMatchObject([
+        {
+          packageName: cliOnly,
+          state: 'registered',
+          enabled: true,
+          issues: [],
+        },
+      ]);
+
+      const unregistered = await catalog(
+        { ...fixture, cli: { file, plugins: [] } },
+        [],
+      );
+      expect((await unregistered.list([])).data).toMatchObject([
+        { packageName: cliOnly, state: 'unregistered', enabled: false },
+      ]);
+    },
+  );
+
   it('lists a third-party plugin with the name and description it declares', async () => {
     const plugin = '@acme/app-plugin-orders';
     const plugins = await catalog(

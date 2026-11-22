@@ -491,6 +491,67 @@ describe('app plugin register command', () => {
     );
   });
 
+  it('keeps what it registered when a later plugin fails, and checks every name before writing', async () => {
+    const appRoot = await createAppWithInstalledPlugin();
+    const previousExitCode = process.exitCode;
+    let stdout: string;
+    let invalid: string;
+    try {
+      ({ stdout: invalid } = await runCommand(config, 'plugin:register', [
+        'audit-log',
+        'Not A Name',
+        '--dir',
+        appRoot,
+        '--no-install',
+        '--no-skills',
+        '--json',
+      ]));
+      expect(
+        JSON.parse(await readFile(path.join(appRoot, 'package.json'), 'utf8'))
+          .dependencies ?? {},
+      ).not.toHaveProperty('@nocobase/app-plugin-audit-log');
+      ({ stdout } = await runCommand(config, 'plugin:register', [
+        'audit-log',
+        'not-installed',
+        'knowledge',
+        '--dir',
+        appRoot,
+        '--no-install',
+        '--no-skills',
+        '--json',
+      ]));
+    } finally {
+      process.exitCode = previousExitCode;
+    }
+    expect(JSON.parse(invalid)).toMatchObject({ ok: false });
+    const response = JSON.parse(stdout) as {
+      ok: boolean;
+      error: {
+        code: string;
+        message: string;
+        details: {
+          registered: Array<{ packageName: string }>;
+          failed: string;
+          skipped: string[];
+        };
+      };
+    };
+    expect(response.ok).toBe(false);
+    expect(response.error.code).toBe('PLUGIN_NOT_INSTALLED');
+    expect(response.error.message).toContain(
+      'Registering stopped at @nocobase/app-plugin-not-installed after registering @nocobase/app-plugin-audit-log',
+    );
+    expect(response.error.details).toMatchObject({
+      registered: [{ packageName: '@nocobase/app-plugin-audit-log' }],
+      failed: '@nocobase/app-plugin-not-installed',
+      skipped: ['@nocobase/app-plugin-knowledge'],
+    });
+    expect(
+      JSON.parse(await readFile(path.join(appRoot, 'package.json'), 'utf8'))
+        .dependencies,
+    ).toHaveProperty('@nocobase/app-plugin-audit-log');
+  });
+
   it('reports a plugin registered on only one of its Client and Server sides', async () => {
     const appRoot = await createAppWithInstalledPlugin({ client: false });
     await runCommand(config, 'plugin:register', [

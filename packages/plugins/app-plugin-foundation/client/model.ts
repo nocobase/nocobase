@@ -150,15 +150,26 @@ export function registerCommand(packages: readonly string[]): string {
   return `pnpm nocobase plugin register ${packages.map(pluginCommandName).join(' ')}`;
 }
 
-/** The enabled plugins that build on `row`, which have to be disabled with it. */
+/**
+ * The enabled plugins that build on `row`: `required` ones cannot start without it and have to be disabled with it;
+ * `optional` ones keep working without it and only lose the features that need it.
+ */
 export function dependentsOf(
   row: PluginRow,
   rows: readonly PluginRow[],
-): PluginRow[] {
-  return rows.filter(
-    (item) =>
-      item.enabled && item.plugin.requires.includes(row.plugin.packageName),
+): { readonly required: PluginRow[]; readonly optional: PluginRow[] } {
+  const { packageName } = row.plugin;
+  const dependents = rows.filter(
+    (item) => item.enabled && item.plugin.requires.includes(packageName),
   );
+  return {
+    required: dependents.filter(
+      (item) => !item.plugin.optionalRequires.includes(packageName),
+    ),
+    optional: dependents.filter((item) =>
+      item.plugin.optionalRequires.includes(packageName),
+    ),
+  };
 }
 
 /** Whether a row matches the search text, by title or package name. */

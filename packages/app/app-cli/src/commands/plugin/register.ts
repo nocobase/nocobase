@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import type { CommandSuccessStatus } from '@nocobase/cli-envelope';
 
+import { CommandError } from '../../command/errors.ts';
 import { AppCommand } from '../../context.ts';
 import {
   addDependencyCommand,
@@ -98,6 +99,43 @@ export interface PluginRegisterManyResult {
   readonly plugins: readonly PluginRegisterResult[];
 }
 
+/**
+ * `error.details` when registering several plugins fails part way: the ones before `failed` are registered and stay
+ * so, and the ones after it were not attempted. Running the same command again finishes the rest.
+ */
+export interface PluginRegisterManyFailureDetails {
+  readonly registered: readonly PluginRegisterResult[];
+  readonly failed: string;
+  readonly skipped: readonly string[];
+}
+
+/** The failure of one plugin among several, keeping what was already registered so a caller can tell. */
+function registerManyFailure(
+  error: CommandError,
+  details: PluginRegisterManyFailureDetails,
+): CommandError {
+  if (details.registered.length === 0 && details.skipped.length === 0)
+    return error;
+  const done =
+    details.registered.length > 0
+      ? ` after registering ${details.registered.map(({ packageName }) => packageName).join(', ')}`
+      : '';
+  const rest =
+    details.skipped.length > 0
+      ? `; ${details.skipped.join(', ')} ${details.skipped.length === 1 ? 'was' : 'were'} not attempted`
+      : '';
+  return new CommandError(
+    `${error.message} Registering stopped at ${details.failed}${done}${rest}.`,
+    {
+      code: error.errorCode,
+      suggestions: error.commandSuggestions,
+      exit: error.exitCode,
+      details,
+      cause: error,
+    },
+  );
+}
+
 export default class PluginRegister extends AppCommand {
   static override summary =
     'Install a plugin and wire it into this application.';
@@ -182,11 +220,21 @@ export default class PluginRegister extends AppCommand {
         throw pluginError(
           '--version applies to one plugin. Register a plugin that needs a version on its own.',
         );
+      // A misspelt name fails the command before anything is written.
+      const packageNames = names.map((name) => pluginPackageName(name));
       const plugins: PluginRegisterResult[] = [];
       const statuses: CommandSuccessStatus[] = [];
-      for (const name of names) {
+      for (const [index, name] of names.entries()) {
         this.#lastStatus = 'success';
-        plugins.push(await this.register(name, flags));
+        try {
+          plugins.push(await this.register(name, flags));
+        } catch (error) {
+          throw registerManyFailure(classifyPluginError(error), {
+            registered: plugins,
+            failed: packageNames[index],
+            skipped: packageNames.slice(index + 1),
+          });
+        }
         statuses.push(this.#lastStatus);
       }
       super.setStatus(

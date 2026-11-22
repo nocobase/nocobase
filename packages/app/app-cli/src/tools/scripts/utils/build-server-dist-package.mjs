@@ -83,7 +83,13 @@ const getVendorPackagePath = (packageName) =>
  */
 const pluginPeerDependencies = (packageJson) => {
   const peers = Object.keys(packageJson.peerDependencies ?? {})
-    .filter((name) => /^@nocobase\/app-(plugin|portal)-/.test(name))
+    // Official and third-party scopes alike: the rule `isPluginPackageName` in `src/lib/plugin-package-name.ts`
+    // applies, which these plain Node scripts cannot import.
+    .filter((name) =>
+      /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
+        name,
+      ),
+    )
     .sort();
   if (peers.length === 0) return {};
   const optional = peers.filter(

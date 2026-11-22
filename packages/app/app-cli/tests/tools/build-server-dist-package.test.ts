@@ -218,9 +218,14 @@ describe('server package generation', () => {
         ...(manifest.peerDependencies as Record<string, string>),
         '@nocobase/app-plugin-agents': 'workspace:^',
         '@nocobase/app-plugin-file': 'workspace:^',
+        // Third-party scopes are application plugins too; a package outside the naming rule is not.
+        '@acme/app-plugin-crm': '^1.0.0',
+        '@acme/app-portal-shop': '^1.0.0',
+        '@acme/app-plugin-': '^1.0.0',
       },
       peerDependenciesMeta: {
         '@nocobase/app-plugin-file': { optional: true },
+        '@acme/app-portal-shop': { optional: true },
       },
     });
 
@@ -237,10 +242,13 @@ describe('server package generation', () => {
       ),
     );
     expect(vendored.peerDependencies).toEqual({
+      '@acme/app-plugin-crm': '*',
+      '@acme/app-portal-shop': '*',
       '@nocobase/app-plugin-agents': '*',
       '@nocobase/app-plugin-file': '*',
     });
     expect(vendored.peerDependenciesMeta).toEqual({
+      '@acme/app-portal-shop': { optional: true },
       '@nocobase/app-plugin-file': { optional: true },
     });
   });

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { classifyPluginRegistration } from '@nocobase/app-server/plugins';
 
 import {
-  PLUGIN_PACKAGE_PATTERN,
+  isPluginPackageName,
   pluginCommandName,
   type FoundationLocalizedText,
   type FoundationPluginMetadata,
@@ -16,6 +16,8 @@ interface ApplicationManifest {
   readonly dependencies: Readonly<Record<string, string>>;
   readonly devDependencies: Readonly<Record<string, string>>;
   readonly deployed: boolean;
+  /** The packages the application's `cli/plugins` registers. */
+  readonly cliPlugins: ReadonlySet<string>;
 }
 
 interface InstalledPlugin extends FoundationPluginMetadata {
@@ -54,6 +56,9 @@ export class FoundationPluginCatalog {
   /**
    * `clientPlugins` are the packages the browser's application registers, which only the browser knows. Without
    * them, a plugin with a page is taken as registered on its client side exactly when it is on its server side.
+   *
+   * They come from the request, so they only answer whether a plugin the application already declares or the server
+   * registers is registered in the browser: a name outside that set is ignored and never looked up or cached.
    */
   public async list(clientPlugins?: readonly string[]): Promise<{
     readonly data: FoundationPluginView[];
@@ -61,26 +66,21 @@ export class FoundationPluginCatalog {
   }> {
     const application = await this.readApplication();
     const serverPlugins = (this.options.serverPlugins() ?? []).filter(
-      ({ packageName }) => PLUGIN_PACKAGE_PATTERN.test(packageName),
+      ({ packageName }) => isPluginPackageName(packageName),
     );
     const server = new Set(serverPlugins.map(({ packageName }) => packageName));
-    const client = clientPlugins
-      ? new Set(
-          clientPlugins.filter((name) => PLUGIN_PACKAGE_PATTERN.test(name)),
-        )
-      : undefined;
     const names = [
       ...new Set([
         ...server,
-        ...(client ?? []),
         ...[
           ...Object.keys(application.dependencies),
           ...Object.keys(application.devDependencies),
         ]
-          .filter((name) => PLUGIN_PACKAGE_PATTERN.test(name))
+          .filter(isPluginPackageName)
           .sort(),
       ]),
     ];
+    const client = clientPlugins ? new Set(clientPlugins) : undefined;
     const serverVersions = new Map(
       serverPlugins.map(({ packageName, version }) => [packageName, version]),
     );
@@ -108,8 +108,7 @@ export class FoundationPluginCatalog {
             client: client
               ? client.has(packageName)
               : entries.client && entries.server && server.has(packageName),
-            // The command line's own registrations are not part of the running application.
-            cli: false,
+            cli: application.cliPlugins.has(packageName),
           },
         });
         return { packageName, installed, dependencyField, registration };
@@ -127,7 +126,8 @@ export class FoundationPluginCatalog {
     const data = classified.map(
       ({ packageName, installed, dependencyField, registration }) => {
         const requires = installed?.requires ?? [];
-        const optional = new Set(installed?.optionalRequires ?? []);
+        const optionalRequires = installed?.optionalRequires ?? [];
+        const optional = new Set(optionalRequires);
         const isEnabled = enabled.has(packageName);
         const version = installed?.version ?? serverVersions.get(packageName);
         return {
@@ -145,6 +145,7 @@ export class FoundationPluginCatalog {
           skillsOnly: registration.skillsOnly,
           issues: registration.issues.map(({ code }) => code),
           requires,
+          optionalRequires,
           // Enabling a plugin brings everything it builds on; an enabled one only lacks what it cannot work without.
           missingRequires: requires.filter(
             (name) => !enabled.has(name) && !(isEnabled && optional.has(name)),
@@ -156,15 +157,17 @@ export class FoundationPluginCatalog {
   }
 
   private readApplication(): Promise<ApplicationManifest> {
-    this.application ??= readJson(
-      path.join(this.options.rootDir, 'package.json'),
-    ).then((manifest) => {
+    this.application ??= Promise.all([
+      readJson(path.join(this.options.rootDir, 'package.json')),
+      readCliPlugins(this.options.rootDir),
+    ]).then(([manifest, cliPlugins]) => {
       const nocobase = record(manifest?.nocobase);
       return {
         dependencies: stringRecord(manifest?.dependencies),
         devDependencies: stringRecord(manifest?.devDependencies),
         // `pnpm build` records when it built the deployable `dist/package.json`, which lists only `dependencies`.
         deployed: typeof nocobase?.builtAt === 'string',
+        cliPlugins,
       };
     });
     return this.application;
@@ -202,9 +205,7 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
   const peers = stringRecord(manifest.peerDependencies);
   const peersMeta = record(manifest.peerDependenciesMeta) ?? {};
   const nocobase = record(manifest.nocobase) ?? {};
-  const requires = Object.keys(peers)
-    .filter((name) => PLUGIN_PACKAGE_PATTERN.test(name))
-    .sort();
+  const requires = Object.keys(peers).filter(isPluginPackageName).sort();
   const title = localizedText(nocobase.title);
   const description = localizedText(nocobase.description);
   const docs = localizedText(nocobase.docs);
@@ -225,6 +226,28 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
     ...(description !== undefined ? { description } : {}),
     ...(docs !== undefined ? { docs } : {}),
   };
+}
+
+/**
+ * The packages the application's CLI composition root registers. The running server never loads the CLI, so it reads
+ * the root's import specifiers instead: `cli/plugins.ts` in a source checkout and the compiled `cli/plugins.js` a build
+ * writes, which keeps them. A plugin's CLI entry is imported only to be registered there, which is what
+ * `plugin register` writes and `plugin inspect` reads.
+ */
+async function readCliPlugins(rootDir: string): Promise<ReadonlySet<string>> {
+  for (const file of ['plugins.ts', 'plugins.js']) {
+    const source = await readFile(
+      path.join(rootDir, 'cli', file),
+      'utf8',
+    ).catch(() => undefined);
+    if (source === undefined) continue;
+    return new Set(
+      [...source.matchAll(/\bfrom\s+['"]([^'"]+)\/cli['"]/gu)]
+        .map(([, packageName]) => packageName)
+        .filter(isPluginPackageName),
+    );
+  }
+  return new Set();
 }
 
 function localizedText(value: unknown): FoundationLocalizedText | undefined {

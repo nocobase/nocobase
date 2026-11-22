@@ -84,6 +84,8 @@ const viVN: LocaleResource<typeof enUS> = {
       'Các plugin đã bật phụ thuộc vào nó: {{names}}. Hãy tắt chúng cùng lúc.',
     noDependents:
       'Không có plugin đã bật nào phụ thuộc vào nó, nên có thể tắt riêng.',
+    optionalDependents:
+      'Các plugin đã bật dùng nó như tùy chọn: {{names}}. Chúng vẫn hoạt động khi không có nó nhưng mất các tính năng cần đến nó.',
   },
   enable: {
     title: 'Bật {{title}}',

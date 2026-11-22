@@ -73,6 +73,8 @@ const zhCN: FoundationResource = {
     unregister: '停用，数据保留',
     dependents: '依赖它的已启用插件：{{names}}。需要一起停用。',
     noDependents: '依赖它的已启用插件：无，可以直接停用。',
+    optionalDependents:
+      '可选地用到它的已启用插件：{{names}}。停用后它们仍能使用，只是少了依赖它的功能。',
   },
   enable: {
     title: '启用 {{title}}',

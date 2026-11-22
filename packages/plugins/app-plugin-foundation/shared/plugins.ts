@@ -32,6 +32,8 @@ export interface FoundationPluginView extends FoundationPluginMetadata {
   readonly issues: readonly PluginRegistrationIssueCode[];
   /** The application plugins this one builds on: the `app-plugin-*` and `app-portal-*` packages among its `peerDependencies`. */
   readonly requires: readonly string[];
+  /** Those of `requires` its manifest marks optional: it starts without them and loses only the features that need them. */
+  readonly optionalRequires: readonly string[];
   /**
    * Those of `requires` the application has not enabled. For a plugin that is enabled, only those it cannot work
    * without; the ones its manifest marks optional are left out.
@@ -44,9 +46,16 @@ export interface FoundationPluginsMeta {
   readonly deployed: boolean;
 }
 
-/** Package names the plugins page lists: official and third-party application plugins and portals. */
-export const PLUGIN_PACKAGE_PATTERN: RegExp =
-  /^(@[^/]+\/)?app-(plugin|portal)-/;
+/**
+ * Whether a name is an application plugin or portal package, official or third-party: the same rule
+ * `pnpm nocobase plugin` applies (`isPluginPackageName` in `@nocobase/app-cli`), so the page lists exactly the packages
+ * the command line accepts.
+ */
+export function isPluginPackageName(packageName: string): boolean {
+  return /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
+    packageName,
+  );
+}
 
 const OFFICIAL_PREFIX = '@nocobase/app-plugin-';
 
