@@ -157,7 +157,7 @@ function AuthenticatedLayout({
       '            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}\n' +
         "            <div className='relative flex min-h-0 flex-1'>\n" +
         main
-          .replace(/^( +)(?=[<{])/gmu, '  $1')
+          .replace(/^( +)(?=[<{>)]|data-testid=|className=)/gmu, '  $1')
           .replace(
             'relative isolate min-w-0',
             'relative isolate min-h-0 min-w-0',

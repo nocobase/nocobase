@@ -4,6 +4,7 @@ import {
   ClientApplicationContext,
   createAppI18nRuntime,
   NavigationGuardProvider,
+  usePageBreadcrumb,
   type ClientApplication,
   createAppClientConfig,
 } from '@nocobase/app-client';
@@ -418,3 +419,72 @@ it('keeps every personal settings page, a plugin one included, at most 860px wid
       .closest('[data-testid="personal-settings-content"]'),
   ).toHaveClass('max-w-[860px]');
 });
+
+/** A page declaring its whole trail, as the agents plugin's skill pages do. */
+function DeclaredTrail({ list }: { readonly list: string }) {
+  usePageBreadcrumb([{ label: 'Skills', to: list }, { label: 'New skill' }]);
+  return <p>Declared trail</p>;
+}
+
+it.each([
+  ['System settings', '/settings/skills/new', '/settings/skills', '/settings'],
+  ['Personal settings', '/me/skills/new', '/me/skills', '/me'],
+  [undefined, '/projects/skills/new', '/projects/skills', undefined],
+] as const)(
+  'keeps the settings area ahead of a trail a page declares (%s)',
+  async (areaTitle, path, list, home) => {
+    const surface = path.startsWith('/settings')
+      ? 'systemSettings'
+      : path.startsWith('/me')
+        ? 'personalSettings'
+        : undefined;
+    // The skill library and its new page, mounted in the area under test.
+    const skills: AppClientRegisteredRoute = {
+      id: `test:skills:${list}`,
+      name: 'skills',
+      path: list,
+      packageName: 'test',
+      source: 'application',
+      auth: 'required',
+      authz: 'skip',
+      ...(surface ? { surface } : {}),
+      componentLoader: async () => ({ default: () => null }),
+      children: [
+        {
+          id: `test:skillsNew:${list}`,
+          name: 'skillsNew',
+          path,
+          packageName: 'test',
+          source: 'application',
+          auth: 'required',
+          authz: 'skip',
+          ...(surface ? { surface } : {}),
+          componentLoader: async () => ({ default: () => null }),
+        },
+      ],
+    };
+    const routes = [...personalSettingsFixture(), skills];
+    await setup(
+      <Routes>
+        <Route element={<AppLayout routes={routes} />}>
+          <Route path={path} element={<DeclaredTrail list={list} />} />
+        </Route>
+      </Routes>,
+      path,
+    );
+    await screen.findByText('Declared trail');
+    const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const links = within(trail)
+      .getAllByRole('link')
+      .filter((link) => link.textContent && link.getAttribute('href'))
+      .map((link) => [link.textContent, link.getAttribute('href')]);
+    expect(links).toEqual([
+      ...(areaTitle ? [[areaTitle, home]] : []),
+      ['Skills', list],
+    ]);
+    expect(within(trail).getByText('New skill')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  },
+);
