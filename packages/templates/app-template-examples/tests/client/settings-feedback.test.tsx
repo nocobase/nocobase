@@ -9,7 +9,6 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Routes, Route } from 'react-router';
 import UsersPage from '../../client/pages/settings/users.js';
-import RolesPage from '../../client/pages/settings/roles.js';
 import { ListRecoveryError } from '../../client/hooks/use-table-url-state.js';
 import { SettingsError } from '../../client/pages/settings/shared.js';
 import enUS from '../../client/locales/en-US.js';
@@ -40,15 +39,12 @@ describe.each([
   ['en-US', enUS],
   ['zh-CN', zhCN],
 ] as const)('%s', (language, copy) => {
-  it.each(['users', 'roles'] as const)(
+  it.each(['users'] as const)(
     'keeps the compact empty status and hides creation for a read-only %s list',
     async (kind) => {
       await renderWithApp(
         <Routes>
-          <Route
-            path={`/settings/${kind}`}
-            element={kind === 'users' ? <UsersPage /> : <RolesPage />}
-          />
+          <Route path={`/settings/${kind}`} element={<UsersPage />} />
         </Routes>,
         {
           route: `/settings/${kind}`,
@@ -69,8 +65,7 @@ describe.each([
       );
       expect(
         screen.queryByRole('button', {
-          name:
-            kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
+          name: copy.settings.newUser,
         }),
       ).not.toBeInTheDocument();
       expect(
@@ -79,15 +74,12 @@ describe.each([
     },
   );
 
-  it.each(['users', 'roles'] as const)(
+  it.each(['users'] as const)(
     'keeps a single creation entry for an authorized empty %s list',
     async (kind) => {
       await renderWithApp(
         <Routes>
-          <Route
-            path={`/settings/${kind}`}
-            element={kind === 'users' ? <UsersPage /> : <RolesPage />}
-          />
+          <Route path={`/settings/${kind}`} element={<UsersPage />} />
         </Routes>,
         {
           route: `/settings/${kind}`,
@@ -105,14 +97,12 @@ describe.each([
       );
       expect(
         await screen.findByRole('button', {
-          name:
-            kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
+          name: copy.settings.newUser,
         }),
       ).toHaveAttribute('href', `/settings/${kind}/create`);
       expect(
         screen.getAllByRole('button', {
-          name:
-            kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
+          name: copy.settings.newUser,
         }),
       ).toHaveLength(1);
       expect(screen.getByRole('status').textContent).toBe(
