@@ -22,6 +22,7 @@ import {
 import { classifyPluginError } from '../../lib/plugin-json.ts';
 import {
   classifyPluginRegistration,
+  listCliPluginRegistrations,
   type PluginRegistrationIssueCode,
 } from '@nocobase/app-server/plugins';
 import {
@@ -278,6 +279,15 @@ async function inspectComposition(
         ? await readServerPlugins(appRoot)
         : await readCliPlugins(appRoot);
   if (!file.exists) return { registered: false };
+  if (kind === 'cli') {
+    // The same reading the App Foundation plugins page applies to the running application's `cli/plugins`.
+    const order = listCliPluginRegistrations(file.sourceText).indexOf(
+      packageName,
+    );
+    return order === -1
+      ? { registered: false }
+      : { registered: true, order: order + 1 };
+  }
   const editor =
     kind === 'client'
       ? await createClientPluginsEditor(appRoot)

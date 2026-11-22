@@ -247,6 +247,60 @@ describe('FoundationPluginCatalog', () => {
     },
   );
 
+  describe.each([
+    {
+      file: 'plugins.ts' as const,
+      header:
+        "import { defineCliPlugins, type AppCliPlugins } from '@nocobase/app-cli';",
+      define: (members: string) =>
+        `const cliPlugins: AppCliPlugins = defineCliPlugins([${members}]);\nexport default cliPlugins;\n`,
+    },
+    {
+      // What `pnpm build` compiles the same file to.
+      file: 'plugins.js' as const,
+      header: "import { defineCliPlugins } from '@nocobase/app-cli';",
+      define: (members: string) =>
+        `const cliPlugins = defineCliPlugins([${members}]);\nexport default cliPlugins;\n//${'#'} sourceMappingURL=plugins.js.map\n`,
+    },
+  ])('a CLI-only plugin and cli/$file', ({ file, header, define }) => {
+    const cliOnly = '@acme/app-plugin-tools';
+    const classify = async (source: string) => {
+      const plugins = await catalog(
+        {
+          dependencies: [cliOnly],
+          installed: [{ name: cliOnly, entries: ['cli'] }],
+          cli: { file, source },
+        },
+        [],
+      );
+      return (await plugins.list([])).data;
+    };
+
+    it('is enabled when the array passes it', async () => {
+      expect(
+        await classify(
+          `${header}\nimport tools from '${cliOnly}/cli';\n${define('tools')}`,
+        ),
+      ).toMatchObject([{ state: 'registered', enabled: true }]);
+    });
+
+    it('is not enabled when its import stays but the array no longer passes it', async () => {
+      expect(
+        await classify(
+          `${header}\nimport tools from '${cliOnly}/cli';\n${define('')}`,
+        ),
+      ).toMatchObject([{ state: 'unregistered', enabled: false }]);
+    });
+
+    it('is not enabled when its import and its entry are commented out', async () => {
+      expect(
+        await classify(
+          `${header}\n// import tools from '${cliOnly}/cli';\n/* import more from '${cliOnly}/cli'; */\n${define('/* tools */')}`,
+        ),
+      ).toMatchObject([{ state: 'unregistered', enabled: false }]);
+    });
+  });
+
   it('lists a third-party plugin with the name and description it declares', async () => {
     const plugin = '@acme/app-plugin-orders';
     const plugins = await catalog(

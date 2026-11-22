@@ -23,7 +23,10 @@ export async function createApplicationFixture(options: {
   /** The CLI composition root to write, `cli/plugins.ts` as a source checkout has it or `cli/plugins.js` as a build does. */
   readonly cli?: {
     readonly file: 'plugins.ts' | 'plugins.js';
-    readonly plugins: readonly string[];
+    /** The packages it registers, each imported and listed. */
+    readonly plugins?: readonly string[];
+    /** The file's text as written, instead of `plugins`. */
+    readonly source?: string;
   };
 }): Promise<{
   readonly rootDir: string;
@@ -42,18 +45,20 @@ export async function createApplicationFixture(options: {
     }),
   );
   if (options.cli) {
-    const locals = options.cli.plugins.map((_, index) => `plugin${index}`);
+    const plugins = options.cli.plugins ?? [];
+    const locals = plugins.map((_, index) => `plugin${index}`);
     await mkdir(path.join(rootDir, 'cli'), { recursive: true });
     await writeFile(
       path.join(rootDir, 'cli', options.cli.file),
-      [
-        "import { defineCliPlugins } from '@nocobase/app-cli';",
-        ...options.cli.plugins.map(
-          (name, index) => `import ${locals[index]} from '${name}/cli';`,
-        ),
-        `export default defineCliPlugins([${locals.join(', ')}]);`,
-        '',
-      ].join('\n'),
+      options.cli.source ??
+        [
+          "import { defineCliPlugins } from '@nocobase/app-cli';",
+          ...plugins.map(
+            (name, index) => `import ${locals[index]} from '${name}/cli';`,
+          ),
+          `export default defineCliPlugins([${locals.join(', ')}]);`,
+          '',
+        ].join('\n'),
     );
   }
   for (const plugin of options.installed) {

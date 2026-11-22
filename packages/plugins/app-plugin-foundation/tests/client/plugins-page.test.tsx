@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 import plugin from '../../client/plugin.js';
 import PluginsPage from '../../client/pages/plugins-page.js';
 import { FOUNDATION_PACKAGE } from '../../shared/access.js';
+import { FoundationPluginCatalog } from '../../server/plugins.js';
 import type { FoundationPluginView } from '../../shared/plugins.js';
+import { createApplicationFixture } from '../helpers/application.js';
 
 function view(
   name: string,
@@ -270,6 +272,53 @@ describe('plugins page', () => {
       'Enabled plugins that use it optionally: Knowledge.',
     );
   });
+
+  it.each(['plugins.ts', 'plugins.js'] as const)(
+    'offers to enable a CLI-only plugin whose import cli/%s keeps but does not register',
+    async (file) => {
+      const cliOnly = '@acme/app-plugin-tools';
+      const app = await createApplicationFixture({
+        dependencies: [cliOnly],
+        installed: [
+          {
+            name: cliOnly,
+            entries: ['cli'],
+            nocobase: { title: 'Tools' },
+          },
+        ],
+        cli: {
+          file,
+          source: [
+            "import { defineCliPlugins } from '@nocobase/app-cli';",
+            `import tools from '${cliOnly}/cli';`,
+            `// import older from '${cliOnly}/cli';`,
+            'export default defineCliPlugins([]);',
+          ].join('\n'),
+        },
+      });
+      try {
+        const { data } = await new FoundationPluginCatalog({
+          rootDir: app.rootDir,
+          serverPlugins: () => [],
+        }).list([]);
+        await renderPage({ plugins: data });
+
+        expect(within(group(/^Not enabled/)).getByText('Tools')).toBeTruthy();
+        fireEvent.click(
+          within(rowOf('Tools')).getByRole('button', {
+            name: 'How to enable Tools',
+          }),
+        );
+        expect(
+          within(await screen.findByRole('dialog')).getByText(
+            `pnpm nocobase plugin register ${cliOnly}`,
+          ),
+        ).toBeInTheDocument();
+      } finally {
+        await app.cleanup();
+      }
+    },
+  );
 
   it('offers the fixing command for a plugin that needs attention', async () => {
     await renderPage();

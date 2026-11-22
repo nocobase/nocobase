@@ -26,6 +26,7 @@ export {
   type PluginRegistrationStateName,
   type PluginRegistrationSurfaces,
 } from './registration-state.js';
+export { listCliPluginRegistrations } from './cli-registrations.js';
 export type * from './types.js';
 
 import type { Hono } from 'hono';

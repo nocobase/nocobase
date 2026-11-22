@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { classifyPluginRegistration } from '@nocobase/app-server/plugins';
+import {
+  classifyPluginRegistration,
+  listCliPluginRegistrations,
+} from '@nocobase/app-server/plugins';
 
 import {
   isPluginPackageName,
@@ -229,10 +232,9 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
 }
 
 /**
- * The packages the application's CLI composition root registers. The running server never loads the CLI, so it reads
- * the root's import specifiers instead: `cli/plugins.ts` in a source checkout and the compiled `cli/plugins.js` a build
- * writes, which keeps them. A plugin's CLI entry is imported only to be registered there, which is what
- * `plugin register` writes and `plugin inspect` reads.
+ * The packages the application's CLI composition root registers, read exactly as `plugin inspect` reads them:
+ * `cli/plugins.ts` in a source checkout and the compiled `cli/plugins.js` a build writes. The running server never
+ * loads the CLI.
  */
 async function readCliPlugins(rootDir: string): Promise<ReadonlySet<string>> {
   for (const file of ['plugins.ts', 'plugins.js']) {
@@ -242,9 +244,7 @@ async function readCliPlugins(rootDir: string): Promise<ReadonlySet<string>> {
     ).catch(() => undefined);
     if (source === undefined) continue;
     return new Set(
-      [...source.matchAll(/\bfrom\s+['"]([^'"]+)\/cli['"]/gu)]
-        .map(([, packageName]) => packageName)
-        .filter(isPluginPackageName),
+      listCliPluginRegistrations(source).filter(isPluginPackageName),
     );
   }
   return new Set();
