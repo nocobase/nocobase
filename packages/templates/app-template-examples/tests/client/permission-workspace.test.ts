@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { appClientLocales } from '@nocobase/app-client';
 import { defineAppRoutes } from '@nocobase/app-client/plugins';
 import {
   defineAppRuntime,
@@ -40,7 +41,11 @@ import {
 } from '../../client/components/permission-editor-model.js';
 import enUS from '../../client/locales/en-US.js';
 
-const lookup = (key: string): unknown =>
+// app-client's own wording, such as the built-in settings category titles, behind the application's.
+const appClientEnUS = (
+  (await appClientLocales['en-US']!()) as { readonly default: object }
+).default;
+const find = (resources: object, key: string): unknown =>
   key
     .split('.')
     .reduce<unknown>(
@@ -48,8 +53,10 @@ const lookup = (key: string): unknown =>
         value && typeof value === 'object'
           ? Reflect.get(value, part)
           : undefined,
-      enUS,
+      resources,
     );
+const lookup = (key: string): unknown =>
+  find(enUS, key) ?? find(appClientEnUS, key);
 const words = {
   text: (value: LocalizedText): string =>
     typeof value === 'string'
@@ -390,7 +397,7 @@ describe('role permission workspace', () => {
     );
     expect(ws.objects.some((object) => object.id === 'user:*')).toBe(false);
     // Grouped by the settings home's categories; no data scopes.
-    expect(roles.group).toBe(enUS.settings.categories.account);
+    expect(roles.group).toBe('Accounts and permissions');
     expect(
       ws.settings.flatMap((item) =>
         item.objects.flatMap((object) =>

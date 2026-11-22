@@ -120,7 +120,7 @@ function runtimeDependencies(template) {
 }
 
 // Examples installs Agents; Default deliberately does not. Apply only the documented chat
-// composition slots to Default's expected source, keeping every shared line under comparison.
+// composition slots (its header button is registered in `client/header-actions.ts`, not here) to Default's expected source, keeping every shared line under comparison.
 function withExamplesChat(source, file) {
   const replaceOnce = (before, after) => {
     assert.equal(source.split(before).length - 1, 1, `${file}: chat slot`);
@@ -157,23 +157,12 @@ function AuthenticatedLayout({
       '            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}\n' +
         "            <div className='relative flex min-h-0 flex-1'>\n" +
         main
-          .replace(/^( +)(?=[<{])/gmu, '  $1')
+          .replace(/^( +)(?=[<{>)]|data-testid=|className=)/gmu, '  $1')
           .replace(
             'relative isolate min-w-0',
             'relative isolate min-h-0 min-w-0',
           ) +
         '\n              <OnlineAgentPanelHost />\n            </div>',
-    );
-  }
-  if (file === 'client/layouts/components/header-actions.tsx') {
-    replaceOnce(
-      "import { UserMenu } from './user-menu.js';",
-      "import { UserMenu } from './user-menu.js';\n" +
-        "import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';",
-    );
-    replaceOnce(
-      '        <UserMenu />',
-      '        <ChatHeaderButton />\n        <UserMenu />',
     );
   }
   return source;

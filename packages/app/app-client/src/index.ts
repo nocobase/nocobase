@@ -39,7 +39,12 @@ export {
   type RemoteRepository,
   type RemoteRepositoryQuery,
 } from '@nocobase/api-client';
-export { useApiClient, useClientApplication, useService } from './hooks.js';
+export {
+  useApiClient,
+  useClientApplication,
+  useHeaderActions,
+  useService,
+} from './hooks.js';
 export {
   PageBreadcrumbProvider,
   usePageBreadcrumb,
@@ -103,9 +108,15 @@ export {
   type AppClientLocaleContribution,
   type CreateAppI18nRuntimeOptions,
 } from './i18n.js';
+export { APP_CLIENT_NAMESPACE } from './namespace.js';
+export { default as appClientLocales } from './locales/index.js';
 export {
   applyClientRouteComponentOverrides,
+  applyHeaderActionOverrides,
+  badgeCount,
   defineAppRoutes,
+  defineHeaderActionOverrides,
+  defineHeaderActions,
   defineClientPlugin,
   defineClientPlugins,
   defineClientReactProviders,
@@ -119,11 +130,19 @@ export {
   PERSONAL_SETTINGS_CATEGORIES,
   PERSONAL_SETTINGS_ROUTE_PATH,
   resolveAppClientContributions,
+  resolveHeaderActions,
   SYSTEM_SETTINGS_CATEGORIES,
   SYSTEM_SETTINGS_ROUTE_PATH,
 } from './plugins.js';
 export type {
   AppClientAppRoutesContribution,
+  AppClientBadge,
+  AppClientBadgeHook,
+  AppClientBadgeTone,
+  AppClientHeaderActionDefinition,
+  AppClientHeaderActionOverride,
+  AppClientHeaderActions,
+  AppClientRegisteredHeaderAction,
   AppClientPersonalSettingsRoutesContribution,
   AppClientSystemSettingsRoutesContribution,
   AppClientRouteSurface,

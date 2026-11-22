@@ -213,14 +213,14 @@ Provide English and Chinese text without unresolved interpolation placeholders. 
 
 ## 5. Settings pages
 
-There is one kind of client route, `defineAppRoutes()`, and plugins contribute no settings pages of their own: a page that configures something is an ordinary App page. Place it in the application's System settings structure — one sidebar entry opening a home page of cards by category, with tabs inside a module — by registering it with `parent` naming a settings category, as [System settings navigation](../../settings-navigation.md) describes. Add the icons to the `lucide-react` import at the top of the file (here `SlidersHorizontal`):
+A page that configures something for the whole application is a System settings page, declared with `defineSystemSettingsRoutes()` by the application or a plugin; a page where each person configures their own account is a personal settings page, declared with `definePersonalSettingsRoutes()`. Place a System settings page in the application's System settings structure — one sidebar entry opening the first page the viewer may open, a settings menu by category, with tabs inside a module — by naming its category with `parent`, as [System settings navigation](../../settings-navigation.md) describes. Add the icons to the `lucide-react` import at the top of the file (here `SlidersHorizontal`):
 
 ```ts
-// Appended to the routes in client/routes.ts, beside the template's settings shell.
+// Declared in client/routes.ts inside defineSystemSettingsRoutes([...]), beside the template's settings shell.
 {
-  // A card in the application's own Business category, which its settings routes declare once as
-  // `{ name: 'business', category: true, navigation: { title: 'settings.categories.business', order: 150 }, children: [] }`.
-  parent: 'business',
+  // An entry in the application's own Projects category, which its settings routes declare once as
+  // `{ name: 'projects', category: true, navigation: { title: 'settings.categories.projects', order: 50 }, children: [] }`.
+  parent: 'projects',
   // Opens for identities granted read on the project-settings item; the endpoints check the same item.
   authz: {
     resource: { type: 'settings', id: 'project-settings' },
@@ -233,7 +233,7 @@ There is one kind of client route, `defineAppRoutes()`, and plugins contribute n
     description: 'navigation.projectSettingsDescription',
     icon: SlidersHorizontal,
   },
-  // In Default the settings group's path is a prefix: this page is at /settings/projects.
+  // Relative to /settings: this page is at /settings/projects.
   path: '/projects',
 },
 ```
@@ -242,7 +242,7 @@ A configuration page checks a **settings item** rather than a page grant: a name
 
 - **Register the item on the server** in the `boot()` of the provider that owns the feature, with the service resolved from `authorizationToken`: `authz.settings.add({ id: 'project-settings', title, actions: [{ name: 'read' }, { name: 'update' }] })`, placed in the permission workspace with `authz.ui.place` (after `authz.ui.sections.add` when it needs a subsection of its own); an unplaced item is listed under "Other" with a startup warning. The server denies an item or action nobody registered, so an unregistered item keeps the page closed. The endpoints check the same item per action, `read` for loading and `update` for saving; see ["Authorization, when identity is not enough" in `../../server-routes.md`](../../server-routes.md#authorization-when-identity-is-not-enough). Actions are business actions (`read`, `update`); there is no conversion such as `list`, `show` or `edit`. Read the `nocobase-app-plugin-authorization` Skill before designing several items or actions.
 - **Gate the write controls on the write action**: `useCan({ resource: { type: 'settings', id: 'project-settings' }, action: 'update' })` ([section 8](#8-show-actions-by-permission-usecan)). Without it, render the values read-only instead of hiding the page.
-- `authz` is checked before the page loads; without permission its card disappears from the settings home, and opening its URL directly does not load the component either. A category or module group whose pages are all denied disappears with them.
+- `authz` is checked before the page loads; without permission its entry disappears from the settings menu, and opening its URL directly does not load the component either. A category or module group whose pages are all denied disappears with them.
 - `navigation.order` sets the position in the menu; lower numbers come first.
 - For tabs and detail child pages, see [`child-routes.md`](child-routes.md).
 
@@ -280,7 +280,20 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 
 ### A count beside an entry
 
-An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. A count changes while the page is open, so it is not part of the route's `navigation`: the App layout reads it with the hook that keeps it current and passes it to `NavigationMenu` in `badges`, keyed by the route's `name`:
+An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. The route declares it with `navigation.badge`, a hook returning `{ count, tone? }` or `undefined` that the menu calls while it renders the entry; `tone: 'attention'` draws the count on the primary color. The hook runs inside the signed-in session, starts over when the person changes, and owns its data: it reads a query kept current by a realtime topic or a write's invalidation, and never starts a request on each render.
+
+```ts
+// client/routes.ts
+navigation: {
+  title: 'navigation.inbox',
+  badge: () => {
+    const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-notification-in-app/client/inbox
+    return { count: unread, tone: 'attention' };
+  },
+},
+```
+
+The App layout may instead pass a count to `NavigationMenu` in `badges`, keyed by the route's `name`, which replaces what the route declares — for a route the application does not own, or a `live` count:
 
 ```tsx
 // client/layouts/app-layout.tsx
@@ -294,7 +307,7 @@ const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-noti
 />;
 ```
 
-A number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
+In `badges` a number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
 
 ## 7. Back button and breadcrumbs
 

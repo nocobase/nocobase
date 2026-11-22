@@ -411,6 +411,7 @@ const systemZhCN: SystemResource = {
     description: '前往本应用的页面。',
     breadcrumb: '面包屑',
     breadcrumbMore: '显示中间层级',
+    moreActions: '更多操作',
     back: '返回',
     backTo: '返回{{label}}',
   },

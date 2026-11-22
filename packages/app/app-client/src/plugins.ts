@@ -4,6 +4,13 @@ import type { ComponentType } from 'react';
 
 import type { ClientApplication } from './application.js';
 import type { AppClientReactProvider } from './config.js';
+import {
+  defineHeaderActions,
+  type AppClientBadgeHook,
+  type AppClientHeaderActionDefinition,
+  type AppClientHeaderActions,
+} from './header-actions.js';
+import { APP_CLIENT_NAMESPACE } from './namespace.js';
 
 const CONTRIBUTION_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 const RESERVED_APPLICATION_ROUTE_PATHS = new Set([
@@ -88,12 +95,15 @@ export const SYSTEM_SETTINGS_CATEGORIES: {
 export const PERSONAL_SETTINGS_CATEGORIES: {
   readonly account: 'account';
   readonly preferences: 'preferences';
+  readonly messages: 'messages';
   readonly other: 'other';
 } = Object.freeze({
   /** The person's profile, password and sign-in methods. */
   account: 'account',
   /** Language, appearance and other personal habits. */
   preferences: 'preferences',
+  /** The messages a person receives: their notifications, their mailboxes. */
+  messages: 'messages',
   /** Pages that fit no other category. */
   other: 'other',
 } as const);
@@ -125,6 +135,7 @@ const BUILT_IN_SETTINGS_CATEGORIES: Readonly<
   personalSettings: Object.freeze([
     [PERSONAL_SETTINGS_CATEGORIES.account, 100],
     [PERSONAL_SETTINGS_CATEGORIES.preferences, 200],
+    [PERSONAL_SETTINGS_CATEGORIES.messages, 300],
     [PERSONAL_SETTINGS_CATEGORIES.other, 900],
   ] as const),
 });
@@ -139,8 +150,9 @@ interface SettingsSurfaceSpec {
    */
   readonly categoryPrefix: string;
   /**
-   * Where a built-in category's title lives: `<titlePrefix><id>` in the application's own locale namespace, so an
-   * application words it like any of its strings. Its route is named `<surface>.<id>`.
+   * Where a built-in category's title lives: `<titlePrefix><id>` in app-client's namespace (`APP_CLIENT_NAMESPACE`),
+   * which ships the English and Chinese defaults. Its route is named `<surface>.<id>`; an application rewords it with
+   * a title of its own through `defineSettingsCategories()`.
    */
   readonly titlePrefix: string;
 }
@@ -311,6 +323,11 @@ export interface AppClientRouteNavigation {
    */
   readonly description?: string;
   readonly icon?: AppClientRouteIcon;
+  /**
+   * The count beside the entry, such as unread messages: a hook the menu calls while it renders the entry
+   * (`AppClientBadgeHook`). A layout may still pass a count of its own for the entry, which wins.
+   */
+  readonly badge?: AppClientBadgeHook;
 }
 
 /**
@@ -436,6 +453,8 @@ export interface AppClientContribution<TOptions = void> {
   readonly reactProviders?: AppClientReactProviders<TOptions>;
   readonly routes?: AppClientRoutes<TOptions>;
   readonly locales?: AppClientLocales;
+  /** Buttons in the header's right-hand area, left of the account menu (`AppClientHeaderActionDefinition`). */
+  readonly headerActions?: AppClientHeaderActions<TOptions>;
   readonly options?: TOptions;
 }
 
@@ -469,6 +488,7 @@ export interface AppClientPluginRegistration {
   readonly routes: readonly AppClientRouteContribution[];
   readonly reactProviders: readonly AppClientReactProviderDefinition[];
   readonly locales?: AppClientLocales;
+  readonly headerActions: readonly AppClientHeaderActionDefinition[];
   readonly routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[];
   readonly options: unknown;
 }
@@ -514,6 +534,9 @@ export function defineClientPlugin<TOptions = void>(
         resolveContribution(definition.reactProviders, resolvedOptions) ?? [],
       ),
       locales: definition.locales,
+      headerActions: defineHeaderActions(
+        resolveContribution(definition.headerActions, resolvedOptions) ?? [],
+      ),
       routeComponentOverrides: defineClientRouteComponentOverrides(overrides),
       options: resolvedOptions,
     });
@@ -810,11 +833,7 @@ export function resolveAppClientContributions(
     }
   }
 
-  const roots = assembleRoutes(
-    inputs,
-    inputs.find((input) => input.source === 'application')?.packageName ??
-      '@nocobase/app-client',
-  );
+  const roots = assembleRoutes(inputs);
   const routes = Object.freeze([
     ...resolveRouteTree(
       roots.filter((node) => node.surface === 'app'),
@@ -859,10 +878,7 @@ interface RouteNode {
   hidden?: boolean;
 }
 
-function assembleRoutes(
-  inputs: readonly RouteInput[],
-  applicationPackage: string,
-): RouteNode[] {
+function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   const roots: RouteNode[] = [];
   const groups = new Map<string, RouteNode>();
   const pending: { node: RouteNode; parent: string; category?: string }[] = [];
@@ -873,8 +889,8 @@ function assembleRoutes(
     surface: AppClientSettingsRouteSurface,
     id: string,
   ): string => `${SETTINGS_SURFACES[surface].categoryPrefix}${id}`;
-  // Every settings surface something contributes to starts with its built-in categories, titled in the application's
-  // namespace so the application words them like its own strings.
+  // Every settings surface something contributes to starts with its built-in categories, titled in app-client's
+  // namespace, which ships their default wording.
   for (const surface of ['systemSettings', 'personalSettings'] as const) {
     if (!inputs.some((input) => input.surface === surface)) continue;
     for (const [id, order] of BUILT_IN_SETTINGS_CATEGORIES[surface]) {
@@ -888,7 +904,7 @@ function assembleRoutes(
           children: Object.freeze([]),
           category: true,
         }),
-        packageName: applicationPackage,
+        packageName: APP_CLIENT_NAMESPACE,
         source: 'application',
         surface,
         children: [],
@@ -939,6 +955,15 @@ function assembleRoutes(
           throw new Error(
             `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from "${input.packageName}" cannot also be a module.`,
           );
+        // A category only groups the menu: it adds no URL segment and no breadcrumb level, so moving a page to another
+        // category, or the application hiding one, never changes the page's address.
+        if (
+          definition.path !== undefined ||
+          definition.breadcrumb !== undefined
+        )
+          throw new Error(
+            `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from "${input.packageName}" cannot declare path or breadcrumb; its pages keep their own paths.`,
+          );
       } else if (settings && isGroup && !declaresKind)
         throw new Error(
           `${capitalize(SETTINGS_SURFACES[settings].label)} group "${definition.name}" from "${input.packageName}" must declare category: true at the root to add a category, or kind: 'module' to show its pages as tabs.`,
@@ -974,7 +999,15 @@ function assembleRoutes(
                 : `${capitalize(SETTINGS_SURFACES[settings].label)} category "${definition.name}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`
               : `Client route group "${id}" from plugin "${input.packageName}" is already registered by "${previous.packageName}".`,
           );
-        if (settings && isCategory) node.category = definition.name.trim();
+        if (settings && isCategory) {
+          node.category = definition.name.trim();
+          // Named after its surface like the built-in ones, so one package may declare a category of the same id in
+          // both settings surfaces.
+          node.definition = Object.freeze({
+            ...definition,
+            name: `${settings}.${node.category}`,
+          });
+        }
         groups.set(id, node);
       }
       return node;
@@ -1294,6 +1327,10 @@ function normalizeNavigation(
 ): AppClientRouteNavigation {
   const { description, ...rest } = navigation;
   const trimmed = description?.trim();
+  if (navigation.badge !== undefined && typeof navigation.badge !== 'function')
+    throw new Error(
+      `Client route "${id}" from plugin "${packageName}" navigation badge must be a hook function.`,
+    );
   return Object.freeze({
     ...rest,
     title: normalizeTitle(navigation.title, id, packageName),
@@ -1860,3 +1897,18 @@ function findReactProviderCycle(
 
   return reactProviders.map((reactProvider) => reactProvider.id);
 }
+
+export {
+  applyHeaderActionOverrides,
+  badgeCount,
+  defineHeaderActionOverrides,
+  defineHeaderActions,
+  resolveHeaderActions,
+  type AppClientBadge,
+  type AppClientBadgeHook,
+  type AppClientBadgeTone,
+  type AppClientHeaderActionDefinition,
+  type AppClientHeaderActionOverride,
+  type AppClientHeaderActions,
+  type AppClientRegisteredHeaderAction,
+} from './header-actions.js';

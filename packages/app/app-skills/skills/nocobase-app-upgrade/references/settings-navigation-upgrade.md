@@ -71,7 +71,7 @@ A later TARGET makes the settings categories built in ([categories](../../nocoba
 2. Change each `parent` to a built-in id through `SYSTEM_SETTINGS_CATEGORIES` or `PERSONAL_SETTINGS_CATEGORIES`: `settingsAccount` → `account`; `settingsBusiness` → `automation` for workflows and approvals; `settingsAi` → `ai`; `settingsSystem` → `system`, except Database Explorer → `data` and Notifications → `messages`; `personalPreferences` → `preferences`; `personalAccount` → `account`; `personalConnections` → `account`, or another category that fits. Route names, paths and `authz` stay, so URLs and grants are unchanged.
 3. Add `kind: 'module'` to every top-level settings group that is a module, such as `permissionManagement` and `notificationManagement`; a top-level group with neither `kind: 'module'` nor `category: true` is now a registration error.
 4. Keep an application-specific category, such as business configuration, as a root group with `category: true` and a `navigation.order` between the built-in ones. Rename, reorder or hide a built-in one with `defineSettingsCategories()` instead of declaring it. Pages naming a category that no longer exists show under `other` with a warning in development, so check the console after the upgrade.
-5. Merge the template's `settings.categories` and `settings.personal.categories` keys, and `SETTINGS_FALLBACK_CATEGORY` (`systemSettings.other`) in `client/lib/navigation-transform.ts`. Update tests and code that look a category up by route name: the names are now `systemSettings.<id>` and `personalSettings.<id>`.
+5. Remove the built-in categories' titles from `settings.categories` and `settings.personal.categories` in `client/locales/system/settings-*.ts`: `@nocobase/app-client` now ships them in its own namespace. Keep the keys of the application's own categories, such as Examples' `settings.categories.crm`, and reword a built-in one through `defineSettingsCategories()` with a key of the application's own. Merge `SETTINGS_FALLBACK_CATEGORY` (`systemSettings.other`) in `client/lib/navigation-transform.ts`. Update tests and code that look a category up by route name: the names are now `systemSettings.<id>` and `personalSettings.<id>`.
 
 ## Verify
 
@@ -85,3 +85,14 @@ When TARGET's templates no longer contain `client/pages/settings/users.tsx`, `us
 2. Changed copies are application customizations: keep them, remove only the route entry, and register each as a page replacement through `routeComponentOverrides` in `client/runtime.ts` with `USERS_ROUTE_ID`, `USER_CREATE_ROUTE_ID` or `USER_EDIT_ROUTE_ID` from `@nocobase/app-plugin-users/client`. Replace only the pages the application changed; the others use the plugin's.
 3. Page grants are unchanged: the pages keep their `user:*` page access, and existing role grants need no migration. Links such as `requiredRoleSetupLink` keep pointing at `/settings/users`.
 4. Verify `/settings/users`, New user, Edit user and the invitation flow as an administrator and as a role-limited manager, and that `/settings` still opens Users first.
+
+## Header actions and badges
+
+A later TARGET renders the header's right-hand buttons from registrations instead of `client/layouts/components/header-actions.tsx` writing them out, adds a personal settings category `messages`, and lets a route declare its navigation count with `navigation.badge`. Upgrade `@nocobase/app-client` first, then:
+
+1. Take the TARGET `client/header-actions.ts` and the two lines of `client/runtime.ts` that pass `headerActions` and `headerActionOverrides` to `defineAppRuntime()`.
+2. Take the TARGET `header-actions.tsx` and `navigation-menu.tsx`, and the `navigation.moreActions` copy in `client/locales/system/`.
+3. Move every button the application had added to `header-actions.tsx` into `client/header-actions.ts` as `{ name, order, component }`, keeping its component and its order from left to right; Examples-derived applications register the Agent chat button there as `agent-chat`.
+4. A count the application passes to `NavigationMenu` in `badges` keeps working; move it to the route's `navigation.badge` when the application owns the route.
+
+Verify the header at desktop and phone width: the same buttons in the same order, the account menu last, and no wrapping at 390px.

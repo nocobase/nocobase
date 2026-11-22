@@ -137,27 +137,54 @@ export function isAnySettingsPath(pathname: string): boolean {
 /** Where leaving settings leads: the remembered page, or the home page. */
 export function readSettingsReturn(): string {
   try {
-    const value = sessionStorage.getItem(RETURN_KEY);
-    // Only an in-application path, never another origin.
-    return value?.startsWith('/') && !value.startsWith('//') ? value : '/';
+    return inApplication(sessionStorage.getItem(RETURN_KEY)) ?? '/';
   } catch {
     return '/';
   }
 }
 
 /**
+ * `value` when it is a path inside this application, normalized the way the browser reads it; otherwise undefined. A
+ * value that resolves to another origin, such as `//host` or `/\host`, which browsers read as `//host`, is refused.
+ */
+export function inApplication(value: string | null): string | undefined {
+  if (!value?.startsWith('/')) return undefined;
+  const base = 'http://application.invalid';
+  let url: URL;
+  try {
+    url = new URL(value, base);
+  } catch {
+    return undefined;
+  }
+  if (url.origin !== base || url.pathname.startsWith('//')) return undefined;
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/**
+ * Whether a location is the one the document opened on: React Router keys it `default`. A settings page opened that
+ * way — from the address bar or a link from elsewhere, even in a tab that showed application pages before — has
+ * nothing to return to.
+ */
+export function isOpeningLocation(location: { readonly key: string }): boolean {
+  return location.key === 'default';
+}
+
+/**
  * Remembers the last application page outside settings, in this tab, so leaving settings returns to it. Moving between
- * system and personal settings keeps it. A settings page opened directly has nothing to return to and leads to the
- * home page.
+ * system and personal settings keeps it. A settings page the document opened on forgets it, and leads to the home
+ * page (`isOpeningLocation`).
  */
 export function useRememberSettingsReturn(): void {
-  const { pathname, search, hash } = useLocation();
+  const location = useLocation();
+  const { pathname, search, hash } = location;
+  const opening = isOpeningLocation(location);
   useEffect(() => {
-    if (isAnySettingsPath(pathname)) return;
     try {
-      sessionStorage.setItem(RETURN_KEY, `${pathname}${search}${hash}`);
+      if (!isAnySettingsPath(pathname))
+        sessionStorage.setItem(RETURN_KEY, `${pathname}${search}${hash}`);
+      else if (opening) sessionStorage.removeItem(RETURN_KEY);
     } catch {
       // Storage can be unavailable, as in a private window; Back then leads home.
     }
-  }, [pathname, search, hash]);
+  }, [pathname, search, hash, opening]);
 }

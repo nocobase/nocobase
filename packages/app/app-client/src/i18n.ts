@@ -1,6 +1,8 @@
 import { I18nRuntime, type Locale, type LocalesModule } from '@nocobase/i18n';
 
 import { resolveAppBase } from './client.js';
+import appClientLocales from './locales/index.js';
+import { APP_CLIENT_NAMESPACE } from './namespace.js';
 import type { AppClientContributionSource } from './plugins.js';
 
 /** The language an application falls back to when its configuration names none. */
@@ -83,6 +85,12 @@ export async function createAppI18nRuntime(
     applicationNamespace: applicationContribution?.packageName,
   });
 
+  if (
+    !options.contributions.some(
+      (contribution) => contribution.packageName === APP_CLIENT_NAMESPACE,
+    )
+  )
+    runtime.registerNamespace(APP_CLIENT_NAMESPACE, appClientLocales);
   for (const contribution of options.contributions) {
     if (contribution.source === 'application') {
       // Registering the application's namespace is also what settles which languages are on offer: its own locale
