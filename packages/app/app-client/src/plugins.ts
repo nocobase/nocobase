@@ -323,6 +323,8 @@ export interface AppClientRouteNavigation {
    */
   readonly description?: string;
   readonly icon?: AppClientRouteIcon;
+  /** Additional settings resource IDs editable alongside this module’s route permissions in the role editor. */
+  readonly relatedSettings?: readonly string[];
   /**
    * The count beside the entry, such as unread messages: a hook the menu calls while it renders the entry
    * (`AppClientBadgeHook`). A layout may still pass a count of its own for the entry, which wins.

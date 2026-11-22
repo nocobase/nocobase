@@ -14,7 +14,7 @@ distributed;
 distributed();
 ```
 
-Both application templates register it. `@nocobase/app-plugin-concurrency` is an optional peer: without it the page shows the concurrency service as not running and reports the others. To replace the whole page, pass `distributed({ statusComponentLoader: () => import('./pages/cluster.js') })`; the replacement reads the same endpoint.
+The Current configuration tab lists the effective service backends. Expand a service to see its configuration and source. Multi-instance checks shows outstanding checks first, with fixes and a rollout checklist. Both application templates register the page. `@nocobase/app-plugin-concurrency` is an optional peer: without it the page shows the concurrency service as not running and reports the others. To replace the whole page, pass `distributed({ statusComponentLoader: () => import('./pages/cluster.js') })`; the replacement reads the same endpoint.
 
 ## Access
 

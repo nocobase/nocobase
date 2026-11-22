@@ -1,6 +1,20 @@
 import type { DistributedResource } from './en-US.js';
 
 const viVN: DistributedResource = {
+  view: {
+    deployment: 'Chế độ triển khai',
+    multi: 'Nhiều phiên bản chạy',
+    configuration: 'Cấu hình hiện tại',
+    checks: 'Kiểm tra đa phiên bản',
+    backends: 'Backend dịch vụ',
+    readiness: 'Kiểm tra trước khi mở rộng',
+    pending: 'Cần xử lý',
+    all: 'Tất cả',
+    empty: 'Không có mục nào cần xử lý.',
+    blockers: 'Phải sửa · {{count}}',
+    scope:
+      'Cấu hình của phiên bản đang chạy này. Triển khai lại ứng dụng sau khi thay đổi cấu hình.',
+  },
   nav: {
     title: 'Cụm và phân tán',
     description:

@@ -259,6 +259,8 @@ export interface PermissionEditorProps {
   readonly dirty?: boolean | undefined;
   readonly defaultTab?: PermissionEditorTab | undefined;
   readonly tabVariant?: 'line' | 'folder';
+  readonly framed?: boolean;
+  readonly showTabCounts?: boolean;
   /** Tabs after the built-in ones. */
   readonly tabs?: readonly PermissionEditorExtraTab[] | undefined;
   /** Unsaved changes by tab value, shown as a badge on the tab. */
@@ -1180,6 +1182,8 @@ export function PermissionEditor({
   settings = NO_SETTINGS,
   defaultTab = 'menus',
   tabVariant = 'line',
+  framed = true,
+  showTabCounts = tabVariant === 'line',
   defaultObjectId,
   labels,
   className,
@@ -1482,7 +1486,7 @@ export function PermissionEditor({
   const footerBar = (
     <div
       data-slot='permission-save-bar'
-      className='sticky bottom-3 z-10 mx-3 mb-3 flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-background shadow-lg'
+      className='sticky bottom-3 z-10 mx-3 mb-3 flex min-w-0 flex-wrap items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-card-foreground shadow-sm'
     >
       <span
         role='status'
@@ -1492,7 +1496,7 @@ export function PermissionEditor({
           <span aria-hidden className='size-1.5 rounded-full bg-amber-400' />
           {words.unsaved}
         </span>
-        {status && <span className='text-background/70'>{status}</span>}
+        {status && <span className='text-muted-foreground'>{status}</span>}
       </span>
       {footer && (
         <div className='flex flex-wrap items-center gap-2'>{footer}</div>
@@ -1566,8 +1570,9 @@ export function PermissionEditor({
 
   const filtering = Boolean(menuQuery.trim()) || onlyChecked;
   const shownMenus = filterMenus(menus, menuQuery, onlyChecked, value);
+  const panelClass = cn('grid min-w-0 gap-3 py-4', framed && 'px-4');
   const menusPanel = (
-    <div className='grid min-w-0 gap-3 p-4'>
+    <div className={panelClass}>
       {readOnly && (
         <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
       )}
@@ -1850,9 +1855,6 @@ export function PermissionEditor({
   ];
   const settingsGrouped =
     new Set(settings.map((page) => page.group ?? '')).size > 1;
-  const visibleSettings = settings.filter(
-    (page) => settingsLevel(page, value.grants) !== 'none',
-  );
   /** The action that opens a settings page: its first object's View, or that object's first action. */
   const entryOf = (
     page: PermissionSettingsPage,
@@ -1860,6 +1862,11 @@ export function PermissionEditor({
     const first = page.objects[0];
     return first ? (viewActionOf(first) ?? first.actions[0]) : undefined;
   };
+  const canOpenPage = (page: PermissionSettingsPage): boolean => {
+    const entry = entryOf(page);
+    return Boolean(entry && value.grants[entry.id]);
+  };
+  const visibleSettings = settings.filter(canOpenPage);
   const settingsItem = (
     object: PermissionObject,
     action: PermissionAction,
@@ -2027,7 +2034,7 @@ export function PermissionEditor({
     );
   };
   const settingsPanel = (
-    <div className='grid min-w-0 gap-3 p-4'>
+    <div className={panelClass}>
       {readOnly && (
         <p className='text-xs text-muted-foreground'>{words.readOnly}</p>
       )}
@@ -2098,9 +2105,7 @@ export function PermissionEditor({
             );
             const targets = members.flatMap((page) => page.objects);
             const selection = quickSelection(targets, value.grants);
-            const opened = members.filter(
-              (page) => settingsLevel(page, value.grants) !== 'none',
-            ).length;
+            const opened = members.filter(canOpenPage).length;
             return (
               <div
                 key={group}
@@ -2190,7 +2195,7 @@ export function PermissionEditor({
     : filtered;
   const groups = [...new Set(shownObjects.map((object) => object.group ?? ''))];
   const objectsPanel = (
-    <div className='grid min-w-0 gap-3 p-4'>
+    <div className={panelClass}>
       {objects.length > 0 && (
         <p
           data-slot='permission-objects-hint'
@@ -2334,14 +2339,16 @@ export function PermissionEditor({
     <div
       data-slot='permission-editor'
       className={cn(
-        '@container/permissions min-w-0 rounded-lg border bg-card text-card-foreground',
+        '@container/permissions min-w-0',
+        framed && 'rounded-lg border bg-card text-card-foreground',
         className,
       )}
     >
       {(header || unrestricted) && (
         <div
           className={cn(
-            'px-4 pt-3 pb-1',
+            'pb-1',
+            framed && 'px-4 pt-3',
             tabVariant === 'folder' && 'bg-muted/50 pb-3',
           )}
         >
@@ -2370,10 +2377,10 @@ export function PermissionEditor({
         >
           <div
             className={cn(
-              'overflow-x-auto px-4',
-              tabVariant === 'folder'
-                ? 'bg-muted/50 shadow-[inset_0_-1px_var(--border)]'
-                : 'border-b',
+              'overflow-x-auto',
+              framed && 'px-4',
+              tabVariant === 'folder' &&
+                'bg-muted/50 shadow-[inset_0_-1px_var(--border)]',
             )}
           >
             <TabsList
@@ -2392,7 +2399,7 @@ export function PermissionEditor({
                     <LayoutPanelLeftIcon aria-hidden />
                   )}
                   {words.menusTab}
-                  {tabVariant === 'line' && (
+                  {showTabCounts && (
                     <span className={TAB_COUNT}>
                       {words.tabCount(menuTotals.checked, menuTotals.total)}
                     </span>
@@ -2404,7 +2411,7 @@ export function PermissionEditor({
                 <TabsTrigger value='objects' className={TAB_TRIGGER}>
                   {tabVariant === 'folder' && <LayersIcon aria-hidden />}
                   {words.objectsTab}
-                  {tabVariant === 'line' && (
+                  {showTabCounts && (
                     <span className={TAB_COUNT}>
                       {words.tabCount(objectTotals.enabled, objectTotals.total)}
                     </span>
@@ -2418,7 +2425,7 @@ export function PermissionEditor({
                     <SlidersHorizontalIcon aria-hidden />
                   )}
                   {words.settingsTab}
-                  {tabVariant === 'line' && (
+                  {showTabCounts && (
                     <span className={TAB_COUNT}>
                       {words.tabCount(
                         settingsTotals.enabled,
@@ -2445,7 +2452,7 @@ export function PermissionEditor({
           </div>
           <TabsContent key={tab} value={tab}>
             {extraTabs.some((extra) => extra.value === tab) ? (
-              <div className='min-w-0 px-4 py-4'>
+              <div className={cn('min-w-0 py-4', framed && 'px-4')}>
                 {extraTabs.find((extra) => extra.value === tab)?.content}
               </div>
             ) : tab === 'menus' && builtInTabs.includes('menus') ? (

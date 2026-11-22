@@ -1,6 +1,19 @@
 import type { DistributedResource } from './en-US.js';
 
 const zhCN: DistributedResource = {
+  view: {
+    deployment: '部署模式',
+    multi: '多实例',
+    configuration: '当前配置',
+    checks: '多实例检查',
+    backends: '服务后端',
+    readiness: '扩展前检查',
+    pending: '待处理',
+    all: '全部',
+    empty: '暂无待处理项。',
+    blockers: '必须处理 · {{count}} 项',
+    scope: '此页显示当前实例的配置。修改应用配置后，重新部署生效。',
+  },
   nav: {
     title: '集群与分布式',
     description: '本实例使用了哪些后端，以及应用能否以多实例运行。',

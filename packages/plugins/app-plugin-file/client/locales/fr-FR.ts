@@ -8,7 +8,7 @@ const frFR: LocaleResource<typeof enUS> = {
     navDescription:
       'Où sont stockés les fichiers envoyés, et quelles fonctionnalités les stockent',
     description:
-      'Où sont stockés les fichiers envoyés, la taille maximale d’un fichier et les fonctionnalités qui stockent des fichiers. Le stockage est défini dans la configuration de l’application (`drive`) et prend effet après un redéploiement ; cette page affiche les paramètres en vigueur et vérifie que le stockage peut réellement être lu et écrit.',
+      'Consultez les paramètres de stockage et les fonctionnalités qui utilisent chaque disque.',
     checkAction: 'Vérifier le stockage',
     loading: 'Chargement du stockage des fichiers…',
     loadFailed: 'Impossible de charger le stockage des fichiers.',
@@ -20,9 +20,6 @@ const frFR: LocaleResource<typeof enUS> = {
       title_other: '{{count}} avertissements',
       incomplete:
         'Le disque {{disk}} n’est pas entièrement configuré ({{problems}}) : sans conséquence tant qu’il n’est pas utilisé, il échoue lorsqu’il est choisi.',
-      localDefault:
-        'Le stockage par défaut est un disque local : l’application ne peut fonctionner qu’en une seule instance. Utilisez un stockage partagé pour plusieurs instances.',
-      seeCluster: 'Voir Cluster et distribué.',
     },
     columns: {
       name: 'Nom',
@@ -165,11 +162,8 @@ const frFR: LocaleResource<typeof enUS> = {
         'Les paramètres de stockage s’appliquent toujours : les tables de fichiers ajoutées plus tard stockent leurs fichiers sur {{disk}} par défaut.',
     },
     notes: {
-      title: 'Remarques',
-      firstUse:
-        'Le stockage est connecté à la première utilisation ; un démarrage réussi ne prouve donc pas qu’il peut être lu et écrit. La vérification écrit, lit et supprime un fichier temporaire pour le confirmer.',
       changeDefault:
-        'Changer le stockage par défaut n’affecte que les envois ultérieurs ; les fichiers existants sont toujours lus depuis le stockage indiqué par leurs enregistrements et ne sont pas déplacés.',
+        'Changer le disque par défaut affecte uniquement les nouveaux envois.',
       deleteRecords:
         'Supprimer un enregistrement ne supprime pas son fichier du disque.',
       publicLinks:

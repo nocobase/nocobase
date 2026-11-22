@@ -8,7 +8,7 @@ const idID: LocaleResource<typeof enUS> = {
     navDescription:
       'Tempat file yang diunggah disimpan, dan fitur mana yang menyimpannya',
     description:
-      'Tempat file yang diunggah disimpan, seberapa besar satu file boleh, dan fitur mana yang menyimpan file. Penyimpanan diatur di konfigurasi aplikasi (`drive`) dan berlaku setelah deploy ulang; halaman ini menampilkan pengaturan yang berlaku dan memeriksa apakah penyimpanan benar-benar dapat dibaca dan ditulis.',
+      'Lihat pengaturan penyimpanan dan fitur yang menggunakan setiap disk.',
     checkAction: 'Periksa penyimpanan',
     loading: 'Memuat penyimpanan file…',
     loadFailed: 'Penyimpanan file tidak dapat dimuat.',
@@ -19,9 +19,6 @@ const idID: LocaleResource<typeof enUS> = {
       title_other: '{{count}} pemberitahuan',
       incomplete:
         'Disk {{disk}} belum dikonfigurasi sepenuhnya ({{problems}}): tidak berdampak selama tidak digunakan, dan gagal saat dipilih.',
-      localDefault:
-        'Penyimpanan default adalah disk lokal: aplikasi hanya dapat berjalan sebagai satu instans. Gunakan penyimpanan bersama untuk beberapa instans.',
-      seeCluster: 'Lihat Kluster dan terdistribusi.',
     },
     columns: {
       name: 'Nama',
@@ -155,11 +152,8 @@ const idID: LocaleResource<typeof enUS> = {
         'Pengaturan penyimpanan tetap berlaku: tabel file yang ditambahkan kemudian menyimpan file di {{disk}} secara default.',
     },
     notes: {
-      title: 'Catatan',
-      firstUse:
-        'Penyimpanan baru terhubung saat pertama kali digunakan, jadi aplikasi yang berhasil dimulai tidak membuktikan penyimpanan dapat dibaca dan ditulis. Pemeriksaan menulis, membaca, dan menghapus file sementara untuk memastikannya.',
       changeDefault:
-        'Mengubah penyimpanan default hanya memengaruhi unggahan berikutnya; file yang ada tetap dibaca dari penyimpanan yang disebutkan oleh catatannya dan tidak dipindahkan.',
+        'Perubahan disk default hanya berlaku untuk unggahan baru.',
       deleteRecords: 'Menghapus catatan tidak menghapus file-nya dari disk.',
       publicLinks:
         'Tautan publik dapat dibuka oleh siapa pun yang mengetahuinya, tanpa masuk. File sensitif sebaiknya disajikan melalui rute terautentikasi milik plugin itu sendiri.',

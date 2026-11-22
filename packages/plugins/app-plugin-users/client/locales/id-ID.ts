@@ -140,6 +140,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Hanya manusia yang dapat mengelola akun: kunci API tidak boleh.',
   },
   page: {
+    roles: 'Peran',
     loading: 'Memuat',
   },
   notificationTemplates: {

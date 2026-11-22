@@ -21,7 +21,8 @@ import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
 import { Skeleton } from '#components/ui/skeleton';
 import { ErrorAlert } from '../components/key-parts.js';
-import { SystemFrame } from '../components/system-frame.js';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 import { useApiKeysAdminApi, type KeyRules } from '../lib/admin-api.js';
 import { API_KEYS_NAMESPACE } from '../namespace.js';
 
@@ -100,7 +101,8 @@ export default function KeyRulesPage(): ReactElement {
     });
   const readOnly = !mayManage;
   return (
-    <SystemFrame tab='rules'>
+    <PageContainer>
+      <PageHeader title={t('system.keyRules')} />
       {error ? (
         <ErrorAlert error={error} onRetry={reload} />
       ) : !draft ? (
@@ -215,7 +217,7 @@ export default function KeyRulesPage(): ReactElement {
           )}
         </section>
       )}
-    </SystemFrame>
+    </PageContainer>
   );
 }
 

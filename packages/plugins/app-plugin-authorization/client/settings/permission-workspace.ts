@@ -464,7 +464,7 @@ export function permissionWorkspace(
   const settingsObject = (resource: {
     type: string;
     id: string;
-    action: string;
+    action?: string;
   }): PermissionObject | undefined => {
     const key = resourceKey(resource);
     const existing = settingsObjects.find((object) => object.id === key);
@@ -481,10 +481,12 @@ export function permissionWorkspace(
             title: { key: action.title },
           }))
         : (catalogResource?.actions ?? []);
-    const viewName = available.some((action) => action.name === resource.action)
-      ? resource.action
-      : available[0]?.name;
-    if (!viewName) return undefined;
+    if (!available.length) return undefined;
+    const viewName =
+      resource.action &&
+      (available.some((action) => action.name === resource.action)
+        ? resource.action
+        : available[0]?.name);
     const risks = ESCALATION[key] ?? {};
     const actions: PermissionAction[] = [];
     for (const action of [
@@ -714,7 +716,13 @@ export function permissionWorkspace(
           const object = settingsObject(resource);
           return object ? [object] : [];
         });
-      const pageObjectsUsed = [...pageObjects, ...used].filter(
+      const related = (module.route.navigation?.relatedSettings ?? []).flatMap(
+        (id) => {
+          const object = settingsObject({ type: 'settings', id });
+          return object ? [object] : [];
+        },
+      );
+      const pageObjectsUsed = [...pageObjects, ...used, ...related].filter(
         (object, index, all) =>
           all.findIndex((item) => item.id === object.id) === index,
       );

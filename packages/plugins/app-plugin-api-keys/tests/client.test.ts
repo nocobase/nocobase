@@ -51,7 +51,7 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
     expect(apiKeys({ routes: false }).routes).toEqual([]);
   });
 
-  it('registers System settings › API keys: system keys, managed keys, members’ keys and rules', () => {
+  it('registers a single system key list with separate member review and rule pages', () => {
     const registration = apiKeys();
     const { routes } = resolveAppClientContributions([
       { packageName: registration.packageName, routes: registration.routes },
@@ -71,6 +71,7 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
     expect(paths.get(API_KEY_ROUTES.system)).toMatchObject({
       path: '/settings/api-keys',
       authz: read,
+      navigation: { relatedSettings: ['personalApiKeys'] },
     });
     expect(paths.get(API_KEY_ROUTES.systemCreate)).toMatchObject({
       path: '/settings/api-keys/create',
@@ -78,8 +79,6 @@ describe('@nocobase/app-plugin-api-keys Client', () => {
     });
     for (const [id, path] of [
       [API_KEY_ROUTES.systemDetail, '/settings/api-keys/:identityId'],
-      [API_KEY_ROUTES.managed, '/settings/api-keys/managed'],
-      [API_KEY_ROUTES.managedDetail, '/settings/api-keys/managed/:identityId'],
       [API_KEY_ROUTES.members, '/settings/api-keys/members'],
       [API_KEY_ROUTES.rules, '/settings/api-keys/rules'],
     ] as const)

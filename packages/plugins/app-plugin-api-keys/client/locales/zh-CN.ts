@@ -6,7 +6,6 @@ const zhCN: LocaleResource<typeof enUS> = {
   navigation: {
     personal: 'API 密钥',
     system: 'API 密钥',
-    systemDescription: '系统密钥、托管密钥、成员的个人密钥和密钥规则',
   },
   permissions: {
     apiKeys: 'API 密钥',
@@ -15,9 +14,6 @@ const zhCN: LocaleResource<typeof enUS> = {
     manage: '管理系统密钥',
     create: '创建个人 API 密钥',
     humanOnly: '密钥不能管理密钥，只能由人来做。',
-  },
-  roles: {
-    personalKeyCreators: '个人 API 密钥创建者',
   },
   templates: {
     readOnly: '只读',
@@ -83,26 +79,18 @@ const zhCN: LocaleResource<typeof enUS> = {
   },
   system: {
     title: 'API 密钥',
-    description:
-      '系统密钥以自己专属的服务账号调用接口，不属于任何成员：成员离开后照常工作，权限由管理员逐项授予。',
-    tabs: {
-      system: '系统密钥',
-      managed: '托管密钥',
-      members: '成员的个人密钥',
-      rules: '规则',
-    },
+    description: '管理外部集成使用的系统密钥。',
+    more: '更多操作',
+    memberReview: '成员密钥审查',
+    keyRules: '密钥规则',
     newKey: '新建系统密钥',
     search: '搜索密钥',
     empty: '还没有系统密钥。',
-    noManaged: '没有托管密钥。',
-    managedHint:
-      '由其他功能代用户创建和管理的密钥，例如仓库 CI。这里只能查看、停用和删除；权限和轮换在托管方调整。',
     columns: {
       status: '状态',
     },
     ownedBy: '负责人：{{name}}',
     noOwner: '无负责人',
-    managedBy: '由 {{title}} 托管',
     managedTag: '托管 · {{title}}',
     statusEnabled: '已启用',
     enable: '启用',
@@ -130,8 +118,6 @@ const zhCN: LocaleResource<typeof enUS> = {
       ownerHint:
         '接收到期提醒和异常通知。密钥不以负责人的身份调用，负责人离开后仍然可用。',
       expiryHint: '到期前请轮换；轮换不改变身份和权限。',
-      permissionsHint:
-        '系统密钥默认没有任何权限。只授予集成需要的权限，且不能超过你自己的权限。',
       dataRules:
         '记录只能是「全部」或「选定记录」：系统密钥不是成员，「我负责的」等按本人计算的范围对它不适用。限制规则照常生效。',
     },
@@ -194,9 +180,10 @@ const zhCN: LocaleResource<typeof enUS> = {
       '这些规则只对之后新建和轮换的密钥生效，已有密钥的有效期不变。谁能进入此页、管理系统密钥或创建个人密钥，在角色上设置。',
     whoMay: '角色和权限',
     sameAsMe: {
-      title: '「与我相同」的个人密钥',
-      description: '拥有成员全部权限的密钥可以换出其登录状态。默认不允许。',
-      allow: '允许成员创建',
+      title: '个人密钥的权限范围',
+      description:
+        '持有这类密钥的人可能以该成员的身份登录系统。关闭此选项后，成员新建个人密钥时必须指定权限范围。',
+      allow: '允许成员创建拥有本人全部权限的密钥',
     },
     maxDays: {
       title: '个人密钥最长有效期',

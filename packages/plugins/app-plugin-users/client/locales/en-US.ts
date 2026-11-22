@@ -136,6 +136,7 @@ const enUS = {
       "Managing accounts is a person's only: no API key may do it.",
   },
   page: {
+    roles: 'Roles',
     loading: 'Loading',
   },
   notificationTemplates: {

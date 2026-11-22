@@ -1,6 +1,19 @@
 import type { DistributedResource } from './en-US.js';
 
 const zhTW: DistributedResource = {
+  view: {
+    deployment: '部署模式',
+    multi: '多個執行個體',
+    configuration: '目前設定',
+    checks: '多執行個體檢查',
+    backends: '服務後端',
+    readiness: '擴充前檢查',
+    pending: '待處理',
+    all: '全部',
+    empty: '沒有待處理項目。',
+    blockers: '必須處理 · {{count}} 項',
+    scope: '此頁顯示目前執行個體的設定。修改應用程式設定後，請重新部署。',
+  },
   nav: {
     title: '叢集與分散式',
     description: '本執行個體使用了哪些後端，以及應用程式能否以多執行個體執行。',

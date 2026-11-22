@@ -1,6 +1,20 @@
 import type { DistributedResource } from './en-US.js';
 
 const esES: DistributedResource = {
+  view: {
+    deployment: 'Modo de despliegue',
+    multi: 'Varias instancias',
+    configuration: 'Configuración actual',
+    checks: 'Comprobación entre instancias',
+    backends: 'Backends de servicios',
+    readiness: 'Comprobaciones antes de escalar',
+    pending: 'Pendientes',
+    all: 'Todas',
+    empty: 'No hay comprobaciones pendientes.',
+    blockers: 'Correcciones necesarias · {{count}}',
+    scope:
+      'Configuración de esta instancia. Vuelve a desplegar la aplicación después de modificarla.',
+  },
   nav: {
     title: 'Clúster y distribución',
     description:
