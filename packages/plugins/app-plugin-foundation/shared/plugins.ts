@@ -24,6 +24,8 @@ export interface FoundationPluginView extends FoundationPluginMetadata {
   /** The installed version, absent when the package does not resolve. */
   readonly version?: string;
   readonly dependencyField?: 'dependencies' | 'devDependencies';
+  /** Whether the running application registers it. */
+  readonly enabled: boolean;
   /** The same state `pnpm nocobase plugin inspect` reports. */
   readonly state: PluginRegistrationStateName;
   readonly skillsOnly: boolean;
@@ -40,7 +42,8 @@ export interface FoundationPluginsMeta {
 }
 
 /** Package names the plugins page lists: official and third-party application plugins and portals. */
-export const PLUGIN_PACKAGE_PATTERN: RegExp = /^(@[^/]+\/)?app-(plugin|portal)-/;
+export const PLUGIN_PACKAGE_PATTERN: RegExp =
+  /^(@[^/]+\/)?app-(plugin|portal)-/;
 
 const OFFICIAL_PREFIX = '@nocobase/app-plugin-';
 

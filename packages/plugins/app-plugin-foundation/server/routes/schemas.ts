@@ -6,7 +6,9 @@ import type {
   FoundationPluginsMeta,
 } from '../../shared/plugins.js';
 
-export const PluginsQuery = z.strictObject({
+export const PluginsQuery: z.ZodType<{
+  client?: string | string[];
+}> = z.strictObject({
   client: z
     .union([z.string(), z.array(z.string())])
     .optional()
@@ -43,6 +45,9 @@ export const PluginSchema: z.ZodType<FoundationPluginView> = z
       .meta({
         description: "Where the application's package.json declares it.",
       }),
+    enabled: z.boolean().meta({
+      description: 'Whether the running application registers it.',
+    }),
     state: z
       .enum([
         'absent',
@@ -70,7 +75,9 @@ export const PluginSchema: z.ZodType<FoundationPluginView> = z
           'CLI_ENTRY_UNEXPECTED',
         ]),
       )
-      .meta({ description: 'Registration problems, as `plugin inspect` codes.' }),
+      .meta({
+        description: 'Registration problems, as `plugin inspect` codes.',
+      }),
     requires: z.array(z.string()).meta({
       description: 'Application plugins this one builds on.',
     }),

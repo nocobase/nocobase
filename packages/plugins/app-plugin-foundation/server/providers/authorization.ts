@@ -27,7 +27,9 @@ export function registerPluginsAccess(authz: AppAuthorization): void {
   authz.settings.add({
     id: PLUGINS_SETTINGS_ID,
     title: accessText('settings.plugins'),
-    actions: [{ name: PLUGINS_ACCESS.action, title: accessText('actions.read') }],
+    actions: [
+      { name: PLUGINS_ACCESS.action, title: accessText('actions.read') },
+    ],
   });
   authz.ui.place(
     { type: 'settings', id: PLUGINS_SETTINGS_ID },

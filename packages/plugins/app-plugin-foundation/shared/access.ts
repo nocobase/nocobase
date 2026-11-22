@@ -21,10 +21,16 @@ export function accessText(key: string): {
 export const PLUGINS_SETTINGS_ID = 'foundation.plugins';
 
 /** «Plugins · View»: opens the plugins page and reads `GET /api/foundation/plugins`. */
-export const PLUGINS_ACCESS = {
+export const PLUGINS_ACCESS: {
+  readonly resource: {
+    readonly type: 'settings';
+    readonly id: 'foundation.plugins';
+  };
+  readonly action: 'read';
+} = {
   resource: { type: 'settings', id: PLUGINS_SETTINGS_ID },
   action: 'read',
-} as const;
+};
 
 /** The permission workspace subsection (under administration) the settings item is listed in. */
 export const SYSTEM_SECTION = 'system';

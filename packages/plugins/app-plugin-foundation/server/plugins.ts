@@ -45,7 +45,9 @@ export class FoundationPluginCatalog {
     Promise<InstalledPlugin | undefined>
   >();
 
-  public constructor(private readonly options: FoundationPluginCatalogOptions) {}
+  public constructor(
+    private readonly options: FoundationPluginCatalogOptions,
+  ) {}
 
   /**
    * `clientPlugins` are the packages the browser's application registers, which only the browser knows. Without
@@ -136,6 +138,7 @@ export class FoundationPluginCatalog {
             : {}),
           ...(installed?.docs !== undefined ? { docs: installed.docs } : {}),
           ...(dependencyField ? { dependencyField } : {}),
+          enabled: enabled.has(packageName),
           state: registration.state,
           skillsOnly: registration.skillsOnly,
           issues: registration.issues.map(({ code }) => code),
@@ -177,7 +180,7 @@ export class FoundationPluginCatalog {
   private async findInstalled(
     packageName: string,
   ): Promise<InstalledPlugin | undefined> {
-    for (let directory = this.options.rootDir; ; ) {
+    for (let directory = this.options.rootDir; ;) {
       const manifest = await readJson(
         path.join(directory, 'node_modules', packageName, 'package.json'),
       );

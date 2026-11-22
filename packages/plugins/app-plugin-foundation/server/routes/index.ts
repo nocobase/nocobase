@@ -62,7 +62,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'List the plugins the application uses',
         operationId: 'foundationListPlugins',
         description:
-          "Lists the application plugins the application declares or registers, with their installed versions, the names and descriptions their package.json declares under `nocobase`, and the registration state `pnpm nocobase plugin inspect` reports. Reads installed manifests only; nothing is scanned or written. Requires the `read` action of the `foundation.plugins` settings item.",
+          'Lists the application plugins the application declares or registers, with their installed versions, the names and descriptions their package.json declares under `nocobase`, and the registration state `pnpm nocobase plugin inspect` reports. Reads installed manifests only; nothing is scanned or written. Requires the `read` action of the `foundation.plugins` settings item.',
         responses: {
           200: listResponse(PluginSchema, PluginsMetaSchema),
           ...apiErrorResponses,
