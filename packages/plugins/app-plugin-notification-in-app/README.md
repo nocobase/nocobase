@@ -9,7 +9,7 @@ user-isolated inbox API.
 The package exports its Server plugin and public Server contracts from both the
 package root and `/server`. Register it in the target App's Server plugin list
 after `@nocobase/app-plugin-notification` when durable notification delivery is
-needed. Its `/client` entry contributes a development-only inbox page. The package keeps
+needed. Its `/client` entry contributes the inbox page (route `inbox`, `/inbox`) and the header's inbox button. The package keeps
 `@nocobase/app-plugin-notification` as a peer because it imports the shared
 notification contracts. Registering the core Server plugin is optional: the
 inbox store and routes require only the database and authentication services,
@@ -19,7 +19,7 @@ Channel and Provider contribution is skipped in that case.
 The plugin registers:
 
 - the `in-app` Channel and database Provider;
-- the `notificationInAppItems` migration;
+- the `notificationInAppItems` migrations, including the `kind`, `category`, `sourceType` and `sourceId` columns `notify()` fills (older items keep them empty);
 - authenticated inbox routes under `/api/notificationInApp`.
 
 ## Inbox API
@@ -35,9 +35,11 @@ The plugin registers:
 
 The running application's API document lists these operations under the `NotificationInApp` tag with their parameters, response schemas and errors: open `/api/swagger/docs` while signed in, or read the JSON at `/api/swagger`. Their operationIds are `notificationInAppListMessages`, `notificationInAppCountUnreadMessages`, `notificationInAppMarkAllMessagesRead`, `notificationInAppMarkMessageRead`, `notificationInAppMarkMessageUnread` and `notificationInAppDeleteMessage`.
 
-The list accepts `pageSize` (an integer from 1 to 100, defaulting to 20), `unreadOnly=true` to restrict the result to unread messages, and `pageToken`, the `meta.nextPageToken` of the previous page; `nextPageToken` is absent on the last page. Pages follow a stable `(createdAt, id)` order. Clients must treat page tokens as opaque and must not construct or persist internal table queries.
+The list accepts `pageSize` (an integer from 1 to 100, defaulting to 20), `unreadOnly=true` to restrict the result to unread messages, `category` to restrict it to one notification category (the kind's `categoryKey`, such as `projects`), and `pageToken`, the `meta.nextPageToken` of the previous page; `nextPageToken` is absent on the last page. Pages follow a stable `(createdAt, id)` order. Clients must treat page tokens as opaque and must not construct or persist internal table queries.
 
 The write methods take no body and need no token of their own. A write authenticated by the browser's session cookie is protected from cross-site forgery by the authentication plugin, which rejects it with 403 `INVALID_CSRF_ORIGIN` (domain `authentication`) unless its `Origin` or `Referer` is the application's own or a trusted origin.
+
+`GET /api/notificationInApp/messages/unreadCount?byCategory=true` also answers `categories: [{ category, count }]`, the unread messages per category; messages without a category have no `category` key. The inbox page takes each category's name from `GET /api/notifications/preferences`.
 
 Durable inbox mutations publish a user-scoped realtime invalidation event. Clients use that event as a refetch signal and continue to treat the HTTP API as the authoritative inbox state.
 
@@ -57,13 +59,14 @@ Every operation runs behind the authentication plugin's `auth.required()` and ta
 
 `@nocobase/app-plugin-notification-in-app/client/inbox` is the headless entry for an application that renders its own inbox. It is built on the `/client` API helpers and React Query, which the application provides as the `@tanstack/react-query` peer; the hooks use the nearest `QueryClientProvider`.
 
-| Export                          | What it does                                                                                                                                  |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `inboxKeys`                     | Query keys, all under `inboxKeys.all` (`['notificationInApp', 'inbox']`), so one invalidation refreshes the list and the count                |
-| `useInboxItems(pageSize?)`      | The viewer's messages as an infinite query, 25 per page by default; `fetchNextPage()` follows `nextPageToken`                                 |
-| `useInboxUnreadCount()`         | The unread count                                                                                                                              |
-| `useInboxActions()`             | `{ mark(id, action), readAll(), pending }`: updates the cached list and count at once, restores them if the server refuses, refetches settled |
-| `useInboxRefresh(extraTopics?)` | Invalidates `inboxKeys.all` on the plugin's realtime signal, on reconnection and on window focus, and on each of `extraTopics`                |
+| Export                               | What it does                                                                                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inboxKeys`                          | Query keys, all under `inboxKeys.all` (`['notificationInApp', 'inbox']`), so one invalidation refreshes the list and the count                        |
+| `useInboxItems(pageSize?, filters?)` | The viewer's messages as an infinite query, 25 per page by default, narrowed by `{ category, unreadOnly }`; `fetchNextPage()` follows `nextPageToken` |
+| `useInboxUnreadByCategory()`         | The unread count of each category                                                                                                                     |
+| `useInboxUnreadCount()`              | The unread count                                                                                                                                      |
+| `useInboxActions()`                  | `{ mark(id, action), readAll(), pending }`: updates the cached list and count at once, restores them if the server refuses, refetches settled         |
+| `useInboxRefresh(extraTopics?)`      | Invalidates `inboxKeys.all` on the plugin's realtime signal, on reconnection and on window focus, and on each of `extraTopics`                        |
 
 ```tsx
 import {
@@ -87,15 +90,24 @@ function Inbox() {
 
 Prefer these hooks over calling `fetchInbox` and the mutation helpers from components, so every inbox surface in the application shares one cache and refreshes on the same signals. `mark` and `readAll` reject when the server refuses; show the error where the call was made.
 
-## Client inbox page
+## Client inbox page and header button
 
-The plugin contributes no pages. An application that wants an inbox page renders the exported `NotificationInAppInbox` inside `NotificationInAppProvider` in a page of its own and declares that page among its own routes; mounting the Provider in the page keeps the subscription alive only while the page is open.
+Registering `@nocobase/app-plugin-notification-in-app/client` is enough: the plugin registers the route `inbox` at `/inbox` (signed in, no page grant, because the API answers each person's own messages only) and the header button `inbox` through `headerActions`. The button opens a popover with the latest messages, "Mark all read" and a link to the page; its badge is what waits on the viewer, in the `attention` tone, when a pending source counts anything, else the unread count, else nothing. The badge hook also keeps every inbox query fresh over realtime while the person is signed in, so the button, the page and every other open tab update together.
 
-The Provider subscribes only while it is mounted, reconnects after authentication changes, and refetches the unread count on realtime invalidation, WebSocket reconnection, and browser focus. HTTP state remains authoritative.
+The page is the master–detail inbox the UI Library block used to copy into the templates: a left rail with All, Unread, Pending and one entry per category; a list grouped as Pending, Today and Earlier; a detail pane that marks read or unread, deletes and opens the item's target. The view, the category and the selected item are in the URL (`?view=unread|todo`, `?category=`, `?item=`). Without a renderer for its kind an item shows its body and Open.
+
+### Customizing it
+
+1. **Register the plugin.** `notificationInApp()` in `client/plugins.ts`, beside `notification()`.
+2. **Plugin options.** `notificationInApp({ headerButton: false })` leaves the header button out; `inboxPath: '/messages'` moves the page. The route keeps its name `inbox`.
+3. **Extension points.** Two lists, bound by the plugin's client service provider; register into them from your own client service provider's `boot()`:
+   - **Entry renderers** (`inboxRenderersToken`): `app.container.resolve(inboxRenderersToken).register(defineInboxRenderer({ kinds: ['approval.requested'], icon, text, detail, actions }))`. A renderer matches an item by its notification `kind` first, else by its notice's `source` and `types`; it gives the icon, the wording, the detail and the actions, such as Approve and Reject through `DecisionActionsBar`.
+   - **Pending sources** (`inboxSourcesToken`): `resolve(inboxSourcesToken).register({ id, notices, waiting, pending, refreshTopics })`. `notices` says who sent each item and whether its decision still waits or how it ended ("Approved by Wang Fang"), `waiting` lists what waits on the viewer in full, `pending` counts it per category for the rail and the header badge. Several sources are combined: counts add up, and a failing source leaves the others.
+4. **Replace the page.** `routeComponentOverrides: [{ name: 'inbox', component: MyInbox }]` in the application's `client/plugins.ts` replaces the whole page; `headerActionOverrides: [{ name: 'inbox', component: MyButton }]` (or `hidden: true`) replaces the button. A replacement can still render the exported `InboxPage` with its own `registry`, `source`, `title` or `detailToolbar`, or build on the `/client/inbox` hooks. The UI Library's inbox block is generated from this plugin's source, for an application that wants to copy the page and own it entirely.
 
 ## Development
 
-Tests live in `tests/` and include Client inbox runtime behavior,
+Tests live in `tests/` and include the Client plugin, header badge and extension points, inbox hooks,
 Server Route validation, stable pagination, Provider behavior, and real SQLite
 migration `up`/`down` coverage.
 
@@ -116,4 +128,4 @@ Pass `target: { type: 'route', path: '/topics/123' }` for application navigation
 
 Run the target-column migration before using the updated inbox. It adds nullable JSON storage; existing `actionUrl` values are ignored and never converted. The old column is left unused. For multi-Channel sends, provide a complete message under each `messages` key, with an IM URL or links in email bodies as appropriate.
 
-Configure `notification.channels.inbox: { type: 'in-app' }` and send `messages: { inbox: { to: '123', title: 'Approved', body: 'Review the result' } }`. The native `to` value accepts one application user ID or a non-empty readonly array. Each user receives an independent Delivery and retry; no current user is inferred.
+Configure `notification.channels.inbox: { type: 'in-app' }`. Business code sends to people with `notify(kind, { to: userIds })` from `@nocobase/app-plugin-notification`: the in-app channel reaches every user by their ID and fills the item's `kind`, `category`, `sourceType` and `sourceId`. A direct send uses `messages: { inbox: { to: '123', title: 'Approved', body: 'Review the result' } }`. The native `to` value accepts one application user ID or a non-empty readonly array. Each user receives an independent Delivery and retry; no current user is inferred.

@@ -325,8 +325,8 @@ export const moduleOverviews: Readonly<Record<string, ModuleOverview>> = {
       },
     ],
     note: [
-      'Channels and the inbox interface are checked separately. A channel alone does not provide a place to read messages.',
-      '渠道配置和收件箱界面分别判断。没有收件箱入口，用户仍无法在应用中查看站内信。',
+      'Channels and the inbox interface are checked separately. The client plugin provides the inbox page; a channel alone does not.',
+      '渠道配置和站内信界面分别判断。站内信页面由客户端插件提供，仅配置渠道不会提供。',
     ],
     actions: [
       {
@@ -366,12 +366,12 @@ export const moduleOverviews: Readonly<Record<string, ModuleOverview>> = {
         ],
         steps: [
           [
-            'Reuse NotificationInAppProvider and NotificationInAppInbox with the host API client.',
-            '复用 NotificationInAppProvider 与 NotificationInAppInbox，沿用宿主 API 客户端。',
+            'Register the in-app notification client plugin: it provides the /inbox page and the header inbox button with its unread badge.',
+            '注册站内信客户端插件：它提供 /inbox 页面和顶栏站内信按钮及未读徽标。',
           ],
           [
-            'Provide an authenticated route and entry while retaining server-side user isolation.',
-            '提供登录后的真实路由和入口，保留服务端按用户隔离。',
+            'Customize through plugin options, entry renderers and pending sources before replacing the page, keeping server-side user isolation.',
+            '先用插件选项、条目渲染器和待处理来源定制，再考虑整页替换；保留服务端按用户隔离。',
           ],
           [
             'Realtime events only trigger refetches; HTTP responses own message content and read state.',
