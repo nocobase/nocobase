@@ -7,6 +7,7 @@ import apiKeys from '@nocobase/app-plugin-api-keys/server';
 import authentication from '@nocobase/app-plugin-authentication/server';
 import authorization from '@nocobase/app-plugin-authorization/server';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
+import distributed from '@nocobase/app-plugin-distributed/server';
 import users from '@nocobase/app-plugin-users/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
 import notification from '@nocobase/app-plugin-notification/server';
@@ -35,6 +36,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   notificationInApp,
   notificationProviders,
   file,
+  distributed,
   scheduler,
   mail,
   foundation,

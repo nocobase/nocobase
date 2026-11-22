@@ -25,6 +25,7 @@ import type {
   PublishReceipt,
   QueueConfig,
   QueueConsumer,
+  QueueDescription,
   QueueDrainOptions,
   QueueLogger,
   QueueManager,
@@ -144,7 +145,54 @@ class DefaultQueueService implements QueueService, QueueHost {
         `Queue implementation "${name}" needs validateConfig and createRuntime.`,
       );
     }
+    if (
+      implementation.sharing !== undefined &&
+      implementation.sharing !== 'local' &&
+      implementation.sharing !== 'shared'
+    ) {
+      throw new TypeError(
+        `Queue implementation "${name}" declares an unknown sharing "${String(implementation.sharing)}".`,
+      );
+    }
     this.implementations.set(name, implementation);
+  }
+
+  public describe(): QueueDescription {
+    const backend = (adapter: string) => {
+      const implementation =
+        adapter === IN_MEMORY_ADAPTER
+          ? undefined
+          : this.implementations.get(adapter);
+      return adapter === IN_MEMORY_ADAPTER
+        ? { registered: true, sharing: 'local' as const }
+        : {
+            registered: implementation !== undefined,
+            sharing: implementation?.sharing ?? ('unknown' as const),
+          };
+    };
+    const backends = queueConfigKeys(this.config).map((name) => {
+      const entry = this.config?.backends?.[name];
+      const adapter = typeof entry?.adapter === 'string' ? entry.adapter : '';
+      return { name, adapter, ...backend(adapter) };
+    });
+    const configured = this.config?.default;
+    const adapter =
+      configured === undefined
+        ? IN_MEMORY_ADAPTER
+        : (backends.find(({ name }) => name === configured)?.adapter ?? '');
+    const defaultKey = selectQueueConfig(this.config, undefined).key;
+    return {
+      default: configured ?? null,
+      adapter,
+      ...backend(adapter),
+      backends,
+      selections: [...this.slots]
+        .filter(([, slot]) => slot.config.key !== defaultKey)
+        .map(([queue, slot]) => ({
+          consumer: queue,
+          backend: slot.config.key,
+        })),
+    };
   }
 
   public manager(queue: string, configKey?: string): QueueManager {
