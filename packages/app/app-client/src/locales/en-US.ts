@@ -14,6 +14,7 @@ export default {
       categories: {
         account: 'Account',
         preferences: 'Preferences',
+        messages: 'Messages',
         other: 'Other',
       },
     },

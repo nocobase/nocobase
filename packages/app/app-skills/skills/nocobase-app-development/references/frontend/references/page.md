@@ -280,7 +280,20 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 
 ### A count beside an entry
 
-An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. A count changes while the page is open, so it is not part of the route's `navigation`: the App layout reads it with the hook that keeps it current and passes it to `NavigationMenu` in `badges`, keyed by the route's `name`:
+An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. The route declares it with `navigation.badge`, a hook returning `{ count, tone? }` or `undefined` that the menu calls while it renders the entry; `tone: 'attention'` draws the count on the primary color. The hook runs inside the signed-in session, starts over when the person changes, and owns its data: it reads a query kept current by a realtime topic or a write's invalidation, and never starts a request on each render.
+
+```ts
+// client/routes.ts
+navigation: {
+  title: 'navigation.inbox',
+  badge: () => {
+    const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-notification-in-app/client/inbox
+    return { count: unread, tone: 'attention' };
+  },
+},
+```
+
+The App layout may instead pass a count to `NavigationMenu` in `badges`, keyed by the route's `name`, which replaces what the route declares — for a route the application does not own, or a `live` count:
 
 ```tsx
 // client/layouts/app-layout.tsx
@@ -294,7 +307,7 @@ const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-noti
 />;
 ```
 
-A number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
+In `badges` a number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
 
 ## 7. Back button and breadcrumbs
 

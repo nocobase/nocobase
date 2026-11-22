@@ -175,9 +175,15 @@ describe('runtime default locale', () => {
     const t = runtime.i18n.getFixedT(APP_CLIENT_NAMESPACE);
     expect(t('settings.categories.data')).toBe('Data and files');
     expect(t('settings.personal.categories.preferences')).toBe('Preferences');
+    expect(t('settings.personal.categories.messages')).toBe('Messages');
     await runtime.i18n.changeLanguage('zh-CN');
     expect(
       runtime.i18n.getFixedT(APP_CLIENT_NAMESPACE)('settings.categories.data'),
     ).toBe('数据与文件');
+    expect(
+      runtime.i18n.getFixedT(APP_CLIENT_NAMESPACE)(
+        'settings.personal.categories.messages',
+      ),
+    ).toBe('消息');
   });
 });
