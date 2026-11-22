@@ -300,7 +300,11 @@ async function inspect(
       } catch (error) {
         const classified = classifyHandshakeFailure(error);
         const detail = statusDetailOf(
-          error instanceof Error ? error.message : String(error),
+          spec.id === 'antigravity' && classified.status === 'needsLogin'
+            ? `Run ${spec.signIn} on the runtime as the account that runs the Runner, then detect again.`
+            : error instanceof Error
+              ? error.message
+              : String(error),
         );
         return {
           installed: true,

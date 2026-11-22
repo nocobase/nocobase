@@ -123,11 +123,14 @@ export function ToolTable({
       onCheckedChange={(value) => onSwitch(tool, value)}
     />
   );
-  const state = (tool: AgentTool) => (
-    <ToolStateTag
-      state={toolState({ enabledTools, tools: runner.tools }, tool)}
-    />
-  );
+  const stateTag = (tool: AgentTool) => {
+    const state = toolState({ enabledTools, tools: runner.tools }, tool);
+    const detail =
+      tool === 'antigravity' && state === 'signedOut'
+        ? runner.tools.find((item) => item.kind === tool)?.statusDetail
+        : undefined;
+    return <ToolStateTag state={state} detail={detail} />;
+  };
   if (!tools.length)
     return (
       <p className='text-sm text-muted-foreground'>{t('runtimes.noTools')}</p>
@@ -145,7 +148,7 @@ export function ToolTable({
           >
             <div className='flex items-center gap-2 p-3'>
               <span className='min-w-0 font-medium'>{t(`tools.${tool}`)}</span>
-              {state(tool)}
+              {stateTag(tool)}
               <span className='ml-auto flex items-center'>{toggle(tool)}</span>
             </div>
             <div className='border-t p-3'>{quota(tool)}</div>
@@ -234,7 +237,7 @@ export function ToolTable({
                   <div className='flex items-center'>{toggle(tool)}</div>
                 </TableCell>
                 <TableCell>
-                  <div className='flex items-center'>{state(tool)}</div>
+                  <div className='flex items-center'>{stateTag(tool)}</div>
                 </TableCell>
                 <TableCell>
                   <div className='flex items-center'>{quota(tool)}</div>
