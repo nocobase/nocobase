@@ -23,7 +23,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
 import { useAuthorizationClient } from '../use-authorization-client.js';
 import { useAuthorizationRevision } from '../use-authorization-revision.js';
-import type { AuthorizationPageTab } from './extensions.js';
+import type { AuthorizationRequirement } from '../authorization-client.js';
+import type {
+  AuthorizationContentTab,
+  AuthorizationPageTab,
+  AuthorizationRuleTabProps,
+} from './extensions.js';
+import { DATA_RULES_TAB } from './tab-keys.js';
 import { pageTabHref, useLocalizedText } from './localized-text.js';
 import { useAuthorizationSettings } from './use-authorization-settings.js';
 
@@ -50,20 +56,19 @@ export function AuthorizationPage({
     settings.pageTabs.subscribe,
     settings.pageTabs.list,
   );
-  const open = useOpenTabs(tabs, tab);
+  const ruleTabs = useSyncExternalStore(
+    settings.ruleTabs.subscribe,
+    settings.ruleTabs.list,
+  );
+  const open = useOpenTabs(tabs, ruleTabs, tab);
   const navigate = useNavigate();
   const heading = t('settings.permissionManagement');
   return (
     <PageContainer>
       <PageHeader
         title={heading}
-        description={
-          <>
-            {description}
-            {description ? ' ' : null}
-            <HowItWorks />
-          </>
-        }
+        description={description}
+        note={<HowItWorks />}
         actions={actions}
       />
       <Tabs
@@ -96,32 +101,46 @@ export function AuthorizationPage({
 
 /**
  * The tabs the person may open, in order. The open tab is the page the router already let in; the others are listed
- * once they are known to open, so a viewer who may open only one sees no tab bar at all.
+ * once they are known to open, so a viewer who may open only one sees no tab bar at all. The Data rules tab holds the
+ * kinds of rule the rule plugins add, so it is listed only while one of them is installed and the person may open
+ * it.
  */
 function useOpenTabs(
   tabs: readonly AuthorizationPageTab[],
+  ruleTabs: readonly AuthorizationContentTab<AuthorizationRuleTabProps>[],
   current: string,
 ): readonly AuthorizationPageTab[] {
   const client = useAuthorizationClient();
   const revision = useAuthorizationRevision();
   const [allowed, setAllowed] = useState<{
     readonly tabs: readonly AuthorizationPageTab[];
+    readonly ruleTabs: readonly AuthorizationContentTab<AuthorizationRuleTabProps>[];
     readonly revision: unknown;
     readonly keys: ReadonlySet<string>;
   }>();
   useEffect(() => {
     let active = true;
+    const can = (requirement: AuthorizationRequirement | undefined) =>
+      requirement === undefined
+        ? Promise.resolve(true)
+        : client.can(requirement).then(
+            (answer) => answer,
+            () => false,
+          );
     void Promise.all(
       tabs.map((tab) =>
-        client.can(tab.authz).then(
-          (can) => can,
-          () => false,
-        ),
+        tab.key === DATA_RULES_TAB
+          ? Promise.all([
+              can(tab.authz),
+              ...ruleTabs.map((rule) => can(rule.authz)),
+            ]).then(([page, ...rules]) => page && rules.some(Boolean))
+          : can(tab.authz),
       ),
     ).then((answers) => {
       if (!active) return;
       setAllowed({
         tabs,
+        ruleTabs,
         revision,
         keys: new Set(tabs.filter((_, i) => answers[i]).map((tab) => tab.key)),
       });
@@ -129,9 +148,11 @@ function useOpenTabs(
     return () => {
       active = false;
     };
-  }, [client, revision, tabs]);
+  }, [client, revision, tabs, ruleTabs]);
   const keys =
-    allowed?.tabs === tabs && allowed.revision === revision
+    allowed?.tabs === tabs &&
+    allowed.ruleTabs === ruleTabs &&
+    allowed.revision === revision
       ? allowed.keys
       : undefined;
   return tabs.filter((tab) => tab.key === current || keys?.has(tab.key));

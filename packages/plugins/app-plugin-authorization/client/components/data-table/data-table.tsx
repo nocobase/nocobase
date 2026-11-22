@@ -207,7 +207,7 @@ function phoneMedia(): MediaQueryList | undefined {
 }
 
 /** Whether the viewport is phone-sized, read on the first render so a phone never flashes the table. */
-function useIsPhone(enabled: boolean): boolean {
+export function useIsPhone(enabled: boolean): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {
       const media = enabled ? phoneMedia() : undefined;

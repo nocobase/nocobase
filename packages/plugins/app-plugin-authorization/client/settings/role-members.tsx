@@ -10,6 +10,7 @@ import {
   type ReactElement,
 } from 'react';
 
+import { useIsPhone } from '#components/data-table/data-table';
 import { Button } from '#components/ui/button';
 import {
   Dialog,
@@ -222,6 +223,50 @@ export function RoleMembers({
     [members],
   );
   const directories = types.filter((type) => type.directory);
+  const phone = useIsPhone(true);
+  // The Type column tells members apart only when they are of more than one kind, such as users and teams.
+  const showType =
+    new Set((members ?? []).map((member) => member.assignment.subject.type))
+      .size > 1;
+  const otherRolesOf = (member: Member): ReactElement => (
+    <span className='flex flex-wrap gap-1'>
+      {otherRoles?.get(subjectKey(member.assignment.subject))?.map((role) => (
+        <span
+          key={role}
+          className='rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'
+        >
+          {role}
+        </span>
+      ))}
+    </span>
+  );
+  const actionsOf = (member: Member): ReactElement | null =>
+    (checkHref && member.assignment.subject.type === 'user') || editable ? (
+      <div className='flex flex-wrap items-center gap-2 md:inline-flex md:justify-end'>
+        {checkHref && member.assignment.subject.type === 'user' && (
+          <Link
+            className='text-sm text-primary underline-offset-4 hover:underline'
+            to={checkHref(member.assignment.subject.id)}
+          >
+            {t('settings.members.checkPermissions')}
+          </Link>
+        )}
+        {editable && (
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            disabled={removing !== undefined}
+            aria-label={t('settings.members.removeMember', {
+              name: member.title,
+            })}
+            onClick={() => void remove(member)}
+          >
+            {t('settings.members.remove')}
+          </Button>
+        )}
+      </div>
+    ) : null;
 
   if (error) return <SettingsError error={error} retry={reload} />;
   if (!members) return <SettingsLoading />;
@@ -242,12 +287,43 @@ export function RoleMembers({
         <p className='rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground'>
           {t('settings.members.empty')}
         </p>
+      ) : phone ? (
+        // A phone lists each member as a card with its actions under it, so nothing scrolls sideways.
+        <ul
+          className='divide-y rounded-lg border'
+          data-slot='role-member-cards'
+        >
+          {members.map((member) => (
+            <li key={member.assignment.id} className='flex flex-col gap-2 p-3'>
+              <div className='min-w-0'>
+                <div className='font-medium break-words'>{member.title}</div>
+                {member.description && (
+                  <div className='text-xs break-words text-muted-foreground'>
+                    {member.description}
+                  </div>
+                )}
+                {showType && (
+                  <div className='text-xs text-muted-foreground'>
+                    {typeTitle(member.assignment.subject.type)}
+                  </div>
+                )}
+              </div>
+              {otherRoles?.get(subjectKey(member.assignment.subject))
+                ?.length ? (
+                <div className='flex flex-wrap items-center gap-1 text-xs text-muted-foreground'>
+                  {t('settings.members.otherRoles')}:{otherRolesOf(member)}
+                </div>
+              ) : null}
+              {actionsOf(member)}
+            </li>
+          ))}
+        </ul>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{t('settings.members.member')}</TableHead>
-              <TableHead>{t('settings.members.type')}</TableHead>
+              {showType && <TableHead>{t('settings.members.type')}</TableHead>}
               <TableHead>{t('settings.members.otherRoles')}</TableHead>
               {(editable || checkHref) && (
                 <TableHead className='w-24 text-right'>
@@ -267,24 +343,15 @@ export function RoleMembers({
                     </div>
                   )}
                 </TableCell>
-                <TableCell className='text-muted-foreground'>
-                  {typeTitle(member.assignment.subject.type)}
-                </TableCell>
+                {showType && (
+                  <TableCell className='text-muted-foreground'>
+                    {typeTitle(member.assignment.subject.type)}
+                  </TableCell>
+                )}
                 <TableCell>
                   {otherRoles?.get(subjectKey(member.assignment.subject))
                     ?.length ? (
-                    <span className='flex flex-wrap gap-1'>
-                      {otherRoles
-                        .get(subjectKey(member.assignment.subject))
-                        ?.map((role) => (
-                          <span
-                            key={role}
-                            className='rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'
-                          >
-                            {role}
-                          </span>
-                        ))}
-                    </span>
+                    otherRolesOf(member)
                   ) : (
                     <span className='text-muted-foreground'>
                       {otherRoles ? '—' : ''}
@@ -293,28 +360,7 @@ export function RoleMembers({
                 </TableCell>
                 {(editable || checkHref) && (
                   <TableCell className='text-right whitespace-nowrap'>
-                    {checkHref && member.assignment.subject.type === 'user' && (
-                      <Link
-                        className='me-2 text-sm text-primary underline-offset-4 hover:underline'
-                        to={checkHref(member.assignment.subject.id)}
-                      >
-                        {t('settings.members.checkPermissions')}
-                      </Link>
-                    )}
-                    {editable && (
-                      <Button
-                        type='button'
-                        variant='ghost'
-                        size='sm'
-                        disabled={removing !== undefined}
-                        aria-label={t('settings.members.removeMember', {
-                          name: member.title,
-                        })}
-                        onClick={() => void remove(member)}
-                      >
-                        {t('settings.members.remove')}
-                      </Button>
-                    )}
+                    {actionsOf(member)}
                   </TableCell>
                 )}
               </TableRow>

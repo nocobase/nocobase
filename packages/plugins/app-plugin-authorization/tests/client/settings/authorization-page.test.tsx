@@ -36,9 +36,20 @@ const tree = (
   </Routes>
 );
 
-/** A session that may read the settings listed, as a member with those grants. */
-function mount(route: string, readable: readonly string[], locale = 'en-US') {
-  return renderWithApp(tree, {
+/** The kinds of data rule installed by default: Default access, as its rule plugin adds it. */
+const DEFAULT_RULES = ['default-access'] as const;
+
+/**
+ * A session that may read the settings listed, as a member with those grants, in an application where the rule
+ * plugins named in `rules` are installed.
+ */
+async function mount(
+  route: string,
+  readable: readonly string[],
+  locale = 'en-US',
+  rules: readonly string[] = DEFAULT_RULES,
+) {
+  const view = await renderWithApp(tree, {
     route,
     locale,
     routes: settingsRoutes,
@@ -57,6 +68,18 @@ function mount(route: string, readable: readonly string[], locale = 'en-US') {
         : { data: [] },
     ),
   });
+  const settings = view.app.container.resolve(authorizationSettingsToken);
+  for (const rule of rules)
+    settings.ruleTabs.add({
+      key: rule,
+      title: rule,
+      authz: {
+        resource: { type: 'settings', id: `authorization.${rule}` },
+        action: 'read',
+      },
+      component: async () => ({ default: () => null }),
+    });
+  return view;
 }
 
 it('switches between the page tabs by address under one heading and keeps keyboard focus', async () => {
@@ -174,4 +197,51 @@ it('lists a tab another package adds in its order, and only to those its page ad
       authz: 'unrestricted',
     }),
   ).toThrow('The page tab "checks" is added twice.');
+});
+
+it('hides Data rules while no rule plugin is installed and lists it once one is', async () => {
+  const view = await mount(
+    '/settings/roles',
+    [
+      'authorization.permission-sets',
+      'authorization.default-access',
+      'authorization.sharing-rules',
+    ],
+    'en-US',
+    [],
+  );
+  await screen.findByRole('heading', { name: 'Roles and permissions' });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+  const settings = view.app.container.resolve(authorizationSettingsToken);
+  const remove = settings.ruleTabs.add({
+    key: 'sharing-rules',
+    title: 'Sharing rules',
+    authz: {
+      resource: { type: 'settings', id: 'authorization.sharing-rules' },
+      action: 'read',
+    },
+    component: async () => ({ default: () => null }),
+  });
+  expect(await screen.findByRole('tab', { name: 'Data rules' })).toBeVisible();
+  remove();
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('tab', { name: 'Data rules' }),
+    ).not.toBeInTheDocument(),
+  );
+});
+
+it('hides Data rules when the viewer may open none of the installed kinds of rule', async () => {
+  await mount(
+    '/settings/roles',
+    ['authorization.permission-sets', 'authorization.default-access'],
+    'en-US',
+    ['sharing-rules'],
+  );
+  await screen.findByRole('heading', { name: 'Roles and permissions' });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(
+    screen.queryByRole('tab', { name: 'Data rules' }),
+  ).not.toBeInTheDocument();
 });
