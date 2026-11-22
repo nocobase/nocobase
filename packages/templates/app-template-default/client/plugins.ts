@@ -44,7 +44,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   distributed(),
   scheduler(),
-  mail(),
+  mail({ routes: { mail: false, mailTeam: false } }),
   foundation(),
 ]);
 

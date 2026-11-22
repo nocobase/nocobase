@@ -1,6 +1,9 @@
 import type { MailResource } from './en-US.js';
 
+import pagesZhCN from '../../shared/locales/pages.zh-CN.js';
+
 const zhCN: MailResource = {
+  ...pagesZhCN,
   content: {
     tooLarge: '正文超过 16 MiB 查看上限，请在原邮箱查看。附件仍可下载。',
     deferred: '已同步邮件信息，正文可按需下载。',
@@ -555,6 +558,7 @@ const zhCN: MailResource = {
     drafts: '草稿',
     moveMessage: '移动邮件',
     aliases: '别名',
+    downloadOriginal: '下载原件',
   },
   status: {
     account: {

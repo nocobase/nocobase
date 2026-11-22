@@ -175,6 +175,16 @@ export class DatabaseMailStore implements MailStore {
     return this.accounts.listAllAccounts();
   }
 
+  public listLastSyncedAt(): Promise<ReadonlyMap<string, string>> {
+    return this.sync.listLastSyncedAt();
+  }
+
+  public countAccountsByProvider(): Promise<
+    readonly import('./contracts/persistence.js').MailProviderAccountCount[]
+  > {
+    return this.accounts.countAccountsByProvider();
+  }
+
   public async getPushSubscription(
     accountId: string,
   ): Promise<MailProviderPushSubscription | undefined> {
@@ -646,10 +656,18 @@ export class DatabaseMailStore implements MailStore {
   }
 
   public async listAllSyncRuns(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailSyncRun>> {
-    return this.sync.listAllSyncRuns(offset, limit);
+    filter?: import('../shared/mail.js').MailManagedLogFilter,
+  ): Promise<import('../shared/mail.js').MailPage<MailSyncRun>> {
+    return this.sync.listAllSyncRuns(pageToken, limit, filter);
+  }
+
+  public deleteFinishedSyncRunsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    return this.sync.deleteFinishedSyncRunsBefore(before, limit);
   }
 
   public async cancelSyncRun(
@@ -735,10 +753,18 @@ export class DatabaseMailStore implements MailStore {
   }
 
   public async listAllSubmissions(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<import('../shared/mail.js').MailOffsetPage<MailStoredSubmission>> {
-    return this.submissions.listAllSubmissions(offset, limit);
+    filter?: import('../shared/mail.js').MailManagedLogFilter,
+  ): Promise<import('../shared/mail.js').MailPage<MailStoredSubmission>> {
+    return this.submissions.listAllSubmissions(pageToken, limit, filter);
+  }
+
+  public deleteFinishedSubmissionsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    return this.submissions.deleteFinishedSubmissionsBefore(before, limit);
   }
 
   public async createSubmission(

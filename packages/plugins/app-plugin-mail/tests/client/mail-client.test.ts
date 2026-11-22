@@ -134,6 +134,27 @@ describe('MailClient', () => {
     await client.listManagedAccounts();
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/accounts',
+      query: {
+        status: undefined,
+        provider: undefined,
+        userId: undefined,
+        q: undefined,
+      },
+    });
+    await client.listManagedAccounts({
+      statuses: ['reauthorizationRequired', 'revoked'],
+      provider: 'gmail',
+      userId: 'user-2',
+      q: 'ana',
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/settings/accounts',
+      query: {
+        status: 'reauthorizationRequired,revoked',
+        provider: 'gmail',
+        userId: 'user-2',
+        q: 'ana',
+      },
     });
     await client.listManagementAccounts();
     expect(request).toHaveBeenLastCalledWith({
@@ -143,15 +164,15 @@ describe('MailClient', () => {
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/management/accounts/account%2F1/folders',
     });
-    await client.listManagedSyncRunsPage({ page: 2, pageSize: 50 });
+    await client.listManagedSyncRunsPage({ pageToken: 'next', pageSize: 50 });
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/syncRuns',
-      query: { page: 2, pageSize: 50 },
+      query: { pageToken: 'next', pageSize: 50 },
     });
     await client.listManagedSubmissionsPage();
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/submissions',
-      query: { page: undefined, pageSize: undefined },
+      query: { pageToken: undefined, pageSize: undefined },
     });
     await expect(
       client.startAuthorization({ type: 'gmail', name: 'google' }),

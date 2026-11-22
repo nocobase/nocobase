@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesZhTW from '../../shared/locales/pages.zh-TW.js';
+
 const zhTW: LocaleResource<typeof enUS> = {
+  ...pagesZhTW,
   content: {
     tooLarge:
       '正文超出了 16 MiB 觀看限制。在您原來的郵箱中開啟它。附件仍然可以下載。',
@@ -551,6 +554,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     drafts: '草稿',
     moveMessage: '行動訊息',
     aliases: '別名',
+    downloadOriginal: '下載原始郵件',
   },
   status: {
     account: {

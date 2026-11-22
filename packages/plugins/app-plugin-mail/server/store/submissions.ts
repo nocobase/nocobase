@@ -5,11 +5,19 @@ import type { NormalizedMailMessage } from '../contracts/provider.js';
 import type { MessageRow } from './rows.js';
 import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
-import { type DatabaseManager } from '@nocobase/db';
+import {
+  accountIdsOfMember,
+  applyLogCursor,
+  applyManagedLogFilter,
+  encodeLogCursor,
+  FINISHED_SUBMISSION_STATUSES,
+} from './log-filter.js';
+import { type DatabaseManager, type SelectQuery } from '@nocobase/db';
 import { randomUUID } from 'node:crypto';
 import {
   type MailComposeInput,
-  type MailOffsetPage,
+  type MailManagedLogFilter,
+  type MailPage,
   type MailProviderError,
   type MailSubmission,
 } from '../../shared/mail.js';
@@ -59,7 +67,7 @@ export class MailSubmissionsStore {
         'in',
         accounts.map((account) => account.id),
       );
-    if (groupByBatch) query = query.where('idempotencyKey', 'like', 'bulk:%:0');
+    if (groupByBatch) query = whereLogEntry(query, bulkOnly);
     else if (bulkOnly) query = query.where('idempotencyKey', 'like', 'bulk:%');
     const row = await query.executeTakeFirst<{
       readonly count: number | string;
@@ -87,38 +95,44 @@ export class MailSubmissionsStore {
         accounts.map((account) => account.id),
       );
     if (groupByBatch) {
-      // sendBulk persists recipient zero first, making it the stable batch anchor.
-      const anchors = await query
-        .where('idempotencyKey', 'like', 'bulk:%:0')
+      // sendBulk persists recipient zero first, making it the stable batch anchor; a single send is its own entry.
+      const entries = await whereLogEntry(query, bulkOnly)
         .orderBy('createdAt', 'desc')
         .orderBy('id', 'desc')
         .offset(offset)
         .limit(limit)
         .execute<SubmissionRow>();
-      if (anchors.length === 0) return [];
-      const rows = await query
-        .where((builder) =>
-          builder.or(
-            anchors.map((anchor) => {
-              const prefix = anchor.idempotencyKey.slice(0, -1);
-              return builder.and([
-                builder('accountId', '=', anchor.accountId),
-                builder(
-                  'idempotencyKey',
-                  'in',
-                  Array.from(
-                    { length: 100 },
-                    (_, index) => `${prefix}${index}`,
-                  ),
+      const anchors = entries.filter((entry) =>
+        isBulkKey(entry.idempotencyKey),
+      );
+      const rows =
+        anchors.length === 0
+          ? []
+          : await query
+              .where((builder) =>
+                builder.or(
+                  anchors.map((anchor) => {
+                    const prefix = anchor.idempotencyKey.slice(0, -1);
+                    return builder.and([
+                      builder('accountId', '=', anchor.accountId),
+                      builder(
+                        'idempotencyKey',
+                        'in',
+                        Array.from(
+                          { length: 100 },
+                          (_, index) => `${prefix}${index}`,
+                        ),
+                      ),
+                    ]);
+                  }),
                 ),
-              ]);
-            }),
-          ),
-        )
-        .orderBy('createdAt', 'asc')
-        .orderBy('id', 'asc')
-        .execute<SubmissionRow>();
-      return anchors.flatMap((anchor) => {
+              )
+              .orderBy('createdAt', 'asc')
+              .orderBy('id', 'asc')
+              .execute<SubmissionRow>();
+      return entries.flatMap((anchor) => {
+        if (!isBulkKey(anchor.idempotencyKey))
+          return [fromSubmissionRow(anchor)];
         const prefix = anchor.idempotencyKey.slice(0, -1);
         return rows
           .filter(
@@ -140,30 +154,72 @@ export class MailSubmissionsStore {
   }
 
   public async listAllSubmissions(
-    offset: number,
+    pageToken: string | undefined,
     limit: number,
-  ): Promise<MailOffsetPage<MailStoredSubmission>> {
-    validateLogPagination(offset, limit);
+    filter: MailManagedLogFilter = {},
+  ): Promise<MailPage<MailStoredSubmission>> {
+    validateLogPagination(0, limit);
+    const memberAccountIds = await accountIdsOfMember(this.accounts, filter);
+    if (memberAccountIds?.length === 0) return { items: [], total: 0 };
     const [rows, count] = await Promise.all([
-      this.database
-        .query()
-        .selectFrom<SubmissionRow>('mailSubmissions')
-        .selectAll()
+      applyLogCursor(
+        applyManagedLogFilter(
+          this.database
+            .query()
+            .selectFrom<SubmissionRow>('mailSubmissions')
+            .selectAll(),
+          filter,
+          memberAccountIds,
+        ),
+        pageToken,
+      )
         .orderBy('createdAt', 'desc')
         .orderBy('id', 'desc')
-        .offset(offset)
-        .limit(limit)
+        // One row past the page tells whether another page follows.
+        .limit(limit + 1)
         .execute<SubmissionRow>(),
-      this.database
-        .query()
-        .selectFrom<SubmissionRow>('mailSubmissions')
-        .select(({ fn }) => [fn.countAll().as('count')])
-        .executeTakeFirst<{ readonly count: number | string }>(),
+      applyManagedLogFilter(
+        this.database
+          .query()
+          .selectFrom<SubmissionRow>('mailSubmissions')
+          .select(({ fn }) => [fn.countAll().as('count')]),
+        filter,
+        memberAccountIds,
+      ).executeTakeFirst<{ readonly count: number | string }>(),
     ]);
+    const items = rows.slice(0, limit).map(fromSubmissionRow);
+    const last = items.at(-1);
     return {
-      items: rows.map(fromSubmissionRow),
+      items,
       total: Number(count?.count ?? 0),
+      ...(rows.length > limit && last
+        ? { nextCursor: encodeLogCursor(last) }
+        : {}),
     };
+  }
+
+  public async deleteFinishedSubmissionsBefore(
+    before: string,
+    limit: number,
+  ): Promise<number> {
+    const ids = await this.database
+      .query()
+      .selectFrom<SubmissionRow>('mailSubmissions')
+      .select('id')
+      .where('createdAt', '<', before)
+      .where('status', 'in', [...FINISHED_SUBMISSION_STATUSES])
+      .orderBy('createdAt', 'asc')
+      .orderBy('id', 'asc')
+      .limit(limit)
+      .pluck<string>('id');
+    if (ids.length === 0) return 0;
+    const result = await this.database
+      .query()
+      .deleteFrom<SubmissionRow>('mailSubmissions')
+      .where('id', 'in', ids)
+      .where('status', 'in', [...FINISHED_SUBMISSION_STATUSES])
+      .execute();
+    return result.deletedCount ?? 0;
   }
 
   public async createSubmission(
@@ -621,4 +677,29 @@ export class MailSubmissionsStore {
     if (!row) return submission;
     return fromSubmissionRow(row);
   }
+}
+
+/** Whether a submission belongs to a bulk send, whose idempotency key is `bulk:<batch>:<recipient index>`. */
+function isBulkKey(idempotencyKey: string): boolean {
+  return idempotencyKey.startsWith('bulk:');
+}
+
+/**
+ * Narrows a submission query to the entries of a history grouped by batch: each bulk send's anchor (recipient zero) and,
+ * unless `bulkOnly`, every single send, scheduled ones included.
+ */
+function whereLogEntry<TQuery extends SelectQuery>(
+  query: TQuery,
+  bulkOnly: boolean,
+): TQuery {
+  return (
+    bulkOnly
+      ? (query as SelectQuery).where('idempotencyKey', 'like', 'bulk:%:0')
+      : (query as SelectQuery).where((builder) =>
+          builder.or([
+            builder('idempotencyKey', 'not like', 'bulk:%'),
+            builder('idempotencyKey', 'like', 'bulk:%:0'),
+          ]),
+        )
+  ) as TQuery;
 }

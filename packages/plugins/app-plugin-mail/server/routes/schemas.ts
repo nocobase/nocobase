@@ -6,6 +6,10 @@ import {
   MAIL_LABEL_COLORS,
   MAIL_PROVIDER_CAPABILITIES,
   type MailAccountView,
+  type MailAdminAccountView,
+  type MailManagedSubmissionView,
+  type MailSettingsOverview,
+  type MailTeamAccountView,
   type MailUpdatedAccountView,
   type MailAuthorizationStartResult,
   type MailFolder,
@@ -122,7 +126,7 @@ const PageQuery = z.object({
   pageSize,
 });
 
-/** Cursor paging, for message feeds. The token is the opaque value of `meta.nextPageToken`. */
+/** Cursor paging, for message feeds and the settings logs. The token is the opaque value of `meta.nextPageToken`. */
 const CursorQuery = z.object({
   pageSize,
   pageToken: z.string().min(1).optional(),
@@ -225,14 +229,62 @@ export const SyncRunsQuery: z.ZodObject<
   z.core.$strip
 > = PageQuery;
 
+/** A comma-separated list of statuses, such as `failed,cancelled`. */
+const statusList = z
+  .string()
+  .max(200)
+  .regex(/^[A-Za-z]+(?:,[A-Za-z]+)*$/u, {
+    message: 'Must be statuses separated by commas.',
+  })
+  .optional()
+  .meta({
+    description:
+      'Statuses separated by commas, such as `failed,cancelled`; any of them matches.',
+  });
+
 /** Every user's sync runs or submissions, for administrators. */
 export const ManagedLogsQuery: z.ZodObject<
   {
-    page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    pageToken: z.ZodOptional<z.ZodString>;
+    userId: z.ZodOptional<z.ZodString>;
+    accountId: z.ZodOptional<z.ZodString>;
+    status: z.ZodOptional<z.ZodString>;
+    from: z.ZodOptional<z.ZodISODateTime>;
+    to: z.ZodOptional<z.ZodISODateTime>;
   },
   z.core.$strip
-> = PageQuery;
+> = CursorQuery.extend({
+  userId: id.optional().meta({ description: "Only this member's accounts." }),
+  accountId: id.optional(),
+  status: statusList,
+  from: dateTime
+    .optional()
+    .meta({ description: 'Created at or after this time.' }),
+  to: dateTime.optional().meta({ description: 'Created before this time.' }),
+});
+
+/** Every member's accounts on the Mail settings page. */
+export const AdminAccountsQuery: z.ZodObject<
+  {
+    status: z.ZodOptional<z.ZodString>;
+    provider: z.ZodOptional<z.ZodString>;
+    userId: z.ZodOptional<z.ZodString>;
+    q: z.ZodOptional<z.ZodString>;
+  },
+  z.core.$strip
+> = z.object({
+  status: statusList,
+  provider: z
+    .string()
+    .max(MAX_MAIL_NAME_LENGTH)
+    .optional()
+    .meta({ description: 'The configured Provider name.' }),
+  userId: id.optional(),
+  q: z.string().max(MAX_MAIL_NAME_LENGTH).optional().meta({
+    description: "Part of the address, the display name or the owner's name.",
+  }),
+});
 
 export const SubmissionsQuery: z.ZodObject<
   {
@@ -308,6 +360,7 @@ export const ManagementMessagesQuery: z.ZodObject<
   {
     page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    userId: z.ZodOptional<z.ZodString>;
     accountId: z.ZodOptional<z.ZodString>;
     folderId: z.ZodOptional<z.ZodString>;
     q: z.ZodOptional<z.ZodString>;
@@ -333,6 +386,7 @@ export const ManagementMessagesQuery: z.ZodObject<
   },
   z.core.$strip
 > = PageQuery.extend({
+  userId: id.optional().meta({ description: "Only this member's accounts." }),
   accountId: id.optional(),
   folderId: id.optional(),
   q: z.string().max(MAX_MAIL_STRING_LENGTH).optional(),
@@ -1016,6 +1070,47 @@ export const MailManagedAccountSchema: z.ZodType<MailManagedAccountView> = z
   })
   .meta({ ref: 'MailManagedAccount' });
 
+export const MailAdminAccountSchema: z.ZodType<MailAdminAccountView> = z
+  .object({
+    id: z.string(),
+    userId: z
+      .string()
+      .meta({ description: 'The member who owns the account.' }),
+    ownerName: z.string().optional(),
+    address: z.string(),
+    displayName: z.string().optional(),
+    provider: providerIdentity,
+    status: accountFields.status,
+    removalFailed: z.boolean().optional(),
+    lastSyncedAt: timestamp.optional().meta({
+      description: 'When the account last finished a synchronization.',
+    }),
+  })
+  .meta({
+    ref: 'MailAdminAccount',
+    description:
+      "A member's account as the Mail settings page shows it, without scopes, folders or mailbox content.",
+  });
+
+export const MailTeamAccountSchema: z.ZodType<MailTeamAccountView> = z
+  .object({
+    id: z.string(),
+    userId: z
+      .string()
+      .meta({ description: 'The member who owns the account.' }),
+    ownerName: z.string().optional(),
+    address: z.string(),
+    displayName: z.string().optional(),
+    canMoveMessages: z.boolean().optional().meta({
+      description:
+        "Whether the account's Provider can move messages, so archive applies.",
+    }),
+  })
+  .meta({
+    ref: 'MailTeamAccount',
+    description: "A member's account as Team mail offers it in its filters.",
+  });
+
 export const MailAuthorizationSchema: z.ZodType<MailAuthorizationStartResult> =
   z
     .object({
@@ -1220,6 +1315,96 @@ export const MailSubmissionLogSchema: z.ZodType<MailSubmissionLogView> = z
   })
   .meta({ ref: 'MailSubmissionLog' });
 
+export const MailManagedSubmissionSchema: z.ZodType<MailManagedSubmissionView> =
+  z
+    .object({
+      id: z.string(),
+      accountId: z.string(),
+      status: submissionFields.status,
+      recipientCount: z
+        .number()
+        .meta({ description: 'How many To, Cc and Bcc recipients.' }),
+      bulk: z.boolean().optional(),
+      batchId: z.string().optional(),
+      scheduledAt: timestamp.optional(),
+      error: MailPublicErrorSchema.optional(),
+      canRetry: z.boolean().optional().meta({
+        description:
+          'Whether the caller may retry it now: it failed and the caller holds `settings:mail.admin/manage` or owns it.',
+      }),
+      canCancel: z.boolean().optional().meta({
+        description:
+          'Whether the caller may cancel it now: it is pending or failed and the caller holds `settings:mail.admin/manage` or owns it.',
+      }),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })
+    .meta({
+      ref: 'MailManagedSubmission',
+      description:
+        "A member's submission as the Mail settings page shows it: never the subject, body, addresses or attachments.",
+    });
+
+const settingSource = z
+  .enum(['environment', 'config', 'default', 'code', 'unknown'])
+  .meta({
+    description:
+      'Where the value comes from: an `MAIL_*` environment variable, the `mail` configuration, the built-in default, code the application registered, or `unknown` when the configuration cannot tell.',
+  });
+
+function settingValue<T extends z.ZodType>(value: T) {
+  return z.object({ value, source: settingSource });
+}
+
+export const MailSettingsOverviewSchema: z.ZodType<MailSettingsOverview> = z
+  .object({
+    providers: z.array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        label: z.string(),
+        connection: z.enum(['oauth', 'credentials']).optional(),
+        capabilities: z.record(z.string(), z.boolean()),
+        source: z.enum(['config', 'code']).meta({
+          description:
+            '`config` when `mail.providers` names it; `code` when it is only registered in code.',
+        }),
+        accountCount: z.number(),
+        attentionCount: z.number().meta({
+          description: 'Accounts that need reauthorization or were revoked.',
+        }),
+      }),
+    ),
+    accounts: z.object({
+      total: z.number(),
+      reauthorizationRequired: z.number(),
+      suspended: z.number(),
+      removing: z.number(),
+    }),
+    runtime: z.object({
+      automaticSyncIntervalMinutes: settingValue(z.number()),
+      syncBatchSize: settingValue(z.number()),
+      oauthCallbackUrl: settingValue(z.string()),
+      oauthReturnUrl: settingValue(z.string()),
+      pushWebhookUrl: settingValue(z.string().nullable()),
+      pushWebhookSecretConfigured: settingValue(z.boolean()),
+      jobs: settingValue(z.string().nullable()).meta({
+        description:
+          'The `jobs` configuration Mail runs on; `null` follows `jobs.default`.',
+      }),
+      logRetentionDays: settingValue(z.number()).meta({
+        description:
+          'Days finished sync runs and submissions are kept; `0` keeps them.',
+      }),
+      credentialVault: settingValue(z.enum(['builtin', 'application'])),
+    }),
+  })
+  .meta({
+    ref: 'MailSettingsOverview',
+    description:
+      'Providers, account totals and the runtime configuration with the source of each value. Never carries a secret.',
+  });
+
 const normalizedAttachmentFields = {
   outboundAttachmentId: z
     .string()
@@ -1416,6 +1601,25 @@ export const MailCursorListMeta: z.ZodType<{
       .meta({ description: 'The number of matching messages.' }),
   })
   .meta({ ref: 'MailCursorListMeta' });
+
+/** `meta` of a settings log, paged by `pageToken` so rows written or deleted between two pages shift nothing. */
+export const MailLogCursorListMeta: z.ZodType<{
+  pageSize: number;
+  nextPageToken?: string;
+  total: number;
+}> = z
+  .object({
+    pageSize: z.number().int(),
+    nextPageToken: z.string().optional().meta({
+      description:
+        'Pass as `pageToken` for the next, older page; absent on the last page.',
+    }),
+    total: z
+      .number()
+      .int()
+      .meta({ description: 'The number of records matching the filters.' }),
+  })
+  .meta({ ref: 'MailLogCursorListMeta' });
 
 /** `meta` of a page-numbered log or table. */
 export const MailPageListMeta: z.ZodType<{
