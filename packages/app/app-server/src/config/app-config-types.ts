@@ -54,11 +54,6 @@ export interface AppConfigAccessor {
    * application's own, not the host process's; an accessor without declared rules may omit it.
    */
   loadedEnvironmentVariables?(): readonly string[];
-  /**
-   * Whether the application's own sources — configuration files and the environment — set `path`, such as
-   * `queue.default`, rather than leaving it to the code defaults. An accessor without layers may omit it.
-   */
-  isUserProvided?(path: string): boolean;
   subscribe<TValue>(
     namespace: string,
     listener: AppConfigChangeListener<TValue>,

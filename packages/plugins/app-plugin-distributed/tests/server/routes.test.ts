@@ -93,7 +93,7 @@ describe('GET /api/distributed/status', () => {
   it('shows a configured shared backend as shared and configured', async () => {
     const result = await status({
       services: { caching: SHARED.caching },
-      userProvided: ['caching.default'],
+      overrides: { caching: { default: 'redis' }, snowflake: { workerId: 0 } },
     });
 
     expect(result.services[0]).toMatchObject({
@@ -103,6 +103,10 @@ describe('GET /api/distributed/status', () => {
       default: 'redis',
       adapter: 'redis',
       registered: true,
+    });
+    expect(result.idGeneration).toMatchObject({
+      workerId: 0,
+      source: 'configured',
     });
     expect(result.mode).toBe('multi');
   });

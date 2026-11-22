@@ -105,8 +105,20 @@ export async function collectDistributedStatus(
   logger?: StatusLogger,
 ): Promise<DistributedStatus> {
   const { container, config } = app;
-  const userProvided = (path: string): boolean =>
-    config.isUserProvided?.(path) ?? false;
+  const overrides = config.layers?.().overrides;
+  const userProvided = (path: string): boolean => {
+    let value: unknown = overrides;
+    for (const segment of path.split('.')) {
+      if (
+        typeof value !== 'object' ||
+        value === null ||
+        !Object.hasOwn(value, segment)
+      )
+        return false;
+      value = (value as Record<string, unknown>)[segment];
+    }
+    return true;
+  };
   const describe = async (
     key: DistributedServiceKey,
   ): Promise<ServiceDescription | undefined> => {

@@ -63,7 +63,7 @@ export interface ApplicationOptions {
     >
   >;
   readonly config?: Record<string, unknown>;
-  readonly userProvided?: readonly string[];
+  readonly overrides?: Record<string, unknown>;
   readonly localDiskUsage?: {
     defaultDiskIsLocal: boolean;
     collections: { connection: string; collection: string }[];
@@ -186,12 +186,14 @@ export function application(
     () => options.registry ?? createDistributedStatusRegistry(),
   );
   const config = { ...DEFAULT_CONFIG, ...options.config };
-  const userProvided = new Set(options.userProvided ?? []);
   return {
     container,
     config: {
       get: (key: string) => config[key],
-      isUserProvided: (path: string) => userProvided.has(path),
+      layers: () => ({
+        defaults: DEFAULT_CONFIG,
+        overrides: options.overrides ?? {},
+      }),
     },
   } as unknown as AppPluginApplication;
 }

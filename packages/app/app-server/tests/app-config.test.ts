@@ -99,19 +99,6 @@ describe('AppConfig', () => {
     expect(config.get('feature.port')).toBe(2000);
   });
 
-  it('tells a path the application sources set from one left to the code defaults', async () => {
-    const file = path.join(directory(), 'config.yml');
-    writeFileSync(file, 'queue:\n  default: redis\n');
-    const config = new AppConfig().loadFile(file);
-    await config.loadAll();
-    config.mergeDefaults({ caching: { default: 'memory' } });
-
-    expect(config.isUserProvided('queue.default')).toBe(true);
-    expect(config.isUserProvided('queue')).toBe(true);
-    expect(config.isUserProvided('caching.default')).toBe(false);
-    expect(config.isUserProvided('jobs.default')).toBe(false);
-  });
-
   it('merges code defaults below file and explicit environment sources and reloads them', async () => {
     const file = path.join(directory(), 'config.toml');
     writeFileSync(file, '[feature]\nport=2000\nlabel="file"');
