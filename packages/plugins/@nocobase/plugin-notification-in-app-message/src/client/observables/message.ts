@@ -28,19 +28,17 @@ const filterMessageByStatus = (message: Message) => {
 const filterMessageByUserId = (message: Message) => {
   return message.userId == String(userIdObs.value ?? '');
 };
-export const selectedMessageListObs = observable.computed(() => {
-  if (selectedChannelNameObs.value) {
-    const filteredMessages = messageListObs.value.filter(
-      (message) =>
-        message.channelName === selectedChannelNameObs.value &&
-        filterMessageByStatus(message) &&
-        filterMessageByUserId(message),
-    );
-    return filteredMessages;
-  } else {
-    return [];
-  }
-}) as { value: Message[] };
+export const getChannelMessages = (channelName: string | null) => {
+  if (!channelName) return [];
+  return messageListObs.value.filter(
+    (message) =>
+      message.channelName === channelName && filterMessageByStatus(message) && filterMessageByUserId(message),
+  );
+};
+
+export const selectedMessageListObs = observable.computed(() => getChannelMessages(selectedChannelNameObs.value)) as {
+  value: Message[];
+};
 
 export const fetchMessages = async (params: any = { limit: 30 }) => {
   isFecthingMessageObs.value = true;
@@ -110,18 +108,17 @@ export const updateUnreadMsgsCount = async () => {
   unreadMsgsCountObs.value = res?.data?.data.count;
 };
 
-export const showMsgLoadingMoreObs = observable.computed(() => {
-  const selectedChannelId = selectedChannelNameObs.value;
-  if (!selectedChannelId) return false;
-  const selectedChannel = channelMapObs.value[selectedChannelId];
-  const selectedMessageList = selectedMessageListObs.value;
-
-  const isMoreMessageByStatus = {
-    read: selectedChannel.totalMsgCnt - selectedChannel.unreadMsgCnt > selectedMessageList.length,
-    unread: selectedChannel.unreadMsgCnt > selectedMessageList.length,
-    all: selectedChannel.totalMsgCnt > selectedMessageList.length,
+export const hasMoreChannelMessages = (channelName: string | null, loaded: number) => {
+  const channel = channelName && channelMapObs.value[channelName];
+  if (!channel || !loaded) return false;
+  const countByStatus = {
+    read: channel.totalMsgCnt - channel.unreadMsgCnt,
+    unread: channel.unreadMsgCnt,
+    all: channel.totalMsgCnt,
   };
-  if (isMoreMessageByStatus[channelStatusFilterObs.value] && selectedMessageList.length > 0) {
-    return true;
-  }
-}) as { value: boolean };
+  return countByStatus[channelStatusFilterObs.value] > loaded;
+};
+
+export const showMsgLoadingMoreObs = observable.computed(() =>
+  hasMoreChannelMessages(selectedChannelNameObs.value, selectedMessageListObs.value.length),
+) as { value: boolean };

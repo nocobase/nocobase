@@ -18,13 +18,14 @@ import { Schema } from '@formily/react';
 import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
 import { useLocalTranslation } from '../../../locale';
 import {
+  channelMapObs,
+  channelStatusFilterObs,
   fetchChannels,
   fetchMessages,
+  getChannelMessages,
+  hasMoreChannelMessages,
   inboxVisible,
   selectedChannelNameObs,
-  selectedChannelObs,
-  selectedMessageListObs,
-  showMsgLoadingMoreObs,
   updateMessage,
   userIdObs,
 } from '../../observables';
@@ -37,29 +38,31 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
   return text;
 }
 
-const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
+const MobileMessagePageInner = (props: { displayPageHeader?: boolean; channelName?: string }) => {
   const app = useApp();
   const basename = app.router.basename.replace(/\/+$/, '');
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const ctx = useCurrentUserContext();
   const [searchParams] = useSearchParams();
-  const channelName = searchParams.get('channel');
+  const routeChannelName = props.channelName ? null : searchParams.get('channel');
   useEffect(() => {
     const effect = async () => {
-      if (channelName) {
-        await fetchChannels({ filter: { name: channelName } });
-        selectedChannelNameObs.value = channelName;
+      if (routeChannelName) {
+        await fetchChannels({ filter: { name: routeChannelName } });
+        selectedChannelNameObs.value = routeChannelName;
       }
     };
     effect();
-  }, [channelName]);
+  }, [routeChannelName]);
 
   const currUserId = ctx.data?.data?.id;
   useEffect(() => {
     userIdObs.value = currUserId ?? null;
   }, [currUserId]);
-  const messages = selectedMessageListObs.value;
+  const channelName = props.channelName ?? selectedChannelNameObs.value;
+  const messages = getChannelMessages(channelName);
+  const hasMore = hasMoreChannelMessages(channelName, messages.length);
   const viewMessageDetail = (message) => {
     const url = message.options?.mobileUrl || message.options?.url;
     if (url) {
@@ -81,29 +84,34 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
     });
     viewMessageDetail(message);
   };
-  const [fetchMsgStatus, setFecthMsgStatus] = useState<'success' | 'loading' | 'failure'>('success');
+  const [fetchMsgStatus, setFetchMsgStatus] = useState<'success' | 'loading' | 'failure'>(
+    props.channelName ? 'loading' : 'success',
+  );
+  const [failedBefore, setFailedBefore] = useState<string | number>();
+  const loadMessages = useCallback(
+    async (before?: string | number) => {
+      if (!channelName) return;
+      const filter = before === undefined ? { channelName } : { channelName, receiveTimestamp: { $lt: before } };
+      try {
+        setFetchMsgStatus('loading');
+        await fetchMessages({ filter, limit: 30 });
+        setFetchMsgStatus('success');
+      } catch {
+        setFailedBefore(before);
+        setFetchMsgStatus('failure');
+      }
+    },
+    [channelName],
+  );
 
-  const onLoadMessagesMore = useCallback(async () => {
-    const filter: Record<string, any> = {};
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage) {
-      filter.receiveTimestamp = {
-        $lt: lastMessage.receiveTimestamp,
-      };
-    }
-    if (selectedChannelNameObs.value) {
-      filter.channelName = selectedChannelNameObs.value;
-    }
-    try {
-      setFecthMsgStatus('loading');
-      const res = await fetchMessages({ filter, limit: 30 });
-      setFecthMsgStatus('success');
-      return res;
-    } catch {
-      setFecthMsgStatus('failure');
-    }
-  }, [messages]);
-  const title = Schema.compile(selectedChannelObs.value?.title, { t: app.i18n.t }) || t('Message');
+  const statusFilter = channelStatusFilterObs.value;
+  useEffect(() => {
+    if (props.channelName) loadMessages();
+  }, [props.channelName, statusFilter, loadMessages]);
+
+  const onLoadMessagesMore = () => loadMessages(messages[messages.length - 1]?.receiveTimestamp);
+  const channel = channelName ? channelMapObs.value[channelName] : null;
+  const title = Schema.compile(channel?.title, { t: app.i18n.t }) || t('Message');
 
   return (
     <MobilePageProvider displayPageHeader={props.displayPageHeader}>
@@ -154,14 +162,11 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
                 </List.Item>
               );
             })}
-            <InfiniteScroll
-              loadMore={onLoadMessagesMore}
-              hasMore={fetchMsgStatus !== 'failure' && showMsgLoadingMoreObs.value}
-            >
+            <InfiniteScroll loadMore={onLoadMessagesMore} hasMore={fetchMsgStatus === 'success' && hasMore}>
               <InfiniteScrollContent
                 loadMoreStatus={fetchMsgStatus}
-                hasMore={showMsgLoadingMoreObs.value}
-                retry={onLoadMessagesMore}
+                hasMore={hasMore || fetchMsgStatus === 'failure'}
+                retry={() => loadMessages(failedBefore)}
               />
             </InfiniteScroll>
           </List>
