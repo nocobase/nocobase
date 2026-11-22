@@ -16,6 +16,8 @@ import {
 } from '../shared/capability-guide/index.js';
 
 export interface FoundationRouteOptions {
+  /** `false` removes the application usage page while retaining the capability guide. Defaults to `true`. */
+  readonly usagePage?: boolean;
   /** Wrap the entry in a settings group for a bare application. */
   readonly settingsGroup?: boolean;
   /** App-relative path of the page. Defaults to `/foundation`. */
@@ -136,8 +138,7 @@ export function capabilityGuideDefinitions(
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
 ): AppClientAppRoutesContribution {
-  // Without the application's manifest there is nothing to list: an application that has not opted in keeps exactly
-  // the App usage page it had.
+  // The capability guide and the application usage page can be enabled independently.
   const guide = options.manifest
     ? capabilityGuideDefinitions(createCapabilityCatalog(options.manifest), {
         navigation: options.guideNavigation,
@@ -145,6 +146,7 @@ export function createFoundationRoutes(
         entryLoaders: options.guideEntryLoaders,
       })
     : [];
+  if (options.usagePage === false) return defineAppRoutes(guide);
   return defineAppRoutes(
     options.settingsGroup
       ? [

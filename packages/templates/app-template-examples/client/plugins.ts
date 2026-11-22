@@ -65,7 +65,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   foundation({
     manifest: applicationManifest,
     guideSettingsPath: '/settings',
-    navigation: false,
+    usagePage: false,
   }),
   knowledge({ routes: false }),
 ]);
