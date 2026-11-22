@@ -341,6 +341,33 @@ describe('notify()', () => {
     }
   });
 
+  it('treats a rescheduled date as a new request under the same key', async () => {
+    const h = harness();
+    try {
+      await h.manager.notify('approval.requested', {
+        to: ['alice'],
+        data: { title: 'Budget', due: new Date('2026-11-22T09:00:00.000Z') },
+        idempotencyKey: 'reminder-1',
+      });
+      await expect(
+        h.manager.notify('approval.requested', {
+          to: ['alice'],
+          data: { title: 'Budget', due: new Date('2026-11-22T09:00:00.000Z') },
+          idempotencyKey: 'reminder-1',
+        }),
+      ).resolves.toMatchObject({ send: { deduplicated: true } });
+      await expect(
+        h.manager.notify('approval.requested', {
+          to: ['alice'],
+          data: { title: 'Budget', due: new Date('2026-11-23T09:00:00.000Z') },
+          idempotencyKey: 'reminder-1',
+        }),
+      ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_CONFLICT' });
+    } finally {
+      await h.manager.close();
+    }
+  });
+
   it('writes to each person in their own language, as one send that a repeat returns whole', async () => {
     const h = harness({ locales: { alice: 'en-US', carol: 'fr-FR' } });
     try {

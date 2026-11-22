@@ -707,7 +707,9 @@ export class NotificationManager<
           continue;
         }
         const locale = localeOf(userId);
-        byLocale.set(locale, [...(byLocale.get(locale) ?? []), ...found]);
+        const group = byLocale.get(locale);
+        if (group) group.push(...found);
+        else byLocale.set(locale, [...found]);
       }
       for (const [locale, addressed] of byLocale) {
         const composed = channel.audience.compose(

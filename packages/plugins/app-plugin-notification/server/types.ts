@@ -124,7 +124,11 @@ export interface NotificationSendInput<
 export interface NotificationNotifyInput {
   /** Application user ids. Duplicates are sent once. */
   readonly to: readonly string[];
-  /** The values the kind's `content()` renders. */
+  /**
+   * The values the kind's `content()` renders: JSON values and valid `Date`s. With an `idempotencyKey` they also decide
+   * whether a repeat is the same request, so a value that cannot be compared (a `Map`, a class instance, `NaN`…) is
+   * refused.
+   */
   readonly data?: Readonly<Record<string, unknown>>;
   /** Where opening the notification leads. */
   readonly target?: NotificationTarget;
