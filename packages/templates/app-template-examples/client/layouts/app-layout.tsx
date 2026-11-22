@@ -144,17 +144,7 @@ function AuthenticatedLayout({
             moved by the page's scrolling nor stretched by its height. */}
                 <div className='h-full overflow-y-auto'>
                   <RouteLeaveBoundary hidden={loading}>
-                    {/* Personal settings pages, the built-in ones and every plugin's, read at most 860px wide. */}
-                    {inPersonalSettings ? (
-                      <div
-                        data-testid='personal-settings-content'
-                        className='mx-auto w-full max-w-[860px]'
-                      >
-                        <Outlet />
-                      </div>
-                    ) : (
-                      <Outlet />
-                    )}
+                    <Outlet />
                   </RouteLeaveBoundary>
                 </div>
               </main>

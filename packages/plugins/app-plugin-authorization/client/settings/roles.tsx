@@ -104,9 +104,9 @@ export default function RolesPage(): ReactElement {
       description={t('settings.rolesDescription')}
       actions={create ?? undefined}
     >
-      <div className='grid min-w-0 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]'>
+      <div className='grid min-w-0 rounded-lg border bg-card text-card-foreground lg:grid-cols-[16rem_minmax(0,1fr)]'>
         {/* On a phone the roles are a select above the editor, so the permissions stay in view. */}
-        <div className='lg:hidden'>
+        <div className='border-b p-3 lg:hidden'>
           <Select
             items={roles.map((role) => ({
               value: role.key,
@@ -134,7 +134,7 @@ export default function RolesPage(): ReactElement {
         </div>
         <aside
           aria-label={t('settings.roles')}
-          className='hidden min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:flex lg:self-start'
+          className='hidden min-w-0 flex-col gap-2 border-r p-3 lg:flex'
         >
           <InputGroup>
             <InputGroupAddon>

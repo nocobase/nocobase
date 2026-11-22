@@ -87,7 +87,7 @@ export default function PersonalKeysPage(): ReactElement {
   }
 
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader
         title={t('personal.title')}
         description={t('personal.description')}

@@ -321,7 +321,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     other: '记录筛选条件有修改',
     tabs: {
       menus: '页面访问',
-      objects: '操作权限',
+      objects: '业务操作',
       settings: '系统设置',
     },
     added: '允许',
@@ -379,17 +379,17 @@ const settings: LocaleResource<typeof settingsEnUS> = {
   },
   permissionEditor: {
     menusTab: '页面访问',
-    objectsTab: '操作权限',
+    objectsTab: '业务操作',
     settingsTab: '系统设置',
     tabCount: '{{count}} / {{total}}',
     noMenus: '没有页面',
     emptyPage:
       '能进入「{{menu}}」页面，但这个角色还不能查看{{object}}，打开后是空的。',
     openView: '去开启「{{action}}」',
-    opensWith: '随「{{action}}」显示，去操作权限设置',
+    opensWith: '随「{{action}}」显示，前往「业务操作」设置',
     attention_one: '{{count}} 个页面需要注意',
     attention_other: '{{count}} 个页面需要注意',
-    objects: '操作权限',
+    objects: '业务操作',
     search: '搜索对象或操作',
     clearSearch: '清除搜索',
     noResults: '没有匹配的对象或操作',
@@ -447,7 +447,7 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     operationCount: '{{enabled}}/{{total}} 项操作',
     opensEmpty: '打开后是空的',
     defaultsAdded: '已同时允许{{actions}}，范围用默认选项。',
-    adjustOperations: '去操作权限调整',
+    adjustOperations: '前往「业务操作」调整',
     usedOn: '用于：{{pages}}',
     notOnPage: '不对应页面',
     missingPage:

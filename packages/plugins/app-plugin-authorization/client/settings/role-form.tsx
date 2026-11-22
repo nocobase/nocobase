@@ -701,6 +701,7 @@ function RoleEditor(): ReactElement {
             className='flex flex-col gap-4'
           >
             <PermissionEditor
+              className='rounded-none border-0 bg-transparent'
               menus={workspace?.menus ?? []}
               objects={objects}
               settings={workspace?.settings ?? []}

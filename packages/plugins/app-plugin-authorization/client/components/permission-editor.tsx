@@ -1185,11 +1185,20 @@ export function PermissionEditor({
   const words: PermissionEditorLabels = { ...DEFAULT_LABELS, ...labels };
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<string>(
-    builtInTabs.includes(defaultTab)
-      ? defaultTab
-      : (builtInTabs[0] ?? 'objects'),
+  const hasOperations = objects.some((object) => object.actions.length > 0);
+  const visibleBuiltIns = builtInTabs.filter((key) =>
+    key === 'objects'
+      ? hasOperations
+      : key !== 'settings' || settings.length > 0,
   );
+  const availableTabs = [
+    ...visibleBuiltIns,
+    ...extraTabs.map((extra) => extra.value),
+  ];
+  const [requestedTab, setRequestedTab] = useState<string>(defaultTab);
+  const tab = availableTabs.includes(requestedTab)
+    ? requestedTab
+    : availableTabs[0];
   const [flash, setFlash] = useState<MenuFlash | undefined>();
   const [query, setQuery] = useState('');
   const [onlyEnabled, setOnlyEnabled] = useState(false);
@@ -1437,7 +1446,7 @@ export function PermissionEditor({
   const openObject = (objectId: string): void => {
     if (!objects.some((object) => object.id === objectId)) return;
     reveal();
-    setTab('objects');
+    setRequestedTab('objects');
     setFlash(undefined);
     focusObject(objectId);
   };
@@ -1445,12 +1454,12 @@ export function PermissionEditor({
     const found = findAction(allObjects, actionId);
     if (!found) return;
     reveal();
-    setTab('objects');
+    setRequestedTab('objects');
     focusObject(found.object.id);
   };
   const openView = (warning: PermissionMenuWarning): void => {
     reveal();
-    setTab('objects');
+    setRequestedTab('objects');
     focusObject(warning.object.id);
   };
 
@@ -2362,59 +2371,66 @@ export function PermissionEditor({
       )}
     >
       {header && <div className='px-4 pt-3 pb-1'>{header}</div>}
-      <Tabs
-        value={tab}
-        onValueChange={(next: string) => {
-          setTab(next);
-          setNotices([]);
-          setPending(undefined);
-          setFlash(undefined);
-        }}
-      >
-        {/* The tabs stay on one row, each name beside its count; a narrow screen scrolls them sideways. */}
-        <div className='overflow-x-auto border-b px-4'>
-          <TabsList
-            variant='line'
-            className='flex w-max gap-3 py-0 group-data-horizontal/tabs:h-10'
-          >
-            {builtInTabs.includes('menus') && (
-              <TabsTrigger value='menus' className={TAB_TRIGGER}>
-                {words.menusTab}
-                <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                  {words.tabCount(menuTotals.checked, menuTotals.total)}
-                </span>
-                <TabBadge count={tabBadges?.menus} labels={words} />
-              </TabsTrigger>
-            )}
-            <TabsTrigger value='objects' className={TAB_TRIGGER}>
-              {words.objectsTab}
-              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                {words.tabCount(objectTotals.enabled, objectTotals.total)}
-              </span>
-              <TabBadge count={tabBadges?.objects} labels={words} />
-            </TabsTrigger>
-            {settings.length > 0 && builtInTabs.includes('settings') && (
-              <TabsTrigger value='settings' className={TAB_TRIGGER}>
-                {words.settingsTab}
-                <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                  {words.tabCount(settingsTotals.enabled, settingsTotals.total)}
-                </span>
-                <TabBadge count={tabBadges?.settings} labels={words} />
-              </TabsTrigger>
-            )}
-            {extraTabs.map((extra) => (
-              <TabsTrigger
-                key={extra.value}
-                value={extra.value}
-                className={TAB_TRIGGER}
-              >
-                {extra.label}
-                <TabBadge count={tabBadges?.[extra.value]} labels={words} />
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
+      {tab && (
+        <Tabs
+          value={tab}
+          onValueChange={(next: string) => {
+            setRequestedTab(next);
+            setNotices([]);
+            setPending(undefined);
+            setFlash(undefined);
+          }}
+        >
+          {/* The tabs stay on one row, each name beside its count; a narrow screen scrolls them sideways. */}
+          <div className='overflow-x-auto border-b px-4'>
+            <TabsList
+              variant='line'
+              className='flex w-max gap-3 py-0 group-data-horizontal/tabs:h-10'
+            >
+              {visibleBuiltIns.includes('menus') && (
+                <TabsTrigger value='menus' className={TAB_TRIGGER}>
+                  {words.menusTab}
+                  <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                    {words.tabCount(menuTotals.checked, menuTotals.total)}
+                  </span>
+                  <TabBadge count={tabBadges?.menus} labels={words} />
+                </TabsTrigger>
+              )}
+              {visibleBuiltIns.includes('objects') && (
+                <TabsTrigger value='objects' className={TAB_TRIGGER}>
+                  {words.objectsTab}
+                  <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                    {words.tabCount(objectTotals.enabled, objectTotals.total)}
+                  </span>
+                  <TabBadge count={tabBadges?.objects} labels={words} />
+                </TabsTrigger>
+              )}
+              {visibleBuiltIns.includes('settings') && (
+                <TabsTrigger value='settings' className={TAB_TRIGGER}>
+                  {words.settingsTab}
+                  <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                    {words.tabCount(
+                      settingsTotals.enabled,
+                      settingsTotals.total,
+                    )}
+                  </span>
+                  <TabBadge count={tabBadges?.settings} labels={words} />
+                </TabsTrigger>
+              )}
+              {extraTabs.map((extra) => (
+                <TabsTrigger
+                  key={extra.value}
+                  value={extra.value}
+                  className={TAB_TRIGGER}
+                >
+                  {extra.label}
+                  <TabBadge count={tabBadges?.[extra.value]} labels={words} />
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        </Tabs>
+      )}
       {extraTabs.some((extra) => extra.value === tab) ? (
         <div className='min-w-0 px-4 py-4'>
           {extraTabs.find((extra) => extra.value === tab)?.content}
@@ -2425,9 +2441,9 @@ export function PermissionEditor({
         settings.length &&
         builtInTabs.includes('settings') ? (
         settingsPanel
-      ) : (
+      ) : tab === 'objects' ? (
         objectsPanel
-      )}
+      ) : null}
       {saveBar}
     </div>
   );

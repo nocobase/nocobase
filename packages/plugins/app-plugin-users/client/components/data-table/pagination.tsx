@@ -44,6 +44,7 @@ export function DataTablePagination<TData>({
   showSelectedCount = true,
   disabled = false,
   countPending = false,
+  children,
   className,
   ...props
 }: DataTablePaginationProps<TData>): ReactElement {
@@ -66,18 +67,19 @@ export function DataTablePagination<TData>({
     >
       <div
         className={cn(
-          'flex-1 text-sm text-muted-foreground',
+          'grow text-sm text-muted-foreground',
           countPending && 'invisible',
         )}
         aria-hidden={countPending || undefined}
       >
-        {showSelectedCount
-          ? t('dataTable.selectedCount', {
-              defaultValue: '{{selected}} of {{total}} row(s) selected.',
-              selected,
-              total,
-            })
-          : null}
+        {children ??
+          (showSelectedCount
+            ? t('dataTable.selectedCount', {
+                defaultValue: '{{selected}} of {{total}} row(s) selected.',
+                selected,
+                total,
+              })
+            : null)}
       </div>
       <div className='flex min-w-0 flex-wrap items-center justify-end gap-x-6 gap-y-3 lg:gap-x-8'>
         <div className='flex shrink-0 items-center gap-2'>

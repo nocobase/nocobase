@@ -123,7 +123,7 @@ export default function SystemKeyDetailPage(): ReactElement {
   };
 
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader
         title={
           key ? (
