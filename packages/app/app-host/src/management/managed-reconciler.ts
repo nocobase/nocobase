@@ -641,6 +641,41 @@ export class ManagedReconciler {
     });
   }
 
+  /**
+   * The definition an App's command-line tool runs with for a spec, without registering or starting anything: an
+   * in-process App's release expanded here (reused when it is), its configuration file written and its data
+   * directory; an external service's definition as its backend runs it. Queued behind deployments, so a release is
+   * never pruned or replaced while it is prepared.
+   */
+  commandDefinition(spec: HostDeploymentSpec): Promise<AppDefinition> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({ revision: 1, deployments: [spec] });
+      const configPath = await this.prepareConfig(spec);
+      if (spec.backend !== 'in-process')
+        return this.serviceDefinition(spec, configPath);
+      const artifact = await this.artifactResolver
+        .restore(spec.artifact)
+        .catch(() => this.artifactResolver.resolve(spec.artifact));
+      return {
+        ...artifact.definition,
+        id: spec.appId,
+        appName: spec.appId,
+        backend: spec.backend,
+        isolation: spec.backend,
+        dataDir: await this.volumes.prepareStorageDir(spec.appId),
+        configPath,
+        env: spec.env ? { ...spec.env } : undefined,
+      };
+    });
+  }
+
+  /** Stops an App before its data is restored; an App this Host does not run is left alone. */
+  stopForRestore(appId: string): Promise<void> {
+    if (![...this.statuses.values()].some((status) => status.appId === appId))
+      return Promise.resolve();
+    return this.stopDeployment(appId).then(() => undefined);
+  }
+
   /** The spec an App was last deployed or restored with. */
   specOf(appId: string): HostDeploymentSpec | undefined {
     return this.specs.get(appId);

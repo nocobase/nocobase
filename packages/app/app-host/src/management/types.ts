@@ -200,17 +200,79 @@ export interface ApplyDeploymentSetResult {
 export type HostOperationState =
   'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'cancelled';
 
-/** A deployment's outcome as the operation log keeps it, also after the Host or its control plane restarted. */
+/** What a recorded operation did; absent for a deployment recorded before backups existed. */
+export type HostOperationKind = 'deployment' | 'backup' | 'restore';
+
+/** An operation's outcome as the operation log keeps it, also after the Host or its control plane restarted. */
 export interface HostOperation {
   operationId: string;
   scopeId: string;
   appId: string;
+  /** `deployment` when absent. */
+  kind?: HostOperationKind;
   state: HostOperationState;
   /** The App once the deployment finished. */
   status: HostDeploymentStatus | null;
+  /** What a succeeded backup or restore answered (`HostBackup`, `HostRestoreResult`). */
+  result?: unknown;
   error: string | null;
+  /** The stable code of a failed backup or restore, such as `BACKUP_COMMAND_UNAVAILABLE`. */
+  errorCode?: string;
+  /** What the App's command-line tool reported with that failure, such as each database's rollback state. */
+  errorDetails?: unknown;
   startedAt: string;
   finishedAt: string | null;
+}
+
+/** A backup of an App's databases and files, taken by the App's own `backup create` command. */
+export interface HostBackup {
+  /** The operation ID that created it. */
+  backupId: string;
+  appId: string;
+  createdAt: string;
+  /** Archive bytes. */
+  size: number;
+  sha256: string;
+  /**
+   * Whether the archive restores everything on its own: every database exported, every disk's files included, no
+   * limitations. A backup that needs an external recovery point or a remote disk's versioning is not complete.
+   */
+  complete: boolean;
+  /** `backup inspect` of the archive: the App, version, each database and disk, and limitations. */
+  manifest: Record<string, unknown>;
+  /** The release the App ran when the backup was taken. */
+  version: string | null;
+  /** That release's archive checksum, or the image digest an external service ran. */
+  artifact: string | null;
+}
+
+export interface HostBackupOptions {
+  /** The control plane's operation: a backup runs at most once per operation ID, which also names the backup. */
+  operationId: string;
+  scope?: HostScope;
+  /** Require the App to be stopped (`backup create --offline`); by default the backup is taken while it runs. */
+  offline?: boolean;
+}
+
+export interface HostRestoreOptions {
+  /** The control plane's operation: a restore runs at most once per operation ID. */
+  operationId: string;
+  scope?: HostScope;
+  backupId: string;
+  /** The archive checksum to require; the one recorded with the backup by default. */
+  sha256?: string;
+  /**
+   * What the App runs once its data is restored: normally the deployment it ran when the backup was taken, since the
+   * backup's release has to restore it. The App is stopped first, restored with this deployment's release,
+   * configuration and environment, and then deployed with it (left stopped for `desiredState: 'stopped'`).
+   */
+  deployment: HostDeploymentSpec;
+}
+
+export interface HostRestoreResult {
+  /** `backup restore`'s report: each database's and disk's outcome, and referenced files that were missing. */
+  restore: Record<string, unknown>;
+  status: HostStatus;
 }
 
 /** What a backend can do, so a control plane offers only that. */
@@ -221,7 +283,7 @@ export interface HostBackendCapabilities {
   rollout: 'stop-first' | 'start-first';
   /** Runs release images (`HostDeploymentSpec.images`) rather than only the archive. */
   images: boolean;
-  /** Backs an App's data up before a deployment, when configured. */
+  /** Backs an App's databases and files up and restores them on request (`createBackup`, `restoreBackup`). */
   backup: boolean;
   logs: boolean;
   urlModes: ('path' | 'subdomain')[];

@@ -23,6 +23,7 @@ import type { AppRuntimeRegistry } from '../app-registry.ts';
 import type { DeploymentLogListener } from '../deployment-log.js';
 import { fullErrorMessage } from '../errors.ts';
 import { isServiceBackend, type ServiceBackend } from '../service-backend.ts';
+import { HostBackups } from './backups.ts';
 import type { ManagedReconciler } from './managed-reconciler.ts';
 import {
   MemoryOperationLog,
@@ -34,6 +35,11 @@ import {
   IN_PROCESS_BACKEND,
   type ApplyDeploymentSetResult,
   type HostBackendDescription,
+  type HostBackup,
+  type HostBackupOptions,
+  type HostOperationKind,
+  type HostRestoreOptions,
+  type HostRestoreResult,
   type HostDeploymentSet,
   type HostDeploymentSpec,
   type HostDescription,
@@ -49,15 +55,26 @@ export const UNSCOPED = '_';
 
 const APP_ID = /^[a-zA-Z0-9_-]+$/;
 
-/** An error with a stable code, which the IPC channel carries to the caller. */
+export type HostManagementErrorCode =
+  | 'APP_OWNED_BY_OTHER_SCOPE'
+  | 'BACKEND_UNAVAILABLE'
+  | 'INVALID_SCOPE'
+  | 'HOST_DRAINING'
+  | 'APP_NOT_FOUND'
+  | 'BACKUP_NOT_FOUND'
+  | 'BACKUP_UNSUPPORTED'
+  | 'BACKUP_COMMAND_UNAVAILABLE'
+  | 'BACKUP_FAILED';
+
+/**
+ * An error with a stable code, which the IPC channel carries to the caller. A failed backup or restore carries the
+ * code its command reported (`RESTORE_APP_RUNNING`, a database tool's failure) and what the command said about it.
+ */
 export class HostManagementError extends Error {
   constructor(
     message: string,
-    public readonly code:
-      | 'APP_OWNED_BY_OTHER_SCOPE'
-      | 'BACKEND_UNAVAILABLE'
-      | 'INVALID_SCOPE'
-      | 'HOST_DRAINING',
+    public readonly code: HostManagementErrorCode | (string & {}),
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'HostManagementError';
@@ -87,6 +104,9 @@ export class ManagedScopes {
   /** Which scope each App belongs to. */
   private readonly owners = new Map<string, string>();
   private readonly inflight = new Map<string, Promise<HostStatus>>();
+  /** Backups and restores under way, by scope and operation ID. */
+  private readonly tasks = new Map<string, Promise<unknown>>();
+  private readonly backups: HostBackups;
   private readonly operations: OperationLog;
   private readonly hostId: string;
   private readonly now: () => number;
@@ -96,6 +116,12 @@ export class ManagedScopes {
     this.operations = options.operations ?? new MemoryOperationLog();
     this.hostId = options.hostId ?? randomUUID();
     this.now = options.now ?? Date.now;
+    this.backups = new HostBackups({
+      reconciler: options.reconciler,
+      registry: options.registry,
+      volumesDir: options.appVolumesDir,
+      now: this.now,
+    });
   }
 
   describe(mode: HostDescription['mode']): HostDescription {
@@ -109,7 +135,7 @@ export class ManagedScopes {
             onDemand: true,
             rollout: 'stop-first',
             images: false,
-            backup: false,
+            backup: true,
             logs: true,
             urlModes: ['path'],
           },
@@ -320,6 +346,58 @@ export class ManagedScopes {
     return status;
   }
 
+  /** Backs an App up at most once per operation ID (see `HostBackups.create`). */
+  async createBackup(
+    appId: string,
+    options: HostBackupOptions,
+  ): Promise<HostBackup> {
+    const scopeId = await this.taskScope(appId, options.scope);
+    return await this.task('backup', scopeId, appId, options.operationId, () =>
+      this.backups.create(appId, options.operationId, {
+        offline: options.offline,
+      }),
+    );
+  }
+
+  /** Restores an App's backup at most once per operation ID (see `HostBackups.restore`). */
+  async restoreBackup(
+    appId: string,
+    options: HostRestoreOptions,
+  ): Promise<HostRestoreResult> {
+    const scopeId = await this.taskScope(appId, options.scope);
+    const deployment = options.scope
+      ? { ...options.deployment, scope: options.scope }
+      : options.deployment;
+    if (options.scope) this.assertBackend(deployment);
+    return await this.task('restore', scopeId, appId, options.operationId, () =>
+      this.backups.restore(appId, {
+        backupId: options.backupId,
+        sha256: options.sha256,
+        deployment,
+        deploy: async (spec) => {
+          if (options.scope) this.owners.set(appId, options.scope.id);
+          await this.options.reconciler.applyDeployment(spec);
+          return this.status({ appIds: [appId] });
+        },
+      }),
+    );
+  }
+
+  /** Removes an App's backup; false when it had none by that ID. */
+  async deleteBackup(
+    appId: string,
+    backupId: string,
+    scope: HostScope | undefined,
+  ): Promise<{ deleted: boolean }> {
+    await this.taskScope(appId, scope);
+    return { deleted: await this.backups.delete(appId, backupId) };
+  }
+
+  /** Whether a backup or restore is under way. */
+  isBusy(): boolean {
+    return this.tasks.size > 0;
+  }
+
   async getOperation(
     operationId: string,
     scope: HostScope | undefined,
@@ -405,7 +483,10 @@ export class ManagedScopes {
    */
   async drain(timeoutMs: number): Promise<void> {
     this.draining = true;
-    const running = [...this.inflight.values()];
+    const running: Promise<unknown>[] = [
+      ...this.inflight.values(),
+      ...this.tasks.values(),
+    ];
     if (!running.length) return;
     await Promise.race([
       Promise.allSettled(running),
@@ -433,6 +514,105 @@ export class ManagedScopes {
   }
 
   // ---------------------------------------------------------------------------------------------------------------
+
+  /** The scope a backup task is recorded under, with the App checked to be that scope's. */
+  private async taskScope(
+    appId: string,
+    scope: HostScope | undefined,
+  ): Promise<string> {
+    this.assertAccepting();
+    if (!scope) return UNSCOPED;
+    await this.bind(scope);
+    this.assertAccepting();
+    this.assertOwnership(scope.id, [appId]);
+    return scope.id;
+  }
+
+  /**
+   * Runs a backup or restore at most once per operation ID, with its outcome recorded before and after: a repeat
+   * answers the recorded result (or failure), a concurrent one waits for the first, and one the previous Host process
+   * left unfinished (`interrupted`) runs again.
+   */
+  private async task<T>(
+    kind: HostOperationKind,
+    scopeId: string,
+    appId: string,
+    operationId: string,
+    work: () => Promise<T>,
+  ): Promise<T> {
+    assertOperationId(operationId);
+    const key = `${scopeId}\u0000${operationId}`;
+    const running = this.tasks.get(key);
+    if (running) return (await running) as T;
+    const recorded = await this.operations.get(scopeId, operationId);
+    if (recorded && (recorded.kind ?? 'deployment') !== kind)
+      throw new HostManagementError(
+        `Operation "${operationId}" is a ${recorded.kind ?? 'deployment'}, not a ${kind}`,
+        'INVALID_SCOPE',
+      );
+    if (recorded && recorded.appId !== appId)
+      throw new HostManagementError(
+        `Operation "${operationId}" belongs to App "${recorded.appId}"`,
+        'INVALID_SCOPE',
+      );
+    if (recorded?.state === 'succeeded') return recorded.result as T;
+    if (recorded?.state === 'failed')
+      throw new HostManagementError(
+        recorded.error ?? `The recorded ${kind} failed`,
+        recorded.errorCode ?? 'BACKUP_FAILED',
+        recorded.errorDetails,
+      );
+    this.assertAccepting();
+    const base = {
+      operationId,
+      scopeId,
+      appId,
+      kind,
+      status: null,
+      startedAt: new Date(this.now()).toISOString(),
+    } as const;
+    const execute = async (): Promise<T> => {
+      await this.operations.put({
+        ...base,
+        state: 'running',
+        error: null,
+        finishedAt: null,
+      });
+      try {
+        const result = await work();
+        await this.operations.put({
+          ...base,
+          state: 'succeeded',
+          result,
+          error: null,
+          finishedAt: new Date(this.now()).toISOString(),
+        });
+        return result;
+      } catch (error) {
+        const coded = error as { code?: unknown; details?: unknown };
+        await this.operations.put({
+          ...base,
+          state: 'failed',
+          error: fullErrorMessage(error),
+          ...(typeof coded?.code === 'string'
+            ? { errorCode: coded.code }
+            : {}),
+          ...(coded?.details !== undefined
+            ? { errorDetails: coded.details }
+            : {}),
+          finishedAt: new Date(this.now()).toISOString(),
+        });
+        throw error;
+      }
+    };
+    const work$ = execute();
+    this.tasks.set(key, work$);
+    try {
+      return await work$;
+    } finally {
+      this.tasks.delete(key);
+    }
+  }
 
   private async run(
     state: ScopeState,
