@@ -224,14 +224,14 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
     'claude-haiku-4-5',
     'claude-fable-5-1',
   ],
-  codex: ['gpt-6.1-sol', 'gpt-6-astra', 'gpt-6-luna'],
+  codex: ['gpt-6.2-sol', 'gpt-6.2-astra', 'gpt-6-luna'],
   opencode: [
     'anthropic/claude-opus-5-5',
     'anthropic/claude-sonnet-5',
     'anthropic/claude-haiku-4-5',
     'anthropic/claude-fable-5-1',
-    'openai/gpt-6.1-sol',
-    'openai/gpt-6-astra',
+    'openai/gpt-6.2-sol',
+    'openai/gpt-6.2-astra',
     'openai/gpt-6-luna',
   ],
   pi: [
@@ -239,8 +239,8 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
     'anthropic/claude-sonnet-5',
     'anthropic/claude-haiku-4-5',
     'anthropic/claude-fable-5-1',
-    'openai/gpt-6.1-sol',
-    'openai/gpt-6-astra',
+    'openai/gpt-6.2-sol',
+    'openai/gpt-6.2-astra',
     'openai/gpt-6-luna',
   ],
 };
