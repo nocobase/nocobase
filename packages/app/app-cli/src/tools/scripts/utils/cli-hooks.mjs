@@ -52,3 +52,36 @@ export const runHookStage = (hooks, stage, run) => {
     run(hook.label, hook.command[0], hook.command.slice(1));
   }
 };
+
+export const CLI_PLUGIN_REGISTRATIONS_ENV = 'NOCOBASE_CLI_PLUGIN_REGISTRATIONS';
+
+/**
+ * The packages `cli/plugins.ts` registers, as `nocobase build` read them with the application's TypeScript, which the
+ * build writes to `dist/cli/plugins.json`. Missing fails the build for the same reason missing hooks do: a deployment
+ * built without it would show every CLI-only plugin as not enabled.
+ */
+export const readCliPluginRegistrations = (env = process.env) => {
+  const serialized = env[CLI_PLUGIN_REGISTRATIONS_ENV];
+  if (serialized === undefined) {
+    throw new Error(
+      `${CLI_PLUGIN_REGISTRATIONS_ENV} is not set. Run this through \`nocobase build\`, which passes the CLI plugins it registers.`,
+    );
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(serialized);
+  } catch (cause) {
+    throw new Error(`${CLI_PLUGIN_REGISTRATIONS_ENV} does not hold JSON.`, {
+      cause,
+    });
+  }
+  if (
+    !Array.isArray(parsed?.plugins) ||
+    !parsed.plugins.every((name) => typeof name === 'string')
+  ) {
+    throw new Error(
+      `${CLI_PLUGIN_REGISTRATIONS_ENV} must hold { "plugins": [package names] }.`,
+    );
+  }
+  return { plugins: parsed.plugins };
+};

@@ -273,52 +273,58 @@ describe('plugins page', () => {
     );
   });
 
-  it.each(['plugins.ts', 'plugins.js'] as const)(
-    'offers to enable a CLI-only plugin whose import cli/%s keeps but does not register',
-    async (file) => {
-      const cliOnly = '@acme/app-plugin-tools';
-      const app = await createApplicationFixture({
-        dependencies: [cliOnly],
-        installed: [
-          {
-            name: cliOnly,
-            entries: ['cli'],
-            nocobase: { title: 'Tools' },
-          },
-        ],
-        cli: {
-          file,
-          source: [
-            "import { defineCliPlugins } from '@nocobase/app-cli';",
-            `import tools from '${cliOnly}/cli';`,
-            `// import older from '${cliOnly}/cli';`,
-            'export default defineCliPlugins([]);',
-          ].join('\n'),
+  it.each([
+    [
+      'cli/plugins.ts keeps its import but does not register it',
+      {
+        source: [
+          "import { defineCliPlugins } from '@nocobase/app-cli';",
+          "import tools from '@acme/app-plugin-tools/cli';",
+          "// import older from '@acme/app-plugin-tools/cli';",
+          'if (true) /[/*]/.test("a");',
+          'export default defineCliPlugins([]);',
+        ].join('\n'),
+      },
+    ],
+    [
+      "the deployment's cli/plugins.json does not list it",
+      { deployed: true, plugins: [] },
+    ],
+  ])('offers to enable a CLI-only plugin when %s', async (_, cli) => {
+    const cliOnly = '@acme/app-plugin-tools';
+    const app = await createApplicationFixture({
+      dependencies: [cliOnly],
+      installed: [
+        {
+          name: cliOnly,
+          entries: ['cli'],
+          nocobase: { title: 'Tools' },
         },
-      });
-      try {
-        const { data } = await new FoundationPluginCatalog({
-          rootDir: app.rootDir,
-          serverPlugins: () => [],
-        }).list([]);
-        await renderPage({ plugins: data });
+      ],
+      cli,
+    });
+    try {
+      const { data } = await new FoundationPluginCatalog({
+        rootDir: app.rootDir,
+        serverPlugins: () => [],
+      }).list([]);
+      await renderPage({ plugins: data });
 
-        expect(within(group(/^Not enabled/)).getByText('Tools')).toBeTruthy();
-        fireEvent.click(
-          within(rowOf('Tools')).getByRole('button', {
-            name: 'How to enable Tools',
-          }),
-        );
-        expect(
-          within(await screen.findByRole('dialog')).getByText(
-            `pnpm nocobase plugin register ${cliOnly}`,
-          ),
-        ).toBeInTheDocument();
-      } finally {
-        await app.cleanup();
-      }
-    },
-  );
+      expect(within(group(/^Not enabled/)).getByText('Tools')).toBeTruthy();
+      fireEvent.click(
+        within(rowOf('Tools')).getByRole('button', {
+          name: 'How to enable Tools',
+        }),
+      );
+      expect(
+        within(await screen.findByRole('dialog')).getByText(
+          `pnpm nocobase plugin register ${cliOnly}`,
+        ),
+      ).toBeInTheDocument();
+    } finally {
+      await app.cleanup();
+    }
+  });
 
   it('offers the fixing command for a plugin that needs attention', async () => {
     await renderPage();

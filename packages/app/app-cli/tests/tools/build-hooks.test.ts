@@ -23,6 +23,7 @@ type HookStages = Record<string, Hook[]>;
 type StepRunner = (label: string, command: string, args: string[]) => void;
 interface CliHooksModule {
   CLI_HOOKS_ENV: string;
+  CLI_PLUGIN_REGISTRATIONS_ENV: string;
   readCliHooks: (env?: NodeJS.ProcessEnv) => {
     build: HookStages;
     dev: HookStages;
@@ -30,7 +31,12 @@ interface CliHooksModule {
   runHookStage: (hooks: HookStages, stage: string, run: StepRunner) => void;
 }
 
-const { CLI_HOOKS_ENV, readCliHooks, runHookStage } = (await import(
+const {
+  CLI_HOOKS_ENV,
+  CLI_PLUGIN_REGISTRATIONS_ENV,
+  readCliHooks,
+  runHookStage,
+} = (await import(
   new URL('../../src/tools/scripts/utils/cli-hooks.mjs', import.meta.url).href
 )) as CliHooksModule;
 
@@ -146,6 +152,7 @@ describe('build pipeline hook stages', () => {
     args: string[],
     options: {
       withoutHooks?: boolean;
+      withoutCliPluginRegistrations?: boolean;
       failOn?: string;
       failStatus?: number;
       env?: NodeJS.ProcessEnv;
@@ -218,7 +225,10 @@ describe('build pipeline hook stages', () => {
       encoding: 'utf8',
       timeout: 30_000,
       env: {
-        ...withoutVariable(process.env, CLI_HOOKS_ENV),
+        ...withoutVariable(
+          withoutVariable(process.env, CLI_HOOKS_ENV),
+          CLI_PLUGIN_REGISTRATIONS_ENV,
+        ),
         PATH: `${shimDir}${path.delimiter}${process.env.PATH ?? ''}`,
         NOCOBASE_TOOL_ROOT: root,
         NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD: '0',
@@ -226,6 +236,13 @@ describe('build pipeline hook stages', () => {
         ...(options.withoutHooks
           ? {}
           : { [CLI_HOOKS_ENV]: JSON.stringify(hookStages) }),
+        ...(options.withoutCliPluginRegistrations
+          ? {}
+          : {
+              [CLI_PLUGIN_REGISTRATIONS_ENV]: JSON.stringify({
+                plugins: ['@acme/app-plugin-tools'],
+              }),
+            }),
         FAIL_ON: options.failOn ?? '',
         FAIL_STATUS: String(options.failStatus ?? 1),
         ...options.env,
@@ -291,6 +308,15 @@ describe('build pipeline hook stages', () => {
       ).toContain(
         "await runAppCli({ root: path.resolve(import.meta.dirname, '..') });",
       );
+      // What `cli/plugins.ts` registers, which a deployment reads in place of that file and a compiler.
+      expect(
+        JSON.parse(
+          readFileSync(
+            path.join(path.dirname(sentinel), 'cli', 'plugins.json'),
+            'utf8',
+          ),
+        ),
+      ).toEqual({ plugins: ['@acme/app-plugin-tools'] });
     },
   );
 
@@ -365,6 +391,22 @@ describe('build pipeline hook stages', () => {
 
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain(`${CLI_HOOKS_ENV} is not set.`);
+      expect(commands).toEqual([]);
+      expect(readFileSync(sentinel, 'utf8')).toBe('previous build');
+    },
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'stops before clearing dist without the CLI plugins the command read',
+    () => {
+      const { result, commands, sentinel } = runBuild([], {
+        withoutCliPluginRegistrations: true,
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(
+        `${CLI_PLUGIN_REGISTRATIONS_ENV} is not set.`,
+      );
       expect(commands).toEqual([]);
       expect(readFileSync(sentinel, 'utf8')).toBe('previous build');
     },

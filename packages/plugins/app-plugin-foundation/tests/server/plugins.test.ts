@@ -215,9 +215,12 @@ describe('FoundationPluginCatalog', () => {
     expect([...installed.keys()]).toEqual([MAIL]);
   });
 
-  it.each(['plugins.ts', 'plugins.js'] as const)(
-    'takes a plugin with only a CLI entry as registered exactly when cli/%s registers it',
-    async (file) => {
+  it.each([
+    ['cli/plugins.ts of a source checkout', false],
+    ['cli/plugins.json of a deployment', true],
+  ] as const)(
+    'takes a plugin with only a CLI entry as registered exactly when %s registers it',
+    async (_, deployed) => {
       const cliOnly = '@acme/app-plugin-tools';
       const fixture = {
         dependencies: [cliOnly],
@@ -225,7 +228,7 @@ describe('FoundationPluginCatalog', () => {
       };
 
       const registered = await catalog(
-        { ...fixture, cli: { file, plugins: [cliOnly] } },
+        { ...fixture, cli: { deployed, plugins: [cliOnly] } },
         [],
       );
       expect((await registered.list([])).data).toMatchObject([
@@ -238,7 +241,7 @@ describe('FoundationPluginCatalog', () => {
       ]);
 
       const unregistered = await catalog(
-        { ...fixture, cli: { file, plugins: [] } },
+        { ...fixture, cli: { deployed, plugins: [] } },
         [],
       );
       expect((await unregistered.list([])).data).toMatchObject([
@@ -247,58 +250,84 @@ describe('FoundationPluginCatalog', () => {
     },
   );
 
-  describe.each([
-    {
-      file: 'plugins.ts' as const,
-      header:
-        "import { defineCliPlugins, type AppCliPlugins } from '@nocobase/app-cli';",
-      define: (members: string) =>
-        `const cliPlugins: AppCliPlugins = defineCliPlugins([${members}]);\nexport default cliPlugins;\n`,
-    },
-    {
-      // What `pnpm build` compiles the same file to.
-      file: 'plugins.js' as const,
-      header: "import { defineCliPlugins } from '@nocobase/app-cli';",
-      define: (members: string) =>
-        `const cliPlugins = defineCliPlugins([${members}]);\nexport default cliPlugins;\n//${'#'} sourceMappingURL=plugins.js.map\n`,
-    },
-  ])('a CLI-only plugin and cli/$file', ({ file, header, define }) => {
+  describe('a CLI-only plugin and a cli/plugins.ts the compiler parses', () => {
     const cliOnly = '@acme/app-plugin-tools';
-    const classify = async (source: string) => {
+    const classify = async (body: string) => {
       const plugins = await catalog(
         {
           dependencies: [cliOnly],
           installed: [{ name: cliOnly, entries: ['cli'] }],
-          cli: { file, source },
+          cli: {
+            source: `import { defineCliPlugins, type AppCliPlugins } from '@nocobase/app-cli';
+import tools from '${cliOnly}/cli';
+${body}
+export default cliPlugins;
+`,
+          },
         },
         [],
       );
       return (await plugins.list([])).data;
     };
+    const enabled = [{ state: 'registered', enabled: true }];
+    const notEnabled = [{ state: 'unregistered', enabled: false }];
 
     it('is enabled when the array passes it', async () => {
       expect(
         await classify(
-          `${header}\nimport tools from '${cliOnly}/cli';\n${define('tools')}`,
+          'const cliPlugins: AppCliPlugins = defineCliPlugins([tools]);',
         ),
-      ).toMatchObject([{ state: 'registered', enabled: true }]);
+      ).toMatchObject(enabled);
     });
 
     it('is not enabled when its import stays but the array no longer passes it', async () => {
       expect(
         await classify(
-          `${header}\nimport tools from '${cliOnly}/cli';\n${define('')}`,
+          'const cliPlugins: AppCliPlugins = defineCliPlugins([]);',
         ),
-      ).toMatchObject([{ state: 'unregistered', enabled: false }]);
+      ).toMatchObject(notEnabled);
     });
 
-    it('is not enabled when its import and its entry are commented out', async () => {
+    it('is not enabled when its entry is commented out', async () => {
       expect(
         await classify(
-          `${header}\n// import tools from '${cliOnly}/cli';\n/* import more from '${cliOnly}/cli'; */\n${define('/* tools */')}`,
+          `// const old = defineCliPlugins([tools]);
+/* defineCliPlugins([tools]) */
+const cliPlugins: AppCliPlugins = defineCliPlugins([/* tools */]);`,
         ),
-      ).toMatchObject([{ state: 'unregistered', enabled: false }]);
+      ).toMatchObject(notEnabled);
     });
+
+    it('is not enabled by a call written in a string or a template literal', async () => {
+      expect(
+        await classify(
+          `const help = 'defineCliPlugins([tools])';
+const example = \`Register it: defineCliPlugins([tools]) \${help}\`;
+const cliPlugins: AppCliPlugins = defineCliPlugins([]);`,
+        ),
+      ).toMatchObject(notEnabled);
+    });
+
+    it.each([
+      [
+        'an assignment',
+        'const commentStart = /[/*]/;\nconst ratio = 4 / 2 / 1;',
+      ],
+      ['an if condition', 'if (true) /[/*]/.test("a");'],
+      [
+        'a return inside a template interpolation',
+        'const label = `${(() => { return /[/*]/.test("a"); })()}`;',
+      ],
+    ])(
+      'stays enabled after a regular expression holding comment characters in %s',
+      async (_, before) => {
+        expect(
+          await classify(
+            `${before}\nconst cliPlugins: AppCliPlugins = defineCliPlugins([tools]);`,
+          ),
+        ).toMatchObject(enabled);
+      },
+    );
   });
 
   it('lists a third-party plugin with the name and description it declares', async () => {

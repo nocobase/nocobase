@@ -277,10 +277,10 @@ async function inspectComposition(
         : await readCliPlugins(appRoot);
   if (!file.exists) return { registered: false };
   if (kind === 'cli') {
-    // The same reading the App Foundation plugins page applies to the running application's `cli/plugins`.
-    const order = listCliPluginRegistrations(file.sourceText).indexOf(
-      packageName,
-    );
+    // The same reading the App Foundation plugins page and `pnpm build` apply to `cli/plugins.ts`.
+    const order = (
+      await listCliPluginRegistrations(file.sourceText, { appRoot })
+    ).indexOf(packageName);
     return order === -1
       ? { registered: false }
       : { registered: true, order: order + 1 };

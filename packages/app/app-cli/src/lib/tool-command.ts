@@ -1,4 +1,5 @@
 // Shared by the commands that run a development or build script against the application.
+import { readCliPluginRegistrations } from '@nocobase/app-server/plugins';
 import { Command } from '@oclif/core';
 
 import { applicationState } from '../runtime/command-store.ts';
@@ -8,6 +9,11 @@ import { collectCliHooks } from './cli-hooks.ts';
 export interface ToolCommandOptions {
   /** Hand the plugins' build and dev hooks to the script. */
   readonly hooks?: boolean;
+  /**
+   * Hand the script the packages `cli/plugins.ts` registers, read with the application's TypeScript, which the build
+   * writes to `dist/cli/plugins.json` for a deployment that has neither.
+   */
+  readonly cliPluginRegistrations?: boolean;
   /** Node options for the script, such as a loader. */
   readonly execArgv?: readonly string[];
 }
@@ -31,6 +37,11 @@ export abstract class ToolCommand extends Command {
       env['NOCOBASE_CLI_HOOKS'] = JSON.stringify(
         collectCliHooks(await loadPlugins()),
       );
+    }
+    if (this.toolOptions.cliPluginRegistrations) {
+      env['NOCOBASE_CLI_PLUGIN_REGISTRATIONS'] = JSON.stringify({
+        plugins: await readCliPluginRegistrations(location.root),
+      });
     }
     const exitCode = await runAppTool(this.tool, {
       rootDir: location.root,

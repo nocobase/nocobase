@@ -1,6 +1,9 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
+
+const require = createRequire(import.meta.url);
 
 export interface FixturePlugin {
   readonly name: string;
@@ -20,12 +23,15 @@ export async function createApplicationFixture(options: {
   readonly devDependencies?: readonly string[];
   readonly installed: readonly FixturePlugin[];
   readonly builtAt?: string;
-  /** The CLI composition root to write, `cli/plugins.ts` as a source checkout has it or `cli/plugins.js` as a build does. */
+  /**
+   * The CLI registrations to write: a source checkout's `cli/plugins.ts`, parsed with the TypeScript this package
+   * resolves, or, `deployed`, the `cli/plugins.json` a build writes in its place.
+   */
   readonly cli?: {
-    readonly file: 'plugins.ts' | 'plugins.js';
+    readonly deployed?: boolean;
     /** The packages it registers, each imported and listed. */
     readonly plugins?: readonly string[];
-    /** The file's text as written, instead of `plugins`. */
+    /** The `cli/plugins.ts` text as written, instead of `plugins`. */
     readonly source?: string;
   };
 }): Promise<{
@@ -48,18 +54,32 @@ export async function createApplicationFixture(options: {
     const plugins = options.cli.plugins ?? [];
     const locals = plugins.map((_, index) => `plugin${index}`);
     await mkdir(path.join(rootDir, 'cli'), { recursive: true });
-    await writeFile(
-      path.join(rootDir, 'cli', options.cli.file),
-      options.cli.source ??
-        [
-          "import { defineCliPlugins } from '@nocobase/app-cli';",
-          ...plugins.map(
-            (name, index) => `import ${locals[index]} from '${name}/cli';`,
-          ),
-          `export default defineCliPlugins([${locals.join(', ')}]);`,
-          '',
-        ].join('\n'),
-    );
+    if (options.cli.deployed) {
+      await writeFile(
+        path.join(rootDir, 'cli', 'plugins.json'),
+        JSON.stringify({ plugins }),
+      );
+    } else {
+      await writeFile(
+        path.join(rootDir, 'cli', 'plugins.ts'),
+        options.cli.source ??
+          [
+            "import { defineCliPlugins } from '@nocobase/app-cli';",
+            ...plugins.map(
+              (name, index) => `import ${locals[index]} from '${name}/cli';`,
+            ),
+            `export default defineCliPlugins([${locals.join(', ')}]);`,
+            '',
+          ].join('\n'),
+      );
+      // A source checkout has the TypeScript it builds with; link this package's own.
+      await mkdir(path.join(rootDir, 'node_modules'), { recursive: true });
+      await symlink(
+        path.dirname(require.resolve('typescript/package.json')),
+        path.join(rootDir, 'node_modules', 'typescript'),
+        'dir',
+      );
+    }
   }
   for (const plugin of options.installed) {
     const directory = path.join(rootDir, 'node_modules', plugin.name);

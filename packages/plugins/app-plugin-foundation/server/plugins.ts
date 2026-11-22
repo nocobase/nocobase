@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import {
   classifyPluginRegistration,
-  listCliPluginRegistrations,
+  readCliPluginRegistrations,
 } from '@nocobase/app-server/plugins';
 
 import {
@@ -173,6 +173,10 @@ export class FoundationPluginCatalog {
         cliPlugins,
       };
     });
+    // A failure, such as a source checkout without TypeScript, is reported to this request and retried by the next.
+    this.application.catch(() => {
+      this.application = undefined;
+    });
     return this.application;
   }
 
@@ -232,22 +236,14 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
 }
 
 /**
- * The packages the application's CLI composition root registers, read exactly as `plugin inspect` reads them:
- * `cli/plugins.ts` in a source checkout and the compiled `cli/plugins.js` a build writes. The running server never
- * loads the CLI.
+ * The packages the application's CLI composition root registers, read the way `plugin inspect` reads them: parsed from
+ * `cli/plugins.ts` in a source checkout, and from the `cli/plugins.json` `pnpm build` writes in a deployment. The
+ * running server never loads the CLI.
  */
 async function readCliPlugins(rootDir: string): Promise<ReadonlySet<string>> {
-  for (const file of ['plugins.ts', 'plugins.js']) {
-    const source = await readFile(
-      path.join(rootDir, 'cli', file),
-      'utf8',
-    ).catch(() => undefined);
-    if (source === undefined) continue;
-    return new Set(
-      listCliPluginRegistrations(source).filter(isPluginPackageName),
-    );
-  }
-  return new Set();
+  return new Set(
+    (await readCliPluginRegistrations(rootDir)).filter(isPluginPackageName),
+  );
 }
 
 function localizedText(value: unknown): FoundationLocalizedText | undefined {
