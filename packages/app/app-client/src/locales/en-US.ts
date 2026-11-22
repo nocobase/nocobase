@@ -13,9 +13,7 @@ export default {
     personal: {
       categories: {
         account: 'Account',
-        preferences: 'Preferences',
-        messages: 'Messages',
-        other: 'Other',
+        integrations: 'Integrations',
       },
     },
   },

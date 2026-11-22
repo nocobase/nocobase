@@ -65,11 +65,11 @@ The categories are built in, so every application and plugin shares the same one
 | `system`           | System                   | 600   | plugins, languages, configuration, cluster, logs, deployment, App Foundation |
 | `other`            | Other                    | 900   | pages that fit no other category; cannot be hidden                           |
 
-Personal settings have `account` (100, profile, password, sign-in methods), `preferences` (200, language and appearance), `messages` (300, a person's own notifications and mailboxes) and `other` (900). A category no page joins is not shown.
+Personal settings have `account` (100, account security, preferences and notifications) and `integrations` (200, API keys and connected accounts). A category no page joins is not shown.
 
 - There is no built-in business category. An application or plugin with business configuration adds its own: a root group with `category: true` and a `navigation.order` between the built-in ones, such as `{ name: 'crm', category: true, navigation: { title: 'crm.settings', order: 150 }, children: [] }`. Its id is its name, and other packages join it with `parent: 'crm'`. Declaring an id twice in one settings surface, or redeclaring a built-in one, is a registration error; the same id in System and personal settings are two categories. A category declares no `path` and no `breadcrumb`: it only groups the menu, so its pages keep their own URLs and the trail never names it, wherever the page is filed.
 - A plugin that ships ready-made settings pages registers them in a built-in category when the application asks. `@nocobase/app-plugin-agents` does so with `agents({ settingsRoutes: true })` in `client/plugins.ts`: Agents, Runtimes, Skills, Models and Usage join AI at `/settings/agents`, `/settings/runtimes`, `/settings/skills`, `/settings/models` and `/settings/usage`, each keeping its own page grant, and their links to one another (a new skill, back to the library, an agent from Usage) stay under `/settings`. Without the option the plugin registers nothing and the application routes the definitions from `@nocobase/app-plugin-agents/client/routes` where it keeps them.
-- The application changes how a category shows, never its id: `defineSettingsCategories('systemSettings', { ai: { title: 'settings.assistants', order: 250 }, automation: { hidden: true } })` in its own route contributions. A hidden category's pages move to `other`; `other` cannot be hidden. Only the application may pass category overrides.
+- The application changes how a category shows, never its id: `defineSettingsCategories('systemSettings', { ai: { title: 'settings.assistants', order: 250 }, automation: { hidden: true } })` in its own route contributions. Pages from hidden categories move to the fallback category, `other` in system settings or `account` in personal settings. The fallback stays visible. Only the application may pass category overrides.
 - Every other top-level group is a module and declares `kind: 'module'`; a group with neither is a registration error, so a former category declaration cannot silently become a module.
 - Registered routes carry `kind: 'category'` or `kind: 'module'` and, on a category, `category: '<id>'`; the route name is `<surface>.<id>`, such as `systemSettings.account`, for built-in and added categories alike, and a built-in category's `packageName` is `@nocobase/app-client`.
 
@@ -83,7 +83,7 @@ Pages where each signed-in person configures their own account — their profile
 
 - The entry is the first item of the account (avatar) menu, opening `/me`, which leads to the first personal page; Language and Theme stay in that menu as shortcuts to the same preferences. Personal settings never appear in the business menu or the System settings menu.
 - Without an `authz` of its own, a personal page admits every signed-in person (`authz: 'skip'`, `auth: 'required'`) and stays out of page permissions. Its server reads and writes only the current person's data, taken from the session, never a user id from the request.
-- The categories are the built-in `account`, `preferences`, `messages` and `other`; the templates ship Language and appearance (`personalAppearance`, `/me/preferences`). While on `/me/*`, the sidebar shows Back, the person's identity and the personal settings menu, and the trail reads Personal settings → page. Back returns to the business page the viewer left, also after moving between system and personal settings.
+- The categories are the built-in `account` and `integrations`; the templates ship Language and appearance (`personalAppearance`, `/me/preferences`). While on `/me/*`, the sidebar shows Back, the person's identity and the personal settings menu, and the trail reads Personal settings → page. Back returns to the business page the viewer left, also after moving between system and personal settings.
 - A feature that has both an application-wide and a personal side, such as API keys, declares one page on each surface; routes of one surface cannot join a group of the other.
 
 ```ts
@@ -94,7 +94,7 @@ import {
 
 export default definePersonalSettingsRoutes([
   {
-    parent: PERSONAL_SETTINGS_CATEGORIES.account,
+    parent: PERSONAL_SETTINGS_CATEGORIES.integrations,
     name: 'myMailAccounts',
     path: '/mail-accounts', // /me/mail-accounts
     navigation: { title: 'me.mailAccounts' },

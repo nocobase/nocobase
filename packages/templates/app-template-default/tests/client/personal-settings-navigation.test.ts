@@ -78,7 +78,7 @@ describe('Personal settings navigation', () => {
     const routes = resolve();
     const menu = buildPersonalSettingsNavigation(routes, new Set());
     expect(outline(menu)).toEqual([
-      ['personalSettings.preferences', ['/me/preferences']],
+      ['personalSettings.account', ['/me/preferences']],
     ]);
     expect(firstNavigationPage(menu)?.path).toBe('/me/preferences');
     expect(
@@ -90,7 +90,7 @@ describe('Personal settings navigation', () => {
     const routes = resolve(
       definePersonalSettingsRoutes([
         {
-          parent: 'account',
+          parent: 'integrations',
           name: 'apiKeys',
           path: '/api-keys',
           navigation: { title: 'API keys' },
@@ -100,10 +100,10 @@ describe('Personal settings navigation', () => {
     );
     const menu = buildPersonalSettingsNavigation(routes, new Set());
     expect(outline(menu)).toEqual([
-      ['personalSettings.account', ['/me/api-keys']],
-      ['personalSettings.preferences', ['/me/preferences']],
+      ['personalSettings.account', ['/me/preferences']],
+      ['personalSettings.integrations', ['/me/api-keys']],
     ]);
-    expect(firstNavigationPage(menu)?.path).toBe('/me/api-keys');
+    expect(firstNavigationPage(menu)?.path).toBe('/me/preferences');
   });
 
   it('tells system and personal settings locations apart', () => {

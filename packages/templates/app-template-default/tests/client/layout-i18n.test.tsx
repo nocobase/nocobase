@@ -303,13 +303,13 @@ function personalSettingsFixture(): AppClientRegisteredRoute[] {
       componentLoader: page,
     }),
     personal({
-      id: `${APP_CLIENT_NAMESPACE}:personalSettings.preferences`,
-      name: 'personalSettings.preferences',
+      id: `${APP_CLIENT_NAMESPACE}:personalSettings.account`,
+      name: 'personalSettings.account',
       packageName: APP_CLIENT_NAMESPACE,
       kind: 'category',
-      category: 'preferences',
+      category: 'account',
       path: '/me',
-      navigation: { title: 'settings.personal.categories.preferences' },
+      navigation: { title: 'settings.personal.categories.account' },
       children: [
         personal({
           id: 'test:personalAppearance',
@@ -347,7 +347,7 @@ it('shows personal settings in their own navigation and keeps the way back acros
   const menu = await screen.findByRole('navigation', {
     name: 'Personal settings navigation',
   });
-  expect(within(menu).getByText('Preferences')).toBeVisible();
+  expect(within(menu).getByText('Account')).toBeVisible();
   expect(
     within(menu).getByRole('link', { name: 'Language and appearance' }),
   ).toHaveAttribute('aria-current', 'page');
@@ -378,7 +378,7 @@ it('links the first breadcrumb level of personal settings back to /me', async ()
     within(trail).getByRole('link', { name: 'Personal settings' }),
   ).toHaveAttribute('href', '/me');
   expect(trail).toHaveTextContent('Language and appearance');
-  expect(trail).not.toHaveTextContent('Preferences');
+  expect(trail).not.toHaveTextContent('Account');
 });
 
 it('leads back home from a settings page opened directly in a tab that showed application pages before', async () => {
