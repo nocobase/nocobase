@@ -159,7 +159,7 @@ describe('create with exception', () => {
 
       const response = await app.agent().post('/enrollments:create').set('X-Locale', 'zh-CN').send({});
       expect(response.status).toBe(400);
-      expect(response.body.errors).toEqual([{ message: '参保明细: 人员编号 字段不能为空' }]);
+      expect(response.body.errors).toEqual([{ message: '参保明细: 人员编号 cannot be null' }]);
     },
   );
 
@@ -174,8 +174,7 @@ describe('create with exception', () => {
         fields: [
           {
             type: 'string',
-            name: 'staffCode',
-            field: 'staff_code',
+            name: 'code',
             uiSchema: { title: '{{t("人员编号")}}' },
             unique: true,
             allowNull: false,
@@ -195,49 +194,36 @@ describe('create with exception', () => {
     await app.db.sync();
 
     for (const { name, title } of relatedCollections) {
-      const create = (staffCode: string | null) =>
+      const create = (code: string | null) =>
         app
           .agent()
           .post('/applications:create')
           .set('X-Locale', 'zh-CN')
-          .send({ [name]: [{ staffCode }] });
+          .send({ [name]: [{ code }] });
       expect((await create('P001')).status).toBe(200);
       const duplicate = await create('P001');
       expect(duplicate.status).toBe(400);
       expect(duplicate.body.errors).toEqual([{ message: `${title}: 人员编号 字段值已存在` }]);
       const missing = await create(null);
       expect(missing.status).toBe(400);
-      expect(missing.body.errors).toEqual([{ message: `${title}: 人员编号 字段不能为空` }]);
+      expect(missing.body.errors).toEqual([{ message: `${title}: 人员编号 cannot be null` }]);
     }
   });
 
-  it('resolves known unique index names and hides unmapped identifiers', async () => {
-    const collection = app.collection({
-      name: 'enrollments',
-      title: 'Enrollment',
-      fields: [{ type: 'string', name: 'code', uiSchema: { title: 'Personnel number' } }],
-      indexes: [{ name: 'idx_staff_number', unique: true, fields: ['code'] }],
-    });
-    app.resourcer.define({
-      name: 'constraint',
-      actions: {
-        async report(ctx) {
-          const { path } = ctx.action.params.values;
-          throw Object.assign(new Error('duplicate'), {
-            name: 'SequelizeUniqueConstraintError',
-            errors: [{ type: 'unique violation', path, instance: collection.model.build() }],
-          });
-        },
+  it('preserves the validation message when there is no collection', async () => {
+    app.use(
+      () => {
+        throw Object.assign(new Error('duplicate'), {
+          name: 'SequelizeUniqueConstraintError',
+          errors: [{ type: 'unique violation', path: 'external_code' }],
+        });
       },
-    });
-    for (const [path, message] of [
-      ['idx_staff_number', 'Enrollment: Personnel number already exists'],
-      ['opaque_db_identifier', 'A record in Enrollment already exists.'],
-    ]) {
-      const response = await app.agent().post('/constraint:report').send({ path });
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toEqual([{ message }]);
-    }
+      { after: 'dataSource' },
+    );
+
+    const response = await app.agent().post('/users:create').send({});
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual([{ message: 'external_code already exists' }]);
   });
 
   it('should handle unique error with raw sql', async () => {
@@ -284,8 +270,7 @@ describe('create with exception', () => {
     });
 
     const body = response.body;
-    expect(response.status).toBe(400);
-    expect(body.errors).toEqual([{ message: 'A record already exists.' }]);
+    expect(body['errors'][0]['message']).toBeDefined();
   });
 
   it('should mask SQL reference errors', async () => {

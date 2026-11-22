@@ -10,6 +10,7 @@
 import type { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import JSON5 from 'json5';
+import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
 
 function titleKey(title: string) {
@@ -43,27 +44,6 @@ function translateCollectionTitle(
   return t(key === title ? collection.name : key, { ns: defaultNs });
 }
 
-function findConstraintField(collection: Collection, path: string, unique: boolean) {
-  const findField = (name: string) => collection.getField(name) || collection.findField((f) => f.columnName() === name);
-  const field = findField(path);
-  if (field || !unique) {
-    return field;
-  }
-
-  // Sequelize v6 keeps generated index names (including shortened names) in _indexes.
-  const model = collection.model as typeof collection.model & { _indexes?: typeof collection.model.options.indexes };
-  const index = model._indexes?.find((index) => index.unique && index.name === path);
-  if (index?.fields?.length === 1) {
-    const [column] = index.fields;
-    if (typeof column === 'string') {
-      return findField(column);
-    }
-    if ('name' in column) {
-      return findField(column.name);
-    }
-  }
-}
-
 export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
@@ -74,6 +54,19 @@ export class PluginErrorHandlerServer extends Plugin {
   }
 
   registerSequelizeValidationErrorHandler() {
+    const findCollection = (instance, ctx): Collection | undefined => {
+      if (!instance) {
+        return;
+      }
+
+      const model = instance.constructor;
+      const dataSourceKey = ctx.get('x-data-source');
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      const database = dataSource ? dataSource.collectionManager.db : ctx.db;
+
+      return database.modelCollection.get(model);
+    };
+
     this.errorHandler.register(
       (err) =>
         err?.errors?.length &&
@@ -82,24 +75,21 @@ export class PluginErrorHandlerServer extends Plugin {
         ctx.body = {
           errors: err.errors.map((item) => {
             const t = ctx.i18n.t;
-            const collection: Collection | undefined = item.instance?.constructor.collection;
-            const unique = item.type === 'unique violation';
-            const constraint = unique || item.type === 'notNull Violation' || item.type === 'notNull violation';
-            const titles = { ns: ['lm-collections', 'client'] };
-            const collectionTitle = constraint && collection && translateCollectionTitle(collection, t);
-            const field =
-              constraint && collection && item.path
-                ? findConstraintField(collection, item.path, unique)
-                : collection?.getField(item.path);
-
-            if (unique && !field) {
-              const key = collectionTitle ? 'A record in {{collection}} already exists.' : 'A record already exists.';
-              return { message: t(key, { ns: this.i18nNs, collection: collectionTitle }) };
+            const collection = findCollection(item.instance, ctx);
+            const field = collection?.getField(item.path);
+            const title = collection ? titleKey(lodash.get(field?.options, 'uiSchema.title', item.path)) : item.path;
+            const message = t(item.type, {
+              ns: this.i18nNs,
+              field: t(title, { ns: ['lm-collections', 'client'] }),
+            });
+            const constraint =
+              item.type === 'unique violation' ||
+              item.type === 'notNull Violation' ||
+              item.type === 'notNull violation';
+            if (constraint && collection) {
+              return { message: `${translateCollectionTitle(collection, t)}: ${message}` };
             }
-
-            const fieldTitle = t(titleKey(field?.options.uiSchema?.title || field?.name || item.path), titles);
-            const label = constraint && collectionTitle ? `${collectionTitle}: ${fieldTitle}` : fieldTitle;
-            return { message: t(item.type, { ns: this.i18nNs, field: label }) };
+            return { message };
           }),
         };
         ctx.status = 400;
