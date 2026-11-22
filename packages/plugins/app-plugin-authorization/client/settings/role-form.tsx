@@ -28,29 +28,19 @@ import {
   type ReactElement,
 } from 'react';
 import {
-  Link,
   useLocation,
   useNavigate,
   useOutletContext,
   useParams,
   useSearchParams,
 } from 'react-router';
-import { CopyIcon, PencilIcon } from 'lucide-react';
 import { Badge } from '#components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#components/ui/dialog';
 import {
   PermissionEditor,
   type PermissionEditorExtraTab,
   type PermissionValue,
 } from '#components/permission-editor';
 import { permissionChanges } from '#components/permission-editor-model';
-import { RowActions } from '#components/row-actions';
 import { Skeleton } from '#components/ui/skeleton';
 import type {
   AuthorizationContentTab,
@@ -87,6 +77,7 @@ const EMPTY_VALUE: PermissionValue = { menus: [], grants: {} };
 
 export interface RolesOutletContext {
   readonly reload: () => void;
+  readonly setEditorLocked: (locked: boolean) => void;
   /** The roles list path, for links between roles. */
   readonly base: string;
 }
@@ -108,7 +99,12 @@ function RoleEditor(): ReactElement {
     sourceKey
       ? `authorization/permissionSets/${encodeURIComponent(sourceKey)}`
       : 'authorization/permissionSets/options',
-    true,
+    {
+      keepPreviousData: true,
+      scopes: sourceKey
+        ? [`authorization/permissionSets/${encodeURIComponent(sourceKey)}`]
+        : [],
+    },
   );
   const missingRef = useRef<unknown>(undefined);
   useEffect(() => {
@@ -240,6 +236,11 @@ function RoleEditor(): ReactElement {
           ),
         ));
   const leave = useSettingsLeave(dirty, busy);
+  const { setEditorLocked } = parent;
+  useEffect(() => {
+    setEditorLocked(dirty || busy);
+    return () => setEditorLocked(false);
+  }, [dirty, busy, setEditorLocked]);
   const unrestricted = Boolean(source?.unrestricted) && !creating;
   const allowed = creating
     ? canCreate
@@ -251,7 +252,7 @@ function RoleEditor(): ReactElement {
   const canAssign = useRolePermission('assign');
   const [reviewing, setReviewing] = useState(false);
   const [memberCount, setMemberCount] = useState<number>();
-  const [renaming, setRenaming] = useState(false);
+
   const changes = useMemo(
     () =>
       workspace
@@ -516,25 +517,6 @@ function RoleEditor(): ReactElement {
 
   const keyInvalid = keyConflict || (submitted && !roleKey.trim());
   const nameInvalid = submitted && !name.trim();
-  const duplicateHref =
-    !creating && canCreate && !unrestricted
-      ? {
-          pathname: `${parent.base}/create`,
-          search: `?copy=${encodeURIComponent(key)}`,
-        }
-      : undefined;
-  const duplicate =
-    duplicateHref !== undefined ? (
-      <Button
-        variant='outline'
-        size='sm'
-        nativeButton={false}
-        render={<Link to={duplicateHref} />}
-      >
-        <CopyIcon />
-        {t('settings.duplicateRole')}
-      </Button>
-    ) : null;
   const header = (
     <div className='flex flex-col gap-3'>
       {creating ? (
@@ -580,8 +562,6 @@ function RoleEditor(): ReactElement {
           </div>
         </div>
       ) : (
-        // An existing role reads as a title; its key never changes and its name changes through Rename. A phone keeps
-        // the whole name and puts Rename and Duplicate in a menu beside it.
         <div className='flex items-start gap-3'>
           <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
             <h2 className='min-w-0 text-lg font-semibold break-words'>
@@ -598,53 +578,12 @@ function RoleEditor(): ReactElement {
               <Badge variant='outline'>{t('settings.protected')}</Badge>
             ) : null}
           </div>
-          <div className='hidden shrink-0 gap-2 sm:flex'>
-            {!readOnly && (
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => setRenaming(true)}
-              >
-                <PencilIcon />
-                {t('settings.rename')}
-              </Button>
-            )}
-            {duplicate}
-          </div>
-          <div className='shrink-0 sm:hidden'>
-            <RowActions
-              label={t('settings.actionsFor', { name })}
-              actions={[
-                !readOnly && {
-                  key: 'rename',
-                  label: t('settings.rename'),
-                  onClick: () => setRenaming(true),
-                },
-                duplicateHref !== undefined && {
-                  key: 'duplicate',
-                  label: t('settings.duplicateRole'),
-                  render: <Link to={duplicateHref} />,
-                },
-              ]}
-            />
-          </div>
         </div>
       )}
       {initial?.protection && !unrestricted && (
         <p className='text-sm text-muted-foreground'>
           {t('settings.protectedHint')}
         </p>
-      )}
-      {renaming && (
-        <RenameRole
-          name={name}
-          onCancel={() => setRenaming(false)}
-          onRename={(next) => {
-            setRenaming(false);
-            setNameDraft(next === defaultName ? undefined : next);
-          }}
-        />
       )}
     </div>
   );
@@ -755,64 +694,6 @@ function RoleEditor(): ReactElement {
         }}
       />
     </div>
-  );
-}
-
-/** Renames a role. The new name is part of the unsaved changes, saved with the rest after the review. */
-function RenameRole({
-  name,
-  onCancel,
-  onRename,
-}: {
-  readonly name: string;
-  readonly onCancel: () => void;
-  readonly onRename: (name: string) => void;
-}): ReactElement {
-  const { t } = useTranslation();
-  const [value, setValue] = useState(name);
-  const empty = !value.trim();
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onCancel();
-      }}
-    >
-      <DialogContent className='sm:max-w-md'>
-        <form
-          className='grid gap-4'
-          onSubmit={(event) => {
-            // The dialog sits inside the role form: its submit must not save the role.
-            event.preventDefault();
-            event.stopPropagation();
-            if (!empty) onRename(value.trim());
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{t('settings.renameTitle')}</DialogTitle>
-          </DialogHeader>
-          <div className='grid gap-1.5'>
-            <Label htmlFor='role-rename'>{t('settings.roleName')} *</Label>
-            <Input
-              id='role-rename'
-              autoFocus
-              required
-              value={value}
-              aria-invalid={empty}
-              onChange={(event) => setValue(event.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button type='button' variant='outline' onClick={onCancel}>
-              {t('settings.cancel')}
-            </Button>
-            <Button type='submit' disabled={empty}>
-              {t('settings.rename')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 

@@ -7,4 +7,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Use the available width on settings pages, group role selection and editing in one panel, hide empty permission tabs, align user totals with pagination, and list Database under System.
+Use the available width on settings pages, manage role names, copies, and deletion from the role list while configuring permissions in the adjacent panel, hide empty permission tabs, align user totals with pagination, and list Database under System.

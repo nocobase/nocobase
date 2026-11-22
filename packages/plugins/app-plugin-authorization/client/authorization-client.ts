@@ -426,7 +426,7 @@ export class AuthorizationClient {
 
   updatePermissionSet(
     key: string,
-    input: PermissionSetInput,
+    input: Partial<PermissionSetInput>,
     idempotencyKey?: string,
   ): Promise<PermissionSet> {
     return this.send(

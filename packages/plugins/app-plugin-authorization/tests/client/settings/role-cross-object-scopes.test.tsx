@@ -246,19 +246,25 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
   }
   expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
   // Only the name changes.
-  await user.click(screen.getByRole('button', { name: words.rename }));
-  await user.type(screen.getByRole('textbox', { name: /Role name/ }), ' 2');
   await user.click(
-    within(screen.getByRole('dialog', { name: words.renameTitle })).getByRole(
-      'button',
-      { name: words.rename },
-    ),
+    within(
+      within(
+        screen.getByRole('complementary', { name: words.roles }),
+      ).getByRole('navigation'),
+    ).getByRole('button', {
+      name: words.actionsFor.replace('{{name}}', 'Dispatcher'),
+    }),
   );
   await user.click(
-    screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
+    await screen.findByRole('menuitem', { name: words.editRole }),
+  );
+  const editDialog = screen.getByRole('dialog', { name: words.editRole });
+  await user.type(
+    within(editDialog).getByRole('textbox', { name: /Role name/ }),
+    ' 2',
   );
   await user.click(
-    await screen.findByRole('button', { name: words.review.confirm }),
+    within(editDialog).getByRole('button', { name: words.save }),
   );
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
@@ -398,19 +404,25 @@ it('keeps a role’s own custom filters when View’s stored condition is applie
     screen.queryByText(/now follows the view scope/),
   ).not.toBeInTheDocument();
   expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: words.rename }));
-  await user.type(screen.getByRole('textbox', { name: /Role name/ }), ' 2');
   await user.click(
-    within(screen.getByRole('dialog', { name: words.renameTitle })).getByRole(
-      'button',
-      { name: words.rename },
-    ),
+    within(
+      within(
+        screen.getByRole('complementary', { name: words.roles }),
+      ).getByRole('navigation'),
+    ).getByRole('button', {
+      name: words.actionsFor.replace('{{name}}', 'Pricing'),
+    }),
   );
   await user.click(
-    screen.getByRole('button', { name: words.reviewAndSave, exact: true }),
+    await screen.findByRole('menuitem', { name: words.editRole }),
+  );
+  const editDialog = screen.getByRole('dialog', { name: words.editRole });
+  await user.type(
+    within(editDialog).getByRole('textbox', { name: /Role name/ }),
+    ' 2',
   );
   await user.click(
-    await screen.findByRole('button', { name: words.review.confirm }),
+    within(editDialog).getByRole('button', { name: words.save }),
   );
   await waitFor(() => expect(roles[0]?.title).toBe('Pricing 2'));
   expect(roles[0]?.grants).toEqual(stored);

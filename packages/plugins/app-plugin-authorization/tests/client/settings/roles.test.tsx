@@ -83,16 +83,35 @@ function api(roles: PermissionSet[]) {
     }: {
       path: string;
       method: string;
-      json?: { grants: readonly PermissionGrant[] };
+      json?: {
+        key?: string;
+        title?: string;
+        grants: readonly PermissionGrant[];
+      };
     }) => {
       if (path === 'authorization/permissions')
         return { data: { unrestricted: true, permissions: [] } };
       if (path === 'authorization/permissionSets/options')
         return { data: options };
-      if (path === 'authorization/permissionSets') return { data: roles };
+      if (path === 'authorization/permissionSets') {
+        if (method === 'POST' && json?.key) {
+          const role = {
+            key: json.key,
+            title: json.title,
+            grants: json.grants,
+          };
+          roles.push(role);
+          return { data: role };
+        }
+        return { data: roles };
+      }
       const key = decodeURIComponent(path.split('/').at(-1) ?? '');
       const index = roles.findIndex((role) => role.key === key);
       if (index === -1) return new Response(null, { status: 404 });
+      if (method === 'DELETE') {
+        roles.splice(index, 1);
+        return new Response(null, { status: 204 });
+      }
       if (method === 'PATCH' && json)
         roles[index] = { ...roles[index]!, grants: json.grants };
       return { data: roles[index] };
@@ -304,4 +323,62 @@ it('announces a slow retry after the role list fails to load, from the retry but
   }
   expect(await screen.findByTitle('NocoBase team')).toBeVisible();
   expect(screen.queryByText(enUS.listFeedback.failed)).not.toBeInTheDocument();
+});
+
+it('creates, copies and deletes roles from the list while targeting the chosen row', async () => {
+  const user = userEvent.setup();
+  const grants = [
+    {
+      resource: { type: 'page', id: 'start' },
+      actions: [{ action: 'access' }],
+    },
+  ];
+  const roles: PermissionSet[] = [{ key: 'sales', title: 'Sales', grants }];
+  await mount('/settings/roles/sales/edit', api(roles));
+  const list = within(
+    await screen.findByRole('complementary', { name: words.roles }),
+  );
+  await user.click(await list.findByRole('button', { name: words.newRole }));
+  const create = within(
+    await screen.findByRole('dialog', { name: words.newRole }),
+  );
+  await user.type(create.getByLabelText(/Role name/), 'Staff');
+  await user.type(create.getByLabelText(words.key), 'staff');
+  await user.click(
+    create.getByRole('button', { name: words.createRoleAction }),
+  );
+  await screen.findByRole('heading', { name: 'Staff' });
+  expect(roles.find((role) => role.key === 'staff')?.grants).toEqual([]);
+  const nav = within(list.getByRole('navigation'));
+  const actions = () =>
+    nav.getByRole('button', {
+      name: words.actionsFor.replace('{{name}}', 'Sales'),
+    });
+  await user.click(actions());
+  await user.click(
+    await screen.findByRole('menuitem', { name: words.duplicateRole }),
+  );
+  await user.click(
+    within(await screen.findByRole('dialog')).getByRole('button', {
+      name: words.createRoleAction,
+    }),
+  );
+  await screen.findByRole('heading', { name: 'Sales (copy)' });
+  expect(roles.find((role) => role.key === 'sales-copy')?.grants).toEqual(
+    grants,
+  );
+  await user.click(actions());
+  await user.click(
+    await screen.findByRole('menuitem', { name: words.deleteRole }),
+  );
+  const confirm = within(await screen.findByRole('dialog'));
+  expect(
+    confirm.getByText(words.deleteRoleHint.replace('{{name}}', 'Sales')),
+  ).toBeVisible();
+  await user.click(confirm.getByRole('button', { name: words.deleteRole }));
+  await waitFor(() =>
+    expect(nav.queryByRole('link', { name: /^Sales sales$/ })).toBeNull(),
+  );
+  expect(roles.map((role) => role.key)).toEqual(['staff', 'sales-copy']);
+  expect(screen.getByRole('heading', { name: 'Sales (copy)' })).toBeVisible();
 });

@@ -7,6 +7,10 @@ const settings: LocaleResource<typeof settingsEnUS> = {
   permissionManagementDescription:
     '设置每个角色能打开的页面、能做的操作和能看到的数据。',
   rolesDescription: '设置每个角色能看到的菜单，以及对每类业务数据能做什么。',
+  createRoleAction: '创建',
+  deleteRole: '删除角色',
+  deleteRoleHint: '确定删除「{{name}}」吗？成员将失去此角色授予的权限。',
+  roleKeyHint: '角色创建后，标识不可修改。',
   editRole: '编辑角色',
   dataRules: '数据规则',
   dataRulesDescription:
