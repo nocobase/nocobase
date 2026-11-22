@@ -13,6 +13,7 @@ import { pagePermissionTitles } from './pages/settings/page-permission-titles.js
 import { permissionPageCatalog } from './pages/settings/permission-catalog.js';
 import { permissionWorkspaceSelection } from './pages/settings/permission-workspace.js';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
+import distributed from '@nocobase/app-plugin-distributed/client';
 import users from '@nocobase/app-plugin-users/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
@@ -41,6 +42,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   notificationInApp(),
   notification(),
   file(),
+  distributed(),
   scheduler(),
   mail(),
   foundation(),

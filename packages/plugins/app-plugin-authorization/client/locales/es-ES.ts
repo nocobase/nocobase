@@ -67,6 +67,7 @@ const esES: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Conjuntos de permisos',
+      'authentication-settings': 'Inicio de sesión y autenticación',
     },
     subjectTypes: {
       authenticated: 'Todos los usuarios registrados',

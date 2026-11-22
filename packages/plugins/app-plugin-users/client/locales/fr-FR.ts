@@ -139,6 +139,10 @@ const frFR: LocaleResource<typeof enUS> = {
     usersDescription: 'Gérez les comptes, les accès et les sessions actives.',
     total_many: '{{count}} d’utilisateurs',
   },
+  humanOnly: {
+    manageAccounts:
+      "Seule une personne gère les comptes : aucune clé d'API ne le peut.",
+  },
   page: {
     loading: 'Chargement',
   },

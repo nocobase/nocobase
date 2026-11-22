@@ -20,7 +20,7 @@ Every endpoint the plugin adds is served under `/api/auth/*` at once and documen
 Configuring a plugin changes nothing in the database: the plugin starts, and the first request that touches its model fails against a missing table or column. The authentication plugin owns only its own tables (`user`, `session`, `account`, `verification`), so the application creates whatever else a plugin it chooses needs. Do this before enabling it:
 
 1. Find the plugin's schema in the installed version: the schema section of its documentation page, and `schema.mjs` beside its source. It lists every model the plugin adds and every field it adds to `user`, `session` or `account`, with type, required, unique and index information. `twoFactor`, `passkey`, `organization`, `deviceAuthorization` and `magicLink` add schema; `username`, `emailOTP` and `bearer` extend or reuse existing tables. NocoBase's API keys plugin creates the `apikey` table itself.
-2. Write one application migration in `database/main/migrations/` that creates those models and alters those collections, spelling out every field, type, length, nullability, unique constraint and index exactly as the schema declares them, with a `down` that reverses it. Follow the application Skill's migrations reference for the DSL. Keep Better Auth's model and field names (`deviceCode`, `userCode`); the adapter maps them to the naming strategy. Say in the migration which Better Auth version the shape comes from, and add a new migration when a later version adds a field.
+2. Write one application migration in `database/main/migrations/` that creates those models and alters those collections, spelling out every field, type, length, nullability, unique constraint and index exactly as the schema declares them, with a `down` that reverses it. Follow the application Skill's migrations reference for the DSL. Keep Better Auth's model and field names (`deviceCode`, `userCode`); the adapter maps them to the naming strategy. A field name ending in capitals, such as passkey's `credentialID`, does not survive snake_case column names (`credential_id` reads back as `credentialId`): map it with the plugin's `schema` option (`schema: { passkey: { fields: { credentialID: 'credentialId' } } }`) and use the mapped name in the migration. Say in the migration which Better Auth version the shape comes from, and add a new migration when a later version adds a field.
 3. Put a unique constraint on every external-account key, normally `issuer + subject` or the plugin's own identifier column. It prevents double binding and settles concurrent first sign-ins.
 4. Test the migration with `describeMigration()` from `@nocobase/app-testing/server`, and exercise the plugin's endpoints in a test against the migrated database, so a field the documentation omitted is found there and not in production.
 
@@ -45,3 +45,85 @@ RFC 8628 through `deviceAuthorization()`: the CLI posts its client id to `/api/a
 - Create the `deviceCode` model: `deviceCode` and `userCode` (strings, required, each unique), `userId` (string, optional), `expiresAt` (date, required), `status` (string, required), `lastPolledAt` (date, optional), `pollingInterval` (number, optional, milliseconds), `clientId` and `scope` (strings, optional), plus `id`. That is the shape in better-auth 1.7.5; check the installed version's `schema.mjs`.
 - The plugin needs no join queries. With the API Keys plugin installed, no API key reaches the approval endpoints: approving issues a session, which takes a sign-in.
 - Adding `bearer()` documents a `bearerAuth` security scheme beside `cookieAuth` in the API document.
+
+### Two-factor authentication and passkeys
+
+The Sign-in and authentication page's guides hand a development agent a prompt that points here. Two-factor authentication is `twoFactor()` from `better-auth/plugins` with `twoFactorClient()` from `better-auth/client/plugins`. Passkeys are not in `better-auth` itself: install `@better-auth/passkey` at the same version as `better-auth` and use `passkey()` from `@better-auth/passkey` with `passkeyClient()` from `@better-auth/passkey/client`. Read `rpID` (the host name) and `origin` from `app.publicOrigin` rather than hard-coding them; passkeys need HTTPS (localhost excepted), and changing the domain invalidates every passkey already registered. Neither plugin comes with pages: the application adds the Account and security sections (setting up and removing an authenticator with its backup codes; adding, renaming and deleting passkeys) and the sign-in steps (the code after `twoFactorRedirect`, through `twoFactor.verifyTotp` or `twoFactor.verifyBackupCode`; a "Sign in with a passkey" button through `signIn.passkey`).
+
+These migrations match better-auth and `@better-auth/passkey` 1.7.21; the authentication plugin's tests run both and use them through Better Auth. Give them the application's own timestamp.
+
+```ts
+// The twoFactor() schema in better-auth 1.7.21.
+import { defineMigration, type MigrationDefinition } from '@nocobase/db';
+
+const migration: MigrationDefinition = defineMigration({
+  name: '202612010001_create_two_factor',
+
+  async up({ builder }) {
+    await builder.alterCollection('user', (collection) => {
+      collection.boolean('twoFactorEnabled').nullable().defaultTo(false);
+    });
+    await builder.createCollection('twoFactor', (collection) => {
+      collection.string('id', { length: 64 }).notNull();
+      collection.string('secret', { length: 255 }).notNull();
+      collection.text('backupCodes').notNull();
+      collection.string('userId', { length: 64 }).notNull();
+      collection.boolean('verified').nullable().defaultTo(true);
+      collection.integer('failedVerificationCount').nullable().defaultTo(0);
+      collection.datetime('lockedUntil').nullable();
+
+      collection.primary('id', { name: 'pk_two_factor' });
+      collection.index('secret', { name: 'idx_two_factor_secret' });
+      collection.index('userId', { name: 'idx_two_factor_user' });
+    });
+  },
+
+  async down({ builder }) {
+    await builder.dropCollection('twoFactor');
+    await builder.alterCollection('user', (collection) => {
+      collection.dropField('twoFactorEnabled');
+    });
+  },
+});
+
+export default migration;
+```
+
+```ts
+// The passkey() schema in @better-auth/passkey 1.7.21, with credentialID stored as
+// credentialId: an all-caps suffix does not survive the snake_case column names.
+// A WebAuthn credential ID is up to 1023 bytes, 1364 characters of base64url, so it is a
+// text column. No portable index holds a key that long (MySQL with utf8mb4 stops at 3072
+// bytes, SQL Server at 1700), so it has none: a passkey sign-in reads the table by it,
+// and people's passkeys are listed through the userId index.
+import { defineMigration, type MigrationDefinition } from '@nocobase/db';
+
+const migration: MigrationDefinition = defineMigration({
+  name: '202612010002_create_passkey',
+
+  async up({ builder }) {
+    await builder.createCollection('passkey', (collection) => {
+      collection.string('id', { length: 64 }).notNull();
+      collection.string('name', { length: 255 }).nullable();
+      collection.text('publicKey').notNull();
+      collection.string('userId', { length: 64 }).notNull();
+      collection.text('credentialId').notNull();
+      collection.integer('counter').notNull();
+      collection.string('deviceType', { length: 32 }).notNull();
+      collection.boolean('backedUp').notNull();
+      collection.string('transports', { length: 255 }).nullable();
+      collection.datetime('createdAt').nullable();
+      collection.string('aaguid', { length: 64 }).nullable();
+
+      collection.primary('id', { name: 'pk_passkey' });
+      collection.index('userId', { name: 'idx_passkey_user' });
+    });
+  },
+
+  async down({ builder }) {
+    await builder.dropCollection('passkey');
+  },
+});
+
+export default migration;
+```

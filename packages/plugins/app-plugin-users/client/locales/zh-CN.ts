@@ -124,6 +124,9 @@ const zhCN: UsersResource = {
     users: '用户管理',
     usersDescription: '管理用户账户、角色及登录会话。',
   },
+  humanOnly: {
+    manageAccounts: '账号只能由人来管理，不能交给 API 密钥。',
+  },
   page: {
     loading: '加载中',
   },

@@ -348,6 +348,16 @@ describe('@nocobase/app-plugin-users resource authorization', () => {
         },
       ),
     ).resolves.toMatchObject({ effect: 'deny' });
+    // Managing accounts is a person's only: every action says so, so no API key may be given or take one.
+    const { actions } = handler as unknown as {
+      actions: readonly { name: string; humanOnly?: unknown }[];
+    };
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions)
+      expect(action.humanOnly).toEqual({
+        key: 'humanOnly.manageAccounts',
+        ns: '@nocobase/app-plugin-users',
+      });
   });
 });
 

@@ -37,6 +37,10 @@ const ptBR: LocaleResource<typeof enUS> = {
       read: 'Visualizar',
       manage: 'Gerenciar',
     },
+    humanOnly: {
+      servicesManage:
+        'Gerenciar serviços de modelos grava chaves de provedores; só uma pessoa pode fazer isso.',
+    },
     keyScopes: {
       agents: {
         title: 'Agentes',

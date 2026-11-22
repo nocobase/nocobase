@@ -10,6 +10,7 @@ import type {
 
 export const memoryCacheProviderDriver: CacheProviderDriver = {
   name: 'memory',
+  sharing: 'local',
   createProvider(
     config: CacheProviderConfig,
     _context: CacheProviderDriverContext,

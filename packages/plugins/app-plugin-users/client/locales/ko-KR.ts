@@ -131,6 +131,10 @@ const koKR: LocaleResource<typeof enUS> = {
     users: '사용자 관리',
     usersDescription: '계정, 접근 권한 및 활성 세션을 관리합니다.',
   },
+  humanOnly: {
+    manageAccounts:
+      '계정 관리는 사람만 할 수 있으며 API 키에는 부여할 수 없습니다.',
+  },
   page: {
     loading: '로드 중',
   },

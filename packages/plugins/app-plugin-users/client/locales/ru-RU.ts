@@ -140,6 +140,10 @@ const ruRU: LocaleResource<typeof enUS> = {
     total_few: '{{count}} пользователя',
     total_many: '{{count}} пользователей',
   },
+  humanOnly: {
+    manageAccounts:
+      'Управлять учётными записями может только человек, а не API-ключ.',
+  },
   page: {
     loading: 'Загрузка',
   },

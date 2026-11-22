@@ -135,6 +135,10 @@ const viVN: LocaleResource<typeof enUS> = {
     usersDescription:
       'Quản lý tài khoản, quyền truy cập và các phiên đang hoạt động.',
   },
+  humanOnly: {
+    manageAccounts:
+      'Chỉ con người mới quản lý tài khoản: không khóa API nào được làm việc này.',
+  },
   page: {
     loading: 'Đang tải',
   },

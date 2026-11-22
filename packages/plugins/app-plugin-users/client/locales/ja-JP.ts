@@ -137,6 +137,10 @@ const jaJP: LocaleResource<typeof enUS> = {
     usersDescription:
       'アカウント、アクセス権、アクティブなセッションを管理します。',
   },
+  humanOnly: {
+    manageAccounts:
+      'アカウントの管理は人だけが行えます。API キーには付与できません。',
+  },
   page: {
     loading: '読み込み中',
   },

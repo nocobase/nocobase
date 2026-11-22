@@ -126,6 +126,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     users: '使用者管理',
     usersDescription: '管理使用者帳號、角色及登入工作階段。',
   },
+  humanOnly: {
+    manageAccounts: '帳號只能由人來管理，不能交給 API 金鑰。',
+  },
   page: {
     loading: '載入中',
   },

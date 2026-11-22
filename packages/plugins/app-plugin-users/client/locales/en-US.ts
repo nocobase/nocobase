@@ -131,6 +131,10 @@ const enUS = {
     users: 'Users',
     usersDescription: 'Manage accounts, access and active sessions.',
   },
+  humanOnly: {
+    manageAccounts:
+      "Managing accounts is a person's only: no API key may do it.",
+  },
   page: {
     loading: 'Loading',
   },

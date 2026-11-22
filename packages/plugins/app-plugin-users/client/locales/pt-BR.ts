@@ -136,6 +136,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     usersDescription: 'Gerencie contas, acessos e sessões ativas.',
     total_many: '{{count}} de usuários',
   },
+  humanOnly: {
+    manageAccounts:
+      'Somente uma pessoa gerencia contas: nenhuma chave de API pode fazer isso.',
+  },
   page: {
     loading: 'Carregando',
   },

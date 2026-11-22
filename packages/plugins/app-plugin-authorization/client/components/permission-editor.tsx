@@ -227,6 +227,10 @@ export interface PermissionEditorLabels {
   readonly pageClosed: string;
   /** Unsaved changes on a tab, as its badge's accessible name. */
   readonly tabChanges: (count: number) => string;
+  /** The tag of an action only a person may take, in an editor of what a credential may do. */
+  readonly humanOnly: string;
+  /** The tag of an action no longer in effect. */
+  readonly lapsed: string;
 }
 
 export interface PermissionEditorProps {
@@ -256,6 +260,11 @@ export interface PermissionEditorProps {
   /** Unsaved changes by tab value, shown as a badge on the tab. */
   readonly tabBadges?: Readonly<Record<string, number>> | undefined;
   /**
+   * The built-in tabs shown, in their order; defaults to all three. An editor of what a credential may do leaves out
+   * page access, which only a role has.
+   */
+  readonly builtInTabs?: readonly PermissionEditorTab[] | undefined;
+  /**
    * The actions each page turns on when it is checked, by menu id, at their default scopes. Risky and managed actions
    * are never turned on this way.
    */
@@ -268,6 +277,11 @@ export interface PermissionEditorProps {
 }
 
 const NO_SETTINGS: readonly PermissionSettingsPage[] = [];
+const ALL_TABS: readonly PermissionEditorTab[] = [
+  'menus',
+  'objects',
+  'settings',
+];
 const NO_TABS: readonly PermissionEditorExtraTab[] = [];
 const NO_GROUPS: ReadonlySet<string> = new Set();
 
@@ -375,6 +389,8 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
               .filter(Boolean)
               .join(' ')
           : `Nothing was turned off: ${list(notice.actions)} ${notice.actions.length === 1 ? 'is' : 'are'} managed by the application and ${notice.actions.length === 1 ? 'needs' : 'need'} it.`,
+  humanOnly: 'People only',
+  lapsed: 'Lapsed',
 };
 
 const FOLLOW = '__same-as-view__';
@@ -388,7 +404,11 @@ function ScopeSelect({
   onChange,
 }: {
   readonly label: string;
-  readonly options: readonly { value: string; label: string }[];
+  readonly options: readonly {
+    value: string;
+    label: string;
+    disabled?: boolean | undefined;
+  }[];
   readonly value: string;
   readonly disabled: boolean;
   readonly following?: boolean | undefined;
@@ -421,6 +441,7 @@ function ScopeSelect({
             <SelectItem
               key={option.value}
               value={option.value}
+              disabled={option.disabled}
               className='*:min-w-0 *:shrink *:whitespace-normal'
             >
               {option.label}
@@ -772,7 +793,7 @@ function OperationItem({
   const locked = readOnly || Boolean(action.managed);
   const description = [
     action.description,
-    action.managed ? labels.managed : undefined,
+    action.humanOnly ?? (action.managed ? labels.managed : undefined),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -797,6 +818,8 @@ function OperationItem({
           'cursor-pointer text-sm leading-5 break-words',
           dimmed && 'text-muted-foreground',
           locked && 'cursor-default',
+          action.humanOnly && 'text-muted-foreground',
+          action.lapsed && 'text-muted-foreground line-through',
         )}
       >
         {action.label}
@@ -804,6 +827,23 @@ function OperationItem({
       {description && (
         <span id={`${controlId}-description`} className='sr-only'>
           {description}
+        </span>
+      )}
+      {action.humanOnly && (
+        <span
+          data-slot='permission-human-only'
+          title={action.humanOnly}
+          className='inline-flex rounded bg-muted px-1.5 text-xs leading-5 text-muted-foreground'
+        >
+          {labels.humanOnly}
+        </span>
+      )}
+      {action.lapsed && (
+        <span
+          data-slot='permission-lapsed'
+          className='inline-flex rounded bg-amber-500/10 px-1.5 text-xs leading-5 text-amber-800 dark:text-amber-300'
+        >
+          {labels.lapsed}
         </span>
       )}
       {action.risk && (
@@ -1140,11 +1180,16 @@ export function PermissionEditor({
   tabs: extraTabs = NO_TABS,
   tabBadges,
   menuDefaults,
+  builtInTabs = ALL_TABS,
 }: PermissionEditorProps): ReactElement {
   const words: PermissionEditorLabels = { ...DEFAULT_LABELS, ...labels };
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<string>(defaultTab);
+  const [tab, setTab] = useState<string>(
+    builtInTabs.includes(defaultTab)
+      ? defaultTab
+      : (builtInTabs[0] ?? 'objects'),
+  );
   const [flash, setFlash] = useState<MenuFlash | undefined>();
   const [query, setQuery] = useState('');
   const [onlyEnabled, setOnlyEnabled] = useState(false);
@@ -1799,6 +1844,14 @@ export function PermissionEditor({
             <div className='min-w-0'>{object.notice}</div>
           </div>
         )}
+        {object.footnote && (
+          <p
+            data-slot='permission-object-footnote'
+            className='col-span-full col-start-2 min-w-0 text-xs text-muted-foreground'
+          >
+            {object.footnote}
+          </p>
+        )}
       </section>
     );
   };
@@ -1979,6 +2032,18 @@ export function PermissionEditor({
                 <InfoIcon aria-hidden className='mt-0.5 size-4 shrink-0' />
                 <div className='min-w-0'>{object.notice}</div>
               </div>
+            ),
+        )}
+        {page.objects.map(
+          (object) =>
+            object.footnote && (
+              <p
+                key={`${object.id}-footnote`}
+                data-slot='permission-object-footnote'
+                className='col-span-full col-start-2 min-w-0 text-xs text-muted-foreground'
+              >
+                {object.footnote}
+              </p>
             ),
         )}
       </section>
@@ -2312,13 +2377,15 @@ export function PermissionEditor({
             variant='line'
             className='flex w-max gap-3 py-0 group-data-horizontal/tabs:h-10'
           >
-            <TabsTrigger value='menus' className={TAB_TRIGGER}>
-              {words.menusTab}
-              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                {words.tabCount(menuTotals.checked, menuTotals.total)}
-              </span>
-              <TabBadge count={tabBadges?.menus} labels={words} />
-            </TabsTrigger>
+            {builtInTabs.includes('menus') && (
+              <TabsTrigger value='menus' className={TAB_TRIGGER}>
+                {words.menusTab}
+                <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                  {words.tabCount(menuTotals.checked, menuTotals.total)}
+                </span>
+                <TabBadge count={tabBadges?.menus} labels={words} />
+              </TabsTrigger>
+            )}
             <TabsTrigger value='objects' className={TAB_TRIGGER}>
               {words.objectsTab}
               <span className='text-xs font-normal text-muted-foreground tabular-nums'>
@@ -2326,7 +2393,7 @@ export function PermissionEditor({
               </span>
               <TabBadge count={tabBadges?.objects} labels={words} />
             </TabsTrigger>
-            {settings.length > 0 && (
+            {settings.length > 0 && builtInTabs.includes('settings') && (
               <TabsTrigger value='settings' className={TAB_TRIGGER}>
                 {words.settingsTab}
                 <span className='text-xs font-normal text-muted-foreground tabular-nums'>
@@ -2352,9 +2419,11 @@ export function PermissionEditor({
         <div className='min-w-0 px-4 py-4'>
           {extraTabs.find((extra) => extra.value === tab)?.content}
         </div>
-      ) : tab === 'menus' ? (
+      ) : tab === 'menus' && builtInTabs.includes('menus') ? (
         menusPanel
-      ) : tab === 'settings' && settings.length ? (
+      ) : tab === 'settings' &&
+        settings.length &&
+        builtInTabs.includes('settings') ? (
         settingsPanel
       ) : (
         objectsPanel

@@ -1477,6 +1477,10 @@ const viVN: LocaleResource<typeof enUS> = {
       read: 'Xem',
       manage: 'Quản lý',
     },
+    humanOnly: {
+      servicesManage:
+        'Quản lý dịch vụ mô hình sẽ ghi khóa của nhà cung cấp; chỉ người mới được làm.',
+    },
     keyScopes: {
       agents: {
         title: 'Tác nhân',

@@ -43,8 +43,11 @@ server entry) or `@nocobase/app-plugin-authentication/server`:
 
 Client, from `@nocobase/app-plugin-authentication/client`:
 
-- `authentication()` is the registration factory. It takes no options,
-  contributes no routes, and mounts one React provider.
+- `authentication()` is the registration factory. It mounts one React provider and registers two settings pages, so the application declares neither:
+  - System settings › Accounts › Sign-in and authentication (`/settings/authentication`, route id `AUTHENTICATION_SETTINGS_ROUTE_ID`), read-only, behind the `authentication.settings` settings item's `read` action, with its single sign-on guide at `/settings/authentication/sso` (`AUTHENTICATION_SSO_GUIDE_ROUTE_ID`) and the two-factor and passkey guides at `/settings/authentication/two-factor` (`AUTHENTICATION_TWO_FACTOR_GUIDE_ROUTE_ID`) and `/settings/authentication/passkey` (`AUTHENTICATION_PASSKEY_GUIDE_ROUTE_ID`).
+  - Personal settings › Account › Account and security (`/me/security`, `ACCOUNT_SECURITY_ROUTE_ID`), open to every signed-in person: sign-in details, change password, signed-in devices (command-line sign-ins included) and linked single sign-on or social accounts, all through Better Auth's own endpoints.
+  - `authentication({ signInButtons: ['github'] })` names the providers the application's sign-in page shows a button for; the settings page lists only those as sign-in page entries and marks other configured providers as having no button.
+  - Replace a whole page with `authentication({ settingsComponentLoader, accountSecurityComponentLoader })`, or with `routeComponentOverrides` naming the route ids above. See [client session and pages](references/client-session-and-pages.md#the-settings-pages).
 - `useAuthentication()` returns `{ client, session, isPending, refresh }`;
   `useAuthenticationClient()` returns the Better Auth client alone.
 - `RequiredAuthentication`, `GuestAuthentication`, and
@@ -58,9 +61,11 @@ Headless actions, from `@nocobase/app-plugin-authentication/client/actions`:
 `usePasswordLogin`, `usePasswordRegistration`, `usePasswordResetRequest`,
 `usePasswordReset`, each returning `{ submit, isPending, error }`.
 
-HTTP: every Better Auth endpoint is served under `/api/auth/*` by the plugin's
-own route. A Better Auth plugin's endpoints appear there automatically. There
-is no other authentication REST surface.
+HTTP: every Better Auth endpoint is served under `/api/auth/*` by the plugin's own route. A Better Auth plugin's endpoints appear there automatically. Besides it the plugin serves three read-only routes: the public `GET /api/authentication/capabilities` (whether password reset is available); `GET /api/authentication/settings`, the effective sign-in settings, where each comes from (`env` with the variable's name, `file` for `config.yml`, `code`, or `default`) and the problems to fix, for those granted `settings:authentication.settings` `read`; and `GET /api/authentication/providers`, the single sign-on and social providers a signed-in person can link, by id and name. The settings response never holds a secret, a signing key, a client id or secret, or a mail credential; none of these routes changes configuration.
+
+Sign-in methods from other plugins: `signInMethodsToken` resolves a registry another plugin adds a row to at boot, `container.resolve(signInMethodsToken).add({ id, title: { key, ns, defaultValue }, description?, config?, signInEntry?, detailsPath?, describe: () => ({ status: 'enabled' | 'notConfigured', configPath? }) })`, after checking `container.has(signInMethodsToken)`; it returns a function that removes the row. The API keys plugin adds its `api-key` row this way, so the row disappears with the plugin. `describe()` runs on each request for the settings and returns no secret.
+
+Permission: the `authentication.settings` settings item is declared by `@nocobase/app-plugin-authorization`, which also binds `authenticationSettingsAccessToken`, the check in front of the settings route; this plugin cannot depend on the authorization plugin. Without that plugin the settings route answers `403` to everyone.
 
 API document: the plugin lets a signed-in session read the App's OpenAPI document at `GET /api/swagger` and its Swagger UI at `GET /api/swagger/docs`; an anonymous request gets `401` with `error.reason` `API_DOCS_UNAUTHENTICATED`, and `@nocobase/app-plugin-api-keys` adds API keys as a second way in. The plugin also merges Better Auth's endpoints into that document from Better Auth's own OpenAPI generator, at their full `/api/auth/...` paths and tagged `Authentication`, so a Better Auth plugin added to `auth.plugins` is documented without further work. Browser-only steps are left out: `/sign-in/social`, `/link-social`, `/callback/{id}`, `/verify-email`, `/reset-password/{token}`, `/delete-user/callback` and `/error`. Do not add Better Auth's `openAPI()` plugin: it would publish its own unauthenticated `/api/auth/reference` page and schema route.
 
@@ -86,7 +91,8 @@ Read only the reference the task needs.
   four guest routes in `client/routes.ts`, the pages in `client/pages/auth/`,
   the authentication UI in `client/extensions/nocobase-auth-*/`, its own migrations for any
   schema a sign-in method adds, and every environment variable and secret.
-- Authorization owns permissions. Users owns the administration page. The
+- The plugin also owns the Sign-in and authentication and Account and security settings pages; the application replaces them through `routeComponentOverrides` rather than declaring its own.
+- Authorization owns permissions, including the `authentication.settings` settings item. Users owns the administration page. The
   application's own code decides which roles exist.
 - The plugin's `skills/` source is authoritative. `.agents/skills/` is a
   synchronized copy and must not be edited.

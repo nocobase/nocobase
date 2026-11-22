@@ -98,6 +98,8 @@ export function usePermissionEditorLabels(): PermissionEditorLabels {
       pageOpens: k('pageOpens'),
       pageClosed: k('pageClosed'),
       tabChanges: (count) => k('tabChanges', { count }),
+      humanOnly: k('humanOnly'),
+      lapsed: k('lapsed'),
       notice: (notice) => {
         switch (notice.kind) {
           case 'scope-reset':

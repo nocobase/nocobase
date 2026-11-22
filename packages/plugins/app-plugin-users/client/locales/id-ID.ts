@@ -135,6 +135,10 @@ const idID: LocaleResource<typeof enUS> = {
     users: 'Pengguna',
     usersDescription: 'Kelola akun, akses, dan sesi aktif.',
   },
+  humanOnly: {
+    manageAccounts:
+      'Hanya manusia yang dapat mengelola akun: kunci API tidak boleh.',
+  },
   page: {
     loading: 'Memuat',
   },

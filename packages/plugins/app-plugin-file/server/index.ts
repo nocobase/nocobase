@@ -11,6 +11,8 @@ export type {
   ServerFileRepository,
   FileRepositoryOptions,
   FileOperations,
+  FileDriveConfig,
+  LocalDiskUsage,
 } from './repository.js';
 export { defineFileRepositoryApiRoutes } from './routes.js';
 export type {

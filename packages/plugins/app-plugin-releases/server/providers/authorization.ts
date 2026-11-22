@@ -12,12 +12,22 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ResourceItems } from '@nocobase/authorization/core';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { APPS_BUSINESS } from '../access/caller.js';
+import {
+  releasesKeyScopeObjects,
+  type ReleasesKeyScopeObjects,
+} from '../access/key-scope-objects.js';
+import { releasesToken } from '../tokens.js';
+
 import {
   ACCESS_NAMESPACE,
   ACCESS_SECTION,
   BUSINESS_ACTIONS,
   BUSINESS_KEYS,
   BUSINESS_SECTION,
+  HUMAN_ONLY_ACTIONS,
+  HUMAN_ONLY_REASONS,
+  KEY_TEMPLATES,
   RESOURCE_TYPE,
   SETTINGS_ACTIONS,
   accessText,
@@ -62,10 +72,19 @@ export function registerBusinesses(authz: AppAuthorization): void {
       actions: BUSINESS_KEYS.filter(
         (entry) => entry.business === business,
       ).flatMap(({ key }) =>
-        levelActionsOf(key).map(({ level, name }) => ({
-          name,
-          title: actionText(key, level),
-        })),
+        levelActionsOf(key).map(({ level, name }) => {
+          const action = key.slice(key.indexOf('/') + 1);
+          const humanOnly = (HUMAN_ONLY_ACTIONS as readonly string[]).includes(
+            action,
+          )
+            ? HUMAN_ONLY_REASONS[action as keyof typeof HUMAN_ONLY_REASONS]
+            : undefined;
+          return {
+            name,
+            title: actionText(key, level),
+            ...(humanOnly ? { humanOnly } : {}),
+          };
+        }),
       ),
     });
   authz.resourceTypes.add({ type: RESOURCE_TYPE, items });
@@ -76,6 +95,24 @@ export function registerBusinesses(authz: AppAuthorization): void {
     );
 }
 
+/**
+ * What API keys are offered of this plugin: the CI templates, and the Apps a key may be limited to, listed by
+ * `objects` (the Apps the key's maker may see). Returns what removes them.
+ */
+export function registerCredentials(
+  authz: AppAuthorization,
+  objects?: ReleasesKeyScopeObjects,
+): () => void {
+  const removals = KEY_TEMPLATES.map((template) =>
+    authz.credentials.templates.add(template),
+  );
+  if (objects)
+    removals.push(authz.credentials.objectSources.add(APPS_BUSINESS, objects));
+  return () => {
+    for (const remove of removals) remove();
+  };
+}
+
 export class ReleasesAuthorizationProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = `${ACCESS_NAMESPACE}/authorization`;
 
@@ -83,6 +120,13 @@ export class ReleasesAuthorizationProvider extends ServiceProvider<AppPluginAppl
     const authz = this.app.container.resolve(authorizationToken);
     registerSettings(authz);
     registerBusinesses(authz);
+    const { container } = this.app;
+    registerCredentials(
+      authz,
+      container.has(releasesToken)
+        ? releasesKeyScopeObjects(() => container.resolve(releasesToken))
+        : undefined,
+    );
     return Promise.resolve();
   }
 }

@@ -140,6 +140,10 @@ const deDE: LocaleResource<typeof enUS> = {
     users: 'Benutzer',
     usersDescription: 'Konten, Zugriffe und aktive Sitzungen verwalten.',
   },
+  humanOnly: {
+    manageAccounts:
+      'Konten verwaltet nur ein Mensch: Kein API-Schlüssel darf das.',
+  },
   page: {
     loading: 'Wird geladen',
   },
