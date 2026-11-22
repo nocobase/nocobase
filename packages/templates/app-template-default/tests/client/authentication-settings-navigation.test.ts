@@ -47,7 +47,6 @@ describe('the authentication plugin’s settings pages in the application', () =
     const menu = buildPersonalSettingsNavigation(resolve(), new Set());
     expect(menu.map(({ route }) => route.name)).toEqual([
       'personalSettings.account',
-      'personalSettings.preferences',
     ]);
     expect(firstNavigationPage(menu)?.path).toBe('/me/security');
   });

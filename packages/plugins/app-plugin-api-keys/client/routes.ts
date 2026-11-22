@@ -42,7 +42,7 @@ export const API_KEY_ROUTES: {
 export const personalRoutes: AppClientRouteContribution =
   definePersonalSettingsRoutes([
     {
-      parent: PERSONAL_SETTINGS_CATEGORIES.account,
+      parent: PERSONAL_SETTINGS_CATEGORIES.integrations,
       name: NAMES.personal,
       path: '/api-keys',
       navigation: { title: 'navigation.personal', icon: KeyRound },

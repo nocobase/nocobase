@@ -264,3 +264,8 @@ export {
   type RouteOverlayHostConfig,
   type RouteOverlayHostValue,
 } from './route-containers.js';
+export {
+  PersonalSettingsBackground,
+  PersonalSettingsDialogRoutes,
+} from './personal-settings-router.js';
+export { usePersonalSettingsNavigation } from './personal-settings-navigation.js';

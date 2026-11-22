@@ -543,6 +543,21 @@ describe('resolveAgent', () => {
       permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
     });
   });
+
+  it('keeps independent Antigravity CLI and Gemini CLI launchers', () => {
+    expect(AGENTS.find((spec) => spec.id === 'antigravity')).toMatchObject({
+      name: 'Antigravity CLI',
+      launchers: [{ command: 'agy', args: ['acp'] }],
+      allowAll: true,
+      signIn: 'agy acp --login',
+    });
+    expect(AGENTS.find((spec) => spec.id === 'gemini')).toMatchObject({
+      name: 'Gemini CLI',
+      launchers: [{ command: 'gemini', args: ['--acp'] }],
+      modes: ['yolo'],
+      signIn: 'gemini',
+    });
+  });
 });
 
 describe('compareVersions', () => {

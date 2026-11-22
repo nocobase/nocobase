@@ -14,6 +14,12 @@ import {
 import enUS from '../../client/locales/en-US.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 
+vi.mock('@nocobase/app-plugin-authorization/client', async (original) => ({
+  ...(await original<
+    typeof import('@nocobase/app-plugin-authorization/client')
+  >()),
+  useCan: () => ({ can: true, isPending: false }),
+}));
 vi.mock('../../client/routing/route-navigation.js', async (original) => ({
   ...(await original<
     typeof import('../../client/routing/route-navigation.js')
@@ -67,18 +73,22 @@ function OrderPage(): ReactElement {
   return <h1>Order #42</h1>;
 }
 
-async function renderLayout(page: ReactElement): Promise<HTMLElement> {
+async function renderLayout(
+  page: ReactElement,
+  initialRoute = '/orders/42',
+  registered: readonly AppClientRegisteredRoute[] = routes,
+): Promise<HTMLElement> {
   const sidebarPreference = createAppSidebarPreferenceStore('/test-app');
   await renderWithApp(
     <SidebarPreferenceProvider value={sidebarPreference}>
       <Routes>
-        <Route element={<AppLayout routes={routes} />}>
+        <Route element={<AppLayout routes={registered} />}>
           <Route path='/orders/:id' element={page} />
         </Route>
       </Routes>
     </SidebarPreferenceProvider>,
     {
-      route: '/orders/42',
+      route: initialRoute,
       namespace: packageMetadata.name,
       namespaces: {
         [packageMetadata.name]: enUS,
@@ -87,7 +97,7 @@ async function renderLayout(page: ReactElement): Promise<HTMLElement> {
       fetch: answerApi(() => ({ data: {} })),
     },
   );
-  return screen.getByRole('banner');
+  return screen.getByRole('banner', { hidden: true });
 }
 
 it('shows the route trail of a nested page in its header', async () => {
@@ -119,4 +129,32 @@ it('shows the trail a page declares, with its record names, in place of the rout
     'page',
   );
   expect(within(trail).queryByText('Detail')).toBeNull();
+});
+
+it('opens a registered personal settings page over the current business route', async () => {
+  const profile: AppClientRegisteredRoute = {
+    ...detail,
+    id: 'profile',
+    name: 'profile',
+    authz: 'skip',
+    surface: 'personalSettings',
+    path: '/me/profile',
+    packageName: packageMetadata.name,
+    navigation: { title: 'settings.personal.appearance.title' },
+    componentLoader: async () => ({ default: () => <h2>Profile settings</h2> }),
+  };
+  await renderLayout(
+    <h1>Current order</h1>,
+    '/orders/42?personalSettings=profile',
+    [profile, ...routes],
+  );
+  const dialog = await screen.findByRole('dialog');
+  expect(
+    await within(dialog).findByRole('heading', { name: 'Profile settings' }),
+  ).toBeVisible();
+  expect(within(dialog).getByRole('link')).toHaveAttribute(
+    'href',
+    '/orders/42?personalSettings=profile',
+  );
+  expect(screen.getByText('Current order')).toBeInTheDocument();
 });
