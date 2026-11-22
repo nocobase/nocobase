@@ -466,6 +466,34 @@ const zhTW: LocaleResource<typeof enUS> = {
     tabsLabel: '我的任務檢視',
     title: '我的任務',
   },
+  noticeKinds: {
+    contributor: '專案',
+    category: '專案',
+    recipients: '通知涉及且能看到該任務的人；不含操作者本人。',
+    businessRule:
+      '每則通知傳送一次。成員可在通知設定中為每種通知選擇推播和郵件。',
+    languagePolicy: '以應用預設語言產生一次。',
+    variables: { title: '發生了什麼', body: '任務標題或留言摘錄' },
+    mentioned: { name: '被提及', trigger: '有人在任務或留言中提到你。' },
+    assigned: {
+      name: '指派給你',
+      trigger: '有人把你設為任務的負責人或執行人。',
+    },
+    attention: {
+      name: '需要你處理',
+      trigger: '別人把你負責的任務移到需要你的狀態，例如「受阻」或「待審查」。',
+    },
+    commented: { name: '新留言', trigger: '有人在你關注的任務留言。' },
+    statusChanged: {
+      name: '狀態變更',
+      trigger: '你關注的任務進入了另一個狀態。',
+    },
+    progress: {
+      name: '進展',
+      trigger:
+        '你的任務所依賴的任務已完成、子任務全部完成，或其他外掛回報了任務進展。',
+    },
+  },
   nav: {
     general: '一般',
     issues: '任務',

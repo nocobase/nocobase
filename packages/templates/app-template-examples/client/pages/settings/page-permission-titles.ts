@@ -18,5 +18,4 @@ export const pagePermissionTitles: PagePermissionTitles = {
   'skill-projects-detail-edit': 'skillProjects.edit',
   'skill-projects-edit': 'skillProjects.edit',
   // The template detail drawer shares the list page grant.
-  notificationTemplate: 'settings.notificationTemplates',
 };

@@ -1,5 +1,4 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
-import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import personalSettingsRoutes from './pages/me/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
@@ -178,16 +177,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'home',
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',
-  },
-  {
-    // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an
-    // unread badge). The plugin's API answers each person's own messages only, so the page needs no authorization of
-    // its own.
-    authz: 'skip',
-    auth: 'required',
-    componentLoader: () => import('./pages/inbox.js'),
-    name: 'inbox',
-    path: '/inbox',
   },
   {
     auth: 'required',
@@ -509,12 +498,14 @@ const settingsRoutes: AppClientRouteContribution = defineSystemSettingsRoutes([
   },
 ]);
 
-// Users and Permission management join the Accounts and permissions category; Notifications joins the System category.
+// The Users and Authorization plugins register Users and Roles and permissions under Accounts and permissions, and
+// `@nocobase/app-plugin-notification` registers Messages › Notifications.
 // Their former URLs outside `/settings` redirect through `lib/settings-redirects.ts`.
-const routes: readonly AppClientRouteContribution[] =
-  includeNotificationTemplateRoutes(
-    [appRoutes, settingsRoutes, personalSettingsRoutes, databaseExplorerRoutes],
-    true,
-  );
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  settingsRoutes,
+  personalSettingsRoutes,
+  databaseExplorerRoutes,
+];
 
 export default routes;

@@ -271,41 +271,6 @@ describe('System settings navigation', () => {
     expect(page.navigation?.description).toBe('nav.pluginsDescription');
     expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
   });
-
-  it('shows the notification template view as a Messages card once an invitation mailer is configured', () => {
-    const routes = resolveAppClientContributions([
-      {
-        packageName: app,
-        source: 'application',
-        routes: createApplicationRoutes({
-          notificationTemplates: { invitationConfigured: true },
-        }),
-      },
-      users,
-      authorizationPages(),
-    ]).routes;
-    expect(catalog(routes)).toEqual([
-      [
-        'systemSettings.account',
-        [
-          ['settingsUsers', '/settings/users'],
-          ['permissionManagement', '/settings/roles'],
-        ],
-      ],
-      workflowCategory,
-      [
-        'systemSettings.messages',
-        [['notificationManagement', '/settings/notifications/templates']],
-      ],
-      [
-        'systemSettings.system',
-        [['databaseExplorer', '/settings/database-explorer']],
-      ],
-    ]);
-    expect(
-      buildRouteNavigation(routes, new Set()).map(({ route }) => route.name),
-    ).toEqual(['home', 'settingsHome']);
-  });
 });
 
 it('places database browsing in System and hides its card when access is denied', () => {
@@ -313,7 +278,7 @@ it('places database browsing in System and hides its card when access is denied'
     {
       packageName: app,
       source: 'application',
-      routes: createApplicationRoutes({}),
+      routes: createApplicationRoutes(),
     },
     users,
     authorizationPages(),
@@ -352,7 +317,7 @@ it('keeps workflow management out of the menu when both views are denied', () =>
     {
       packageName: app,
       source: 'application',
-      routes: createApplicationRoutes({}),
+      routes: createApplicationRoutes(),
     },
   ]).routes;
   const views = ['workflowDefinitions', 'workflowExecutions'].map((name) =>

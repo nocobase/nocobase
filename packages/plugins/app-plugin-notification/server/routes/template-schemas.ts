@@ -43,6 +43,9 @@ export const templateSchema: z.ZodType<NotificationTemplateView> = z
     contributor: z.string(),
     contributorLabel: templateTextSchema.optional(),
     category: templateTextSchema,
+    categoryKey: z.string().meta({
+      description: 'A stable key of the category, for filtering and grouping.',
+    }),
     name: templateTextSchema,
     trigger: templateTextSchema,
     recipients: templateTextSchema,
@@ -63,8 +66,21 @@ export const templateSchema: z.ZodType<NotificationTemplateView> = z
         enabled: z.boolean().nullable(),
       }),
     ),
+    policies: z
+      .array(
+        z.object({
+          type: z.string(),
+          policy: z.enum(['required', 'on', 'off']),
+          adjustable: z.boolean(),
+        }),
+      )
+      .optional()
+      .meta({
+        description:
+          'Per channel type: always sent, on or off by default, and whether a person may change it. Absent for a kind `notify()` does not send.',
+      }),
   })
-  .meta({ ref: 'NotificationTemplate' });
+  .meta({ ref: 'NotificationKind' });
 export const previewSchema: z.ZodType<NotificationTemplatePreview> = z
   .object({
     synthetic: z.literal(true),
@@ -73,4 +89,4 @@ export const previewSchema: z.ZodType<NotificationTemplatePreview> = z
     content: templateContentSchema,
     definition: templateContentSchema,
   })
-  .meta({ ref: 'NotificationTemplatePreview' });
+  .meta({ ref: 'NotificationKindPreview' });

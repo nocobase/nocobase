@@ -8,9 +8,6 @@ const settings = {
     documentation: '查看文档',
     emptyExecutions: '暂无流程执行记录。',
   },
-  notificationManagementDescription: '查看已登记的通知模板和合成内容预览。',
-  notificationTemplates: '通知模板',
-  notificationManagement: '通知',
   listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',

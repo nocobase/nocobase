@@ -17,7 +17,7 @@ function resolve() {
     {
       packageName: '@nocobase/app-template-default',
       source: 'application',
-      routes: createApplicationRoutes({}),
+      routes: createApplicationRoutes(),
     },
     {
       packageName: plugin.packageName,

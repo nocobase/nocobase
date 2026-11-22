@@ -96,7 +96,11 @@ describe('application config', () => {
         createNotificationRegistry().registerChannelType(InAppChannel);
       const config = runtime.config.get<NotificationConfig>('notification')!;
       expect(config.channels.inbox).toMatchObject({ provider: 'in-app' });
-      expect(() => registry.validate(config)).not.toThrow();
+      // The web-push plugin registers its own channel type; this registry only knows in-app.
+      expect(config.channels.webPush).toMatchObject({ provider: 'web-push' });
+      expect(() =>
+        registry.validate({ channels: { inbox: config.channels.inbox! } }),
+      ).not.toThrow();
       writeFileSync(
         configPath,
         'notification:\n  channels:\n    inbox:\n      provider: in-app\n      enabled: false\n',
@@ -105,7 +109,11 @@ describe('application config', () => {
       const disabledConfig =
         disabled.config.get<NotificationConfig>('notification')!;
       expect(disabledConfig.channels.inbox).toMatchObject({ enabled: false });
-      expect(() => registry.validate(disabledConfig)).not.toThrow();
+      expect(() =>
+        registry.validate({
+          channels: { inbox: disabledConfig.channels.inbox! },
+        }),
+      ).not.toThrow();
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

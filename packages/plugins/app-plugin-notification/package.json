@@ -114,7 +114,8 @@
     "react-dom": "^19.0.0",
     "@base-ui/react": "catalog:",
     "class-variance-authority": "catalog:",
-    "cn": "catalog:"
+    "cn": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -130,7 +131,8 @@
     "vitest": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:"
+    "tw-animate-css": "catalog:",
+    "react-router": "catalog:"
   },
   "imports": {
     "#components/*": {

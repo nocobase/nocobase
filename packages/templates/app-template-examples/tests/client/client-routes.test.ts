@@ -7,6 +7,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
+import { createNotificationRoutes } from '@nocobase/app-plugin-notification/client';
 import { settingsRoutes as routesExampleSettings } from '@nocobase/app-plugin-routes-example/client/routes';
 import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.ts';
@@ -124,11 +125,11 @@ describe('app client routes', () => {
     expect(paths.some((path) => path.startsWith('/chat'))).toBe(false);
   });
 
-  it('keeps the inbox out of the application navigation', () => {
-    // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
+  it('leaves the inbox page to the in-app notification plugin', () => {
+    // `@nocobase/app-plugin-notification-in-app/client` registers the route `inbox` and the header button.
     expect(
       applicationRoutes[0].routes.find((route) => route.name === 'inbox'),
-    ).not.toHaveProperty('navigation');
+    ).toBeUndefined();
   });
 
   it('keeps workflow, user and role management as cards of the one System settings entry', () => {
@@ -162,7 +163,7 @@ describe('app client routes', () => {
       ['systemSettings.automation', [['workflows', '/settings/workflows']]],
       [
         'systemSettings.messages',
-        [['notificationManagement', '/settings/notifications/templates']],
+        [['notificationSettings', '/settings/notifications']],
       ],
       [
         'systemSettings.ai',
@@ -268,7 +269,6 @@ describe('app client routes', () => {
       { name: 'knowledge', authorizedAs: 'knowledge' },
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.
       { name: 'routeDialogExample', authorizedAs: null },
@@ -344,8 +344,7 @@ describe('app client routes', () => {
         name: 'workflowExecution',
         authorizedAs: 'settings:workflow-management',
       },
-      { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
-      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
+      { name: 'notificationSettings', authorizedAs: 'settings:notification' },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
       // A plugin's settings page without its own `authz` admits unrestricted administrators only.
       { name: 'exampleSettings', authorizedAs: 'unrestricted' },
@@ -353,6 +352,7 @@ describe('app client routes', () => {
       // Personal settings belong to whoever is signed in, so they stay out of page authorization.
       { name: 'personalSettingsHome', authorizedAs: null },
       { name: 'personalAppearance', authorizedAs: null },
+      { name: 'notificationPreferences', authorizedAs: null },
     ]);
   });
 });
@@ -380,6 +380,11 @@ function resolveRoutes() {
           children: [],
         })),
       })),
+    },
+    // The notification plugin's System and Personal settings pages.
+    {
+      packageName: '@nocobase/app-plugin-notification',
+      routes: createNotificationRoutes(),
     },
     // A plugin's own settings page, declared with `defineSystemSettingsRoutes()`.
     {

@@ -31,6 +31,8 @@ export interface NotificationLogRecord {
   readonly requestFingerprint?: string;
   readonly sourceType: string;
   readonly sourceReferenceId?: string;
+  /** The notification kind the send was made for (`notify()`, or `send({ kind })`). */
+  readonly kind?: string;
   readonly messageSnapshot: Readonly<Record<string, object>>;
   readonly status: NotificationLogStatus;
   readonly createdAt: string;
@@ -44,6 +46,8 @@ export interface NotificationDeliveryRecord {
   readonly channelType: string;
   readonly recipientSnapshot: object;
   readonly messageSnapshot: object;
+  /** Who the delivery went to, for searching the log: a user id, an address, a device id or the channel name. */
+  readonly recipientKey?: string;
   readonly providerType: string;
   readonly attemptCount: number;
   readonly status: NotificationDeliveryStatus;
@@ -100,6 +104,41 @@ export interface NotificationLogCursor {
   readonly id: string;
 }
 
+/** Which deliveries the delivery log lists. Every filter narrows; none lists every delivery. */
+export interface NotificationDeliveryFilter {
+  readonly statuses?: readonly NotificationDeliveryStatus[];
+  readonly channelName?: string;
+  readonly kind?: string;
+  /** A recipient key, or the source reference id of the send. */
+  readonly search?: string;
+  /** Created at or after this instant. */
+  readonly from?: string;
+  /** Created before this instant. */
+  readonly to?: string;
+}
+
+/** One row of the delivery log: a delivery with what its send was about. */
+/** A delivery as the delivery log lists it: without its recipient and message snapshots or its lease. */
+export type NotificationDeliveryLogItem = Omit<
+  NotificationDeliveryRecord,
+  'recipientSnapshot' | 'messageSnapshot' | 'leaseToken' | 'leaseExpiresAt'
+>;
+
+export interface NotificationDeliveryLogRecord {
+  readonly delivery: NotificationDeliveryLogItem;
+  readonly kind?: string;
+  readonly sourceType: string;
+  readonly sourceReferenceId?: string;
+  readonly idempotencyKey?: string;
+}
+
+/** How many deliveries of a group, such as one channel, ended in each status. */
+export interface NotificationDeliveryCount {
+  readonly key: string;
+  readonly status: NotificationDeliveryStatus;
+  readonly count: number;
+}
+
 export interface NotificationStore {
   now(): Promise<string>;
   create(bundle: NotificationLogBundle): Promise<void>;
@@ -120,6 +159,22 @@ export interface NotificationStore {
     before?: NotificationLogCursor,
   ): Promise<readonly NotificationLogRecord[]>;
   getDelivery(id: string): Promise<NotificationDeliveryRecord | undefined>;
+  /** Deliveries newest first, ties broken by id, starting after `before` when given. */
+  listDeliveryLog?(
+    filter: NotificationDeliveryFilter,
+    limit: number,
+    before?: NotificationLogCursor,
+  ): Promise<readonly NotificationDeliveryLogRecord[]>;
+  /** Deliveries matching `filter` per status, ignoring its `statuses`. */
+  countDeliveryStatuses?(
+    filter: NotificationDeliveryFilter,
+  ): Promise<readonly NotificationDeliveryCount[]>;
+  /** Deliveries created since `since`, per channel name and status. */
+  countDeliveriesByChannel?(
+    since: string,
+  ): Promise<readonly NotificationDeliveryCount[]>;
+  /** Sends made since `since`, per notification kind. */
+  countSendsByKind?(since: string): Promise<ReadonlyMap<string, number>>;
   listDeliveries(
     notificationId: string,
   ): Promise<readonly NotificationDeliveryRecord[]>;
@@ -179,6 +234,7 @@ interface NotificationRow extends Row {
   requestFingerprint?: string | null;
   sourceType: string;
   sourceReferenceId?: string;
+  kind?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -190,6 +246,7 @@ interface DeliveryRow extends Row {
   channelType: string;
   recipientSnapshot: object | string;
   messageSnapshot: object | string;
+  recipientKey?: string | null;
   providerType: string;
   attemptCount: number;
   status: NotificationDeliveryStatus;
@@ -343,6 +400,170 @@ export class DatabaseNotificationStore implements NotificationStore {
       .where('id', '=', id)
       .executeTakeFirst<DeliveryRow>();
     return row ? fromDeliveryRow(row) : undefined;
+  }
+
+  async listDeliveryLog(
+    filter: NotificationDeliveryFilter,
+    limit: number,
+    before?: NotificationLogCursor,
+  ): Promise<readonly NotificationDeliveryLogRecord[]> {
+    // Only what the list shows: the recipient and message snapshots can be large and the response drops them.
+    let query = this.deliveryLogQuery(filter, true)
+      .select(DELIVERY_LOG_COLUMNS.map((column) => `d.${column}` as const))
+      .select([
+        'n.kind as dispatchKind',
+        'n.sourceType as dispatchSourceType',
+        'n.sourceReferenceId as dispatchSourceReferenceId',
+        'n.idempotencyKey as dispatchIdempotencyKey',
+      ])
+      .orderBy('d.createdAt', 'desc')
+      .orderBy('d.id', 'desc')
+      .limit(limit);
+    if (before)
+      query = query.where((builder) =>
+        builder.or([
+          builder('d.createdAt', '<', before.createdAt),
+          builder.and([
+            builder('d.createdAt', '=', before.createdAt),
+            builder('d.id', '<', before.id),
+          ]),
+        ]),
+      );
+    const rows = await query.execute<
+      Omit<
+        DeliveryRow,
+        | 'recipientSnapshot'
+        | 'messageSnapshot'
+        | 'leaseToken'
+        | 'leaseExpiresAt'
+      > & {
+        dispatchKind?: string | null;
+        dispatchSourceType: string;
+        dispatchSourceReferenceId?: string | null;
+        dispatchIdempotencyKey?: string | null;
+      }
+    >();
+    return rows.map((row) => {
+      const {
+        dispatchKind,
+        dispatchSourceType,
+        dispatchSourceReferenceId,
+        dispatchIdempotencyKey,
+        ...delivery
+      } = row;
+      const {
+        recipientSnapshot: _recipientSnapshot,
+        messageSnapshot: _messageSnapshot,
+        leaseToken: _leaseToken,
+        leaseExpiresAt: _leaseExpiresAt,
+        ...listed
+      } = fromDeliveryRow({
+        ...delivery,
+        recipientSnapshot: {},
+        messageSnapshot: {},
+      } as DeliveryRow);
+      return {
+        delivery: listed,
+        ...(dispatchKind ? { kind: dispatchKind } : {}),
+        sourceType: dispatchSourceType,
+        ...(dispatchSourceReferenceId
+          ? { sourceReferenceId: dispatchSourceReferenceId }
+          : {}),
+        ...(dispatchIdempotencyKey
+          ? { idempotencyKey: dispatchIdempotencyKey }
+          : {}),
+      };
+    });
+  }
+
+  async countDeliveryStatuses(
+    filter: NotificationDeliveryFilter,
+  ): Promise<readonly NotificationDeliveryCount[]> {
+    const rows = await this.deliveryLogQuery(
+      { ...filter, statuses: undefined },
+      Boolean(filter.kind || filter.search),
+    )
+      .select(({ fn }) => [
+        'd.status as status',
+        fn.countAll<number>().as('count'),
+      ])
+      .groupBy('d.status')
+      .execute<{
+        status: NotificationDeliveryStatus;
+        count: number | string;
+      }>();
+    return rows.map((row) => ({
+      key: 'all',
+      status: row.status,
+      count: Number(row.count),
+    }));
+  }
+
+  async countDeliveriesByChannel(
+    since: string,
+  ): Promise<readonly NotificationDeliveryCount[]> {
+    const rows = await this.database
+      .query()
+      .selectFrom<DeliveryRow>('notificationDeliveries')
+      .select(({ fn }) => [
+        'channelName',
+        'status',
+        fn.countAll<number>().as('count'),
+      ])
+      .where('createdAt', '>=', since)
+      .groupBy(['channelName', 'status'])
+      .execute<{
+        channelName: string;
+        status: NotificationDeliveryStatus;
+        count: number | string;
+      }>();
+    return rows.map((row) => ({
+      key: row.channelName,
+      status: row.status,
+      count: Number(row.count),
+    }));
+  }
+
+  async countSendsByKind(since: string): Promise<ReadonlyMap<string, number>> {
+    const rows = await this.database
+      .query()
+      .selectFrom<NotificationRow>('notificationDispatches')
+      .select(({ fn }) => ['kind', fn.countAll<number>().as('count')])
+      .where('createdAt', '>=', since)
+      .where('kind', 'is not', null)
+      .groupBy('kind')
+      .execute<{ kind: string; count: number | string }>();
+    return new Map(rows.map((row) => [row.kind, Number(row.count)]));
+  }
+
+  /** Deliveries `d` matching `filter`, joined to their sends `n` when a filter or the caller reads them. */
+  private deliveryLogQuery(filter: NotificationDeliveryFilter, join: boolean) {
+    let query = this.database.query().selectFrom('notificationDeliveries as d');
+    if (join)
+      query = query.innerJoin(
+        'notificationDispatches as n',
+        'n.id',
+        'd.notificationId',
+      );
+    if (filter.statuses?.length)
+      query = query.where('d.status', 'in', [...filter.statuses]);
+    if (filter.channelName)
+      query = query.where('d.channelName', '=', filter.channelName);
+    if (filter.kind) query = query.where('n.kind', '=', filter.kind);
+    if (filter.from) query = query.where('d.createdAt', '>=', filter.from);
+    if (filter.to) query = query.where('d.createdAt', '<', filter.to);
+    if (filter.search) {
+      const search = filter.search;
+      query = query.where((builder) =>
+        builder.or([
+          builder('d.notificationId', '=', search),
+          builder('d.recipientKey', '=', search),
+          builder('n.sourceReferenceId', '=', search),
+          builder('n.idempotencyKey', '=', search),
+        ]),
+      );
+    }
+    return query;
   }
 
   async listDeliveries(
@@ -759,6 +980,7 @@ function toLogRow(record: NotificationLogRecord): NotificationRow {
     requestFingerprint: record.requestFingerprint,
     sourceType: record.sourceType,
     sourceReferenceId: record.sourceReferenceId,
+    ...(record.kind === undefined ? {} : { kind: record.kind }),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -777,6 +999,7 @@ function fromLogRow(
     requestFingerprint: row.requestFingerprint ?? undefined,
     sourceType: row.sourceType,
     sourceReferenceId: row.sourceReferenceId,
+    ...(row.kind ? { kind: row.kind } : {}),
     messageSnapshot,
     status: summarizeNotificationDeliveries(deliveries),
     createdAt: row.createdAt,
@@ -796,6 +1019,9 @@ function toDeliveryRow(record: NotificationDeliveryRecord): DeliveryRow {
     channelType: record.channelType,
     recipientSnapshot: JSON.stringify(record.recipientSnapshot),
     messageSnapshot: JSON.stringify(record.messageSnapshot),
+    ...(record.recipientKey === undefined
+      ? {}
+      : { recipientKey: record.recipientKey }),
     providerType: record.providerType,
     attemptCount: record.attemptCount,
     status: record.status,
@@ -814,6 +1040,24 @@ function toDeliveryRow(record: NotificationDeliveryRecord): DeliveryRow {
   };
 }
 
+/** The delivery columns the delivery log lists. */
+const DELIVERY_LOG_COLUMNS = [
+  'id',
+  'notificationId',
+  'channelName',
+  'channelType',
+  'recipientKey',
+  'providerType',
+  'attemptCount',
+  'status',
+  'nextRunAt',
+  'lastError',
+  'retryResolution',
+  'providerIdempotency',
+  'createdAt',
+  'updatedAt',
+] as const satisfies readonly (keyof DeliveryRow)[];
+
 function fromDeliveryRow(row: DeliveryRow): NotificationDeliveryRecord {
   return {
     id: row.id,
@@ -822,6 +1066,7 @@ function fromDeliveryRow(row: DeliveryRow): NotificationDeliveryRecord {
     channelType: row.channelType,
     recipientSnapshot: parseObject(row.recipientSnapshot, 'recipient'),
     messageSnapshot: parseObject(row.messageSnapshot, 'message'),
+    ...(row.recipientKey ? { recipientKey: row.recipientKey } : {}),
     providerType: row.providerType,
     attemptCount: row.attemptCount,
     status: row.status,

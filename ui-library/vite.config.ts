@@ -36,6 +36,13 @@ export default defineConfig({
         ),
       },
       {
+        find: /^@nocobase\/app-plugin-notification-in-app\/client$/,
+        replacement: path.resolve(
+          __dirname,
+          './website/demo/inbox/notification-in-app-client.ts',
+        ),
+      },
+      {
         find: /^@nocobase\/app-client$/,
         replacement: path.resolve(
           __dirname,

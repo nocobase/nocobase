@@ -490,6 +490,45 @@ const viVN: LocaleResource<typeof enUS> = {
     tabsLabel: 'Các chế độ xem Nhiệm vụ của tôi',
     title: 'Nhiệm vụ của tôi',
   },
+  noticeKinds: {
+    contributor: 'Dự án',
+    category: 'Dự án',
+    recipients:
+      'Những người mà thông báo nói tới và có thể xem vấn đề; không bao giờ là người thực hiện.',
+    businessRule:
+      'Gửi một lần cho mỗi thông báo. Thành viên chọn đẩy và email cho từng loại trong cài đặt thông báo.',
+    languagePolicy: 'Soạn một lần bằng ngôn ngữ mặc định của ứng dụng.',
+    variables: {
+      title: 'Điều gì đã xảy ra',
+      body: 'Tiêu đề vấn đề hoặc trích đoạn bình luận',
+    },
+    mentioned: {
+      name: 'Được nhắc đến',
+      trigger: 'Ai đó nhắc đến bạn trong vấn đề hoặc bình luận.',
+    },
+    assigned: {
+      name: 'Giao cho bạn',
+      trigger: 'Ai đó đặt bạn làm người phụ trách hoặc người thực hiện vấn đề.',
+    },
+    attention: {
+      name: 'Cần bạn',
+      trigger:
+        'Người khác chuyển vấn đề bạn phụ trách sang trạng thái cần bạn, như Bị chặn hoặc Đang xem xét.',
+    },
+    commented: {
+      name: 'Bình luận mới',
+      trigger: 'Ai đó bình luận vấn đề bạn theo dõi.',
+    },
+    statusChanged: {
+      name: 'Đổi trạng thái',
+      trigger: 'Vấn đề bạn theo dõi chuyển sang trạng thái khác.',
+    },
+    progress: {
+      name: 'Tiến độ',
+      trigger:
+        'Phụ thuộc của vấn đề đã xong, mọi vấn đề con đã xong hoặc plugin khác báo tiến độ.',
+    },
+  },
   nav: {
     general: 'Đại tướng',
     issues: 'Nhiệm vụ',

@@ -1,7 +1,4 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
-import { createAppClientConfig } from '@nocobase/app-client';
-import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
-import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import { Home } from 'lucide-react';
 import personalSettingsRoutes from './pages/me/routes.js';
 import workflowSettingsRoutes from './pages/settings/workflows/routes.js';
@@ -21,16 +18,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'home',
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',
-  },
-  {
-    // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an
-    // unread badge). The plugin's API answers each person's own messages only, so the page needs no authorization of
-    // its own.
-    authz: 'skip',
-    auth: 'required',
-    componentLoader: () => import('./pages/inbox.js'),
-    name: 'inbox',
-    path: '/inbox',
   },
   {
     auth: 'guest',
@@ -71,21 +58,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-// The Users and Authorization plugins contribute their modules to the same settings shell as Database Explorer.
-export function createApplicationRoutes(
-  rawConfig: unknown = readAppClientRuntimeConfig(),
-): readonly AppClientRouteContribution[] {
-  const config = createAppClientConfig({ rawConfig });
-  return includeNotificationTemplateRoutes(
-    [
-      appRoutes,
-      settingsShellRoutes,
-      personalSettingsRoutes,
-      workflowSettingsRoutes,
-      databaseExplorerRoutes,
-    ],
-    config.get<boolean>('notificationTemplates.invitationConfigured') === true,
-  );
+// The System settings shell shows only the modules a viewer may open. The Users and Authorization plugins contribute
+// their modules to the same shell as Workflow management and Database Explorer, and `@nocobase/app-plugin-notification`
+// adds Messages › Notifications.
+export function createApplicationRoutes(): readonly AppClientRouteContribution[] {
+  return [
+    appRoutes,
+    settingsShellRoutes,
+    personalSettingsRoutes,
+    workflowSettingsRoutes,
+    databaseExplorerRoutes,
+  ];
 }
 
 const routes: readonly AppClientRouteContribution[] = createApplicationRoutes();

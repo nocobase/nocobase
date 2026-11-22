@@ -92,6 +92,7 @@
     "@nocobase/mailer": "workspace:^"
   },
   "peerDependencies": {
+    "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/i18n": "workspace:^",

@@ -1,6 +1,6 @@
 # Inbox
 
-An application's inbox over `@nocobase/app-plugin-notification-in-app`: the `inbox` block, the `/inbox` page, documented in [inbox/README.md](inbox/README.md), and the `inbox-button` component a header links to it with.
+The inbox of `@nocobase/app-plugin-notification-in-app`. The plugin itself provides the `/inbox` page and the header's inbox button with its badge, so an application normally registers the plugin and installs nothing from here. The `inbox` block, documented in [inbox/README.md](inbox/README.md), is the plugin's page generated from its source, for an application that copies it out to own it; the `inbox-button` component is a presentational header button for an application that replaces the plugin's (`headerActionOverrides` on `inbox`).
 
 ## inbox-button
 

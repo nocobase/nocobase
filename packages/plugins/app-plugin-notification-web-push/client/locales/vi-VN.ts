@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Đã đăng ký: {{total}} · Đang bật: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Thông báo đẩy',
   'push.description':
     'Nhận lời nhắc trên từng thiết bị, ngay cả khi đóng ứng dụng.',
@@ -31,6 +36,9 @@ const viVN: LocaleResource<typeof enUS> = {
   'push.failed': 'Không thể cập nhật thông báo đẩy. Vui lòng thử lại.',
   'push.loadingFailed': 'Không thể tải thiết bị. Vui lòng thử lại.',
   'push.retry': 'Thử lại',
+  'channelType.title': 'Thông báo đẩy trình duyệt',
+  'channelType.testHint':
+    'Gửi thông báo thử đến các trình duyệt bạn đã bật thông báo đẩy. Hãy bật trước trong Cài đặt cá nhân › Thông báo.',
 };
 
 export default viVN;

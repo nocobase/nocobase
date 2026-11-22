@@ -10,12 +10,21 @@ export interface InboxItem {
   readonly title: string;
   readonly body: string;
   readonly target?: NotificationTarget;
+  /** The notification kind it was sent as with `notify()`, such as `approval.requested`; absent on older items. */
+  readonly kind?: string;
+  /** The kind's category key, such as `approvals`, which the inbox filters by. */
+  readonly category?: string;
+  /** What the item is about: its source type and record id. */
+  readonly sourceType?: string;
+  readonly sourceId?: string;
   readonly readAt?: string;
   readonly createdAt: string;
 }
 
 export interface InboxFilters {
   readonly unreadOnly?: boolean;
+  /** Only items of this category key. */
+  readonly category?: string;
   readonly pageSize?: number;
   /** The `nextPageToken` of the previous page, passed back unchanged. */
   readonly pageToken?: string;
@@ -38,6 +47,7 @@ export async function fetchInbox(
     pageSize: String(filters.pageSize ?? 25),
   });
   if (filters.unreadOnly) query.set('unreadOnly', 'true');
+  if (filters.category) query.set('category', filters.category);
   if (filters.pageToken) query.set('pageToken', filters.pageToken);
   const value = await client.request<unknown>({
     path: `${MESSAGES_PATH}?${query}`,
@@ -66,6 +76,31 @@ export async function fetchUnreadCount(
     signal,
   });
   return response.data.count;
+}
+
+/** Unread items per category key; items sent without a category are counted under `undefined`. */
+export interface InboxCategoryCount {
+  readonly category?: string;
+  readonly count: number;
+}
+
+export async function fetchUnreadByCategory(
+  client: ApiClient,
+  signal?: AbortSignal,
+): Promise<{
+  readonly count: number;
+  readonly categories: readonly InboxCategoryCount[];
+}> {
+  const response = await client.request<{
+    readonly data: {
+      readonly count: number;
+      readonly categories?: readonly InboxCategoryCount[];
+    };
+  }>({ path: `${MESSAGES_PATH}/unreadCount?byCategory=true`, signal });
+  return {
+    count: response.data.count,
+    categories: response.data.categories ?? [],
+  };
 }
 
 /** Marks one message read or unread, returning it, or deletes it, returning nothing. */

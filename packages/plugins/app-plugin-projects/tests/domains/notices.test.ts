@@ -1,9 +1,7 @@
 // @vitest-environment node
 import {
   notificationServiceToken,
-  type NotificationChannelConfigInput,
-  type NotificationSendInput,
-  type NotificationChannelMap,
+  type NotificationNotifyInput,
 } from '@nocobase/app-plugin-notification/server';
 import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -27,10 +25,7 @@ let stop: () => void;
 
 /** An application that binds its own notices and translates keys as `key(values)`. */
 function application(
-  channel?: NotificationChannelConfigInput,
-  send?: (
-    input: NotificationSendInput<NotificationChannelMap>,
-  ) => Promise<void>,
+  notify?: (kind: string, input: NotificationNotifyInput) => Promise<void>,
 ): AppPluginApplication {
   const services = new Map<unknown, unknown>([
     [
@@ -57,17 +52,12 @@ function application(
       },
     ],
   ]);
-  if (channel) {
+  if (notify) {
     services.delete(projectsNoticesToken);
-    services.set(notificationServiceToken, { send });
+    services.set(notificationServiceToken, { notify });
   }
   return {
-    config: {
-      get: (name: string) =>
-        name === 'notification' && channel
-          ? { channels: { inbox: channel } }
-          : undefined,
-    },
+    config: { get: () => undefined },
     container: {
       has: (token: unknown) => services.has(token),
       resolve: (token: unknown) => services.get(token),
@@ -105,27 +95,25 @@ async function moveTo(
   });
 }
 
-it.each([
-  { type: 'in-app' },
-  { provider: 'in-app' },
-  { type: 'in-app', provider: 'in-app' },
-])('sends direct inbox notices with config %j', async (channel) => {
+it('sends notices with notify() as project kinds without an application inbox', async () => {
   stop();
-  const send = vi.fn(
-    async (
-      _input: NotificationSendInput<NotificationChannelMap>,
-    ): Promise<void> => {},
+  const notify = vi.fn(
+    async (_kind: string, _input: NotificationNotifyInput): Promise<void> => {},
   );
-  stop = startNotifications(application(channel, send), h.services.events);
+  stop = startNotifications(application(notify), h.services.events);
   const issue = await h.services.issues.create(lead(), {
     title: 'Direct notification',
     statusKey: 'in_progress',
   });
   await moveTo(alice(), issue, 'blocked');
-  await vi.waitFor(() => expect(send).toHaveBeenCalled());
-  expect(send).toHaveBeenCalledWith(
+  await vi.waitFor(() => expect(notify).toHaveBeenCalled());
+  expect(notify).toHaveBeenCalledWith(
+    'projects.attention',
     expect.objectContaining({
-      messages: { inbox: expect.objectContaining({ to: ['lead'] }) },
+      to: ['lead'],
+      data: expect.objectContaining({ body: 'Direct notification' }),
+      target: { type: 'route', path: `/issues/${issue.identifier}` },
+      source: { type: 'projects.issue', referenceId: issue.id },
     }),
   );
 });

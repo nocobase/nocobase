@@ -3,6 +3,7 @@ import {
   resolveAppClientContributions,
   type AppClientRegisteredRoute,
 } from '@nocobase/app-client/plugins';
+import { createNotificationRoutes } from '@nocobase/app-plugin-notification/client';
 import { describe, expect, it } from 'vitest';
 
 import usersRoutes from '@nocobase/app-plugin-users/client/routes';
@@ -21,6 +22,11 @@ function resolve() {
       packageName: packageMetadata.name,
       source: 'application',
       routes: applicationRoutes,
+    },
+    {
+      packageName: '@nocobase/app-plugin-notification',
+      source: 'plugin',
+      routes: createNotificationRoutes(),
     },
     // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
     {
@@ -49,9 +55,7 @@ function expectSettingsEntry(routes: readonly AppClientRegisteredRoute[]) {
         route.path === '/settings' || route.path.startsWith('/settings/'),
     ),
   ).toMatchObject([{ route: { name: 'settingsHome' }, children: [] }]);
-  expect(
-    selectedNavigationId(routes, '/settings/notifications/templates'),
-  ).toBe(
+  expect(selectedNavigationId(routes, '/settings/notifications')).toBe(
     routeKey(menu.find(({ route }) => route.name === 'settingsHome')!.route),
   );
 }
@@ -71,8 +75,8 @@ describe('System settings navigation with application menus', () => {
   it('opens Notifications from Messages and Database Explorer from System', () => {
     const routes = resolve();
     expect(categoryModules('messages', routes)).toContainEqual([
-      'notificationManagement',
-      '/settings/notifications/templates',
+      'notificationSettings',
+      '/settings/notifications',
     ]);
     const explorer = ['databaseExplorer', '/settings/database-explorer'];
     expect(categoryModules('system', routes)).toContainEqual(explorer);

@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  'push.deviceCount': '등록 {{total}}대 · 활성 {{active}}대',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': '푸시 알림',
   'push.description': '앱이 닫혀 있어도 각 기기에서 알림을 받습니다.',
   'push.subscribe': '이 기기 구독',
@@ -31,6 +36,9 @@ const koKR: LocaleResource<typeof enUS> = {
   'push.failed': '푸시 알림을 업데이트할 수 없습니다. 다시 시도하세요.',
   'push.loadingFailed': '기기를 불러올 수 없습니다. 다시 시도하세요.',
   'push.retry': '다시 시도',
+  'channelType.title': '브라우저 푸시',
+  'channelType.testHint':
+    '푸시를 켠 브라우저로 테스트 알림을 보냅니다. 먼저 개인 설정 › 알림에서 켜세요.',
 };
 
 export default koKR;

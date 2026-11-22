@@ -1,10 +1,15 @@
 const messages = {
-  'push.title': '推送通知',
-  'push.description': '每台设备独立订阅，应用 关闭后也能收到提醒。',
-  'push.subscribe': '订阅此设备',
+  'push.deviceCount': '已登记 {{total}} 台 · 已开启 {{active}} 台',
+  'push.active': '已开启',
+  'push.paused': '已暂停',
+  'push.pause': '暂停',
+  'push.resume': '恢复',
+  'push.title': '接收推送的设备',
+  'push.description': '在要接收浏览器推送的设备上分别开启。',
+  'push.subscribe': '在这台设备上开启推送',
   'push.name': '设备名称',
   'push.empty': '还没有订阅设备',
-  'push.emptyHint': '订阅此设备，即可在 应用 关闭后收到提醒。',
+  'push.emptyHint': '在这台设备上开启推送，即可在 应用关闭后收到提醒。',
   'push.ios':
     'iOS 或 iPadOS 16.4 及以上：在 Safari 的分享菜单中选择“添加到主屏幕”，然后从主屏幕打开 应用 再订阅。',
   'push.unsupported': '推送需要 HTTPS 和支持 Web Push 的浏览器。',
@@ -23,6 +28,9 @@ const messages = {
   'push.failed': '无法更新推送设置，请重试。',
   'push.loadingFailed': '无法加载设备，请重试。',
   'push.retry': '重试',
+  'channelType.title': '浏览器推送',
+  'channelType.testHint':
+    '给你开启了推送的浏览器发一条测试通知。请先在个人设置 › 通知中开启。',
 };
 
 export default messages;

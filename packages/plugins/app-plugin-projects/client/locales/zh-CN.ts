@@ -466,6 +466,34 @@ const pages = {
     tabsLabel: '我的任务视图',
     title: '我的任务',
   },
+  noticeKinds: {
+    contributor: '项目',
+    category: '项目',
+    recipients: '通知涉及且能看到该任务的人；不含操作者本人。',
+    businessRule:
+      '每条通知发送一次。成员可在通知设置里为每种通知选择推送和邮件。',
+    languagePolicy: '按应用默认语言生成一次。',
+    variables: { title: '发生了什么', body: '任务标题或评论摘录' },
+    mentioned: { name: '被提及', trigger: '有人在任务或评论中提到你。' },
+    assigned: {
+      name: '分配给你',
+      trigger: '有人把你设为任务的负责人或执行人。',
+    },
+    attention: {
+      name: '需要你处理',
+      trigger: '别人把你负责的任务移到需要你的状态，例如「受阻」或「待评审」。',
+    },
+    commented: { name: '新评论', trigger: '有人评论了你关注的任务。' },
+    statusChanged: {
+      name: '状态变更',
+      trigger: '你关注的任务进入了另一个状态。',
+    },
+    progress: {
+      name: '进展',
+      trigger:
+        '你的任务依赖的任务已完成、子任务全部完成，或其他插件报告了任务进展。',
+    },
+  },
   nav: {
     general: '常规',
     issues: '任务',

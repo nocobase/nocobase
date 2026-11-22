@@ -9,10 +9,6 @@ const settings = {
     documentation: 'View documentation',
     emptyExecutions: 'No workflow executions have been recorded yet.',
   },
-  notificationManagementDescription:
-    'View registered notification templates and synthetic content previews.',
-  notificationTemplates: 'Notification templates',
-  notificationManagement: 'Notifications',
   listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',

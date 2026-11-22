@@ -11,6 +11,7 @@ import idempotencyMigration from '../database/migrations/202609080001_create_not
 import instantMigration from '../database/migrations/202609130001_notification_instant_columns.js';
 import namesMigration from '../database/migrations/202609200001_notification_channel_names.js';
 import singleProviderMigration from '../database/migrations/202609200003_notification_single_provider.js';
+import kindsMigration from '../database/migrations/202611220005_notification_kinds_and_preferences.js';
 
 interface DispatchRow extends Row {
   readonly id: string;
@@ -65,6 +66,7 @@ describe('notification migrations through the migration runner', () => {
         instantMigration.name,
         namesMigration.name,
         singleProviderMigration.name,
+        kindsMigration.name,
       ],
       skipped: [baseMigration.name],
       warnings: [],
@@ -111,6 +113,7 @@ describe('notification migrations through the migration runner', () => {
     await expect(migrator.rollback()).resolves.toMatchObject({
       batch: 2,
       rolledBack: [
+        kindsMigration.name,
         singleProviderMigration.name,
         namesMigration.name,
         instantMigration.name,

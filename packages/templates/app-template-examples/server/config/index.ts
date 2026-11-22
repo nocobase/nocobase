@@ -8,6 +8,7 @@ import {
 import auth from './auth.js';
 import authorization from './authorization.js';
 import notification from './notification.js';
+import push from './push.js';
 import secrets from './secrets.js';
 import session from './session.js';
 import server from './server.js';
@@ -36,6 +37,7 @@ const defaultConfigs: AppConfigFactory<{
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
   notification: ReturnType<typeof notification>;
+  push: ReturnType<typeof push>;
   secrets: ReturnType<typeof secrets>;
   session: ReturnType<typeof session>;
   server: ReturnType<typeof server>;
@@ -64,6 +66,7 @@ const defaultConfigs: AppConfigFactory<{
   auth,
   authorization,
   notification,
+  push,
   secrets,
   session,
   server,

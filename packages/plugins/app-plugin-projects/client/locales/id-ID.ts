@@ -492,6 +492,45 @@ const idID: LocaleResource<typeof enUS> = {
     tabsLabel: 'Tampilan Tugas saya',
     title: 'Tugas saya',
   },
+  noticeKinds: {
+    contributor: 'Proyek',
+    category: 'Proyek',
+    recipients:
+      'Orang yang dituju pemberitahuan dan dapat melihat isu; tidak pernah orang yang bertindak.',
+    businessRule:
+      'Dikirim sekali per pemberitahuan. Anggota memilih push dan email untuk setiap jenis di pengaturan notifikasi.',
+    languagePolicy: 'Ditulis sekali dalam bahasa bawaan aplikasi.',
+    variables: {
+      title: 'Apa yang terjadi',
+      body: 'Judul isu atau kutipan komentar',
+    },
+    mentioned: {
+      name: 'Disebut',
+      trigger: 'Seseorang menyebut Anda di isu atau komentar.',
+    },
+    assigned: {
+      name: 'Ditugaskan kepada Anda',
+      trigger: 'Seseorang menjadikan Anda pemilik atau pelaksana isu.',
+    },
+    attention: {
+      name: 'Membutuhkan Anda',
+      trigger:
+        'Orang lain memindahkan isu milik Anda ke status yang membutuhkan Anda, seperti Terhambat atau Dalam tinjauan.',
+    },
+    commented: {
+      name: 'Komentar baru',
+      trigger: 'Seseorang mengomentari isu yang Anda ikuti.',
+    },
+    statusChanged: {
+      name: 'Status berubah',
+      trigger: 'Isu yang Anda ikuti pindah ke status lain.',
+    },
+    progress: {
+      name: 'Kemajuan',
+      trigger:
+        'Ketergantungan isu Anda selesai, semua sub-isu selesai, atau plugin lain melaporkan kemajuan.',
+    },
+  },
   nav: {
     general: 'Jenderal',
     issues: 'Tugas',

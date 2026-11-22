@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/registry.ts: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 /**
  * The inbox registry: how the browser words and renders what each contributor puts in the inbox, and which categories
  * the inbox sorts it into. Each contributor brings, keyed by its notices' `source` (and optionally `types`):
@@ -27,6 +28,7 @@ import {
   type Context,
 } from 'react';
 
+import { useInboxCategoryLabel } from './categories.js';
 import {
   entryCategories,
   type InboxCategory,
@@ -83,9 +85,14 @@ export interface InboxEntryWording<M> {
 }
 
 export interface InboxEntryRenderer<M = unknown> {
-  /** The source it renders, as its notices name it. */
-  readonly source: string;
-  /** The types it renders; every type of the source when left out. */
+  /**
+   * The notification kinds it renders, as `notify()` sent them (`approval.requested`): it takes every item of these
+   * kinds, whatever a source says about it.
+   */
+  readonly kinds?: readonly string[];
+  /** The source it renders, as a pending source's notices name it; give it or `kinds`. */
+  readonly source?: string;
+  /** The types of `source` it renders; every type of the source when left out. */
   readonly types?: readonly string[];
   /** The i18n namespace its parts translate in; the page's when left out. */
   readonly namespace?: Namespace;
@@ -159,7 +166,7 @@ export const decisionCategory: InboxEntryCategory = {
   type: 'entries',
   id: 'decision',
   label: (t) => t('inbox.kinds.decision', { defaultValue: 'Decisions' }),
-  title: (t) => t('inbox.tabs.decision', { defaultValue: 'Needs my decision' }),
+  title: (t) => t('inbox.tabs.decision', { defaultValue: 'Pending' }),
   empty: (t) =>
     t('inbox.empty.decision', {
       defaultValue: 'No decisions waiting for you',
@@ -168,18 +175,41 @@ export const decisionCategory: InboxEntryCategory = {
   waits: true,
 };
 
-/** Everything else: information, including every item the source knows nothing about. */
+/** Whether `at` falls on the viewer's today. */
+export function isToday(at: string, now: Date = new Date()): boolean {
+  const date = new Date(at);
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+/** Information that arrived today. */
+export const todayCategory: InboxEntryCategory = {
+  type: 'entries',
+  id: 'today',
+  label: (t) => t('inbox.kinds.today', { defaultValue: 'Today' }),
+  title: (t) => t('inbox.tabs.today', { defaultValue: 'Today' }),
+  empty: (t) => t('inbox.empty.info', { defaultValue: 'No notifications' }),
+  match: (entry) =>
+    entry.notice?.kind !== 'decision' && isToday(entry.item.createdAt),
+};
+
+/** Everything else: earlier information, including every item no source knows about. */
 export const infoCategory: InboxEntryCategory = {
   type: 'entries',
   id: 'info',
-  label: (t) => t('inbox.kinds.info', { defaultValue: 'Notifications' }),
-  title: (t) => t('inbox.tabs.info', { defaultValue: 'Notifications' }),
+  label: (t) => t('inbox.kinds.info', { defaultValue: 'Earlier' }),
+  title: (t) => t('inbox.tabs.info', { defaultValue: 'Earlier' }),
   empty: (t) => t('inbox.empty.info', { defaultValue: 'No notifications' }),
   match: (entry) => entry.notice?.kind !== 'decision',
 };
 
+/** Pending first, then today's and earlier information, as the list groups them. */
 export const defaultInboxCategories: readonly InboxCategory[] = [
   decisionCategory,
+  todayCategory,
   infoCategory,
 ];
 
@@ -228,11 +258,12 @@ export const fallbackRenderer: InboxEntryRenderer<null> = {
   icon: () => BellIcon,
   useWording() {
     const { t } = useTranslation();
-    const categories = categoriesOfRegistry(useInboxRegistry());
+    const categoryLabel = useInboxCategoryLabel();
     return {
+      // The notification category it was sent in, such as Approvals; a plain notification without one.
       label: (entry) =>
-        categoryOf(categories, entry)?.title(t) ??
-        t('inbox.tabs.info', { defaultValue: 'Notifications' }),
+        categoryLabel(entry.item.category) ??
+        t('inbox.notification', { defaultValue: 'Notification' }),
       text: ({ item }) => ({
         title: item.title,
         sentence: item.body && item.body !== item.title ? item.body : null,
@@ -241,25 +272,34 @@ export const fallbackRenderer: InboxEntryRenderer<null> = {
   },
 };
 
-/** The renderer of an item: the first registered for its source and type, else the fallback. */
+/**
+ * The renderer of an item: the first registered for its notification kind, else the first for its notice's source and
+ * type, else the fallback.
+ */
 export function rendererFor(
   registry: InboxRegistry,
   entry: InboxEntry,
 ): InboxEntryRenderer<never> {
+  const { kind } = entry.item;
   const notice = entry.notice;
-  const found = notice
-    ? registry.renderers.find(
-        (renderer) =>
-          renderer.source === notice.source &&
-          (!renderer.types || renderer.types.includes(notice.type)),
-      )
-    : undefined;
+  const found =
+    (kind
+      ? registry.renderers.find((renderer) => renderer.kinds?.includes(kind))
+      : undefined) ??
+    (notice
+      ? registry.renderers.find(
+          (renderer) =>
+            renderer.source !== undefined &&
+            renderer.source === notice.source &&
+            (!renderer.types || renderer.types.includes(notice.type)),
+        )
+      : undefined);
   return found ?? (fallbackRenderer as unknown as InboxEntryRenderer<never>);
 }
 
 /** A renderer's identity, to key what renders an item: an item's renderer changes once its notice arrives. */
 export function rendererKey(renderer: InboxEntryRenderer<never>): string {
-  return `${renderer.source}/${renderer.types?.join(',') ?? '*'}`;
+  return `${renderer.kinds?.join(',') ?? ''}/${renderer.source ?? ''}/${renderer.types?.join(',') ?? '*'}`;
 }
 
 /** The renderer of an item in the registry in effect. */

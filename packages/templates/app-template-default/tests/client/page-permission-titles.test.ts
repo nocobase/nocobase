@@ -31,10 +31,7 @@ const application = resolveAppClientContributions([
   {
     packageName: 'title-check-app',
     source: 'application',
-    // Include the routes the application adds once the built-in invitation is configured.
-    routes: createApplicationRoutes({
-      notificationTemplates: { invitationConfigured: true },
-    }),
+    routes: createApplicationRoutes(),
   },
 ]);
 const pages = flatten(application.routes).filter(

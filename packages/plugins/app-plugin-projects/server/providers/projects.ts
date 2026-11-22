@@ -1,3 +1,4 @@
+import { notificationTemplateRegistryToken } from '@nocobase/app-plugin-notification/server';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
 import { driveManagerToken } from '@nocobase/app-server/drive';
@@ -26,6 +27,7 @@ import {
   projectsTriggersToken,
 } from '../tokens.js';
 import { NAMESPACE } from './authorization.js';
+import { registerNoticeKinds } from './notice-kinds.js';
 import { createVisibilityFilter, startNotifications } from './notifications.js';
 
 const PURGE_DELAY_MS = 60_000;
@@ -113,6 +115,13 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
       container
         .resolve(userManagementServiceToken)
         .onInvitationAccepted((context) => invitations.accepted(context)),
+      ...(container.has(notificationTemplateRegistryToken)
+        ? [
+            registerNoticeKinds(
+              container.resolve(notificationTemplateRegistryToken),
+            ),
+          ]
+        : []),
       startNotifications(
         this.app,
         events,

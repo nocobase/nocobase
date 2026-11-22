@@ -501,6 +501,46 @@ const frFR: LocaleResource<typeof enUS> = {
     tabsLabel: 'Vues de Mes tâches',
     title: 'Mes tâches',
   },
+  noticeKinds: {
+    contributor: 'Projets',
+    category: 'Projets',
+    recipients:
+      "Les personnes concernées par l'avis qui peuvent voir le ticket ; jamais l'auteur de l'action.",
+    businessRule:
+      "Envoyé une fois par avis. Les membres choisissent le push et l'e-mail pour chaque type dans leurs paramètres de notification.",
+    languagePolicy:
+      "Rédigé une fois dans la langue par défaut de l'application.",
+    variables: {
+      title: "Ce qui s'est passé",
+      body: 'Le titre du ticket ou un extrait du commentaire',
+    },
+    mentioned: {
+      name: 'Mentionné',
+      trigger: "Quelqu'un vous mentionne dans un ticket ou un commentaire.",
+    },
+    assigned: {
+      name: 'Vous est attribué',
+      trigger: "Quelqu'un vous désigne responsable ou exécutant d'un ticket.",
+    },
+    attention: {
+      name: 'Vous attend',
+      trigger:
+        "Quelqu'un d'autre déplace un ticket dont vous êtes responsable vers un statut qui vous attend, comme Bloqué ou En revue.",
+    },
+    commented: {
+      name: 'Nouveau commentaire',
+      trigger: "Quelqu'un commente un ticket que vous suivez.",
+    },
+    statusChanged: {
+      name: 'Statut modifié',
+      trigger: 'Un ticket que vous suivez change de statut.',
+    },
+    progress: {
+      name: 'Avancement',
+      trigger:
+        'Une dépendance de votre ticket est terminée, tous les sous-tickets sont terminés ou un autre plugin signale un avancement.',
+    },
+  },
   nav: {
     general: 'Général',
     issues: 'Tâches',

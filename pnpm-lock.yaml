@@ -5036,6 +5036,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
@@ -5160,6 +5163,9 @@ importers:
 
   packages/plugins/app-plugin-notification-providers:
     dependencies:
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
       '@nocobase/app-plugin-notification':
         specifier: workspace:^
         version: link:../app-plugin-notification
@@ -6283,6 +6289,9 @@ importers:
       '@nocobase/app-plugin-notification-providers':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-notification-web-push':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-notification-web-push
       '@nocobase/app-plugin-office-flows-example':
         specifier: workspace:*
         version: link:../../examples/app-plugin-office-flows-example

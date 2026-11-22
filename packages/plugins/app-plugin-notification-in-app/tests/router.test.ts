@@ -43,6 +43,52 @@ describe('createInAppRouter', () => {
     });
   });
 
+  it('filters by category and counts unread messages per category', async () => {
+    const store = new MemoryInAppStore();
+    for (const [index, category] of [
+      'approvals',
+      'approvals',
+      'tasks',
+      undefined,
+    ].entries())
+      await store.deliver({
+        deliveryId: `delivery-${index}`,
+        notificationId: `notification-${index}`,
+        userId: 'user-1',
+        message: {
+          body: `Message ${index}`,
+          ...(category ? { kind: `${category}.kind`, category } : {}),
+        },
+        createdAt: `2026-08-26T00:00:0${index}.000Z`,
+      });
+    const router = await authenticatedRouter(store);
+
+    const approvals = (await (
+      await router.request('/messages?category=approvals')
+    ).json()) as { data: readonly { category?: string; kind?: string }[] };
+    expect(approvals.data).toHaveLength(2);
+    expect(approvals.data[0]).toMatchObject({
+      category: 'approvals',
+      kind: 'approvals.kind',
+    });
+    expect(
+      await (await router.request('/messages/unreadCount')).json(),
+    ).toEqual({ data: { count: 4 } });
+    const counted = (await (
+      await router.request('/messages/unreadCount?byCategory=true')
+    ).json()) as {
+      data: { count: number; categories: readonly object[] };
+    };
+    expect(counted.data.count).toBe(4);
+    expect(counted.data.categories).toEqual(
+      expect.arrayContaining([
+        { category: 'approvals', count: 2 },
+        { category: 'tasks', count: 1 },
+        { count: 1 },
+      ]),
+    );
+  });
+
   it('returns a stable page token and accepts it for the next page', async () => {
     const store = new MemoryInAppStore();
     for (let index = 0; index < 3; index++) {
