@@ -70,4 +70,42 @@ export default defineCliPlugins([
       ),
     ).toEqual([]);
   });
+
+  // The source checkout's cli/plugins.ts and the cli/plugins.js a build compiles from it.
+  const forms = (body: string) => ({
+    ts: `import { defineCliPlugins, type AppCliPlugins } from '@nocobase/app-cli';
+import tools from '@acme/app-plugin-tools/cli';
+${body.replace('const cliPlugins =', 'const cliPlugins: AppCliPlugins =')}
+export default cliPlugins;
+`,
+    js: `import { defineCliPlugins } from '@nocobase/app-cli';
+import tools from '@acme/app-plugin-tools/cli';
+${body}
+export default cliPlugins;
+//${'#'} sourceMappingURL=plugins.js.map
+`,
+  });
+
+  it.each(['ts', 'js'] as const)(
+    'ignores a call written inside a string or a template literal (%s)',
+    (form) => {
+      const source = forms(`const help = 'defineCliPlugins([tools])';
+const example = \`Register it: defineCliPlugins([tools]) \${help}\`;
+const cliPlugins = defineCliPlugins([]);`)[form];
+      expect(listCliPluginRegistrations(source)).toEqual([]);
+    },
+  );
+
+  it.each(['ts', 'js'] as const)(
+    'keeps a real call after a regular expression holding comment characters (%s)',
+    (form) => {
+      const source = forms(`const commentStart = /[/*]/;
+const ratio = 4 / 2 / 1;
+const cliPlugins = defineCliPlugins([tools]);
+const slashes = /\\/\\*/g;`)[form];
+      expect(listCliPluginRegistrations(source)).toEqual([
+        '@acme/app-plugin-tools',
+      ]);
+    },
+  );
 });

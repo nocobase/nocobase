@@ -4,10 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  createCliPluginsEditor,
-  readCliPlugins,
-} from '../../lib/cli-plugins.ts';
+import { readCliPlugins } from '../../lib/cli-plugins.ts';
 import {
   createClientPluginsEditor,
   readClientPlugins,
@@ -291,9 +288,7 @@ async function inspectComposition(
   const editor =
     kind === 'client'
       ? await createClientPluginsEditor(appRoot)
-      : kind === 'server'
-        ? await createServerPluginsEditor(appRoot)
-        : await createCliPluginsEditor(appRoot);
+      : await createServerPluginsEditor(appRoot);
   const entries = editor.list(file.sourceText);
   const order = entries.findIndex((entry) => entry.packageName === packageName);
   return order === -1
