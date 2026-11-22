@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createOriginResolver } from '../../settings.js';
-import { describeResetSender } from '../../settings-service.js';
+import {
+  describeResetSender,
+  settingsEnvironment,
+} from '../../settings-service.js';
 
 describe('createOriginResolver', () => {
   const originOf = createOriginResolver({
@@ -36,6 +39,35 @@ describe('createOriginResolver', () => {
     expect(originOf('auth.plugins').source).toBe('code');
     expect(originOf('auth.session.updateAge').source).toBe('default');
     expect(originOf('auth.secret').source).toBe('default');
+  });
+
+  it('counts a variable as set only when the application’s own environment set it, not the host process', () => {
+    const previous = process.env.AUTH_SESSION_EXPIRES_IN;
+    process.env.AUTH_SESSION_EXPIRES_IN = '60';
+    try {
+      const originOfApp = createOriginResolver({
+        layers: { defaults: {}, overrides: {} },
+        ...settingsEnvironment({
+          environmentVariableMappings: () => ({
+            APP_PUBLIC_ORIGIN: { path: 'app.publicOrigin', type: 'string' },
+            AUTH_SESSION_EXPIRES_IN: {
+              path: 'auth.session.expiresIn',
+              type: 'number',
+            },
+          }),
+          loadedEnvironmentVariables: () => ['APP_PUBLIC_ORIGIN'],
+        }),
+      });
+      expect(originOfApp('app.publicOrigin')).toEqual({
+        path: 'app.publicOrigin',
+        source: 'env',
+        env: 'APP_PUBLIC_ORIGIN',
+      });
+      expect(originOfApp('auth.session.expiresIn').source).toBe('default');
+    } finally {
+      if (previous === undefined) delete process.env.AUTH_SESSION_EXPIRES_IN;
+      else process.env.AUTH_SESSION_EXPIRES_IN = previous;
+    }
   });
 });
 

@@ -58,12 +58,7 @@ export function createAuthenticationSettingsService(
         publicOrigin: app?.publicOrigin || undefined,
         authBasePath: options.authBasePath,
         layers: options.config.layers?.(),
-        environmentVariables: Object.fromEntries(
-          Object.entries(
-            options.config.environmentVariableMappings?.() ?? {},
-          ).map(([variable, mapping]) => [variable, mapping.path]),
-        ),
-        environment: options.environment ?? loadedEnvironment(options.config),
+        ...settingsEnvironment(options.config, options.environment),
         authentication: options.authentication(),
         methods: options.methods,
         resetSender: options.resetSender,
@@ -80,17 +75,34 @@ export function createAuthenticationSettingsService(
 }
 
 /**
- * The declared variables set in the environment the configuration was loaded from: the application's own, which a host
- * may give each application separately, rather than the host process's. Only whether each is set matters; no value is
- * read. An accessor that does not report it falls back to the process environment.
+ * The declared section variables with the paths they set, and which of them the environment the configuration was
+ * loaded from set: the application's own environment, which a host may give each application separately, rather than
+ * the host process's. Only whether each is set matters; no value is read. An accessor that does not report the loaded
+ * variables falls back to the process environment.
  */
-function loadedEnvironment(
-  config: AppConfigAccessor,
-): Readonly<Record<string, string | undefined>> {
+export function settingsEnvironment(
+  config: Pick<
+    AppConfigAccessor,
+    'environmentVariableMappings' | 'loadedEnvironmentVariables'
+  >,
+  environment?: Readonly<Record<string, string | undefined>>,
+): {
+  readonly environmentVariables: Readonly<Record<string, string>>;
+  readonly environment: Readonly<Record<string, string | undefined>>;
+} {
   const loaded = config.loadedEnvironmentVariables?.();
-  return loaded
-    ? Object.fromEntries(loaded.map((variable) => [variable, 'set']))
-    : process.env;
+  return {
+    environmentVariables: Object.fromEntries(
+      Object.entries(config.environmentVariableMappings?.() ?? {}).map(
+        ([variable, mapping]) => [variable, mapping.path],
+      ),
+    ),
+    environment:
+      environment ??
+      (loaded
+        ? Object.fromEntries(loaded.map((variable) => [variable, 'set']))
+        : process.env),
+  };
 }
 
 /** Which sender password reset uses, by name only, in the precedence `createPasswordResetSender` applies. */
