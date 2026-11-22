@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Registrados: {{total}} · Ativos: {{active}}',
   'push.title': 'Notificações push',
   'push.description':
     'Receba lembretes em cada dispositivo, mesmo quando o aplicativo estiver fechado.',

@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  'push.deviceCount': '登録済み {{total}} 台 · 有効 {{active}} 台',
   'push.title': 'プッシュ通知',
   'push.description':
     'アプリを閉じている場合でも、各デバイスでリマインダーを受信します。',

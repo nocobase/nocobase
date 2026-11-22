@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  'push.deviceCount': '已登記 {{total}} 台 · 已啟用 {{active}} 台',
   'push.title': '推播通知',
   'push.description': '在每臺裝置上接收提醒，即使應用程式關閉時也是如此。',
   'push.subscribe': '訂閱該裝置',

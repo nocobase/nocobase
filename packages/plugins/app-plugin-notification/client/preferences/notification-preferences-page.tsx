@@ -25,7 +25,9 @@ export function NotificationPreferencesPage(): ReactElement {
   const [loaded, reload] = useLoaded(() => api.preferences(), 'preferences');
   const [saved, setSaved] = useState<NotificationPreferencesView>();
   const [saving, setSaving] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ id: string; message: string } | null>(
+    null,
+  );
   const view = saved ?? (loaded.state === 'ready' ? loaded.data : undefined);
   const toggle = (kind: string, channelType: string, enabled: boolean) => {
     const id = `${kind}:${channelType}`;
@@ -38,7 +40,10 @@ export function NotificationPreferencesPage(): ReactElement {
       },
       (cause: unknown) => {
         setSaving(null);
-        setError(failureMessage(cause, t('preferences.saveFailed')));
+        setError({
+          id,
+          message: failureMessage(cause, t('preferences.saveFailed')),
+        });
       },
     );
   };
@@ -136,12 +141,17 @@ export function NotificationPreferencesPage(): ReactElement {
                                   className='inline-flex items-center gap-1 text-xs text-muted-foreground'
                                   title={t('preferences.required')}
                                 >
-                                  <Switch aria-label={label} checked disabled />
                                   <LockIcon aria-hidden className='size-3' />
-                                  <span className='sr-only'>
-                                    {t('preferences.required')}
-                                  </span>
+                                  <span>{t('preferences.required')}</span>
                                 </span>
+                              )}
+                              {error?.id === `${kind.id}:${type}` && (
+                                <p
+                                  role='alert'
+                                  className='mt-1 text-xs text-destructive'
+                                >
+                                  {error.message}
+                                </p>
                               )}
                             </td>
                           );
@@ -153,11 +163,6 @@ export function NotificationPreferencesPage(): ReactElement {
               </tbody>
             </table>
           </div>
-          {error ? (
-            <p role='alert' className='text-sm text-destructive'>
-              {error}
-            </p>
-          ) : null}
           <p className='text-xs text-muted-foreground'>
             {[
               t('preferences.requiredHint'),

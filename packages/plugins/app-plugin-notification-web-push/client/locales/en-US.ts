@@ -1,5 +1,6 @@
 const messages = {
-  'push.title': 'Push notifications',
+  'push.deviceCount': 'Registered: {{total}} · Enabled: {{active}}',
+  'push.title': 'Push devices',
   'push.description':
     'Receive reminders on each device, even when the app is closed.',
   'push.subscribe': 'Subscribe this device',

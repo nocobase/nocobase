@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Registriert: {{total}} · Aktiviert: {{active}}',
   'push.title': 'Push-Benachrichtigungen',
   'push.description':
     'Erhalten Sie Erinnerungen auf jedem Gerät, auch wenn die App geschlossen ist.',

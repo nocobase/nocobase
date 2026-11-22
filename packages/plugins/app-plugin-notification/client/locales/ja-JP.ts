@@ -251,10 +251,10 @@ const jaJP: LocaleResource<typeof enUS> = {
   preferences: {
     title: '通知',
     description:
-      '通知の種類ごとに受け取る場所を選びます。アプリ内メッセージは常に届きます。',
+      '通知の種類ごとに受け取る場所を選びます。変更は自動保存されます。',
     notification: '通知',
     required: '常に送信',
-    requiredHint: 'グレーのチャネルは常に送信され、オフにできません。',
+    requiredHint: '必須のチャネルは通知ポリシーで指定されます。',
     emailHint: 'メールはアカウントのメールアドレスに届きます。',
     pushHint: 'ブラウザープッシュは下でオンにしたデバイスに届きます。',
     empty: '選択できる通知はまだありません。',

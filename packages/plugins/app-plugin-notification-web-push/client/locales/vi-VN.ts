@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Đã đăng ký: {{total}} · Đang bật: {{active}}',
   'push.title': 'Thông báo đẩy',
   'push.description':
     'Nhận lời nhắc trên từng thiết bị, ngay cả khi đóng ứng dụng.',

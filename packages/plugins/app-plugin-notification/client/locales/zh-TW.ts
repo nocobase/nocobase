@@ -241,10 +241,10 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   preferences: {
     title: '通知',
-    description: '選擇每類通知在哪裡接收。站內信總會收到。',
+    description: '選擇每類通知在哪裡接收。變更會自動儲存。',
     notification: '通知',
     required: '必發',
-    requiredHint: '灰色的管道為必發，不能關閉。',
+    requiredHint: '必收管道由通知策略指定。',
     emailHint: '郵件發到你的帳號信箱。',
     pushHint: '瀏覽器推播發到你在下方開啟的裝置。',
     empty: '暫時沒有可以設定的通知。',

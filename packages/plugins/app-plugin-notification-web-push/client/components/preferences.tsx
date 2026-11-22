@@ -64,7 +64,11 @@ export function PushPreferences(): React.ReactElement | null {
   const toaster = useToaster();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
-  const [denied, setDenied] = useState(false);
+  const [denied, setDenied] = useState(
+    () =>
+      typeof Notification !== 'undefined' &&
+      Notification.permission === 'denied',
+  );
   const [remove, setRemove] = useState<PushDevice | null>(null);
   const [confirm, setConfirm] = useState(false);
   const subscribeButtonRef = useRef<HTMLButtonElement>(null);
@@ -123,7 +127,7 @@ export function PushPreferences(): React.ReactElement | null {
     setBusy(true);
     try {
       const permission = await Notification.requestPermission();
-      setDenied(permission !== 'granted');
+      setDenied(permission === 'denied');
       if (permission !== 'granted') return;
       const registration = await registerWorker(base);
       await navigator.serviceWorker.ready;
@@ -169,7 +173,7 @@ export function PushPreferences(): React.ReactElement | null {
         ? 'push.denied'
         : null;
   const canSubscribe =
-    supported && !!key.data && !(ios && !standalone) && !registered;
+    supported && !denied && !!key.data && !(ios && !standalone) && !registered;
   const action = (
     <Button
       ref={subscribeButtonRef}
@@ -193,14 +197,21 @@ export function PushPreferences(): React.ReactElement | null {
         ) : null}
         {!!devices.data?.length && !registered ? action : null}
       </FieldLegend>
-      <FieldDescription>{t('push.description')}</FieldDescription>
+      <FieldDescription>
+        {devices.data?.length
+          ? t('push.deviceCount', {
+              total: devices.data.length,
+              active: devices.data.filter((device) => device.enabled).length,
+            })
+          : t('push.description')}
+      </FieldDescription>
       {ios && !standalone ? (
         <FieldDescription>{t('push.ios')}</FieldDescription>
       ) : null}
       {unavailable ? (
         <FieldDescription>{t(unavailable)}</FieldDescription>
       ) : null}
-      {!registered && supported ? (
+      {canSubscribe ? (
         <Field>
           <FieldLabel htmlFor='push-device-name'>{t('push.name')}</FieldLabel>
           <Input

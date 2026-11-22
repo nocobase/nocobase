@@ -240,10 +240,10 @@ const zhCN: NotificationResource = {
   },
   preferences: {
     title: '通知',
-    description: '选择每类通知在哪里接收。站内信总会收到。',
+    description: '选择每类通知在哪里接收。更改会自动保存。',
     notification: '通知',
-    required: '必发',
-    requiredHint: '灰色的渠道为必发，不能关闭。',
+    required: '必收',
+    requiredHint: '必收渠道由该通知的接收策略规定。',
     emailHint: '邮件发到你的账号邮箱。',
     pushHint: '浏览器推送发到你在下方开启的设备。',
     empty: '暂时没有可以设置的通知。',

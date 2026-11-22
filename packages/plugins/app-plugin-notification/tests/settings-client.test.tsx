@@ -82,10 +82,12 @@ describe('personal notification preferences', () => {
           : new Response(null, { status: 404 }),
       calls,
     );
-    const inApp = await screen.findByRole('switch', {
-      name: 'Approval requested · In-app messages',
-    });
-    expect(inApp).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByText('Always sent')).toBeVisible();
+    expect(
+      screen.queryByRole('switch', {
+        name: 'Approval requested · In-app messages',
+      }),
+    ).toBeNull();
     expect(
       screen.getByRole('columnheader', { name: 'In-app messages' }),
     ).toBeVisible();

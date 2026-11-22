@@ -251,11 +251,10 @@ const koKR: LocaleResource<typeof enUS> = {
   preferences: {
     title: '알림',
     description:
-      'Choose where you receive each kind of notification. In-app messages always arrive.',
+      'Choose where you receive each kind of notification. Changes are saved automatically.',
     notification: 'Notification',
     required: 'Always sent',
-    requiredHint:
-      'Greyed-out channels are always sent and cannot be turned off.',
+    requiredHint: 'Required channels are set by the notification policy.',
     emailHint: 'Email goes to your account email address.',
     pushHint: 'Browser push reaches the devices you turned it on for below.',
     empty: 'There are no notifications you can choose for yet.',
