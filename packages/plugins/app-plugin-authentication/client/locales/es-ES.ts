@@ -1,6 +1,7 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import type enUS from './en-US.js';
+import { withPluralForms } from '../plural-forms.js';
+import enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
   errors: {
@@ -36,9 +37,16 @@ const esES: LocaleResource<typeof enUS> = {
       'No se confía en este origen. Configure app.publicOrigin en config.yml en {{origin}}, reinicie la aplicación y vuelva a intentarlo.',
     INVALID_ORIGIN:
       'No se confía en este origen. Verifique app.publicOrigin en config.yml, reinicie la aplicación e inténtelo nuevamente.',
+    FAILED_TO_UNLINK_LAST_ACCOUNT: enUS.errors.FAILED_TO_UNLINK_LAST_ACCOUNT,
     INVALID_CSRF_ORIGIN:
       'Esta solicitud provino de otro sitio y fue rechazada. Vuelve a cargar la página e inténtalo de nuevo.',
   },
+  // The settings pages are not translated into this language yet; English is shown.
+  settings: withPluralForms(enUS.settings, 'es-ES'),
+  guide: enUS.guide,
+  prompt: enUS.prompt,
+  sso: enUS.sso,
+  account: withPluralForms(enUS.account, 'es-ES'),
 };
 
 export default esES;

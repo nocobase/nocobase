@@ -1,7 +1,8 @@
 # Copy this file to config.yml before starting the application.
 
 # app:
-#   Public origin used for callbacks and redirects in production.
+#   Public origin used for callbacks and redirects in production. System settings › Sign-in and authentication
+#   shows whether it is set and the callback URLs built from it.
 #   publicOrigin: https://apps.example.com
 
 # The language the application starts in, for the browser and the server alike. Which languages it offers follows
@@ -119,7 +120,8 @@ secrets:
 # MAILERS_SYSTEM_ENABLED=true
 
 auth:
-  # Set app.publicOrigin before explicitly enabling automatic password recovery.
+  # Set app.publicOrigin before explicitly enabling automatic password recovery. System settings › Sign-in and
+  # authentication checks all three conditions and shows where each effective auth value comes from.
   # passwordReset:
   #   enabled: true
   #   mailer: system # omit to preserve existing default selection
