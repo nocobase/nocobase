@@ -220,7 +220,7 @@ export class DetailsItemModel extends DisplayItemModel<{
     return (
       <FormItem
         {...mergedProps}
-        itemMarginBottom={this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? 8 : undefined}
+        itemMarginBottom={this.context.isMobileLayout && mergedProps.layout === 'horizontal' ? 6 : undefined}
         value={value}
       >
         <FieldModelRenderer model={modelForRender} />

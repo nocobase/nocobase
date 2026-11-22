@@ -14,7 +14,7 @@ import { expect, it, vi } from 'vitest';
 import { DetailsItemModel } from '../DetailsItemModel';
 
 it.each([
-  [true, 'horizontal', '8px'],
+  [true, 'horizontal', '6px'],
   [true, 'vertical', '12px'],
   [false, 'horizontal', '12px'],
 ] as const)('sets field spacing for isMobileLayout=%s and layout=%s', (isMobileLayout, layout, expectedMargin) => {
@@ -31,5 +31,5 @@ it.each([
   expect(container.querySelector<HTMLElement>('.ant-form-item-label')?.style.paddingBottom).toBe(
     layout === 'vertical' ? '0px' : '',
   );
-  expect(Field).toHaveBeenCalledWith(expect.not.objectContaining({ itemMarginBottom: 8 }), {});
+  expect(Field).toHaveBeenCalledWith(expect.not.objectContaining({ itemMarginBottom: expect.any(Number) }), {});
 });
