@@ -30,6 +30,10 @@ const write = (data: unknown): RequestInit => ({
   headers: { 'content-type': 'application/json', origin: 'http://localhost' },
   body: JSON.stringify(data),
 });
+// Each poll waits for the server to finish one model turn: run the requested `bash` tool (the first `acme kb` call
+// takes about 0.7 seconds on an idle machine) and send the next model request. Vitest's 1-second `expect.poll`
+// default is far too tight for that on a contended CI runner, so wait on the observable result instead.
+const turn = { timeout: 15_000 } as const;
 const config = (policy: string) => ({
   scope: [KNOWLEDGE_CHAT_SCOPE],
   context: { variable: { knowledgeRetrieval: policy } },
@@ -131,12 +135,12 @@ test('persists both browser policies through real creation HTTP and native searc
       );
       expect(sent.status).toBe(200);
       const stream = sent.text();
-      await expect.poll(() => fixture.streams.length).toBe(offset + 1);
+      await expect.poll(() => fixture.streams.length, turn).toBe(offset + 1);
       const first = JSON.stringify(fixture.requests.at(-1)?.messages);
       expect(first).toContain(`Retrieval policy: ${policy}.`);
       expect(first).not.toContain(marker);
       fixture.bash(offset, 'acme kb search --q policyfixture --json');
-      await expect.poll(() => fixture.streams.length).toBe(offset + 2);
+      await expect.poll(() => fixture.streams.length, turn).toBe(offset + 2);
       const searched = JSON.stringify(fixture.requests.at(-1)?.messages);
       expect(searched).toContain(docId);
       expect(searched).toContain('default');
@@ -144,7 +148,7 @@ test('persists both browser policies through real creation HTTP and native searc
         offset + 1,
         `acme kb search --q policyfixture --scope sales --json; acme kb read ${docId} --json`,
       );
-      await expect.poll(() => fixture.streams.length).toBe(offset + 3);
+      await expect.poll(() => fixture.streams.length, turn).toBe(offset + 3);
       expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
         marker,
       );
@@ -165,6 +169,7 @@ test('persists both browser policies through real creation HTTP and native searc
         .poll(
           async () =>
             (await (await admin.fetch(endpoint)).json()).data.execution?.status,
+          turn,
         )
         .toBe('idle');
     }
@@ -192,7 +197,7 @@ test('persists both browser policies through real creation HTTP and native searc
       );
       expect(later.status).toBe(200);
       const streamed = later.text();
-      await expect.poll(() => fixture.streams.length).toBe(offset + 1);
+      await expect.poll(() => fixture.streams.length, turn).toBe(offset + 1);
       expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
         `Retrieval policy: ${snapshot.policy}.`,
       );
@@ -200,7 +205,7 @@ test('persists both browser policies through real creation HTTP and native searc
         offset,
         'acme kb search --q policyfixture --scope default --json',
       );
-      await expect.poll(() => fixture.streams.length).toBe(offset + 2);
+      await expect.poll(() => fixture.streams.length, turn).toBe(offset + 2);
       expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
         docId,
       );

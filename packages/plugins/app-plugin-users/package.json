@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Users",
+      "zh-CN": "用户"
+    },
+    "description": {
+      "en-US": "Members, profiles and invitations",
+      "zh-CN": "成员、资料和邀请"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

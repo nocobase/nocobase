@@ -31,6 +31,7 @@ const ruRU: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Наборы прав',
+      'authentication-settings': 'Вход и аутентификация',
     },
     subjectTypes: {
       authenticated: 'Все вошедшие пользователи',

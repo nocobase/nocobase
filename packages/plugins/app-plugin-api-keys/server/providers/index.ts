@@ -1,6 +1,8 @@
 import {
   authenticationToken,
+  signInMethodsToken,
   userAdministrationServiceToken,
+  type AuthConfig,
 } from '@nocobase/app-plugin-authentication/server';
 import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
 import { schedulerServiceToken } from '@nocobase/app-plugin-scheduler/server/tokens';
@@ -144,6 +146,31 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     )
       return;
     this.booted = true;
+    if (container.has(signInMethodsToken))
+      this.releases.push(
+        container.resolve(signInMethodsToken).add({
+          id: 'api-key',
+          title: {
+            key: 'settings.methods.apiKey.title',
+            ns: '@nocobase/app-plugin-authentication',
+            defaultValue: 'API keys',
+          },
+          description: {
+            key: 'settings.methods.apiKey.description',
+            ns: '@nocobase/app-plugin-authentication',
+            defaultValue: 'Programs call the API without the sign-in page',
+          },
+          config: 'apiKey()',
+          signInEntry: false,
+          // Read each time the settings page asks, from the Better Auth plugins the application configures.
+          describe: () =>
+            (this.app.config.get<AuthConfig>('auth')?.plugins ?? []).some(
+              (plugin) => plugin.id === 'api-key',
+            )
+              ? { status: 'enabled', configPath: 'auth.plugins' }
+              : { status: 'notConfigured' },
+        }),
+      );
     if (container.has(apiDocsToken)) {
       const apiDocs = container.resolve(apiDocsToken);
       const resolveAuth = () => container.resolve(authenticationToken);

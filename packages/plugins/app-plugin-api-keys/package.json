@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "API keys",
+      "zh-CN": "API 密钥"
+    },
+    "description": {
+      "en-US": "System keys and personal keys",
+      "zh-CN": "系统密钥和个人密钥"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

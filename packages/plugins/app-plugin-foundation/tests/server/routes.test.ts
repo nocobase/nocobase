@@ -2,248 +2,33 @@ import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
   findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   generateApiDocument,
 } from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { FoundationOverview } from '../../shared/foundation.js';
+import { PLUGINS_ACCESS } from '../../shared/access.js';
 import routes, { apiRoutes } from '../../server/routes/index.js';
-import { foundationServiceToken } from '../../server/tokens.js';
+import { createApplicationFixture } from '../helpers/application.js';
 
-const OVERVIEW_PATH = '/foundation/overview';
-
-const OVERVIEW: FoundationOverview = {
-  capabilities: [],
-  checkedAt: '2026-10-20T08:00:00.000Z',
-  durationMs: 12,
-  connection: 'default',
-};
-
-describe('@nocobase/app-plugin-foundation API routes', () => {
-  it('reads registration names without scanning or leaking plugin internals', async () => {
-    const overview = vi.fn();
-    const app = application({ identity: 'unrestricted', overview });
-    const router = await apiRoutes.createRouter({
-      ...app,
-      registeredServerPlugins: [
-        {
-          packageName: '@nocobase/app-plugin-agents',
-          rootDir: '/private/app',
-          version: 'private',
-        },
-        { packageName: '@nocobase/app-plugin-agents' },
-      ],
-    } as AppPluginApplication);
-    const response = await router.request('/foundation/registrations');
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      data: { serverPlugins: ['@nocobase/app-plugin-agents'] },
-    });
-    expect(overview).not.toHaveBeenCalled();
-  });
-
-  it.each([undefined, []])(
-    'distinguishes unavailable facts from no registrations (%s)',
-    async (serverPlugins) => {
-      const overview = vi.fn();
-      const router = await apiRoutes.createRouter({
-        ...application({ identity: 'unrestricted', overview }),
-        registeredServerPlugins: serverPlugins,
-      });
-      const response = await router.request('/foundation/registrations');
-      expect(await response.json()).toEqual({
-        data: { serverPlugins: serverPlugins ?? null },
-      });
-      expect(overview).not.toHaveBeenCalled();
-    },
-  );
-
-  it.each(['anonymous', 'restricted'] as const)(
-    'protects registration facts for %s identities',
-    async (identity) => {
-      const overview = vi.fn();
-      const router = await apiRoutes.createRouter(
-        application({ identity, overview }),
-      );
-      expect((await router.request('/foundation/registrations')).status).toBe(
-        identity === 'anonymous' ? 401 : 403,
-      );
-      expect(overview).not.toHaveBeenCalled();
-    },
-  );
-
-  it('contributes the protected Foundation routes', () => {
-    expect(routes).toEqual([apiRoutes]);
-  });
-
-  it('rejects an anonymous request before collecting anything', async () => {
-    const overview = vi.fn();
-    const router = await apiRoutes.createRouter(
-      application({ identity: 'anonymous', overview }),
-    );
-
-    expect((await router.request(OVERVIEW_PATH)).status).toBe(401);
-    expect(overview).not.toHaveBeenCalled();
-  });
-
-  it('rejects a signed-in user without unrestricted access, whatever grants they hold', async () => {
-    const overview = vi.fn();
-    const router = await apiRoutes.createRouter(
-      application({ identity: 'restricted', overview }),
-    );
-
-    const response = await router.request(OVERVIEW_PATH);
-
-    expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      error: expect.objectContaining({
-        code: 403,
-        status: 'PERMISSION_DENIED',
-        reason: 'FOUNDATION_FORBIDDEN',
-        domain: 'foundation',
-      }),
-    });
-    expect(overview).not.toHaveBeenCalled();
-  });
-
-  it('answers an administrator with unrestricted access', async () => {
-    const overview = vi.fn().mockResolvedValue(OVERVIEW);
-    const router = await apiRoutes.createRouter(
-      application({ identity: 'unrestricted', overview }),
-    );
-
-    const response = await router.request(OVERVIEW_PATH);
-
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ data: OVERVIEW });
-    expect(overview).toHaveBeenCalledWith();
-  });
-
-  it('checks authorization again after a successful response has warmed the service', async () => {
-    let identity: 'anonymous' | 'restricted' | 'unrestricted' = 'unrestricted';
-    const overview = vi.fn().mockResolvedValue(OVERVIEW);
-    const router = await apiRoutes.createRouter(
-      application({
-        get identity() {
-          return identity;
-        },
-        overview,
-      }),
-    );
-    expect((await router.request(OVERVIEW_PATH)).status).toBe(200);
-    identity = 'restricted';
-    expect((await router.request(`${OVERVIEW_PATH}?refresh=true`)).status).toBe(
-      403,
-    );
-    identity = 'anonymous';
-    expect((await router.request(OVERVIEW_PATH)).status).toBe(401);
-    expect(overview).toHaveBeenCalledTimes(1);
-  });
-
-  it('reads only on GET and submits background work through POST', async () => {
-    const overview = vi.fn().mockResolvedValue(OVERVIEW);
-    const router = await apiRoutes.createRouter(
-      application({ identity: 'unrestricted', overview }),
-    );
-    for (const action of ['ensureScan', 'refresh', 'countRecords']) {
-      expect(
-        (await router.request(`/foundation/${action}`, { method: 'POST' }))
-          .status,
-      ).toBe(200);
-      expect(overview).toHaveBeenLastCalledWith(
-        action === 'refresh'
-          ? { refresh: true }
-          : action === 'countRecords'
-            ? { countRecords: true }
-            : {},
-      );
-    }
-    expect(
-      (await router.request('/foundation/overview?refresh=true')).status,
-    ).toBe(400);
-    expect(
-      (await router.request('/foundation/overview?countRecords=true')).status,
-    ).toBe(400);
-    expect((await router.request('/foundation/scanStatus')).status).toBe(200);
-  });
-
-  it('declares its route in the API document without schema problems', async () => {
-    const router = await apiRoutes.createRouter(
-      application({ identity: 'unrestricted', overview: vi.fn() }),
-    );
-
-    expect(findUndeclaredApiRoutes(router)).toEqual([]);
-    const document = await generateApiDocument(router, {
-      info: { title: 'test', version: '0.0.0' },
-    });
-    expect(findApiDocumentSchemaProblems(document)).toEqual([]);
-    expect(
-      (
-        document.paths?.['/api/foundation/overview'] as {
-          get?: { operationId?: string };
-        }
-      ).get?.operationId,
-    ).toBe('foundationGetOverview');
-  });
-
-  it.each(['anonymous', 'restricted'] as const)(
-    'protects collection browsing and explicit counts from a %s identity',
-    async (identity) => {
-      const overview = vi.fn();
-      const collections = vi.fn();
-      const router = await apiRoutes.createRouter(
-        application({ identity, overview, collections }),
-      );
-      expect((await router.request('/foundation/collections')).status).toBe(
-        identity === 'anonymous' ? 401 : 403,
-      );
-      expect(
-        (await router.request('/foundation/countRecords', { method: 'POST' }))
-          .status,
-      ).toBe(identity === 'anonymous' ? 401 : 403);
-      expect(overview).not.toHaveBeenCalled();
-      expect(collections).not.toHaveBeenCalled();
-    },
-  );
-
-  it('validates collection searches, paging and the explicit count flag', async () => {
-    const overview = vi.fn().mockResolvedValue(OVERVIEW);
-    const collections = vi.fn().mockResolvedValue({
-      items: [{ name: 'orders', kind: 'table' }],
-      total: 1,
-    });
-    const router = await apiRoutes.createRouter(
-      application({ identity: 'unrestricted', overview, collections }),
-    );
-    expect(
-      (await router.request('/foundation/collections?search=orders&offset=50'))
-        .status,
-    ).toBe(200);
-    expect(collections).toHaveBeenCalledWith({ search: 'orders', offset: 50 });
-    expect(
-      (await router.request('/foundation/collections?offset=-1')).status,
-    ).toBe(400);
-    expect(
-      (await router.request(`${OVERVIEW_PATH}?countRecords=unknown`)).status,
-    ).toBe(400);
-    expect(
-      (await router.request('/foundation/countRecords', { method: 'POST' }))
-        .status,
-    ).toBe(200);
-    expect(overview).toHaveBeenCalledWith({ countRecords: true });
-    collections.mockResolvedValue(undefined);
-    expect((await router.request('/foundation/collections')).status).toBe(503);
-  });
+const MAIL = '@nocobase/app-plugin-mail';
+const cleanups: (() => Promise<void>)[] = [];
+afterEach(async () => {
+  await Promise.all(cleanups.splice(0).map((cleanup) => cleanup()));
 });
 
-function application(options: {
-  readonly identity: 'anonymous' | 'restricted' | 'unrestricted';
-  readonly overview: ReturnType<typeof vi.fn>;
-  readonly collections?: ReturnType<typeof vi.fn>;
-}): AppPluginApplication {
+type Identity = 'anonymous' | 'without-grant' | 'with-grant';
+
+async function application(identity: () => Identity) {
+  const fixture = await createApplicationFixture({
+    dependencies: [MAIL],
+    installed: [{ name: MAIL, version: '1.2.3' }],
+  });
+  cleanups.push(fixture.cleanup);
+  const required = vi.fn();
   const container = new ServiceContainer();
   container.singleton(authenticationToken, () => ({
     required:
@@ -252,7 +37,7 @@ function application(options: {
         context: { json: (body: unknown, status: number) => unknown },
         next: () => Promise<void>,
       ) => {
-        if (options.identity === 'anonymous')
+        if (identity() === 'anonymous')
           return context.json({ code: 'UNAUTHENTICATED' }, 401);
         await next();
         return undefined;
@@ -266,27 +51,84 @@ function application(options: {
         next: () => Promise<void>,
       ) => {
         context.set('authz', {
-          // A restricted identity may hold every grant there is; only unrestricted access opens the overview.
-          snapshot: () =>
-            Promise.resolve({
-              unrestricted: options.identity === 'unrestricted',
-              permissions: [
-                { resource: { type: 'page', id: '*' }, actions: ['access'] },
-              ],
-            }),
+          require: (access: unknown) => {
+            required(access);
+            if (identity() !== 'with-grant')
+              throw new ApiError({
+                status: 'PERMISSION_DENIED',
+                reason: 'AUTHORIZATION_DENIED',
+                domain: 'authorization',
+                message: 'Denied.',
+              });
+            return Promise.resolve();
+          },
         });
         await next();
       },
   }));
-  container.singleton(foundationServiceToken, () => ({
-    overview: options.overview,
-    snapshot: options.overview,
-    scanStatus: options.overview,
-    ensureScan: options.overview,
-    collections: options.collections,
-  }));
-  return {
+  const app = {
     container,
     config: { get: () => undefined },
+    paths: {
+      rootDir: fixture.rootDir,
+      server: () => fixture.rootDir,
+    },
+    registeredServerPlugins: [{ packageName: MAIL, version: '1.2.3' }],
   } as unknown as AppPluginApplication;
+  return { router: await apiRoutes.createRouter(app), required };
 }
+
+describe('GET /api/foundation/plugins', () => {
+  it('lists the plugins for a holder of «Plugins · View»', async () => {
+    const { router, required } = await application(() => 'with-grant');
+
+    const response = await router.request(
+      `/foundation/plugins?client=${encodeURIComponent(MAIL)}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: [
+        expect.objectContaining({
+          packageName: MAIL,
+          name: 'mail',
+          version: '1.2.3',
+          state: 'registered',
+          enabled: true,
+        }),
+      ],
+      meta: { deployed: false },
+    });
+    expect(required).toHaveBeenCalledWith(PLUGINS_ACCESS);
+  });
+
+  it('answers 403 without the grant and 401 without a sign-in', async () => {
+    let identity: Identity = 'without-grant';
+    const { router } = await application(() => identity);
+
+    const denied = await router.request('/foundation/plugins');
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toEqual({
+      error: expect.objectContaining({ reason: 'AUTHORIZATION_DENIED' }),
+    });
+
+    identity = 'anonymous';
+    expect((await router.request('/foundation/plugins')).status).toBe(401);
+  });
+
+  it('declares itself in the API document', async () => {
+    const { router } = await application(() => 'with-grant');
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+    expect(
+      Object.values(document.paths ?? {}).map((item) => item?.get?.operationId),
+    ).toEqual(['foundationListPlugins']);
+  });
+
+  it('contributes only the plugins API', () => {
+    expect(routes).toEqual([apiRoutes]);
+  });
+});

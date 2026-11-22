@@ -42,6 +42,7 @@ const koKR: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': '권한 세트',
+      'authentication-settings': '로그인 및 인증',
     },
     subjectTypes: {
       authenticated: '로그인한 모든 사용자',
