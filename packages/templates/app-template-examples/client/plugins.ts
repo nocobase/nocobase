@@ -23,6 +23,7 @@ import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/client
 import routesExample from '@nocobase/app-plugin-routes-example/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
 import notification from '@nocobase/app-plugin-notification/client';
+import notificationWebPush from '@nocobase/app-plugin-notification-web-push/client';
 import repositoryExample from '@nocobase/app-plugin-repository-example/client';
 import scheduler from '@nocobase/app-plugin-scheduler/client';
 import file from '@nocobase/app-plugin-file/client';
@@ -55,6 +56,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   officeFlowsExample(),
   routesExample(),
   notification(),
+  notificationWebPush(),
   repositoryExample(),
   file(),
   fileExample(),

@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-notification-in-app",
   "displayName": "In-app Notification App Plugin",
-  "description": "Provides an authenticated in-app inbox, notification Channel, and development-only Client inbox page.",
+  "description": "Provides the authenticated in-app inbox, its notification Channel, the inbox page and the header inbox button.",
   "version": "2.0.0-beta.6",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

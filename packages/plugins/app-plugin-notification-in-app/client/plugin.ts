@@ -17,8 +17,10 @@ export interface InAppNotificationClientOptions {
   readonly inboxPath?: string;
 }
 
-/** The inbox page's route name, which `routeComponentOverrides` replaces it by. */
+/** The inbox page's route name. */
 export const INBOX_ROUTE_NAME = 'inbox';
+/** The inbox page's route id, which `routeComponentOverrides` replaces the page by. */
+export const INBOX_ROUTE_ID = '@nocobase/app-plugin-notification-in-app:inbox';
 /** The header button's name, which `headerActionOverrides` hides or replaces it by. */
 export const INBOX_HEADER_ACTION_NAME = 'inbox';
 

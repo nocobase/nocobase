@@ -29,21 +29,35 @@ export const inboxKeys: typeof Inbox.inboxKeys = {
   all: ['notificationInApp', 'inbox'],
   items: ['notificationInApp', 'inbox', 'items'],
   unread: ['notificationInApp', 'inbox', 'unread'],
-  page: (pageSize) => ['notificationInApp', 'inbox', 'items', pageSize],
+  unreadByCategory: ['notificationInApp', 'inbox', 'unread-by-category'],
+  page: (pageSize, filters) => [
+    'notificationInApp',
+    'inbox',
+    'items',
+    pageSize,
+    filters?.category ?? null,
+    filters?.unreadOnly === true,
+  ],
 };
 
 export function useInboxItems(
   pageSize: number = INBOX_PAGE_SIZE,
+  filters: Inbox.InboxListFilters = {},
 ): UseInfiniteQueryResult<InfiniteData<InboxListResponse, string | undefined>> {
   return useInfiniteQuery({
-    queryKey: inboxKeys.page(pageSize),
+    queryKey: inboxKeys.page(pageSize, filters),
     queryFn: async ({ pageParam }): Promise<InboxListResponse> => {
       await wait();
+      const shown = messages.filter(
+        (message) =>
+          (!filters.category || message.category === filters.category) &&
+          (!filters.unreadOnly || !message.readAt),
+      );
       const start = pageParam ? Number(pageParam) : 0;
       const end = start + pageSize;
       return {
-        data: messages.slice(start, end),
-        ...(end < messages.length ? { nextPageToken: String(end) } : {}),
+        data: shown.slice(start, end),
+        ...(end < shown.length ? { nextPageToken: String(end) } : {}),
       };
     },
     initialPageParam: undefined as string | undefined,
@@ -60,6 +74,28 @@ export function useInboxUnreadCount(): UseQueryResult<number> {
     },
   });
 }
+
+export function useInboxUnreadByCategory(): UseQueryResult<
+  readonly Inbox.InboxCategoryCount[]
+> {
+  return useQuery({
+    queryKey: inboxKeys.unreadByCategory,
+    queryFn: async () => {
+      await wait();
+      const counts = new Map<string | undefined, number>();
+      for (const message of messages)
+        if (!message.readAt)
+          counts.set(message.category, (counts.get(message.category) ?? 0) + 1);
+      return [...counts].map(([category, count]) =>
+        category ? { category, count } : { count },
+      );
+    },
+  });
+}
+
+// The preview has no realtime connection to wait for.
+// eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- stands in for the hook of the same name
+export const useInboxReadiness: typeof Inbox.useInboxReadiness = () => true;
 
 export function useInboxActions(): Inbox.InboxActions {
   const queryClient = useQueryClient();

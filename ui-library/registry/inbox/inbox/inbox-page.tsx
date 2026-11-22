@@ -1,3 +1,4 @@
+// Generated from packages/plugins/app-plugin-notification-in-app/client/inbox-page/inbox-page.tsx: edit it there, then run `node scripts/sync-ui-library-inbox.mjs`.
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import {
   useInboxActions,
@@ -5,7 +6,7 @@ import {
   useInboxRefresh,
   useInboxUnreadCount,
 } from '@nocobase/app-plugin-notification-in-app/client/inbox';
-import { useTranslation } from '@nocobase/i18n/client';
+import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCheckIcon } from 'lucide-react';
 import {
@@ -19,11 +20,18 @@ import {
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { PageHeader } from '#components/page-header';
+import { IN_APP_NOTIFICATION_CLIENT_NAMESPACE } from '@nocobase/app-plugin-notification-in-app/client';
 import { Button } from '#components/ui/button';
 import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
+import { useInboxCategories } from './categories.js';
+import {
+  useInboxRenderers,
+  useInboxSource,
+} from '@nocobase/app-plugin-notification-in-app/client';
 import type { InboxAction } from './inbox-actions.js';
+import { InboxRail } from './inbox-rail.js';
 import { InboxDetail, type InboxDetailToolbarInput } from './inbox-detail.js';
 import { InboxList, type InboxListCollection } from './inbox-list.js';
 import {
@@ -31,6 +39,7 @@ import {
   collectionCategories,
   entriesOf,
   entryLink,
+  entryUrl,
   freshIds,
   groupEntries,
   inboxFilterParams,
@@ -46,12 +55,13 @@ import {
 import { ContributorScope, InboxRegistryProvider } from './registry-scope.js';
 import {
   categoriesOfRegistry,
+  defaultInboxRegistry,
   useFeedItems,
   useInboxRegistry,
+  useProvidedInboxRegistry,
   type InboxRegistry,
 } from './registry.js';
 import {
-  defaultInboxSource,
   inboxSourceKeys,
   useInboxNotices,
   useInboxPending,
@@ -66,9 +76,12 @@ export interface InboxNotify {
 }
 
 export interface InboxPageProps {
-  /** What the application adds to the in-app items; `defaultInboxSource` adds nothing. */
+  /** What the application adds to the in-app items; the sources registered with `inboxSourcesToken` when left out. */
   readonly source?: InboxSource;
-  /** The contributors and categories; the provided registry, or `defaultInboxRegistry`, when left out. */
+  /**
+   * The contributors and categories; when left out, the provided registry, else the default categories with the
+   * renderers registered with `inboxRenderersToken`.
+   */
   readonly registry?: InboxRegistry;
   /** The page title; `inbox.title` when left out. */
   readonly title?: ReactNode;
@@ -137,18 +150,29 @@ function useDefaultNotify(): InboxNotify {
  */
 export function InboxPage({
   registry,
+  source,
   ...props
 }: InboxPageProps): ReactElement {
-  if (!registry) return <InboxPageContent {...props} />;
+  const provided = useProvidedInboxRegistry();
+  const renderers = useInboxRenderers();
+  const registered = useInboxSource();
+  const effective = useMemo(
+    () =>
+      registry ??
+      provided ?? { ...defaultInboxRegistry, renderers: [...renderers] },
+    [registry, provided, renderers],
+  );
   return (
-    <InboxRegistryProvider registry={registry}>
-      <InboxPageContent {...props} />
-    </InboxRegistryProvider>
+    <NamespaceScope ns={IN_APP_NOTIFICATION_CLIENT_NAMESPACE}>
+      <InboxRegistryProvider registry={effective}>
+        <InboxPageContent {...props} source={source ?? registered} />
+      </InboxRegistryProvider>
+    </NamespaceScope>
   );
 }
 
 function InboxPageContent({
-  source = defaultInboxSource,
+  source,
   title,
   description,
   detailToolbar,
@@ -157,7 +181,9 @@ function InboxPageContent({
   notify: givenNotify,
   pageSize,
   idPrefix = 'nocobase-inbox',
-}: Omit<InboxPageProps, 'registry'>): ReactElement {
+}: Omit<InboxPageProps, 'registry' | 'source'> & {
+  readonly source: InboxSource;
+}): ReactElement {
   const { t } = useTranslation();
   const defaultNotify = useDefaultNotify();
   const notify = givenNotify ?? defaultNotify;
@@ -183,7 +209,11 @@ function InboxPageContent({
   const feedCount = feeds.reduce((sum, { items }) => sum + items.length, 0);
   useInboxRefresh(source.refreshTopics);
 
-  const pages = useInboxItems(pageSize);
+  const pages = useInboxItems(pageSize, {
+    ...(filter.category ? { category: filter.category } : {}),
+    unreadOnly: view === 'unread',
+  });
+  const inboxCategories = useInboxCategories();
   const items = useMemo(
     () => pages.data?.pages.flatMap((page) => page.data) ?? [],
     [pages.data],
@@ -204,10 +234,12 @@ function InboxPageContent({
     [waiting.data, items, notices.data],
   );
   const groups = groupEntries(entries, categories);
-  const unread = Object.values(unreadByCategory(groups)).reduce(
-    (sum, count) => sum + count,
-    0,
-  );
+  const unread =
+    unreadTotal.data ??
+    Object.values(unreadByCategory(groups)).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
   const waitingCounts = waitingByCategory(groups, categories, pending.data);
   const pendingTotal =
     Object.values(waitingCounts).reduce((sum, count) => sum + count, 0) +
@@ -263,10 +295,15 @@ function InboxPageContent({
     (ids.length === 0 || notices.data !== undefined) &&
     (kind !== 'all' ||
       Object.values(collectionStates).every((state) => state.loaded));
+  // The item shown stays shown once it leaves the list, such as when reading it in Unread.
+  const [kept, setKept] = useState<InboxEntry | null>(null);
   const selected =
     visible.find((entry) => entry.item.id === selectedParam) ??
+    (selectedParam && kept?.item.id === selectedParam ? kept : null) ??
     visible[0] ??
     null;
+  if ((selected?.item.id ?? null) !== (kept?.item.id ?? null))
+    setKept(selected);
 
   const onPendingChangeRef = useRef(onPendingChange);
   useEffect(() => {
@@ -316,7 +353,7 @@ function InboxPageContent({
     );
   }
   // "Mark all read" acts on what is shown: everything in All with every kind, otherwise the loaded unread items listed.
-  const everything = view === 'all' && kind === 'all';
+  const everything = view !== 'todo' && kind === 'all' && !filter.category;
   const unreadShown = everything
     ? (unreadTotal.data ?? 0)
     : visible.filter((entry) => !entry.item.readAt).length;
@@ -349,6 +386,10 @@ function InboxPageContent({
     if (!entry.item.readAt) act(entry, 'read');
     const link = entryLink(entry);
     if (link) void navigate(link);
+    else {
+      const url = entryUrl(entry);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    }
   }
 
   function run(entry: InboxEntry, action: InboxAction): void {
@@ -364,7 +405,12 @@ function InboxPageContent({
   }
 
   // j / k / Enter, ignored while typing, with a modifier, or when a dialog is open.
-  const keysRef = useRef({ visible, selected, select, open });
+  const keysRef = useRef<{
+    visible: typeof visible;
+    selected: typeof selected;
+    select: typeof select;
+    open: typeof open;
+  } | null>(null);
   useEffect(() => {
     keysRef.current = { visible, selected, select, open };
   });
@@ -375,6 +421,7 @@ function InboxPageContent({
       if (document.querySelector('[role="dialog"], [role="alertdialog"]'))
         return;
       const current = keysRef.current;
+      if (!current) return;
       const key = event.key.toLowerCase();
       if (key === 'j' || key === 'k') {
         const id = stepSelection(
@@ -445,17 +492,34 @@ function InboxPageContent({
           }
         />
       </div>
-      <div className='flex min-h-0 flex-1'>
+      <div className='flex min-h-0 flex-1 max-lg:flex-col'>
         <div
           className={cn(
-            'flex min-h-0 w-full flex-col border-r bg-sidebar/60 lg:w-[26rem] lg:shrink-0',
+            'lg:shrink-0',
+            showsDetail ? 'max-lg:hidden' : undefined,
+          )}
+        >
+          <InboxRail
+            filter={filter}
+            unread={unread}
+            pending={pendingTotal}
+            categories={inboxCategories}
+            onFilter={(value) =>
+              replaceParams(
+                inboxFilterParams(withoutSelection(), value, categories),
+              )
+            }
+            idPrefix={idPrefix}
+          />
+        </div>
+        <div
+          className={cn(
+            'flex min-h-0 w-full flex-1 flex-col border-r bg-sidebar/60 lg:w-[24rem] lg:flex-none lg:shrink-0',
             showsDetail ? 'max-lg:hidden' : undefined,
           )}
         >
           <InboxList
             filter={filter}
-            unread={unread}
-            pending={pendingTotal}
             waiting={waitingCounts}
             feedCount={feedCount}
             feeds={feeds.map(({ feed, items: feedItems }) =>

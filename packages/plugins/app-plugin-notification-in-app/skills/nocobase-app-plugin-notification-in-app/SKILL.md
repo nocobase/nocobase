@@ -28,7 +28,7 @@ This Skill is published with `@nocobase/app-plugin-notification-in-app`. The plu
 
 - Do not replace durable notifications with transient browser toasts.
 - Do not edit inbox tables directly or publish forged realtime events as notification state.
-- Do not copy an inbox page or a header inbox button into the application: the plugin registers the route `inbox` (`/inbox`) and the header action `inbox`. Customize with plugin options, the `inboxRenderersToken` and `inboxSourcesToken` extension lists, then `routeComponentOverrides` / `headerActionOverrides` named `inbox`.
+- Do not copy an inbox page or a header inbox button into the application: the plugin registers the route `inbox` (`/inbox`) and the header action `inbox`. Customize with plugin options, the `inboxRenderersToken` and `inboxSourcesToken` extension lists, then `routeComponentOverrides` on `@nocobase/app-plugin-notification-in-app:inbox` / `headerActionOverrides` named `inbox`.
 
 # Input Contract
 

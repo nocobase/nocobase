@@ -21,5 +21,4 @@ export const pagePermissionTitles: PagePermissionTitles = {
   'skills-new': 'onlineAgent.newSkill',
   'skills-detail': 'onlineAgent.skillDetail',
   // The template detail drawer shares the list page grant.
-  notificationTemplate: 'settings.notificationTemplates',
 };

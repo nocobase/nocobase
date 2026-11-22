@@ -1,7 +1,4 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
-import { createAppClientConfig } from '@nocobase/app-client';
-import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
-import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import { Home } from 'lucide-react';
 import personalSettingsRoutes from './pages/me/routes.js';
 import settingsShellRoutes from './pages/settings/shell-routes.js';
@@ -21,16 +18,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'home',
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',
-  },
-  {
-    // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an
-    // unread badge). The plugin's API answers each person's own messages only, so the page needs no authorization of
-    // its own.
-    authz: 'skip',
-    auth: 'required',
-    componentLoader: () => import('./pages/inbox.js'),
-    name: 'inbox',
-    path: '/inbox',
   },
   {
     auth: 'guest',
@@ -72,22 +59,16 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 ]);
 
 // The System settings shell shows only the modules a viewer may open. Users and Permission management
-// (`./pages/settings/routes.js`) are registered from the start, beside the Database Explorer; further business
-// administration joins the same shell.
-export function createApplicationRoutes(
-  rawConfig: unknown = readAppClientRuntimeConfig(),
-): readonly AppClientRouteContribution[] {
-  const config = createAppClientConfig({ rawConfig });
-  return includeNotificationTemplateRoutes(
-    [
-      appRoutes,
-      settingsShellRoutes,
-      personalSettingsRoutes,
-      systemSettingsRoutes,
-      databaseExplorerRoutes,
-    ],
-    config.get<boolean>('notificationTemplates.invitationConfigured') === true,
-  );
+// (`./pages/settings/routes.js`) are registered from the start, beside the Database Explorer; plugins add theirs,
+// such as Messages › Notifications from `@nocobase/app-plugin-notification`.
+export function createApplicationRoutes(): readonly AppClientRouteContribution[] {
+  return [
+    appRoutes,
+    settingsShellRoutes,
+    personalSettingsRoutes,
+    systemSettingsRoutes,
+    databaseExplorerRoutes,
+  ];
 }
 
 const routes: readonly AppClientRouteContribution[] = createApplicationRoutes();

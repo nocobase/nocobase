@@ -2,7 +2,6 @@ import databaseExplorer from '../../pages/settings/database-explorer/zh-CN.js';
 import settings from './settings-zh-CN.js';
 import type { SystemResource } from './en-US.js';
 import deviceApprovalZhCN from '#extensions/nocobase-device-approval/locales/zh-CN';
-import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
@@ -77,8 +76,6 @@ const systemZhCN: SystemResource = {
 
   // The UI Library block of the `/device` page; the keys below may reword it.
   ...deviceApprovalZhCN,
-  // The UI Library block of the `/inbox` page; the keys below may reword it.
-  ...inboxZhCN,
   // Shared form wording overrides the defaults included by composed blocks.
   formFeedback: {
     field: '此字段的值未通过校验，请检查并修改后重试。',
@@ -87,12 +84,6 @@ const systemZhCN: SystemResource = {
     network: '无法连接，请检查网络后重试。已保留您的输入。',
     denied: '当前权限无法提交此表单。已保留您的输入。',
   },
-  // The UI Library component of the header's inbox button.
-  'inboxButton.title': '收件箱',
-  'inboxButton.pending': '收件箱，{{count}} 项待处理',
-  'inboxButton.unread': '收件箱，{{count}} 条未读',
-  'inboxButton.pendingHint': '{{count}} 项等你处理，处理后减少。',
-  'inboxButton.unreadHint': '{{count}} 条未读，阅读后减少。',
   'auth.welcome': '欢迎回来',
   'auth.loginDescription': '使用用户名或邮箱和密码登录',
   'auth.registerTitle': '创建账户',

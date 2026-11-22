@@ -6,7 +6,7 @@ Build application-specific features directly in the application by default. Use 
 
 ## Default template scope
 
-Default is the clean application starting point. It registers product capabilities but no `app-plugin-*-example` plugins, example pages, application sample services, or sample APIs. Keep runnable demonstrations in `app-template-examples`. Application-owned business server routes start empty; Users supplies the standard Permission Set role scope. Application-owned pages include the localized homepage and inbox, and the Users and Permission management settings modules, registered from the start.
+Default is the clean application starting point. It registers product capabilities but no `app-plugin-*-example` plugins, example pages, application sample services, or sample APIs. Keep runnable demonstrations in `app-template-examples`. Application-owned business server routes start empty; Users supplies the standard Permission Set role scope. Application-owned pages include the localized homepage and the Users and Permission management settings modules, registered from the start.
 
 `database/main/` contains required permission initialization only; application-owned business migrations and seeds start empty. Do not add article history, demo seeds, or compatibility copies from Examples to this template. Existing installations retain their own executed migration sources when upgrading; see the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations).
 
@@ -145,4 +145,4 @@ Assign application business roles to explicitly identified users through the pre
 
 Run `pnpm exec vitest run tests/server/authorization-assignment-safety.test.ts` after permission initialization changes and before delivery. It boots the real application on an isolated database and inspects initialized wildcard assignments and the inherited member role. Keep this test in generated applications. An intentional global default requires explicit user authorization, a working administration surface and corresponding acceptance tests before deliberately updating the expected baseline; do not delete, skip or loosen the guard to make tests pass. Test an ordinary user with only the configured role: inspect all effective grant sources and verify both hidden buttons and rejected direct API calls.
 
-For notification business, follow [notification template delivery](.agents/rules/notification-templates.md), including source-owned scenario registration and synthetic-only preview.
+For notification business, follow [notifications](.agents/rules/notification-templates.md): the plugins own the inbox and notification pages, and business code sends with `notify()`.

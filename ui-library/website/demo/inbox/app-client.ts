@@ -11,6 +11,7 @@ export {
 } from '../../../../packages/app/app-client/src/navigation-guard.js';
 import type * as AppClient from '@nocobase/app-client';
 import { removeDemoLink } from '../agents/agents-chat-client.js';
+import { demoPreferences } from './inbox-data.js';
 
 // The preview's stand-in for the application client, aliased in vite.config.ts: the inbox block asks it for the API
 // client, which the demo's source never calls, and for the toaster, which writes to the console.
@@ -29,6 +30,9 @@ export const useApiClient: typeof AppClient.useApiClient = () =>
           decodeURIComponent(unlink[1]),
           decodeURIComponent(unlink[2]),
         );
+      // The inbox's categories come from the notification plugin's kinds.
+      if (path === 'notifications/preferences')
+        return { data: demoPreferences };
       return { data: null };
     },
   }) as unknown as AppClient.ApiClient;

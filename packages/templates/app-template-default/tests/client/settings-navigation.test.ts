@@ -251,37 +251,6 @@ describe('System settings navigation', () => {
     expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
   });
 
-  it('shows the notification template view as a Messages card once an invitation mailer is configured', () => {
-    const routes = resolveAppClientContributions([
-      {
-        packageName: app,
-        source: 'application',
-        routes: createApplicationRoutes({
-          notificationTemplates: { invitationConfigured: true },
-        }),
-      },
-    ]).routes;
-    expect(catalog(routes)).toEqual([
-      [
-        'systemSettings.account',
-        [
-          ['settingsUsers', '/settings/users'],
-          ['permissionManagement', '/settings/roles'],
-        ],
-      ],
-      [
-        'systemSettings.messages',
-        [['notificationManagement', '/settings/notifications/templates']],
-      ],
-      [
-        'systemSettings.data',
-        [['databaseExplorer', '/settings/database-explorer']],
-      ],
-    ]);
-    expect(
-      buildRouteNavigation(routes, new Set()).map(({ route }) => route.name),
-    ).toEqual(['home', 'settingsHome']);
-  });
 });
 
 it('places database browsing in Data and files and hides its card when access is denied', () => {
@@ -289,7 +258,7 @@ it('places database browsing in Data and files and hides its card when access is
     {
       packageName: app,
       source: 'application',
-      routes: createApplicationRoutes({}),
+      routes: createApplicationRoutes(),
     },
   ]).routes;
   const page = find(routes, 'databaseExplorer');

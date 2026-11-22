@@ -1,14 +1,28 @@
 import type { InboxItem } from '@nocobase/app-plugin-notification-in-app/client/inbox';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { StampIcon } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InboxPage } from '../../registry/inbox/inbox/inbox-page';
+import {
+  defineInboxRenderer,
+  type InboxEntryRenderer,
+} from '../../registry/inbox/inbox/registry';
 import type { InboxSource } from '../../registry/inbox/inbox/source';
 import { item, notice } from './fixtures';
 import { Frame } from './frame';
 
 const plugin = vi.hoisted(() => ({
   items: [] as InboxItem[],
+  filters: [] as unknown[],
+  renderers: [] as unknown[],
+  source: { id: 'notifications' } as unknown,
   mark: vi.fn(),
   readAll: vi.fn(),
   refresh: vi.fn(),
@@ -18,19 +32,26 @@ const plugin = vi.hoisted(() => ({
 // The plugin's hooks, answering from memory: what the page does with them is under test, not the plugin.
 vi.mock('@nocobase/app-plugin-notification-in-app/client/inbox', () => ({
   inboxKeys: { all: ['notificationInApp', 'inbox'] },
-  useInboxItems: () => ({
-    data: { pages: [{ data: plugin.items }], pageParams: [undefined] },
-    isFetching: false,
-    isError: false,
-    error: null,
-    isFetchingNextPage: false,
-    hasNextPage: false,
-    refetch: vi.fn(),
-    fetchNextPage: vi.fn(),
-  }),
+  useInboxItems: (_pageSize: number, filters: unknown) => {
+    plugin.filters.push(filters);
+    return {
+      data: { pages: [{ data: plugin.items }], pageParams: [undefined] },
+      isFetching: false,
+      isError: false,
+      error: null,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      refetch: vi.fn(),
+      fetchNextPage: vi.fn(),
+    };
+  },
   useInboxUnreadCount: () => ({
     data: plugin.items.filter((entry) => !entry.readAt).length,
   }),
+  useInboxUnreadByCategory: () => ({
+    data: [{ category: 'projects', count: 1 }],
+  }),
+  useInboxReadiness: () => true,
   useInboxActions: () => ({
     mark: plugin.mark,
     readAll: plugin.readAll,
@@ -39,9 +60,26 @@ vi.mock('@nocobase/app-plugin-notification-in-app/client/inbox', () => ({
   useInboxRefresh: plugin.refresh,
 }));
 
+// The plugin's client entry: its namespace, and what others registered into its two extension lists.
+vi.mock('@nocobase/app-plugin-notification-in-app/client', () => ({
+  IN_APP_NOTIFICATION_CLIENT_NAMESPACE:
+    '@nocobase/app-plugin-notification-in-app',
+  useInboxRenderers: () => plugin.renderers,
+  useInboxSource: () => plugin.source,
+}));
+
 vi.mock('@nocobase/app-client', () => ({
   ApiClientError: class extends Error {},
-  useApiClient: () => ({}),
+  // The categories come from the notification plugin's kinds.
+  useApiClient: () => ({
+    request: () =>
+      Promise.resolve({
+        data: {
+          channelTypes: ['in-app'],
+          kinds: [{ category: 'Projects', categoryKey: 'projects' }],
+        },
+      }),
+  }),
   useToaster: () => ({ show: plugin.toast, close: vi.fn() }),
 }));
 
@@ -50,18 +88,24 @@ beforeEach(() => {
   plugin.readAll.mockReset().mockResolvedValue(0);
   plugin.refresh.mockReset();
   plugin.toast.mockReset();
-  plugin.items = [item('a'), item('b', { readAt: '2026-10-01T09:00:00.000Z' })];
+  plugin.filters = [];
+  plugin.renderers = [];
+  plugin.source = { id: 'notifications' };
+  plugin.items = [
+    item('a', { category: 'projects' }),
+    item('b', { readAt: '2026-10-01T09:00:00.000Z' }),
+  ];
 });
 
 describe('the inbox page', () => {
-  it("lists the plugin's messages as notifications without a source, and marks one read when selected", async () => {
+  it("lists the plugin's messages without a source, and marks one read when selected", async () => {
     render(
       <Frame>
         <InboxPage />
       </Frame>,
     );
     expect(
-      await screen.findByRole('heading', { name: /Notifications/u }),
+      await screen.findByRole('heading', { name: /Earlier/u }),
     ).toBeInTheDocument();
     // The first item is shown in the detail pane.
     expect(
@@ -76,7 +120,26 @@ describe('the inbox page', () => {
     await waitFor(() => expect(plugin.mark).toHaveBeenCalledWith('a', 'read'));
   });
 
-  it('adds what a source knows: decisions first, counted on To do, refreshed by its topics', async () => {
+  it('asks the server for one category or the unread items as the rail chooses', async () => {
+    render(
+      <Frame>
+        <InboxPage />
+      </Frame>,
+    );
+    const rail = await screen.findByTestId('nocobase-inbox-rail');
+    fireEvent.click(
+      await within(rail).findByRole('button', { name: /Projects/u }),
+    );
+    await waitFor(() =>
+      expect(plugin.filters.at(-1)).toMatchObject({ category: 'projects' }),
+    );
+    fireEvent.click(within(rail).getByRole('button', { name: /Unread/u }));
+    await waitFor(() =>
+      expect(plugin.filters.at(-1)).toEqual({ unreadOnly: true }),
+    );
+  });
+
+  it('adds what a source knows: decisions first, counted on Pending, refreshed by its topics', async () => {
     const source: InboxSource = {
       id: 'test',
       notices: (ids) =>
@@ -94,11 +157,39 @@ describe('the inbox page', () => {
       </Frame>,
     );
     expect(
-      await screen.findByRole('heading', { name: /Needs my decision/u }),
+      await screen.findByRole('heading', { name: /Pending/u }),
     ).toHaveTextContent('3');
     expect(screen.getByLabelText('3 waiting')).toBeInTheDocument();
     expect(plugin.refresh).toHaveBeenCalledWith(['test:inbox']);
     await waitFor(() => expect(onPendingChange).toHaveBeenLastCalledWith(3));
+  });
+
+  it('uses the sources and renderers registered with the plugin when none is passed', async () => {
+    plugin.source = {
+      id: 'registered',
+      pending: () => Promise.resolve({ decision: 2 }),
+    } satisfies InboxSource;
+    plugin.renderers = [
+      defineInboxRenderer<null>({
+        kinds: ['approval.requested'],
+        icon: () => StampIcon,
+        // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- the renderer's hook, which needs no other hook here
+        useWording: () => ({
+          label: () => 'Approval',
+          text: () => ({ title: 'Approve the budget', sentence: '' }),
+        }),
+      }) as InboxEntryRenderer<never>,
+    ];
+    plugin.items = [item('a', { kind: 'approval.requested' })];
+    render(
+      <Frame>
+        <InboxPage />
+      </Frame>,
+    );
+    expect(await screen.findByLabelText('2 waiting')).toBeInTheDocument();
+    expect(
+      (await screen.findAllByText('Approve the budget')).length,
+    ).toBeGreaterThan(0);
   });
 
   it('deletes an item through the plugin and says so', async () => {

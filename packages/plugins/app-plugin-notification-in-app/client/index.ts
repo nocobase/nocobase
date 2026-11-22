@@ -25,6 +25,7 @@ export * from './inbox-page/registry.js';
 export * from './inbox-page/source.js';
 export {
   INBOX_HEADER_ACTION_NAME,
+  INBOX_ROUTE_ID,
   INBOX_ROUTE_NAME,
   type InAppNotificationClientOptions,
 } from './plugin.js';

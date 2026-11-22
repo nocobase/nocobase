@@ -135,6 +135,9 @@ notification:
   channels:
     inbox:
       type: in-app
+    # Browser push to the devices each person turned on; needs push.privateKey (WEB_PUSH_PRIVATE_KEY).
+    webPush:
+      type: web-push
 
     # Configuring mailers alone does not create a notification channel.
     # system-email:
