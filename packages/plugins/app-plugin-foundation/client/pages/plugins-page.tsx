@@ -431,7 +431,9 @@ function CommandDialog({
         <div className='space-y-2 rounded-lg bg-muted px-3 py-2 font-mono text-xs'>
           {commands.map(({ line, note }) => (
             <div key={line}>
-              <code className='block break-all select-all'>{line}</code>
+              <code className='block break-words whitespace-pre-wrap select-all'>
+                {line}
+              </code>
               {note ? (
                 <div className='font-sans text-muted-foreground'>{note}</div>
               ) : null}

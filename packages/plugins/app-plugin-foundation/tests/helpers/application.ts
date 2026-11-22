@@ -7,6 +7,7 @@ export interface FixturePlugin {
   readonly version?: string;
   readonly entries?: readonly ('client' | 'server' | 'cli')[];
   readonly peers?: readonly string[];
+  readonly optionalPeers?: readonly string[];
   readonly nocobase?: Record<string, unknown>;
 }
 
@@ -50,7 +51,15 @@ export async function createApplicationFixture(options: {
           ]),
         ),
         peerDependencies: Object.fromEntries(
-          (plugin.peers ?? []).map((name) => [name, 'workspace:^']),
+          [...(plugin.peers ?? []), ...(plugin.optionalPeers ?? [])].map(
+            (name) => [name, 'workspace:^'],
+          ),
+        ),
+        peerDependenciesMeta: Object.fromEntries(
+          (plugin.optionalPeers ?? []).map((name) => [
+            name,
+            { optional: true },
+          ]),
         ),
         ...(plugin.nocobase ? { nocobase: plugin.nocobase } : {}),
       }),

@@ -122,15 +122,52 @@ describe('FoundationPluginCatalog', () => {
     });
   });
 
+  it('asks to enable an optional requirement first, but does not flag an enabled plugin without it', async () => {
+    const USERS = '@nocobase/app-plugin-users';
+    const NOTIFICATION = '@nocobase/app-plugin-notification';
+    const plugins = await catalog(
+      {
+        dependencies: [KNOWLEDGE, AGENTS, USERS, NOTIFICATION],
+        installed: [
+          { name: KNOWLEDGE, optionalPeers: [AGENTS] },
+          { name: AGENTS },
+          { name: USERS, optionalPeers: [NOTIFICATION] },
+          { name: NOTIFICATION },
+        ],
+      },
+      [USERS],
+    );
+
+    const { data } = await plugins.list([USERS]);
+    const byName = Object.fromEntries(data.map((item) => [item.name, item]));
+
+    expect(byName.knowledge).toMatchObject({
+      enabled: false,
+      requires: [AGENTS],
+      missingRequires: [AGENTS],
+    });
+    expect(byName.users).toMatchObject({
+      enabled: true,
+      requires: [NOTIFICATION],
+      missingRequires: [],
+    });
+  });
+
   it('takes the server registration for the browser when it is not told', async () => {
     const plugins = await catalog(
-      { dependencies: [MAIL], installed: [{ name: MAIL }] },
-      [MAIL],
+      {
+        dependencies: [MAIL, EXPLORER],
+        installed: [{ name: MAIL }, { name: EXPLORER, entries: ['server'] }],
+      },
+      [MAIL, EXPLORER],
     );
 
     const { data } = await plugins.list();
 
-    expect(data).toMatchObject([{ packageName: MAIL, state: 'registered' }]);
+    expect(data).toMatchObject([
+      { packageName: MAIL, state: 'registered' },
+      { packageName: EXPLORER, state: 'registered', issues: [] },
+    ]);
   });
 
   it('marks a deployed application, which lists only its dependencies', async () => {

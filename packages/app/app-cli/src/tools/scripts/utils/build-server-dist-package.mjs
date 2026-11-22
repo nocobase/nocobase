@@ -78,19 +78,27 @@ const getVendorPackagePath = (packageName) =>
 
 /**
  * The other application plugins a plugin builds on, kept so a deployment can still tell which plugin another one
- * needs. The range is `*`: a `workspace:` range means nothing outside this repository, and with `autoInstallPeers:
- * false` the deployment installs none of them because of it.
+ * needs, with the ones marked optional still marked so. The range is `*`: a `workspace:` range means nothing outside
+ * this repository, and with `autoInstallPeers: false` the deployment installs none of them because of it.
  */
 const pluginPeerDependencies = (packageJson) => {
   const peers = Object.keys(packageJson.peerDependencies ?? {})
     .filter((name) => /^@nocobase\/app-(plugin|portal)-/.test(name))
-    .filter(
-      (name) => packageJson.peerDependenciesMeta?.[name]?.optional !== true,
-    )
     .sort();
-  return peers.length === 0
-    ? undefined
-    : Object.fromEntries(peers.map((name) => [name, '*']));
+  if (peers.length === 0) return {};
+  const optional = peers.filter(
+    (name) => packageJson.peerDependenciesMeta?.[name]?.optional === true,
+  );
+  return {
+    peerDependencies: Object.fromEntries(peers.map((name) => [name, '*'])),
+    ...(optional.length === 0
+      ? {}
+      : {
+          peerDependenciesMeta: Object.fromEntries(
+            optional.map((name) => [name, { optional: true }]),
+          ),
+        }),
+  };
 };
 
 const createRuntimePackageJson = (packageJson) => ({
@@ -105,7 +113,7 @@ const createRuntimePackageJson = (packageJson) => ({
   exports: packageJson.publishConfig?.exports ?? packageJson.exports,
   engines: packageJson.engines,
   nocobase: packageJson.nocobase,
-  peerDependencies: pluginPeerDependencies(packageJson),
+  ...pluginPeerDependencies(packageJson),
 });
 
 /**

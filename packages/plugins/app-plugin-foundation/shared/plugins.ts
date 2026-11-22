@@ -30,9 +30,12 @@ export interface FoundationPluginView extends FoundationPluginMetadata {
   readonly state: PluginRegistrationStateName;
   readonly skillsOnly: boolean;
   readonly issues: readonly PluginRegistrationIssueCode[];
-  /** The application plugins this one builds on, from its required `peerDependencies`. */
+  /** The application plugins this one builds on: the `app-plugin-*` and `app-portal-*` packages among its `peerDependencies`. */
   readonly requires: readonly string[];
-  /** Those of `requires` the application has not enabled. */
+  /**
+   * Those of `requires` the application has not enabled. For a plugin that is enabled, only those it cannot work
+   * without; the ones its manifest marks optional are left out.
+   */
   readonly missingRequires: readonly string[];
 }
 

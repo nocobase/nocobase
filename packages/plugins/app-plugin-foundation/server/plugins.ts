@@ -22,6 +22,8 @@ interface InstalledPlugin extends FoundationPluginMetadata {
   readonly version?: string;
   readonly entries: { client: boolean; server: boolean; cli: boolean };
   readonly requires: readonly string[];
+  /** Those of `requires` declared optional: needed for all of the plugin's features, not for it to start. */
+  readonly optionalRequires: readonly string[];
 }
 
 export interface FoundationPluginCatalogOptions {
@@ -105,9 +107,7 @@ export class FoundationPluginCatalog {
             server: server.has(packageName),
             client: client
               ? client.has(packageName)
-              : entries.server
-                ? server.has(packageName)
-                : false,
+              : entries.client && entries.server && server.has(packageName),
             // The command line's own registrations are not part of the running application.
             cli: false,
           },
@@ -127,6 +127,8 @@ export class FoundationPluginCatalog {
     const data = classified.map(
       ({ packageName, installed, dependencyField, registration }) => {
         const requires = installed?.requires ?? [];
+        const optional = new Set(installed?.optionalRequires ?? []);
+        const isEnabled = enabled.has(packageName);
         const version = installed?.version ?? serverVersions.get(packageName);
         return {
           packageName,
@@ -138,12 +140,15 @@ export class FoundationPluginCatalog {
             : {}),
           ...(installed?.docs !== undefined ? { docs: installed.docs } : {}),
           ...(dependencyField ? { dependencyField } : {}),
-          enabled: enabled.has(packageName),
+          enabled: isEnabled,
           state: registration.state,
           skillsOnly: registration.skillsOnly,
           issues: registration.issues.map(({ code }) => code),
           requires,
-          missingRequires: requires.filter((name) => !enabled.has(name)),
+          // Enabling a plugin brings everything it builds on; an enabled one only lacks what it cannot work without.
+          missingRequires: requires.filter(
+            (name) => !enabled.has(name) && !(isEnabled && optional.has(name)),
+          ),
         } satisfies FoundationPluginView;
       },
     );
@@ -197,6 +202,9 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
   const peers = stringRecord(manifest.peerDependencies);
   const peersMeta = record(manifest.peerDependenciesMeta) ?? {};
   const nocobase = record(manifest.nocobase) ?? {};
+  const requires = Object.keys(peers)
+    .filter((name) => PLUGIN_PACKAGE_PATTERN.test(name))
+    .sort();
   const title = localizedText(nocobase.title);
   const description = localizedText(nocobase.description);
   const docs = localizedText(nocobase.docs);
@@ -209,13 +217,10 @@ function installedPlugin(manifest: Record<string, unknown>): InstalledPlugin {
       server: exports['./server'] !== undefined,
       cli: exports['./cli'] !== undefined,
     },
-    requires: Object.keys(peers)
-      .filter(
-        (name) =>
-          PLUGIN_PACKAGE_PATTERN.test(name) &&
-          record(peersMeta[name])?.optional !== true,
-      )
-      .sort(),
+    requires,
+    optionalRequires: requires.filter(
+      (name) => record(peersMeta[name])?.optional === true,
+    ),
     ...(title !== undefined ? { title } : {}),
     ...(description !== undefined ? { description } : {}),
     ...(docs !== undefined ? { docs } : {}),

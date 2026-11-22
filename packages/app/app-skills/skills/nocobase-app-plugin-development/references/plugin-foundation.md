@@ -193,7 +193,7 @@ An application's System settings › System › Plugins page lists each plugin b
 }
 ```
 
-The same page also lists the application plugins a plugin requires, from its non-optional `peerDependencies`, and tells a user to enable them first.
+The same page lists the application plugins a plugin builds on, from the `app-plugin-*` packages among its `peerDependencies`, and tells a user to enable them first; once the plugin is enabled, only a missing non-optional one is reported as a problem.
 
 ## Development and publishing configuration
 

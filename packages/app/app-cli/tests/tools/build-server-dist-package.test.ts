@@ -238,6 +238,10 @@ describe('server package generation', () => {
     );
     expect(vendored.peerDependencies).toEqual({
       '@nocobase/app-plugin-agents': '*',
+      '@nocobase/app-plugin-file': '*',
+    });
+    expect(vendored.peerDependenciesMeta).toEqual({
+      '@nocobase/app-plugin-file': { optional: true },
     });
   });
 
