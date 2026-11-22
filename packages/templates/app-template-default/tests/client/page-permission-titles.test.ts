@@ -10,7 +10,7 @@ import zhCN from '../../client/locales/zh-CN.js';
 import {
   pagePermissionResources,
   pagePermissionTitle,
-} from '../../client/pages/settings/page-permissions.js';
+} from '@nocobase/app-plugin-authorization/client/settings';
 import { pagePermissionTitles } from '../../client/pages/settings/page-permission-titles.js';
 
 const flatten = (

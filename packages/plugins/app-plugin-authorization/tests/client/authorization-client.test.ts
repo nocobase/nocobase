@@ -24,15 +24,30 @@ import { useAuthorizationClient } from '../../client/use-authorization-client.js
 import { authorizationClientToken } from '../../client/tokens.js';
 
 describe('@nocobase/app-plugin-authorization client', () => {
-  it('contributes its provider and no pages', () => {
-    expect(plugin().routes).toEqual([]);
+  it('contributes its provider and the Roles and permissions pages, which an application may leave out', () => {
+    const names = (registration: ReturnType<typeof plugin>) =>
+      registration.routes.flatMap((contribution) =>
+        contribution.routes.map((route) => route.name),
+      );
+    expect(names(plugin())).toEqual(['permissionManagement']);
+    expect(plugin({ routes: false }).routes).toEqual([]);
+    const authorizationProvider = {
+      name: 'authorization',
+      after: ['@nocobase/app-plugin-authentication:authentication'],
+      component: expect.any(Function),
+    };
+    // Stored links to Data rules leave a kind whose rule plugin is gone, only while the pages are registered.
     expect(reactProviders).toMatchObject([
+      authorizationProvider,
       {
-        name: 'authorization',
-        after: ['@nocobase/app-plugin-authentication:authentication'],
+        name: 'rule-address-fallback',
+        after: ['@nocobase/app-plugin-authorization:authorization'],
         component: expect.any(Function),
       },
     ]);
+    expect(
+      plugin({ routes: false }).reactProviders.map(({ name }) => name),
+    ).toEqual(['authorization']);
   });
 
   it('registers one injectable Authorization Client that preserves domain actions and resource ids without falling back to page grants', async () => {

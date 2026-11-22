@@ -54,8 +54,13 @@ export const customerResource = defineCompositeResource(
   (r) =>
     r
       .title('Example customers')
+      // The page the actions take effect on; opening it turns View on in the role editor. Neither grants anything.
+      .usedOn('customer-contacts')
       .action('view', (a) =>
-        a.title('View customers').grant('customers', customerData),
+        a
+          .title('View customers')
+          .defaultFor('customer-contacts')
+          .grant('customers', customerData),
       )
       .action('edit', (a) =>
         a
@@ -73,8 +78,12 @@ export const contactResource = defineCompositeResource(
   (r) =>
     r
       .title('Example contacts')
+      .usedOn('customer-contacts')
       .action('view', (a) =>
-        a.title('View contacts').grant('contacts', contactData),
+        a
+          .title('View contacts')
+          .defaultFor('customer-contacts')
+          .grant('contacts', contactData),
       )
       .action('edit', (a) =>
         a
@@ -94,6 +103,7 @@ export const repResource = defineCompositeResource(
   (r) =>
     r
       .title('Example customer owners')
+      .usedOn('customer-contacts')
       .action('view', (a) =>
         a.title('Select customer owners').grant('salesReps', repData),
       ),

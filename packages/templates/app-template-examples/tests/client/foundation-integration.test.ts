@@ -3,6 +3,7 @@ import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { describe, expect, it } from 'vitest';
 
 import appRuntime from '../../client/runtime.js';
+import { permissionPageCatalog } from '../../client/pages/settings/permission-catalog.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import cliPlugins from '../../cli/plugins.js';
 import {
@@ -44,6 +45,20 @@ describe('plugins page integration', () => {
         ({ route }) => route.name === 'plugins',
       ),
     ).toBe(false);
+  });
+
+  it('lists Plugins in the role editor’s System category, not among the menus', async () => {
+    const { routes } = await resolveAppRuntime(appRuntime);
+    const catalog = permissionPageCatalog(routes);
+    const owners = catalog.settings.flatMap((category) =>
+      category.modules
+        .filter(({ route }) => route.name === 'plugins')
+        .map(() => category.route.name),
+    );
+    expect(owners).toEqual(['systemSettings.system']);
+    const menu = (items: typeof catalog.navigation): readonly string[] =>
+      items.flatMap((item) => [item.route.name, ...menu(item.children)]);
+    expect(menu(catalog.navigation)).not.toContain('plugins');
   });
 
   it('sends the earlier Foundation and capability guide addresses to the plugins page', async () => {
