@@ -45,7 +45,7 @@ const TABS = [
 ] as const;
 
 /**
- * Personal settings › Messages › Mail accounts (route `mailAccounts`): the signed-in person's mailboxes, signatures,
+ * Personal settings › Integrations › Mail accounts (route `mailAccounts`): the signed-in person's mailboxes, signatures,
  * templates, labels and their own sync and send history. OAuth authorization returns here by default.
  */
 export default function MailAccountsSettingsPage(): ReactElement {

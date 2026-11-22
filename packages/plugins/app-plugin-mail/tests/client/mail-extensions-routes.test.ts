@@ -48,6 +48,10 @@ describe('Mail pages', () => {
     expect(routes.get('mailSettings')).toMatchObject({
       authz: MAIL_ACCESS.settingsRead,
     });
+    expect(routes.get('mailAccounts')).toMatchObject({
+      parent: 'integrations',
+      path: '/mail',
+    });
     expect(routes.get('mail')?.navigation).toBeDefined();
   });
 
