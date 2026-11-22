@@ -11,6 +11,7 @@ import {
   ResourceItems,
   addReservedResourceType,
   type AuthorizationRuntimeContext,
+  type ResourceActionRisk,
   type ResourceTypeRegistry,
 } from './resource-types.js';
 import { parseRecordSelection, type RecordSelection } from './selection.js';
@@ -65,6 +66,9 @@ export interface CompositeResourceAction {
    * the Customers page. Display only: it grants nothing, and checks still read the action's own grant.
    */
   defaultFor?: readonly string[];
+  /** Why no credential such as an API key may hold this action; see `ResourceActionMetadata.humanOnly`. */
+  humanOnly?: AuthorizationTitle;
+  risk?: ResourceActionRisk;
 }
 
 /**
@@ -135,6 +139,8 @@ export interface CompositeResourceActionData {
   grants: readonly CompositeResourceGrant[];
   dataScopes: readonly DataScope[];
   defaultFor?: readonly string[];
+  humanOnly?: AuthorizationTitle;
+  risk?: ResourceActionRisk;
 }
 
 export class CompositeResourceActionBuilder<
@@ -159,6 +165,19 @@ export class CompositeResourceActionBuilder<
       ...this.data,
       defaultFor: [...(this.data.defaultFor ?? []), ...pages],
     });
+  }
+
+  /** Marks the action a person's only, with the reason a credential may not hold it. */
+  humanOnly(reason: AuthorizationTitle): CompositeResourceActionBuilder<S> {
+    return new CompositeResourceActionBuilder({
+      ...this.data,
+      humanOnly: reason,
+    });
+  }
+
+  /** How much harm the action can do; an editor asks before turning on a `high` one. */
+  risk(risk: ResourceActionRisk): CompositeResourceActionBuilder<S> {
+    return new CompositeResourceActionBuilder({ ...this.data, risk });
   }
 
   grant<C extends CompositeResourceContribution>(
@@ -346,6 +365,12 @@ export class CompositeResourceBuilder<
       grants: built.grants,
       ...(built.dataScopes?.length ? { dataScopes: built.dataScopes } : {}),
       ...(defaultFor.length ? { defaultFor } : {}),
+      ...('humanOnly' in built && built.humanOnly !== undefined
+        ? { humanOnly: built.humanOnly as AuthorizationTitle }
+        : {}),
+      ...('risk' in built && built.risk !== undefined
+        ? { risk: built.risk as ResourceActionRisk }
+        : {}),
     };
     return new CompositeResourceBuilder({
       ...this.definition,
@@ -575,7 +600,12 @@ export class CompositeResourceRegistry implements CompositeResourceApi {
     this.items.add({
       id: resource.name,
       title: resource.title,
-      actions: resource.actions.map(({ name, title }) => ({ name, title })),
+      actions: resource.actions.map(({ name, title, humanOnly, risk }) => ({
+        name,
+        title,
+        ...(humanOnly === undefined ? {} : { humanOnly }),
+        ...(risk === undefined ? {} : { risk }),
+      })),
     });
     this.definitions.set(resource.name, resource);
     return new CompositeResourceReference<A>(resource);

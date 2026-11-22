@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  higherRisk,
   applyQuickSetMany,
   enableDefaults,
   quickSelection,
@@ -189,5 +190,14 @@ describe('permission editor rules', () => {
         owner: 'Roles and permissions',
       },
     ]);
+  });
+});
+
+describe('the risk of an action two declarations rate', () => {
+  it('keeps the higher one', () => {
+    expect(higherRisk('sensitive', 'high')).toBe('high');
+    expect(higherRisk('high', undefined)).toBe('high');
+    expect(higherRisk(undefined, 'sensitive')).toBe('sensitive');
+    expect(higherRisk(null, undefined)).toBeUndefined();
   });
 });

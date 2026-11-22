@@ -1395,6 +1395,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       read: '檢視',
       manage: '管理',
     },
+    humanOnly: {
+      servicesManage: '管理模型服務會寫入服務商金鑰，只能由人操作。',
+    },
     keyScopes: {
       agents: {
         title: '代理',

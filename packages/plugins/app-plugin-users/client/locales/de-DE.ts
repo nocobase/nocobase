@@ -3,6 +3,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts:
+      'Konten verwaltet nur ein Mensch: Kein API-Schlüssel darf das.',
+  },
   page: {
     loading: 'Wird geladen',
   },

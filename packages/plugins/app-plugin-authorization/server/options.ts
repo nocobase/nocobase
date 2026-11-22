@@ -348,3 +348,121 @@ function compositeDataScopes(
   }
   return result;
 }
+
+/**
+ * The workspace catalogue limited to what a caller holds today (`snapshot`), for an editor of what a credential of
+ * theirs, such as an API key, may do: only resources with an action they hold, with only those actions, and only the
+ * collections those resources read. Who may be assigned anything is not theirs to see, so subject types are left out.
+ */
+export function grantableAuthorizationOptions(
+  options: AuthorizationOptions,
+  snapshot: {
+    readonly unrestricted: boolean;
+    readonly permissions: readonly {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly actions: readonly string[];
+    }[];
+  },
+  /**
+   * Actions listed as well whatever is held, which the server derives itself, such as those a key of the caller still
+   * names after the caller lost them. Never taken from a request.
+   */
+  also: readonly {
+    readonly resource: { readonly type: string; readonly id: string };
+    readonly actions: readonly string[];
+  }[] = [],
+): AuthorizationOptions {
+  if (snapshot.unrestricted) return { ...options, subjectTypes: [] };
+  const extra = new Map<string, Set<string>>();
+  for (const entry of also) {
+    const key = JSON.stringify([entry.resource.type, entry.resource.id]);
+    extra.set(key, new Set([...(extra.get(key) ?? []), ...entry.actions]));
+  }
+  const held = new Map(
+    snapshot.permissions.map((permission) => [
+      JSON.stringify([permission.resource.type, permission.resource.id]),
+      new Set(permission.actions),
+    ]),
+  );
+  const read = new Set<string>();
+  const sections = options.sections.flatMap((section) => {
+    const subsections = section.subsections.flatMap((subsection) => {
+      if (subsection.recordType) return [subsection];
+      const resources = subsection.resources.flatMap((resource) => {
+        const key = JSON.stringify([resource.type, resource.id]);
+        const actions = held.get(key);
+        const named = extra.get(key);
+        const kept = resource.actions.filter(
+          (action) => actions?.has(action.name) || named?.has(action.name),
+        );
+        if (!kept.length) return [];
+        const dataScopes = resource.dataScopes
+          ? Object.fromEntries(
+              Object.entries(resource.dataScopes).filter(([action]) =>
+                kept.some((entry) => entry.name === action),
+              ),
+            )
+          : undefined;
+        for (const scopes of Object.values(dataScopes ?? {}))
+          for (const scope of scopes) read.add(scope.collection);
+        return [
+          {
+            ...resource,
+            actions: kept,
+            ...(dataScopes ? { dataScopes } : {}),
+          },
+        ];
+      });
+      return resources.length ? [{ ...subsection, resources }] : [];
+    });
+    return subsections.length ? [{ ...section, subsections }] : [];
+  });
+  // Rebuilt from what is kept, so nothing about a resource the caller does not hold shows: the groups the kept
+  // resources name with their ancestors, and the record access keys their data scopes offer, on the collections read.
+  const kept = sections.flatMap((section) =>
+    section.subsections.flatMap((subsection) => subsection.resources),
+  );
+  const offered = new Set(
+    kept.flatMap((resource) =>
+      Object.values(resource.dataScopes ?? {}).flatMap((scopes) =>
+        scopes.flatMap((scope) => scope.recordAccess),
+      ),
+    ),
+  );
+  const groupsByName = new Map(
+    (options.resourceGroups ?? []).map((group) => [group.name, group]),
+  );
+  const wanted = new Set<string>();
+  for (const resource of kept) {
+    let name = resource.group;
+    while (name !== undefined && !wanted.has(name)) {
+      wanted.add(name);
+      name = groupsByName.get(name)?.parent;
+    }
+  }
+  const resourceGroups = (options.resourceGroups ?? []).filter((group) =>
+    wanted.has(group.name),
+  );
+  const { resourceGroups: _all, ...rest } = options;
+  return {
+    ...rest,
+    sections,
+    ...(resourceGroups.length ? { resourceGroups } : {}),
+    subjectTypes: [],
+    recordAccess: options.recordAccess.flatMap((definition) =>
+      offered.has(definition.key)
+        ? [
+            {
+              ...definition,
+              collections: definition.collections.filter((name) =>
+                read.has(name),
+              ),
+            },
+          ]
+        : [],
+    ),
+    collections: options.collections.filter((collection) =>
+      read.has(collection.name),
+    ),
+  };
+}

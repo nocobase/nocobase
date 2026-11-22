@@ -131,6 +131,33 @@ const settings = {
     duplicate: 'This key is already in use. Use a different key.',
   },
   permissionCheck: {
+    key: {
+      title: 'API key',
+      step: 'The key',
+      disabled: 'This key is disabled: every request made with it is refused.',
+      expired: 'This key has expired: every request made with it is refused.',
+      unbounded: 'The key does whatever its holder’s roles allow.',
+      bounded:
+        'Operations the key allows: {{count}}. It reaches only what its holder’s roles and the data rules also allow.',
+      personless:
+        'It acts as no person: default access and sharing rules that add records counted from “me” add none for it. Restriction rules still apply.',
+      objects: '{{business}}: limited to chosen records ({{count}}).',
+      stepUnbounded: 'The key narrows nothing: its holder’s roles decide.',
+      stepMissing: 'The key does not include this operation, so it is refused.',
+      stepCovers: 'The key includes this operation.',
+      configured: 'Configured for {{scope}}: {{records}}.',
+      reached: 'Reached now: {{records}}.',
+      recordsFailed:
+        'Could not read which of these records it reaches now. Try again.',
+      leftOut: 'Left out by the roles and data rules below: {{records}}.',
+      intersection:
+        'The records it reaches are those the key keeps that the roles and data rules below also reach.',
+      allRecords: 'every record',
+      noRecords: 'no records',
+      chosen: 'chosen records ({{count}}): {{ids}}',
+    },
+    subjectKind: 'Who',
+    member: 'A member',
     title: 'Permission check',
     description:
       'Find out why someone cannot see something, or why they can change it. This only reads; nothing is changed.',
@@ -362,6 +389,13 @@ const settings = {
     restrictionDescription:
       'Takes away records no role may touch, whatever was allowed before.',
   },
+  keyPermissions: {
+    missing: "You don't have: {{actions}}",
+    settingsVisible: 'The key opens in System settings: {{pages}}.',
+    settingsNoneVisible: 'The key opens no System settings pages.',
+    selectedRecords: 'Selected records',
+    recordsChosen: 'Records chosen: {{count}}',
+  },
   permissionEditor: {
     menusTab: 'Page access',
     objectsTab: 'Operations',
@@ -460,6 +494,8 @@ const settings = {
     pageClosed: 'This role cannot open this page',
     tabChanges_one: '{{count}} unsaved change',
     tabChanges_other: '{{count}} unsaved changes',
+    humanOnly: 'People only',
+    lapsed: 'Lapsed',
     quoted: '“{{text}}”',
     otherOperations: 'Other operations',
   },

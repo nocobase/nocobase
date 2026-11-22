@@ -31,6 +31,8 @@ export interface AccessLocale {
         };
       };
     };
+    /** Why an action is a person's only, as the permission editor shows it for an API key. */
+    readonly humanOnly: { readonly servicesManage: string };
     readonly keyScopes: {
       readonly [K in 'agents' | 'runners' | 'prices' | 'services']: {
         readonly title: string;
@@ -71,6 +73,10 @@ const accessEnUS: AccessLocale = {
       },
     },
     actions: { read: 'View', manage: 'Manage' },
+    humanOnly: {
+      servicesManage:
+        'Managing model services writes provider keys; only a person may do it.',
+    },
     keyScopes: {
       agents: {
         title: 'Agents',

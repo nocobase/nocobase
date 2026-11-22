@@ -3,6 +3,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts:
+      'アカウントの管理は人だけが行えます。API キーには付与できません。',
+  },
   page: {
     loading: '読み込み中',
   },

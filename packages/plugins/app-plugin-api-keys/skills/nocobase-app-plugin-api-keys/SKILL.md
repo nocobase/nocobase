@@ -106,6 +106,8 @@ An unscoped key authenticates as its owner, but some Better Auth endpoints requi
 
 In an App with the default templates' `bearer()`, close this path in one of two ways: give every key a scope (a scoped key cannot use account endpoints other than `/get-session`), or reject `/list-sessions` in the App's Better Auth `hooks.before` when an API key header is present. Check the configured key header names (`x-api-key` by default) rather than a resolved Session: the App's hook runs before plugin hooks resolve the key.
 
+**Key permissions.** A key's permissions take the shape of a permission set's grants (`permissions` on `POST /api/apiKeys`, stored as format `2`) and are intersected with the holder's current permission on every request. A plugin marks an action no key may hold with `humanOnly: <reason>` where it registers the action; every key, with permissions or without, is then denied it (`KEY_HUMAN_ONLY`) while a signed-in person keeps it. A plugin offers key templates and the records a key may be limited to through `authz.credentials.templates.add` and `authz.credentials.objectSources.add`. Scope groups (`KeyScopeGroupDeclaration`, `apiKeyScopesToken`, `scope` on `POST /api/apiKeys`) are deprecated; see the plugin README's "Format 1, deprecated" for the migration.
+
 ## Other constraints
 
 - **A rejected key is answered with Better Auth's own status, and its code as `error.reason`** (domain `authentication`) in the standard error body, so a guarded route tells the caller why: `401 KEY_EXPIRED`, `401 KEY_NOT_FOUND`, `429 USAGE_EXCEEDED`. `getSession()` throws Better Auth's `APIError` for a
