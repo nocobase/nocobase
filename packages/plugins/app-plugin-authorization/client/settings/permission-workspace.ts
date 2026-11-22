@@ -465,6 +465,7 @@ export function permissionWorkspace(
     type: string;
     id: string;
     action?: string;
+    initialRecordAccess?: string;
   }): PermissionObject | undefined => {
     const key = resourceKey(resource);
     const existing = settingsObjects.find((object) => object.id === key);
@@ -505,7 +506,21 @@ export function permissionWorkspace(
         resource: { type: resource.type, id: resource.id },
         action: action.name,
         view: isView,
-        scopes: [],
+        scopes: (catalogResource?.dataScopes?.[action.name] ?? []).map(
+          (scope) => {
+            const initial = resource.initialRecordAccess;
+            return {
+              key: scope.key,
+              collection: scope.collection,
+              fields: scope.fields,
+              visible: false,
+              defaultValue:
+                initial && scope.recordAccess.includes(initial)
+                  ? initial
+                  : (scope.defaultValue ?? ''),
+            };
+          },
+        ),
       });
     }
     const object: PermissionObject = {
@@ -695,7 +710,22 @@ export function permissionWorkspace(
       const label = text(
         navigationTitle(module.route, titles) ?? module.route.name,
       );
-      const resources = routeResources(module.route, false);
+      const inferred = routeResources(module.route, false);
+      const composites = selection.settingsComposites?.[module.route.name];
+      const resources = composites
+        ? [
+            ...inferred.filter((resource) => resource.type !== 'composite'),
+            ...composites.map((item) => ({
+              ...item,
+              type: 'composite',
+              action:
+                inferred.find(
+                  (resource) =>
+                    resource.type === 'composite' && resource.id === item.id,
+                )?.action ?? 'view',
+            })),
+          ]
+        : inferred;
       const pages = resources
         .filter((resource) => resource.type === 'page')
         .map((resource) => resource.id)

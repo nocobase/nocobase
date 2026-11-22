@@ -53,6 +53,13 @@ export interface PermissionWorkspaceSelection {
       }
     >
   >;
+  /** Composite management resources owned by each settings route, including operations without a route of their own. An initial record access applies only when a role newly enables an action. */
+  readonly settingsComposites?: Readonly<
+    Record<
+      string,
+      readonly { readonly id: string; readonly initialRecordAccess?: string }[]
+    >
+  >;
   readonly filterFieldTitles?: Readonly<
     Record<string, Readonly<Record<string, LocalizedText>>>
   >;

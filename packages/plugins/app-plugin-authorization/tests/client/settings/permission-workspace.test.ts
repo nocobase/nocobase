@@ -1324,3 +1324,84 @@ describe('role permission workspace', () => {
     ).toEqual(['By slot', 'Departments']);
   });
 });
+
+it('stores the configured record scope for a new management grant and preserves existing narrower grants', () => {
+  const resource = { type: 'composite', id: 'contracts' };
+  const detailResource = { type: 'composite', id: 'contract-contacts' };
+  const manager = defineSystemSettingsRoutes([
+    {
+      name: 'contractsAdmin',
+      parent: SYSTEM_SETTINGS_CATEGORIES.system,
+      path: '/contracts',
+      navigation: { title: 'Contracts' },
+      authz: { resource, action: 'view' },
+      componentLoader: async () => ({ default: () => null }),
+      children: [
+        {
+          name: 'contractContactsLink',
+          path: ':id/contacts',
+          authz: { resource: detailResource, action: 'view' },
+          componentLoader: async () => ({ default: () => null }),
+        },
+      ],
+    },
+    {
+      name: 'contactsAdmin',
+      parent: SYSTEM_SETTINGS_CATEGORIES.system,
+      path: '/contacts',
+      navigation: { title: 'Contacts' },
+      authz: { resource: detailResource, action: 'view' },
+      componentLoader: async () => ({ default: () => null }),
+    },
+  ]);
+  const { routes } = resolveAppClientContributions([
+    { source: 'application', packageName: 'fixture', routes: [manager] },
+  ]);
+  const ws = permissionWorkspace(
+    source,
+    defaultPermissionPageCatalog(routes),
+    {},
+    words,
+    {
+      business: [],
+      settingsComposites: {
+        contractsAdmin: [
+          { id: 'contracts', initialRecordAccess: 'allRecords' },
+        ],
+      },
+    },
+  );
+  const initial: PermissionGrant[] = [
+    {
+      resource,
+      actions: [
+        {
+          action: 'view',
+          policy: { type: 'composite', scopes: { records: 'own' } },
+        },
+      ],
+    },
+  ];
+  const { draft, filters } = draftFromGrants(initial, ws);
+  const next = {
+    ...draft,
+    grants: { ...draft.grants, [contract('update')]: { scopes: {} } },
+  };
+  expect(grantsFromDraft(next, filters, initial, ws)).toEqual([
+    {
+      resource,
+      actions: [
+        ...initial[0]!.actions,
+        {
+          action: 'update',
+          policy: { type: 'composite', scopes: { records: 'allRecords' } },
+        },
+      ],
+    },
+  ]);
+  expect(
+    ws.settings
+      .find((page) => page.label === 'Contracts')
+      ?.objects.map((object) => object.id),
+  ).toEqual(['composite:contracts']);
+});
