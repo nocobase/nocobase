@@ -123,23 +123,31 @@ export function RoleDialog({
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
-              <div className='grid gap-1.5'>
-                <Label htmlFor='dialog-role-key'>{t('settings.key')}</Label>
-                <Input
-                  aria-describedby='dialog-role-key-hint'
-                  id='dialog-role-key'
-                  required
-                  readOnly={action.kind === 'edit'}
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                />
-                <p
-                  id='dialog-role-key-hint'
-                  className='text-xs text-muted-foreground'
-                >
-                  {t('settings.roleKeyHint')}
-                </p>
-              </div>
+              {action.kind === 'edit' ? (
+                <dl className='grid gap-1.5'>
+                  <dt className='text-sm font-medium'>{t('settings.key')}</dt>
+                  <dd className='select-text break-all font-mono text-sm text-muted-foreground'>
+                    {action.role.key}
+                  </dd>
+                </dl>
+              ) : (
+                <div className='grid gap-1.5'>
+                  <Label htmlFor='dialog-role-key'>{t('settings.key')}</Label>
+                  <Input
+                    aria-describedby='dialog-role-key-hint'
+                    id='dialog-role-key'
+                    required
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                  />
+                  <p
+                    id='dialog-role-key-hint'
+                    className='text-xs text-muted-foreground'
+                  >
+                    {t('settings.roleKeyHint')}
+                  </p>
+                </div>
+              )}
             </>
           )}
           {(action.kind === 'create' || action.kind === 'copy') &&

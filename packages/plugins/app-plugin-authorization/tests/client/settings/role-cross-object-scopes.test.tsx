@@ -259,6 +259,12 @@ it('shows and keeps the scopes a dispatcher has on objects it cannot view when o
     await screen.findByRole('menuitem', { name: words.editRole }),
   );
   const editDialog = screen.getByRole('dialog', { name: words.editRole });
+  expect(within(editDialog).getByRole('definition')).toHaveTextContent(
+    roles[0]!.key,
+  );
+  expect(
+    within(editDialog).queryByRole('textbox', { name: words.key }),
+  ).toBeNull();
   await user.type(
     within(editDialog).getByRole('textbox', { name: /Role name/ }),
     ' 2',
