@@ -152,22 +152,19 @@ function Code({
   readonly onCopy: (text: string) => void;
 }): ReactElement {
   return (
-    <div className='relative'>
+    <div className='overflow-hidden rounded-lg bg-muted'>
+      <div className='flex justify-end px-1.5 pt-1.5'>
+        <Button size='sm' variant='outline' onClick={() => onCopy(children)}>
+          <CopyIcon aria-hidden />
+          {copyLabel}
+        </Button>
+      </div>
       <pre
-        className='overflow-x-auto rounded-lg bg-muted px-3 py-2 pr-20 text-xs leading-5'
+        className='overflow-x-auto px-3 pt-1 pb-2 text-xs leading-5'
         data-testid={testId}
       >
         {children}
       </pre>
-      <Button
-        size='sm'
-        variant='outline'
-        className='absolute top-1.5 right-1.5'
-        onClick={() => onCopy(children)}
-      >
-        <CopyIcon aria-hidden />
-        {copyLabel}
-      </Button>
     </div>
   );
 }
