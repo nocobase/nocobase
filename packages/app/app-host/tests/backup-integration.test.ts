@@ -1,9 +1,9 @@
 /**
  * Backups and restores of a real application release through a real managed Host child and its IPC channel: the
  * release's own `backup` commands back the App up while it runs and while it is stopped, a later change to its
- * database and uploads is undone by a restore with the backup's release, a restore to an older release puts that
- * release back, a killed Host neither repeats a finished backup nor loses its result, and an interrupted one runs
- * again.
+ * database and uploads is undone by a restore with the backup's release, a failed restore stays recorded with the App
+ * stopped, a killed Host neither repeats a finished backup nor loses its result nor leaves its command running, and an
+ * interrupted one runs again.
  *
  * Opt in with `APP_HOST_BACKUP_IT_ARTIFACT=<release archive>` (`pnpm build --tar` of an application, such as the
  * default template's `storage/exports/dist.tar.gz`). `APP_HOST_BACKUP_IT_POSTGRES=postgres://user:password@host:port/db`
@@ -160,8 +160,7 @@ function marker(file: string, value?: string): string | null {
       db.prepare('INSERT INTO it_marker (value) VALUES (?)').run(value);
     }
     const row = db.prepare('SELECT value FROM it_marker').get() as
-      | { value: string }
-      | undefined;
+      { value: string } | undefined;
     return row?.value ?? null;
   } finally {
     db.close();
@@ -207,7 +206,11 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
         host: {
           mode: 'managed',
           server: { host: '127.0.0.1', port: 0 },
-          artifact: { driver: 'fs', location: artifactDir, visibility: 'private' },
+          artifact: {
+            driver: 'fs',
+            location: artifactDir,
+            visibility: 'private',
+          },
           appRevisionsDir: path.join(root, 'revisions'),
           appVolumesDir: volumesDir,
           controlDir: path.join(root, 'control'),
@@ -290,7 +293,11 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
 
   it('backs a stopped App up offline and refuses offline while it runs', async () => {
     await expect(
-      host.createBackup!('shop', { operationId: 'b-refused', scope, offline: true }),
+      host.createBackup!('shop', {
+        operationId: 'b-refused',
+        scope,
+        offline: true,
+      }),
     ).rejects.toMatchObject({ code: expect.stringMatching(/RUNNING|ACTIVE/) });
     const refused = await host.getOperation('b-refused', { scope });
     expect(refused).toMatchObject({ kind: 'backup', state: 'failed' });
@@ -353,9 +360,10 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
         path.join(large, `large-${index}.bin`),
         randomBytes(64 * 1024 * 1024),
       );
-    const pending = host
-      .createBackup!('shop', { operationId: 'b-interrupted', scope })
-      .catch((error: unknown) => error);
+    const pending = host.createBackup!('shop', {
+      operationId: 'b-interrupted',
+      scope,
+    }).catch((error: unknown) => error);
     await waitFor(async () => {
       const operation = await host.getOperation('b-interrupted', { scope });
       return operation?.state === 'running';
@@ -371,11 +379,13 @@ describe.runIf(ARTIFACT)('backups with a real release', () => {
     );
     await startSupervisor();
 
-    await expect(host.getOperation('b-kept', { scope })).resolves.toMatchObject({
-      kind: 'backup',
-      state: 'succeeded',
-      result: backup,
-    });
+    await expect(host.getOperation('b-kept', { scope })).resolves.toMatchObject(
+      {
+        kind: 'backup',
+        state: 'succeeded',
+        result: backup,
+      },
+    );
     await expect(
       host.getOperation('b-interrupted', { scope }),
     ).resolves.toMatchObject({ kind: 'backup', state: 'interrupted' });

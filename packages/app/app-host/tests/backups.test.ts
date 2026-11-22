@@ -82,7 +82,11 @@ function spec(
     desiredState: 'running',
     backend: 'in-process',
     activation: 'eager',
-    config: { provider: 'file', content: 'demo: true\n', revision: operationId },
+    config: {
+      provider: 'file',
+      content: 'demo: true\n',
+      revision: operationId,
+    },
     env: { BACKUP_CLI_LOG: log, ...env },
   };
 }
@@ -244,15 +248,13 @@ describe('backups on a managed Host', () => {
   });
 
   it('keeps the command code and report of a failed restore and leaves the App stopped', async () => {
-    const failure = await host
-      .restoreBackup!('demo', {
-        operationId: 'r-wrong',
-        scope,
-        backupId: 'b-1',
-        sha256: '0'.repeat(64),
-        deployment: spec('r-wrong', withCli),
-      })
-      .catch((error: unknown) => error);
+    const failure = await host.restoreBackup!('demo', {
+      operationId: 'r-wrong',
+      scope,
+      backupId: 'b-1',
+      sha256: '0'.repeat(64),
+      deployment: spec('r-wrong', withCli),
+    }).catch((error: unknown) => error);
     expect(failure).toMatchObject({
       code: 'BACKUP_DIGEST_MISMATCH',
       details: { connections: [{ name: 'main', status: 'not-started' }] },
@@ -307,12 +309,14 @@ describe('backups on a managed Host', () => {
     });
     await host.applyDeployment(deployment);
     await writeFile(path.join(root, 'hold'), '');
-    const pending = host
-      .createBackup!('demo', { operationId: 'b-killed', scope })
-      .catch((error: unknown) => error);
-    await waitFor(async () =>
-      (await readFile(path.join(root, 'cli.pid'), 'utf8').catch(() => ''))
-        .length > 0,
+    const pending = host.createBackup!('demo', {
+      operationId: 'b-killed',
+      scope,
+    }).catch((error: unknown) => error);
+    await waitFor(
+      async () =>
+        (await readFile(path.join(root, 'cli.pid'), 'utf8').catch(() => ''))
+          .length > 0,
     );
     const cli = Number(await readFile(path.join(root, 'cli.pid'), 'utf8'));
     killHost();
@@ -347,15 +351,15 @@ describe('backups on a managed Host', () => {
   }, 60_000);
 
   it('removes a backup', async () => {
-    await expect(
-      host.deleteBackup!('demo', 'b-1', { scope }),
-    ).resolves.toEqual({ deleted: true });
+    await expect(host.deleteBackup!('demo', 'b-1', { scope })).resolves.toEqual(
+      { deleted: true },
+    );
     await expect(
       stat(path.join(volumesDir, 'demo', 'backups', 'b-1.tar.gz')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
-    await expect(
-      host.deleteBackup!('demo', 'b-1', { scope }),
-    ).resolves.toEqual({ deleted: false });
+    await expect(host.deleteBackup!('demo', 'b-1', { scope })).resolves.toEqual(
+      { deleted: false },
+    );
   });
 });
 

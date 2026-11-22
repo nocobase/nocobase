@@ -144,7 +144,7 @@ async function inStorage(script: string): Promise<string> {
     const frames = await container.logs({ stdout: true, stderr: true });
     // Docker multiplexes the streams: an 8-byte header (stream, 0, 0, 0, size) before each frame.
     const streams = { 1: '', 2: '' } as Record<number, string>;
-    for (let offset = 0; offset + 8 <= frames.length; ) {
+    for (let offset = 0; offset + 8 <= frames.length;) {
       const size = frames.readUInt32BE(offset + 4);
       streams[frames[offset]!] =
         (streams[frames[offset]!] ?? '') +
@@ -206,167 +206,171 @@ async function cleanup(): Promise<void> {
         .catch(() => undefined);
 }
 
-describe.runIf(IMAGE)('backups through the Docker backend against Docker', () => {
-  beforeAll(async () => {
-    await docker.ping();
-    await cleanup();
-    await follow(await docker.pull('registry:2'));
-    const registry = await docker.createContainer({
-      name: `${PREFIX}registry`,
-      Image: 'registry:2',
-      HostConfig: {
-        PortBindings: {
-          '5000/tcp': [
-            { HostIp: '127.0.0.1', HostPort: String(REGISTRY_PORT) },
-          ],
-        },
-      },
-    });
-    await registry.start();
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const version = await docker.version();
-    platform = `${version.Os}/${({ aarch64: 'arm64', x86_64: 'amd64' } as Record<string, string>)[version.Arch] ?? version.Arch}`;
-    await docker.getImage(IMAGE!).tag({ repo: REPOSITORY, tag: 'it' });
-    const output = await follow(
-      await docker.getImage(`${REPOSITORY}:it`).push({
-        authconfig: { serveraddress: `127.0.0.1:${REGISTRY_PORT}` },
-      }),
-    );
-    // An Engine answers the digest as `aux` or only in its final status line.
-    const pushed =
-      output.find((item) => item.aux?.Digest)?.aux?.Digest ??
-      output
-        .map((item) => /digest: (sha256:[0-9a-f]{64})/.exec(item.status ?? '')?.[1])
-        .find(Boolean);
-    if (!pushed) throw new Error('The registry answered no digest.');
-    digest = pushed;
-    dir = await mkdtemp(path.join(os.tmpdir(), PREFIX));
-    host = createAppHost({
-      mode: 'managed',
-      port: 0,
-      appRevisionsDir: path.join(dir, 'revisions'),
-      appVolumesDir: path.join(dir, 'volumes'),
-      artifact: {
-        driver: 'fs',
-        location: path.join(dir, 'artifacts'),
-        visibility: 'private',
-      },
-      evictionIntervalMs: 0,
-      operations: new FileOperationLog(path.join(dir, 'control')),
-      backends: [
-        createDockerBackend({
-          pollIntervalMs: 500,
-          endpoint: `unix://${SOCKET}`,
-          settings: {
-            ...DOCKER_DEFAULT_SETTINGS,
-            namePrefix: PREFIX,
-            image: { platform: null, keep: 1 },
-            healthCheck: {
-              path: '/api/healthz',
-              timeoutSeconds: 120,
-              intervalSeconds: 2,
-            },
-            stopTimeoutSeconds: 10,
+describe.runIf(IMAGE)(
+  'backups through the Docker backend against Docker',
+  () => {
+    beforeAll(async () => {
+      await docker.ping();
+      await cleanup();
+      await follow(await docker.pull('registry:2'));
+      const registry = await docker.createContainer({
+        name: `${PREFIX}registry`,
+        Image: 'registry:2',
+        HostConfig: {
+          PortBindings: {
+            '5000/tcp': [
+              { HostIp: '127.0.0.1', HostPort: String(REGISTRY_PORT) },
+            ],
           },
+        },
+      });
+      await registry.start();
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const version = await docker.version();
+      platform = `${version.Os}/${({ aarch64: 'arm64', x86_64: 'amd64' } as Record<string, string>)[version.Arch] ?? version.Arch}`;
+      await docker.getImage(IMAGE!).tag({ repo: REPOSITORY, tag: 'it' });
+      const output = await follow(
+        await docker.getImage(`${REPOSITORY}:it`).push({
+          authconfig: { serveraddress: `127.0.0.1:${REGISTRY_PORT}` },
         }),
-      ],
-    });
-    await host.start();
-  }, 600_000);
+      );
+      // An Engine answers the digest as `aux` or only in its final status line.
+      const pushed =
+        output.find((item) => item.aux?.Digest)?.aux?.Digest ??
+        output
+          .map(
+            (item) =>
+              /digest: (sha256:[0-9a-f]{64})/.exec(item.status ?? '')?.[1],
+          )
+          .find(Boolean);
+      if (!pushed) throw new Error('The registry answered no digest.');
+      digest = pushed;
+      dir = await mkdtemp(path.join(os.tmpdir(), PREFIX));
+      host = createAppHost({
+        mode: 'managed',
+        port: 0,
+        appRevisionsDir: path.join(dir, 'revisions'),
+        appVolumesDir: path.join(dir, 'volumes'),
+        artifact: {
+          driver: 'fs',
+          location: path.join(dir, 'artifacts'),
+          visibility: 'private',
+        },
+        evictionIntervalMs: 0,
+        operations: new FileOperationLog(path.join(dir, 'control')),
+        backends: [
+          createDockerBackend({
+            pollIntervalMs: 500,
+            endpoint: `unix://${SOCKET}`,
+            settings: {
+              ...DOCKER_DEFAULT_SETTINGS,
+              namePrefix: PREFIX,
+              image: { platform: null, keep: 1 },
+              healthCheck: {
+                path: '/api/healthz',
+                timeoutSeconds: 120,
+                intervalSeconds: 2,
+              },
+              stopTimeoutSeconds: 10,
+            },
+          }),
+        ],
+      });
+      await host.start();
+    }, 600_000);
 
-  afterAll(async () => {
-    await host?.close('test end').catch(() => undefined);
-    await cleanup();
-    if (dir) await rm(dir, { recursive: true, force: true });
-  }, 120_000);
+    afterAll(async () => {
+      await host?.close('test end').catch(() => undefined);
+      await cleanup();
+      if (dir) await rm(dir, { recursive: true, force: true });
+    }, 120_000);
 
-  it('backs a running SQLite App up in a one-off container and restores its database and uploads', async () => {
-    const service = host.management;
-    const first = await service.applyDeployment(deployment('d-1'));
-    expect(first.deployments[0]).toMatchObject({ observedState: 'running' });
-    const described = await service.describeHost();
-    expect(
-      described.backends.find((backend) => backend.name === 'docker'),
-    ).toMatchObject({ capabilities: { backup: true } });
-    expect(JSON.parse(await inStorage(MARKER('before')))).toEqual({
-      marker: 'before',
-      uploads: ['before.txt'],
-    });
+    it('backs a running SQLite App up in a one-off container and restores its database and uploads', async () => {
+      const service = host.management;
+      const first = await service.applyDeployment(deployment('d-1'));
+      expect(first.deployments[0]).toMatchObject({ observedState: 'running' });
+      const described = await service.describeHost();
+      expect(
+        described.backends.find((backend) => backend.name === 'docker'),
+      ).toMatchObject({ capabilities: { backup: true } });
+      expect(JSON.parse(await inStorage(MARKER('before')))).toEqual({
+        marker: 'before',
+        uploads: ['before.txt'],
+      });
 
-    const backup = await service.createBackup!('shop', {
-      operationId: 'b-1',
-      scope: scope(),
-    });
-    expect(backup).toMatchObject({
-      backupId: 'b-1',
-      appId: 'shop',
-      complete: true,
-      manifest: {
-        online: true,
-        connections: [{ name: 'main', dialect: 'sqlite', mode: 'dump' }],
-        disks: [expect.objectContaining({ mode: 'files' })],
-        limitations: [],
-      },
-    });
-    expect(backup.size).toBeGreaterThan(0);
-    // Asked again, the finished backup answers without running.
-    await expect(
-      service.createBackup!('shop', { operationId: 'b-1', scope: scope() }),
-    ).resolves.toEqual(backup);
-    // The command containers are gone.
-    expect(
-      await docker.listContainers({
-        all: true,
-        filters: { name: [`${PREFIX}shop-command`] },
-      }),
-    ).toEqual([]);
+      const backup = await service.createBackup!('shop', {
+        operationId: 'b-1',
+        scope: scope(),
+      });
+      expect(backup).toMatchObject({
+        backupId: 'b-1',
+        appId: 'shop',
+        complete: true,
+        manifest: {
+          online: true,
+          connections: [{ name: 'main', dialect: 'sqlite', mode: 'dump' }],
+          disks: [expect.objectContaining({ mode: 'files' })],
+          limitations: [],
+        },
+      });
+      expect(backup.size).toBeGreaterThan(0);
+      // Asked again, the finished backup answers without running.
+      await expect(
+        service.createBackup!('shop', { operationId: 'b-1', scope: scope() }),
+      ).resolves.toEqual(backup);
+      // The command containers are gone.
+      expect(
+        await docker.listContainers({
+          all: true,
+          filters: { name: [`${PREFIX}shop-command`] },
+        }),
+      ).toEqual([]);
 
-    expect(JSON.parse(await inStorage(MARKER('after')))).toEqual({
-      marker: 'after',
-      uploads: ['after.txt', 'before.txt'],
-    });
-    const restored = await service.restoreBackup!('shop', {
-      operationId: 'r-1',
-      scope: scope(),
-      backupId: 'b-1',
-      sha256: backup.sha256,
-      deployment: deployment('r-1'),
-    });
-    expect(restored.status.deployments).toMatchObject([
-      { appId: 'shop', observedState: 'running' },
-    ]);
-    expect(restored.restore).toMatchObject({
-      connections: [{ name: 'main', status: 'restored' }],
-    });
-    expect(JSON.parse(await inStorage(MARKER()))).toEqual({
-      marker: 'before',
-      uploads: ['before.txt'],
-    });
+      expect(JSON.parse(await inStorage(MARKER('after')))).toEqual({
+        marker: 'after',
+        uploads: ['after.txt', 'before.txt'],
+      });
+      const restored = await service.restoreBackup!('shop', {
+        operationId: 'r-1',
+        scope: scope(),
+        backupId: 'b-1',
+        sha256: backup.sha256,
+        deployment: deployment('r-1'),
+      });
+      expect(restored.status.deployments).toMatchObject([
+        { appId: 'shop', observedState: 'running' },
+      ]);
+      expect(restored.restore).toMatchObject({
+        connections: [{ name: 'main', status: 'restored' }],
+      });
+      expect(JSON.parse(await inStorage(MARKER()))).toEqual({
+        marker: 'before',
+        uploads: ['before.txt'],
+      });
 
-    // A wrong checksum fails the restore with the command's own code, and the App is left stopped.
-    const failed = await service
-      .restoreBackup!('shop', {
+      // A wrong checksum fails the restore with the command's own code, and the App is left stopped.
+      const failed = await service.restoreBackup!('shop', {
         operationId: 'r-2',
         scope: scope(),
         backupId: 'b-1',
         sha256: '0'.repeat(64),
         deployment: deployment('r-2'),
-      })
-      .catch((error: unknown) => error);
-    expect(failed).toMatchObject({ code: 'BACKUP_DIGEST_MISMATCH' });
-    await expect(
-      service.getOperation('r-2', { scope: scope() }),
-    ).resolves.toMatchObject({
-      kind: 'restore',
-      state: 'failed',
-      errorCode: 'BACKUP_DIGEST_MISMATCH',
-    });
+      }).catch((error: unknown) => error);
+      expect(failed).toMatchObject({ code: 'BACKUP_DIGEST_MISMATCH' });
+      await expect(
+        service.getOperation('r-2', { scope: scope() }),
+      ).resolves.toMatchObject({
+        kind: 'restore',
+        state: 'failed',
+        errorCode: 'BACKUP_DIGEST_MISMATCH',
+      });
 
-    await expect(
-      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
-    ).resolves.toEqual({ deleted: true });
-    await expect(
-      service.deleteBackup!('shop', 'b-1', { scope: scope() }),
-    ).resolves.toEqual({ deleted: false });
-  }, 900_000);
-});
+      await expect(
+        service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+      ).resolves.toEqual({ deleted: true });
+      await expect(
+        service.deleteBackup!('shop', 'b-1', { scope: scope() }),
+      ).resolves.toEqual({ deleted: false });
+    }, 900_000);
+  },
+);

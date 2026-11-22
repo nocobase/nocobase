@@ -145,7 +145,9 @@ export class HostBackups {
     assertAppId(appId);
     assertOperationId(options.backupId);
     if (!options.deployment || options.deployment.appId !== appId)
-      throw new Error(`The deployment to restore must be one of App "${appId}"`);
+      throw new Error(
+        `The deployment to restore must be one of App "${appId}"`,
+      );
     return this.locked(appId, async () => {
       const backup = await this.read(appId, options.backupId);
       if (!backup)
@@ -217,7 +219,9 @@ export class HostBackups {
 
   // ---------------------------------------------------------------------------------------------------------------
 
-  private async runnerFor(definition: AppDefinition): Promise<AppCommandRunner> {
+  private async runnerFor(
+    definition: AppDefinition,
+  ): Promise<AppCommandRunner> {
     if (definition.backend === 'in-process')
       return new InProcessCommandRunner(
         definition,

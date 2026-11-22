@@ -19,25 +19,44 @@ const flag = (key) => {
   return index >= 0 ? rest[index + 1] : undefined;
 };
 const print = (document) => {
-  process.stdout.write(`${JSON.stringify({ schemaVersion: 1, command: name, warnings: [], ...document })}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ schemaVersion: 1, command: name, warnings: [], ...document })}\n`,
+  );
 };
 const succeed = (result) => print({ ok: true, status: 'success', result });
 const fail = (code, message, details) => {
-  print({ ok: false, status: 'failure', error: { code, message, suggestions: [], details } });
+  print({
+    ok: false,
+    status: 'failure',
+    error: { code, message, suggestions: [], details },
+  });
   process.exit(1);
 };
-const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
+const sha256 = (file) =>
+  createHash('sha256').update(readFileSync(file)).digest('hex');
 
-if (process.env.BACKUP_CLI_PID) writeFileSync(process.env.BACKUP_CLI_PID, String(process.pid));
+if (process.env.BACKUP_CLI_PID)
+  writeFileSync(process.env.BACKUP_CLI_PID, String(process.pid));
 if (process.env.BACKUP_CLI_LOG)
-  appendFileSync(process.env.BACKUP_CLI_LOG, `${name} ${process.env.APP_CONFIG_FILE ? 'config' : 'no-config'}\n`);
+  appendFileSync(
+    process.env.BACKUP_CLI_LOG,
+    `${name} ${process.env.APP_CONFIG_FILE ? 'config' : 'no-config'}\n`,
+  );
 const hold = process.env.BACKUP_CLI_HOLD;
-while (hold && existsSync(hold)) await new Promise((resolve) => setTimeout(resolve, 20));
+while (hold && existsSync(hold))
+  await new Promise((resolve) => setTimeout(resolve, 20));
 
-if (topic !== 'backup') fail('INVALID_USAGE', `command ${topic}:${command} not found`);
+if (topic !== 'backup')
+  fail('INVALID_USAGE', `command ${topic}:${command} not found`);
 const manifest = {
   app: { name: 'demo', version: '0.0.1' },
-  connections: [{ name: 'main', mode: 'dump', snapshot: { time: '2026-11-22T00:00:00.000Z' } }],
+  connections: [
+    {
+      name: 'main',
+      mode: 'dump',
+      snapshot: { time: '2026-11-22T00:00:00.000Z' },
+    },
+  ],
   disks: [{ name: 'local', mode: 'files', count: 1, size: 1 }],
   limitations: [],
   ...JSON.parse(process.env.BACKUP_CLI_MANIFEST ?? '{}'),
@@ -45,14 +64,27 @@ const manifest = {
 switch (command) {
   case 'create': {
     const output = flag('--output');
-    if (existsSync(output)) fail('BACKUP_OUTPUT_EXISTS', `${output} already exists`);
-    writeFileSync(output, JSON.stringify({ data: readFileSync(path.join(storage, 'data.txt'), 'utf8'), manifest }));
-    succeed({ file: output, size: statSync(output).size, sha256: sha256(output), manifest });
+    if (existsSync(output))
+      fail('BACKUP_OUTPUT_EXISTS', `${output} already exists`);
+    writeFileSync(
+      output,
+      JSON.stringify({
+        data: readFileSync(path.join(storage, 'data.txt'), 'utf8'),
+        manifest,
+      }),
+    );
+    succeed({
+      file: output,
+      size: statSync(output).size,
+      sha256: sha256(output),
+      manifest,
+    });
     break;
   }
   case 'verify': {
     const file = rest[0];
-    if (flag('--sha256') !== sha256(file)) fail('BACKUP_DIGEST_MISMATCH', 'The archive checksum does not match.');
+    if (flag('--sha256') !== sha256(file))
+      fail('BACKUP_DIGEST_MISMATCH', 'The archive checksum does not match.');
     succeed({ ok: true, sha256: sha256(file), manifest });
     break;
   }
@@ -65,8 +97,15 @@ switch (command) {
       fail('BACKUP_DIGEST_MISMATCH', 'The archive checksum does not match.', {
         connections: [{ name: 'main', status: 'not-started' }],
       });
-    writeFileSync(path.join(storage, 'data.txt'), JSON.parse(readFileSync(file, 'utf8')).data);
-    succeed({ connections: [{ name: 'main', status: 'restored' }], disks: [{ name: 'local', status: 'restored' }], missingFiles: [] });
+    writeFileSync(
+      path.join(storage, 'data.txt'),
+      JSON.parse(readFileSync(file, 'utf8')).data,
+    );
+    succeed({
+      connections: [{ name: 'main', status: 'restored' }],
+      disks: [{ name: 'local', status: 'restored' }],
+      missingFiles: [],
+    });
     break;
   }
   default:

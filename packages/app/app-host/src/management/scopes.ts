@@ -594,9 +594,7 @@ export class ManagedScopes {
           ...base,
           state: 'failed',
           error: fullErrorMessage(error),
-          ...(typeof coded?.code === 'string'
-            ? { errorCode: coded.code }
-            : {}),
+          ...(typeof coded?.code === 'string' ? { errorCode: coded.code } : {}),
           ...(coded?.details !== undefined
             ? { errorDetails: coded.details }
             : {}),

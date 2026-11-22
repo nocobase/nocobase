@@ -57,6 +57,10 @@ Before a container takes traffic, the Host requests its health path through the 
 
 Rollback is the same with an older release; its image is reused, or pulled again by digest when it was pruned.
 
+## Backups
+
+The backend backs Apps up and restores them (`capabilities.backup: true`; see Backups in `@nocobase/app-host`) by running the release's `node dist/cli/index.js backup …` in a one-off container of the App's image, with its storage volume, its own backups volume `<prefix><app>-backups` at `/app/backups` (`backupsPath`), its network, environment and configuration file. Each command's container is removed once it exits, and one a previous Host left behind is removed before the next command runs. A restore stops the App's container before the command runs and deploys the given deployment after it. Removing an App with its data also removes its backups volume. The application templates' images include the PostgreSQL, MySQL and MariaDB client tools the commands need.
+
 ## Lifecycle
 
 | Registry                 | Container                                                                                    |
@@ -78,4 +82,4 @@ App containers never get the Docker socket. They drop every Linux capability and
 
 ## Tests
 
-`pnpm test` runs the unit tests: settings, tar handling, and the backend under a real managed App Host against a fake Engine whose containers listen on loopback ports (forwarding, the start-first switch without a failed request, pull by digest, the refusal of a release without an image, idle stop, dormancy, adoption after a restart and logs). `pnpm test:docker` also runs the integration test against a real Docker Engine (`APP_HOST_DOCKER_SOCKET`, default `/var/run/docker.sock`; ports from `APP_HOST_DOCKER_PORT`, default 14300): the same through real containers, with release images built and pushed to a local `registry:2` and pulled by digest. It pulls `node:24-bookworm-slim` and `registry:2`, names everything `app-host-docker-it-*` and removes it afterwards.
+`pnpm test` runs the unit tests: settings, tar handling, and the backend under a real managed App Host against a fake Engine whose containers listen on loopback ports (forwarding, the start-first switch without a failed request, pull by digest, the refusal of a release without an image, idle stop, dormancy, adoption after a restart, logs and backup commands). `pnpm test:docker:backup` with `APP_HOST_DOCKER_BACKUP_IT_IMAGE=<image>`, an image built from an application template (`pnpm build`, then `docker build --build-arg DIST=prebuilt -t <image> .` in the template), backs a running SQLite App up through real one-off containers and restores its database and uploads; it pulls `registry:2` and names everything `app-host-docker-backup-it-*`. `pnpm test:docker` also runs the integration test against a real Docker Engine (`APP_HOST_DOCKER_SOCKET`, default `/var/run/docker.sock`; ports from `APP_HOST_DOCKER_PORT`, default 14300): the same through real containers, with release images built and pushed to a local `registry:2` and pulled by digest. It pulls `node:24-bookworm-slim` and `registry:2`, names everything `app-host-docker-it-*` and removes it afterwards.
