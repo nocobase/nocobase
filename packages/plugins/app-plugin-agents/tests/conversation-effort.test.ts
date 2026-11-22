@@ -438,3 +438,51 @@ it('does not save an Agent default on a switch', async () => {
   ).toBeNull();
   expect((await claim(h, runner))[0].tool.effort).toBe('high');
 });
+
+it('starts a conversation with the person’s own effort when none is chosen, where the agent takes it', async () => {
+  const { id } = await fixture();
+  const saved = await h.request('PATCH', '/agents/chatPreferences', {
+    user: 'alice',
+    body: { effort: 'high' },
+  });
+  expect(saved.status).toBe(200);
+  expect(saved.body.data.effort).toBe('high');
+  // Kept across reads, as after a reload.
+  expect(
+    (await h.request('GET', '/agents/chatPreferences', { user: 'alice' })).body
+      .data.effort,
+  ).toBe('high');
+  const start = (body: Record<string, unknown>) =>
+    h.request('POST', '/agents/conversations', {
+      user: 'alice',
+      body: { agentId: id, ...body },
+    });
+  expect((await start({})).body.data.effort).toBe('high');
+  // A choice made for the conversation wins.
+  expect((await start({ effort: 'low' })).body.data.effort).toBe('low');
+  // Someone else's preference is their own.
+  expect(
+    (
+      await h.request('POST', '/agents/conversations', {
+        user: 'bob',
+        body: { agentId: id },
+      })
+    ).body.data.effort,
+  ).toBeNull();
+  // An effort the agent's runtimes do not offer is left out rather than refused.
+  await h.request('PATCH', '/agents/chatPreferences', {
+    user: 'alice',
+    body: { effort: 'minimal' },
+  });
+  const other = await start({});
+  expect(other.status).toBe(201);
+  expect(other.body.data.effort).toBeNull();
+  expect(
+    (
+      await h.request('PATCH', '/agents/chatPreferences', {
+        user: 'alice',
+        body: { effort: 'nonsense' },
+      })
+    ).status,
+  ).toBe(400);
+});

@@ -302,7 +302,17 @@ function AgentRow({
           >
             {t('agents.edit.button')}
           </Button>
-        ) : null}
+        ) : (
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => onEdit(agent)}
+            aria-label={t('agents.detail.viewFor', { name: agent.name })}
+            data-testid={`agent-view-${agent.id}`}
+          >
+            {t('agents.detail.view')}
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );

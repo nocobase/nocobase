@@ -41,6 +41,7 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 
 import {
+  effortsFor,
   mayChat,
   type Agent,
   type ChatAudience,
@@ -648,6 +649,22 @@ export function createConversationService(
       actorUserId: userId,
     });
     return chatEffortCapabilities(agent.modelEntries[0], eligible);
+  }
+
+  /** The person's own effort for a conversation they start without choosing one, where the agent's tool takes it. */
+  async function preferredEffort(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+  ): Promise<string | undefined> {
+    const entry = agent.modelEntries[0];
+    if (agent.source !== 'runner' || !entry) return undefined;
+    const { effort } = await deps.settings.preferences(userId, conn);
+    if (!effort || !effortsFor(entry).includes(effort)) return undefined;
+    const options = await effortOptions(conn, agent, userId);
+    return options === undefined || options.includes(effort)
+      ? effort
+      : undefined;
   }
 
   async function validateEffort(
@@ -2243,7 +2260,9 @@ export function createConversationService(
           unit.conn,
           agent,
           userId,
-          request.effort,
+          request.effort !== undefined
+            ? request.effort
+            : await preferredEffort(unit.conn, agent, userId),
         );
         const title =
           request.title === undefined

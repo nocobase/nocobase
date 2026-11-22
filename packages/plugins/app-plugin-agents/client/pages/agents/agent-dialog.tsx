@@ -1,6 +1,8 @@
 /**
- * Edit the saved description, default reasoning effort, who may chat with it and enabled state of an agent.
- * Enabling needs a description; the server refuses one without it too.
+ * An agent's details, in a sheet the Agent page opens from its row: its settings (the saved description, default
+ * reasoning effort, who may chat with it and enabled state, edited by who manages agents and only read by everyone
+ * else), the business actions it may perform, the team's default skills it gets and its recent runs. Enabling needs a
+ * description; the server refuses one without it too.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,13 +13,18 @@ import { agentModelOf } from '../../../shared/model-catalog.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog.js';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '../../components/ui/sheet.js';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '../../components/ui/tabs.js';
 import {
   Field,
   FieldDescription,
@@ -39,6 +46,12 @@ import { Textarea } from '../../components/ui/textarea.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { useChatRoles, useRoleTitle } from './chat-roles.js';
+import {
+  AgentActionsTab,
+  AgentRunsTab,
+  AgentSkillsTab,
+  AgentSummary,
+} from './agent-detail-tabs.js';
 import { GoodAtTemplates } from './good-at-templates.js';
 
 /** The value the effort select holds for the tool's default. */
@@ -54,21 +67,93 @@ export function AgentDialog({
   onClose,
 }: AgentDialogProps): ReactElement {
   return (
-    <Dialog
+    <Sheet
       open={agent !== null}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
-      <DialogContent
-        className='flex max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] flex-col sm:max-w-xl'
+      <SheetContent
+        className='w-full gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[640px]'
         data-testid='agent-dialog'
       >
         {agent ? (
-          <AgentForm key={agent.id} agent={agent} onClose={onClose} />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+          <AgentDetail key={agent.id} agent={agent} onClose={onClose} />
+        ) : (
+          <SheetTitle className='sr-only'>Agent</SheetTitle>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+const TABS = ['settings', 'actions', 'skills', 'runs'] as const;
+
+function AgentDetail({
+  agent,
+  onClose,
+}: {
+  readonly agent: AgentView;
+  readonly onClose: () => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<string>('settings');
+  const { runners } = agent;
+  return (
+    <>
+      <SheetHeader className='shrink-0 border-b'>
+        <SheetTitle>{agent.name}</SheetTitle>
+        <SheetDescription>
+          {runners.team + runners.personal > 0
+            ? t('agents.enable.reportedBy', {
+                count: runners.team + runners.personal,
+                names: runners.names.join(', '),
+              })
+            : t('agents.enable.noRunnerNow')}
+        </SheetDescription>
+      </SheetHeader>
+      <Tabs
+        value={tab}
+        onValueChange={setTab}
+        className='flex min-h-0 flex-1 flex-col gap-0'
+      >
+        <div className='shrink-0 overflow-x-auto border-b px-4'>
+          <TabsList variant='line' className='w-max'>
+            {TABS.map((value) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                data-testid={`agent-tab-${value}`}
+              >
+                {t(`agents.detail.tabs.${value}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+        <TabsContent
+          keepMounted
+          value='settings'
+          className='flex min-h-0 flex-1 flex-col'
+        >
+          {agent.canEdit ? (
+            <AgentForm agent={agent} onClose={onClose} />
+          ) : (
+            <div className='min-h-0 flex-1 overflow-y-auto p-4'>
+              <AgentSummary agent={agent} />
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value='actions' className='min-h-0 overflow-y-auto p-4'>
+          <AgentActionsTab agent={agent} />
+        </TabsContent>
+        <TabsContent value='skills' className='min-h-0 overflow-y-auto p-4'>
+          <AgentSkillsTab />
+        </TabsContent>
+        <TabsContent value='runs' className='min-h-0 overflow-y-auto p-4'>
+          <AgentRunsTab agentId={agent.id} />
+        </TabsContent>
+      </Tabs>
+    </>
   );
 }
 
@@ -129,29 +214,12 @@ function AgentForm({
   const rolesMissing = audience === 'roles' && chatRoles.length === 0;
   // Every agent shows its whole model id here.
   const qualifiedModel = agentModelOf(agent).model ?? null;
-  const { runners } = agent;
-  const reportedBy = t('agents.enable.reportedBy', {
-    count: runners.team + runners.personal,
-    names: runners.names.join(', '),
-  });
 
   return (
     <>
-      <DialogHeader className='shrink-0'>
-        <DialogTitle>
-          {t('agents.edit.title', {
-            name: agent.name,
-          })}
-        </DialogTitle>
-        <DialogDescription>
-          {runners.team + runners.personal > 0
-            ? reportedBy
-            : t('agents.enable.noRunnerNow')}
-        </DialogDescription>
-      </DialogHeader>
       <form
         id='agent-dialog-form'
-        className='-mx-4 min-h-0 flex-1 overflow-y-auto px-4 pb-1'
+        className='min-h-0 flex-1 overflow-y-auto p-4'
         onSubmit={(event) => {
           event.preventDefault();
           setSubmitted(true);
@@ -297,7 +365,7 @@ function AgentForm({
           ) : null}
         </FieldGroup>
       </form>
-      <DialogFooter className='shrink-0'>
+      <div className='flex shrink-0 justify-end gap-2 border-t p-4'>
         <Button variant='outline' type='button' onClick={onClose}>
           {t('actions.cancel')}
         </Button>
@@ -309,7 +377,7 @@ function AgentForm({
         >
           {t('actions.save')}
         </Button>
-      </DialogFooter>
+      </div>
     </>
   );
 }

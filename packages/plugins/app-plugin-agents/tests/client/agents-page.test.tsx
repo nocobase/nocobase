@@ -1195,4 +1195,49 @@ describe('the Agent page', () => {
     expect(screen.queryByTestId('agent-edit-sonnet')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-edit-kimi')).not.toBeInTheDocument();
   });
+
+  it('shows a reader an agent’s settings, business actions, default skills and runs without a way to change them', async () => {
+    agents = agents.map((each) => ({
+      ...each,
+      canEdit: false,
+      actions: ['crm.deals/comment'],
+    }));
+    api.routes['agents/actions'] = () => [
+      {
+        key: 'crm.deals/comment',
+        group: 'crm.deals',
+        title: { key: 'Comment on deals', ns: 'crm' },
+      },
+      { key: 'crm.deals/delete', group: 'crm.deals' },
+    ];
+    api.routes['agents/skillAttachments/global/default'] = () => ({
+      skillIds: ['s1'],
+    });
+    api.routes['agents/skills'] = () => [
+      { id: 's1', name: 'reviewing', description: 'Review changes.' },
+      { id: 's2', name: 'unused', description: 'Not a default.' },
+    ];
+    api.routes['agents/runs'] = () => [];
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-view-sonnet'));
+    const sheet = await screen.findByTestId('agent-dialog');
+    expect(
+      await within(sheet).findByTestId('agent-summary'),
+    ).toBeInTheDocument();
+    expect(within(sheet).queryByTestId('agent-dialog-save')).toBeNull();
+    const user = userEvent.setup();
+    await user.click(within(sheet).getByTestId('agent-tab-actions'));
+    const actions = await within(sheet).findByTestId('agent-actions');
+    expect(within(actions).getByText('Comment on deals')).toBeInTheDocument();
+    expect(within(actions).queryByText('crm.deals/delete')).toBeNull();
+    await user.click(within(sheet).getByTestId('agent-tab-skills'));
+    const skills = await within(sheet).findByTestId('agent-skills');
+    expect(within(skills).getByText('reviewing')).toBeInTheDocument();
+    expect(within(skills).queryByText('unused')).toBeNull();
+    await user.click(within(sheet).getByTestId('agent-tab-runs'));
+    expect(await within(sheet).findByText('runs.empty')).toBeInTheDocument();
+    expect(callsTo('GET', 'agents/runs')[0]?.query).toMatchObject({
+      agentId: 'sonnet',
+    });
+  });
 });

@@ -20,6 +20,7 @@ import { forbidden, invalid } from '../../kernel/errors.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
+import { PREFERRED_EFFORTS } from '../../../shared/agents.js';
 import { findAgent } from '../agents/index.js';
 import { preferencesRepo, settingsRepo } from './conversation.store.js';
 
@@ -37,6 +38,12 @@ export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
       .enum(RUNNER_PREFERENCES)
       .describe(
         'Which kind of runner runs queued from now on go to first: auto, personal or team.',
+      ),
+    effort: z
+      .enum(PREFERRED_EFFORTS)
+      .nullable()
+      .describe(
+        'The reasoning effort new conversations take when none is chosen, where the agent offers it; null: each agent’s default.',
       ),
   })
   .partial();
@@ -97,6 +104,7 @@ export function createChatSettingsService(deps: {
     return {
       defaultAgentId: row?.defaultAgentId ?? null,
       runnerPreference: toRunnerPreference(row?.runnerPreference),
+      effort: row?.effort ?? null,
     };
   }
 
@@ -180,6 +188,7 @@ export function createChatSettingsService(deps: {
           defaultAgentId: next.defaultAgentId,
           runnerPreference:
             next.runnerPreference === 'auto' ? null : next.runnerPreference,
+          effort: next.effort,
           updatedAt: clock.now().toISOString(),
         };
         const existing = await preferencesRepo(conn).findOne({

@@ -46,6 +46,29 @@ export interface RunnerModelEntry {
   readonly effort?: string | null;
 }
 
+/**
+ * Every reasoning effort some coding tool takes, from least to most, for a person's own preference
+ * (`ChatPreferences.effort`).
+ */
+export const PREFERRED_EFFORTS: readonly [string, ...string[]] = (() => {
+  const known = new Set(Object.values(TOOL_EFFORTS).flat());
+  const ordered = [
+    'off',
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+    'ultra',
+  ];
+  const all = [
+    ...ordered.filter((effort) => known.has(effort)),
+    ...[...known].filter((effort) => !ordered.includes(effort)),
+  ];
+  return all as unknown as readonly [string, ...string[]];
+})();
+
 /** The most entries an agent's list holds. */
 export const MAX_MODEL_ENTRIES = 20;
 
@@ -99,7 +122,8 @@ export interface Agent {
   readonly toolPolicy: Partial<ToolPolicy> | null;
   /**
    * Who may chat with it (`mayChat`): null for every signed-in person, else the keys of the permission sets (roles)
-   * whose members may. Managers of agents always may. Work given to it otherwise (assignments, delegation) ignores it.
+   * whose members may. Only an unrestricted identity (root) always may. Work given to it otherwise (assignments,
+   * delegation) ignores it.
    */
   readonly chatRoles: readonly string[] | null;
   /** When a runner last reported its tool and model; null for the application's own. */

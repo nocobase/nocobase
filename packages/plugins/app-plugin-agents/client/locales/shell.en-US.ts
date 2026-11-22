@@ -1,6 +1,7 @@
 /**
  * The wording of what the plugin brings to an application on its own: who may chat with an agent and the team's
- * default Agent on the Agent page, and Personal settings › Preferences › Agent. Merged into `agents` and added as `me`;
+ * default Agent on the Agent page, the Usage page's tabs, and Personal settings › Preferences › Agent. Merged into
+ * `agents` and `usage` and added as `me`;
  * the other languages fall back to English for these keys until they are translated.
  */
 const shellEnUS = {
@@ -12,8 +13,26 @@ const shellEnUS = {
       everyone: 'All members',
       roles: 'Specific roles',
       placeholder: 'Choose roles',
-      hint: 'Members outside these roles do not see this agent in the chat panel and cannot start a conversation with it. Managers of agents always can.',
+      hint: 'Members outside these roles do not see this agent in the chat panel and cannot start a conversation with it. Managing agents does not change who can chat; only root reaches every agent.',
       required: 'Choose at least one role.',
+    },
+    detail: {
+      view: 'View',
+      viewFor: 'View {{name}}',
+      readOnly: 'You can view this agent. Only managers of agents change it.',
+      tabs: {
+        settings: 'Settings',
+        actions: 'Business actions',
+        skills: 'Default skills',
+        runs: 'Runs',
+      },
+      actionsHint:
+        'What the application lets this agent do in business data. It acts only where the person who woke it may act too.',
+      actionsNone: 'This agent has no business actions.',
+      skillsHint:
+        'The team default skills every run of every agent gets. Change them on the Skills page.',
+      skillsNone: 'No team default skills yet.',
+      skillsUnavailable: 'You need permission to view skills to see them.',
     },
     teamDefault: {
       label: 'Team default Agent',
@@ -22,12 +41,21 @@ const shellEnUS = {
       saved: 'Team default Agent saved',
     },
   },
+  usage: { tabs: { usage: 'Usage', prices: 'Prices' } },
   me: {
     navigation: 'Agent',
     title: 'Agent',
     description:
       'Your own Agent settings: where your new conversations go, the runtimes you added and what your runs used.',
     defaultAgent: { title: 'My default Agent' },
+    effort: {
+      title: 'Reasoning effort',
+      description:
+        'How hard the agent thinks in the conversations you start, unless you choose otherwise in the conversation. An agent whose coding tool does not offer it uses its own default.',
+      label: 'My reasoning effort',
+      default: "Each agent's default",
+      saved: 'Reasoning effort saved',
+    },
     runtimes: {
       title: 'Runtimes I added',
       description:

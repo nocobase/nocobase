@@ -2029,6 +2029,10 @@ export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
     description:
       'Which kind of runner runs queued from now on go to first: auto (whichever fits and asks first), personal (their own runners) or team (shared runners). The other kind takes a run about a second later when the preferred kind cannot.',
   }),
+  effort: z.string().nullable().meta({
+    description:
+      'The reasoning effort conversations they start take when they choose none, where the agent’s tool offers it; null: each agent’s default.',
+  }),
 });
 
 export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({

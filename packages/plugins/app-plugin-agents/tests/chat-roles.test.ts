@@ -79,7 +79,7 @@ describe('who may chat with an agent', () => {
         user: 'bob',
         body: message(id, 'Still here?'),
       });
-      expect(refused.status, JSON.stringify(refused.body)).toBe(403);
+      expect(refused.status).toBe(403);
       expect(refused.body.error.message).toBe(
         'You may not chat with this agent.',
       );

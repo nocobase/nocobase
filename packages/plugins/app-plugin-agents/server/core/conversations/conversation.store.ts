@@ -94,6 +94,8 @@ export interface PreferencesRecord {
   readonly defaultAgentId: string | null;
   /** `personal` or `team`; null: `auto`. */
   readonly runnerPreference?: string | null;
+  /** The reasoning effort conversations they start take; null: each agent's default. */
+  readonly effort?: string | null;
   readonly onlineAgent?: JsonColumn;
   readonly updatedAt: string;
 }

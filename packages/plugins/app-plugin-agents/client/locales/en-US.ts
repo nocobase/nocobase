@@ -618,6 +618,7 @@ export type AgentsResource = LocaleResource<typeof enUS>;
 const withShell: typeof enUS = {
   ...enUS,
   agents: mergeLocale(enUS.agents, shellEnUS.agents),
+  usage: mergeLocale(enUS.usage, shellEnUS.usage),
   ...{ me: shellEnUS.me },
 };
 

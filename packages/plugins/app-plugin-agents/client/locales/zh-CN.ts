@@ -578,6 +578,7 @@ const zhCN: AgentsResource = {
 const withShell: typeof zhCN = {
   ...zhCN,
   agents: mergeLocale(zhCN.agents, shellZhCN.agents),
+  usage: mergeLocale(zhCN.usage, shellZhCN.usage),
   ...{ me: shellZhCN.me },
 };
 

@@ -1,6 +1,7 @@
 /**
  * Personal settings › Preferences › Agent (`/me/agent`, route `agentPreferences`): what one signed-in person sets for
- * themselves — the agent their new conversations go to (among those they may chat with), the runtimes they added, and
+ * themselves — the agent their new conversations go to (among those they may chat with), the reasoning effort they
+ * start with, the runtimes they added, and
  * what their own runs used — followed by the sections other plugins register (`agents.preferenceSections.add`), such as
  * a computer the person connected. It needs only a signed-in person.
  */
@@ -24,6 +25,7 @@ import {
 import { Skeleton } from '../../components/ui/skeleton.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { DefaultAgentPreference } from '../../profile/default-agent.js';
+import { EffortPreference } from '../../profile/effort-preference.js';
 import { usePreferenceSections } from '../../ui-registry.js';
 import { formatCost, formatTokens } from '../usage/model.js';
 
@@ -158,6 +160,13 @@ export default function AgentPreferencesPage(): ReactElement {
       <div className='flex flex-col gap-4'>
         <Section testId='me-default-agent' title={t('me.defaultAgent.title')}>
           <DefaultAgentPreference />
+        </Section>
+        <Section
+          testId='me-effort'
+          title={t('me.effort.title')}
+          description={t('me.effort.description')}
+        >
+          <EffortPreference />
         </Section>
         {userId ? (
           <>
