@@ -71,7 +71,10 @@ const guide = defineSystemSettingsRoutes([
     path: '/guide',
     auth: 'required',
     authz: GUIDE_ACCESS,
-    navigation: { title: 'Fixture guide' },
+    navigation: {
+      title: 'Fixture guide',
+      relatedSettings: ['fixture-personal', 'uninstalled-plugin'],
+    },
     componentLoader: async () => ({ default: () => null }),
   },
 ]);
@@ -173,6 +176,14 @@ const source = {
           name: 'authorization',
           title: 'Authorization',
           resources: [
+            {
+              type: 'settings',
+              id: 'fixture-personal',
+              title: 'Personal tools',
+              actions: [
+                { name: 'create', title: 'Create personal tool', risk: 'high' },
+              ],
+            },
             {
               type: 'settings',
               id: 'authorization.permission-sets',
@@ -490,6 +501,26 @@ describe('role permission workspace', () => {
         ),
       ),
     )!;
+    const personalAction = guide.objects[1]!.actions[0]!;
+    expect(guide.objects).toHaveLength(2);
+    expect(personalAction).toMatchObject({
+      label: 'Create personal tool',
+      risk: 'high',
+    });
+    const personalOnly = setActionEnabled(
+      guide.objects,
+      {},
+      personalAction.id,
+      true,
+    );
+    expect(
+      grantsFromDraft({ menus: [], grants: personalOnly.grants }, {}, [], ws),
+    ).toEqual([
+      {
+        resource: { type: 'settings', id: 'fixture-personal' },
+        actions: [{ action: 'create' }],
+      },
+    ]);
     const open = guide.objects[0]!.actions[0]!;
     expect(open).toMatchObject({ label: enUS.settings.openPage, view: true });
     expect(

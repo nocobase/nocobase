@@ -141,6 +141,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Somente uma pessoa gerencia contas: nenhuma chave de API pode fazer isso.',
   },
   page: {
+    roles: 'Papéis',
     loading: 'Carregando',
   },
   notificationTemplates: {

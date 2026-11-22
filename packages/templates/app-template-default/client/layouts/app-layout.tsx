@@ -9,7 +9,11 @@ import { Breadcrumbs } from '#components/breadcrumbs';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
-import { PageBreadcrumbProvider } from '@nocobase/app-client';
+import {
+  AppAsideOutlet,
+  AppLayoutProviders,
+  PageBreadcrumbProvider,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { LayoutHeader } from './components/layout-header.js';
 import {
@@ -86,59 +90,67 @@ export function AppLayout({
       : t('navigation.label', { defaultValue: 'Application navigation' });
 
   return (
-    // The shell owns the business route tree used by its pages and navigation.
-    <RouteTreeProvider routes={routes} access={access}>
-      <PageBreadcrumbProvider>
-        <AppSidebarProvider>
-          <AppSidebar
-            label={navigationLabel}
-            footer={
-              <>
-                {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
-                {!inSettings && settingsEntry.length ? (
-                  <div className='shrink-0 border-t border-sidebar-border'>
-                    <NavigationMenu
-                      items={settingsEntry}
-                      label={t('settings.title')}
-                      selectedKey={undefined}
-                    />
-                  </div>
-                ) : null}
-                <AppSidebarFooter />
-              </>
-            }
-          >
-            {inSettings ? <SettingsBack /> : null}
-            {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
-            <NavigationMenu
-              items={menuItems}
+    // The shell owns the business route tree used by its pages and navigation; the plugins' layout providers (such as
+    // the Agent panel's) wrap all of it, so the header, the pages and the asides share them.
+    <AppLayoutProviders>
+      <RouteTreeProvider routes={routes} access={access}>
+        <PageBreadcrumbProvider>
+          <AppSidebarProvider>
+            <AppSidebar
               label={navigationLabel}
-              selectedKey={selectedKey}
-            />
-          </AppSidebar>
-          <div className='flex min-w-0 flex-1 flex-col'>
-            <LayoutHeader className='sticky top-0 z-40 justify-between'>
-              <div className='flex min-w-0 items-center gap-3'>
-                <AppSidebarToggle />
-                <div className='h-5 w-px shrink-0 bg-border' />
-                {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
-                <Breadcrumbs denied={denied} />
-              </div>
-              <HeaderActions />
-            </LayoutHeader>
-            <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
-              <BrandWatermark className='-z-10' />
-              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+              footer={
+                <>
+                  {/* The System settings entry stays in view at the bottom of the sidebar, outside the scrolling menu. */}
+                  {!inSettings && settingsEntry.length ? (
+                    <div className='shrink-0 border-t border-sidebar-border'>
+                      <NavigationMenu
+                        items={settingsEntry}
+                        label={t('settings.title')}
+                        selectedKey={undefined}
+                      />
+                    </div>
+                  ) : null}
+                  <AppSidebarFooter />
+                </>
+              }
+            >
+              {inSettings ? <SettingsBack /> : null}
+              {inPersonalSettings ? <PersonalSettingsIdentity /> : null}
+              <NavigationMenu
+                items={menuItems}
+                label={navigationLabel}
+                selectedKey={selectedKey}
+              />
+            </AppSidebar>
+            <div className='flex min-w-0 flex-1 flex-col'>
+              <LayoutHeader className='sticky top-0 z-40 justify-between'>
+                <div className='flex min-w-0 items-center gap-3'>
+                  <AppSidebarToggle />
+                  <div className='h-5 w-px shrink-0 bg-border' />
+                  {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
+                  <Breadcrumbs denied={denied} />
+                </div>
+                <HeaderActions />
+              </LayoutHeader>
+              {/* The content row: the page, and beside it the asides plugins register (such as the Agent panel),
+            which take the width they need while the page narrows. */}
+              <div className='relative flex min-h-0 flex-1'>
+                <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-hidden'>
+                  <BrandWatermark className='-z-10' />
+                  {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
-              <div className='h-full overflow-y-auto'>
-                <RouteLeaveBoundary hidden={loading}>
-                  <Outlet />
-                </RouteLeaveBoundary>
+                  <div className='h-full overflow-y-auto'>
+                    <RouteLeaveBoundary hidden={loading}>
+                      <Outlet />
+                    </RouteLeaveBoundary>
+                  </div>
+                </main>
+                <AppAsideOutlet />
               </div>
-            </main>
-          </div>
-        </AppSidebarProvider>
-      </PageBreadcrumbProvider>
-    </RouteTreeProvider>
+            </div>
+          </AppSidebarProvider>
+        </PageBreadcrumbProvider>
+      </RouteTreeProvider>
+    </AppLayoutProviders>
   );
 }

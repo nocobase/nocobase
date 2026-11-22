@@ -144,6 +144,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Seule une personne gère les comptes : aucune clé d'API ne le peut.",
   },
   page: {
+    roles: 'Rôles',
     loading: 'Chargement',
   },
   notificationTemplates: {

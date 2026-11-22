@@ -142,6 +142,7 @@ const esES: LocaleResource<typeof enUS> = {
       'Solo una persona gestiona cuentas: ninguna clave de API puede hacerlo.',
   },
   page: {
+    roles: 'Roles',
     loading: 'Cargando',
   },
   notificationTemplates: {

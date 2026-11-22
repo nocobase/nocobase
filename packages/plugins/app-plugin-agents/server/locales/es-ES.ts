@@ -31,6 +31,7 @@ const esES: LocaleResource<typeof enUS> = {
         runners: 'Entornos de ejecución',
         prices: 'Precios de los modelos',
         services: 'Servicios modelo',
+        skills: 'Habilidades',
       },
     },
     actions: {

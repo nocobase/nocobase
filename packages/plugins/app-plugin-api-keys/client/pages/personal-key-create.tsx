@@ -34,6 +34,7 @@ import type {
   LocalizedText,
 } from '../../shared/scopes.js';
 import { ConfirmDialog, ErrorAlert } from '../components/key-parts.js';
+import { KeyCreateActions } from '../components/key-create-actions.js';
 import { KeySecret } from '../components/key-secret.js';
 import { PermissionTable } from '../components/permission-table.js';
 import { RecordPicker } from '../components/record-picker.js';
@@ -414,7 +415,7 @@ function CreateForm({
       />
       <form
         noValidate
-        className='grid min-w-0 gap-6 rounded-xl border bg-card p-4 text-card-foreground sm:p-6'
+        className='relative grid min-w-0 gap-6 rounded-xl border bg-card p-4 text-card-foreground sm:p-6'
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
@@ -554,14 +555,7 @@ function CreateForm({
             {error}
           </p>
         ) : null}
-        <div className='flex flex-wrap justify-end gap-2 border-t pt-4'>
-          <Button type='button' variant='outline' onClick={onCancel}>
-            {t('common.cancel')}
-          </Button>
-          <Button type='submit' disabled={submitting}>
-            {submitting ? t('create.submitting') : t('create.submit')}
-          </Button>
-        </div>
+        <KeyCreateActions submitting={submitting} onCancel={onCancel} />
       </form>
     </>
   );

@@ -130,6 +130,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     manageAccounts: '帳號只能由人來管理，不能交給 API 金鑰。',
   },
   page: {
+    roles: '角色',
     loading: '載入中',
   },
   notificationTemplates: {

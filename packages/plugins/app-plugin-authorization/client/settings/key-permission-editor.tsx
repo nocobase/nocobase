@@ -636,6 +636,8 @@ function KeyPermissionTable({
       value={draft.draft}
       onChange={change}
       readOnly={readOnly}
+      framed={false}
+      showTabCounts={false}
       builtInTabs={['objects', 'settings']}
       tabs={extraTabs}
       // An application without business objects opens on what it has.

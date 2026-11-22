@@ -1,6 +1,20 @@
 import type { DistributedResource } from './en-US.js';
 
 const ptBR: DistributedResource = {
+  view: {
+    deployment: 'Modo de implantação',
+    multi: 'Várias instâncias',
+    configuration: 'Configuração atual',
+    checks: 'Verificações entre instâncias',
+    backends: 'Backends dos serviços',
+    readiness: 'Verificações antes de escalar',
+    pending: 'Pendentes',
+    all: 'Todas',
+    empty: 'Nenhuma verificação pendente.',
+    blockers: 'Correções obrigatórias · {{count}}',
+    scope:
+      'Configuração desta instância. Implante novamente o aplicativo após alterar a configuração.',
+  },
   nav: {
     title: 'Cluster e distribuição',
     description:

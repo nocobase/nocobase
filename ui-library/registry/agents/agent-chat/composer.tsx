@@ -11,6 +11,8 @@ import {
   useFileUploadLimit,
 } from '@nocobase/app-plugin-file/client';
 import {
+  CapturingPageDraftContext,
+  RestoredPageDraftContext,
   buildPageContext,
   contextChips,
   uiItemKey,
@@ -25,9 +27,13 @@ import type {
   PageContext,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
+  useCallback,
+  useContext,
+  useState,
   useLayoutEffect,
   useMemo,
   useRef,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -39,6 +45,10 @@ import {
   type AgentComposerContext,
 } from '#components/agent-composer';
 
+import {
+  AgentSlotOutlet,
+  replaceable,
+} from '@nocobase/app-plugin-agents/client/chat';
 import { useComposerLabels } from './chat-i18n.js';
 
 export interface ComposerProps {
@@ -63,6 +73,15 @@ export interface ComposerProps {
   readonly onStop: () => void;
   /** `page`: the full-page view's box, one rounded field holding the text and a round send button. */
   readonly variant?: 'panel' | 'page';
+  /** The conversation the box writes to, null before its first message; what `composerActions` are given. */
+  readonly conversationId?: string | null;
+  /** The agent the box writes to, when one is chosen. */
+  readonly agentId?: string | null;
+  /**
+   * Receives the function that puts text into the box (never sending it), for what surrounds it such as the empty
+   * state's suggestions; returns what undoes it.
+   */
+  readonly registerInsert?: (insert: (text: string) => void) => () => void;
 }
 
 /** What a chip in the composer carries, as its preview dialog shows it. */
@@ -87,7 +106,8 @@ function chipContent(chip: ChatContextChip): unknown {
   }
 }
 
-export function Composer({
+/** The panel's and the conversation page's message box; replaceable as `Composer` (`agents.components.replace`). */
+export function DefaultComposer({
   disabled,
   running,
   stopping,
@@ -98,6 +118,9 @@ export function Composer({
   onStop,
   variant = 'panel',
   registerAddFiles,
+  conversationId = null,
+  agentId = null,
+  registerInsert,
 }: ComposerProps): ReactElement {
   const location = useLocation();
   const panel = useChatPanel();
@@ -113,6 +136,22 @@ export function Composer({
       sendAllowedRef.current = false;
     };
   }, [onSend, disabled, panel.open, panel.composerRevision]);
+  // The box's own insert, handed to the `composerActions` slot and to `registerInsert`.
+  const insertRef = useRef<((text: string) => void) | null>(null);
+  const registerBoxInsert = useCallback(
+    (insert: (text: string) => void) => {
+      insertRef.current = insert;
+      const undo = registerInsert?.(insert);
+      return () => {
+        undo?.();
+        if (insertRef.current === insert) insertRef.current = null;
+      };
+    },
+    [registerInsert],
+  );
+  const insertText = useCallback((text: string) => {
+    insertRef.current?.(text);
+  }, []);
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
@@ -127,26 +166,54 @@ export function Composer({
     [files, limit, registerAddFiles],
   );
 
-  const input: ChatContextInput = {
-    route: `${location.pathname}${location.search}`,
-    pinned: panel.pinned,
-    sources: sources.items,
-    uiSources: sources.uiSources.filter((source) =>
-      sources.selectedUIKeys.has(uiItemKey(source)),
-    ),
-    filter: sources.filter,
-    selection: sources.selection,
-    removed: sources.removed,
-  };
+  const store = useContext(CapturingPageDraftContext);
+  const restored = useContext(RestoredPageDraftContext);
+  const [usedContext, setUsedContext] = useState(false);
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const carried = !usedContext && restored?.context;
+  const input: ChatContextInput = carried
+    ? { ...carried, removed: new Set([...carried.removed, ...removed]) }
+    : {
+        route: `${location.pathname}${location.search}`,
+        pinned: panel.pinned,
+        sources: sources.items,
+        uiSources: sources.uiSources.filter((source) =>
+          sources.selectedUIKeys.has(uiItemKey(source)),
+        ),
+        filter: sources.filter,
+        selection: sources.selection,
+        removed: sources.removed,
+      };
   const inputRef = useRef(input);
   useLayoutEffect(() => {
     inputRef.current = input;
   });
+  useLayoutEffect(() => {
+    if (!store) return;
+    return store.register('context', async () => {
+      const saved = inputRef.current;
+      const ui = saved.uiSources?.length
+        ? await sources.snapshotUI()
+        : undefined;
+      return { ...saved, ...(ui ? { ui } : {}) };
+    });
+  }, [store, sources]);
   const context: AgentComposerContext = {
     chips: contextChips(input),
-    onRemove: sources.remove,
+    onRemove: carried
+      ? (key) => setRemoved((current) => new Set([...current, key]))
+      : sources.remove,
     inspect: chipContent,
     build: () => {
+      if (carried) {
+        const items = carried.ui?.items.filter(
+          (item) => !input.removed.has(uiItemKey(item)),
+        );
+        const { ui: _ui, ...rest } = input;
+        return buildPageContext(
+          items?.length ? { ...rest, ui: { version: 1, items } } : rest,
+        );
+      }
       if (sources.selectedUIKeys.size === 0) return buildPageContext(input);
       return sources.snapshotUI().then((ui) => {
         const latest = inputRef.current;
@@ -174,7 +241,16 @@ export function Composer({
       running={running}
       stopping={stopping}
       notice={notice}
-      toolbar={toolbar}
+      toolbar={
+        <>
+          <AgentSlotOutlet
+            name='composerActions'
+            props={{ conversationId, agentId, insertText }}
+          />
+          {toolbar ?? null}
+        </>
+      }
+      registerInsert={registerBoxInsert}
       {...(placeholder === undefined ? {} : { placeholder })}
       labels={labels}
       context={context}
@@ -189,9 +265,18 @@ export function Composer({
         )
           return false;
         const taken = currentSendRef.current(content, carried, sent);
-        if (taken) panel.clearPinned();
+        if (taken) {
+          panel.clearPinned();
+          setUsedContext(true);
+        }
         return taken;
       }}
     />
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components -- wrapped once at load, so replacements follow it
+export const Composer: ComponentType<ComposerProps> = replaceable(
+  'Composer',
+  DefaultComposer,
+);

@@ -13,6 +13,7 @@ import {
 } from './account-writes.js';
 import { fromAccountRow } from './mappers.js';
 import { type AccountRow } from './rows.js';
+import { type MailProviderAccountCount } from '../contracts/persistence.js';
 import { countMessagesOutsideSyncFolders } from './message-writes.js';
 import { jsonOrNull, normalizeAddress } from './serialization.js';
 
@@ -86,6 +87,33 @@ export class MailAccountsStore {
       .orderBy('address', 'asc')
       .execute<AccountRow>();
     return rows.map(fromAccountRow);
+  }
+
+  public async countAccountsByProvider(): Promise<
+    readonly MailProviderAccountCount[]
+  > {
+    const rows = await this.database
+      .query()
+      .selectFrom<AccountRow>('mailAccounts')
+      .select(({ fn }) => [
+        'providerType',
+        'providerName',
+        'status',
+        fn.countAll().as('count'),
+      ])
+      .groupBy(['providerType', 'providerName', 'status'])
+      .execute<{
+        readonly providerType: string;
+        readonly providerName: string;
+        readonly status: string;
+        readonly count: number | string;
+      }>();
+    return rows.map((row) => ({
+      providerType: row.providerType,
+      providerName: row.providerName,
+      status: row.status,
+      count: Number(row.count),
+    }));
   }
 
   public async updateAccountStatus(

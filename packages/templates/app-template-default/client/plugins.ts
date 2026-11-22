@@ -1,3 +1,4 @@
+import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
@@ -44,7 +45,9 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   distributed(),
   scheduler(),
-  mail(),
+  mail({ routes: { mail: false, mailTeam: false } }),
+  // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
+  agents(),
   foundation(),
 ]);
 

@@ -3,8 +3,7 @@ export default {
     title: 'File storage',
     navDescription:
       'Where uploaded files are stored, and which features store them',
-    description:
-      'Where uploaded files are stored, how large one file may be, and which features store files. Storage is set in the application configuration (`drive`) and takes effect after redeploying; this page shows the settings in effect and checks that storage can really be read and written.',
+    description: 'View storage settings and the features that use each disk.',
     checkAction: 'Check storage',
     loading: 'Loading file storage…',
     loadFailed: 'File storage could not be loaded.',
@@ -15,9 +14,6 @@ export default {
       title_other: '{{count}} notices',
       incomplete:
         'Disk {{disk}} is not fully configured ({{problems}}): it does no harm while unused, and fails when chosen.',
-      localDefault:
-        'The default storage is a local disk: the application can only run as a single instance. Use shared storage for several instances.',
-      seeCluster: 'See Cluster and distributed.',
     },
     columns: {
       name: 'Name',
@@ -156,11 +152,7 @@ export default {
         'Storage settings still apply: file tables added later store files on {{disk}} by default.',
     },
     notes: {
-      title: 'Notes',
-      firstUse:
-        'Storage is connected on first use, so a successful start does not prove it can be read and written. Check writes, reads and deletes a temporary file to confirm.',
-      changeDefault:
-        'Changing the default storage affects only later uploads; existing files are still read from the storage their records name and are not moved.',
+      changeDefault: 'Changing the default disk only affects new uploads.',
       deleteRecords:
         'Deleting a record does not delete its file from the disk.',
       publicLinks:

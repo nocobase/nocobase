@@ -140,6 +140,7 @@ const viVN: LocaleResource<typeof enUS> = {
       'Chỉ con người mới quản lý tài khoản: không khóa API nào được làm việc này.',
   },
   page: {
+    roles: 'Vai trò',
     loading: 'Đang tải',
   },
   notificationTemplates: {

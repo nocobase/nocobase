@@ -2,6 +2,8 @@
  * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
  * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
  * bounded snapshots; everyone else receives 404. Changing the team's default chat agent needs `agents.agents` manage.
+ * An agent may limit who chats with it to roles (`Agent.chatRoles`): it is left out of `chatAgents`, and creating a
+ * conversation with it, sending to it, switching to it or making it one's default answers 403 to anyone else.
  */
 import { limitBytes, fileTooLarge } from '@nocobase/app-plugin-file/server';
 import {
@@ -45,6 +47,9 @@ import {
   PageContextSchema,
 } from '../core/conversations/index.js';
 import { RUN_SELF_ACTION } from '../core/callers/index.js';
+import { findAgent } from '../core/agents/index.js';
+import { findConversation } from '../core/conversations/conversation.store.js';
+import { mayChat } from '../../shared/agents.js';
 import { forbidden, invalid } from '../kernel/errors.js';
 import {
   decodePageToken,
@@ -327,6 +332,24 @@ export function createChatRoutes(
     if (!value) throw forbidden('Trusted entry credentials are required.');
     return value;
   };
+  /**
+   * Refuses (403) chatting with an agent that limits who may chat with it to roles the caller has none of. One read of
+   * the agent; the caller's permission sets only when the agent names roles. The native online agent (`online`) and an
+   * unknown id pass, for the service to answer as it does.
+   */
+  const mayChatWith = async (
+    context: Context<AdminEnv>,
+    agentId: string | null | undefined,
+  ): Promise<void> => {
+    if (!agentId || agentId === 'online') return;
+    const agent = await findAgent(services.tx.read(), agentId);
+    if (!agent?.chatRoles?.length) return;
+    if (!mayChat(agent, await context.get('caller').chatAudience()))
+      throw forbidden('You may not chat with this agent.');
+  };
+  /** The agent of a conversation the caller owns, read after the service checked the owner. */
+  const conversationAgentId = async (id: string): Promise<string | null> =>
+    (await findConversation(services.tx.read(), id))?.agentId ?? null;
 
   const conversationParam = apiValidator('param', ConversationParams);
   const conversationId = (context: Context<AdminEnv>): string =>
@@ -392,7 +415,7 @@ export function createChatRoutes(
         },
       }),
       description:
-        'Creates an OnlineAgent session without sending input. Configuration defaults are resolved once; original model columns remain authoritative.',
+        'Creates an OnlineAgent session without sending input. Configuration defaults are resolved once; original model columns remain authoritative. 403 when the agent (named, or the default it goes to) is limited to roles the caller has none of.',
       responses: {
         201: dataResponse(ConversationDetailSchema, 'Created.'),
         400: conversationConflict('No chat agent is available'),
@@ -427,6 +450,16 @@ export function createChatRoutes(
                 'online'
             )
               throw invalid('Only Runner conversations can select a project.');
+            const requested = request.agentId ?? request.config?.agentId;
+            if (requested) await mayChatWith(context, requested);
+            else {
+              // The default it will go to: the caller's own, else the team's.
+              const own = await chat.preferences(me(context));
+              await mayChatWith(
+                context,
+                own.defaultAgentId ?? (await chat.settings()).defaultAgentId,
+              );
+            }
             const agent = await services.onlineAgent.realtime(
               trusted(context),
               {
@@ -748,7 +781,7 @@ export function createChatRoutes(
         ],
       }),
       description:
-        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. Server metadata, history, tools and config are not writable here. Runner uses the same input and standard stream; only saved source records are projected. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
+        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. 403 when the conversation’s agent is limited to roles the caller has none of. Server metadata, history, tools and config are not writable here. Runner uses the same input and standard stream; only saved source records are projected. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
       responses: {
         200: {
           description:
@@ -799,6 +832,10 @@ export function createChatRoutes(
           'Online agents do not support conversation reasoning effort.',
           { reason: 'EFFORT_UNSUPPORTED' },
         );
+      await mayChatWith(
+        context,
+        request.agentId ?? (await conversationAgentId(id)),
+      );
       await agent.send([{ role: 'user', content: parts }], {
         agentId: request.agentId,
         runnerId: request.runnerId,
@@ -885,6 +922,7 @@ export function createChatRoutes(
         },
         { sessionId: id },
       );
+      await mayChatWith(context, await conversationAgentId(id));
       const seq = await agent.queue(
         [{ role: 'user', content: request.message.parts }],
         {
@@ -1051,7 +1089,7 @@ export function createChatRoutes(
       operationId: 'agentsSwitchConversationAgent',
       ...cliRoute(false),
       description:
-        'Owner only. Select an enabled, callable Runner Agent once all pending work has ended. History and task links stay; the next message starts a fresh tool session with the new agent. No run is cancelled or automatically started.',
+        'Owner only. Select an enabled, callable Runner Agent the caller may chat with (403 otherwise) once all pending work has ended. History and task links stay; the next message starts a fresh tool session with the new agent. No run is cancelled or automatically started.',
       responses: {
         200: dataResponse(ConversationDetailSchema),
         409: conversationConflict(
@@ -1066,14 +1104,17 @@ export function createChatRoutes(
       'json',
       z.strictObject({ agentId: z.string().trim().min(1).max(64) }),
     ),
-    async (context) =>
-      context.json({
+    async (context) => {
+      const { agentId } = context.req.valid('json');
+      await mayChatWith(context, agentId);
+      return context.json({
         data: await conversations.switchAgent(
           me(context),
           conversationId(context),
-          context.req.valid('json').agentId,
+          agentId,
         ),
-      }),
+      });
+    },
   );
   router.get(
     '/conversations/:conversationId/runners',
@@ -1485,14 +1526,18 @@ export function createChatRoutes(
       operationId: 'agentsListChatAgents',
       // UI-only: the chat panel's agent picker; `agent list` lists the same agents.
       ...cliRoute(false),
-      description: 'With whether each can answer now.',
+      description:
+        'With whether each can answer now. Agents limited to roles the caller has none of are left out (`Agent.chatRoles`).',
       responses: {
         200: listResponse(ChatAgentSchema),
         ...apiErrorResponses,
       },
     }),
     async (context) => {
-      const data = await services.conversations.chatAgents(me(context));
+      // Agents limited to roles the caller has none of are left out; the roles are read only when one is limited.
+      const data = await services.conversations.chatAgents(me(context), () =>
+        context.get('caller').chatAudience(),
+      );
       return context.json({ data, meta: { total: data.length } });
     },
   );
@@ -1527,20 +1572,21 @@ export function createChatRoutes(
         },
       }),
       description:
-        "Sets the caller's own default chat agent and which kind of runner their runs go to first. The runner preference applies to runs queued after the change.",
+        "Sets the caller's own default chat agent, one they may chat with (403 otherwise), and which kind of runner their runs go to first. The runner preference applies to runs queued after the change.",
       responses: {
         200: dataResponse(ChatDefaultAgentSchema),
         ...apiErrorResponses,
       },
     }),
     apiValidator('json', ChatPreferencesPatchSchema),
-    async (context) =>
-      context.json({
-        data: await chat.updatePreferences(
-          me(context),
-          context.req.valid('json'),
-        ),
-      }),
+    async (context) => {
+      const patch = context.req.valid('json');
+      // A person's default is an agent they may chat with.
+      await mayChatWith(context, patch.defaultAgentId);
+      return context.json({
+        data: await chat.updatePreferences(me(context), patch),
+      });
+    },
   );
   router.get(
     '/chatSettings',
@@ -1576,7 +1622,7 @@ export function createChatRoutes(
         },
       }),
       description:
-        "Sets the team's default chat agent, an enabled agent. Needs `agents.agents` manage.",
+        "Sets the team's default chat agent, an enabled agent everyone may chat with (400 `AGENT_CHAT_LIMITED` for one limited to roles). Needs `agents.agents` manage.",
       responses: {
         200: dataResponse(ChatSettingsSchema),
         ...apiErrorResponses,

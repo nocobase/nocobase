@@ -4,15 +4,12 @@ import {
   CHAT_MOBILE_QUERY,
   useChatPanel,
 } from '@nocobase/app-plugin-agents/client/chat';
-import type { ConversationMode } from '@nocobase/app-plugin-agents/shared/conversations';
-import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { ConversationPanelFrame } from './panel-frame.js';
 import {
   ConversationAssociationsProvider,
   type ConversationAssociationOptions,
 } from './conversation-associations.js';
 import { ChatWorkspace, type ChatWorkspaceProps } from './workspace.js';
-import { useChatMode } from './chat-mode.js';
 import { useMediaQuery } from './use-media-query.js';
 import { useChatTranslation } from './chat-i18n.js';
 
@@ -87,35 +84,6 @@ export function PanelWorkspace({
 }: {
   readonly slots?: LinkedChatWorkspaceSlots | undefined;
 }): ReactElement {
-  // A host's own list heading replaces the agent-kind tabs and their filter.
-  return slots?.list?.heading !== undefined ? (
-    <BoundWorkspace slots={slots} />
-  ) : (
-    <ModeWorkspace slots={slots} />
-  );
-}
-
-function ModeWorkspace({
-  slots,
-}: {
-  readonly slots?: LinkedChatWorkspaceSlots | undefined;
-}): ReactElement {
-  const mode = useChatMode();
-  return (
-    <BoundWorkspace
-      slots={{
-        ...slots,
-        list: { heading: <ModeTabs />, mode: mode.mode, ...slots?.list },
-      }}
-    />
-  );
-}
-
-function BoundWorkspace({
-  slots,
-}: {
-  readonly slots?: LinkedChatWorkspaceSlots | undefined;
-}): ReactElement {
   const panel = useChatPanel();
   const phone = useMediaQuery(CHAT_MOBILE_QUERY);
   return (
@@ -139,38 +107,5 @@ function BoundWorkspace({
       }
       expanded={panel.mode === 'expanded'}
     />
-  );
-}
-
-/** Tabs between the two kinds of agent when both are configured, as My sessions switches between kinds of sessions. */
-function ModeTabs(): ReactElement {
-  const mode = useChatMode();
-  const { t } = useChatTranslation();
-  if (!mode.switchable)
-    return (
-      <h2 className='truncate text-base font-semibold'>
-        {t('chat.list.label')}
-      </h2>
-    );
-  return (
-    <Tabs
-      value={mode.mode ?? mode.modes[0]}
-      className='min-w-0'
-      onValueChange={(next: ConversationMode) => mode.switchTo(next)}
-    >
-      <TabsList className='w-full min-w-0'>
-        {mode.modes.map((item) => (
-          <TabsTrigger
-            key={item}
-            value={item}
-            className='min-w-0 flex-auto px-1 text-xs'
-          >
-            <span className='truncate'>
-              {t(item === 'online' ? 'chat.modes.online' : 'chat.modes.runner')}
-            </span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
   );
 }

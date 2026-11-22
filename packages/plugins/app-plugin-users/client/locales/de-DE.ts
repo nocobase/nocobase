@@ -145,6 +145,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'Konten verwaltet nur ein Mensch: Kein API-Schlüssel darf das.',
   },
   page: {
+    roles: 'Rollen',
     loading: 'Wird geladen',
   },
   notificationTemplates: {

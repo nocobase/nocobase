@@ -40,3 +40,12 @@ export const mailOutboundAttachmentStorageToken: ServiceToken<MailOutboundAttach
   createServiceToken<MailOutboundAttachmentStorage>(
     '@nocobase/app-plugin-mail/outbound-attachment-storage',
   );
+
+/** What the Mail settings overview reports about how the plugin was assembled. Internal to this package. */
+export interface MailAssemblyInfo {
+  /** Whether the application registered its own credential vault before Mail registered the built-in one. */
+  readonly credentialVault: 'builtin' | 'application';
+}
+
+export const mailAssemblyInfoToken: ServiceToken<MailAssemblyInfo> =
+  createServiceToken<MailAssemblyInfo>('@nocobase/app-plugin-mail/assembly');

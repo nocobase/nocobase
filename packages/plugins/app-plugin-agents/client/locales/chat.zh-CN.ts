@@ -18,7 +18,8 @@ const chatZhCN: ChatLocale = {
         '当前模型不支持「{{requested}}」思考等级，本次回复使用了厂商默认设置。',
       warning: '模型可能未在本次回复中应用「{{level}}」思考等级。',
     },
-    executionFailed: '执行失败。请先查看已保存的会话记录，再决定是否重试。',
+    executionFailed:
+      '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。',
     untitled: '未命名对话',
     renamed: '标题已修改',
     archivedNamed: '已归档“{{title}}”',
@@ -31,8 +32,8 @@ const chatZhCN: ChatLocale = {
       agentArchived: '未启用',
       forbidden: '你无权使用',
       noModel: '请先配置聊天模型',
-      noRunner: '暂无执行机，选不了',
-      othersPersonal: '只有别人的个人执行机能跑',
+      noRunner: '暂无运行环境，选不了',
+      othersPersonal: '只有别人的个人运行环境能运行',
       modelUnavailable: '模型不可用',
     },
     offline: {
@@ -87,8 +88,8 @@ const chatZhCN: ChatLocale = {
       working: '正在执行 {{subject}}',
     },
     agents: {
-      personalOnly: '仅个人执行机',
-      hint: '列出已启用的 agent，你现在用不了的会写明原因。回答跑在执行机上，第一条回复要等执行机领取，通常十几秒。',
+      personalOnly: '仅个人运行环境',
+      hint: '列出已启用的 Agent，你现在用不了的会写明原因。回答跑在运行环境上，第一条回复要等运行环境领取，通常十几秒。',
       chooseFor: '选择 Agent',
       empty: '没有你可以选择的 Agent',
       none: '没有 Agent',

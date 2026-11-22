@@ -60,7 +60,8 @@
         "MAIL_SYNC_BATCH_SIZE",
         "MAIL_PUSH_WEBHOOK_URL",
         "MAIL_PUSH_WEBHOOK_SECRET",
-        "MAIL_JOBS"
+        "MAIL_JOBS",
+        "MAIL_LOG_RETENTION_DAYS"
       ]
     }
   },
@@ -108,6 +109,7 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",

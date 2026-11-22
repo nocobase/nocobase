@@ -128,6 +128,7 @@ const zhCN: UsersResource = {
     manageAccounts: '账号只能由人来管理，不能交给 API 密钥。',
   },
   page: {
+    roles: '角色',
     loading: '加载中',
   },
   notificationTemplates: {

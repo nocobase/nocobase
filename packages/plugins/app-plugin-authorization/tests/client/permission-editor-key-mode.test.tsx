@@ -52,11 +52,12 @@ describe('the permission table of a credential', () => {
         value={{ menus: [], grants: { view: {}, rollback: {} } }}
         onChange={vi.fn()}
         builtInTabs={['objects', 'settings']}
+        showTabCounts={false}
         defaultTab='menus'
       />,
     );
     expect(screen.queryByRole('tab', { name: /Page access/ })).toBeNull();
-    expect(screen.getByRole('tab', { name: /Operations/ })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Operations' })).toHaveAttribute(
       'aria-selected',
       'true',
     );

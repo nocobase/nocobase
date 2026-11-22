@@ -13,6 +13,7 @@ import type { RunEvent } from '@nocobase/agent-protocol';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   renderHook,
@@ -733,5 +734,38 @@ describe('profile and presets', () => {
     expect(system).toHaveTextContent('chatProfile.systemDefaultNamed');
     await userEvent.click(system!);
     await waitFor(() => expect(preferences.defaultAgentId).toBeNull());
+  });
+
+  it('saves the person’s own reasoning effort and shows it again after a reload', async () => {
+    let preferences = {
+      defaultAgentId: null as string | null,
+      runnerPreference: 'auto',
+      effort: null as string | null,
+    };
+    resetApi(
+      routes({
+        'agents/chatPreferences': () => preferences,
+        'PATCH agents/chatPreferences': (request) => {
+          preferences = { ...preferences, ...(request.json as object) };
+          return preferences;
+        },
+      }),
+    );
+    const { EffortPreference } =
+      await import('../../client/profile/effort-preference.js');
+    renderChat('/profile', <EffortPreference />);
+    const select = await screen.findByTestId('profile-effort-select');
+    expect(select).toHaveTextContent('me.effort.default');
+    await userEvent.click(select);
+    await userEvent.click(
+      await screen.findByRole('option', { name: 'agents.effort.high' }),
+    );
+    await waitFor(() => expect(preferences.effort).toBe('high'));
+    // A new page with a fresh cache, as after a reload.
+    cleanup();
+    renderChat('/profile', <EffortPreference />);
+    expect(
+      await screen.findByTestId('profile-effort-select'),
+    ).toHaveTextContent('agents.effort.high');
   });
 });

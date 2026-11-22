@@ -1,23 +1,15 @@
-import { ClientApplicationContext } from '@nocobase/app-client';
-import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { usePageBreadcrumb } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   AlertTriangle,
   Check,
-  ChevronRight,
   FolderOpen,
   Loader2,
   Minus,
   X,
 } from 'lucide-react';
-import {
-  useContext,
-  useMemo,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router';
 
 import {
   formatAgo,
@@ -43,9 +35,16 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 export default function FileStoragePage(): ReactElement {
   const storage = useFileStorage();
   const [params] = useSearchParams();
+  const { pathname } = useLocation();
   const disk = params.get('disk');
   const { t, i18n } = useStorageTranslation(storage.data);
   const locale = i18n.language || 'en-US';
+
+  usePageBreadcrumb(
+    disk
+      ? [{ label: t('storage.backToList'), to: pathname }, { label: disk }]
+      : null,
+  );
 
   let body: ReactNode;
   if (!storage.data) {
@@ -91,7 +90,7 @@ export default function FileStoragePage(): ReactElement {
           {t('storage.title')}
         </h1>
         <p className='max-w-4xl text-sm leading-6 text-muted-foreground'>
-          <CodeText text={t('storage.description')} />
+          {t('storage.description')}
         </p>
       </header>
       {body}
@@ -161,11 +160,9 @@ function Overview({
       {tab === 'disks' ? (
         <>
           <DiskList view={view} t={t} locale={locale} />
-          <Notes
-            t={t}
-            items={['firstUse', 'changeDefault', 'noBrowser']}
-            titled
-          />
+          <p className='text-sm text-muted-foreground'>
+            {t('storage.notes.changeDefault')}
+          </p>
         </>
       ) : view.usages.length === 0 ? (
         <EmptyUsages view={view} t={t} />
@@ -189,35 +186,8 @@ function Hints({
   readonly view: FileStorageView;
   readonly t: Translate;
 }): ReactElement | null {
-  const clusterPath = useClusterSettingsPath();
-  const items: { readonly key: string; readonly node: ReactNode }[] = [];
-  for (const disk of view.disks)
-    if (!disk.complete)
-      items.push({
-        key: `incomplete-${disk.name}`,
-        node: t('storage.hints.incomplete', {
-          disk: disk.name,
-          problems: problemsText(disk, t),
-        }),
-      });
-  const defaultDisk = view.disks.find((disk) => disk.isDefault);
-  if (defaultDisk?.driver === 'fs')
-    items.push({
-      key: 'local-default',
-      node: (
-        <>
-          {t('storage.hints.localDefault')}{' '}
-          {clusterPath ? (
-            <Link to={clusterPath} className='underline underline-offset-2'>
-              {t('storage.hints.seeCluster')}
-            </Link>
-          ) : (
-            t('storage.hints.seeCluster')
-          )}
-        </>
-      ),
-    });
-  if (items.length === 0) return null;
+  const incomplete = view.disks.filter((disk) => !disk.complete);
+  if (incomplete.length === 0) return null;
   return (
     <div
       role='status'
@@ -226,11 +196,16 @@ function Hints({
       <AlertTriangle className='mt-0.5 size-4 shrink-0' aria-hidden />
       <div className='space-y-1'>
         <p className='font-semibold'>
-          {t('storage.hints.title', { count: items.length })}
+          {t('storage.hints.title', { count: incomplete.length })}
         </p>
         <ul className='list-disc space-y-1 pl-4'>
-          {items.map((item) => (
-            <li key={item.key}>{item.node}</li>
+          {incomplete.map((disk) => (
+            <li key={disk.name}>
+              {t('storage.hints.incomplete', {
+                disk: disk.name,
+                problems: problemsText(disk, t),
+              })}
+            </li>
           ))}
         </ul>
       </div>
@@ -238,27 +213,8 @@ function Hints({
   );
 }
 
-/** The cluster settings page, when the application has one; the hint names it without a link otherwise. */
-function useClusterSettingsPath(): string | undefined {
-  const app = useContext(ClientApplicationContext);
-  return useMemo(() => {
-    const visit = (
-      routes: readonly AppClientRegisteredRoute[],
-    ): string | undefined => {
-      for (const route of routes) {
-        if (route.componentLoader && /\/settings\/cluster$/.test(route.path))
-          return route.path;
-        const found = visit(route.children ?? []);
-        if (found) return found;
-      }
-      return undefined;
-    };
-    return app ? visit(app.runtime.routes) : undefined;
-  }, [app]);
-}
-
 const gridDisks =
-  'md:grid md:grid-cols-[minmax(7rem,0.8fr)_minmax(12rem,1.6fr)_6rem_7rem_6rem_minmax(10rem,1.2fr)_5rem] md:items-center md:gap-3';
+  'md:grid md:grid-cols-[minmax(7rem,0.8fr)_minmax(12rem,1.6fr)_6rem_7rem_6rem_minmax(10rem,1.2fr)] md:items-center md:gap-3';
 
 function DiskList({
   view,
@@ -280,17 +236,18 @@ function DiskList({
         <div>{t('storage.columns.maxFileSize')}</div>
         <div>{t('storage.columns.usages')}</div>
         <div>{t('storage.columns.status')}</div>
-        <div />
       </div>
       {view.disks.map((disk) => {
         const count = view.usages.filter(
           (usage) => usage.disk === disk.name,
         ).length;
         return (
-          <div
+          <Link
             key={disk.name}
             data-disk={disk.name}
-            className={`grid gap-1.5 border-t px-4 py-3 text-sm first:border-t-0 md:first:border-t ${gridDisks}`}
+            to={{ search: `?disk=${encodeURIComponent(disk.name)}` }}
+            aria-label={`${t('storage.details')} ${disk.name}`}
+            className={`grid gap-1.5 border-t px-4 py-3 text-sm last:rounded-b-xl hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${gridDisks}`}
           >
             <div className='flex flex-wrap items-center gap-2'>
               <span className='font-semibold'>{disk.name}</span>
@@ -319,16 +276,7 @@ function DiskList({
             <div>
               <DiskStatus disk={disk} t={t} locale={locale} />
             </div>
-            <div className='md:text-right'>
-              <Link
-                to={{ search: `?disk=${encodeURIComponent(disk.name)}` }}
-                className={buttonClass}
-                aria-label={`${t('storage.details')} ${disk.name}`}
-              >
-                {t('storage.details')}
-              </Link>
-            </div>
-          </div>
+          </Link>
         );
       })}
     </div>
@@ -510,22 +458,8 @@ function DiskDetail({
 }): ReactElement {
   const disk = view.disks.find((item) => item.name === name);
   const usages = view.usages.filter((usage) => usage.disk === name);
-  const crumb = (
-    <nav className='flex items-center gap-1 text-xs text-muted-foreground'>
-      <Link to={{ search: '' }} className='underline underline-offset-2'>
-        {t('storage.backToList')}
-      </Link>
-      <ChevronRight className='size-3' aria-hidden />
-      <span>{name}</span>
-    </nav>
-  );
   if (!disk)
-    return (
-      <div className='space-y-3'>
-        {crumb}
-        <p className='text-sm'>{t('storage.notFound', { disk: name })}</p>
-      </div>
-    );
+    return <p className='text-sm'>{t('storage.notFound', { disk: name })}</p>;
   const rows: [string, ReactNode, 'code' | 'config' | 'default'][] = [
     [
       t('storage.settings.driver'),
@@ -558,7 +492,6 @@ function DiskDetail({
   return (
     <div className='space-y-4'>
       <div className='space-y-1'>
-        {crumb}
         <h1 className='flex flex-wrap items-center gap-2 font-heading text-2xl font-semibold tracking-[-0.035em]'>
           {disk.name}
           {disk.isDefault && <DefaultBadge t={t} />}
@@ -771,19 +704,12 @@ function stepDetail(
 function Notes({
   t,
   items,
-  titled,
 }: {
   readonly t: Translate;
   readonly items: readonly string[];
-  readonly titled?: boolean;
 }): ReactElement {
   return (
-    <div className='space-y-1 text-sm text-muted-foreground'>
-      {titled && (
-        <p className='font-semibold text-foreground'>
-          {t('storage.notes.title')}
-        </p>
-      )}
+    <div className='text-sm text-muted-foreground'>
       <ul className='list-disc space-y-1 pl-5'>
         {items.map((item) => (
           <li key={item}>

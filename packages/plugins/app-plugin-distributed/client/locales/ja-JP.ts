@@ -1,6 +1,20 @@
 import type { DistributedResource } from './en-US.js';
 
 const jaJP: DistributedResource = {
+  view: {
+    deployment: 'デプロイモード',
+    multi: '複数インスタンス',
+    configuration: '現在の設定',
+    checks: '複数インスタンスの確認',
+    backends: 'サービスのバックエンド',
+    readiness: '拡張前の確認',
+    pending: '要対応',
+    all: 'すべて',
+    empty: '対応が必要な項目はありません。',
+    blockers: '要修正 · {{count}} 件',
+    scope:
+      'このインスタンスの設定を表示します。設定を変更したら再デプロイしてください。',
+  },
   nav: {
     title: 'クラスターと分散構成',
     description:

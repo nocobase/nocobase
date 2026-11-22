@@ -31,6 +31,7 @@ const viVN: LocaleResource<typeof enUS> = {
         runners: 'Môi trường chạy',
         prices: 'Giá mẫu',
         services: 'Dịch vụ kiểu mẫu',
+        skills: 'Kỹ năng',
       },
     },
     actions: {

@@ -189,7 +189,7 @@ describe('skill pages', () => {
           version: 3,
         }),
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
   });
 
@@ -296,7 +296,7 @@ describe('skill pages', () => {
   });
 
   it('does not grant global settings to someone allowed to edit only their own skill', async () => {
-    granted.delete('agents.agents/manage');
+    granted.delete('agents.skills/manage');
     granted.add('agents.agents/edit');
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
@@ -419,7 +419,7 @@ describe('skill pages', () => {
           });
         },
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
@@ -452,7 +452,7 @@ describe('skill pages', () => {
           throw new FakeApiError(409, 'REVISION_CONFLICT');
         },
       },
-      ['agents.agents/read'],
+      ['agents.skills/read'],
     );
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
@@ -524,7 +524,7 @@ describe('skill pages', () => {
           content: (request.json as SkillInput).content,
         }),
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
     renderRoute(<NewSkillPage />, '/skills/new', '/skills/new');
     const source = screen.getByLabelText('skills.content');
@@ -559,7 +559,7 @@ describe('skill pages', () => {
           content: (request.json as SkillInput).content,
         }),
       },
-      ['agents.agents/read', 'agents.agents/manage'],
+      ['agents.skills/read', 'agents.skills/manage'],
     );
     const view = renderRoute(
       <NewSkillPage />,

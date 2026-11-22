@@ -5,13 +5,11 @@
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { InfoIcon } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
 
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { Alert, AlertDescription } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
@@ -23,11 +21,12 @@ import type {
 } from '../../shared/scopes.js';
 import { ErrorAlert } from '../components/key-parts.js';
 import { KeyOptionPicker } from '../components/key-option-picker.js';
+import { KeyCreateActions } from '../components/key-create-actions.js';
 import { KeySecret } from '../components/key-secret.js';
 import { PermissionTable } from '../components/permission-table.js';
 import { ScopeRecordPicker } from '../components/scope-record-picker.js';
 import { RecordPicker } from '../components/record-picker.js';
-import type { SystemKeysOutletContext } from '../components/system-key-list.js';
+import type { SystemKeysOutletContext } from './system-keys.js';
 import { useApiKeysAdminApi, type SystemKey } from '../lib/admin-api.js';
 import { useApiKeysApi } from '../lib/api.js';
 import { API_KEYS_NAMESPACE } from '../namespace.js';
@@ -194,7 +193,7 @@ function CreateForm({
   return (
     <form
       noValidate
-      className='grid min-w-0 gap-6 rounded-xl border bg-card p-4 text-card-foreground sm:p-6'
+      className='relative grid min-w-0 gap-6 rounded-xl border bg-card p-4 text-card-foreground sm:p-6'
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -265,13 +264,6 @@ function CreateForm({
         </div>
       </Row>
       <div className='grid min-w-0 gap-2'>
-        <span className='text-sm font-medium'>{t('detail.what')}</span>
-        <Alert>
-          <InfoIcon aria-hidden />
-          <AlertDescription>
-            {t('system.create.permissionsHint')}
-          </AlertDescription>
-        </Alert>
         <PermissionTable
           value={grants}
           onChange={setGrants}
@@ -304,14 +296,7 @@ function CreateForm({
           {error}
         </p>
       ) : null}
-      <div className='flex flex-wrap justify-end gap-2 border-t pt-4'>
-        <Button type='button' variant='outline' onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-        <Button type='submit' disabled={submitting}>
-          {submitting ? t('create.submitting') : t('create.submit')}
-        </Button>
-      </div>
+      <KeyCreateActions submitting={submitting} onCancel={onCancel} />
     </form>
   );
 }

@@ -10,6 +10,11 @@ import {
   type AppClientHeaderActionDefinition,
   type AppClientHeaderActions,
 } from './header-actions.js';
+import {
+  defineLayoutExtensions,
+  type AppClientLayoutExtensionDefinition,
+  type AppClientLayoutExtensions,
+} from './layout-extensions.js';
 import { APP_CLIENT_NAMESPACE } from './namespace.js';
 
 const CONTRIBUTION_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
@@ -323,6 +328,8 @@ export interface AppClientRouteNavigation {
    */
   readonly description?: string;
   readonly icon?: AppClientRouteIcon;
+  /** Additional settings resource IDs editable alongside this module’s route permissions in the role editor. */
+  readonly relatedSettings?: readonly string[];
   /**
    * The count beside the entry, such as unread messages: a hook the menu calls while it renders the entry
    * (`AppClientBadgeHook`). A layout may still pass a count of its own for the entry, which wins.
@@ -455,6 +462,8 @@ export interface AppClientContribution<TOptions = void> {
   readonly locales?: AppClientLocales;
   /** Buttons in the header's right-hand area, left of the account menu (`AppClientHeaderActionDefinition`). */
   readonly headerActions?: AppClientHeaderActions<TOptions>;
+  /** A provider around the signed-in layout and an aside beside its content (`AppClientLayoutExtensionDefinition`). */
+  readonly layoutExtensions?: AppClientLayoutExtensions<TOptions>;
   readonly options?: TOptions;
 }
 
@@ -489,6 +498,7 @@ export interface AppClientPluginRegistration {
   readonly reactProviders: readonly AppClientReactProviderDefinition[];
   readonly locales?: AppClientLocales;
   readonly headerActions: readonly AppClientHeaderActionDefinition[];
+  readonly layoutExtensions: readonly AppClientLayoutExtensionDefinition[];
   readonly routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[];
   readonly options: unknown;
 }
@@ -536,6 +546,9 @@ export function defineClientPlugin<TOptions = void>(
       locales: definition.locales,
       headerActions: defineHeaderActions(
         resolveContribution(definition.headerActions, resolvedOptions) ?? [],
+      ),
+      layoutExtensions: defineLayoutExtensions(
+        resolveContribution(definition.layoutExtensions, resolvedOptions) ?? [],
       ),
       routeComponentOverrides: defineClientRouteComponentOverrides(overrides),
       options: resolvedOptions,
@@ -1898,6 +1911,16 @@ function findReactProviderCycle(
   return reactProviders.map((reactProvider) => reactProvider.id);
 }
 
+export {
+  AppAsideOutlet,
+  AppLayoutProviders,
+  defineLayoutExtensions,
+  resolveLayoutExtensions,
+  useLayoutExtensions,
+  type AppClientLayoutExtensionDefinition,
+  type AppClientLayoutExtensions,
+  type AppClientRegisteredLayoutExtension,
+} from './layout-extensions.js';
 export {
   applyHeaderActionOverrides,
   badgeCount,

@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesIdID from '../../shared/locales/pages.id-ID.js';
+
 const idID: LocaleResource<typeof enUS> = {
+  ...pagesIdID,
   content: {
     tooLarge:
       'Tubuh melebihi batas tampilan 16 MiB. Buka di kotak surat asli Anda. Lampiran masih dapat diunduh.',
@@ -594,6 +597,7 @@ const idID: LocaleResource<typeof enUS> = {
     drafts: 'Draf',
     moveMessage: 'Pindahkan pesan',
     aliases: 'Alias',
+    downloadOriginal: 'Unduh asli',
   },
   status: {
     account: {

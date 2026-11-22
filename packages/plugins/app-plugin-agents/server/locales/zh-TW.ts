@@ -29,6 +29,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         runners: '執行環境',
         prices: '型號價格',
         services: '模特兒服務',
+        skills: '技能',
       },
     },
     actions: {

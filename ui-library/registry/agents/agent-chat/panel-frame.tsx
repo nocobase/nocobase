@@ -1,6 +1,5 @@
 import { resolveAppUrl } from '@nocobase/app-client';
 import {
-  CHAT_DOCK_QUERY,
   CHAT_MOBILE_QUERY,
   CHAT_PANEL_ATTRIBUTE,
   CHAT_PANEL_ID,
@@ -20,18 +19,26 @@ import { cn } from 'cn';
 import { useMediaQuery } from './use-media-query.js';
 import { useKeyboardFit } from './use-keyboard-fit.js';
 
+/** The panel's default width beside the content, in pixels. */
+export const CHAT_PANEL_WIDTH = 420;
+
+/**
+ * The panel's frame: from `md` up an `<aside>` docked beside the content, which narrows (`width` pixels, at most half
+ * the window), or covering it while expanded; below `md` a full-screen dialog.
+ */
 export function ConversationPanelFrame({
   children,
   title,
   preferComposer = false,
+  width = CHAT_PANEL_WIDTH,
 }: {
   readonly children: ReactNode;
   readonly title: string;
   readonly preferComposer?: boolean;
+  readonly width?: number;
 }): ReactElement | null {
   const panel = useChatPanel();
   const mobile = useMediaQuery(CHAT_MOBILE_QUERY);
-  const wide = useMediaQuery(CHAT_DOCK_QUERY, true);
   const [mounted, setMounted] = useState(panel.open);
   const asideRef = useRef<HTMLElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -137,16 +144,15 @@ export function ConversationPanelFrame({
       {...marker}
       aria-label={title}
       hidden={!open}
-      data-mode={expanded ? 'expanded' : wide ? 'docked' : 'floating'}
+      data-mode={expanded ? 'expanded' : 'docked'}
       data-testid='chat-panel'
       className={cn(
         'flex min-h-0 min-w-0 flex-col overflow-hidden bg-background outline-none',
         expanded
           ? 'absolute inset-0 z-30'
-          : wide
-            ? 'relative w-[22rem] shrink-0 border-l 2xl:w-[26.25rem]'
-            : 'absolute inset-y-0 right-0 z-30 w-[22rem] max-w-full border-l shadow-xl',
+          : 'relative max-w-[50vw] shrink-0 border-l',
       )}
+      style={expanded ? undefined : { width }}
     >
       {children}
     </aside>
