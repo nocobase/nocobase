@@ -1,7 +1,5 @@
-import { TriangleAlertIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { Alert, AlertDescription } from '../components/ui/alert.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import {
@@ -27,14 +25,8 @@ import { LoadState } from './shared.js';
 
 const CONFIG_EXAMPLE = `notification:
   channels:
-    browser:
-      type: web-push        # needs @nocobase/app-plugin-notification-web-push
-    ops-feishu:
-      type: feishu-webhook
-      webhookUrl: \${FEISHU_WEBHOOK_URL}
-  retry:
-    maxAttempts: 3          # 3 by default
-    intervalMs: 30000`;
+    inbox:
+      type: in-app`;
 
 /** Channels in `notification.channels`, with a test send to the administrator alone. */
 export function ChannelsTab({
@@ -51,30 +43,8 @@ export function ChannelsTab({
   if (loaded.state !== 'ready')
     return <LoadState loaded={loaded} onRetry={reload} />;
   const { data: channels, meta } = loaded.data;
-  const failing = channels.filter((channel) => channel.last24h.failed > 0);
   return (
     <div className='min-w-0 space-y-6'>
-      {failing.map((channel) => (
-        <Alert key={channel.name}>
-          <TriangleAlertIcon />
-          <AlertDescription className='flex flex-wrap items-center gap-x-2'>
-            <span>
-              {t('channels.failing', {
-                channel: channel.name,
-                count: channel.last24h.failed,
-              })}
-            </span>
-            <Button
-              variant='link'
-              size='sm'
-              className='h-auto p-0'
-              onClick={() => onShowDeliveries(channel.name)}
-            >
-              {t('channels.showFailures')}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ))}
       {channels.length ? (
         <ul
           aria-label={t('channels.title')}
@@ -82,11 +52,10 @@ export function ChannelsTab({
         >
           <li
             aria-hidden
-            className='hidden gap-4 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid lg:grid-cols-[minmax(8rem,1fr)_minmax(14rem,2fr)_minmax(10rem,1fr)_8rem_6rem]'
+            className='hidden gap-4 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid lg:grid-cols-[minmax(12rem,2fr)_minmax(9rem,1fr)_minmax(10rem,1fr)_auto]'
           >
             <span>{t('channels.columns.name')}</span>
-            <span>{t('channels.columns.type')}</span>
-            <span>{t('channels.columns.contributor')}</span>
+            <span>{t('templates.recipients')}</span>
             <span>{t('channels.columns.last24h')}</span>
             <span />
           </li>
@@ -95,6 +64,7 @@ export function ChannelsTab({
               key={channel.name}
               channel={channel}
               canTest={canManage && channel.testable && channel.enabled}
+              onFailures={() => onShowDeliveries(channel.name)}
               onTest={() => setTesting(channel)}
             />
           ))}
@@ -117,7 +87,11 @@ export function ChannelsTab({
         <p className='mt-2 text-muted-foreground'>{t('channels.howToHint')}</p>
       </details>
       <DeliverySettings settings={meta.delivery} />
-      <TestDialog channel={testing} onClose={() => setTesting(null)} />
+      <TestDialog
+        key={testing?.name ?? 'closed'}
+        channel={testing}
+        onClose={() => setTesting(null)}
+      />
     </div>
   );
 }
@@ -125,10 +99,12 @@ export function ChannelsTab({
 function ChannelRow({
   channel,
   canTest,
+  onFailures,
   onTest,
 }: {
   readonly channel: NotificationChannelView;
   readonly canTest: boolean;
+  readonly onFailures: () => void;
   readonly onTest: () => void;
 }): ReactElement {
   const { t, text } = useNotificationText();
@@ -141,58 +117,76 @@ function ChannelRow({
       : channel.type;
   const { accepted, failed } = channel.last24h;
   return (
-    <li className='grid gap-3 px-4 py-3 text-sm lg:grid-cols-[minmax(8rem,1fr)_minmax(14rem,2fr)_minmax(10rem,1fr)_8rem_6rem] lg:items-center lg:gap-4'>
-      <div className='min-w-0'>
-        <p className='font-medium break-all'>{channel.name}</p>
-        <p className='text-xs text-muted-foreground'>
-          {channel.enabled
-            ? channel.reachesUsers
-              ? t('channels.reachesUsers')
-              : t('channels.groupOnly')
-            : t('channels.disabled')}
-        </p>
-      </div>
-      <div className='min-w-0 space-y-1'>
-        <p className='flex items-center gap-1.5 font-medium'>
-          {Icon ? <Icon className='size-4 text-muted-foreground' /> : null}
-          <span>{typeName}</span>
-          <code className='text-xs font-normal text-muted-foreground'>
-            {channel.type}
+    <li className='grid gap-3 px-4 py-3 text-sm lg:grid-cols-[minmax(12rem,2fr)_minmax(9rem,1fr)_minmax(10rem,1fr)_auto] lg:items-center lg:gap-4'>
+      <details className='min-w-0'>
+        <summary className='cursor-pointer font-medium'>
+          {Icon ? <Icon aria-hidden className='mr-1 inline size-4' /> : null}
+          {display
+            ? typeName
+            : t(`channelTypes.${channel.channelType}`, {
+                defaultValue: typeName,
+              })}
+          <code className='ml-2 text-xs font-normal text-muted-foreground'>
+            {channel.name}
           </code>
-        </p>
-        {display?.Summary ? (
-          <display.Summary channel={channel} />
-        ) : channel.summary.length ? (
-          <dl className='flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground'>
-            {channel.summary.map((item) => (
-              <div
-                key={`${text(item.label)}:${item.value}`}
-                className='flex min-w-0 gap-1'
-              >
-                <dt>{text(item.label)}</dt>
-                <dd className='font-mono break-all text-foreground/80'>
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-      </div>
-      <p className='min-w-0 font-mono text-xs break-all text-muted-foreground'>
-        <span className='lg:hidden'>{t('channels.columns.contributor')}: </span>
-        {channel.contributor ?? '—'}
-      </p>
+          {!channel.enabled && (
+            <Badge variant='outline'>{t('channels.disabled')}</Badge>
+          )}
+        </summary>
+        <div className='mt-2 space-y-1 text-xs text-muted-foreground'>
+          <p>
+            {t('channels.columns.type')}: {typeName} · {channel.type}
+          </p>
+          {display?.Summary ? (
+            <display.Summary channel={channel} />
+          ) : channel.summary.length ? (
+            <dl className='flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground'>
+              {channel.summary.map((item) => (
+                <div
+                  key={`${text(item.label)}:${item.value}`}
+                  className='flex min-w-0 gap-1'
+                >
+                  <dt>{text(item.label)}</dt>
+                  <dd className='font-mono break-all text-foreground/80'>
+                    {item.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          <p className='min-w-0 font-mono text-xs break-all text-muted-foreground'>
+            <span className='font-sans'>
+              {t('channels.columns.contributor')}:{' '}
+            </span>
+            {channel.contributor ?? '—'}
+          </p>
+        </div>
+      </details>
+      <span>
+        {channel.reachesUsers
+          ? t('channels.reachesUsers')
+          : t('channels.groupOnly')}
+      </span>
       <div className='flex flex-wrap items-center gap-1.5'>
         <span className='text-xs text-muted-foreground lg:hidden'>
           {t('channels.columns.last24h')}:
         </span>
         {failed > 0 ? (
-          <Badge variant='destructive'>
+          <Button
+            variant='link'
+            size='sm'
+            className='h-auto p-0 text-destructive'
+            onClick={onFailures}
+          >
             {t('channels.failedCount', { count: failed })}
-          </Badge>
+          </Button>
         ) : null}
         <span className='text-xs'>
           {t('channels.acceptedCount', { count: accepted })}
+          {channel.last24h.pending > 0 &&
+            ` · ${t('status.pending')} ${channel.last24h.pending}`}
+          {channel.last24h.unknown > 0 &&
+            ` · ${t('status.unknown')} ${channel.last24h.unknown}`}
         </span>
       </div>
       <div className='lg:text-right'>
@@ -215,22 +209,21 @@ function DeliverySettings({
   const source = (configured: boolean) =>
     t(configured ? 'channels.fromConfig' : 'channels.fromDefault');
   return (
-    <section
-      aria-labelledby='notification-delivery-settings'
-      className='space-y-2'
-    >
-      <h2 id='notification-delivery-settings' className='text-sm font-medium'>
+    <details className='rounded-lg border p-4 text-sm'>
+      <summary className='cursor-pointer font-medium'>
         {t('channels.delivery.title')}
-      </h2>
+      </summary>
       <dl className='divide-y rounded-lg border text-sm'>
         <div className='grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]'>
           <dt className='font-medium'>{t('channels.delivery.retry')}</dt>
           <dd className='space-y-0.5'>
             <p>
-              {t('channels.delivery.retryValue', {
-                count: settings.retry.maxAttempts,
-                seconds: Math.round(settings.retry.intervalMs / 1000),
-              })}{' '}
+              {settings.retry.maxAttempts === 1
+                ? t('channels.delivery.noRetry')
+                : t('channels.delivery.retryValue', {
+                    count: settings.retry.maxAttempts,
+                    seconds: Math.round(settings.retry.intervalMs / 1000),
+                  })}{' '}
               <Badge variant='outline'>
                 {source(settings.retry.configured)}
               </Badge>
@@ -255,7 +248,7 @@ function DeliverySettings({
           </dd>
         </div>
       </dl>
-    </section>
+    </details>
   );
 }
 
@@ -272,7 +265,11 @@ function TestDialog({
   const [state, setState] = useState<
     | { readonly state: 'idle' }
     | { readonly state: 'sending' }
-    | { readonly state: 'sent'; readonly notificationId: string }
+    | {
+        readonly state: 'sent';
+        readonly notificationId: string;
+        readonly status: string;
+      }
     | { readonly state: 'failed'; readonly message: string }
   >({ state: 'idle' });
   const close = () => {
@@ -284,7 +281,11 @@ function TestDialog({
     setState({ state: 'sending' });
     api.testChannel(channel.name).then(
       (result) =>
-        setState({ state: 'sent', notificationId: result.notificationId }),
+        setState({
+          state: 'sent',
+          notificationId: result.notificationId,
+          status: result.status,
+        }),
       (cause: unknown) =>
         setState({
           state: 'failed',
@@ -316,7 +317,8 @@ function TestDialog({
         </DialogHeader>
         {state.state === 'sent' ? (
           <p role='status' className='text-sm'>
-            {t('channels.testSent', { id: state.notificationId })}
+            {t('channels.testSent', { id: state.notificationId })} ·{' '}
+            {t(`status.${state.status}`, { defaultValue: state.status })}
           </p>
         ) : state.state === 'failed' ? (
           <p role='alert' className='text-sm text-destructive'>

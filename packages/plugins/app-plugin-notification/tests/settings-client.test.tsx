@@ -298,7 +298,10 @@ describe('notification settings page', () => {
       },
       calls,
     );
-    expect(await screen.findByText('smtp.example.com')).toBeVisible();
+    const summary = (await screen.findByText('mail')).closest('summary');
+    expect(summary).not.toBeNull();
+    fireEvent.click(summary!);
+    expect(screen.getByText('smtp.example.com')).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Channels' })).toHaveAttribute(
       'aria-selected',
       'true',
