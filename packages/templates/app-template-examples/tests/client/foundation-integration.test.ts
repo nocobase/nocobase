@@ -34,12 +34,13 @@ describe('Examples Foundation integration', () => {
   it('provides Features and extensions in System settings with its existing route', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const category = buildSettingsCatalog(runtime.routes, new Set()).find(
-      ({ route }) => route.name === 'settingsSystem',
+      ({ route }) => route.name === 'systemSettings.system',
     );
     const guide = category?.modules.find(
       ({ route }) => route.name === 'capabilityGuide',
     );
     expect(guide?.target.path).toBe('/settings/capabilities');
+    expect(guide?.route.surface).toBe('systemSettings');
     expect(guide?.route.auth).toBe('required');
     expect(guide?.route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
     expect(
@@ -52,7 +53,9 @@ describe('Examples Foundation integration', () => {
   it('lists the capability guide, and every demo it offers opens a page this application registers', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     expect(
-      runtime.routes.find((route) => route.name === 'capabilityGuide'),
+      runtime.routes
+        .find((route) => route.name === 'systemSettings.system')
+        ?.children?.find((route) => route.name === 'capabilityGuide'),
     ).toMatchObject({
       path: '/settings/capabilities',
       auth: 'required',
@@ -97,15 +100,15 @@ describe('Examples Foundation integration', () => {
       catalog
         .find(({ route }) => route.name === name)
         ?.modules.map(({ route, target }) => [route.name, target.path]);
-    expect(modules('settingsAccount')).toContainEqual([
+    expect(modules('systemSettings.account')).toContainEqual([
       'settingsUsers',
-      '/users',
+      '/settings/users',
     ]);
-    expect(modules('settingsAccount')).toContainEqual([
+    expect(modules('systemSettings.account')).toContainEqual([
       'permissionManagement',
-      '/roles',
+      '/settings/roles',
     ]);
-    expect(modules('settingsSystem')).toContainEqual([
+    expect(modules('systemSettings.system')).toContainEqual([
       'capabilityGuide',
       '/settings/capabilities',
     ]);
@@ -202,6 +205,12 @@ it('offers one Features and extensions page on the System settings tab', async (
     ),
   ).toBe(false);
   expect(
-    routes.find(({ name }) => name === 'capabilityGuideEntry')?.authz,
-  ).toEqual(CAPABILITY_GUIDE_ACCESS);
+    routes
+      .find(({ name }) => name === 'systemSettings.system')
+      ?.children?.find(({ name }) => name === 'capabilityGuideEntry'),
+  ).toMatchObject({
+    path: '/settings/capabilities/:entryId',
+    surface: 'systemSettings',
+    authz: CAPABILITY_GUIDE_ACCESS,
+  });
 });

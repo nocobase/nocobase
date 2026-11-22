@@ -2,7 +2,7 @@ import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
   defineAppRoutes,
-  defineClientPlugin,
+  defineSystemSettingsRoutes,
 } from '@nocobase/app-client/plugins';
 import {
   AuthorizationClient,
@@ -21,7 +21,7 @@ import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
-const settingsNamespace = '@nocobase/compact-role-test';
+const settingsNamespace = '@nocobase/app-testing';
 const words = enUS.settings;
 const editor = words.permissionEditor;
 const services = (app: ClientApplication) =>
@@ -29,61 +29,42 @@ const services = (app: ClientApplication) =>
     authorizationClientToken,
     new AuthorizationClient(app.container.resolve(apiClientToken)),
   );
-// The System settings group of this application's routes, without its business pages.
-const settingsShellRoutes = defineAppRoutes([
-  {
-    name: 'systemManagement',
-    navigation: { title: 'settings.title' },
-    children: [
-      {
-        name: 'settingsHome',
-        path: '/settings',
-        auth: 'required',
-        authz: 'skip',
-        componentLoader: async () => ({ default: () => null }),
-      },
-      {
-        name: 'settingsAccount',
-        navigation: { title: 'settings.categories.account', order: 10 },
-        children: [],
-      },
-    ],
-  },
-]);
-
 const namespaces = {
   [settingsNamespace]: {
     'en-US': async () => ({ default: enUS }),
     'zh-CN': async () => ({ default: zhCN }),
   },
 };
-const plugins = [
-  defineClientPlugin({
-    packageName: settingsNamespace,
-    routes: [
-      settingsShellRoutes,
-      systemSettingsRoutes,
-      defineAppRoutes([
-        {
-          name: 'start',
-          path: '/start',
-          navigation: { title: 'navigation.home' },
-          authz: { resource: { type: 'page', id: 'start' }, action: 'access' },
-          componentLoader: async () => ({ default: () => null }),
-        },
-        {
-          name: 'library',
-          path: '/library',
-          navigation: { title: 'navigation.resources' },
-          authz: {
-            resource: { type: 'page', id: 'library' },
-            action: 'access',
-          },
-          componentLoader: async () => ({ default: () => null }),
-        },
-      ]),
-    ],
-  })(),
+const settingsShellRoutes = defineSystemSettingsRoutes([
+  {
+    name: 'settingsHome',
+    path: '/',
+    authz: 'skip',
+    componentLoader: async () => ({ default: () => null }),
+  },
+]);
+const routes = [
+  settingsShellRoutes,
+  systemSettingsRoutes,
+  defineAppRoutes([
+    {
+      name: 'start',
+      path: '/start',
+      navigation: { title: 'navigation.home' },
+      authz: { resource: { type: 'page', id: 'start' }, action: 'access' },
+      componentLoader: async () => ({ default: () => null }),
+    },
+    {
+      name: 'library',
+      path: '/library',
+      navigation: { title: 'navigation.resources' },
+      authz: {
+        resource: { type: 'page', id: 'library' },
+        action: 'access',
+      },
+      componentLoader: async () => ({ default: () => null }),
+    },
+  ]),
 ];
 const options = {
   sections: [
@@ -153,7 +134,7 @@ function mount(route: string, calls: ReturnType<typeof api>) {
       route,
       namespace: settingsNamespace,
       namespaces,
-      plugins,
+      routes,
       services,
       fetch: answerApi(calls),
     },

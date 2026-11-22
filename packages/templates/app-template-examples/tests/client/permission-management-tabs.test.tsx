@@ -85,14 +85,14 @@ function tree(prefix: string) {
     </Routes>
   );
 }
-it.each([''])(
+it.each(['/settings'])(
   'uses two URL-backed tabs under one heading at the existing %s URLs and keeps keyboard focus',
   async (prefix) => {
     const user = userEvent.setup();
     await mount(prefix);
-    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    await screen.findByRole('tab', { name: 'Roles' });
     expect(
-      screen.getByRole('heading', { name: 'Permission management' }),
+      screen.getByRole('heading', { name: 'Roles and permissions' }),
     ).toBeVisible();
     expect(screen.getAllByRole('tab')).toHaveLength(2);
     await user.click(screen.getByRole('tab', { name: 'Default data scopes' }));
@@ -113,39 +113,36 @@ it.each([''])(
       ).toHaveFocus(),
     );
     await user.keyboard('{ArrowLeft}');
-    expect(
-      screen.getByRole('tab', { name: 'Roles and permissions' }),
-    ).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'Roles' })).toHaveFocus();
     await user.keyboard('{Enter}');
     await waitFor(() =>
-      expect(
-        screen.getByRole('tab', { name: 'Roles and permissions' }),
-      ).toHaveAttribute('aria-selected', 'true'),
+      expect(screen.getByRole('tab', { name: 'Roles' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
     );
     await waitFor(() =>
-      expect(
-        screen.getByRole('tab', { name: 'Roles and permissions' }),
-      ).toHaveFocus(),
+      expect(screen.getByRole('tab', { name: 'Roles' })).toHaveFocus(),
     );
   },
 );
 it('shows a readable view without a single-tab bar and keeps direct navigation on it', async () => {
-  await mount('', 'default-access', false);
-  await screen.findByRole('heading', { name: 'Permission management' });
+  await mount('/settings', 'default-access', false);
+  await screen.findByRole('heading', { name: 'Roles and permissions' });
   // The module has one view this viewer may open, so it shows that view without a tab bar.
   await waitFor(() =>
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument(),
   );
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-    '/default-access',
+    '/settings/default-access',
   );
 });
 it('uses the agreed Chinese menu and tab names', async () => {
-  await mount('', 'roles', true, 'zh-CN');
-  await screen.findByRole('tab', { name: '角色与权限' });
-  expect(screen.getByRole('heading', { name: '权限管理' })).toBeVisible();
-  expect(screen.getByRole('tab', { name: '角色与权限' })).toBeVisible();
+  await mount('/settings', 'roles', true, 'zh-CN');
+  await screen.findByRole('tab', { name: '角色' });
+  expect(screen.getByRole('heading', { name: '角色和权限' })).toBeVisible();
+  expect(screen.getByRole('tab', { name: '角色' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '默认数据范围' })).toBeVisible();
 });
 
@@ -205,7 +202,7 @@ it.each([false, true])(
         )}
       </Shell>,
       {
-        route: '/roles',
+        route: '/settings/roles',
         beforeRequest: async (request) => {
           if (
             hold &&
@@ -215,7 +212,7 @@ it.each([false, true])(
         },
       },
     );
-    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    await screen.findByRole('tab', { name: 'Roles' });
     const draft = screen.getByRole('textbox', { name: 'Draft' });
     await userEvent.type(draft, 'Keep this unsaved value');
     try {
@@ -241,7 +238,7 @@ it.each([false, true])(
       hold = false;
       release();
     }
-    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    await screen.findByRole('tab', { name: 'Roles' });
     expect(screen.getByRole('textbox', { name: 'Draft' })).toBe(draft);
     expect(draft).toHaveValue('Keep this unsaved value');
   },
@@ -255,15 +252,15 @@ it.each(['tab', 'breadcrumb'])(
       <Shell>
         <Breadcrumbs />
         <Routes>
-          <Route path='/roles' element={<DraftPage />} />
+          <Route path='/settings/roles' element={<DraftPage />} />
           <Route
-            path='/default-access'
+            path='/settings/default-access'
             element={<Content tab='default-access' />}
           />
           <Route path='/settings' element={<h1>Settings destination</h1>} />
         </Routes>
       </Shell>,
-      { route: '/roles' },
+      { route: '/settings/roles' },
     );
     const draft = await screen.findByRole('textbox', { name: 'Draft' });
     await user.type(draft, 'Unsaved inline draft');
@@ -289,7 +286,7 @@ it.each(['tab', 'breadcrumb'])(
     if (destination === 'tab')
       await waitFor(() =>
         expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-          '/default-access',
+          '/settings/default-access',
         ),
       );
     else
@@ -327,7 +324,7 @@ function NestedDraft() {
 const nestedRoute = {
   id: 'nested-draft',
   name: 'Nested draft',
-  path: '/roles/test/edit',
+  path: '/settings/roles/test/edit',
   auth: 'required',
   authz: {
     resource: { type: 'settings', id: 'authorization.permission-sets' },
@@ -340,7 +337,7 @@ const nestedRoute = {
 const parentRoute = {
   ...nestedRoute,
   id: 'parent-draft',
-  path: '/roles',
+  path: '/settings/roles',
   componentLoader: async () => ({ default: Outlet }),
 };
 function nestedTree() {
@@ -354,11 +351,14 @@ function nestedTree() {
           element={
             <>
               <h1>Settings destination</h1>
-              <Link to='/roles/test/edit'>Edit role</Link>
+              <Link to='/settings/roles/test/edit'>Edit role</Link>
             </>
           }
         />
-        <Route path='/roles' element={<ClientRoute route={parentRoute} />}>
+        <Route
+          path='/settings/roles'
+          element={<ClientRoute route={parentRoute} />}
+        >
           <Route
             path='test/edit'
             element={<ClientRoute route={nestedRoute} />}
@@ -415,7 +415,7 @@ it.each(['breadcrumb', 'back'])(
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
       expect(
         screen.getByRole('status', { name: 'Current URL' }),
-      ).toHaveTextContent('/roles/test/edit');
+      ).toHaveTextContent('/settings/roles/test/edit');
       expect(beforeUnload()).toBe(true);
       hold = false;
       pending.resolve();
@@ -429,7 +429,7 @@ it.each(['breadcrumb', 'back'])(
       );
       expect(
         screen.getByRole('status', { name: 'Current URL' }),
-      ).toHaveTextContent('/roles/test/edit');
+      ).toHaveTextContent('/settings/roles/test/edit');
       expect(draft).toHaveValue('Nested unsaved draft');
       expect(beforeUnload()).toBe(true);
       await leave();
@@ -455,7 +455,7 @@ it('restores the draft and restarts only the mounted data effect after permissio
   const pending = Promise.withResolvers<void>();
   let hold = false;
   const view = await renderAuthenticatedClient(nestedTree(), {
-    route: '/roles/test/edit',
+    route: '/settings/roles/test/edit',
     beforeRequest(request) {
       requests.push(new URL(request.url).pathname);
       if (hold && request.url.endsWith('/authorization/permissions'))
@@ -483,7 +483,7 @@ it('restores the draft and restarts only the mounted data effect after permissio
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(
       screen.getByRole('status', { name: 'Current URL' }),
-    ).toHaveTextContent('/roles/test/edit');
+    ).toHaveTextContent('/settings/roles/test/edit');
     expect(beforeUnload()).toBe(true);
   } finally {
     hold = false;
@@ -501,7 +501,7 @@ it('drops a hidden draft and its shell guard when the final permission result de
   const pending = Promise.withResolvers<void>();
   let hold = false;
   const view = await renderAuthenticatedClient(nestedTree(), {
-    route: '/roles/test/edit',
+    route: '/settings/roles/test/edit',
     member: true,
     grants: [
       {

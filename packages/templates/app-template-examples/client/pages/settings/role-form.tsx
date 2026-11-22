@@ -36,6 +36,7 @@ import {
   useRolePermission,
 } from './hooks.js';
 import { pagePermissionTitles } from './page-permission-titles.js';
+import { withSettingsShell } from '../../routing/settings-shell.js';
 import { permissionWorkspace } from './permission-workspace.js';
 import { withPermissionFilters } from './permission-filters.js';
 import {
@@ -130,7 +131,7 @@ function RoleEditor(): ReactElement {
       options.data
         ? permissionWorkspace(
             options.data.data,
-            app.runtime.routes,
+            withSettingsShell(app.runtime.routes),
             pagePermissionTitles,
             {
               text: (value) =>

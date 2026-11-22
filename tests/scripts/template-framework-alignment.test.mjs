@@ -134,7 +134,7 @@ function withExamplesChat(source, file) {
         'import { RouteTreeProvider }',
     );
     replaceOnce(
-      'export function AppLayout({ routes }: AppLayoutProps): ReactElement {',
+      'export function AppLayout({\n  routes: registered,\n}: AppLayoutProps): ReactElement {',
       `export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   return (
     <OnlineAgentProvider>
@@ -143,7 +143,9 @@ function withExamplesChat(source, file) {
   );
 }
 
-function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
+function AuthenticatedLayout({
+  routes: registered,
+}: AppLayoutProps): ReactElement {`,
     );
     // Retain the route outlet, watermark, scrolling and surrounding shell verbatim.
     const main = source.match(
@@ -155,7 +157,7 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
       '            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}\n' +
         "            <div className='relative flex min-h-0 flex-1'>\n" +
         main
-          .replace(/^( +)(?=[<{])/gmu, '  $1')
+          .replace(/^( +)(?=[<{>)]|data-testid=|className=)/gmu, '  $1')
           .replace(
             'relative isolate min-w-0',
             'relative isolate min-h-0 min-w-0',

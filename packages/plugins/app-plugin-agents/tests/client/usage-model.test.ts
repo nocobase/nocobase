@@ -12,6 +12,7 @@ import {
   rowLink,
   usageChart,
 } from '../../client/pages/usage/model.js';
+import { settingsMount } from '../../client/mount.js';
 import type {
   UsagePoint,
   UsageReport,
@@ -43,6 +44,10 @@ describe('the usage page model', () => {
 
   it('links agents to their page, and groups and subjects where the application shows them', () => {
     expect(rowLink('agent', 'a 1', [])).toBe('/agents/a%201');
+    // Mounted as System settings pages, which have no page per agent: the agents list beside the usage page.
+    expect(
+      rowLink('agent', 'a 1', [], settingsMount('/settings/agents').agentLink),
+    ).toBe('/settings/agents');
     expect(rowLink('group', 'p1', [issue])).toBe('/projects/p1');
     expect(rowLink('subject', 'issue:i1', [issue])).toBe('/issues/i1');
     expect(rowLink('subject', 'conversation:c1', [issue])).toBeNull();

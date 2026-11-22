@@ -2,7 +2,7 @@ const settings = {
   notificationManagementDescription:
     'View registered notification templates and synthetic content previews.',
   notificationTemplates: 'Notification templates',
-  notificationManagement: 'Notification management',
+  notificationManagement: 'Notifications',
   listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',
@@ -25,7 +25,7 @@ const settings = {
   roleFilter: 'Filter by role',
   allRoles: 'All roles',
 
-  permissionManagement: 'Permission management',
+  permissionManagement: 'Roles and permissions',
   defaultAccess: {
     kindBusiness: 'business operations',
     kindTable: 'data table',
@@ -118,21 +118,28 @@ const settings = {
 
   reload: 'Reload role',
   title: 'System settings',
+  back: 'Back',
+  navigation: 'Settings navigation',
+  personal: {
+    title: 'Personal settings',
+    navigation: 'Personal settings navigation',
+    empty: 'There are no personal settings yet.',
+    appearance: {
+      title: 'Language and appearance',
+      description:
+        'The same choices as Language and Theme in the account menu; they apply to you in this browser.',
+    },
+  },
   home: {
-    description:
-      'Accounts, permissions, business configuration and system capabilities are all here.',
     empty: 'No settings are available to you yet.',
   },
   categories: {
-    account: 'Accounts and permissions',
-    business: 'Business configuration',
-    ai: 'AI',
-    system: 'System',
+    crm: 'CRM',
   },
   permissionManagementDescription:
     'Set what each role can open and do, and the data it can see.',
   users: 'Users',
-  roles: 'Roles and permissions',
+  roles: 'Roles',
   usersDescription: 'Manage accounts, access and active sessions.',
   rolesDescription:
     'Set the menus each role sees and what it may do with each kind of business data.',
