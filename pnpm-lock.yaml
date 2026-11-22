@@ -4258,6 +4258,12 @@ importers:
 
   packages/plugins/app-plugin-file:
     dependencies:
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../app-plugin-authorization
       '@nocobase/drive':
         specifier: workspace:^
         version: link:../../libs/drive
@@ -4267,9 +4273,18 @@ importers:
       hono:
         specifier: 'catalog:'
         version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@nocobase/api-client':
         specifier: workspace:*
@@ -4319,9 +4334,6 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
-      lucide-react:
-        specifier: 'catalog:'
-        version: 0.487.0(react@19.2.8)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
@@ -5464,6 +5476,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nocobase/app-client':
         specifier: workspace:*
         version: link:../../app/app-client
@@ -5497,15 +5512,33 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

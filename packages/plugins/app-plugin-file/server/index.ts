@@ -7,6 +7,7 @@ export {
 } from './repository.js';
 export type {
   FileColumn,
+  FileUsageStats,
   ServerFileRepository,
   FileRepositoryOptions,
   FileOperations,
@@ -26,3 +27,14 @@ export {
   type DriveUploadLimit,
   type FileUploadLimits,
 } from '../shared/upload-limits.js';
+export type {
+  FileUsageDefinition,
+  FileUsageDescription,
+  FileUsageDisk,
+  FileUsageDownload,
+  FileUsageText,
+} from './usages.js';
+export {
+  FILE_STORAGE_CHECK,
+  FILE_STORAGE_PAGE,
+} from '../shared/storage-access.js';
