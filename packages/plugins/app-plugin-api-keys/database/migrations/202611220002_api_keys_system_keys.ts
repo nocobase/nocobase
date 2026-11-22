@@ -10,7 +10,7 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  * - `apiKeyRules`: the one row of rules an administrator sets; without it the application's configuration applies.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202611210003_api_keys_system_keys',
+  name: '202611220002_api_keys_system_keys',
 
   async up({ builder }) {
     await builder.createCollection('apiKeySystemKeys', (collection) => {

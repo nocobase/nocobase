@@ -72,7 +72,7 @@ async function ownedSuffixes(
  * application's role. Without the authorization plugin's roles there is nothing to list.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202611210006_api_keys_prefix_exemptions',
+  name: '202611220004_api_keys_prefix_exemptions',
 
   async up(context) {
     const { builder, query } = context;

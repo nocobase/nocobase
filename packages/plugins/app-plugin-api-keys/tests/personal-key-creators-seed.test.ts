@@ -8,7 +8,7 @@ import {
 import { createMigrator } from '@nocobase/db';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
-import seed from '../database/seeds/202611210002_api_keys_personal_key_creators.js';
+import seed from '../database/seeds/202611220001_api_keys_personal_key_creators.js';
 
 const require = createRequire(import.meta.url);
 const migrations = (packageName: string) =>

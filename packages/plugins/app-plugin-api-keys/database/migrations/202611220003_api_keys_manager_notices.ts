@@ -6,7 +6,7 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  * gone.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202611210004_api_keys_manager_notices',
+  name: '202611220003_api_keys_manager_notices',
 
   async up({ builder }) {
     await builder.createCollection('apiKeyManagerNotices', (collection) => {

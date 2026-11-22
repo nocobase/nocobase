@@ -9,7 +9,7 @@ import {
 import { createMigrator, type Migrator } from '@nocobase/db';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import migration from '../database/migrations/202611210006_api_keys_prefix_exemptions.js';
+import migration from '../database/migrations/202611220004_api_keys_prefix_exemptions.js';
 
 const require = createRequire(import.meta.url);
 const migrations = (packageName: string) =>
@@ -104,7 +104,7 @@ describe('listing the roles already named in the prefix reserved for system keys
       'member',
     ])
       await role(created, key);
-    await apiKeys.upTo('202611210004_api_keys_manager_notices');
+    await apiKeys.upTo('202611220003_api_keys_manager_notices');
     // A system key registered before the list is made, and its set.
     await role(created, 'system-key-42');
     await created.database
@@ -125,7 +125,7 @@ describe('listing the roles already named in the prefix reserved for system keys
     const { created, apiKeys } = await database();
     testDatabase = created;
     await role(created, 'system-key-sales');
-    await apiKeys.upTo('202611210004_api_keys_manager_notices');
+    await apiKeys.upTo('202611220003_api_keys_manager_notices');
     await role(created, 'system-key-42');
     await created.database
       .connection()
@@ -142,7 +142,7 @@ describe('listing the roles already named in the prefix reserved for system keys
 
     // Only the list's own migration rolls back: the system keys stay registered.
     expect((await apiKeys.rollback()).rolledBack).toEqual([
-      '202611210006_api_keys_prefix_exemptions',
+      '202611220004_api_keys_prefix_exemptions',
     ]);
     await apiKeys.latest();
     expect(await listed(created)).toEqual(['system-key-sales']);
@@ -153,7 +153,7 @@ describe('listing the roles already named in the prefix reserved for system keys
     testDatabase = created;
     await role(created, 'system-key-sales');
     await role(created, 'system-key-support');
-    await apiKeys.upTo('202611210004_api_keys_manager_notices');
+    await apiKeys.upTo('202611220003_api_keys_manager_notices');
     await apiKeys.latest();
     expect(await listed(created)).toEqual([
       'system-key-sales',
@@ -238,11 +238,11 @@ describe('listing the roles already named in the prefix reserved for system keys
     const { created, apiKeys } = await database(true, false);
     testDatabase = created;
     await role(created, 'system-key-sales');
-    await apiKeys.upTo('202611210004_api_keys_manager_notices');
+    await apiKeys.upTo('202611220003_api_keys_manager_notices');
     await apiKeys.latest();
     expect(await listed(created)).toEqual(['system-key-sales']);
     expect((await apiKeys.rollback()).rolledBack).toEqual([
-      '202611210006_api_keys_prefix_exemptions',
+      '202611220004_api_keys_prefix_exemptions',
     ]);
     await apiKeys.latest();
     expect(await listed(created)).toEqual(['system-key-sales']);

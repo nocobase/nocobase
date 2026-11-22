@@ -67,7 +67,7 @@ describeMigration('202609150001_create_api_key_table', {
   },
 });
 
-describeMigration('202611210003_api_keys_system_keys', {
+describeMigration('202611220002_api_keys_system_keys', {
   sources,
   up: async ({ connection, expectCollection }) => {
     for (const [name, fields] of [
@@ -108,7 +108,7 @@ describeMigration('202611210003_api_keys_system_keys', {
   },
 });
 
-describeMigration('202611210004_api_keys_manager_notices', {
+describeMigration('202611220003_api_keys_manager_notices', {
   sources,
   up: async ({ expectCollection }) => {
     for (const field of [

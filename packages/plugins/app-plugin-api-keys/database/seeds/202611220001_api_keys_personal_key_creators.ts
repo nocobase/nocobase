@@ -82,7 +82,7 @@ const parse = (value: unknown): unknown => {
  * not recorded as done and runs again. A run that stopped half way finishes on the next one, adding only what is missing.
  */
 const seed: SeedDefinition = defineSeed({
-  name: '202611210002_api_keys_personal_key_creators',
+  name: '202611220001_api_keys_personal_key_creators',
   transaction: false,
 
   async run(context) {

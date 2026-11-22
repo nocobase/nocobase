@@ -11,7 +11,7 @@ const migrations = (packageName: string) =>
     'database/migrations',
   );
 
-describeMigration('202611210006_api_keys_prefix_exemptions', {
+describeMigration('202611220004_api_keys_prefix_exemptions', {
   sources: [
     {
       packageName: '@nocobase/app-plugin-authentication',
