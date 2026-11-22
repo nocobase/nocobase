@@ -845,12 +845,16 @@ describe('protecting Permission Sets by key prefix', () => {
         permissionSet: 'system-key-42',
       }),
     ).rejects.toBeInstanceOf(PermissionSetSubjectNotAllowedError);
-    expect(() =>
-      authorization.permissionSets.protect({
-        owner: '@nocobase/other',
-        keys: ['system-key-7'],
-      }),
-    ).toThrow(/already protected/u);
+    // A key another owner protects by name stays theirs, such as a root set configured under the prefix.
+    const named = authorization.permissionSets.protect({
+      owner: '@nocobase/other',
+      keys: ['system-key-operators'],
+      unrestricted: true,
+    });
+    expect(
+      authorization.permissionSets.protection('system-key-operators'),
+    ).toMatchObject({ owner: '@nocobase/other', unrestricted: true });
+    named();
     expect(() =>
       authorization.permissionSets.protect({
         owner: '@nocobase/test',
@@ -859,19 +863,15 @@ describe('protecting Permission Sets by key prefix', () => {
         unrestricted: true,
       }),
     ).toThrow(/prefix/u);
-    // Another owner may not reserve an overlapping prefix, or one covering a key it does not own.
-    authorization.permissionSets.protect({
-      owner: '@nocobase/test',
-      keys: ['kept-set'],
-    });
-    for (const prefixes of [['system-'], ['system-key-x'], ['kept-']])
+    // Another owner may not reserve an overlapping prefix.
+    for (const prefixes of [['system-'], ['system-key-x']])
       expect(() =>
         authorization.permissionSets.protect({
           owner: '@nocobase/other',
           keys: [],
           prefixes,
         }),
-      ).toThrow(/protects/u);
+      ).toThrow(/overlap/u);
     // The management surface cannot create a set in the reserved prefix.
     expect(() =>
       authorization.permissionSets.assertWritable('system-key-new', 'create'),
@@ -880,5 +880,40 @@ describe('protecting Permission Sets by key prefix', () => {
     expect(
       authorization.permissionSets.protection('system-key-42'),
     ).toBeUndefined();
+  });
+  it('leaves a key protected by name, registered before or after the prefix, and the keys it excepts', () => {
+    const authorization = authorizationWith({}, []);
+    // Configured before the prefix, as an application's root set is.
+    authorization.permissionSets.protect({
+      owner: '@nocobase/host',
+      keys: ['system-key-root'],
+      unrestricted: true,
+    });
+    const release = authorization.permissionSets.protect({
+      owner: '@nocobase/test',
+      keys: [],
+      prefixes: ['system-key-'],
+      except: ['system-key-sales'],
+      allow: [],
+      hidden: true,
+    });
+    // Registered after it, as another plugin's own set is.
+    authorization.permissionSets.protect({
+      owner: '@nocobase/plugin',
+      keys: ['system-key-audit'],
+    });
+    expect(
+      authorization.permissionSets.protection('system-key-root'),
+    ).toMatchObject({ owner: '@nocobase/host', unrestricted: true });
+    expect(
+      authorization.permissionSets.protection('system-key-audit')?.owner,
+    ).toBe('@nocobase/plugin');
+    expect(
+      authorization.permissionSets.protection('system-key-sales'),
+    ).toBeUndefined();
+    expect(
+      authorization.permissionSets.protection('system-key-42')?.owner,
+    ).toBe('@nocobase/test');
+    release();
   });
 });

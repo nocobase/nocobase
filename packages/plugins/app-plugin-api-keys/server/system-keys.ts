@@ -9,7 +9,7 @@
  * feature creates and adjusts for a person (`createManaged`, `setPermissionsManaged`, `rotateManaged`); their manager is
  * told when an administrator disables or deletes one.
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
@@ -246,20 +246,33 @@ function canonical(value: unknown): unknown {
   return result;
 }
 
-/** A digest of what an import asked for: its grants in canonical order, or that it took what the account held. */
-function importRequest(permissions: KeyPermissions | undefined): string {
+/**
+ * A digest of what an import asked for, or that it took what the account held: every grant as one resource, action
+ * and policy, listed once and in order, and the records each business is limited to, so the same request compares
+ * equal however its grants were split, ordered or repeated.
+ */
+export function importRequest(permissions: KeyPermissions | undefined): string {
   if (!permissions) return 'held';
-  const grants = permissions.grants
-    .map((grant) => ({
-      resource: { type: grant.resource.type, id: grant.resource.id },
-      actions: grant.actions
-        .map((entry) => canonical(entry))
-        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
-    }))
-    .sort((a, b) =>
-      JSON.stringify(a.resource).localeCompare(JSON.stringify(b.resource)),
-    );
-  return JSON.stringify(canonical({ grants }));
+  const entries = new Set<string>();
+  for (const grant of permissions.grants)
+    for (const entry of grant.actions)
+      entries.add(
+        JSON.stringify([
+          grant.resource.type,
+          grant.resource.id,
+          entry.action,
+          canonical(entry.policy ?? null),
+        ]),
+      );
+  const objects = Object.fromEntries(
+    Object.entries(permissions.objects ?? {})
+      .map(([business, ids]): [string, string[]] => [
+        business,
+        [...new Set(ids)].sort(),
+      ])
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return JSON.stringify({ grants: [...entries].sort(), objects });
 }
 
 /** `permissions` when the account holds every action of it exactly, record scopes included. */
@@ -299,11 +312,34 @@ function onlyHeld(
  * Renames a Permission Set in its tables, its assignments along: an assignment's id names its set, so it is renamed
  * too. Refuses a name already taken.
  */
+/** A Permission Set's key and an assignment's id are at most this long. */
+const MAX_KEY_LENGTH = 255;
+/** Room an assignment's id needs besides its set's key: `<subject type>:<subject id>:`, each at most 64. */
+const ASSIGNMENT_ID_ROOM = 130;
+
+/**
+ * The key a released set gets: `role-<old key>`, or for a long one its start and a digest of the whole, short enough
+ * that the set's key and its assignments' ids fit their columns.
+ */
+export function releasedKey(key: string): string {
+  const limit = MAX_KEY_LENGTH - ASSIGNMENT_ID_ROOM;
+  const plain = `role-${key}`;
+  if (plain.length <= limit) return plain;
+  const digest = createHash('sha256').update(key).digest('hex').slice(0, 12);
+  return `${plain.slice(0, limit - digest.length - 1)}-${digest}`;
+}
+
 export async function renameSet(
   connection: DatabaseConnection,
   key: string,
   newKey: string,
 ): Promise<void> {
+  if (!newKey || newKey.length > MAX_KEY_LENGTH)
+    throw new ApiKeyRequestError(
+      400,
+      'NOT_RESERVED',
+      `A Permission Set's key is 1 to ${MAX_KEY_LENGTH} characters.`,
+    );
   const taken = await connection.query
     .selectFrom('authorizationPermissionSets')
     .select(['key'])
@@ -325,11 +361,23 @@ export async function renameSet(
     .select(['id', 'subjectType', 'subjectId'])
     .where('permissionSetKey', '=', key)
     .execute();
+  const idOf = (assignment: (typeof assignments)[number]) =>
+    `${String(assignment.subjectType)}:${String(assignment.subjectId)}:${newKey}`;
+  // Checked before anything is written: an assignment's id names its set, and has to fit its column too.
+  const tooLong = assignments.find(
+    (assignment) => idOf(assignment).length > MAX_KEY_LENGTH,
+  );
+  if (tooLong)
+    throw new ApiKeyRequestError(
+      400,
+      'NOT_RESERVED',
+      `${newKey} is too long for the id of an assignment of ${key}; choose a shorter key.`,
+    );
   for (const assignment of assignments)
     await connection.query
       .updateTable('authorizationPermissionSetAssignments')
       .set({
-        id: `${String(assignment.subjectType)}:${String(assignment.subjectId)}:${newKey}`,
+        id: idOf(assignment),
         permissionSetKey: newKey,
       })
       .where('id', '=', assignment.id as string)
@@ -375,8 +423,10 @@ export class SystemApiKeys {
   /**
    * Protects every system key's hidden Permission Set, present or created later by any process: hidden from the
    * management lists, never edited or assigned there, and assignable to a user only. Call at boot in every process.
+   * `except` are sets under the prefix that are no system key's (`collisions`), which stay as they were; a set another
+   * owner protects by name, such as a root set an application configured under the prefix, stays theirs.
    */
-  protectAll(): void {
+  protectAll(except: readonly string[] = []): void {
     const authz = this.options.authorization();
     if (!authz || this.releaseProtection.length) return;
     this.releaseProtection.push(
@@ -384,6 +434,7 @@ export class SystemApiKeys {
         owner: SYSTEM_KEY_OWNER,
         keys: [],
         prefixes: [SYSTEM_KEY_SET_PREFIX],
+        ...(except.length ? { except } : {}),
         allow: [],
         assignableTo: ['user'],
         hidden: true,
@@ -1102,9 +1153,13 @@ export class SystemApiKeys {
       .where('identityId', '=', identityId)
       .executeTakeFirst<SystemRow>();
     if (!registered) {
-      // Deleted already, the account's removal failing after: removing again finishes it.
-      if (await this.deletedLeavingAccount(identityId)) {
-        await this.options.users().remove(identityId, actorId);
+      // Deleted already, the account's removal or the manager's notice failing after: removing again finishes them.
+      const unfinished = await this.unfinishedDeletion(identityId);
+      if (unfinished) {
+        if (!unfinished.accountRemoved) {
+          await this.options.users().remove(identityId, actorId);
+          await this.markAccountRemoved(unfinished.eventId);
+        }
         await this.deliverPending(identityId);
         return;
       }
@@ -1139,21 +1194,58 @@ export class SystemApiKeys {
       );
       return this.storeNotice(connection, row, actorId, 'deleted');
     });
+    const eventId = await this.deleteEventOf(identityId);
     await this.options.users().remove(identityId, actorId);
+    if (eventId) await this.markAccountRemoved(eventId);
     await this.deliver(noticeId);
   }
 
-  /** Whether a system key's deletion committed but its service account is still there. */
-  private async deletedLeavingAccount(identityId: string): Promise<boolean> {
-    const deleted = await this.db.query
+  /** The id of the latest deletion recorded for a key, if any. */
+  private async deleteEventOf(identityId: string): Promise<string | undefined> {
+    const event = await this.db.query
       .selectFrom('apiKeyEvents')
       .select(['id'])
       .where('identityId', '=', identityId)
       .where('action', '=', 'delete')
+      .orderBy('createdAt', 'desc')
+      .executeTakeFirst<{ id: string }>();
+    return event?.id;
+  }
+
+  /**
+   * A deletion that committed but did not finish: its service account's removal (which the authentication plugin
+   * does in several steps, any of which may fail after the account is marked deleted) not confirmed yet, or a
+   * manager's notice still stored. Undefined when there is none, or it finished.
+   */
+  private async unfinishedDeletion(
+    identityId: string,
+  ): Promise<{ eventId: string; accountRemoved: boolean } | undefined> {
+    const event = await this.db.query
+      .selectFrom('apiKeyEvents')
+      .select(['id', 'details'])
+      .where('identityId', '=', identityId)
+      .where('action', '=', 'delete')
+      .orderBy('createdAt', 'desc')
+      .executeTakeFirst<{ id: string; details: unknown }>();
+    if (!event) return undefined;
+    const details = json(event.details) as Record<string, unknown> | null;
+    const accountRemoved = details?.accountRemoved === true;
+    if (!accountRemoved) return { eventId: event.id, accountRemoved };
+    const notice = await this.db.query
+      .selectFrom('apiKeyManagerNotices')
+      .select(['id'])
+      .where('identityId', '=', identityId)
       .executeTakeFirst();
-    if (!deleted) return false;
-    const user = await this.options.users().get(identityId);
-    return Boolean(user && user.kind === 'service');
+    return notice ? { eventId: event.id, accountRemoved } : undefined;
+  }
+
+  /** Records on the deletion that its service account is removed, so deleting again answers that nothing is left. */
+  private async markAccountRemoved(eventId: string): Promise<void> {
+    await this.db.query
+      .updateTable('apiKeyEvents')
+      .set({ details: JSON.stringify({ accountRemoved: true }) })
+      .where('id', '=', eventId)
+      .execute();
   }
 
   /** Delivers the notices still stored for one key. */
@@ -1168,17 +1260,19 @@ export class SystemApiKeys {
 
   /**
    * Renames a Permission Set in the prefix reserved for system keys that is no system key's, such as a role an
-   * application had named so before, moving its assignments with it, so it is no longer hidden or locked. Answers the
-   * new key: `newKey`, or the old one prefixed with `role-`.
+   * application had named so before, moving its assignments with it. Optional: such a set keeps working under its name
+   * (`protectAll`'s `except`); renaming frees the name. Answers the new key: `newKey`, or one made from the old key
+   * that fits the set's and its assignments' 255-character keys.
    */
-  async releaseReserved(key: string, newKey = `role-${key}`): Promise<string> {
+  async releaseReserved(key: string, newKey?: string): Promise<string> {
     if (!key.startsWith(SYSTEM_KEY_SET_PREFIX))
       throw new ApiKeyRequestError(
         400,
         'NOT_RESERVED',
         `${key} is not in the prefix reserved for system keys.`,
       );
-    if (newKey.startsWith(SYSTEM_KEY_SET_PREFIX))
+    const target = newKey ?? releasedKey(key);
+    if (target.startsWith(SYSTEM_KEY_SET_PREFIX))
       throw new ApiKeyRequestError(
         400,
         'NOT_RESERVED',
@@ -1196,9 +1290,9 @@ export class SystemApiKeys {
           'NOT_RESERVED',
           `${key} is a system key's set.`,
         );
-      await renameSet(connection, key, newKey);
+      await renameSet(connection, key, target);
     });
-    return newKey;
+    return target;
   }
 
   // Managed keys: another feature creates and adjusts them for a person, who never needs to manage system keys, and
@@ -1258,25 +1352,15 @@ export class SystemApiKeys {
     const authz = this.requireAuthorization();
     const registered = await this.db.query
       .selectFrom('apiKeySystemKeys')
-      .select(['keyId'])
+      .select(['keyId', 'importRequest'])
       .where('identityId', '=', input.identityId)
-      .executeTakeFirst<{ keyId: string }>();
+      .executeTakeFirst<{ keyId: string; importRequest: string | null }>();
     if (registered) {
-      // Only the same import answers again: the same key, asking for the same grants as the import that was made.
-      const made = await this.db.query
-        .selectFrom('apiKeyEvents')
-        .select(['details'])
-        .where('identityId', '=', input.identityId)
-        .where('action', '=', 'adopt')
-        .executeTakeFirst<{ details: unknown }>();
-      const details = json(made?.details);
-      const request: unknown =
-        details && typeof details === 'object'
-          ? Reflect.get(details, 'request')
-          : undefined;
+      // Only the same import answers again: the same key, asking for the same grants as the import that was made, as
+      // its own row records it — never the activity it brought along, which may hold imports of its own.
       if (
         String(registered.keyId) !== input.keyId ||
-        request !== importRequest(input.permissions)
+        registered.importRequest !== importRequest(input.permissions)
       )
         throw new ApiKeyRequestError(
           400,
@@ -1365,6 +1449,7 @@ export class SystemApiKeys {
         .values({
           ...row,
           remindedAt: null,
+          importRequest: importRequest(input.permissions),
           createdAt: now,
           updatedAt: now,
         })

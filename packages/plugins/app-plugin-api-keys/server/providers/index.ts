@@ -163,24 +163,26 @@ export class ApiKeysProvider extends ServiceProvider<AppPluginApplication> {
     if (container.has(authorizationToken)) {
       registerApiKeySettings(container.resolve(authorizationToken));
       const systemKeys = container.resolve(systemApiKeysToken);
-      systemKeys.protectAll();
-      // The upgrade renames roles that were named in the reserved prefix before; one named so since is reported.
+      // Sets already named in the reserved prefix that are no system key's, such as an application's roles from before
+      // the prefix was reserved, keep working as they are: they are left out of the protection and reported.
       const logger = container.has(loggingToken)
         ? container.resolve(loggingToken).getLogger('api-keys')
         : undefined;
+      let colliding: string[] = [];
       try {
-        const colliding = await systemKeys.collisions();
+        colliding = await systemKeys.collisions();
         if (colliding.length)
           logger?.warn(
             { permissionSets: colliding },
-            'Permission sets in the prefix reserved for system keys are hidden and locked; rename each with SystemApiKeys.releaseReserved(key), which moves its assignments along',
+            'Permission sets in the prefix reserved for system keys keep working as they are; rename each with SystemApiKeys.releaseReserved(key), which moves its assignments along, to free the name',
           );
       } catch (error) {
         logger?.error(
           { error: error instanceof Error ? error.message : String(error) },
-          'Could not check for permission sets in the prefix reserved for system keys',
+          'Could not check for permission sets in the prefix reserved for system keys; every set in it is protected as a system key’s',
         );
       }
+      systemKeys.protectAll(colliding);
       this.releases.push(() => systemKeys.release());
       // The permission inspector checks a key as a request made with it: `{ type: 'apiKey', id: <key id> }`.
       this.releases.push(

@@ -105,12 +105,15 @@ export interface PermissionSetProtection {
   keys: readonly string[];
   /**
    * Every set whose key starts with one of these, present or created later, by any process: for an owner that creates
-   * its sets at run time, such as one per API key. The prefix is reserved for the owner: no other owner may protect an
-   * overlapping prefix or a key in it, and the management surface cannot create a set in it (unless `allow` names
-   * `create`). A set already named so before is protected too, so an owner should check for one at boot. Such a
-   * protection cannot be unrestricted or require an active assignment.
+   * its sets at run time, such as one per API key. No other owner may protect an overlapping prefix, and the management
+   * surface cannot create a set in it (unless `allow` names `create`). A key another owner protects by name stays
+   * theirs, whichever is registered first, such as a root set an application configured under the prefix. A set
+   * already named so before is protected too unless listed in `except`, so an owner should check for one at boot. Such
+   * a protection cannot be unrestricted or require an active assignment.
    */
   prefixes?: readonly string[];
+  /** Keys `prefixes` leaves alone, such as roles an application had named so before the prefix was reserved. */
+  except?: readonly string[];
   /** Operations the generic management surface may still perform. */
   allow?: readonly PermissionSetWriteOperation[];
   /**
@@ -147,6 +150,8 @@ export interface PermissionSetProtectionInfo {
   assignableTo?: readonly string[];
   /** Present only when the generic management surface leaves the set out of its lists. */
   hidden?: boolean;
+  /** Keys a prefix protection leaves alone. */
+  except?: readonly string[];
 }
 
 export class PermissionSetProtectedError extends Error {
@@ -349,6 +354,7 @@ class PermissionSetService<
         ? { assignableTo: [...protection.assignableTo] }
         : {}),
       ...(protection.hidden ? { hidden: true } : {}),
+      ...(protection.except?.length ? { except: [...protection.except] } : {}),
     };
     const prefixes = protection.prefixes ?? [];
     if (
@@ -360,7 +366,8 @@ class PermissionSetService<
       );
     const byPrefix: Map<string, PermissionSetProtectionInfo> =
       (this.shared.prefixes ??= new Map<string, PermissionSetProtectionInfo>());
-    // A prefix reserves every key it starts: no other owner may reserve an overlapping prefix or hold a key in it.
+    // No other owner may reserve an overlapping prefix. A key protected by name, by anyone, takes precedence over a
+    // prefix (`protection`), so neither order of registration fails.
     for (const prefix of prefixes) {
       if (!prefix) throw new Error('A protected key prefix cannot be empty');
       for (const [other, info] of byPrefix)
@@ -371,15 +378,10 @@ class PermissionSetService<
           throw new Error(
             `Permission Sets starting with "${prefix}" overlap "${other}", which ${info.owner} protects`,
           );
-      for (const [key, info] of this.protections)
-        if (info.owner !== protection.owner && key.startsWith(prefix))
-          throw new Error(
-            `Permission Set "${key}", which ${info.owner} protects, starts with "${prefix}"`,
-          );
     }
     const registered: string[] = [];
     for (const key of protection.keys) {
-      const existing = this.protection(key);
+      const existing = this.protections.get(key);
       if (existing && existing.owner !== protection.owner) {
         throw new Error(
           `Permission Set "${key}" is already protected by ${existing.owner}`,
@@ -405,7 +407,7 @@ class PermissionSetService<
     const exact = this.protections.get(key);
     if (exact) return exact;
     for (const [prefix, info] of this.shared.prefixes ?? [])
-      if (key.startsWith(prefix)) return info;
+      if (key.startsWith(prefix) && !info.except?.includes(key)) return info;
     return undefined;
   }
 

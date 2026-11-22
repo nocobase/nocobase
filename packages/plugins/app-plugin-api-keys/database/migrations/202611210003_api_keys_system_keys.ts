@@ -5,6 +5,7 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  *
  * - `apiKeySystemKeys`: one row per system key, keyed by its service account (`identityId`). Only accounts listed here
  *   are this plugin's system keys; other service accounts, such as an application's own, are never listed or changed.
+ *   An imported key keeps what its import asked for, apart from the activity it brought along.
  * - `apiKeyEvents`: what was done to a system key, by whom (none for the system itself), with what changed.
  * - `apiKeyRules`: the one row of rules an administrator sets; without it the application's configuration applies.
  */
@@ -19,6 +20,8 @@ const migration: MigrationDefinition = defineMigration({
       collection.json('managedBy').nullable();
       collection.string('createdById', { length: 64 }).nullable();
       collection.datetime('remindedAt').nullable();
+      // What an import asked for (`SystemApiKeys.adopt`), to tell a repeat of it from another; null for a key made here.
+      collection.text('importRequest').nullable();
       collection.datetime('createdAt').notNull();
       collection.datetime('updatedAt').notNull();
       collection.primary('identityId', { name: 'pk_api_key_system_keys' });

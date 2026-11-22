@@ -35,6 +35,7 @@ import { registerApiKeySettings } from '../server/settings.js';
 import {
   assertSystemPermissions,
   SystemApiKeys,
+  releasedKey,
   systemKeySet,
 } from '../server/system-keys.js';
 import {
@@ -480,6 +481,92 @@ describe('system keys', () => {
     otherKeys.release();
   });
 
+  it('boots beside a root role and an application’s role named in the reserved prefix, leaving both as they were', async () => {
+    // An application's own role named so before the prefix was reserved, held by a member.
+    await authz.permissionSets.create({
+      key: 'system-key-sales',
+      grants: [authz.settings.grant('orders', ['read'])],
+    });
+    await authz.permissionSets.assign({
+      subject: { type: 'user', id: memberId },
+      permissionSet: 'system-key-sales',
+    });
+    try {
+      // Another instance whose root set is configured under the prefix too.
+      const other = createAppAuthorization({
+        connection: database.connection(),
+        config: { permissionSets: { rootSet: 'system-key-operators' } },
+      });
+      const otherKeys = new SystemApiKeys({
+        connection: () => database.connection(),
+        keys,
+        users: () => users,
+        authorization: () => other,
+      });
+      const colliding = await otherKeys.collisions();
+      expect(colliding).toContain('system-key-sales');
+      expect(() => otherKeys.protectAll(colliding)).not.toThrow();
+      // The root set stays the application's, unrestricted as configured.
+      expect(
+        other.permissionSets.protection('system-key-operators'),
+      ).toMatchObject({ unrestricted: true });
+      expect(
+        other.permissionSets.protection('system-key-operators')?.owner,
+      ).not.toBe('@nocobase/app-plugin-api-keys');
+      // The application's role is neither hidden nor locked, and still grants its member.
+      expect(
+        other.permissionSets.protection('system-key-sales'),
+      ).toBeUndefined();
+      expect(() =>
+        other.permissionSets.assertWritable('system-key-sales', 'update'),
+      ).not.toThrow();
+      expect(
+        (
+          await other.permissionSets.getEffective({
+            principal: { type: 'user', id: memberId },
+          })
+        ).map((set) => set.key),
+      ).toContain('system-key-sales');
+      // A system key made after that instance started is still protected there.
+      const created = await systemKeys.create(adminId, {
+        name: 'beside a root role',
+        expiresInDays: 30,
+        permissions: readOrders,
+      });
+      expect(
+        other.permissionSets.protection(systemKeySet(created.key.identityId))
+          ?.hidden,
+      ).toBe(true);
+      otherKeys.release();
+    } finally {
+      for (const assignment of await authz.permissionSets.listAssignments(
+        'system-key-sales',
+      ))
+        await authz.permissionSets.revoke(assignment.id);
+      await authz.permissionSets.delete('system-key-sales');
+    }
+  });
+
+  it('releases a reserved name into a key that fits the database, and refuses one that does not', async () => {
+    const long = `system-key-${'r'.repeat(200)}`;
+    const released = releasedKey(long);
+    expect(released.length).toBeLessThanOrEqual(255 - 130);
+    expect(released.startsWith('role-system-key-')).toBe(true);
+    expect(releasedKey(long)).toBe(released);
+    expect(releasedKey('system-key-sales')).toBe('role-system-key-sales');
+    await authz.permissionSets.create({ key: long, grants: [] });
+    try {
+      await expect(
+        systemKeys.releaseReserved(long, `role-${'x'.repeat(260)}`),
+      ).rejects.toMatchObject({ code: 'NOT_RESERVED' });
+      expect(await authz.permissionSets.get(long)).toBeTruthy();
+      await expect(systemKeys.releaseReserved(long)).resolves.toBe(released);
+      expect(await authz.permissionSets.get(released)).toBeTruthy();
+    } finally {
+      await authz.permissionSets.delete(released).catch(() => undefined);
+    }
+  });
+
   it('takes an owner who is an active member, never a service account', async () => {
     const robot = await users.createServiceAccount({ name: 'Robot owner' });
     await expect(
@@ -712,7 +799,29 @@ describe('system keys', () => {
       identityId: robot.id,
       keyId: own.key.id,
       permissions: both,
+      // History brought along may hold an import of its own; it never stands for this one.
+      events: [
+        {
+          action: 'adopt',
+          actorId: null,
+          details: { request: 'held' },
+          createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+        },
+      ],
     });
+    // The same grants split into one per action and listed the other way round are the same import.
+    await expect(
+      systemKeys.adopt({
+        identityId: robot.id,
+        keyId: own.key.id,
+        permissions: {
+          grants: [
+            { resource: orders, actions: [{ action: 'update' }] },
+            { resource: orders, actions: [{ action: 'read' }] },
+          ],
+        },
+      }),
+    ).resolves.toMatchObject({ identityId: robot.id });
     // The same grants written in another order are the same import.
     await expect(
       systemKeys.adopt({
@@ -764,6 +873,62 @@ describe('system keys', () => {
       ).rejects.toMatchObject({ code: 'SYSTEM_KEY_NOT_FOUND' });
     } finally {
       remove.mockRestore();
+    }
+  });
+
+  it('finishes deleting a key whose account was marked deleted before its cleanup failed, and tells its manager once', async () => {
+    const revoked = vi.fn();
+    const release = systemKeys.managers.add('half-deleted-ci', {
+      onRevoked: revoked,
+    });
+    const managed = await systemKeys.createManaged(
+      memberId,
+      { name: 'CI half deleted', expiresInDays: 30, permissions: readOrders },
+      { kind: 'half-deleted-ci', id: 'repo-2', title: 'acme/api' },
+    );
+    const identityId = managed.key.identityId;
+    // The authentication plugin marks the account deleted, then fails removing its sessions.
+    const remove = vi
+      .spyOn(users, 'remove')
+      .mockImplementationOnce(async (userId) => {
+        await database
+          .connection()
+          .query.updateTable('user')
+          .set({ deletedAt: new Date(), disabledAt: new Date() })
+          .where('id', '=', userId)
+          .execute();
+        throw new Error('session store down');
+      });
+    try {
+      await expect(systemKeys.remove(identityId, adminId)).rejects.toThrow(
+        'session store down',
+      );
+      expect(await users.get(identityId)).toBeFalsy();
+      expect(revoked).not.toHaveBeenCalled();
+      await systemKeys.remove(identityId, adminId);
+      expect(remove).toHaveBeenCalledTimes(2);
+      const accounts = await database
+        .connection()
+        .query.selectFrom('account')
+        .select(['id'])
+        .where('userId', '=', identityId)
+        .execute();
+      expect(accounts).toEqual([]);
+      expect(revoked).toHaveBeenCalledTimes(1);
+      expect(revoked).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          identityId,
+          how: 'deleted',
+          noticeId: expect.any(String),
+        }),
+      );
+      await expect(
+        systemKeys.remove(identityId, adminId),
+      ).rejects.toMatchObject({ code: 'SYSTEM_KEY_NOT_FOUND' });
+      expect(revoked).toHaveBeenCalledTimes(1);
+    } finally {
+      remove.mockRestore();
+      release();
     }
   });
 
