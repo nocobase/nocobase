@@ -1,4 +1,4 @@
-import { OnlineAgentExample } from '#components/online-agent/example';
+import { AgentExample } from '#components/online-agent/example';
 import { PageContainer } from '#components/page-container';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -71,7 +71,7 @@ export default function ExamplesHomePage(): ReactElement {
         </Button>
       </header>
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-        <OnlineAgentExample />
+        <AgentExample />
         {examples.map(({ key, path, icon: Icon }) => (
           <Link
             key={key}

@@ -1,3 +1,4 @@
+import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
 import applicationManifest from '../package.json' with { type: 'json' };
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
@@ -37,6 +38,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   scheduler(),
   mail(),
+  // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
+  agents(),
   // The manifest is what the capability guide lists: every plugin this application declares.
   foundation({
     settingsGroup: SYSTEM_SETTINGS_CATEGORIES.system,

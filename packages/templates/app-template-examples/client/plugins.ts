@@ -32,6 +32,14 @@ import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
 import applicationManifest from '../package.json' with { type: 'json' };
 import knowledge from '@nocobase/app-plugin-knowledge/client';
+import { FormProposalRenderer } from '#components/online-agent/form-proposal-card';
+import { EXAMPLES_FORM_TOOL } from '../shared/ai-form-fill.js';
+
+// The AI form demonstration's proposal card, shown in the Agent panel wherever the agent calls its tool.
+agents.toolRenderers.add({
+  name: EXAMPLES_FORM_TOOL,
+  component: FormProposalRenderer,
+});
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -61,6 +69,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   scheduler(),
   mail(),
   mailExample(),
+  // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
   agents(),
   // The manifest is what the capability guide lists: every plugin this application declares.
   foundation({

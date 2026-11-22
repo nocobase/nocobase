@@ -5,7 +5,6 @@ import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
-import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
@@ -401,21 +400,12 @@ const enUS = {
   // The template's own copy: the shell, the sign-in pages and shared components. Keep it in `./system/` so a
   // template upgrade can replace it without touching the application's copy below.
   ...systemEnUS,
-  ...agentChatEnUS,
-  onlineAgent: {
-    group: 'Agents',
-    agents: 'Agents',
-    runtimes: 'Runtimes',
-    skills: 'Skills',
-    newSkill: 'New skill',
-    skillDetail: 'Skill details',
-    connectRuntime: 'Connect runtime',
-    models: 'Models',
-    openModels: 'Open models',
+  aiExamples: {
+    group: 'AI examples',
+    openModels: 'Open model services',
     checkingModels: 'Checking chat models…',
     catalogFailed: 'Could not load chat models.',
     noModels: {
-      title: 'No chat model configured',
       description:
         'Add a model service and enable a chat model to start chatting.',
       readOnly: 'Ask an administrator to configure a chat model.',
@@ -664,11 +654,11 @@ const enUS = {
       description:
         'Review an application-owned tool proposal and explicitly fill a local draft without saving records.',
     },
-    onlineAgent: {
-      title: 'Online Agent',
+    agent: {
+      title: 'Agent',
       description:
-        'Configure a chat model and talk to Online Agent from any page.',
-      open: 'Open Agent chat',
+        'Configure a model service, then ask the Agent from any page.',
+      open: 'Open Agent',
     },
     i18n: {
       title: 'Internationalization',

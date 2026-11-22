@@ -4,6 +4,9 @@ import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 
+/** System settings › AI › Model services, which `@nocobase/app-plugin-agents` registers. */
+const MODEL_SERVICES_PATH = '/settings/models';
+
 export function ModelsLink({
   explain = false,
 }: {
@@ -20,11 +23,11 @@ export function ModelsLink({
       variant='outline'
       size='sm'
       nativeButton={false}
-      render={<Link to='/models' />}
+      render={<Link to={MODEL_SERVICES_PATH} />}
     >
-      {t('onlineAgent.openModels')}
+      {t('aiExamples.openModels')}
     </Button>
   ) : explain ? (
-    <p>{t('onlineAgent.noModels.readOnly')}</p>
+    <p>{t('aiExamples.noModels.readOnly')}</p>
   ) : null;
 }

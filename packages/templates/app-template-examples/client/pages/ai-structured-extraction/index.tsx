@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '#components/ui/tabs';
 import { useModelCatalog } from '#components/online-agent/use-model-catalog';
-import { useOnlineAgentIdentityActive } from '#components/online-agent/identity-context';
+import { useIsMounted } from '#hooks/use-is-mounted';
 import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import {
@@ -92,7 +92,7 @@ function ExtractionDemo<T>({
   const { t } = useTranslation();
   const api = useApiClient();
   const toaster = useToaster();
-  const identityActive = useOnlineAgentIdentityActive();
+  const identityActive = useIsMounted();
   const [result, setResult] = useState(empty);
   const [failure, setFailure] = useState<
     | 'requestFailed'

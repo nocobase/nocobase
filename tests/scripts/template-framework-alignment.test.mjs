@@ -119,55 +119,6 @@ function runtimeDependencies(template) {
   return imported;
 }
 
-// Examples installs Agents; Default deliberately does not. Apply only the documented chat
-// composition slots (its header button is registered in `client/header-actions.ts`, not here) to Default's expected source, keeping every shared line under comparison.
-function withExamplesChat(source, file) {
-  const replaceOnce = (before, after) => {
-    assert.equal(source.split(before).length - 1, 1, `${file}: chat slot`);
-    source = source.replace(before, after);
-  };
-  if (file === 'client/layouts/app-layout.tsx') {
-    replaceOnce(
-      'import { RouteTreeProvider }',
-      "import { OnlineAgentProvider } from '#components/online-agent/provider';\n" +
-        "import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';\n" +
-        'import { RouteTreeProvider }',
-    );
-    replaceOnce(
-      'export function AppLayout({\n  routes: registered,\n}: AppLayoutProps): ReactElement {',
-      `export function AppLayout({ routes }: AppLayoutProps): ReactElement {
-  return (
-    <OnlineAgentProvider>
-      <AuthenticatedLayout routes={routes} />
-    </OnlineAgentProvider>
-  );
-}
-
-function AuthenticatedLayout({
-  routes: registered,
-}: AppLayoutProps): ReactElement {`,
-    );
-    // Retain the route outlet, watermark, scrolling and surrounding shell verbatim.
-    const main = source.match(
-      /^            <main[\s\S]*?^            <\/main>/mu,
-    )?.[0];
-    assert.ok(main, 'shared route outlet');
-    replaceOnce(
-      main,
-      '            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}\n' +
-        "            <div className='relative flex min-h-0 flex-1'>\n" +
-        main
-          .replace(/^( +)(?=[<{>)]|data-testid=|className=)/gmu, '  $1')
-          .replace(
-            'relative isolate min-w-0',
-            'relative isolate min-h-0 min-w-0',
-          ) +
-        '\n              <OnlineAgentPanelHost />\n            </div>',
-    );
-  }
-  return source;
-}
-
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
 
@@ -285,12 +236,8 @@ for (const template of templates) {
         const relative = path.join(directory, file);
         assert.equal(
           sharedFrameworkSource(template, relative),
-          template.kind === 'examples'
-            ? withExamplesChat(
-                sharedFrameworkSource(baseline, relative),
-                relative,
-              )
-            : sharedFrameworkSource(baseline, relative),
+          // Both templates get the Agent panel from the plugin's layout extension, so the layouts are identical.
+          sharedFrameworkSource(baseline, relative),
           `${template.kind}: ${relative}`,
         );
       }
@@ -312,9 +259,7 @@ for (const template of templates) {
     ]) {
       assert.equal(
         sharedFrameworkSource(template, file),
-        template.kind === 'examples'
-          ? withExamplesChat(sharedFrameworkSource(baseline, file), file)
-          : sharedFrameworkSource(baseline, file),
+        sharedFrameworkSource(baseline, file),
         `${template.kind}: ${file}`,
       );
     }
