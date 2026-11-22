@@ -145,6 +145,24 @@ describe('create with exception', () => {
     });
   });
 
+  it.each(['{{t("Enrollment", { ns: "benefits" })}}', '{{t("Enrollment", {"ns":["missing-namespace","benefits"]})}}'])(
+    'uses the collection title namespace in validation messages: %s',
+    async (title) => {
+      app.i18n.addResources('zh-CN', 'benefits', { Enrollment: '参保明细' });
+      app.i18n.addResources('zh-CN', 'lm-collections', { Enrollment: '默认标题' });
+      const collection = app.collection({
+        name: 'enrollments',
+        title,
+        fields: [{ name: 'code', type: 'string', allowNull: false, uiSchema: { title: '人员编号' } }],
+      });
+      await collection.sync();
+
+      const response = await app.agent().post('/enrollments:create').set('X-Locale', 'zh-CN').send({});
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toEqual([{ message: '参保明细: 人员编号 字段不能为空' }]);
+    },
+  );
+
   it('identifies the failing related collection for unique and not-null constraints', async () => {
     const relatedCollections = [
       { name: 'employees', title: '在职人员' },

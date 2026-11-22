@@ -9,10 +9,38 @@
 
 import type { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import JSON5 from 'json5';
 import { ErrorHandler } from './error-handler';
 
 function titleKey(title: string) {
   return /{{\s*t\(\s*(['"`])([^'"`]+)\1\s*\)\s*}}/.exec(title)?.[2] || title;
+}
+
+function translateCollectionTitle(
+  collection: Collection,
+  t: (key: string, options: { ns: string | string[] }) => string,
+) {
+  const title = collection.options.title || collection.name;
+  const defaultNs = ['lm-collections', 'client'];
+  const expression = /^\s*{{\s*t\s*\(([\s\S]*)\)\s*}}\s*$/.exec(title);
+  if (!expression) {
+    return t(titleKey(title), { ns: defaultNs });
+  }
+
+  // Collection definitions use both JSON options and literals such as { ns: 'workflow' }.
+  try {
+    const [key, options] = JSON5.parse<[unknown, { ns?: unknown }?]>(`[${expression[1]}]`);
+    if (typeof key === 'string') {
+      const ns = options?.ns;
+      const hasNamespace =
+        typeof ns === 'string' || (Array.isArray(ns) && ns.every((value) => typeof value === 'string'));
+      return t(key, { ns: hasNamespace ? ns : defaultNs });
+    }
+  } catch {
+    // Older single-argument templates may use backticks.
+  }
+  const key = titleKey(title);
+  return t(key === title ? collection.name : key, { ns: defaultNs });
 }
 
 function findConstraintField(collection: Collection, path: string, unique: boolean) {
@@ -58,7 +86,7 @@ export class PluginErrorHandlerServer extends Plugin {
             const unique = item.type === 'unique violation';
             const constraint = unique || item.type === 'notNull Violation' || item.type === 'notNull violation';
             const titles = { ns: ['lm-collections', 'client'] };
-            const collectionTitle = collection && t(titleKey(collection.options.title || collection.name), titles);
+            const collectionTitle = constraint && collection && translateCollectionTitle(collection, t);
             const field =
               constraint && collection && item.path
                 ? findConstraintField(collection, item.path, unique)
