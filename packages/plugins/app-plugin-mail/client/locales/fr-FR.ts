@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesFrFR from '../../shared/locales/pages.fr-FR.js';
+
 const frFR: LocaleResource<typeof enUS> = {
+  ...pagesFrFR,
   content: {
     tooLarge:
       "Le corps dépasse la limite d'affichage de 16 Mio. Ouvrez-le dans votre boîte aux lettres d'origine. Les pièces jointes peuvent toujours être téléchargées.",

@@ -6,7 +6,7 @@ The authenticated API base is `/api/mail`, the plugin's namespace; every resourc
 
 The running application documents every `/api/mail` route — parameters, bodies, response schemas, and error statuses — in its OpenAPI document: Swagger UI at `/api/swagger/docs` and the JSON at `/api/swagger`, readable with a signed-in session or an API key. Each route is tagged `Mail` and has an operationId of the form `mail<Verb><Resource>`, such as `mailSendMessage`. Treat that document as the reference for exact shapes; this page explains behavior it cannot.
 
-Every route under `/api/mail` requires an authenticated user and access to a Mail page resource, checked before input is validated or any record is read. Routes under `/settings` require `mail.admin`; routes under `/management` require `mail.management`; all other routes require `mail.workspace`. Personal account and message operations enforce account ownership. Management message reads are read-only.
+Every route under `/api/mail` requires an authenticated user and declares one permission requirement, checked before input is validated or any record is read; the OpenAPI description of each route names it. Personal routes require `page:mail.workspace/access`. `GET` routes under `/management` require `mail:mail.management/view` and `POST /management/messages/batchApply` requires `mail:mail.management/process`. `GET` routes under `/settings` require `settings:mail.admin/read`, and retrying or cancelling a member's run or submission under `/settings` requires `settings:mail.admin/manage`. `process` and `manage` do not include `view` and `read`. Personal account and message operations enforce account ownership. Management message reads are read-only. The former `page:mail.management/access` and `page:mail.admin/access` grants no longer open any route.
 
 Lists page one of two ways. Feeds (`/messages` and conversation messages) take `pageSize` and `pageToken` and answer `meta: { nextPageToken, total }`; `nextPageToken` is absent on the last page and is sent back unchanged as `pageToken`. Log and management tables (`/syncRuns`, `/submissions`, `/settings/syncRuns`, `/settings/submissions`, `/management/messages`) take `page` and `pageSize` and answer `meta: { page, pageSize, total }`. `pageSize` defaults to 20 and is at most 100. Search is `q`. Bounded lists — Providers, accounts, identities, signatures, folders, labels, templates, and the admin and management account overviews — are answered whole as `{ data, meta: { total } }`. Dates in requests, such as `initialSyncReceivedAfter`, `receivedAfter`, and `scheduledAt`, are RFC 3339 date-times.
 
@@ -121,7 +121,27 @@ Conversation-message detail and full-thread counts retain their existing semanti
 | `POST` | `/submissions/:submissionId/retry`  | Retries an eligible submission; returns `MailSubmissionLogView`.                                                        |
 | `POST` | `/submissions/:submissionId/cancel` | Cancels an eligible submission; returns `MailSubmissionLogView`.                                                        |
 
+## Mail settings
+
+None of these answers a subject, body, recipient address or secret.
+
+| Method | Path                                          | Request / result                                                                                                                                       |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/settings/overview`                          | Providers with capabilities, account and attention counts and source, account totals, and the runtime configuration with each value's source.          |
+| `GET`  | `/settings/accounts`                          | Every member's accounts with Provider, status and last synchronization; filters by `status` (comma-separated), `provider`, `userId` and `q`.            |
+| `GET`  | `/settings/syncRuns`                          | Every member's runs, newest first; filters by `userId`, `accountId`, `status`, `from` and `to`; paged with `page` and `pageSize`.                       |
+| `POST` | `/settings/syncRuns/:syncRunId/retry`         | `manage`: retries a member's failed or partial run; returns `202` and the run.                                                                          |
+| `POST` | `/settings/syncRuns/:syncRunId/cancel`        | `manage`: cancels a member's pending or running run.                                                                                                    |
+| `GET`  | `/settings/submissions`                       | Every member's sends with account, owner, recipient count, batch, result and failure code; same filters and paging as the runs.                         |
+| `POST` | `/settings/submissions/:submissionId/retry`   | `manage`: retries a member's eligible submission.                                                                                                       |
+| `POST` | `/settings/submissions/:submissionId/cancel`  | `manage`: cancels a member's pending or scheduled submission.                                                                                           |
+
+Each log row carries `canManage`, true when the caller may retry or cancel it. Finished runs and submissions older than `mail.logRetentionDays` (default 90, `0` keeps them) are deleted by the maintenance loop.
+
 ## All-user management
+
+`GET /management/accounts` answers only the account ids, addresses and owners Team mail's filters need. `GET /management/messages` also filters by `userId`.
+
 
 | Method | Path                                                                            | Request / result                                                                                                   |
 | ------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |

@@ -134,6 +134,27 @@ describe('MailClient', () => {
     await client.listManagedAccounts();
     expect(request).toHaveBeenLastCalledWith({
       path: 'mail/settings/accounts',
+      query: {
+        status: undefined,
+        provider: undefined,
+        userId: undefined,
+        q: undefined,
+      },
+    });
+    await client.listManagedAccounts({
+      statuses: ['reauthorizationRequired', 'revoked'],
+      provider: 'gmail',
+      userId: 'user-2',
+      q: 'ana',
+    });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'mail/settings/accounts',
+      query: {
+        status: 'reauthorizationRequired,revoked',
+        provider: 'gmail',
+        userId: 'user-2',
+        q: 'ana',
+      },
     });
     await client.listManagementAccounts();
     expect(request).toHaveBeenLastCalledWith({

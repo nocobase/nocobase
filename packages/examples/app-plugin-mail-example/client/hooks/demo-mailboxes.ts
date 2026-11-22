@@ -1,10 +1,8 @@
-import {
-  mailErrorMessage,
-  type MailAccountView,
-  type MailClient,
-  useMailClient,
+import type {
+  MailAccountView,
+  MailClient,
 } from '@nocobase/app-plugin-mail/client';
-import { useCallback, useEffect, useState } from 'react';
+
 import { seedDemoManagement } from './seed-demo-management.js';
 
 export interface DemoMailboxProfile {
@@ -43,109 +41,11 @@ const DEMO_SYNC_LOOKBACK_DAYS = 30;
 const DEMO_SYNC_TIMEOUT_MS = 30_000;
 const DEMO_SYNC_POLL_INTERVAL_MS = 500;
 
-export interface DemoMailboxState {
-  readonly accounts: readonly MailAccountView[];
-  readonly error?: string;
-  readonly loading: boolean;
-  readonly retry: () => void;
-}
-
-interface DemoMailboxBootstrapEntry {
-  readonly promise: Promise<readonly MailAccountView[]>;
-  accounts?: readonly MailAccountView[];
-}
-
-const accountBootstrapByClient = new WeakMap<
-  MailClient,
-  DemoMailboxBootstrapEntry
->();
-
-export function useDemoMailbox(): DemoMailboxState {
-  const mail = useMailClient();
-  const [accounts, setAccounts] = useState<readonly MailAccountView[]>(
-    () => getCachedDemoAccounts(mail) ?? [],
-  );
-  const [error, setError] = useState<string>();
-  const [loading, setLoading] = useState(() => !getCachedDemoAccounts(mail));
-  const [revision, setRevision] = useState(0);
-
-  const retry = useCallback((): void => {
-    accountBootstrapByClient.delete(mail);
-    setError(undefined);
-    setLoading(true);
-    setRevision((value) => value + 1);
-  }, [mail]);
-
-  useEffect(() => {
-    let active = true;
-    const cachedAccounts = getCachedDemoAccounts(mail);
-    if (cachedAccounts) {
-      setAccounts(cachedAccounts);
-      setError(undefined);
-      setLoading(false);
-      return () => {
-        active = false;
-      };
-    }
-
-    setLoading(true);
-    setError(undefined);
-    void getOrCreateDemoAccounts(mail)
-      .then((nextAccounts) => {
-        if (active) setAccounts(nextAccounts);
-      })
-      .catch((cause: unknown) => {
-        if (active) {
-          setError(
-            mailErrorMessage(
-              cause,
-              cause instanceof Error
-                ? cause.message
-                : 'Could not load demo mailboxes.',
-            ),
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [mail, revision]);
-
-  return { accounts, error, loading, retry };
-}
-
-function getOrCreateDemoAccounts(
-  mail: MailClient,
-): Promise<readonly MailAccountView[]> {
-  const existing = accountBootstrapByClient.get(mail);
-  if (existing) return existing.promise;
-
-  const bootstrap = bootstrapDemoAccounts(mail);
-  const entry: DemoMailboxBootstrapEntry = { promise: bootstrap };
-  accountBootstrapByClient.set(mail, entry);
-  void bootstrap.then(
-    (accounts) => {
-      entry.accounts = accounts;
-    },
-    () => {
-      if (accountBootstrapByClient.get(mail) === entry) {
-        accountBootstrapByClient.delete(mail);
-      }
-    },
-  );
-  return bootstrap;
-}
-
-function getCachedDemoAccounts(
-  mail: MailClient,
-): readonly MailAccountView[] | undefined {
-  return accountBootstrapByClient.get(mail)?.accounts;
-}
-
-async function bootstrapDemoAccounts(
+/**
+ * Connects the three demo mailboxes the caller does not have yet, synchronizes each until it has mail, and seeds
+ * sample templates, signatures and labels. Safe to run again: existing accounts and samples are kept.
+ */
+export async function setUpDemoMailboxes(
   mail: MailClient,
 ): Promise<readonly MailAccountView[]> {
   const existingAccounts = await mail.listAccounts();

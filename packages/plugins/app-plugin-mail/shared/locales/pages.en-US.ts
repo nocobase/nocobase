@@ -1,3 +1,5 @@
+import type { LocaleResource } from '@nocobase/i18n';
+
 /**
  * The plugin's own pages, their navigation and the permissions it registers (`shared/access.ts`), spread into the
  * client locales; `access` is also spread into the server locales, which the permission workspace reads its titles
@@ -200,5 +202,7 @@ const pagesEnUS = {
     },
   },
 };
+
+export type MailPagesResource = LocaleResource<typeof pagesEnUS>;
 
 export default pagesEnUS;

@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesViVN from '../../shared/locales/pages.vi-VN.js';
+
 const viVN: LocaleResource<typeof enUS> = {
+  ...pagesViVN,
   content: {
     tooLarge:
       'Nội dung vượt quá giới hạn xem 16 MiB. Mở nó trong hộp thư ban đầu của bạn. Tệp đính kèm vẫn có thể được tải xuống.',

@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesDeDE from '../../shared/locales/pages.de-DE.js';
+
 const deDE: LocaleResource<typeof enUS> = {
+  access: pagesDeDE.access,
   errors: {
     originalNotFound:
       'Die Originalnachricht ist beim E-Mail-Anbieter nicht mehr verfügbar.',

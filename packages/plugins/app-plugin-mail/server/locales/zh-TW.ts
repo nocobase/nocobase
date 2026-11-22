@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesZhTW from '../../shared/locales/pages.zh-TW.js';
+
 const zhTW: LocaleResource<typeof enUS> = {
+  access: pagesZhTW.access,
   errors: {
     originalNotFound: '郵件服務供應商已無法提供該原始郵件。',
     originalTooLarge: '原始郵件超出 40 MiB 的下載上限。',

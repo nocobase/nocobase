@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesIdID from '../../shared/locales/pages.id-ID.js';
+
 const idID: LocaleResource<typeof enUS> = {
+  access: pagesIdID.access,
   errors: {
     originalNotFound: 'Pesan asli tidak lagi tersedia di penyedia email.',
     originalTooLarge: 'Pesan asli melebihi batas unduhan 40 MiB.',

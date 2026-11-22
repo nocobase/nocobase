@@ -1,6 +1,8 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-const enUS = {
+import pagesEnUS from '../../shared/locales/pages.en-US.js';
+
+const ownEnUS = {
   content: {
     tooLarge:
       'The body exceeds the 16 MiB viewing limit. Open it in your original mailbox. Attachments can still be downloaded.',
@@ -667,6 +669,8 @@ const enUS = {
       'The mail operation failed for an unexpected reason. Share the error code below with the mail administrator.',
   },
 };
+
+const enUS: typeof ownEnUS & typeof pagesEnUS = { ...ownEnUS, ...pagesEnUS };
 
 export type MailResource = LocaleResource<typeof enUS>;
 

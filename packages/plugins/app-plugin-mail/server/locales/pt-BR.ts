@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesPtBR from '../../shared/locales/pages.pt-BR.js';
+
 const ptBR: LocaleResource<typeof enUS> = {
+  access: pagesPtBR.access,
   errors: {
     originalNotFound:
       'A mensagem original não está mais disponível no provedor de e-mail.',

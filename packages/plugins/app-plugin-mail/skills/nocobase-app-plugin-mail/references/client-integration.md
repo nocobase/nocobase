@@ -8,26 +8,40 @@ Register the Mail Client plugin before rendering its UI. Use `MailWorkspacePage`
 
 Use the application's client services and permission context. `useMailClient()` resolves the application-owned client in React; `app.services.resolve(mailClientToken)` does so elsewhere. Use the Mail translation namespace for application-owned copy that reuses Mail translation keys. Follow the target application's routing and theme conventions for new pages.
 
-The plugin contributes no routes. An application places `MailWorkspacePage`, `MailAccountsPage` and the reusable components in pages it declares among its own routes, with the page permissions those routes need. Pass the accounts page's path to `MailWorkspacePage` as `accountsHref` so a user without an account can reach it. Administrators read every user's accounts and logs through `GET /api/mail/settings/accounts`, `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions`.
+The plugin registers four pages: `mail` (`/mail`, the workspace, with the unread count in the navigation), `mailTeam` (`/mail/team`, Team mail), `mailAccounts` (`/me/mail`, Personal settings › Messages › Mail accounts) and `mailSettings` (`/settings/mail`, System settings › Messages › Mail). Their `authz` use the constants in `MAIL_ACCESS`, the same the API checks. An application moves or hides the two navigation entries with `mail({ routes: { mail: { order, parent }, mailTeam: false } })`, and replaces a page as a whole by its route name with `routeComponentOverrides`. Do not register application pages that duplicate them.
 
-If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to the application page that renders the accounts and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page); the default returns to the application root. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow.
+`mail.oauthReturnUrl` defaults to `/me/mail`, the plugin's Mail accounts page, which reads the `mailAuthorization` result and reloads the accounts. Configure it only when the application replaces or leaves out that page; see [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page).
 
-### Personal account entry and workspace actions
+### Extension points
 
-Register an application-owned `/mail/accounts` page whose lazy loader imports the public `MailAccountsPage` from `/client`. Require authentication (`auth: 'required'`) and declare `authz: { resource: { type: 'page', id: 'mail.workspace' }, action: 'access' }` on that page and the workspace. The account APIs independently enforce permissions; a link grants no access. This is a personal connection/management page, including resuming suspended accounts, not a read-only administrator account overview.
+Resolve `mailExtensionsToken` in a client service provider's `boot()`; the plugin's own pages read what is registered:
+
+```ts
+import { mailExtensionsToken } from '@nocobase/app-plugin-mail/client';
+
+const mail = this.app.container.resolve(mailExtensionsToken);
+mail.providerTypes.add({ type: 'crm-gateway', title: 'CRM gateway' });
+mail.slots.messageAside.add({ name: 'customer', component: CustomerAside });
+mail.slots.composeToolbar.add({ name: 'quote', component: InsertQuote });
+mail.slots.workspaceActions.add({ name: 'logs', component: LogsLink });
+mail.templateVariables.add({ key: 'customer', label: 'Customer', resolve: ({ to }) => findCustomer(to) });
+mail.composer.onComplete.add((result, rejected, error, details) => recordActivity(details));
+```
+
+`messageAside` receives the open message and its lower-cased addresses and is not rendered when nothing is registered; `composeToolbar` receives the composer state with `insertText` and `insertHtml`; `workspaceActions` render after Compose and Sync and never replace them. A `templateVariables` prop of the same key wins over a registered variable. `onComplete` handlers run after the page's own completion handling and receive the same arguments as the `onComplete` prop, including the submission IDs in `details`. Each registry rejects a duplicate name, key or type, and each slot renders inside its own error boundary.
+
+### Composing your own page
+
+`MailWorkspacePage` and `MailAccountsPage` remain exported for an application that composes its own pages, for example through `routeComponentOverrides`. Require authentication and declare `authz: MAIL_ACCESS.workspace` on such a page.
 
 ```tsx
 <MailWorkspacePage
-  accountsHref='/mail/accounts'
+  accountsHref='/me/mail'
   headerActions={<a href={resolveAppUrl('/mail/logs')}>Mail logs</a>}
 />
 ```
 
-Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. `accountsHref` excludes the deployment prefix: `/mail/accounts` becomes `/main/mail/accounts` under `/main`. With no usable accounts the workspace displays Connect mail account; with accounts it retains Mail accounts in the header. If the property is omitted, neither link is invented. `headerActions` appends arbitrary React content after the built-in controls without replacing their disabled/loading behavior, and never implicitly supplies an empty-state account link. The reusable workspace does not depend on development mode, and the plugin contributes no routes.
-
-Separately configure `mail.oauthReturnUrl: /mail/accounts` so OAuth success and failure return to the registered production page. This server configuration is independent of the component property; the return page consumes the authorization result and reloads accounts. Passing a link does not register a page; the application must declare it in its production routes.
-
-A production startup warning flags the known development-only return destination without changing it or creating a route. It is an observability reminder, not proof that a custom route exists. Keep the return path free of the deployment prefix, register the page in production with the authentication/permission contract above, and verify both success and failure flows; the existing `MailAccountsPage` already handles those result parameters.
+Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. `accountsHref` excludes the deployment prefix. With no usable accounts the workspace displays Connect mail account; with accounts it retains Mail accounts in the header. If the property is omitted, neither link is invented. `headerActions` appends React content after the built-in controls, alongside the registered `workspaceActions`.
 
 ## Business records and templates
 

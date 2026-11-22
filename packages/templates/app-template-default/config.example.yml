@@ -235,7 +235,10 @@ snowflake:
 #       #   cert: replace-with-the-client-certificate-pem
 #       #   key: replace-with-the-client-private-key-pem
 
-# Mail is registered by default. Configure mailbox provider instances before connecting accounts.
+# Mail is registered by default with its own pages: Mail and Team mail in the navigation,
+# Personal settings › Mail accounts and System settings › Mail. Configure mailbox provider
+# instances before connecting accounts. Finished sync and send logs are kept 90 days
+# (logRetentionDays, 0 keeps them).
 # See .agents/skills/nocobase-app-plugin-mail/references/configuration-and-accounts.md.
 mail:
   providers: {}

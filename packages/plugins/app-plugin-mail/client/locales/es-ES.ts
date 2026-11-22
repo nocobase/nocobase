@@ -2,7 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
 
+import pagesEsES from '../../shared/locales/pages.es-ES.js';
+
 const esES: LocaleResource<typeof enUS> = {
+  ...pagesEsES,
   content: {
     tooLarge:
       'El cuerpo excede el límite de visualización de 16 MiB. Ábrelo en tu buzón original. Los archivos adjuntos aún se pueden descargar.',
