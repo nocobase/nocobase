@@ -25,6 +25,25 @@ const releases: PermissionObject = {
 };
 
 describe('the permission table of a credential', () => {
+  it('falls back to page access when the operations catalog becomes empty', () => {
+    const props = {
+      menus: [],
+      value: { menus: [], grants: {} },
+      onChange: vi.fn(),
+      defaultTab: 'objects' as const,
+    };
+    const view = render(<PermissionEditor {...props} objects={[releases]} />);
+    expect(screen.getByRole('tab', { name: /Operations/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    view.rerender(<PermissionEditor {...props} objects={[]} />);
+    expect(screen.queryByRole('tab', { name: /Operations/ })).toBeNull();
+    expect(screen.getByRole('tab', { name: /Page access/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
   it('shows only the tabs asked for, an action only a person may take greyed out with its reason, and lapsed ones', () => {
     render(
       <PermissionEditor
@@ -33,11 +52,12 @@ describe('the permission table of a credential', () => {
         value={{ menus: [], grants: { view: {}, rollback: {} } }}
         onChange={vi.fn()}
         builtInTabs={['objects', 'settings']}
+        showTabCounts={false}
         defaultTab='menus'
       />,
     );
     expect(screen.queryByRole('tab', { name: /Page access/ })).toBeNull();
-    expect(screen.getByRole('tab', { name: /Operations/ })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Operations' })).toHaveAttribute(
       'aria-selected',
       'true',
     );

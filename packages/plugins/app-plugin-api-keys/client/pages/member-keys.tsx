@@ -20,7 +20,8 @@ import {
   KeyScopeSummary,
   LastUsed,
 } from '../components/key-parts.js';
-import { SystemFrame } from '../components/system-frame.js';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 import { useApiKeysAdminApi, type MemberKey } from '../lib/admin-api.js';
 import { API_KEYS_NAMESPACE } from '../namespace.js';
 
@@ -71,7 +72,8 @@ export default function MemberKeysPage(): ReactElement {
   const pageSize = 20;
   const pages = found ? Math.max(1, Math.ceil(found.total / pageSize)) : 1;
   return (
-    <SystemFrame tab='members'>
+    <PageContainer>
+      <PageHeader title={t('system.memberReview')} />
       <p className='text-sm text-muted-foreground'>{t('members.hint')}</p>
       <section className='min-w-0 rounded-xl border bg-card text-card-foreground'>
         <div className='flex flex-wrap items-center gap-2 border-b px-4 py-3'>
@@ -236,6 +238,6 @@ export default function MemberKeysPage(): ReactElement {
           setRevoking(undefined);
         }}
       />
-    </SystemFrame>
+    </PageContainer>
   );
 }

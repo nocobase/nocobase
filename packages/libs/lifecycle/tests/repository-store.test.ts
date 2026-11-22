@@ -1,6 +1,6 @@
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CREATE_TRANSITION,
@@ -33,6 +33,8 @@ async function createTables(): Promise<void> {
     table.integer('lifecycleVersion').notNull().defaultTo(0);
     // Which version of a process a ticket belongs to; empty for most here.
     table.string('flow');
+    table.datetimeTz('dueAt');
+    table.json('management');
     table.integer('managementRevision');
   });
   await builder.createCollection('notes', (table) => {
@@ -560,6 +562,111 @@ describe('Repository lifecycle store', () => {
         .repository('tickets')
         .findOne({ filter: { id: Number(id) } }),
     ).toMatchObject({ status: 'awaitingCustomer' });
+  });
+
+  it('rolls back a transition joined to the resume savepoint and lets the caller retry', async () => {
+    const managed = new LifecycleRuntime({ store, clock: () => now });
+    const afterCommit = vi.fn();
+    const name = 'managedTickets';
+    const actor = { id: 'agent' };
+    let refuse = true;
+    managed.register(
+      defineLifecycle({
+        name,
+        key: name,
+        version: 1,
+        collection: 'tickets',
+        initial: 'open',
+        states: ['open', { name: 'closed', final: true }],
+        dueAtField: 'dueAt',
+        transitions: { close: { from: 'open', to: 'closed' } },
+        triggers: {
+          expire: { when: 'open', after: () => 1_000, transition: 'close' },
+        },
+        management: {
+          field: 'management',
+          suspend: true,
+          onResume: async ({ record, tx }) => {
+            await (tx.handle as DatabaseConnection)
+              .repository('notes')
+              .createOne({
+                values: { ticketId: String(record.id), text: 'resumed' },
+              });
+            tx.afterCommit(afterCommit);
+            if (refuse)
+              await managed.fire(name, record.id, 'close', {
+                actor,
+                transaction: tx.handle,
+              });
+          },
+        },
+      }),
+    );
+    const authorize = () => true;
+    const {
+      record: { id },
+    } = await managed.create(
+      name,
+      { customerEmail: 'a@example.com' },
+      { actor },
+    );
+    const options = { actor, authorize, reason: 'Review' };
+    const suspended = await managed.suspend(name, id, {
+      ...options,
+      requestId: 'suspend',
+      expectedVersion: (await managed.managementDetails(
+        name,
+        id,
+        actor,
+        authorize,
+      ))!.version,
+    });
+    const before = await store.findRecord('tickets', id);
+    const history = await store.listTransitions(name, String(id));
+    now = new Date(now.getTime() + 500);
+    const command = {
+      ...options,
+      requestId: 'resume',
+      expectedVersion: suspended.version,
+    };
+
+    await database.transaction(async (transaction) => {
+      await transaction.repository('notes').createOne({
+        values: { ticketId: String(id), text: 'caller write' },
+      });
+      await expect(
+        managed.resume(name, id, { ...command, transaction }),
+      ).rejects.toMatchObject({ code: 'INVALID_SET' });
+    });
+
+    expect(await store.findRecord('tickets', id)).toEqual(before);
+    expect(await store.listTransitions(name, String(id))).toEqual(history);
+    expect(afterCommit).not.toHaveBeenCalled();
+    const notes = database.repository('notes');
+    expect((await notes.findMany({})).map((row) => row.text)).toEqual([
+      'caller write',
+    ]);
+
+    refuse = false;
+    await database.transaction(async (transaction) => {
+      await expect(
+        managed.resume(name, id, { ...command, transaction }),
+      ).resolves.toMatchObject({ suspended: false });
+      expect(afterCommit).not.toHaveBeenCalled();
+    });
+    expect(afterCommit).toHaveBeenCalledOnce();
+    expect(await store.findRecord('tickets', id)).toMatchObject({
+      dueAt: new Date(now.getTime() + 1_000).toISOString(),
+      managementRevision: 2,
+      management: { suspendedAt: null, pausedMs: 500 },
+    });
+    expect(await notes.count()).toBe(2);
+    expect(
+      await store.findTransitionByRequest(name, String(id), 'resume'),
+    ).toMatchObject({
+      transition: '$manage',
+      management: { command: 'resume' },
+    });
   });
 
   it('joins a caller’s transaction, and dispatches the effects once it commits', async () => {

@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
 import { settingsRoutes as routesExampleSettings } from '@nocobase/app-plugin-routes-example/client/routes';
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import applicationRoutes from '../../client/routes.ts';
 import {
   buildRouteNavigation,
@@ -224,12 +225,11 @@ describe('app client routes', () => {
         [['knowledgeIndexing', '/settings/knowledge/indexing']],
       ],
       [
-        'systemSettings.data',
-        [['databaseExplorer', '/settings/database-explorer']],
-      ],
-      [
         'systemSettings.system',
-        [['exampleSettings', '/settings/routes-example']],
+        [
+          ['exampleSettings', '/settings/routes-example'],
+          ['databaseExplorer', '/settings/database-explorer'],
+        ],
       ],
     ]);
     expect(catalog[3].modules[0].route).toMatchObject({
@@ -412,9 +412,9 @@ describe('app client routes', () => {
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
       { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
-      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // A plugin's settings page without its own `authz` admits unrestricted administrators only.
       { name: 'exampleSettings', authorizedAs: 'unrestricted' },
+      { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // Personal settings belong to whoever is signed in, so they stay out of page authorization.
       { name: 'personalSettingsHome', authorizedAs: null },
       { name: 'personalAppearance', authorizedAs: null },
@@ -429,6 +429,12 @@ function resolveRoutes() {
       packageName: '@nocobase/app-template-examples',
       routes: applicationRoutes,
       source: 'application',
+    },
+    // User management joins Accounts and permissions from its plugin, as client/plugins.ts registers it.
+    {
+      packageName: '@nocobase/app-plugin-users',
+      routes: usersRoutes,
+      source: 'plugin',
     },
     {
       packageName: '@nocobase/app-plugin-lifecycle-example',

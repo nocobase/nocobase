@@ -27,9 +27,27 @@ const routes: AppClientSystemSettingsRoutesContribution =
         title: 'nav.title',
         description: 'nav.description',
         icon: Network,
+        relatedSettings: ['snowflakeWorker'],
       },
       breadcrumb: { title: 'nav.title' },
       componentLoader: () => import('./components/status-page.js'),
+      children: [
+        {
+          name: 'distributedConfiguration',
+          path: 'configuration',
+          componentLoader: async () => ({
+            default: (await import('./components/status-page.js'))
+              .Configuration,
+          }),
+        },
+        {
+          name: 'distributedChecks',
+          path: 'checks',
+          componentLoader: async () => ({
+            default: (await import('./components/status-page.js')).Checks,
+          }),
+        },
+      ],
     },
   ]);
 

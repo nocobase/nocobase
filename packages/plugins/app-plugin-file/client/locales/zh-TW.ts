@@ -6,8 +6,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   storage: {
     title: '檔案儲存',
     navDescription: '上傳的檔案存在哪裡，以及哪些功能在存檔案',
-    description:
-      '上傳的檔案存在哪裡、單一檔案最大多少，以及哪些功能在存檔案。儲存在應用程式設定（`drive`）中設定，重新部署後生效；本頁顯示目前生效的設定，並檢查儲存是否真的可以讀寫。',
+    description: '查看檔案儲存設定及使用這些儲存空間的功能。',
     checkAction: '檢查儲存',
     loading: '正在載入檔案儲存…',
     loadFailed: '無法載入檔案儲存。',
@@ -18,9 +17,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       title_other: '{{count}} 則提示',
       incomplete:
         '磁碟 {{disk}} 設定不完整（{{problems}}）：未被使用時不受影響，被選用時會失敗。',
-      localDefault:
-        '預設儲存是本機磁碟：應用程式只能以單一執行個體執行。多執行個體部署請使用共用儲存。',
-      seeCluster: '參見「叢集與分散式」。',
     },
     columns: {
       name: '名稱',
@@ -154,11 +150,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         '儲存設定依然生效：之後新增的檔案表預設把檔案存到 {{disk}}。',
     },
     notes: {
-      title: '說明',
-      firstUse:
-        '儲存在首次使用時才連線，因此應用程式啟動成功並不代表儲存可以讀寫。點擊「檢查」會寫入、讀取並刪除一個暫存檔來確認。',
-      changeDefault:
-        '修改預設儲存只影響之後的上傳；既有檔案仍從其記錄所指的儲存讀取，不會被搬移。',
+      changeDefault: '變更預設儲存空間只會影響之後上傳的檔案。',
       deleteRecords: '刪除記錄不會從磁碟上刪除對應的檔案。',
       publicLinks:
         '公開連結無需登入，任何知道連結的人都能開啟。敏感檔案應透過外掛自己的驗證路由提供。',

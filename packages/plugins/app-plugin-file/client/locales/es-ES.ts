@@ -8,7 +8,7 @@ const esES: LocaleResource<typeof enUS> = {
     navDescription:
       'Dónde se guardan los archivos subidos y qué funciones los guardan',
     description:
-      'Dónde se guardan los archivos subidos, el tamaño máximo de un archivo y qué funciones guardan archivos. El almacenamiento se define en la configuración de la aplicación (`drive`) y se aplica tras volver a desplegar; esta página muestra la configuración vigente y comprueba que el almacenamiento se puede leer y escribir de verdad.',
+      'Consulta la configuración del almacenamiento y las funciones que usan cada disco.',
     checkAction: 'Comprobar almacenamiento',
     loading: 'Cargando el almacenamiento de archivos…',
     loadFailed: 'No se pudo cargar el almacenamiento de archivos.',
@@ -20,9 +20,6 @@ const esES: LocaleResource<typeof enUS> = {
       title_other: '{{count}} avisos',
       incomplete:
         'El disco {{disk}} no está configurado por completo ({{problems}}): no causa problemas mientras no se use y falla cuando se elige.',
-      localDefault:
-        'El almacenamiento predeterminado es un disco local: la aplicación solo puede ejecutarse como una única instancia. Use almacenamiento compartido para varias instancias.',
-      seeCluster: 'Consulte Clúster y distribuido.',
     },
     columns: {
       name: 'Nombre',
@@ -164,11 +161,8 @@ const esES: LocaleResource<typeof enUS> = {
         'La configuración de almacenamiento sigue aplicándose: las tablas de archivos que se añadan después guardarán los archivos en {{disk}} de forma predeterminada.',
     },
     notes: {
-      title: 'Notas',
-      firstUse:
-        'El almacenamiento se conecta en el primer uso, así que un arranque correcto no demuestra que se pueda leer y escribir. Comprobar escribe, lee y elimina un archivo temporal para confirmarlo.',
       changeDefault:
-        'Cambiar el almacenamiento predeterminado solo afecta a las subidas posteriores; los archivos existentes se siguen leyendo del almacenamiento que indican sus registros y no se mueven.',
+        'Cambiar el disco predeterminado solo afecta a las nuevas subidas.',
       deleteRecords: 'Eliminar un registro no elimina su archivo del disco.',
       publicLinks:
         'Cualquiera que conozca un enlace público puede abrirlo sin iniciar sesión. Los archivos sensibles deben servirse mediante las rutas autenticadas propias del plugin.',

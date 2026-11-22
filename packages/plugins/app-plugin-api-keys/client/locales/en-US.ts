@@ -3,8 +3,6 @@ const enUS = {
   navigation: {
     personal: 'API keys',
     system: 'API keys',
-    systemDescription:
-      'System keys, managed keys, members’ personal keys and the rules for keys',
   },
   permissions: {
     apiKeys: 'API keys',
@@ -13,9 +11,6 @@ const enUS = {
     manage: 'Manage system keys',
     create: 'Create personal API keys',
     humanOnly: 'Keys never manage keys: only a person may do this.',
-  },
-  roles: {
-    personalKeyCreators: 'Personal API key creators',
   },
   templates: {
     readOnly: 'Read only',
@@ -85,26 +80,18 @@ const enUS = {
   },
   system: {
     title: 'API keys',
-    description:
-      'A system key calls the API as its own service account, not as any member: it keeps working when people leave, and an administrator grants its permissions one by one.',
-    tabs: {
-      system: 'System keys',
-      managed: 'Managed keys',
-      members: 'Members’ personal keys',
-      rules: 'Rules',
-    },
+    description: 'Manage system keys for external integrations.',
+    more: 'More actions',
+    memberReview: 'Review member keys',
+    keyRules: 'Key rules',
     newKey: 'New system key',
     search: 'Search keys',
     empty: 'No system keys yet.',
-    noManaged: 'No managed keys.',
-    managedHint:
-      'Keys another feature created and manages for someone, such as a repository’s CI. Here you can only view, disable or delete them; their permissions and rotation change where they are managed.',
     columns: {
       status: 'Status',
     },
     ownedBy: 'Owner: {{name}}',
     noOwner: 'No owner',
-    managedBy: 'Managed by {{title}}',
     managedTag: 'Managed · {{title}}',
     statusEnabled: 'Enabled',
     enable: 'Enable',
@@ -134,8 +121,6 @@ const enUS = {
         'Receives the expiry reminder and notices about the key. The key does not act as them and keeps working if they leave.',
       expiryHint:
         'Rotate it before it expires; rotating keeps its identity and permissions.',
-      permissionsHint:
-        'A system key starts with no permissions. Give it only what the integration needs, from what you can do yourself.',
       dataRules:
         'Records are all or selected ones: a system key is no member, so “mine” and other records relative to a person do not apply. Restriction rules still apply to it.',
     },
@@ -199,10 +184,10 @@ const enUS = {
       'These rules apply to keys created or rotated from now on; existing keys keep their expiry. Who may open this page, manage system keys or create personal keys is set on roles.',
     whoMay: 'Roles and permissions',
     sameAsMe: {
-      title: 'Personal keys “same as me”',
+      title: 'Personal key permissions',
       description:
-        'A key with all of its member’s permissions can obtain their sign-in. Off by default.',
-      allow: 'Allow members to create them',
+        'Anyone with such a key may be able to sign in as its owner. When this option is off, members must choose permissions for each new personal key.',
+      allow: 'Allow members to create keys with all their permissions',
     },
     maxDays: {
       title: 'Longest personal key lifetime',

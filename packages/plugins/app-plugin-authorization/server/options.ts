@@ -1,6 +1,7 @@
 import {
   dataScopeTarget,
   type AuthorizationTitle,
+  type ResourceActionRisk,
   type ResourceItemAction,
 } from '@nocobase/authorization/core';
 import { databaseHost } from './database/api.js';
@@ -13,6 +14,7 @@ export interface AuthorizationOptionsAction {
   readonly name: string;
   readonly title: OptionText;
   readonly description?: OptionText;
+  readonly risk?: ResourceActionRisk;
   /** Composites only: page ids whose access a role editor turns this action on with. */
   readonly defaultFor?: readonly string[];
 }
@@ -110,6 +112,7 @@ function actionOption(action: ResourceItemAction): AuthorizationOptionsAction {
   return {
     name: action.name,
     title: title(action.title, action.name),
+    ...(action.risk ? { risk: action.risk } : {}),
     ...(action.description === undefined
       ? {}
       : { description: title(action.description, '') }),

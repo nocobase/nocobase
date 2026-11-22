@@ -8,7 +8,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     navDescription:
       'Onde os arquivos enviados são armazenados e quais recursos os armazenam',
     description:
-      'Onde os arquivos enviados são armazenados, o tamanho máximo de um arquivo e quais recursos armazenam arquivos. O armazenamento é definido na configuração da aplicação (`drive`) e entra em vigor após uma nova implantação; esta página mostra as configurações em vigor e verifica se o armazenamento pode realmente ser lido e gravado.',
+      'Veja as configurações de armazenamento e os recursos que usam cada disco.',
     checkAction: 'Verificar armazenamento',
     loading: 'Carregando o armazenamento de arquivos…',
     loadFailed: 'Não foi possível carregar o armazenamento de arquivos.',
@@ -20,9 +20,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       title_other: '{{count}} avisos',
       incomplete:
         'O disco {{disk}} não está totalmente configurado ({{problems}}): não causa problemas enquanto não é usado e falha quando é escolhido.',
-      localDefault:
-        'O armazenamento padrão é um disco local: a aplicação só pode ser executada como uma única instância. Use armazenamento compartilhado para várias instâncias.',
-      seeCluster: 'Consulte Cluster e distribuído.',
     },
     columns: {
       name: 'Nome',
@@ -163,11 +160,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         'As configurações de armazenamento continuam valendo: tabelas de arquivos adicionadas depois armazenam arquivos em {{disk}} por padrão.',
     },
     notes: {
-      title: 'Observações',
-      firstUse:
-        'O armazenamento é conectado no primeiro uso, então uma inicialização bem-sucedida não prova que ele pode ser lido e gravado. A verificação grava, lê e exclui um arquivo temporário para confirmar.',
-      changeDefault:
-        'Alterar o armazenamento padrão afeta apenas os envios posteriores; os arquivos existentes continuam sendo lidos do armazenamento indicado em seus registros e não são movidos.',
+      changeDefault: 'Alterar o disco padrão afeta apenas os novos uploads.',
       deleteRecords: 'Excluir um registro não exclui o arquivo dele do disco.',
       publicLinks:
         'Um link público pode ser aberto por qualquer pessoa que o conheça, sem login. Arquivos sensíveis devem ser servidos pelas rotas autenticadas do próprio plugin.',

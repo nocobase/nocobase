@@ -464,27 +464,25 @@ export function permissionWorkspace(
   const settingsObject = (resource: {
     type: string;
     id: string;
-    action: string;
+    action?: string;
   }): PermissionObject | undefined => {
     const key = resourceKey(resource);
     const existing = settingsObjects.find((object) => object.id === key);
     if (existing) return existing;
     const catalogResource = catalog.get(key);
-    const available: readonly {
-      name: string;
-      title: LocalizedText;
-      description?: LocalizedText;
-    }[] =
+    const available: CatalogResource['actions'] =
       resource.type === 'user'
         ? USER_ACTIONS.map((action) => ({
             name: action.name,
             title: { key: action.title },
           }))
         : (catalogResource?.actions ?? []);
-    const viewName = available.some((action) => action.name === resource.action)
-      ? resource.action
-      : available[0]?.name;
-    if (!viewName) return undefined;
+    if (!available.length) return undefined;
+    const viewName =
+      resource.action &&
+      (available.some((action) => action.name === resource.action)
+        ? resource.action
+        : available[0]?.name);
     const risks = ESCALATION[key] ?? {};
     const actions: PermissionAction[] = [];
     for (const action of [
@@ -493,6 +491,7 @@ export function permissionWorkspace(
     ]) {
       const id = permissionRowId(resource, action.name);
       const isView = action.name === viewName;
+      const risk = risks[action.name] ?? action.risk;
       actions.push({
         id,
         label: text(action.title),
@@ -500,7 +499,7 @@ export function permissionWorkspace(
           ? { description: text(action.description) }
           : {}),
         ...(isView ? { view: true } : {}),
-        ...(risks[action.name] ? { risk: risks[action.name] } : {}),
+        ...(risk ? { risk } : {}),
       });
       bindings.set(id, {
         resource: { type: resource.type, id: resource.id },
@@ -714,7 +713,13 @@ export function permissionWorkspace(
           const object = settingsObject(resource);
           return object ? [object] : [];
         });
-      const pageObjectsUsed = [...pageObjects, ...used].filter(
+      const related = (module.route.navigation?.relatedSettings ?? []).flatMap(
+        (id) => {
+          const object = settingsObject({ type: 'settings', id });
+          return object ? [object] : [];
+        },
+      );
+      const pageObjectsUsed = [...pageObjects, ...used, ...related].filter(
         (object, index, all) =>
           all.findIndex((item) => item.id === object.id) === index,
       );

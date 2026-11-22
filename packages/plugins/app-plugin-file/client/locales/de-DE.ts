@@ -8,7 +8,7 @@ const deDE: LocaleResource<typeof enUS> = {
     navDescription:
       'Wo hochgeladene Dateien gespeichert werden und welche Funktionen Dateien speichern',
     description:
-      'Wo hochgeladene Dateien gespeichert werden, wie groß eine Datei sein darf und welche Funktionen Dateien speichern. Der Speicher wird in der Anwendungskonfiguration (`drive`) festgelegt und wirkt nach einem erneuten Deployment; diese Seite zeigt die wirksamen Einstellungen und prüft, ob der Speicher tatsächlich gelesen und beschrieben werden kann.',
+      'Speichereinstellungen und die Funktionen ansehen, die den jeweiligen Speicher nutzen.',
     checkAction: 'Speicher prüfen',
     loading: 'Dateispeicher wird geladen…',
     loadFailed: 'Der Dateispeicher konnte nicht geladen werden.',
@@ -19,9 +19,6 @@ const deDE: LocaleResource<typeof enUS> = {
       title_other: '{{count}} Hinweise',
       incomplete:
         'Datenträger {{disk}} ist nicht vollständig konfiguriert ({{problems}}): Solange er nicht verwendet wird, schadet das nicht; wird er gewählt, schlägt es fehl.',
-      localDefault:
-        'Der Standardspeicher ist ein lokaler Datenträger: Die Anwendung kann nur als einzelne Instanz laufen. Verwenden Sie für mehrere Instanzen einen gemeinsamen Speicher.',
-      seeCluster: 'Siehe Cluster und verteilter Betrieb.',
     },
     columns: {
       name: 'Name',
@@ -158,11 +155,8 @@ const deDE: LocaleResource<typeof enUS> = {
         'Die Speichereinstellungen gelten weiterhin: Später hinzugefügte Dateitabellen speichern Dateien standardmäßig auf {{disk}}.',
     },
     notes: {
-      title: 'Hinweise',
-      firstUse:
-        'Der Speicher wird erst bei der ersten Verwendung verbunden, ein erfolgreicher Start beweist also nicht, dass er gelesen und beschrieben werden kann. Die Prüfung schreibt, liest und löscht eine temporäre Datei, um das zu bestätigen.',
       changeDefault:
-        'Eine Änderung des Standardspeichers betrifft nur spätere Uploads; vorhandene Dateien werden weiterhin aus dem Speicher gelesen, den ihre Datensätze angeben, und nicht verschoben.',
+        'Eine Änderung des Standardspeichers betrifft nur neue Uploads.',
       deleteRecords:
         'Das Löschen eines Datensatzes löscht seine Datei nicht vom Datenträger.',
       publicLinks:

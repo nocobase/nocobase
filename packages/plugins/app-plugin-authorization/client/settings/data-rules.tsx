@@ -24,7 +24,6 @@ import type { AuthorizationRuleTabProps } from './extensions.js';
 import {
   ruleKeyOfPath,
   ruleTabHref,
-  useReadableRuleTabs,
   type RuleTab,
 } from './readable-rule-tabs.js';
 
@@ -56,8 +55,23 @@ function RuleContent({ tab }: { readonly tab: RuleTab }): ReactElement {
  */
 export default function DataRulesPage(): ReactElement {
   const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
+  return (
+    <AuthorizationPage
+      tab={DATA_RULES_TAB}
+      description={t('settings.dataRulesDescription')}
+    >
+      {(tabs) => <RulePanels tabs={tabs} />}
+    </AuthorizationPage>
+  );
+}
+
+function RulePanels({
+  tabs,
+}: {
+  readonly tabs: readonly RuleTab[] | undefined;
+}): ReactElement {
+  const { t } = useTranslation(AUTHORIZATION_NAMESPACE);
   const text = useLocalizedText();
-  const tabs = useReadableRuleTabs();
   const [params] = useSearchParams();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -74,11 +88,8 @@ export default function DataRulesPage(): ReactElement {
     if (moveTo) void navigate(moveTo, { replace: true });
   }, [moveTo, navigate]);
   return (
-    <AuthorizationPage
-      tab={DATA_RULES_TAB}
-      description={t('settings.dataRulesDescription')}
-    >
-      {tabs && tabs.length > 1 && current ? (
+    <>
+      {tabs && tabs.length > 0 && current ? (
         <Tabs
           value={current.key}
           onValueChange={(next) => {
@@ -109,6 +120,6 @@ export default function DataRulesPage(): ReactElement {
       )}
       {/* The old `create` and `:key/edit` addresses, which redirect back here. */}
       <Outlet />
-    </AuthorizationPage>
+    </>
   );
 }

@@ -5,7 +5,7 @@ export default createClientLibraryConfig({
   overrides: [
     {
       name: 'app-plugin-api-keys/database-migrations',
-      files: ['database/migrations/*.ts', 'database/seeds/*.ts'],
+      files: ['database/migrations/*.ts'],
       languageOptions: {
         parserOptions: {
           project: './tsconfig.migrations.json',

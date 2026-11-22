@@ -33,7 +33,7 @@ export interface PermissionGrant {
 }
 
 export type PermissionSetWriteOperation =
-  'create' | 'update' | 'delete' | 'assign' | 'revoke';
+  'create' | 'update' | 'updateTitle' | 'delete' | 'assign' | 'revoke';
 
 export interface PermissionSetProtection {
   owner: string;
@@ -79,6 +79,7 @@ interface OptionsActionResponse {
   name: string;
   title: LocalizedText;
   description?: LocalizedText;
+  risk?: 'sensitive' | 'high';
   /** Composites only: page ids whose access the role editor turns this action on with. */
   defaultFor?: readonly string[];
 }
@@ -426,7 +427,7 @@ export class AuthorizationClient {
 
   updatePermissionSet(
     key: string,
-    input: PermissionSetInput,
+    input: Partial<PermissionSetInput>,
     idempotencyKey?: string,
   ): Promise<PermissionSet> {
     return this.send(

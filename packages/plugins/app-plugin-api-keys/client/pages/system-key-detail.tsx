@@ -46,7 +46,7 @@ import {
 import { PermissionTable } from '../components/permission-table.js';
 import { ScopeRecordPicker } from '../components/scope-record-picker.js';
 import { RecordPicker } from '../components/record-picker.js';
-import type { SystemKeysOutletContext } from '../components/system-key-list.js';
+import type { SystemKeysOutletContext } from './system-keys.js';
 import {
   useApiKeysAdminApi,
   type SystemKey,
@@ -123,7 +123,7 @@ export default function SystemKeyDetailPage(): ReactElement {
   };
 
   return (
-    <PageContainer className='max-w-[1120px]'>
+    <PageContainer>
       <PageHeader
         title={
           key ? (

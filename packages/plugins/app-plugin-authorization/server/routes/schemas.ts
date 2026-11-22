@@ -152,6 +152,7 @@ export const PermissionGrantSchema: z.ZodType = z
 const writeOperation = z.enum([
   'create',
   'update',
+  'updateTitle',
   'delete',
   'assign',
   'revoke',

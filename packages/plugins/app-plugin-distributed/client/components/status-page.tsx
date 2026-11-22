@@ -3,8 +3,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   CircleAlert,
   CircleCheck,
-  Info,
-  Square,
+  ChevronRight,
+  Server,
   TriangleAlert,
 } from 'lucide-react';
 import {
@@ -12,11 +12,23 @@ import {
   Suspense,
   lazy,
   useMemo,
+  useState,
   type ComponentType,
   type ErrorInfo,
   type ReactElement,
   type ReactNode,
 } from 'react';
+
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Outlet,
+  useLocation,
+  useOutletContext,
+  useResolvedPath,
+  matchPath,
+} from 'react-router';
 
 import { REDIS_PLUGINS, sharedBackendSnippet } from '../../shared/snippets.js';
 import type {
@@ -55,52 +67,6 @@ const LEVEL_STYLES: Readonly<
   recommended: { icon: TriangleAlert, tone: 'text-(--status-warning)' },
   ok: { icon: CircleCheck, tone: 'text-(--status-success)' },
 };
-
-const BADGE_TONES: Readonly<Record<DistributedCheckLevel, string>> = {
-  required: 'border-destructive/20 bg-destructive/10 text-destructive',
-  recommended:
-    'border-(--status-warning)/20 bg-(--status-warning-background) text-(--status-warning)',
-  ok: 'border-(--status-success)/20 bg-(--status-success-background) text-(--status-success)',
-};
-
-const SHARING_TONES: Readonly<Record<DistributedSharing, string>> = {
-  shared:
-    'border-(--status-success)/20 bg-(--status-success-background) text-(--status-success)',
-  local: 'border-border bg-muted text-muted-foreground',
-  unknown:
-    'border-(--status-warning)/20 bg-(--status-warning-background) text-(--status-warning)',
-};
-
-function Badge({
-  className,
-  children,
-}: {
-  readonly className: string;
-  readonly children: ReactNode;
-}): ReactElement {
-  return (
-    <span
-      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs whitespace-nowrap ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  readonly title: string;
-  readonly children: ReactNode;
-}): ReactElement {
-  return (
-    <section className='flex flex-col gap-3 rounded-lg border bg-card p-4 text-card-foreground'>
-      <h2 className='text-base font-semibold'>{title}</h2>
-      {children}
-    </section>
-  );
-}
 
 function Snippet({ code }: { readonly code: string }): ReactElement {
   return (
@@ -198,6 +164,206 @@ function useCheckText(): (check: DistributedCheckResult) => {
   };
 }
 
+const card = 'overflow-hidden rounded-lg border bg-card text-card-foreground';
+const disclosure =
+  'flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 hover:bg-muted/50 focus-visible:outline-ring [&::-webkit-details-marker]:hidden';
+
+function Arrow(): ReactElement {
+  return (
+    <ChevronRight
+      aria-hidden
+      className='size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90'
+    />
+  );
+}
+
+function Summary({ status }: DistributedStatusBlockProps): ReactElement {
+  const { t } = useText();
+  const { search } = useLocation();
+  const present = status.services.filter((service) => service.available);
+  const shared = present.filter(
+    (service) => service.sharing === 'shared',
+  ).length;
+  const blocked = status.checks.filter(
+    (check) => check.level === 'required',
+  ).length;
+  return (
+    <section
+      className={`${card} flex flex-wrap items-center gap-x-3 gap-y-2 p-4`}
+    >
+      <span className='flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+        <Server aria-hidden className='size-5' />
+      </span>
+      <div className='flex-1'>
+        <p className='text-xs text-muted-foreground'>{t('view.deployment')}</p>
+        <p className='text-lg font-semibold'>
+          {t(status.mode === 'single' ? 'summary.single' : 'view.multi')}
+        </p>
+      </div>
+      <div className='text-right'>
+        <div aria-hidden className='mb-1 flex justify-end gap-1'>
+          {present.map((service) => (
+            <span
+              key={service.key}
+              className={`h-1 w-4 rounded-full ${service.sharing === 'shared' ? 'bg-primary' : 'bg-muted'}`}
+            />
+          ))}
+        </div>
+        <span className='text-xs text-muted-foreground'>
+          {t('sections.services')}{' '}
+          <strong className='tabular-nums text-foreground'>
+            {t('summary.shared', { shared, total: present.length })}
+          </strong>
+        </span>
+      </div>
+      {blocked > 0 && (
+        <Link
+          to={{ pathname: 'checks', search }}
+          className='flex w-full items-center gap-2 text-sm text-destructive hover:underline'
+        >
+          <CircleAlert aria-hidden className='size-4' />
+          {t('view.blockers', { count: blocked })}
+          <ChevronRight aria-hidden className='size-3' />
+        </Link>
+      )}
+    </section>
+  );
+}
+
+const columns =
+  'grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_1rem] items-center gap-2 px-3 sm:px-4';
+const sharingTone: Record<DistributedSharing, string> = {
+  shared: 'bg-(--status-success)',
+  local: 'bg-muted-foreground',
+  unknown: 'bg-(--status-warning)',
+};
+
+function ServiceRow({
+  service,
+}: {
+  readonly service: DistributedService;
+}): ReactElement {
+  const { t } = useText();
+  return (
+    <details className='group border-t'>
+      <summary
+        className={`${columns} cursor-pointer list-none py-3 text-sm hover:bg-muted/50 [&::-webkit-details-marker]:hidden`}
+      >
+        <span className='font-medium'>{t(`services.${service.key}.name`)}</span>
+        <span className='min-w-0 break-all font-mono text-xs'>
+          {service.available
+            ? (service.default ?? (service.adapter || t('notSet')))
+            : t('unavailable')}
+        </span>
+        <span className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+          {service.available ? (
+            <>
+              <i
+                aria-hidden
+                className={`size-1.5 shrink-0 rounded-full ${sharingTone[service.sharing]}`}
+              />
+              {t(`sharing.${service.sharing}`)}
+            </>
+          ) : (
+            '—'
+          )}
+        </span>
+        <Arrow />
+      </summary>
+      <div className='space-y-1.5 bg-muted/40 px-4 py-3 text-sm text-muted-foreground'>
+        <p>{t(`services.${service.key}.usage`)}</p>
+        {service.available && (
+          <>
+            <p>
+              <code>{service.configPath}</code> ·{' '}
+              {t(`source.${service.source}`)}
+            </p>
+            <p>
+              {t('table.adapter')} ·{' '}
+              <code>{service.adapter || t('notSet')}</code>
+              {!service.registered && (
+                <span className='ml-2 text-destructive'>
+                  {t('unregistered')}
+                </span>
+              )}
+            </p>
+            {service.selections.length > 0 && (
+              <p className='break-words'>
+                {t('selections')} ·{' '}
+                {service.selections
+                  .map((selection) =>
+                    selection.consumer
+                      ? t('selection', {
+                          consumer: selection.consumer,
+                          backend: selection.backend,
+                        })
+                      : selection.backend,
+                  )
+                  .join(', ')}
+              </p>
+            )}
+            <p className='break-all'>
+              {t('table.plugin')} · <code>{REDIS_PLUGINS[service.key]}</code>
+            </p>
+            {service.sharing !== 'shared' && (
+              <details>
+                <summary className='w-fit cursor-pointer text-primary'>
+                  {t('howToChange')}
+                </summary>
+                <p className='my-2'>{t('howToChangeIntro')}</p>
+                <Snippet code={sharedBackendSnippet(service.key)} />
+              </details>
+            )}
+          </>
+        )}
+      </div>
+    </details>
+  );
+}
+
+export function Configuration(): ReactElement {
+  const status = useOutletContext<DistributedStatus>();
+  const { t } = useText();
+  return (
+    <>
+      <section className={card}>
+        <h2 className='px-4 py-3 text-base font-semibold'>
+          {t('view.backends')}
+        </h2>
+        <div
+          className={`${columns} bg-muted/50 py-2 text-xs text-muted-foreground`}
+        >
+          <span>{t('table.service')}</span>
+          <span>{t('table.backend')}</span>
+          <span>{t('table.sharing')}</span>
+        </div>
+        {status.services.map((service) => (
+          <ServiceRow key={service.key} service={service} />
+        ))}
+      </section>
+      <SlotBlocks slot='services' status={status} />
+      <details className={`group ${card}`}>
+        <summary className={disclosure}>
+          <span className='font-medium'>{t('sections.idGeneration')}</span>
+          <span className='ml-auto text-sm text-muted-foreground'>
+            {status.idGeneration.mode === 'auto'
+              ? t('idGeneration.auto')
+              : t('idGeneration.manual', {
+                  workerId: status.idGeneration.workerId ?? '—',
+                })}
+          </span>
+          <Arrow />
+        </summary>
+        <p className='border-t px-4 py-3 text-sm text-muted-foreground'>
+          {t('table.source')} · {t(`source.${status.idGeneration.source}`)}
+        </p>
+      </details>
+      <SlotBlocks slot='idGeneration' status={status} />
+      <p className='text-xs text-muted-foreground'>{t('view.scope')}</p>
+    </>
+  );
+}
+
 function CheckRow({
   check,
 }: {
@@ -206,306 +372,43 @@ function CheckRow({
   const { t } = useText();
   const text = useCheckText()(check);
   const { icon: Icon, tone } = LEVEL_STYLES[check.level];
-  return (
-    <li
-      className='flex gap-3 border-b py-3 last:border-b-0'
-      data-check={check.id}
-    >
-      <Icon aria-hidden className={`mt-0.5 size-4 shrink-0 ${tone}`} />
-      <div className='flex min-w-0 flex-1 flex-col gap-1'>
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='font-medium'>{text.title}</span>
-          <Badge className={BADGE_TONES[check.level]}>
-            {t(`level.${check.level}`)}
-          </Badge>
-        </div>
-        <p className='text-sm break-words text-muted-foreground'>
+  const grouped = check.id === 'services.local';
+  const label = (
+    <>
+      <Icon aria-hidden className={`size-4 shrink-0 ${tone}`} />
+      <span className='min-w-0 flex-1'>
+        <strong className='font-medium'>
+          {grouped ? t('view.backends') : text.title}
+        </strong>
+        <span className='block break-words text-xs text-muted-foreground'>
           {text.detail}
-        </p>
-        {check.fix ? (
-          <details className='text-sm'>
-            <summary className='cursor-pointer text-primary'>
-              {t('fix')}
-            </summary>
-            <div className='mt-2 flex flex-col gap-2'>
-              <p>{text.fix}</p>
-              {check.fix.snippet ? <Snippet code={check.fix.snippet} /> : null}
-            </div>
-          </details>
-        ) : null}
-      </div>
-    </li>
-  );
-}
-
-function Summary({
-  status,
-}: {
-  readonly status: DistributedStatus;
-}): ReactElement {
-  const { t } = useText();
-  const present = status.services.filter((service) => service.available);
-  const shared = present.filter(
-    (service) => service.sharing === 'shared',
-  ).length;
-  const count = (level: DistributedCheckLevel) =>
-    status.checks.filter((check) => check.level === level).length;
-  const required = count('required');
-  // One instance can still have blocking items, such as an adapter no plugin provides; then the summary says so.
-  const cards =
-    status.mode === 'single'
-      ? [
-          {
-            value: t('summary.single'),
-            caption:
-              required > 0
-                ? t('summary.singleBlockedCaption')
-                : t('summary.singleCaption'),
-          },
-          {
-            value: t('summary.shared', { shared, total: present.length }),
-            caption: t('summary.sharedCaption'),
-          },
-          ...(required > 0
-            ? [
-                {
-                  value: String(required),
-                  caption: t('summary.requiredCaption'),
-                  tone: 'text-destructive',
-                },
-              ]
-            : []),
-        ]
-      : [
-          {
-            value: t('summary.shared', { shared, total: present.length }),
-            caption: t('summary.sharedCaption'),
-          },
-          {
-            value: String(required),
-            caption: t('summary.requiredCaption'),
-            tone: required > 0 ? 'text-destructive' : undefined,
-          },
-          {
-            value: String(count('recommended')),
-            caption: t('summary.recommendedCaption'),
-          },
-        ];
-  return (
-    <div
-      className={`grid grid-cols-1 gap-3 ${cards.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
-    >
-      {cards.map((card) => (
-        <div
-          key={card.caption}
-          className='flex flex-col gap-1 rounded-lg border bg-card p-4'
-        >
-          <span
-            className={`text-xl font-semibold ${'tone' in card && card.tone ? card.tone : ''}`}
-          >
-            {card.value}
-          </span>
-          <span className='text-sm text-muted-foreground'>{card.caption}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ServiceBackend({
-  service,
-}: {
-  readonly service: DistributedService;
-}): ReactElement {
-  const { t } = useText();
-  return (
-    <div className='flex min-w-0 flex-col gap-0.5'>
-      <span className='font-mono text-xs break-all'>
-        {service.configPath} → {service.default ?? t('notSet')}
+        </span>
       </span>
-      <span className='text-xs text-muted-foreground'>
-        {t('table.adapter')}: {service.adapter}
-        {service.registered ? '' : ` · ${t('unregistered')}`}
-      </span>
-      {service.selections.length > 0 ? (
-        <span className='text-xs text-muted-foreground'>
-          {t('selections')}:{' '}
-          {service.selections
-            .map((selection) =>
-              selection.consumer
-                ? t('selection', {
-                    consumer: selection.consumer,
-                    backend: selection.backend,
-                  })
-                : selection.backend,
-            )
-            .join(', ')}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function useServiceCells(service: DistributedService): {
-  readonly name: ReactElement;
-  readonly backend: ReactElement;
-  readonly sharing: ReactElement;
-  readonly plugin: ReactElement;
-  readonly source: ReactElement;
-} {
-  const { t } = useText();
-  return {
-    name: (
-      <div className='flex flex-col gap-0.5'>
-        <span className='font-medium'>{t(`services.${service.key}.name`)}</span>
-        <span className='text-xs text-muted-foreground'>
-          {t(`services.${service.key}.usage`)}
-        </span>
-      </div>
-    ),
-    backend: service.available ? (
-      <ServiceBackend service={service} />
-    ) : (
-      <span className='text-xs text-muted-foreground'>{t('unavailable')}</span>
-    ),
-    sharing: (
-      <Badge className={SHARING_TONES[service.sharing]}>
-        {t(`sharing.${service.sharing}`)}
-      </Badge>
-    ),
-    plugin: (
-      <span className='font-mono text-xs break-all'>
-        {REDIS_PLUGINS[service.key]}
-      </span>
-    ),
-    source: <span className='text-sm'>{t(`source.${service.source}`)}</span>,
-  };
-}
-
-function ServiceRow({
-  service,
-}: {
-  readonly service: DistributedService;
-}): ReactElement {
-  const cells = useServiceCells(service);
-  return (
-    <tr className='border-b align-top last:border-b-0'>
-      <td className='py-3 pr-4'>{cells.name}</td>
-      <td className='py-3 pr-4'>{cells.backend}</td>
-      <td className='py-3 pr-4'>{cells.sharing}</td>
-      <td className='py-3 pr-4'>{cells.plugin}</td>
-      <td className='py-3'>{cells.source}</td>
-    </tr>
-  );
-}
-
-function ServiceCard({
-  service,
-}: {
-  readonly service: DistributedService;
-}): ReactElement {
-  const { t } = useText();
-  const cells = useServiceCells(service);
-  return (
-    <li className='flex flex-col gap-2 border-b py-3 last:border-b-0'>
-      <div className='flex items-start justify-between gap-2'>
-        {cells.name}
-        {cells.sharing}
-      </div>
-      {cells.backend}
-      <div className='flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground'>
-        <span>
-          {t('table.plugin')}: {cells.plugin}
-        </span>
-        <span>
-          {t('table.source')}: {cells.source}
-        </span>
-      </div>
-    </li>
-  );
-}
-
-function Services({
-  status,
-}: {
-  readonly status: DistributedStatus;
-}): ReactElement {
-  const { t } = useText();
-  const local = status.services.filter(
-    (service) => service.available && service.sharing !== 'shared',
+      <span className={`text-xs ${tone}`}>{t(`level.${check.level}`)}</span>
+    </>
   );
   return (
-    <Section title={t('sections.services')}>
-      <table className='hidden w-full text-left text-sm md:table'>
-        <thead className='text-xs text-muted-foreground'>
-          <tr className='border-b'>
-            <th className='py-2 pr-4 font-medium'>{t('table.service')}</th>
-            <th className='py-2 pr-4 font-medium'>{t('table.backend')}</th>
-            <th className='py-2 pr-4 font-medium'>{t('table.sharing')}</th>
-            <th className='py-2 pr-4 font-medium'>{t('table.plugin')}</th>
-            <th className='py-2 font-medium'>{t('table.source')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {status.services.map((service) => (
-            <ServiceRow key={service.key} service={service} />
-          ))}
-        </tbody>
-      </table>
-      <ul className='md:hidden'>
-        {status.services.map((service) => (
-          <ServiceCard key={service.key} service={service} />
-        ))}
-      </ul>
-      {local.length > 0 ? (
-        <details className='text-sm'>
-          <summary className='cursor-pointer text-primary'>
-            {t('howToChange')}
+    <li className='border-t first:border-t-0' data-check={check.id}>
+      {check.fix || grouped ? (
+        <details className='group'>
+          <summary className={disclosure}>
+            {label}
+            <Arrow />
           </summary>
-          <div className='mt-2 flex flex-col gap-2'>
-            <p>{t('howToChangeIntro')}</p>
-            {local.map((service) => (
-              <Snippet
-                key={service.key}
-                code={sharedBackendSnippet(service.key)}
-              />
-            ))}
+          <div className='space-y-2 bg-muted/40 px-4 py-3 text-sm'>
+            {text.fix && <p>{text.fix}</p>}
+            {check.fix?.snippet && <Snippet code={check.fix.snippet} />}
+            {grouped && (
+              <Link className='text-primary underline' to='../configuration'>
+                {t('view.configuration')}
+              </Link>
+            )}
           </div>
         </details>
-      ) : null}
-      <SlotBlocks slot='services' status={status} />
-    </Section>
-  );
-}
-
-function IdGeneration({
-  status,
-}: {
-  readonly status: DistributedStatus;
-}): ReactElement {
-  const { t } = useText();
-  const { idGeneration } = status;
-  return (
-    <Section title={t('sections.idGeneration')}>
-      <dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm'>
-        <dt className='text-muted-foreground'>{t('idGeneration.mode')}</dt>
-        <dd>
-          {idGeneration.mode === 'auto'
-            ? t('idGeneration.auto')
-            : t('idGeneration.manual', {
-                workerId: idGeneration.workerId ?? '—',
-              })}
-        </dd>
-        <dt className='text-muted-foreground'>{t('table.source')}</dt>
-        <dd>{t(`source.${idGeneration.source}`)}</dd>
-      </dl>
-      {idGeneration.mode === 'manual' ? (
-        <p className='text-sm text-muted-foreground'>
-          {t('idGeneration.modeHint')}
-        </p>
-      ) : null}
-      <SlotBlocks slot='idGeneration' status={status} />
-    </Section>
+      ) : (
+        <div className='flex items-center gap-3 px-4 py-3 pr-11'>{label}</div>
+      )}
+    </li>
   );
 }
 
@@ -517,81 +420,63 @@ const CHECKLIST = [
   'websocket',
 ] as const;
 
-function Checklist({
-  status,
-}: {
-  readonly status: DistributedStatus;
-}): ReactElement {
+export function Checks(): ReactElement {
   const { t } = useText();
-  return (
-    <Section title={t('sections.checklist')}>
-      <p className='text-sm text-muted-foreground'>{t('checklist.intro')}</p>
-      <ul className='flex flex-col gap-2 text-sm'>
-        {CHECKLIST.map((item) => (
-          <li key={item} className='flex gap-2'>
-            <Square
-              aria-hidden
-              className='mt-0.5 size-4 shrink-0 text-muted-foreground'
-            />
-            <span>{t(`checklist.${item}`)}</span>
-          </li>
-        ))}
-      </ul>
-      <SlotBlocks slot='checklist' status={status} />
-    </Section>
-  );
-}
-
-function Notes(): ReactElement {
-  const { t } = useText();
-  return (
-    <Section title={t('sections.notes')}>
-      <ul className='flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground'>
-        <li>{t('notes.current')}</li>
-        <li>{t('notes.noTest')}</li>
-        <li>{t('notes.instances')}</li>
-      </ul>
-    </Section>
-  );
-}
-
-export function DistributedStatusView({
-  status,
-}: {
-  readonly status: DistributedStatus;
-}): ReactElement {
-  const { t } = useText();
-  const blocked = status.checks.some(({ level }) => level === 'required');
+  const status = useOutletContext<DistributedStatus>();
+  const [all, setAll] = useState(false);
+  const checks = all
+    ? status.checks
+    : status.checks.filter((check) => check.level !== 'ok');
   return (
     <>
-      <Summary status={status} />
-      <Section title={t('sections.scale')}>
-        {status.mode === 'single' ? (
-          <div
-            role='note'
-            className={`flex gap-2 rounded-md border p-3 text-sm ${blocked ? 'border-destructive/20 bg-destructive/5' : 'border-primary/15 bg-primary/5'}`}
-          >
-            <Info
-              aria-hidden
-              className={`mt-0.5 size-4 shrink-0 ${blocked ? 'text-destructive' : 'text-primary'}`}
-            />
-            <span>{t(blocked ? 'singleBlocked' : 'singleHint')}</span>
-          </div>
-        ) : null}
-        <ul>
-          {status.checks.map((check) => (
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <h2 className='text-base font-semibold'>{t('view.readiness')}</h2>
+        <div className='flex gap-1'>
+          {(['pending', 'all'] as const).map((filter) => {
+            const active = (filter === 'all') === all;
+            return (
+              <button
+                key={filter}
+                type='button'
+                aria-pressed={active}
+                onClick={() => setAll(filter === 'all')}
+                className={`rounded-md px-2.5 py-1 text-xs ${active ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/50'}`}
+              >
+                {t(`view.${filter}`)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {checks.length ? (
+        <ul className={card}>
+          {checks.map((check) => (
             <CheckRow
               key={`${check.id}:${JSON.stringify(check.params ?? {})}`}
               check={check}
             />
           ))}
         </ul>
-        <SlotBlocks slot='overview' status={status} />
-      </Section>
-      <Services status={status} />
-      <IdGeneration status={status} />
-      <Checklist status={status} />
-      <Notes />
+      ) : (
+        <p className={`${card} px-4 py-3 text-sm text-muted-foreground`}>
+          {t('view.empty')}
+        </p>
+      )}
+      <details className={`group ${card}`}>
+        <summary className={disclosure}>
+          <span className='font-medium'>{t('sections.checklist')}</span>
+          <Arrow />
+        </summary>
+        <div className='border-t px-4 py-3 text-sm'>
+          <p className='text-muted-foreground'>{t('checklist.intro')}</p>
+          <ul className='mt-2 list-disc space-y-1 pl-5'>
+            {CHECKLIST.map((item) => (
+              <li key={item}>{t(`checklist.${item}`)}</li>
+            ))}
+          </ul>
+        </div>
+      </details>
+      <SlotBlocks slot='checklist' status={status} />
     </>
   );
 }
@@ -599,18 +484,34 @@ export function DistributedStatusView({
 export default function DistributedStatusPage(): ReactElement {
   const { t } = useText();
   const { status, error, loading, reload } = useDistributedStatus();
+  const { pathname, search } = useLocation();
+  const parent = useResolvedPath('.');
+  const atParent = matchPath({ path: parent.pathname, end: true }, pathname);
   return (
-    <div className='mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:p-6'>
-      <header className='flex flex-col gap-1'>
-        <h1 className='font-heading text-2xl font-semibold'>
-          {t('nav.title')}
-        </h1>
-        <p className='max-w-3xl text-sm text-muted-foreground'>
-          {t('page.description')}
-        </p>
-      </header>
+    <section className='flex w-full min-w-0 flex-col gap-4 p-4 sm:p-6 md:p-8'>
+      <h1 className='font-heading text-2xl font-semibold'>{t('nav.title')}</h1>
       {status ? (
-        <DistributedStatusView status={status} />
+        <>
+          {atParent && (
+            <Navigate replace to={{ pathname: 'configuration', search }} />
+          )}
+          <Summary status={status} />
+          <SlotBlocks slot='overview' status={status} />
+          <nav aria-label={t('nav.title')} className='flex gap-5 border-b'>
+            {(['configuration', 'checks'] as const).map((path) => (
+              <NavLink
+                key={path}
+                to={{ pathname: path, search }}
+                className={({ isActive }) =>
+                  `border-b-2 py-2 text-sm font-medium ${isActive ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`
+                }
+              >
+                {t(`view.${path}`)}
+              </NavLink>
+            ))}
+          </nav>
+          <Outlet context={status} />
+        </>
       ) : loading ? (
         <p role='status' className='text-sm text-muted-foreground'>
           {t('page.loading')}
@@ -618,10 +519,10 @@ export default function DistributedStatusPage(): ReactElement {
       ) : (
         <div
           role='alert'
-          className='flex flex-wrap items-center gap-3 text-sm text-destructive'
+          className='flex items-center gap-3 text-sm text-destructive'
         >
-          <span>{t('page.loadFailed')}</span>
-          {error === 'failed' ? (
+          {t('page.loadFailed')}
+          {error === 'failed' && (
             <button
               type='button'
               className='rounded-md border px-3 py-1 text-foreground'
@@ -629,9 +530,9 @@ export default function DistributedStatusPage(): ReactElement {
             >
               {t('page.retry')}
             </button>
-          ) : null}
+          )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
