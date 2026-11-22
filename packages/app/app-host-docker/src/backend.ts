@@ -19,14 +19,17 @@
  * Everything the backend creates carries labels naming the scope, so it finds its resources again after a restart
  * and never touches containers it did not create.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import {
+  HostManagementError,
   deploymentLog,
   type AppActivationRequest,
+  type AppCommandOutput,
+  type AppCommandRunner,
   type AppDefinition,
   type HostBackendCapabilities,
   type HostDeploymentStatus,
@@ -72,7 +75,7 @@ export const DOCKER_BACKEND_CAPABILITIES: HostBackendCapabilities = {
   onDemand: true,
   rollout: 'start-first',
   images: true,
-  backup: false,
+  backup: true,
   logs: true,
   urlModes: ['path', 'subdomain'],
 };
@@ -378,6 +381,7 @@ export class DockerBackend implements ServiceBackend {
         await docker.removeContainer(container.Id);
       if (!options.purgeData) return;
       await docker.removeVolume(names.volume(definition.id));
+      await docker.removeVolume(names.backupVolume(definition.id));
       for (const image of await this.appImages(scope, definition.id))
         for (const reference of image.RepoTags?.length
           ? image.RepoTags
@@ -401,6 +405,111 @@ export class DockerBackend implements ServiceBackend {
     const scope = this.scope(service.scope);
     const container = await this.current(scope, definition.id);
     return await containerLogPage(scope.docker, container?.Id ?? null, query);
+  }
+
+  /**
+   * Runs the App's command-line tool in one-off containers of the definition's image, with the App's storage volume,
+   * its backup volume (`backupsPath`), network, environment and configuration file, as the App's own container has
+   * them. Each run's container is removed once it exits.
+   */
+  async commandRunner(definition: AppDefinition): Promise<AppCommandRunner> {
+    assertAppId(definition.id);
+    const service = serviceOptions(definition);
+    const scope = this.scope(service.scope);
+    const config = this.settings;
+    const { docker, names } = scope;
+    await this.ensureInfrastructure(scope, definition.id);
+    await docker.ensureVolume(
+      names.backupVolume(definition.id),
+      names.labels('app', { [LABEL.app]: definition.id }),
+    );
+    const image = await this.ensureImage(
+      scope,
+      config,
+      imageTargetOf(definition),
+    );
+    const env: Record<string, string> = {
+      ...definition.env,
+      NODE_ENV: 'production',
+      ...(service.configFile ? { APP_CONFIG_FILE: config.configPath } : {}),
+    };
+    const run = async (cmd: readonly string[]): Promise<AppCommandOutput> => {
+      // A command a previous Host process left running would race this one on the same archive.
+      for (const container of await docker.listContainers(
+        names.selector('command', definition.id),
+      ))
+        await docker.removeContainer(container.Id);
+      const id = await docker.createContainer(
+        names.commandContainer(definition.id, randomUUID().slice(0, 8)),
+        {
+          Image: image,
+          Cmd: [...cmd],
+          Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
+          Labels: names.labels('command', { [LABEL.app]: definition.id }),
+          HostConfig: {
+            Mounts: [
+              {
+                Type: 'volume',
+                Source: names.volume(definition.id),
+                Target: config.storagePath,
+              },
+              {
+                Type: 'volume',
+                Source: names.backupVolume(definition.id),
+                Target: config.backupsPath,
+              },
+            ],
+            NetworkMode: names.network(),
+            Init: true,
+            CapDrop: ['ALL'],
+            SecurityOpt: ['no-new-privileges'],
+          },
+          NetworkingConfig: { EndpointsConfig: { [names.network()]: {} } },
+        },
+        config.image.platform,
+      );
+      try {
+        await this.copyConfig(docker, id, definition, config);
+        await docker.startContainer(id);
+        const exitCode = await docker.waitContainer(id);
+        const lines = await docker.logs(id, {});
+        const text = (stream: 'stdout' | 'stderr'): string =>
+          lines
+            .filter((line) => line.stream === stream)
+            .map((line) => line.text)
+            .join('\n');
+        return { exitCode, stdout: text('stdout'), stderr: text('stderr') };
+      } finally {
+        await docker.removeContainer(id).catch(() => undefined);
+      }
+    };
+    return {
+      backupsDir: config.backupsPath,
+      run: async (args) => {
+        const output = await run(['node', 'dist/cli/index.js', ...args]);
+        if (
+          output.exitCode !== 0 &&
+          /Cannot find module '[^']*dist\/cli\/index\.js'/.test(output.stderr)
+        )
+          throw new HostManagementError(
+            `The image of App "${definition.id}" has no command-line tool (dist/cli/index.js); rebuild it with an @nocobase/app-cli that has the backup commands`,
+            'BACKUP_COMMAND_UNAVAILABLE',
+          );
+        return output;
+      },
+      removeBackupFile: async (name) => {
+        const output = await run([
+          'node',
+          '-e',
+          'require("node:fs").rmSync(process.argv[1], { force: true })',
+          path.posix.join(config.backupsPath, path.posix.basename(name)),
+        ]);
+        if (output.exitCode !== 0)
+          throw new Error(
+            `Could not remove backup ${name}: ${output.stderr.trim().slice(-500)}`,
+          );
+      },
+    };
   }
 
   // ---- containers -----------------------------------------------------------------------------------------------

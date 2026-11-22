@@ -25,6 +25,20 @@ const INHERITED_ENV = [
   'SYSTEMROOT',
 ] as const;
 
+/**
+ * Runs the command as a grandchild and ends it (SIGTERM, which a backup command answers by aborting and cleaning up)
+ * once its stdin closes, which is when the Host process exits for any reason: a command never outlives its Host to
+ * race the repeat a restarted Host runs.
+ */
+const SUPERVISE = `const { spawn } = require('node:child_process');
+const child = spawn(process.execPath, process.argv.slice(1), { stdio: ['ignore', 'inherit', 'inherit'] });
+const stop = () => child.kill('SIGTERM');
+process.stdin.on('end', stop);
+process.stdin.on('error', stop);
+process.stdin.resume();
+child.on('error', (error) => { console.error(error.message); process.exit(1); });
+child.on('exit', (code, signal) => process.exit(code ?? (signal ? 128 : 1)));`;
+
 /** Bytes of output kept per stream; backup commands print one JSON document. */
 const OUTPUT_LIMIT = 16 * 1024 * 1024;
 
@@ -66,10 +80,10 @@ export class InProcessCommandRunner implements AppCommandRunner {
         : {}),
     });
     return await new Promise<AppCommandOutput>((resolve, reject) => {
-      const child = spawn(process.execPath, [cli, ...args], {
+      const child = spawn(process.execPath, ['-e', SUPERVISE, cli, ...args], {
         cwd: rootDir,
         env,
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       const stdout = collect(child.stdout);
       const stderr = collect(child.stderr);
