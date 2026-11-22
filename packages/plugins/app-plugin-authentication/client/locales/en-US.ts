@@ -283,11 +283,12 @@ const enUS = {
       'Follow the “Adding sign-in methods” reference of the nocobase-app-plugin-authentication Skill:',
     followPlugin:
       'Follow the “Enabling an official Better Auth plugin” reference of the nocobase-app-plugin-authentication Skill:',
-    discoveryUnknown: '{{name}}’s OIDC discovery URL',
+    discoveryUnknown:
+      '(the OIDC discovery URL {{name}} publishes, ending in /.well-known/openid-configuration)',
     sso: {
       intro:
         'Turn on single sign-on with {{name}} in this NocoBase application (Better Auth genericOAuth, OIDC).',
-      add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and the discovery URL {{discovery}}. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
+      add: 'In server/config/auth.ts, add genericOAuth from better-auth/plugins to the plugins, keeping the plugins already there, with providerId {{id}} and discoveryUrl {{discovery}}. Read clientId and clientSecret from the environment variables {{prefix}}_CLIENT_ID and {{prefix}}_CLIENT_SECRET; never write them into code. The browser needs no client plugin: sign-in and linking go through signIn.social and linkSocial.',
     },
     social: {
       intro:

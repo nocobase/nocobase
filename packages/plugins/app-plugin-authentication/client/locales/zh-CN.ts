@@ -263,7 +263,8 @@ const zhCN: AuthenticationResource = {
       '按 nocobase-app-plugin-authentication Skill 的「Adding sign-in methods」做：',
     followPlugin:
       '按 nocobase-app-plugin-authentication Skill 的「Enabling an official Better Auth plugin」做：',
-    discoveryUnknown: '{{name}} 的 OIDC discovery 地址',
+    discoveryUnknown:
+      '（{{name}} 提供的 OIDC discovery 地址，以 /.well-known/openid-configuration 结尾）',
     sso: {
       intro:
         '请在这个 NocoBase 应用里开启 {{name}} 单点登录（Better Auth genericOAuth，OIDC）。',
