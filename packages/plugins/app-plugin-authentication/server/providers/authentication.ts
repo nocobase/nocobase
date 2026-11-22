@@ -47,8 +47,17 @@ import {
   createSessionSecurityFragment,
 } from '../api-docs.js';
 import { createAuthStorage } from '../auth-storage.js';
-import { authenticationToken } from '../tokens.js';
-import { userAdministrationServiceToken } from '../tokens.js';
+import {
+  authenticationToken,
+  signInMethodsToken,
+  userAdministrationServiceToken,
+} from '../tokens.js';
+import { createSignInMethodRegistry } from '../sign-in-methods.js';
+import {
+  authenticationSettingsServiceToken,
+  createAuthenticationSettingsService,
+  describeResetSender,
+} from '../settings-service.js';
 import { createUserAdministrationService } from '../user-administration.js';
 import {
   type AuthConfig,
@@ -108,6 +117,27 @@ export class AuthenticationProvider<
     });
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
+    );
+    this.app.container.singleton(signInMethodsToken, () =>
+      createSignInMethodRegistry(),
+    );
+    const resetSender = describeResetSender(this.emailSnapshot, mailerFactory);
+    this.app.container.singleton(
+      authenticationSettingsServiceToken,
+      (container) =>
+        createAuthenticationSettingsService({
+          config: this.app.config,
+          authentication: () => container.resolve(authenticationToken),
+          methods: container.resolve(signInMethodsToken),
+          resetSender,
+          authBasePath: resolvePublicPath(
+            '/api/auth',
+            this.app.config.get<AppIdentityConfig>('app')?.publicBasePath ?? '',
+          ),
+          secretsReady: () =>
+            container.has(secretsServiceToken) &&
+            container.resolve(secretsServiceToken).ready,
+        }),
     );
     this.app.container.singleton(
       userAdministrationServiceToken,

@@ -3,7 +3,10 @@
 export {
   AuthorizationSettings,
   AuthorizationTabRegistry,
+  type AuthorizationCheckSubject,
+  type AuthorizationCheckSubjectPickerProps,
   type AuthorizationContentTab,
+  type AuthorizationTabTarget,
   type AuthorizationPageTab,
   type AuthorizationRoleTabProps,
   type AuthorizationRuleTabProps,
@@ -40,3 +43,16 @@ export const loadSharingRules = (): Promise<
 export const loadRestrictionRules = (): Promise<
   typeof import('./restriction-rules.js')
 > => import('./restriction-rules.js');
+
+// What a credential such as an API key may do, limited to what the person giving it holds: for the API keys plugin.
+export type {
+  KeyPermissionCeiling,
+  KeyPermissionCeilingAction,
+  KeyPermissionEditorProps,
+  KeyScopeRecordsProps,
+} from './key-permission-editor.js';
+
+/** The permission table of a credential such as an API key, loaded when a page shows it. */
+export const loadKeyPermissionEditor = (): Promise<
+  typeof import('./key-permission-editor.js')
+> => import('./key-permission-editor.js');

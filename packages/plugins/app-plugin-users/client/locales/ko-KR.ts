@@ -3,6 +3,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts:
+      '계정 관리는 사람만 할 수 있으며 API 키에는 부여할 수 없습니다.',
+  },
   page: {
     loading: '로드 중',
   },

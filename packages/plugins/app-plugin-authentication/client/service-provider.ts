@@ -1,17 +1,31 @@
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { ClientApplication } from '@nocobase/app-client';
 import { resolveAppUrl } from '@nocobase/app-client';
-import type { ClientServiceProviderConstructor } from '@nocobase/app-client/plugins';
+import type {
+  ClientServiceProviderConstructor,
+  ClientServiceProviderContext,
+} from '@nocobase/app-client/plugins';
 
 import {
   createAuthClient,
   type AuthConfig,
   type AuthClient,
 } from './auth-client.js';
-import { authenticationClientToken } from './tokens.js';
+import {
+  authenticationClientSettingsToken,
+  authenticationClientToken,
+} from './tokens.js';
 
 export class AuthenticationServiceProvider extends ServiceProvider<ClientApplication> {
   public readonly name: string = '@nocobase/app-plugin-authentication/client';
+
+  public constructor(
+    app: ClientApplication,
+    private readonly context:
+      ClientServiceProviderContext | undefined = undefined,
+  ) {
+    super(app);
+  }
 
   public override boot(): Promise<void> {
     const apiBaseURL =
@@ -23,6 +37,12 @@ export class AuthenticationServiceProvider extends ServiceProvider<ClientApplica
       ).href,
       ...this.app.config.get<AuthConfig>('auth'),
     });
+    const options = (this.context?.options ?? {}) as {
+      readonly signInButtons?: readonly string[];
+    };
+    this.app.container.singleton(authenticationClientSettingsToken, () => ({
+      signInButtons: options.signInButtons ?? [],
+    }));
     this.app.container.singleton(
       authenticationClientToken,
       () => authClient as AuthClient,

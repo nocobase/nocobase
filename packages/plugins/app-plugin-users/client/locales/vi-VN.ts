@@ -3,6 +3,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts:
+      'Chỉ con người mới quản lý tài khoản: không khóa API nào được làm việc này.',
+  },
   page: {
     loading: 'Đang tải',
   },

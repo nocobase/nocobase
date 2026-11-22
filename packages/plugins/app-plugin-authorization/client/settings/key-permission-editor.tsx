@@ -1,0 +1,693 @@
+/**
+ * The permission table of a credential such as an API key: the role editor's Business data and System settings tabs,
+ * limited to what the person giving it holds. It lists only resources and actions they hold, says which actions of a
+ * listed object they do not hold, greys out actions only a person may take with the reason, and offers only record
+ * scopes no wider than theirs. Page access belongs to roles and is not shown. Read-only, it shows a key's permissions,
+ * the ones the key lost with its holder struck through.
+ */
+import { useClientApplication } from '@nocobase/app-client';
+import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
+import {
+  createElement,
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+
+import { higherRisk } from '#components/permission-editor-model';
+import {
+  PermissionEditor,
+  type PermissionEditorExtraTab,
+  type PermissionAction,
+  type PermissionObject,
+  type PermissionScopeSlot,
+  type PermissionSettingsPage,
+  type PermissionValue,
+} from '#components/permission-editor';
+import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
+import type {
+  AuthorizationOptionsResponse,
+  LocalizedText,
+  PermissionGrant,
+} from '../authorization-client.js';
+import type {
+  AuthorizationContentTab,
+  AuthorizationRoleTabProps,
+} from './extensions.js';
+import { useSettingsData } from './hooks.js';
+import { grantsOfTypes, tabsFor, withTabGrants } from './tab-grants.js';
+import { usePermissionEditorLabels } from './permission-editor-labels.js';
+import { permissionWorkspace } from './permission-workspace.js';
+import {
+  draftFromGrants,
+  filterKey,
+  grantsFromDraft,
+  NO_SCOPE,
+  type PermissionBinding,
+  type PermissionWorkspace,
+} from './permissions-model.js';
+import { SettingsError, SettingsLoading } from './shared.js';
+import { useAuthorizationSettings } from './use-authorization-settings.js';
+
+/** One action the person giving a key holds, as `GET /api/apiKeys/grantable` lists it. */
+export interface KeyPermissionCeilingAction {
+  readonly action: string;
+  /** Why no key may hold it; set, the action shows greyed out as a person's only. */
+  readonly humanOnly: LocalizedText | null;
+  /** How risky the server says the action is; a high-risk one is turned on only after a confirmation. */
+  readonly risk?: 'high' | 'sensitive' | null;
+  /** The record access keys each data scope is held at; absent when every scope is open. */
+  readonly scopes?: Readonly<Record<string, readonly string[]>>;
+}
+
+/** What `KeyPermissionEditorProps.scopeRecords` gets for one data scope set to "Selected records". */
+export interface KeyScopeRecordsProps {
+  readonly resource: { readonly type: string; readonly id: string };
+  readonly action: string;
+  readonly scope: string;
+  readonly value: readonly string[];
+  readonly onChange: (ids: readonly string[]) => void;
+  readonly readOnly: boolean;
+}
+
+/** What the person giving a key holds: every action when `unrestricted`, otherwise `grants`. */
+export interface KeyPermissionCeiling {
+  readonly unrestricted: boolean;
+  readonly grants: readonly {
+    readonly resource: { readonly type: string; readonly id: string };
+    readonly actions: readonly KeyPermissionCeilingAction[];
+  }[];
+}
+
+export interface KeyPermissionEditorProps {
+  /** The key's grants, as a Permission Set stores them. */
+  readonly value: readonly PermissionGrant[];
+  readonly onChange?: (grants: readonly PermissionGrant[]) => void;
+  /** What the person giving the key holds; required unless `readOnly`. */
+  readonly ceiling?: KeyPermissionCeiling;
+  readonly readOnly?: boolean;
+  /** The key's grants its holder no longer holds: shown struck through. */
+  readonly lapsed?: readonly PermissionGrant[];
+  /**
+   * Where the catalogue comes from: the caller's own, limited to what they hold, unless the host serves one that also
+   * names what it shows read-only, such as the actions a key kept after its holder lost them.
+   */
+  readonly catalogPath?: string;
+  /** Shown above the tabs, such as templates and quick settings. */
+  readonly header?: ReactNode;
+  /** A control under a business object's actions, such as the records a key is limited to, by its resource. */
+  readonly objectExtra?: (resource: {
+    readonly type: string;
+    readonly id: string;
+  }) => ReactNode;
+  /**
+   * Told once the table is built, and again when it changes, which of the actions it offers are high risk: a host's
+   * quick settings leave those out, so turning one on always goes through the table's warning.
+   */
+  readonly onRisky?: (
+    actions: readonly {
+      readonly resource: { readonly type: string; readonly id: string };
+      readonly action: string;
+    }[],
+  ) => void;
+  /**
+   * For a system key, which has no person behind it: a data scope is every record (when the giver holds every record),
+   * records chosen from those the giver can see (`scopeRecords`), or none; never one counted from "me".
+   */
+  readonly systemKey?: boolean;
+  /**
+   * The control choosing the records of a data scope set to "Selected records", for a system key: the host lists the
+   * records the giver can see. Without it, chosen records show as a count.
+   */
+  readonly scopeRecords?: (props: KeyScopeRecordsProps) => ReactNode;
+  readonly className?: string;
+}
+
+const resourceKey = (resource: { type: string; id: string }): string =>
+  `${resource.type}:${resource.id}`;
+
+const ALL_RECORDS = 'allRecords';
+/** The choice of a system key's data scope limited to chosen records, stored as `{ type: 'records', ids }`. */
+export const SELECTED_RECORDS = '__records__';
+
+/** The ids a stored data scope value chooses; undefined for any other value. */
+function chosenIds(value: unknown): readonly string[] | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const type: unknown = Reflect.get(value, 'type');
+  const ids: unknown = Reflect.get(value, 'ids');
+  return type === 'records' && Array.isArray(ids)
+    ? ids.filter((id): id is string => typeof id === 'string')
+    : undefined;
+}
+
+/** The stored data scope value of an action's scope among grants. */
+function storedScope(
+  grants: readonly PermissionGrant[],
+  resource: { readonly type: string; readonly id: string },
+  action: string,
+  scope: string,
+): unknown {
+  const entry = grants
+    .find(
+      (grant) =>
+        grant.resource.type === resource.type &&
+        grant.resource.id === resource.id,
+    )
+    ?.actions.find((item) => item.action === action);
+  const scopes: unknown = entry?.policy?.scopes;
+  return scopes && typeof scopes === 'object'
+    ? Reflect.get(scopes, scope)
+    : undefined;
+}
+
+function grantKeys(
+  grants: readonly PermissionGrant[] | undefined,
+): ReadonlySet<string> {
+  return new Set(
+    (grants ?? []).flatMap((grant) =>
+      grant.actions.map(
+        (entry) => `${resourceKey(grant.resource)}/${entry.action}`,
+      ),
+    ),
+  );
+}
+
+/** A scope slot with the options wider than what is held disabled, and a default that is not one of them. */
+function narrowSlot(
+  slot: PermissionScopeSlot,
+  held: readonly string[] | undefined,
+  systemKey = false,
+  selectedLabel = '',
+): PermissionScopeSlot {
+  if (!slot.options) return slot;
+  const open = !held || held.includes(ALL_RECORDS);
+  if (open && !systemKey) return slot;
+  // A system key has no person to count records from: every record, when the giver holds every record, chosen records
+  // the giver can see, or none.
+  const allowed = (value: string): boolean =>
+    value === NO_SCOPE ||
+    (systemKey
+      ? (value === ALL_RECORDS && open) || value === SELECTED_RECORDS
+      : (held ?? []).includes(value));
+  const options = [
+    ...slot.options,
+    ...(systemKey && !slot.followsView
+      ? [{ value: SELECTED_RECORDS, label: selectedLabel }]
+      : []),
+  ].map((option) =>
+    allowed(option.value) ? option : { ...option, disabled: true },
+  );
+  const fallback = options.find((option) => !option.disabled)?.value;
+  return {
+    ...slot,
+    options,
+    ...(slot.defaultValue !== undefined &&
+    !allowed(slot.defaultValue) &&
+    fallback !== undefined
+      ? { defaultValue: fallback }
+      : {}),
+  };
+}
+
+/** The workspace's objects and settings pages limited to what may be shown, with the actions marked. */
+function keyWorkspace(
+  workspace: PermissionWorkspace,
+  options: {
+    readonly ceiling: KeyPermissionCeiling | undefined;
+    readonly systemKey: boolean;
+    readonly selectedLabel: string;
+    readonly shown: ReadonlySet<string> | undefined;
+    readonly lapsed: ReadonlySet<string>;
+    readonly text: (value: LocalizedText) => string;
+    readonly missing: (actions: readonly string[]) => string;
+  },
+): {
+  readonly objects: readonly PermissionObject[];
+  readonly settings: readonly PermissionSettingsPage[];
+} {
+  const held = new Map<string, KeyPermissionCeilingAction>();
+  for (const grant of options.ceiling?.grants ?? [])
+    for (const action of grant.actions)
+      held.set(`${resourceKey(grant.resource)}/${action.action}`, action);
+  const bindingOf = (action: PermissionAction): PermissionBinding | undefined =>
+    workspace.bindings.get(action.id);
+  const limit = (object: PermissionObject): PermissionObject | undefined => {
+    const missing: string[] = [];
+    const actions = object.actions.flatMap((action): PermissionAction[] => {
+      const binding = bindingOf(action);
+      if (!binding) return [];
+      const key = `${resourceKey(binding.resource)}/${binding.action}`;
+      // Read-only, a key shows the actions it has.
+      if (options.shown) {
+        if (!options.shown.has(key)) return [];
+        return [options.lapsed.has(key) ? { ...action, lapsed: true } : action];
+      }
+      const entry = held.get(key);
+      if (!entry && !options.ceiling?.unrestricted) {
+        missing.push(action.label);
+        return [];
+      }
+      if (entry?.humanOnly)
+        return [
+          {
+            ...action,
+            managed: true,
+            humanOnly: options.text(entry.humanOnly),
+          },
+        ];
+      // Whichever says higher, the table or the server, so a high-risk action always asks first.
+      const risk = higherRisk(action.risk, entry?.risk);
+      return [
+        {
+          ...action,
+          ...(risk ? { risk } : {}),
+          ...(action.scopes
+            ? {
+                scopes: action.scopes.map((slot) =>
+                  narrowSlot(
+                    slot,
+                    entry?.scopes?.[slot.id],
+                    options.systemKey,
+                    options.selectedLabel,
+                  ),
+                ),
+              }
+            : {}),
+        },
+      ];
+    });
+    if (!actions.length) return undefined;
+    return {
+      ...object,
+      actions,
+      ...(missing.length ? { footnote: options.missing(missing) } : {}),
+    };
+  };
+  const objects = workspace.objects.flatMap((object) => {
+    const kept = limit(object);
+    return kept ? [kept] : [];
+  });
+  const settings = workspace.settings.flatMap((page) => {
+    const kept = page.objects.flatMap((object) => {
+      const limited = limit(object);
+      return limited ? [limited] : [];
+    });
+    return kept.length ? [{ ...page, objects: kept }] : [];
+  });
+  return { objects, settings };
+}
+
+/**
+ * Renders in this plugin's translations wherever it is placed, such as on a page of the API keys plugin; what a host
+ * passes in (`header`, `objectExtra`) names its own namespace.
+ */
+export function KeyPermissionEditor(
+  props: KeyPermissionEditorProps,
+): ReactElement {
+  return (
+    <NamespaceScope ns={AUTHORIZATION_NAMESPACE}>
+      <KeyPermissionTable {...props} />
+    </NamespaceScope>
+  );
+}
+
+function KeyPermissionTable({
+  value,
+  onChange,
+  ceiling,
+  readOnly = false,
+  lapsed,
+  header,
+  objectExtra,
+  onRisky,
+  catalogPath = 'authorization/permissionSets/grantableOptions',
+  systemKey = false,
+  scopeRecords,
+  className,
+}: KeyPermissionEditorProps): ReactElement {
+  const { t, i18n } = useTranslation();
+  const app = useClientApplication();
+  const settings = useAuthorizationSettings();
+  const labels = usePermissionEditorLabels();
+  const options = useSettingsData<{ data: AuthorizationOptionsResponse }>(
+    catalogPath,
+  );
+  const text = useMemo(
+    () =>
+      (item: LocalizedText): string =>
+        typeof item === 'string'
+          ? item
+          : t(item.key, {
+              ns: item.ns,
+              defaultValue: item.defaultValue ?? item.key,
+            }),
+    [t],
+  );
+  const workspace = useMemo(
+    () =>
+      options.data
+        ? permissionWorkspace(
+            options.data.data,
+            settings.pageCatalog(app.runtime.routes),
+            settings.pageTitles,
+            { text, t: (key, values) => t(key, values) },
+            settings.workspace,
+          )
+        : undefined,
+    [options.data, app, settings, t, text],
+  );
+  const shownKeys = useMemo(
+    () => (readOnly ? grantKeys([...value, ...(lapsed ?? [])]) : undefined),
+    [readOnly, value, lapsed],
+  );
+  const lapsedKeys = useMemo(() => grantKeys(lapsed), [lapsed]);
+  const limited = useMemo(
+    () =>
+      workspace
+        ? keyWorkspace(workspace, {
+            ceiling,
+            systemKey,
+            selectedLabel: t('settings.keyPermissions.selectedRecords'),
+            shown: shownKeys,
+            lapsed: lapsedKeys,
+            text,
+            missing: (actions) =>
+              t('settings.keyPermissions.missing', {
+                actions: new Intl.ListFormat(i18n.language, {
+                  type: 'conjunction',
+                }).format(actions),
+              }),
+          })
+        : undefined,
+    [
+      workspace,
+      ceiling,
+      systemKey,
+      shownKeys,
+      lapsedKeys,
+      text,
+      t,
+      i18n.language,
+    ],
+  );
+  const shownGrants = useMemo(
+    () => (readOnly ? [...value, ...(lapsed ?? [])] : value),
+    [readOnly, value, lapsed],
+  );
+  const draft = useMemo(() => {
+    if (!workspace) return undefined;
+    const read = draftFromGrants(shownGrants, workspace);
+    // A data scope stored as chosen records shows as "Selected records", its ids kept beside the draft.
+    const chosen: Record<string, readonly string[]> = {};
+    const grants = { ...read.draft.grants };
+    for (const [id, binding] of workspace.bindings) {
+      const entry = grants[id];
+      if (!entry) continue;
+      for (const scope of binding.scopes) {
+        const ids = chosenIds(
+          storedScope(shownGrants, binding.resource, binding.action, scope.key),
+        );
+        if (!ids) continue;
+        chosen[filterKey(id, scope.key)] = ids;
+        grants[id] = {
+          ...grants[id],
+          scopes: { ...grants[id]?.scopes, [scope.key]: SELECTED_RECORDS },
+        };
+      }
+    }
+    return { ...read, draft: { ...read.draft, grants }, chosen };
+  }, [workspace, shownGrants]);
+  /** Grants for a draft, with every scope set to "Selected records" stored as the records chosen. */
+  const grantsOf = useCallback(
+    (
+      next: PermissionValue,
+      chosen: Readonly<Record<string, readonly string[]>>,
+    ): readonly PermissionGrant[] => {
+      if (!workspace || !draft) return value;
+      const grants = grantsFromDraft(next, draft.filters, value, workspace);
+      return grants.map((grant) => ({
+        ...grant,
+        actions: grant.actions.map((entry) => {
+          const id = [...workspace.bindings].find(
+            ([, binding]) =>
+              binding.resource.type === grant.resource.type &&
+              binding.resource.id === grant.resource.id &&
+              binding.action === entry.action,
+          )?.[0];
+          const picked = id ? next.grants[id]?.scopes : undefined;
+          const scopes: unknown = entry.policy?.scopes;
+          if (!id || !picked || !scopes || typeof scopes !== 'object')
+            return entry;
+          const replaced = Object.fromEntries(
+            Object.entries(scopes as Record<string, unknown>).map(
+              ([key, stored]) => [
+                key,
+                picked[key] === SELECTED_RECORDS
+                  ? {
+                      type: 'records',
+                      ids: [...(chosen[filterKey(id, key)] ?? [])],
+                    }
+                  : stored,
+              ],
+            ),
+          );
+          return {
+            ...entry,
+            policy: { ...entry.policy!, scopes: replaced },
+          };
+        }),
+      }));
+    },
+    [workspace, draft, value],
+  );
+  const withRecords = useCallback(
+    (objects: readonly PermissionObject[]): readonly PermissionObject[] =>
+      !systemKey || !workspace || !draft
+        ? objects
+        : objects.map((object) => ({
+            ...object,
+            actions: object.actions.map((action) => {
+              const binding = workspace.bindings.get(action.id);
+              if (!binding || !action.scopes) return action;
+              return {
+                ...action,
+                scopes: action.scopes.map((slot) => {
+                  if (
+                    draft.draft.grants[action.id]?.scopes?.[slot.id] !==
+                    SELECTED_RECORDS
+                  )
+                    return slot;
+                  const key = filterKey(action.id, slot.id);
+                  const ids = draft.chosen[key] ?? [];
+                  return {
+                    ...slot,
+                    configuration: scopeRecords ? (
+                      scopeRecords({
+                        resource: binding.resource,
+                        action: binding.action,
+                        scope: slot.id,
+                        value: ids,
+                        readOnly: readOnly || !onChange,
+                        onChange: (next) =>
+                          onChange?.(
+                            grantsOf(draft.draft, {
+                              ...draft.chosen,
+                              [key]: next,
+                            }),
+                          ),
+                      })
+                    ) : (
+                      <span className='text-xs text-muted-foreground'>
+                        {t('settings.keyPermissions.recordsChosen', {
+                          count: ids.length,
+                        })}
+                      </span>
+                    ),
+                  };
+                }),
+              };
+            }),
+          })),
+    [
+      systemKey,
+      workspace,
+      draft,
+      scopeRecords,
+      readOnly,
+      onChange,
+      grantsOf,
+      t,
+    ],
+  );
+  const objects = useMemo(
+    () =>
+      limited && objectExtra
+        ? withRecords(limited.objects).map((object) => {
+            const binding = object.actions
+              .map((action) => workspace?.bindings.get(action.id))
+              .find(Boolean);
+            const extra = binding ? objectExtra(binding.resource) : undefined;
+            return extra
+              ? {
+                  ...object,
+                  footnote: (
+                    <>
+                      {extra}
+                      {object.footnote ? (
+                        <span className='block'>{object.footnote}</span>
+                      ) : null}
+                    </>
+                  ),
+                }
+              : object;
+          })
+        : limited
+          ? withRecords(limited.objects)
+          : undefined,
+    [limited, objectExtra, workspace, withRecords],
+  );
+
+  const risky = useMemo(() => {
+    if (!limited || !workspace) return [];
+    return [
+      ...limited.objects,
+      ...limited.settings.flatMap((page) => page.objects),
+    ]
+      .flatMap((object) => object.actions)
+      .filter((action) => action.risk === 'high' && !action.humanOnly)
+      .flatMap((action) => {
+        const binding = workspace.bindings.get(action.id);
+        return binding
+          ? [{ resource: binding.resource, action: binding.action }]
+          : [];
+      });
+  }, [limited, workspace]);
+  const riskyKey = JSON.stringify(risky);
+  const reportRef = useRef(onRisky);
+  useEffect(() => {
+    reportRef.current = onRisky;
+  });
+  // Told again only when what is risky changes, not on every new callback.
+  useEffect(() => {
+    if (workspace) reportRef.current?.(JSON.parse(riskyKey) as typeof risky);
+  }, [riskyKey, workspace]);
+
+  const keyTabs = useKeyTabs();
+  // The giver's holdings as grants, for a tab to list no more than they hold.
+  const ceilingGrants = useMemo<readonly PermissionGrant[]>(
+    () =>
+      (ceiling?.grants ?? []).flatMap((grant) => {
+        const actions = grant.actions
+          .filter((entry) => !entry.humanOnly)
+          .map((entry) => ({ action: entry.action }));
+        return actions.length ? [{ resource: grant.resource, actions }] : [];
+      }),
+    [ceiling],
+  );
+  const extraTabs = useMemo<readonly PermissionEditorExtraTab[]>(
+    () =>
+      keyTabs.map((tab) => ({
+        value: `extension:${tab.key}`,
+        label: text(tab.title),
+        content: (
+          <Suspense fallback={<SettingsLoading />}>
+            <KeyTabContent
+              tab={tab}
+              props={{
+                target: 'apiKey',
+                editable: !readOnly && Boolean(onChange),
+                value: grantsOfTypes(
+                  readOnly ? [...value, ...(lapsed ?? [])] : value,
+                  tab.resourceTypes,
+                ),
+                onChange: (next) =>
+                  onChange?.(withTabGrants(value, tab.resourceTypes, next)),
+                ceiling: ceiling?.unrestricted
+                  ? null
+                  : grantsOfTypes(ceilingGrants, tab.resourceTypes),
+              }}
+            />
+          </Suspense>
+        ),
+      })),
+    [keyTabs, text, readOnly, onChange, value, lapsed, ceiling, ceilingGrants],
+  );
+
+  if (options.error) return <SettingsError error={options.error} />;
+  if (!workspace || !limited || !draft || !objects) return <SettingsLoading />;
+
+  const change = (next: PermissionValue): void => {
+    if (readOnly || !onChange) return;
+    onChange(grantsOf(next, draft.chosen));
+  };
+
+  return (
+    <PermissionEditor
+      menus={[]}
+      objects={objects}
+      settings={limited.settings}
+      value={draft.draft}
+      onChange={change}
+      readOnly={readOnly}
+      builtInTabs={['objects', 'settings']}
+      tabs={extraTabs}
+      // An application without business objects opens on what it has.
+      defaultTab={
+        !objects.length && limited.settings.length ? 'settings' : 'objects'
+      }
+      header={header}
+      labels={{
+        ...labels,
+        settingsVisible: (pages) =>
+          t('settings.keyPermissions.settingsVisible', {
+            pages: new Intl.ListFormat(i18n.language, {
+              type: 'conjunction',
+            }).format(pages),
+          }),
+        settingsNoneVisible: t('settings.keyPermissions.settingsNoneVisible'),
+      }}
+      {...(className ? { className } : {})}
+    />
+  );
+}
+
+type KeyTab = AuthorizationContentTab<AuthorizationRoleTabProps>;
+
+const keyTabModules = new WeakMap<
+  KeyTab['component'],
+  Promise<{ readonly default: ComponentType<AuthorizationRoleTabProps> }>
+>();
+
+function KeyTabContent({
+  tab,
+  props,
+}: {
+  readonly tab: KeyTab;
+  readonly props: AuthorizationRoleTabProps;
+}): ReactElement {
+  let module = keyTabModules.get(tab.component);
+  if (!module) {
+    module = tab.component();
+    keyTabModules.set(tab.component, module);
+  }
+  return createElement(use(module).default, props);
+}
+
+/** The registered permission tabs that declare they apply to API keys too. */
+function useKeyTabs(): readonly KeyTab[] {
+  const settings = useAuthorizationSettings();
+  const tabs = useSyncExternalStore(
+    settings.roleTabs.subscribe,
+    settings.roleTabs.list,
+  );
+  return useMemo(() => tabsFor(tabs, 'apiKey'), [tabs]);
+}
+
+export default KeyPermissionEditor;

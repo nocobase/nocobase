@@ -3,6 +3,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  humanOnly: {
+    manageAccounts:
+      'Управлять учётными записями может только человек, а не API-ключ.',
+  },
   page: {
     loading: 'Загрузка',
   },

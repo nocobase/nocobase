@@ -1,6 +1,10 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
+  humanOnly: {
+    manageAccounts:
+      "Managing accounts is a person's only: no API key may do it.",
+  },
   page: {
     loading: 'Loading',
   },

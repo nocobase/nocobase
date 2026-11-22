@@ -38,6 +38,12 @@
     },
     "./package.json": "./package.json"
   },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./client/components/*.js"
+    }
+  },
   "files": [
     "dist",
     "README.md",
@@ -64,6 +70,9 @@
         "import": "./dist/shared/scopes.js"
       },
       "./package.json": "./package.json"
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js"
     }
   },
   "scripts": {
@@ -88,20 +97,41 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/app-plugin-notification": "workspace:^",
+    "@nocobase/app-plugin-scheduler": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
-    "@nocobase/service-provider": "workspace:^"
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/service-provider": "workspace:^",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "^19.0.0",
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
+    "jsdom": "catalog:",
     "prettier": "catalog:",
+    "react-dom": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

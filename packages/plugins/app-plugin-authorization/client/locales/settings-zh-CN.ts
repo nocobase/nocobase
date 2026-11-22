@@ -126,6 +126,32 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     duplicate: '此标识已被使用，请更换标识。',
   },
   permissionCheck: {
+    key: {
+      title: 'API 密钥',
+      step: '密钥',
+      disabled: '这把密钥已停用：用它发出的请求一律被拒绝。',
+      expired: '这把密钥已过期：用它发出的请求一律被拒绝。',
+      unbounded: '这把密钥能做其持有者的角色允许的一切。',
+      bounded:
+        '密钥允许的操作：{{count}} 项，且不超过持有者的角色和数据规则允许的范围。',
+      personless:
+        '它不代表任何成员：默认访问和共享规则中按「本人」计算的记录不会加给它。限制规则照常生效。',
+      objects: '{{business}}：限定为选定记录（{{count}} 条）。',
+      stepUnbounded: '密钥不做限制，由持有者的角色决定。',
+      stepMissing: '密钥不包含这项操作，因此被拒绝。',
+      stepCovers: '密钥包含这项操作。',
+      configured: '{{scope}} 的配置范围：{{records}}。',
+      reached: '当前实际可访问：{{records}}。',
+      recordsFailed: '无法读取这些记录当前是否可访问，请重试。',
+      leftOut: '被下方角色和数据规则排除：{{records}}。',
+      intersection:
+        '最终能访问的记录 = 密钥保留的记录 ∩ 角色和下方数据规则允许的记录。',
+      allRecords: '全部记录',
+      noRecords: '无记录',
+      chosen: '选定记录（{{count}} 条）：{{ids}}',
+    },
+    subjectKind: '检查对象',
+    member: '成员',
     title: '权限检查',
     description:
       '排查“他为什么看不到”或“他为什么能改”。这里只查看，不会修改任何配置。',
@@ -344,6 +370,13 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     restriction: '− 限制规则',
     restrictionDescription: '去掉任何角色都不能触及的记录，无论之前是否允许。',
   },
+  keyPermissions: {
+    missing: '你没有：{{actions}}',
+    settingsVisible: '这把密钥能进入的系统设置页面：{{pages}}。',
+    settingsNoneVisible: '这把密钥不能进入任何系统设置页面。',
+    selectedRecords: '选定记录',
+    recordsChosen: '已选记录：{{count}} 条',
+  },
   permissionEditor: {
     menusTab: '页面访问',
     objectsTab: '操作权限',
@@ -440,6 +473,8 @@ const settings: LocaleResource<typeof settingsEnUS> = {
     pageClosed: '这个角色不能进入这个页面',
     tabChanges_one: '{{count}} 处未保存的修改',
     tabChanges_other: '{{count}} 处未保存的修改',
+    humanOnly: '仅限人',
+    lapsed: '已失效',
     quoted: '「{{text}}」',
     otherOperations: '其他操作',
   },

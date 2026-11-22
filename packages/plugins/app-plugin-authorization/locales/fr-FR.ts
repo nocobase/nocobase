@@ -31,6 +31,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     settings: {
       'permission-sets': 'Ensembles de permissions',
+      'authentication-settings': 'Connexion et authentification',
     },
     subjectTypes: {
       authenticated: 'Tous les utilisateurs connectés',

@@ -258,10 +258,9 @@ it.each(['en-US', 'zh-CN'])(
         return { data: rules };
       }),
     });
-    await user.type(
-      await screen.findByRole('textbox', { name: copy.settings.key }),
-      'new-baseline',
-    );
+    const key = await screen.findByRole('textbox', { name: copy.settings.key });
+    await waitFor(() => expect(key).toBeEnabled());
+    await user.type(key, 'new-baseline');
     await user.click(
       screen.getByRole('combobox', {
         name: `${copy.settings.defaultAccess.resource} *`,
@@ -336,10 +335,9 @@ it('retains the create draft when the server rejects a duplicate and shows a con
             : { data: [] },
     ),
   });
-  await user.type(
-    await screen.findByRole('textbox', { name: 'Key' }),
-    'new-rule',
-  );
+  const key = await screen.findByRole('textbox', { name: 'Key' });
+  await waitFor(() => expect(key).toBeEnabled());
+  await user.type(key, 'new-rule');
   await user.click(screen.getByRole('combobox', { name: 'Business object *' }));
   await user.click(await screen.findByRole('option', { name: 'Projects' }));
   await user.click(screen.getByRole('button', { name: 'Save' }));

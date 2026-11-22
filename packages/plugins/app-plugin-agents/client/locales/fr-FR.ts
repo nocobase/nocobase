@@ -1529,6 +1529,10 @@ const frFR: LocaleResource<typeof enUS> = {
       read: 'Afficher',
       manage: 'Gérer',
     },
+    humanOnly: {
+      servicesManage:
+        'Gérer les services de modèles écrit des clés de fournisseurs ; seule une personne peut le faire.',
+    },
     keyScopes: {
       agents: {
         title: 'Agents',

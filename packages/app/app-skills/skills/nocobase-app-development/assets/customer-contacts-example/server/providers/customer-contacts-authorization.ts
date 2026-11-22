@@ -123,6 +123,8 @@ export default class CustomerContactsAuthorizationProvider extends ServiceProvid
       defineRecordAccess('example.crm.own', (a) =>
         a
           .title('Customers I own')
+          // Counted from the person signed in.
+          .personal()
           .collections(CUSTOMERS, CONTACTS, REPS)
           .resolver(async ({ collection, principal }) => {
             const database = this.app.container.resolve(databaseManagerToken);

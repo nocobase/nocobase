@@ -54,6 +54,11 @@ export const OWN_KEY_POLICY_SLOT: unique symbol = Symbol.for(
 
 export interface OwnKeyPolicySlot {
   current: ((userId: string) => Promise<boolean>) | null;
+  /**
+   * Whether a key that is the person in full may be created; Better Auth's own `/api-key/create` makes only such keys
+   * from a sign-in. Unset allows it.
+   */
+  sameAsMe?: ((userId: string) => Promise<boolean>) | null;
 }
 
 /** The slot of a plugin `apiKey()` made, or undefined for any other plugin. */
@@ -181,12 +186,21 @@ function createApiKeysPlugin(
           matcher: (ctx: { path?: string }) => ctx.path === '/api-key/create',
           handler: createAuthMiddleware(async (ctx) => {
             const check = policy.current;
-            if (!check || presentedKey(ctx.headers) !== null) return;
+            const sameAsMe = policy.sameAsMe;
+            if ((!check && !sameAsMe) || presentedKey(ctx.headers) !== null)
+              return;
             const session = await getSessionFromCtx(ctx);
-            if (session && !(await check(session.user.id)))
+            if (!session) return;
+            if (check && !(await check(session.user.id)))
               throw APIError.from('FORBIDDEN', {
                 code: 'API_KEY_CREATION_FORBIDDEN',
                 message: 'You may not create API keys of your own.',
+              });
+            if (sameAsMe && !(await sameAsMe(session.user.id)))
+              throw APIError.from('FORBIDDEN', {
+                code: 'SAME_AS_ME_DISABLED',
+                message:
+                  'Keys with the same permissions as their owner are turned off: choose what the key may do.',
               });
           }),
         },

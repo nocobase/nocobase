@@ -1,6 +1,9 @@
 import type { UsersResource } from './en-US.js';
 
 const zhCN: UsersResource = {
+  humanOnly: {
+    manageAccounts: '账号只能由人来管理，不能交给 API 密钥。',
+  },
   page: {
     loading: '加载中',
   },
