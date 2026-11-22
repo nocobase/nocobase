@@ -1054,6 +1054,19 @@ const viVN: LocaleResource<typeof enUS> = {
       thinking: 'Đang suy nghĩ…',
       reading: 'Nhìn vào {{subject}}',
       working: 'Đang làm việc trên {{subject}}',
+      ...{
+        count_one: '{{count}} bước',
+        count_other: '{{count}} bước',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Cần tôi {{count}}',
+        waiting_other: 'Cần tôi {{count}}',
+        active_one: 'Đang tiến hành {{count}}',
+        active_other: 'Đang tiến hành {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Chỉ dành cho vận động viên chạy bộ cá nhân',

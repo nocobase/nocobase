@@ -1029,6 +1029,19 @@ const koKR: LocaleResource<typeof enUS> = {
       thinking: '생각하는 중…',
       reading: '{{subject}} 살펴보는 중',
       working: '{{subject}} 작업 중',
+      ...{
+        count_one: '{{count}}단계',
+        count_other: '{{count}}단계',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '확인 필요 {{count}}',
+        waiting_other: '확인 필요 {{count}}',
+        active_one: '진행 중 {{count}}',
+        active_other: '진행 중 {{count}}',
+      },
     },
     agents: {
       personalOnly: '개인 실행 환경만',

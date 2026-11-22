@@ -1055,6 +1055,19 @@ const idID: LocaleResource<typeof enUS> = {
       thinking: 'Berpikir…',
       reading: 'Melihat {{subject}}',
       working: 'Sedang mengerjakan {{subject}}',
+      ...{
+        count_one: '{{count}} langkah',
+        count_other: '{{count}} langkah',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Perlu saya {{count}}',
+        waiting_other: 'Perlu saya {{count}}',
+        active_one: 'Sedang berjalan {{count}}',
+        active_other: 'Sedang berjalan {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Hanya runner pribadi',

@@ -999,6 +999,19 @@ const zhTW: LocaleResource<typeof enUS> = {
       thinking: '思考…',
       reading: '看著{{subject}}',
       working: '正在 {{subject}} 上工作',
+      ...{
+        count_one: '{{count}} 個步驟',
+        count_other: '{{count}} 個步驟',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: '需要我 {{count}}',
+        waiting_other: '需要我 {{count}}',
+        active_one: '進行中 {{count}}',
+        active_other: '進行中 {{count}}',
+      },
     },
     agents: {
       personalOnly: '僅限個人執行環境',

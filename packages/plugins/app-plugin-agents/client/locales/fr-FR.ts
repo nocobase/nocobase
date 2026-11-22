@@ -1091,6 +1091,22 @@ const frFR: LocaleResource<typeof enUS> = {
       thinking: 'Penser…',
       reading: 'En regardant {{subject}}',
       working: 'Travail sur {{subject}}',
+      ...{
+        count_one: '{{count}} étape',
+        count_other: '{{count}} étapes',
+        count_many: '{{count}} étapes',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Besoin de moi {{count}}',
+        waiting_other: 'Besoin de moi {{count}}',
+        waiting_many: 'Besoin de moi {{count}}',
+        active_one: 'En cours {{count}}',
+        active_other: 'En cours {{count}}',
+        active_many: 'En cours {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Exécuteurs personnels uniquement',

@@ -546,8 +546,7 @@ export function defineClientPlugin<TOptions = void>(
         resolveContribution(definition.headerActions, resolvedOptions) ?? [],
       ),
       layoutExtensions: defineLayoutExtensions(
-        resolveContribution(definition.layoutExtensions, resolvedOptions) ??
-          [],
+        resolveContribution(definition.layoutExtensions, resolvedOptions) ?? [],
       ),
       routeComponentOverrides: defineClientRouteComponentOverrides(overrides),
       options: resolvedOptions,

@@ -1091,6 +1091,25 @@ const ruRU: LocaleResource<typeof enUS> = {
       thinking: 'Размышляет…',
       reading: 'Смотрит {{subject}}',
       working: 'Работает над {{subject}}',
+      ...{
+        count_one: '{{count}} шаг',
+        count_other: '{{count}} шагов',
+        count_few: '{{count}} шага',
+        count_many: '{{count}} шагов',
+      },
+    },
+    // Plural forms of the panel wording, outside the typed shape (the rest falls back to English).
+    ...{
+      list: {
+        waiting_one: 'Ждут меня: {{count}}',
+        waiting_other: 'Ждут меня: {{count}}',
+        waiting_few: 'Ждут меня: {{count}}',
+        waiting_many: 'Ждут меня: {{count}}',
+        active_one: 'В работе: {{count}}',
+        active_other: 'В работе: {{count}}',
+        active_few: 'В работе: {{count}}',
+        active_many: 'В работе: {{count}}',
+      },
     },
     agents: {
       personalOnly: 'Только личные среды',
