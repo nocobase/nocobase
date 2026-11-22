@@ -13,6 +13,14 @@ const DEFAULT_ACCESS = {
   type: 'settings',
   id: 'authorization.default-access',
 } as const;
+const SHARING_RULES = {
+  type: 'settings',
+  id: 'authorization.sharing-rules',
+} as const;
+const RESTRICTION_RULES = {
+  type: 'settings',
+  id: 'authorization.restriction-rules',
+} as const;
 
 /**
  * Roles and permissions, in the Accounts category of the system settings. Each top tab of the page is a page of this
@@ -83,6 +91,27 @@ export function authorizationSettingsRoutes(): AppClientSystemSettingsRoutesCont
                 import('./settings/default-access-form.js'),
             },
           ],
+        },
+        // Data rules opens on any kind of rule the person may read: each kind has an address guarded by its own read
+        // permission, so the menu, the page's tabs and the router agree. The page itself leaves a kind no rule plugin
+        // registers for one that is, or for another tab of the page.
+        {
+          name: 'settingsSharingRules',
+          path: '/sharing-rules',
+          auth: 'required',
+          authz: { resource: SHARING_RULES, action: 'read' },
+          navigation: { title: 'settings.dataRules', icon: ListFilter },
+          breadcrumb: { title: 'settings.dataRules' },
+          componentLoader: () => import('./settings/data-rules.js'),
+        },
+        {
+          name: 'settingsRestrictionRules',
+          path: '/restriction-rules',
+          auth: 'required',
+          authz: { resource: RESTRICTION_RULES, action: 'read' },
+          navigation: { title: 'settings.dataRules', icon: ListFilter },
+          breadcrumb: { title: 'settings.dataRules' },
+          componentLoader: () => import('./settings/data-rules.js'),
         },
         // Reads anyone's permissions, so only an unrestricted role opens it, as the inspector it reads requires.
         {

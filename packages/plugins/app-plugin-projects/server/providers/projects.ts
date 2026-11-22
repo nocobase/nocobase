@@ -90,6 +90,22 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override boot(): Promise<void> {
+    // Listed on the file storage settings page, with the disk its files go to and how many it holds.
+    if (this.app.container.has(serverFileRepositoryManagerToken))
+      this.app.container
+        .resolve(serverFileRepositoryManagerToken)
+        .registerUsage({
+          id: 'projects.attachments',
+          title: {
+            key: 'fileUsage',
+            ns: '@nocobase/app-plugin-projects',
+            defaultValue: 'Issue attachments',
+          },
+          plugin: '@nocobase/app-plugin-projects',
+          collection: 'pmAttachments',
+          disk: { default: true },
+          download: 'authenticated',
+        });
     if (this.releases.length > 0) return Promise.resolve();
     const { container } = this.app;
     const { invitations, events, tx } = container.resolve(projectsToken);

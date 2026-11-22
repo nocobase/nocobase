@@ -42,6 +42,8 @@ import {
   ruleResourceLabels,
   ruleResources,
   ruleScopes,
+  RESERVED_RULE_KEYS,
+  suggestRuleKey,
   type DataRule,
   type ScopeSelection,
 } from './default-access-model.js';
@@ -127,6 +129,19 @@ export function DataRuleEditor({
   const [removing, setRemoving] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const value = draft ?? initial ?? EMPTY_RULE;
+  // A new rule's key follows its name, or its object without one, until the person types a key of their own.
+  const [keyEdited, setKeyEdited] = useState(false);
+  const withKey = (next: DataRule): DataRule =>
+    !creating || keyEdited
+      ? next
+      : {
+          ...next,
+          key: suggestRuleKey(
+            typeof next.title === 'string' ? next.title : '',
+            next.resource.id,
+            rules.map((rule) => rule.key),
+          ),
+        };
   const dirty =
     draft !== undefined && JSON.stringify(draft) !== JSON.stringify(initial);
   const leave = useSettingsLeave(dirty, busy);
@@ -183,8 +198,7 @@ export function DataRuleEditor({
       label: value.resource.id,
     });
   const invalidKey =
-    !value.key.trim() ||
-    ['options', 'subjects', 'records'].includes(value.key.trim());
+    !value.key.trim() || RESERVED_RULE_KEYS.includes(value.key.trim());
   const noSubjects = kind.subjects && !value.subjects?.length;
   const fieldLabels: Record<string, string> = {
     name: t('settings.defaultAccess.fieldLabels.name'),
@@ -558,7 +572,7 @@ export function DataRuleEditor({
                   placeholder={k('namePlaceholder')}
                   disabled={readOnly}
                   onChange={(event) =>
-                    setDraft({ ...value, title: event.target.value })
+                    setDraft(withKey({ ...value, title: event.target.value }))
                   }
                 />
               </div>
@@ -582,6 +596,11 @@ export function DataRuleEditor({
               }
               labels={{
                 key: t('settings.key'),
+                keyHint: t(
+                  kind.subjects
+                    ? 'settings.defaultAccess.keyFromName'
+                    : 'settings.defaultAccess.keyFromResource',
+                ),
                 resource: t('settings.defaultAccess.resource'),
                 chooseResource: t('settings.defaultAccess.chooseResource'),
                 action: t('settings.defaultAccess.action'),
@@ -589,6 +608,8 @@ export function DataRuleEditor({
                 noScopes: t('settings.defaultAccess.chooseResource'),
               }}
               onKeyChange={(key) => {
+                // An emptied key follows the name again from its next change.
+                setKeyEdited(key !== '');
                 setDraft({ ...value, key });
                 setFieldErrors((old) => {
                   const { key: _key, ...next } = old;
@@ -600,11 +621,13 @@ export function DataRuleEditor({
                   (entry) => resourceKey(entry) === selected,
                 );
                 if (next) {
-                  setDraft({
-                    ...value,
-                    resource: { type: next.type, id: next.id },
-                    actions: [],
-                  });
+                  setDraft(
+                    withKey({
+                      ...value,
+                      resource: { type: next.type, id: next.id },
+                      actions: [],
+                    }),
+                  );
                   setEditing(undefined);
                   setFieldErrors({});
                   setScopeErrors({});

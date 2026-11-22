@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  fileUsage: 'Tệp cơ sở tri thức',
   indexing: {
     failedDocumentCount: 'Tài liệu thất bại: {{count}}',
     enabled: 'Bật lập chỉ mục',

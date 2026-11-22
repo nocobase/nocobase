@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  fileUsage: 'Вложения чата',
   modelSuggestions: {
     design:
       'Самое сильное рассуждение: предложения, архитектура, сложные расследования и проверка важных изменений; также обычная реализация, изменения в нескольких пакетах и написание предложений.',

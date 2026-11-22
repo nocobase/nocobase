@@ -116,3 +116,132 @@ export function matchingRules(
         )),
   );
 }
+
+/** What a conditional decision limits one data table to, as the inspector explains it. */
+export interface ScopeDetail {
+  /** The data table's name. */
+  readonly collection: string;
+  /** Each source's record selection, such as a role's "Own records". */
+  readonly selections: readonly {
+    readonly source: { readonly plugin: string; readonly id: string };
+    readonly selection: {
+      readonly type: string;
+      readonly key?: string;
+      readonly ids?: readonly unknown[];
+    };
+  }[];
+  /** The records reached, as the conditions the scope resolves to, such as `ownerId = "u1"`. */
+  readonly conditions?: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const OPERATORS: Readonly<Record<string, string>> = {
+  $eq: '=',
+  $ne: '≠',
+  $gt: '>',
+  $gte: '≥',
+  $lt: '<',
+  $lte: '≤',
+  $in: 'in',
+  $notIn: 'not in',
+};
+
+/**
+ * A data scope's filter tree in one line, such as `ownerId = "u1" or teamId in ["t1"]`. Comparisons read as symbols;
+ * another operator reads as its name in `operatorNames` (the filter editor's, such as "Is empty"), and an operator
+ * that takes no value, such as `$empty`, shows none.
+ */
+export function describeScopeFilter(
+  node: unknown,
+  operatorNames: Readonly<Record<string, string>> = {},
+): string {
+  const describe = (item: unknown, nested: boolean): string => {
+    if (!isRecord(item)) return '';
+    if (item.kind === 'condition') {
+      const path = Array.isArray(item.path) ? item.path.join('.') : '';
+      const operator = String(item.operator);
+      const name = OPERATORS[operator] ?? operatorNames[operator] ?? operator;
+      return item.value === undefined
+        ? `${path} ${name}`
+        : `${path} ${name} ${JSON.stringify(item.value)}`;
+    }
+    if (item.kind === 'group' && Array.isArray(item.items)) {
+      const parts = item.items
+        .map((child) => describe(child, true))
+        .filter(Boolean);
+      const joined = parts.join(item.logic === 'or' ? ' or ' : ' and ');
+      return nested && parts.length > 1 ? `(${joined})` : joined;
+    }
+    return '';
+  };
+  return describe(node, false);
+}
+
+/** The data tables a conditional decision limits and how, for each check on a data table it is made of. */
+export function scopeDetails(
+  decision: AuthorizationDecision,
+  operatorNames: Readonly<Record<string, string>> = {},
+): readonly ScopeDetail[] {
+  const conditions = decision.conditions;
+  const checks: readonly {
+    resource: { type: string; id: string };
+    decision: AuthorizationDecision;
+  }[] =
+    conditions?.type === 'composite' && Array.isArray(conditions.checks)
+      ? (conditions.checks as readonly {
+          resource: { type: string; id: string };
+          decision: AuthorizationDecision;
+        }[])
+      : conditions?.type === 'database' &&
+          typeof conditions.collection === 'string'
+        ? [
+            {
+              resource: {
+                type: 'database.collection',
+                id: conditions.collection,
+              },
+              decision,
+            },
+          ]
+        : [];
+  return checks
+    .filter((check) => check.decision.effect === 'conditional')
+    .map((check) => {
+      const selections = check.decision.reasons.flatMap((reason) => {
+        if (reason.code !== 'SELECTION_EXPANDED') return [];
+        const source: unknown = reason.details?.source;
+        const selection: unknown = reason.details?.selection;
+        if (
+          !isRecord(source) ||
+          typeof source.plugin !== 'string' ||
+          typeof source.id !== 'string' ||
+          !isRecord(selection) ||
+          typeof selection.type !== 'string'
+        )
+          return [];
+        return [
+          {
+            source: { plugin: source.plugin, id: source.id },
+            selection: {
+              type: selection.type,
+              ...(typeof selection.key === 'string'
+                ? { key: selection.key }
+                : {}),
+              ...(Array.isArray(selection.ids) ? { ids: selection.ids } : {}),
+            },
+          },
+        ];
+      });
+      const scope = check.decision.conditions?.scope;
+      const described = isRecord(scope)
+        ? describeScopeFilter(scope.root, operatorNames)
+        : '';
+      return {
+        collection: check.resource.id,
+        selections,
+        ...(described ? { conditions: described } : {}),
+      };
+    });
+}

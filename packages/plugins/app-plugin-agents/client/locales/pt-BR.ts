@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  fileUsage: 'Anexos do chat',
   modelSuggestions: {
     design:
       'Raciocínio mais forte: propostas, arquitetura, investigações difíceis e revisão de alterações importantes; também implementação comum e alterações entre pacotes.',

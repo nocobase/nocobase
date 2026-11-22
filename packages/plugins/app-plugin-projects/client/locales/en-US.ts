@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import accessEnUS from '../../shared/locales/access.en-US.js';
 
 const pages = {
+  fileUsage: 'Issue attachments',
   actions: {
     cancel: 'Cancel',
     close: 'Close',

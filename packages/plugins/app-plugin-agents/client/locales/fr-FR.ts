@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  fileUsage: 'Pièces jointes du chat',
   modelSuggestions: {
     design:
       'Raisonnement le plus avancé : propositions, architecture, enquêtes difficiles et revue des modifications importantes ; aussi implémentation courante et modifications entre paquets.',

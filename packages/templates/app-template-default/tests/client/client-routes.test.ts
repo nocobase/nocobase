@@ -203,6 +203,15 @@ describe('app client routes', () => {
         name,
         authorizedAs: 'settings:authorization.default-access',
       })),
+      // Each kind of data rule opens at its own address, guarded by its own read permission.
+      {
+        name: 'settingsSharingRules',
+        authorizedAs: 'settings:authorization.sharing-rules',
+      },
+      {
+        name: 'settingsRestrictionRules',
+        authorizedAs: 'settings:authorization.restriction-rules',
+      },
       // Reading anyone's permissions is for an unrestricted role only.
       { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
@@ -229,6 +238,8 @@ describe('app client routes', () => {
       '/settings/default-access',
       '/settings/default-access/create',
       '/settings/default-access/:key/edit',
+      '/settings/sharing-rules',
+      '/settings/restriction-rules',
       '/settings/permission-check',
       '/settings/database-explorer',
     ]);

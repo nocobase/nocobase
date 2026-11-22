@@ -50,6 +50,7 @@ import {
   type PermissionValue,
 } from '#components/permission-editor';
 import { permissionChanges } from '#components/permission-editor-model';
+import { RowActions } from '#components/row-actions';
 import { Skeleton } from '#components/ui/skeleton';
 import type {
   AuthorizationContentTab,
@@ -515,20 +516,20 @@ function RoleEditor(): ReactElement {
 
   const keyInvalid = keyConflict || (submitted && !roleKey.trim());
   const nameInvalid = submitted && !name.trim();
+  const duplicateHref =
+    !creating && canCreate && !unrestricted
+      ? {
+          pathname: `${parent.base}/create`,
+          search: `?copy=${encodeURIComponent(key)}`,
+        }
+      : undefined;
   const duplicate =
-    !creating && canCreate && !unrestricted ? (
+    duplicateHref !== undefined ? (
       <Button
         variant='outline'
         size='sm'
         nativeButton={false}
-        render={
-          <Link
-            to={{
-              pathname: `${parent.base}/create`,
-              search: `?copy=${encodeURIComponent(key)}`,
-            }}
-          />
-        }
+        render={<Link to={duplicateHref} />}
       >
         <CopyIcon />
         {t('settings.duplicateRole')}
@@ -579,13 +580,14 @@ function RoleEditor(): ReactElement {
           </div>
         </div>
       ) : (
-        // An existing role reads as a title; its key never changes and its name changes through Rename.
-        <div className='flex flex-wrap items-center gap-x-3 gap-y-2'>
-          <div className='flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1'>
-            <h2 className='min-w-0 truncate text-lg font-semibold' title={name}>
+        // An existing role reads as a title; its key never changes and its name changes through Rename. A phone keeps
+        // the whole name and puts Rename and Duplicate in a menu beside it.
+        <div className='flex items-start gap-3'>
+          <div className='flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1'>
+            <h2 className='min-w-0 text-lg font-semibold break-words'>
               {name}
             </h2>
-            <code className='rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground'>
+            <code className='max-w-full truncate rounded bg-muted px-1.5 py-0.5 font-mono text-xs whitespace-nowrap text-muted-foreground'>
               {roleKey}
             </code>
             {unrestricted ? (
@@ -596,7 +598,7 @@ function RoleEditor(): ReactElement {
               <Badge variant='outline'>{t('settings.protected')}</Badge>
             ) : null}
           </div>
-          <div className='flex flex-wrap gap-2'>
+          <div className='hidden shrink-0 gap-2 sm:flex'>
             {!readOnly && (
               <Button
                 type='button'
@@ -609,6 +611,23 @@ function RoleEditor(): ReactElement {
               </Button>
             )}
             {duplicate}
+          </div>
+          <div className='shrink-0 sm:hidden'>
+            <RowActions
+              label={t('settings.actionsFor', { name })}
+              actions={[
+                !readOnly && {
+                  key: 'rename',
+                  label: t('settings.rename'),
+                  onClick: () => setRenaming(true),
+                },
+                duplicateHref !== undefined && {
+                  key: 'duplicate',
+                  label: t('settings.duplicateRole'),
+                  render: <Link to={duplicateHref} />,
+                },
+              ]}
+            />
           </div>
         </div>
       )}

@@ -146,8 +146,8 @@ it('creates a sharing rule in a side sheet, naming who it shares with and never 
     within(sheet).getByRole('textbox', { name: words.sharingRules.name }),
     'Team projects',
   );
-  await user.type(
-    within(sheet).getByRole('textbox', { name: `${words.key} *` }),
+  // The key follows the name until it is typed.
+  expect(within(sheet).getByRole('textbox', { name: words.key })).toHaveValue(
     'team-projects',
   );
   await user.click(
@@ -156,6 +156,9 @@ it('creates a sharing rule in a side sheet, naming who it shares with and never 
     }),
   );
   await user.click(await screen.findByRole('option', { name: 'Projects' }));
+  expect(within(sheet).getByRole('textbox', { name: words.key })).toHaveValue(
+    'team-projects',
+  );
   await user.click(
     within(sheet).getByRole('combobox', { name: 'View · Projects' }),
   );

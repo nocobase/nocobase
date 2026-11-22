@@ -368,6 +368,10 @@ it('adds and removes members at once and keeps the last one', async () => {
     await screen.findByRole('tab', { name: new RegExp(words.members.tab) }),
   );
   expect(await screen.findByRole('cell', { name: /Alice/ })).toBeVisible();
+  // With users only, a Type column would repeat the same word on every row.
+  expect(
+    screen.queryByRole('columnheader', { name: words.members.type }),
+  ).not.toBeInTheDocument();
   // A user member's permissions open in Permission check with the user picked.
   expect(
     screen.getByRole('link', { name: words.members.checkPermissions }),

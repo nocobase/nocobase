@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  fileUsage: '對話附件',
   modelSuggestions: {
     design:
       '最強推理：方案設計、架構、疑難排查、重要修改的程式碼審查；也能進行一般實作、跨套件修改及撰寫方案',

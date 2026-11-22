@@ -180,6 +180,8 @@ describe('System settings navigation', () => {
         'settingsUsers',
         'settingsRoles',
         'settingsDefaultAccess',
+        'settingsSharingRules',
+        'settingsRestrictionRules',
         'settingsPermissionCheck',
       ].map((name) => routeKey(find(routes, name))),
     );

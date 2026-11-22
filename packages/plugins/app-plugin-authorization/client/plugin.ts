@@ -4,7 +4,7 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
-import reactProviders from './react-providers.js';
+import { authorizationReactProviders } from './react-providers.js';
 import { authorizationSettingsRoutes } from './routes.js';
 import serviceProviders from './service-provider.js';
 import type { AuthorizationSettingsOptions } from './settings/extensions.js';
@@ -19,7 +19,7 @@ const authorization: AppClientPluginFactory<AuthorizationClientOptions> =
     packageName: '@nocobase/app-plugin-authorization',
     locales,
     serviceProviders: (options) => serviceProviders(options),
-    reactProviders,
+    reactProviders: (options) => authorizationReactProviders(options),
     routes: (options) =>
       options.routes === false ? [] : [authorizationSettingsRoutes()],
   });
