@@ -9,6 +9,7 @@ const esES: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Programaciones',
     read: 'Leer',
+    manage: 'Gestionar',
   },
 };
 

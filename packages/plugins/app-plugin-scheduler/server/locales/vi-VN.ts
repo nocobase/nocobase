@@ -9,6 +9,7 @@ const viVN: LocaleResource<typeof enUS> = {
   authorization: {
     title: 'Lịch trình',
     read: 'Đọc',
+    manage: 'Quản lý',
   },
 };
 
