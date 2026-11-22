@@ -1,0 +1,13 @@
+---
+'@nocobase/app-plugin-agents': minor
+'@nocobase/app-client': minor
+'@nocobase/app-template-default': minor
+'@nocobase/app-template-examples': minor
+'@nocobase/app-skills': patch
+---
+
+The Agents plugin now brings its own UI: registering `agents()` adds the ✦ button in the header (header action `agent`, its badge the conversations waiting for the viewer), the Agent panel beside the content (loaded the first time it opens; full screen on phones), the conversation page `/chat/:conversationId` (route `agentChat`), System settings › AI (Agent, Model services, Runtimes, Skills, Usage) and Personal settings › Preferences › Agent. The UI Library's `agent-chat` block moved into the plugin and is generated from it. Customize with options (`agents({ headerAction, panel: { width, defaultOpen }, chatPath })`), extension points (`useAgentContext`, `AskAgentButton`, `agents.toolRenderers.add`, `agents.slots.composerActions|messageActions|emptyState.add`, `agents.preferenceSections.add`), `agents.components.replace(name, Component)`, `routeComponentOverrides` and `headerActionOverrides`; the `settingsRoutes` option is gone because the settings pages are always registered.
+
+The settings pages and their API check settings items instead of page grants: Agent `agents.agents`, Model services `agents.services`, Runtimes `agents.runners`, the new Skills `agents.skills` and Usage `agents.prices`. The usage report is open to anyone signed in (every run for a reader of usage or agents, otherwise their own runs). Migration `202611210001_ag_settings_grants` gives existing roles the matching Skills and Usage grants, so they keep what they could do. Each agent can limit who may chat with it to roles (`chatRoles`, migration `202611210002_ag_agent_chat_roles`; existing agents stay open to everyone): others do not see it in the panel and the chat API answers 403, and the team default Agent must be open to everyone. Other plugins register model service providers with `agents.models.providers.register`, listed by `GET /api/agents/modelProviders`.
+
+`@nocobase/app-client` adds layout extensions: a plugin's `layoutExtensions` contribute a provider around the signed-in layout and an aside the layout renders beside its content (`AppLayoutProviders`, `AppAsideOutlet`). Both templates render them and register the Agents plugin only, with no Agent page code; Examples drops its copied `nocobase-agent-chat` block, its Agent pages under business navigation and the hard-coded header chat button. Applications that copied the block before should delete it (and the code mounting it), or keep it with `agents({ headerAction: false, panel: false })`.
