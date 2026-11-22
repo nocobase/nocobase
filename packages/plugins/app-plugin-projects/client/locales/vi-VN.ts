@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  fileUsage: 'Tệp đính kèm của tác vụ',
   actions: {
     cancel: 'Hủy',
     close: 'Đóng',

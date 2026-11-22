@@ -1,6 +1,7 @@
 import type { KnowledgeClientResource } from './en-US.js';
 
 const zhCN: KnowledgeClientResource = {
+  fileUsage: '知识库文件',
   indexing: {
     failedDocumentCount: '失败文档：{{count}}',
     enabled: '启用索引',

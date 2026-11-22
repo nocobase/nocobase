@@ -1,4 +1,4 @@
-import type { PagePermissionTitles } from './page-permissions.js';
+import type { PagePermissionTitles } from '@nocobase/app-plugin-authorization/client/settings';
 
 /** Permission labels for application pages without navigation/breadcrumb titles (including overlays).
  * Keys are existing route names; values are application translation keys.

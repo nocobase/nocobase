@@ -41,6 +41,14 @@
     "CHANGELOG.md"
   ],
   "nocobase": {
+    "title": {
+      "en-US": "Mail",
+      "zh-CN": "邮件"
+    },
+    "description": {
+      "en-US": "Team mail and personal mailboxes",
+      "zh-CN": "团队邮件和个人邮箱"
+    },
     "appConfig": {
       "namespace": "mail",
       "configFile": "server/config/mail.ts",

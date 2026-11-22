@@ -3,6 +3,16 @@
   "displayName": "Distributed App Plugin",
   "description": "Agent Skills for configuring and verifying distributed NocoBase applications.",
   "version": "0.1.0-beta.1",
+  "nocobase": {
+    "title": {
+      "en-US": "Cluster and distribution",
+      "zh-CN": "集群与分布式"
+    },
+    "description": {
+      "en-US": "Run the application on several nodes",
+      "zh-CN": "在多个节点上运行应用"
+    }
+  },
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,

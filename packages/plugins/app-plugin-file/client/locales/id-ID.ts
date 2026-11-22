@@ -3,6 +3,172 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  storage: {
+    title: 'Penyimpanan file',
+    navDescription:
+      'Tempat file yang diunggah disimpan, dan fitur mana yang menyimpannya',
+    description:
+      'Tempat file yang diunggah disimpan, seberapa besar satu file boleh, dan fitur mana yang menyimpan file. Penyimpanan diatur di konfigurasi aplikasi (`drive`) dan berlaku setelah deploy ulang; halaman ini menampilkan pengaturan yang berlaku dan memeriksa apakah penyimpanan benar-benar dapat dibaca dan ditulis.',
+    checkAction: 'Periksa penyimpanan',
+    loading: 'Memuat penyimpanan file…',
+    loadFailed: 'Penyimpanan file tidak dapat dimuat.',
+    retry: 'Coba lagi',
+    tabs: { disks: 'Penyimpanan', usages: 'Fitur' },
+    hints: {
+      title_one: '{{count}} pemberitahuan',
+      title_other: '{{count}} pemberitahuan',
+      incomplete:
+        'Disk {{disk}} belum dikonfigurasi sepenuhnya ({{problems}}): tidak berdampak selama tidak digunakan, dan gagal saat dipilih.',
+      localDefault:
+        'Penyimpanan default adalah disk lokal: aplikasi hanya dapat berjalan sebagai satu instans. Gunakan penyimpanan bersama untuk beberapa instans.',
+      seeCluster: 'Lihat Kluster dan terdistribusi.',
+    },
+    columns: {
+      name: 'Nama',
+      type: 'Tipe · lokasi',
+      visibility: 'Visibilitas',
+      maxFileSize: 'Ukuran file maks.',
+      usages: 'Fitur',
+      status: 'Status',
+      feature: 'Fitur',
+      collection: 'Tabel file',
+      disk: 'Disimpan di',
+      download: 'Unduhan',
+      files: 'File',
+      setting: 'Pengaturan',
+      value: 'Nilai saat ini',
+      source: 'Sumber',
+    },
+    default: 'Default',
+    details: 'Detail',
+    usageCount_one: '{{count}} fitur',
+    usageCount_other: '{{count}} fitur',
+    drivers: {
+      fs: 'Disk lokal',
+      s3: 'Penyimpanan kompatibel S3',
+      oss: 'Alibaba Cloud OSS',
+      custom: 'Driver kustom',
+    },
+    location: {
+      inApp: '{{path}} (di dalam direktori aplikasi)',
+      outsideApp: 'Di luar direktori aplikasi',
+      bucketMissing: 'bucket belum diatur',
+      unknown: 'Diatur di kode',
+    },
+    visibility: {
+      private: 'Privat',
+      public: 'Publik',
+      privateLong: 'Privat: hanya diunduh melalui aplikasi',
+      publicLong: 'Publik: siapa pun yang memiliki URL dapat mengunduh',
+      unknown: 'Ditentukan oleh driver',
+    },
+    urls: {
+      application: 'Disajikan oleh aplikasi (stream)',
+      public: 'URL publik',
+      signed: 'URL bertanda tangan yang kedaluwarsa',
+    },
+    sizeMb: '{{size}} MB',
+    status: {
+      ok: 'Baca dan tulis OK',
+      failed: 'Pemeriksaan gagal',
+      incomplete: 'Konfigurasi belum lengkap',
+      unchecked: 'Belum diperiksa',
+      checkedAgo: 'Diperiksa {{time}}',
+    },
+    problems: {
+      LOCATION_MISSING: 'location kosong',
+      BUCKET_MISSING: 'bucket kosong',
+      REGION_MISSING: 'region kosong',
+      CREDENTIALS_MISSING: 'kredensial tidak ada',
+      REGION_INVALID: 'region harus berbentuk oss-<region>',
+      CREDENTIALS_INVALID: 'kredensial mencampur dua sumber atau tidak valid',
+      SETTINGS_INVALID: 'timeout atau domain tidak valid',
+      NOT_LOADED: 'tidak dimuat oleh aplikasi',
+    },
+    sources: { code: 'Kode', config: 'Konfigurasi', default: 'Nilai default' },
+    settings: {
+      driver: 'Tipe',
+      location: 'Lokasi',
+      visibility: 'Visibilitas',
+      maxFileSize: 'Ukuran file maks.',
+      urls: 'Tautan unduhan',
+    },
+    backToList: 'Penyimpanan file',
+    defaultSubtitle: 'Unggahan baru disimpan di sini secara default.',
+    notDefaultSubtitle: 'Hanya digunakan oleh fitur yang menyebutkannya.',
+    notFound: 'Disk {{disk}} belum dikonfigurasi.',
+    howToChange: 'Cara mengubah',
+    howToChangeNote:
+      'Alibaba Cloud OSS (`oss`) dan driver kustom juga didukung. Deploy ulang setelah perubahan, dan naikkan batas ukuran body permintaan reverse proxy setidaknya sebesar ukuran file maks.',
+    check: {
+      title: 'Pemeriksaan',
+      run: 'Periksa',
+      rerun: 'Periksa lagi',
+      running: 'Memeriksa…',
+      failed: 'Pemeriksaan tidak dapat dijalankan.',
+      never: 'Disk ini belum diperiksa pada instans ini sejak dimulai.',
+      scope:
+        'Hanya satu file sementara di direktori `nocobase-check/` pada disk yang ditulis, dibaca, dan dihapus; file bisnis tidak disentuh. Dengan beberapa instans, hanya instans ini yang diperiksa.',
+      steps: {
+        write: 'Tulis file sementara',
+        read: 'Baca kembali dan bandingkan',
+        url: 'Buat tautan unduhan',
+        delete: 'Hapus file sementara',
+      },
+      details: {
+        bytes: '{{bytes}} byte cocok',
+        APPLICATION: 'Disajikan melalui aplikasi',
+        PUBLIC: 'URL publik dibuat',
+        SIGNED: 'URL bertanda tangan dibuat',
+        deleted: 'Dihapus',
+        skipped: 'Dilewati',
+      },
+      reasons: {
+        CONFIG_INCOMPLETE: 'Konfigurasi belum lengkap: {{detail}}',
+        DISK_UNAVAILABLE: 'Disk tidak dapat dibuka',
+        WRITE_FAILED: 'Penulisan gagal',
+        READ_FAILED: 'Pembacaan gagal',
+        CONTENT_MISMATCH: 'Isi yang dibaca kembali berbeda',
+        URL_FAILED: 'Tautan tidak dapat dibuat',
+        DELETE_FAILED: 'Penghapusan gagal',
+        unknown: 'Gagal',
+      },
+    },
+    usedBy: 'Fitur yang menggunakan disk ini',
+    noUsagesOnDisk: 'Tidak ada fitur yang menyimpan file di disk ini.',
+    download: {
+      authenticated: 'Masuk dan izin',
+      public: 'Tautan publik',
+    },
+    diskDefault: 'Default ({{disk}})',
+    diskConfig: '{{path}} → {{disk}}',
+    diskConfigDefault: '{{path}} → Default ({{disk}})',
+    plugin: 'Plugin {{plugin}}',
+    application: 'Aplikasi',
+    filesValue: '{{files}} file · {{size}}',
+    filesUnavailable: 'Tidak dapat dihitung',
+    empty: {
+      title: 'Belum ada fitur yang menyimpan file',
+      description:
+        'Tabel file dibuat oleh plugin atau kode aplikasi. Setelah plugin dengan lampiran dipasang (seperti proyek, basis pengetahuan, atau agen), plugin itu muncul di sini tanpa pengaturan tambahan.',
+      defaultDisk:
+        'Pengaturan penyimpanan tetap berlaku: tabel file yang ditambahkan kemudian menyimpan file di {{disk}} secara default.',
+    },
+    notes: {
+      title: 'Catatan',
+      firstUse:
+        'Penyimpanan baru terhubung saat pertama kali digunakan, jadi aplikasi yang berhasil dimulai tidak membuktikan penyimpanan dapat dibaca dan ditulis. Pemeriksaan menulis, membaca, dan menghapus file sementara untuk memastikannya.',
+      changeDefault:
+        'Mengubah penyimpanan default hanya memengaruhi unggahan berikutnya; file yang ada tetap dibaca dari penyimpanan yang disebutkan oleh catatannya dan tidak dipindahkan.',
+      deleteRecords: 'Menghapus catatan tidak menghapus file-nya dari disk.',
+      publicLinks:
+        'Tautan publik dapat dibuka oleh siapa pun yang mengetahuinya, tanpa masuk. File sensitif sebaiknya disajikan melalui rute terautentikasi milik plugin itu sendiri.',
+      noBrowser:
+        'Tidak ada penjelajah file global: file adalah milik fiturnya masing-masing dan dilihat sesuai izin setiap fitur.',
+      readOnly:
+        'Fitur dideklarasikan oleh kode plugin atau aplikasi (tabel file, disk, metode unduhan). Daftar ini hanya-baca; tabel file tidak dapat dibuat di sini.',
+    },
+  },
   'files.ooxmlLoadFailed': 'Tidak dapat merender file Office Open XML ini.',
   'files.ooxmlLoadTimedOut':
     'Pratinjau tidak selesai dimuat dalam waktu {{minutes}} menit.',

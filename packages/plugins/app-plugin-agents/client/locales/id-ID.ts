@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  fileUsage: 'Lampiran obrolan',
   modelSuggestions: {
     design:
       'Penalaran terkuat: usulan, arsitektur, penyelidikan rumit dan peninjauan perubahan penting; juga implementasi rutin dan perubahan lintas paket.',

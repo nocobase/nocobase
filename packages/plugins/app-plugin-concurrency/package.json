@@ -7,6 +7,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Concurrency control",
+      "zh-CN": "并发控制"
+    },
+    "description": {
+      "en-US": "Locks and concurrency limits",
+      "zh-CN": "锁和并发限制"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

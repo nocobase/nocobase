@@ -9,6 +9,7 @@ import runtimesEnUS from './runtimes.en-US.js';
 import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
+  fileUsage: 'Chat attachments',
   modelSuggestions: {
     design:
       'Strongest reasoning: proposals, architecture, hard investigations and reviews of important changes; also routine implementation, cross-package changes and writing proposals.',

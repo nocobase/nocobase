@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  fileUsage: '知識庫檔案',
   indexing: {
     failedDocumentCount: '失敗文件：{{count}}',
     enabled: '啟用索引',
