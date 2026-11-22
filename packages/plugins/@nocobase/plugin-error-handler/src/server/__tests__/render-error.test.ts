@@ -72,7 +72,7 @@ describe('create with exception', () => {
     expect(response.body).toEqual({
       errors: [
         {
-          message: 'name cannot be null',
+          message: 'users: name cannot be null',
         },
       ],
     });
@@ -112,7 +112,7 @@ describe('create with exception', () => {
 
     expect(response.statusCode).toEqual(400);
 
-    expect(response.body['errors'][0]['message']).toBe('name already exists');
+    expect(response.body['errors'][0]['message']).toBe('users: name already exists');
   });
 
   it('should render error with field title', async () => {
@@ -139,10 +139,91 @@ describe('create with exception', () => {
     expect(response.body).toEqual({
       errors: [
         {
-          message: 'UserName cannot be null',
+          message: 'users: UserName cannot be null',
         },
       ],
     });
+  });
+
+  it.each(['{{t("Enrollment", { ns: "benefits" })}}', '{{t("Enrollment", {"ns":["missing-namespace","benefits"]})}}'])(
+    'uses the collection title namespace in validation messages: %s',
+    async (title) => {
+      app.i18n.addResources('zh-CN', 'benefits', { Enrollment: '参保明细' });
+      app.i18n.addResources('zh-CN', 'lm-collections', { Enrollment: '默认标题' });
+      const collection = app.collection({
+        name: 'enrollments',
+        title,
+        fields: [{ name: 'code', type: 'string', allowNull: false, uiSchema: { title: '人员编号' } }],
+      });
+      await collection.sync();
+
+      const response = await app.agent().post('/enrollments:create').set('X-Locale', 'zh-CN').send({});
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toEqual([{ message: '参保明细: 人员编号 cannot be null' }]);
+    },
+  );
+
+  it('identifies the failing related collection for unique and not-null constraints', async () => {
+    const relatedCollections = [
+      { name: 'employees', title: '在职人员' },
+      { name: 'enrollments', title: '参保明细' },
+    ];
+    for (const related of relatedCollections) {
+      app.collection({
+        ...related,
+        fields: [
+          {
+            type: 'string',
+            name: 'code',
+            uiSchema: { title: '{{t("人员编号")}}' },
+            unique: true,
+            allowNull: false,
+          },
+        ],
+      });
+    }
+    app.collection({
+      name: 'applications',
+      fields: relatedCollections.map(({ name }) => ({
+        type: 'hasMany',
+        name,
+        target: name,
+        foreignKey: 'applicationId',
+      })),
+    });
+    await app.db.sync();
+
+    for (const { name, title } of relatedCollections) {
+      const create = (code: string | null) =>
+        app
+          .agent()
+          .post('/applications:create')
+          .set('X-Locale', 'zh-CN')
+          .send({ [name]: [{ code }] });
+      expect((await create('P001')).status).toBe(200);
+      const duplicate = await create('P001');
+      expect(duplicate.status).toBe(400);
+      expect(duplicate.body.errors).toEqual([{ message: `${title}: 人员编号 字段值已存在` }]);
+      const missing = await create(null);
+      expect(missing.status).toBe(400);
+      expect(missing.body.errors).toEqual([{ message: `${title}: 人员编号 cannot be null` }]);
+    }
+  });
+
+  it('preserves the validation message when there is no collection', async () => {
+    app.use(
+      () => {
+        throw Object.assign(new Error('duplicate'), {
+          name: 'SequelizeUniqueConstraintError',
+          errors: [{ type: 'unique violation', path: 'external_code' }],
+        });
+      },
+      { after: 'dataSource' },
+    );
+
+    const response = await app.agent().post('/users:create').send({});
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual([{ message: 'external_code already exists' }]);
   });
 
   it('should handle unique error with raw sql', async () => {

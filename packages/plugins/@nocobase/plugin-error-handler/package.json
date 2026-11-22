@@ -12,6 +12,9 @@
   "homepage": "https://nocode.docs.nocobase.com/handbook/error-handler",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/error-handler",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/error-handler",
+  "dependencies": {
+    "json5": "^2.2.3"
+  },
   "devDependencies": {
     "@formily/json-schema": "2.x",
     "supertest": "^6.1.6"
