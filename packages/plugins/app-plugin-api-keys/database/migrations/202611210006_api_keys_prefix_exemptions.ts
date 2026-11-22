@@ -127,7 +127,19 @@ const migration: MigrationDefinition = defineMigration({
    * rolling back then is refused rather than giving that name to a system key later or hiding the role. A list that
    * cannot be checked, its tables unreadable, is kept the same way, with the database's error as the cause.
    */
-  async down({ builder, query }) {
+  async down(context) {
+    const { builder, query } = context;
+    // Service accounts are checked exactly when `up` checks them: when their Collection is registered. Any failure to
+    // find out is the database's error, kept as the cause.
+    let services: boolean;
+    try {
+      services = await hasCollection(context, 'user');
+    } catch (error) {
+      throw new Error(
+        `Could not check that applying ${migration.name} again lists the same reserved role names, so its list is kept: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
     const lost: string[] = [];
     let after: string | null = null;
     for (;;) {
@@ -154,11 +166,10 @@ const migration: MigrationDefinition = defineMigration({
               .execute()
           ).map((row) => String(row.key)),
         );
-        // `up` checks service accounts only when their table exists; it does wherever this plugin's keys do.
         owned = await ownedSuffixes(
           query,
           keys.map((key) => key.slice(PREFIX.length)),
-          true,
+          services,
         );
       } catch (error) {
         throw new Error(

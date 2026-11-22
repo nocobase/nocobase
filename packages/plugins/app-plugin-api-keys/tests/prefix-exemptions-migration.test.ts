@@ -19,13 +19,16 @@ const migrations = (packageName: string) =>
   );
 
 /** A database with the authentication (and, unless left out, authorization) plugin's tables, and the API keys migrator. */
-async function database(withAuthorization = true): Promise<{
+async function database(
+  withAuthorization = true,
+  withAuthentication = true,
+): Promise<{
   created: TestDatabase;
   apiKeys: Migrator;
 }> {
   const created = await createTestDatabase();
   for (const packageName of [
-    '@nocobase/app-plugin-authentication',
+    ...(withAuthentication ? ['@nocobase/app-plugin-authentication'] : []),
     ...(withAuthorization ? ['@nocobase/app-plugin-authorization'] : []),
   ])
     await createMigrator({
@@ -212,7 +215,12 @@ describe('listing the roles already named in the prefix reserved for system keys
       },
     });
     const failure = await migration
-      .down({ builder: undefined, query } as never)
+      .down({
+        builder: undefined,
+        query,
+        repository: (name: string) =>
+          created.database.connection().repository(name),
+      } as never)
       .then(
         () => undefined,
         (error: unknown) => error,
@@ -222,6 +230,47 @@ describe('listing the roles already named in the prefix reserved for system keys
     expect(String(failure)).toMatch(
       /Could not check .*so its list is kept: connection lost/u,
     );
+    expect(await listed(created)).toEqual(['system-key-sales']);
+  });
+
+  it('rolls back what it listed without the users’ Collection, checking service accounts exactly as it listed', async () => {
+    // Roles, but no authentication plugin: `up` cannot check service accounts, and `down` does not either.
+    const { created, apiKeys } = await database(true, false);
+    testDatabase = created;
+    await role(created, 'system-key-sales');
+    await apiKeys.upTo('202611210004_api_keys_manager_notices');
+    await apiKeys.latest();
+    expect(await listed(created)).toEqual(['system-key-sales']);
+    expect((await apiKeys.rollback()).rolledBack).toEqual([
+      '202611210006_api_keys_prefix_exemptions',
+    ]);
+    await apiKeys.latest();
+    expect(await listed(created)).toEqual(['system-key-sales']);
+  });
+
+  it('keeps the list when it cannot find out whether the users’ Collection exists, saying why', async () => {
+    const { created, apiKeys } = await database();
+    testDatabase = created;
+    await role(created, 'system-key-sales');
+    await apiKeys.latest();
+    const lost = new Error('connection lost');
+    const failure = await migration
+      .down({
+        builder: undefined,
+        query: created.database.connection().query,
+        repository: (name: string) =>
+          name === 'user'
+            ? {
+                count: () => Promise.reject(lost),
+              }
+            : created.database.connection().repository(name),
+      } as never)
+      .then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+    expect((failure as Error).cause).toBe(lost);
+    expect(String(failure)).toMatch(/so its list is kept: connection lost/u);
     expect(await listed(created)).toEqual(['system-key-sales']);
   });
 
