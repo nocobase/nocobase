@@ -241,7 +241,7 @@ describe('notification routes', () => {
       parent: 'personalSettings',
       routes: [
         {
-          parent: 'messages',
+          parent: 'account',
           name: 'notificationPreferences',
           path: '/notifications',
         },

@@ -67,7 +67,7 @@ export function NotificationPreferencesPage(): ReactElement {
   const columnName = (type: string) =>
     t(`channelTypes.${type}`, { defaultValue: type });
   return (
-    <div className='mx-auto w-full max-w-4xl min-w-0 space-y-6 p-4 sm:p-6'>
+    <div className='w-full min-w-0 space-y-6 p-4 sm:p-6'>
       <header className='space-y-1'>
         <h1 className='text-xl font-semibold'>{t('preferences.title')}</h1>
         <p className='text-sm text-muted-foreground'>
