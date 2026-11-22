@@ -26,7 +26,7 @@ describe('Personal settings navigation', () => {
     );
   });
 
-  it('lists the built-in Language and appearance page and opens it from /me', () => {
+  it('lists the built-in Preferences page and opens it from /me', () => {
     const menu = buildPersonalSettingsNavigation(resolve(), new Set());
     expect(
       menu.map(({ route, children }) => [

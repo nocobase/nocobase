@@ -351,7 +351,7 @@ it('shows personal settings in their own navigation and keeps the way back acros
   });
   expect(within(menu).getByText('Account')).toBeVisible();
   expect(
-    within(menu).getByRole('link', { name: 'Language and appearance' }),
+    within(menu).getByRole('link', { name: 'Preferences' }),
   ).toHaveAttribute('aria-current', 'page');
   expect(screen.getByText('Ada Lovelace')).toBeVisible();
   expect(screen.queryByRole('link', { name: 'System settings' })).toBeNull();
@@ -379,7 +379,7 @@ it('links the first breadcrumb level of personal settings back to /me', async ()
   expect(
     within(trail).getByRole('link', { name: 'Personal settings' }),
   ).toHaveAttribute('href', '/me');
-  expect(trail).toHaveTextContent('Language and appearance');
+  expect(trail).toHaveTextContent('Preferences');
   expect(trail).not.toHaveTextContent('Account');
 });
 

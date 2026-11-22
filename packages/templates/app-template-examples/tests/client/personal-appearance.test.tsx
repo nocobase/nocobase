@@ -24,7 +24,7 @@ it('changes the color mode and theme the account menu also offers', async () => 
   );
   const user = userEvent.setup();
   expect(
-    screen.getByRole('heading', { level: 1, name: 'Language and appearance' }),
+    screen.getByRole('heading', { level: 1, name: 'Preferences' }),
   ).toBeVisible();
   const mode = screen.getByRole('group', { name: 'Color mode' });
   await user.click(within(mode).getByRole('radio', { name: 'Dark' }));

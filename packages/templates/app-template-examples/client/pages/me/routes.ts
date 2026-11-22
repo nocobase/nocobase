@@ -3,6 +3,7 @@ import {
   PERSONAL_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
+import { Palette } from 'lucide-react';
 
 /**
  * The personal settings home and built-in pages. Every page declared with `definePersonalSettingsRoutes()`, by the
@@ -23,7 +24,11 @@ const personalSettingsRoutes: AppClientRouteContribution =
       parent: PERSONAL_SETTINGS_CATEGORIES.account,
       name: 'personalAppearance',
       path: '/preferences',
-      navigation: { title: 'settings.personal.appearance.title', order: 200 },
+      navigation: {
+        title: 'settings.personal.appearance.title',
+        icon: Palette,
+        order: 200,
+      },
       breadcrumb: { title: 'settings.personal.appearance.title' },
       componentLoader: () => import('./appearance.js'),
     },

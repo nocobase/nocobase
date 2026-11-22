@@ -6,4 +6,4 @@
 '@nocobase/app-skills': patch
 ---
 
-Group personal settings into Account and Integrations, with language and appearance under Account and personal API keys under Integrations.
+Group personal settings into Account and Integrations, with a Preferences entry and palette icon under Account and personal API keys under Integrations.

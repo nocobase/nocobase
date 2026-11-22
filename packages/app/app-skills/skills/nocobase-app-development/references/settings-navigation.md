@@ -83,7 +83,7 @@ Pages where each signed-in person configures their own account — their profile
 
 - The entry is the first item of the account (avatar) menu, opening `/me`, which leads to the first personal page; Language and Theme stay in that menu as shortcuts to the same preferences. Personal settings never appear in the business menu or the System settings menu.
 - Without an `authz` of its own, a personal page admits every signed-in person (`authz: 'skip'`, `auth: 'required'`) and stays out of page permissions. Its server reads and writes only the current person's data, taken from the session, never a user id from the request.
-- The categories are the built-in `account` and `integrations`; the templates ship Language and appearance (`personalAppearance`, `/me/preferences`). While on `/me/*`, the sidebar shows Back, the person's identity and the personal settings menu, and the trail reads Personal settings → page. Back returns to the business page the viewer left, also after moving between system and personal settings.
+- The categories are the built-in `account` and `integrations`; the templates ship Preferences (`personalAppearance`, `/me/preferences`). While on `/me/*`, the sidebar shows Back, the person's identity and the personal settings menu, and the trail reads Personal settings → page. Back returns to the business page the viewer left, also after moving between system and personal settings.
 - A feature that has both an application-wide and a personal side, such as API keys, declares one page on each surface; routes of one surface cannot join a group of the other.
 
 ```ts
