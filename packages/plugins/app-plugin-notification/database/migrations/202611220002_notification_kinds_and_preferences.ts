@@ -13,7 +13,7 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  * Existing rows are not backfilled: older sends have no kind and no recipient key.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202611220001_notification_kinds_and_preferences',
+  name: '202611220002_notification_kinds_and_preferences',
   async up({ builder }) {
     await builder.createCollection('notificationPreferences', (table) => {
       table.string('id', { length: 36 }).primary();

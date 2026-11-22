@@ -7,7 +7,7 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  * `(userId, readAt, createdAt)` index already narrows.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202611220002_notification_in_app_kind_source',
+  name: '202611220003_notification_in_app_kind_source',
   async up({ builder }) {
     await builder.alterCollection('notificationInAppItems', (table) => {
       table.string('kind', { length: 200 }).nullable();
