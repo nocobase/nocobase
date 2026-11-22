@@ -104,7 +104,48 @@ const migration: MigrationDefinition = defineMigration({
     }
   },
 
-  async down({ builder }) {
+  /**
+   * Drops the list only when applying this migration again lists the same names: every name in it still has its role.
+   * A name whose role was deleted stays reserved, and only this table remembers it, so rolling back then is refused
+   * rather than giving that name to a system key later. Without the authorization plugin's roles readable, no name can
+   * be listed again, so a list that holds any is kept the same way.
+   */
+  async down({ builder, query }) {
+    const lost: string[] = [];
+    let after: string | null = null;
+    for (;;) {
+      let page = query
+        .selectFrom('apiKeyPrefixExemptions')
+        .select(['permissionSetKey']);
+      if (after !== null) page = page.where('permissionSetKey', '>', after);
+      const rows = await page
+        .orderBy('permissionSetKey', 'asc')
+        .limit(BATCH)
+        .execute();
+      if (!rows.length) break;
+      const keys = rows.map((row) => String(row.permissionSetKey));
+      after = keys.at(-1)!;
+      let present: Set<string>;
+      try {
+        present = new Set(
+          (
+            await query
+              .selectFrom('authorizationPermissionSets')
+              .select(['key'])
+              .where('key', 'in', keys)
+              .execute()
+          ).map((row) => String(row.key)),
+        );
+      } catch {
+        present = new Set();
+      }
+      lost.push(...keys.filter((key) => !present.has(key)));
+      if (rows.length < BATCH) break;
+    }
+    if (lost.length)
+      throw new Error(
+        `Rolling back ${migration.name} would forget ${lost.length} name(s) reserved for roles that no longer exist (${lost.slice(0, 10).join(', ')}${lost.length > 10 ? ', …' : ''}), which applying it again cannot list; a system key could then take one. Keep this migration applied.`,
+      );
     await builder.dropCollection('apiKeyPrefixExemptions');
   },
 });

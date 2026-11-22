@@ -143,6 +143,38 @@ describe('listing the roles already named in the prefix reserved for system keys
     expect(await listed(created)).toEqual(['system-key-sales']);
   });
 
+  it('refuses to roll back while it holds a name whose role was deleted, keeping the name reserved', async () => {
+    const { created, apiKeys } = await database();
+    testDatabase = created;
+    await role(created, 'system-key-sales');
+    await role(created, 'system-key-support');
+    await apiKeys.upTo('202611210004_api_keys_manager_notices');
+    await apiKeys.latest();
+    expect(await listed(created)).toEqual([
+      'system-key-sales',
+      'system-key-support',
+    ]);
+    // The application deletes one of its old roles: only the list remembers its name now.
+    await created.database
+      .connection()
+      .query.deleteFrom('authorizationPermissionSets')
+      .where('key', '=', 'system-key-sales')
+      .execute();
+    await expect(apiKeys.rollback()).rejects.toThrow(
+      /would forget 1 name\(s\).*system-key-sales/u,
+    );
+    expect(await listed(created)).toEqual([
+      'system-key-sales',
+      'system-key-support',
+    ]);
+    // Applying again changes nothing: the migration stays applied.
+    await apiKeys.latest();
+    expect(await listed(created)).toEqual([
+      'system-key-sales',
+      'system-key-support',
+    ]);
+  });
+
   it('tells a system key’s set by its service account after rolling back past the system keys', async () => {
     const { created, apiKeys } = await database();
     testDatabase = created;
