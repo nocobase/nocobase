@@ -603,6 +603,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     drafts: 'Rascunhos',
     moveMessage: 'Mover mensagens',
     aliases: 'Aliases',
+    downloadOriginal: 'Baixar original',
   },
   status: {
     account: {

@@ -592,6 +592,7 @@ const ownEnUS = {
     drafts: 'Drafts',
     moveMessage: 'Move messages',
     aliases: 'Aliases',
+    downloadOriginal: 'Download original',
   },
   status: {
     account: {

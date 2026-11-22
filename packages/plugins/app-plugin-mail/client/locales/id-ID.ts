@@ -597,6 +597,7 @@ const idID: LocaleResource<typeof enUS> = {
     drafts: 'Draf',
     moveMessage: 'Pindahkan pesan',
     aliases: 'Alias',
+    downloadOriginal: 'Unduh asli',
   },
   status: {
     account: {

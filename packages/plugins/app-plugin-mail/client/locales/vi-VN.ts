@@ -593,6 +593,7 @@ const viVN: LocaleResource<typeof enUS> = {
     drafts: 'Bản nháp',
     moveMessage: 'Di chuyển tin nhắn',
     aliases: 'Bí danh',
+    downloadOriginal: 'Tải bản gốc',
   },
   status: {
     account: {

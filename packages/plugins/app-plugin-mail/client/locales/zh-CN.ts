@@ -558,6 +558,7 @@ const zhCN: MailResource = {
     drafts: '草稿',
     moveMessage: '移动邮件',
     aliases: '别名',
+    downloadOriginal: '下载原件',
   },
   status: {
     account: {

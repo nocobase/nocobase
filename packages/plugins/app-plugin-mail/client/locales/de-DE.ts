@@ -606,6 +606,7 @@ const deDE: LocaleResource<typeof enUS> = {
     drafts: 'Entwürfe',
     moveMessage: 'Nachrichten verschieben',
     aliases: 'Aliase',
+    downloadOriginal: 'Original herunterladen',
   },
   status: {
     account: {

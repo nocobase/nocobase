@@ -598,6 +598,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     drafts: '下書き',
     moveMessage: 'メッセージの移動',
     aliases: '別名',
+    downloadOriginal: '元のメールをダウンロード',
   },
   status: {
     account: {

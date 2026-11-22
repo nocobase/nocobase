@@ -80,17 +80,18 @@ describe('Mail extension points', () => {
       component,
     });
 
-    expect(mail.slots.workspaceActions.list().map(({ name }) => name)).toEqual(
-      ['early', 'late'],
-    );
+    expect(mail.slots.workspaceActions.list().map(({ name }) => name)).toEqual([
+      'early',
+      'late',
+    ]);
     expect(() =>
       mail.slots.workspaceActions.add({ name: 'late', component }),
     ).toThrow(/already registered/u);
 
     removeEarly();
-    expect(mail.slots.workspaceActions.list().map(({ name }) => name)).toEqual(
-      ['late'],
-    );
+    expect(mail.slots.workspaceActions.list().map(({ name }) => name)).toEqual([
+      'late',
+    ]);
   });
 
   it('keeps Provider types by type and completion handlers until removed', () => {

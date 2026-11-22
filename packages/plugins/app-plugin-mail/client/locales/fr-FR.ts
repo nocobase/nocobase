@@ -604,6 +604,7 @@ const frFR: LocaleResource<typeof enUS> = {
     drafts: 'Brouillons',
     moveMessage: 'Déplacer les messages',
     aliases: 'Alias',
+    downloadOriginal: "Télécharger l'original",
   },
   status: {
     account: {

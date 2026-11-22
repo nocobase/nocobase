@@ -603,6 +603,7 @@ const esES: LocaleResource<typeof enUS> = {
     drafts: 'Borradores',
     moveMessage: 'Mover mensajes',
     aliases: 'Alias',
+    downloadOriginal: 'Descargar original',
   },
   status: {
     account: {

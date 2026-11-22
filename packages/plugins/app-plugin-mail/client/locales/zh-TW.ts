@@ -554,6 +554,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     drafts: '草稿',
     moveMessage: '行動訊息',
     aliases: '別名',
+    downloadOriginal: '下載原始郵件',
   },
   status: {
     account: {
