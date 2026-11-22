@@ -156,19 +156,20 @@ const idID: LocaleResource<typeof enUS> = {
     groupOnly: 'Group or address only',
     disabled: 'Disabled',
     failedCount: '{{count}} failed',
-    acceptedCount: '{{count}} delivered',
+    acceptedCount: '{{count}} accepted',
     test: 'Test',
     fromConfig: 'From config.yml',
     fromDefault: 'Default',
     delivery: {
       title: 'Delivery',
       retry: 'Retries',
+      noRetry: 'No automatic retry after failure',
       retryValue: 'Up to {{count}} attempts, {{seconds}} s apart',
       retryHint: 'Set with notification.retry in config.yml.',
       jobs: 'Jobs',
       jobsHint: 'Deliveries run as background jobs on this configuration.',
     },
-    howTo: 'How to add a channel',
+    howTo: 'Channel configuration guide',
     howToHint:
       'Add a channel under notification.channels in config.yml and restart the application. A channel type comes from an installed plugin; secrets belong in environment variables.',
     testTitle: 'Test {{channel}}',
@@ -177,7 +178,7 @@ const idID: LocaleResource<typeof enUS> = {
     testToGroup:
       'Sends one test message to the group or address this channel is set up with. It appears in the delivery log.',
     testSend: 'Send test',
-    testSent: 'Test sent. Notification {{id}}.',
+    testSent: 'Test request {{id}}',
     testFailed: 'The test could not be sent.',
   },
   kinds: {
@@ -208,7 +209,7 @@ const idID: LocaleResource<typeof enUS> = {
       retrying: 'Retrying',
       unknown: 'Result unknown',
       pending: 'Pending',
-      accepted: 'Delivered',
+      accepted: 'Accepted',
     },
     channel: 'Channel',
     kind: 'Notification kind',
@@ -253,11 +254,10 @@ const idID: LocaleResource<typeof enUS> = {
   preferences: {
     title: 'Notifikasi',
     description:
-      'Choose where you receive each kind of notification. In-app messages always arrive.',
+      'Choose where you receive each kind of notification. Changes are saved automatically.',
     notification: 'Notification',
     required: 'Always sent',
-    requiredHint:
-      'Greyed-out channels are always sent and cannot be turned off.',
+    requiredHint: 'Required channels are set by the notification policy.',
     emailHint: 'Email goes to your account email address.',
     pushHint: 'Browser push reaches the devices you turned it on for below.',
     empty: 'There are no notifications you can choose for yet.',

@@ -82,10 +82,12 @@ describe('personal notification preferences', () => {
           : new Response(null, { status: 404 }),
       calls,
     );
-    const inApp = await screen.findByRole('switch', {
-      name: 'Approval requested · In-app messages',
-    });
-    expect(inApp).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByText('Always sent')).toBeVisible();
+    expect(
+      screen.queryByRole('switch', {
+        name: 'Approval requested · In-app messages',
+      }),
+    ).toBeNull();
     expect(
       screen.getByRole('columnheader', { name: 'In-app messages' }),
     ).toBeVisible();
@@ -298,7 +300,8 @@ describe('notification settings page', () => {
       },
       calls,
     );
-    expect(await screen.findByText('smtp.example.com')).toBeVisible();
+    fireEvent.click(await screen.findByRole('button', { name: /mail/i }));
+    expect(screen.getByText('smtp.example.com')).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Channels' })).toHaveAttribute(
       'aria-selected',
       'true',

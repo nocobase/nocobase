@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  'push.deviceCount': 'Terdaftar: {{total}} · Aktif: {{active}}',
   'push.title': 'Pemberitahuan push',
   'push.description':
     'Terima pengingat di setiap perangkat, bahkan saat aplikasi ditutup.',

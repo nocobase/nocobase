@@ -342,6 +342,12 @@ export function DeliveriesTab({
                     </td>
                     <td className='px-3 py-2'>
                       <StatusBadge status={row.delivery.status} />
+                      {row.delivery.status === 'failed' &&
+                        row.delivery.lastError && (
+                          <p className='mt-1 max-w-xs break-words text-xs text-destructive'>
+                            {row.delivery.lastError.message}
+                          </p>
+                        )}
                     </td>
                     <td className='px-3 py-2 text-right tabular-nums'>
                       {row.delivery.attemptCount}

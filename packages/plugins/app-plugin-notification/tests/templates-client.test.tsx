@@ -126,12 +126,14 @@ async function renderPage({
 }
 
 describe('notification template directory', () => {
-  it('groups clickable cards by category and opens details in a drawer with inert HTML', async () => {
+  it('groups notifications by category and opens details in a drawer with inert HTML', async () => {
     const calls = await renderPage();
     const group = await screen.findByRole('region', { name: 'Tasks' });
     expect(screen.getByRole('region', { name: 'Accounts' })).toBeVisible();
     const card = within(group).getByRole('button', { name: /Task assigned/u });
-    expect(card).toHaveTextContent('In-app message');
+    expect(
+      within(group).getByRole('columnheader', { name: /In-app message/u }),
+    ).toBeVisible();
     expect(card).not.toHaveTextContent('in-app');
     fireEvent.click(card);
     const drawer = await screen.findByRole('dialog');

@@ -66,9 +66,6 @@ export function NotificationSettingsPage(): ReactElement {
     <div className='mx-auto w-full max-w-6xl min-w-0 space-y-5 p-4 sm:p-6'>
       <header className='space-y-1'>
         <h1 className='text-xl font-semibold'>{t('settings.title')}</h1>
-        <p className='text-sm text-muted-foreground'>
-          {t('settings.description')}
-        </p>
       </header>
       <Tabs
         value={tab}

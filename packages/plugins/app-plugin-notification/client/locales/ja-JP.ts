@@ -153,13 +153,14 @@ const jaJP: LocaleResource<typeof enUS> = {
     groupOnly: 'グループまたは固定アドレスのみ',
     disabled: '無効',
     failedCount: '失敗 {{count}}',
-    acceptedCount: '配信 {{count}}',
+    acceptedCount: '受付 {{count}}',
     test: 'テスト',
     fromConfig: 'config.yml から',
     fromDefault: '既定値',
     delivery: {
       title: '配信',
       retry: '再試行',
+      noRetry: '失敗時の自動再試行なし',
       retryValue: '最大 {{count}} 回、{{seconds}} 秒間隔',
       retryHint: 'config.yml の notification.retry で設定します。',
       jobs: 'ジョブ',
@@ -174,7 +175,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     testToGroup:
       'このチャネルに設定されたグループまたはアドレスにテストメッセージを 1 件送ります。配信ログに記録されます。',
     testSend: 'テストを送信',
-    testSent: 'テストを送信しました。通知 {{id}}。',
+    testSent: 'テスト記録 {{id}}',
     testFailed: 'テストを送信できませんでした。',
   },
   kinds: {
@@ -205,7 +206,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       retrying: '再試行中',
       unknown: '結果不明',
       pending: '待機中',
-      accepted: '配信済み',
+      accepted: '受付済み',
     },
     channel: 'チャネル',
     kind: '通知の種類',
@@ -250,10 +251,10 @@ const jaJP: LocaleResource<typeof enUS> = {
   preferences: {
     title: '通知',
     description:
-      '通知の種類ごとに受け取る場所を選びます。アプリ内メッセージは常に届きます。',
+      '通知の種類ごとに受け取る場所を選びます。変更は自動保存されます。',
     notification: '通知',
     required: '常に送信',
-    requiredHint: 'グレーのチャネルは常に送信され、オフにできません。',
+    requiredHint: '必須のチャネルは通知ポリシーで指定されます。',
     emailHint: 'メールはアカウントのメールアドレスに届きます。',
     pushHint: 'ブラウザープッシュは下でオンにしたデバイスに届きます。',
     empty: '選択できる通知はまだありません。',
