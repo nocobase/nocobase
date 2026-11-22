@@ -641,7 +641,7 @@ describe('definePersonalSettingsRoutes', () => {
         packageName: '@example/plugin',
         routes: definePersonalSettingsRoutes([
           {
-            parent: PERSONAL_SETTINGS_CATEGORIES.preferences,
+            parent: PERSONAL_SETTINGS_CATEGORIES.account,
             name: 'appearance',
             path: '/appearance',
             navigation: { title: 'Appearance' },
@@ -671,16 +671,8 @@ describe('definePersonalSettingsRoutes', () => {
         'settings.personal.categories.account',
       ],
       [
-        '@nocobase/app-client:personalSettings.preferences',
-        'settings.personal.categories.preferences',
-      ],
-      [
-        '@nocobase/app-client:personalSettings.messages',
-        'settings.personal.categories.messages',
-      ],
-      [
-        '@nocobase/app-client:personalSettings.other',
-        'settings.personal.categories.other',
+        '@nocobase/app-client:personalSettings.integrations',
+        'settings.personal.categories.integrations',
       ],
     ]);
   });

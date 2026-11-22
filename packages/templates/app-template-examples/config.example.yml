@@ -51,6 +51,9 @@
 
 # Values under client are public and embedded in the SPA HTML.
 client:
+  # Open personal settings from the account menu as a page (default) or dialog.
+  personalSettings:
+    openMode: page
   app:
     title: NocoBase Examples
     # Defaults apply only when no valid browser-local choice is saved.

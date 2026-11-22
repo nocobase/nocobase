@@ -113,7 +113,7 @@ const settings = {
     navigation: 'Personal settings navigation',
     empty: 'There are no personal settings yet.',
     appearance: {
-      title: 'Language and appearance',
+      title: 'Preferences',
       description:
         'The same choices as Language and Theme in the account menu; they apply to you in this browser.',
     },

@@ -13,9 +13,7 @@ export default {
     personal: {
       categories: {
         account: '账号',
-        preferences: '偏好',
-        messages: '消息',
-        other: '其他',
+        integrations: '集成',
       },
     },
   },

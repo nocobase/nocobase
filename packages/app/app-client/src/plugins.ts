@@ -99,18 +99,19 @@ export const SYSTEM_SETTINGS_CATEGORIES: {
 /** The personal settings categories every application has, used like `SYSTEM_SETTINGS_CATEGORIES`. */
 export const PERSONAL_SETTINGS_CATEGORIES: {
   readonly account: 'account';
-  readonly preferences: 'preferences';
-  readonly messages: 'messages';
-  readonly other: 'other';
+  readonly integrations: 'integrations';
+  /** @deprecated Use account. */
+  readonly preferences: 'account';
+  /** @deprecated Use account. */
+  readonly messages: 'account';
+  /** @deprecated Use account. */
+  readonly other: 'account';
 } = Object.freeze({
-  /** The person's profile, password and sign-in methods. */
   account: 'account',
-  /** Language, appearance and other personal habits. */
-  preferences: 'preferences',
-  /** The messages a person receives: their notifications, their mailboxes. */
-  messages: 'messages',
-  /** Pages that fit no other category. */
-  other: 'other',
+  integrations: 'integrations',
+  preferences: 'account',
+  messages: 'account',
+  other: 'account',
 } as const);
 
 export type SystemSettingsCategory =
@@ -119,7 +120,10 @@ export type PersonalSettingsCategory =
   (typeof PERSONAL_SETTINGS_CATEGORIES)[keyof typeof PERSONAL_SETTINGS_CATEGORIES];
 
 /** The category that holds pages whose category does not exist or is hidden, in both settings surfaces. */
-const FALLBACK_SETTINGS_CATEGORY = 'other';
+const FALLBACK_SETTINGS_CATEGORY = {
+  systemSettings: 'other',
+  personalSettings: 'account',
+} as const;
 
 /** Built-in categories in menu order; orders are 100 apart so a plugin category fits between two. */
 const BUILT_IN_SETTINGS_CATEGORIES: Readonly<
@@ -139,9 +143,7 @@ const BUILT_IN_SETTINGS_CATEGORIES: Readonly<
   ] as const),
   personalSettings: Object.freeze([
     [PERSONAL_SETTINGS_CATEGORIES.account, 100],
-    [PERSONAL_SETTINGS_CATEGORIES.preferences, 200],
-    [PERSONAL_SETTINGS_CATEGORIES.messages, 300],
-    [PERSONAL_SETTINGS_CATEGORIES.other, 900],
+    [PERSONAL_SETTINGS_CATEGORIES.integrations, 200],
   ] as const),
 });
 
@@ -375,7 +377,7 @@ export interface AppClientSettingsCategoryOverride {
   /** A translation key replacing the category's title, read where the category's own title is: the application's namespace for a built-in category. */
   readonly title?: string;
   readonly order?: number;
-  /** Leaves the category out of the menu; its pages move to `other`, which cannot be hidden. */
+  /** Leaves the category out of the menu; its pages move to the surface's fallback category. */
   readonly hidden?: boolean;
 }
 
@@ -650,7 +652,7 @@ export function definePersonalSettingsRoutes(
 
 /**
  * Changes how the application shows existing settings categories, built-in or declared by a plugin: their title,
- * their order, or whether they are shown at all. A hidden category's pages move to `other`. Ids never change and
+ * their order, or whether they are shown at all. A hidden category's pages move to the surface's fallback category. Ids never change and
  * categories are never removed, so plugins can rely on them. Only the application may register it; an override naming
  * a category nobody declares is ignored with a development warning.
  */
@@ -675,9 +677,9 @@ export function defineSettingsCategories(
   const frozen = Object.freeze(
     Object.fromEntries(
       Object.entries(categories).map(([id, override]) => {
-        if (id === FALLBACK_SETTINGS_CATEGORY && override.hidden)
+        if (id === FALLBACK_SETTINGS_CATEGORY[surface] && override.hidden)
           throw new Error(
-            `The ${SETTINGS_SURFACES[surface].label} category "${FALLBACK_SETTINGS_CATEGORY}" cannot be hidden.`,
+            `The ${SETTINGS_SURFACES[surface].label} category "${FALLBACK_SETTINGS_CATEGORY[surface]}" cannot be hidden.`,
           );
         return [id, Object.freeze({ ...override })];
       }),
@@ -1079,9 +1081,11 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
   ): RouteNode => {
     if (isDevelopment())
       console.warn(
-        `${capitalize(SETTINGS_SURFACES[surface].label)} route "${route}" from "${packageName}" ${reason}; showing it under "${FALLBACK_SETTINGS_CATEGORY}".`,
+        `${capitalize(SETTINGS_SURFACES[surface].label)} route "${route}" from "${packageName}" ${reason}; showing it under "${FALLBACK_SETTINGS_CATEGORY[surface]}".`,
       );
-    return groups.get(categoryKey(surface, FALLBACK_SETTINGS_CATEGORY))!;
+    return groups.get(
+      categoryKey(surface, FALLBACK_SETTINGS_CATEGORY[surface]),
+    )!;
   };
   for (const { node, parent, category } of pending) {
     let target = groups.get(parent);
@@ -1119,7 +1123,9 @@ function assembleRoutes(inputs: readonly RouteInput[]): RouteNode[] {
     roots.splice(roots.indexOf(node), 1);
     if (node.children?.length)
       groups
-        .get(categoryKey(node.surface, FALLBACK_SETTINGS_CATEGORY))!
+        .get(
+          categoryKey(node.surface, FALLBACK_SETTINGS_CATEGORY[node.surface]),
+        )!
         .children!.push(...node.children);
   }
   const visiting = new Set<RouteNode>();

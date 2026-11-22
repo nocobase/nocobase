@@ -3,11 +3,12 @@ import {
   PERSONAL_SETTINGS_CATEGORIES,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
+import { Palette } from 'lucide-react';
 
 /**
  * The personal settings home and built-in pages. Every page declared with `definePersonalSettingsRoutes()`, by the
  * application or a plugin, is mounted under `/me`, opens from the account menu and joins one of the categories
- * `@nocobase/app-client` builds in with `parent`, such as `parent: PERSONAL_SETTINGS_CATEGORIES.preferences`, which also
+ * `@nocobase/app-client` builds in with `parent`, such as `parent: PERSONAL_SETTINGS_CATEGORIES.account`, which also
  * titles them. Personal settings belong to whoever is signed in: a page declares no `authz`, stays out of page
  * permissions, and reads only the current person's data. A category the viewer can open nothing in is not shown.
  */
@@ -20,10 +21,14 @@ const personalSettingsRoutes: AppClientRouteContribution =
       componentLoader: () => import('./personal-settings-home.js'),
     },
     {
-      parent: PERSONAL_SETTINGS_CATEGORIES.preferences,
+      parent: PERSONAL_SETTINGS_CATEGORIES.account,
       name: 'personalAppearance',
       path: '/preferences',
-      navigation: { title: 'settings.personal.appearance.title' },
+      navigation: {
+        title: 'settings.personal.appearance.title',
+        icon: Palette,
+        order: 200,
+      },
       breadcrumb: { title: 'settings.personal.appearance.title' },
       componentLoader: () => import('./appearance.js'),
     },

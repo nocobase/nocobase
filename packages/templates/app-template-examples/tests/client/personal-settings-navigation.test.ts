@@ -26,14 +26,14 @@ describe('Personal settings navigation', () => {
     );
   });
 
-  it('lists the built-in Language and appearance page and opens it from /me', () => {
+  it('lists the built-in Preferences page and opens it from /me', () => {
     const menu = buildPersonalSettingsNavigation(resolve(), new Set());
     expect(
       menu.map(({ route, children }) => [
         route.name,
         children.map((child) => child.route.path),
       ]),
-    ).toEqual([['personalSettings.preferences', ['/me/preferences']]]);
+    ).toEqual([['personalSettings.account', ['/me/preferences']]]);
     expect(firstNavigationPage(menu)?.path).toBe('/me/preferences');
   });
 });

@@ -1,11 +1,14 @@
 import { useAuthenticationErrorResolver } from '@nocobase/app-plugin-authentication/client/actions';
-import { getAvatarInitials, useToaster } from '@nocobase/app-client';
+import {
+  getAvatarInitials,
+  useClientApplication,
+  usePersonalSettingsNavigation,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { PERSONAL_SETTINGS_ROUTE_PATH } from '@nocobase/app-client/plugins';
 import { LogOut, UserCog, UserRound } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   DropdownMenu,
@@ -37,7 +40,8 @@ export function UserMenu(): ReactElement {
   const { t } = useTranslation();
   const toaster = useToaster();
   const resolveError = useAuthenticationErrorResolver();
-  const navigate = useNavigate();
+  const { open } = usePersonalSettingsNavigation();
+  const { config } = useClientApplication();
 
   const name =
     identity?.fullName ||
@@ -83,7 +87,11 @@ export function UserMenu(): ReactElement {
         <DropdownMenuItem
           className='gap-2'
           onClick={() => {
-            void navigate(PERSONAL_SETTINGS_ROUTE_PATH);
+            open(
+              config.get('personalSettings.openMode') === 'dialog'
+                ? 'dialog'
+                : 'page',
+            );
           }}
         >
           <UserCog className='size-4' />
