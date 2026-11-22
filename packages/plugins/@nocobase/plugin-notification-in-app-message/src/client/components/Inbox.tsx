@@ -62,7 +62,13 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
           onClose={() => setSelectedChannel(null)}
           minHeight={'60vh'}
         >
-          <MobileMessagePage displayPageHeader={false} />
+          {selectedChannel && (
+            <MobileMessagePage
+              key={selectedChannel.name}
+              channelName={selectedChannel.name}
+              displayPageHeader={false}
+            />
+          )}
         </MobilePopup>
       </>
     );
