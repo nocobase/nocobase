@@ -229,7 +229,7 @@ export default function RolesPage(): ReactElement {
                   <div
                     key={role.key}
                     className={cn(
-                      'flex items-center gap-1 rounded-md pr-1',
+                      'flex items-center gap-1 rounded-md pr-1 hover:bg-accent has-focus-visible:bg-accent has-aria-expanded:bg-accent',
                       selected === role.key && 'bg-accent',
                     )}
                   >
@@ -239,8 +239,8 @@ export default function RolesPage(): ReactElement {
                       }}
                       aria-current={selected === role.key ? 'page' : undefined}
                       className={cn(
-                        'flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
-                        selected === role.key && 'bg-accent font-medium',
+                        'flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        selected === role.key && 'font-medium',
                       )}
                     >
                       <span className='min-w-0 flex-1'>
