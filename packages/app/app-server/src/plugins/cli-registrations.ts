@@ -105,9 +105,10 @@ function registrationArray(
 ): ts.ArrayLiteralExpression | undefined {
   const exported = defaultExport(typescript, sourceFile);
   if (!exported) return undefined;
-  const expression = typescript.isIdentifier(exported)
-    ? topLevelInitializer(typescript, sourceFile, exported.text)
-    : exported;
+  const value = unwrap(typescript, exported);
+  const expression = typescript.isIdentifier(value)
+    ? topLevelInitializer(typescript, sourceFile, value.text)
+    : value;
   const call = expression && unwrap(typescript, expression);
   if (
     !call ||

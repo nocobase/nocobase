@@ -132,6 +132,13 @@ export class FoundationPluginCatalog {
         };
       }),
     );
+    // A plugin whose registration cannot be told is neither missing nor enabled: no dependent is flagged for it and
+    // no command registers it, since its own row already asks for a rebuild.
+    const unknown = new Set(
+      classified
+        .filter(({ registrationUnknown }) => registrationUnknown)
+        .map(({ packageName }) => packageName),
+    );
     const enabled = new Set(
       classified
         .filter(
@@ -173,7 +180,10 @@ export class FoundationPluginCatalog {
           optionalRequires,
           // Enabling a plugin brings everything it builds on; an enabled one only lacks what it cannot work without.
           missingRequires: requires.filter(
-            (name) => !enabled.has(name) && !(isEnabled && optional.has(name)),
+            (name) =>
+              !enabled.has(name) &&
+              !unknown.has(name) &&
+              !(isEnabled && optional.has(name)),
           ),
         } satisfies FoundationPluginView;
       },

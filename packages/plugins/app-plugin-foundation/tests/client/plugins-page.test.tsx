@@ -352,6 +352,58 @@ describe('plugins page', () => {
     }
   });
 
+  it.each([
+    ['an enabled', true],
+    ['a not-enabled', false],
+  ])(
+    'neither flags nor registers a requirement a deployment cannot tell for %s dependent',
+    async (_, enabled) => {
+      const tools = '@acme/app-plugin-tools';
+      const reports = '@acme/app-plugin-reports';
+      const app = await createApplicationFixture({
+        dependencies: [tools, reports],
+        installed: [
+          { name: tools, entries: ['cli'], nocobase: { title: 'Tools' } },
+          { name: reports, peers: [tools], nocobase: { title: 'Reports' } },
+        ],
+        cli: { legacyBuild: true, plugins: [tools] },
+      });
+      try {
+        const registered = enabled ? [reports] : [];
+        const { data } = await new FoundationPluginCatalog({
+          rootDir: app.rootDir,
+          serverPlugins: () =>
+            registered.map((packageName) => ({
+              packageName,
+              version: '1.0.0',
+            })),
+        }).list(registered);
+        await renderPage({ plugins: data, deployed: true });
+
+        const row = rowOf('Reports');
+        expect(row).not.toHaveTextContent('needs');
+        expect(row).not.toHaveTextContent('Enable first');
+        expect(
+          screen.queryByText(/plugin register .*app-plugin-tools/),
+        ).toBeNull();
+        if (enabled) {
+          expect(within(group(/^Enabled/)).getByText('Reports')).toBeTruthy();
+        } else {
+          fireEvent.click(
+            within(row).getByRole('button', { name: 'How to enable Reports' }),
+          );
+          expect(
+            within(await screen.findByRole('dialog')).getByText(
+              `pnpm nocobase plugin register ${reports}`,
+            ),
+          ).toBeInTheDocument();
+        }
+      } finally {
+        await app.cleanup();
+      }
+    },
+  );
+
   it('offers the fixing command for a plugin that needs attention', async () => {
     await renderPage();
 

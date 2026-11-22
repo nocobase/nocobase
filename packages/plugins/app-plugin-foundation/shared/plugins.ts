@@ -41,7 +41,8 @@ export interface FoundationPluginView extends FoundationPluginMetadata {
   readonly optionalRequires: readonly string[];
   /**
    * Those of `requires` the application has not enabled. For a plugin that is enabled, only those it cannot work
-   * without; the ones its manifest marks optional are left out.
+   * without; the ones its manifest marks optional are left out. One whose registration cannot be told
+   * (`registrationUnknown`) is not counted as missing.
    */
   readonly missingRequires: readonly string[];
 }

@@ -123,6 +123,11 @@ function unused() {
       // Both templates assign the call to a variable and export that.
       `${header}const cliPlugins: AppCliPlugins = defineCliPlugins([tools]);\nexport default cliPlugins;\n`,
       `${header}const cliPlugins = defineCliPlugins([tools]) satisfies AppCliPlugins;\nexport { cliPlugins as default };\n`,
+      // A wrapped default export is traced to the same variable.
+      `${header}const cliPlugins = defineCliPlugins([tools]);\nexport default (cliPlugins);\n`,
+      `${header}const cliPlugins = defineCliPlugins([tools]);\nexport default cliPlugins satisfies readonly unknown[];\n`,
+      `${header}const cliPlugins = defineCliPlugins([tools]);\nexport default (cliPlugins as AppCliPlugins)!;\n`,
+      `${header}export default (defineCliPlugins([tools]) satisfies AppCliPlugins);\n`,
     ])
       expect(await list(source)).toEqual(['@acme/app-plugin-tools']);
   });

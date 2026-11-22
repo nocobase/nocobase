@@ -91,7 +91,7 @@ export const PluginSchema: z.ZodType<FoundationPluginView> = z
     }),
     missingRequires: z.array(z.string()).meta({
       description:
-        'Those of `requires` the application has not enabled; for an enabled plugin, only those it cannot work without.',
+        'Those of `requires` the application has not enabled; for an enabled plugin, only those it cannot work without. One whose registration cannot be told is not counted.',
     }),
   })
   .meta({ ref: 'FoundationPlugin' });

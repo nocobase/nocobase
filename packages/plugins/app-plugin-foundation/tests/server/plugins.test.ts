@@ -272,6 +272,34 @@ describe('FoundationPluginCatalog', () => {
     ]);
   });
 
+  it.each([
+    ['enabled', true],
+    ['not enabled', false],
+  ] as const)(
+    'does not count a requirement whose registration cannot be told as missing for an %s dependent',
+    async (_, enabled) => {
+      const tools = '@acme/app-plugin-tools';
+      const reports = '@acme/app-plugin-reports';
+      const plugins = await catalog(
+        {
+          dependencies: [tools, reports],
+          installed: [
+            { name: tools, entries: ['cli'] },
+            { name: reports, peers: [tools] },
+          ],
+          cli: { legacyBuild: true, plugins: [tools] },
+        },
+        enabled ? [reports] : [],
+      );
+
+      const { data } = await plugins.list(enabled ? [reports] : []);
+      expect(data).toMatchObject([
+        { packageName: reports, enabled, issues: [], missingRequires: [] },
+        { packageName: tools, registrationUnknown: true },
+      ]);
+    },
+  );
+
   describe('a CLI-only plugin and a cli/plugins.ts the compiler parses', () => {
     const cliOnly = '@acme/app-plugin-tools';
     const classify = async (body: string) => {
