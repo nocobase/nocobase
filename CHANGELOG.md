@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.51](https://github.com/nocobase/nocobase/compare/v2.2.50...v2.2.51) - 2026-11-22
+
+### 🚀 Improvements
+
+- **[client-v2]** Reduced the spacing between fields in horizontal mobile details blocks. ([#11644](https://github.com/nocobase/nocobase/pull/11644))
+
+### 🐛 Bug Fixes
+
+- **[Error handler]** Duplicate and not-null field messages now include the collection title when available, including when saving related records. ([#11638](https://github.com/nocobase/nocobase/pull/11638))
+
+- **[Notification: In-app message]** Fixed an issue where opening a channel in the mobile inbox could show messages from another channel. ([#11662](https://github.com/nocobase/nocobase/pull/11662))
+
+- **[Migration manager]** PostgreSQL migrations now exclude unrelated sequences, so selected tables can be restored even when the target lacks schemas used only by other tables.
+
 ## [v2.2.50](https://github.com/nocobase/nocobase/compare/v2.2.49...v2.2.50) - 2026-11-21
 
 ### 🚀 Improvements
