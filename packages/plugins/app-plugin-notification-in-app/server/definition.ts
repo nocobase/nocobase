@@ -269,7 +269,7 @@ export class InAppChannel implements ChannelInstance<
       body: content.body.trim() ? content.body : content.title,
       ...(content.target ? { target: content.target } : {}),
       kind: content.kind,
-      category: content.category,
+      ...(content.category ? { category: content.category } : {}),
       ...(content.source
         ? {
             source: {

@@ -826,8 +826,8 @@ export class NotificationManager<
         messages: {
           [name]: audience.compose(
             {
+              // No category: a test is not a kind people choose, so the inbox lists it under All only.
               kind: 'notification.test',
-              category: 'system',
               title: input.title,
               body: input.body,
               key: idempotencyKey,

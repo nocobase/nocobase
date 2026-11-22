@@ -48,8 +48,8 @@ export type ChannelCapabilities = NotificationProviderCapabilities;
 export interface NotificationContent {
   /** The notification kind, such as `approval.requested`. */
   readonly kind: string;
-  /** The kind's category key, such as `approval`. */
-  readonly category: string;
+  /** The kind's category key, such as `approval`; absent for a channel test send. */
+  readonly category?: string;
   readonly title: string;
   readonly body: string;
   readonly html?: string;
