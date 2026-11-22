@@ -229,3 +229,5 @@ Definitions are checked when the module loads: every state is reachable from an 
 | Transactional outbox  | Effect runs written in the business transaction and delivered after commit                                              |
 | Fencing tokens        | Every attempt carries a number, and a reclaimed attempt cannot write its result                                         |
 | HTTP idempotency keys | `requestId` returns the first result to a repeated request                                                              |
+
+Applications that persist work for a state stay can call `findStayExit(store, { lifecycle, recordId, entryId, version })` with the transaction's store. It returns the first later transition that ended the stay, including a management reset or restart. A suspension or resume preserves the stay. An effect continuation can supply its own request ID prefix to ignore transitions it initiated.
