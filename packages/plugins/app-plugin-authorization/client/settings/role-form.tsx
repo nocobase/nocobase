@@ -1,3 +1,4 @@
+import { UsersRoundIcon } from 'lucide-react';
 import { FeedbackForm } from '#components/feedback-form';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import {
@@ -251,7 +252,6 @@ function RoleEditor(): ReactElement {
   const originalRevisionRef = useRef<string | undefined>(undefined);
   const canAssign = useRolePermission('assign');
   const [reviewing, setReviewing] = useState(false);
-  const [memberCount, setMemberCount] = useState<number>();
 
   const changes = useMemo(
     () =>
@@ -299,43 +299,24 @@ function RoleEditor(): ReactElement {
       `${parent.base.slice(0, parent.base.lastIndexOf('/'))}/permission-check?${new URLSearchParams({ user: userId })}`,
     [parent.base],
   );
-  const onMemberCount = useCallback(
-    (count: number) => setMemberCount(count),
-    [],
-  );
-  // The members tab shows its count before it is opened.
-  useEffect(() => {
-    if (creating || !key) return;
-    let active = true;
-    authz.listAssignments(key).then(
-      (assignments) => {
-        if (active) setMemberCount((count) => count ?? assignments.length);
-      },
-      () => undefined,
-    );
-    return () => {
-      active = false;
-    };
-  }, [authz, creating, key]);
   const extraTabs = useMemo<readonly PermissionEditorExtraTab[]>(() => {
     if (creating || !key || !initial) return [];
+    const membersTab: PermissionEditorExtraTab = {
+      value: 'members',
+      icon: <UsersRoundIcon aria-hidden />,
+      label: t('settings.members.tab'),
+      content: (
+        <RoleMembers
+          permissionSet={key}
+          types={memberTypes}
+          editable={canAssign}
+          checkHref={checkHref}
+        />
+      ),
+    };
+    if (unrestricted) return [membersTab];
     return [
-      {
-        value: 'members',
-        label:
-          memberCount === undefined
-            ? t('settings.members.tab')
-            : t('settings.members.tabCount', { count: memberCount }),
-        content: (
-          <RoleMembers
-            permissionSet={key}
-            types={memberTypes}
-            editable={canAssign}
-            onCount={onMemberCount}
-            checkHref={checkHref}
-          />
-        ),
-      },
+      membersTab,
       ...roleTabs.map((tab) => ({
         value: `extension:${tab.key}`,
         label:
@@ -369,13 +350,12 @@ function RoleEditor(): ReactElement {
       })),
     ];
   }, [
+    unrestricted,
     creating,
     key,
     initial,
-    memberCount,
     memberTypes,
     canAssign,
-    onMemberCount,
     checkHref,
     roleTabs,
     allowed,
@@ -640,6 +620,7 @@ function RoleEditor(): ReactElement {
             className='flex flex-col gap-4'
           >
             <PermissionEditor
+              tabVariant='folder'
               className='rounded-none border-0 bg-transparent'
               menus={workspace?.menus ?? []}
               objects={objects}

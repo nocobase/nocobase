@@ -169,7 +169,19 @@ it('lists the roles beside the editor, opens the first one and only offers a tit
   expect(within(list).getByText(words.unrestrictedRole)).toBeVisible();
   expect(within(list).getByText(words.protected)).toBeVisible();
   // The first role opens at once: the system administrator, which has nothing to set.
-  expect(await screen.findByText(editor.unrestrictedTitle)).toBeVisible();
+  expect(await screen.findByText(editor.unrestrictedDescription)).toBeVisible();
+  const membersTab = screen.getByRole('tab', {
+    name: words.members.tab,
+    selected: true,
+  });
+  const roleDetails = screen.getByRole('tabpanel', {
+    name: words.roles,
+    exact: true,
+  });
+  expect(within(roleDetails).getAllByRole('tab')).toEqual([membersTab]);
+  expect(
+    screen.getByRole('tabpanel', { name: words.members.tab }),
+  ).toBeVisible();
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: words.reviewAndSave, exact: true }),
@@ -207,7 +219,8 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   const calls = api(roles);
   await mount('/settings/roles/team/edit', calls);
   const menusTab = await screen.findByRole('tab', {
-    name: new RegExp(`${editor.menusTab}\\s*0 / \\d+`),
+    name: editor.menusTab,
+    exact: true,
   });
   expect(menusTab).toHaveAttribute('aria-selected', 'true');
   const home = screen.getByRole('checkbox', {
@@ -219,7 +232,7 @@ it('saves menu access apart from the actions, explains escalation and asks befor
   await user.click(home);
   expect(
     screen.getByRole('tab', {
-      name: new RegExp(`${editor.menusTab}\\s*1 / \\d+`),
+      name: new RegExp(editor.menusTab),
     }),
   ).toBeVisible();
   expect(

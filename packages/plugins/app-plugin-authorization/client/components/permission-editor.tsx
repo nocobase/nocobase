@@ -9,8 +9,10 @@
 import {
   ChevronDownIcon,
   InfoIcon,
+  LayoutPanelLeftIcon,
+  LayersIcon,
+  SlidersHorizontalIcon,
   SearchIcon,
-  ShieldCheckIcon,
   TriangleAlertIcon,
   XIcon,
 } from 'lucide-react';
@@ -59,7 +61,7 @@ import {
   SelectValue,
 } from '#components/ui/select';
 import { Switch } from '#components/ui/switch';
-import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#components/ui/tabs';
 import {
   applyQuickSet,
   applyQuickSetMany,
@@ -132,6 +134,7 @@ export type PermissionEditorTab = 'menus' | 'objects' | 'settings';
 export interface PermissionEditorExtraTab {
   readonly value: string;
   readonly label: ReactNode;
+  readonly icon?: ReactNode;
   readonly content: ReactNode;
 }
 
@@ -255,6 +258,7 @@ export interface PermissionEditorProps {
   /** The draft differs from what is saved. */
   readonly dirty?: boolean | undefined;
   readonly defaultTab?: PermissionEditorTab | undefined;
+  readonly tabVariant?: 'line' | 'folder';
   /** Tabs after the built-in ones. */
   readonly tabs?: readonly PermissionEditorExtraTab[] | undefined;
   /** Unsaved changes by tab value, shown as a badge on the tab. */
@@ -289,6 +293,7 @@ const list = (items: readonly string[]): string =>
   new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
 
 const TAB_TRIGGER = 'flex-none gap-1.5 py-0.5 whitespace-nowrap';
+const TAB_COUNT = 'text-xs font-normal text-muted-foreground tabular-nums';
 
 const DEFAULT_LABELS: PermissionEditorLabels = {
   menusTab: 'Page access',
@@ -1174,6 +1179,7 @@ export function PermissionEditor({
   dirty = false,
   settings = NO_SETTINGS,
   defaultTab = 'menus',
+  tabVariant = 'line',
   defaultObjectId,
   labels,
   className,
@@ -1186,11 +1192,13 @@ export function PermissionEditor({
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const hasOperations = objects.some((object) => object.actions.length > 0);
-  const visibleBuiltIns = builtInTabs.filter((key) =>
-    key === 'objects'
-      ? hasOperations
-      : key !== 'settings' || settings.length > 0,
-  );
+  const visibleBuiltIns = unrestricted
+    ? []
+    : builtInTabs.filter((key) =>
+        key === 'objects'
+          ? hasOperations
+          : key !== 'settings' || settings.length > 0,
+      );
   const availableTabs = [
     ...visibleBuiltIns,
     ...extraTabs.map((extra) => extra.value),
@@ -1492,46 +1500,6 @@ export function PermissionEditor({
     </div>
   );
   const saveBar = dirty && !unrestricted && footer ? footerBar : null;
-
-  if (unrestricted)
-    return (
-      <div
-        data-slot='permission-editor'
-        className={cn(
-          '@container/permissions min-w-0 rounded-lg border bg-card text-card-foreground',
-          className,
-        )}
-      >
-        {header && <div className='border-b px-4 py-3'>{header}</div>}
-        <div className='flex min-w-0 items-start gap-3 px-4 py-6'>
-          <ShieldCheckIcon
-            aria-hidden
-            className='mt-0.5 size-5 shrink-0 text-primary'
-          />
-          <div className='grid min-w-0 gap-1'>
-            <h2 className='text-base font-semibold'>
-              {words.unrestrictedTitle}
-            </h2>
-            <p className='text-sm text-muted-foreground'>
-              {words.unrestrictedDescription}
-            </p>
-          </div>
-        </div>
-        {/* Host tabs such as members still apply to a role that has every permission. */}
-        {extraTabs.map((extra) => (
-          <section
-            key={extra.value}
-            aria-label={
-              typeof extra.label === 'string' ? extra.label : undefined
-            }
-            className='flex min-w-0 flex-col gap-3 border-t px-4 py-4'
-          >
-            <h3 className='text-sm font-semibold'>{extra.label}</h3>
-            {extra.content}
-          </section>
-        ))}
-      </div>
-    );
 
   const messages = (
     <>
@@ -2370,9 +2338,28 @@ export function PermissionEditor({
         className,
       )}
     >
-      {header && <div className='px-4 pt-3 pb-1'>{header}</div>}
+      {(header || unrestricted) && (
+        <div
+          className={cn(
+            'px-4 pt-3 pb-1',
+            tabVariant === 'folder' && 'bg-muted/50 pb-3',
+          )}
+        >
+          {header ?? (
+            <h2 className='text-base font-semibold'>
+              {words.unrestrictedTitle}
+            </h2>
+          )}
+          {unrestricted && (
+            <p className='mt-3 text-sm text-muted-foreground'>
+              {words.unrestrictedDescription}
+            </p>
+          )}
+        </div>
+      )}
       {tab && (
         <Tabs
+          className='gap-0'
           value={tab}
           onValueChange={(next: string) => {
             setRequestedTab(next);
@@ -2381,39 +2368,64 @@ export function PermissionEditor({
             setFlash(undefined);
           }}
         >
-          {/* The tabs stay on one row, each name beside its count; a narrow screen scrolls them sideways. */}
-          <div className='overflow-x-auto border-b px-4'>
+          <div
+            className={cn(
+              'overflow-x-auto px-4',
+              tabVariant === 'folder'
+                ? 'bg-muted/50 shadow-[inset_0_-1px_var(--border)]'
+                : 'border-b',
+            )}
+          >
             <TabsList
-              variant='line'
-              className='flex w-max gap-3 py-0 group-data-horizontal/tabs:h-10'
+              variant={tabVariant}
+              activateOnFocus={tabVariant === 'folder'}
+              className={cn(
+                'flex w-max',
+                tabVariant === 'folder'
+                  ? 'group-data-horizontal/tabs:h-9'
+                  : 'gap-3 py-0 group-data-horizontal/tabs:h-10',
+              )}
             >
               {visibleBuiltIns.includes('menus') && (
                 <TabsTrigger value='menus' className={TAB_TRIGGER}>
+                  {tabVariant === 'folder' && (
+                    <LayoutPanelLeftIcon aria-hidden />
+                  )}
                   {words.menusTab}
-                  <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                    {words.tabCount(menuTotals.checked, menuTotals.total)}
-                  </span>
+                  {tabVariant === 'line' && (
+                    <span className={TAB_COUNT}>
+                      {words.tabCount(menuTotals.checked, menuTotals.total)}
+                    </span>
+                  )}
                   <TabBadge count={tabBadges?.menus} labels={words} />
                 </TabsTrigger>
               )}
               {visibleBuiltIns.includes('objects') && (
                 <TabsTrigger value='objects' className={TAB_TRIGGER}>
+                  {tabVariant === 'folder' && <LayersIcon aria-hidden />}
                   {words.objectsTab}
-                  <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                    {words.tabCount(objectTotals.enabled, objectTotals.total)}
-                  </span>
+                  {tabVariant === 'line' && (
+                    <span className={TAB_COUNT}>
+                      {words.tabCount(objectTotals.enabled, objectTotals.total)}
+                    </span>
+                  )}
                   <TabBadge count={tabBadges?.objects} labels={words} />
                 </TabsTrigger>
               )}
               {visibleBuiltIns.includes('settings') && (
                 <TabsTrigger value='settings' className={TAB_TRIGGER}>
+                  {tabVariant === 'folder' && (
+                    <SlidersHorizontalIcon aria-hidden />
+                  )}
                   {words.settingsTab}
-                  <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                    {words.tabCount(
-                      settingsTotals.enabled,
-                      settingsTotals.total,
-                    )}
-                  </span>
+                  {tabVariant === 'line' && (
+                    <span className={TAB_COUNT}>
+                      {words.tabCount(
+                        settingsTotals.enabled,
+                        settingsTotals.total,
+                      )}
+                    </span>
+                  )}
                   <TabBadge count={tabBadges?.settings} labels={words} />
                 </TabsTrigger>
               )}
@@ -2423,27 +2435,31 @@ export function PermissionEditor({
                   value={extra.value}
                   className={TAB_TRIGGER}
                 >
+                  {tabVariant === 'folder' &&
+                    (extra.icon ?? <LayersIcon aria-hidden />)}
                   {extra.label}
                   <TabBadge count={tabBadges?.[extra.value]} labels={words} />
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
+          <TabsContent key={tab} value={tab}>
+            {extraTabs.some((extra) => extra.value === tab) ? (
+              <div className='min-w-0 px-4 py-4'>
+                {extraTabs.find((extra) => extra.value === tab)?.content}
+              </div>
+            ) : tab === 'menus' && builtInTabs.includes('menus') ? (
+              menusPanel
+            ) : tab === 'settings' &&
+              settings.length &&
+              builtInTabs.includes('settings') ? (
+              settingsPanel
+            ) : tab === 'objects' ? (
+              objectsPanel
+            ) : null}
+          </TabsContent>
         </Tabs>
       )}
-      {extraTabs.some((extra) => extra.value === tab) ? (
-        <div className='min-w-0 px-4 py-4'>
-          {extraTabs.find((extra) => extra.value === tab)?.content}
-        </div>
-      ) : tab === 'menus' && builtInTabs.includes('menus') ? (
-        menusPanel
-      ) : tab === 'settings' &&
-        settings.length &&
-        builtInTabs.includes('settings') ? (
-        settingsPanel
-      ) : tab === 'objects' ? (
-        objectsPanel
-      ) : null}
       {saveBar}
     </div>
   );
