@@ -22,6 +22,8 @@ const SETS: Record<string, readonly Grant[]> = {
   'agent-reader': [settings('agents.agents', 'read'), page('agents')],
   'agent-manager': [settings('agents.agents', 'read', 'manage')],
   'usage-reader': [page('usage'), settings('agents.prices', 'manage')],
+  'usage-only': [page('usage')],
+  'price-reader': [page('usage'), settings('agents.prices', 'read')],
   unrelated: [settings('agents.runners', 'read'), page('runtimes')],
   'already-upgraded': [
     settings('agents.agents', 'read'),
@@ -102,6 +104,13 @@ describeMigration('202611210001_ag_settings_grants', {
         (grant) => grant.resource.id === 'agents.prices',
       ),
     ).toHaveLength(1);
+    expect(
+      actions(sets['usage-only'].grants, 'settings', 'agents.prices'),
+    ).toEqual(['read']);
+    expect(sets['price-reader']).toEqual({
+      grants: SETS['price-reader'],
+      revision: 'before',
+    });
     // The page grants stay; sets with nothing to add are left alone, revision included.
     expect(
       actions(sets['already-upgraded'].grants, 'settings', 'agents.skills'),
@@ -125,5 +134,16 @@ describeMigration('202611210001_ag_settings_grants', {
       actions(sets['agent-manager'].grants, 'settings', 'agents.agents'),
     ).toEqual(['manage', 'read']);
     expect(sets.unrelated.grants).toEqual(SETS.unrelated);
+    // Only the prices read it added goes: what a set held before stays as it was.
+    expect(sets['usage-only'].grants).toEqual(SETS['usage-only']);
+    expect(sets['usage-reader'].grants).toEqual(SETS['usage-reader']);
+    expect(sets['price-reader'].grants).toEqual(SETS['price-reader']);
+    expect(
+      await connection.query
+        .selectFrom('agSettings')
+        .select(['key'])
+        .where('key', '=', '202611210001_ag_settings_grants')
+        .execute(),
+    ).toEqual([]);
   },
 });

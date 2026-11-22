@@ -18,10 +18,13 @@ import {
  * the agents' ones any more. Sets are rewritten one by one (there are few), each with a new revision so an editor open
  * on an old one reloads. Without the authorization plugin's table there is nothing to change.
  *
- * `down` removes every `agents.skills` grant, an item that did not exist before this migration. The `agents.prices`
- * read added for the usage page cannot be told apart from one an administrator gave, so it stays.
+ * `down` removes every `agents.skills` grant, an item that did not exist before this migration, and the `agents.prices`
+ * read this migration added: `up` records the sets it gave it in the plugin's own settings (`agSettings`, under the
+ * migration's name), so a read an administrator gave stays.
  */
 const TABLE = 'authorizationPermissionSets';
+const SETTINGS = 'agSettings';
+const NAME = '202611210001_ag_settings_grants';
 
 interface GrantRecord {
   readonly resource: { readonly type: string; readonly id: string };
@@ -94,10 +97,13 @@ function withSettings(
   );
 }
 
-/** The grants this migration gives a set, or null when it needs none. */
-function upgradeGrants(grants: readonly GrantRecord[]): GrantRecord[] | null {
+/** The grants this migration gives a set, or null when it needs none; `prices` says whether it gave `agents.prices` read. */
+function upgradeGrants(
+  grants: readonly GrantRecord[],
+): { grants: GrantRecord[]; prices: boolean } | null {
   let next: readonly GrantRecord[] = grants;
   let changed = false;
+  let prices = false;
   const agents = actionsOf(grants, 'settings', 'agents.agents');
   const skillActions = ['read', 'manage'].filter((action) =>
     agents.has(action),
@@ -108,14 +114,38 @@ function upgradeGrants(grants: readonly GrantRecord[]): GrantRecord[] | null {
   }
   if (actionsOf(grants, 'page', 'usage').has('access')) {
     const added = withSettings(next, 'agents.prices', ['read']);
-    if (added) [next, changed] = [added, true];
+    if (added) [next, changed, prices] = [added, true, true];
   }
-  return changed ? [...next] : null;
+  return changed ? { grants: [...next], prices } : null;
+}
+
+/** `grants` without the `read` of `agents.prices`, dropping the grant when nothing else is left in it. */
+function withoutPricesRead(grants: readonly GrantRecord[]): GrantRecord[] {
+  return grants.flatMap((grant) => {
+    if (!isSettings(grant, 'agents.prices')) return [grant];
+    const actions = grant.actions.filter((entry) => entry.action !== 'read');
+    return actions.length ? [{ ...grant, actions }] : [];
+  });
+}
+
+function parseKeys(value: unknown): readonly string[] {
+  let parsed: unknown = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+  const keys = (parsed as { pricesRead?: unknown } | null)?.pricesRead;
+  return Array.isArray(keys)
+    ? keys.filter((key): key is string => typeof key === 'string')
+    : [];
 }
 
 async function rewrite(
   { builder, query }: MigrationContext,
-  change: (grants: readonly GrantRecord[]) => GrantRecord[] | null,
+  change: (key: string, grants: readonly GrantRecord[]) => GrantRecord[] | null,
 ): Promise<void> {
   if (!(await builder.hasCollection(TABLE))) return;
   const rows = await query
@@ -126,7 +156,7 @@ async function rewrite(
   for (const row of rows) {
     const grants = parseGrants(row.grants);
     if (!grants) continue;
-    const next = change(grants);
+    const next = change(row.key as string, grants);
     if (!next) continue;
     await query
       .updateTable(TABLE)
@@ -141,16 +171,50 @@ async function rewrite(
 }
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202611210001_ag_settings_grants',
+  name: NAME,
   async up(context: MigrationContext): Promise<void> {
-    await rewrite(context, upgradeGrants);
+    const pricesRead: string[] = [];
+    await rewrite(context, (key, grants) => {
+      const next = upgradeGrants(grants);
+      if (next?.prices) pricesRead.push(key);
+      return next?.grants ?? null;
+    });
+    if (!pricesRead.length || !(await context.builder.hasCollection(SETTINGS)))
+      return;
+    await context.query
+      .insertInto(SETTINGS)
+      .values({
+        key: NAME,
+        value: JSON.stringify({ pricesRead }),
+        updatedById: null,
+        updatedAt: new Date(),
+      })
+      .execute();
   },
   async down(context: MigrationContext): Promise<void> {
-    await rewrite(context, (grants) =>
-      grants.some((grant) => isSettings(grant, 'agents.skills'))
-        ? grants.filter((grant) => !isSettings(grant, 'agents.skills'))
-        : null,
-    );
+    let pricesRead = new Set<string>();
+    const hasSettings = await context.builder.hasCollection(SETTINGS);
+    if (hasSettings) {
+      const row = await context.query
+        .selectFrom(SETTINGS)
+        .select(['value'])
+        .where('key', '=', NAME)
+        .executeTakeFirst();
+      pricesRead = new Set(parseKeys(row?.value));
+    }
+    await rewrite(context, (key, grants) => {
+      const skills = grants.some((grant) => isSettings(grant, 'agents.skills'));
+      if (!skills && !pricesRead.has(key)) return null;
+      const next = grants.filter(
+        (grant) => !isSettings(grant, 'agents.skills'),
+      );
+      return pricesRead.has(key) ? withoutPricesRead(next) : next;
+    });
+    if (hasSettings)
+      await context.query
+        .deleteFrom(SETTINGS)
+        .where('key', '=', NAME)
+        .execute();
   },
 });
 
