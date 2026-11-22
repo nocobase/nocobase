@@ -213,7 +213,7 @@ export const GUIDE_ENTRIES = {
     role: 'example',
     group: 'integration',
     related: ['app-plugin-mail'],
-    demo: '/mail-example',
+    demo: '/mail',
     skills: [],
     prompts: ['main'],
   },

@@ -20,7 +20,7 @@ export const capabilityPages: Record<
     names: [],
     paths: ['/lifecycle-example/tickets'],
   },
-  'app-plugin-mail-example': { names: [], paths: ['/mail-example'] },
+  'app-plugin-mail-example': { names: ['mail'], paths: ['/mail'] },
   'app-plugin-notification-example': {
     names: [],
     paths: ['/notification-example'],

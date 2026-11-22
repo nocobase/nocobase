@@ -366,22 +366,22 @@ export const exampleOverviews: Readonly<Record<string, ModuleOverview>> = {
     ],
     interfaces: [
       {
-        title: ['Mail demo entry', '邮箱演示入口'],
-        names: [],
+        title: ['Mail workspace', '邮件工作台'],
+        names: ['mail'],
         knownRoute: true,
-        paths: ['/mail-example'],
+        paths: ['/mail'],
       },
       {
-        title: ['Mail workspace example', '邮箱工作台示例'],
-        names: [],
+        title: ['Mail accounts and activity', '邮箱账号和收发记录'],
+        names: ['mailAccounts'],
         knownRoute: true,
-        paths: ['/mail-example/workspace'],
+        paths: ['/me/mail'],
       },
       {
-        title: ['Sync log example', '同步记录示例'],
-        names: [],
+        title: ['Mail settings', '邮箱设置'],
+        names: ['mailSettings'],
         knownRoute: true,
-        paths: ['/mail-example/sync-logs'],
+        paths: ['/settings/mail'],
       },
     ],
     note: [

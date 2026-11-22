@@ -558,7 +558,7 @@ const enUS: GuideContent = {
       },
       reference: [
         'Use the three mock provider configurations included in Examples.',
-        'Open Mail example to initialize and synchronize its sample mailboxes.',
+        'Open Mail and choose Set up demo mailboxes to initialize and synchronize the sample mailboxes.',
         'Try composing, templates, signatures and sync logs; delivery stays simulated.',
       ],
     },
