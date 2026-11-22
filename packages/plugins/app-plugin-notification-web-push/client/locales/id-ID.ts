@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   'push.deviceCount': 'Terdaftar: {{total}} · Aktif: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Pemberitahuan push',
   'push.description':
     'Terima pengingat di setiap perangkat, bahkan saat aplikasi ditutup.',

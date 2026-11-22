@@ -968,6 +968,7 @@ export class NotificationManager<
               name: view.name,
               category: view.category,
               categoryKey: view.categoryKey,
+              trigger: view.trigger,
               channels,
             },
           ]

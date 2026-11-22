@@ -133,6 +133,25 @@ const zhCN: NotificationResource = {
     },
   },
   channels: {
+    configuration: '设置',
+    builtin: '内置，无需设置',
+    guideTitle: '添加或修改渠道',
+    promptTitle: '开发 Agent 提示词',
+    copyPrompt: '复制提示词',
+    copied: '已复制提示词。',
+    manualCopy: '请选中提示词，手动复制。',
+    agentPrompt:
+      '请在这个 NocoBase 应用里配置「{{type}}」。先确认已注册对应的通知插件，再根据应用配置机制设置 {{fields}}。请显式映射部署环境变量，将凭据保存在仓库之外。完成后列出修改的文件和部署所需的环境变量，说明如何重启、如何测试，以及测试消息将发给谁。',
+    retryPrompt:
+      '请检查 config.yml 的 notification.retry，按我指定的次数和间隔设置 maxAttempts 和 intervalMs。maxAttempts 包含首次尝试。请列出修改后的自动重试次数、间隔和重启步骤。',
+    failureSummary: '近 24 小时有 {{count}} 次发送失败。',
+    guideTypes: {
+      email: '邮件',
+      'feishu-webhook': '飞书群',
+      'dingtalk-webhook': '钉钉群',
+      'web-push': '浏览器推送',
+      retry: '修改重试策略',
+    },
     title: '渠道',
     failing: '{{channel}} 近 24 小时失败 {{count}} 次。',
     showFailures: '查看失败记录',

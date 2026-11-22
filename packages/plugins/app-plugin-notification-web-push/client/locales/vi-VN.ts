@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   'push.deviceCount': 'Đã đăng ký: {{total}} · Đang bật: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Thông báo đẩy',
   'push.description':
     'Nhận lời nhắc trên từng thiết bị, ngay cả khi đóng ứng dụng.',

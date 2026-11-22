@@ -1,5 +1,9 @@
 const messages = {
   'push.deviceCount': 'Registered: {{total}} · Enabled: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Push devices',
   'push.description':
     'Receive reminders on each device, even when the app is closed.',

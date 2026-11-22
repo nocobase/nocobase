@@ -182,19 +182,15 @@ describe('delivery retry', () => {
     const calls: Call[] = [];
     await renderDeliveries(['read', 'manage'], calls);
     const drawer = await screen.findByRole('dialog');
-    fireEvent.click(
-      await within(drawer).findByRole('button', { name: 'Retry' }),
-    );
-    const dialog = await screen
-      .findByRole('alertdialog')
-      .catch(() => screen.findByRole('dialog', { name: 'Retry delivery' }));
-    const confirm = within(dialog).getByRole('button', { name: 'Retry' });
+    const confirm = await within(drawer).findByRole('button', {
+      name: 'Retry',
+    });
     expect(confirm).toBeDisabled();
-    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Reason' }), {
+    fireEvent.change(within(drawer).getByRole('textbox', { name: 'Reason' }), {
       target: { value: '   ' },
     });
     expect(confirm).toBeDisabled();
-    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Reason' }), {
+    fireEvent.change(within(drawer).getByRole('textbox', { name: 'Reason' }), {
       target: { value: 'Mailbox fixed' },
     });
     expect(confirm).toBeEnabled();
@@ -300,8 +296,7 @@ describe('notification settings page', () => {
       },
       calls,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /mail/i }));
-    expect(screen.getByText('smtp.example.com')).toBeVisible();
+    expect(await screen.findByText('smtp.example.com')).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Channels' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -312,5 +307,14 @@ describe('notification settings page', () => {
       ).toBe(true),
     );
     expect(screen.queryByRole('button', { name: 'Test' })).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add or change a channel' }),
+    );
+    const guide = await screen.findByRole('dialog');
+    fireEvent.click(within(guide).getByRole('tab', { name: 'Feishu group' }));
+    expect(within(guide).getByText(/webhookUrl/u)).toBeVisible();
+    expect(
+      within(guide).getByRole('button', { name: 'Copy prompt' }),
+    ).toBeVisible();
   });
 });

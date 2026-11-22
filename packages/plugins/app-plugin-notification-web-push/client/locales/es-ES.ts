@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
   'push.deviceCount': 'Registrados: {{total}} · Activos: {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Notificaciones push',
   'push.description':
     'Reciba recordatorios en cada dispositivo, incluso cuando la aplicación esté cerrada.',

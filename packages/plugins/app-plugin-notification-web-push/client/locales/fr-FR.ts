@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   'push.deviceCount': 'Enregistrés : {{total}} · Activés : {{active}}',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': 'Notifications poussées',
   'push.description':
     "Recevez des rappels sur chaque appareil, même lorsque l'application est fermée.",

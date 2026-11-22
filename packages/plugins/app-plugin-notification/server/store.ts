@@ -556,6 +556,7 @@ export class DatabaseNotificationStore implements NotificationStore {
       const search = filter.search;
       query = query.where((builder) =>
         builder.or([
+          builder('d.notificationId', '=', search),
           builder('d.recipientKey', '=', search),
           builder('n.sourceReferenceId', '=', search),
           builder('n.idempotencyKey', '=', search),

@@ -13,6 +13,8 @@ import { DELIVERY_OUTCOMES, type NotificationDeliveryOutcome } from './api.js';
 import { ChannelsTab } from './channels-tab.js';
 import { DeliveriesTab, type DeliveriesTabProps } from './deliveries-tab.js';
 
+import { useLoaded, useSettingsApi } from './hooks.js';
+import { Button } from '../components/ui/button.js';
 const TABS = ['channels', 'kinds', 'deliveries'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -25,6 +27,15 @@ const FILTER_PARAMS = ['status', 'channel', 'kind', 'q', 'range'] as const;
  */
 export function NotificationSettingsPage(): ReactElement {
   const { t } = useNotificationText();
+  const api = useSettingsApi();
+  const [loaded, reload] = useLoaded(() => api.channels(), 'channels');
+  const failures =
+    loaded.state === 'ready'
+      ? loaded.data.data.reduce(
+          (count, channel) => count + channel.last24h.failed,
+          0,
+        )
+      : 0;
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab');
   const tab: Tab = TABS.includes(requested as Tab)
@@ -66,21 +77,48 @@ export function NotificationSettingsPage(): ReactElement {
     <div className='mx-auto w-full max-w-6xl min-w-0 space-y-5 p-4 sm:p-6'>
       <header className='space-y-1'>
         <h1 className='text-xl font-semibold'>{t('settings.title')}</h1>
+        <p className='text-sm text-muted-foreground'>
+          {t('settings.description')}
+        </p>
       </header>
+      {failures > 0 && (
+        <div className='flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive'>
+          {t('channels.failureSummary', { count: failures })}
+          <Button
+            variant='link'
+            size='sm'
+            onClick={() =>
+              openTab('deliveries', { status: 'failed', range: '24h' })
+            }
+          >
+            {t('channels.showFailures')}
+          </Button>
+        </div>
+      )}
       <Tabs
         value={tab}
         onValueChange={(value) => openTab(value as Tab)}
         className='min-w-0'
       >
-        <TabsList className='max-w-full overflow-x-auto'>
+        <TabsList variant='line' className='h-auto max-w-full border-b pb-1'>
           {TABS.map((value) => (
             <TabsTrigger key={value} value={value}>
               {t(`settings.tabs.${value}`)}
+              {value === 'deliveries' && failures > 0 && tab !== value && (
+                <span className='rounded-full bg-destructive/10 px-1.5 text-xs text-destructive'>
+                  {failures}
+                </span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
         <TabsContent value='channels' className='pt-3'>
           <ChannelsTab
+            onShowTest={(channel, q) =>
+              openTab('deliveries', { channel, q, range: '24h' })
+            }
+            loaded={loaded}
+            reload={reload}
             onShowDeliveries={(channel) =>
               openTab('deliveries', { channel, status: 'failed', range: '24h' })
             }

@@ -6,10 +6,9 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useHref } from 'react-router';
-import { Bell, Ellipsis, LoaderCircle } from 'lucide-react';
+import { Bell, LoaderCircle } from 'lucide-react';
 import { Button } from './ui/button.js';
 import { Input } from './ui/input.js';
-import { Switch } from './ui/switch.js';
 import { Skeleton } from './ui/skeleton.js';
 import { Alert, AlertDescription } from './ui/alert.js';
 import {
@@ -19,6 +18,7 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
+  FieldTitle,
 } from './ui/field.js';
 import {
   Empty,
@@ -27,14 +27,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from './ui/empty.js';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu.js';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -252,71 +244,66 @@ export function PushPreferences(): React.ReactElement | null {
         </Empty>
       ) : (
         devices.data.map((device) => (
-          <Field orientation='horizontal' key={device.id}>
+          <Field
+            className='flex-wrap rounded-lg border p-3'
+            orientation='horizontal'
+            key={device.id}
+          >
             <FieldContent>
-              <FieldLabel htmlFor={`push-${device.id}`}>
-                {device.name}
-              </FieldLabel>
+              <FieldTitle>{device.name}</FieldTitle>
               {device.id === current ? (
                 <FieldDescription>{t('push.current')}</FieldDescription>
               ) : null}
             </FieldContent>
-            <Switch
-              id={`push-${device.id}`}
-              disabled={busy}
-              checked={device.enabled}
-              onCheckedChange={(enabled) =>
-                void act(async () => {
-                  await api.request({
-                    method: 'PATCH',
-                    path: `webPush/subscriptions/${device.id}`,
-                    json: { enabled },
-                  });
-                  window.dispatchEvent(new Event('nocobase:push-device'));
-                }, 'push.saved')
-              }
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    aria-label={t('push.more')}
-                    disabled={busy}
-                  />
-                }
+            <span className='text-xs text-muted-foreground'>
+              {t(device.enabled ? 'push.active' : 'push.paused')}
+            </span>
+            <div className='flex flex-wrap items-center gap-1'>
+              <Button
+                size='sm'
+                variant='outline'
+                disabled={busy || !device.enabled}
+                onClick={() => {
+                  void act(async () => {
+                    await api.request({
+                      method: 'POST',
+                      path: `webPush/subscriptions/${device.id}/test`,
+                    });
+                  }, 'push.testSent');
+                }}
               >
-                <Ellipsis />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align='end' className='w-auto min-w-40'>
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    disabled={!device.enabled}
-                    onClick={() =>
-                      void act(async () => {
-                        await api.request({
-                          method: 'POST',
-                          path: `webPush/subscriptions/${device.id}/test`,
-                        });
-                      }, 'push.testSent')
-                    }
-                  >
-                    {t('push.test')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant='destructive'
-                    onClick={() => {
-                      setRemove(device);
-                      setConfirm(true);
-                    }}
-                  >
-                    {t('push.remove')}
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {t('push.test')}
+              </Button>
+              <Button
+                size='sm'
+                variant='outline'
+                disabled={busy}
+                onClick={() => {
+                  void act(async () => {
+                    await api.request({
+                      method: 'PATCH',
+                      path: `webPush/subscriptions/${device.id}`,
+                      json: { enabled: !device.enabled },
+                    });
+                    window.dispatchEvent(new Event('nocobase:push-device'));
+                  }, 'push.saved');
+                }}
+              >
+                {t(device.enabled ? 'push.pause' : 'push.resume')}
+              </Button>
+              <Button
+                size='sm'
+                variant='ghost'
+                className='text-destructive'
+                disabled={busy}
+                onClick={() => {
+                  setRemove(device);
+                  setConfirm(true);
+                }}
+              >
+                {t('push.remove')}
+              </Button>
+            </div>
           </Field>
         ))
       )}

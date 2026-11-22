@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
   'push.deviceCount': '등록 {{total}}대 · 활성 {{active}}대',
+  'push.active': 'Enabled',
+  'push.paused': 'Paused',
+  'push.pause': 'Pause',
+  'push.resume': 'Resume',
   'push.title': '푸시 알림',
   'push.description': '앱이 닫혀 있어도 각 기기에서 알림을 받습니다.',
   'push.subscribe': '이 기기 구독',

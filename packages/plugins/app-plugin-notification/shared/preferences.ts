@@ -18,12 +18,14 @@ export interface NotificationPreferenceKind {
   readonly contributor: string;
   readonly name: NotificationTemplateText;
   readonly category: NotificationTemplateText;
+  readonly trigger?: NotificationTemplateText;
   readonly categoryKey: string;
   readonly channels: readonly NotificationPreferenceChannel[];
 }
 
 /** What `GET /notifications/preferences` answers. */
 export interface NotificationPreferencesView {
+  readonly email?: string;
   /** The channel types an enabled channel can reach the person on, in configuration order. */
   readonly channelTypes: readonly string[];
   readonly kinds: readonly NotificationPreferenceKind[];

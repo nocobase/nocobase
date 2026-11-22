@@ -258,93 +258,85 @@ export function NotificationKinds({
             </Select>
           </div>
           {groups.length ? (
-            <div className='space-y-6'>
-              {groups.map((group, index) => (
-                <section
-                  key={group.key}
-                  aria-labelledby={`notification-template-group-${index}`}
-                  className='space-y-3'
-                >
-                  <h2
-                    id={`notification-template-group-${index}`}
-                    className='text-sm font-medium text-muted-foreground'
+            <div className='overflow-x-auto rounded-lg border'>
+              <table className='w-full text-left text-sm'>
+                <thead className='border-b bg-muted/40 text-xs text-muted-foreground'>
+                  <tr>
+                    <th className='p-3'>{t('preferences.notification')}</th>
+                    {channels.map(([type, entry]) => (
+                      <th key={type} className='p-3'>
+                        {t(`channelTypes.${type}`, {
+                          defaultValue: channelTypeText(text, entry),
+                        })}
+                      </th>
+                    ))}
+                    <th className='p-3'>{t('deliveries.ranges.7d')}</th>
+                  </tr>
+                </thead>
+                {groups.map((group, index) => (
+                  <tbody
+                    key={group.key}
+                    aria-labelledby={`notification-template-group-${index}`}
                   >
-                    {group.label}
-                  </h2>
-                  <div className='overflow-x-auto rounded-lg border'>
-                    <table className='w-full text-left text-sm'>
-                      <thead className='border-b bg-muted/40 text-xs text-muted-foreground'>
-                        <tr>
-                          <th className='p-3'>
-                            {t('preferences.notification')}
-                          </th>
-                          {channels.map(([type, entry]) => (
-                            <th key={type} className='p-3'>
-                              {t(`channelTypes.${type}`, {
-                                defaultValue: channelTypeText(text, entry),
-                              })}
-                            </th>
-                          ))}
-                          <th className='p-3'>{t('deliveries.ranges.7d')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {group.items.map((item) => (
-                          <tr key={item.id} className='border-b last:border-0'>
-                            <th
-                              scope='row'
-                              className='min-w-44 p-3 font-normal'
-                            >
-                              <Button
-                                variant='link'
-                                className='h-auto p-0 text-left font-medium'
-                                onClick={() => onSelect(item.id)}
-                              >
-                                {text(item.name)}
-                              </Button>
-                              <p className='text-xs text-muted-foreground'>
-                                {text(item.trigger)}
-                              </p>
-                            </th>
-                            {channels.map(([type]) => {
-                              const policy = item.policies?.find(
-                                (entry) => entry.type === type,
-                              );
-                              const direct =
-                                !item.policies &&
-                                item.channels.some(
-                                  (entry) => entry.type === type,
-                                );
-                              return (
-                                <td key={type} className='p-3'>
-                                  {policy ? (
-                                    <Badge
-                                      variant={
-                                        policy.policy === 'required'
-                                          ? 'secondary'
-                                          : 'outline'
-                                      }
-                                    >
-                                      {t(`kinds.policies.${policy.policy}`)}
-                                    </Badge>
-                                  ) : direct ? (
-                                    t('kinds.sentDirectly')
-                                  ) : (
-                                    '—'
-                                  )}
-                                </td>
-                              );
-                            })}
-                            <td className='p-3 tabular-nums'>
-                              {item.sentLast7Days ?? '—'}
+                    <tr className='bg-muted/50'>
+                      <th
+                        id={`notification-template-group-${index}`}
+                        scope='rowgroup'
+                        colSpan={channels.length + 2}
+                        className='px-3 py-1.5 text-xs'
+                      >
+                        {group.label}
+                      </th>
+                    </tr>
+                    {group.items.map((item) => (
+                      <tr key={item.id} className='border-b last:border-0'>
+                        <th scope='row' className='min-w-44 p-3 font-normal'>
+                          <Button
+                            variant='link'
+                            className='h-auto p-0 text-left font-medium'
+                            onClick={() => onSelect(item.id)}
+                          >
+                            {text(item.name)}
+                          </Button>
+                          <p className='text-xs text-muted-foreground'>
+                            {text(item.trigger)}
+                          </p>
+                        </th>
+                        {channels.map(([type]) => {
+                          const policy = item.policies?.find(
+                            (entry) => entry.type === type,
+                          );
+                          const direct =
+                            !item.policies &&
+                            item.channels.some((entry) => entry.type === type);
+                          return (
+                            <td key={type} className='p-3'>
+                              {policy ? (
+                                <Badge
+                                  variant={
+                                    policy.policy === 'required'
+                                      ? 'secondary'
+                                      : 'outline'
+                                  }
+                                >
+                                  {t(`kinds.policies.${policy.policy}`)}
+                                </Badge>
+                              ) : direct ? (
+                                t('kinds.sentDirectly')
+                              ) : (
+                                '—'
+                              )}
                             </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              ))}
+                          );
+                        })}
+                        <td className='p-3 tabular-nums'>
+                          {item.sentLast7Days ?? '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                ))}
+              </table>
             </div>
           ) : (
             <p

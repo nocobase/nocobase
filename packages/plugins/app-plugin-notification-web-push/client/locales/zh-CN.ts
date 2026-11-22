@@ -1,5 +1,9 @@
 const messages = {
   'push.deviceCount': '已登记 {{total}} 台 · 已开启 {{active}} 台',
+  'push.active': '已开启',
+  'push.paused': '已暂停',
+  'push.pause': '暂停',
+  'push.resume': '恢复',
   'push.title': '接收推送的设备',
   'push.description': '在要接收浏览器推送的设备上分别开启。',
   'push.subscribe': '在这台设备上开启推送',

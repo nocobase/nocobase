@@ -4,13 +4,10 @@ import { useState, type FormEvent, type ReactElement } from 'react';
 import { Alert, AlertDescription } from '../components/ui/alert.js';
 import { Button } from '../components/ui/button.js';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../components/ui/dialog.js';
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '../components/ui/collapsible.js';
 import { Input } from '../components/ui/input.js';
 import {
   Select,
@@ -422,7 +419,6 @@ function DeliveryDetail({
   const { t, language } = useNotificationText();
   const canManage = useCanManageNotifications();
   const [loaded, reload] = useLoaded(() => api.delivery(id), `delivery:${id}`);
-  const [retrying, setRetrying] = useState(false);
   const detail: NotificationDeliveryLogDetails | undefined =
     loaded.state === 'ready' ? loaded.data : undefined;
   const status = detail?.delivery.status;
@@ -452,46 +448,16 @@ function DeliveryDetail({
           <LoadState loaded={loaded} onRetry={reload} />
         ) : detail ? (
           <>
-            <dl className='grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm'>
-              <dt className='text-muted-foreground'>
-                {t('deliveries.columns.result')}
-              </dt>
-              <dd>
-                <StatusBadge status={detail.delivery.status} />
-              </dd>
-              <dt className='text-muted-foreground'>
-                {t('deliveries.columns.channel')}
-              </dt>
-              <dd className='break-all'>
-                {detail.delivery.channelName}{' '}
-                <span className='text-muted-foreground'>
-                  ({detail.delivery.providerType})
+            <div className='flex flex-wrap items-center gap-2 text-sm'>
+              <StatusBadge status={detail.delivery.status} />
+              <span>{detail.delivery.channelName}</span>
+              {detail.delivery.recipientKey && (
+                <span className='break-all text-muted-foreground'>
+                  {detail.delivery.recipientKey}
                 </span>
-              </dd>
-              <dt className='text-muted-foreground'>
-                {t('deliveries.columns.recipient')}
-              </dt>
-              <dd className='font-mono text-xs break-all'>
-                {detail.delivery.recipientKey ?? '—'}
-              </dd>
-              <dt className='text-muted-foreground'>
-                {t('deliveries.source')}
-              </dt>
-              <dd className='break-all'>
-                {[detail.sourceType, detail.sourceReferenceId]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </dd>
-              {detail.idempotencyKey ? (
-                <>
-                  <dt className='text-muted-foreground'>
-                    {t('deliveries.idempotencyKey')}
-                  </dt>
-                  <dd className='font-mono text-xs break-all'>
-                    {detail.idempotencyKey}
-                  </dd>
-                </>
-              ) : null}
+              )}
+            </div>
+            <dl className='grid gap-1 text-sm'>
               {detail.delivery.lastError ? (
                 <>
                   <dt className='text-muted-foreground'>
@@ -580,26 +546,42 @@ function DeliveryDetail({
               </section>
             ) : null}
             {canManage && status === 'failed' ? (
-              <div className='flex flex-wrap items-center gap-3'>
-                <Button onClick={() => setRetrying(true)}>
-                  {t('deliveries.retry')}
-                </Button>
-                <span className='text-xs text-muted-foreground'>
-                  {t('deliveries.retryHint')}
-                </span>
-              </div>
+              <RetryForm
+                deliveryId={id}
+                channel={detail.delivery.channelName}
+                onRetried={() => {
+                  reload();
+                  onRetried();
+                }}
+              />
             ) : null}
-            <RetryDialog
-              open={retrying}
-              deliveryId={id}
-              channel={detail.delivery.channelName}
-              onClose={() => setRetrying(false)}
-              onRetried={() => {
-                setRetrying(false);
-                reload();
-                onRetried();
-              }}
-            />
+            <Collapsible>
+              <CollapsibleTrigger className='text-sm text-muted-foreground underline'>
+                {t('templates.technical')}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <dl className='grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm'>
+                  <dt className='text-muted-foreground'>
+                    {t('deliveries.source')}
+                  </dt>
+                  <dd className='break-all'>
+                    {[detail.sourceType, detail.sourceReferenceId]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </dd>
+                  {detail.idempotencyKey ? (
+                    <>
+                      <dt className='text-muted-foreground'>
+                        {t('deliveries.idempotencyKey')}
+                      </dt>
+                      <dd className='font-mono text-xs break-all'>
+                        {detail.idempotencyKey}
+                      </dd>
+                    </>
+                  ) : null}
+                </dl>
+              </CollapsibleContent>
+            </Collapsible>
           </>
         ) : null}
       </div>
@@ -607,17 +589,13 @@ function DeliveryDetail({
   );
 }
 
-function RetryDialog({
-  open,
+function RetryForm({
   deliveryId,
   channel,
-  onClose,
   onRetried,
 }: {
-  readonly open: boolean;
   readonly deliveryId: string;
   readonly channel: string;
-  readonly onClose: () => void;
   readonly onRetried: () => void;
 }): ReactElement {
   const api = useSettingsApi();
@@ -647,43 +625,31 @@ function RetryDialog({
     );
   };
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
-    >
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>{t('deliveries.retryTitle')}</DialogTitle>
-          <DialogDescription>
-            {t('deliveries.retryDescription', { channel })}
-          </DialogDescription>
-        </DialogHeader>
-        <label className='space-y-1.5 text-sm'>
-          <span className='font-medium'>{t('deliveries.reason')}</span>
-          <Textarea
-            value={reason}
-            maxLength={500}
-            required
-            rows={3}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </label>
-        {error ? (
-          <p role='alert' className='text-sm text-destructive'>
-            {error}
-          </p>
-        ) : null}
-        <DialogFooter>
-          <Button variant='outline' onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button disabled={!trimmed || busy} onClick={submit}>
-            {t('deliveries.retry')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <section className='space-y-3 rounded-lg border bg-muted/30 p-4'>
+      <h3 className='font-medium'>{t('deliveries.retryTitle')}</h3>
+      <label className='space-y-1.5 text-sm'>
+        <span className='font-medium'>{t('deliveries.reason')}</span>
+        <Textarea
+          value={reason}
+          maxLength={500}
+          required
+          rows={3}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </label>
+      {error ? (
+        <p role='alert' className='text-sm text-destructive'>
+          {error}
+        </p>
+      ) : null}
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <span className='text-xs text-muted-foreground'>
+          {t('deliveries.retryDescription', { channel })}
+        </span>
+        <Button disabled={!trimmed || busy} onClick={submit}>
+          {t('deliveries.retry')}
+        </Button>
+      </div>
+    </section>
   );
 }

@@ -142,6 +142,25 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   channels: {
+    configuration: 'Configuration',
+    builtin: 'Built in · no setup required',
+    guideTitle: 'Add or change a channel',
+    promptTitle: 'Development agent prompt',
+    copyPrompt: 'Copy prompt',
+    copied: 'Prompt copied.',
+    manualCopy: 'Select the prompt and copy it manually.',
+    agentPrompt:
+      'Configure {{type}} in this NocoBase application. Check the installed notification plugins and use the application configuration mechanism for {{fields}}. Map secrets explicitly from the deployment environment. Keep credentials out of version control. Explain which files and environment variables change, how to restart, and who will receive the channel test.',
+    retryPrompt:
+      'Review notification.retry in config.yml. Set maxAttempts (including the initial attempt) and intervalMs to the requested values. Explain the resulting number of retries and how to apply the configuration.',
+    failureSummary: 'Failed deliveries in the last 24 hours: {{count}}.',
+    guideTypes: {
+      email: 'Email',
+      'feishu-webhook': 'Feishu group',
+      'dingtalk-webhook': 'DingTalk group',
+      'web-push': 'Browser push',
+      retry: 'Retry policy',
+    },
     title: 'Channels',
     failing:
       'Failed deliveries on {{channel}} in the last 24 hours: {{count}}.',

@@ -128,11 +128,11 @@ async function renderPage({
 describe('notification template directory', () => {
   it('groups notifications by category and opens details in a drawer with inert HTML', async () => {
     const calls = await renderPage();
-    const group = await screen.findByRole('region', { name: 'Tasks' });
-    expect(screen.getByRole('region', { name: 'Accounts' })).toBeVisible();
+    const group = await screen.findByRole('rowgroup', { name: 'Tasks' });
+    expect(screen.getByRole('rowgroup', { name: 'Accounts' })).toBeVisible();
     const card = within(group).getByRole('button', { name: /Task assigned/u });
     expect(
-      within(group).getByRole('columnheader', { name: /In-app message/u }),
+      screen.getByRole('columnheader', { name: /In-app message/u }),
     ).toBeVisible();
     expect(card).not.toHaveTextContent('in-app');
     fireEvent.click(card);
@@ -164,7 +164,7 @@ describe('notification template directory', () => {
     fireEvent.change(search, { target: { value: 'missing' } });
     expect(screen.getByText('No templates match these filters.')).toBeVisible();
     fireEvent.change(search, { target: { value: 'invitation' } });
-    expect(screen.queryByRole('region', { name: 'Tasks' })).toBeNull();
+    expect(screen.queryByRole('rowgroup', { name: 'Tasks' })).toBeNull();
     expect(
       screen.getByRole('button', { name: /User invitation/u }),
     ).toBeVisible();
@@ -186,7 +186,7 @@ describe('notification template directory', () => {
       'POST notifications/kinds/task.assigned/preview zh-CN',
     );
     expect(
-      screen.getByRole('region', { name: '任务', hidden: true }),
+      screen.getByRole('rowgroup', { name: '任务', hidden: true }),
     ).toBeInTheDocument();
   });
 

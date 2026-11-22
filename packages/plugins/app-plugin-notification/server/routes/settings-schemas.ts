@@ -131,6 +131,7 @@ const preferenceChannel = z.object({
 
 export const preferencesSchema: z.ZodType = z
   .object({
+    email: z.string().optional(),
     channelTypes: z.array(z.string()).meta({
       description:
         'The channel types an enabled channel can reach the person on.',
@@ -142,6 +143,7 @@ export const preferencesSchema: z.ZodType = z
         name: templateTextSchema,
         category: templateTextSchema,
         categoryKey: z.string(),
+        trigger: templateTextSchema.optional(),
         channels: z.array(preferenceChannel),
       }),
     ),

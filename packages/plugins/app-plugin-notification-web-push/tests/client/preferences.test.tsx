@@ -98,7 +98,7 @@ it('shows one subscribe action and requests permission only after the click', as
 it('updates the current device immediately and scopes its request to that record', async () => {
   localStorage.setItem(deviceKey('/', 'alice'), 'device1');
   await show([{ id: 'device1', name: 'My phone', enabled: true }]);
-  const toggle = await screen.findByRole('switch', { name: 'My phone' });
+  const toggle = await screen.findByRole('button', { name: 'Pause' });
   expect(screen.getByText('This device')).toBeVisible();
   expect(
     screen.queryByRole('button', { name: 'Subscribe this device' }),

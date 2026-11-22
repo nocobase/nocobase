@@ -94,6 +94,11 @@ export function NotificationPreferencesPage(): ReactElement {
                       className='px-3 py-2 text-center font-medium'
                     >
                       {columnName(type)}
+                      {type === 'email' && view.email && (
+                        <small className='block font-normal'>
+                          {view.email}
+                        </small>
+                      )}
                     </th>
                   ))}
                 </tr>
@@ -116,7 +121,12 @@ export function NotificationPreferencesPage(): ReactElement {
                           scope='row'
                           className='px-3 py-2 text-left font-normal'
                         >
-                          {text(kind.name)}
+                          <span className='font-medium'>{text(kind.name)}</span>
+                          {kind.trigger && (
+                            <p className='mt-0.5 text-xs text-muted-foreground'>
+                              {text(kind.trigger)}
+                            </p>
+                          )}
                         </th>
                         {columns.map((type) => {
                           const channel = kind.channels.find(

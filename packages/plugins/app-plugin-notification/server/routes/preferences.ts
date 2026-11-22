@@ -63,7 +63,10 @@ export function createPreferenceRoutes(
     }),
     async (context) =>
       context.json({
-        data: await runtime().preferencesFor(context.get('auth')!.user.id),
+        data: {
+          ...(await runtime().preferencesFor(context.get('auth')!.user.id)),
+          email: context.get('auth')!.user.email,
+        },
       }),
   );
 
@@ -87,10 +90,13 @@ export function createPreferenceRoutes(
     async (context) => {
       try {
         return context.json({
-          data: await runtime().savePreferences(
-            context.get('auth')!.user.id,
-            context.req.valid('json').items,
-          ),
+          data: {
+            ...(await runtime().savePreferences(
+              context.get('auth')!.user.id,
+              context.req.valid('json').items,
+            )),
+            email: context.get('auth')!.user.email,
+          },
         });
       } catch (error) {
         if (!(error instanceof NotificationPreferenceError)) throw error;
