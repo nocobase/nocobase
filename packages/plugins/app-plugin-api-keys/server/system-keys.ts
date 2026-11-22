@@ -9,7 +9,7 @@
  * feature creates and adjusts for a person (`createManaged`, `setPermissionsManaged`, `rotateManaged`); their manager is
  * told when an administrator disables or deletes one.
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
@@ -308,82 +308,6 @@ function onlyHeld(
   return { grants: permissions.grants.map((grant) => ({ ...grant })) };
 }
 
-/**
- * Renames a Permission Set in its tables, its assignments along: an assignment's id names its set, so it is renamed
- * too. Refuses a name already taken.
- */
-/** A Permission Set's key and an assignment's id are at most this long. */
-const MAX_KEY_LENGTH = 255;
-/** Room an assignment's id needs besides its set's key: `<subject type>:<subject id>:`, each at most 64. */
-const ASSIGNMENT_ID_ROOM = 130;
-
-/**
- * The key a released set gets: `role-<old key>`, or for a long one its start and a digest of the whole, short enough
- * that the set's key and its assignments' ids fit their columns.
- */
-export function releasedKey(key: string): string {
-  const limit = MAX_KEY_LENGTH - ASSIGNMENT_ID_ROOM;
-  const plain = `role-${key}`;
-  if (plain.length <= limit) return plain;
-  const digest = createHash('sha256').update(key).digest('hex').slice(0, 12);
-  return `${plain.slice(0, limit - digest.length - 1)}-${digest}`;
-}
-
-export async function renameSet(
-  connection: DatabaseConnection,
-  key: string,
-  newKey: string,
-): Promise<void> {
-  if (!newKey || newKey.length > MAX_KEY_LENGTH)
-    throw new ApiKeyRequestError(
-      400,
-      'NOT_RESERVED',
-      `A Permission Set's key is 1 to ${MAX_KEY_LENGTH} characters.`,
-    );
-  const taken = await connection.query
-    .selectFrom('authorizationPermissionSets')
-    .select(['key'])
-    .where('key', '=', newKey)
-    .executeTakeFirst();
-  if (taken)
-    throw new ApiKeyRequestError(
-      400,
-      'NOT_RESERVED',
-      `A Permission Set named ${newKey} exists already.`,
-    );
-  await connection.query
-    .updateTable('authorizationPermissionSets')
-    .set({ key: newKey, updatedAt: new Date() })
-    .where('key', '=', key)
-    .execute();
-  const assignments = await connection.query
-    .selectFrom('authorizationPermissionSetAssignments')
-    .select(['id', 'subjectType', 'subjectId'])
-    .where('permissionSetKey', '=', key)
-    .execute();
-  const idOf = (assignment: (typeof assignments)[number]) =>
-    `${String(assignment.subjectType)}:${String(assignment.subjectId)}:${newKey}`;
-  // Checked before anything is written: an assignment's id names its set, and has to fit its column too.
-  const tooLong = assignments.find(
-    (assignment) => idOf(assignment).length > MAX_KEY_LENGTH,
-  );
-  if (tooLong)
-    throw new ApiKeyRequestError(
-      400,
-      'NOT_RESERVED',
-      `${newKey} is too long for the id of an assignment of ${key}; choose a shorter key.`,
-    );
-  for (const assignment of assignments)
-    await connection.query
-      .updateTable('authorizationPermissionSetAssignments')
-      .set({
-        id: idOf(assignment),
-        permissionSetKey: newKey,
-      })
-      .where('id', '=', assignment.id as string)
-      .execute();
-}
-
 export class SystemApiKeys {
   private readonly managersByKind = new Map<string, SystemKeyManager>();
   private releaseProtection: (() => void)[] = [];
@@ -423,7 +347,7 @@ export class SystemApiKeys {
   /**
    * Protects every system key's hidden Permission Set, present or created later by any process: hidden from the
    * management lists, never edited or assigned there, and assignable to a user only. Call at boot in every process.
-   * `except` are sets under the prefix that are no system key's (`collisions`), which stay as they were; a set another
+   * `except` are the sets the upgrade left to the application (`exemptions`), which stay as they were; a set another
    * owner protects by name, such as a root set an application configured under the prefix, stays theirs.
    */
   protectAll(except: readonly string[] = []): void {
@@ -443,25 +367,45 @@ export class SystemApiKeys {
   }
 
   /**
-   * Permission Sets in the reserved `system-key-` prefix that are no system key's, such as a role an administrator named
-   * so before: the prefix protection hides them and keeps them from being edited, so the application should rename
-   * them. Read at boot.
+   * Permission Sets an application had named in the reserved `system-key-` prefix before it was reserved, which the
+   * prefix protection leaves alone (`protectAll`'s `except`). The upgrade lists them once, in `apiKeyPrefixExemptions`,
+   * and the list never changes afterwards, so every process, whenever it starts, leaves the same sets alone; none of
+   * these names is ever given to a system key, even once its role is gone.
    */
-  async collisions(): Promise<string[]> {
-    const authz = this.options.authorization();
-    if (!authz) return [];
-    const listed = new Set(
-      (
-        await this.db.query
-          .selectFrom('apiKeySystemKeys')
-          .select(['identityId'])
-          .execute()
-      ).map((row) => systemKeySet(String(row.identityId))),
-    );
-    return (await authz.permissionSets.list())
-      .map((set) => set.key)
-      .filter(
-        (key) => key.startsWith(SYSTEM_KEY_SET_PREFIX) && !listed.has(key),
+  async exemptions(): Promise<string[]> {
+    return (
+      await this.db.query
+        .selectFrom('apiKeyPrefixExemptions')
+        .select(['permissionSetKey'])
+        .execute()
+    ).map((row) => String(row.permissionSetKey));
+  }
+
+  /**
+   * Refuses a system key's set name that is not free: one an upgrade left to an application's role
+   * (`apiKeyPrefixExemptions`), one another owner protects by name, such as a root set configured under the prefix, or
+   * one a set already carries. The first two hold in every process; a set with the name would be no system key's there.
+   */
+  private async requireFreeSetName(
+    connection: DatabaseConnection,
+    authz: AppAuthorization,
+    set: string,
+  ): Promise<void> {
+    const exempt = await connection.query
+      .selectFrom('apiKeyPrefixExemptions')
+      .select(['permissionSetKey'])
+      .where('permissionSetKey', '=', set)
+      .executeTakeFirst();
+    const owner = authz.permissionSets.protection(set)?.owner;
+    if (
+      exempt ||
+      (owner !== undefined && owner !== SYSTEM_KEY_OWNER) ||
+      (await authz.permissionSets.withTransaction(connection).get(set))
+    )
+      throw new ApiKeyRequestError(
+        400,
+        'SYSTEM_KEY_SET_TAKEN',
+        `The name ${set} belongs to a Permission Set that is no system key's, so this account cannot become one.`,
       );
   }
 
@@ -767,12 +711,15 @@ export class SystemApiKeys {
       description: input.description ?? null,
     });
     const set = systemKeySet(account.id);
+    let setCreated = false;
     try {
+      await this.requireFreeSetName(this.db, authz, set);
       await authz.permissionSets.create({
         key: set,
         title: name,
         grants: permissions.grants,
       });
+      setCreated = true;
       await authz.permissionSets.assign({
         subject: { type: 'user', id: account.id },
         permissionSet: set,
@@ -806,18 +753,23 @@ export class SystemApiKeys {
       });
       return { key: await this.get(account.id), secret: created.secret };
     } catch (error) {
-      await this.discard(account.id, actorId);
+      await this.discard(account.id, actorId, setCreated);
       throw error;
     }
   }
 
-  /** Removes what a failed creation left behind. */
-  private async discard(identityId: string, actorId: string): Promise<void> {
+  /** Removes what a failed creation left behind: the set only when this creation made it, never a role of the name. */
+  private async discard(
+    identityId: string,
+    actorId: string,
+    setCreated: boolean,
+  ): Promise<void> {
     const authz = this.options.authorization();
     await this.options.keys.revokeAll(identityId).catch(() => undefined);
-    await authz?.permissionSets
-      .delete(systemKeySet(identityId))
-      .catch(() => undefined);
+    if (setCreated)
+      await authz?.permissionSets
+        .delete(systemKeySet(identityId))
+        .catch(() => undefined);
     await this.options
       .users()
       .remove(identityId, actorId)
@@ -1258,43 +1210,6 @@ export class SystemApiKeys {
     for (const notice of pending) await this.deliverNotices(String(notice.id));
   }
 
-  /**
-   * Renames a Permission Set in the prefix reserved for system keys that is no system key's, such as a role an
-   * application had named so before, moving its assignments with it. Optional: such a set keeps working under its name
-   * (`protectAll`'s `except`); renaming frees the name. Answers the new key: `newKey`, or one made from the old key
-   * that fits the set's and its assignments' 255-character keys.
-   */
-  async releaseReserved(key: string, newKey?: string): Promise<string> {
-    if (!key.startsWith(SYSTEM_KEY_SET_PREFIX))
-      throw new ApiKeyRequestError(
-        400,
-        'NOT_RESERVED',
-        `${key} is not in the prefix reserved for system keys.`,
-      );
-    const target = newKey ?? releasedKey(key);
-    if (target.startsWith(SYSTEM_KEY_SET_PREFIX))
-      throw new ApiKeyRequestError(
-        400,
-        'NOT_RESERVED',
-        'Rename it out of the reserved prefix.',
-      );
-    await this.db.transaction(async (connection) => {
-      const listed = await connection.query
-        .selectFrom('apiKeySystemKeys')
-        .select(['identityId'])
-        .where('identityId', '=', key.slice(SYSTEM_KEY_SET_PREFIX.length))
-        .executeTakeFirst();
-      if (listed)
-        throw new ApiKeyRequestError(
-          400,
-          'NOT_RESERVED',
-          `${key} is a system key's set.`,
-        );
-      await renameSet(connection, key, target);
-    });
-    return target;
-  }
-
   // Managed keys: another feature creates and adjusts them for a person, who never needs to manage system keys, and
   // never gives one more than that person holds.
 
@@ -1394,16 +1309,11 @@ export class SystemApiKeys {
           'The service account has no such API key to adopt.',
         );
       // The set's name must be free: a role an application already has under it keeps its grants and members.
-      if (
-        await authz.permissionSets
-          .withTransaction(connection)
-          .get(systemKeySet(input.identityId))
-      )
-        throw new ApiKeyRequestError(
-          400,
-          'SYSTEM_KEY_SET_TAKEN',
-          `A Permission Set named ${systemKeySet(input.identityId)} exists already; rename it with releaseReserved, then import again.`,
-        );
+      await this.requireFreeSetName(
+        connection,
+        authz,
+        systemKeySet(input.identityId),
+      );
       // What the account holds now, read in this transaction: the set never gets more.
       const held = heldGrants(
         await authz.permissionSets.withTransaction(connection).getEffective({

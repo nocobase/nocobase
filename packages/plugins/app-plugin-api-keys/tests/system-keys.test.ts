@@ -35,7 +35,6 @@ import { registerApiKeySettings } from '../server/settings.js';
 import {
   assertSystemPermissions,
   SystemApiKeys,
-  releasedKey,
   systemKeySet,
 } from '../server/system-keys.js';
 import {
@@ -97,6 +96,14 @@ describe('system keys', () => {
     });
   const asKey = (secret: string, path: string) =>
     app.request(path, { headers: { 'x-api-key': secret } });
+
+  /** Lists a set as the upgrade's seed does for a role already named in the reserved prefix. */
+  const exempt = (permissionSetKey: string) =>
+    database
+      .connection()
+      .query.insertInto('apiKeyPrefixExemptions')
+      .values({ permissionSetKey, createdAt: new Date() })
+      .execute();
 
   beforeAll(async () => {
     testDatabase = await createTestDatabase();
@@ -482,7 +489,7 @@ describe('system keys', () => {
   });
 
   it('boots beside a root role and an application’s role named in the reserved prefix, leaving both as they were', async () => {
-    // An application's own role named so before the prefix was reserved, held by a member.
+    // An application's own role named so before the prefix was reserved, held by a member, which the upgrade listed.
     await authz.permissionSets.create({
       key: 'system-key-sales',
       grants: [authz.settings.grant('orders', ['read'])],
@@ -491,6 +498,7 @@ describe('system keys', () => {
       subject: { type: 'user', id: memberId },
       permissionSet: 'system-key-sales',
     });
+    await exempt('system-key-sales');
     try {
       // Another instance whose root set is configured under the prefix too.
       const other = createAppAuthorization({
@@ -503,9 +511,9 @@ describe('system keys', () => {
         users: () => users,
         authorization: () => other,
       });
-      const colliding = await otherKeys.collisions();
-      expect(colliding).toContain('system-key-sales');
-      expect(() => otherKeys.protectAll(colliding)).not.toThrow();
+      const exemptions = await otherKeys.exemptions();
+      expect(exemptions).toEqual(['system-key-sales']);
+      expect(() => otherKeys.protectAll(exemptions)).not.toThrow();
       // The root set stays the application's, unrestricted as configured.
       expect(
         other.permissionSets.protection('system-key-operators'),
@@ -547,23 +555,33 @@ describe('system keys', () => {
     }
   });
 
-  it('releases a reserved name into a key that fits the database, and refuses one that does not', async () => {
-    const long = `system-key-${'r'.repeat(200)}`;
-    const released = releasedKey(long);
-    expect(released.length).toBeLessThanOrEqual(255 - 130);
-    expect(released.startsWith('role-system-key-')).toBe(true);
-    expect(releasedKey(long)).toBe(released);
-    expect(releasedKey('system-key-sales')).toBe('role-system-key-sales');
-    await authz.permissionSets.create({ key: long, grants: [] });
+  it('protects a set in the prefix that is being created when another process starts, once it becomes a system key', async () => {
+    // A creation in flight: the set exists, the key is not listed yet.
+    const robot = await users.createServiceAccount({ name: 'In flight' });
+    const set = systemKeySet(robot.id);
+    await authz.permissionSets.create({ key: set, grants: [] });
     try {
-      await expect(
-        systemKeys.releaseReserved(long, `role-${'x'.repeat(260)}`),
-      ).rejects.toMatchObject({ code: 'NOT_RESERVED' });
-      expect(await authz.permissionSets.get(long)).toBeTruthy();
-      await expect(systemKeys.releaseReserved(long)).resolves.toBe(released);
-      expect(await authz.permissionSets.get(released)).toBeTruthy();
+      // An instance starting now leaves out only what the upgrade listed, never what it finds in the prefix.
+      const other = createAppAuthorization({
+        connection: database.connection(),
+      });
+      const otherKeys = new SystemApiKeys({
+        connection: () => database.connection(),
+        keys,
+        users: () => users,
+        authorization: () => other,
+      });
+      otherKeys.protectAll(await otherKeys.exemptions());
+      expect(other.permissionSets.protection(set)).toMatchObject({
+        owner: '@nocobase/app-plugin-api-keys',
+        hidden: true,
+      });
+      expect(() =>
+        other.permissionSets.assertWritable(set, 'assign'),
+      ).toThrow();
+      otherKeys.release();
     } finally {
-      await authz.permissionSets.delete(released).catch(() => undefined);
+      await authz.permissionSets.delete(set);
     }
   });
 
@@ -730,7 +748,7 @@ describe('system keys', () => {
     });
   });
 
-  it('refuses to import over a role already named for the account, until it is renamed with its members', async () => {
+  it('never gives a system key a name an application’s role holds, held or listed by the upgrade, or another owner’s', async () => {
     const robot = await users.createServiceAccount({ name: 'Taken' });
     const own = await keys.create(
       robot.id,
@@ -745,31 +763,54 @@ describe('system keys', () => {
       subject: { type: 'user', id: robot.id },
       permissionSet: `api-key-${robot.id}`,
     });
-    // An application's role that happens to carry the reserved name, held by a member.
+    // An application's role that carries the reserved name, held by a member and listed by the upgrade.
     const taken = systemKeySet(robot.id);
     await authz.permissionSets.create({ key: taken, grants: [] });
     await authz.permissionSets.assign({
       subject: { type: 'user', id: memberId },
       permissionSet: taken,
     });
+    await exempt(taken);
     await expect(
       systemKeys.adopt({ identityId: robot.id, keyId: own.key.id }),
     ).rejects.toMatchObject({ code: 'SYSTEM_KEY_SET_TAKEN' });
     // Nothing changed: the role keeps no grants and its member.
     expect((await authz.permissionSets.get(taken))?.grants).toEqual([]);
-    expect(await systemKeys.collisions()).toContain(taken);
-    const renamed = await systemKeys.releaseReserved(taken);
-    expect(renamed).toBe(`role-${taken}`);
     expect(
-      (await authz.permissionSets.listAssignments(renamed)).map(
+      (await authz.permissionSets.listAssignments(taken)).map(
         (assignment) => assignment.subject.id,
       ),
     ).toEqual([memberId]);
-    expect(await systemKeys.collisions()).not.toContain(taken);
-    await systemKeys.adopt({ identityId: robot.id, keyId: own.key.id });
-    expect(await systemKeys.isSystemKey(robot.id)).toBe(true);
-    // The renamed role was left alone by the import.
-    expect((await authz.permissionSets.get(renamed))?.grants).toEqual([]);
+    // Gone, its name stays the application's: every process started since leaves it unprotected.
+    for (const assignment of await authz.permissionSets.listAssignments(taken))
+      await authz.permissionSets.revoke(assignment.id);
+    await authz.permissionSets.delete(taken);
+    await expect(
+      systemKeys.adopt({ identityId: robot.id, keyId: own.key.id }),
+    ).rejects.toMatchObject({ code: 'SYSTEM_KEY_SET_TAKEN' });
+    expect(await systemKeys.isSystemKey(robot.id)).toBe(false);
+    expect(await authz.permissionSets.get(taken)).toBeFalsy();
+
+    // A name another owner protects, such as a root set configured under the prefix, is theirs.
+    const rooted = await users.createServiceAccount({ name: 'Rooted' });
+    const rootedKey = await keys.create(
+      rooted.id,
+      { name: 'org', expiresInDays: null, permissions: readOrders },
+      await keys.identityOf(adminId),
+    );
+    const release = authz.permissionSets.protect({
+      owner: 'an application',
+      keys: [systemKeySet(rooted.id)],
+      allow: [],
+    });
+    try {
+      await expect(
+        systemKeys.adopt({ identityId: rooted.id, keyId: rootedKey.key.id }),
+      ).rejects.toMatchObject({ code: 'SYSTEM_KEY_SET_TAKEN' });
+      expect(await systemKeys.isSystemKey(rooted.id)).toBe(false);
+    } finally {
+      release();
+    }
   });
 
   it('answers a repeated import only when it asks for the same grants, in any order', async () => {

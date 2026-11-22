@@ -108,8 +108,10 @@ export interface PermissionSetProtection {
    * its sets at run time, such as one per API key. No other owner may protect an overlapping prefix, and the management
    * surface cannot create a set in it (unless `allow` names `create`). A key another owner protects by name stays
    * theirs, whichever is registered first, such as a root set an application configured under the prefix. A set
-   * already named so before is protected too unless listed in `except`, so an owner should check for one at boot. Such
-   * a protection cannot be unrestricted or require an active assignment.
+   * already named so before is protected too unless listed in `except`. Every process must pass the same `except`, so
+   * an owner lists those sets once, when it reserves the prefix, and stores the list rather than reading the prefix at
+   * boot, and never gives one of those names to a set of its own. Such a protection cannot be unrestricted or require an
+   * active assignment.
    */
   prefixes?: readonly string[];
   /** Keys `prefixes` leaves alone, such as roles an application had named so before the prefix was reserved. */

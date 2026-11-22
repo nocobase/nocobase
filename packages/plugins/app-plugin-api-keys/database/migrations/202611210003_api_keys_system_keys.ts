@@ -8,6 +8,8 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  *   An imported key keeps what its import asked for, apart from the activity it brought along.
  * - `apiKeyEvents`: what was done to a system key, by whom (none for the system itself), with what changed.
  * - `apiKeyRules`: the one row of rules an administrator sets; without it the application's configuration applies.
+ * - `apiKeyPrefixExemptions`: Permission Sets an application had named in the `system-key-` prefix before it was
+ *   reserved, listed once by the upgrade's seed and never changed, so every process leaves the same ones alone.
  */
 const migration: MigrationDefinition = defineMigration({
   name: '202611210003_api_keys_system_keys',
@@ -50,9 +52,17 @@ const migration: MigrationDefinition = defineMigration({
       collection.datetime('updatedAt').notNull();
       collection.primary('id', { name: 'pk_api_key_rules' });
     });
+    await builder.createCollection('apiKeyPrefixExemptions', (collection) => {
+      collection.string('permissionSetKey', { length: 255 }).notNull();
+      collection.datetime('createdAt').notNull();
+      collection.primary('permissionSetKey', {
+        name: 'pk_api_key_prefix_exemptions',
+      });
+    });
   },
 
   async down({ builder }) {
+    await builder.dropCollection('apiKeyPrefixExemptions');
     await builder.dropCollection('apiKeyRules');
     await builder.dropCollection('apiKeyEvents');
     await builder.dropCollection('apiKeySystemKeys');
