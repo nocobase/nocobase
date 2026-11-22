@@ -23,6 +23,9 @@ const messages = {
   'push.failed': '无法更新推送设置，请重试。',
   'push.loadingFailed': '无法加载设备，请重试。',
   'push.retry': '重试',
+  'channelType.title': '浏览器推送',
+  'channelType.testHint':
+    '给你开启了推送的浏览器发一条测试通知。请先在个人设置 › 通知中开启。',
 };
 
 export default messages;

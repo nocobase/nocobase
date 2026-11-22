@@ -31,6 +31,9 @@ const koKR: LocaleResource<typeof enUS> = {
   'push.failed': '푸시 알림을 업데이트할 수 없습니다. 다시 시도하세요.',
   'push.loadingFailed': '기기를 불러올 수 없습니다. 다시 시도하세요.',
   'push.retry': '다시 시도',
+  'channelType.title': '브라우저 푸시',
+  'channelType.testHint':
+    '푸시를 켠 브라우저로 테스트 알림을 보냅니다. 먼저 개인 설정 › 알림에서 켜세요.',
 };
 
 export default koKR;

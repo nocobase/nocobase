@@ -32,6 +32,9 @@ const ruRU: LocaleResource<typeof enUS> = {
   'push.failed': 'Не удалось обновить push-уведомления. Повторите попытку.',
   'push.loadingFailed': 'Не удалось загрузить устройства. Повторите попытку.',
   'push.retry': 'Повторить',
+  'channelType.title': 'Push в браузере',
+  'channelType.testHint':
+    'Отправляет тестовое уведомление в браузеры, где вы включили push. Сначала включите его в Личных настройках › Уведомления.',
 };
 
 export default ruRU;

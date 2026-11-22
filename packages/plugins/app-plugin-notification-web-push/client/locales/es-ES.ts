@@ -35,6 +35,9 @@ const esES: LocaleResource<typeof enUS> = {
   'push.loadingFailed':
     'No se pueden cargar dispositivos. Por favor inténtalo de nuevo.',
   'push.retry': 'Reintentar',
+  'channelType.title': 'Push del navegador',
+  'channelType.testHint':
+    'Envía una notificación de prueba a los navegadores en los que activó las notificaciones push. Actívelas primero en Ajustes personales › Notificaciones.',
 };
 
 export default esES;

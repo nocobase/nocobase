@@ -33,6 +33,9 @@ const jaJP: LocaleResource<typeof enUS> = {
   'push.failed': 'プッシュ通知を更新できません。もう一度試してください。',
   'push.loadingFailed': 'デバイスをロードできません。もう一度試してください。',
   'push.retry': '再試行',
+  'channelType.title': 'ブラウザープッシュ',
+  'channelType.testHint':
+    'プッシュをオンにしたブラウザーにテスト通知を送ります。先に個人設定 › 通知でオンにしてください。',
 };
 
 export default jaJP;

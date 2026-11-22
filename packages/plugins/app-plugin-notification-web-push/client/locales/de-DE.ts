@@ -35,6 +35,9 @@ const deDE: LocaleResource<typeof enUS> = {
   'push.loadingFailed':
     'Geräte können nicht geladen werden. Bitte versuchen Sie es erneut.',
   'push.retry': 'Erneut versuchen',
+  'channelType.title': 'Browser-Push',
+  'channelType.testHint':
+    'Sendet eine Testbenachrichtigung an die Browser, für die Sie Push aktiviert haben. Aktivieren Sie es zuerst unter Persönliche Einstellungen › Benachrichtigungen.',
 };
 
 export default deDE;

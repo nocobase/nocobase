@@ -28,6 +28,9 @@ const messages = {
   'push.failed': 'Unable to update push notifications. Please try again.',
   'push.loadingFailed': 'Unable to load devices. Please try again.',
   'push.retry': 'Retry',
+  'channelType.title': 'Browser push',
+  'channelType.testHint':
+    'Sends a test notification to the browsers you turned push on for. Turn it on under Personal settings › Notifications first.',
 };
 
 export default messages;

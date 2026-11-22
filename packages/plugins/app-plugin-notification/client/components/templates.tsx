@@ -20,6 +20,7 @@ import {
   SheetTitle,
 } from './ui/sheet.js';
 import type {
+  NotificationKindChannelPolicy,
   NotificationTemplateChannel,
   NotificationTemplatePreview,
   NotificationTemplateText,
@@ -32,6 +33,11 @@ import {
 } from '../template-language.js';
 
 const namespace = '@nocobase/app-plugin-notification';
+
+/** A kind as the directory lists it, with its sends in the last seven days. */
+type KindListItem = NotificationTemplateView & {
+  readonly sentLast7Days?: number;
+};
 
 type ResolveText = (text: NotificationTemplateText) => string;
 
@@ -56,6 +62,12 @@ function useTemplateText(): {
   return { text, t: translate, language: i18n.language };
 }
 
+const channelTypeLabel = (type: string): NotificationTemplateText => ({
+  ns: namespace,
+  key: `channelTypes.${type}`,
+  defaultValue: type,
+});
+
 const textKey = (value: NotificationTemplateText): string =>
   typeof value === 'string' ? value : `${value.ns}:${value.key}`;
 
@@ -69,8 +81,49 @@ const channelText = (
   channel: NotificationTemplateChannel,
 ): string => (channel.label ? text(channel.label) : channel.name);
 
-/** Read-only administration block. The host owns routing, page framing and permission grants. */
-export function NotificationTemplates({
+/** A channel type's name in the interface language, such as "Browser push" for `web-push`. */
+function useChannelTypeName(): (type: string) => string {
+  const { t } = useTemplateText();
+  return (type) => t(`channelTypes.${type}`, { defaultValue: type });
+}
+
+/** Required, on and off channel types of a kind, as chips. */
+function PolicyChips({
+  policies,
+}: {
+  readonly policies: readonly NotificationKindChannelPolicy[];
+}): ReactElement {
+  const { t } = useTemplateText();
+  const name = useChannelTypeName();
+  return (
+    <span className='flex flex-wrap gap-1.5'>
+      {policies.map((policy) => (
+        <Badge
+          key={policy.type}
+          variant={
+            policy.policy === 'required'
+              ? 'default'
+              : policy.policy === 'on'
+                ? 'secondary'
+                : 'outline'
+          }
+          title={t(`kinds.policies.${policy.policy}`)}
+        >
+          {name(policy.type)}
+          <span className='sr-only'>
+            {` (${t(`kinds.policies.${policy.policy}`)})`}
+          </span>
+        </Badge>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The notification kinds plugins registered, read-only: grouped by category, with their channel policies, and the
+ * details and a preview in a drawer. The host owns routing, page framing and permission grants.
+ */
+export function NotificationKinds({
   selectedId,
   onSelect,
 }: {
@@ -80,7 +133,7 @@ export function NotificationTemplates({
 }): ReactElement {
   const api = useApiClient();
   const { t, text } = useTemplateText();
-  const [items, setItems] = useState<readonly NotificationTemplateView[]>();
+  const [items, setItems] = useState<readonly KindListItem[]>();
   const [error, setError] = useState<'forbidden' | 'failed' | null>(null);
   const [revision, setRevision] = useState(0);
   const [search, setSearch] = useState('');
@@ -89,8 +142,8 @@ export function NotificationTemplates({
   useEffect(() => {
     let current = true;
     void api
-      .request<{ data: NotificationTemplateView[] }>({
-        path: 'notifications/templates',
+      .request<{ data: KindListItem[] }>({
+        path: 'notifications/kinds',
       })
       .then(({ data }) => {
         if (current) setItems(data);
@@ -98,8 +151,7 @@ export function NotificationTemplates({
       .catch((cause: unknown) => {
         if (current)
           setError(
-            cause instanceof ApiClientError &&
-              cause.reason === 'NOTIFICATION_TEMPLATES_FORBIDDEN'
+            cause instanceof ApiClientError && cause.status === 403
               ? 'forbidden'
               : 'failed',
           );
@@ -118,6 +170,16 @@ export function NotificationTemplates({
     const entries = new Map<string, NotificationTemplateChannel>();
     for (const entry of items?.flatMap((item) => item.channels) ?? [])
       if (!entries.has(entry.type)) entries.set(entry.type, entry);
+    // A kind sent with `notify()` names channel types even where no channel of the type is configured.
+    for (const policy of items?.flatMap((item) => item.policies ?? []) ?? [])
+      if (!entries.has(policy.type))
+        entries.set(policy.type, {
+          name: policy.type,
+          type: policy.type,
+          typeLabel: channelTypeLabel(policy.type),
+          configured: false,
+          enabled: null,
+        });
     return [...entries];
   }, [items]);
   const query = search.trim().toLowerCase();
@@ -125,7 +187,8 @@ export function NotificationTemplates({
     (item) =>
       (category === 'all' || textKey(item.category) === category) &&
       (channel === 'all' ||
-        item.channels.some((entry) => entry.type === channel)) &&
+        item.channels.some((entry) => entry.type === channel) ||
+        Boolean(item.policies?.some((policy) => policy.type === channel))) &&
       [
         text(item.name),
         text(item.category),
@@ -264,12 +327,47 @@ export function NotificationTemplates({
                           <span className='line-clamp-2 text-sm text-muted-foreground break-words'>
                             {text(item.trigger)}
                           </span>
-                          <span className='mt-auto flex flex-wrap gap-1.5 pt-1'>
-                            {item.channels.map((entry) => (
-                              <Badge variant='outline' key={entry.name}>
-                                {channelTypeText(text, entry)}
-                              </Badge>
-                            ))}
+                          <span className='mt-auto pt-1'>
+                            {item.policies ? (
+                              <PolicyChips policies={item.policies} />
+                            ) : (
+                              <span className='flex flex-wrap gap-1.5'>
+                                {item.channels.map((entry) => (
+                                  <Badge variant='outline' key={entry.name}>
+                                    {channelTypeText(text, entry)}
+                                  </Badge>
+                                ))}
+                              </span>
+                            )}
+                          </span>
+                          <span className='flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground'>
+                            <span>
+                              {item.policies
+                                ? (() => {
+                                    const adjustable = item.policies.filter(
+                                      (policy) => policy.adjustable,
+                                    );
+                                    return adjustable.length
+                                      ? t('kinds.adjustable', {
+                                          channels: adjustable
+                                            .map((policy) =>
+                                              t(`channelTypes.${policy.type}`, {
+                                                defaultValue: policy.type,
+                                              }),
+                                            )
+                                            .join(', '),
+                                        })
+                                      : t('kinds.notAdjustable');
+                                  })()
+                                : t('kinds.sentDirectly')}
+                            </span>
+                            {item.sentLast7Days === undefined ? null : (
+                              <span>
+                                {t('kinds.sentLast7Days', {
+                                  count: item.sentLast7Days,
+                                })}
+                              </span>
+                            )}
                           </span>
                         </button>
                       </li>
@@ -337,7 +435,7 @@ function TemplateDetail({
     let current = true;
     void api
       .request<{ data: NotificationTemplateView }>({
-        path: `notifications/templates/${encodeURIComponent(id)}`,
+        path: `notifications/kinds/${encodeURIComponent(id)}`,
       })
       .then(({ data }) => {
         if (current) setDetail(data);
@@ -360,7 +458,7 @@ function TemplateDetail({
     let current = true;
     void api
       .request<{ data: NotificationTemplatePreview }>({
-        path: `notifications/templates/${encodeURIComponent(id)}/preview`,
+        path: `notifications/kinds/${encodeURIComponent(id)}/preview`,
         method: 'POST',
         json: { locale },
       })
@@ -440,6 +538,31 @@ function TemplateDetail({
                 </div>
               ))}
             </dl>
+            {detail.policies ? (
+              <section className='space-y-2'>
+                <h3 className='text-sm font-medium'>{t('kinds.policyTitle')}</h3>
+                <ul className='space-y-1.5 text-sm'>
+                  {detail.policies.map((policy) => (
+                    <li
+                      key={policy.type}
+                      className='flex flex-wrap items-center justify-between gap-2'
+                    >
+                      <span>
+                        {t(`channelTypes.${policy.type}`, {
+                          defaultValue: policy.type,
+                        })}
+                      </span>
+                      <span className='text-muted-foreground'>
+                        {t(`kinds.policies.${policy.policy}`)}
+                        {policy.adjustable
+                          ? ` · ${t('kinds.personCanChange')}`
+                          : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
             <section className='space-y-2'>
               <h3 className='text-sm font-medium'>{t('templates.status')}</h3>
               <ul className='space-y-2'>
@@ -644,3 +767,6 @@ function PreviewContent({
     </div>
   );
 }
+
+/** @deprecated The directory lists notification kinds now; use `NotificationKinds`. */
+export const NotificationTemplates: typeof NotificationKinds = NotificationKinds;

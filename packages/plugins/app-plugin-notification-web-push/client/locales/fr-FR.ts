@@ -35,6 +35,9 @@ const frFR: LocaleResource<typeof enUS> = {
   'push.loadingFailed':
     'Impossible de charger les appareils. Veuillez réessayer.',
   'push.retry': 'Réessayer',
+  'channelType.title': 'Push navigateur',
+  'channelType.testHint':
+    'Envoie une notification de test aux navigateurs pour lesquels vous avez activé le push. Activez-le d’abord dans Paramètres personnels › Notifications.',
 };
 
 export default frFR;
