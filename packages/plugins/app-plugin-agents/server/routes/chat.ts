@@ -1533,20 +1533,10 @@ export function createChatRoutes(
       },
     }),
     async (context) => {
-      const listed = await services.conversations.chatAgents(me(context));
-      // Leave out the agents limited to roles the caller has none of; most lists name none and read no roles.
-      const limited = new Map(
-        (await services.agents.list())
-          .filter((agent) => agent.chatRoles?.length)
-          .map((agent) => [agent.id, agent]),
+      // Agents limited to roles the caller has none of are left out; the roles are read only when one is limited.
+      const data = await services.conversations.chatAgents(me(context), () =>
+        context.get('caller').chatAudience(),
       );
-      const audience = limited.size
-        ? await context.get('caller').chatAudience()
-        : 'all';
-      const data = listed.filter((item) => {
-        const agent = limited.get(item.id);
-        return !agent || mayChat(agent, audience);
-      });
       return context.json({ data, meta: { total: data.length } });
     },
   );

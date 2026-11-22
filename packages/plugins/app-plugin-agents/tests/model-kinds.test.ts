@@ -241,13 +241,12 @@ describe('model kinds', () => {
         )
       ).rows,
     ).toEqual([]);
-    expect(
-      (
-        await harness.request('GET', '/agents/usage/models', {
-          user: 'eve',
-        })
-      ).status,
-    ).toBe(403);
+    // Anyone signed in reads it; without reading usage or agents, there are no rows.
+    const eve = await harness.request('GET', '/agents/usage/models', {
+      user: 'eve',
+    });
+    expect(eve.status).toBe(200);
+    expect(eve.body.data.rows).toEqual([]);
   });
 
   it('checks a model as its kind says', async () => {

@@ -40,7 +40,11 @@ import {
 } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import {
+  mayChat,
+  type Agent,
+  type ChatAudience,
+} from '../../../shared/agents.js';
 import { agentModelOf } from '../../../shared/model-catalog.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
@@ -3133,7 +3137,7 @@ export function createConversationService(
       return run;
     },
 
-    async chatAgents(userId) {
+    async chatAgents(userId, audience) {
       const conn = tx.read();
       const [agents, runners, settings, preferences] = await Promise.all([
         deps.agents.list(),
@@ -3143,6 +3147,8 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
+      const limited = agents.some((agent) => agent.chatRoles?.length);
+      const who: ChatAudience = limited && audience ? await audience() : 'all';
       const variableStates = await deps.eligibility.prepare(conn, agents, {});
       const now = clock.now().getTime();
       const catalog = await Promise.all(
@@ -3150,7 +3156,9 @@ export function createConversationService(
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
           .filter(
             (agent) =>
-              agent.source === 'runner' && deps.agents.mayInvoke(agent, userId),
+              agent.source === 'runner' &&
+              deps.agents.mayInvoke(agent, userId) &&
+              mayChat(agent, who),
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
