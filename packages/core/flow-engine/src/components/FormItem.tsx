@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cx } from '@emotion/css';
 import React from 'react';
 import { Tooltip, Form } from 'antd';
 import type { FormItemProps, TooltipProps } from 'antd';
@@ -82,7 +81,7 @@ export const FormItem = ({
           }
           return child;
         });
-  const { label, labelWrap, colon = true, layout } = forwardedRest;
+  const { className, label, labelWrap, colon = true, layout } = forwardedRest;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const labelColStyle =
     layout === 'vertical' ? { width: labelWidth, ...verticalFormItemLabelStyle } : { width: labelWidth };
@@ -131,7 +130,7 @@ export const FormItem = ({
   return (
     <Form.Item
       {...forwardedRest}
-      className={cx(forwardedRest.className, itemMarginClassName)}
+      className={itemMarginClassName ? [className, itemMarginClassName].filter(Boolean).join(' ') : className}
       style={itemMarginClassName ? forwardedRest.style : { ...formItemStyle, ...forwardedRest.style }}
       labelCol={{ style: labelColStyle }}
       layout={layout}
