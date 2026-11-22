@@ -8,10 +8,14 @@ import { Breadcrumbs } from '#components/breadcrumbs';
 
 import { OnlineAgentProvider } from '#components/online-agent/provider';
 import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';
+import { PersonalSettingsDialog } from '../routing/personal-settings-dialog.js';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
-import { PageBreadcrumbProvider } from '@nocobase/app-client';
+import {
+  PageBreadcrumbProvider,
+  PersonalSettingsBackground,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { LayoutHeader } from './components/layout-header.js';
 import {
@@ -62,7 +66,6 @@ function AuthenticatedLayout({
   const routes = useMemo(() => withSettingsShell(registered), [registered]);
   const { items, denied, loading } = useRouteNavigation(routes);
   const access = useMemo(() => ({ denied, loading }), [denied, loading]);
-  useRememberSettingsReturn();
   // System and personal settings pages replace the application's menu with their own, the way back first; elsewhere
   // the single System settings entry stands apart at the bottom of the menu, and personal settings open from the
   // account menu.
@@ -143,16 +146,25 @@ function AuthenticatedLayout({
                 {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
                 <div className='h-full overflow-y-auto'>
-                  <RouteLeaveBoundary hidden={loading}>
-                    <Outlet />
-                  </RouteLeaveBoundary>
+                  <PersonalSettingsBackground>
+                    <RememberSettingsReturn />
+                    <RouteLeaveBoundary hidden={loading}>
+                      <Outlet />
+                    </RouteLeaveBoundary>
+                  </PersonalSettingsBackground>
                 </div>
               </main>
               <OnlineAgentPanelHost />
             </div>
           </div>
+          <PersonalSettingsDialog />
         </AppSidebarProvider>
       </PageBreadcrumbProvider>
     </RouteTreeProvider>
   );
+}
+
+function RememberSettingsReturn() {
+  useRememberSettingsReturn();
+  return null;
 }
