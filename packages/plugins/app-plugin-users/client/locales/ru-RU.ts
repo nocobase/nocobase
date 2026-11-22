@@ -145,6 +145,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       'Управлять учётными записями может только человек, а не API-ключ.',
   },
   page: {
+    roles: 'Роли',
     loading: 'Загрузка',
   },
   notificationTemplates: {

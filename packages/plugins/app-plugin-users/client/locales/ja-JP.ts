@@ -142,6 +142,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       'アカウントの管理は人だけが行えます。API キーには付与できません。',
   },
   page: {
+    roles: 'ロール',
     loading: '読み込み中',
   },
   notificationTemplates: {

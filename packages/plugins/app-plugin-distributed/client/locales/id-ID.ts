@@ -1,6 +1,20 @@
 import type { DistributedResource } from './en-US.js';
 
 const idID: DistributedResource = {
+  view: {
+    deployment: 'Mode penerapan',
+    multi: 'Beberapa instans',
+    configuration: 'Konfigurasi saat ini',
+    checks: 'Pemeriksaan multi-instans',
+    backends: 'Backend layanan',
+    readiness: 'Pemeriksaan sebelum penskalaan',
+    pending: 'Perlu ditangani',
+    all: 'Semua',
+    empty: 'Tidak ada pemeriksaan yang perlu ditangani.',
+    blockers: 'Wajib diperbaiki · {{count}}',
+    scope:
+      'Konfigurasi instans ini. Terapkan ulang aplikasi setelah mengubah konfigurasinya.',
+  },
   nav: {
     title: 'Klaster dan terdistribusi',
     description:

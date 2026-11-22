@@ -6,8 +6,7 @@ const viVN: LocaleResource<typeof enUS> = {
   storage: {
     title: 'Lưu trữ tệp',
     navDescription: 'Nơi lưu các tệp đã tải lên và những tính năng lưu tệp',
-    description:
-      'Nơi lưu các tệp đã tải lên, kích thước tối đa của một tệp và những tính năng lưu tệp. Lưu trữ được thiết lập trong cấu hình ứng dụng (`drive`) và có hiệu lực sau khi triển khai lại; trang này hiển thị các thiết lập đang có hiệu lực và kiểm tra xem lưu trữ có thực sự đọc và ghi được hay không.',
+    description: 'Xem cấu hình lưu trữ và các tính năng sử dụng từng ổ đĩa.',
     checkAction: 'Kiểm tra lưu trữ',
     loading: 'Đang tải lưu trữ tệp…',
     loadFailed: 'Không thể tải lưu trữ tệp.',
@@ -18,9 +17,6 @@ const viVN: LocaleResource<typeof enUS> = {
       title_other: '{{count}} thông báo',
       incomplete:
         'Đĩa {{disk}} chưa được cấu hình đầy đủ ({{problems}}): không ảnh hưởng gì khi chưa được dùng, và sẽ lỗi khi được chọn.',
-      localDefault:
-        'Lưu trữ mặc định là đĩa cục bộ: ứng dụng chỉ có thể chạy một phiên bản. Hãy dùng lưu trữ dùng chung cho nhiều phiên bản.',
-      seeCluster: 'Xem Cụm và phân tán.',
     },
     columns: {
       name: 'Tên',
@@ -156,11 +152,8 @@ const viVN: LocaleResource<typeof enUS> = {
         'Thiết lập lưu trữ vẫn có hiệu lực: các bảng tệp thêm sau sẽ lưu tệp trên {{disk}} theo mặc định.',
     },
     notes: {
-      title: 'Lưu ý',
-      firstUse:
-        'Lưu trữ chỉ được kết nối ở lần dùng đầu tiên, nên khởi động thành công không chứng minh rằng nó đọc và ghi được. Kiểm tra sẽ ghi, đọc và xóa một tệp tạm để xác nhận.',
       changeDefault:
-        'Thay đổi lưu trữ mặc định chỉ ảnh hưởng đến các lần tải lên sau; tệp hiện có vẫn được đọc từ lưu trữ mà bản ghi của chúng chỉ định và không bị di chuyển.',
+        'Việc đổi ổ đĩa mặc định chỉ ảnh hưởng đến các tệp tải lên sau đó.',
       deleteRecords: 'Xóa một bản ghi không xóa tệp của nó khỏi đĩa.',
       publicLinks:
         'Bất kỳ ai biết liên kết công khai đều mở được mà không cần đăng nhập. Tệp nhạy cảm nên được phục vụ qua các route có xác thực của chính plugin.',

@@ -1,6 +1,20 @@
 import type { DistributedResource } from './en-US.js';
 
 const deDE: DistributedResource = {
+  view: {
+    deployment: 'Bereitstellungsmodus',
+    multi: 'Mehrere Instanzen',
+    configuration: 'Aktuelle Konfiguration',
+    checks: 'Prüfung für mehrere Instanzen',
+    backends: 'Dienst-Backends',
+    readiness: 'Prüfung vor der Skalierung',
+    pending: 'Zu bearbeiten',
+    all: 'Alle',
+    empty: 'Keine offenen Prüfpunkte.',
+    blockers: 'Zu beheben · {{count}}',
+    scope:
+      'Konfiguration dieser Instanz. Nach Änderungen an der Anwendungskonfiguration erneut bereitstellen.',
+  },
   nav: {
     title: 'Cluster und Verteilung',
     description:

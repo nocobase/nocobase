@@ -79,6 +79,7 @@ interface OptionsActionResponse {
   name: string;
   title: LocalizedText;
   description?: LocalizedText;
+  risk?: 'sensitive' | 'high';
   /** Composites only: page ids whose access the role editor turns this action on with. */
   defaultFor?: readonly string[];
 }

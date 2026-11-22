@@ -573,8 +573,6 @@ function RoleEditor(): ReactElement {
         <Button
           type='button'
           variant='ghost'
-          // The footer sits on the editor's dark save bar.
-          className='text-background hover:bg-background/10 hover:text-background'
           disabled={busy}
           onClick={() => {
             if (creating) void navigate({ pathname: parent.base, search: '' });

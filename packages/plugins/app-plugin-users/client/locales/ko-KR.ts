@@ -136,6 +136,7 @@ const koKR: LocaleResource<typeof enUS> = {
       '계정 관리는 사람만 할 수 있으며 API 키에는 부여할 수 없습니다.',
   },
   page: {
+    roles: '역할',
     loading: '로드 중',
   },
   notificationTemplates: {

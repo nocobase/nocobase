@@ -1,9 +1,13 @@
 // db-test-portability: dialect-specific — a fake configuration names SQLite to exercise the database check; no database is opened
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
+import { Routes, Route } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
-import DistributedStatusPage from '../../client/components/status-page.js';
+import DistributedStatusPage, {
+  Configuration,
+  Checks,
+} from '../../client/components/status-page.js';
 import plugin from '../../client/plugin.js';
 import type {
   DistributedService,
@@ -110,98 +114,81 @@ const MULTI: DistributedStatus = {
 };
 
 async function show(status: DistributedStatus, extra = false) {
-  return renderWithApp(<DistributedStatusPage />, {
-    plugins: extra ? [plugin(), fixtureClientPlugin()] : [plugin()],
-    namespace: '@nocobase/app-plugin-distributed',
-    fetch: answerApi(({ path }) => {
-      if (path !== 'distributed/status') throw new Error(`Unexpected ${path}`);
-      return { data: status };
-    }),
-  });
+  return renderWithApp(
+    <Routes>
+      <Route path='distributed' element={<DistributedStatusPage />}>
+        <Route path='configuration' element={<Configuration />} />
+        <Route path='checks' element={<Checks />} />
+      </Route>
+    </Routes>,
+    {
+      route: '/distributed',
+      plugins: extra ? [plugin(), fixtureClientPlugin()] : [plugin()],
+      namespace: '@nocobase/app-plugin-distributed',
+      fetch: answerApi(({ path }) => {
+        if (path !== 'distributed/status')
+          throw new Error(`Unexpected ${path}`);
+        return { data: status };
+      }),
+    },
+  );
 }
 
 describe('cluster and distributed page', () => {
-  it('tells a single instance that nothing needs to change', async () => {
+  it('opens configuration first and discloses a service’s effective settings', async () => {
     await show(SINGLE);
-
-    expect(await screen.findByText('Single instance')).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'Running one instance needs no change.',
-    );
-    expect(screen.getByText('0 / 5')).toBeInTheDocument();
+    expect(await screen.findByText('Single instance')).toBeVisible();
     expect(
-      screen.getAllByText('This instance only').length,
-    ).toBeGreaterThanOrEqual(5);
+      await screen.findByRole('heading', { name: 'Service backends' }),
+    ).toBeVisible();
+    expect(screen.getByText('0 / 5')).toBeVisible();
+    expect(screen.queryByText(/SQLite serves one instance only/u)).toBeNull();
+    const row = screen.getByText('Caching').closest('details')!;
+    fireEvent.click(row.querySelector('summary')!);
+    expect(within(row).getByText('caching.default')).toBeVisible();
     expect(
-      screen.getByText(/SQLite serves one instance only/u),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Manual worker ID 0/u)).toBeInTheDocument();
-    expect(screen.getByText('Before going live')).toBeInTheDocument();
-    expect(
-      screen.getByText(/There is no “Test connection”/u),
-    ).toBeInTheDocument();
+      within(row).getByText('@nocobase/app-plugin-caching-redis'),
+    ).toBeVisible();
   });
 
-  it('does not tell a single instance with a blocking item that nothing needs to change', async () => {
-    await show({
-      ...SINGLE,
-      checks: [
-        {
-          id: 'service.unregistered',
-          level: 'required',
-          title: 'Caching',
-          detail: 'caching.default selects the adapter "acme".',
-          params: {
-            service: 'caching',
-            adapter: 'acme',
-            configPath: 'caching.default',
-            plugin: '@nocobase/app-plugin-caching-redis',
-          },
-        },
-        ...SINGLE.checks,
-      ],
-    });
-
-    expect(await screen.findByText('Single instance')).toBeInTheDocument();
+  it('links to a blocking check even for single-instance configurations', async () => {
+    await show({ ...SINGLE, checks: [MULTI.checks[0]!, ...SINGLE.checks] });
+    fireEvent.click(await screen.findByRole('link', { name: 'Must fix · 1' }));
     expect(
-      screen.getByText('Items below must be fixed even for one instance'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('must be fixed')).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'Even with one instance, the items marked “Must fix” below need attention.',
-    );
-    expect(screen.getByRole('note')).not.toHaveTextContent('needs no change');
+      await screen.findByText('Queue is still local to this instance'),
+    ).toBeVisible();
   });
 
-  it('lists what must be fixed before running several instances', async () => {
-    await show(MULTI);
-
+  it('shows pending checks initially, expands fixes and filters extension checks', async () => {
+    await show(MULTI, true);
+    expect(await screen.findByText('4 / 5')).toBeVisible();
+    expect(
+      await screen.findByText('Running instances: node-a, node-b'),
+    ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole('link', { name: 'Multi-instance checks' }),
+    );
     const queue = (
       await screen.findByText('Queue is still local to this instance')
     ).closest('li')!;
-    expect(within(queue).getByText('Must fix')).toBeInTheDocument();
-    expect(
-      within(queue).getByText('queue: default: redis', {
-        normalizer: (text) => text.replace(/\s+/gu, ' ').trim(),
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Files in attachments, contracts are on this host/u),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('note')).not.toBeInTheDocument();
-    expect(
-      screen.getAllByText('Shared between instances').length,
-    ).toBeGreaterThanOrEqual(4);
-    expect(screen.getAllByText('Configured').length).toBeGreaterThanOrEqual(4);
+    expect(within(queue).getByText('Must fix')).toBeVisible();
+    fireEvent.click(queue.querySelector('summary')!);
+    expect(queue.querySelector('code')).toHaveTextContent(
+      'queue: default: redis',
+    );
+    expect(screen.queryByText('Running instances')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    expect(screen.getByText('Running instances')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }));
+    expect(screen.queryByText('Running instances')).toBeNull();
   });
 
-  it('shows checks and blocks an external plugin registers', async () => {
-    await show(MULTI, true);
-
-    expect(await screen.findByText('Running instances')).toBeInTheDocument();
-    expect(
-      await screen.findByText('Running instances: node-a, node-b'),
-    ).toBeInTheDocument();
+  it('shows an empty pending filter when every check passes', async () => {
+    await show({ ...MULTI, checks: [MULTI.checks[2]!] });
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Multi-instance checks' }),
+    );
+    expect(await screen.findByText('No checks to address.')).toBeVisible();
   });
 
   it('reports a refused request without showing any status', async () => {

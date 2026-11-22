@@ -75,7 +75,8 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "lucide-react": "catalog:",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-router": "catalog:"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-plugin-concurrency": {

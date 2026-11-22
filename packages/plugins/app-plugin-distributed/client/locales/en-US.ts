@@ -1,6 +1,20 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
+  view: {
+    deployment: 'Deployment mode',
+    multi: 'Multiple instances',
+    configuration: 'Current configuration',
+    checks: 'Multi-instance checks',
+    backends: 'Service backends',
+    readiness: 'Scale-out readiness',
+    pending: 'Needs attention',
+    all: 'All',
+    empty: 'No checks to address.',
+    blockers: 'Must fix · {{count}}',
+    scope:
+      'Configuration of this instance. Redeploy after changing application settings.',
+  },
   nav: {
     title: 'Cluster and distributed',
     description:

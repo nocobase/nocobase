@@ -6,8 +6,7 @@ const zhCN: LocaleResource<typeof enUS> = {
   storage: {
     title: '文件存储',
     navDescription: '上传的文件存在哪里，以及哪些功能在存文件',
-    description:
-      '上传的文件存在哪里、单个文件最大多少，以及哪些功能在存文件。存储在应用配置（`drive`）中设置，重新部署后生效；本页展示当前生效的设置，并检查存储是否真的可以读写。',
+    description: '查看文件存储配置和使用这些存储的功能。',
     checkAction: '检查存储',
     loading: '正在加载文件存储…',
     loadFailed: '无法加载文件存储。',
@@ -18,9 +17,6 @@ const zhCN: LocaleResource<typeof enUS> = {
       title_other: '{{count}} 条提示',
       incomplete:
         '磁盘 {{disk}} 配置不完整（{{problems}}）：未被使用时不受影响，被选用时会失败。',
-      localDefault:
-        '默认存储是本地磁盘：应用只能以单实例运行。多实例部署请使用共享存储。',
-      seeCluster: '参见“集群与分布式”。',
     },
     columns: {
       name: '名称',
@@ -154,11 +150,7 @@ const zhCN: LocaleResource<typeof enUS> = {
         '存储设置依然生效：之后新增的文件表默认把文件存到 {{disk}}。',
     },
     notes: {
-      title: '说明',
-      firstUse:
-        '存储在首次使用时才连接，因此应用启动成功并不代表存储可以读写。点击“检查”会写入、读取并删除一个临时文件来确认。',
-      changeDefault:
-        '修改默认存储只影响之后的上传；已有文件仍从其记录所指的存储读取，不会被迁移。',
+      changeDefault: '更改默认存储只影响新上传的文件。',
       deleteRecords: '删除记录不会从磁盘上删除对应的文件。',
       publicLinks:
         '公开链接无需登录，任何知道链接的人都能打开。敏感文件应通过插件自己的鉴权路由提供。',
