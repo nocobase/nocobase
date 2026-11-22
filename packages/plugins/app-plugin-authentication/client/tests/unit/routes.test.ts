@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import authentication from '../../plugin.js';
 import {
   ACCOUNT_SECURITY_ROUTE_ID,
+  AUTHENTICATION_PASSKEY_GUIDE_ROUTE_ID,
   AUTHENTICATION_SETTINGS_ROUTE_ID,
   AUTHENTICATION_SSO_GUIDE_ROUTE_ID,
+  AUTHENTICATION_TWO_FACTOR_GUIDE_ROUTE_ID,
 } from '../../routes.js';
 
 const componentLoader = async () => ({ default: () => null });
@@ -47,6 +49,35 @@ describe('the settings pages the authentication plugin registers', () => {
       },
     });
     expect(byId(AUTHENTICATION_SSO_GUIDE_ROUTE_ID)?.navigation).toBeUndefined();
+  });
+
+  it('puts the two-factor and passkey guides beside it, behind the same settings item and out of the menu', async () => {
+    for (const [id, path, title] of [
+      [
+        AUTHENTICATION_TWO_FACTOR_GUIDE_ROUTE_ID,
+        '/settings/authentication/two-factor',
+        'guide.twoFactor.title',
+      ],
+      [
+        AUTHENTICATION_PASSKEY_GUIDE_ROUTE_ID,
+        '/settings/authentication/passkey',
+        'guide.passkey.title',
+      ],
+    ] as const) {
+      const route = byId(id);
+      expect(route).toMatchObject({
+        path,
+        authz: {
+          resource: { type: 'settings', id: 'authentication.settings' },
+          action: 'read',
+        },
+        breadcrumb: { title },
+      });
+      expect(route?.navigation).toBeUndefined();
+      expect((await route?.componentLoader?.())?.default).toEqual(
+        expect.any(Function),
+      );
+    }
   });
 
   it('puts Account and security in Personal settings › Account, open to every signed-in person', () => {

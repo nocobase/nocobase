@@ -246,6 +246,44 @@ const enUS = {
         'The identities behind system API keys; they only call the API with keys and cannot sign in with a password or single sign-on.',
     },
   },
+  guide: {
+    plugins: '1. Add the plugin',
+    migration: '2. Add a migration',
+    migrationDescription:
+      'The plugin needs tables the application does not have yet. Add this migration to database/main/migrations/ with a timestamp in its file name and name; it matches Better Auth 1.7.21. Never run Better Auth’s own schema generation against the application database.',
+    deploy: '3. Redeploy',
+    deployDescription:
+      'Deploy the configuration and the migration together; the migration runs on start. Then check that the method shows as On under Sign-in methods.',
+    notes: 'Before you turn it on',
+    twoFactor: {
+      title: 'Turn on two-factor authentication',
+      description:
+        'After their password, people enter a one-time code from an authenticator app. This page only explains the steps and saves nothing.',
+      pluginsDescription:
+        'Add twoFactor() to the server’s authentication configuration and twoFactorClient() to the browser’s, keeping the plugins already there.',
+      note1:
+        'Each person turns it on for themselves in Account and security and scans the code with an authenticator app. Account and security does not include that section yet: add it to the application, or replace the page, before people need it.',
+      note2:
+        'Once a person has turned it on, signing in with a password asks for the code. The sign-in page has to handle that second step (twoFactorRedirect, then twoFactor.verifyTotp) before anyone turns it on.',
+      note3:
+        'Keep the backup codes the authenticator setup shows. An administrator cannot read a person’s codes; a person who loses both needs the factor removed for them.',
+    },
+    passkey: {
+      title: 'Turn on passkeys',
+      description:
+        'People sign in with a fingerprint, their face or a security key instead of a password. This page only explains the steps and saves nothing.',
+      pluginsDescription:
+        'Passkeys come from the separate @better-auth/passkey package: install it at the same version as better-auth, then add passkey() to the server’s authentication configuration and passkeyClient() to the browser’s.',
+      publicOriginMissing:
+        'app.publicOrigin is not set, so rpID and origin above are placeholders. Set app.publicOrigin, or fill in the address people use.',
+      note1:
+        'Passkeys only work over HTTPS (localhost excepted). origin is the exact address the browser shows, including any port.',
+      note2:
+        'rpID is the domain passkeys are bound to, without scheme or port. Changing it later invalidates every passkey already registered.',
+      note3:
+        'People register a passkey after signing in, and the sign-in page needs a “Sign in with a passkey” button. Neither Account and security nor the template’s sign-in page includes these yet: add them to the application.',
+    },
+  },
   sso: {
     title: 'Turn on single sign-on (OIDC)',
     socialTitle: 'Turn on social sign-in',

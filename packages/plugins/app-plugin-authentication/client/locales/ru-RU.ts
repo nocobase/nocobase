@@ -41,6 +41,7 @@ const ruRU: LocaleResource<typeof enUS> = {
   },
   // The settings pages are not translated into this language yet; English is shown.
   settings: withPluralForms(enUS.settings, 'ru-RU'),
+  guide: enUS.guide,
   sso: enUS.sso,
   account: withPluralForms(enUS.account, 'ru-RU'),
 };

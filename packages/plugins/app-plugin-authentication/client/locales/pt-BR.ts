@@ -43,6 +43,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   // The settings pages are not translated into this language yet; English is shown.
   settings: withPluralForms(enUS.settings, 'pt-BR'),
+  guide: enUS.guide,
   sso: enUS.sso,
   account: withPluralForms(enUS.account, 'pt-BR'),
 };

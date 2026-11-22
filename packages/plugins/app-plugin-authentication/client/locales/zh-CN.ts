@@ -229,6 +229,44 @@ const zhCN: AuthenticationResource = {
         '系统密钥背后的身份，只能用密钥调用接口，不能用密码或 SSO 登录。',
     },
   },
+  guide: {
+    plugins: '1. 加插件',
+    migration: '2. 加数据库迁移',
+    migrationDescription:
+      '这个插件需要应用里还没有的数据表。把下面的迁移放进 database/main/migrations/，文件名和 name 里填上时间戳；表结构与 Better Auth 1.7.21 一致。不要对应用数据库运行 Better Auth 自带的建表命令。',
+    deploy: '3. 重新部署',
+    deployDescription:
+      '配置和迁移一起部署，启动时自动执行迁移。部署后到「登录方式」确认这一行显示为已开启。',
+    notes: '开启前注意',
+    twoFactor: {
+      title: '开启两步验证',
+      description:
+        '输入密码后，再输入一次验证器 App 上的动态码。本页只说明步骤，不保存任何配置。',
+      pluginsDescription:
+        '在服务端认证配置里加 twoFactor()，在浏览器端认证配置里加 twoFactorClient()，原有插件保留。',
+      note1:
+        '每个人在「账号与安全」里自己开启，用验证器 App 扫码绑定。「账号与安全」目前还没有这一块，需要应用补上或整页替换后再开放。',
+      note2:
+        '有人开启后，用密码登录会要求输入动态码。开启前，登录页要先支持这一步（twoFactorRedirect，再调用 twoFactor.verifyTotp）。',
+      note3:
+        '请保存绑定时显示的备用码。管理员看不到任何人的备用码；验证器和备用码都丢失时，需要替他移除两步验证。',
+    },
+    passkey: {
+      title: '开启通行密钥',
+      description:
+        '用指纹、面容或安全密钥代替密码登录。本页只说明步骤，不保存任何配置。',
+      pluginsDescription:
+        '通行密钥在独立的 @better-auth/passkey 包里：先按 better-auth 的同一版本安装，再在服务端认证配置里加 passkey()，在浏览器端认证配置里加 passkeyClient()。',
+      publicOriginMissing:
+        '没有设置 app.publicOrigin，上面的 rpID 和 origin 是占位符。请设置 app.publicOrigin，或填入大家实际访问的地址。',
+      note1:
+        '通行密钥只能在 HTTPS 下使用（localhost 除外）。origin 要和浏览器地址栏完全一致，包括端口。',
+      note2:
+        'rpID 是通行密钥绑定的域名，不带协议和端口。之后修改会让已注册的通行密钥全部失效。',
+      note3:
+        '登录后才能注册通行密钥，登录页也需要「用通行密钥登录」按钮。「账号与安全」和模板的登录页目前都没有，需要应用补上。',
+    },
+  },
   sso: {
     title: '开启企业 SSO（OIDC）',
     socialTitle: '开启社交账号登录',

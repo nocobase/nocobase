@@ -31,6 +31,17 @@ import {
 } from './shared.js';
 import { useAuthenticationTranslation, useDuration } from './i18n.js';
 
+/** The guide each built-in method links to while it is not configured, relative to this page. */
+const GUIDE_PATHS: Record<
+  NonNullable<AuthenticationSignInMethod['guide']>,
+  string
+> = {
+  sso: 'sso?type=sso',
+  social: 'sso?type=social',
+  twoFactor: 'two-factor',
+  passkey: 'passkey',
+};
+
 const TABS = ['methods', 'registration', 'password', 'session'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -238,12 +249,11 @@ function MethodsTab({
                 >
                   {t('settings.methods.details')}
                 </Button>
-              ) : method.status === 'notConfigured' &&
-                (method.guide === 'sso' || method.guide === 'social') ? (
+              ) : method.status === 'notConfigured' && method.guide ? (
                 <Button
                   size='sm'
                   variant='outline'
-                  render={<Link to={`sso?type=${method.guide}`} />}
+                  render={<Link to={GUIDE_PATHS[method.guide]} />}
                   nativeButton={false}
                 >
                   {t('settings.methods.howToEnable')}

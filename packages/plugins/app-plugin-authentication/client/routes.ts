@@ -13,6 +13,10 @@ const PACKAGE = '@nocobase/app-plugin-authentication';
 export const AUTHENTICATION_SETTINGS_ROUTE_ID: string = `${PACKAGE}:authenticationSettings`;
 /** The single sign-on guide it links to (`/settings/authentication/sso`). */
 export const AUTHENTICATION_SSO_GUIDE_ROUTE_ID: string = `${PACKAGE}:authenticationSsoGuide`;
+/** The guide to turning on two-factor authentication (`/settings/authentication/two-factor`). */
+export const AUTHENTICATION_TWO_FACTOR_GUIDE_ROUTE_ID: string = `${PACKAGE}:authenticationTwoFactorGuide`;
+/** The guide to turning on passkeys (`/settings/authentication/passkey`). */
+export const AUTHENTICATION_PASSKEY_GUIDE_ROUTE_ID: string = `${PACKAGE}:authenticationPasskeyGuide`;
 /** Personal settings › Account › Account and security (`/me/security`). */
 export const ACCOUNT_SECURITY_ROUTE_ID: string = `${PACKAGE}:accountSecurity`;
 
@@ -50,6 +54,28 @@ export const systemSettingsRoutes: AppClientRouteContribution =
       authz: readSettings,
       breadcrumb: { title: 'sso.title' },
       componentLoader: () => import('./pages/sso-guide-page.js'),
+    },
+    {
+      parent: SYSTEM_SETTINGS_CATEGORIES.account,
+      name: 'authenticationTwoFactorGuide',
+      path: '/authentication/two-factor',
+      authz: readSettings,
+      breadcrumb: { title: 'guide.twoFactor.title' },
+      componentLoader: () =>
+        import('./pages/method-guide-page.js').then((module) => ({
+          default: module.TwoFactorGuidePage,
+        })),
+    },
+    {
+      parent: SYSTEM_SETTINGS_CATEGORIES.account,
+      name: 'authenticationPasskeyGuide',
+      path: '/authentication/passkey',
+      authz: readSettings,
+      breadcrumb: { title: 'guide.passkey.title' },
+      componentLoader: () =>
+        import('./pages/method-guide-page.js').then((module) => ({
+          default: module.PasskeyGuidePage,
+        })),
     },
   ]);
 

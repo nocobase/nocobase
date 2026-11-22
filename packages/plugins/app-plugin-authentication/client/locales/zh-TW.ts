@@ -36,6 +36,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   // The settings pages are not translated into this language yet; English is shown.
   settings: withPluralForms(enUS.settings, 'zh-TW'),
+  guide: enUS.guide,
   sso: enUS.sso,
   account: withPluralForms(enUS.account, 'zh-TW'),
 };
