@@ -1,3 +1,9 @@
+import { ChevronRightIcon } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../components/ui/collapsible.js';
 import { useState, type ReactElement } from 'react';
 
 import { Badge } from '../components/ui/badge.js';
@@ -77,15 +83,23 @@ export function ChannelsTab({
           {t('channels.empty')}
         </p>
       )}
-      <details className='rounded-lg border p-4 text-sm'>
-        <summary className='cursor-pointer font-medium'>
+      <Collapsible className='rounded-lg border p-4 text-sm'>
+        <CollapsibleTrigger className='group inline-flex items-center gap-1 text-left font-medium'>
+          <ChevronRightIcon
+            aria-hidden
+            className='size-4 shrink-0 group-aria-expanded:rotate-90'
+          />
           {t('channels.howTo')}
-        </summary>
-        <pre className='mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs'>
-          {CONFIG_EXAMPLE}
-        </pre>
-        <p className='mt-2 text-muted-foreground'>{t('channels.howToHint')}</p>
-      </details>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <pre className='mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs'>
+            {CONFIG_EXAMPLE}
+          </pre>
+          <p className='mt-2 text-muted-foreground'>
+            {t('channels.howToHint')}
+          </p>
+        </CollapsibleContent>
+      </Collapsible>
       <DeliverySettings settings={meta.delivery} />
       <TestDialog
         key={testing?.name ?? 'closed'}
@@ -118,8 +132,12 @@ function ChannelRow({
   const { accepted, failed } = channel.last24h;
   return (
     <li className='grid gap-3 px-4 py-3 text-sm lg:grid-cols-[minmax(12rem,2fr)_minmax(9rem,1fr)_minmax(10rem,1fr)_auto] lg:items-center lg:gap-4'>
-      <details className='min-w-0'>
-        <summary className='cursor-pointer font-medium'>
+      <Collapsible className='min-w-0'>
+        <CollapsibleTrigger className='group inline-flex items-center gap-1 text-left font-medium'>
+          <ChevronRightIcon
+            aria-hidden
+            className='size-4 shrink-0 group-aria-expanded:rotate-90'
+          />
           {Icon ? <Icon aria-hidden className='mr-1 inline size-4' /> : null}
           {display
             ? typeName
@@ -132,36 +150,38 @@ function ChannelRow({
           {!channel.enabled && (
             <Badge variant='outline'>{t('channels.disabled')}</Badge>
           )}
-        </summary>
-        <div className='mt-2 space-y-1 text-xs text-muted-foreground'>
-          <p>
-            {t('channels.columns.type')}: {typeName} · {channel.type}
-          </p>
-          {display?.Summary ? (
-            <display.Summary channel={channel} />
-          ) : channel.summary.length ? (
-            <dl className='flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground'>
-              {channel.summary.map((item) => (
-                <div
-                  key={`${text(item.label)}:${item.value}`}
-                  className='flex min-w-0 gap-1'
-                >
-                  <dt>{text(item.label)}</dt>
-                  <dd className='font-mono break-all text-foreground/80'>
-                    {item.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-          <p className='min-w-0 font-mono text-xs break-all text-muted-foreground'>
-            <span className='font-sans'>
-              {t('channels.columns.contributor')}:{' '}
-            </span>
-            {channel.contributor ?? '—'}
-          </p>
-        </div>
-      </details>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className='mt-2 space-y-1 text-xs text-muted-foreground'>
+            <p>
+              {t('channels.columns.type')}: {typeName} · {channel.type}
+            </p>
+            {display?.Summary ? (
+              <display.Summary channel={channel} />
+            ) : channel.summary.length ? (
+              <dl className='flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground'>
+                {channel.summary.map((item) => (
+                  <div
+                    key={`${text(item.label)}:${item.value}`}
+                    className='flex min-w-0 gap-1'
+                  >
+                    <dt>{text(item.label)}</dt>
+                    <dd className='font-mono break-all text-foreground/80'>
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+            <p className='min-w-0 font-mono text-xs break-all text-muted-foreground'>
+              <span className='font-sans'>
+                {t('channels.columns.contributor')}:{' '}
+              </span>
+              {channel.contributor ?? '—'}
+            </p>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
       <span>
         {channel.reachesUsers
           ? t('channels.reachesUsers')
@@ -209,46 +229,52 @@ function DeliverySettings({
   const source = (configured: boolean) =>
     t(configured ? 'channels.fromConfig' : 'channels.fromDefault');
   return (
-    <details className='rounded-lg border p-4 text-sm'>
-      <summary className='cursor-pointer font-medium'>
+    <Collapsible className='rounded-lg border p-4 text-sm'>
+      <CollapsibleTrigger className='group inline-flex items-center gap-1 text-left font-medium'>
+        <ChevronRightIcon
+          aria-hidden
+          className='size-4 shrink-0 group-aria-expanded:rotate-90'
+        />
         {t('channels.delivery.title')}
-      </summary>
-      <dl className='divide-y rounded-lg border text-sm'>
-        <div className='grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]'>
-          <dt className='font-medium'>{t('channels.delivery.retry')}</dt>
-          <dd className='space-y-0.5'>
-            <p>
-              {settings.retry.maxAttempts === 1
-                ? t('channels.delivery.noRetry')
-                : t('channels.delivery.retryValue', {
-                    count: settings.retry.maxAttempts,
-                    seconds: Math.round(settings.retry.intervalMs / 1000),
-                  })}{' '}
-              <Badge variant='outline'>
-                {source(settings.retry.configured)}
-              </Badge>
-            </p>
-            <p className='text-xs text-muted-foreground'>
-              {t('channels.delivery.retryHint')}
-            </p>
-          </dd>
-        </div>
-        <div className='grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]'>
-          <dt className='font-medium'>{t('channels.delivery.jobs')}</dt>
-          <dd className='space-y-0.5'>
-            <p>
-              <code>{settings.jobs ?? 'jobs.default'}</code>{' '}
-              <Badge variant='outline'>
-                {source(settings.jobs !== undefined)}
-              </Badge>
-            </p>
-            <p className='text-xs text-muted-foreground'>
-              {t('channels.delivery.jobsHint')}
-            </p>
-          </dd>
-        </div>
-      </dl>
-    </details>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <dl className='divide-y rounded-lg border text-sm'>
+          <div className='grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]'>
+            <dt className='font-medium'>{t('channels.delivery.retry')}</dt>
+            <dd className='space-y-0.5'>
+              <p>
+                {settings.retry.maxAttempts === 1
+                  ? t('channels.delivery.noRetry')
+                  : t('channels.delivery.retryValue', {
+                      count: settings.retry.maxAttempts,
+                      seconds: Math.round(settings.retry.intervalMs / 1000),
+                    })}{' '}
+                <Badge variant='outline'>
+                  {source(settings.retry.configured)}
+                </Badge>
+              </p>
+              <p className='text-xs text-muted-foreground'>
+                {t('channels.delivery.retryHint')}
+              </p>
+            </dd>
+          </div>
+          <div className='grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]'>
+            <dt className='font-medium'>{t('channels.delivery.jobs')}</dt>
+            <dd className='space-y-0.5'>
+              <p>
+                <code>{settings.jobs ?? 'jobs.default'}</code>{' '}
+                <Badge variant='outline'>
+                  {source(settings.jobs !== undefined)}
+                </Badge>
+              </p>
+              <p className='text-xs text-muted-foreground'>
+                {t('channels.delivery.jobsHint')}
+              </p>
+            </dd>
+          </div>
+        </dl>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
