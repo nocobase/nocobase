@@ -57,3 +57,7 @@ Follow the synchronized [page data freshness rules](../skills/nocobase-app-devel
 ## Features and extensions
 
 Features and extensions belongs in System settings under the System category, alongside Database Explorer. Use the permission-filtered settings catalog rather than a separate sidebar footer entry. Its detail breadcrumb includes System settings and returns to the filtered catalog. The homepage retains its discovery link.
+
+## Push notifications in the account menu
+
+The account menu's Push notifications item opens `client/layouts/components/push-notifications-dialog.tsx`, which renders `PushPreferences` from `@nocobase/app-plugin-notification-web-push/client`: the signed-in person subscribes this device, pauses, removes or tests their own devices, and sees when push is not configured, unsupported or blocked. Permission is requested only from its Subscribe button; do not request it on page load, sign-in or installation, and do not register another service worker. Sign-out in `user-menu.tsx` calls `unsubscribeDevice` first and stops if that fails, so a shared browser does not keep notifying a signed-out person. Configuration (`push`, `WEB_PUSH_PRIVATE_KEY`) is in `config.example.yml`; sending is the application's own decision through the `webPush` notification channel.

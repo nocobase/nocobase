@@ -24,6 +24,7 @@ import { createAppDatabaseTaskContributions } from '@nocobase/app-server/plugins
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { InAppChannel } from '@nocobase/app-plugin-notification-in-app/server';
+import { WebPushChannel } from '@nocobase/app-plugin-notification-web-push/server';
 import {
   createNotificationRegistry,
   type NotificationConfig,
@@ -78,7 +79,7 @@ describe('application config', () => {
     });
   });
 
-  it('enables the in-app channel by default and honors an explicit disabled configuration', async () => {
+  it('enables the in-app and Web Push channels by default and honors an explicit disabled configuration', async () => {
     const directory = mkdtempSync(
       path.join(tmpdir(), 'examples-notification-config-'),
     );
@@ -92,10 +93,12 @@ describe('application config', () => {
           env: { AUTH_SECRET: 'test-auth-secret-at-least-32-characters' },
         });
       const runtime = await resolve();
-      const registry =
-        createNotificationRegistry().registerChannelType(InAppChannel);
+      const registry = createNotificationRegistry()
+        .registerChannelType(InAppChannel)
+        .registerChannelType(WebPushChannel);
       const config = runtime.config.get<NotificationConfig>('notification')!;
       expect(config.channels.inbox).toMatchObject({ provider: 'in-app' });
+      expect(config.channels.webPush).toMatchObject({ provider: 'web-push' });
       expect(() => registry.validate(config)).not.toThrow();
       writeFileSync(
         configPath,

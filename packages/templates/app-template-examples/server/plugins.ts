@@ -17,6 +17,7 @@ import lifecycleExample from '@nocobase/app-plugin-lifecycle-example/server';
 import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/server';
 import notification from '@nocobase/app-plugin-notification/server';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/server';
+import webPush from '@nocobase/app-plugin-notification-web-push/server';
 import notificationProviders from '@nocobase/app-plugin-notification-providers/server';
 import notificationExample from '@nocobase/app-plugin-notification-example/server';
 import queueExample from '@nocobase/app-plugin-queue-example/server';
@@ -53,6 +54,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   i18n,
   notification,
   notificationInApp,
+  webPush,
   notificationProviders,
   notificationExample,
   queueExample,
