@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ruRU: LocaleResource<typeof enUS> = {
+  fileUsage: 'Файлы базы знаний',
   indexing: {
     failedDocumentCount: 'Документов с ошибкой: {{count}}',
     enabled: 'Включить индексацию',

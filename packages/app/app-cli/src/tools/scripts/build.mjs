@@ -48,7 +48,12 @@ Deployment metadata:
 const { generateDatabaseManifests } =
   await import('@nocobase/dev-config/build/database-manifests');
 const { default: spawn } = await import('cross-spawn');
-const { readCliHooks, runHookStage } = await import('./utils/cli-hooks.mjs');
+const {
+  assertCliPluginRegistrationsCurrent,
+  readCliHooks,
+  readCliPluginRegistrations,
+  runHookStage,
+} = await import('./utils/cli-hooks.mjs');
 const { resolveBuildWorkspacePackages, buildNodeOptions } =
   await import('./utils/build-workspace.mjs');
 
@@ -83,6 +88,20 @@ function writeCliEntry() {
       "await runAppCli({ root: path.resolve(import.meta.dirname, '..') });",
       '',
     ].join('\n'),
+  );
+}
+
+/**
+ * Writes `dist/cli/plugins.json`: the packages `cli/plugins.ts` registers, as the `build` command read them with the
+ * application's TypeScript. A deployment has neither that file nor a compiler, so the App Foundation plugins page reads
+ * this list there instead.
+ */
+function writeCliPluginRegistrations() {
+  const file = path.join(distDir, 'cli', 'plugins.json');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify({ plugins: cliPluginRegistrations.plugins }, null, 2)}\n`,
   );
 }
 
@@ -225,6 +244,7 @@ const run = (label, command, args, options = {}) => {
 
 // Read before anything is built, so a broken CLI assembly fails here rather than after several minutes of work.
 const { build: buildHooks } = readCliHooks();
+const cliPluginRegistrations = readCliPluginRegistrations();
 
 fs.rmSync(distDir, { recursive: true, force: true });
 
@@ -275,6 +295,9 @@ run('Rewrite server path aliases', 'pnpm', [
   'tsconfig.server.json',
 ]);
 writeCliEntry();
+// The beforeBuild and afterClientBuild hooks ran after the list was read; the CLI just compiled must match it.
+assertCliPluginRegistrationsCurrent(cliPluginRegistrations, rootDir);
+writeCliPluginRegistrations();
 // tsc emits only TypeScript. An external connection reads its hand-written supplemental metadata from
 // `database/<connection>/metadata/<name>.json` at runtime, so those files have to travel with the server or a
 // deployment resolves every external Collection without titles or relations and reports nothing wrong.

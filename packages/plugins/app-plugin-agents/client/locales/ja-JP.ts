@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  fileUsage: 'チャットの添付ファイル',
   modelSuggestions: {
     design:
       '最も高度な推論：提案、アーキテクチャ、難しい問題の調査、重要な変更のコードレビュー。通常の実装、パッケージ間の変更、提案書の作成にも対応。',

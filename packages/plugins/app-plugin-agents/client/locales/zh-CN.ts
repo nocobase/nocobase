@@ -11,6 +11,7 @@ import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
+  fileUsage: '会话附件',
   modelSuggestions: {
     design:
       '推理最强：方案设计、架构、疑难排查、重要改动的代码评审；也能做常规实现、跨包改动、写方案',

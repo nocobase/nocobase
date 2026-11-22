@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Agent sessions",
+      "zh-CN": "Agent 会话"
+    },
+    "description": {
+      "en-US": "Conversations with agents and their history",
+      "zh-CN": "和 Agent 的对话及其记录"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

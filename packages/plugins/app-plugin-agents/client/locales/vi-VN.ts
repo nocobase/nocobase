@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  fileUsage: 'Tệp đính kèm trò chuyện',
   modelSuggestions: {
     design:
       'Suy luận mạnh nhất: đề xuất, kiến trúc, điều tra vấn đề khó và đánh giá thay đổi quan trọng; cũng triển khai thông thường và thay đổi nhiều gói.',

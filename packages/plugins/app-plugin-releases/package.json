@@ -8,6 +8,16 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "nocobase": {
+    "title": {
+      "en-US": "Releases",
+      "zh-CN": "发布"
+    },
+    "description": {
+      "en-US": "Apps, releases and deployments",
+      "zh-CN": "应用、版本和部署"
+    }
+  },
   "sideEffects": false,
   "exports": {
     "./server": {

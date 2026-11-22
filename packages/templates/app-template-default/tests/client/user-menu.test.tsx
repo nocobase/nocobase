@@ -1,5 +1,5 @@
 import { AppThemeProvider } from '../../client/theme/index.js';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { useLocation } from 'react-router';
@@ -78,27 +78,16 @@ it('opens personal settings from the first account menu entry', async () => {
     </AppThemeProvider>,
   );
   const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: 'Open account menu' }));
+  // The trigger also opens on hover. Open it from the keyboard so no hover timer can close the menu again while the
+  // pointer moves from the trigger to the item, which made this test fail under load.
+  screen.getByRole('button', { name: 'Open account menu' }).focus();
+  await user.keyboard('{Enter}');
   const [first] = within(await screen.findByRole('menu')).getAllByRole(
     'menuitem',
   );
   expect(first).toHaveTextContent('Personal settings');
-  // The menu ignores the pointer while it opens; click once it takes clicks, as a person would.
-  await waitFor(() => expect(takesPointer(first!)).toBe(true));
   await user.click(first!);
   expect(
     await screen.findByRole('status', { name: 'Location' }),
   ).toHaveTextContent('/me');
 });
-
-/**
- * Whether the pointer reaches `element`: the nearest of it and its ancestors that declares `pointer-events` decides, the
- * way user-event checks before a click.
- */
-function takesPointer(element: Element): boolean {
-  for (let node: Element | null = element; node; node = node.parentElement) {
-    const value = (node as HTMLElement).style?.pointerEvents;
-    if (value) return value !== 'none';
-  }
-  return true;
-}

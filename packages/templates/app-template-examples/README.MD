@@ -16,9 +16,9 @@ Ask the application agent to upgrade NocoBase using the application-local [templ
 
 Complete the target’s requirements in that same upgrade: reconcile dependencies, copied template and Registry sources, application-owned table/card consumers and translations while preserving business customizations, grants, records and executed migrations. For list feedback, follow the target Skill’s `references/list-feedback-upgrade.md`. Do not finish with only a version bump, dependency update or Skill sync. Missing targets, unresolved business conflicts or failed acceptance stop completion; confirm `defaultTemplateVersion` only after the checks pass. See the target Skill’s `references/versioned-upgrade-verification.md` for package integrity records and verification after publication.
 
-## App foundation
+## Plugins page
 
-Open `/settings/foundation` relative to this application's mount path, to inspect its Core capabilities, usage evidence and statistics. Examples registers the Foundation Client, Server and CLI plugins as a deployment dependency, alongside its demonstrations. System settings lists Features and extensions for viewers with catalog access. The CLI build hook preserves page-to-capability evidence in `dist/server/foundation-modules.json`, so deployments without page source files retain recognized associations such as Articles using data modeling. Rebuild after changing page or API dependencies; refreshing an older deployment cannot recreate missing build evidence. The page and its `/api/foundation/overview` endpoint require unrestricted administrator access, such as the root Permission Set; ordinary users cannot see the menu entry or read the evidence. A mounted application at `/my-examples/` exposes the page at `/my-examples/foundation`.
+Open `/settings/plugins` relative to this application's mount path to see which plugins the application uses, their versions and states, and the commands that enable, update or disable each one. Examples registers `@nocobase/app-plugin-foundation` on Client and Server. The page and its `GET /api/foundation/plugins` endpoint require the «Plugins · View» settings item (`foundation.plugins` / `read`); root has it, and other roles see neither the menu entry nor the data without it. The earlier `/settings/foundation` and `/settings/capabilities` addresses open this page.
 
 ## Create an examples application
 
@@ -705,8 +705,6 @@ Office distribution workflows share department role membership under `office.org
 The **Execution records** tab lists lifecycle-managed business records across all workflows, with workflow filtering and pagination. Open a record to see its current node, previously visited nodes and the exact traversed edges in different colors. The transition history supports step-by-step replay, including loops and repeated visits, while **Latest progress** restores the full recorded path. History, effect runs and recorded execution parameters are shown beside the diagram on wide screens and stacked on narrow screens. The detail URLs can be opened directly and retain the parent list's filters when closed.
 
 Workflow management requires `read` on the `workflow-management` settings item; category changes require `update`. Root has access. The application seed grants both actions to an existing `system-administrator` permission set without assigning users or overwriting an existing workflow grant. Apply the new plugin migration and application seeds through the normal database upgrade workflow before using the catalog. Initial categories are example business data, not lifecycle engine metadata. Existing business example pages remain accessible under their own policies.
-
-Foundation identifies the Articles database dependency on the proven normal-success API path. The matrix details preserve database availability, authentication, body-size and input-validation conditions with their framework sources; rejected requests are not described as database activity. The Client, Server and CLI registrations remain required, and a production rebuild carries this evidence into the source-free deployment.
 
 ## Internal workspace packages
 

@@ -5,11 +5,13 @@ import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
 import {
   defineClientPlugins,
-  SYSTEM_SETTINGS_CATEGORIES,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
+import { pagePermissionTitles } from './pages/settings/page-permission-titles.js';
+import { permissionPageCatalog } from './pages/settings/permission-catalog.js';
+import { permissionWorkspaceSelection } from './pages/settings/permission-workspace.js';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
 import users from '@nocobase/app-plugin-users/client';
@@ -30,7 +32,6 @@ import fileExample from '@nocobase/app-plugin-file-example/client';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
-import applicationManifest from '../package.json' with { type: 'json' };
 import knowledge from '@nocobase/app-plugin-knowledge/client';
 import { FormProposalRenderer } from '#components/online-agent/form-proposal-card';
 import { EXAMPLES_FORM_TOOL } from '../shared/ai-form-fill.js';
@@ -45,7 +46,12 @@ agents.toolRenderers.add({
 // list; removing its entry and its import disables it.
 const clientPlugins: AppClientPlugins = defineClientPlugins([
   authentication(),
-  authorization(),
+  // The Roles and permissions pages list this application's pages and business objects.
+  authorization({
+    pageCatalog: permissionPageCatalog,
+    workspace: permissionWorkspaceSelection,
+    pageTitles: pagePermissionTitles,
+  }),
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
@@ -71,13 +77,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   mailExample(),
   // The Agent panel and ✦ in the header, the conversation page, System settings › AI and Personal settings › Agent.
   agents(),
-  // The manifest is what the capability guide lists: every plugin this application declares.
-  foundation({
-    settingsGroup: SYSTEM_SETTINGS_CATEGORIES.system,
-    manifest: applicationManifest,
-    guideSettingsPath: '/settings',
-    navigation: false,
-  }),
+  foundation(),
   knowledge({ routes: false }),
 ]);
 

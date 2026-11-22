@@ -22,6 +22,7 @@ export async function buildSamples(work) {
   delete env.NOCOBASE_TOOL_ROOT;
   delete env.NOCOBASE_APP_ROOT;
   delete env.NOCOBASE_CLI_HOOKS;
+  delete env.NOCOBASE_CLI_PLUGIN_REGISTRATIONS;
   const run = (args, cwd) =>
     new Promise((resolve, reject) => {
       const child = spawn('pnpm', args, { cwd, env, stdio: 'inherit' });

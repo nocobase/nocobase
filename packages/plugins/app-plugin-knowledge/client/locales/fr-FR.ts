@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  fileUsage: 'Fichiers de la base de connaissances',
   indexing: {
     failedDocumentCount: 'Documents en échec : {{count}}',
     enabled: 'Activer l’indexation',

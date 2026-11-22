@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  fileUsage: 'Chat-Anhänge',
   modelSuggestions: {
     design:
       'Stärkstes Schlussfolgern: Vorschläge, Architektur, schwierige Untersuchungen und Prüfung wichtiger Änderungen; auch Routineumsetzung, paketübergreifende Änderungen und Vorschläge.',

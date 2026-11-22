@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const koKR: LocaleResource<typeof enUS> = {
+  fileUsage: '채팅 첨부 파일',
   modelSuggestions: {
     design:
       '가장 강력한 추론: 제안, 아키텍처, 어려운 조사, 중요한 변경 검토. 일반 구현, 여러 패키지에 걸친 변경, 제안 작성도 가능.',
