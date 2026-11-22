@@ -27,6 +27,7 @@ const routes: AppClientSystemSettingsRoutesContribution =
         title: 'nav.title',
         description: 'nav.description',
         icon: Network,
+        relatedSettings: ['snowflakeWorker'],
       },
       breadcrumb: { title: 'nav.title' },
       componentLoader: () => import('./components/status-page.js'),

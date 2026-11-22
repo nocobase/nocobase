@@ -73,7 +73,7 @@ const guide = defineSystemSettingsRoutes([
     authz: GUIDE_ACCESS,
     navigation: {
       title: 'Fixture guide',
-      relatedSettings: ['fixture-personal'],
+      relatedSettings: ['fixture-personal', 'uninstalled-plugin'],
     },
     componentLoader: async () => ({ default: () => null }),
   },
@@ -180,7 +180,9 @@ const source = {
               type: 'settings',
               id: 'fixture-personal',
               title: 'Personal tools',
-              actions: [{ name: 'create', title: 'Create personal tool' }],
+              actions: [
+                { name: 'create', title: 'Create personal tool', risk: 'high' },
+              ],
             },
             {
               type: 'settings',
@@ -500,7 +502,11 @@ describe('role permission workspace', () => {
       ),
     )!;
     const personalAction = guide.objects[1]!.actions[0]!;
-    expect(personalAction.label).toBe('Create personal tool');
+    expect(guide.objects).toHaveLength(2);
+    expect(personalAction).toMatchObject({
+      label: 'Create personal tool',
+      risk: 'high',
+    });
     const personalOnly = setActionEnabled(
       guide.objects,
       {},

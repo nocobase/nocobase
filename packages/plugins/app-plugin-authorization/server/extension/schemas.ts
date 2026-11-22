@@ -314,6 +314,7 @@ const OptionsActionSchema = z.object({
   name: z.string(),
   title: OptionTextSchema,
   description: OptionTextSchema.optional(),
+  risk: z.enum(['sensitive', 'high']).optional(),
   defaultFor: z.array(z.string()).optional().meta({
     description:
       'Composites only: page ids whose access a role editor turns this action on with. Display only.',

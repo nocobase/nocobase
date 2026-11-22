@@ -470,11 +470,7 @@ export function permissionWorkspace(
     const existing = settingsObjects.find((object) => object.id === key);
     if (existing) return existing;
     const catalogResource = catalog.get(key);
-    const available: readonly {
-      name: string;
-      title: LocalizedText;
-      description?: LocalizedText;
-    }[] =
+    const available: CatalogResource['actions'] =
       resource.type === 'user'
         ? USER_ACTIONS.map((action) => ({
             name: action.name,
@@ -495,6 +491,7 @@ export function permissionWorkspace(
     ]) {
       const id = permissionRowId(resource, action.name);
       const isView = action.name === viewName;
+      const risk = risks[action.name] ?? action.risk;
       actions.push({
         id,
         label: text(action.title),
@@ -502,7 +499,7 @@ export function permissionWorkspace(
           ? { description: text(action.description) }
           : {}),
         ...(isView ? { view: true } : {}),
-        ...(risks[action.name] ? { risk: risks[action.name] } : {}),
+        ...(risk ? { risk } : {}),
       });
       bindings.set(id, {
         resource: { type: resource.type, id: resource.id },

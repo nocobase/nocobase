@@ -267,7 +267,7 @@ describe('page declarations of a composite', () => {
             }),
           )
           .action('approve', (action) =>
-            action.grant({
+            action.risk('high').grant({
               build: () => ({
                 grants: [
                   {
@@ -291,7 +291,7 @@ describe('page declarations of a composite', () => {
         usedOn: ['sales.quotes', 'dashboard'],
         actions: [
           { name: 'view', defaultFor: ['sales.quotes'] },
-          { name: 'approve' },
+          { name: 'approve', risk: 'high' },
         ],
       },
       { id: 'sales.quotes' },
