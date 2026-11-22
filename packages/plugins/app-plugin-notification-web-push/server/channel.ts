@@ -1,9 +1,11 @@
 import type {
+  ChannelConfigSummaryItem,
   ChannelContext,
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
   ChannelSendResult,
+  NotificationContent,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification/server';
 import { webPushServiceToken } from './tokens.js';
@@ -26,9 +28,41 @@ export class WebPushChannel implements ChannelInstance<
   PreparedPush
 > {
   static readonly type = 'web-push';
+  static readonly contributor: string =
+    '@nocobase/app-plugin-notification-web-push';
+  /** Push needs no per-channel settings: its keys live in the plugin's secrets. */
+  static summarize(): readonly ChannelConfigSummaryItem[] {
+    return [];
+  }
   private readonly service: WebPushService;
   constructor(context: ChannelContext) {
     this.service = context.container.resolve(webPushServiceToken);
+  }
+  /** Each user's enabled devices; a user without one is skipped. */
+  async resolveUsers(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly PreparedPush['device'][]>> {
+    const found = new Map<string, PreparedPush['device'][]>();
+    if (!this.service.subscriptions.ready) return found;
+    for (const row of await this.service.subscriptions.forUsers(userIds)) {
+      const devices = found.get(row.userId) ?? [];
+      devices.push({ id: row.id, userId: row.userId });
+      found.set(row.userId, devices);
+    }
+    return found;
+  }
+  /** Opens the notification's route, or the application home for an external link the worker would refuse. */
+  compose(
+    content: NotificationContent,
+    recipients: readonly PreparedPush['device'][],
+  ): WebPushMessage {
+    return {
+      to: [...recipients],
+      title: content.title.slice(0, 200),
+      ...(content.body ? { body: content.body } : {}),
+      url: content.target?.type === 'route' ? content.target.path : '/',
+      dedupeKey: `${content.kind}:${content.key}`.slice(0, 512),
+    };
   }
   validateMessage(
     input: unknown,

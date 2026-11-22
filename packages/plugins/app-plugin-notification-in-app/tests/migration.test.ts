@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 
 import {
@@ -9,7 +10,10 @@ import {
   type MigrationSource,
   type Migrator,
 } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/app-testing/server';
+import {
+  createDatabaseTest,
+  describeMigration,
+} from '@nocobase/app-testing/server';
 import { describe, expect } from 'vitest';
 
 import { DatabaseInAppStore } from '../server/store.js';
@@ -21,6 +25,7 @@ const MIGRATION_NAME = '202608190002_create_notification_in_app_items' as const;
 const TARGET_MIGRATION_NAME = '202609200002_notification_in_app_target';
 const INSTANT_MIGRATION_NAME =
   '202609180001_notification_in_app_instant_columns';
+const KIND_MIGRATION_NAME = '202611220002_notification_in_app_kind_source';
 
 const sources: readonly MigrationSource[] = [
   {
@@ -274,26 +279,26 @@ describe('in-app notification database migration', () => {
       packageName: '@nocobase/app-plugin-notification-in-app',
     });
 
-    expect(loaded.map(({ name }) => name)).toEqual([
+    const names = [
       MIGRATION_NAME,
       INSTANT_MIGRATION_NAME,
       TARGET_MIGRATION_NAME,
-    ]);
-    expect(loaded.map(({ checksum }) => checksum)).toEqual([
-      expect.stringMatching(/^[a-f0-9]{64}$/),
-      expect.stringMatching(/^[a-f0-9]{64}$/),
-      expect.stringMatching(/^[a-f0-9]{64}$/),
-    ]);
+      KIND_MIGRATION_NAME,
+    ];
+    expect(loaded.map(({ name }) => name)).toEqual(names);
+    expect(loaded.map(({ checksum }) => checksum)).toEqual(
+      names.map(() => expect.stringMatching(/^[a-f0-9]{64}$/)),
+    );
     await expect(migrator.latest()).resolves.toEqual({
       batch: 1,
-      executed: [MIGRATION_NAME, INSTANT_MIGRATION_NAME, TARGET_MIGRATION_NAME],
+      executed: names,
       skipped: [],
       warnings: [],
     });
     await expect(migrator.latest()).resolves.toEqual({
       batch: 1,
       executed: [],
-      skipped: [MIGRATION_NAME, INSTANT_MIGRATION_NAME, TARGET_MIGRATION_NAME],
+      skipped: names,
       warnings: [],
     });
 
@@ -316,10 +321,17 @@ describe('in-app notification database migration', () => {
         batch: 1,
         checksum: loaded[2]?.checksum,
       },
+      {
+        packageName: '@nocobase/app-plugin-notification-in-app',
+        name: KIND_MIGRATION_NAME,
+        batch: 1,
+        checksum: loaded[3]?.checksum,
+      },
     ]);
     await expect(migrator.rollback()).resolves.toMatchObject({
       batch: 1,
       rolledBack: [
+        KIND_MIGRATION_NAME,
         TARGET_MIGRATION_NAME,
         INSTANT_MIGRATION_NAME,
         MIGRATION_NAME,
@@ -329,6 +341,85 @@ describe('in-app notification database migration', () => {
     await expectCollection('notificationInAppItems').not.toExist();
     await expect(history(migrator)).resolves.toEqual([]);
   });
+});
+
+describeMigration(KIND_MIGRATION_NAME, {
+  sources,
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('notificationInAppItems')
+      .values({
+        id: 'before-kinds',
+        deliveryId: 'delivery-before',
+        notificationId: 'n',
+        userId: 'u',
+        body: 'Old',
+        createdAt: '2026-11-01T00:00:00.000Z',
+        updatedAt: '2026-11-01T00:00:00.000Z',
+      })
+      .execute();
+  },
+  up: async ({ database, expectCollection }) => {
+    for (const [field, length] of [
+      ['kind', 200],
+      ['category', 100],
+      ['sourceType', 100],
+      ['sourceId', 191],
+    ] as const)
+      await expectCollection('notificationInAppItems').toHaveField(field, {
+        type: 'string',
+        length,
+        nullable: true,
+      });
+    const store = new DatabaseInAppStore(database);
+    // `up` runs again after `down`: what an earlier run wrote has lost its new columns, as older messages have.
+    const old = (await store.list({ userId: 'u', limit: 100 })).find(
+      (item) => item.id === 'before-kinds',
+    );
+    expect(old).toMatchObject({ body: 'Old' });
+    expect(old).not.toHaveProperty('category');
+    const deliveryId = randomUUID();
+    await store.deliver({
+      deliveryId,
+      notificationId: 'n',
+      userId: 'u',
+      message: {
+        to: ['u'],
+        title: 'Approve',
+        body: 'Budget',
+        kind: 'approval.requested',
+        category: 'approvals',
+        source: { type: 'approval', id: '42' },
+      },
+      createdAt: '2026-11-22T00:00:00.000Z',
+    });
+    await expect(
+      store.list({ userId: 'u', category: 'approvals' }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        deliveryId,
+        kind: 'approval.requested',
+        category: 'approvals',
+        sourceType: 'approval',
+        sourceId: '42',
+      }),
+    ]);
+    await expect(store.countUnreadByCategory('u')).resolves.toContainEqual({
+      category: 'approvals',
+      count: 1,
+    });
+  },
+  down: async ({ connection, expectCollection }) => {
+    for (const field of ['kind', 'category', 'sourceType', 'sourceId'])
+      await expectCollection('notificationInAppItems').not.toHaveField(field);
+    await expect(
+      connection.query
+        .selectFrom('notificationInAppItems')
+        .selectAll()
+        .where('id', '=', 'before-kinds')
+        .executeTakeFirst(),
+    ).resolves.toMatchObject({ body: 'Old' });
+  },
 });
 
 function migratorFor(database: {

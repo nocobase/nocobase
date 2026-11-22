@@ -1,11 +1,13 @@
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import type {
   ChannelCapabilities,
+  ChannelConfigSummaryItem,
   ChannelContext,
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
   ChannelSendResult,
+  NotificationContent,
   NotificationI18nText,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
@@ -38,7 +40,18 @@ export function validateInAppMessage(
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('In-app message is required.');
   for (const key of Object.keys(value)) {
-    if (!['to', 'title', 'body', 'target', 'actionUrl'].includes(key))
+    if (
+      ![
+        'to',
+        'title',
+        'body',
+        'target',
+        'actionUrl',
+        'kind',
+        'category',
+        'source',
+      ].includes(key)
+    )
       throw new Error(`Unsupported In-app message field "${key}".`);
   }
   const message = value as InAppMessage;
@@ -58,12 +71,31 @@ export function validateInAppMessage(
     !message.body.trim()
   )
     throw new Error('In-app title and body are required.');
+  const text = (value: unknown, field: string, length: number) => {
+    if (value === undefined) return undefined;
+    if (typeof value !== 'string' || !value.trim() || value.length > length)
+      throw new Error(`In-app ${field} must be a non-empty string.`);
+    return value;
+  };
+  const kind = text(message.kind, 'kind', 200);
+  const category = text(message.category, 'category', 100);
+  const sourceType = text(message.source?.type, 'source type', 100);
+  const sourceId = text(message.source?.id, 'source id', 191);
+  if (message.source !== undefined && sourceType === undefined)
+    throw new Error('In-app source must have a type.');
   return {
     message: {
       to: message.to,
       title: message.title,
       body: message.body,
       target: validateNotificationTarget(message.target),
+      ...(kind ? { kind } : {}),
+      ...(category ? { category } : {}),
+      ...(sourceType
+        ? {
+            source: { type: sourceType, ...(sourceId ? { id: sourceId } : {}) },
+          }
+        : {}),
     },
     recipients: ids.map((userId: string) => ({ userId })),
   };
@@ -193,6 +225,11 @@ export class InAppChannel implements ChannelInstance<
     'providers.builtIn',
     'Built-in',
   );
+  static readonly contributor = '@nocobase/app-plugin-notification-in-app';
+  /** The inbox has no configuration to summarize. */
+  static summarize(): readonly ChannelConfigSummaryItem[] {
+    return [];
+  }
   readonly capabilities: ChannelCapabilities = {
     idempotency: { supported: true },
   };
@@ -212,6 +249,38 @@ export class InAppChannel implements ChannelInstance<
     input: ChannelPreparationInput<InAppMessage, InAppRecipient>,
   ): Promise<PreparedInAppMessage> {
     return prepareInAppMessage(input);
+  }
+  /** Every application user has an inbox; a user that no longer exists fails at delivery. */
+  resolveUsers(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly InAppRecipient[]>> {
+    return Promise.resolve(
+      new Map(userIds.map((userId) => [userId, [{ userId }]])),
+    );
+  }
+  compose(
+    content: NotificationContent,
+    recipients: readonly InAppRecipient[],
+  ): InAppMessage {
+    const [first, ...rest] = recipients.map(({ userId }) => userId);
+    return {
+      to: [first, ...rest],
+      title: content.title,
+      body: content.body.trim() ? content.body : content.title,
+      ...(content.target ? { target: content.target } : {}),
+      kind: content.kind,
+      category: content.category,
+      ...(content.source
+        ? {
+            source: {
+              type: content.source.type,
+              ...(content.source.referenceId
+                ? { id: content.source.referenceId }
+                : {}),
+            },
+          }
+        : {}),
+    };
   }
   send({
     message,
