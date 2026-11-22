@@ -1,4 +1,12 @@
 const settings = {
+  workflows: {
+    title: 'Workflow management',
+    description: 'View workflow definitions and execution history.',
+    definitions: 'Definitions',
+    executions: 'Executions',
+    emptyDefinitions: 'No workflows have been defined yet.',
+    emptyExecutions: 'No workflow executions have been recorded yet.',
+  },
   listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',

@@ -1,4 +1,12 @@
 const settings = {
+  workflows: {
+    title: '流程管理',
+    description: '查看流程定义和执行记录。',
+    definitions: '流程定义',
+    executions: '执行记录',
+    emptyDefinitions: '暂无流程定义。',
+    emptyExecutions: '暂无流程执行记录。',
+  },
   listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',

@@ -31,6 +31,16 @@ describe('app client routes', () => {
     );
   });
 
+  it('keeps workflow and process pages in System settings in a fresh application', () => {
+    const processPages = pagePaths(resolveRoutes().routes).filter((path) =>
+      /\/(?:workflows|processes)(?:\/|$)/.test(path),
+    );
+    expect(processPages).toEqual([
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
+    ]);
+  });
+
   it('loads every page component', async () => {
     const resolved = resolveRoutes();
     const loaders = componentLoadersIn(resolved.routes);
@@ -93,6 +103,8 @@ describe('app client routes', () => {
       },
       // Reading anyone's permissions is for an unrestricted role only.
       { name: 'settingsPermissionCheck', authorizedAs: 'unrestricted' },
+      { name: 'workflowDefinitions', authorizedAs: 'unrestricted' },
+      { name: 'workflowExecutions', authorizedAs: 'unrestricted' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
       // Personal settings belong to whoever is signed in, so they stay out of page authorization.
       { name: 'personalSettingsHome', authorizedAs: null },
@@ -120,6 +132,8 @@ describe('app client routes', () => {
       '/settings/sharing-rules',
       '/settings/restriction-rules',
       '/settings/permission-check',
+      '/settings/workflows/definitions',
+      '/settings/workflows/executions',
       '/settings/database-explorer',
     ]);
     for (const loader of componentLoadersIn(resolveRoutes().routes))

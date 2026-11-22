@@ -1,6 +1,7 @@
 import databaseExplorerRoutes from './pages/settings/database-explorer/routes.js';
 import { Home } from 'lucide-react';
 import personalSettingsRoutes from './pages/me/routes.js';
+import workflowSettingsRoutes from './pages/settings/workflows/routes.js';
 import settingsShellRoutes from './pages/settings/shell-routes.js';
 import {
   defineAppRoutes,
@@ -58,13 +59,14 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 ]);
 
 // The System settings shell shows only the modules a viewer may open. The Users and Authorization plugins contribute
-// their modules to the same shell as Database Explorer, and `@nocobase/app-plugin-notification` adds Messages ›
-// Notifications.
+// their modules to the same shell as Workflow management and Database Explorer, and `@nocobase/app-plugin-notification`
+// adds Messages › Notifications.
 export function createApplicationRoutes(): readonly AppClientRouteContribution[] {
   return [
     appRoutes,
     settingsShellRoutes,
     personalSettingsRoutes,
+    workflowSettingsRoutes,
     databaseExplorerRoutes,
   ];
 }

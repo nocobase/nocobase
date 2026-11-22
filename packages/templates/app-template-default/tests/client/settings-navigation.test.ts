@@ -52,6 +52,11 @@ function find(
   return undefined as unknown as AppClientRegisteredRoute;
 }
 
+const workflowCategory = [
+  'systemSettings.automation',
+  [['workflowManagement', '/settings/workflows/definitions']],
+];
+
 const catalog = (
   routes: readonly AppClientRegisteredRoute[],
   denied = new Set<string>(),
@@ -294,11 +299,36 @@ it('places database browsing in Data and files and hides its card when access is
   ];
   expect(catalog(routes)).toEqual([
     account,
+    workflowCategory,
     [
       'systemSettings.data',
       [['databaseExplorer', '/settings/database-explorer']],
     ],
   ]);
   // The empty Data and files category is hidden; Accounts and permissions stays.
-  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([account]);
+  expect(catalog(routes, new Set([routeKey(page)]))).toEqual([
+    account,
+    workflowCategory,
+  ]);
+});
+
+it('keeps workflow management out of the menu when both views are denied', () => {
+  const routes = resolveAppClientContributions([
+    {
+      packageName: app,
+      source: 'application',
+      routes: createApplicationRoutes(),
+    },
+  ]).routes;
+  const views = ['workflowDefinitions', 'workflowExecutions'].map((name) =>
+    find(routes, name),
+  );
+  expect(views.map((view) => [view.path, view.auth, view.authz])).toEqual([
+    ['/settings/workflows/definitions', 'required', 'unrestricted'],
+    ['/settings/workflows/executions', 'required', 'unrestricted'],
+  ]);
+  expect(catalog(routes)).toContainEqual(workflowCategory);
+  expect(catalog(routes, new Set(views.map(routeKey)))).not.toContainEqual(
+    workflowCategory,
+  );
 });
