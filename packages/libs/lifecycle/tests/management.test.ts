@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   defineEffect,
   defineLifecycle,
+  findStayExit,
   LifecycleRuntime,
   MemoryLifecycleStore,
   type ManagementAuthorization,
@@ -121,6 +122,28 @@ async function fixture(
 }
 
 describe('management of a bound lifecycle instance', () => {
+  it('preserves a stay across pause and resume, and ends it on same-state restart', async () => {
+    const { store, runtime, id, options, wait } = await fixture();
+    const { entry } = await wait();
+    const stay = {
+      lifecycle: entry.lifecycle,
+      recordId: entry.recordId,
+      entryId: entry.id,
+      version: entry.version,
+    };
+    await runtime.suspend('desk', id, await options());
+    expect(await findStayExit(store, stay)).toBeUndefined();
+    await runtime.resume('desk', id, await options());
+    expect(await findStayExit(store, stay)).toBeUndefined();
+    await runtime.suspend('desk', id, await options());
+    await runtime.restartAt('desk', id, 'waiting', await options());
+    expect(await findStayExit(store, stay)).toMatchObject({
+      from: 'waiting',
+      to: 'waiting',
+      management: { command: 'restartAt' },
+    });
+  });
+
   it('checks authorization before replay, rejects stale and reused requests, and audits the original result', async () => {
     const { runtime, id, options, detail } = await fixture();
     const command = await options();
