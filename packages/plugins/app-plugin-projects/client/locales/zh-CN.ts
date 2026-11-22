@@ -2,6 +2,7 @@ import accessZhCN from '../../shared/locales/access.zh-CN.js';
 import type { ProjectsResource } from './en-US.js';
 
 const pages = {
+  fileUsage: '任务附件',
   actions: {
     cancel: '取消',
     close: '关闭',

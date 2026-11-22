@@ -3,6 +3,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  fileUsage: 'Hình ảnh phiên',
   navigation: {
     agentSessions: 'My Agents',
   },
